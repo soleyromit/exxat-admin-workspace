@@ -5,3 +5,4 @@
 [submodule "studentUX"]
 	path = studentUX
 	url = https://github.com/ExxatDesign/studentUX.git
+	branch = main
