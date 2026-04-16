@@ -1,0 +1,6 @@
+packages:
+  - 'apps/exam-management/*'
+  - 'apps/patient-log/*'
+  - 'apps/pce/*'
+  - 'apps/skills-checklist/*'
+  - 'apps/learning-contracts/*'
