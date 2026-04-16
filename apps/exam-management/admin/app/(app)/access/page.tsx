@@ -1,0 +1,126 @@
+import { SiteHeader } from '@/components/site-header'
+import { PageHeader } from '@/components/page-header'
+import { DataTable, type Column } from '@/components/data-table'
+
+interface AccessEntry {
+  id: string
+  name: string
+  email: string
+  role: 'Admin' | 'Faculty' | 'Viewer'
+  addedDate: string
+}
+
+const MOCK_ACCESS: AccessEntry[] = [
+  {
+    id: '1',
+    name: 'Dr. Sarah Chen',
+    email: 'sarah.chen@university.edu',
+    role: 'Admin',
+    addedDate: '2026-01-15',
+  },
+  {
+    id: '2',
+    name: 'Dr. James Patel',
+    email: 'james.patel@university.edu',
+    role: 'Faculty',
+    addedDate: '2026-02-03',
+  },
+  {
+    id: '3',
+    name: 'Dr. Maria Lopez',
+    email: 'maria.lopez@university.edu',
+    role: 'Faculty',
+    addedDate: '2026-02-10',
+  },
+  {
+    id: '4',
+    name: 'Dr. Ahmed Hassan',
+    email: 'ahmed.hassan@university.edu',
+    role: 'Faculty',
+    addedDate: '2026-03-01',
+  },
+  {
+    id: '5',
+    name: 'Prof. Linda Kim',
+    email: 'linda.kim@university.edu',
+    role: 'Viewer',
+    addedDate: '2026-03-20',
+  },
+]
+
+const ROLE_COLORS: Record<AccessEntry['role'], { bg: string; color: string }> = {
+  Admin: { bg: 'var(--primary)', color: 'var(--primary-foreground)' },
+  Faculty: { bg: 'var(--secondary)', color: 'var(--secondary-foreground)' },
+  Viewer: { bg: 'var(--muted)', color: 'var(--muted-foreground)' },
+}
+
+const columns: Column<AccessEntry>[] = [
+  {
+    key: 'name',
+    header: 'Name',
+    render: (row) => <span className="font-medium">{row.name}</span>,
+  },
+  {
+    key: 'email',
+    header: 'Email',
+    render: (row) => (
+      <span style={{ color: 'var(--muted-foreground)' }}>{row.email}</span>
+    ),
+  },
+  {
+    key: 'role',
+    header: 'Role',
+    render: (row) => {
+      const s = ROLE_COLORS[row.role]
+      return (
+        <span
+          className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+          style={{ backgroundColor: s.bg, color: s.color }}
+        >
+          {row.role}
+        </span>
+      )
+    },
+  },
+  {
+    key: 'addedDate',
+    header: 'Added',
+    render: (row) => (
+      <span style={{ color: 'var(--muted-foreground)' }}>{row.addedDate}</span>
+    ),
+  },
+]
+
+export default function AccessPage() {
+  return (
+    <>
+      <SiteHeader title="Share Access" />
+      <div className="flex flex-1 flex-col">
+        <PageHeader
+          title="Share Access"
+          subtitle="Manage who can access and collaborate on your question bank"
+          actions={
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: 'var(--primary)',
+                color: 'var(--primary-foreground)',
+              }}
+            >
+              <i className="fa-light fa-user-plus" aria-hidden="true" />
+              Invite
+            </button>
+          }
+        />
+        <div className="flex-1 p-6">
+          <DataTable
+            columns={columns}
+            data={MOCK_ACCESS}
+            emptyMessage="No users have been granted access."
+          />
+        </div>
+      </div>
+    </>
+  )
+}
