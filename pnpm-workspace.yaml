@@ -1,4 +1,5 @@
 packages:
+  - 'exxat-ds/packages/*'
   - 'apps/exam-management/*'
   - 'apps/patient-log/*'
   - 'apps/pce/*'
