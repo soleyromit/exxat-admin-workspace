@@ -1,0 +1,7 @@
+[submodule "exxat-ds"]
+	path = exxat-ds
+	url = https://github.com/ExxatDesign/Exxat-DS-Workspace.git
+	branch = main
+[submodule "studentUX"]
+	path = studentUX
+	url = https://github.com/ExxatDesign/studentUX.git
