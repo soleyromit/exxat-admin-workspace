@@ -11,6 +11,7 @@ import {
   InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput,
 } from '@exxat/ds/packages/ui/src'
 import type { Question } from '@/lib/qb-types'
+import { RequestEditAccessModal } from './qb-modals'
 
 // ── Shared header cell class (matches DS DataTable th) ───────────────────────
 const TH = 'h-9 px-3 text-left align-middle text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg border-b border-border select-none whitespace-nowrap'
@@ -444,6 +445,8 @@ export function QBTable() {
   } = useQB()
 
   const isAdmin = currentPersona.role === 'Admin'
+
+  const [reqAccessQuestion, setReqAccessQuestion] = useState<{ id: string; title: string } | null>(null)
 
   // ── Toolbar state ─────────────────────────────────────────────────────────
   const [search, setSearch] = useState('')
@@ -1006,7 +1009,7 @@ export function QBTable() {
                             )}
                             <DropdownMenuSeparator />
                             {!isAdmin && !isOwner && (
-                              <DropdownMenuItem onClick={() => {}}>
+                              <DropdownMenuItem onClick={() => { setReqAccessQuestion({ id: q.id, title: q.title }); setOpenMenuQuestionId(null) }}>
                                 <i className="fa-light fa-lock-keyhole-open" aria-hidden="true" />
                                 Request Edit Access
                               </DropdownMenuItem>
@@ -1088,6 +1091,16 @@ export function QBTable() {
         totalCount={visibleQuestions.length}
         toggleFilter={toggleFilter}
       />
+
+      {/* ── Request Edit Access Modal ── */}
+      {reqAccessQuestion && (
+        <RequestEditAccessModal
+          questionId={reqAccessQuestion.id}
+          questionTitle={reqAccessQuestion.title}
+          open={!!reqAccessQuestion}
+          onOpenChange={open => !open && setReqAccessQuestion(null)}
+        />
+      )}
     </div>
   )
 }
