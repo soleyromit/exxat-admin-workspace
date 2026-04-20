@@ -70,5 +70,5 @@ export interface Assessment {
   offeringId: string
   title: string
   questionCount: number
-  diffDistribution: { easy: number; medium: number; hard: number }
+  diffDistribution: Record<QDiff, number>
 }
