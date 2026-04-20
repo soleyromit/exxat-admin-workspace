@@ -48,10 +48,10 @@ export default async function QuestionDetailPage({ params }: PageProps) {
           }}
         >
           <div className="mb-6 flex flex-wrap gap-2">
-            <Badge variant="secondary" className="rounded-full">
+            <Badge variant="secondary" className="rounded">
               {TYPE_LABELS[question.type] ?? question.type}
             </Badge>
-            <Badge variant="secondary" className="rounded-full">
+            <Badge variant="secondary" className="rounded">
               {SCOPE_LABELS[question.scope] ?? question.scope}
             </Badge>
           </div>
@@ -80,7 +80,7 @@ export default async function QuestionDetailPage({ params }: PageProps) {
                 <dt style={{ color: 'var(--muted-foreground)' }}>Tags</dt>
                 <dd className="mt-1 flex flex-wrap gap-1">
                   {question.tags.map((tag) => (
-                    <Badge key={tag} variant="outline" className="rounded-full text-xs">
+                    <Badge key={tag} variant="outline" className="rounded text-xs">
                       {tag}
                     </Badge>
                   ))}
