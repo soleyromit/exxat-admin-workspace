@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useQB } from './qb-state'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -17,19 +17,23 @@ export function ManageCollaboratorsModal() {
   const folder = folders.find(f => f.id === collaboratorsModalFolderId)
   const [search, setSearch] = useState('')
   const [removedId, setRemovedId] = useState<string | null>(null)
-  const [undoTimer, setUndoTimer] = useState<ReturnType<typeof setTimeout> | null>(null)
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => { if (undoTimerRef.current) clearTimeout(undoTimerRef.current) }
+  }, [])
 
   const collaborators = MOCK_QB_PERSONAS.filter(p => folder?.collaborators?.includes(p.id) && p.id !== removedId)
 
   function removeCollaborator(id: string) {
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
     setRemovedId(id)
-    const t = setTimeout(() => setRemovedId(null), 5000)
-    setUndoTimer(t)
+    undoTimerRef.current = setTimeout(() => { setRemovedId(null); undoTimerRef.current = null }, 5000)
   }
 
   function undoRemove() {
     setRemovedId(null)
-    if (undoTimer) clearTimeout(undoTimer)
+    if (undoTimerRef.current) { clearTimeout(undoTimerRef.current); undoTimerRef.current = null }
   }
 
   return (
@@ -105,18 +109,27 @@ export function ManageCollaboratorsModal() {
 }
 
 // ── Request Edit Access Modal ─────────────────────────────────────────────────
-export function RequestEditAccessModal({ questionId, questionTitle, open, onOpenChange }: {
-  questionId: string
+export function RequestEditAccessModal({ questionTitle, open, onOpenChange }: {
   questionTitle: string
   open: boolean
   onOpenChange: (v: boolean) => void
 }) {
   const [message, setMessage] = useState('')
   const [sent, setSent] = useState(false)
+  const submitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => { if (submitTimerRef.current) clearTimeout(submitTimerRef.current) }
+  }, [])
 
   function submit() {
     setSent(true)
-    setTimeout(() => { onOpenChange(false); setSent(false); setMessage('') }, 1800)
+    submitTimerRef.current = setTimeout(() => {
+      onOpenChange(false)
+      setSent(false)
+      setMessage('')
+      submitTimerRef.current = null
+    }, 1800)
   }
 
   return (

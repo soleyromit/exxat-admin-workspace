@@ -1095,7 +1095,6 @@ export function QBTable() {
       {/* ── Request Edit Access Modal ── */}
       {reqAccessQuestion && (
         <RequestEditAccessModal
-          questionId={reqAccessQuestion.id}
           questionTitle={reqAccessQuestion.title}
           open={!!reqAccessQuestion}
           onOpenChange={open => !open && setReqAccessQuestion(null)}
