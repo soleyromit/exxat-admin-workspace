@@ -531,22 +531,112 @@ Smart views tabs:     Tabs variant="line"
 
 ---
 
+## Section 8 — Smart Views: Removed Entirely
+
+### What's removed
+
+```
+BEFORE                               AFTER
+─────────────────────────────        ─────────────────────────────
+QB tab strip:                        QB tab strip: GONE
+  [All Questions] [My Questions]
+  [Pending Review] [Low Discrim.]    Navigation lives in sidebar only:
+  [Never Used] [High Difficulty]       • All Questions  (quick nav)
+  [My MCQs] [+ Add view]              • My Questions   (quick nav)
+  ↑ entire strip removed
+
+Filter sheet smart views:            Filter sheet: column types only
+  Saved views, smart criteria          • Status (Saved / Draft)
+  ↑ removed                           • Type
+                                       • Difficulty
+                                       • Bloom's
+                                       • Favorites toggle
+```
+
+### Files affected
+
+| File | Change |
+|---|---|
+| `qb-tabs.tsx` | **Deleted** — entire file removed |
+| `qb-state.tsx` | Remove `smartViews[]`, `activeTabId`, `SVItem` type references |
+| `qb-types.ts` | Remove `SVItem` type |
+| `qb-mock-data.ts` | Remove `mockSmartViews[]` array |
+| `question-bank-client.tsx` | Remove `<QBTabs />` render |
+
+---
+
+## Section 9 — DS Compliance Audit
+
+All violations found in the current codebase. Every item below is a **hard requirement** for implementation — no exceptions.
+
+### `qb-table.tsx` violations
+
+```
+LINE    VIOLATION                              FIX
+──────  ─────────────────────────────────     ────────────────────────────────────
+103     Raw <button> in menuItem()             DS DropdownMenuItem
+163-190 Portal + <div> for row context menu   DS DropdownMenu + DropdownMenuItem
+37-86   Portal + <div> for version popover    DS Popover + PopoverContent
+224     Raw <button> as custom checkbox        DS Checkbox
+428     Raw <button> for column toggle        DS Button + Checkbox
+507     Raw <button> as DropdownMenuTrigger   DS Button asChild
+763     Raw <button> "Clear filters"           DS Button variant="ghost"
+1011    Raw <button> for version cell         DS Button variant="ghost"
+709     color-mix(..., white)                  color-mix(..., var(--background))
+721     color-mix(..., white)                  color-mix(..., var(--background))
+737     color-mix(..., white)                  color-mix(..., var(--background))
+970     Raw <span> for avatar initials        DS Avatar + AvatarFallback
+487-488 Nested <DropdownMenu> inside          Remove outer wrapper
+        <DropdownMenu> (bug)
+148,158 question.shortlisted                  question.favorited
+602,883 question.shortlisted                  question.favorited
+```
+
+### `questions/[id]/page.tsx` violations
+
+```
+LINE    VIOLATION                              FIX
+──────  ─────────────────────────────────     ────────────────────────────────────
+51-68   Raw <span> for type + scope badges    DS Badge variant="secondary"
+92-104  Raw <span> for tags                   DS Badge variant="outline"
+```
+
+### Version history — "current" word
+
+```
+BEFORE                               AFTER
+─────────────────────────────        ─────────────────────────────
+V3  Current version                  V3  Drug Metabolism Basics (title)
+V2  Previous revision 2              V2  Revision 2
+V1  Previous revision 1              V1  Revision 1
+
+isCurrent flag → renamed isLatest
+Styling: isLatest row gets brand-tint bg (latest is still visually
+distinct — just not labeled "current" since all versions are usable)
+```
+
+---
+
 ## Implementation Order
 
 ```
-1.  lib/qb-types.ts            ← data model foundation
-2.  lib/qb-mock-data.ts        ← updated + new mock arrays
-3.  qb-state.tsx               ← role logic, new fields, auto-select, empty state
-4.  qb-sidebar.tsx             ← tree restructure, context menu removals
-5.  app/globals.css            ← new CSS tokens + highlight animation
-6.  components/qb/badges.tsx   ← StatusBadge, DiffBadge, TypeBadge
-7.  qb-table.tsx               ← columns, drag-reorder, header menus, subfolder, favorites, popovers
-8.  qb-header.tsx              ← simplified (breadcrumb removed)
-9.  qb-title.tsx               ← Google Drive breadcrumb title
-10. qb-modals.tsx              ← ManageCollaborators redesign, SmartPopulate update, FilterSheet
-11. components/app-sidebar.tsx ← new nav items
-12. app/(app)/courses/         ← new Courses page
-13. app/(app)/assessment-builder/ ← new Assessment Builder page
+1.  lib/qb-types.ts               ← status simplification, remove SVItem, rename shortlisted→favorited
+2.  lib/qb-mock-data.ts           ← updated questions, remove smart views + offerings, new mock arrays
+3.  qb-state.tsx                  ← role logic, remove smartViews/activeTabId, new fields, auto-select
+4.  qb-tabs.tsx                   ← DELETE entire file
+5.  qb-sidebar.tsx                ← tree restructure, context menu removals, remove add-course btn
+6.  app/globals.css               ← new CSS tokens + highlight flash animation
+7.  components/qb/badges.tsx      ← StatusBadge (Saved/Draft), DiffBadge neutral, TypeBadge neutral
+8.  qb-table.tsx                  ← DS compliance fixes + new columns + drag-reorder + subfolder
+                                     + favorites + column header menus + difficulty popover
+9.  qb-header.tsx                 ← simplified (breadcrumb removed)
+10. qb-title.tsx                  ← Google Drive breadcrumb title with sibling switcher
+11. qb-modals.tsx                 ← ManageCollaborators redesign, SmartPopulate update, FilterSheet
+12. app/(app)/questions/[id]/     ← DS Badge compliance fix
+13. question-bank-client.tsx      ← remove QBTabs render, update empty state
+14. components/app-sidebar.tsx    ← add Courses + Assessment Builder nav items
+15. app/(app)/courses/            ← new Courses page (scaffolded)
+16. app/(app)/assessment-builder/ ← new Assessment Builder page (scaffolded)
 ```
 
 ---
