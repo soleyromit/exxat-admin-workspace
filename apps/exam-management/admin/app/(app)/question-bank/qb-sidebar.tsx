@@ -1,134 +1,72 @@
 'use client'
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useQB } from './qb-state'
-import { Portal } from '@/components/qb/portal'
 import type { FolderNode } from '@/lib/qb-types'
+import {
+  Button,
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
+  InputGroup, InputGroupAddon, Input,
+} from '@exxat/ds/packages/ui/src'
 
-function getAccentColor(node: FolderNode) {
-  if (node.isQuestionSet) return 'var(--qb-question-set)'
-  return 'var(--brand-color)'
-}
-
-function getFolderIcon(node: FolderNode, depth: number, expanded: boolean, selected: boolean) {
-  if (node.isCourse)         return { cls: 'fa-solid fa-graduation-cap', color: selected ? 'var(--brand-color)' : 'var(--muted-foreground)' }
-  if (node.isCourseOffering) return { cls: expanded ? 'fa-solid fa-calendar-days' : 'fa-regular fa-calendar-days', color: selected ? 'var(--brand-color)' : 'var(--muted-foreground)' }
-  if (node.isQuestionSet)    return { cls: 'fa-solid fa-rectangle-list', color: 'var(--qb-question-set)' }
-  if (node.locked)           return { cls: 'fa-solid fa-lock', color: 'var(--qb-locked)' }
+function getFolderIcon(node: FolderNode, _depth: number, expanded: boolean, selected: boolean) {
+  if (node.isCourse) return { cls: 'fa-solid fa-graduation-cap', color: selected ? 'var(--brand-color)' : 'var(--muted-foreground)' }
+  if (node.locked)   return { cls: 'fa-solid fa-lock', color: 'var(--qb-locked)' }
   return {
     cls: expanded ? 'fa-solid fa-folder-open' : (selected ? 'fa-solid fa-folder' : 'fa-regular fa-folder'),
-    color: selected ? getAccentColor(node) : 'var(--muted-foreground)',
+    color: selected ? 'var(--brand-color)' : 'var(--muted-foreground)',
   }
 }
 
-interface MenuPos { x: number; y: number }
-
-function FolderContextMenu({
-  node,
-  pos,
-  onClose,
-  isAdmin,
-  depth,
-}: {
-  node: FolderNode
-  pos: MenuPos
-  onClose: () => void
-  isAdmin: boolean
-  depth: number
-}) {
+function FolderContextMenu({ node, isAdmin }: { node: FolderNode; isAdmin: boolean }) {
+  const { setCollaboratorsModalFolderId } = useQB()
   if (!isAdmin) return null
-
-  const menuItem = (
-    icon: string,
-    label: string,
-    color?: string,
-    onClick?: () => void,
-    danger = false,
-  ) => (
-    <button
-      key={label}
-      className="qb-menu-btn"
-      onClick={(e) => { e.stopPropagation(); onClick?.(); onClose() }}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        padding: '8px 14px', width: '100%', background: 'none', border: 'none',
-        cursor: 'pointer', fontSize: 13, textAlign: 'left',
-        color: danger ? 'var(--destructive)' : (color ?? 'var(--foreground)'),
-      }}
-    >
-      <i className={`fa-regular ${icon}`} aria-hidden="true"
-        style={{ width: 16, textAlign: 'center', fontSize: 13, color: danger ? 'var(--destructive)' : (color ?? 'var(--muted-foreground)') }} />
-      {label}
-    </button>
-  )
-
-  const sep = () => <div style={{ height: 1, margin: '4px 0', background: 'var(--border)' }} />
-
   return (
-    <Portal>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 99997 }} />
-      <div style={{
-        position: 'fixed',
-        top: pos.y + 4,
-        left: pos.x,
-        zIndex: 99998,
-        background: 'var(--background)',
-        border: '1px solid var(--border)',
-        borderRadius: 8,
-        boxShadow: 'var(--shadow-lg)',
-        minWidth: 200,
-        padding: '4px 0',
-      }}>
-        {node.locked ? (
-          <>
-            <div style={{ padding: '4px 14px 6px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)' }}>
-              Locked
-            </div>
-            {menuItem('fa-lock-open', 'Unlock folder', 'var(--qb-locked)')}
-          </>
-        ) : node.isCourseOffering ? (
-          <>
-            {menuItem('fa-pen', 'Rename Offering')}
-            {menuItem('fa-folder-plus', 'Add Folder')}
-            {menuItem('fa-rectangle-list', 'New Question Set', 'var(--qb-question-set)')}
-            {menuItem('fa-user-plus', 'Manage Members')}
-            {menuItem('fa-share-nodes', 'Share / Access')}
-            {sep()}
-            {menuItem('fa-box-archive', 'Archive Offering')}
-            {menuItem('fa-trash-can', 'Delete Offering', undefined, undefined, true)}
-          </>
-        ) : (
-          <>
-            {menuItem('fa-pen', 'Rename')}
-            {depth < 4 && !node.isQuestionSet && menuItem('fa-folder-plus', 'Add Subfolder')}
-            {depth < 4 && !node.isQuestionSet && menuItem('fa-rectangle-list', 'New Question Set', 'var(--qb-question-set)')}
-            {node.isQuestionSet && menuItem('fa-users', 'Manage Collaborators', 'var(--qb-question-set)')}
-            {menuItem('fa-share-nodes', 'Share / Access')}
-            {sep()}
-            {!node.isQuestionSet && menuItem('fa-lock', 'Lock folder', 'var(--qb-locked)')}
-            {sep()}
-            {menuItem('fa-box-archive', 'Archive')}
-            {menuItem('fa-trash-can', 'Delete', undefined, undefined, true)}
-          </>
-        )}
-      </div>
-    </Portal>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost" size="icon-xs"
+          aria-label="Folder options"
+          className="qb-folder-menu-btn shrink-0"
+          onClick={e => e.stopPropagation()}
+        >
+          <i className="fa-regular fa-ellipsis" aria-hidden="true" style={{ fontSize: 12 }} />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuItem onClick={() => {}}>
+          <i className="fa-light fa-folder-plus" aria-hidden="true" />
+          New Subfolder
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setCollaboratorsModalFolderId(node.id)}>
+          <i className="fa-light fa-users" aria-hidden="true" />
+          Manage Access
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => {}}>
+          <i className="fa-light fa-pen" aria-hidden="true" />
+          Rename
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem variant="destructive" onClick={() => {}}>
+          <i className="fa-light fa-trash-can" aria-hidden="true" />
+          Delete Folder
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
 function InlineFolderInput({
   depth,
-  isQSet,
   onConfirm,
   onCancel,
 }: {
   depth: number
-  isQSet: boolean
   onConfirm: (name: string) => void
   onCancel: () => void
 }) {
   const [name, setName] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
-  const accentColor = isQSet ? 'var(--qb-question-set)' : 'var(--brand-color)'
 
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 50)
@@ -148,9 +86,9 @@ function InlineFolderInput({
       height: 32,
     }}>
       <i
-        className={isQSet ? 'fa-solid fa-rectangle-list' : 'fa-regular fa-folder'}
+        className="fa-regular fa-folder"
         aria-hidden="true"
-        style={{ fontSize: 13, color: accentColor, width: 16, textAlign: 'center' }}
+        style={{ fontSize: 13, color: 'var(--brand-color)', width: 16, textAlign: 'center' }}
       />
       <input
         ref={inputRef}
@@ -163,17 +101,17 @@ function InlineFolderInput({
         onBlur={confirm}
         style={{
           flex: 1, fontSize: 12, padding: '2px 6px', borderRadius: 4,
-          border: 'none', outline: `2px solid ${accentColor}`,
+          border: 'none', outline: '2px solid var(--brand-color)',
           background: 'var(--background)', color: 'var(--foreground)',
         }}
-        placeholder={isQSet ? 'Question set name…' : 'Folder name…'}
+        placeholder="Folder name…"
       />
-      <button onClick={confirm} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
-        <i className="fa-regular fa-check" aria-hidden="true" style={{ fontSize: 12, color: accentColor }} />
-      </button>
-      <button onClick={onCancel} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
+      <Button variant="ghost" size="icon-xs" onClick={confirm} aria-label="Confirm">
+        <i className="fa-regular fa-check" aria-hidden="true" style={{ fontSize: 12, color: 'var(--brand-color)' }} />
+      </Button>
+      <Button variant="ghost" size="icon-xs" onClick={onCancel} aria-label="Cancel">
         <i className="fa-regular fa-xmark" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)' }} />
-      </button>
+      </Button>
     </div>
   )
 }
@@ -192,11 +130,10 @@ function FolderRow({
     expandedFolderIds, toggleFolder,
     folders,
     draggedQuestionId, setDragOverFolderId, dragOverFolderId,
-    openMenuFolderId, setOpenMenuFolderId,
     draggedFolderId, setDraggedFolderId,
+    highlightedFolderId,
   } = useQB()
 
-  const [menuPos, setMenuPos] = useState<MenuPos | null>(null)
   const [isRenaming, setIsRenaming] = useState(false)
   const [renameName, setRenameName] = useState(node.name)
   const renameRef = useRef<HTMLInputElement>(null)
@@ -205,38 +142,11 @@ function FolderRow({
   const isExpanded = expandedFolderIds.has(node.id)
   const isDragOver = dragOverFolderId === node.id
   const hasChildren = folders.some(f => f.parentId === node.id)
-  const accentColor = getAccentColor(node)
   const icon = getFolderIcon(node, depth, isExpanded, isSelected)
 
-  // Offering badge colour — teal at depth 1 (offerings)
-  const isOffering = !!node.isCourseOffering
+  const selectedBg = `color-mix(in oklch, var(--brand-color) 10%, var(--background))`
 
-  const selectedBg = isOffering
-    ? `color-mix(in oklch, var(--brand-color) 8%, var(--background))`
-    : `color-mix(in oklch, ${accentColor} 10%, var(--background))`
-
-  function handleContextMenu(e: React.MouseEvent) {
-    if (!isAdmin) return
-    e.preventDefault()
-    setMenuPos({ x: e.clientX, y: e.clientY })
-    setOpenMenuFolderId(node.id)
-  }
-
-  function handleEllipsis(e: React.MouseEvent<HTMLButtonElement>) {
-    e.stopPropagation()
-    const rect = e.currentTarget.getBoundingClientRect()
-    setMenuPos({ x: rect.right, y: rect.bottom })
-    setOpenMenuFolderId(node.id)
-  }
-
-  function closeMenu() {
-    setOpenMenuFolderId(null)
-    setMenuPos(null)
-  }
-
-  const showMenu = openMenuFolderId === node.id && menuPos !== null
-
-  const indentPx = isOffering ? 8 + (depth - 1) * 16 : 8 + depth * 16
+  const indentPx = 8 + depth * 16
 
   return (
     <div style={{ position: 'relative' }}>
@@ -245,14 +155,14 @@ function FolderRow({
         aria-selected={isSelected}
         aria-expanded={hasChildren ? isExpanded : undefined}
         tabIndex={0}
+        className={highlightedFolderId === node.id ? 'folder-highlight' : undefined}
         onClick={() => {
           if (!isRenaming) {
             setSelectedFolderId(node.id)
             if (hasChildren && !node.locked) toggleFolder(node.id)
           }
         }}
-        onContextMenu={handleContextMenu}
-        draggable={isAdmin && !isRenaming && !node.locked && !isOffering}
+        draggable={isAdmin && !isRenaming && !node.locked}
         onDragStart={(e) => {
           e.stopPropagation()
           setDraggedFolderId(node.id)
@@ -274,14 +184,14 @@ function FolderRow({
         }}
         style={{
           display: 'flex', alignItems: 'center', gap: 4,
-          height: isOffering ? 28 : 32,
+          height: 32,
           paddingLeft: indentPx,
           paddingRight: 8,
           cursor: 'pointer',
           borderRadius: 6,
-          margin: isOffering ? '0 4px' : '1px 4px',
-          backgroundColor: isSelected ? selectedBg : isDragOver ? `color-mix(in oklch, ${accentColor} 15%, var(--background))` : 'transparent',
-          outline: isDragOver ? `2px dashed ${accentColor}` : 'none',
+          margin: '1px 4px',
+          backgroundColor: isSelected ? selectedBg : isDragOver ? `color-mix(in oklch, var(--brand-color) 15%, var(--background))` : 'transparent',
+          outline: isDragOver ? '2px dashed var(--brand-color)' : 'none',
           transition: 'background-color 100ms',
           userSelect: 'none',
         }}
@@ -315,7 +225,7 @@ function FolderRow({
 
         {/* Icon */}
         <i className={icon.cls} aria-hidden="true"
-          style={{ fontSize: isOffering ? 11 : 13, color: icon.color, width: 16, textAlign: 'center', flexShrink: 0 }} />
+          style={{ fontSize: 13, color: icon.color, width: 16, textAlign: 'center', flexShrink: 0 }} />
 
         {/* Name */}
         {isRenaming ? (
@@ -331,45 +241,21 @@ function FolderRow({
             onClick={e => e.stopPropagation()}
             style={{
               flex: 1, fontSize: 12, padding: '1px 4px', borderRadius: 3,
-              border: 'none', outline: `2px solid ${accentColor}`,
-              background: 'var(--background)', color: accentColor,
+              border: 'none', outline: '2px solid var(--brand-color)',
+              background: 'var(--background)', color: 'var(--brand-color)',
               fontWeight: 500,
             }}
           />
         ) : (
           <span style={{
             flex: 1,
-            fontSize: isOffering ? 11 : 13,
+            fontSize: 13,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            fontWeight: isSelected ? 500 : isOffering ? 500 : 400,
-            color: isSelected ? (isOffering ? 'var(--brand-color)' : accentColor) : node.locked ? 'var(--muted-foreground)' : isOffering ? 'var(--foreground)' : 'var(--foreground)',
+            fontWeight: isSelected ? 500 : 400,
+            color: isSelected ? 'var(--brand-color)' : node.locked ? 'var(--muted-foreground)' : 'var(--foreground)',
             fontStyle: node.locked ? 'italic' : 'normal',
-            letterSpacing: isOffering ? '0.01em' : undefined,
           }}>
             {node.name}
-          </span>
-        )}
-
-        {/* Offering badge */}
-        {isOffering && (
-          <span style={{
-            fontSize: 8, fontWeight: 700, padding: '1px 4px', borderRadius: 3,
-            backgroundColor: `color-mix(in oklch, var(--brand-color) 12%, var(--background))`,
-            color: 'var(--brand-color)', flexShrink: 0, letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-          }}>
-            Offering
-          </span>
-        )}
-
-        {/* SET badge */}
-        {node.isQuestionSet && (
-          <span style={{
-            fontSize: 9, fontWeight: 700, padding: '1px 4px', borderRadius: 3,
-            backgroundColor: 'color-mix(in oklch, var(--qb-question-set) 15%, var(--background))',
-            color: 'var(--qb-question-set)', flexShrink: 0,
-          }}>
-            SET
           </span>
         )}
 
@@ -378,34 +264,9 @@ function FolderRow({
           {node.count}
         </span>
 
-        {/* ⋯ button — admin only */}
-        {isAdmin && (
-          <button
-            onClick={handleEllipsis}
-            aria-label={`Actions for ${node.name}`}
-            className="qb-folder-menu-btn"
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              padding: 3, borderRadius: 4, flexShrink: 0,
-              color: showMenu ? accentColor : 'var(--muted-foreground)',
-              fontSize: 12,
-            }}
-          >
-            <i className={showMenu ? 'fa-solid fa-ellipsis' : 'fa-regular fa-ellipsis'} aria-hidden="true" />
-          </button>
-        )}
+        {/* ⋯ context menu — admin only */}
+        <FolderContextMenu node={node} isAdmin={isAdmin} />
       </div>
-
-      {/* Context menu */}
-      {showMenu && (
-        <FolderContextMenu
-          node={node}
-          pos={menuPos!}
-          onClose={closeMenu}
-          isAdmin={isAdmin}
-          depth={depth}
-        />
-      )}
     </div>
   )
 }
@@ -422,7 +283,7 @@ function FolderTree({
   isAdmin: boolean
 }) {
   const { expandedFolderIds } = useQB()
-  const children = nodes.filter(n => n.parentId === parentId && !n.isQuestionSet)
+  const children = nodes.filter(n => n.parentId === parentId)
 
   return (
     <>
@@ -447,14 +308,13 @@ export function QBSidebar() {
     currentPersona,
     expandedFolderIds,
     questions,
+    sidebarSearch, setSidebarSearch,
   } = useQB()
 
   const [inlineCreateParent, setInlineCreateParent] = useState<string | 'root' | null>(null)
-  const [inlineCreateQSet, setInlineCreateQSet] = useState(false)
 
   const isAdmin = currentPersona.role === 'Admin'
 
-  const questionSets = folders.filter(f => f.isQuestionSet)
   const courseFolders = folders.filter(f => f.isCourse && f.parentId === null)
 
   const allQCount = questions.length
@@ -462,6 +322,18 @@ export function QBSidebar() {
 
   const isAllSelected = navView === 'all'
   const isMySelected = navView === 'my'
+
+  // Filter root course folders by search
+  const rootFolders = courseFolders
+  const filteredRoots = sidebarSearch.trim()
+    ? rootFolders.filter(f => {
+        const matchesSelf = f.name.toLowerCase().includes(sidebarSearch.toLowerCase())
+        const childMatches = folders.some(
+          child => child.parentId === f.id && child.name.toLowerCase().includes(sidebarSearch.toLowerCase())
+        )
+        return matchesSelf || childMatches
+      })
+    : rootFolders
 
   // Nav item shared style
   const navItem = (
@@ -518,7 +390,7 @@ export function QBSidebar() {
     >
       {/* Library header strip */}
       <div style={{
-        height: 40, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        height: 40, display: 'flex', alignItems: 'center',
         padding: '0 12px', borderBottom: '1px solid var(--border)', flexShrink: 0,
       }}>
         <span style={{
@@ -527,15 +399,6 @@ export function QBSidebar() {
         }}>
           Library
         </span>
-        {isAdmin && (
-          <button
-            onClick={() => { setInlineCreateParent('root'); setInlineCreateQSet(false) }}
-            aria-label="Create top-level folder"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 3, borderRadius: 4, color: 'var(--muted-foreground)' }}
-          >
-            <i className="fa-regular fa-plus" aria-hidden="true" style={{ fontSize: 13 }} />
-          </button>
-        )}
       </div>
 
       {/* ── Quick Nav: All Questions + My Questions ── */}
@@ -547,25 +410,38 @@ export function QBSidebar() {
       {/* Scrollable tree area */}
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '8px 0' }}>
 
-        {/* ── Courses ── */}
-        <div style={{ padding: '4px 12px 2px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        {/* ── Courses section header ── */}
+        <div style={{ padding: '4px 12px 6px' }}>
           <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)' }}>
             {isAdmin ? 'Courses' : 'My Courses'}
           </span>
-          {isAdmin && (
-            <button
-              onClick={() => { setInlineCreateParent('root'); setInlineCreateQSet(false) }}
-              aria-label="Add course"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, borderRadius: 3, color: 'var(--muted-foreground)' }}
-            >
-              <i className="fa-regular fa-plus" aria-hidden="true" style={{ fontSize: 11 }} />
-            </button>
-          )}
         </div>
 
-        {/* Course → Offering → Folders tree */}
+        {/* Search bar */}
+        <div style={{ padding: '0 8px 8px' }}>
+          <InputGroup>
+            <Input
+              placeholder="Search folders…"
+              value={sidebarSearch}
+              onChange={e => setSidebarSearch(e.target.value)}
+              style={{ height: 28, fontSize: 12 }}
+            />
+            <InputGroupAddon align="inline-end">
+              {sidebarSearch
+                ? (
+                  <Button variant="ghost" size="icon-xs" aria-label="Clear search" onClick={() => setSidebarSearch('')}>
+                    <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 11 }} />
+                  </Button>
+                )
+                : <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 11, color: 'var(--muted-foreground)', padding: '0 6px' }} />
+              }
+            </InputGroupAddon>
+          </InputGroup>
+        </div>
+
+        {/* Course → Folders tree */}
         <div role="tree" aria-label="Course tree">
-          {courseFolders.map(course => (
+          {filteredRoots.map(course => (
             <div key={course.id}>
               <FolderRow node={course} depth={0} isAdmin={isAdmin} />
               {expandedFolderIds.has(course.id) && (
@@ -578,25 +454,9 @@ export function QBSidebar() {
         {inlineCreateParent === 'root' && (
           <InlineFolderInput
             depth={0}
-            isQSet={inlineCreateQSet}
             onConfirm={() => setInlineCreateParent(null)}
             onCancel={() => setInlineCreateParent(null)}
           />
-        )}
-
-        {/* ── Question Sets section (admin only) ── */}
-        {isAdmin && questionSets.length > 0 && (
-          <>
-            <div style={{ height: 1, margin: '8px 12px', background: 'var(--border)' }} />
-            <div style={{ padding: '4px 12px 2px' }}>
-              <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)' }}>
-                Question Sets
-              </span>
-            </div>
-            {questionSets.map(node => (
-              <FolderRow key={node.id} node={node} depth={0} isAdmin={isAdmin} />
-            ))}
-          </>
         )}
       </div>
     </aside>
