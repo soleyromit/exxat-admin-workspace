@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { Badge } from '@exxat/ds/packages/ui/src'
 import { SiteHeader } from '@/components/site-header'
 import { MOCK_QUESTIONS } from '@/lib/mock-questions'
 
@@ -47,24 +48,12 @@ export default async function QuestionDetailPage({ params }: PageProps) {
           }}
         >
           <div className="mb-6 flex flex-wrap gap-2">
-            <span
-              className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
-              style={{
-                backgroundColor: 'var(--secondary)',
-                color: 'var(--secondary-foreground)',
-              }}
-            >
+            <Badge variant="secondary" className="rounded-full">
               {TYPE_LABELS[question.type] ?? question.type}
-            </span>
-            <span
-              className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
-              style={{
-                backgroundColor: 'var(--muted)',
-                color: 'var(--muted-foreground)',
-              }}
-            >
+            </Badge>
+            <Badge variant="secondary" className="rounded-full">
               {SCOPE_LABELS[question.scope] ?? question.scope}
-            </span>
+            </Badge>
           </div>
 
           <h2 className="mb-6 text-xl font-semibold">{question.title}</h2>
@@ -91,16 +80,9 @@ export default async function QuestionDetailPage({ params }: PageProps) {
                 <dt style={{ color: 'var(--muted-foreground)' }}>Tags</dt>
                 <dd className="mt-1 flex flex-wrap gap-1">
                   {question.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full px-2 py-0.5 text-xs"
-                      style={{
-                        backgroundColor: 'var(--accent)',
-                        color: 'var(--accent-foreground)',
-                      }}
-                    >
+                    <Badge key={tag} variant="outline" className="rounded-full text-xs">
                       {tag}
-                    </span>
+                    </Badge>
                   ))}
                 </dd>
               </div>
