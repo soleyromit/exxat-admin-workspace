@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react'
 import type { FolderNode, Question, Persona } from '@/lib/qb-types'
 import { MOCK_QB_FOLDERS, MOCK_QB_QUESTIONS, MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
 
@@ -135,10 +135,13 @@ export function QBProvider({ children }: { children: ReactNode }) {
     else setNavViewState('my')
   }
 
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   function setHighlightedFolderId(id: string | null) {
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current)
     setHighlightedFolderIdState(id)
     if (id !== null) {
-      setTimeout(() => setHighlightedFolderIdState(null), 1500)
+      highlightTimerRef.current = setTimeout(() => setHighlightedFolderIdState(null), 1500)
     }
   }
 
@@ -168,7 +171,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
 
   const isAdmin = currentPersona.role === 'Admin'
 
-  const visibleQuestions = MOCK_QB_QUESTIONS.filter(q => {
+  const visibleQuestions = useMemo(() => MOCK_QB_QUESTIONS.filter(q => {
     const roleVisible = isAdmin
       ? true
       : q.status === 'Saved' || (q.status === 'Draft' && q.creator === currentPersona.id)
@@ -185,7 +188,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
     const favFilter = favoritesFilter ? q.favorited === true : true
 
     return roleVisible && navVisible && myFilter && favFilter
-  })
+  }), [isAdmin, currentPersona.id, navView, selectedFolderId, myQuestionsOnly, favoritesFilter])
 
   const toggleQuestionSelection = useCallback((id: string) => {
     setSelectedQuestionIds(prev => {
