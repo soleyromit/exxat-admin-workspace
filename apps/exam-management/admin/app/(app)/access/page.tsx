@@ -95,7 +95,7 @@ export default function AccessPage() {
   return (
     <>
       <SiteHeader title="Share Access" />
-      <div className="flex flex-1 flex-col">
+      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
         <PageHeader
           title="Share Access"
           subtitle="Manage who can access and collaborate on your question bank"
@@ -120,7 +120,7 @@ export default function AccessPage() {
             emptyMessage="No users have been granted access."
           />
         </div>
-      </div>
+      </main>
     </>
   )
 }

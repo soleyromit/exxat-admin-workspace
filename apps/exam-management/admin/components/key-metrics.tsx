@@ -42,7 +42,7 @@ export function KeyMetrics({ metrics }: KeyMetricsProps) {
               style={{
                 color:
                   metric.trend === 'up'
-                    ? 'var(--success)'
+                    ? 'var(--primary)'
                     : metric.trend === 'down'
                       ? 'var(--destructive)'
                       : 'var(--muted-foreground)',

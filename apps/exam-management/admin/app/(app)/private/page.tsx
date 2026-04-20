@@ -62,7 +62,7 @@ export default function PrivatePage() {
   return (
     <>
       <SiteHeader title="Private Space" />
-      <div className="flex flex-1 flex-col">
+      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
         <PageHeader
           title="Private Space"
           subtitle="Questions visible only to you"
@@ -74,7 +74,7 @@ export default function PrivatePage() {
             emptyMessage="You have no private questions yet."
           />
         </div>
-      </div>
+      </main>
     </>
   )
 }

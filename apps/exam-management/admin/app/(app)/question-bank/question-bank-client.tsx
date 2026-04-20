@@ -1,185 +1,77 @@
 'use client'
+import { QBProvider } from './qb-state'
+import { QBLayoutInner } from './qb-layout'
+import { QBHeader } from './qb-header'
+import { QBSidebar } from './qb-sidebar'
+import { QBTitle } from './qb-title'
+import { QBTable } from './qb-table'
+import { useQB } from './qb-state'
+import { ManageCollaboratorsModal, FilterSheet } from './qb-modals'
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { KeyMetrics } from '@/components/key-metrics'
-import { PageHeader } from '@/components/page-header'
-import { DataTable, type Column } from '@/components/data-table'
-import { RoleToggle } from '@/components/role-toggle'
-import { MOCK_QUESTIONS, QB_METRICS, type Question } from '@/lib/mock-questions'
+function QBContent() {
+  const { currentPersona, selectedFolderId } = useQB()
+  const isAdmin = currentPersona.role === 'Admin'
+  const isFaculty = !isAdmin
+  const hasFolderSelected = selectedFolderId !== null
+  const hasAssignedCourses = (currentPersona.assignedFolders?.length ?? 0) > 0
 
-type ViewMode = 'all' | 'by-course' | 'by-folder'
-
-const VIEW_OPTIONS: { value: ViewMode; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'by-course', label: 'By Course' },
-  { value: 'by-folder', label: 'By Folder' },
-]
-
-function ScopeBadge({ scope }: { scope: Question['scope'] }) {
-  const styles: Record<Question['scope'], { bg: string; color: string }> = {
-    shared: { bg: 'var(--success)', color: 'var(--success-foreground)' },
-    course: { bg: 'var(--primary)', color: 'var(--primary-foreground)' },
-    private: { bg: 'var(--muted)', color: 'var(--muted-foreground)' },
+  if (isFaculty && !hasAssignedCourses) {
+    return (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40, gap: 16 }}>
+        <div style={{ width: 72, height: 72, borderRadius: 16, backgroundColor: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <i className="fa-regular fa-hourglass-half" aria-hidden="true" style={{ fontSize: 28, color: 'var(--muted-foreground)' }} />
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8, color: 'var(--foreground)' }}>No courses assigned yet</h2>
+          <p style={{ fontSize: 13, color: 'var(--muted-foreground)', maxWidth: 340 }}>
+            Your admin will assign course folders. You&apos;ll see your courses here as soon as they&apos;re assigned.
+          </p>
+        </div>
+      </div>
+    )
   }
-  const s = styles[scope]
+
   return (
-    <span
-      className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize"
-      style={{ backgroundColor: s.bg, color: s.color }}
-    >
-      {scope}
-    </span>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {isFaculty && hasFolderSelected && (
+        <div style={{
+          padding: '8px 16px',
+          backgroundColor: 'color-mix(in oklch, var(--chart-1) 10%, var(--background))',
+          borderBottom: '1px solid color-mix(in oklch, var(--chart-1) 20%, var(--background))',
+          display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
+        }}>
+          <i className="fa-regular fa-circle-info" aria-hidden="true" style={{ color: 'var(--chart-1)', flexShrink: 0 }} />
+          <span style={{ fontSize: 12, color: 'var(--foreground)' }}>
+            Faculty view — browse saved questions, add your own, or request edit access on existing ones.
+          </span>
+        </div>
+      )}
+      <QBTitle />
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        <QBTable />
+      </div>
+    </div>
   )
 }
 
-function TypeBadge({ type }: { type: Question['type'] }) {
-  const labels: Record<Question['type'], string> = {
-    mcq: 'MCQ',
-    'true-false': 'True/False',
-    'short-answer': 'Short Answer',
-    essay: 'Essay',
-  }
+function QBInner() {
   return (
-    <span
-      className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
-      style={{
-        backgroundColor: 'var(--secondary)',
-        color: 'var(--secondary-foreground)',
-      }}
-    >
-      {labels[type]}
-    </span>
+    <QBLayoutInner>
+      <QBHeader />
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <QBSidebar />
+        <QBContent />
+      </div>
+      <ManageCollaboratorsModal />
+      <FilterSheet />
+    </QBLayoutInner>
   )
 }
 
 export function QuestionBankClient() {
-  const [view, setView] = useState<ViewMode>('all')
-  const [role, setRole] = useState<'admin' | 'faculty'>('admin')
-
-  const filteredQuestions =
-    role === 'faculty'
-      ? MOCK_QUESTIONS.filter((q) => q.scope !== 'private')
-      : MOCK_QUESTIONS
-
-  const columns: Column<Question>[] = [
-    {
-      key: 'title',
-      header: 'Question',
-      render: (row) => (
-        <Link
-          href={`/questions/${row.id}`}
-          className="font-medium hover:underline"
-          style={{ color: 'var(--primary)' }}
-        >
-          {row.title}
-        </Link>
-      ),
-    },
-    {
-      key: 'type',
-      header: 'Type',
-      render: (row) => <TypeBadge type={row.type} />,
-    },
-    {
-      key: view === 'by-folder' ? 'folder' : 'course',
-      header: view === 'by-folder' ? 'Folder' : 'Course',
-      render: (row) => (
-        <span style={{ color: 'var(--foreground)' }}>
-          {view === 'by-folder' ? row.folder : row.course}
-        </span>
-      ),
-    },
-    {
-      key: 'scope',
-      header: 'Access',
-      render: (row) => <ScopeBadge scope={row.scope} />,
-    },
-    {
-      key: 'updatedAt',
-      header: 'Updated',
-      render: (row) => (
-        <span style={{ color: 'var(--muted-foreground)' }}>{row.updatedAt}</span>
-      ),
-    },
-    {
-      key: 'actions',
-      header: '',
-      className: 'w-12 text-right',
-      render: (row) => (
-        <button
-          type="button"
-          aria-label={`Actions for ${row.title}`}
-          className="rounded p-1 transition-colors"
-          style={{ color: 'var(--muted-foreground)' }}
-        >
-          <i className="fa-light fa-ellipsis-vertical" aria-hidden="true" />
-        </button>
-      ),
-    },
-  ]
-
   return (
-    <div className="flex flex-1 flex-col">
-      <PageHeader
-        title="Question Bank"
-        subtitle="Manage and organize your exam questions"
-        actions={
-          <>
-            <RoleToggle onChange={setRole} />
-            <Link
-              href="/questions/new"
-              className="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors"
-              style={{
-                backgroundColor: 'var(--primary)',
-                color: 'var(--primary-foreground)',
-              }}
-            >
-              <i className="fa-light fa-plus" aria-hidden="true" />
-              Add Question
-            </Link>
-          </>
-        }
-      />
-
-      <div className="flex-1 space-y-6 p-6">
-        <KeyMetrics metrics={QB_METRICS} />
-
-        <div className="flex items-center gap-2">
-          <div
-            className="flex overflow-hidden rounded-md"
-            style={{ border: '1px solid var(--border)' }}
-            role="group"
-            aria-label="View mode"
-          >
-            {VIEW_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                aria-pressed={view === opt.value}
-                onClick={() => setView(opt.value)}
-                className="px-4 py-1.5 text-sm font-medium transition-colors"
-                style={{
-                  backgroundColor:
-                    view === opt.value ? 'var(--primary)' : 'transparent',
-                  color:
-                    view === opt.value
-                      ? 'var(--primary-foreground)'
-                      : 'var(--foreground)',
-                }}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <DataTable
-          columns={columns}
-          data={filteredQuestions}
-          emptyMessage="No questions found."
-        />
-      </div>
-    </div>
+    <QBProvider>
+      <QBInner />
+    </QBProvider>
   )
 }

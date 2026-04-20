@@ -3,12 +3,14 @@
 import Link from 'next/link'
 import type { Assessment } from '@/lib/mock-assessments'
 import { MOCK_ASSESSMENTS, ASSESSMENT_METRICS } from '@/lib/mock-assessments'
+import { buttonVariants } from '@exxat/student/components/ui/button'
+import { Badge } from '@exxat/student/components/ui/badge'
 
-const STATUS_STYLES: Record<Assessment['status'], string> = {
-  'not-started': 'bg-[var(--muted)] text-[var(--muted-foreground)]',
-  'in-progress': 'bg-amber-50 text-amber-700',
-  'submitted': 'bg-blue-50 text-blue-700',
-  'graded': 'bg-emerald-50 text-emerald-700',
+const STATUS_VARIANT: Record<Assessment['status'], 'default' | 'secondary' | 'outline' | 'destructive'> = {
+  'not-started': 'secondary',
+  'in-progress': 'default',
+  'submitted': 'outline',
+  'graded': 'secondary',
 }
 
 const STATUS_LABELS: Record<Assessment['status'], string> = {
@@ -76,22 +78,16 @@ export function AssessmentsClient() {
                   <div className="text-sm font-semibold text-emerald-600">{a.score}%</div>
                 </div>
               )}
-              <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[a.status]}`}>
+              <Badge variant={STATUS_VARIANT[a.status]}>
                 {STATUS_LABELS[a.status]}
-              </span>
+              </Badge>
               {(a.status === 'not-started' || a.status === 'in-progress') && (
-                <Link
-                  href={`/exam/${a.id}`}
-                  className="rounded-lg bg-[var(--brand-color)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity min-h-9 flex items-center"
-                >
+                <Link href={`/exam/${a.id}`} className={buttonVariants({ variant: 'default' })}>
                   {a.status === 'in-progress' ? 'Continue' : 'Start'}
                 </Link>
               )}
               {(a.status === 'graded' || a.status === 'submitted') && (
-                <Link
-                  href={`/exam/${a.id}/results`}
-                  className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--accent)] transition-colors min-h-9 flex items-center"
-                >
+                <Link href={`/exam/${a.id}/results`} className={buttonVariants({ variant: 'outline' })}>
                   Review
                 </Link>
               )}

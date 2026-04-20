@@ -1,3 +1,4 @@
+import { SidebarProvider, SidebarInset, TooltipProvider } from '@exxat/ds/packages/ui/src'
 import { AppSidebar } from '@/components/app-sidebar'
 
 export default function AppLayout({
@@ -6,11 +7,13 @@ export default function AppLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex min-h-screen">
-      <AppSidebar />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {children}
-      </div>
-    </div>
+    <TooltipProvider>
+      <SidebarProvider className="h-svh">
+        <AppSidebar />
+        <SidebarInset className="flex flex-col overflow-hidden">
+          {children}
+        </SidebarInset>
+      </SidebarProvider>
+    </TooltipProvider>
   )
 }

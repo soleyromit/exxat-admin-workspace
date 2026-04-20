@@ -5,13 +5,13 @@ export interface Column<T> {
   className?: string
 }
 
-export interface DataTableProps<T> {
+export interface DataTableProps<T extends { id: string | number }> {
   columns: Column<T>[]
   data: T[]
   emptyMessage?: string
 }
 
-export function DataTable<T>({
+export function DataTable<T extends { id: string | number }>({
   columns,
   data,
   emptyMessage = 'No data found.',
@@ -56,7 +56,7 @@ export function DataTable<T>({
           ) : (
             data.map((row, rowIndex) => (
               <tr
-                key={rowIndex}
+                key={row.id}
                 style={{
                   borderBottom:
                     rowIndex < data.length - 1

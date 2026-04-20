@@ -415,7 +415,172 @@ QuestionBankFull    — full QB view composition
 
 ---
 
-## 9. Self-Update Rule
+## 9. Canonical Component Map — Never Hand-Roll These
+
+This section is the ground truth for UI elements in this product.
+Before writing ANY component, check here first. If the element is listed → use the canonical implementation. Do NOT rebuild it.
+
+### Admin App — Ask Leo Button
+`AskLeoButton` from studentUX depends on `useAppStore` (student-only) — cannot import directly in admin.
+**Admin canonical:**
+```tsx
+<Button variant="outline" size="sm" className="gap-1.5 text-xs font-medium">
+  <i className="fa-duotone fa-solid fa-star-christmas text-xs" style={{ color: 'var(--brand-color)' }} aria-hidden="true" />
+  Ask Leo
+</Button>
+```
+→ Icon: `fa-duotone fa-solid fa-star-christmas` — confirmed from DS source. Never `fa-sparkles`, never `fa-plus`.
+→ Variant: `outline` — gives the DS `border-input` visible border. Never `ghost` (ghost is `border-transparent`).
+→ Color: `var(--brand-color)` on the icon — matches DS AskLeoButton's brand tint.
+
+### Raw `<button>` — NEVER
+**Rule:** Never use a raw `<button>` element anywhere in the admin app.
+→ Every interactive button must be DS `Button` with an explicit `variant` and `size`.
+→ If the design needs no visible border/bg (ghost-style inline action): use `Button variant="ghost" size="icon-xs"` or `size="icon-sm"`.
+→ Raw `<button style={{ background: 'none', border: 'none' }}>` bypasses the DS token system entirely.
+
+### Toolbar Icon Buttons (QB table toolbar)
+**Canonical:** DS `Button variant="outline" size="icon-sm"` for all toolbar icon actions.
+```tsx
+<Button variant="outline" size="icon-sm" aria-label="...">
+  <i className="fa-light fa-..." aria-hidden="true" style={{ fontSize: 13 }} />
+</Button>
+```
+→ Active/filtered state: override `borderColor` and `color` via `style` prop (NOT a different variant).
+```tsx
+// Active state (brand color)
+style={isActive ? { borderColor: 'var(--brand-color)', color: 'var(--brand-color)', backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' } : {}}
+// Active state (accent color, e.g. bookmark)
+style={isOn ? { borderColor: 'var(--qb-locked)', color: 'var(--qb-locked)', backgroundColor: 'color-mix(in oklch, var(--qb-locked) 10%, var(--background))' } : {}}
+```
+→ Expandable search: use `InputGroup` + `InputGroupAddon` + `InputGroupInput` + `InputGroupButton` — never a raw `<div>` with `<input>`.
+→ Never use `color-mix(in oklch, ... white)` — use `var(--background)` instead of `white`.
+
+### Inline Row Buttons (shortlist, ownership, etc.)
+**Canonical:** DS `Button variant="ghost" size="icon-xs"` for inline icon actions within table rows.
+```tsx
+<Button
+  variant="ghost"
+  size="icon-xs"
+  onClick={(e) => e.stopPropagation()}
+  aria-label="..."
+  className={`shrink-0 transition-opacity ${condition ? 'opacity-100' : 'opacity-0'}`}
+  style={{ color: 'var(--token)' }}
+>
+  <i className="fa-..." aria-hidden="true" style={{ fontSize: 11 }} />
+</Button>
+```
+
+### Row Context Menu (⋯ button per table row)
+**Canonical:** DS `DropdownMenu` + `DropdownMenuTrigger asChild` + `DropdownMenuContent` + `DropdownMenuItem`
+Import: `from '@exxat/ds/packages/ui/src'`
+→ Never use a Portal-based custom menu (`<Portal><div style="position:fixed">...</div></Portal>`)
+→ Always use `<DropdownMenuTrigger asChild><Button variant="ghost" size="icon-sm">⋯</Button></DropdownMenuTrigger>`
+
+### Version History / Info Popover
+**Canonical:** DS `Popover` + `PopoverTrigger asChild` + `PopoverContent`
+Import: `from '@exxat/ds/packages/ui/src'`
+→ Never use a Portal-based version popover
+→ `PopoverContent` replaces the hand-rolled fixed-positioned div
+
+### Filter / Properties Sheet
+**Canonical:** DS `Sheet` with `showOverlay={false}` `showCloseButton={false}`, floating, `height: calc(100vh - 1rem)`
+→ Navigation tile pattern (icon box + label + desc + chevron → sub-panel)
+→ Already established in `qb-table.tsx` → `FilterPropertiesSheet` component. Never create a new popover-based filter.
+
+### Column Header Contextual Menu
+**Canonical:** DS `DropdownMenu` inside `<th>` — already in `qb-table.tsx` → `ColHeader` component.
+→ Never hand-roll a custom dropdown inside a `<th>`.
+
+### Folder / Item Context Menu (right-click or ⋯)
+**Canonical:** DS `DropdownMenu` + `DropdownMenuTrigger asChild`
+→ The current `FolderContextMenu` (Portal-based) in `qb-sidebar.tsx` is established — do NOT change it unless migrating to DS `DropdownMenu`
+
+### Main Navigation Sidebar
+**Canonical:** `components/app-sidebar.tsx` — DS `Sidebar variant="inset" collapsible="icon"` + `SidebarProvider className="h-svh"` + `SidebarInset`
+→ Never add a second sidebar. Never change `variant`. Never remove `h-svh`.
+
+### QB Library Sidebar (left panel inside QB)
+**Canonical:** `qb-sidebar.tsx` — custom `<aside>` with animated width (`sidebarOpen` from QB state)
+→ The QB sidebar toggle button is in `qb-header.tsx` and controls `sidebarOpen` in QB state (NOT the main DS sidebar toggle).
+→ The `fa-sidebar` icon in `qb-header.tsx` controls the MAIN DS sidebar via `useSidebar().toggleSidebar`.
+
+### Data Table
+**Canonical for QB:** custom `<table>` in `qb-table.tsx` using DS token classes (`TH`, `TD` constants), `Checkbox` from DS, `DropdownMenu` for column headers.
+→ Never replace with a raw `<table>` without DS tokens. Never use a third-party grid.
+→ Columns are defined in `QB_COLS` constant — add columns there, not ad-hoc.
+
+### Icons
+**Rule:** Always Font Awesome Pro via `<i className="fa-{weight} fa-{name}" aria-hidden="true" />`
+- `fa-light` → default / inactive / secondary states
+- `fa-regular` → interactive secondary
+- `fa-solid` → active / selected / filled states
+- Never use `fa-sparkles` or `fa-plus` for Leo AI — use `fa-duotone fa-solid fa-star-christmas`
+- Never use Lucide or Heroicons in admin app
+
+### Colors
+**Rule:** Never hardcode `oklch()`, `hex`, `rgb()`, or `rgba()` in JS/TSX style objects.
+→ Define a CSS variable in `app/globals.css` under `/* QB color tokens */`
+→ Reference as `'var(--token-name)'` in JS
+→ QB tokens already defined: `--qb-private`, `--qb-question-set`, `--qb-locked`, `--qb-trust-*`, `--qb-split-divider`
+
+### Badges / Status Chips
+**Canonical:** `StatusBadge`, `TypeBadge`, `DiffBadge`, `BloomsBadge`, `PBisCell` — all in `components/qb/badges.tsx`
+→ Never define inline badge `<span>` elements for QB status/type/difficulty. Import from `badges.tsx`.
+→ All badge components in `badges.tsx` MUST use DS `Badge` as the base — never raw `<span>`.
+
+**StatusBadge — pill + icon design (confirmed from design reference):**
+```tsx
+// DS Badge variant="secondary" + rounded-full + icon + custom bg/fg tokens
+<Badge
+  variant="secondary"
+  className="rounded-full px-3 py-1 gap-1.5 font-semibold whitespace-nowrap"
+  style={{ backgroundColor: s.bg, color: s.fg }}
+>
+  <i className={`fa-light ${s.icon}`} aria-hidden="true" style={{ fontSize: 11 }} />
+  {status}
+</Badge>
+```
+Status → icon mapping (FA light weight):
+- Active / Ready / Approved → `fa-circle-check`
+- In Review → `fa-eye`
+- Draft → `fa-hourglass`
+- Flagged → `fa-circle-xmark`
+- Locked → `fa-lock`
+
+Status colors are defined in `app/globals.css` as `--qb-status-{name}-bg` and `--qb-status-{name}-fg` tokens.
+
+**Badge shape override pattern** (for rectangular / metadata badges):
+```tsx
+// Rectangular (4px radius) — override DS rounded-4xl
+<Badge variant="secondary" className="rounded">{label}</Badge>
+
+// With custom color
+<Badge variant="secondary" className="rounded" style={{ backgroundColor: 'var(--token)', color: 'var(--token)' }}>
+  {label}
+</Badge>
+
+// Code/ID badge (monospace, with visible border)
+<Badge variant="secondary" className="rounded font-mono border border-border" style={{ fontSize: 10, padding: '1px 5px' }}>
+  {q.code}
+</Badge>
+```
+→ Status badges: `rounded-full` (full pill). Metadata badges: `rounded` (4px rectangle).
+→ Never use `white` in `color-mix()` — always use `var(--background)` instead.
+→ `style` overrides Tailwind classes for backgroundColor/color — use for custom token colors.
+
+### Dialogs / Modals
+**Canonical:** DS `Dialog` + `DialogContent` + `DialogHeader` + `DialogTitle` + `DialogFooter`
+Import: `from '@exxat/ds/packages/ui/src'`
+→ Already used in `qb-modals.tsx`. Never use a custom `<div role="dialog">`.
+
+### Bulk Action Bar
+**Canonical:** The floating `role="status"` bar in `qb-table.tsx` (bottom-center, fixed, `animate-in slide-in-from-bottom-3`)
+→ Never create a second bulk action bar. Extend the existing one.
+
+---
+
+## 10. Self-Update Rule
 
 When you build a new feature component in this product:
 → Add it to Section 6 "Already built" with its DS import mapping

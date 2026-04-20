@@ -1,2 +1,86 @@
-@import '../../../exxat-ds/packages/ui/src/theme.css';
+@import '../../../../exxat-ds/packages/ui/src/theme.css';
 @import "tailwindcss";
+@source '../../../../exxat-ds/packages/ui/src/**/*.{ts,tsx}';
+
+/* ── Sidebar token — defined in globals.css, not theme.css ─────────────────── */
+:root {
+  --sidebar: var(--brand-tint);
+}
+
+.dark {
+  --sidebar: oklch(0.245 0.015 270);
+}
+
+/* ── DataTable tokens (mirrors exxat-ds/packages/ui/src/globals.css) ───────── */
+:root {
+  --dt-header-bg:       var(--background);
+  --dt-row-bg:          var(--background);
+  --dt-row-hover:       oklch(0.972 0.001 270);
+  --dt-row-selected:    oklch(0.962 0.003 260);
+  --dt-row-selected-fg: var(--foreground);
+  --dt-group-bg:        oklch(0.972 0.001 270);
+  --sticky-edge-fade:   oklch(0 0 0 / 0.08);
+}
+
+.dark {
+  --dt-row-hover:       oklch(0.24 0.01 270);
+  --dt-row-selected:    oklch(0.27 0.02 270);
+  --dt-group-bg:        oklch(0.24 0.01 270);
+  --sticky-edge-fade:   oklch(0 0 0 / 0.32);
+}
+
+@theme inline {
+  --color-dt-header-bg:       var(--dt-header-bg);
+  --color-dt-row-bg:          var(--dt-row-bg);
+  --color-dt-row-hover:       var(--dt-row-hover);
+  --color-dt-row-selected:    var(--dt-row-selected);
+  --color-dt-row-selected-fg: var(--dt-row-selected-fg);
+  --color-dt-group-bg:        var(--dt-group-bg);
+  --color-interactive-hover:        var(--interactive-hover);
+  --color-interactive-hover-subtle: var(--interactive-hover-subtle);
+}
+
+/* ── QB color tokens ─────────────────────────────────────────────────────────── */
+:root {
+  --qb-private:            var(--brand-preview-prism);  /* fuchsia — private space / locked */
+  --qb-question-set:       var(--chart-2);               /* teal    — question sets          */
+  --qb-locked:             oklch(0.45 0.12 70);          /* amber   — locked / bookmarked    */
+  --qb-trust-senior-color: oklch(0.40 0.14 145);
+  --qb-trust-senior-bg:    oklch(0.95 0.05 145);
+  --qb-trust-mid-color:    oklch(0.35 0.10 220);
+  --qb-trust-mid-bg:       oklch(0.94 0.04 220);
+  --qb-trust-junior-color: oklch(0.55 0 0);
+  --qb-split-divider:      oklch(1 0 0 / 0.15);         /* split-button divider on primary  */
+
+  /* QB status badge tokens — pill + icon design (StatusBadge in badges.tsx) */
+  --qb-status-active-bg:    color-mix(in oklch, var(--chart-2) 16%, var(--background));
+  --qb-status-active-fg:    oklch(0.30 0.13 155);       /* deep green text                  */
+  --qb-status-ready-bg:     color-mix(in oklch, var(--chart-2) 10%, var(--background));
+  --qb-status-ready-fg:     oklch(0.32 0.11 184);       /* teal text                        */
+  --qb-status-review-bg:    color-mix(in oklch, var(--chart-1) 14%, var(--background));
+  --qb-status-review-fg:    oklch(0.32 0.18 264);       /* indigo text                      */
+  --qb-status-draft-bg:     color-mix(in oklch, var(--chart-4) 16%, var(--background));
+  --qb-status-draft-fg:     oklch(0.38 0.15 84);        /* amber text                       */
+  --qb-status-flagged-bg:   color-mix(in oklch, var(--destructive) 12%, var(--background));
+  --qb-status-flagged-fg:   oklch(0.40 0.20 25);        /* red text                         */
+  --qb-status-approved-bg:  color-mix(in oklch, var(--brand-color) 14%, var(--background));
+  --qb-status-approved-fg:  var(--brand-color-dark);    /* brand text                       */
+  --qb-status-locked-bg:    var(--muted);               /* grey bg                          */
+  --qb-status-locked-fg:    var(--muted-foreground);    /* grey text                        */
+
+  /* QB difficulty tokens (DiffBadge / PBisCell in badges.tsx) */
+  --qb-diff-hard-color:      oklch(0.45 0.18 25);       /* red text — Hard diff             */
+  --qb-diff-medium-color:    oklch(0.45 0.14 70);       /* amber text — Medium              */
+}
+
+/* QB hover behaviors */
+.qb-folder-menu-btn {
+  opacity: 0;
+  transition: opacity 100ms;
+}
+[role="treeitem"]:hover .qb-folder-menu-btn {
+  opacity: 1;
+}
+.qb-menu-btn:hover {
+  background-color: var(--accent);
+}

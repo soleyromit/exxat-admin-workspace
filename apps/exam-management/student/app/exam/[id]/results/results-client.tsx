@@ -21,12 +21,12 @@ export function ResultsClient({ id }: { id: string }) {
 
           {/* Score card */}
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-8 flex flex-col items-center gap-3 text-center">
-            <div className="text-5xl font-bold text-emerald-600">{score}%</div>
+            <div className="text-5xl font-bold text-chart-2">{score}%</div>
             <div className="text-sm text-[var(--muted-foreground)]">{correct} of {total} correct</div>
             <div className="h-2 w-full max-w-xs rounded-full bg-[var(--muted)] overflow-hidden">
-              <div className="h-full rounded-full bg-emerald-500" style={{ width: `${score}%` }} />
+              <div className="h-full rounded-full bg-chart-2" style={{ width: `${score}%` }} />
             </div>
-            <span className="rounded-full px-3 py-0.5 text-xs font-medium bg-emerald-50 text-emerald-700 mt-1">Passed</span>
+            <span className="rounded-full px-3 py-0.5 text-xs font-medium bg-chart-2/10 text-chart-2 mt-1">Passed</span>
           </div>
 
           {/* Question review */}
@@ -39,12 +39,12 @@ export function ResultsClient({ id }: { id: string }) {
                   key={q.id}
                   className={`rounded-xl border p-4 flex gap-3 ${
                     isCorrect
-                      ? 'border-emerald-200 bg-emerald-50/50'
-                      : 'border-red-200 bg-red-50/50'
+                      ? 'border-chart-2/30 bg-chart-2/5'
+                      : 'border-destructive/30 bg-destructive/5'
                   }`}
                 >
                   <i
-                    className={`fa-light ${isCorrect ? 'fa-circle-check text-emerald-600' : 'fa-circle-xmark text-red-500'} mt-0.5 shrink-0`}
+                    className={`fa-light ${isCorrect ? 'fa-circle-check text-chart-2' : 'fa-circle-xmark text-destructive'} mt-0.5 shrink-0`}
                     aria-hidden="true"
                   />
                   <div className="flex flex-col gap-1">
@@ -64,7 +64,7 @@ export function ResultsClient({ id }: { id: string }) {
 
           <Link
             href="/assessments"
-            className="self-center rounded-xl bg-[var(--brand-color)] px-8 py-2.5 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+            className="self-center rounded-xl bg-[var(--brand-color)] px-8 py-2.5 text-sm font-medium text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
           >
             Back to Assessments
           </Link>

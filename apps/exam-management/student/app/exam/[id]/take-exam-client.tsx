@@ -27,7 +27,13 @@ export function TakeExamClient({ id }: { id: string }) {
     <div className="flex h-screen flex-col">
       {/* Top bar */}
       <header className="flex h-14 items-center justify-between border-b border-[var(--border)] bg-[var(--background)] px-6">
-        <span className="text-sm font-semibold text-[var(--foreground)]">{assessment?.title ?? 'Exam'}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-semibold text-[var(--foreground)]">{assessment?.title ?? 'Exam'}</span>
+          <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-[var(--brand-color-surface)] text-[var(--brand-color-dark)]">
+            <i className="fa-light fa-graduation-cap" aria-hidden="true" />
+            Student DS
+          </span>
+        </div>
         <div className="flex items-center gap-3 text-sm text-[var(--muted-foreground)]">
           <i className="fa-light fa-clock" aria-hidden="true" />
           <span>60:00</span>

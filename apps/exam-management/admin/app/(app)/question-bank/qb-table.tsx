@@ -92,7 +92,7 @@ function RowContextMenu({ question, pos, onClose }: {
   pos: { x: number; y: number }
   onClose: () => void
 }) {
-  const { currentPersona } = useQB()
+  const { currentPersona, setRequestEditAccessQuestionId } = useQB()
   const isAdmin = currentPersona.role === 'Admin'
   const isOwner = question.creator === currentPersona.id
 
@@ -127,7 +127,6 @@ function RowContextMenu({ question, pos, onClose }: {
     menuItem('fa-folder-plus', 'Add to Folder'),
     menuItem('fa-arrow-right-arrow-left', 'Transfer to Course'),
     menuItem('fa-share-nodes', 'Share'),
-    menuItem('fa-flag', 'Flag for Review'),
     menuItem('fa-circle-check', 'Mark Reviewed'),
     menuItem('fa-clock-rotate-left', 'Version History'),
     sep(),
@@ -141,7 +140,6 @@ function RowContextMenu({ question, pos, onClose }: {
     menuItem('fa-thumbtack', question.pinned ? 'Unfix from top' : 'Fix to top', 'var(--brand-color)'),
     sep(),
     ...(question.tags.includes('private') ? [menuItem('fa-arrow-up-from-bracket', 'Promote to Pool', 'var(--qb-private)')] : []),
-    menuItem('fa-flag', 'Flag for Review'),
     menuItem('fa-clock-rotate-left', 'Version History'),
     sep(),
     menuItem('fa-copy', 'Save as Copy'),
@@ -150,11 +148,10 @@ function RowContextMenu({ question, pos, onClose }: {
 
   const facultyViewOnlyItems = [
     menuItem('fa-eye', 'View Details'),
-    menuItem('fa-key', 'Request Edit Access'),
+    menuItem('fa-key', 'Request Edit Access', undefined, false, () => setRequestEditAccessQuestionId(question.id)),
     menuItem('fa-clock-rotate-left', 'Version History'),
     sep(),
     menuItem('fa-copy', 'Save as Copy'),
-    menuItem('fa-flag', 'Flag for Review'),
     menuItem(question.shortlisted ? 'fa-bookmark-slash' : 'fa-bookmark', question.shortlisted ? 'Remove from Shortlist' : 'Add to Shortlist', 'var(--qb-locked)'),
   ]
 
@@ -485,34 +482,32 @@ function ColHeader({
   return (
     <th className={`${TH} ${className ?? ''}`}>
       <DropdownMenu>
-        <DropdownMenu>
-          {/* Trigger: the label row itself */}
-          <div
-            className="flex items-center gap-1 group/col-hdr cursor-pointer select-none w-full"
-            onClick={() => col.sortKey && onSort(col.key, isActive && sortDir === 'asc' ? 'desc' : 'asc')}
+        <div
+          className="flex items-center gap-1 group/col-hdr cursor-pointer select-none w-full"
+          onClick={() => col.sortKey && onSort(col.key, isActive && sortDir === 'asc' ? 'desc' : 'asc')}
+        >
+          <span className="flex-1 truncate">{col.label}</span>
+          {isActive && (
+            <i
+              className={`fa-solid ${sortDir === 'asc' ? 'fa-arrow-up' : 'fa-arrow-down'} text-[9px]`}
+              style={{ color: 'var(--brand-color)' }}
+              aria-hidden="true"
+            />
+          )}
+          <DropdownMenuTrigger
+            className="opacity-0 group-hover/col-hdr:opacity-100 transition-opacity flex items-center justify-center"
+            onClick={e => e.stopPropagation()}
+            asChild
           >
-            <span className="flex-1 truncate">{col.label}</span>
-            {isActive && (
-              <i
-                className={`fa-solid ${sortDir === 'asc' ? 'fa-arrow-up' : 'fa-arrow-down'} text-[9px]`}
-                style={{ color: 'var(--brand-color)' }}
-                aria-hidden="true"
-              />
-            )}
-            <DropdownMenuTrigger
-              className="opacity-0 group-hover/col-hdr:opacity-100 transition-opacity flex items-center justify-center"
-              onClick={e => e.stopPropagation()}
-              asChild
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              aria-label={`Column options for ${col.label}`}
             >
-              <button
-                aria-label={`Column options for ${col.label}`}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}
-              >
-                <i className="fa-light fa-chevron-down text-[9px] text-muted-foreground" aria-hidden="true" />
-              </button>
-            </DropdownMenuTrigger>
-          </div>
-        </DropdownMenu>
+              <i className="fa-light fa-chevron-down text-[9px] text-muted-foreground" aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+        </div>
 
         <DropdownMenuContent align="start" className="w-44">
           {col.sortKey && (
@@ -705,7 +700,7 @@ export function QBTable() {
               size="icon-sm"
               onClick={() => { setSearchOpen(true); setTimeout(() => searchRef.current?.focus(), 30) }}
               aria-label="Search questions"
-              style={search ? { borderColor: 'var(--brand-color)', color: 'var(--brand-color)', backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, white)' } : {}}
+              style={search ? { borderColor: 'var(--brand-color)', color: 'var(--brand-color)', backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' } : {}}
             >
               <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 13 }} />
             </Button>
@@ -718,7 +713,7 @@ export function QBTable() {
             onClick={() => setBookmarkOnly(v => !v)}
             aria-pressed={bookmarkOnly}
             aria-label={bookmarkOnly ? 'Show all questions' : 'Show bookmarked only'}
-            style={bookmarkOnly ? { borderColor: 'var(--qb-locked)', color: 'var(--qb-locked)', backgroundColor: 'color-mix(in oklch, var(--qb-locked) 10%, white)' } : {}}
+            style={bookmarkOnly ? { borderColor: 'var(--qb-locked)', color: 'var(--qb-locked)', backgroundColor: 'color-mix(in oklch, var(--qb-locked) 10%, var(--background))' } : {}}
           >
             <i
               className={bookmarkOnly ? 'fa-solid fa-bookmark' : 'fa-light fa-bookmark'}
@@ -734,7 +729,7 @@ export function QBTable() {
               size="icon-sm"
               onClick={() => setPropertiesOpen(true)}
               aria-label="Table properties"
-              style={activeFilterCount > 0 || hiddenCols.size > 0 ? { borderColor: 'var(--brand-color)', color: 'var(--brand-color)', backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, white)' } : {}}
+              style={activeFilterCount > 0 || hiddenCols.size > 0 ? { borderColor: 'var(--brand-color)', color: 'var(--brand-color)', backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' } : {}}
             >
               <i className="fa-light fa-sliders" aria-hidden="true" style={{ fontSize: 13 }} />
             </Button>
@@ -917,17 +912,17 @@ export function QBTable() {
                             {q.code}
                           </Badge>
                           <TypeBadge type={q.type} />
-                          {!isAdmin && isHovered && (
+                          {!isAdmin && !isOwner && isHovered && (
                             <Badge
                               variant="secondary"
                               className="rounded"
                               style={{
                                 fontSize: 10, padding: '1px 5px',
-                                backgroundColor: isOwner ? 'var(--brand-tint)' : 'var(--muted)',
-                                color: isOwner ? 'var(--brand-color-dark)' : 'var(--muted-foreground)',
+                                backgroundColor: 'var(--muted)',
+                                color: 'var(--muted-foreground)',
                               }}
                             >
-                              {isOwner ? 'Mine' : 'View only'}
+                              View only
                             </Badge>
                           )}
                         </div>
@@ -1008,13 +1003,13 @@ export function QBTable() {
 
                       {/* Version */}
                       {!hiddenCols.has('version') && <td className={`${TD} w-16`}>
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="xs"
                           onClick={(e) => openVersionPopover(e, q)}
                           aria-label={`Version history for ${q.title}`}
                           style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 4,
-                            fontSize: 10, fontWeight: 600, borderRadius: 4,
-                            padding: '2px 6px', cursor: 'pointer', border: 'none',
+                            fontSize: 10, fontWeight: 600, gap: 4,
                             backgroundColor: openVersionPopoverId === q.id ? 'var(--brand-tint)' : 'var(--muted)',
                             color: openVersionPopoverId === q.id ? 'var(--brand-color-dark)' : 'var(--muted-foreground)',
                           }}
@@ -1025,7 +1020,7 @@ export function QBTable() {
                             style={{ fontSize: 9 }}
                           />
                           V{q.version}
-                        </button>
+                        </Button>
                       </td>}
 
                       {/* Actions ⋯ */}
