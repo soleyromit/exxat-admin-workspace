@@ -71,6 +71,12 @@
   /* QB difficulty tokens (DiffBadge / PBisCell in badges.tsx) */
   --qb-diff-hard-color:      oklch(0.45 0.18 25);       /* red text — Hard diff             */
   --qb-diff-medium-color:    oklch(0.45 0.14 70);       /* amber text — Medium              */
+
+  /* QB status tokens — Saved (teal) + Draft (amber) */
+  --qb-status-saved-bg: color-mix(in oklch, var(--chart-2) 15%, transparent);
+  --qb-status-saved-fg: color-mix(in oklch, var(--chart-2) 80%, var(--foreground));
+  --qb-status-draft-bg: color-mix(in oklch, var(--chart-4) 15%, transparent);
+  --qb-status-draft-fg: color-mix(in oklch, var(--chart-4) 75%, var(--foreground));
 }
 
 /* QB hover behaviors */
@@ -83,4 +89,13 @@
 }
 .qb-menu-btn:hover {
   background-color: var(--accent);
+}
+
+/* Folder highlight animation */
+@keyframes folder-highlight {
+  0%   { background-color: var(--brand-tint); }
+  100% { background-color: transparent; }
+}
+.folder-highlight {
+  animation: folder-highlight 1500ms ease forwards;
 }

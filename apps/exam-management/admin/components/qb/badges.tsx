@@ -1,76 +1,84 @@
 import { Badge } from '@exxat/ds/packages/ui/src'
 import type { QStatus, QType, QDiff, QBlooms } from '@/lib/qb-types'
 
-// ─── StatusBadge ─────────────────────────────────────────────────────────────
-
-const STATUS_STYLES: Record<QStatus, { bg: string; fg: string; icon: string }> = {
-  'Active':    { bg: 'var(--qb-status-active-bg)',   fg: 'var(--qb-status-active-fg)',   icon: 'fa-circle-check'  },
-  'Ready':     { bg: 'var(--qb-status-ready-bg)',    fg: 'var(--qb-status-ready-fg)',    icon: 'fa-circle-check'  },
-  'In Review': { bg: 'var(--qb-status-review-bg)',   fg: 'var(--qb-status-review-fg)',   icon: 'fa-eye'           },
-  'Draft':     { bg: 'var(--qb-status-draft-bg)',    fg: 'var(--qb-status-draft-fg)',    icon: 'fa-hourglass'     },
-  'Flagged':   { bg: 'var(--qb-status-flagged-bg)',  fg: 'var(--qb-status-flagged-fg)',  icon: 'fa-circle-xmark'  },
-  'Approved':  { bg: 'var(--qb-status-approved-bg)', fg: 'var(--qb-status-approved-fg)', icon: 'fa-circle-check' },
-  'Locked':    { bg: 'var(--qb-status-locked-bg)',   fg: 'var(--qb-status-locked-fg)',   icon: 'fa-lock'          },
+// ── Status Badge — pill + icon ────────────────────────────────────────────────
+const STATUS_MAP: Record<QStatus, { bg: string; fg: string; icon: string }> = {
+  Saved: { bg: 'var(--qb-status-saved-bg)', fg: 'var(--qb-status-saved-fg)', icon: 'fa-circle-check' },
+  Draft: { bg: 'var(--qb-status-draft-bg)', fg: 'var(--qb-status-draft-fg)', icon: 'fa-hourglass' },
 }
 
 export function StatusBadge({ status }: { status: QStatus }) {
-  const s = STATUS_STYLES[status]
+  const s = STATUS_MAP[status]
   return (
     <Badge
       variant="secondary"
-      className="rounded-full px-3 py-1 gap-1.5 font-semibold whitespace-nowrap"
+      className="rounded-full px-2.5 py-0.5 gap-1.5 font-semibold whitespace-nowrap"
       style={{ backgroundColor: s.bg, color: s.fg }}
     >
-      <i className={`fa-light ${s.icon}`} aria-hidden="true" style={{ fontSize: 11 }} />
+      <i className={`fa-light ${s.icon}`} aria-hidden="true" style={{ fontSize: 10 }} />
       {status}
     </Badge>
   )
 }
 
-// ─── TypeBadge ───────────────────────────────────────────────────────────────
+// ── Type Badge — neutral muted text + icon ────────────────────────────────────
+const TYPE_ICONS: Record<QType, string> = {
+  'MCQ':        'fa-list-ul',
+  'Fill blank': 'fa-input-text',
+  'Hotspot':    'fa-crosshairs',
+  'Ordering':   'fa-arrow-up-arrow-down',
+  'Matching':   'fa-arrows-left-right-to-line',
+}
 
 export function TypeBadge({ type }: { type: QType }) {
   return (
-    <Badge variant="secondary" className="rounded whitespace-nowrap">
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>
+      <i className={`fa-light ${TYPE_ICONS[type]}`} aria-hidden="true" style={{ fontSize: 11 }} />
       {type}
+    </span>
+  )
+}
+
+// ── Difficulty — neutral muted text ───────────────────────────────────────────
+export function DiffBadge({ difficulty }: { difficulty: QDiff }) {
+  return (
+    <span style={{ fontSize: 12, color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>
+      {difficulty}
+    </span>
+  )
+}
+
+// ── Blooms Badge ──────────────────────────────────────────────────────────────
+const BLOOMS_COLORS: Record<QBlooms, string> = {
+  Remember:   'var(--chart-3)',
+  Understand: 'var(--chart-2)',
+  Apply:      'var(--chart-1)',
+  Analyze:    'var(--chart-4)',
+  Evaluate:   'var(--chart-5)',
+  Create:     'var(--brand-color)',
+}
+
+export function BloomsBadge({ blooms }: { blooms: QBlooms }) {
+  return (
+    <Badge
+      variant="secondary"
+      className="rounded font-medium whitespace-nowrap"
+      style={{ fontSize: 10, padding: '1px 6px', color: BLOOMS_COLORS[blooms], backgroundColor: `color-mix(in oklch, ${BLOOMS_COLORS[blooms]} 12%, var(--background))` }}
+    >
+      {blooms}
     </Badge>
   )
 }
 
-// ─── DiffBadge ───────────────────────────────────────────────────────────────
-
-const DIFF_STYLES: Record<QDiff, { color: string; weight: number }> = {
-  'Easy':   { color: 'var(--qb-trust-senior-color)',  weight: 500 },
-  'Medium': { color: 'var(--qb-diff-medium-color)',   weight: 600 },
-  'Hard':   { color: 'var(--qb-diff-hard-color)',       weight: 700 },
-}
-
-export function DiffBadge({ diff }: { diff: QDiff }) {
-  const s = DIFF_STYLES[diff]
-  return (
-    <span style={{ fontSize: 12, fontWeight: s.weight, color: s.color, whiteSpace: 'nowrap' }}>
-      {diff}
-    </span>
-  )
-}
-
-// ─── PBisCell ────────────────────────────────────────────────────────────────
-
-export function PBisCell({ value, dir }: { value: number | null; dir: 'up' | 'down' | 'flat' | null }) {
-  if (value === null) return <span style={{ color: 'var(--muted-foreground)', fontSize: 12 }}>—</span>
-  const isGood = value >= 0.30
-  const color = isGood ? 'var(--qb-trust-senior-color)' : 'var(--qb-diff-hard-color)'
-  const icon = dir === 'up' ? 'fa-arrow-trend-up' : dir === 'down' ? 'fa-arrow-trend-down' : 'fa-minus'
+// ── pBIS Cell ─────────────────────────────────────────────────────────────────
+export function PBisCell({ pbis, pbisDir }: { pbis: number | null; pbisDir: 'up' | 'down' | 'flat' | null }) {
+  if (pbis === null) return <span style={{ color: 'var(--muted-foreground)', fontSize: 12 }}>—</span>
+  const arrow = pbisDir === 'up' ? 'fa-arrow-up' : pbisDir === 'down' ? 'fa-arrow-down' : 'fa-minus'
+  const color = pbisDir === 'up' ? 'var(--qb-status-saved-fg)' : pbisDir === 'down' ? 'var(--destructive)' : 'var(--muted-foreground)'
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color }}>
-      <i className={`fa-regular ${icon}`} aria-hidden="true" style={{ fontSize: 10 }} />
-      {value.toFixed(2)}
+      <i className={`fa-solid ${arrow}`} aria-hidden="true" style={{ fontSize: 9 }} />
+      {pbis.toFixed(2)}
     </span>
   )
-}
-
-// ─── BloomsBadge ─────────────────────────────────────────────────────────────
-
-export function BloomsBadge({ blooms }: { blooms: QBlooms }) {
-  return <span style={{ fontSize: 12, color: 'var(--foreground)' }}>{blooms}</span>
 }
