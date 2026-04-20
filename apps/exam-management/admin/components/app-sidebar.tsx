@@ -144,6 +144,18 @@ const NAV_ITEMS = [
     href: '/question-bank',
     icon: 'fa-books',
   },
+  {
+    key: 'courses',
+    title: 'Courses',
+    href: '/courses',
+    icon: 'fa-graduation-cap',
+  },
+  {
+    key: 'assessment-builder',
+    title: 'Assessment Builder',
+    href: '/assessment-builder',
+    icon: 'fa-rectangle-list',
+  },
 ]
 
 // ── AppSidebar ────────────────────────────────────────────────────────────────
