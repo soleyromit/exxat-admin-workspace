@@ -79,9 +79,12 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button
-          style={{ display: 'inline-flex', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="p-0 h-auto gap-0"
           aria-label={`${personas.length} collaborators`}
+          style={{ display: 'inline-flex', alignItems: 'center' }}
         >
           {shown.map((p, i) => (
             <Avatar key={p.id} style={{ width: 22, height: 22, marginLeft: i === 0 ? 0 : -7, border: '2px solid var(--background)', borderRadius: '50%', zIndex: shown.length - i, position: 'relative' }}>
@@ -95,7 +98,7 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
               +{overflow}
             </Badge>
           )}
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-60 p-3">
         <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', marginBottom: 8 }}>
@@ -184,7 +187,7 @@ export function QBTitle() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4, minWidth: 0 }}>
           {segments.map((seg, i) => (
-            <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <span key={seg.folderId ?? seg.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               {i > 0 && (
                 <i className="fa-light fa-chevron-right" aria-hidden="true"
                   style={{ fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0 }} />
@@ -201,7 +204,7 @@ export function QBTitle() {
         </div>
 
         {/* Single Add Question CTA — no split, no dropdown */}
-        <Button size="default" onClick={() => {}} style={{ flexShrink: 0 }}>
+        <Button variant="default" size="default" onClick={() => {}} style={{ flexShrink: 0 }}>
           <i className="fa-light fa-plus" aria-hidden="true" />
           Add Question
         </Button>
