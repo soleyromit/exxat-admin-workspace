@@ -202,17 +202,21 @@ function FolderRow({
         }}
       >
         {/* Chevron */}
-        <button
+        <Button
+          variant="ghost"
+          size="icon-xs"
           onClick={(e) => {
             e.stopPropagation()
             if (hasChildren && !node.locked) toggleFolder(node.id)
           }}
           aria-label={isExpanded ? 'Collapse' : 'Expand'}
           style={{
-            background: 'none', border: 'none', cursor: hasChildren && !node.locked ? 'pointer' : 'default',
-            padding: 0, width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0, color: 'var(--muted-foreground)',
             opacity: hasChildren && !node.locked ? 1 : 0,
+            cursor: hasChildren && !node.locked ? 'pointer' : 'default',
+            width: 16,
+            height: 16,
+            padding: 0,
+            flexShrink: 0,
           }}
           tabIndex={-1}
         >
@@ -221,7 +225,7 @@ function FolderRow({
             aria-hidden="true"
             style={{ fontSize: 9 }}
           />
-        </button>
+        </Button>
 
         {/* Icon */}
         <i className={icon.cls} aria-hidden="true"
@@ -343,16 +347,18 @@ export function QBSidebar() {
     count: number,
     onClick: () => void,
   ) => (
-    <button
+    <Button
+      variant="ghost"
       onClick={onClick}
+      className="w-full justify-start"
       style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        border: 'none', cursor: 'pointer',
-        padding: '7px 12px', height: 34,
-        background: active ? 'var(--brand-tint)' : 'none',
+        padding: '7px 12px',
+        height: 34,
+        backgroundColor: active ? 'var(--brand-tint)' : 'transparent',
         borderRadius: active ? 6 : 0,
         margin: active ? '0 4px' : '0',
         width: active ? 'calc(100% - 8px)' : '100%',
+        color: active ? 'var(--brand-color)' : 'var(--foreground)',
       }}
     >
       <i
@@ -370,7 +376,7 @@ export function QBSidebar() {
       <span style={{ fontSize: 10, color: active ? 'var(--brand-color)' : 'var(--muted-foreground)' }}>
         {count}
       </span>
-    </button>
+    </Button>
   )
 
   return (
