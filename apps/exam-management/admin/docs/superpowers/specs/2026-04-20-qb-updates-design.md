@@ -531,7 +531,94 @@ Smart views tabs:     Tabs variant="line"
 
 ---
 
-## Section 8 — Smart Views: Removed Entirely
+## Section 8 — Toolbar, Navigation Defaults & Sidebar Search
+
+### Default view
+
+```
+navView initializes to 'my'  ←  My Questions is the default
+```
+
+### Toolbar — updated layout
+
+```
+BEFORE                               AFTER
+─────────────────────────────        ─────────────────────────────────────────
+[count]    [🔍] [🔖] [≡]            [count]    [🔍 Search folders...] [👤] [⭐] [≡]
+                                                  sidebar search    my  fav  props
+```
+
+**Toolbar icon buttons (right of search):**
+
+| Button | Icon | Active state | Aria label |
+|---|---|---|---|
+| My Questions | `fa-user` | `--brand-color` border + tint bg | "Show my questions only" |
+| Favorites | `fa-star` | `--chart-4` amber border + tint bg | "Show favorites only" |
+| Properties | `fa-sliders` | `--brand-color` + count badge | "Table properties" |
+
+**My Questions toggle logic:**
+```
+myQuestionsOnly = true  →  table shows only questions where creator === currentPersona.id
+                           works as intersection with active folder selection
+                           i.e. My Questions + Cardiology folder = my questions IN Cardiology
+myQuestionsOnly = false →  all role-visible questions in current folder/view
+```
+
+**Sidebar folder search:**
+```
+┌──────────────────────────────┐
+│ Library                      │
+│ [🔍 Search folders...      ] │  ← InputGroup, compact (h-7), full-width
+│──────────────────────────────│    clears on Escape, autofocuses on click
+│ All Questions  My Questions  │    filters tree nodes in real-time
+│──────────────────────────────│    matching nodes stay, non-matching hidden
+│ ▼ PHAR101 Question Bank (QB)│    parent nodes stay open if child matches
+│   📁 Cardio [filtered]       │
+│   📁 Pharmaco [filtered]     │
+│ ▼ BIOL201 Question Bank (QB)│
+│   📁 Cell Bio [filtered]     │
+└──────────────────────────────┘
+```
+
+---
+
+## Section 9 — Collaborator Avatars in Main Area
+
+### Placement — `qb-title.tsx` subtitle row
+
+```
+Question Bank › [PHAR101 QB ▾] › [Cardiology ▾]      [New Question ▾] [⋯]
+14 questions · Last updated 2 days ago  ·  [DT][SC][JP]+1  [+ Add]
+                                            ↑ avatar stack (Figma-style)
+```
+
+**Avatar stack:**
+- DS `Avatar` + `AvatarFallback` per collaborator
+- Stacked with `ml-[-8px]` overlap, max 3 shown
+- `+N` DS `Badge variant="secondary"` for overflow
+- `[+ Add]` → `Button variant="ghost" size="icon-xs"` `fa-user-plus` — admin only
+
+**Hover popover (DS `Popover`):**
+```
+┌──────────────────────────────────────┐
+│ Shared with                          │
+│ ──────────────────────────────────── │
+│ [DT] Dr. Thompson      Owner         │
+│ [SC] Dr. Sarah Chen    [Can Edit ▾]  │  ← Select (admin only)
+│ [JP] Dr. James Patel   [View Only ▾] │
+│ [+1] Show all (4 people)             │
+│ ──────────────────────────────────── │
+│ [+ Add people]   Button outline sm   │  ← admin only, opens ManageCollaboratorsModal
+└──────────────────────────────────────┘
+```
+
+**Role rules:**
+- Admin: sees role `Select` per row + `[+ Add people]` button
+- Faculty: sees names + roles as read-only text only, no Select, no Add
+
+---
+
+## Section 10 — Smart Views: Removed Entirely
 
 ### What's removed
 
@@ -565,7 +652,203 @@ Filter sheet smart views:            Filter sheet: column types only
 
 ---
 
-## Section 9 — DS Compliance Audit
+## Section 11 — Product Reference & Interaction Standards
+
+> These are the design quality benchmarks. Every QB component is measured against them.
+
+### Reference products → QB mapping
+
+```
+LINEAR               → Question table, filters, keyboard nav, bulk actions
+FIGMA                → Collaborator avatars, hover popovers, access control
+NOTION               → Breadcrumb nav, folder dropdown pickers, property sidebar
+GITHUB               → Version history timeline, review workflows
+VERCEL               → Status badges, activity feed, clean typography hierarchy
+CURSOR / CLAUDE      → Ask Leo integration, contextual AI suggestions
+PERPLEXITY           → Search UX, result hierarchy, instant feedback
+```
+
+---
+
+### Table (Linear-inspired)
+
+```
+WHAT LINEAR DOES                     QB EQUIVALENT
+─────────────────────────────        ─────────────────────────────
+⌘K command palette                   ⌘K opens expandable search (already in toolbar)
+Keyboard row navigation              ↑ ↓ arrows navigate rows, Enter opens detail
+Shift+click range select             Shift+click selects question range
+Row hover reveals actions smoothly   ⋯ + star + shortlist appear on hover with opacity transition
+Active filters = inline chips        Filter chips appear below toolbar when active
+Count updates live                   "14 of 47 questions" updates as filters change
+Bulk action bar slides up            Animate-in from bottom when rows selected
+Empty state is friendly              fa-inbox + copy + single CTA, never a blank screen
+```
+
+**Active filter chips (Linear-style):**
+```
+[count]  [Status: Draft ×] [Type: MCQ ×] [Clear all]    [🔍][👤][⭐][≡]
+         ↑ chips appear inline below toolbar when any filter is active
+         × on each chip clears that specific filter
+         "Clear all" clears everything
+```
+
+---
+
+### Collaborator avatars (Figma-inspired)
+
+```
+WHAT FIGMA DOES                      QB EQUIVALENT
+─────────────────────────────        ─────────────────────────────
+Avatar stack in header               Avatar stack in title subtitle row
+Hover = names + presence             Hover = names + roles + quick access edit
+Click avatar = profile card          Hover popover = role Select + Add people
++N overflow badge                    +N DS Badge → "Show all N people" link
+Share button always visible          [+ Add] icon always visible (admin only)
+```
+
+---
+
+### Version history (GitHub-inspired)
+
+```
+WHAT GITHUB DOES                     QB EQUIVALENT
+─────────────────────────────        ─────────────────────────────
+Timeline list (newest first)         V3 at top, V1 at bottom
+Each commit = author + time + msg    Each version = author + age + title snippet
+SHA badge                            V3 badge with brand-tint bg (latest)
+Restore button per commit            "Use this version" button per row (owner only)
+No "current" label                   No "current" — any version is equally valid ✓
+```
+
+**Version history popover (updated):**
+```
+┌────────────────────────────────────────┐
+│ Version History                        │
+│ ──────────────────────────────────── │
+│ [V3] Drug Metabolism Basics            │  ← brand-tint bg (latest, not "current")
+│      Dr. Thompson · 2 days ago         │
+│                         [Use this ▾]  │
+│ [V2] Revision 2                        │
+│      Dr. Thompson · 3 weeks ago        │
+│                         [Use this ▾]  │
+│ [V1] Revision 1                        │
+│      Dr. Thompson · 2 months ago       │
+│                         [Use this ▾]  │
+│ ──────────────────────────────────── │
+│  fa-lock  Only creator can restore    │  ← shown for non-owners only
+└────────────────────────────────────────┘
+```
+
+---
+
+### Breadcrumb navigation (Notion-inspired)
+
+```
+WHAT NOTION DOES                     QB EQUIVALENT
+─────────────────────────────        ─────────────────────────────
+Page title = breadcrumb              qb-title h1 = breadcrumb ✓
+Click segment = sibling picker       Chevron ▾ = sibling DropdownMenu ✓
+Hover = page preview card            Hover = folder snapshot Popover ✓
+Smooth open/close transitions        Popover/Dropdown uses DS animation defaults
+Escape closes all open overlays      closeAllOverlays() already in qb-state ✓
+```
+
+---
+
+### Search UX (Perplexity-inspired)
+
+```
+WHAT PERPLEXITY DOES                 QB EQUIVALENT
+─────────────────────────────        ─────────────────────────────
+Search is always primary             Toolbar search is always accessible (icon expands)
+Instant results, no submit           Table filters live as you type, 0ms debounce
+Clear search = instant reset         Escape clears + collapses search
+Result count feedback                "14 of 47 questions" updates live
+Empty state is helpful               "No questions match" + "Clear filters" link
+```
+
+---
+
+### Micro-interactions (across all components)
+
+```
+INTERACTION              ANIMATION                          DURATION
+──────────────────────   ──────────────────────────────────  ──────────
+Bulk action bar appears  slide-in-from-bottom + fade-in       150ms
+Bulk action bar leaves   slide-out-to-bottom + fade-out       100ms
+Folder highlight flash   background brand-tint → transparent  1500ms ease
+Filter chip appears      fade-in + scale-in                    100ms
+Filter chip dismisses    fade-out + scale-out                  80ms
+Row hover actions        opacity 0 → 1                         120ms
+Popover opens            DS default (zoom + fade)             150ms
+Sidebar tree expand      height 0 → auto                      200ms ease
+Avatar hover popover     DS default delay 300ms               150ms open
+Search expand            width 0 → 220px                      200ms ease
+Sidebar search filter    tree nodes fade non-matching         100ms
+```
+
+---
+
+### Content hierarchy (Vercel-inspired)
+
+```
+HIERARCHY                VISUAL TREATMENT
+──────────────────────   ─────────────────────────────────────────────────────
+Question title           text-sm font-medium --foreground    ← primary, dominant
+Code badge               font-mono text-[10px] --muted-fg    ← secondary, quiet
+Status badge             Saved/Draft with tint bg + icon     ← semantic, not loud
+Type                     --muted-foreground plain text        ← metadata, recedes
+Difficulty               --muted-foreground plain text        ← metadata, recedes
+Creator                  Avatar + name, trust badge small     ← identity, supports
+Version                  V3 pill, brand-tint bg              ← utility, on-demand
+Actions (⋯ ★)            opacity-0 → revealed on hover       ← progressive disclosure
+```
+
+---
+
+### End-to-end workflows
+
+**Question lifecycle:**
+```
+Create → [New Question] → Draft (private, owner only)
+Edit   → Edit in place or full page → still Draft
+Share  → Promote Draft → Saved (visible to collaborators)
+Use    → Assessment Builder pulls Saved questions
+Revise → Creates new version → old versions preserved
+Retire → Archive (removes from active views, not deleted)
+```
+
+**Folder access workflow:**
+```
+Admin creates folder
+  → Sets collaborators via [+ Add] or ManageCollaboratorsModal
+  → Faculty gains access (folder appears in their sidebar)
+  → Faculty sees Saved questions + own Drafts inside
+  → Faculty can promote their Drafts to Saved
+  → Admin sees all Saved (not faculty Drafts)
+```
+
+**Favorites workflow:**
+```
+Any user → click ★ on any visible question → toggled instantly (optimistic)
+         → toolbar [⭐] active → shows only favorited questions
+         → works as intersection with folder + My Questions filters
+         → favoritesFilter persists across folder navigation (session only)
+```
+
+**Version restore workflow:**
+```
+Open version popover → see all versions newest-first
+Owner only → [Use this ▾] per version → DropdownMenu:
+  "Use as new version" → creates V4 with V2 content
+  "Preview"            → read-only preview modal (future)
+Non-owner → versions visible but no restore action shown
+```
+
+---
+
+## Section 13 — DS Compliance Audit
 
 All violations found in the current codebase. Every item below is a **hard requirement** for implementation — no exceptions.
 
@@ -622,18 +905,23 @@ distinct — just not labeled "current" since all versions are usable)
 ```
 1.  lib/qb-types.ts               ← status simplification, remove SVItem, rename shortlisted→favorited
 2.  lib/qb-mock-data.ts           ← updated questions, remove smart views + offerings, new mock arrays
-3.  qb-state.tsx                  ← role logic, remove smartViews/activeTabId, new fields, auto-select
+3.  qb-state.tsx                  ← role logic, remove smartViews/activeTabId, navView default='my',
+                                     myQuestionsOnly toggle, new fields, auto-select
 4.  qb-tabs.tsx                   ← DELETE entire file
-5.  qb-sidebar.tsx                ← tree restructure, context menu removals, remove add-course btn
-6.  app/globals.css               ← new CSS tokens + highlight flash animation
+5.  qb-sidebar.tsx                ← tree restructure, folder search bar, context menu removals,
+                                     remove add-course btn, highlight flash on folder rows
+6.  app/globals.css               ← new CSS tokens + highlight flash animation + filter chip styles
 7.  components/qb/badges.tsx      ← StatusBadge (Saved/Draft), DiffBadge neutral, TypeBadge neutral
-8.  qb-table.tsx                  ← DS compliance fixes + new columns + drag-reorder + subfolder
-                                     + favorites + column header menus + difficulty popover
+8.  qb-table.tsx                  ← DS compliance (all violations fixed) + new columns (subfolder,
+                                     type, lastEditedBy, favorited) + drag-reorder + column header
+                                     menus + difficulty popover + active filter chips + My Qs +
+                                     Favorites toolbar icons + version history DS Popover
 9.  qb-header.tsx                 ← simplified (breadcrumb removed)
-10. qb-title.tsx                  ← Google Drive breadcrumb title with sibling switcher
+10. qb-title.tsx                  ← Google Drive breadcrumb + collaborator avatar stack +
+                                     hover access popover + sibling switcher
 11. qb-modals.tsx                 ← ManageCollaborators redesign, SmartPopulate update, FilterSheet
 12. app/(app)/questions/[id]/     ← DS Badge compliance fix
-13. question-bank-client.tsx      ← remove QBTabs render, update empty state
+13. question-bank-client.tsx      ← remove QBTabs render, update empty states
 14. components/app-sidebar.tsx    ← add Courses + Assessment Builder nav items
 15. app/(app)/courses/            ← new Courses page (scaffolded)
 16. app/(app)/assessment-builder/ ← new Assessment Builder page (scaffolded)
