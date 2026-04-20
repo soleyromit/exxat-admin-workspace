@@ -33,6 +33,8 @@ interface QBState {
   setMyQuestionsOnly: (v: boolean) => void
   favoritesFilter: boolean
   setFavoritesFilter: (v: boolean) => void
+  favoritedIds: Set<string>
+  toggleQuestionFavorited: (id: string) => void
 
   columnOrder: ColumnId[]
   setColumnOrder: (order: ColumnId[]) => void
@@ -99,6 +101,9 @@ export function QBProvider({ children }: { children: ReactNode }) {
   const [highlightedFolderId, setHighlightedFolderIdState] = useState<string | null>(null)
   const [myQuestionsOnly, setMyQuestionsOnly] = useState(false)
   const [favoritesFilter, setFavoritesFilter] = useState(false)
+  const [favoritedIds, setFavoritedIds] = useState<Set<string>>(
+    new Set(MOCK_QB_QUESTIONS.filter(q => q.favorited === true).map(q => q.id))
+  )
   const [columnOrder, setColumnOrder] = useState<ColumnId[]>(DEFAULT_COLUMN_ORDER)
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<Set<string>>(new Set())
   const [rowHoverId, setRowHoverId] = useState<string | null>(null)
@@ -169,6 +174,15 @@ export function QBProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const toggleQuestionFavorited = useCallback((id: string) => {
+    setFavoritedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
   const isAdmin = currentPersona.role === 'Admin'
 
   const visibleQuestions = useMemo(() => MOCK_QB_QUESTIONS.filter(q => {
@@ -185,10 +199,10 @@ export function QBProvider({ children }: { children: ReactNode }) {
         : true
 
     const myFilter = myQuestionsOnly ? q.creator === currentPersona.id : true
-    const favFilter = favoritesFilter ? q.favorited === true : true
+    const favFilter = favoritesFilter ? favoritedIds.has(q.id) : true
 
     return roleVisible && navVisible && myFilter && favFilter
-  }), [isAdmin, currentPersona.id, navView, selectedFolderId, myQuestionsOnly, favoritesFilter])
+  }), [isAdmin, currentPersona.id, navView, selectedFolderId, myQuestionsOnly, favoritesFilter, favoritedIds])
 
   const toggleQuestionSelection = useCallback((id: string) => {
     setSelectedQuestionIds(prev => {
@@ -224,6 +238,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
     highlightedFolderId, setHighlightedFolderId, navigateToFolder,
     myQuestionsOnly, setMyQuestionsOnly,
     favoritesFilter, setFavoritesFilter,
+    favoritedIds, toggleQuestionFavorited,
     columnOrder, setColumnOrder,
     questions: MOCK_QB_QUESTIONS,
     selectedQuestionIds, toggleQuestionSelection, selectAllQuestions, clearSelection,

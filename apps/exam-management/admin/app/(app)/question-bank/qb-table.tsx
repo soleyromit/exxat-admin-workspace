@@ -44,13 +44,7 @@ function SubfolderCell({ question }: { question: Question }) {
       {segments.map((seg, i) => (
         <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
           {i > 0 && <i className="fa-light fa-chevron-right" aria-hidden="true" style={{ fontSize: 9 }} />}
-          <Button
-            variant="ghost" size="xs"
-            onClick={e => e.stopPropagation()}
-            className="h-auto px-0 py-0 text-xs text-muted-foreground hover:underline"
-          >
-            {seg}
-          </Button>
+          <span>{seg}</span>
         </span>
       ))}
     </span>
@@ -59,12 +53,13 @@ function SubfolderCell({ question }: { question: Question }) {
 
 // ── Favorited star cell ───────────────────────────────────────────────────────
 function FavoritedCell({ question }: { question: Question }) {
-  const [fav, setFav] = useState(question.favorited ?? false)
+  const { favoritedIds, toggleQuestionFavorited } = useQB()
+  const fav = favoritedIds.has(question.id)
   return (
     <Button
       variant="ghost" size="icon-xs"
       aria-label={fav ? 'Remove from favorites' : 'Add to favorites'}
-      onClick={e => { e.stopPropagation(); setFav(v => !v) }}
+      onClick={e => { e.stopPropagation(); toggleQuestionFavorited(question.id) }}
       style={{ color: fav ? 'var(--chart-4)' : 'var(--muted-foreground)' }}
     >
       <i className={fav ? 'fa-solid fa-star' : 'fa-light fa-star'} aria-hidden="true" style={{ fontSize: 13 }} />
@@ -445,6 +440,7 @@ export function QBTable() {
     openMenuQuestionId, setOpenMenuQuestionId,
     myQuestionsOnly, setMyQuestionsOnly,
     favoritesFilter, setFavoritesFilter,
+    favoritedIds, toggleQuestionFavorited,
   } = useQB()
 
   const isAdmin = currentPersona.role === 'Admin'
@@ -788,13 +784,13 @@ export function QBTable() {
                           <Button
                             variant="ghost"
                             size="icon-xs"
-                            onClick={(e) => e.stopPropagation()}
-                            aria-label={q.favorited ? 'Remove from favorites' : 'Add to favorites'}
-                            className={`shrink-0 transition-opacity ${q.favorited || isHovered ? 'opacity-100' : 'opacity-0'}`}
+                            onClick={(e) => { e.stopPropagation(); toggleQuestionFavorited(q.id) }}
+                            aria-label={favoritedIds.has(q.id) ? 'Remove from favorites' : 'Add to favorites'}
+                            className={`shrink-0 transition-opacity ${favoritedIds.has(q.id) || isHovered ? 'opacity-100' : 'opacity-0'}`}
                             style={{ color: 'var(--qb-locked)' }}
                           >
                             <i
-                              className={q.favorited ? 'fa-solid fa-bookmark' : 'fa-regular fa-bookmark'}
+                              className={favoritedIds.has(q.id) ? 'fa-solid fa-bookmark' : 'fa-regular fa-bookmark'}
                               aria-hidden="true"
                               style={{ fontSize: 11 }}
                             />
@@ -1004,7 +1000,7 @@ export function QBTable() {
                             </DropdownMenuItem>
                             {isAdmin && (
                               <DropdownMenuItem onClick={() => {}}>
-                                <i className="fa-light fa-folder-arrow-up" aria-hidden="true" />
+                                <i className="fa-light fa-folder-plus" aria-hidden="true" />
                                 Move to Folder
                               </DropdownMenuItem>
                             )}
