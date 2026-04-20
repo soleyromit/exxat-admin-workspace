@@ -2,11 +2,12 @@
 import { useState, useRef, useEffect } from 'react'
 import { useQB } from './qb-state'
 import { StatusBadge, TypeBadge, DiffBadge, PBisCell, BloomsBadge } from '@/components/qb/badges'
-import { Portal } from '@/components/qb/portal'
 import {
   Button, Badge, Checkbox,
   Sheet, SheetContent, SheetTitle,
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+  Popover, PopoverTrigger, PopoverContent,
+  Tooltip, TooltipTrigger, TooltipContent,
   InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput,
 } from '@exxat/ds/packages/ui/src'
 import type { Question } from '@/lib/qb-types'
@@ -17,190 +18,86 @@ const TH = 'h-9 px-3 text-left align-middle text-xs font-medium text-muted-foreg
 // ── Shared body cell class (matches DS DataTable td) ─────────────────────────
 const TD = 'px-3 py-2.5 align-middle border-b border-border group-last/row:border-b-0 whitespace-nowrap'
 
-// ── Version Popover ──────────────────────────────────────────────────────────
-function VersionPopover({ question, pos, onClose }: {
-  question: Question
-  pos: { x: number; y: number }
-  onClose: () => void
-}) {
-  const { currentPersona } = useQB()
-  const isOwner = question.creator === currentPersona.id
-
-  const versions = Array.from({ length: question.version }, (_, i) => ({
-    v: question.version - i,
-    label: i === 0 ? question.title.slice(0, 60) : `Revision ${question.version - i}`,
-    author: i === 0 ? (question.lastEditedBy ?? question.creator ?? 'Unknown') : question.creator ?? 'Unknown',
-    date: i === 0 ? question.age : `${i + 1} months ago`,
-    isLatest: i === 0,
-  }))
-
-  return (
-    <Portal>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 99997 }} />
-      <div style={{
-        position: 'fixed',
-        top: pos.y + 4,
-        right: window.innerWidth - pos.x,
-        zIndex: 99999,
-        background: 'var(--background)',
-        border: '1px solid var(--border)',
-        borderRadius: 8,
-        boxShadow: 'var(--shadow-lg)',
-        minWidth: 260,
-        padding: 12,
-      }}>
-        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', marginBottom: 10 }}>
-          Version History
-        </div>
-        {versions.map(v => (
-          <div key={v.v} style={{
-            display: 'flex', alignItems: 'flex-start', gap: 8,
-            padding: '6px 0',
-            borderBottom: '1px solid var(--border)',
-          }}>
-            <span style={{
-              fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, flexShrink: 0,
-              backgroundColor: v.isLatest ? 'var(--brand-tint)' : 'var(--muted)',
-              color: v.isLatest ? 'var(--brand-color-dark)' : 'var(--muted-foreground)',
-            }}>
-              V{v.v}
-            </span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {v.label}
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 1 }}>
-                {v.author} · {v.date}
-              </div>
-            </div>
-          </div>
-        ))}
-        {!isOwner && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: 11, color: 'var(--muted-foreground)' }}>
-            <i className="fa-regular fa-lock" aria-hidden="true" />
-            Only the creator can restore versions.
-          </div>
-        )}
-      </div>
-    </Portal>
-  )
-}
-
-// ── Row Context Menu ──────────────────────────────────────────────────────────
-function RowContextMenu({ question, pos, onClose }: {
-  question: Question
-  pos: { x: number; y: number }
-  onClose: () => void
-}) {
-  const { currentPersona, setRequestEditAccessQuestionId } = useQB()
-  const isAdmin = currentPersona.role === 'Admin'
-  const isOwner = question.creator === currentPersona.id
-
-  const sep = () => <div key={Math.random()} style={{ height: 1, margin: '4px 0', background: 'var(--border)' }} />
-
-  function menuItem(icon: string, label: string, color?: string, danger = false, onClick?: () => void) {
-    return (
-      <button
-        key={label}
-        className="qb-menu-btn"
-        onClick={(e) => { e.stopPropagation(); onClick?.(); onClose() }}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px',
-          width: '100%', background: 'none', border: 'none', cursor: 'pointer',
-          fontSize: 13, textAlign: 'left',
-          color: danger ? 'var(--destructive)' : (color ?? 'var(--foreground)'),
-        }}
-      >
-        <i className={`fa-regular ${icon}`} aria-hidden="true"
-          style={{ width: 16, textAlign: 'center', fontSize: 13,
-            color: danger ? 'var(--destructive)' : (color ?? 'var(--muted-foreground)') }} />
-        {label}
-      </button>
-    )
-  }
-
-  const adminItems = [
-    menuItem('fa-eye', 'View Details'),
-    menuItem('fa-users', 'Collaborate', 'var(--qb-trust-senior-color)'),
-    menuItem('fa-thumbtack', question.pinned ? 'Unfix from top' : 'Fix to top', 'var(--brand-color)'),
-    sep(),
-    menuItem('fa-folder-plus', 'Add to Folder'),
-    menuItem('fa-arrow-right-arrow-left', 'Transfer to Course'),
-    menuItem('fa-share-nodes', 'Share'),
-    menuItem('fa-circle-check', 'Mark Reviewed'),
-    menuItem('fa-clock-rotate-left', 'Version History'),
-    sep(),
-    menuItem('fa-box-archive', 'Archive'),
-    menuItem('fa-trash-can', 'Delete', undefined, true),
-  ]
-
-  const facultyOwnItems = [
-    menuItem('fa-pen', 'Edit Question'),
-    menuItem('fa-users', 'Collaborate', 'var(--qb-trust-senior-color)'),
-    menuItem('fa-thumbtack', question.pinned ? 'Unfix from top' : 'Fix to top', 'var(--brand-color)'),
-    sep(),
-    ...(question.tags.includes('private') ? [menuItem('fa-arrow-up-from-bracket', 'Promote to Pool', 'var(--qb-private)')] : []),
-    menuItem('fa-clock-rotate-left', 'Version History'),
-    sep(),
-    menuItem('fa-copy', 'Save as Copy'),
-    menuItem(question.shortlisted ? 'fa-bookmark-slash' : 'fa-bookmark', question.shortlisted ? 'Remove from Shortlist' : 'Add to Shortlist', 'var(--qb-locked)'),
-  ]
-
-  const facultyViewOnlyItems = [
-    menuItem('fa-eye', 'View Details'),
-    menuItem('fa-key', 'Request Edit Access', undefined, false, () => setRequestEditAccessQuestionId(question.id)),
-    menuItem('fa-clock-rotate-left', 'Version History'),
-    sep(),
-    menuItem('fa-copy', 'Save as Copy'),
-    menuItem(question.shortlisted ? 'fa-bookmark-slash' : 'fa-bookmark', question.shortlisted ? 'Remove from Shortlist' : 'Add to Shortlist', 'var(--qb-locked)'),
-  ]
-
-  const items = isAdmin ? adminItems : isOwner ? facultyOwnItems : facultyViewOnlyItems
-
-  return (
-    <Portal>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 99997 }} />
-      <div style={{
-        position: 'fixed',
-        top: pos.y + 4,
-        right: window.innerWidth - pos.x,
-        zIndex: 99999,
-        background: 'var(--background)',
-        border: '1px solid var(--border)',
-        borderRadius: 8,
-        boxShadow: 'var(--shadow-lg)',
-        minWidth: 200,
-        padding: '4px 0',
-        overflow: 'hidden',
-      }}>
-        {!isAdmin && (
-          <div style={{ padding: '6px 14px 8px', borderBottom: '1px solid var(--border)', backgroundColor: 'var(--muted)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--muted-foreground)' }}>
-              <i className={`fa-regular ${isOwner ? 'fa-user' : 'fa-user-lock'}`} aria-hidden="true" />
-              {isOwner ? 'Your question' : `View only — ${question.creator ?? 'Unknown'}`}
-            </div>
-          </div>
-        )}
-        {items}
-      </div>
-    </Portal>
-  )
-}
-
 // ── Column definitions ────────────────────────────────────────────────────────
 const QB_COLS = [
-  { key: 'question',   label: 'Question',   sortKey: 'title',       hideable: false },
-  { key: 'status',     label: 'Status',     sortKey: 'status',      hideable: true  },
-  { key: 'type',       label: 'Type',       sortKey: 'type',        hideable: true  },
-  { key: 'difficulty', label: 'Difficulty', sortKey: 'difficulty',  hideable: true  },
-  { key: 'blooms',     label: "Bloom's",    sortKey: 'blooms',      hideable: true  },
-  { key: 'creator',    label: 'Creator',    sortKey: 'creator',     hideable: true  },
-  { key: 'usage',      label: 'Usage',      sortKey: 'usage',       hideable: true  },
-  { key: 'pbis',       label: 'P-Bis',      sortKey: 'pbis',        hideable: true  },
-  { key: 'version',    label: 'Ver.',       sortKey: null,          hideable: true  },
+  { key: 'question',     label: 'Question',      sortKey: 'title',       hideable: false },
+  { key: 'status',       label: 'Status',        sortKey: 'status',      hideable: true  },
+  { key: 'type',         label: 'Type',          sortKey: 'type',        hideable: true  },
+  { key: 'difficulty',   label: 'Difficulty',    sortKey: 'difficulty',  hideable: true  },
+  { key: 'blooms',       label: "Bloom's",       sortKey: 'blooms',      hideable: true  },
+  { key: 'subfolder',    label: 'Subfolder',     sortKey: null,          hideable: true  },
+  { key: 'creator',      label: 'Creator',       sortKey: 'creator',     hideable: true  },
+  { key: 'lastEditedBy', label: 'Last Edited By', sortKey: null,         hideable: true  },
+  { key: 'usage',        label: 'Usage',         sortKey: 'usage',       hideable: true  },
+  { key: 'pbis',         label: 'P-Bis',         sortKey: 'pbis',        hideable: true  },
+  { key: 'version',      label: 'Ver.',          sortKey: null,          hideable: true  },
+  { key: 'favorited',    label: '',              sortKey: null,          hideable: false },
 ] as const
 
 type ColKey = (typeof QB_COLS)[number]['key']
+
+// ── Subfolder path cell ───────────────────────────────────────────────────────
+function SubfolderCell({ question }: { question: Question }) {
+  const segments = question.folderPath.split(' / ')
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 12, color: 'var(--muted-foreground)', flexWrap: 'nowrap' }}>
+      {segments.map((seg, i) => (
+        <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+          {i > 0 && <i className="fa-light fa-chevron-right" aria-hidden="true" style={{ fontSize: 9 }} />}
+          <Button
+            variant="ghost" size="xs"
+            onClick={e => e.stopPropagation()}
+            className="h-auto px-0 py-0 text-xs text-muted-foreground hover:underline"
+          >
+            {seg}
+          </Button>
+        </span>
+      ))}
+    </span>
+  )
+}
+
+// ── Favorited star cell ───────────────────────────────────────────────────────
+function FavoritedCell({ question }: { question: Question }) {
+  const [fav, setFav] = useState(question.favorited ?? false)
+  return (
+    <Button
+      variant="ghost" size="icon-xs"
+      aria-label={fav ? 'Remove from favorites' : 'Add to favorites'}
+      onClick={e => { e.stopPropagation(); setFav(v => !v) }}
+      style={{ color: fav ? 'var(--chart-4)' : 'var(--muted-foreground)' }}
+    >
+      <i className={fav ? 'fa-solid fa-star' : 'fa-light fa-star'} aria-hidden="true" style={{ fontSize: 13 }} />
+    </Button>
+  )
+}
+
+// ── Active filter chips ───────────────────────────────────────────────────────
+function ActiveFilterChips() {
+  const { myQuestionsOnly, setMyQuestionsOnly, favoritesFilter, setFavoritesFilter } = useQB()
+  const chips: { label: string; onRemove: () => void }[] = []
+  if (myQuestionsOnly) chips.push({ label: 'My Questions', onRemove: () => setMyQuestionsOnly(false) })
+  if (favoritesFilter) chips.push({ label: 'Favorites', onRemove: () => setFavoritesFilter(false) })
+  if (chips.length === 0) return null
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
+      {chips.map(chip => (
+        <Badge key={chip.label} variant="secondary" className="rounded gap-1 px-2 py-0.5 text-xs" style={{ display: 'inline-flex', alignItems: 'center' }}>
+          {chip.label}
+          <Button
+            variant="ghost" size="icon-xs"
+            onClick={chip.onRemove}
+            aria-label={`Remove ${chip.label} filter`}
+            className="h-auto w-auto p-0 ml-1"
+            style={{ color: 'inherit' }}
+          >
+            <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 10 }} />
+          </Button>
+        </Badge>
+      ))}
+    </div>
+  )
+}
 
 // ── Filter section (used inside FilterPropertiesSheet) ────────────────────────
 function FilterSection<T extends string>({
@@ -545,8 +442,9 @@ export function QBTable() {
     rowHoverId, setRowHoverId,
     currentPersona,
     setDraggedQuestionId,
-    openVersionPopoverId, setOpenVersionPopoverId,
     openMenuQuestionId, setOpenMenuQuestionId,
+    myQuestionsOnly, setMyQuestionsOnly,
+    favoritesFilter, setFavoritesFilter,
   } = useQB()
 
   const isAdmin = currentPersona.role === 'Admin'
@@ -594,7 +492,7 @@ export function QBTable() {
     if (statusFilter.size > 0 && !statusFilter.has(q.status)) return false
     if (typeFilter.size > 0 && !typeFilter.has(q.type)) return false
     if (diffFilter.size > 0 && !diffFilter.has(q.difficulty)) return false
-    if (bookmarkOnly && !q.shortlisted) return false
+    if (bookmarkOnly && !q.favorited) return false
     return true
   })
 
@@ -625,11 +523,6 @@ export function QBTable() {
   // Reset to page 1 when filters/sort change
   useEffect(() => { setPage(1) }, [search, statusFilter, typeFilter, diffFilter, bookmarkOnly, sortCol, sortDir])
 
-  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null)
-  const [versionPopoverPos, setVersionPopoverPos] = useState<{ x: number; y: number } | null>(null)
-  const [contextMenuQuestion, setContextMenuQuestion] = useState<Question | null>(null)
-  const [versionPopoverQuestion, setVersionPopoverQuestion] = useState<Question | null>(null)
-
   const allSelected = pageQuestions.length > 0 && pageQuestions.every(q => selectedQuestionIds.has(q.id))
   const someSelected = pageQuestions.some(q => selectedQuestionIds.has(q.id)) && !allSelected
   const anySelected = selectedQuestionIds.size > 0
@@ -637,22 +530,6 @@ export function QBTable() {
   function handleSelectAll() {
     if (allSelected) clearSelection()
     else selectAllQuestions()
-  }
-
-  function openContextMenu(e: React.MouseEvent, question: Question) {
-    e.stopPropagation()
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-    setContextMenuPos({ x: rect.right, y: rect.bottom })
-    setContextMenuQuestion(question)
-    setOpenMenuQuestionId(question.id)
-  }
-
-  function openVersionPopover(e: React.MouseEvent, question: Question) {
-    e.stopPropagation()
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-    setVersionPopoverPos({ x: rect.right, y: rect.bottom })
-    setVersionPopoverQuestion(question)
-    setOpenVersionPopoverId(question.id)
   }
 
   return (
@@ -722,6 +599,38 @@ export function QBTable() {
             />
           </Button>
 
+          {/* My Questions toggle */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline" size="icon-sm"
+                aria-label="My questions"
+                aria-pressed={myQuestionsOnly}
+                onClick={() => setMyQuestionsOnly(!myQuestionsOnly)}
+                style={myQuestionsOnly ? { borderColor: 'var(--brand-color)', color: 'var(--brand-color)', backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' } : {}}
+              >
+                <i className="fa-light fa-user" aria-hidden="true" style={{ fontSize: 13 }} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>My questions only</TooltipContent>
+          </Tooltip>
+
+          {/* Favorites toggle */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline" size="icon-sm"
+                aria-label="Favorites"
+                aria-pressed={favoritesFilter}
+                onClick={() => setFavoritesFilter(!favoritesFilter)}
+                style={favoritesFilter ? { borderColor: 'var(--chart-4)', color: 'var(--chart-4)', backgroundColor: 'color-mix(in oklch, var(--chart-4) 10%, var(--background))' } : {}}
+              >
+                <i className={favoritesFilter ? 'fa-solid fa-star' : 'fa-light fa-star'} aria-hidden="true" style={{ fontSize: 13 }} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Favorites only</TooltipContent>
+          </Tooltip>
+
           {/* Properties / filter sheet trigger */}
           <div style={{ position: 'relative' }}>
             <Button
@@ -749,6 +658,9 @@ export function QBTable() {
 
         </div>
       </div>
+
+      {/* ── Active filter chips ── */}
+      <ActiveFilterChips />
 
       {filteredQuestions.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-48 gap-2">
@@ -788,14 +700,17 @@ export function QBTable() {
                       onSort={handleSort}
                       onHide={key => setHiddenCols(prev => new Set([...prev, key]))}
                       className={
-                        col.key === 'status'     ? 'w-28' :
-                        col.key === 'type'       ? 'w-24' :
-                        col.key === 'difficulty' ? 'w-24' :
-                        col.key === 'blooms'     ? 'w-28' :
-                        col.key === 'creator'    ? 'w-40' :
-                        col.key === 'usage'      ? 'w-16' :
-                        col.key === 'pbis'       ? 'w-20' :
-                        col.key === 'version'    ? 'w-16' : ''
+                        col.key === 'status'       ? 'w-28' :
+                        col.key === 'type'         ? 'w-24' :
+                        col.key === 'difficulty'   ? 'w-24' :
+                        col.key === 'blooms'       ? 'w-28' :
+                        col.key === 'subfolder'    ? 'w-44' :
+                        col.key === 'creator'      ? 'w-40' :
+                        col.key === 'lastEditedBy' ? 'w-32' :
+                        col.key === 'usage'        ? 'w-16' :
+                        col.key === 'pbis'         ? 'w-20' :
+                        col.key === 'version'      ? 'w-16' :
+                        col.key === 'favorited'    ? 'w-8'  : ''
                       }
                     />
                   ))}
@@ -874,12 +789,12 @@ export function QBTable() {
                             variant="ghost"
                             size="icon-xs"
                             onClick={(e) => e.stopPropagation()}
-                            aria-label={q.shortlisted ? 'Remove from shortlist' : 'Add to shortlist'}
-                            className={`shrink-0 transition-opacity ${q.shortlisted || isHovered ? 'opacity-100' : 'opacity-0'}`}
+                            aria-label={q.favorited ? 'Remove from favorites' : 'Add to favorites'}
+                            className={`shrink-0 transition-opacity ${q.favorited || isHovered ? 'opacity-100' : 'opacity-0'}`}
                             style={{ color: 'var(--qb-locked)' }}
                           >
                             <i
-                              className={q.shortlisted ? 'fa-solid fa-bookmark' : 'fa-regular fa-bookmark'}
+                              className={q.favorited ? 'fa-solid fa-bookmark' : 'fa-regular fa-bookmark'}
                               aria-hidden="true"
                               style={{ fontSize: 11 }}
                             />
@@ -945,7 +860,7 @@ export function QBTable() {
                       {/* Difficulty */}
                       {!hiddenCols.has('difficulty') && (
                         <td className={`${TD} w-24`}>
-                          <DiffBadge diff={q.difficulty} />
+                          <DiffBadge difficulty={q.difficulty} />
                         </td>
                       )}
 
@@ -953,6 +868,13 @@ export function QBTable() {
                       {!hiddenCols.has('blooms') && (
                         <td className={`${TD} w-28`}>
                           <BloomsBadge blooms={q.blooms} />
+                        </td>
+                      )}
+
+                      {/* Subfolder path */}
+                      {!hiddenCols.has('subfolder') && (
+                        <td className={`${TD} w-44`}>
+                          <SubfolderCell question={q} />
                         </td>
                       )}
 
@@ -987,6 +909,15 @@ export function QBTable() {
                         </td>
                       )}
 
+                      {/* Last Edited By */}
+                      {!hiddenCols.has('lastEditedBy') && (
+                        <td className={`${TD} w-32`}>
+                          <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
+                            {q.lastEditedBy ?? q.creator ?? '—'}
+                          </span>
+                        </td>
+                      )}
+
                       {/* Usage */}
                       {!hiddenCols.has('usage') && (
                         <td className={`${TD} w-16 text-sm text-foreground`}>
@@ -997,45 +928,101 @@ export function QBTable() {
                       {/* P-Bis */}
                       {!hiddenCols.has('pbis') && (
                         <td className={`${TD} w-20`}>
-                          <PBisCell value={q.pbis} dir={q.pbisDir} />
+                          <PBisCell pbis={q.pbis} pbisDir={q.pbisDir} />
                         </td>
                       )}
 
-                      {/* Version */}
-                      {!hiddenCols.has('version') && <td className={`${TD} w-16`}>
-                        <Button
-                          variant="ghost"
-                          size="xs"
-                          onClick={(e) => openVersionPopover(e, q)}
-                          aria-label={`Version history for ${q.title}`}
-                          style={{
-                            fontSize: 10, fontWeight: 600, gap: 4,
-                            backgroundColor: openVersionPopoverId === q.id ? 'var(--brand-tint)' : 'var(--muted)',
-                            color: openVersionPopoverId === q.id ? 'var(--brand-color-dark)' : 'var(--muted-foreground)',
-                          }}
-                        >
-                          <i
-                            className={openVersionPopoverId === q.id ? 'fa-solid fa-clock-rotate-left' : 'fa-regular fa-clock-rotate-left'}
-                            aria-hidden="true"
-                            style={{ fontSize: 9 }}
-                          />
-                          V{q.version}
-                        </Button>
-                      </td>}
+                      {/* Version — DS Popover */}
+                      {!hiddenCols.has('version') && (
+                        <td className={`${TD} w-16`}>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="icon-xs" aria-label="Version history">
+                                <Badge variant="secondary" className="rounded font-mono" style={{ fontSize: 10, padding: '1px 5px', cursor: 'pointer' }}>
+                                  V{q.version}
+                                </Badge>
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent align="end" className="w-72 p-3">
+                              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', marginBottom: 10 }}>
+                                Version History
+                              </div>
+                              {Array.from({ length: q.version }, (_, i) => {
+                                const vNum = q.version - i
+                                const isLatest = i === 0
+                                return (
+                                  <div key={vNum} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
+                                    <Badge variant="secondary" className="rounded font-mono shrink-0" style={{ fontSize: 9, padding: '1px 5px', backgroundColor: isLatest ? 'var(--brand-tint)' : undefined, color: isLatest ? 'var(--brand-color-dark)' : undefined }}>
+                                      V{vNum}
+                                    </Badge>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {isLatest ? q.title.slice(0, 55) : `Revision ${vNum}`}
+                                      </div>
+                                      <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 1 }}>
+                                        {isLatest ? (q.lastEditedBy ?? q.creator ?? 'Unknown') : q.creator ?? 'Unknown'} · {isLatest ? q.age : `${i + 1} months ago`}
+                                      </div>
+                                    </div>
+                                    {isOwner && (
+                                      <Button variant="ghost" size="icon-xs" aria-label="Use this version">
+                                        <i className="fa-light fa-rotate-left" aria-hidden="true" style={{ fontSize: 11 }} />
+                                      </Button>
+                                    )}
+                                  </div>
+                                )
+                              })}
+                            </PopoverContent>
+                          </Popover>
+                        </td>
+                      )}
 
-                      {/* Actions ⋯ */}
+                      {/* Favorited star */}
+                      {!hiddenCols.has('favorited') && (
+                        <td className={`${TD} w-8`}>
+                          <FavoritedCell question={q} />
+                        </td>
+                      )}
+
+                      {/* Actions ⋯ — DS DropdownMenu */}
                       <td className={`${TD} w-10 text-right`}>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={(e) => openContextMenu(e, q)}
-                          aria-label={`Actions for ${q.title}`}
-                        >
-                          <i
-                            className={`fa-${openMenuQuestionId === q.id ? 'solid' : 'regular'} fa-ellipsis`}
-                            aria-hidden="true"
-                          />
-                        </Button>
+                        <DropdownMenu open={openMenuQuestionId === q.id} onOpenChange={open => setOpenMenuQuestionId(open ? q.id : null)}>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${q.title}`} onClick={e => e.stopPropagation()}>
+                              <i className={`fa-${openMenuQuestionId === q.id ? 'solid' : 'regular'} fa-ellipsis`} aria-hidden="true" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-44">
+                            {(isAdmin || isOwner) && (
+                              <DropdownMenuItem onClick={() => {}}>
+                                <i className="fa-light fa-pen" aria-hidden="true" />
+                                Edit
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem onClick={() => {}}>
+                              <i className="fa-light fa-copy" aria-hidden="true" />
+                              Duplicate
+                            </DropdownMenuItem>
+                            {isAdmin && (
+                              <DropdownMenuItem onClick={() => {}}>
+                                <i className="fa-light fa-folder-arrow-up" aria-hidden="true" />
+                                Move to Folder
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            {!isAdmin && !isOwner && (
+                              <DropdownMenuItem onClick={() => {}}>
+                                <i className="fa-light fa-lock-keyhole-open" aria-hidden="true" />
+                                Request Edit Access
+                              </DropdownMenuItem>
+                            )}
+                            {(isAdmin || isOwner) && (
+                              <DropdownMenuItem variant="destructive" onClick={() => {}}>
+                                <i className="fa-light fa-trash-can" aria-hidden="true" />
+                                Delete
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </td>
                     </tr>
                   )
@@ -1085,24 +1072,6 @@ export function QBTable() {
             <i className="fa-light fa-xmark" aria-hidden="true" />
           </Button>
         </div>
-      )}
-
-      {/* ── Version popover ── */}
-      {versionPopoverQuestion && versionPopoverPos && (
-        <VersionPopover
-          question={versionPopoverQuestion}
-          pos={versionPopoverPos}
-          onClose={() => { setVersionPopoverQuestion(null); setVersionPopoverPos(null); setOpenVersionPopoverId(null) }}
-        />
-      )}
-
-      {/* ── Row context menu ── */}
-      {contextMenuQuestion && contextMenuPos && (
-        <RowContextMenu
-          question={contextMenuQuestion}
-          pos={contextMenuPos}
-          onClose={() => { setContextMenuQuestion(null); setContextMenuPos(null); setOpenMenuQuestionId(null) }}
-        />
       )}
 
       {/* ── Properties / filter sheet ── */}
