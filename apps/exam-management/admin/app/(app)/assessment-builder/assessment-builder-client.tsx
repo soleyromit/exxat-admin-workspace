@@ -14,8 +14,10 @@ function DiffBar({ Easy, Medium, Hard }: { Easy: number; Medium: number; Hard: n
 }
 
 export default function AssessmentBuilderClient() {
-  const [selectedCourseId, setSelectedCourseId] = useState(mockCourses[0].id)
-  const [selectedOfferingId, setSelectedOfferingId] = useState(mockCourseOfferings[0].id)
+  const [selectedCourseId, setSelectedCourseId] = useState(mockCourses[0]?.id ?? '')
+  const [selectedOfferingId, setSelectedOfferingId] = useState(
+    mockCourseOfferings.find(o => o.courseId === (mockCourses[0]?.id ?? ''))?.id ?? ''
+  )
 
   const offerings = mockCourseOfferings.filter(o => o.courseId === selectedCourseId)
   const assessments = mockAssessments.filter(a => a.courseId === selectedCourseId && a.offeringId === selectedOfferingId)
@@ -38,6 +40,7 @@ export default function AssessmentBuilderClient() {
                   setSelectedCourseId(course.id)
                   if (courseOfferings.length) setSelectedOfferingId(courseOfferings[0].id)
                 }}
+                aria-pressed={isSelected}
               >
                 <i className="fa-light fa-graduation-cap" aria-hidden="true" style={{ fontSize: 13, color: isSelected ? 'var(--brand-color)' : 'var(--muted-foreground)' }} />
                 <span style={{ fontSize: 13 }}>{course.code}</span>
@@ -49,6 +52,7 @@ export default function AssessmentBuilderClient() {
                   className="w-full justify-start gap-2 pl-7 mb-0.5"
                   style={selectedOfferingId === o.id ? { backgroundColor: 'var(--brand-tint)', fontWeight: 500 } : {}}
                   onClick={() => setSelectedOfferingId(o.id)}
+                  aria-pressed={selectedOfferingId === o.id}
                 >
                   <i className="fa-light fa-calendar-days" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)' }} />
                   <span style={{ fontSize: 12 }}>{o.semester}</span>
@@ -70,7 +74,7 @@ export default function AssessmentBuilderClient() {
               {mockCourseOfferings.find(o => o.id === selectedOfferingId)?.semester}
             </p>
           </div>
-          <Button>
+          <Button variant="default" size="sm">
             <i className="fa-light fa-plus" aria-hidden="true" />
             New Assessment
           </Button>
