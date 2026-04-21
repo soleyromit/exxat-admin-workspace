@@ -76,8 +76,7 @@ export function useQB(): QBState {
 }
 
 const DEFAULT_COLUMN_ORDER: ColumnId[] = [
-  'select', 'title', 'status', 'type', 'difficulty', 'blooms',
-  'location', 'creator', 'lastEditedBy', 'usage', 'pbis', 'version', 'favorited', 'actions',
+  'type', 'difficulty', 'blooms', 'location', 'creator', 'lastEditedBy', 'usage', 'pbis', 'version'
 ]
 
 function isInSubtree(folderId: string, rootId: string, folders: FolderNode[]): boolean {

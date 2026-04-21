@@ -440,7 +440,7 @@ function ColHeader({
   return (
     <TableHead
       className={`${TH} ${className ?? ''}`}
-      style={dragOverStyle ?? stickyStyle}
+      style={{ ...(dragOverStyle ?? stickyStyle), ...(draggable ? { cursor: 'grab' } : {}) }}
       draggable={draggable}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
@@ -587,13 +587,13 @@ export function QBTable() {
     const FIXED_END   = ['favorited', 'actions'] as const
     const reorderable = columnOrder.filter(k => !hiddenCols.has(k as ColKey))
     return [
-      ...QB_COLS.filter(c => FIXED_START.includes(c.key as typeof FIXED_START[number])),
+      ...QB_COLS.filter(c => FIXED_START.includes(c.key as typeof FIXED_START[number]) && !hiddenCols.has(c.key as ColKey)),
       ...QB_COLS.filter(c =>
         reorderable.includes(c.key) &&
         !FIXED_START.includes(c.key as typeof FIXED_START[number]) &&
         !FIXED_END.includes(c.key as typeof FIXED_END[number])
       ).sort((a, b) => reorderable.indexOf(a.key) - reorderable.indexOf(b.key)),
-      ...QB_COLS.filter(c => FIXED_END.includes(c.key as typeof FIXED_END[number])),
+      ...QB_COLS.filter(c => FIXED_END.includes(c.key as typeof FIXED_END[number]) && !hiddenCols.has(c.key as ColKey)),
     ]
   }, [columnOrder, hiddenCols])
 
