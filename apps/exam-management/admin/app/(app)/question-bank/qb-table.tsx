@@ -462,6 +462,7 @@ export function QBTable() {
     openMenuQuestionId, setOpenMenuQuestionId,
     myQuestionsOnly, setMyQuestionsOnly,
     favoritesFilter, setFavoritesFilter,
+    favoritedIds,
   } = useQB()
 
   const isAdmin = currentPersona.role === 'Admin'
@@ -511,7 +512,7 @@ export function QBTable() {
     if (statusFilter.size > 0 && !statusFilter.has(q.status)) return false
     if (typeFilter.size > 0 && !typeFilter.has(q.type)) return false
     if (diffFilter.size > 0 && !diffFilter.has(q.difficulty)) return false
-    if (bookmarkOnly && !q.favorited) return false
+    if (bookmarkOnly && !favoritedIds.has(q.id)) return false
     return true
   })
 
@@ -714,7 +715,7 @@ export function QBTable() {
                       />
                     </div>
                   </TableHead>
-                  {QB_COLS.filter(c => !hiddenCols.has(c.key)).map(col => (
+                  {QB_COLS.filter(c => !hiddenCols.has(c.key) && c.key !== 'select' && c.key !== 'actions').map(col => (
                     <ColHeader
                       key={col.key}
                       col={col}
@@ -883,7 +884,7 @@ export function QBTable() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <div style={{
                               width: 22, height: 22, borderRadius: '50%', background: creatorPersona.color,
-                              color: 'white', fontSize: 8, fontWeight: 700,
+                              color: 'var(--primary-foreground)', fontSize: 8, fontWeight: 700,
                               display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                             }}>
                               {creatorPersona.initials}
