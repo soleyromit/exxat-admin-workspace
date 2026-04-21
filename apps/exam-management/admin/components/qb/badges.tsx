@@ -18,7 +18,7 @@ export function StatusBadge({ status }: { status: QStatusReduced }) {
       className="rounded-full px-2.5 py-0.5 gap-1 font-semibold whitespace-nowrap text-[10px]"
       style={{ backgroundColor: s.bg, color: s.fg }}
     >
-      <i className={`fa-solid ${s.icon}`} aria-hidden="true" style={{ fontSize: 8 }} />
+      <i className={`fa-light ${s.icon}`} aria-hidden="true" style={{ fontSize: 8 }} />
       {status}
     </Badge>
   )
