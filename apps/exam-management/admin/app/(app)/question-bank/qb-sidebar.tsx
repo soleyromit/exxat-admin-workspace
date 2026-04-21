@@ -23,7 +23,7 @@ function getFolderIcon(node: FolderNode, expanded: boolean, selected: boolean) {
   }
 }
 
-function FolderContextMenu({ node, isAdmin }: { node: FolderNode; isAdmin: boolean }) {
+function FolderContextMenu({ node, isAdmin, onRename }: { node: FolderNode; isAdmin: boolean; onRename: () => void }) {
   const { setCollaboratorsModalFolderId } = useQB()
   if (!isAdmin) return null
   return (
@@ -47,7 +47,7 @@ function FolderContextMenu({ node, isAdmin }: { node: FolderNode; isAdmin: boole
           <i className="fa-light fa-users" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
           Manage Access
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => {}}>
+        <DropdownMenuItem onClick={() => onRename()}>
           <i className="fa-light fa-pencil" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
           Rename
         </DropdownMenuItem>
@@ -133,6 +133,7 @@ function FolderRow({
     draggedQuestionId, setDragOverFolderId, dragOverFolderId,
     draggedFolderId, setDraggedFolderId,
     highlightedFolderId,
+    renameFolder,
   } = useQB()
 
   const [isRenaming, setIsRenaming] = useState(false)
@@ -239,10 +240,19 @@ function FolderRow({
             value={renameName}
             onChange={e => setRenameName(e.target.value)}
             onKeyDown={e => {
-              if (e.key === 'Enter') setIsRenaming(false)
-              if (e.key === 'Escape') { setIsRenaming(false); setRenameName(node.name) }
+              if (e.key === 'Enter') {
+                if (renameName.trim()) renameFolder(node.id, renameName.trim())
+                setIsRenaming(false)
+              }
+              if (e.key === 'Escape') {
+                setIsRenaming(false)
+                setRenameName(node.name)
+              }
             }}
-            onBlur={() => setIsRenaming(false)}
+            onBlur={() => {
+              if (renameName.trim()) renameFolder(node.id, renameName.trim())
+              setIsRenaming(false)
+            }}
             onClick={e => e.stopPropagation()}
             style={{ flex: 1, fontSize: 12, color: 'var(--brand-color)', fontWeight: 500 }}
           />
@@ -264,7 +274,15 @@ function FolderRow({
         </span>
 
         {/* ⋯ context menu — admin only */}
-        <FolderContextMenu node={node} isAdmin={isAdmin} />
+        <FolderContextMenu
+          node={node}
+          isAdmin={isAdmin}
+          onRename={() => {
+            setIsRenaming(true)
+            setRenameName(node.name)
+            setTimeout(() => renameRef.current?.focus(), 50)
+          }}
+        />
       </div>
     </div>
   )
