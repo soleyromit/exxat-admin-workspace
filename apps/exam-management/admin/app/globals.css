@@ -71,12 +71,15 @@
   /* QB difficulty tokens (DiffBadge / PBisCell in badges.tsx) */
   --qb-diff-hard-color:      oklch(0.45 0.18 25);       /* red text — Hard diff             */
   --qb-diff-medium-color:    oklch(0.45 0.14 70);       /* amber text — Medium              */
+  --qb-diff-easy:            oklch(0.55 0.005 270);     /* neutral weight — Easy            */
+  --qb-diff-medium:          oklch(0.35 0.005 270);     /* neutral weight — Medium          */
+  --qb-diff-hard:            oklch(0.18 0.005 270);     /* neutral weight — Hard            */
 
   /* QB status tokens — Saved (teal) + Draft (amber) */
-  --qb-status-saved-bg: color-mix(in oklch, var(--chart-2) 15%, transparent);
-  --qb-status-saved-fg: color-mix(in oklch, var(--chart-2) 80%, var(--foreground));
-  --qb-status-draft-bg: color-mix(in oklch, var(--chart-4) 15%, transparent);
-  --qb-status-draft-fg: color-mix(in oklch, var(--chart-4) 75%, var(--foreground));
+  --qb-status-saved-bg: oklch(0.93 0.04 200 / 0.25);
+  --qb-status-saved-fg: oklch(0.35 0.12 200);
+  --qb-status-draft-bg: oklch(0.93 0.03 80 / 0.25);
+  --qb-status-draft-fg: oklch(0.45 0.1 70);
 }
 
 /* QB hover behaviors */
