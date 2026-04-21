@@ -5,7 +5,7 @@ import { StatusBadge, DiffBadge, PBisCell, BloomsBadge } from '@/components/qb/b
 import {
   Button, Badge, Checkbox,
   Sheet, SheetContent, SheetTitle,
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem,
   Popover, PopoverTrigger, PopoverContent,
   Tooltip, TooltipTrigger, TooltipContent,
   InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput,
@@ -381,20 +381,40 @@ function FilterPropertiesSheet({
   )
 }
 
+// ── Enum filter options per column key ───────────────────────────────────────
+const ENUM_FILTERS: Partial<Record<string, readonly string[]>> = {
+  status:     ['Saved', 'Draft'] as const,
+  type:       ['MCQ', 'Fill blank', 'Hotspot', 'Ordering', 'Matching'] as const,
+  difficulty: ['Easy', 'Medium', 'Hard'] as const,
+  blooms:     ['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'] as const,
+}
+
 // ── Column header with sort indicator + contextual menu ───────────────────────
 function ColHeader({
-  col, sortCol, sortDir, onSort, onHide, className,
+  col, sortCol, sortDir, onSort, onHide, onPin,
+  filterOptions, activeFilter, onFilterChange, openPanel,
+  pinned, className,
 }: {
   col: typeof QB_COLS[number]
   sortCol: string | null
   sortDir: 'asc' | 'desc'
   onSort: (key: string, dir: 'asc' | 'desc') => void
   onHide: (key: ColKey) => void
+  onPin: (key: string) => void
+  filterOptions?: readonly string[]
+  activeFilter?: Set<string>
+  onFilterChange?: (val: string) => void
+  openPanel?: () => void
+  pinned?: boolean
   className?: string
 }) {
   const isActive = sortCol === col.key
+  const stickyStyle: React.CSSProperties = pinned
+    ? { position: 'sticky', left: 0, zIndex: 2, background: 'var(--dt-header-bg)', boxShadow: '2px 0 4px var(--sticky-edge-fade)' }
+    : {}
+
   return (
-    <TableHead className={`${TH} ${className ?? ''}`}>
+    <TableHead className={`${TH} ${className ?? ''}`} style={stickyStyle}>
       <DropdownMenu>
         <div
           className="flex items-center gap-1 group/col-hdr cursor-pointer select-none w-full"
@@ -423,28 +443,67 @@ function ColHeader({
           </DropdownMenuTrigger>
         </div>
 
-        <DropdownMenuContent align="start" className="w-44">
+        <DropdownMenuContent align="start" className="w-48">
+          {/* Sort */}
           {col.sortKey && (
             <>
               <DropdownMenuItem onClick={() => onSort(col.key, 'asc')}>
-                <i className="fa-light fa-arrow-up text-xs" aria-hidden="true" />
+                <i className="fa-light fa-arrow-up" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
                 Sort ascending
                 {isActive && sortDir === 'asc' && <i className="fa-solid fa-check text-xs ml-auto" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onSort(col.key, 'desc')}>
-                <i className="fa-light fa-arrow-down text-xs" aria-hidden="true" />
+                <i className="fa-light fa-arrow-down" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
                 Sort descending
                 {isActive && sortDir === 'desc' && <i className="fa-solid fa-check text-xs ml-auto" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />}
               </DropdownMenuItem>
-              {col.hideable && <DropdownMenuSeparator />}
+              <DropdownMenuSeparator />
             </>
           )}
-          {col.hideable && (
-            <DropdownMenuItem onClick={() => onHide(col.key)}>
-              <i className="fa-light fa-eye-slash text-xs" aria-hidden="true" />
-              Hide column
-            </DropdownMenuItem>
+
+          {/* Inline enum filter — for Status, Type, Difficulty, Bloom's */}
+          {filterOptions && filterOptions.length > 0 && activeFilter && onFilterChange && (
+            <>
+              <div style={{ padding: '4px 8px 2px', fontSize: 10, fontWeight: 700,
+                textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted-foreground)' }}>
+                Filter
+              </div>
+              {filterOptions.map(opt => (
+                <DropdownMenuCheckboxItem
+                  key={opt}
+                  checked={activeFilter.has(opt)}
+                  onCheckedChange={() => onFilterChange(opt)}
+                >
+                  {opt}
+                </DropdownMenuCheckboxItem>
+              ))}
+              <DropdownMenuSeparator />
+            </>
           )}
+
+          {/* Text column filter → open panel */}
+          {col.key === 'lastEditedBy' && openPanel && (
+            <>
+              <DropdownMenuItem onClick={openPanel}>
+                <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
+                Filter by {col.label}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
+
+          {/* Column actions */}
+          <DropdownMenuItem onClick={() => onPin(col.key)}>
+            <i className="fa-light fa-thumbtack" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
+            {pinned ? 'Unpin column' : 'Pin left'}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => col.hideable && onHide(col.key)}
+            disabled={!col.hideable}
+          >
+            <i className="fa-light fa-eye-slash" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
+            Hide column
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </TableHead>
@@ -476,10 +535,12 @@ export function QBTable() {
   const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set())
   const [typeFilter, setTypeFilter] = useState<Set<string>>(new Set())
   const [diffFilter, setDiffFilter] = useState<Set<string>>(new Set())
+  const [bloomsFilter, setBloomsFilter] = useState<Set<string>>(new Set())
   const [bookmarkOnly, setBookmarkOnly] = useState(false)
   const [sortCol, setSortCol] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [hiddenCols, setHiddenCols] = useState<Set<ColKey>>(new Set())
+  const [pinnedCols, setPinnedCols] = useState<Set<string>>(new Set())
   const searchRef = useRef<HTMLInputElement>(null)
 
   function toggleFilter<T extends string>(set: Set<T>, value: T): Set<T> {
@@ -494,8 +555,8 @@ export function QBTable() {
     setSortDir(dir)
   }
 
-  const hasActiveFilters = statusFilter.size > 0 || typeFilter.size > 0 || diffFilter.size > 0
-  const activeFilterCount = statusFilter.size + typeFilter.size + diffFilter.size + (bookmarkOnly ? 1 : 0)
+  const hasActiveFilters = statusFilter.size > 0 || typeFilter.size > 0 || diffFilter.size > 0 || bloomsFilter.size > 0
+  const activeFilterCount = statusFilter.size + typeFilter.size + diffFilter.size + bloomsFilter.size + (bookmarkOnly ? 1 : 0)
   const hasAnyFilter = search || hasActiveFilters || bookmarkOnly
 
   function clearAllFilters() {
@@ -503,6 +564,7 @@ export function QBTable() {
     setStatusFilter(new Set())
     setTypeFilter(new Set())
     setDiffFilter(new Set())
+    setBloomsFilter(new Set())
     setBookmarkOnly(false)
   }
 
@@ -512,6 +574,7 @@ export function QBTable() {
     if (statusFilter.size > 0 && !statusFilter.has(q.status)) return false
     if (typeFilter.size > 0 && !typeFilter.has(q.type)) return false
     if (diffFilter.size > 0 && !diffFilter.has(q.difficulty)) return false
+    if (bloomsFilter.size > 0 && !bloomsFilter.has(q.blooms)) return false
     if (bookmarkOnly && !favoritedIds.has(q.id)) return false
     return true
   })
@@ -541,7 +604,7 @@ export function QBTable() {
   const pageQuestions = sortedQuestions.slice((page - 1) * perPage, page * perPage)
 
   // Reset to page 1 when filters/sort change
-  useEffect(() => { setPage(1) }, [search, statusFilter, typeFilter, diffFilter, bookmarkOnly, sortCol, sortDir])
+  useEffect(() => { setPage(1) }, [search, statusFilter, typeFilter, diffFilter, bloomsFilter, bookmarkOnly, sortCol, sortDir])
 
   const allSelected = pageQuestions.length > 0 && pageQuestions.every(q => selectedQuestionIds.has(q.id))
   const someSelected = pageQuestions.some(q => selectedQuestionIds.has(q.id)) && !allSelected
@@ -715,29 +778,49 @@ export function QBTable() {
                       />
                     </div>
                   </TableHead>
-                  {QB_COLS.filter(c => !hiddenCols.has(c.key) && c.key !== 'select' && c.key !== 'actions').map(col => (
-                    <ColHeader
-                      key={col.key}
-                      col={col}
-                      sortCol={sortCol}
-                      sortDir={sortDir}
-                      onSort={handleSort}
-                      onHide={key => setHiddenCols(prev => new Set([...prev, key]))}
-                      className={
-                        col.key === 'status'       ? 'w-28' :
-                        col.key === 'type'         ? 'w-24' :
-                        col.key === 'difficulty'   ? 'w-24' :
-                        col.key === 'blooms'       ? 'w-28' :
-                        col.key === 'location'     ? 'w-44' :
-                        col.key === 'creator'      ? 'w-40' :
-                        col.key === 'lastEditedBy' ? 'w-32' :
-                        col.key === 'usage'        ? 'w-16' :
-                        col.key === 'pbis'         ? 'w-20' :
-                        col.key === 'version'      ? 'w-16' :
-                        col.key === 'favorited'    ? 'w-8'  : ''
-                      }
-                    />
-                  ))}
+                  {QB_COLS.filter(c => !hiddenCols.has(c.key) && c.key !== 'select' && c.key !== 'actions').map(col => {
+                    // Map col key → its active filter Set and setter
+                    const filterSetMap: Partial<Record<string, { set: Set<string>; setter: React.Dispatch<React.SetStateAction<Set<string>>> }>> = {
+                      status:     { set: statusFilter,  setter: setStatusFilter  },
+                      type:       { set: typeFilter,    setter: setTypeFilter    },
+                      difficulty: { set: diffFilter,    setter: setDiffFilter    },
+                      blooms:     { set: bloomsFilter,  setter: setBloomsFilter  },
+                    }
+                    const filterEntry = filterSetMap[col.key]
+                    return (
+                      <ColHeader
+                        key={col.key}
+                        col={col}
+                        sortCol={sortCol}
+                        sortDir={sortDir}
+                        onSort={handleSort}
+                        onHide={key => setHiddenCols(prev => new Set([...prev, key as ColKey]))}
+                        onPin={key => setPinnedCols(prev => {
+                          const next = new Set(prev)
+                          if (next.has(key)) next.delete(key); else next.add(key)
+                          return next
+                        })}
+                        filterOptions={ENUM_FILTERS[col.key]}
+                        activeFilter={filterEntry?.set}
+                        onFilterChange={filterEntry ? (val) => filterEntry.setter(prev => toggleFilter(prev, val)) : undefined}
+                        openPanel={col.key === 'lastEditedBy' ? () => setPropertiesOpen(true) : undefined}
+                        pinned={pinnedCols.has(col.key)}
+                        className={
+                          col.key === 'status'       ? 'w-28' :
+                          col.key === 'type'         ? 'w-24' :
+                          col.key === 'difficulty'   ? 'w-24' :
+                          col.key === 'blooms'       ? 'w-28' :
+                          col.key === 'location'     ? 'w-44' :
+                          col.key === 'creator'      ? 'w-40' :
+                          col.key === 'lastEditedBy' ? 'w-32' :
+                          col.key === 'usage'        ? 'w-16' :
+                          col.key === 'pbis'         ? 'w-20' :
+                          col.key === 'version'      ? 'w-16' :
+                          col.key === 'favorited'    ? 'w-8'  : ''
+                        }
+                      />
+                    )
+                  })}
                   <TableHead className={`${TH} w-10`} />
                 </TableRow>
               </TableHeader>
