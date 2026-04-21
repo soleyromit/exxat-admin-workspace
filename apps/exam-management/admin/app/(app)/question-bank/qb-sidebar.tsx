@@ -8,9 +8,15 @@ import {
   InputGroup, InputGroupAddon, Input,
 } from '@exxat/ds/packages/ui/src'
 
+function courseFolderLabel(name: string): string {
+  // Input: "PHAR101 Question Bank (QB)" → Output: "PHAR101 · Question Bank"
+  const match = name.match(/^([A-Z0-9]+)\s/)
+  if (!match) return name
+  return `${match[1]} · Question Bank`
+}
+
 function getFolderIcon(node: FolderNode, _depth: number, expanded: boolean, selected: boolean) {
   if (node.isCourse) return { cls: 'fa-solid fa-graduation-cap', color: selected ? 'var(--brand-color)' : 'var(--muted-foreground)' }
-  if (node.locked)   return { cls: 'fa-solid fa-lock', color: 'var(--qb-locked)' }
   return {
     cls: expanded ? 'fa-solid fa-folder-open' : (selected ? 'fa-solid fa-folder' : 'fa-regular fa-folder'),
     color: selected ? 'var(--brand-color)' : 'var(--muted-foreground)',
@@ -34,22 +40,21 @@ function FolderContextMenu({ node, isAdmin }: { node: FolderNode; isAdmin: boole
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
         <DropdownMenuItem onClick={() => {}}>
-          <i className="fa-light fa-folder-plus" aria-hidden="true" />
+          <i className="fa-light fa-folder-plus" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
           New Subfolder
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setCollaboratorsModalFolderId(node.id)}>
-          <i className="fa-light fa-users" aria-hidden="true" />
+          <i className="fa-light fa-users" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
           Manage Access
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => {}}>
-          <i className="fa-light fa-pen" aria-hidden="true" />
+          <i className="fa-light fa-pencil" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
           Rename
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onClick={() => {}}>
-          <i className="fa-light fa-trash-can" aria-hidden="true" />
-          Delete Folder
+          <i className="fa-light fa-trash" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+          Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -159,10 +164,10 @@ function FolderRow({
         onClick={() => {
           if (!isRenaming) {
             setSelectedFolderId(node.id)
-            if (hasChildren && !node.locked) toggleFolder(node.id)
+            if (hasChildren) toggleFolder(node.id)
           }
         }}
-        draggable={isAdmin && !isRenaming && !node.locked}
+        draggable={isAdmin && !isRenaming}
         onDragStart={(e) => {
           e.stopPropagation()
           setDraggedFolderId(node.id)
@@ -207,12 +212,12 @@ function FolderRow({
           size="icon-xs"
           onClick={(e) => {
             e.stopPropagation()
-            if (hasChildren && !node.locked) toggleFolder(node.id)
+            if (hasChildren) toggleFolder(node.id)
           }}
           aria-label={isExpanded ? 'Collapse' : 'Expand'}
           style={{
-            opacity: hasChildren && !node.locked ? 1 : 0,
-            cursor: hasChildren && !node.locked ? 'pointer' : 'default',
+            opacity: hasChildren ? 1 : 0,
+            cursor: hasChildren ? 'pointer' : 'default',
             width: 16,
             height: 16,
             padding: 0,
@@ -256,10 +261,9 @@ function FolderRow({
             fontSize: 13,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             fontWeight: isSelected ? 500 : 400,
-            color: isSelected ? 'var(--brand-color)' : node.locked ? 'var(--muted-foreground)' : 'var(--foreground)',
-            fontStyle: node.locked ? 'italic' : 'normal',
+            color: isSelected ? 'var(--brand-color)' : 'var(--foreground)',
           }}>
-            {node.name}
+            {node.isCourse ? courseFolderLabel(node.name) : node.name}
           </span>
         )}
 
