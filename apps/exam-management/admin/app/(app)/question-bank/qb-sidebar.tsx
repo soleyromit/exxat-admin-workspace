@@ -46,6 +46,75 @@ function getFolderIcon(node: FolderNode, expanded: boolean, selected: boolean) {
   }
 }
 
+function DeleteFolderDialog({
+  node,
+  open,
+  onClose,
+}: {
+  node: FolderNode
+  open: boolean
+  onClose: () => void
+}) {
+  const { folders, questions, deleteFolder } = useQB()
+
+  const affectedFolderIds = getDescendantIds(node.id, folders)
+  const affectedQuestions = questions.filter(q => affectedFolderIds.has(q.folder))
+  const usedQuestions = affectedQuestions.filter(q => (q.usedInSections?.length ?? 0) > 0)
+
+  function handleDelete() {
+    deleteFolder(node.id)
+    onClose()
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Delete &quot;{node.name}&quot;?</DialogTitle>
+        </DialogHeader>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <p style={{ fontSize: 13, color: 'var(--foreground)' }}>
+            This will permanently delete the folder and all subfolders.
+          </p>
+          {affectedQuestions.length > 0 && (
+            <div style={{
+              padding: 12, borderRadius: 8,
+              backgroundColor: 'var(--qb-delete-impact-bg)',
+              border: '1px solid var(--qb-delete-impact-border)',
+            }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--destructive)', marginBottom: 6 }}>
+                <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ marginRight: 6 }} />
+                Impact: {affectedQuestions.length} question{affectedQuestions.length !== 1 ? 's' : ''} will be removed
+              </p>
+              {usedQuestions.length > 0 && (
+                <>
+                  <p style={{ fontSize: 11, color: 'var(--destructive)', marginBottom: 4 }}>
+                    {usedQuestions.length} question{usedQuestions.length !== 1 ? 's are' : ' is'} used in assessments:
+                  </p>
+                  <div style={{ maxHeight: 120, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    {usedQuestions.map(q => (
+                      <div key={q.id} style={{ fontSize: 11, color: 'var(--foreground)' }}>
+                        · {q.title.slice(0, 60)}{q.title.length > 60 ? '…' : ''}{' '}
+                        <span style={{ color: 'var(--muted-foreground)' }}>
+                          ({q.usedInSections!.join(', ')})
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="destructive" onClick={handleDelete}>Delete folder</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function MoveFolderDialog({
   node,
   open,
@@ -132,6 +201,7 @@ function FolderContextMenu({
   onAddSubfolder,
   onChangeIcon,
   onMove,
+  onDelete,
 }: {
   node: FolderNode
   isAdmin: boolean
@@ -139,6 +209,7 @@ function FolderContextMenu({
   onAddSubfolder: () => void
   onChangeIcon: (icon: string) => void
   onMove: () => void
+  onDelete: () => void
 }) {
   const { setCollaboratorsModalFolderId } = useQB()
   const [iconPickerOpen, setIconPickerOpen] = useState(false)
@@ -220,7 +291,7 @@ function FolderContextMenu({
           Move to subfolder
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onClick={() => {}}>
+        <DropdownMenuItem variant="destructive" onClick={() => onDelete()}>
           <i className="fa-light fa-trash-can" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
           Delete
         </DropdownMenuItem>
@@ -317,6 +388,7 @@ function FolderRow({
   const [renameName, setRenameName] = useState(node.name)
   const [showingInlineCreate, setShowingInlineCreate] = useState(false)
   const [moveFolderDialogOpen, setMoveFolderDialogOpen] = useState(false)
+  const [deleteFolderDialogOpen, setDeleteFolderDialogOpen] = useState(false)
   const renameRef = useRef<HTMLInputElement>(null)
 
   const isSelected = selectedFolderId === node.id
@@ -469,6 +541,7 @@ function FolderRow({
           onAddSubfolder={() => setShowingInlineCreate(true)}
           onChangeIcon={(icon) => setFolderIcon(node.id, icon)}
           onMove={() => setMoveFolderDialogOpen(true)}
+          onDelete={() => setDeleteFolderDialogOpen(true)}
         />
       </div>
       {showingInlineCreate && (
@@ -486,6 +559,13 @@ function FolderRow({
           node={node}
           open={moveFolderDialogOpen}
           onClose={() => setMoveFolderDialogOpen(false)}
+        />
+      )}
+      {deleteFolderDialogOpen && (
+        <DeleteFolderDialog
+          node={node}
+          open={deleteFolderDialogOpen}
+          onClose={() => setDeleteFolderDialogOpen(false)}
         />
       )}
     </div>

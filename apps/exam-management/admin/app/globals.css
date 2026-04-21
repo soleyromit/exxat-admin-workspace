@@ -78,6 +78,10 @@
   --qb-status-saved-fg: oklch(0.35 0.12 200);
   --qb-status-draft-bg: oklch(0.93 0.03 80 / 0.25);
   --qb-status-draft-fg: oklch(0.45 0.1 70);
+
+  /* Folder delete impact panel */
+  --qb-delete-impact-bg:     color-mix(in oklch, var(--destructive) 8%, var(--background));
+  --qb-delete-impact-border: color-mix(in oklch, var(--destructive) 20%, transparent);
 }
 
 /* Courses table row tints */
