@@ -77,3 +77,36 @@ export interface Assessment {
   questionCount: number
   diffDistribution: Record<QDiff, number>
 }
+
+export interface AssessmentQuestion {
+  questionId: string
+  order: number
+}
+
+export interface AssessmentDraft {
+  id: string
+  title: string
+  courseId: string
+  offeringId: string
+  questions: AssessmentQuestion[]
+}
+
+export interface SmartView {
+  id: string
+  label: string
+  isSystem: boolean
+  filters: {
+    difficulty?: QDiff[]
+    type?: QType[]
+    blooms?: QBlooms[]
+    unusedOnly?: boolean
+  }
+}
+
+export const SYSTEM_SMART_VIEWS: SmartView[] = [
+  { id: 'all',     label: 'All questions',  isSystem: true, filters: {} },
+  { id: 'hard',    label: 'Hard only',      isSystem: true, filters: { difficulty: ['Hard'] } },
+  { id: 'mcq-med', label: 'MCQ · Medium',   isSystem: true, filters: { type: ['MCQ'], difficulty: ['Medium'] } },
+  { id: 'apply',   label: 'Apply + Analyze', isSystem: true, filters: { blooms: ['Apply', 'Analyze'] } },
+  { id: 'unused',  label: 'Not yet used',   isSystem: true, filters: { unusedOnly: true } },
+]

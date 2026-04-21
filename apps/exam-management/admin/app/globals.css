@@ -86,6 +86,16 @@
   --courses-offering-row-bg: color-mix(in oklch, var(--brand-tint) 18%, var(--background));
 }
 
+/* Assessment Builder row tints */
+:root {
+  --ab-selector-bar-bg:    color-mix(in oklch, var(--brand-tint) 40%, var(--background));
+  --ab-panel-bg:           color-mix(in oklch, var(--brand-tint) 25%, var(--background));
+  --ab-smart-view-bar-bg:  color-mix(in oklch, var(--brand-tint) 20%, var(--background));
+  --ab-picker-selected-bg: color-mix(in oklch, var(--brand-tint) 35%, var(--background));
+  --ab-chart-bg:           color-mix(in oklch, var(--brand-tint) 15%, var(--background));
+  --ab-active-border:      color-mix(in oklch, var(--brand-color) 20%, transparent);
+}
+
 /* QB hover behaviors */
 .qb-folder-menu-btn {
   opacity: 0;
