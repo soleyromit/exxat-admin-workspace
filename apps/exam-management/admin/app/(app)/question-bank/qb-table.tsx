@@ -15,7 +15,7 @@ import type { Question } from '@/lib/qb-types'
 import { RequestEditAccessModal } from './qb-modals'
 
 // ── Shared header cell class (matches DS DataTable th) ───────────────────────
-const TH = 'h-9 px-3 text-left align-middle text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg border-b border-border select-none whitespace-nowrap'
+const TH = '!h-9 px-3 text-left align-middle text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg border-b border-border select-none whitespace-nowrap'
 
 // ── Shared body cell class (matches DS DataTable td) ─────────────────────────
 const TD = 'px-3 py-2.5 align-middle border-b border-border group-last/row:border-b-0 whitespace-nowrap'
@@ -676,7 +676,7 @@ export function QBTable() {
       ) : (
         <>
           {/* ── Table container — matches DS DataTable visual ── */}
-          <div className="overflow-x-auto border border-border rounded-lg">
+          <div className="border border-border rounded-lg">
             <Table className="w-full text-sm border-separate border-spacing-0">
               <TableHeader>
                 <TableRow>
@@ -717,7 +717,7 @@ export function QBTable() {
                   <TableHead className={`${TH} w-10`} />
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="[&_tr:last-child]:border-b-0">
                 {pageQuestions.map((q) => {
                   const isSelected = selectedQuestionIds.has(q.id)
                   const isHovered = rowHoverId === q.id
@@ -752,7 +752,7 @@ export function QBTable() {
                       draggable={isAdmin}
                       onDragStart={() => setDraggedQuestionId(q.id)}
                       onDragEnd={() => setDraggedQuestionId(null)}
-                      className="group/row transition-colors hover:bg-dt-row-hover"
+                      className="group/row transition-colors hover:!bg-dt-row-hover"
                       style={{
                         backgroundColor: rowBg,
                         opacity: (!isAdmin && !isOwner) ? 0.72 : 1,
