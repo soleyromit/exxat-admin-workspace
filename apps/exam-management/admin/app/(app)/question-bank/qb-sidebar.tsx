@@ -456,6 +456,12 @@ function FolderRow({
     setHoverOpen(false)
   }
 
+  useEffect(() => {
+    return () => {
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
+    }
+  }, [])
+
   const isSelected = selectedFolderId === node.id
   const isExpanded = expandedFolderIds.has(node.id)
   const isDragOver = dragOverFolderId === node.id
@@ -614,7 +620,7 @@ function FolderRow({
         />
       </div>
         </PopoverTrigger>
-        <PopoverContent side="right" align="start" className="w-52 p-3" style={{ zIndex: 100 }}>
+        <PopoverContent side="right" align="start" className="w-52 p-3">
           <FolderDiffPopover folderId={node.id} />
         </PopoverContent>
       </Popover>
