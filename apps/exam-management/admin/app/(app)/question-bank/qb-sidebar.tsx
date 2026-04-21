@@ -414,7 +414,7 @@ export function QBSidebar() {
         {/* ── Courses section header ── */}
         <div style={{ padding: '4px 12px 6px' }}>
           <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)' }}>
-            {isAdmin ? 'Courses' : 'My Courses'}
+            {isAdmin ? 'Question Bank' : 'My Question Bank'}
           </span>
         </div>
 

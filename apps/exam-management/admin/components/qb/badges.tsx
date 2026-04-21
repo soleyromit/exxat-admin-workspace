@@ -44,38 +44,19 @@ export function TypeBadge({ type }: { type: QType }) {
 
 // ── Difficulty — neutral weight text ─────────────────────────────────────────
 export function DiffBadge({ diff }: { diff: QDiff }) {
-  const styles: Record<QDiff, { fontWeight: number; color: string }> = {
-    Easy:   { fontWeight: 400, color: 'var(--qb-diff-easy)' },
-    Medium: { fontWeight: 600, color: 'var(--qb-diff-medium)' },
-    Hard:   { fontWeight: 800, color: 'var(--qb-diff-hard)' },
-  }
-  const s = styles[diff]
   return (
-    <span style={{ fontSize: 11.5, fontWeight: s.fontWeight, color: s.color, letterSpacing: diff === 'Hard' ? '-0.01em' : undefined }}>
+    <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)' }}>
       {diff}
     </span>
   )
 }
 
 // ── Blooms Badge ──────────────────────────────────────────────────────────────
-const BLOOMS_COLORS: Record<QBlooms, string> = {
-  Remember:   'var(--chart-3)',
-  Understand: 'var(--chart-2)',
-  Apply:      'var(--chart-1)',
-  Analyze:    'var(--chart-4)',
-  Evaluate:   'var(--chart-5)',
-  Create:     'var(--brand-color)',
-}
-
 export function BloomsBadge({ blooms }: { blooms: QBlooms }) {
   return (
-    <Badge
-      variant="secondary"
-      className="rounded font-medium whitespace-nowrap"
-      style={{ fontSize: 10, padding: '1px 6px', color: BLOOMS_COLORS[blooms], backgroundColor: `color-mix(in oklch, ${BLOOMS_COLORS[blooms]} 12%, var(--background))` }}
-    >
+    <span style={{ fontSize: 12, color: 'var(--muted-foreground)', fontWeight: 500 }}>
       {blooms}
-    </Badge>
+    </span>
   )
 }
 

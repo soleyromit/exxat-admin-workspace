@@ -33,9 +33,8 @@ const QB_COLS = [
   { key: 'creator',      label: 'Creator',        sortKey: 'creator',     hideable: true  },
   { key: 'lastEditedBy', label: 'Last Edited By', sortKey: null,          hideable: true  },
   { key: 'usage',        label: 'Usage',          sortKey: 'usage',       hideable: true  },
-  { key: 'pbis',         label: 'P–',             sortKey: 'pbis',        hideable: true  },
+  { key: 'pbis',         label: 'P-Biserial',     sortKey: 'pbis',        hideable: true  },
   { key: 'version',      label: 'Ver.',           sortKey: null,          hideable: true  },
-  { key: 'favorited',    label: '★',              sortKey: null,          hideable: false },
   { key: 'actions',      label: '',               sortKey: null,          hideable: false, sortable: false },
 ] as const
 
@@ -44,31 +43,23 @@ type ColKey = (typeof QB_COLS)[number]['key']
 // ── Location path cell ───────────────────────────────────────────────────────
 function LocationCell({ question }: { question: Question }) {
   const { folders, navigateToFolder } = useQB()
-  if (!question.folderPath) return <span style={{ color: 'var(--muted-foreground)' }}>—</span>
+  if (!question.folderPath) return <span style={{ color: 'var(--muted-foreground)', fontSize: 11 }}>—</span>
   const parts = question.folderPath.split(' / ')
-  const courseRoot = parts[0]   // e.g. "PHAR101 QB"
-  const sub = parts.slice(1).join(' / ')  // e.g. "Antibiotics & Antimicrobials"
-  const courseCode = courseRoot.split(' ')[0]  // e.g. "PHAR101"
-  const rootFolder = folders.find(f => f.isCourse && f.name.startsWith(courseCode))
+  // Show the deepest folder (last segment)
+  const displayName = parts[parts.length - 1]
+  // Find the folder by matching the name
+  const targetFolder = folders.find(f => f.name === displayName || question.folderPath?.endsWith(f.name))
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11 }}>
-      <Button
-        variant="ghost"
-        size="icon-xs"
-        onClick={(e) => { e.stopPropagation(); if (rootFolder) navigateToFolder(rootFolder.id) }}
-        className="h-auto w-auto p-0 font-normal"
-        style={{ color: 'var(--brand-color)', textDecoration: 'underline', textUnderlineOffset: 2, fontSize: 11 }}
-        aria-label={`Navigate to ${courseRoot}`}
-      >
-        {courseRoot}
-      </Button>
-      {sub && (
-        <>
-          <span style={{ opacity: 0.4, fontSize: 11 }}>›</span>
-          <span style={{ color: 'var(--muted-foreground)', fontSize: 11 }}>{sub}</span>
-        </>
-      )}
-    </div>
+    <Button
+      variant="ghost"
+      size="icon-xs"
+      onClick={(e) => { e.stopPropagation(); if (targetFolder) navigateToFolder(targetFolder.id) }}
+      className="h-auto w-auto p-0 font-normal text-left"
+      style={{ color: 'var(--brand-color)', textDecoration: 'underline', textUnderlineOffset: 2, fontSize: 11, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}
+      aria-label={`Navigate to ${displayName}`}
+    >
+      {displayName}
+    </Button>
   )
 }
 
@@ -91,10 +82,9 @@ function FavoritedCell({ questionId }: { questionId: string }) {
 
 // ── Active filter chips ───────────────────────────────────────────────────────
 function ActiveFilterChips() {
-  const { myQuestionsOnly, setMyQuestionsOnly, favoritesFilter, setFavoritesFilter } = useQB()
+  const { myQuestionsOnly, setMyQuestionsOnly } = useQB()
   const chips: { label: string; onRemove: () => void }[] = []
   if (myQuestionsOnly) chips.push({ label: 'My Questions', onRemove: () => setMyQuestionsOnly(false) })
-  if (favoritesFilter) chips.push({ label: 'Favorites', onRemove: () => setFavoritesFilter(false) })
   if (chips.length === 0) return null
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
@@ -525,11 +515,43 @@ function ColHeader({
             </>
           )}
 
-          {/* Column actions */}
+          {/* Search / text tools */}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => {}}>
+            <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
+            Search
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => {}}>
+            <i className="fa-light fa-text-size" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
+            Wrap text
+          </DropdownMenuItem>
+
+          {/* Pin */}
+          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => onPin(col.key)}>
             <i className="fa-light fa-thumbtack" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
             {pinned ? 'Unpin column' : 'Pin left'}
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => {}}>
+            <i className="fa-light fa-thumbtack fa-flip-horizontal" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
+            Pin right
+          </DropdownMenuItem>
+
+          {/* Advanced column actions */}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => {}}>
+            <i className="fa-light fa-filter" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
+            Filter by this column
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => {}}>
+            <i className="fa-light fa-layer-group" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
+            Group by this column
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => {}}>
+            <i className="fa-light fa-highlighter" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
+            Add conditional rule
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => col.hideable && onHide(col.key)}
             disabled={!col.hideable}
@@ -553,7 +575,6 @@ export function QBTable() {
     setDraggedQuestionId,
     openMenuQuestionId, setOpenMenuQuestionId,
     myQuestionsOnly, setMyQuestionsOnly,
-    favoritesFilter, setFavoritesFilter,
     favoritedIds,
     columnOrder, setColumnOrder,
   } = useQB()
@@ -584,7 +605,7 @@ export function QBTable() {
   // ── Visible columns ordered by columnOrder (hideable) + fixed positions ──
   const visibleCols = useMemo(() => {
     const FIXED_START = ['select', 'title', 'status'] as const
-    const FIXED_END   = ['favorited', 'actions'] as const
+    const FIXED_END   = ['actions'] as const
     const reorderable = columnOrder.filter(k => !hiddenCols.has(k as ColKey))
     return [
       ...QB_COLS.filter(c => FIXED_START.includes(c.key as typeof FIXED_START[number]) && !hiddenCols.has(c.key as ColKey)),
@@ -671,17 +692,10 @@ export function QBTable() {
 
   return (
     <div className="flex flex-col flex-1 overflow-auto pb-4" style={{ padding: '16px 16px 0' }}>
-      {/* ── Toolbar: count left, icon controls right ── */}
+      {/* ── Toolbar: icon controls ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, minHeight: 32 }}>
-        {/* Count */}
-        <span style={{ fontSize: 12, color: 'var(--muted-foreground)', flex: 1 }}>
-          {hasAnyFilter
-            ? `${filteredQuestions.length} of ${visibleQuestions.length} questions`
-            : `${visibleQuestions.length} questions`}
-        </span>
-
-        {/* Right: icon controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        {/* Icon controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
 
           {/* Search — expandable */}
           {searchOpen ? (
@@ -710,7 +724,7 @@ export function QBTable() {
             </InputGroup>
           ) : (
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon-sm"
               onClick={() => { setSearchOpen(true); setTimeout(() => searchRef.current?.focus(), 30) }}
               aria-label="Search questions"
@@ -722,7 +736,7 @@ export function QBTable() {
 
           {/* Bookmark toggle — star icon */}
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon-sm"
             onClick={() => setBookmarkOnly(v => !v)}
             aria-pressed={bookmarkOnly}
@@ -744,7 +758,7 @@ export function QBTable() {
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="outline" size="icon-sm"
+                variant="ghost" size="icon-sm"
                 aria-label="My questions"
                 aria-pressed={myQuestionsOnly}
                 onClick={() => setMyQuestionsOnly(!myQuestionsOnly)}
@@ -756,26 +770,10 @@ export function QBTable() {
             <TooltipContent>My questions only</TooltipContent>
           </Tooltip>
 
-          {/* Favorites toggle */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline" size="icon-sm"
-                aria-label="Favorites"
-                aria-pressed={favoritesFilter}
-                onClick={() => setFavoritesFilter(!favoritesFilter)}
-                style={favoritesFilter ? { borderColor: 'var(--chart-4)', color: 'var(--chart-4)', backgroundColor: 'color-mix(in oklch, var(--chart-4) 10%, var(--background))' } : {}}
-              >
-                <i className={favoritesFilter ? 'fa-solid fa-star' : 'fa-light fa-star'} aria-hidden="true" style={{ fontSize: 13 }} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Favorites only</TooltipContent>
-          </Tooltip>
-
           {/* Properties / filter sheet trigger */}
           <div style={{ position: 'relative' }}>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon-sm"
               onClick={() => setPropertiesOpen(true)}
               aria-label="Table properties"
@@ -872,9 +870,8 @@ export function QBTable() {
                           col.key === 'creator'      ? 'w-40' :
                           col.key === 'lastEditedBy' ? 'w-32' :
                           col.key === 'usage'        ? 'w-16' :
-                          col.key === 'pbis'         ? 'w-20' :
-                          col.key === 'version'      ? 'w-16' :
-                          col.key === 'favorited'    ? 'w-8'  : ''
+                          col.key === 'pbis'         ? 'w-24' :
+                          col.key === 'version'      ? 'w-16' : ''
                         }
                         draggable={col.hideable}
                         onDragStart={col.hideable ? () => { dragColRef.current = col.key } : undefined}
@@ -916,12 +913,7 @@ export function QBTable() {
                   const creatorPersona = MOCK_QB_PERSONAS.find(p => p.id === (q.creator ?? ''))
                     ?? { initials: '?', color: 'var(--muted)', name: 'Unknown', trustLevel: 'junior' as const, id: '', role: 'Faculty' as const }
 
-                  // Row background: QB-specific state overrides DS defaults
-                  const rowBg = isSelected
-                    ? 'var(--dt-row-selected)'
-                    : q.pinned
-                      ? 'color-mix(in oklch, var(--brand-color) 4%, var(--background))'
-                      : undefined
+                  const rowBg = isSelected ? 'var(--dt-row-selected)' : undefined
 
                   return (
                     <TableRow
@@ -986,18 +978,22 @@ export function QBTable() {
                                         </Badge>
                                       )}
                                     </div>
-                                    <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--foreground)', lineHeight: 1.4 }}>
-                                      {q.title}
-                                    </div>
-                                    <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                      <Badge
-                                        variant="secondary"
-                                        className="rounded font-mono border border-border"
-                                        style={{ fontSize: 10, padding: '1px 5px' }}
-                                      >
-                                        {q.code}
-                                      </Badge>
-                                      {!isAdmin && !isOwner && isHovered && (
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <div style={{
+                                          fontSize: 12.5, fontWeight: 500, color: 'var(--foreground)', lineHeight: 1.4,
+                                          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                                          cursor: 'default'
+                                        }}>
+                                          {q.title}
+                                        </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent className="max-w-xs">
+                                        {q.title}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                    {!isAdmin && !isOwner && isHovered && (
+                                      <div style={{ marginTop: 3 }}>
                                         <Badge
                                           variant="secondary"
                                           className="rounded"
@@ -1005,9 +1001,11 @@ export function QBTable() {
                                         >
                                           View only
                                         </Badge>
-                                      )}
-                                    </div>
+                                      </div>
+                                    )}
                                   </div>
+                                  {/* Star — show on hover, always show when favorited */}
+                                  <FavoritedCell questionId={q.id} />
                                 </div>
                               </TableCell>
                             )
@@ -1058,18 +1056,36 @@ export function QBTable() {
                                 </div>
                               </TableCell>
                             )
-                          case 'lastEditedBy':
-                            return (
+                          case 'lastEditedBy': {
+                            const editorId = q.lastEditedBy ?? q.creator
+                            if (!editorId) return (
                               <TableCell key="lastEditedBy" className={`${TD} w-32`} style={pinnedStyle('lastEditedBy', pinnedCols)}>
-                                <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
-                                  {q.lastEditedBy ?? q.creator ?? '—'}
-                                </span>
+                                <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>—</span>
                               </TableCell>
                             )
+                            const editorPersona = MOCK_QB_PERSONAS.find(p => p.id === editorId)
+                              ?? { initials: editorId.slice(0, 2).toUpperCase(), color: 'var(--muted)', name: editorId, trustLevel: 'junior' as const, id: editorId, role: 'Faculty' as const }
+                            return (
+                              <TableCell key="lastEditedBy" className={`${TD} w-32`} style={pinnedStyle('lastEditedBy', pinnedCols)}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <div style={{
+                                    width: 22, height: 22, borderRadius: '50%', background: editorPersona.color,
+                                    color: 'var(--primary-foreground)', fontSize: 8, fontWeight: 700,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                                  }}>
+                                    {editorPersona.initials}
+                                  </div>
+                                  <span style={{ fontSize: 11, color: 'var(--foreground)' }}>{editorPersona.name}</span>
+                                </div>
+                              </TableCell>
+                            )
+                          }
                           case 'usage':
                             return (
-                              <TableCell key="usage" className={`${TD} w-16 text-sm text-foreground`} style={pinnedStyle('usage', pinnedCols)}>
-                                {q.usage}
+                              <TableCell key="usage" className={`${TD} w-16`} style={pinnedStyle('usage', pinnedCols)}>
+                                {(q.usage ?? 0) === 0
+                                  ? <span style={{ color: 'var(--muted-foreground)', fontSize: 12 }}>—</span>
+                                  : <span style={{ fontSize: 12 }}>×{q.usage}</span>}
                               </TableCell>
                             )
                           case 'pbis':
@@ -1121,12 +1137,6 @@ export function QBTable() {
                                 </Popover>
                               </TableCell>
                             )
-                          case 'favorited':
-                            return (
-                              <TableCell key="favorited" className={`${TD} w-8`} style={pinnedStyle('favorited', pinnedCols)}>
-                                <FavoritedCell questionId={q.id} />
-                              </TableCell>
-                            )
                           case 'actions':
                             return null
                           default:
@@ -1142,36 +1152,30 @@ export function QBTable() {
                               <i className={`fa-${openMenuQuestionId === q.id ? 'solid' : 'regular'} fa-ellipsis`} aria-hidden="true" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-44">
-                            {(isAdmin || isOwner) && (
-                              <DropdownMenuItem onClick={() => {}}>
-                                <i className="fa-light fa-pen" aria-hidden="true" />
-                                Edit
-                              </DropdownMenuItem>
-                            )}
+                          <DropdownMenuContent align="end" className="w-48">
                             <DropdownMenuItem onClick={() => {}}>
-                              <i className="fa-light fa-copy" aria-hidden="true" />
-                              Duplicate
+                              <i className="fa-light fa-folder-plus" aria-hidden="true" />
+                              Add to folder
                             </DropdownMenuItem>
-                            {isAdmin && (
-                              <DropdownMenuItem onClick={() => {}}>
-                                <i className="fa-light fa-folder-plus" aria-hidden="true" />
-                                Move to Folder
-                              </DropdownMenuItem>
-                            )}
                             <DropdownMenuSeparator />
-                            {!isAdmin && !isOwner && (
-                              <DropdownMenuItem onClick={() => { setReqAccessQuestion({ id: q.id, title: q.title }); setOpenMenuQuestionId(null) }}>
-                                <i className="fa-light fa-lock-keyhole-open" aria-hidden="true" />
-                                Request Edit Access
-                              </DropdownMenuItem>
-                            )}
-                            {(isAdmin || isOwner) && (
-                              <DropdownMenuItem variant="destructive" onClick={() => {}}>
-                                <i className="fa-light fa-trash-can" aria-hidden="true" />
-                                Delete
-                              </DropdownMenuItem>
-                            )}
+                            <DropdownMenuItem onClick={() => {}}>
+                              <i className="fa-light fa-circle" aria-hidden="true" />
+                              Set status: Saved
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {}}>
+                              <i className="fa-light fa-circle-half-stroke" aria-hidden="true" />
+                              Set status: Draft
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => {}}>
+                              <i className="fa-light fa-user-plus" aria-hidden="true" />
+                              Add collaborator
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem variant="destructive" onClick={() => {}}>
+                              <i className="fa-light fa-trash-can" aria-hidden="true" />
+                              Delete
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
