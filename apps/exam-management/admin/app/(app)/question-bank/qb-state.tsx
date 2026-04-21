@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useCallback, useEffect, useMemo, u
 import type { FolderNode, Question, Persona } from '@/lib/qb-types'
 import { MOCK_QB_FOLDERS, MOCK_QB_QUESTIONS, MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
 
-export type ColumnId = 'select' | 'code' | 'title' | 'status' | 'type' | 'difficulty' | 'blooms' | 'subfolder' | 'lastEditedBy' | 'usage' | 'pbis' | 'favorited' | 'actions'
+export type ColumnId = 'select' | 'title' | 'status' | 'type' | 'difficulty' | 'blooms' | 'location' | 'creator' | 'lastEditedBy' | 'usage' | 'pbis' | 'version' | 'favorited' | 'actions'
 
 interface QBState {
   currentPersona: Persona
@@ -78,8 +78,8 @@ export function useQB(): QBState {
 }
 
 const DEFAULT_COLUMN_ORDER: ColumnId[] = [
-  'select', 'code', 'title', 'status', 'type', 'difficulty', 'blooms',
-  'subfolder', 'lastEditedBy', 'usage', 'pbis', 'favorited', 'actions',
+  'select', 'title', 'status', 'type', 'difficulty', 'blooms',
+  'location', 'creator', 'lastEditedBy', 'usage', 'pbis', 'version', 'favorited', 'actions',
 ]
 
 function isInSubtree(folderId: string, rootId: string, folders: FolderNode[]): boolean {

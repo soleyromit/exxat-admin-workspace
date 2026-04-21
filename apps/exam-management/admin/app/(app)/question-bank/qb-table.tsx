@@ -1,7 +1,7 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import { useQB } from './qb-state'
-import { StatusBadge, TypeBadge, DiffBadge, PBisCell, BloomsBadge } from '@/components/qb/badges'
+import { StatusBadge, DiffBadge, PBisCell, BloomsBadge } from '@/components/qb/badges'
 import {
   Button, Badge, Checkbox,
   Sheet, SheetContent, SheetTitle,
@@ -12,6 +12,7 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@exxat/ds/packages/ui/src'
 import type { Question } from '@/lib/qb-types'
+import { MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
 import { RequestEditAccessModal } from './qb-modals'
 
 // ── Shared header cell class (matches DS DataTable th) ───────────────────────
@@ -22,49 +23,66 @@ const TD = 'px-3 py-2.5 align-middle border-b border-border group-last/row:borde
 
 // ── Column definitions ────────────────────────────────────────────────────────
 const QB_COLS = [
-  { key: 'question',     label: 'Question',      sortKey: 'title',       hideable: false },
-  { key: 'status',       label: 'Status',        sortKey: 'status',      hideable: true  },
-  { key: 'type',         label: 'Type',          sortKey: 'type',        hideable: true  },
-  { key: 'difficulty',   label: 'Difficulty',    sortKey: 'difficulty',  hideable: true  },
-  { key: 'blooms',       label: "Bloom's",       sortKey: 'blooms',      hideable: true  },
-  { key: 'subfolder',    label: 'Subfolder',     sortKey: null,          hideable: true  },
-  { key: 'creator',      label: 'Creator',       sortKey: 'creator',     hideable: true  },
-  { key: 'lastEditedBy', label: 'Last Edited By', sortKey: null,         hideable: true  },
-  { key: 'usage',        label: 'Usage',         sortKey: 'usage',       hideable: true  },
-  { key: 'pbis',         label: 'P-Bis',         sortKey: 'pbis',        hideable: true  },
-  { key: 'version',      label: 'Ver.',          sortKey: null,          hideable: true  },
-  { key: 'favorited',    label: '',              sortKey: null,          hideable: false },
+  { key: 'title',        label: 'Question',       sortKey: 'title',       hideable: false },
+  { key: 'status',       label: 'Status',         sortKey: 'status',      hideable: false },
+  { key: 'type',         label: 'Type',           sortKey: 'type',        hideable: true  },
+  { key: 'difficulty',   label: 'Difficulty',     sortKey: 'difficulty',  hideable: true  },
+  { key: 'blooms',       label: "Bloom's",        sortKey: 'blooms',      hideable: true  },
+  { key: 'location',     label: 'Location',       sortKey: null,          hideable: true  },
+  { key: 'creator',      label: 'Creator',        sortKey: 'creator',     hideable: true  },
+  { key: 'lastEditedBy', label: 'Last Edited By', sortKey: null,          hideable: true  },
+  { key: 'usage',        label: 'Usage',          sortKey: 'usage',       hideable: true  },
+  { key: 'pbis',         label: 'P–',             sortKey: 'pbis',        hideable: true  },
+  { key: 'version',      label: 'Ver.',           sortKey: null,          hideable: true  },
+  { key: 'favorited',    label: '★',              sortKey: null,          hideable: false },
 ] as const
 
 type ColKey = (typeof QB_COLS)[number]['key']
 
-// ── Subfolder path cell ───────────────────────────────────────────────────────
-function SubfolderCell({ question }: { question: Question }) {
-  const segments = question.folderPath.split(' / ')
+// ── Location path cell ───────────────────────────────────────────────────────
+function LocationCell({ question }: { question: Question }) {
+  const { folders, navigateToFolder } = useQB()
+  if (!question.folderPath) return <span style={{ color: 'var(--muted-foreground)' }}>—</span>
+  const parts = question.folderPath.split(' / ')
+  const courseRoot = parts[0]   // e.g. "PHAR101 QB"
+  const sub = parts.slice(1).join(' / ')  // e.g. "Antibiotics & Antimicrobials"
+  const courseCode = courseRoot.split(' ')[0]  // e.g. "PHAR101"
+  const rootFolder = folders.find(f => f.isCourse && f.name.startsWith(courseCode))
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 12, color: 'var(--muted-foreground)', flexWrap: 'nowrap' }}>
-      {segments.map((seg, i) => (
-        <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-          {i > 0 && <i className="fa-light fa-chevron-right" aria-hidden="true" style={{ fontSize: 9 }} />}
-          <span>{seg}</span>
-        </span>
-      ))}
-    </span>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11 }}>
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        onClick={(e) => { e.stopPropagation(); if (rootFolder) navigateToFolder(rootFolder.id) }}
+        className="h-auto w-auto p-0 font-normal"
+        style={{ color: 'var(--brand-color)', textDecoration: 'underline', textUnderlineOffset: 2, fontSize: 11 }}
+        aria-label={`Navigate to ${courseRoot}`}
+      >
+        {courseRoot}
+      </Button>
+      {sub && (
+        <>
+          <span style={{ opacity: 0.4, fontSize: 11 }}>›</span>
+          <span style={{ color: 'var(--muted-foreground)', fontSize: 11 }}>{sub}</span>
+        </>
+      )}
+    </div>
   )
 }
 
 // ── Favorited star cell ───────────────────────────────────────────────────────
-function FavoritedCell({ question }: { question: Question }) {
+function FavoritedCell({ questionId }: { questionId: string }) {
   const { favoritedIds, toggleQuestionFavorited } = useQB()
-  const fav = favoritedIds.has(question.id)
+  const isFav = favoritedIds.has(questionId)
   return (
     <Button
       variant="ghost" size="icon-xs"
-      aria-label={fav ? 'Remove from favorites' : 'Add to favorites'}
-      onClick={e => { e.stopPropagation(); toggleQuestionFavorited(question.id) }}
-      style={{ color: fav ? 'var(--chart-4)' : 'var(--muted-foreground)' }}
+      aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
+      onClick={e => { e.stopPropagation(); toggleQuestionFavorited(questionId) }}
+      style={{ color: isFav ? 'var(--chart-4)' : 'var(--muted-foreground)', opacity: isFav ? 1 : 0 }}
+      className="transition-opacity group-hover/row:opacity-100"
     >
-      <i className={fav ? 'fa-solid fa-star' : 'fa-light fa-star'} aria-hidden="true" style={{ fontSize: 13 }} />
+      <i className={isFav ? 'fa-solid fa-star' : 'fa-light fa-star'} aria-hidden="true" style={{ fontSize: 13 }} />
     </Button>
   )
 }
@@ -442,7 +460,6 @@ export function QBTable() {
     openMenuQuestionId, setOpenMenuQuestionId,
     myQuestionsOnly, setMyQuestionsOnly,
     favoritesFilter, setFavoritesFilter,
-    favoritedIds, toggleQuestionFavorited,
   } = useQB()
 
   const isAdmin = currentPersona.role === 'Admin'
@@ -502,7 +519,7 @@ export function QBTable() {
     if (!sortCol) return filteredQuestions
     return [...filteredQuestions].sort((a, b) => {
       let va: string | number = '', vb: string | number = ''
-      if (sortCol === 'question')   { va = a.title ?? '';         vb = b.title ?? ''         }
+      if (sortCol === 'title')       { va = a.title ?? '';         vb = b.title ?? ''         }
       else if (sortCol === 'status')     { va = a.status ?? '';        vb = b.status ?? ''        }
       else if (sortCol === 'type')       { va = a.type ?? '';          vb = b.type ?? ''          }
       else if (sortCol === 'difficulty') { va = DIFF_ORDER[a.difficulty] ?? 0; vb = DIFF_ORDER[b.difficulty] ?? 0 }
@@ -583,17 +600,21 @@ export function QBTable() {
             </Button>
           )}
 
-          {/* Bookmark toggle */}
+          {/* Bookmark toggle — star icon */}
           <Button
             variant="outline"
             size="icon-sm"
             onClick={() => setBookmarkOnly(v => !v)}
             aria-pressed={bookmarkOnly}
             aria-label={bookmarkOnly ? 'Show all questions' : 'Show bookmarked only'}
-            style={bookmarkOnly ? { borderColor: 'var(--qb-locked)', color: 'var(--qb-locked)', backgroundColor: 'color-mix(in oklch, var(--qb-locked) 10%, var(--background))' } : {}}
+            style={bookmarkOnly ? {
+              borderColor: 'var(--chart-4)',
+              color: 'var(--chart-4)',
+              backgroundColor: 'color-mix(in oklch, var(--chart-4) 10%, var(--background))',
+            } : {}}
           >
             <i
-              className={bookmarkOnly ? 'fa-solid fa-bookmark' : 'fa-light fa-bookmark'}
+              className={bookmarkOnly ? 'fa-solid fa-star' : 'fa-light fa-star'}
               aria-hidden="true"
               style={{ fontSize: 13 }}
             />
@@ -704,7 +725,7 @@ export function QBTable() {
                         col.key === 'type'         ? 'w-24' :
                         col.key === 'difficulty'   ? 'w-24' :
                         col.key === 'blooms'       ? 'w-28' :
-                        col.key === 'subfolder'    ? 'w-44' :
+                        col.key === 'location'     ? 'w-44' :
                         col.key === 'creator'      ? 'w-40' :
                         col.key === 'lastEditedBy' ? 'w-32' :
                         col.key === 'usage'        ? 'w-16' :
@@ -724,17 +745,8 @@ export function QBTable() {
                   const isOwner = q.creator === currentPersona.id
                   const isPrivate = q.tags.includes('private')
 
-                  const creatorPersona = (() => {
-                    const map: Record<string, { initials: string; color: string; name: string; trust: string }> = {
-                      'persona-thompson': { initials: 'DT', color: 'var(--brand-color)', name: 'Dr. Thompson', trust: 'senior' },
-                      'persona-chen':     { initials: 'SC', color: 'var(--qb-question-set)', name: 'Dr. Chen', trust: 'senior' },
-                      'persona-patel':    { initials: 'JP', color: 'var(--chart-5)', name: 'Dr. Patel', trust: 'junior' },
-                    }
-                    return map[q.creator ?? ''] ?? { initials: '?', color: 'var(--muted)', name: 'Unknown', trust: 'junior' }
-                  })()
-
-                  const trustColor = { senior: 'var(--qb-trust-senior-color)', mid: 'var(--qb-trust-mid-color)', junior: 'var(--qb-trust-junior-color)' }[creatorPersona.trust as 'senior' | 'mid' | 'junior'] ?? 'var(--qb-trust-junior-color)'
-                  const trustBg   = { senior: 'var(--qb-trust-senior-bg)', mid: 'var(--qb-trust-mid-bg)', junior: 'var(--muted)' }[creatorPersona.trust as 'senior' | 'mid' | 'junior'] ?? 'var(--muted)'
+                  const creatorPersona = MOCK_QB_PERSONAS.find(p => p.id === (q.creator ?? ''))
+                    ?? { initials: '?', color: 'var(--muted)', name: 'Unknown', trustLevel: 'junior' as const, id: '', role: 'Faculty' as const }
 
                   // Row background: QB-specific state overrides DS defaults
                   const rowBg = isSelected
@@ -777,69 +789,52 @@ export function QBTable() {
                         </div>
                       </TableCell>
 
-                      {/* Question cell */}
-                      <TableCell className={TD} style={{ minWidth: 200 }}>
-                        {/* Title row */}
-                        <div className="flex items-center gap-1.5 mb-1">
+                      {/* Question cell — title + code only (no type pill) */}
+                      <TableCell className={TD} style={{ minWidth: 280, maxWidth: 380 }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
                           {q.pinned && (
-                            <i className="fa-solid fa-thumbtack text-brand-color flex-shrink-0" aria-hidden="true"
-                              style={{ fontSize: 9, color: 'var(--brand-color)', transform: 'rotate(45deg)' }} />
+                            <i className="fa-solid fa-thumbtack" aria-hidden="true"
+                              style={{ fontSize: 10, color: 'var(--brand-color)', marginTop: 3, transform: 'rotate(45deg)', flexShrink: 0 }} />
                           )}
-                          <Button
-                            variant="ghost"
-                            size="icon-xs"
-                            onClick={(e) => { e.stopPropagation(); toggleQuestionFavorited(q.id) }}
-                            aria-label={favoritedIds.has(q.id) ? 'Remove from favorites' : 'Add to favorites'}
-                            className={`shrink-0 transition-opacity ${favoritedIds.has(q.id) || isHovered ? 'opacity-100' : 'opacity-0'}`}
-                            style={{ color: 'var(--qb-locked)' }}
-                          >
-                            <i
-                              className={favoritedIds.has(q.id) ? 'fa-solid fa-bookmark' : 'fa-regular fa-bookmark'}
-                              aria-hidden="true"
-                              style={{ fontSize: 11 }}
-                            />
-                          </Button>
-                          {isPrivate && (
-                            <Badge
-                              variant="secondary"
-                              className="rounded shrink-0"
-                              style={{
-                                fontSize: 9, fontWeight: 600, padding: '1px 5px',
-                                backgroundColor: 'color-mix(in oklch, var(--qb-private) 12%, var(--background))',
-                                color: 'var(--qb-private)',
-                                border: '1px solid color-mix(in oklch, var(--qb-private) 25%, var(--background))',
-                              }}
-                            >
-                              <i className="fa-solid fa-lock-keyhole" aria-hidden="true" style={{ fontSize: 7 }} /> Private
-                            </Badge>
-                          )}
-                          <span className="text-sm font-medium text-foreground truncate">
-                            {q.title}
-                          </span>
-                        </div>
-                        {/* Sub-row: code + type + ownership */}
-                        <div className="flex items-center gap-1.5">
-                          <Badge
-                            variant="secondary"
-                            className="rounded font-mono border border-border"
-                            style={{ fontSize: 10, padding: '1px 5px' }}
-                          >
-                            {q.code}
-                          </Badge>
-                          <TypeBadge type={q.type} />
-                          {!isAdmin && !isOwner && isHovered && (
-                            <Badge
-                              variant="secondary"
-                              className="rounded"
-                              style={{
-                                fontSize: 10, padding: '1px 5px',
-                                backgroundColor: 'var(--muted)',
-                                color: 'var(--muted-foreground)',
-                              }}
-                            >
-                              View only
-                            </Badge>
-                          )}
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
+                              {isPrivate && (
+                                <Badge
+                                  variant="secondary"
+                                  className="rounded shrink-0"
+                                  style={{
+                                    fontSize: 9, fontWeight: 600, padding: '1px 5px',
+                                    backgroundColor: 'color-mix(in oklch, var(--qb-private) 12%, var(--background))',
+                                    color: 'var(--qb-private)',
+                                    border: '1px solid color-mix(in oklch, var(--qb-private) 25%, var(--background))',
+                                  }}
+                                >
+                                  <i className="fa-solid fa-lock-keyhole" aria-hidden="true" style={{ fontSize: 7 }} /> Private
+                                </Badge>
+                              )}
+                            </div>
+                            <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--foreground)', lineHeight: 1.4 }}>
+                              {q.title}
+                            </div>
+                            <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <Badge
+                                variant="secondary"
+                                className="rounded font-mono border border-border"
+                                style={{ fontSize: 10, padding: '1px 5px' }}
+                              >
+                                {q.code}
+                              </Badge>
+                              {!isAdmin && !isOwner && isHovered && (
+                                <Badge
+                                  variant="secondary"
+                                  className="rounded"
+                                  style={{ fontSize: 10, padding: '1px 5px', backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}
+                                >
+                                  View only
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </TableCell>
 
@@ -850,10 +845,12 @@ export function QBTable() {
                         </TableCell>
                       )}
 
-                      {/* Type */}
+                      {/* Type — plain neutral text, no pill */}
                       {!hiddenCols.has('type') && (
                         <TableCell className={`${TD} w-24`}>
-                          <TypeBadge type={q.type} />
+                          <span style={{ fontSize: 11.5, fontWeight: 500, color: 'var(--muted-foreground)' }}>
+                            {q.type}
+                          </span>
                         </TableCell>
                       )}
 
@@ -871,40 +868,25 @@ export function QBTable() {
                         </TableCell>
                       )}
 
-                      {/* Subfolder path */}
-                      {!hiddenCols.has('subfolder') && (
+                      {/* Location — folder path as clickable breadcrumb */}
+                      {!hiddenCols.has('location') && (
                         <TableCell className={`${TD} w-44`}>
-                          <SubfolderCell question={q} />
+                          <LocationCell question={q} />
                         </TableCell>
                       )}
 
                       {/* Creator */}
                       {!hiddenCols.has('creator') && (
                         <TableCell className={`${TD} w-40`}>
-                          <div className="flex items-center gap-2">
-                            <span style={{
-                              width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-                              backgroundColor: creatorPersona.color,
-                              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: 9, fontWeight: 700, color: 'var(--primary-foreground)',
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{
+                              width: 22, height: 22, borderRadius: '50%', background: creatorPersona.color,
+                              color: 'white', fontSize: 8, fontWeight: 700,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                             }}>
                               {creatorPersona.initials}
-                            </span>
-                            <div style={{ minWidth: 0 }}>
-                              <div className="text-xs font-semibold text-foreground truncate">
-                                {creatorPersona.name}
-                              </div>
-                              <div className="flex items-center gap-1 mt-0.5">
-                                <span className="text-[10px] text-muted-foreground">Faculty</span>
-                                <Badge
-                                  variant="secondary"
-                                  className="rounded"
-                                  style={{ fontSize: 9, fontWeight: 700, padding: '0 4px', backgroundColor: trustBg, color: trustColor }}
-                                >
-                                  {creatorPersona.trust}
-                                </Badge>
-                              </div>
                             </div>
+                            <span style={{ fontSize: 11, color: 'var(--foreground)' }}>{creatorPersona.name}</span>
                           </div>
                         </TableCell>
                       )}
@@ -979,7 +961,7 @@ export function QBTable() {
                       {/* Favorited star */}
                       {!hiddenCols.has('favorited') && (
                         <TableCell className={`${TD} w-8`}>
-                          <FavoritedCell question={q} />
+                          <FavoritedCell questionId={q.id} />
                         </TableCell>
                       )}
 
