@@ -59,8 +59,6 @@
   --qb-status-ready-fg:     oklch(0.32 0.11 184);       /* teal text                        */
   --qb-status-review-bg:    color-mix(in oklch, var(--chart-1) 14%, var(--background));
   --qb-status-review-fg:    oklch(0.32 0.18 264);       /* indigo text                      */
-  --qb-status-draft-bg:     color-mix(in oklch, var(--chart-4) 16%, var(--background));
-  --qb-status-draft-fg:     oklch(0.38 0.15 84);        /* amber text                       */
   --qb-status-flagged-bg:   color-mix(in oklch, var(--destructive) 12%, var(--background));
   --qb-status-flagged-fg:   oklch(0.40 0.20 25);        /* red text                         */
   --qb-status-approved-bg:  color-mix(in oklch, var(--brand-color) 14%, var(--background));
