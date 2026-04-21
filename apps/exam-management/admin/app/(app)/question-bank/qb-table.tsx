@@ -289,7 +289,7 @@ function FilterPropertiesSheet({
               />
               {/* Bookmarked */}
               <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-1">Saved</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-1">Favorites</p>
                 <button
                   onClick={() => setBookmarkOnly(v => !v)}
                   className="flex items-center gap-2.5 w-full px-1 py-1.5 rounded-lg text-sm text-left transition-colors hover:bg-muted/60"
