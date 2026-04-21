@@ -6,7 +6,6 @@ import { QBSidebar } from './qb-sidebar'
 import { QBTitle } from './qb-title'
 import { QBTable } from './qb-table'
 import { useQB } from './qb-state'
-import { ManageCollaboratorsModal } from './qb-modals'
 
 function QBContent() {
   const { currentPersona, selectedFolderId } = useQB()
@@ -62,7 +61,6 @@ function QBInner() {
         <QBSidebar />
         <QBContent />
       </div>
-      <ManageCollaboratorsModal />
     </QBLayoutInner>
   )
 }
