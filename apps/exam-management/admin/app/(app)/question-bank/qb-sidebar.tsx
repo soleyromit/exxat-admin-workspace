@@ -5,6 +5,7 @@ import type { FolderNode } from '@/lib/qb-types'
 import {
   Button,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
+  Popover, PopoverTrigger, PopoverContent,
   InputGroup, InputGroupAddon, Input,
 } from '@exxat/ds/packages/ui/src'
 
@@ -16,6 +17,9 @@ function courseFolderLabel(name: string): string {
 }
 
 function getFolderIcon(node: FolderNode, expanded: boolean, selected: boolean) {
+  if (node.icon) {
+    return { cls: `fa-light ${node.icon}`, color: selected ? 'var(--brand-color)' : 'var(--muted-foreground)' }
+  }
   if (node.isCourse) return { cls: 'fa-solid fa-graduation-cap', color: selected ? 'var(--brand-color)' : 'var(--muted-foreground)' }
   return {
     cls: expanded ? 'fa-solid fa-folder-open' : (selected ? 'fa-solid fa-folder' : 'fa-regular fa-folder'),
@@ -23,22 +27,48 @@ function getFolderIcon(node: FolderNode, expanded: boolean, selected: boolean) {
   }
 }
 
-function FolderContextMenu({ node, isAdmin, onRename, onAddSubfolder }: { node: FolderNode; isAdmin: boolean; onRename: () => void; onAddSubfolder: () => void }) {
+function FolderContextMenu({
+  node,
+  isAdmin,
+  onRename,
+  onAddSubfolder,
+  onChangeIcon,
+}: {
+  node: FolderNode
+  isAdmin: boolean
+  onRename: () => void
+  onAddSubfolder: () => void
+  onChangeIcon: (icon: string) => void
+}) {
   const { setCollaboratorsModalFolderId } = useQB()
+  const [iconPickerOpen, setIconPickerOpen] = useState(false)
+
+  const ICON_OPTIONS = [
+    { icon: 'fa-folder', label: 'Folder' },
+    { icon: 'fa-book', label: 'Book' },
+    { icon: 'fa-graduation-cap', label: 'Course' },
+    { icon: 'fa-star', label: 'Star' },
+    { icon: 'fa-flag', label: 'Flag' },
+    { icon: 'fa-file-lines', label: 'File' },
+    { icon: 'fa-rectangle-list', label: 'List' },
+    { icon: 'fa-layer-group', label: 'Stack' },
+  ]
+
   if (!isAdmin) return null
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="ghost" size="icon-xs"
+          variant="ghost"
+          size="icon-xs"
           aria-label="Folder options"
           className="qb-folder-menu-btn shrink-0"
-          onClick={e => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
         >
           <i className="fa-regular fa-ellipsis" aria-hidden="true" style={{ fontSize: 12 }} />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-44">
+      <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuItem onClick={() => onAddSubfolder()}>
           <i className="fa-light fa-folder-plus" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
           New Subfolder
@@ -50,6 +80,54 @@ function FolderContextMenu({ node, isAdmin, onRename, onAddSubfolder }: { node: 
         <DropdownMenuItem onClick={() => onRename()}>
           <i className="fa-light fa-pen" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
           Rename
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setIconPickerOpen((v) => !v) }}>
+          <i className="fa-light fa-palette" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+          Change icon
+          {iconPickerOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                left: '100%',
+                top: 0,
+                background: 'var(--popover)',
+                border: '1px solid var(--border)',
+                borderRadius: 8,
+                padding: 8,
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: 4,
+                boxShadow: 'var(--shadow-md)',
+                zIndex: 200,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {ICON_OPTIONS.map((o) => (
+                <button
+                  key={o.icon}
+                  aria-label={o.label}
+                  onClick={() => {
+                    onChangeIcon(o.icon)
+                    setIconPickerOpen(false)
+                  }}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: node.icon === o.icon ? 'var(--brand-tint)' : 'transparent',
+                    border: node.icon === o.icon ? '1px solid var(--brand-color)' : '1px solid transparent',
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                    color: 'var(--foreground)',
+                  }}
+                >
+                  <i className={`fa-light ${o.icon}`} aria-hidden="true" style={{ fontSize: 13 }} />
+                </button>
+              ))}
+            </div>
+          )}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onClick={() => {}}>
@@ -142,6 +220,7 @@ function FolderRow({
     highlightedFolderId,
     renameFolder,
     createFolder,
+    setFolderIcon,
   } = useQB()
 
   const [isRenaming, setIsRenaming] = useState(false)
@@ -297,6 +376,7 @@ function FolderRow({
             setTimeout(() => renameRef.current?.focus(), 50)
           }}
           onAddSubfolder={() => setShowingInlineCreate(true)}
+          onChangeIcon={(icon) => setFolderIcon(node.id, icon)}
         />
       </div>
       {showingInlineCreate && (
