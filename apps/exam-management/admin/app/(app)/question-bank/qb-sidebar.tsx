@@ -691,6 +691,7 @@ export function QBSidebar() {
     expandedFolderIds,
     questions,
     sidebarSearch, setSidebarSearch,
+    accessibleFolderIds,
   } = useQB()
 
   const [inlineCreateParent, setInlineCreateParent] = useState<string | 'root' | null>(null)
@@ -707,6 +708,15 @@ export function QBSidebar() {
 
   const courseFolders = folders.filter(f => f.isCourse && f.parentId === null)
 
+  // Faculty: only show course folders they have access to; admins see all
+  const visibleFolders = isAdmin
+    ? folders
+    : folders.filter(f => accessibleFolderIds.has(f.id))
+
+  const visibleCourseFolders = isAdmin
+    ? courseFolders
+    : courseFolders.filter(f => accessibleFolderIds.has(f.id))
+
   const allQCount = questions.length
   const myQCount = questions.filter(q => q.creator === currentPersona.id).length
 
@@ -714,16 +724,15 @@ export function QBSidebar() {
   const isMySelected = navView === 'my'
 
   // Filter root course folders by search
-  const rootFolders = courseFolders
   const filteredRoots = sidebarSearch.trim()
-    ? rootFolders.filter(f => {
+    ? visibleCourseFolders.filter(f => {
         const matchesSelf = f.name.toLowerCase().includes(sidebarSearch.toLowerCase())
-        const childMatches = folders.some(
+        const childMatches = visibleFolders.some(
           child => child.parentId === f.id && child.name.toLowerCase().includes(sidebarSearch.toLowerCase())
         )
         return matchesSelf || childMatches
       })
-    : rootFolders
+    : visibleCourseFolders
 
   // Nav item shared style
   const navItem = (
@@ -861,10 +870,15 @@ export function QBSidebar() {
             <div key={course.id}>
               <FolderRow node={course} depth={0} isAdmin={isAdmin} />
               {expandedFolderIds.has(course.id) && (
-                <FolderTree nodes={folders} parentId={course.id} depth={1} isAdmin={isAdmin} />
+                <FolderTree nodes={visibleFolders} parentId={course.id} depth={1} isAdmin={isAdmin} />
               )}
             </div>
           ))}
+          {!isAdmin && accessibleFolderIds.size === 0 && (
+            <div style={{ padding: '16px 12px', fontSize: 12, color: 'var(--muted-foreground)', textAlign: 'center' }}>
+              No question banks shared with you yet.
+            </div>
+          )}
         </div>
 
         {inlineCreateParent === 'root' && (

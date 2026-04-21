@@ -66,6 +66,7 @@ interface QBState {
 
   visibleQuestions: Question[]
   selectedFolder: FolderNode | null
+  accessibleFolderIds: Set<string>
 
   closeAllOverlays: () => void
 }
@@ -87,6 +88,14 @@ function isInSubtree(folderId: string, rootId: string, folders: FolderNode[]): b
   const node = folders.find(f => f.id === folderId)
   if (!node || !node.parentId) return false
   return isInSubtree(node.parentId, rootId, folders)
+}
+
+function getDescendantIds(id: string, folders: FolderNode[]): Set<string> {
+  const result = new Set<string>([id])
+  folders.filter(f => f.parentId === id).forEach(f => {
+    getDescendantIds(f.id, folders).forEach(d => result.add(d))
+  })
+  return result
 }
 
 export function QBProvider({ children }: { children: ReactNode }) {
@@ -114,14 +123,34 @@ export function QBProvider({ children }: { children: ReactNode }) {
   const [collaboratorsModalFolderId, setCollaboratorsModalFolderId] = useState<string | null>(null)
   const [folders, setFolders] = useState<FolderNode[]>(MOCK_QB_FOLDERS)
 
-  // Auto-select first assigned folder for Faculty on mount
+  const isAdmin = currentPersona.role === 'Admin'
+
+  const accessibleFolderIds = useMemo<Set<string>>(() => {
+    if (isAdmin) return new Set(folders.map(f => f.id))
+    const accessible = new Set<string>()
+    folders
+      .filter(f => f.parentId === null && (f.collaborators ?? []).includes(currentPersona.id))
+      .forEach(course => {
+        getDescendantIds(course.id, folders).forEach(id => accessible.add(id))
+      })
+    return accessible
+  }, [isAdmin, currentPersona.id, folders])
+
+  // Auto-select first accessible course folder for Faculty on persona change
   useEffect(() => {
-    if (currentPersona.role === 'Faculty' && (currentPersona.assignedFolders?.length ?? 0) > 0) {
-      const firstFolder = currentPersona.assignedFolders![0]
-      setSelectedFolderIdState(firstFolder)
+    if (isAdmin) return
+    const firstAccessibleCourse = folders.find(
+      f => f.parentId === null && accessibleFolderIds.has(f.id)
+    )
+    if (firstAccessibleCourse) {
+      setSelectedFolderIdState(firstAccessibleCourse.id)
       setNavViewState('folder')
+    } else {
+      // No access to any folder — show empty state
+      setSelectedFolderIdState(null)
+      setNavViewState('my')
     }
-  }, [currentPersona])
+  }, [currentPersona]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function setCurrentPersona(p: Persona) {
     setCurrentPersonaState(p)
@@ -225,9 +254,10 @@ export function QBProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  const isAdmin = currentPersona.role === 'Admin'
-
   const visibleQuestions = useMemo(() => MOCK_QB_QUESTIONS.filter(q => {
+    // Faculty: folder must be accessible
+    if (!isAdmin && !accessibleFolderIds.has(q.folder)) return false
+
     const roleVisible = isAdmin
       ? true
       : q.status === 'Saved' || (q.status === 'Draft' && q.creator === currentPersona.id)
@@ -244,7 +274,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
     const favFilter = favoritesFilter ? favoritedIds.has(q.id) : true
 
     return roleVisible && navVisible && myFilter && favFilter
-  }), [isAdmin, currentPersona.id, navView, selectedFolderId, myQuestionsOnly, favoritesFilter, favoritedIds, folders])
+  }), [isAdmin, currentPersona.id, navView, selectedFolderId, myQuestionsOnly, favoritesFilter, favoritedIds, folders, accessibleFolderIds])
 
   const toggleQuestionSelection = useCallback((id: string) => {
     setSelectedQuestionIds(prev => {
@@ -290,7 +320,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
     dragOverFolderId, setDragOverFolderId,
     openMenuQuestionId, setOpenMenuQuestionId,
     collaboratorsModalFolderId, setCollaboratorsModalFolderId,
-    visibleQuestions, selectedFolder,
+    visibleQuestions, selectedFolder, accessibleFolderIds,
     closeAllOverlays,
   }
 
