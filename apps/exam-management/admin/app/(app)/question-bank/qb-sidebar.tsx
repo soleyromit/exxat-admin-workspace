@@ -27,6 +27,14 @@ function courseFolderLabel(name: string): string {
   return `${match[1]} · Question Bank`
 }
 
+function getDescendantIds(id: string, folders: FolderNode[]): Set<string> {
+  const result = new Set<string>([id])
+  folders.filter(f => f.parentId === id).forEach(f => {
+    getDescendantIds(f.id, folders).forEach(d => result.add(d))
+  })
+  return result
+}
+
 function getFolderIcon(node: FolderNode, expanded: boolean, selected: boolean) {
   if (node.icon) {
     return { cls: `fa-light ${node.icon}`, color: selected ? 'var(--brand-color)' : 'var(--muted-foreground)' }
@@ -50,19 +58,11 @@ function MoveFolderDialog({
   const { folders, moveFolder } = useQB()
   const [targetId, setTargetId] = useState<string | null>(null)
 
-  function getDescendantIds(id: string): Set<string> {
-    const result = new Set<string>([id])
-    folders.filter(f => f.parentId === id).forEach(f => {
-      getDescendantIds(f.id).forEach(d => result.add(d))
-    })
-    return result
-  }
-
-  const excluded = getDescendantIds(node.id)
+  const excluded = getDescendantIds(node.id, folders)
   const eligible = folders.filter(f => !excluded.has(f.id) && f.id !== node.parentId)
 
   function getFolderPath(f: FolderNode): string {
-    const parts: string[] = [f.name]
+    const parts: string[] = [f.isCourse ? courseFolderLabel(f.name) : f.name]
     let cur: FolderNode | undefined = f
     while (cur?.parentId) {
       cur = folders.find(x => x.id === cur!.parentId)
