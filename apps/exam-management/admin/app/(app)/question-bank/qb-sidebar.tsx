@@ -431,6 +431,7 @@ function FolderRow({
     selectedFolderId, setSelectedFolderId,
     expandedFolderIds, toggleFolder,
     folders,
+    questions,
     draggedQuestionId, setDragOverFolderId, dragOverFolderId,
     draggedFolderId, setDraggedFolderId,
     highlightedFolderId,
@@ -438,6 +439,9 @@ function FolderRow({
     createFolder,
     setFolderIcon,
   } = useQB()
+
+  const subtreeIds = getDescendantIds(node.id, folders)
+  const folderQuestionCount = questions.filter(q => subtreeIds.has(q.folder)).length
 
   const [isRenaming, setIsRenaming] = useState(false)
   const [renameName, setRenameName] = useState(node.name)
@@ -471,9 +475,15 @@ function FolderRow({
   const indentPx = 8 + depth * 16
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ position: 'relative' }} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       <Popover open={hoverOpen} onOpenChange={setHoverOpen}>
         <PopoverTrigger asChild>
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} aria-hidden="true" />
+        </PopoverTrigger>
+        <PopoverContent side="right" align="start" className="w-52 p-3">
+          <FolderDiffPopover folderId={node.id} />
+        </PopoverContent>
+      </Popover>
       <div
         role="treeitem"
         aria-selected={isSelected}
@@ -506,8 +516,6 @@ function FolderRow({
           e.preventDefault()
           setDragOverFolderId(null)
         }}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
         style={{
           display: 'flex', alignItems: 'center', gap: 4,
           height: 32,
@@ -599,7 +607,7 @@ function FolderRow({
 
         {/* Count */}
         <span style={{ fontSize: 10, color: 'var(--muted-foreground)', flexShrink: 0 }}>
-          {node.count}
+          {folderQuestionCount}
         </span>
 
         {/* ⋯ context menu — admin only */}
@@ -617,11 +625,6 @@ function FolderRow({
           onDelete={() => setDeleteFolderDialogOpen(true)}
         />
       </div>
-        </PopoverTrigger>
-        <PopoverContent side="right" align="start" className="w-52 p-3">
-          <FolderDiffPopover folderId={node.id} />
-        </PopoverContent>
-      </Popover>
       {showingInlineCreate && (
         <InlineFolderInput
           depth={depth + 1}

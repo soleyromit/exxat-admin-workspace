@@ -5,7 +5,7 @@ import { StatusBadge, DiffBadge, PBisCell, BloomsBadge } from '@/components/qb/b
 import {
   Button, Badge, Checkbox,
   Sheet, SheetContent, SheetTitle,
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
   Popover, PopoverTrigger, PopoverContent,
   Tooltip, TooltipTrigger, TooltipContent,
   InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput,
@@ -393,21 +393,12 @@ function pinnedStyle(colKey: string, pinnedCols: Set<string>): React.CSSProperti
   return { position: 'sticky', left: 0, zIndex: 1, background: 'var(--dt-row-bg)', boxShadow: '2px 0 4px var(--sticky-edge-fade)' }
 }
 
-// ── Enum filter options per column key ───────────────────────────────────────
-const ENUM_FILTERS: Partial<Record<string, readonly string[]>> = {
-  status:     ['Saved', 'Draft'] as const,
-  type:       ['MCQ', 'Fill blank', 'Hotspot', 'Ordering', 'Matching'] as const,
-  difficulty: ['Easy', 'Medium', 'Hard'] as const,
-  blooms:     ['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'] as const,
-}
-
 // ── Difficulty distribution popover content ───────────────────────────────────
-function DiffDistributionPopover() {
-  const { visibleQuestions } = useQB()
-  const total  = visibleQuestions.length
-  const easy   = visibleQuestions.filter(q => q.difficulty === 'Easy').length
-  const medium = visibleQuestions.filter(q => q.difficulty === 'Medium').length
-  const hard   = visibleQuestions.filter(q => q.difficulty === 'Hard').length
+function DiffDistributionPopover({ questions }: { questions: Question[] }) {
+  const total  = questions.length
+  const easy   = questions.filter(q => q.difficulty === 'Easy').length
+  const medium = questions.filter(q => q.difficulty === 'Medium').length
+  const hard   = questions.filter(q => q.difficulty === 'Hard').length
 
   if (total === 0) return <p style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>No questions visible</p>
 
@@ -443,8 +434,9 @@ function DiffDistributionPopover() {
 // ── Column header with sort indicator + contextual menu ───────────────────────
 function ColHeader({
   col, sortCol, sortDir, onSort, onHide, onPin,
-  filterOptions, activeFilter, onFilterChange, openPanel,
+  openPanel,
   pinned, className,
+  distQuestions,
   draggable, onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd, dragOverStyle,
 }: {
   col: typeof QB_COLS[number]
@@ -453,12 +445,10 @@ function ColHeader({
   onSort: (key: string, dir: 'asc' | 'desc') => void
   onHide: (key: ColKey) => void
   onPin: (key: string) => void
-  filterOptions?: readonly string[]
-  activeFilter?: Set<string>
-  onFilterChange?: (val: string) => void
   openPanel?: () => void
   pinned?: boolean
   className?: string
+  distQuestions?: Question[]
   draggable?: boolean
   onDragStart?: () => void
   onDragOver?: (e: React.DragEvent) => void
@@ -512,7 +502,7 @@ function ColHeader({
                 </span>
               </PopoverTrigger>
               <PopoverContent side="bottom" align="start" className="w-52 p-3">
-                <DiffDistributionPopover />
+                <DiffDistributionPopover questions={distQuestions ?? []} />
               </PopoverContent>
             </Popover>
           ) : (
@@ -554,26 +544,6 @@ function ColHeader({
                 Sort descending
                 {isActive && sortDir === 'desc' && <i className="fa-solid fa-check text-xs ml-auto" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />}
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-            </>
-          )}
-
-          {/* Inline enum filter — for Status, Type, Difficulty, Bloom's */}
-          {filterOptions && filterOptions.length > 0 && activeFilter && onFilterChange && (
-            <>
-              <div style={{ padding: '4px 8px 2px', fontSize: 10, fontWeight: 700,
-                textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted-foreground)' }}>
-                Filter
-              </div>
-              {filterOptions.map(opt => (
-                <DropdownMenuCheckboxItem
-                  key={opt}
-                  checked={activeFilter.has(opt)}
-                  onCheckedChange={() => onFilterChange(opt)}
-                >
-                  {opt}
-                </DropdownMenuCheckboxItem>
-              ))}
               <DropdownMenuSeparator />
             </>
           )}
@@ -909,14 +879,6 @@ export function QBTable() {
                     </div>
                   </TableHead>
                   {visibleCols.filter(c => c.key !== 'select' && c.key !== 'actions').map(col => {
-                    // Map col key → its active filter Set and setter
-                    const filterSetMap: Partial<Record<string, { set: Set<string>; setter: React.Dispatch<React.SetStateAction<Set<string>>> }>> = {
-                      status:     { set: statusFilter,  setter: setStatusFilter  },
-                      type:       { set: typeFilter,    setter: setTypeFilter    },
-                      difficulty: { set: diffFilter,    setter: setDiffFilter    },
-                      blooms:     { set: bloomsFilter,  setter: setBloomsFilter  },
-                    }
-                    const filterEntry = filterSetMap[col.key]
                     const stickyStyle: React.CSSProperties = pinnedCols.has(col.key)
                       ? { position: 'sticky', left: 0, zIndex: 2, background: 'var(--dt-header-bg)', boxShadow: '2px 0 4px var(--sticky-edge-fade)' }
                       : {}
@@ -934,9 +896,7 @@ export function QBTable() {
                           if (next.has(key)) next.delete(key); else next.add(key)
                           return next
                         })}
-                        filterOptions={ENUM_FILTERS[col.key]}
-                        activeFilter={filterEntry?.set}
-                        onFilterChange={filterEntry ? (val) => filterEntry.setter(prev => toggleFilter(prev, val)) : undefined}
+                        distQuestions={col.key === 'difficulty' ? filteredQuestions : undefined}
                         openPanel={col.key === 'lastEditedBy' ? () => setPropertiesOpen(true) : undefined}
                         pinned={pinnedCols.has(col.key)}
                         className={
