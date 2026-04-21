@@ -23,7 +23,7 @@ function getFolderIcon(node: FolderNode, expanded: boolean, selected: boolean) {
   }
 }
 
-function FolderContextMenu({ node, isAdmin, onRename }: { node: FolderNode; isAdmin: boolean; onRename: () => void }) {
+function FolderContextMenu({ node, isAdmin, onRename, onAddSubfolder }: { node: FolderNode; isAdmin: boolean; onRename: () => void; onAddSubfolder: () => void }) {
   const { setCollaboratorsModalFolderId } = useQB()
   if (!isAdmin) return null
   return (
@@ -39,7 +39,7 @@ function FolderContextMenu({ node, isAdmin, onRename }: { node: FolderNode; isAd
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
-        <DropdownMenuItem onClick={() => {}}>
+        <DropdownMenuItem onClick={() => onAddSubfolder()}>
           <i className="fa-light fa-folder-plus" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
           New Subfolder
         </DropdownMenuItem>
@@ -134,10 +134,12 @@ function FolderRow({
     draggedFolderId, setDraggedFolderId,
     highlightedFolderId,
     renameFolder,
+    createFolder,
   } = useQB()
 
   const [isRenaming, setIsRenaming] = useState(false)
   const [renameName, setRenameName] = useState(node.name)
+  const [showingInlineCreate, setShowingInlineCreate] = useState(false)
   const renameRef = useRef<HTMLInputElement>(null)
 
   const isSelected = selectedFolderId === node.id
@@ -287,8 +289,22 @@ function FolderRow({
             setRenameName(node.name)
             setTimeout(() => renameRef.current?.focus(), 50)
           }}
+          onAddSubfolder={() => {
+            setShowingInlineCreate(true)
+            if (!expandedFolderIds.has(node.id)) toggleFolder(node.id)
+          }}
         />
       </div>
+      {showingInlineCreate && (
+        <InlineFolderInput
+          depth={depth + 1}
+          onConfirm={(name) => {
+            createFolder(name, node.id)
+            setShowingInlineCreate(false)
+          }}
+          onCancel={() => setShowingInlineCreate(false)}
+        />
+      )}
     </div>
   )
 }
