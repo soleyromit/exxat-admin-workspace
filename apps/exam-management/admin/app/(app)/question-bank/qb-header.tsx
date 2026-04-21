@@ -5,12 +5,31 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuItem,
   Tooltip, TooltipContent, TooltipTrigger,
   Avatar, AvatarFallback,
+  Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator,
 } from '@exxat/ds/packages/ui/src'
-import type { Persona } from '@/lib/qb-types'
+import type { Persona, FolderNode } from '@/lib/qb-types'
 
 export function QBHeader() {
-  const { currentPersona, setCurrentPersona, personas } = useQB()
+  const { currentPersona, setCurrentPersona, personas, folders, selectedFolderId, navigateToFolder } = useQB()
   const { toggleSidebar, state: sidebarState } = useSidebar()
+
+  function courseFolderLabel(name: string): string {
+    const match = name.match(/^([A-Z0-9]+)\s/)
+    if (!match) return name
+    return `${match[1]} · Question Bank`
+  }
+
+  function buildPath(folderId: string | null): FolderNode[] {
+    if (!folderId) return []
+    const parts: FolderNode[] = []
+    let cur = folders.find(f => f.id === folderId)
+    while (cur) {
+      parts.unshift(cur)
+      cur = cur.parentId ? folders.find(f => f.id === cur!.parentId) : undefined
+    }
+    return parts
+  }
+  const breadcrumbPath = buildPath(selectedFolderId)
 
   return (
     <header style={{
@@ -22,8 +41,8 @@ export function QBHeader() {
       flexShrink: 0,
       gap: 8,
     }}>
-      {/* Left: sidebar toggle */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+      {/* Left: sidebar toggle + breadcrumb */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -40,6 +59,79 @@ export function QBHeader() {
         </Tooltip>
 
         <div style={{ width: 1, height: 16, background: 'var(--border)', flexShrink: 0 }} />
+
+        {/* Breadcrumb — shown only when a folder is selected */}
+        {breadcrumbPath.length > 0 && (
+          <Breadcrumb style={{ minWidth: 0 }}>
+            <ol style={{ display: 'flex', alignItems: 'center', gap: 0, listStyle: 'none', margin: 0, padding: 0, flexWrap: 'nowrap', overflow: 'hidden' }}>
+              {breadcrumbPath.length <= 3 ? (
+                breadcrumbPath.map((node, i) => (
+                  <BreadcrumbItem key={node.id} style={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                    {i > 0 && <BreadcrumbSeparator style={{ color: 'var(--muted-foreground)', fontSize: 10, padding: '0 4px' }}>/</BreadcrumbSeparator>}
+                    <BreadcrumbLink asChild>
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => navigateToFolder(node.id)}
+                        style={{
+                          fontSize: 12,
+                          color: i === breadcrumbPath.length - 1 ? 'var(--foreground)' : 'var(--muted-foreground)',
+                          fontWeight: i === breadcrumbPath.length - 1 ? 500 : 400,
+                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 160,
+                          height: 'auto', padding: '2px 4px',
+                        }}
+                      >
+                        {node.isCourse ? courseFolderLabel(node.name) : node.name}
+                      </Button>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                ))
+              ) : (
+                <>
+                  <BreadcrumbItem>
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      onClick={() => navigateToFolder(breadcrumbPath[0].id)}
+                      style={{ fontSize: 12, color: 'var(--muted-foreground)', height: 'auto', padding: '2px 4px' }}
+                    >
+                      {breadcrumbPath[0].isCourse ? courseFolderLabel(breadcrumbPath[0].name) : breadcrumbPath[0].name}
+                    </Button>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator style={{ color: 'var(--muted-foreground)', fontSize: 10, padding: '0 4px' }}>/</BreadcrumbSeparator>
+                  <BreadcrumbItem>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon-xs" aria-label="Show more breadcrumb items" style={{ fontSize: 12 }}>
+                          …
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-48">
+                        {breadcrumbPath.slice(1, -1).map(node => (
+                          <DropdownMenuItem key={node.id} onClick={() => navigateToFolder(node.id)}>
+                            <i className="fa-light fa-folder" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
+                            {node.name}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator style={{ color: 'var(--muted-foreground)', fontSize: 10, padding: '0 4px' }}>/</BreadcrumbSeparator>
+                  <BreadcrumbItem>
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      onClick={() => navigateToFolder(breadcrumbPath[breadcrumbPath.length - 1].id)}
+                      style={{ fontSize: 12, fontWeight: 500, color: 'var(--foreground)', height: 'auto', padding: '2px 4px', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                    >
+                      {breadcrumbPath[breadcrumbPath.length - 1].name}
+                    </Button>
+                  </BreadcrumbItem>
+                </>
+              )}
+            </ol>
+          </Breadcrumb>
+        )}
       </div>
 
       {/* Right: persona switcher + Ask Leo */}
