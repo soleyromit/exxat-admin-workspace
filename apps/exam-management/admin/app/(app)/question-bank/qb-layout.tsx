@@ -11,7 +11,7 @@ export function QBLayoutInner({ children }: { children: React.ReactNode }) {
       onClick={closeAllOverlays}
     >
       {children}
-      {collaboratorsModalFolderId && <ManageAccessDialog />}
+      {collaboratorsModalFolderId && <ManageAccessDialog key={collaboratorsModalFolderId} />}
     </div>
   )
 }

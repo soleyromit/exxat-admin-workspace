@@ -468,8 +468,6 @@ function FolderRow({
   const hasChildren = folders.some(f => f.parentId === node.id)
   const icon = getFolderIcon(node, isExpanded, isSelected)
 
-  const selectedBg = `color-mix(in oklch, var(--brand-color) 10%, var(--background))`
-
   const indentPx = 8 + depth * 16
 
   return (
@@ -518,7 +516,7 @@ function FolderRow({
           cursor: 'pointer',
           borderRadius: 6,
           margin: '1px 4px',
-          backgroundColor: isSelected ? selectedBg : isDragOver ? `color-mix(in oklch, var(--brand-color) 15%, var(--background))` : 'transparent',
+          backgroundColor: isSelected ? 'var(--qb-folder-selected-bg)' : isDragOver ? `color-mix(in oklch, var(--brand-color) 15%, var(--background))` : 'transparent',
           outline: isDragOver ? '2px dashed var(--brand-color)' : 'none',
           transition: 'background-color 100ms',
           userSelect: 'none',
@@ -700,7 +698,7 @@ export function QBSidebar() {
       setSearchExpanded(false)
       setSidebarSearch('')
     }
-  }, [sidebarOpen])
+  }, [sidebarOpen, setSidebarSearch])
 
   const isAdmin = currentPersona.role === 'Admin'
 

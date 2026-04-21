@@ -122,13 +122,15 @@ function FilterSection<T extends string>({
         {options.map(opt => {
           const on = selected.has(opt)
           return (
-            <button
+            <Button
               key={opt}
+              variant="ghost"
+              size="xs"
               role="option"
               aria-selected={on}
               onClick={() => onToggle(opt)}
-              className="flex items-center gap-2.5 w-full px-1 py-1.5 rounded-lg text-sm text-left transition-colors hover:bg-muted/60"
-              style={{ color: 'var(--foreground)', background: 'none', border: 'none', cursor: 'pointer' }}
+              className="flex items-center gap-2.5 w-full px-1 py-1.5 rounded-lg text-sm text-left transition-colors hover:bg-muted/60 h-auto font-normal justify-start"
+              style={{ color: 'var(--foreground)', cursor: 'pointer' }}
             >
               <span className="flex items-center justify-center shrink-0" style={{
                 width: 14, height: 14, borderRadius: 3,
@@ -138,7 +140,7 @@ function FilterSection<T extends string>({
                 {on && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 8, color: 'var(--primary-foreground)' }} />}
               </span>
               <span>{opt}</span>
-            </button>
+            </Button>
           )
         })}
       </div>
@@ -289,10 +291,12 @@ function FilterPropertiesSheet({
               {/* Bookmarked */}
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-1">Favorites</p>
-                <button
+                <Button
+                  variant="ghost"
+                  size="xs"
                   onClick={() => setBookmarkOnly(v => !v)}
-                  className="flex items-center gap-2.5 w-full px-1 py-1.5 rounded-lg text-sm text-left transition-colors hover:bg-muted/60"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                  className="flex items-center gap-2.5 w-full px-1 py-1.5 rounded-lg text-sm text-left transition-colors hover:bg-muted/60 h-auto font-normal justify-start"
+                  style={{ cursor: 'pointer' }}
                 >
                   <span className="flex items-center justify-center shrink-0" style={{
                     width: 14, height: 14, borderRadius: 3,
@@ -302,7 +306,7 @@ function FilterPropertiesSheet({
                     {bookmarkOnly && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 8, color: 'var(--primary-foreground)' }} />}
                   </span>
                   <span style={{ color: 'var(--foreground)' }}>Bookmarked only</span>
-                </button>
+                </Button>
               </div>
             </div>
             {activeFilterCount > 0 && (
@@ -336,16 +340,18 @@ function FilterPropertiesSheet({
               {QB_COLS.filter(c => c.hideable).map(col => {
                 const visible = !hiddenCols.has(col.key)
                 return (
-                  <button
+                  <Button
                     key={col.key}
+                    variant="ghost"
+                    size="xs"
                     onClick={() => setHiddenCols(prev => {
                       const next = new Set(prev)
                       if (next.has(col.key)) next.delete(col.key)
                       else next.add(col.key)
                       return next
                     })}
-                    className="flex items-center gap-3 w-full px-2 py-2.5 rounded-lg transition-colors hover:bg-muted/60"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                    className="flex items-center gap-3 w-full px-2 py-2.5 rounded-lg transition-colors hover:bg-muted/60 h-auto font-normal justify-start"
+                    style={{ cursor: 'pointer' }}
                   >
                     <i
                       className={`fa-light ${visible ? 'fa-eye' : 'fa-eye-slash'} text-sm`}
@@ -358,7 +364,7 @@ function FilterPropertiesSheet({
                     {!visible && (
                       <span className="ml-auto text-xs" style={{ color: 'var(--muted-foreground)' }}>Hidden</span>
                     )}
-                  </button>
+                  </Button>
                 )
               })}
             </div>
@@ -874,10 +880,14 @@ export function QBTable() {
           <i className="fa-regular fa-inbox text-3xl opacity-35 text-muted-foreground" aria-hidden="true" />
           <span className="text-sm text-muted-foreground">No questions match your filters</span>
           {hasAnyFilter && (
-            <button onClick={clearAllFilters}
-              style={{ fontSize: 12, color: 'var(--brand-color)', background: 'none', border: 'none', cursor: 'pointer' }}>
+            <Button
+              variant="link"
+              size="xs"
+              onClick={clearAllFilters}
+              style={{ fontSize: 12, color: 'var(--brand-color)' }}
+            >
               Clear filters
-            </button>
+            </Button>
           )}
         </div>
       ) : (

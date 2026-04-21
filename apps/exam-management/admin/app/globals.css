@@ -87,6 +87,7 @@
   --qb-diff-bar-easy:   color-mix(in oklch, var(--chart-2) 60%, var(--background));
   --qb-diff-bar-medium: color-mix(in oklch, var(--chart-4) 60%, var(--background));
   --qb-diff-bar-hard:   color-mix(in oklch, var(--destructive) 50%, var(--background));
+  --qb-folder-selected-bg: color-mix(in oklch, var(--brand-color) 10%, var(--background));
 }
 
 /* Courses table row tints */
