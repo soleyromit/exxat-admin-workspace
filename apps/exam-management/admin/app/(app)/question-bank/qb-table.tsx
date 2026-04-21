@@ -395,6 +395,45 @@ const ENUM_FILTERS: Partial<Record<string, readonly string[]>> = {
   blooms:     ['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'] as const,
 }
 
+// ── Difficulty distribution popover content ───────────────────────────────────
+function DiffDistributionPopover() {
+  const { visibleQuestions } = useQB()
+  const total  = visibleQuestions.length
+  const easy   = visibleQuestions.filter(q => q.difficulty === 'Easy').length
+  const medium = visibleQuestions.filter(q => q.difficulty === 'Medium').length
+  const hard   = visibleQuestions.filter(q => q.difficulty === 'Hard').length
+
+  if (total === 0) return <p style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>No questions visible</p>
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--foreground)' }}>
+        Difficulty — {total} visible
+      </div>
+      <div style={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', gap: 1 }}>
+        {easy   > 0 && <div style={{ flex: easy,   background: 'var(--qb-diff-bar-easy)' }} />}
+        {medium > 0 && <div style={{ flex: medium, background: 'var(--qb-diff-bar-medium)' }} />}
+        {hard   > 0 && <div style={{ flex: hard,   background: 'var(--qb-diff-bar-hard)' }} />}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {([
+          ['Easy',   easy,   'var(--qb-diff-bar-easy)'],
+          ['Medium', medium, 'var(--qb-diff-bar-medium)'],
+          ['Hard',   hard,   'var(--qb-diff-bar-hard)'],
+        ] as const).map(([label, count, color]) => (
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ width: 8, height: 8, borderRadius: 2, background: color, flexShrink: 0 }} />
+            <span style={{ flex: 1, fontSize: 11, color: 'var(--foreground)' }}>{label}</span>
+            <span style={{ fontSize: 11, color: 'var(--muted-foreground)', fontWeight: 500 }}>
+              {count} ({Math.round(count / total * 100)}%)
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ── Column header with sort indicator + contextual menu ───────────────────────
 function ColHeader({
   col, sortCol, sortDir, onSort, onHide, onPin,
@@ -427,6 +466,15 @@ function ColHeader({
     ? { position: 'sticky', left: 0, zIndex: 2, background: 'var(--dt-header-bg)', boxShadow: '2px 0 4px var(--sticky-edge-fade)' }
     : {}
 
+  const [diffHoverOpen, setDiffHoverOpen] = useState(false)
+  const diffHoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (diffHoverTimerRef.current) clearTimeout(diffHoverTimerRef.current)
+    }
+  }, [])
+
   return (
     <TableHead
       className={`${TH} ${className ?? ''}`}
@@ -443,7 +491,24 @@ function ColHeader({
           className="flex items-center gap-1 group/col-hdr cursor-pointer select-none w-full"
           onClick={() => col.sortKey && onSort(col.key, isActive && sortDir === 'asc' ? 'desc' : 'asc')}
         >
-          <span className="flex-1 truncate">{col.label}</span>
+          {col.key === 'difficulty' ? (
+            <Popover open={diffHoverOpen} onOpenChange={setDiffHoverOpen}>
+              <PopoverTrigger asChild>
+                <span
+                  className="flex-1 truncate cursor-default"
+                  onMouseEnter={() => { diffHoverTimerRef.current = setTimeout(() => setDiffHoverOpen(true), 400) }}
+                  onMouseLeave={() => { if (diffHoverTimerRef.current) clearTimeout(diffHoverTimerRef.current); setDiffHoverOpen(false) }}
+                >
+                  {col.label}
+                </span>
+              </PopoverTrigger>
+              <PopoverContent side="bottom" align="start" className="w-52 p-3">
+                <DiffDistributionPopover />
+              </PopoverContent>
+            </Popover>
+          ) : (
+            <span className="flex-1 truncate">{col.label}</span>
+          )}
           {isActive && (
             <i
               className={`fa-solid ${sortDir === 'asc' ? 'fa-arrow-up' : 'fa-arrow-down'} text-[9px]`}
