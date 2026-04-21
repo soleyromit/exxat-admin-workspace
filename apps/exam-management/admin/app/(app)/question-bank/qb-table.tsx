@@ -496,7 +496,10 @@ function ColHeader({
               <PopoverTrigger asChild>
                 <span
                   className="flex-1 truncate cursor-default"
-                  onMouseEnter={() => { diffHoverTimerRef.current = setTimeout(() => setDiffHoverOpen(true), 400) }}
+                  onMouseEnter={() => {
+                    if (diffHoverTimerRef.current) clearTimeout(diffHoverTimerRef.current)
+                    diffHoverTimerRef.current = setTimeout(() => setDiffHoverOpen(true), 400)
+                  }}
                   onMouseLeave={() => { if (diffHoverTimerRef.current) clearTimeout(diffHoverTimerRef.current); setDiffHoverOpen(false) }}
                 >
                   {col.label}
