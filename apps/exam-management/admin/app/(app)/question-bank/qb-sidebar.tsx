@@ -15,7 +15,7 @@ function courseFolderLabel(name: string): string {
   return `${match[1]} · Question Bank`
 }
 
-function getFolderIcon(node: FolderNode, _depth: number, expanded: boolean, selected: boolean) {
+function getFolderIcon(node: FolderNode, expanded: boolean, selected: boolean) {
   if (node.isCourse) return { cls: 'fa-solid fa-graduation-cap', color: selected ? 'var(--brand-color)' : 'var(--muted-foreground)' }
   return {
     cls: expanded ? 'fa-solid fa-folder-open' : (selected ? 'fa-solid fa-folder' : 'fa-regular fa-folder'),
@@ -53,7 +53,7 @@ function FolderContextMenu({ node, isAdmin }: { node: FolderNode; isAdmin: boole
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onClick={() => {}}>
-          <i className="fa-light fa-trash" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+          <i className="fa-light fa-trash-can" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
           Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -95,7 +95,7 @@ function InlineFolderInput({
         aria-hidden="true"
         style={{ fontSize: 13, color: 'var(--brand-color)', width: 16, textAlign: 'center' }}
       />
-      <input
+      <Input
         ref={inputRef}
         value={name}
         onChange={e => setName(e.target.value)}
@@ -104,11 +104,7 @@ function InlineFolderInput({
           if (e.key === 'Escape') onCancel()
         }}
         onBlur={confirm}
-        style={{
-          flex: 1, fontSize: 12, padding: '2px 6px', borderRadius: 4,
-          border: 'none', outline: '2px solid var(--brand-color)',
-          background: 'var(--background)', color: 'var(--foreground)',
-        }}
+        style={{ flex: 1, fontSize: 12 }}
         placeholder="Folder name…"
       />
       <Button variant="ghost" size="icon-xs" onClick={confirm} aria-label="Confirm">
@@ -147,7 +143,7 @@ function FolderRow({
   const isExpanded = expandedFolderIds.has(node.id)
   const isDragOver = dragOverFolderId === node.id
   const hasChildren = folders.some(f => f.parentId === node.id)
-  const icon = getFolderIcon(node, depth, isExpanded, isSelected)
+  const icon = getFolderIcon(node, isExpanded, isSelected)
 
   const selectedBg = `color-mix(in oklch, var(--brand-color) 10%, var(--background))`
 
@@ -226,7 +222,7 @@ function FolderRow({
           tabIndex={-1}
         >
           <i
-            className={`fa-regular ${isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'}`}
+            className={`fa-light ${isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'}`}
             aria-hidden="true"
             style={{ fontSize: 9 }}
           />
@@ -238,7 +234,7 @@ function FolderRow({
 
         {/* Name */}
         {isRenaming ? (
-          <input
+          <Input
             ref={renameRef}
             value={renameName}
             onChange={e => setRenameName(e.target.value)}
@@ -248,12 +244,7 @@ function FolderRow({
             }}
             onBlur={() => setIsRenaming(false)}
             onClick={e => e.stopPropagation()}
-            style={{
-              flex: 1, fontSize: 12, padding: '1px 4px', borderRadius: 3,
-              border: 'none', outline: '2px solid var(--brand-color)',
-              background: 'var(--background)', color: 'var(--brand-color)',
-              fontWeight: 500,
-            }}
+            style={{ flex: 1, fontSize: 12, color: 'var(--brand-color)', fontWeight: 500 }}
           />
         ) : (
           <span style={{
