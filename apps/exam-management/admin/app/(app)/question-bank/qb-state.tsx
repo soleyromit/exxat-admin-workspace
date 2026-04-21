@@ -136,13 +136,22 @@ export function QBProvider({ children }: { children: ReactNode }) {
 
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  function setHighlightedFolderId(id: string | null) {
-    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current)
+  const setHighlightedFolderId = useCallback((id: string | null) => {
     setHighlightedFolderIdState(id)
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current)
     if (id !== null) {
-      highlightTimerRef.current = setTimeout(() => setHighlightedFolderIdState(null), 1500)
+      highlightTimerRef.current = setTimeout(() => {
+        setHighlightedFolderIdState(null)
+        highlightTimerRef.current = null
+      }, 1500)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current)
+    }
+  }, [])
 
   function navigateToFolder(id: string) {
     setSelectedFolderId(id)
