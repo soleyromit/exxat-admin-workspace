@@ -80,6 +80,12 @@
   --qb-status-draft-fg: oklch(0.45 0.1 70);
 }
 
+/* Courses table row tints */
+:root {
+  --courses-row-open-bg:     color-mix(in oklch, var(--brand-tint) 40%, var(--background));
+  --courses-offering-row-bg: color-mix(in oklch, var(--brand-tint) 18%, var(--background));
+}
+
 /* QB hover behaviors */
 .qb-folder-menu-btn {
   opacity: 0;

@@ -44,7 +44,7 @@ export default function CoursesClient() {
               <TableHead style={{ width: 150 }}>Offering / Semester</TableHead>
               <TableHead style={{ width: 110 }}>Students</TableHead>
               <TableHead style={{ width: 90 }}>Status</TableHead>
-              <TableHead style={{ width: 130 }}>QB Questions</TableHead>
+              <TableHead style={{ width: 130 }}>Assessments</TableHead>
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
@@ -57,7 +57,7 @@ export default function CoursesClient() {
                 <React.Fragment key={course.id}>
                   <TableRow
                     onClick={() => toggle(course.id)}
-                    style={{ cursor: 'pointer', background: isOpen ? 'color-mix(in oklch, var(--brand-tint) 40%, var(--background))' : undefined }}
+                    style={{ cursor: 'pointer', background: isOpen ? 'var(--courses-row-open-bg)' : undefined }}
                   >
                     <TableCell>
                       <i
@@ -97,7 +97,7 @@ export default function CoursesClient() {
                   {isOpen && offerings.map(o => {
                     const active = isActiveOffering(o.semester)
                     return (
-                      <TableRow key={o.id} style={{ background: 'color-mix(in oklch, var(--brand-tint) 18%, var(--background))' }}>
+                      <TableRow key={o.id} style={{ background: 'var(--courses-offering-row-bg)' }}>
                         <TableCell></TableCell>
                         <TableCell></TableCell>
                         <TableCell style={{ paddingLeft: 28 }}>
