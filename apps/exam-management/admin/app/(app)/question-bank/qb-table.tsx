@@ -23,6 +23,7 @@ const TD = 'px-3 py-2.5 align-middle border-b border-border group-last/row:borde
 
 // ── Column definitions ────────────────────────────────────────────────────────
 const QB_COLS = [
+  { key: 'select',       label: '',               sortKey: null,          hideable: false, sortable: false },
   { key: 'title',        label: 'Question',       sortKey: 'title',       hideable: false },
   { key: 'status',       label: 'Status',         sortKey: 'status',      hideable: false },
   { key: 'type',         label: 'Type',           sortKey: 'type',        hideable: true  },
@@ -35,6 +36,7 @@ const QB_COLS = [
   { key: 'pbis',         label: 'P–',             sortKey: 'pbis',        hideable: true  },
   { key: 'version',      label: 'Ver.',           sortKey: null,          hideable: true  },
   { key: 'favorited',    label: '★',              sortKey: null,          hideable: false },
+  { key: 'actions',      label: '',               sortKey: null,          hideable: false, sortable: false },
 ] as const
 
 type ColKey = (typeof QB_COLS)[number]['key']
