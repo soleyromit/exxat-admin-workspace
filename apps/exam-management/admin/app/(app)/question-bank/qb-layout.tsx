@@ -1,5 +1,6 @@
 'use client'
 import { useQB } from './qb-state'
+import { ManageAccessDialog } from './qb-manage-access'
 
 export function QBLayoutInner({ children }: { children: React.ReactNode }) {
   const { closeAllOverlays } = useQB()
@@ -10,6 +11,7 @@ export function QBLayoutInner({ children }: { children: React.ReactNode }) {
       onClick={closeAllOverlays}
     >
       {children}
+      <ManageAccessDialog />
     </div>
   )
 }
