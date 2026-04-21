@@ -19,6 +19,11 @@ interface QBState {
   expandedFolderIds: Set<string>
   toggleFolder: (id: string) => void
   folders: FolderNode[]
+  createFolder: (name: string, parentId: string) => void
+  renameFolder: (id: string, name: string) => void
+  deleteFolder: (id: string) => void
+  moveFolder: (id: string, newParentId: string) => void
+  setFolderIcon: (id: string, icon: string) => void
 
   sidebarSearch: string
   setSidebarSearch: (v: string) => void
@@ -107,6 +112,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null)
   const [openMenuQuestionId, setOpenMenuQuestionId] = useState<string | null>(null)
   const [collaboratorsModalFolderId, setCollaboratorsModalFolderId] = useState<string | null>(null)
+  const [folders, setFolders] = useState<FolderNode[]>(MOCK_QB_FOLDERS)
 
   // Auto-select first assigned folder for Faculty on mount
   useEffect(() => {
@@ -155,13 +161,12 @@ export function QBProvider({ children }: { children: ReactNode }) {
 
   function navigateToFolder(id: string) {
     setSelectedFolderId(id)
-    // Expand ancestors
     setExpandedFolderIds(prev => {
       const next = new Set(prev)
-      let node = MOCK_QB_FOLDERS.find(f => f.id === id)
+      let node = folders.find(f => f.id === id)
       while (node?.parentId) {
         next.add(node.parentId)
-        node = MOCK_QB_FOLDERS.find(f => f.id === node!.parentId)
+        node = folders.find(f => f.id === node!.parentId)
       }
       return next
     })
@@ -175,6 +180,40 @@ export function QBProvider({ children }: { children: ReactNode }) {
       else next.add(id)
       return next
     })
+  }, [])
+
+  const createFolder = useCallback((name: string, parentId: string) => {
+    const newId = `folder-${Date.now()}`
+    setFolders(prev => [...prev, { id: newId, name, parentId, count: 0 }])
+    setExpandedFolderIds(prev => new Set([...prev, parentId]))
+    setTimeout(() => setSelectedFolderIdState(newId), 50)
+  }, [])
+
+  const renameFolder = useCallback((id: string, name: string) => {
+    setFolders(prev => prev.map(f => f.id === id ? { ...f, name } : f))
+  }, [])
+
+  const deleteFolder = useCallback((id: string) => {
+    setFolders(prev => {
+      const toRemove = new Set<string>()
+      const queue = [id]
+      while (queue.length) {
+        const cur = queue.shift()!
+        toRemove.add(cur)
+        prev.filter(f => f.parentId === cur).forEach(f => queue.push(f.id))
+      }
+      return prev.filter(f => !toRemove.has(f.id))
+    })
+    setSelectedFolderIdState(null)
+    setNavViewState('my')
+  }, [])
+
+  const moveFolder = useCallback((id: string, newParentId: string) => {
+    setFolders(prev => prev.map(f => f.id === id ? { ...f, parentId: newParentId } : f))
+  }, [])
+
+  const setFolderIcon = useCallback((id: string, icon: string) => {
+    setFolders(prev => prev.map(f => f.id === id ? { ...f, icon } : f))
   }, [])
 
   const toggleQuestionFavorited = useCallback((id: string) => {
@@ -198,14 +237,14 @@ export function QBProvider({ children }: { children: ReactNode }) {
       : navView === 'my'
       ? q.creator === currentPersona.id
       : selectedFolderId
-        ? isInSubtree(q.folder, selectedFolderId, MOCK_QB_FOLDERS)
+        ? isInSubtree(q.folder, selectedFolderId, folders)
         : true
 
     const myFilter = myQuestionsOnly ? q.creator === currentPersona.id : true
     const favFilter = favoritesFilter ? favoritedIds.has(q.id) : true
 
     return roleVisible && navVisible && myFilter && favFilter
-  }), [isAdmin, currentPersona.id, navView, selectedFolderId, myQuestionsOnly, favoritesFilter, favoritedIds])
+  }), [isAdmin, currentPersona.id, navView, selectedFolderId, myQuestionsOnly, favoritesFilter, favoritedIds, folders])
 
   const toggleQuestionSelection = useCallback((id: string) => {
     setSelectedQuestionIds(prev => {
@@ -227,7 +266,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const selectedFolder = selectedFolderId
-    ? MOCK_QB_FOLDERS.find(f => f.id === selectedFolderId) ?? null
+    ? folders.find(f => f.id === selectedFolderId) ?? null
     : null
 
   const value: QBState = {
@@ -236,7 +275,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
     sidebarOpen, setSidebarOpen,
     selectedFolderId, setSelectedFolderId,
     expandedFolderIds, toggleFolder,
-    folders: MOCK_QB_FOLDERS,
+    folders, createFolder, renameFolder, deleteFolder, moveFolder, setFolderIcon,
     sidebarSearch, setSidebarSearch,
     highlightedFolderId, setHighlightedFolderId, navigateToFolder,
     myQuestionsOnly, setMyQuestionsOnly,

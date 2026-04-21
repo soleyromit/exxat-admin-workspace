@@ -24,6 +24,22 @@ export const MOCK_QB_FOLDERS: FolderNode[] = [
   { id: 'skel101-elbow',       name: 'Elbow & Forearm',  parentId: 'skel101', count: 11 },
   { id: 'skel101-cervical',    name: 'Cervical Spine',   parentId: 'skel101', count: 13 },
   { id: 'skel101-lumbar',      name: 'Lumbar Spine',     parentId: 'skel101', count: 10 },
+
+  // ── PHAR101 depth-2 subfolders (under Antibiotics & Antimicrobials) ──
+  { id: 'phar101-abx-gram-pos',   name: 'Gram-Positive Organisms',     parentId: 'phar101-antibiotics', count: 8 },
+  { id: 'phar101-abx-gram-neg',   name: 'Gram-Negative Organisms',     parentId: 'phar101-antibiotics', count: 7 },
+  { id: 'phar101-abx-resistant',  name: 'Resistant Organisms',         parentId: 'phar101-antibiotics', count: 3 },
+
+  // ── PHAR101 depth-3 subfolders ──
+  { id: 'phar101-abx-gpos-staph', name: 'Staphylococcus Coverage',     parentId: 'phar101-abx-gram-pos', count: 4 },
+  { id: 'phar101-abx-gpos-strep', name: 'Streptococcus Coverage',      parentId: 'phar101-abx-gram-pos', count: 4 },
+
+  // ── PHAR101 depth-4 subfolders ──
+  { id: 'phar101-abx-mrsa',       name: 'MRSA Protocols',              parentId: 'phar101-abx-gpos-staph', count: 2 },
+  { id: 'phar101-abx-mssa',       name: 'MSSA Protocols',              parentId: 'phar101-abx-gpos-staph', count: 2 },
+
+  // ── PHAR101 depth-5 subfolder ──
+  { id: 'phar101-abx-mrsa-combo', name: 'Combination Therapy',         parentId: 'phar101-abx-mrsa', count: 1 },
 ]
 
 // ─── Questions ───────────────────────────────────────────────────────────────

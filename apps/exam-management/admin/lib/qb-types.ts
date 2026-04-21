@@ -33,6 +33,8 @@ export interface Question {
   favorited?: boolean
 }
 
+export type AccessRole = 'edit' | 'view'
+
 export interface FolderNode {
   id: string
   name: string
@@ -43,6 +45,8 @@ export interface FolderNode {
   isPrivateSpace?: boolean
   ownerPersonaId?: string
   collaborators?: string[]
+  collaboratorRoles?: Record<string, AccessRole>  // personaId → role
+  icon?: string                                    // FA icon name e.g. 'fa-folder'
 }
 
 export interface Persona {
