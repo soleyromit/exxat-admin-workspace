@@ -311,6 +311,7 @@ export function QBSidebar() {
   } = useQB()
 
   const [inlineCreateParent, setInlineCreateParent] = useState<string | 'root' | null>(null)
+  const [searchExpanded, setSearchExpanded] = useState(false)
 
   const isAdmin = currentPersona.role === 'Admin'
 
@@ -411,33 +412,57 @@ export function QBSidebar() {
       {/* Scrollable tree area */}
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '8px 0' }}>
 
-        {/* ── Courses section header ── */}
-        <div style={{ padding: '4px 12px 6px' }}>
-          <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)' }}>
-            {isAdmin ? 'Question Bank' : 'My Question Bank'}
-          </span>
-        </div>
-
-        {/* Search bar */}
-        <div style={{ padding: '0 8px 8px' }}>
-          <InputGroup>
-            <Input
-              placeholder="Search folders…"
-              value={sidebarSearch}
-              onChange={e => setSidebarSearch(e.target.value)}
-              style={{ height: 28, fontSize: 12 }}
-            />
-            <InputGroupAddon align="inline-end">
-              {sidebarSearch
-                ? (
-                  <Button variant="ghost" size="icon-xs" aria-label="Clear search" onClick={() => setSidebarSearch('')}>
-                    <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 11 }} />
-                  </Button>
-                )
-                : <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 11, color: 'var(--muted-foreground)', padding: '0 6px' }} />
-              }
-            </InputGroupAddon>
-          </InputGroup>
+        {/* ── Question Bank section header with icon-only search ── */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          padding: '4px 8px 4px 12px',
+          gap: 4,
+          minHeight: 30,
+        }}>
+          {searchExpanded ? (
+            /* Expanded: full search input inline */
+            <>
+              <InputGroup style={{ flex: 1 }}>
+                <Input
+                  autoFocus
+                  placeholder="Search folders…"
+                  value={sidebarSearch}
+                  onChange={e => setSidebarSearch(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Escape') { setSidebarSearch(''); setSearchExpanded(false) } }}
+                  style={{ height: 26, fontSize: 12 }}
+                />
+                <InputGroupAddon align="inline-end">
+                  <i className="fa-light fa-magnifying-glass" aria-hidden="true"
+                    style={{ fontSize: 11, color: 'var(--muted-foreground)', padding: '0 6px' }} />
+                </InputGroupAddon>
+              </InputGroup>
+              <Button
+                variant="ghost" size="icon-xs"
+                aria-label="Close search"
+                onClick={() => { setSidebarSearch(''); setSearchExpanded(false) }}
+              >
+                <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 12 }} />
+              </Button>
+            </>
+          ) : (
+            /* Collapsed: label + search icon button */
+            <>
+              <span style={{
+                flex: 1,
+                fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+                letterSpacing: '0.07em', color: 'var(--muted-foreground)',
+              }}>
+                {isAdmin ? 'Question Bank' : 'My Question Bank'}
+              </span>
+              <Button
+                variant="ghost" size="icon-xs"
+                aria-label="Search folders"
+                onClick={() => setSearchExpanded(true)}
+              >
+                <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 12 }} />
+              </Button>
+            </>
+          )}
         </div>
 
         {/* Course → Folders tree */}
