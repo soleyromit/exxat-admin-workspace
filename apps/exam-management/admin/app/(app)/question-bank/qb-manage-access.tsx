@@ -126,8 +126,8 @@ export function ManageAccessDialog() {
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setCollaboratorsModalFolderId(null)}>Cancel</Button>
-          <Button onClick={handleSave}>Save</Button>
+          <Button variant="outline" size="default" onClick={() => setCollaboratorsModalFolderId(null)}>Cancel</Button>
+          <Button size="default" onClick={handleSave}>Save</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

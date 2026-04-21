@@ -3,7 +3,7 @@ import { useQB } from './qb-state'
 import { ManageAccessDialog } from './qb-manage-access'
 
 export function QBLayoutInner({ children }: { children: React.ReactNode }) {
-  const { closeAllOverlays } = useQB()
+  const { closeAllOverlays, collaboratorsModalFolderId } = useQB()
 
   return (
     <div
@@ -11,7 +11,7 @@ export function QBLayoutInner({ children }: { children: React.ReactNode }) {
       onClick={closeAllOverlays}
     >
       {children}
-      <ManageAccessDialog />
+      {collaboratorsModalFolderId && <ManageAccessDialog />}
     </div>
   )
 }
