@@ -5,9 +5,19 @@ import type { FolderNode } from '@/lib/qb-types'
 import {
   Button,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
-  Popover, PopoverTrigger, PopoverContent,
   InputGroup, InputGroupAddon, Input,
 } from '@exxat/ds/packages/ui/src'
+
+const ICON_OPTIONS = [
+  { icon: 'fa-folder', label: 'Folder' },
+  { icon: 'fa-book', label: 'Book' },
+  { icon: 'fa-graduation-cap', label: 'Course' },
+  { icon: 'fa-star', label: 'Star' },
+  { icon: 'fa-flag', label: 'Flag' },
+  { icon: 'fa-file-lines', label: 'File' },
+  { icon: 'fa-rectangle-list', label: 'List' },
+  { icon: 'fa-layer-group', label: 'Stack' },
+]
 
 function courseFolderLabel(name: string): string {
   // Input: "PHAR101 Question Bank (QB)" → Output: "PHAR101 · Question Bank"
@@ -42,17 +52,6 @@ function FolderContextMenu({
 }) {
   const { setCollaboratorsModalFolderId } = useQB()
   const [iconPickerOpen, setIconPickerOpen] = useState(false)
-
-  const ICON_OPTIONS = [
-    { icon: 'fa-folder', label: 'Folder' },
-    { icon: 'fa-book', label: 'Book' },
-    { icon: 'fa-graduation-cap', label: 'Course' },
-    { icon: 'fa-star', label: 'Star' },
-    { icon: 'fa-flag', label: 'Flag' },
-    { icon: 'fa-file-lines', label: 'File' },
-    { icon: 'fa-rectangle-list', label: 'List' },
-    { icon: 'fa-layer-group', label: 'Stack' },
-  ]
 
   if (!isAdmin) return null
   return (
@@ -103,8 +102,10 @@ function FolderContextMenu({
               onClick={(e) => e.stopPropagation()}
             >
               {ICON_OPTIONS.map((o) => (
-                <button
+                <Button
                   key={o.icon}
+                  variant="ghost"
+                  size="icon-xs"
                   aria-label={o.label}
                   onClick={() => {
                     onChangeIcon(o.icon)
@@ -113,18 +114,13 @@ function FolderContextMenu({
                   style={{
                     width: 32,
                     height: 32,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
                     background: node.icon === o.icon ? 'var(--brand-tint)' : 'transparent',
                     border: node.icon === o.icon ? '1px solid var(--brand-color)' : '1px solid transparent',
                     borderRadius: 6,
-                    cursor: 'pointer',
-                    color: 'var(--foreground)',
                   }}
                 >
                   <i className={`fa-light ${o.icon}`} aria-hidden="true" style={{ fontSize: 13 }} />
-                </button>
+                </Button>
               ))}
             </div>
           )}
