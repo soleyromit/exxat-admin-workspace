@@ -82,6 +82,11 @@
   /* Folder delete impact panel */
   --qb-delete-impact-bg:     color-mix(in oklch, var(--destructive) 8%, var(--background));
   --qb-delete-impact-border: color-mix(in oklch, var(--destructive) 20%, transparent);
+
+  /* Folder diff popover */
+  --qb-diff-bar-easy:   color-mix(in oklch, var(--chart-2) 60%, var(--background));
+  --qb-diff-bar-medium: color-mix(in oklch, var(--chart-4) 60%, var(--background));
+  --qb-diff-bar-hard:   color-mix(in oklch, var(--destructive) 50%, var(--background));
 }
 
 /* Courses table row tints */

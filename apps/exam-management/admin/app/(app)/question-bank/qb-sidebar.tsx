@@ -7,6 +7,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
   InputGroup, InputGroupAddon, Input,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Popover, PopoverTrigger, PopoverContent,
 } from '@exxat/ds/packages/ui/src'
 
 const ICON_OPTIONS = [
@@ -363,6 +364,60 @@ function InlineFolderInput({
   )
 }
 
+function FolderDiffPopover({ folderId }: { folderId: string }) {
+  const { folders, questions } = useQB()
+
+  const folderIds = getDescendantIds(folderId, folders)
+  const folderQuestions = questions.filter(q => folderIds.has(q.folder))
+
+  if (folderQuestions.length === 0) {
+    return <p style={{ fontSize: 11, color: 'var(--muted-foreground)', padding: '2px 0' }}>No questions yet</p>
+  }
+
+  const total  = folderQuestions.length
+  const easy   = folderQuestions.filter(q => q.difficulty === 'Easy').length
+  const medium = folderQuestions.filter(q => q.difficulty === 'Medium').length
+  const hard   = folderQuestions.filter(q => q.difficulty === 'Hard').length
+
+  const withPbis = folderQuestions.filter(q => q.pbis !== null)
+  const avgPbis  = withPbis.length > 0
+    ? (withPbis.reduce((sum, q) => sum + (q.pbis ?? 0), 0) / withPbis.length)
+    : null
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--foreground)' }}>
+        {total} question{total !== 1 ? 's' : ''}
+      </div>
+      <div>
+        <div style={{ fontSize: 10, color: 'var(--muted-foreground)', marginBottom: 4 }}>Difficulty</div>
+        <div style={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', gap: 1 }}>
+          {easy   > 0 && <div style={{ flex: easy,   background: 'var(--qb-diff-bar-easy)' }} />}
+          {medium > 0 && <div style={{ flex: medium, background: 'var(--qb-diff-bar-medium)' }} />}
+          {hard   > 0 && <div style={{ flex: hard,   background: 'var(--qb-diff-bar-hard)' }} />}
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+          {([['Easy', easy, 'var(--qb-diff-bar-easy)'], ['Medium', medium, 'var(--qb-diff-bar-medium)'], ['Hard', hard, 'var(--qb-diff-bar-hard)']] as const).map(([label, count, color]) =>
+            count > 0 && (
+              <span key={label} style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 3 }}>
+                <span style={{ width: 8, height: 8, borderRadius: 2, background: color, display: 'inline-block' }} />
+                {label}: {count}
+              </span>
+            )
+          )}
+        </div>
+      </div>
+      <div style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>
+        Avg. pBIS:{' '}
+        <span style={{ fontWeight: 600, color: 'var(--foreground)' }}>
+          {avgPbis !== null ? avgPbis.toFixed(2) : '—'}
+        </span>
+        {withPbis.length < total && ` (${withPbis.length} of ${total} scored)`}
+      </div>
+    </div>
+  )
+}
+
 function FolderRow({
   node,
   depth,
@@ -390,6 +445,16 @@ function FolderRow({
   const [moveFolderDialogOpen, setMoveFolderDialogOpen] = useState(false)
   const [deleteFolderDialogOpen, setDeleteFolderDialogOpen] = useState(false)
   const renameRef = useRef<HTMLInputElement>(null)
+  const [hoverOpen, setHoverOpen] = useState(false)
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function handleMouseEnter() {
+    hoverTimerRef.current = setTimeout(() => setHoverOpen(true), 600)
+  }
+  function handleMouseLeave() {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
+    setHoverOpen(false)
+  }
 
   const isSelected = selectedFolderId === node.id
   const isExpanded = expandedFolderIds.has(node.id)
@@ -403,6 +468,8 @@ function FolderRow({
 
   return (
     <div style={{ position: 'relative' }}>
+      <Popover open={hoverOpen} onOpenChange={setHoverOpen}>
+        <PopoverTrigger asChild>
       <div
         role="treeitem"
         aria-selected={isSelected}
@@ -435,6 +502,8 @@ function FolderRow({
           e.preventDefault()
           setDragOverFolderId(null)
         }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         style={{
           display: 'flex', alignItems: 'center', gap: 4,
           height: 32,
@@ -544,6 +613,11 @@ function FolderRow({
           onDelete={() => setDeleteFolderDialogOpen(true)}
         />
       </div>
+        </PopoverTrigger>
+        <PopoverContent side="right" align="start" className="w-52 p-3" style={{ zIndex: 100 }}>
+          <FolderDiffPopover folderId={node.id} />
+        </PopoverContent>
+      </Popover>
       {showingInlineCreate && (
         <InlineFolderInput
           depth={depth + 1}
