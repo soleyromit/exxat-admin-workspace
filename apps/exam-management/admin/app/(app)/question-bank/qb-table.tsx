@@ -271,7 +271,7 @@ function FilterPropertiesSheet({
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-5">
               <FilterSection
                 label="Status"
-                options={['Draft', 'Active', 'Ready', 'In Review', 'Flagged', 'Approved', 'Locked'] as const}
+                options={['Saved', 'Draft'] as const}
                 selected={statusFilter}
                 onToggle={v => setStatusFilter(prev => toggleFilter(prev, v))}
               />
