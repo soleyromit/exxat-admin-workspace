@@ -6,6 +6,7 @@ import {
   Button,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
   InputGroup, InputGroupAddon, Input,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@exxat/ds/packages/ui/src'
 
 const ICON_OPTIONS = [
@@ -37,18 +38,107 @@ function getFolderIcon(node: FolderNode, expanded: boolean, selected: boolean) {
   }
 }
 
+function MoveFolderDialog({
+  node,
+  open,
+  onClose,
+}: {
+  node: FolderNode
+  open: boolean
+  onClose: () => void
+}) {
+  const { folders, moveFolder } = useQB()
+  const [targetId, setTargetId] = useState<string | null>(null)
+
+  function getDescendantIds(id: string): Set<string> {
+    const result = new Set<string>([id])
+    folders.filter(f => f.parentId === id).forEach(f => {
+      getDescendantIds(f.id).forEach(d => result.add(d))
+    })
+    return result
+  }
+
+  const excluded = getDescendantIds(node.id)
+  const eligible = folders.filter(f => !excluded.has(f.id) && f.id !== node.parentId)
+
+  function getFolderPath(f: FolderNode): string {
+    const parts: string[] = [f.name]
+    let cur: FolderNode | undefined = f
+    while (cur?.parentId) {
+      cur = folders.find(x => x.id === cur!.parentId)
+      if (cur) parts.unshift(cur.isCourse ? courseFolderLabel(cur.name) : cur.name)
+    }
+    return parts.join(' / ')
+  }
+
+  function handleConfirm() {
+    if (targetId) {
+      moveFolder(node.id, targetId)
+      onClose()
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Move &quot;{node.name}&quot;</DialogTitle>
+        </DialogHeader>
+        <div style={{ maxHeight: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {eligible.map(f => (
+            <Button
+              key={f.id}
+              variant="ghost"
+              onClick={() => setTargetId(f.id)}
+              className="w-full justify-start"
+              style={{
+                background: targetId === f.id ? 'var(--brand-tint)' : 'transparent',
+                border: targetId === f.id ? '1px solid var(--brand-color)' : '1px solid transparent',
+                borderRadius: 6,
+                fontSize: 12,
+                height: 'auto',
+                padding: '6px 10px',
+              }}
+            >
+              <i
+                className={`fa-light ${f.isCourse ? 'fa-graduation-cap' : 'fa-folder'}`}
+                aria-hidden="true"
+                style={{ fontSize: 12, color: 'var(--muted-foreground)', width: 14, flexShrink: 0 }}
+              />
+              <span style={{ textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {getFolderPath(f)}
+              </span>
+            </Button>
+          ))}
+          {eligible.length === 0 && (
+            <p style={{ fontSize: 12, color: 'var(--muted-foreground)', padding: '8px 0' }}>
+              No valid move targets available.
+            </p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleConfirm} disabled={!targetId}>Move here</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function FolderContextMenu({
   node,
   isAdmin,
   onRename,
   onAddSubfolder,
   onChangeIcon,
+  onMove,
 }: {
   node: FolderNode
   isAdmin: boolean
   onRename: () => void
   onAddSubfolder: () => void
   onChangeIcon: (icon: string) => void
+  onMove: () => void
 }) {
   const { setCollaboratorsModalFolderId } = useQB()
   const [iconPickerOpen, setIconPickerOpen] = useState(false)
@@ -124,6 +214,10 @@ function FolderContextMenu({
               ))}
             </div>
           )}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onMove()}>
+          <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+          Move to subfolder
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onClick={() => {}}>
@@ -222,6 +316,7 @@ function FolderRow({
   const [isRenaming, setIsRenaming] = useState(false)
   const [renameName, setRenameName] = useState(node.name)
   const [showingInlineCreate, setShowingInlineCreate] = useState(false)
+  const [moveFolderDialogOpen, setMoveFolderDialogOpen] = useState(false)
   const renameRef = useRef<HTMLInputElement>(null)
 
   const isSelected = selectedFolderId === node.id
@@ -373,6 +468,7 @@ function FolderRow({
           }}
           onAddSubfolder={() => setShowingInlineCreate(true)}
           onChangeIcon={(icon) => setFolderIcon(node.id, icon)}
+          onMove={() => setMoveFolderDialogOpen(true)}
         />
       </div>
       {showingInlineCreate && (
@@ -383,6 +479,13 @@ function FolderRow({
             setShowingInlineCreate(false)
           }}
           onCancel={() => setShowingInlineCreate(false)}
+        />
+      )}
+      {moveFolderDialogOpen && (
+        <MoveFolderDialog
+          node={node}
+          open={moveFolderDialogOpen}
+          onClose={() => setMoveFolderDialogOpen(false)}
         />
       )}
     </div>
