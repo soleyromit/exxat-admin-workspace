@@ -96,7 +96,7 @@ function DeleteFolderDialog({
                       <div key={q.id} style={{ fontSize: 11, color: 'var(--foreground)' }}>
                         · {q.title.slice(0, 60)}{q.title.length > 60 ? '…' : ''}{' '}
                         <span style={{ color: 'var(--muted-foreground)' }}>
-                          ({q.usedInSections!.join(', ')})
+                          ({(q.usedInSections ?? []).join(', ')})
                         </span>
                       </div>
                     ))}
