@@ -48,7 +48,7 @@ function FolderContextMenu({ node, isAdmin, onRename }: { node: FolderNode; isAd
           Manage Access
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => onRename()}>
-          <i className="fa-light fa-pencil" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+          <i className="fa-light fa-pen" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
           Rename
         </DropdownMenuItem>
         <DropdownMenuSeparator />
@@ -241,8 +241,8 @@ function FolderRow({
             onChange={e => setRenameName(e.target.value)}
             onKeyDown={e => {
               if (e.key === 'Enter') {
-                if (renameName.trim()) renameFolder(node.id, renameName.trim())
-                setIsRenaming(false)
+                e.preventDefault()
+                renameRef.current?.blur()
               }
               if (e.key === 'Escape') {
                 setIsRenaming(false)
@@ -250,7 +250,12 @@ function FolderRow({
               }
             }}
             onBlur={() => {
-              if (renameName.trim()) renameFolder(node.id, renameName.trim())
+              if (renameName.trim()) {
+                renameFolder(node.id, renameName.trim())
+                setRenameName(renameName.trim())
+              } else {
+                setRenameName(node.name)
+              }
               setIsRenaming(false)
             }}
             onClick={e => e.stopPropagation()}
