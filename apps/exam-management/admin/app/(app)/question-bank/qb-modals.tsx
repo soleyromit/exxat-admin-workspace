@@ -3,10 +3,9 @@ import { useState, useRef, useEffect } from 'react'
 import { useQB } from './qb-state'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
   Button, Badge, Avatar, AvatarFallback,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  InputGroup, InputGroupAddon, Input, Textarea, ToggleSwitch,
+  InputGroup, InputGroupAddon, Input, Textarea,
   Field, FieldLabel,
 } from '@exxat/ds/packages/ui/src'
 import { MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
@@ -198,103 +197,3 @@ export function RequestEditAccessModal({ questionTitle, open, onOpenChange }: {
   )
 }
 
-// ── Filter Sheet ──────────────────────────────────────────────────────────────
-export function FilterSheet() {
-  const { filterSheetOpen, setFilterSheetOpen, favoritesFilter, setFavoritesFilter } = useQB()
-  const [statusFilter, setStatusFilter] = useState<('Saved' | 'Draft')[]>([])
-  const [filters, setFilters] = useState<Record<string, string[]>>({})
-
-  function toggleStatus(s: 'Saved' | 'Draft') {
-    setStatusFilter(prev => prev.includes(s) ? prev.filter(v => v !== s) : [...prev, s])
-  }
-
-  function toggleFilter(field: string, val: string) {
-    setFilters(prev => ({
-      ...prev,
-      [field]: prev[field]?.includes(val)
-        ? prev[field].filter(v => v !== val)
-        : [...(prev[field] ?? []), val],
-    }))
-  }
-
-  const sections: [string, string[]][] = [
-    ['Type',        ['MCQ', 'Fill blank', 'Hotspot', 'Ordering', 'Matching']],
-    ['Difficulty',  ['Easy', 'Medium', 'Hard']],
-    ["Bloom's",     ['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create']],
-  ]
-
-  return (
-    <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
-      <SheetContent side="right" showCloseButton style={{ width: 320, display: 'flex', flexDirection: 'column', padding: 0 }}>
-        <SheetHeader style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-          <SheetTitle>Filters</SheetTitle>
-        </SheetHeader>
-
-        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px' }}>
-
-          {/* Favorites */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0', marginBottom: 16 }}>
-            <span style={{ fontSize: 13, fontWeight: 500 }}>Favorites only</span>
-            <ToggleSwitch checked={favoritesFilter} onChange={setFavoritesFilter} />
-          </div>
-
-          {/* Status */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Status</div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {(['Saved', 'Draft'] as const).map(s => (
-                <Button
-                  key={s}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => toggleStatus(s)}
-                  style={statusFilter.includes(s) ? {
-                    borderColor: 'var(--brand-color)',
-                    backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
-                    color: 'var(--brand-color-dark)',
-                  } : {}}
-                >
-                  {s}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {sections.map(([label, opts]) => (
-            <div key={label} style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--foreground)', marginBottom: 8 }}>{label}</div>
-              {opts.map(opt => {
-                const checked = filters[label]?.includes(opt)
-                return (
-                  <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer' }}>
-                    <div
-                      onClick={() => toggleFilter(label, opt)}
-                      style={{
-                        width: 16, height: 16, borderRadius: 4, flexShrink: 0,
-                        border: `2px solid ${checked ? 'var(--brand-color)' : 'var(--border-control-3)'}`,
-                        backgroundColor: checked ? 'var(--brand-color)' : 'var(--background)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                      }}
-                    >
-                      {checked && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 9, color: 'var(--brand-foreground)' }} />}
-                    </div>
-                    <span style={{ fontSize: 13, color: 'var(--foreground)' }}>{opt}</span>
-                  </label>
-                )
-              })}
-            </div>
-          ))}
-        </div>
-
-        <SheetFooter style={{ padding: '12px 20px', borderTop: '1px solid var(--border)', gap: 8, flexShrink: 0 }}>
-          <Button variant="ghost" onClick={() => { setStatusFilter([]); setFilters({}); setFilterSheetOpen(false) }}>
-            Clear all
-          </Button>
-          <Button onClick={() => setFilterSheetOpen(false)} style={{ flex: 1 }}>
-            Apply
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
-  )
-}

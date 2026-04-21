@@ -58,8 +58,6 @@ interface QBState {
 
   collaboratorsModalFolderId: string | null
   setCollaboratorsModalFolderId: (id: string | null) => void
-  filterSheetOpen: boolean
-  setFilterSheetOpen: (v: boolean) => void
 
   visibleQuestions: Question[]
   selectedFolder: FolderNode | null
@@ -109,7 +107,6 @@ export function QBProvider({ children }: { children: ReactNode }) {
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null)
   const [openMenuQuestionId, setOpenMenuQuestionId] = useState<string | null>(null)
   const [collaboratorsModalFolderId, setCollaboratorsModalFolderId] = useState<string | null>(null)
-  const [filterSheetOpen, setFilterSheetOpen] = useState(false)
 
   // Auto-select first assigned folder for Faculty on mount
   useEffect(() => {
@@ -245,7 +242,6 @@ export function QBProvider({ children }: { children: ReactNode }) {
     dragOverFolderId, setDragOverFolderId,
     openMenuQuestionId, setOpenMenuQuestionId,
     collaboratorsModalFolderId, setCollaboratorsModalFolderId,
-    filterSheetOpen, setFilterSheetOpen,
     visibleQuestions, selectedFolder,
     closeAllOverlays,
   }
