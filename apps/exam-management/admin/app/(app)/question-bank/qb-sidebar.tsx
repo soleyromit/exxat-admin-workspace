@@ -72,6 +72,7 @@ function InlineFolderInput({
 }) {
   const [name, setName] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const cancelledRef = useRef(false)
 
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 50)
@@ -79,8 +80,14 @@ function InlineFolderInput({
   }, [])
 
   function confirm() {
+    if (cancelledRef.current) return
     if (name.trim()) onConfirm(name.trim())
     else onCancel()
+  }
+
+  function cancel() {
+    cancelledRef.current = true
+    onCancel()
   }
 
   return (
@@ -101,7 +108,7 @@ function InlineFolderInput({
         onChange={e => setName(e.target.value)}
         onKeyDown={e => {
           if (e.key === 'Enter') confirm()
-          if (e.key === 'Escape') onCancel()
+          if (e.key === 'Escape') cancel()
         }}
         onBlur={confirm}
         style={{ flex: 1, fontSize: 12 }}
@@ -110,7 +117,7 @@ function InlineFolderInput({
       <Button variant="ghost" size="icon-xs" onClick={confirm} aria-label="Confirm">
         <i className="fa-regular fa-check" aria-hidden="true" style={{ fontSize: 12, color: 'var(--brand-color)' }} />
       </Button>
-      <Button variant="ghost" size="icon-xs" onClick={onCancel} aria-label="Cancel">
+      <Button variant="ghost" size="icon-xs" onClick={cancel} aria-label="Cancel">
         <i className="fa-regular fa-xmark" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)' }} />
       </Button>
     </div>
@@ -289,10 +296,7 @@ function FolderRow({
             setRenameName(node.name)
             setTimeout(() => renameRef.current?.focus(), 50)
           }}
-          onAddSubfolder={() => {
-            setShowingInlineCreate(true)
-            if (!expandedFolderIds.has(node.id)) toggleFolder(node.id)
-          }}
+          onAddSubfolder={() => setShowingInlineCreate(true)}
         />
       </div>
       {showingInlineCreate && (
