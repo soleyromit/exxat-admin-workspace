@@ -135,7 +135,6 @@ export default function AssessmentBuilderClient() {
         />
         {activeAsmt ? (
           <ABQuestionPicker
-            courseId={courseId}
             selectedIds={selectedIds}
             onToggle={toggleQuestion}
             activeAsmt={activeAsmt}
@@ -240,7 +239,8 @@ function ABAssessmentList({ assessments, activeId, onOpen, onCreate }: {
           className="w-full mt-1"
           style={{ borderStyle: 'dashed', fontSize: 12, color: 'var(--muted-foreground)' }}
         >
-          + New assessment
+          <i className="fa-light fa-plus" aria-hidden="true" />
+          {' '}New assessment
         </Button>
       </div>
     </aside>
@@ -249,8 +249,7 @@ function ABAssessmentList({ assessments, activeId, onOpen, onCreate }: {
 
 // ─── Question picker (Task 14) ────────────────────────────────────────────────
 
-function ABQuestionPicker({ courseId: _courseId, selectedIds, onToggle, activeAsmt, smartViews, activeViewId, onViewChange, onSaveView }: {
-  courseId: string
+function ABQuestionPicker({ selectedIds, onToggle, activeAsmt, smartViews, activeViewId, onViewChange, onSaveView }: {
   selectedIds: Set<string>
   onToggle: (id: string) => void
   activeAsmt: AssessmentDraft
@@ -260,6 +259,7 @@ function ABQuestionPicker({ courseId: _courseId, selectedIds, onToggle, activeAs
   onSaveView: (v: SmartView) => void
 }) {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
+  const [saveConfirmed, setSaveConfirmed] = useState(false)
   const [newViewName, setNewViewName] = useState('')
 
   const activeView = smartViews.find(v => v.id === activeViewId) ?? smartViews[0]
@@ -349,7 +349,8 @@ function ABQuestionPicker({ courseId: _courseId, selectedIds, onToggle, activeAs
           className="shrink-0 rounded-full text-[11px] h-7 px-3"
           style={{ color: 'var(--brand-color)', opacity: 0.7 }}
         >
-          + Save view
+          <i className="fa-light fa-plus" aria-hidden="true" />
+          {' '}Save view
         </Button>
       </div>
 
@@ -423,7 +424,9 @@ function ABQuestionPicker({ courseId: _courseId, selectedIds, onToggle, activeAs
       {/* Footer diff chart */}
       <ABDiffChart
         distribution={distribution}
-        onSave={() => alert(`Saved: ${activeAsmt.title} (${selectedIds.size} questions)`)}
+        saveConfirmed={saveConfirmed}
+        onSave={() => { setSaveConfirmed(true); setTimeout(() => setSaveConfirmed(false), 2000) }}
+        onCancel={() => {}}
       />
 
       {/* Save smart view dialog */}
@@ -454,9 +457,11 @@ function ABQuestionPicker({ courseId: _courseId, selectedIds, onToggle, activeAs
 
 // ─── Difficulty distribution chart (Task 15) ─────────────────────────────────
 
-function ABDiffChart({ distribution, onSave }: {
+function ABDiffChart({ distribution, saveConfirmed, onSave, onCancel: _onCancel }: {
   distribution: { Easy: number; Medium: number; Hard: number }
+  saveConfirmed: boolean
   onSave: () => void
+  onCancel: () => void
 }) {
   const total = distribution.Easy + distribution.Medium + distribution.Hard
   const bars = [
@@ -514,8 +519,9 @@ function ABDiffChart({ distribution, onSave }: {
             Select questions to build assessment
           </span>
         )}
-        <Button variant="outline" size="sm" onClick={() => {}}>Cancel</Button>
-        <Button size="sm" disabled={total === 0} onClick={onSave}>Save assessment</Button>
+        <Button size="sm" disabled={total === 0 || saveConfirmed} onClick={onSave}>
+          {saveConfirmed ? 'Saved ✓' : 'Save assessment'}
+        </Button>
       </div>
     </div>
   )
