@@ -859,7 +859,7 @@ export function QBTable() {
                       {/* Difficulty */}
                       {!hiddenCols.has('difficulty') && (
                         <td className={`${TD} w-24`}>
-                          <DiffBadge difficulty={q.difficulty} />
+                          <DiffBadge diff={q.difficulty} />
                         </td>
                       )}
 

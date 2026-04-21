@@ -1,21 +1,24 @@
 import { Badge } from '@exxat/ds/packages/ui/src'
-import type { QStatus, QType, QDiff, QBlooms } from '@/lib/qb-types'
+import type { QType, QDiff, QBlooms } from '@/lib/qb-types'
 
 // ── Status Badge — pill + icon ────────────────────────────────────────────────
-const STATUS_MAP: Record<QStatus, { bg: string; fg: string; icon: string }> = {
-  Saved: { bg: 'var(--qb-status-saved-bg)', fg: 'var(--qb-status-saved-fg)', icon: 'fa-circle-check' },
-  Draft: { bg: 'var(--qb-status-draft-bg)', fg: 'var(--qb-status-draft-fg)', icon: 'fa-hourglass' },
+type QStatusReduced = 'Saved' | 'Draft'
+
+const STATUS_MAP: Record<QStatusReduced, { bg: string; fg: string; icon: string }> = {
+  Saved: { bg: 'var(--qb-status-saved-bg)', fg: 'var(--qb-status-saved-fg)', icon: 'fa-circle' },
+  Draft: { bg: 'var(--qb-status-draft-bg)', fg: 'var(--qb-status-draft-fg)', icon: 'fa-circle-half-stroke' },
 }
 
-export function StatusBadge({ status }: { status: QStatus }) {
+export function StatusBadge({ status }: { status: QStatusReduced }) {
   const s = STATUS_MAP[status]
+  if (!s) return null
   return (
     <Badge
       variant="secondary"
-      className="rounded-full px-2.5 py-0.5 gap-1.5 font-semibold whitespace-nowrap"
+      className="rounded-full px-2.5 py-0.5 gap-1 font-semibold whitespace-nowrap text-[10px]"
       style={{ backgroundColor: s.bg, color: s.fg }}
     >
-      <i className={`fa-light ${s.icon}`} aria-hidden="true" style={{ fontSize: 10 }} />
+      <i className={`fa-solid ${s.icon}`} aria-hidden="true" style={{ fontSize: 8 }} />
       {status}
     </Badge>
   )
@@ -39,11 +42,17 @@ export function TypeBadge({ type }: { type: QType }) {
   )
 }
 
-// ── Difficulty — neutral muted text ───────────────────────────────────────────
-export function DiffBadge({ difficulty }: { difficulty: QDiff }) {
+// ── Difficulty — neutral weight text ─────────────────────────────────────────
+export function DiffBadge({ diff }: { diff: QDiff }) {
+  const styles: Record<QDiff, { fontWeight: number; color: string }> = {
+    Easy:   { fontWeight: 400, color: 'var(--qb-diff-easy)' },
+    Medium: { fontWeight: 600, color: 'var(--qb-diff-medium)' },
+    Hard:   { fontWeight: 800, color: 'var(--qb-diff-hard)' },
+  }
+  const s = styles[diff]
   return (
-    <span style={{ fontSize: 12, color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>
-      {difficulty}
+    <span style={{ fontSize: 11.5, fontWeight: s.fontWeight, color: s.color, letterSpacing: diff === 'Hard' ? '-0.01em' : undefined }}>
+      {diff}
     </span>
   )
 }
