@@ -9,6 +9,7 @@ import {
   Popover, PopoverTrigger, PopoverContent,
   Tooltip, TooltipTrigger, TooltipContent,
   InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput,
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@exxat/ds/packages/ui/src'
 import type { Question } from '@/lib/qb-types'
 import { RequestEditAccessModal } from './qb-modals'
@@ -373,7 +374,7 @@ function ColHeader({
 }) {
   const isActive = sortCol === col.key
   return (
-    <th className={`${TH} ${className ?? ''}`}>
+    <TableHead className={`${TH} ${className ?? ''}`}>
       <DropdownMenu>
         <div
           className="flex items-center gap-1 group/col-hdr cursor-pointer select-none w-full"
@@ -426,7 +427,7 @@ function ColHeader({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
-    </th>
+    </TableHead>
   )
 }
 
@@ -676,11 +677,11 @@ export function QBTable() {
         <>
           {/* ── Table container — matches DS DataTable visual ── */}
           <div className="overflow-x-auto border border-border rounded-lg">
-            <table className="w-full text-sm border-separate border-spacing-0">
-              <thead>
-                <tr>
+            <Table className="w-full text-sm border-separate border-spacing-0">
+              <TableHeader>
+                <TableRow>
                   {/* Select all */}
-                  <th className={`${TH} w-10 text-center`}>
+                  <TableHead className={`${TH} w-10 text-center`}>
                     <div className="flex items-center justify-center">
                       <span className="sr-only">Select all</span>
                       <Checkbox
@@ -689,7 +690,7 @@ export function QBTable() {
                         aria-label="Select all rows"
                       />
                     </div>
-                  </th>
+                  </TableHead>
                   {QB_COLS.filter(c => !hiddenCols.has(c.key)).map(col => (
                     <ColHeader
                       key={col.key}
@@ -713,10 +714,10 @@ export function QBTable() {
                       }
                     />
                   ))}
-                  <th className={`${TH} w-10`} />
-                </tr>
-              </thead>
-              <tbody>
+                  <TableHead className={`${TH} w-10`} />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {pageQuestions.map((q) => {
                   const isSelected = selectedQuestionIds.has(q.id)
                   const isHovered = rowHoverId === q.id
@@ -743,7 +744,7 @@ export function QBTable() {
                       : undefined
 
                   return (
-                    <tr
+                    <TableRow
                       key={q.id}
                       data-state={isSelected ? 'selected' : undefined}
                       onMouseEnter={() => setRowHoverId(q.id)}
@@ -760,7 +761,7 @@ export function QBTable() {
                       }}
                     >
                       {/* Checkbox */}
-                      <td className={`${TD} w-10 text-center`}>
+                      <TableCell className={`${TD} w-10 text-center`}>
                         <div
                           className={`flex items-center justify-center transition-opacity ${
                             anySelected ? 'opacity-100' : 'opacity-0 group-hover/row:opacity-100'
@@ -774,10 +775,10 @@ export function QBTable() {
                             onClick={(e) => e.stopPropagation()}
                           />
                         </div>
-                      </td>
+                      </TableCell>
 
                       {/* Question cell */}
-                      <td className={TD} style={{ minWidth: 200 }}>
+                      <TableCell className={TD} style={{ minWidth: 200 }}>
                         {/* Title row */}
                         <div className="flex items-center gap-1.5 mb-1">
                           {q.pinned && (
@@ -840,46 +841,46 @@ export function QBTable() {
                             </Badge>
                           )}
                         </div>
-                      </td>
+                      </TableCell>
 
                       {/* Status */}
                       {!hiddenCols.has('status') && (
-                        <td className={`${TD} w-28`}>
+                        <TableCell className={`${TD} w-28`}>
                           <StatusBadge status={q.status} />
-                        </td>
+                        </TableCell>
                       )}
 
                       {/* Type */}
                       {!hiddenCols.has('type') && (
-                        <td className={`${TD} w-24`}>
+                        <TableCell className={`${TD} w-24`}>
                           <TypeBadge type={q.type} />
-                        </td>
+                        </TableCell>
                       )}
 
                       {/* Difficulty */}
                       {!hiddenCols.has('difficulty') && (
-                        <td className={`${TD} w-24`}>
+                        <TableCell className={`${TD} w-24`}>
                           <DiffBadge diff={q.difficulty} />
-                        </td>
+                        </TableCell>
                       )}
 
                       {/* Bloom's */}
                       {!hiddenCols.has('blooms') && (
-                        <td className={`${TD} w-28`}>
+                        <TableCell className={`${TD} w-28`}>
                           <BloomsBadge blooms={q.blooms} />
-                        </td>
+                        </TableCell>
                       )}
 
                       {/* Subfolder path */}
                       {!hiddenCols.has('subfolder') && (
-                        <td className={`${TD} w-44`}>
+                        <TableCell className={`${TD} w-44`}>
                           <SubfolderCell question={q} />
-                        </td>
+                        </TableCell>
                       )}
 
                       {/* Creator */}
                       {!hiddenCols.has('creator') && (
-                        <td className={`${TD} w-40`}>
+                        <TableCell className={`${TD} w-40`}>
                           <div className="flex items-center gap-2">
                             <span style={{
                               width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
@@ -905,35 +906,35 @@ export function QBTable() {
                               </div>
                             </div>
                           </div>
-                        </td>
+                        </TableCell>
                       )}
 
                       {/* Last Edited By */}
                       {!hiddenCols.has('lastEditedBy') && (
-                        <td className={`${TD} w-32`}>
+                        <TableCell className={`${TD} w-32`}>
                           <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
                             {q.lastEditedBy ?? q.creator ?? '—'}
                           </span>
-                        </td>
+                        </TableCell>
                       )}
 
                       {/* Usage */}
                       {!hiddenCols.has('usage') && (
-                        <td className={`${TD} w-16 text-sm text-foreground`}>
+                        <TableCell className={`${TD} w-16 text-sm text-foreground`}>
                           {q.usage}
-                        </td>
+                        </TableCell>
                       )}
 
                       {/* P-Bis */}
                       {!hiddenCols.has('pbis') && (
-                        <td className={`${TD} w-20`}>
+                        <TableCell className={`${TD} w-20`}>
                           <PBisCell pbis={q.pbis} pbisDir={q.pbisDir} />
-                        </td>
+                        </TableCell>
                       )}
 
                       {/* Version — DS Popover */}
                       {!hiddenCols.has('version') && (
-                        <td className={`${TD} w-16`}>
+                        <TableCell className={`${TD} w-16`}>
                           <Popover>
                             <PopoverTrigger asChild>
                               <Button variant="ghost" size="icon-xs" aria-label="Version history">
@@ -972,18 +973,18 @@ export function QBTable() {
                               })}
                             </PopoverContent>
                           </Popover>
-                        </td>
+                        </TableCell>
                       )}
 
                       {/* Favorited star */}
                       {!hiddenCols.has('favorited') && (
-                        <td className={`${TD} w-8`}>
+                        <TableCell className={`${TD} w-8`}>
                           <FavoritedCell question={q} />
-                        </td>
+                        </TableCell>
                       )}
 
                       {/* Actions ⋯ — DS DropdownMenu */}
-                      <td className={`${TD} w-10 text-right`}>
+                      <TableCell className={`${TD} w-10 text-right`}>
                         <DropdownMenu open={openMenuQuestionId === q.id} onOpenChange={open => setOpenMenuQuestionId(open ? q.id : null)}>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${q.title}`} onClick={e => e.stopPropagation()}>
@@ -1022,12 +1023,12 @@ export function QBTable() {
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   )
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           {/* ── Pagination ── */}
