@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useQB } from './qb-state'
 import { StatusBadge, DiffBadge, PBisCell, BloomsBadge } from '@/components/qb/badges'
 import {
@@ -410,6 +410,7 @@ function ColHeader({
   col, sortCol, sortDir, onSort, onHide, onPin,
   filterOptions, activeFilter, onFilterChange, openPanel,
   pinned, className,
+  draggable, onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd, dragOverStyle,
 }: {
   col: typeof QB_COLS[number]
   sortCol: string | null
@@ -423,6 +424,13 @@ function ColHeader({
   openPanel?: () => void
   pinned?: boolean
   className?: string
+  draggable?: boolean
+  onDragStart?: () => void
+  onDragOver?: (e: React.DragEvent) => void
+  onDragLeave?: () => void
+  onDrop?: () => void
+  onDragEnd?: () => void
+  dragOverStyle?: React.CSSProperties
 }) {
   const isActive = sortCol === col.key
   const stickyStyle: React.CSSProperties = pinned
@@ -430,7 +438,16 @@ function ColHeader({
     : {}
 
   return (
-    <TableHead className={`${TH} ${className ?? ''}`} style={stickyStyle}>
+    <TableHead
+      className={`${TH} ${className ?? ''}`}
+      style={dragOverStyle ?? stickyStyle}
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
+    >
       <DropdownMenu>
         <div
           className="flex items-center gap-1 group/col-hdr cursor-pointer select-none w-full"
@@ -538,6 +555,7 @@ export function QBTable() {
     myQuestionsOnly, setMyQuestionsOnly,
     favoritesFilter, setFavoritesFilter,
     favoritedIds,
+    columnOrder, setColumnOrder,
   } = useQB()
 
   const isAdmin = currentPersona.role === 'Admin'
@@ -558,6 +576,26 @@ export function QBTable() {
   const [hiddenCols, setHiddenCols] = useState<Set<ColKey>>(new Set())
   const [pinnedCols, setPinnedCols] = useState<Set<string>>(new Set())
   const searchRef = useRef<HTMLInputElement>(null)
+
+  // ── Column drag-reorder state ─────────────────────────────────────────────
+  const dragColRef = useRef<string | null>(null)
+  const [dragOverCol, setDragOverCol] = useState<string | null>(null)
+
+  // ── Visible columns ordered by columnOrder (hideable) + fixed positions ──
+  const visibleCols = useMemo(() => {
+    const FIXED_START = ['select', 'title', 'status'] as const
+    const FIXED_END   = ['favorited', 'actions'] as const
+    const reorderable = columnOrder.filter(k => !hiddenCols.has(k as ColKey))
+    return [
+      ...QB_COLS.filter(c => FIXED_START.includes(c.key as typeof FIXED_START[number])),
+      ...QB_COLS.filter(c =>
+        reorderable.includes(c.key) &&
+        !FIXED_START.includes(c.key as typeof FIXED_START[number]) &&
+        !FIXED_END.includes(c.key as typeof FIXED_END[number])
+      ).sort((a, b) => reorderable.indexOf(a.key) - reorderable.indexOf(b.key)),
+      ...QB_COLS.filter(c => FIXED_END.includes(c.key as typeof FIXED_END[number])),
+    ]
+  }, [columnOrder, hiddenCols])
 
   function toggleFilter<T extends string>(set: Set<T>, value: T): Set<T> {
     const next = new Set(set)
@@ -794,7 +832,7 @@ export function QBTable() {
                       />
                     </div>
                   </TableHead>
-                  {QB_COLS.filter(c => !hiddenCols.has(c.key) && c.key !== 'select' && c.key !== 'actions').map(col => {
+                  {visibleCols.filter(c => c.key !== 'select' && c.key !== 'actions').map(col => {
                     // Map col key → its active filter Set and setter
                     const filterSetMap: Partial<Record<string, { set: Set<string>; setter: React.Dispatch<React.SetStateAction<Set<string>>> }>> = {
                       status:     { set: statusFilter,  setter: setStatusFilter  },
@@ -803,6 +841,10 @@ export function QBTable() {
                       blooms:     { set: bloomsFilter,  setter: setBloomsFilter  },
                     }
                     const filterEntry = filterSetMap[col.key]
+                    const stickyStyle: React.CSSProperties = pinnedCols.has(col.key)
+                      ? { position: 'sticky', left: 0, zIndex: 2, background: 'var(--dt-header-bg)', boxShadow: '2px 0 4px var(--sticky-edge-fade)' }
+                      : {}
+                    const isDragOver = dragOverCol === col.key
                     return (
                       <ColHeader
                         key={col.key}
@@ -834,6 +876,30 @@ export function QBTable() {
                           col.key === 'version'      ? 'w-16' :
                           col.key === 'favorited'    ? 'w-8'  : ''
                         }
+                        draggable={col.hideable}
+                        onDragStart={col.hideable ? () => { dragColRef.current = col.key } : undefined}
+                        onDragOver={col.hideable ? (e: React.DragEvent) => { e.preventDefault(); setDragOverCol(col.key) } : undefined}
+                        onDragLeave={col.hideable ? () => setDragOverCol(null) : undefined}
+                        onDrop={col.hideable ? () => {
+                          const from = dragColRef.current
+                          if (!from || from === col.key) { setDragOverCol(null); return }
+                          const next = [...columnOrder]
+                          const fromIdx = next.indexOf(from as typeof next[number])
+                          const toIdx = next.indexOf(col.key as typeof next[number])
+                          if (fromIdx >= 0 && toIdx >= 0) {
+                            next.splice(fromIdx, 1)
+                            next.splice(toIdx, 0, from as typeof next[number])
+                            setColumnOrder(next)
+                          }
+                          dragColRef.current = null
+                          setDragOverCol(null)
+                        } : undefined}
+                        onDragEnd={col.hideable ? () => { dragColRef.current = null; setDragOverCol(null) } : undefined}
+                        dragOverStyle={isDragOver ? {
+                          outline: '2px dashed var(--brand-color)',
+                          outlineOffset: '-2px',
+                          ...stickyStyle,
+                        } : stickyStyle}
                       />
                     )
                   })}
@@ -874,200 +940,201 @@ export function QBTable() {
                         cursor: 'pointer',
                       }}
                     >
-                      {/* Checkbox */}
-                      <TableCell className={`${TD} w-10 text-center`}>
-                        <div
-                          className={`flex items-center justify-center transition-opacity ${
-                            anySelected ? 'opacity-100' : 'opacity-0 group-hover/row:opacity-100'
-                          }`}
-                          onClick={(e) => { e.stopPropagation(); toggleQuestionSelection(q.id) }}
-                        >
-                          <Checkbox
-                            checked={isSelected}
-                            onCheckedChange={() => toggleQuestionSelection(q.id)}
-                            aria-label={`Select ${q.title}`}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </div>
-                      </TableCell>
-
-                      {/* Question cell — title + code only (no type pill) */}
-                      <TableCell className={TD} style={{ minWidth: 280, maxWidth: 380, ...pinnedStyle('title', pinnedCols) }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-                          {q.pinned && (
-                            <i className="fa-solid fa-thumbtack" aria-hidden="true"
-                              style={{ fontSize: 10, color: 'var(--brand-color)', marginTop: 3, transform: 'rotate(45deg)', flexShrink: 0 }} />
-                          )}
-                          <div style={{ minWidth: 0, flex: 1 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
-                              {isPrivate && (
-                                <Badge
-                                  variant="secondary"
-                                  className="rounded shrink-0"
-                                  style={{
-                                    fontSize: 9, fontWeight: 600, padding: '1px 5px',
-                                    backgroundColor: 'color-mix(in oklch, var(--qb-private) 12%, var(--background))',
-                                    color: 'var(--qb-private)',
-                                    border: '1px solid color-mix(in oklch, var(--qb-private) 25%, var(--background))',
-                                  }}
+                      {/* Cells — ordered by visibleCols to respect drag-reorder */}
+                      {visibleCols.map(col => {
+                        switch (col.key) {
+                          case 'select':
+                            return (
+                              <TableCell key="select" className={`${TD} w-10 text-center`}>
+                                <div
+                                  className={`flex items-center justify-center transition-opacity ${
+                                    anySelected ? 'opacity-100' : 'opacity-0 group-hover/row:opacity-100'
+                                  }`}
+                                  onClick={(e) => { e.stopPropagation(); toggleQuestionSelection(q.id) }}
                                 >
-                                  <i className="fa-solid fa-lock-keyhole" aria-hidden="true" style={{ fontSize: 7 }} /> Private
-                                </Badge>
-                              )}
-                            </div>
-                            <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--foreground)', lineHeight: 1.4 }}>
-                              {q.title}
-                            </div>
-                            <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <Badge
-                                variant="secondary"
-                                className="rounded font-mono border border-border"
-                                style={{ fontSize: 10, padding: '1px 5px' }}
-                              >
-                                {q.code}
-                              </Badge>
-                              {!isAdmin && !isOwner && isHovered && (
-                                <Badge
-                                  variant="secondary"
-                                  className="rounded"
-                                  style={{ fontSize: 10, padding: '1px 5px', backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}
-                                >
-                                  View only
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </TableCell>
-
-                      {/* Status */}
-                      {!hiddenCols.has('status') && (
-                        <TableCell className={`${TD} w-28`} style={pinnedStyle('status', pinnedCols)}>
-                          <StatusBadge status={q.status} />
-                        </TableCell>
-                      )}
-
-                      {/* Type — plain neutral text, no pill */}
-                      {!hiddenCols.has('type') && (
-                        <TableCell className={`${TD} w-24`} style={pinnedStyle('type', pinnedCols)}>
-                          <span style={{ fontSize: 11.5, fontWeight: 500, color: 'var(--muted-foreground)' }}>
-                            {q.type}
-                          </span>
-                        </TableCell>
-                      )}
-
-                      {/* Difficulty */}
-                      {!hiddenCols.has('difficulty') && (
-                        <TableCell className={`${TD} w-24`} style={pinnedStyle('difficulty', pinnedCols)}>
-                          <DiffBadge diff={q.difficulty} />
-                        </TableCell>
-                      )}
-
-                      {/* Bloom's */}
-                      {!hiddenCols.has('blooms') && (
-                        <TableCell className={`${TD} w-28`} style={pinnedStyle('blooms', pinnedCols)}>
-                          <BloomsBadge blooms={q.blooms} />
-                        </TableCell>
-                      )}
-
-                      {/* Location — folder path as clickable breadcrumb */}
-                      {!hiddenCols.has('location') && (
-                        <TableCell className={`${TD} w-44`} style={pinnedStyle('location', pinnedCols)}>
-                          <LocationCell question={q} />
-                        </TableCell>
-                      )}
-
-                      {/* Creator */}
-                      {!hiddenCols.has('creator') && (
-                        <TableCell className={`${TD} w-40`} style={pinnedStyle('creator', pinnedCols)}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <div style={{
-                              width: 22, height: 22, borderRadius: '50%', background: creatorPersona.color,
-                              color: 'var(--primary-foreground)', fontSize: 8, fontWeight: 700,
-                              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                            }}>
-                              {creatorPersona.initials}
-                            </div>
-                            <span style={{ fontSize: 11, color: 'var(--foreground)' }}>{creatorPersona.name}</span>
-                          </div>
-                        </TableCell>
-                      )}
-
-                      {/* Last Edited By */}
-                      {!hiddenCols.has('lastEditedBy') && (
-                        <TableCell className={`${TD} w-32`} style={pinnedStyle('lastEditedBy', pinnedCols)}>
-                          <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
-                            {q.lastEditedBy ?? q.creator ?? '—'}
-                          </span>
-                        </TableCell>
-                      )}
-
-                      {/* Usage */}
-                      {!hiddenCols.has('usage') && (
-                        <TableCell className={`${TD} w-16 text-sm text-foreground`} style={pinnedStyle('usage', pinnedCols)}>
-                          {q.usage}
-                        </TableCell>
-                      )}
-
-                      {/* P-Bis */}
-                      {!hiddenCols.has('pbis') && (
-                        <TableCell className={`${TD} w-20`} style={pinnedStyle('pbis', pinnedCols)}>
-                          <PBisCell pbis={q.pbis} pbisDir={q.pbisDir} />
-                        </TableCell>
-                      )}
-
-                      {/* Version — DS Popover */}
-                      {!hiddenCols.has('version') && (
-                        <TableCell className={`${TD} w-16`} style={pinnedStyle('version', pinnedCols)}>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="ghost" size="icon-xs" aria-label="Version history">
-                                <Badge variant="secondary" className="rounded font-mono" style={{ fontSize: 10, padding: '1px 5px', cursor: 'pointer' }}>
-                                  V{q.version}
-                                </Badge>
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent align="end" className="w-72 p-3">
-                              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', marginBottom: 10 }}>
-                                Version History
-                              </div>
-                              {Array.from({ length: q.version }, (_, i) => {
-                                const vNum = q.version - i
-                                const isLatest = i === 0
-                                return (
-                                  <div key={vNum} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
-                                    <Badge variant="secondary" className="rounded font-mono shrink-0" style={{ fontSize: 9, padding: '1px 5px', backgroundColor: isLatest ? 'var(--brand-tint)' : undefined, color: isLatest ? 'var(--brand-color-dark)' : undefined }}>
-                                      V{vNum}
-                                    </Badge>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                      <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                        {isLatest ? q.title.slice(0, 55) : `Revision ${vNum}`}
-                                      </div>
-                                      <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 1 }}>
-                                        {isLatest ? (q.lastEditedBy ?? q.creator ?? 'Unknown') : q.creator ?? 'Unknown'} · {isLatest ? q.age : `${i + 1} months ago`}
-                                      </div>
+                                  <Checkbox
+                                    checked={isSelected}
+                                    onCheckedChange={() => toggleQuestionSelection(q.id)}
+                                    aria-label={`Select ${q.title}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                </div>
+                              </TableCell>
+                            )
+                          case 'title':
+                            return (
+                              <TableCell key="title" className={TD} style={{ minWidth: 280, maxWidth: 380, ...pinnedStyle('title', pinnedCols) }}>
+                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                                  {q.pinned && (
+                                    <i className="fa-solid fa-thumbtack" aria-hidden="true"
+                                      style={{ fontSize: 10, color: 'var(--brand-color)', marginTop: 3, transform: 'rotate(45deg)', flexShrink: 0 }} />
+                                  )}
+                                  <div style={{ minWidth: 0, flex: 1 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
+                                      {isPrivate && (
+                                        <Badge
+                                          variant="secondary"
+                                          className="rounded shrink-0"
+                                          style={{
+                                            fontSize: 9, fontWeight: 600, padding: '1px 5px',
+                                            backgroundColor: 'color-mix(in oklch, var(--qb-private) 12%, var(--background))',
+                                            color: 'var(--qb-private)',
+                                            border: '1px solid color-mix(in oklch, var(--qb-private) 25%, var(--background))',
+                                          }}
+                                        >
+                                          <i className="fa-solid fa-lock-keyhole" aria-hidden="true" style={{ fontSize: 7 }} /> Private
+                                        </Badge>
+                                      )}
                                     </div>
-                                    {isOwner && (
-                                      <Button variant="ghost" size="icon-xs" aria-label="Use this version">
-                                        <i className="fa-light fa-rotate-left" aria-hidden="true" style={{ fontSize: 11 }} />
-                                      </Button>
-                                    )}
+                                    <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--foreground)', lineHeight: 1.4 }}>
+                                      {q.title}
+                                    </div>
+                                    <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                      <Badge
+                                        variant="secondary"
+                                        className="rounded font-mono border border-border"
+                                        style={{ fontSize: 10, padding: '1px 5px' }}
+                                      >
+                                        {q.code}
+                                      </Badge>
+                                      {!isAdmin && !isOwner && isHovered && (
+                                        <Badge
+                                          variant="secondary"
+                                          className="rounded"
+                                          style={{ fontSize: 10, padding: '1px 5px', backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}
+                                        >
+                                          View only
+                                        </Badge>
+                                      )}
+                                    </div>
                                   </div>
-                                )
-                              })}
-                            </PopoverContent>
-                          </Popover>
-                        </TableCell>
-                      )}
+                                </div>
+                              </TableCell>
+                            )
+                          case 'status':
+                            return (
+                              <TableCell key="status" className={`${TD} w-28`} style={pinnedStyle('status', pinnedCols)}>
+                                <StatusBadge status={q.status} />
+                              </TableCell>
+                            )
+                          case 'type':
+                            return (
+                              <TableCell key="type" className={`${TD} w-24`} style={pinnedStyle('type', pinnedCols)}>
+                                <span style={{ fontSize: 11.5, fontWeight: 500, color: 'var(--muted-foreground)' }}>
+                                  {q.type}
+                                </span>
+                              </TableCell>
+                            )
+                          case 'difficulty':
+                            return (
+                              <TableCell key="difficulty" className={`${TD} w-24`} style={pinnedStyle('difficulty', pinnedCols)}>
+                                <DiffBadge diff={q.difficulty} />
+                              </TableCell>
+                            )
+                          case 'blooms':
+                            return (
+                              <TableCell key="blooms" className={`${TD} w-28`} style={pinnedStyle('blooms', pinnedCols)}>
+                                <BloomsBadge blooms={q.blooms} />
+                              </TableCell>
+                            )
+                          case 'location':
+                            return (
+                              <TableCell key="location" className={`${TD} w-44`} style={pinnedStyle('location', pinnedCols)}>
+                                <LocationCell question={q} />
+                              </TableCell>
+                            )
+                          case 'creator':
+                            return (
+                              <TableCell key="creator" className={`${TD} w-40`} style={pinnedStyle('creator', pinnedCols)}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <div style={{
+                                    width: 22, height: 22, borderRadius: '50%', background: creatorPersona.color,
+                                    color: 'var(--primary-foreground)', fontSize: 8, fontWeight: 700,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                                  }}>
+                                    {creatorPersona.initials}
+                                  </div>
+                                  <span style={{ fontSize: 11, color: 'var(--foreground)' }}>{creatorPersona.name}</span>
+                                </div>
+                              </TableCell>
+                            )
+                          case 'lastEditedBy':
+                            return (
+                              <TableCell key="lastEditedBy" className={`${TD} w-32`} style={pinnedStyle('lastEditedBy', pinnedCols)}>
+                                <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
+                                  {q.lastEditedBy ?? q.creator ?? '—'}
+                                </span>
+                              </TableCell>
+                            )
+                          case 'usage':
+                            return (
+                              <TableCell key="usage" className={`${TD} w-16 text-sm text-foreground`} style={pinnedStyle('usage', pinnedCols)}>
+                                {q.usage}
+                              </TableCell>
+                            )
+                          case 'pbis':
+                            return (
+                              <TableCell key="pbis" className={`${TD} w-20`} style={pinnedStyle('pbis', pinnedCols)}>
+                                <PBisCell pbis={q.pbis} pbisDir={q.pbisDir} />
+                              </TableCell>
+                            )
+                          case 'version':
+                            return (
+                              <TableCell key="version" className={`${TD} w-16`} style={pinnedStyle('version', pinnedCols)}>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button variant="ghost" size="icon-xs" aria-label="Version history">
+                                      <Badge variant="secondary" className="rounded font-mono" style={{ fontSize: 10, padding: '1px 5px', cursor: 'pointer' }}>
+                                        V{q.version}
+                                      </Badge>
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent align="end" className="w-72 p-3">
+                                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', marginBottom: 10 }}>
+                                      Version History
+                                    </div>
+                                    {Array.from({ length: q.version }, (_, i) => {
+                                      const vNum = q.version - i
+                                      const isLatest = i === 0
+                                      return (
+                                        <div key={vNum} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
+                                          <Badge variant="secondary" className="rounded font-mono shrink-0" style={{ fontSize: 9, padding: '1px 5px', backgroundColor: isLatest ? 'var(--brand-tint)' : undefined, color: isLatest ? 'var(--brand-color-dark)' : undefined }}>
+                                            V{vNum}
+                                          </Badge>
+                                          <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                              {isLatest ? q.title.slice(0, 55) : `Revision ${vNum}`}
+                                            </div>
+                                            <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 1 }}>
+                                              {isLatest ? (q.lastEditedBy ?? q.creator ?? 'Unknown') : q.creator ?? 'Unknown'} · {isLatest ? q.age : `${i + 1} months ago`}
+                                            </div>
+                                          </div>
+                                          {isOwner && (
+                                            <Button variant="ghost" size="icon-xs" aria-label="Use this version">
+                                              <i className="fa-light fa-rotate-left" aria-hidden="true" style={{ fontSize: 11 }} />
+                                            </Button>
+                                          )}
+                                        </div>
+                                      )
+                                    })}
+                                  </PopoverContent>
+                                </Popover>
+                              </TableCell>
+                            )
+                          case 'favorited':
+                            return (
+                              <TableCell key="favorited" className={`${TD} w-8`} style={pinnedStyle('favorited', pinnedCols)}>
+                                <FavoritedCell questionId={q.id} />
+                              </TableCell>
+                            )
+                          case 'actions':
+                            return null
+                          default:
+                            return null
+                        }
+                      })}
 
-                      {/* Favorited star */}
-                      {!hiddenCols.has('favorited') && (
-                        <TableCell className={`${TD} w-8`} style={pinnedStyle('favorited', pinnedCols)}>
-                          <FavoritedCell questionId={q.id} />
-                        </TableCell>
-                      )}
-
-                      {/* Actions ⋯ — DS DropdownMenu */}
+                      {/* Actions ⋯ — DS DropdownMenu (always last, fixed) */}
                       <TableCell className={`${TD} w-10 text-right`}>
                         <DropdownMenu open={openMenuQuestionId === q.id} onOpenChange={open => setOpenMenuQuestionId(open ? q.id : null)}>
                           <DropdownMenuTrigger asChild>

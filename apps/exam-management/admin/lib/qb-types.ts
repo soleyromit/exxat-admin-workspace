@@ -1,3 +1,8 @@
+export type ColumnId =
+  | 'select' | 'title' | 'status' | 'type' | 'difficulty'
+  | 'blooms' | 'location' | 'creator' | 'lastEditedBy'
+  | 'usage' | 'pbis' | 'version' | 'favorited' | 'actions'
+
 export type QStatus = 'Saved' | 'Draft'
 export type QType   = 'MCQ' | 'Fill blank' | 'Hotspot' | 'Ordering' | 'Matching'
 export type QDiff   = 'Easy' | 'Medium' | 'Hard'

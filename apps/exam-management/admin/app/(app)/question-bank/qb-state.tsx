@@ -1,10 +1,8 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react'
-import type { FolderNode, Question, Persona } from '@/lib/qb-types'
+import type { FolderNode, Question, Persona, ColumnId } from '@/lib/qb-types'
 import { MOCK_QB_FOLDERS, MOCK_QB_QUESTIONS, MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
-
-export type ColumnId = 'select' | 'title' | 'status' | 'type' | 'difficulty' | 'blooms' | 'location' | 'creator' | 'lastEditedBy' | 'usage' | 'pbis' | 'version' | 'favorited' | 'actions'
 
 interface QBState {
   currentPersona: Persona
