@@ -313,6 +313,13 @@ export function QBSidebar() {
   const [inlineCreateParent, setInlineCreateParent] = useState<string | 'root' | null>(null)
   const [searchExpanded, setSearchExpanded] = useState(false)
 
+  useEffect(() => {
+    if (!sidebarOpen) {
+      setSearchExpanded(false)
+      setSidebarSearch('')
+    }
+  }, [sidebarOpen])
+
   const isAdmin = currentPersona.role === 'Admin'
 
   const courseFolders = folders.filter(f => f.isCourse && f.parentId === null)
