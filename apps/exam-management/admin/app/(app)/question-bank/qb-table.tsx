@@ -162,6 +162,7 @@ function FilterPropertiesSheet({
   statusFilter, setStatusFilter,
   typeFilter, setTypeFilter,
   diffFilter, setDiffFilter,
+  bloomsFilter, setBloomsFilter,
   bookmarkOnly, setBookmarkOnly,
   hiddenCols, setHiddenCols,
   filteredCount, totalCount,
@@ -175,6 +176,8 @@ function FilterPropertiesSheet({
   setTypeFilter: React.Dispatch<React.SetStateAction<Set<string>>>
   diffFilter: Set<string>
   setDiffFilter: React.Dispatch<React.SetStateAction<Set<string>>>
+  bloomsFilter: Set<string>
+  setBloomsFilter: React.Dispatch<React.SetStateAction<Set<string>>>
   bookmarkOnly: boolean
   setBookmarkOnly: React.Dispatch<React.SetStateAction<boolean>>
   hiddenCols: Set<ColKey>
@@ -186,7 +189,7 @@ function FilterPropertiesSheet({
   const [panel, setPanel] = useState<'main' | 'filter' | 'columns'>('main')
   useEffect(() => { if (!open) setPanel('main') }, [open])
 
-  const activeFilterCount = statusFilter.size + typeFilter.size + diffFilter.size + (bookmarkOnly ? 1 : 0)
+  const activeFilterCount = statusFilter.size + typeFilter.size + diffFilter.size + bloomsFilter.size + (bookmarkOnly ? 1 : 0)
   const hiddenColCount = hiddenCols.size
 
   const sheetContentClass = "w-80 sm:max-w-80 p-0 gap-0 flex flex-col border border-border shadow-xl rounded-xl overflow-hidden"
@@ -287,6 +290,12 @@ function FilterPropertiesSheet({
                 selected={diffFilter}
                 onToggle={v => setDiffFilter(prev => toggleFilter(prev, v))}
               />
+              <FilterSection
+                label="Bloom's"
+                options={['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'] as const}
+                selected={bloomsFilter}
+                onToggle={v => setBloomsFilter(prev => toggleFilter(prev, v))}
+              />
               {/* Bookmarked */}
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-1">Favorites</p>
@@ -315,6 +324,7 @@ function FilterPropertiesSheet({
                     setStatusFilter(new Set())
                     setTypeFilter(new Set())
                     setDiffFilter(new Set())
+                    setBloomsFilter(new Set())
                     setBookmarkOnly(false)
                   }}
                 >
@@ -379,6 +389,12 @@ function FilterPropertiesSheet({
       </SheetContent>
     </Sheet>
   )
+}
+
+// ── Pinned column sticky style helper ────────────────────────────────────────
+function pinnedStyle(colKey: string, pinnedCols: Set<string>): React.CSSProperties {
+  if (!pinnedCols.has(colKey)) return {}
+  return { position: 'sticky', left: 0, zIndex: 1, background: 'var(--dt-row-bg)', boxShadow: '2px 0 4px var(--sticky-edge-fade)' }
 }
 
 // ── Enum filter options per column key ───────────────────────────────────────
@@ -876,7 +892,7 @@ export function QBTable() {
                       </TableCell>
 
                       {/* Question cell — title + code only (no type pill) */}
-                      <TableCell className={TD} style={{ minWidth: 280, maxWidth: 380 }}>
+                      <TableCell className={TD} style={{ minWidth: 280, maxWidth: 380, ...pinnedStyle('title', pinnedCols) }}>
                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
                           {q.pinned && (
                             <i className="fa-solid fa-thumbtack" aria-hidden="true"
@@ -926,14 +942,14 @@ export function QBTable() {
 
                       {/* Status */}
                       {!hiddenCols.has('status') && (
-                        <TableCell className={`${TD} w-28`}>
+                        <TableCell className={`${TD} w-28`} style={pinnedStyle('status', pinnedCols)}>
                           <StatusBadge status={q.status} />
                         </TableCell>
                       )}
 
                       {/* Type — plain neutral text, no pill */}
                       {!hiddenCols.has('type') && (
-                        <TableCell className={`${TD} w-24`}>
+                        <TableCell className={`${TD} w-24`} style={pinnedStyle('type', pinnedCols)}>
                           <span style={{ fontSize: 11.5, fontWeight: 500, color: 'var(--muted-foreground)' }}>
                             {q.type}
                           </span>
@@ -942,28 +958,28 @@ export function QBTable() {
 
                       {/* Difficulty */}
                       {!hiddenCols.has('difficulty') && (
-                        <TableCell className={`${TD} w-24`}>
+                        <TableCell className={`${TD} w-24`} style={pinnedStyle('difficulty', pinnedCols)}>
                           <DiffBadge diff={q.difficulty} />
                         </TableCell>
                       )}
 
                       {/* Bloom's */}
                       {!hiddenCols.has('blooms') && (
-                        <TableCell className={`${TD} w-28`}>
+                        <TableCell className={`${TD} w-28`} style={pinnedStyle('blooms', pinnedCols)}>
                           <BloomsBadge blooms={q.blooms} />
                         </TableCell>
                       )}
 
                       {/* Location — folder path as clickable breadcrumb */}
                       {!hiddenCols.has('location') && (
-                        <TableCell className={`${TD} w-44`}>
+                        <TableCell className={`${TD} w-44`} style={pinnedStyle('location', pinnedCols)}>
                           <LocationCell question={q} />
                         </TableCell>
                       )}
 
                       {/* Creator */}
                       {!hiddenCols.has('creator') && (
-                        <TableCell className={`${TD} w-40`}>
+                        <TableCell className={`${TD} w-40`} style={pinnedStyle('creator', pinnedCols)}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <div style={{
                               width: 22, height: 22, borderRadius: '50%', background: creatorPersona.color,
@@ -979,7 +995,7 @@ export function QBTable() {
 
                       {/* Last Edited By */}
                       {!hiddenCols.has('lastEditedBy') && (
-                        <TableCell className={`${TD} w-32`}>
+                        <TableCell className={`${TD} w-32`} style={pinnedStyle('lastEditedBy', pinnedCols)}>
                           <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
                             {q.lastEditedBy ?? q.creator ?? '—'}
                           </span>
@@ -988,21 +1004,21 @@ export function QBTable() {
 
                       {/* Usage */}
                       {!hiddenCols.has('usage') && (
-                        <TableCell className={`${TD} w-16 text-sm text-foreground`}>
+                        <TableCell className={`${TD} w-16 text-sm text-foreground`} style={pinnedStyle('usage', pinnedCols)}>
                           {q.usage}
                         </TableCell>
                       )}
 
                       {/* P-Bis */}
                       {!hiddenCols.has('pbis') && (
-                        <TableCell className={`${TD} w-20`}>
+                        <TableCell className={`${TD} w-20`} style={pinnedStyle('pbis', pinnedCols)}>
                           <PBisCell pbis={q.pbis} pbisDir={q.pbisDir} />
                         </TableCell>
                       )}
 
                       {/* Version — DS Popover */}
                       {!hiddenCols.has('version') && (
-                        <TableCell className={`${TD} w-16`}>
+                        <TableCell className={`${TD} w-16`} style={pinnedStyle('version', pinnedCols)}>
                           <Popover>
                             <PopoverTrigger asChild>
                               <Button variant="ghost" size="icon-xs" aria-label="Version history">
@@ -1046,7 +1062,7 @@ export function QBTable() {
 
                       {/* Favorited star */}
                       {!hiddenCols.has('favorited') && (
-                        <TableCell className={`${TD} w-8`}>
+                        <TableCell className={`${TD} w-8`} style={pinnedStyle('favorited', pinnedCols)}>
                           <FavoritedCell questionId={q.id} />
                         </TableCell>
                       )}
@@ -1152,6 +1168,8 @@ export function QBTable() {
         setTypeFilter={setTypeFilter}
         diffFilter={diffFilter}
         setDiffFilter={setDiffFilter}
+        bloomsFilter={bloomsFilter}
+        setBloomsFilter={setBloomsFilter}
         bookmarkOnly={bookmarkOnly}
         setBookmarkOnly={setBookmarkOnly}
         hiddenCols={hiddenCols}
