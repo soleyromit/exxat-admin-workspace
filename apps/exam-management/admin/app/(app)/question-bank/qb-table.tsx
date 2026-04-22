@@ -1760,10 +1760,12 @@ export function QBTable() {
     for (const rule of conditionalRules) {
       if (rule.values.length === 0) continue
       let val = ''
-      if (rule.fieldKey === 'status')     val = question.status
-      if (rule.fieldKey === 'type')       val = question.type
-      if (rule.fieldKey === 'difficulty') val = question.difficulty
-      if (rule.fieldKey === 'blooms')     val = question.blooms
+      if (rule.fieldKey === 'status')        val = question.status
+      if (rule.fieldKey === 'type')          val = question.type
+      if (rule.fieldKey === 'difficulty')    val = question.difficulty
+      if (rule.fieldKey === 'blooms')        val = question.blooms
+      if (rule.fieldKey === 'creator')       val = personas.find(p => p.id === question.creator)?.name ?? ''
+      if (rule.fieldKey === 'lastEditedBy')  val = personas.find(p => p.id === question.lastEditedBy)?.name ?? ''
       const matches = rule.values.includes(val)
       if ((rule.operator === 'is' && matches) || (rule.operator === 'is_not' && !matches)) {
         return rule.bgColor
