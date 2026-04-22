@@ -1,11 +1,10 @@
 'use client'
 import { useState, useRef } from 'react'
 import { useQB } from './qb-state'
-import type { AccessRole, Persona } from '@/lib/qb-types'
+import type { Persona } from '@/lib/qb-types'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
   Button, Avatar, AvatarFallback,
-  Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
 } from '@exxat/ds/packages/ui/src'
 
 function PersonAvatar({ persona }: { persona: Persona }) {
@@ -27,20 +26,19 @@ function getRoleLabel(role: Persona['role']): string {
   return 'Instructor'
 }
 
-function getCapabilityLabel(role: Persona['role'], accessRole?: AccessRole): string {
+function getCapabilityLabel(role: Persona['role']): string {
   if (role === 'exam_admin') return 'Can edit questions across all folders'
-  const action = accessRole === 'view' ? 'view' : 'edit'
-  if (role === 'course_director') return `Can ${action} questions for this folder`
-  return `Can ${action} their own questions`
+  if (role === 'course_director') return 'Can edit questions for this folder'
+  return 'Can edit their own questions'
 }
 
-function PersonInfo({ persona, accessRole }: { persona: Persona; accessRole?: AccessRole }) {
+function PersonInfo({ persona }: { persona: Persona }) {
   return (
     <div style={{ flex: 1, minWidth: 0 }}>
       <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {persona.name}
       </p>
-      <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: 0 }}>{getCapabilityLabel(persona.role, accessRole)}</p>
+      <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: 0 }}>{getCapabilityLabel(persona.role)}</p>
     </div>
   )
 }
@@ -54,9 +52,6 @@ export function ManageAccessDialog() {
 
   const folder = folders.find(f => f.id === collaboratorsModalFolderId)
 
-  const [roles, setRoles] = useState<Record<string, AccessRole>>(
-    () => Object.fromEntries((folder?.collaborators ?? []).map(id => [id, 'edit' as AccessRole]))
-  )
   const [collaborators, setCollaborators] = useState<string[]>(
     () => folder?.collaborators ?? []
   )
@@ -85,14 +80,12 @@ export function ManageAccessDialog() {
 
   function addCollaborator(personaId: string) {
     setCollaborators(prev => [...prev, personaId])
-    setRoles(prev => ({ ...prev, [personaId]: 'edit' }))
     setSearch('')
     inputRef.current?.focus()
   }
 
   function removeCollaborator(personaId: string) {
     setCollaborators(prev => prev.filter(id => id !== personaId))
-    setRoles(prev => { const next = { ...prev }; delete next[personaId]; return next })
   }
 
   function handleSave() {
@@ -117,12 +110,10 @@ export function ManageAccessDialog() {
           <p className="text-xs text-muted-foreground mt-0.5 truncate">{folder.name}</p>
         </DialogHeader>
 
-        {/* ── Search — fixed, NOT in scroll area; dropdown floats ── */}
+        {/* ── Search ── */}
         {addablePersonas.length > 0 && (
           <div className="px-5 pt-4 pb-0 shrink-0">
-            {/* Relative wrapper so dropdown anchors to the input */}
             <div style={{ position: 'relative' }}>
-              {/* Input container */}
               <div
                 style={{
                   display: 'flex',
@@ -165,7 +156,6 @@ export function ManageAccessDialog() {
                 )}
               </div>
 
-              {/* Floating dropdown — absolute, overlays people list, no layout impact */}
               {showDropdown && (
                 <div
                   role="listbox"
@@ -202,7 +192,7 @@ export function ManageAccessDialog() {
           </div>
         )}
 
-        {/* ── People with access — scrolls independently if list grows ── */}
+        {/* ── People with access ── */}
         <div className="px-5 py-4 flex flex-col gap-1 overflow-y-auto flex-1 min-h-0">
           <p className="text-[11px] font-semibold uppercase tracking-[0.07em] text-muted-foreground mb-2">
             People with access
@@ -212,35 +202,22 @@ export function ManageAccessDialog() {
           <div className="flex items-center gap-3 py-1.5">
             <PersonAvatar persona={currentPersona} />
             <PersonInfo persona={currentPersona} />
-            <span style={{ width: 110, fontSize: 12, color: 'var(--muted-foreground)', textAlign: 'center', flexShrink: 0 }}>
+            <span style={{ fontSize: 12, color: 'var(--muted-foreground)', flexShrink: 0 }}>
               Owner
             </span>
-            <div style={{ width: 24 }} />
           </div>
 
           {/* Collaborator rows */}
           {collaboratorPersonas.map(p => (
             <div key={p.id} className="flex items-center gap-3 py-1.5">
               <PersonAvatar persona={p} />
-              <PersonInfo persona={p} accessRole={roles[p.id]} />
-              <Select
-                value={roles[p.id] ?? 'edit'}
-                onValueChange={v => setRoles(prev => ({ ...prev, [p.id]: v as AccessRole }))}
-              >
-                <SelectTrigger style={{ width: 110, height: 30, fontSize: 12 }}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="edit">Can edit</SelectItem>
-                  <SelectItem value="view">Can view</SelectItem>
-                </SelectContent>
-              </Select>
+              <PersonInfo persona={p} />
               <Button
                 variant="ghost"
                 size="icon-xs"
                 aria-label={`Remove ${p.name}`}
                 onClick={() => removeCollaborator(p.id)}
-                style={{ width: 24, color: 'var(--muted-foreground)' }}
+                style={{ width: 24, color: 'var(--muted-foreground)', flexShrink: 0 }}
               >
                 <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 13 }} />
               </Button>
@@ -253,7 +230,6 @@ export function ManageAccessDialog() {
             </p>
           )}
         </div>
-
 
       </DialogContent>
     </Dialog>
@@ -273,7 +249,7 @@ function SearchResultRow({ persona, onAdd }: { persona: Persona; onAdd: () => vo
       <PersonAvatar persona={persona} />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground truncate">{persona.name}</p>
-        <p className="text-xs text-muted-foreground">{getCapabilityLabel(persona.role, 'edit')}</p>
+        <p className="text-xs text-muted-foreground">{getCapabilityLabel(persona.role)}</p>
       </div>
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0, pointerEvents: 'none' }}>
         <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 9 }} />
