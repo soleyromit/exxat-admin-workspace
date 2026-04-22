@@ -9,6 +9,12 @@ import {
 } from '@exxat/ds/packages/ui/src'
 import type { FolderNode, Persona } from '@/lib/qb-types'
 
+function getRoleLabel(role: Persona['role']): string {
+  if (role === 'exam_admin') return 'Exam Management Admin'
+  if (role === 'course_director') return 'Course Director'
+  return 'Instructor'
+}
+
 function courseFolderLabel(name: string): string {
   const match = name.match(/^([A-Z0-9]+)\s/)
   if (!match) return name
@@ -193,7 +199,7 @@ export function QBHeader() {
                 </AvatarFallback>
               </Avatar>
               <span style={{ fontSize: 12, fontWeight: 500 }}>{currentPersona.name}</span>
-              <Badge variant="secondary" className="rounded" style={{ fontSize: 10 }}>{currentPersona.role}</Badge>
+              <Badge variant="secondary" className="rounded" style={{ fontSize: 10 }}>{getRoleLabel(currentPersona.role)}</Badge>
               <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 10, color: 'var(--muted-foreground)' }} />
             </Button>
           </DropdownMenuTrigger>
@@ -208,7 +214,7 @@ export function QBHeader() {
                 </Avatar>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 600 }}>{p.name}</div>
-                  <div style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>{p.role}</div>
+                  <div style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>{getRoleLabel(p.role)}</div>
                 </div>
                 {p.id === currentPersona.id && (
                   <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 11, color: 'var(--brand-color)' }} />
