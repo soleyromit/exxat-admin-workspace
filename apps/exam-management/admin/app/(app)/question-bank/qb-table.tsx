@@ -189,15 +189,16 @@ function SimpleChip({ chip }: { chip: ChipDef }) {
 }
 
 // Per-filter pill with inline popover editor
-function FilterPill({ filter, onUpdate, onRemove, autoOpen = false }: {
+function FilterPill({ filter, onUpdate, onRemove, autoOpen = false, fieldDefs = QB_FILTER_FIELDS }: {
   filter: QBFilter
   onUpdate: (id: string, patch: Partial<Omit<QBFilter, 'id'>>) => void
   onRemove: (id: string) => void
   autoOpen?: boolean
+  fieldDefs?: typeof QB_FILTER_FIELDS
 }) {
   const [open, setOpen] = useState(autoOpen)
   const [optSearch, setOptSearch] = useState('')
-  const fieldDef = QB_FILTER_FIELDS.find(f => f.key === filter.fieldKey)!
+  const fieldDef = fieldDefs.find(f => f.key === filter.fieldKey)!
   const hasValues = filter.values.length > 0
   const pillLabel = hasValues
     ? filter.values.length === 1 ? `${fieldDef.label} ${filter.values[0]}` : `${fieldDef.label} ${filter.values.length} selected`
@@ -291,7 +292,10 @@ function FilterPill({ filter, onUpdate, onRemove, autoOpen = false }: {
 }
 
 // Field-picker dropdown — opens when clicking "+ Add filter"
-function AddFilterDropdown({ onAdd }: { onAdd: (fieldKey: QBFilterKey) => void }) {
+function AddFilterDropdown({ onAdd, fieldDefs = QB_FILTER_FIELDS }: {
+  onAdd: (fieldKey: QBFilterKey) => void
+  fieldDefs?: typeof QB_FILTER_FIELDS
+}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -305,7 +309,7 @@ function AddFilterDropdown({ onAdd }: { onAdd: (fieldKey: QBFilterKey) => void }
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-44">
         <DropdownMenuLabel style={{ fontSize: 11, color: 'var(--muted-foreground)', fontWeight: 400 }}>Filter by field</DropdownMenuLabel>
-        {QB_FILTER_FIELDS.map(f => (
+        {fieldDefs.map(f => (
           <DropdownMenuItem key={f.key} onClick={() => onAdd(f.key)}>
             <i className={`fa-light ${f.icon}`} aria-hidden="true" />
             {f.label}
@@ -319,6 +323,7 @@ function AddFilterDropdown({ onAdd }: { onAdd: (fieldKey: QBFilterKey) => void }
 function FilterChips({
   activeFilters, bookmarkChips, lastAddedId,
   onAddFilter, onUpdateFilter, onRemoveFilter, onClearAll,
+  filterFields = QB_FILTER_FIELDS,
 }: {
   activeFilters: QBFilter[]
   bookmarkChips: ChipDef[]
@@ -327,6 +332,7 @@ function FilterChips({
   onUpdateFilter: (id: string, patch: Partial<Omit<QBFilter, 'id'>>) => void
   onRemoveFilter: (id: string) => void
   onClearAll: () => void
+  filterFields?: typeof QB_FILTER_FIELDS
 }) {
   const hasActive = activeFilters.some(f => f.values.length > 0) || bookmarkChips.length > 0
   return (
@@ -338,10 +344,11 @@ function FilterChips({
           onUpdate={onUpdateFilter}
           onRemove={onRemoveFilter}
           autoOpen={filter.id === lastAddedId}
+          fieldDefs={filterFields}
         />
       ))}
       {bookmarkChips.map(chip => <SimpleChip key={chip.key} chip={chip} />)}
-      <AddFilterDropdown onAdd={onAddFilter} />
+      <AddFilterDropdown onAdd={onAddFilter} fieldDefs={filterFields} />
       {hasActive && (
         <Button variant="ghost" size="xs" onClick={onClearAll} style={{ height: 28, padding: '0 6px', fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0 }}>
           Clear all
@@ -1655,6 +1662,7 @@ export function QBTable() {
     setCollaboratorsModalFolderId,
     selectedFolderId,
     setNavView,
+    personas,
   } = useQB()
 
   const isAdmin = currentPersona.role === 'Admin'
@@ -1761,6 +1769,15 @@ export function QBTable() {
     }
     return undefined
   }
+
+  const qbFilterFields = QB_FILTER_FIELDS.map(f => {
+    if (f.key !== 'creator' && f.key !== 'lastEditedBy') return f
+    const ids = [...new Set(
+      visibleQuestions.map(q => f.key === 'creator' ? q.creator : q.lastEditedBy).filter((id): id is string => !!id)
+    )]
+    const options = ids.map(id => personas.find(p => p.id === id)?.name ?? id).sort()
+    return { ...f, options }
+  })
 
   const FILTERABLE_COL_VALUES: Partial<Record<ColKey, string[]>> = {
     status: ['Saved', 'Draft'],
@@ -1888,6 +1905,7 @@ export function QBTable() {
             onUpdateFilter={updateFilter}
             onRemoveFilter={removeFilter}
             onClearAll={clearAllFilters}
+            filterFields={qbFilterFields}
           />
         ) : <div style={{ flex: 1 }} />}
 
