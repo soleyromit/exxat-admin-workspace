@@ -1157,14 +1157,6 @@ function QuestionDetailSheet({ question, open, onClose }: { question: Question |
   const creatorPersona = MOCK_QB_PERSONAS.find(p => p.id === question.creator)
   const editorPersona  = MOCK_QB_PERSONAS.find(p => p.id === (question.lastEditedBy ?? question.creator))
 
-  const pbisLabel = question.pbis === null ? null
-    : question.pbis >= 0.3 ? 'good'
-    : question.pbis >= 0.15 ? 'fair'
-    : 'low'
-  const pbisColor = pbisLabel === 'good' ? 'oklch(0.45 0.15 155)'
-    : pbisLabel === 'fair' ? 'oklch(0.55 0.18 75)'
-    : 'var(--destructive)'
-
   const visibleTags = question.tags.filter(t => t !== 'private')
   const versionHistory = mockVersionHistory(question)
   const lastUsed = question.usedInSections?.[0] ?? null
@@ -1219,7 +1211,7 @@ function QuestionDetailSheet({ question, open, onClose }: { question: Question |
                 </Button>
               )}
             </div>
-          ) : !isExamAdmin && (
+          ) : (
             <Button size="sm" variant="outline" className="w-full" style={{ fontSize: 12 }}
               onClick={() => duplicateQuestion(question.id)}>
               <i className="fa-light fa-copy" aria-hidden="true" />
@@ -1309,7 +1301,7 @@ function QuestionDetailSheet({ question, open, onClose }: { question: Question |
                         <div style={{ display: 'flex', gap: 10 }}>
                           {vh.pbis !== null && (
                             <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
-                              P-bis <span style={{ fontWeight: 600, color: vh.pbis >= 0.3 ? 'oklch(0.45 0.15 155)' : vh.pbis >= 0.15 ? 'oklch(0.55 0.18 75)' : 'var(--destructive)' }}>{vh.pbis.toFixed(2)}</span>
+                              P-bis <span style={{ fontWeight: 600, color: 'var(--foreground)' }}>{vh.pbis.toFixed(2)}</span>
                             </span>
                           )}
                           {vh.score !== null && (
@@ -1334,8 +1326,8 @@ function QuestionDetailSheet({ question, open, onClose }: { question: Question |
             </DetailRow>
             {question.pbis !== null && (
               <DetailRow label="PBis">
-                <span style={{ fontSize: 13, fontWeight: 600, color: pbisColor }}>
-                  {question.pbis?.toFixed(2)} <span style={{ fontWeight: 400, fontSize: 12 }}>({pbisLabel})</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)' }}>
+                  {question.pbis?.toFixed(2)}
                 </span>
               </DetailRow>
             )}

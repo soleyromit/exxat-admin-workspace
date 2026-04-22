@@ -61,9 +61,8 @@ export function BloomsBadge({ blooms }: { blooms: QBlooms }) {
 // ── pBIS Cell ─────────────────────────────────────────────────────────────────
 export function PBisCell({ pbis }: { pbis: number | null }) {
   if (pbis === null) return <span style={{ color: 'var(--muted-foreground)', fontSize: 12 }}>—</span>
-  const color = pbis >= 0.3 ? 'oklch(0.45 0.15 155)' : pbis >= 0.15 ? 'oklch(0.55 0.18 75)' : 'var(--destructive)'
   return (
-    <span style={{ fontSize: 12, fontWeight: 500, color }}>
+    <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--foreground)' }}>
       {pbis.toFixed(2)}
     </span>
   )

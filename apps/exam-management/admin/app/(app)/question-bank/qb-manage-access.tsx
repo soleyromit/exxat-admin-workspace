@@ -27,13 +27,20 @@ function getRoleLabel(role: Persona['role']): string {
   return 'Instructor'
 }
 
-function PersonInfo({ persona }: { persona: Persona }) {
+function getCapabilityLabel(role: Persona['role'], accessRole?: AccessRole): string {
+  if (role === 'exam_admin') return 'Can edit questions across all folders'
+  const action = accessRole === 'view' ? 'view' : 'edit'
+  if (role === 'course_director') return `Can ${action} questions for this folder`
+  return `Can ${action} their own questions`
+}
+
+function PersonInfo({ persona, accessRole }: { persona: Persona; accessRole?: AccessRole }) {
   return (
     <div style={{ flex: 1, minWidth: 0 }}>
       <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {persona.name}
       </p>
-      <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: 0 }}>{getRoleLabel(persona.role)}</p>
+      <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: 0 }}>{getCapabilityLabel(persona.role, accessRole)}</p>
     </div>
   )
 }
@@ -70,7 +77,7 @@ export function ManageAccessDialog() {
   const query = search.trim().toLowerCase()
   const searchResults = query
     ? addablePersonas.filter(p =>
-        p.name.toLowerCase().includes(query) || p.role.toLowerCase().includes(query)
+        p.name.toLowerCase().includes(query) || getRoleLabel(p.role).toLowerCase().includes(query)
       )
     : addablePersonas
 
@@ -215,7 +222,7 @@ export function ManageAccessDialog() {
           {collaboratorPersonas.map(p => (
             <div key={p.id} className="flex items-center gap-3 py-1.5">
               <PersonAvatar persona={p} />
-              <PersonInfo persona={p} />
+              <PersonInfo persona={p} accessRole={roles[p.id]} />
               <Select
                 value={roles[p.id] ?? 'edit'}
                 onValueChange={v => setRoles(prev => ({ ...prev, [p.id]: v as AccessRole }))}
@@ -266,7 +273,7 @@ function SearchResultRow({ persona, onAdd }: { persona: Persona; onAdd: () => vo
       <PersonAvatar persona={persona} />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground truncate">{persona.name}</p>
-        <p className="text-xs text-muted-foreground">{getRoleLabel(persona.role)}</p>
+        <p className="text-xs text-muted-foreground">{getCapabilityLabel(persona.role, 'edit')}</p>
       </div>
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0, pointerEvents: 'none' }}>
         <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 9 }} />
