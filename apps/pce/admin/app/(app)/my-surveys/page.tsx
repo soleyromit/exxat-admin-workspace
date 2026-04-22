@@ -1,10 +1,11 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  SidebarTrigger, Separator,
+  SidebarTrigger, Separator, Skeleton,
 } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
@@ -16,6 +17,14 @@ import Link from 'next/link'
 const FACULTY_ID = 'f1'
 
 export default function MySurveysPage() {
+  return (
+    <Suspense fallback={<MySurveysSkeleton />}>
+      <MySurveysContent />
+    </Suspense>
+  )
+}
+
+function MySurveysContent() {
   const { surveys } = usePce()
   const searchParams = useSearchParams()
   const filterParam = searchParams.get('filter')
@@ -107,6 +116,22 @@ export default function MySurveysPage() {
             </Table>
           </div>
         )}
+      </main>
+    </>
+  )
+}
+
+function MySurveysSkeleton() {
+  return (
+    <>
+      <header className="flex items-center gap-2 px-4 py-3 border-b border-border shrink-0">
+        <Skeleton className="h-7 w-7" />
+        <Skeleton className="h-4 w-24" />
+      </header>
+      <main className="flex-1 overflow-auto p-4">
+        <div className="flex flex-col gap-2">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}
+        </div>
       </main>
     </>
   )
