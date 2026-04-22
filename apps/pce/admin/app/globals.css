@@ -1,0 +1,91 @@
+@import '../../../../exxat-ds/packages/ui/src/theme.css';
+@import "tailwindcss";
+@source '../../../../exxat-ds/packages/ui/src/**/*.{ts,tsx}';
+
+/* ── Sidebar token ─────────────────────────────────────────────────────────── */
+:root {
+  --sidebar: var(--brand-tint);
+}
+
+.dark {
+  --sidebar: oklch(0.245 0.015 270);
+}
+
+/* ── DataTable tokens ──────────────────────────────────────────────────────── */
+:root {
+  --dt-header-bg:       var(--background);
+  --dt-row-bg:          var(--background);
+  --dt-row-hover:       oklch(0.972 0.001 270);
+  --dt-row-selected:    oklch(0.962 0.003 260);
+  --dt-row-selected-fg: var(--foreground);
+  --dt-group-bg:        oklch(0.972 0.001 270);
+  --sticky-edge-fade:   oklch(0 0 0 / 0.08);
+}
+
+.dark {
+  --dt-row-hover:       oklch(0.24 0.01 270);
+  --dt-row-selected:    oklch(0.27 0.02 270);
+  --dt-group-bg:        oklch(0.24 0.01 270);
+  --sticky-edge-fade:   oklch(0 0 0 / 0.32);
+}
+
+@theme inline {
+  --color-dt-header-bg:       var(--dt-header-bg);
+  --color-dt-row-bg:          var(--dt-row-bg);
+  --color-dt-row-hover:       var(--dt-row-hover);
+  --color-dt-row-selected:    var(--dt-row-selected);
+  --color-dt-row-selected-fg: var(--dt-row-selected-fg);
+  --color-dt-group-bg:        var(--dt-group-bg);
+  --color-interactive-hover:        var(--interactive-hover);
+  --color-interactive-hover-subtle: var(--interactive-hover-subtle);
+}
+
+/* ── PCE status tokens ─────────────────────────────────────────────────────── */
+:root {
+  --pce-status-draft-bg:          oklch(0.955 0.022 75);
+  --pce-status-draft-fg:          oklch(0.42 0.12 68);
+  --pce-status-draft-border:      oklch(0.82 0.08 72);
+
+  --pce-status-collecting-bg:     oklch(0.945 0.040 184);
+  --pce-status-collecting-fg:     oklch(0.28 0.12 184);
+  --pce-status-collecting-border: oklch(0.72 0.12 184);
+
+  --pce-status-pending-bg:        oklch(0.955 0.022 75);
+  --pce-status-pending-fg:        oklch(0.42 0.12 68);
+  --pce-status-pending-border:    oklch(0.82 0.08 72);
+
+  --pce-status-released-bg:       oklch(0.945 0.040 155);
+  --pce-status-released-fg:       oklch(0.28 0.12 155);
+  --pce-status-released-border:   oklch(0.72 0.12 155);
+
+  --pce-rate-bar-fill:            var(--brand-color);
+  --pce-rate-bar-track:           var(--muted);
+  --pce-locked-bg:                color-mix(in oklch, var(--muted) 40%, var(--background));
+
+  --pce-impact-bg:                color-mix(in oklch, var(--destructive) 8%, var(--background));
+  --pce-impact-border:            color-mix(in oklch, var(--destructive) 20%, transparent);
+}
+
+/* ── App sidebar — flat nav style ─────────────────────────────────────────── */
+[data-sidebar="menu-button"] {
+  background-color: transparent;
+  box-shadow: none;
+  font-weight: 400;
+}
+[data-sidebar="menu-button"]:hover {
+  background-color: var(--sidebar-accent);
+  color: var(--sidebar-accent-foreground);
+  box-shadow: none;
+}
+[data-sidebar="menu-button"][data-active="true"] {
+  background-color: var(--sidebar-accent);
+  color: var(--sidebar-accent-foreground);
+  font-weight: 400;
+  box-shadow: none;
+}
+[data-sidebar="menu-button"].sidebar-brand-btn,
+[data-sidebar="menu-button"].sidebar-brand-btn:hover {
+  background-color: transparent;
+  box-shadow: none;
+  cursor: default;
+}
