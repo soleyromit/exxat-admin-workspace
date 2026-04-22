@@ -1713,6 +1713,7 @@ export function QBTable() {
     selectedFolderId,
     setNavView,
     personas,
+    accessibleFolderIds,
   } = useQB()
 
   const isExamAdmin = currentPersona.role === 'exam_admin'
@@ -2325,6 +2326,9 @@ export function QBTable() {
                   const isHovered = rowHoverId === q.id
                   const isOwner = q.creator === currentPersona.id
                   const isPrivate = q.tags.includes('private')
+                  const canEditRow = isOwner || isExamAdmin ||
+                    (isCourseDirector && q.status === 'Saved' && accessibleFolderIds.has(q.folder))
+                  const canDeleteRow = isOwner || isExamAdmin
 
                   const creatorPersona = MOCK_QB_PERSONAS.find(p => p.id === (q.creator ?? ''))
                     ?? { initials: '?', color: 'var(--muted)', name: 'Unknown', trustLevel: 'junior' as const, id: '', role: 'instructor' as const }
@@ -2560,39 +2564,54 @@ export function QBTable() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-56">
+                            {/* Duplicate — always available; creates a new draft owned by current user */}
                             <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); duplicateQuestion(q.id) }}>
                               <i className="fa-light fa-copy" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                               Duplicate to Draft
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); setMoveTarget({ id: q.id, title: q.title, folder: q.folder }) }}>
-                              <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                              Move to folder
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Saved' }) }}
-                              disabled={q.status === 'Saved'}
-                            >
-                              <i className="fa-light fa-circle-check" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                              Mark as Saved
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Draft' }) }}
-                              disabled={q.status === 'Draft'}
-                            >
-                              <i className="fa-light fa-rotate-left" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                              Revert to Draft
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); setCollaboratorsModalFolderId(q.folder) }}>
-                              <i className="fa-light fa-users" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                              Manage folder access
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem variant="destructive" onClick={() => { setOpenMenuQuestionId(null); setDeleteTarget({ id: q.id, title: q.title }) }}>
-                              <i className="fa-light fa-trash-can" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                              Delete question
-                            </DropdownMenuItem>
+                            {canEditRow && (
+                              <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); setMoveTarget({ id: q.id, title: q.title, folder: q.folder }) }}>
+                                <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                                Move to folder
+                              </DropdownMenuItem>
+                            )}
+                            {canEditRow && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Saved' }) }}
+                                  disabled={q.status === 'Saved'}
+                                >
+                                  <i className="fa-light fa-circle-check" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                                  Mark as Saved
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Draft' }) }}
+                                  disabled={q.status === 'Draft'}
+                                >
+                                  <i className="fa-light fa-rotate-left" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                                  Revert to Draft
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            {isExamAdmin && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); setCollaboratorsModalFolderId(q.folder) }}>
+                                  <i className="fa-light fa-users" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                                  Manage folder access
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            {canDeleteRow && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem variant="destructive" onClick={() => { setOpenMenuQuestionId(null); setDeleteTarget({ id: q.id, title: q.title }) }}>
+                                  <i className="fa-light fa-trash-can" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                                  Delete question
+                                </DropdownMenuItem>
+                              </>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>

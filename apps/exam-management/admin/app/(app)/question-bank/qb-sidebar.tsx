@@ -287,6 +287,7 @@ function MoveFolderDialog({ node, open, onClose }: { node: FolderNode; open: boo
 function FolderContextMenu({
   node,
   isAdmin,
+  canCreateSubfolder,
   onRename,
   onAddSubfolder,
   onMove,
@@ -295,6 +296,7 @@ function FolderContextMenu({
 }: {
   node: FolderNode
   isAdmin: boolean
+  canCreateSubfolder: boolean
   onRename: () => void
   onAddSubfolder: () => void
   onMove: () => void
@@ -303,7 +305,6 @@ function FolderContextMenu({
 }) {
   const { setCollaboratorsModalFolderId } = useQB()
 
-  if (!isAdmin) return null
   return (
     <DropdownMenu onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>
@@ -318,29 +319,35 @@ function FolderContextMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuItem onClick={() => onAddSubfolder()}>
-          <i className="fa-light fa-folder-plus" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-          New Subfolder
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setCollaboratorsModalFolderId(node.id)}>
-          <i className="fa-light fa-users" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-          Manage Access
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onRename()}>
-          <i className="fa-light fa-pen" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-          Rename
-        </DropdownMenuItem>
-        {!node.isCourse && (
-          <DropdownMenuItem onClick={() => onMove()}>
-            <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-            Move to subfolder
+        {canCreateSubfolder && (
+          <DropdownMenuItem onClick={() => onAddSubfolder()}>
+            <i className="fa-light fa-folder-plus" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+            New Subfolder
           </DropdownMenuItem>
         )}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onClick={() => onDelete()}>
-          <i className="fa-light fa-trash-can" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-          Delete
-        </DropdownMenuItem>
+        {isAdmin && (
+          <>
+            <DropdownMenuItem onClick={() => setCollaboratorsModalFolderId(node.id)}>
+              <i className="fa-light fa-users" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+              Manage Access
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onRename()}>
+              <i className="fa-light fa-pen" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+              Rename
+            </DropdownMenuItem>
+            {!node.isCourse && (
+              <DropdownMenuItem onClick={() => onMove()}>
+                <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                Move to subfolder
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onClick={() => onDelete()}>
+              <i className="fa-light fa-trash-can" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+              Delete
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -532,6 +539,7 @@ function FolderRow({
     createFolder,
     setFolderIcon,
     dialogActive, setDialogActive,
+    accessibleFolderIds,
   } = useQB()
 
   const subtreeIds = getDescendantIds(node.id, folders)
@@ -755,7 +763,7 @@ function FolderRow({
         </span>
 
         {/* ⋯ context menu — overlays row on hover, takes no layout space */}
-        {isAdmin && (
+        {(isAdmin || accessibleFolderIds.has(node.id)) && (
           <div style={{
             position: 'absolute',
             right: 4,
@@ -771,6 +779,7 @@ function FolderRow({
             <FolderContextMenu
               node={node}
               isAdmin={isAdmin}
+              canCreateSubfolder={isAdmin || accessibleFolderIds.has(node.id)}
               onOpenChange={setMenuOpen}
               onRename={() => {
                 setIsRenaming(true)
