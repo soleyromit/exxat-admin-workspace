@@ -167,10 +167,10 @@ export const MOCK_QB_QUESTIONS: Question[] = [
 // ─── Personas ────────────────────────────────────────────────────────────────
 
 export const MOCK_QB_PERSONAS: Persona[] = [
-  { id: 'persona-thompson', name: 'Dr. Thompson', initials: 'DT', role: 'Admin',   color: 'var(--brand-color)',      trustLevel: 'senior' },
-  { id: 'persona-chen',     name: 'Dr. Chen',     initials: 'SC', role: 'Admin',   color: 'var(--chart-1)',          trustLevel: 'mid' },
-  { id: 'persona-patel',    name: 'Dr. Patel',    initials: 'JP', role: 'Faculty', color: 'var(--chart-2)',          trustLevel: 'junior', assignedFolders: ['phar101'] },
-  { id: 'persona-kim',      name: 'Dr. Kim',      initials: 'MK', role: 'Faculty', color: 'var(--chart-4)',          assignedFolders: ['skel101'] },
+  { id: 'persona-thompson', name: 'Dr. Thompson', initials: 'DT', role: 'exam_admin',      color: 'var(--brand-color)', trustLevel: 'senior' },
+  { id: 'persona-chen',     name: 'Dr. Chen',     initials: 'SC', role: 'course_director', color: 'var(--chart-1)',  trustLevel: 'mid' },
+  { id: 'persona-patel',    name: 'Dr. Patel',    initials: 'JP', role: 'instructor',      color: 'var(--chart-2)',  trustLevel: 'junior', assignedFolders: ['phar101'] },
+  { id: 'persona-kim',      name: 'Dr. Kim',      initials: 'MK', role: 'instructor',      color: 'var(--chart-4)',  assignedFolders: ['skel101'] },
 ]
 
 // ─── Courses ─────────────────────────────────────────────────────────────────

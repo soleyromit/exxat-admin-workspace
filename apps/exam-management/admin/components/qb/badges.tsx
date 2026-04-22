@@ -59,13 +59,11 @@ export function BloomsBadge({ blooms }: { blooms: QBlooms }) {
 }
 
 // ── pBIS Cell ─────────────────────────────────────────────────────────────────
-export function PBisCell({ pbis, pbisDir }: { pbis: number | null; pbisDir: 'up' | 'down' | 'flat' | null }) {
+export function PBisCell({ pbis }: { pbis: number | null }) {
   if (pbis === null) return <span style={{ color: 'var(--muted-foreground)', fontSize: 12 }}>—</span>
-  const arrow = pbisDir === 'up' ? 'fa-arrow-up' : pbisDir === 'down' ? 'fa-arrow-down' : 'fa-minus'
-  const color = pbisDir === 'up' ? 'var(--qb-status-saved-fg)' : pbisDir === 'down' ? 'var(--destructive)' : 'var(--muted-foreground)'
+  const color = pbis >= 0.3 ? 'oklch(0.45 0.15 155)' : pbis >= 0.15 ? 'oklch(0.55 0.18 75)' : 'var(--destructive)'
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color }}>
-      <i className={`fa-solid ${arrow}`} aria-hidden="true" style={{ fontSize: 9 }} />
+    <span style={{ fontSize: 12, fontWeight: 500, color }}>
       {pbis.toFixed(2)}
     </span>
   )

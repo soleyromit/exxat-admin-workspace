@@ -53,7 +53,7 @@ export interface Persona {
   id: string
   name: string
   initials: string
-  role: 'Admin' | 'Faculty'
+  role: 'exam_admin' | 'course_director' | 'instructor'
   color: string
   trustLevel?: TrustLevel
   assignedFolders?: string[]

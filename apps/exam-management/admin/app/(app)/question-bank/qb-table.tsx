@@ -20,10 +20,10 @@ import { RequestEditAccessModal } from './qb-modals'
 // ── Move Question Dialog ───────────────────────────────────────────────────────
 function MoveQuestionDialog({ question, open, onClose }: { question: { id: string; title: string; folder: string }; open: boolean; onClose: () => void }) {
   const { folders, moveQuestionToFolder, accessibleFolderIds, currentPersona } = useQB()
-  const isAdmin = currentPersona.role === 'Admin'
+  const isExamAdmin = currentPersona.role === 'exam_admin'
   const [targetId, setTargetId] = useState<string | null>(null)
 
-  const eligible = folders.filter(f => f.id !== question.folder && (isAdmin || accessibleFolderIds.has(f.id)))
+  const eligible = folders.filter(f => f.id !== question.folder && (isExamAdmin || accessibleFolderIds.has(f.id)))
 
   function getFolderPath(f: typeof folders[number]): string {
     const parts: string[] = [f.name]
@@ -1137,7 +1137,7 @@ function mockVersionHistory(q: Question): { v: number; editor: string; date: str
 
 // ── Question Detail Sheet ─────────────────────────────────────────────────────
 function QuestionDetailSheet({ question, open, onClose }: { question: Question | null; open: boolean; onClose: () => void }) {
-  const { folders, updateQuestion, duplicateQuestion, currentPersona } = useQB()
+  const { folders, updateQuestion, duplicateQuestion, currentPersona, accessibleFolderIds } = useQB()
   const router = useRouter()
   const [versionHistoryOpen, setVersionHistoryOpen] = useState(false)
 
@@ -1145,9 +1145,11 @@ function QuestionDetailSheet({ question, open, onClose }: { question: Question |
 
   if (!question) return null
 
-  const isAdmin = currentPersona.role === 'Admin'
+  const isExamAdmin = currentPersona.role === 'exam_admin'
+  const isCourseDirector = currentPersona.role === 'course_director'
   const isOwner = question.creator === currentPersona.id
-  const canEdit = isAdmin || isOwner
+  const canEdit = isOwner || isExamAdmin ||
+    (isCourseDirector && question.status === 'Saved' && accessibleFolderIds.has(question.folder))
 
   const folder = folders.find(f => f.id === question.folder)
   const folderLabel = folder?.name ?? question.folderPath?.split(' / ').pop() ?? '—'
@@ -1217,7 +1219,7 @@ function QuestionDetailSheet({ question, open, onClose }: { question: Question |
                 </Button>
               )}
             </div>
-          ) : !isAdmin && (
+          ) : !isExamAdmin && (
             <Button size="sm" variant="outline" className="w-full" style={{ fontSize: 12 }}
               onClick={() => duplicateQuestion(question.id)}>
               <i className="fa-light fa-copy" aria-hidden="true" />
@@ -1721,7 +1723,8 @@ export function QBTable() {
     personas,
   } = useQB()
 
-  const isAdmin = currentPersona.role === 'Admin'
+  const isExamAdmin = currentPersona.role === 'exam_admin'
+  const isCourseDirector = currentPersona.role === 'course_director'
 
   const [reqAccessQuestion, setReqAccessQuestion] = useState<{ id: string; title: string } | null>(null)
   const [moveTarget, setMoveTarget] = useState<{ id: string; title: string; folder: string } | null>(null)
@@ -2082,7 +2085,7 @@ export function QBTable() {
       {filteredQuestions.length === 0 ? (
         visibleQuestions.length === 0 ? (
           /* ── Truly empty: admin empty folder vs faculty no-access ── */
-          isAdmin ? (
+          isExamAdmin ? (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 32px', gap: 20 }}>
               <div style={{ position: 'relative', width: 80, height: 80, borderRadius: '50%', backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <i className="fa-light fa-rectangle-list" aria-hidden="true" style={{ fontSize: 28, color: 'var(--brand-color)', opacity: 0.85 }} />
@@ -2332,7 +2335,7 @@ export function QBTable() {
                   const isPrivate = q.tags.includes('private')
 
                   const creatorPersona = MOCK_QB_PERSONAS.find(p => p.id === (q.creator ?? ''))
-                    ?? { initials: '?', color: 'var(--muted)', name: 'Unknown', trustLevel: 'junior' as const, id: '', role: 'Faculty' as const }
+                    ?? { initials: '?', color: 'var(--muted)', name: 'Unknown', trustLevel: 'junior' as const, id: '', role: 'instructor' as const }
 
                   const condBg = getConditionalRowBg(q)
                   const rowBg = isSelected ? 'var(--dt-row-selected)' : condBg
@@ -2344,13 +2347,13 @@ export function QBTable() {
                       onMouseEnter={() => setRowHoverId(q.id)}
                       onMouseLeave={() => setRowHoverId(null)}
                       onClick={() => setDetailQuestionId(q.id)}
-                      draggable={isAdmin}
+                      draggable={isExamAdmin}
                       onDragStart={() => setDraggedQuestionId(q.id)}
                       onDragEnd={() => setDraggedQuestionId(null)}
                       className="group/row transition-colors hover:!bg-dt-row-hover"
                       style={{
                         backgroundColor: rowBg,
-                        opacity: (!isAdmin && !isOwner) ? 0.72 : 1,
+                        opacity: (!isExamAdmin && !isCourseDirector && !isOwner) ? 0.72 : 1,
                         borderLeft: isPrivate ? '3px solid var(--qb-private)' : undefined,
                         cursor: 'pointer',
                       }}
@@ -2472,7 +2475,7 @@ export function QBTable() {
                               </TableCell>
                             )
                             const editorPersona = MOCK_QB_PERSONAS.find(p => p.id === editorId)
-                              ?? { initials: editorId.slice(0, 2).toUpperCase(), color: 'var(--muted)', name: editorId, trustLevel: 'junior' as const, id: editorId, role: 'Faculty' as const }
+                              ?? { initials: editorId.slice(0, 2).toUpperCase(), color: 'var(--muted)', name: editorId, trustLevel: 'junior' as const, id: editorId, role: 'instructor' as const }
                             return (
                               <TableCell key="lastEditedBy" className={`${TD} w-32`} style={pinnedStyle('lastEditedBy', pinnedCols, pinnedRightCols)}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -2499,7 +2502,7 @@ export function QBTable() {
                           case 'pbis':
                             return (
                               <TableCell key="pbis" className={`${TD} w-20`} style={pinnedStyle('pbis', pinnedCols, pinnedRightCols)}>
-                                <PBisCell pbis={q.pbis} pbisDir={q.pbisDir} />
+                                <PBisCell pbis={q.pbis} />
                               </TableCell>
                             )
                           case 'version':

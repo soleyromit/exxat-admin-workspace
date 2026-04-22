@@ -135,10 +135,10 @@ export function QBProvider({ children }: { children: ReactNode }) {
   const [dialogActive, setDialogActive] = useState(false)
   const [folders, setFolders] = useState<FolderNode[]>(MOCK_QB_FOLDERS)
 
-  const isAdmin = currentPersona.role === 'Admin'
+  const isExamAdmin = currentPersona.role === 'exam_admin'
 
   const accessibleFolderIds = useMemo<Set<string>>(() => {
-    if (isAdmin) return new Set(folders.map(f => f.id))
+    if (isExamAdmin) return new Set(folders.map(f => f.id))
     const accessible = new Set<string>()
     // Any folder where this persona is a direct collaborator grants access to that folder + all descendants
     folders
@@ -147,17 +147,17 @@ export function QBProvider({ children }: { children: ReactNode }) {
         getDescendantIds(folder.id, folders).forEach(id => accessible.add(id))
       })
     return accessible
-  }, [isAdmin, currentPersona.id, folders])
+  }, [isExamAdmin, currentPersona.id, folders])
 
   // Ref so the effect can read the current selectedFolderId without adding it as a dep
   const selectedFolderIdRef = useRef(selectedFolderId)
   selectedFolderIdRef.current = selectedFolderId
 
-  // Auto-navigate Faculty to first accessible folder whenever their access set changes
-  // (covers both persona switch and real-time access grants by Admin)
+  // Auto-navigate instructors and course directors to their first accessible folder
+  // (covers both persona switch and real-time access grants)
   useEffect(() => {
-    if (isAdmin) return
-    // If Faculty already has an accessible folder selected, leave navigation alone
+    if (isExamAdmin) return
+    // If already on an accessible folder, leave navigation alone
     if (selectedFolderIdRef.current && accessibleFolderIds.has(selectedFolderIdRef.current)) return
     // Prefer a root-level course; fall back to any accessible folder
     const firstAccessible =
@@ -171,7 +171,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
       setSelectedFolderIdState(null)
       setNavViewState('my')
     }
-  }, [isAdmin, accessibleFolderIds]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isExamAdmin, accessibleFolderIds]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function setCurrentPersona(p: Persona) {
     setCurrentPersonaState(p)
@@ -340,7 +340,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
 
   const visibleQuestions = useMemo(() => questionsState.filter(q => {
     // Non-admin: folder must be accessible
-    if (!isAdmin && !accessibleFolderIds.has(q.folder)) return false
+    if (!isExamAdmin && !accessibleFolderIds.has(q.folder)) return false
 
     // Draft questions are only visible to their creator, regardless of role
     const roleVisible = q.status === 'Saved' || (q.status === 'Draft' && q.creator === currentPersona.id)
@@ -357,7 +357,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
     const favFilter = favoritesFilter ? favoritedIds.has(q.id) : true
 
     return roleVisible && navVisible && myFilter && favFilter
-  }), [isAdmin, currentPersona.id, navView, selectedFolderId, myQuestionsOnly, favoritesFilter, favoritedIds, folders, accessibleFolderIds, questionsState])
+  }), [isExamAdmin, currentPersona.id, navView, selectedFolderId, myQuestionsOnly, favoritesFilter, favoritedIds, folders, accessibleFolderIds, questionsState])
 
   const toggleQuestionSelection = useCallback((id: string) => {
     setSelectedQuestionIds(prev => {

@@ -27,7 +27,7 @@ function getDescendantIds(id: string, folders: FolderNode[]): Set<string> {
 // Collaborator avatar stack
 function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] }) {
   const { currentPersona, setCollaboratorsModalFolderId, selectedFolderId } = useQB()
-  const isAdmin = currentPersona.role === 'Admin'
+  const isAdmin = currentPersona.role === 'exam_admin'
   const MAX_SHOWN = 3
   const personas = MOCK_QB_PERSONAS.filter(p => collaboratorIds.includes(p.id))
   const shown = personas.slice(0, MAX_SHOWN)
@@ -98,7 +98,7 @@ export function QBTitle() {
     currentPersona, selectedFolderId,
     setCollaboratorsModalFolderId,
   } = useQB()
-  const isAdmin = currentPersona.role === 'Admin'
+  const isAdmin = currentPersona.role === 'exam_admin'
   const count = visibleQuestions.length
 
   // Compute live question count for any folder (same logic as sidebar)

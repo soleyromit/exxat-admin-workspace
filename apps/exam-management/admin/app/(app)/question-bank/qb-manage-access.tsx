@@ -21,13 +21,19 @@ function PersonAvatar({ persona }: { persona: Persona }) {
   )
 }
 
+function getRoleLabel(role: Persona['role']): string {
+  if (role === 'exam_admin') return 'Exam Management Admin'
+  if (role === 'course_director') return 'Course Director'
+  return 'Instructor'
+}
+
 function PersonInfo({ persona }: { persona: Persona }) {
   return (
     <div style={{ flex: 1, minWidth: 0 }}>
       <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {persona.name}
       </p>
-      <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: 0 }}>{persona.role}</p>
+      <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: 0 }}>{getRoleLabel(persona.role)}</p>
     </div>
   )
 }
@@ -260,7 +266,7 @@ function SearchResultRow({ persona, onAdd }: { persona: Persona; onAdd: () => vo
       <PersonAvatar persona={persona} />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground truncate">{persona.name}</p>
-        <p className="text-xs text-muted-foreground">{persona.role}</p>
+        <p className="text-xs text-muted-foreground">{getRoleLabel(persona.role)}</p>
       </div>
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0, pointerEvents: 'none' }}>
         <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 9 }} />

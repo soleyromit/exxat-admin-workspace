@@ -864,11 +864,11 @@ export function QBSidebar() {
     }
   }, [sidebarOpen, setSidebarSearch])
 
-  const isAdmin = currentPersona.role === 'Admin'
+  const isAdmin = currentPersona.role === 'exam_admin'
 
   const courseFolders = folders.filter(f => f.isCourse && f.parentId === null)
 
-  // Faculty: only show course folders they have access to; admins see all
+  // Instructors and course directors only see accessible folders; exam admins see all
   const visibleFolders = isAdmin
     ? folders
     : folders.filter(f => accessibleFolderIds.has(f.id))

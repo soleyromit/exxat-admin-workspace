@@ -160,7 +160,7 @@ ${facultyRole}`
 function QBContent() {
   const { currentPersona, selectedFolderId, accessibleFolderIds } = useQB()
   const [requestDialogOpen, setRequestDialogOpen] = useState(false)
-  const isAdmin = currentPersona.role === 'Admin'
+  const isAdmin = currentPersona.role === 'exam_admin'
   const isFaculty = !isAdmin
   const hasFolderSelected = selectedFolderId !== null
   const hasAssignedCourses = accessibleFolderIds.size > 0
