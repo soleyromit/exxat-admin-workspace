@@ -11,8 +11,9 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="theme-one">
       <head>
+        <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="stylesheet" href="https://use.typekit.net/wuk5wqn.css" />
         <script
           src="https://kit.fontawesome.com/d9bd5774e0.js"
@@ -20,7 +21,7 @@ export default function RootLayout({
           async
         />
       </head>
-      <body>{children}</body>
+      <body className="antialiased" suppressHydrationWarning>{children}</body>
     </html>
   )
 }

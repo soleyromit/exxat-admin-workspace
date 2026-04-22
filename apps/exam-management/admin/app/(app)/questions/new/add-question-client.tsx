@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { MOCK_QB_FOLDERS } from '@/lib/qb-mock-data'
 
 type Step = 1 | 2 | 3
 
@@ -22,11 +23,7 @@ function StepIndicator({ current }: { current: Step }) {
             {index > 0 && (
               <div
                 className="h-px w-12"
-                style={{
-                  backgroundColor: isCompleted
-                    ? 'var(--primary)'
-                    : 'var(--border)',
-                }}
+                style={{ backgroundColor: isCompleted ? 'var(--primary)' : 'var(--border)' }}
                 aria-hidden="true"
               />
             )}
@@ -34,14 +31,8 @@ function StepIndicator({ current }: { current: Step }) {
               <div
                 className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium"
                 style={{
-                  backgroundColor:
-                    isCompleted || isCurrent
-                      ? 'var(--primary)'
-                      : 'var(--muted)',
-                  color:
-                    isCompleted || isCurrent
-                      ? 'var(--primary-foreground)'
-                      : 'var(--muted-foreground)',
+                  backgroundColor: isCompleted || isCurrent ? 'var(--primary)' : 'var(--muted)',
+                  color: isCompleted || isCurrent ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
                 }}
                 aria-current={isCurrent ? 'step' : undefined}
               >
@@ -53,11 +44,7 @@ function StepIndicator({ current }: { current: Step }) {
               </div>
               <span
                 className="text-sm font-medium"
-                style={{
-                  color: isCurrent
-                    ? 'var(--foreground)'
-                    : 'var(--muted-foreground)',
-                }}
+                style={{ color: isCurrent ? 'var(--foreground)' : 'var(--muted-foreground)' }}
               >
                 {step.label}
               </span>
@@ -73,11 +60,7 @@ function Step1() {
   return (
     <div className="space-y-4">
       <div>
-        <label
-          htmlFor="question-title"
-          className="block text-sm font-medium"
-          style={{ color: 'var(--foreground)' }}
-        >
+        <label htmlFor="question-title" className="block text-sm font-medium" style={{ color: 'var(--foreground)' }}>
           Question Title <span aria-hidden="true">*</span>
         </label>
         <input
@@ -86,29 +69,17 @@ function Step1() {
           required
           placeholder="Enter your question..."
           className="mt-1 w-full rounded-md px-3 py-2 text-sm"
-          style={{
-            border: '1px solid var(--border)',
-            backgroundColor: 'var(--background)',
-            color: 'var(--foreground)',
-          }}
+          style={{ border: '1px solid var(--border)', backgroundColor: 'var(--background)', color: 'var(--foreground)' }}
         />
       </div>
       <div>
-        <label
-          htmlFor="question-type"
-          className="block text-sm font-medium"
-          style={{ color: 'var(--foreground)' }}
-        >
+        <label htmlFor="question-type" className="block text-sm font-medium" style={{ color: 'var(--foreground)' }}>
           Question Type <span aria-hidden="true">*</span>
         </label>
         <select
           id="question-type"
           className="mt-1 w-full rounded-md px-3 py-2 text-sm"
-          style={{
-            border: '1px solid var(--border)',
-            backgroundColor: 'var(--background)',
-            color: 'var(--foreground)',
-          }}
+          style={{ border: '1px solid var(--border)', backgroundColor: 'var(--background)', color: 'var(--foreground)' }}
         >
           <option value="">Select type...</option>
           <option value="mcq">Multiple Choice (MCQ)</option>
@@ -116,26 +87,6 @@ function Step1() {
           <option value="short-answer">Short Answer</option>
           <option value="essay">Essay</option>
         </select>
-      </div>
-      <div>
-        <label
-          htmlFor="question-course"
-          className="block text-sm font-medium"
-          style={{ color: 'var(--foreground)' }}
-        >
-          Course
-        </label>
-        <input
-          id="question-course"
-          type="text"
-          placeholder="e.g. Clinical Medicine I"
-          className="mt-1 w-full rounded-md px-3 py-2 text-sm"
-          style={{
-            border: '1px solid var(--border)',
-            backgroundColor: 'var(--background)',
-            color: 'var(--foreground)',
-          }}
-        />
       </div>
     </div>
   )
@@ -149,25 +100,13 @@ function Step2() {
       </p>
       {['A', 'B', 'C', 'D'].map((letter) => (
         <div key={letter} className="flex items-center gap-3">
-          <input
-            type="radio"
-            name="correct-answer"
-            id={`option-${letter}`}
-            value={letter}
-            aria-label={`Option ${letter} is correct`}
-          />
-          <label htmlFor={`option-${letter}`} className="sr-only">
-            Option {letter}
-          </label>
+          <input type="radio" name="correct-answer" id={`option-${letter}`} value={letter} aria-label={`Option ${letter} is correct`} />
+          <label htmlFor={`option-${letter}`} className="sr-only">Option {letter}</label>
           <input
             type="text"
             placeholder={`Option ${letter}`}
             className="flex-1 rounded-md px-3 py-2 text-sm"
-            style={{
-              border: '1px solid var(--border)',
-              backgroundColor: 'var(--background)',
-              color: 'var(--foreground)',
-            }}
+            style={{ border: '1px solid var(--border)', backgroundColor: 'var(--background)', color: 'var(--foreground)' }}
             aria-label={`Text for option ${letter}`}
           />
         </div>
@@ -176,42 +115,74 @@ function Step2() {
   )
 }
 
-function Step3() {
+function Step3({ preselectedFolderId }: { preselectedFolderId: string | null }) {
+  const folder = preselectedFolderId ? MOCK_QB_FOLDERS.find(f => f.id === preselectedFolderId) : null
+
+  // Build folder path label: "PHAR101 QB / Antibiotics / Gram-Positive"
+  function buildFolderPath(folderId: string): string {
+    const parts: string[] = []
+    let node = MOCK_QB_FOLDERS.find(f => f.id === folderId)
+    while (node) {
+      parts.unshift(node.name)
+      node = node.parentId ? MOCK_QB_FOLDERS.find(f => f.id === node!.parentId) : undefined
+    }
+    return parts.join(' / ')
+  }
+
   return (
     <div className="space-y-4">
+      {/* Folder — pre-populated and locked when coming from QB */}
+      <div>
+        <label className="block text-sm font-medium" style={{ color: 'var(--foreground)' }}>
+          Folder
+        </label>
+        {folder ? (
+          <div
+            className="mt-1 flex items-center gap-2 rounded-md px-3 py-2"
+            style={{ border: '1px solid var(--border)', backgroundColor: 'var(--muted)', color: 'var(--foreground)', fontSize: 14 }}
+          >
+            <i className="fa-light fa-folder" aria-hidden="true" style={{ fontSize: 12, color: 'var(--brand-color)', flexShrink: 0 }} />
+            <span style={{ flex: 1 }}>{buildFolderPath(folder.id)}</span>
+            <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>Pre-selected</span>
+          </div>
+        ) : (
+          <select
+            id="question-folder"
+            className="mt-1 w-full rounded-md px-3 py-2 text-sm"
+            style={{ border: '1px solid var(--border)', backgroundColor: 'var(--background)', color: 'var(--foreground)' }}
+          >
+            <option value="">Select a folder...</option>
+            {MOCK_QB_FOLDERS.filter(f => !f.isCourse).map(f => (
+              <option key={f.id} value={f.id}>{f.name}</option>
+            ))}
+          </select>
+        )}
+        {folder && (
+          <p className="mt-1 text-xs" style={{ color: 'var(--muted-foreground)' }}>
+            This question will be added to the folder you were browsing. You can move it later.
+          </p>
+        )}
+      </div>
+
       <div>
         <fieldset>
-          <legend
-            className="text-sm font-medium"
-            style={{ color: 'var(--foreground)' }}
-          >
-            Access Scope
-          </legend>
+          <legend className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Access Scope</legend>
           <div className="mt-2 space-y-2">
             {[
               { value: 'private', label: 'Private — only visible to me' },
               { value: 'shared', label: 'Shared — visible to all faculty' },
-              { value: 'course', label: 'Course-based — linked to specific course' },
             ].map((opt) => (
               <label key={opt.value} className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="scope"
-                  value={opt.value}
-                  defaultChecked={opt.value === 'private'}
-                />
+                <input type="radio" name="scope" value={opt.value} defaultChecked={opt.value === 'private'} />
                 <span style={{ color: 'var(--foreground)' }}>{opt.label}</span>
               </label>
             ))}
           </div>
         </fieldset>
       </div>
+
       <div>
-        <label
-          htmlFor="question-tags"
-          className="block text-sm font-medium"
-          style={{ color: 'var(--foreground)' }}
-        >
+        <label htmlFor="question-tags" className="block text-sm font-medium" style={{ color: 'var(--foreground)' }}>
           Tags
         </label>
         <input
@@ -219,52 +190,27 @@ function Step3() {
           type="text"
           placeholder="e.g. diabetes, endocrinology (comma-separated)"
           className="mt-1 w-full rounded-md px-3 py-2 text-sm"
-          style={{
-            border: '1px solid var(--border)',
-            backgroundColor: 'var(--background)',
-            color: 'var(--foreground)',
-          }}
-        />
-      </div>
-      <div>
-        <label
-          htmlFor="question-folder"
-          className="block text-sm font-medium"
-          style={{ color: 'var(--foreground)' }}
-        >
-          Folder
-        </label>
-        <input
-          id="question-folder"
-          type="text"
-          placeholder="e.g. Endocrinology"
-          className="mt-1 w-full rounded-md px-3 py-2 text-sm"
-          style={{
-            border: '1px solid var(--border)',
-            backgroundColor: 'var(--background)',
-            color: 'var(--foreground)',
-          }}
+          style={{ border: '1px solid var(--border)', backgroundColor: 'var(--background)', color: 'var(--foreground)' }}
         />
       </div>
     </div>
   )
 }
 
-export function AddQuestionClient() {
+function AddQuestionForm() {
   const [step, setStep] = useState<Step>(1)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const preselectedFolderId = searchParams.get('folder')
 
   function goBack() {
     if (step > 1) setStep((s) => (s - 1) as Step)
-    else router.push('/question-bank')
+    else router.push(preselectedFolderId ? `/question-bank?folder=${preselectedFolderId}` : '/question-bank')
   }
 
   function goForward() {
     if (step < 3) setStep((s) => (s + 1) as Step)
-    else {
-      // Save — navigate back to QB
-      router.push('/question-bank')
-    }
+    else router.push(preselectedFolderId ? `/question-bank?folder=${preselectedFolderId}` : '/question-bank')
   }
 
   return (
@@ -272,10 +218,7 @@ export function AddQuestionClient() {
       <div className="flex-1 p-6">
         <div
           className="mx-auto max-w-2xl rounded-xl p-8"
-          style={{
-            backgroundColor: 'var(--card)',
-            border: '1px solid var(--border)',
-          }}
+          style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }}
         >
           <div className="mb-8">
             <StepIndicator current={step} />
@@ -284,32 +227,23 @@ export function AddQuestionClient() {
           <div className="mb-8">
             {step === 1 && <Step1 />}
             {step === 2 && <Step2 />}
-            {step === 3 && <Step3 />}
+            {step === 3 && <Step3 preselectedFolderId={preselectedFolderId} />}
           </div>
 
           <div className="flex items-center justify-between pt-4" style={{ borderTop: '1px solid var(--border)' }}>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={goBack}
-                className="rounded-md px-4 py-2 text-sm font-medium transition-colors"
-                style={{
-                  border: '1px solid var(--border)',
-                  backgroundColor: 'transparent',
-                  color: 'var(--foreground)',
-                }}
-              >
-                {step === 1 ? 'Cancel' : 'Back'}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={goBack}
+              className="rounded-md px-4 py-2 text-sm font-medium"
+              style={{ border: '1px solid var(--border)', backgroundColor: 'transparent', color: 'var(--foreground)' }}
+            >
+              {step === 1 ? 'Cancel' : 'Back'}
+            </button>
             <button
               type="button"
               onClick={goForward}
-              className="rounded-md px-4 py-2 text-sm font-medium transition-colors"
-              style={{
-                backgroundColor: 'var(--primary)',
-                color: 'var(--primary-foreground)',
-              }}
+              className="rounded-md px-4 py-2 text-sm font-medium"
+              style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
             >
               {step === 3 ? 'Save Question' : 'Continue'}
             </button>
@@ -317,5 +251,13 @@ export function AddQuestionClient() {
         </div>
       </div>
     </div>
+  )
+}
+
+export function AddQuestionClient() {
+  return (
+    <Suspense>
+      <AddQuestionForm />
+    </Suspense>
   )
 }

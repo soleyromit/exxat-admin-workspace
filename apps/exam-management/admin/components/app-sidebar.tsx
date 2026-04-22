@@ -8,7 +8,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -18,6 +17,7 @@ import {
   AvatarFallback,
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -25,33 +25,71 @@ import {
   useSidebar,
 } from '@exxat/ds/packages/ui/src'
 
-// ── App header (product logo area) ───────────────────────────────────────────
+// ── Brand header ──────────────────────────────────────────────────────────────
 function AppHeader() {
   const { state } = useSidebar()
-  const isCollapsed = state === 'collapsed'
-
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <SidebarMenuButton
           size="lg"
-          className="cursor-default select-none hover:bg-transparent active:bg-transparent"
-          aria-label="Exam Management Admin"
-          tooltip="Exam Management"
+          className="sidebar-brand-btn cursor-default select-none"
+          aria-label="Exxat Prism"
+          tooltip="Exxat Prism"
         >
-          {/* Icon — always visible */}
-          <span className="flex size-8 items-center justify-center rounded-lg bg-sidebar-accent shrink-0" aria-hidden="true">
-            <i className="fa-light fa-graduation-cap text-sm text-sidebar-accent-foreground" aria-hidden="true" />
-          </span>
-          {/* Text — hidden when collapsed */}
-          <div className="grid flex-1 text-start text-sm leading-tight">
-            <span className="truncate text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              Exam Management
+          {state === 'collapsed' ? (
+            <img
+              src="/exxat-logo.svg"
+              alt=""
+              aria-hidden="true"
+              width={32}
+              height={32}
+              className="shrink-0"
+            />
+          ) : (
+            <img
+              src="/exxat-prism.svg"
+              alt="Exxat Prism"
+              className="h-6 w-auto"
+            />
+          )}
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  )
+}
+
+// ── Institution context card ──────────────────────────────────────────────────
+function InstitutionCard() {
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          size="lg"
+          tooltip="Switch institution"
+          className="sidebar-institution-btn gap-3"
+        >
+          <Avatar className="h-9 w-9 rounded-full shrink-0">
+            <AvatarFallback
+              className="rounded-full text-xs font-bold"
+              style={{ backgroundColor: 'var(--muted)', color: 'var(--foreground)' }}
+            >
+              SU
+            </AvatarFallback>
+          </Avatar>
+          <div className="grid flex-1 text-start leading-tight min-w-0">
+            <span className="truncate text-sm font-semibold text-sidebar-foreground">
+              State University
             </span>
-            <span className="truncate font-semibold text-sidebar-foreground">
-              Admin
+            <span className="truncate text-xs text-muted-foreground">
+              Health Sciences
             </span>
           </div>
+          <i
+            className="fa-light fa-chevron-right ms-auto shrink-0"
+            aria-hidden="true"
+            style={{ fontSize: 11, color: 'var(--muted-foreground)' }}
+          />
         </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>
@@ -60,8 +98,7 @@ function AppHeader() {
 
 // ── User footer ───────────────────────────────────────────────────────────────
 function UserFooter() {
-  const { isMobile, state } = useSidebar()
-
+  const { isMobile } = useSidebar()
   const user = { name: 'Dr. Thompson', email: 'thompson@university.edu', initials: 'DT' }
 
   return (
@@ -75,29 +112,33 @@ function UserFooter() {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
               tooltip={user.name}
             >
-              <Avatar className="h-8 w-8 rounded-lg shrink-0">
-                <AvatarFallback className="rounded-lg text-xs font-bold bg-primary text-primary-foreground">
+              <Avatar className="h-8 w-8 rounded-full shrink-0">
+                <AvatarFallback className="rounded-full text-xs font-bold bg-primary text-primary-foreground">
                   {user.initials}
                 </AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-start text-sm leading-tight">
+              <div className="grid flex-1 text-start text-sm leading-tight min-w-0">
                 <span className="truncate font-medium">{user.name}</span>
                 <span className="truncate text-xs text-muted-foreground">{user.email}</span>
               </div>
-              <i className="fa-light fa-ellipsis-vertical ms-auto" aria-hidden="true" />
+              <i
+                className="fa-light fa-ellipsis-vertical ms-auto shrink-0"
+                aria-hidden="true"
+                style={{ fontSize: 13 }}
+              />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
 
           <DropdownMenuContent
-            className="min-w-60 rounded-lg"
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-60 rounded-lg"
             side={isMobile ? 'bottom' : 'right'}
             align="end"
             sideOffset={4}
           >
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarFallback className="rounded-lg text-xs font-bold bg-primary text-primary-foreground">
+                <Avatar className="h-8 w-8 rounded-full">
+                  <AvatarFallback className="rounded-full text-xs font-bold bg-primary text-primary-foreground">
                     {user.initials}
                   </AvatarFallback>
                 </Avatar>
@@ -110,18 +151,16 @@ function UserFooter() {
 
             <DropdownMenuSeparator />
 
-            <DropdownMenuItem>
-              <i className="fa-light fa-circle-user" aria-hidden="true" />
-              Account
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <i className="fa-light fa-gear" aria-hidden="true" />
-              Settings
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <i className="fa-light fa-bell" aria-hidden="true" />
-              Notifications
-            </DropdownMenuItem>
+            <DropdownMenuGroup>
+              <DropdownMenuItem>
+                <i className="fa-light fa-circle-user" aria-hidden="true" />
+                Account
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <i className="fa-light fa-bell" aria-hidden="true" />
+                Notifications
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
 
             <DropdownMenuSeparator />
 
@@ -154,8 +193,14 @@ const NAV_ITEMS = [
     key: 'assessment-builder',
     title: 'Assessment Builder',
     href: '/assessment-builder',
-    icon: 'fa-rectangle-list',
+    icon: 'fa-clipboard-list',
   },
+]
+
+// ── Footer utility items ──────────────────────────────────────────────────────
+const FOOTER_NAV = [
+  { key: 'settings', title: 'Settings', href: '/settings', icon: 'fa-gear' },
+  { key: 'help', title: 'Get Help', href: '/help', icon: 'fa-circle-question' },
 ]
 
 // ── AppSidebar ────────────────────────────────────────────────────────────────
@@ -164,47 +209,76 @@ export function AppSidebar() {
 
   return (
     <Sidebar variant="inset" collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border pb-2">
-        <AppHeader />
-      </SidebarHeader>
+      <nav aria-label="Application" className="flex min-h-0 flex-1 flex-col">
 
-      <SidebarContent>
-        <SidebarGroup className="py-2">
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-0.5">
-              {NAV_ITEMS.map(item => {
-                const isActive = pathname.startsWith(item.href)
-                return (
-                  <SidebarMenuItem key={item.key}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive}
-                      tooltip={item.title}
-                    >
-                      <Link
-                        href={item.href}
-                        aria-current={isActive ? 'page' : undefined}
+        {/* Header: brand + institution */}
+        <SidebarHeader className="pb-1">
+          <AppHeader />
+          <InstitutionCard />
+        </SidebarHeader>
+
+        <SidebarSeparator />
+
+        {/* Primary navigation */}
+        <SidebarContent className="gap-0">
+          <SidebarGroup className="py-2" role="group" aria-label="Primary navigation">
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {NAV_ITEMS.map(item => {
+                  const isActive = pathname.startsWith(item.href)
+                  return (
+                    <SidebarMenuItem key={item.key}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        tooltip={item.title}
                       >
-                        <span className="size-4 shrink-0 flex items-center justify-center" aria-hidden="true">
-                          <i
-                            className={`${isActive ? 'fa-solid' : 'fa-light'} ${item.icon} text-sm`}
+                        <Link
+                          href={item.href}
+                          aria-current={isActive ? 'page' : undefined}
+                        >
+                          <span
+                            key={isActive ? 'active' : 'idle'}
+                            className={`size-4 shrink-0 flex items-center justify-center${isActive ? ' [animation:sidebar-icon-pop_380ms_cubic-bezier(0.34,1.56,0.64,1)_both]' : ''}`}
                             aria-hidden="true"
-                          />
-                        </span>
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
+                          >
+                            <i
+                              className={`${isActive ? 'fa-solid' : 'fa-light'} ${item.icon} text-sm`}
+                              aria-hidden="true"
+                            />
+                          </span>
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border">
-        <UserFooter />
-      </SidebarFooter>
+        <SidebarSeparator />
+
+        {/* Footer: settings/help + user */}
+        <SidebarFooter className="pt-1">
+          <SidebarMenu>
+            {FOOTER_NAV.map(item => (
+              <SidebarMenuItem key={item.key}>
+                <SidebarMenuButton asChild tooltip={item.title}>
+                  <Link href={item.href}>
+                    <i className={`fa-light ${item.icon} text-sm`} aria-hidden="true" />
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+
+          <UserFooter />
+        </SidebarFooter>
+
+      </nav>
     </Sidebar>
   )
 }

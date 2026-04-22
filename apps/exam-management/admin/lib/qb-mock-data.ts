@@ -5,7 +5,7 @@ import type { FolderNode, Question, Persona, Course, CourseOffering, Assessment 
 export const MOCK_QB_FOLDERS: FolderNode[] = [
   { id: 'phar101', name: 'PHAR101 Question Bank (QB)', parentId: null, count: 74, isCourse: true, collaborators: ['persona-thompson', 'persona-chen', 'persona-patel'] },
   { id: 'biol201', name: 'BIOL201 Question Bank (QB)', parentId: null, count: 58, isCourse: true, collaborators: ['persona-thompson', 'persona-chen'] },
-  { id: 'skel101', name: 'SKEL101 Question Bank (QB)', parentId: null, count: 45, isCourse: true, collaborators: ['persona-thompson'] },
+  { id: 'skel101', name: 'SKEL101 Question Bank (QB)', parentId: null, count: 45, isCourse: true, collaborators: ['persona-thompson', 'persona-kim'] },
 
   // PHAR101 folders (directly under course)
   { id: 'phar101-antibiotics', name: 'Antibiotics & Antimicrobials', parentId: 'phar101', count: 18 },
@@ -122,6 +122,22 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     creator: 'persona-chen', lastEditedBy: 'persona-chen', usedInSections: [],
   },
   {
+    id: 'q-020', code: 'PH-CNS-002', version: 1, age: '5 days',
+    title: 'Draft: Compare the receptor binding profiles of first- vs second-generation antipsychotics in relation to extrapyramidal side effects.',
+    type: 'MCQ', status: 'Draft', difficulty: 'Hard', blooms: 'Analyze',
+    folder: 'phar101-cns', folderPath: 'PHAR101 QB / CNS & Psychotropics',
+    tags: ['antipsychotics', 'EPS', 'receptor'], usage: 0, pbis: null, pbisDir: null,
+    creator: 'persona-thompson', lastEditedBy: 'persona-thompson', usedInSections: [],
+  },
+  {
+    id: 'q-021', code: 'SK-EL-001', version: 1, age: '2 days',
+    title: 'Draft: Describe the biomechanical forces acting on the ulnar collateral ligament during overhead throwing activities.',
+    type: 'Fill blank', status: 'Draft', difficulty: 'Medium', blooms: 'Understand',
+    folder: 'skel101-elbow', folderPath: 'SKEL101 QB / Elbow & Forearm',
+    tags: ['UCL', 'elbow', 'throwing'], usage: 0, pbis: null, pbisDir: null,
+    creator: 'persona-kim', lastEditedBy: 'persona-kim', usedInSections: [],
+  },
+  {
     id: 'q-008', code: 'BI-MEM-001', version: 5, age: '2 years',
     title: 'Which transport mechanism requires the direct hydrolysis of ATP to move substances against their concentration gradient?',
     type: 'MCQ', status: 'Saved', difficulty: 'Easy', blooms: 'Remember',
@@ -154,7 +170,7 @@ export const MOCK_QB_PERSONAS: Persona[] = [
   { id: 'persona-thompson', name: 'Dr. Thompson', initials: 'DT', role: 'Admin',   color: 'var(--brand-color)',      trustLevel: 'senior' },
   { id: 'persona-chen',     name: 'Dr. Chen',     initials: 'SC', role: 'Admin',   color: 'var(--chart-1)',          trustLevel: 'mid' },
   { id: 'persona-patel',    name: 'Dr. Patel',    initials: 'JP', role: 'Faculty', color: 'var(--chart-2)',          trustLevel: 'junior', assignedFolders: ['phar101'] },
-  { id: 'persona-kim',      name: 'Dr. Kim',      initials: 'MK', role: 'Faculty', color: 'var(--chart-4)',          assignedFolders: [] },
+  { id: 'persona-kim',      name: 'Dr. Kim',      initials: 'MK', role: 'Faculty', color: 'var(--chart-4)',          assignedFolders: ['skel101'] },
 ]
 
 // ─── Courses ─────────────────────────────────────────────────────────────────

@@ -1,24 +1,22 @@
 import { Badge } from '@exxat/ds/packages/ui/src'
-import type { QType, QDiff, QBlooms } from '@/lib/qb-types'
+import type { QStatus, QType, QDiff, QBlooms } from '@/lib/qb-types'
 
-// ── Status Badge — pill + icon ────────────────────────────────────────────────
-type QStatusReduced = 'Saved' | 'Draft'
-
-const STATUS_MAP: Record<QStatusReduced, { bg: string; fg: string; icon: string }> = {
-  Saved: { bg: 'var(--qb-status-saved-bg)', fg: 'var(--qb-status-saved-fg)', icon: 'fa-circle' },
-  Draft: { bg: 'var(--qb-status-draft-bg)', fg: 'var(--qb-status-draft-fg)', icon: 'fa-circle-half-stroke' },
+// ── Status Badge — pill + colored border + icon ───────────────────────────────
+const STATUS_MAP: Record<QStatus, { bg: string; fg: string; border: string; icon: string }> = {
+  'Saved': { bg: 'var(--qb-status-saved-bg)', fg: 'var(--qb-status-saved-fg)', border: 'var(--qb-status-saved-border)', icon: 'fa-circle-check' },
+  'Draft': { bg: 'var(--qb-status-draft-bg)', fg: 'var(--qb-status-draft-fg)', border: 'var(--qb-status-draft-border)', icon: 'fa-hourglass'    },
 }
 
-export function StatusBadge({ status }: { status: QStatusReduced }) {
+export function StatusBadge({ status }: { status: QStatus }) {
   const s = STATUS_MAP[status]
   if (!s) return null
   return (
     <Badge
       variant="secondary"
-      className="rounded-full px-2.5 py-0.5 gap-1 font-semibold whitespace-nowrap text-[10px]"
-      style={{ backgroundColor: s.bg, color: s.fg }}
+      className="rounded-full px-3 py-1 gap-1.5 font-semibold whitespace-nowrap text-[12px] border"
+      style={{ backgroundColor: s.bg, color: s.fg, borderColor: s.border }}
     >
-      <i className={`fa-light ${s.icon}`} aria-hidden="true" style={{ fontSize: 8 }} />
+      <i className={`fa-regular ${s.icon}`} aria-hidden="true" style={{ fontSize: 11 }} />
       {status}
     </Badge>
   )

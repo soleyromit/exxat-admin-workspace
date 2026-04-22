@@ -1,25 +1,15 @@
 'use client'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useQB } from './qb-state'
 import type { FolderNode } from '@/lib/qb-types'
 import {
   Button,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
   InputGroup, InputGroupAddon, Input,
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Separator,
   Popover, PopoverTrigger, PopoverContent,
 } from '@exxat/ds/packages/ui/src'
 
-const ICON_OPTIONS = [
-  { icon: 'fa-folder', label: 'Folder' },
-  { icon: 'fa-book', label: 'Book' },
-  { icon: 'fa-graduation-cap', label: 'Course' },
-  { icon: 'fa-star', label: 'Star' },
-  { icon: 'fa-flag', label: 'Flag' },
-  { icon: 'fa-file-lines', label: 'File' },
-  { icon: 'fa-rectangle-list', label: 'List' },
-  { icon: 'fa-layer-group', label: 'Stack' },
-]
 
 function courseFolderLabel(name: string): string {
   // Input: "PHAR101 Question Bank (QB)" → Output: "PHAR101 · Question Bank"
@@ -116,80 +106,179 @@ function DeleteFolderDialog({
   )
 }
 
-function MoveFolderDialog({
-  node,
-  open,
-  onClose,
-}: {
-  node: FolderNode
-  open: boolean
-  onClose: () => void
-}) {
-  const { folders, moveFolder } = useQB()
-  const [targetId, setTargetId] = useState<string | null>(null)
+function MoveFolderDialog({ node, open, onClose }: { node: FolderNode; open: boolean; onClose: () => void }) {
+  const { folders, moveFolder, createFolder, navigateToFolder } = useQB()
 
-  const excluded = getDescendantIds(node.id, folders)
-  const eligible = folders.filter(f => !excluded.has(f.id) && f.id !== node.parentId)
+  // currentId = null means root (all course folders)
+  const [currentId, setCurrentId] = useState<string | null>(null)
+  const [isCreating, setIsCreating] = useState(false)
+  const [newName, setNewName] = useState('')
+  const newInputRef = useRef<HTMLInputElement>(null)
 
-  function getFolderPath(f: FolderNode): string {
-    const parts: string[] = [f.isCourse ? courseFolderLabel(f.name) : f.name]
-    let cur: FolderNode | undefined = f
-    while (cur?.parentId) {
-      cur = folders.find(x => x.id === cur!.parentId)
-      if (cur) parts.unshift(cur.isCourse ? courseFolderLabel(cur.name) : cur.name)
+  const excludedIds = useMemo(() => getDescendantIds(node.id, folders), [node.id, folders])
+
+  // Breadcrumb path to currentId
+  const breadcrumbs = useMemo(() => {
+    const path: FolderNode[] = []
+    let id: string | null = currentId
+    while (id) {
+      const f = folders.find(f => f.id === id)
+      if (!f) break
+      path.unshift(f)
+      id = f.parentId
     }
-    return parts.join(' / ')
+    return path
+  }, [currentId, folders])
+
+  // Immediate children of currentId (excluding the folder being moved + its descendants)
+  const children = useMemo(() =>
+    folders.filter(f => f.parentId === currentId && !excludedIds.has(f.id))
+  , [currentId, folders, excludedIds])
+
+  // Reset when dialog reopens
+  useEffect(() => {
+    if (open) { setCurrentId(null); setIsCreating(false); setNewName('') }
+  }, [open])
+
+  function navigate(id: string | null) {
+    setCurrentId(id)
+    setIsCreating(false)
+    setNewName('')
   }
 
-  function handleConfirm() {
-    if (targetId) {
-      moveFolder(node.id, targetId)
-      onClose()
-    }
+  function handleCreateFolder() {
+    const trimmed = newName.trim()
+    if (!trimmed || currentId === null) return
+    createFolder(trimmed, currentId)
+    setIsCreating(false)
+    setNewName('')
+  }
+
+  const canMoveHere = currentId !== null && currentId !== node.parentId && !excludedIds.has(currentId)
+
+  function handleMoveHere() {
+    if (!canMoveHere || !currentId) return
+    const nodeId = node.id
+    moveFolder(nodeId, currentId)
+    setTimeout(() => navigateToFolder(nodeId), 50)
+    onClose()
   }
 
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent
+        className="p-0 gap-0 overflow-hidden"
+        style={{ width: 480, height: 500, display: 'flex', flexDirection: 'column' }}
+      >
+        {/* ── Header ── */}
+        <DialogHeader className="px-5 pt-5 pb-3 shrink-0">
           <DialogTitle>Move &quot;{node.name}&quot;</DialogTitle>
         </DialogHeader>
-        <div style={{ maxHeight: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {eligible.map(f => (
-            <Button
-              key={f.id}
-              variant="ghost"
-              onClick={() => setTargetId(f.id)}
-              className="w-full justify-start"
-              style={{
-                background: targetId === f.id ? 'var(--brand-tint)' : 'transparent',
-                border: targetId === f.id ? '1px solid var(--brand-color)' : '1px solid transparent',
-                borderRadius: 6,
-                fontSize: 12,
-                height: 'auto',
-                padding: '6px 10px',
-              }}
-            >
-              <i
-                className={`fa-light ${f.isCourse ? 'fa-graduation-cap' : 'fa-folder'}`}
-                aria-hidden="true"
-                style={{ fontSize: 12, color: 'var(--muted-foreground)', width: 14, flexShrink: 0 }}
-              />
-              <span style={{ textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {getFolderPath(f)}
-              </span>
-            </Button>
+
+        {/* ── Breadcrumb nav ── */}
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2, padding: '0 16px 10px', flexShrink: 0 }}>
+          <Button
+            variant="ghost" size="xs"
+            onClick={() => navigate(null)}
+            style={{ height: 24, padding: '0 6px', fontSize: 12, gap: 4, fontWeight: currentId === null ? 600 : 400, color: currentId === null ? 'var(--foreground)' : 'var(--brand-color)' }}
+          >
+            <i className="fa-light fa-graduation-cap" aria-hidden="true" style={{ fontSize: 11 }} />
+            Question Bank
+          </Button>
+          {breadcrumbs.map((crumb, i) => (
+            <span key={crumb.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+              <i className="fa-light fa-chevron-right" aria-hidden="true" style={{ fontSize: 9, color: 'var(--muted-foreground)' }} />
+              <Button
+                variant="ghost" size="xs"
+                onClick={() => navigate(crumb.id)}
+                style={{ height: 24, padding: '0 6px', fontSize: 12, fontWeight: i === breadcrumbs.length - 1 ? 600 : 400, color: i === breadcrumbs.length - 1 ? 'var(--foreground)' : 'var(--brand-color)' }}
+              >
+                {crumb.isCourse ? courseFolderLabel(crumb.name) : crumb.name}
+              </Button>
+            </span>
           ))}
-          {eligible.length === 0 && (
-            <p style={{ fontSize: 12, color: 'var(--muted-foreground)', padding: '8px 0' }}>
-              No valid move targets available.
-            </p>
+        </div>
+
+        <Separator className="shrink-0" />
+
+        {/* ── Folder list ── */}
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          {children.length === 0 && !isCreating ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 8, color: 'var(--muted-foreground)' }}>
+              <i className="fa-light fa-folder-open" aria-hidden="true" style={{ fontSize: 28, opacity: 0.35 }} />
+              <span style={{ fontSize: 12 }}>No subfolders here</span>
+            </div>
+          ) : (
+            <div style={{ padding: '4px 0' }}>
+              {children.map(f => {
+                const hasChildren = folders.some(c => c.parentId === f.id && !excludedIds.has(c.id))
+                const label = f.isCourse ? courseFolderLabel(f.name) : f.name
+                return (
+                  <div
+                    key={f.id}
+                    role="button" tabIndex={0}
+                    onClick={() => navigate(f.id)}
+                    onKeyDown={e => { if (e.key === 'Enter') navigate(f.id) }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 20px', cursor: 'pointer', userSelect: 'none' }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--interactive-hover)')}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
+                  >
+                    <i
+                      className={`fa-light ${f.isCourse ? 'fa-graduation-cap' : 'fa-folder'}`}
+                      aria-hidden="true"
+                      style={{ fontSize: 14, color: 'var(--muted-foreground)', width: 16, textAlign: 'center', flexShrink: 0 }}
+                    />
+                    <span style={{ flex: 1, fontSize: 13, color: 'var(--foreground)' }}>{label}</span>
+                    {hasChildren && (
+                      <i className="fa-light fa-chevron-right" aria-hidden="true" style={{ fontSize: 10, color: 'var(--muted-foreground)' }} />
+                    )}
+                  </div>
+                )
+              })}
+              {/* Inline new folder input */}
+              {isCreating && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 20px' }}>
+                  <i className="fa-light fa-folder" aria-hidden="true" style={{ fontSize: 14, color: 'var(--brand-color)', width: 16, textAlign: 'center', flexShrink: 0 }} />
+                  <Input
+                    ref={newInputRef}
+                    value={newName}
+                    onChange={e => setNewName(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') handleCreateFolder(); if (e.key === 'Escape') setIsCreating(false) }}
+                    onBlur={() => { if (!newName.trim()) setIsCreating(false) }}
+                    placeholder="New folder name…"
+                    autoFocus
+                    style={{ flex: 1, height: 30, fontSize: 13 }}
+                  />
+                  <Button variant="ghost" size="icon-xs" onClick={handleCreateFolder} aria-label="Confirm">
+                    <i className="fa-light fa-check" aria-hidden="true" style={{ fontSize: 11, color: 'var(--brand-color)' }} />
+                  </Button>
+                  <Button variant="ghost" size="icon-xs" onClick={() => setIsCreating(false)} aria-label="Cancel">
+                    <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 11 }} />
+                  </Button>
+                </div>
+              )}
+            </div>
           )}
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleConfirm} disabled={!targetId}>Move here</Button>
-        </DialogFooter>
+
+        <Separator className="shrink-0" />
+
+        {/* ── Footer ── */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', flexShrink: 0 }}>
+          <Button
+            variant="ghost" size="sm"
+            onClick={() => { setIsCreating(true); setTimeout(() => newInputRef.current?.focus(), 50) }}
+            disabled={currentId === null || isCreating}
+            style={{ gap: 6, fontSize: 12 }}
+          >
+            <i className="fa-light fa-folder-plus" aria-hidden="true" style={{ fontSize: 12 }} />
+            New folder
+          </Button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button onClick={handleMoveHere} disabled={!canMoveHere}>Move here</Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   )
@@ -200,24 +289,23 @@ function FolderContextMenu({
   isAdmin,
   onRename,
   onAddSubfolder,
-  onChangeIcon,
   onMove,
   onDelete,
+  onOpenChange,
 }: {
   node: FolderNode
   isAdmin: boolean
   onRename: () => void
   onAddSubfolder: () => void
-  onChangeIcon: (icon: string) => void
   onMove: () => void
   onDelete: () => void
+  onOpenChange?: (open: boolean) => void
 }) {
   const { setCollaboratorsModalFolderId } = useQB()
-  const [iconPickerOpen, setIconPickerOpen] = useState(false)
 
   if (!isAdmin) return null
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
@@ -242,55 +330,12 @@ function FolderContextMenu({
           <i className="fa-light fa-pen" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
           Rename
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setIconPickerOpen((v) => !v) }}>
-          <i className="fa-light fa-palette" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-          Change icon
-          {iconPickerOpen && (
-            <div
-              style={{
-                position: 'absolute',
-                left: '100%',
-                top: 0,
-                background: 'var(--popover)',
-                border: '1px solid var(--border)',
-                borderRadius: 8,
-                padding: 8,
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4, 1fr)',
-                gap: 4,
-                boxShadow: 'var(--shadow-md)',
-                zIndex: 200,
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {ICON_OPTIONS.map((o) => (
-                <Button
-                  key={o.icon}
-                  variant="ghost"
-                  size="icon-xs"
-                  aria-label={o.label}
-                  onClick={() => {
-                    onChangeIcon(o.icon)
-                    setIconPickerOpen(false)
-                  }}
-                  style={{
-                    width: 32,
-                    height: 32,
-                    background: node.icon === o.icon ? 'var(--brand-tint)' : 'transparent',
-                    border: node.icon === o.icon ? '1px solid var(--brand-color)' : '1px solid transparent',
-                    borderRadius: 6,
-                  }}
-                >
-                  <i className={`fa-light ${o.icon}`} aria-hidden="true" style={{ fontSize: 13 }} />
-                </Button>
-              ))}
-            </div>
-          )}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onMove()}>
-          <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-          Move to subfolder
-        </DropdownMenuItem>
+        {!node.isCourse && (
+          <DropdownMenuItem onClick={() => onMove()}>
+            <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+            Move to subfolder
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onClick={() => onDelete()}>
           <i className="fa-light fa-trash-can" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
@@ -315,7 +360,8 @@ function InlineFolderInput({
   const cancelledRef = useRef(false)
 
   useEffect(() => {
-    const t = setTimeout(() => inputRef.current?.focus(), 50)
+    // 200ms delay lets Radix DropdownMenu finish focus restoration before we steal focus
+    const t = setTimeout(() => inputRef.current?.focus(), 200)
     return () => clearTimeout(t)
   }, [])
 
@@ -323,6 +369,14 @@ function InlineFolderInput({
     if (cancelledRef.current) return
     if (name.trim()) onConfirm(name.trim())
     else onCancel()
+  }
+
+  function handleBlur() {
+    if (cancelledRef.current) return
+    // Only auto-confirm on blur if the user typed something — never dismiss empty input on blur
+    // (Radix returns focus to the ⋯ trigger after DropdownMenu closes, which would fire blur
+    // before the user has a chance to type, causing the input to vanish immediately)
+    if (name.trim()) onConfirm(name.trim())
   }
 
   function cancel() {
@@ -350,7 +404,7 @@ function InlineFolderInput({
           if (e.key === 'Enter') confirm()
           if (e.key === 'Escape') cancel()
         }}
-        onBlur={confirm}
+        onBlur={handleBlur}
         style={{ flex: 1, fontSize: 12 }}
         placeholder="Folder name…"
       />
@@ -364,15 +418,16 @@ function InlineFolderInput({
   )
 }
 
+const BLOOMS_ORDER = ['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'] as const
+
 function FolderDiffPopover({ folderId }: { folderId: string }) {
   const { folders, questions } = useQB()
 
+  const folder = folders.find(f => f.id === folderId)
+  const folderLabel = folder ? (folder.isCourse ? courseFolderLabel(folder.name) : folder.name) : ''
+
   const folderIds = getDescendantIds(folderId, folders)
   const folderQuestions = questions.filter(q => folderIds.has(q.folder))
-
-  if (folderQuestions.length === 0) {
-    return <p style={{ fontSize: 11, color: 'var(--muted-foreground)', padding: '2px 0' }}>No questions yet</p>
-  }
 
   const total  = folderQuestions.length
   const easy   = folderQuestions.filter(q => q.difficulty === 'Easy').length
@@ -385,35 +440,72 @@ function FolderDiffPopover({ folderId }: { folderId: string }) {
     : null
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--foreground)' }}>
-        {total} question{total !== 1 ? 's' : ''}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* Full folder name */}
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', lineHeight: 1.35, wordBreak: 'break-word', paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>
+        {folderLabel}
       </div>
-      <div>
-        <div style={{ fontSize: 10, color: 'var(--muted-foreground)', marginBottom: 4 }}>Difficulty</div>
-        <div style={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', gap: 1 }}>
-          {easy   > 0 && <div style={{ flex: easy,   background: 'var(--qb-diff-bar-easy)' }} />}
-          {medium > 0 && <div style={{ flex: medium, background: 'var(--qb-diff-bar-medium)' }} />}
-          {hard   > 0 && <div style={{ flex: hard,   background: 'var(--qb-diff-bar-hard)' }} />}
-        </div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-          {([['Easy', easy, 'var(--qb-diff-bar-easy)'], ['Medium', medium, 'var(--qb-diff-bar-medium)'], ['Hard', hard, 'var(--qb-diff-bar-hard)']] as const).map(([label, count, color]) =>
-            count > 0 && (
-              <span key={label} style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 3 }}>
-                <span style={{ width: 8, height: 8, borderRadius: 2, background: color, display: 'inline-block' }} />
-                {label}: {count}
-              </span>
-            )
-          )}
-        </div>
-      </div>
-      <div style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>
-        Avg. pBIS:{' '}
-        <span style={{ fontWeight: 600, color: 'var(--foreground)' }}>
-          {avgPbis !== null ? avgPbis.toFixed(2) : '—'}
-        </span>
-        {withPbis.length < total && ` (${withPbis.length} of ${total} scored)`}
-      </div>
+
+      {total === 0 ? (
+        <p style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>No questions yet</p>
+      ) : (
+        <>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--foreground)' }}>
+            {total} question{total !== 1 ? 's' : ''}
+          </div>
+
+          {/* Difficulty */}
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: 5 }}>Difficulty</div>
+            <div style={{ display: 'flex', height: 7, borderRadius: 4, overflow: 'hidden', gap: 1 }}>
+              {easy   > 0 && <div style={{ flex: easy,   background: 'var(--qb-diff-bar-easy)' }} />}
+              {medium > 0 && <div style={{ flex: medium, background: 'var(--qb-diff-bar-medium)' }} />}
+              {hard   > 0 && <div style={{ flex: hard,   background: 'var(--qb-diff-bar-hard)' }} />}
+            </div>
+            <div style={{ display: 'flex', gap: 10, marginTop: 5, flexWrap: 'nowrap' }}>
+              {([['Easy', easy, 'var(--qb-diff-bar-easy)'], ['Medium', medium, 'var(--qb-diff-bar-medium)'], ['Hard', hard, 'var(--qb-diff-bar-hard)']] as const).map(([label, count, color]) =>
+                count > 0 && (
+                  <span key={label} style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 2, background: color, display: 'inline-block', flexShrink: 0 }} />
+                    {label}: {count}
+                  </span>
+                )
+              )}
+            </div>
+          </div>
+
+          {/* Bloom's */}
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: 5 }}>Bloom&apos;s</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              {BLOOMS_ORDER.map(level => {
+                const count = folderQuestions.filter(q => q.blooms === level).length
+                if (count === 0) return null
+                const pct = Math.round(count / total * 100)
+                return (
+                  <div key={level} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 11, color: 'var(--muted-foreground)', width: 62, flexShrink: 0 }}>{level}</span>
+                    <div style={{ flex: 1, height: 5, borderRadius: 2, background: 'var(--muted)', overflow: 'hidden' }}>
+                      <div style={{ width: `${pct}%`, height: '100%', background: 'var(--qb-blooms-bar)', borderRadius: 2 }} />
+                    </div>
+                    <span style={{ fontSize: 11, color: 'var(--foreground)', fontWeight: 500, width: 18, textAlign: 'right', flexShrink: 0 }}>
+                      {count}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+            Avg. pBIS:{' '}
+            <span style={{ fontWeight: 600, color: 'var(--foreground)' }}>
+              {avgPbis !== null ? avgPbis.toFixed(2) : '—'}
+            </span>
+            {withPbis.length < total && ` (${withPbis.length} of ${total} scored)`}
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -432,30 +524,41 @@ function FolderRow({
     expandedFolderIds, toggleFolder,
     folders,
     questions,
+    currentPersona,
     draggedQuestionId, setDragOverFolderId, dragOverFolderId,
     draggedFolderId, setDraggedFolderId,
     highlightedFolderId,
     renameFolder,
     createFolder,
     setFolderIcon,
+    dialogActive, setDialogActive,
   } = useQB()
 
   const subtreeIds = getDescendantIds(node.id, folders)
-  const folderQuestionCount = questions.filter(q => subtreeIds.has(q.folder)).length
+  const folderQuestionCount = questions.filter(q =>
+    subtreeIds.has(q.folder) &&
+    (isAdmin || q.status === 'Saved' || q.creator === currentPersona.id)
+  ).length
 
   const [isRenaming, setIsRenaming] = useState(false)
   const [renameName, setRenameName] = useState(node.name)
   const [showingInlineCreate, setShowingInlineCreate] = useState(false)
   const [moveFolderDialogOpen, setMoveFolderDialogOpen] = useState(false)
   const [deleteFolderDialogOpen, setDeleteFolderDialogOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const renameRef = useRef<HTMLInputElement>(null)
   const [hoverOpen, setHoverOpen] = useState(false)
+  const [isRowHovered, setIsRowHovered] = useState(false)
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function handleMouseEnter() {
+    if (dialogActive) return
+    setIsRowHovered(true)
     hoverTimerRef.current = setTimeout(() => setHoverOpen(true), 600)
   }
   function handleMouseLeave() {
+    if (dialogActive) return
+    setIsRowHovered(false)
     if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
     setHoverOpen(false)
   }
@@ -465,6 +568,20 @@ function FolderRow({
       if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
     }
   }, [])
+
+  // Sync global dialogActive when this row's dialogs open or close
+  useEffect(() => {
+    setDialogActive(moveFolderDialogOpen || deleteFolderDialogOpen)
+  }, [moveFolderDialogOpen, deleteFolderDialogOpen, setDialogActive])
+
+  // Reset hover state when a dialog becomes active (from any row)
+  useEffect(() => {
+    if (dialogActive) {
+      setIsRowHovered(false)
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
+      setHoverOpen(false)
+    }
+  }, [dialogActive])
 
   const isSelected = selectedFolderId === node.id
   const isExpanded = expandedFolderIds.has(node.id)
@@ -480,7 +597,25 @@ function FolderRow({
         <PopoverTrigger asChild>
           <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} aria-hidden="true" />
         </PopoverTrigger>
-        <PopoverContent side="right" align="start" className="w-52 p-3">
+        <PopoverContent
+          side="right"
+          align="center"
+          sideOffset={10}
+          className="w-64 p-3"
+          style={{ overflow: 'visible' }}
+        >
+          {/* Caret pointing left toward the tree node */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute', left: -7, top: '50%', transform: 'translateY(-50%)',
+              width: 0, height: 0,
+              borderTop: '7px solid transparent',
+              borderBottom: '7px solid transparent',
+              borderRight: '7px solid var(--popover)',
+              filter: 'drop-shadow(-2px 0 0 var(--border))',
+            }}
+          />
           <FolderDiffPopover folderId={node.id} />
         </PopoverContent>
       </Popover>
@@ -517,6 +652,7 @@ function FolderRow({
           setDragOverFolderId(null)
         }}
         style={{
+          position: 'relative',
           display: 'flex', alignItems: 'center', gap: 4,
           height: 32,
           paddingLeft: indentPx,
@@ -524,7 +660,13 @@ function FolderRow({
           cursor: 'pointer',
           borderRadius: 6,
           margin: '1px 4px',
-          backgroundColor: isSelected ? 'var(--qb-folder-selected-bg)' : isDragOver ? `color-mix(in oklch, var(--brand-color) 15%, var(--background))` : 'transparent',
+          backgroundColor: isSelected
+            ? 'var(--qb-folder-selected-bg)'
+            : isDragOver
+            ? `color-mix(in oklch, var(--brand-color) 15%, var(--background))`
+            : isRowHovered
+            ? 'var(--interactive-hover)'
+            : 'transparent',
           outline: isDragOver ? '2px dashed var(--brand-color)' : 'none',
           transition: 'background-color 100ms',
           userSelect: 'none',
@@ -594,36 +736,53 @@ function FolderRow({
             style={{ flex: 1, fontSize: 12, color: 'var(--brand-color)', fontWeight: 500 }}
           />
         ) : (
-          <span style={{
-            flex: 1,
-            fontSize: 13,
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            fontWeight: isSelected ? 500 : 400,
-            color: isSelected ? 'var(--brand-color)' : 'var(--foreground)',
-          }}>
-            {node.isCourse ? courseFolderLabel(node.name) : node.name}
-          </span>
+          <div className="qb-name-scroll" style={{ flex: 1, minWidth: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
+            <span style={{
+              display: 'block',
+              fontSize: 13,
+              whiteSpace: 'nowrap',
+              fontWeight: isSelected ? 500 : 400,
+              color: isSelected ? 'var(--brand-color)' : 'var(--foreground)',
+            }}>
+              {node.isCourse ? courseFolderLabel(node.name) : node.name}
+            </span>
+          </div>
         )}
 
         {/* Count */}
-        <span style={{ fontSize: 10, color: 'var(--muted-foreground)', flexShrink: 0 }}>
+        <span style={{ fontSize: 10, color: 'var(--muted-foreground)', flexShrink: 0, marginLeft: 6 }}>
           {folderQuestionCount}
         </span>
 
-        {/* ⋯ context menu — admin only */}
-        <FolderContextMenu
-          node={node}
-          isAdmin={isAdmin}
-          onRename={() => {
-            setIsRenaming(true)
-            setRenameName(node.name)
-            setTimeout(() => renameRef.current?.focus(), 50)
-          }}
-          onAddSubfolder={() => setShowingInlineCreate(true)}
-          onChangeIcon={(icon) => setFolderIcon(node.id, icon)}
-          onMove={() => setMoveFolderDialogOpen(true)}
-          onDelete={() => setDeleteFolderDialogOpen(true)}
-        />
+        {/* ⋯ context menu — overlays row on hover, takes no layout space */}
+        {isAdmin && (
+          <div style={{
+            position: 'absolute',
+            right: 4,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            opacity: (isRowHovered || menuOpen) ? 1 : 0,
+            pointerEvents: (isRowHovered || menuOpen) ? 'auto' : 'none',
+            transition: 'opacity 100ms',
+            zIndex: 1,
+            backgroundColor: isSelected ? 'var(--qb-folder-selected-bg)' : isRowHovered ? 'var(--interactive-hover)' : 'transparent',
+            borderRadius: 4,
+          }}>
+            <FolderContextMenu
+              node={node}
+              isAdmin={isAdmin}
+              onOpenChange={setMenuOpen}
+              onRename={() => {
+                setIsRenaming(true)
+                setRenameName(node.name)
+                setTimeout(() => renameRef.current?.focus(), 50)
+              }}
+              onAddSubfolder={() => setShowingInlineCreate(true)}
+              onMove={() => setMoveFolderDialogOpen(true)}
+              onDelete={() => setDeleteFolderDialogOpen(true)}
+            />
+          </div>
+        )}
       </div>
       {showingInlineCreate && (
         <InlineFolderInput
@@ -692,6 +851,7 @@ export function QBSidebar() {
     questions,
     sidebarSearch, setSidebarSearch,
     accessibleFolderIds,
+    createFolder,
   } = useQB()
 
   const [inlineCreateParent, setInlineCreateParent] = useState<string | 'root' | null>(null)
@@ -717,8 +877,15 @@ export function QBSidebar() {
     ? courseFolders
     : courseFolders.filter(f => accessibleFolderIds.has(f.id))
 
-  const allQCount = questions.length
-  const myQCount = questions.filter(q => q.creator === currentPersona.id).length
+  const accessibleQuestions = isAdmin
+    ? questions
+    : questions.filter(q => accessibleFolderIds.has(q.folder))
+  // Only count questions visible to this user (Saved + own Drafts)
+  const countableQuestions = accessibleQuestions.filter(q =>
+    q.status === 'Saved' || (q.status === 'Draft' && q.creator === currentPersona.id)
+  )
+  const allQCount = countableQuestions.length
+  const myQCount = countableQuestions.filter(q => q.creator === currentPersona.id).length
 
   const isAllSelected = navView === 'all'
   const isMySelected = navView === 'my'
@@ -734,7 +901,7 @@ export function QBSidebar() {
       })
     : visibleCourseFolders
 
-  // Nav item shared style
+  // Nav item — consistent layout, active state is visual-only (no size change)
   const navItem = (
     active: boolean,
     icon: string,
@@ -742,24 +909,24 @@ export function QBSidebar() {
     count: number,
     onClick: () => void,
   ) => (
+    <div style={{ padding: '2px 4px' }}>
     <Button
       variant="ghost"
       onClick={onClick}
       className="w-full justify-start"
       style={{
-        padding: '7px 12px',
-        height: 34,
+        padding: '0 8px',
+        height: 32,
+        width: '100%',
         backgroundColor: active ? 'var(--brand-tint)' : 'transparent',
-        borderRadius: active ? 6 : 0,
-        margin: active ? '0 4px' : '0',
-        width: active ? 'calc(100% - 8px)' : '100%',
+        borderRadius: 6,
         color: active ? 'var(--brand-color)' : 'var(--foreground)',
       }}
     >
       <i
         className={active ? `fa-solid ${icon}` : `fa-regular ${icon}`}
         aria-hidden="true"
-        style={{ fontSize: 13, color: active ? 'var(--brand-color)' : 'var(--muted-foreground)', width: 16, textAlign: 'center' }}
+        style={{ fontSize: 13, color: active ? 'var(--brand-color)' : 'var(--muted-foreground)', width: 16, textAlign: 'center', flexShrink: 0 }}
       />
       <span style={{
         flex: 1, fontSize: 13, textAlign: 'left',
@@ -772,6 +939,7 @@ export function QBSidebar() {
         {count}
       </span>
     </Button>
+    </div>
   )
 
   return (
@@ -803,13 +971,13 @@ export function QBSidebar() {
       </div>
 
       {/* ── Quick Nav: All Questions + My Questions ── */}
-      <div style={{ borderBottom: '1px solid var(--border)', padding: '4px 0', flexShrink: 0 }}>
+      <div style={{ borderBottom: '1px solid var(--border)', padding: '2px 0', flexShrink: 0 }}>
         {navItem(isAllSelected, 'fa-book-open', 'All Questions', allQCount, () => setNavView('all'))}
         {navItem(isMySelected, 'fa-user', 'My Questions', myQCount, () => setNavView('my'))}
       </div>
 
       {/* Scrollable tree area */}
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '8px 0' }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '8px 0', scrollbarGutter: 'stable' }}>
 
         {/* ── Question Bank section header with icon-only search ── */}
         <div style={{
@@ -851,7 +1019,7 @@ export function QBSidebar() {
                 fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
                 letterSpacing: '0.07em', color: 'var(--muted-foreground)',
               }}>
-                {isAdmin ? 'Question Bank' : 'My Question Bank'}
+                {'Question Bank'}
               </span>
               <Button
                 variant="ghost" size="icon-xs"
@@ -875,16 +1043,38 @@ export function QBSidebar() {
             </div>
           ))}
           {!isAdmin && accessibleFolderIds.size === 0 && (
-            <div style={{ padding: '16px 12px', fontSize: 12, color: 'var(--muted-foreground)', textAlign: 'center' }}>
-              No question banks shared with you yet.
+            <div style={{ padding: '20px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
+              {/* Illustration */}
+              <div style={{ position: 'relative', width: 64, height: 64, borderRadius: '50%', backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <i className="fa-light fa-lock-keyhole" aria-hidden="true" style={{ fontSize: 22, color: 'var(--brand-color)' }} />
+                <span style={{ position: 'absolute', top: 4, right: 4, width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)', border: '1.5px solid var(--brand-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 8, color: 'var(--brand-color)' }} />
+                </span>
+              </div>
+              <div>
+                <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--foreground)', marginBottom: 4, lineHeight: 1.4 }}>Your question banks will appear here</p>
+                <p style={{ fontSize: 11, color: 'var(--muted-foreground)', lineHeight: 1.5 }}>Once your department admin shares a course folder with you, it&apos;ll show up right here — ready to use.</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full gap-1.5 rounded-lg"
+                style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', color: 'var(--brand-color)', fontSize: 11 }}
+              >
+                <i className="fa-light fa-envelope" aria-hidden="true" style={{ fontSize: 11 }} />
+                Contact your admin to request access
+              </Button>
             </div>
           )}
         </div>
 
-        {inlineCreateParent === 'root' && (
+        {inlineCreateParent !== null && (
           <InlineFolderInput
-            depth={0}
-            onConfirm={() => setInlineCreateParent(null)}
+            depth={inlineCreateParent === 'root' ? 0 : 1}
+            onConfirm={(name) => {
+              createFolder(name, inlineCreateParent === 'root' ? null : inlineCreateParent)
+              setInlineCreateParent(null)
+            }}
             onCancel={() => setInlineCreateParent(null)}
           />
         )}

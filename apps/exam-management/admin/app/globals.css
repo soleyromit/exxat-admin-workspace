@@ -52,42 +52,32 @@
   --qb-trust-junior-color: oklch(0.55 0 0);
   --qb-split-divider:      oklch(1 0 0 / 0.15);         /* split-button divider on primary  */
 
-  /* QB status badge tokens — pill + icon design (StatusBadge in badges.tsx) */
-  --qb-status-active-bg:    color-mix(in oklch, var(--chart-2) 16%, var(--background));
-  --qb-status-active-fg:    oklch(0.30 0.13 155);       /* deep green text                  */
-  --qb-status-ready-bg:     color-mix(in oklch, var(--chart-2) 10%, var(--background));
-  --qb-status-ready-fg:     oklch(0.32 0.11 184);       /* teal text                        */
-  --qb-status-review-bg:    color-mix(in oklch, var(--chart-1) 14%, var(--background));
-  --qb-status-review-fg:    oklch(0.32 0.18 264);       /* indigo text                      */
-  --qb-status-flagged-bg:   color-mix(in oklch, var(--destructive) 12%, var(--background));
-  --qb-status-flagged-fg:   oklch(0.40 0.20 25);        /* red text                         */
-  --qb-status-approved-bg:  color-mix(in oklch, var(--brand-color) 14%, var(--background));
-  --qb-status-approved-fg:  var(--brand-color-dark);    /* brand text                       */
-  --qb-status-locked-bg:    var(--muted);               /* grey bg                          */
-  --qb-status-locked-fg:    var(--muted-foreground);    /* grey text                        */
+  /* QB status badge tokens — Saved (green) + Draft (amber) */
+  --qb-status-saved-bg:     oklch(0.945 0.040 155);  /* soft green surface  */
+  --qb-status-saved-fg:     oklch(0.28 0.12 155);    /* dark green text     */
+  --qb-status-saved-border: oklch(0.72 0.12 155);    /* green border        */
 
-  /* QB difficulty tokens (DiffBadge / PBisCell in badges.tsx) */
-  --qb-diff-hard-color:      oklch(0.45 0.18 25);       /* red text — Hard diff             */
-  --qb-diff-medium-color:    oklch(0.45 0.14 70);       /* amber text — Medium              */
-  --qb-diff-easy:            oklch(0.55 0.005 270);     /* neutral weight — Easy            */
-  --qb-diff-medium:          oklch(0.35 0.005 270);     /* neutral weight — Medium          */
-  --qb-diff-hard:            oklch(0.18 0.005 270);     /* neutral weight — Hard            */
+  --qb-status-draft-bg:     oklch(0.955 0.022 75);   /* warm amber surface  */
+  --qb-status-draft-fg:     oklch(0.42 0.12 68);     /* dark amber text     */
+  --qb-status-draft-border: oklch(0.82 0.08 72);     /* amber border        */
 
-  /* QB status tokens — Saved (teal) + Draft (amber) */
-  --qb-status-saved-bg: oklch(0.93 0.04 200 / 0.25);
-  --qb-status-saved-fg: oklch(0.35 0.12 200);
-  --qb-status-draft-bg: oklch(0.93 0.03 80 / 0.25);
-  --qb-status-draft-fg: oklch(0.45 0.1 70);
+  /* QB difficulty bar — neutral shades, lightest → darkest (Easy → Hard) */
+  --qb-diff-easy-color:      oklch(0.78 0.004 270);      /* light neutral — Easy            */
+  --qb-diff-medium-color:    oklch(0.58 0.006 270);      /* mid neutral — Medium            */
+  --qb-diff-hard-color:      oklch(0.35 0.008 270);      /* dark neutral — Hard             */
 
   /* Folder delete impact panel */
   --qb-delete-impact-bg:     color-mix(in oklch, var(--destructive) 8%, var(--background));
   --qb-delete-impact-border: color-mix(in oklch, var(--destructive) 20%, transparent);
 
-  /* Folder diff popover */
-  --qb-diff-bar-easy:   color-mix(in oklch, var(--chart-2) 60%, var(--background));
-  --qb-diff-bar-medium: color-mix(in oklch, var(--chart-4) 60%, var(--background));
-  --qb-diff-bar-hard:   color-mix(in oklch, var(--destructive) 50%, var(--background));
-  --qb-folder-selected-bg: color-mix(in oklch, var(--brand-color) 10%, var(--background));
+  /* Bloom's distribution bar */
+  --qb-blooms-bar: color-mix(in oklch, var(--brand-color) 45%, var(--background));
+
+  /* Folder diff popover bar — neutral, Easy=light → Hard=dark */
+  --qb-diff-bar-easy:   var(--qb-diff-easy-color);
+  --qb-diff-bar-medium: var(--qb-diff-medium-color);
+  --qb-diff-bar-hard:   var(--qb-diff-hard-color);
+  --qb-folder-selected-bg: var(--sidebar-accent);
 }
 
 /* Courses table row tints */
@@ -106,16 +96,57 @@
   --ab-active-border:      color-mix(in oklch, var(--brand-color) 20%, transparent);
 }
 
+/* Hide scrollbar on QB folder name scroll area */
+.qb-name-scroll::-webkit-scrollbar { display: none; }
+
 /* QB hover behaviors */
 .qb-folder-menu-btn {
   opacity: 0;
   transition: opacity 100ms;
 }
-[role="treeitem"]:hover .qb-folder-menu-btn {
+[role="treeitem"]:hover .qb-folder-menu-btn,
+[role="treeitem"][aria-selected="true"] .qb-folder-menu-btn {
   opacity: 1;
 }
 .qb-menu-btn:hover {
   background-color: var(--accent);
+}
+
+/* ── App sidebar — flat nav style (Image #26 reference) ─────────────────── */
+/* Strip all card chrome from every sidebar menu button */
+[data-sidebar="menu-button"] {
+  background-color: transparent;
+  box-shadow: none;
+  font-weight: 400;
+}
+/* Standard hover: accent tint */
+[data-sidebar="menu-button"]:hover {
+  background-color: var(--sidebar-accent);
+  color: var(--sidebar-accent-foreground);
+  box-shadow: none;
+}
+/* Active nav item: accent tint (not white card) */
+[data-sidebar="menu-button"][data-active="true"] {
+  background-color: var(--sidebar-accent);
+  color: var(--sidebar-accent-foreground);
+  font-weight: 400;
+  box-shadow: none;
+}
+/* Brand header: completely non-interactive */
+[data-sidebar="menu-button"].sidebar-brand-btn,
+[data-sidebar="menu-button"].sidebar-brand-btn:hover {
+  background-color: transparent;
+  box-shadow: none;
+  cursor: default;
+}
+/* Institution card: subtle card appearance */
+[data-sidebar="menu-button"].sidebar-institution-btn {
+  background-color: color-mix(in oklch, var(--background) 80%, var(--sidebar));
+  box-shadow: 0 0 0 1px var(--sidebar-border);
+}
+[data-sidebar="menu-button"].sidebar-institution-btn:hover {
+  background-color: var(--background);
+  box-shadow: 0 0 0 1px var(--sidebar-border);
 }
 
 /* Folder highlight animation */

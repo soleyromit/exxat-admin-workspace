@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   experimental: {
     externalDir: true,
   },
+  devIndicators: false,
   webpack(config) {
     config.resolve.alias = {
       ...config.resolve.alias,

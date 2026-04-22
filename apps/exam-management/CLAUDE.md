@@ -304,6 +304,10 @@ components/qb/tooltip.tsx        — QB-specific tooltip wrapper
 lib/qb-types.ts                  — Question Bank TypeScript types
 lib/qb-mock-data.ts              — QB mock data for development
 lib/mock-questions.ts            — Mock question dataset
+
+public/exxat-logo.svg            — Exxat circular logomark (Prism variant, viewBox-cropped from Exxat_Prism.svg)
+public/exxat-prism.svg           — Full Exxat Prism wordmark (source: Admin/apps/web/Logo/Exxat_Prism.svg)
+public/exxat-one.svg             — Full Exxat One wordmark  (source: Admin/apps/web/Logo/Exxat_one.svg)
 ```
 
 ### Student App — Already Built (confirmed from reading apps/exam-management/student/)
@@ -492,9 +496,46 @@ Import: `from '@exxat/ds/packages/ui/src'`
 **Canonical:** DS `DropdownMenu` inside `<th>` — already in `qb-table.tsx` → `ColHeader` component.
 → Never hand-roll a custom dropdown inside a `<th>`.
 
+### Sidebar Brand Logo
+**Canonical:** `components/app-sidebar.tsx` → `AppHeader` function — use `useSidebar().state` to swap between mark and wordmark.
+```tsx
+function AppHeader() {
+  const { state } = useSidebar()
+  return (
+    <SidebarMenu><SidebarMenuItem>
+      <SidebarMenuButton size="lg" className="cursor-default select-none" aria-label="Exxat Prism" tooltip="Exxat Prism">
+        {state === 'collapsed'
+          ? <img src="/exxat-logo.svg" alt="" aria-hidden="true" width={32} height={32} className="shrink-0" />
+          : <img src="/exxat-prism.svg" alt="Exxat Prism" className="h-6 w-auto" />
+        }
+      </SidebarMenuButton>
+    </SidebarMenuItem></SidebarMenu>
+  )
+}
+```
+→ NEVER show both the mark and the wordmark simultaneously — the wordmark already contains the circular mark.
+→ Logo source files live at `Admin/apps/web/Logo/` (Exxat_one.svg, Exxat_Prism.svg). Copy to `public/` before referencing.
+
 ### Folder / Item Context Menu (right-click or ⋯)
-**Canonical:** DS `DropdownMenu` + `DropdownMenuTrigger asChild`
-→ The current `FolderContextMenu` (Portal-based) in `qb-sidebar.tsx` is established — do NOT change it unless migrating to DS `DropdownMenu`
+**Canonical:** DS `DropdownMenu` + `DropdownMenuTrigger asChild`, wrapped in a hover-only overlay div.
+→ The button must be `position: absolute` inside a `position: relative` row — it takes NO layout space.
+→ Show/hide with `opacity` + `pointerEvents` based on `isRowHovered || menuOpen`.
+→ Track `menuOpen` via `DropdownMenu onOpenChange` so the button stays visible while the dropdown is open.
+```tsx
+{isAdmin && (
+  <div style={{
+    position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)',
+    opacity: (isRowHovered || menuOpen) ? 1 : 0,
+    pointerEvents: (isRowHovered || menuOpen) ? 'auto' : 'none',
+    transition: 'opacity 100ms', zIndex: 1,
+    backgroundColor: isSelected ? 'var(--qb-folder-selected-bg)' : isRowHovered ? 'var(--interactive-hover)' : 'transparent',
+    borderRadius: 4,
+  }}>
+    <FolderContextMenu ... onOpenChange={setMenuOpen} />
+  </div>
+)}
+```
+→ The wrapper background must match the row's current bg state so it visually overlaps the count badge cleanly.
 
 ### Main Navigation Sidebar
 **Canonical:** `components/app-sidebar.tsx` — DS `Sidebar variant="inset" collapsible="icon"` + `SidebarProvider className="h-svh"` + `SidebarInset`
@@ -504,11 +545,24 @@ Import: `from '@exxat/ds/packages/ui/src'`
 **Canonical:** `qb-sidebar.tsx` — custom `<aside>` with animated width (`sidebarOpen` from QB state)
 → The QB sidebar toggle button is in `qb-header.tsx` and controls `sidebarOpen` in QB state (NOT the main DS sidebar toggle).
 → The `fa-sidebar` icon in `qb-header.tsx` controls the MAIN DS sidebar via `useSidebar().toggleSidebar`.
+→ The scrollable tree area uses `scrollbarGutter: 'stable'` to prevent layout compression when the scrollbar appears:
+```tsx
+<div style={{ overflowY: 'auto', overflowX: 'hidden', scrollbarGutter: 'stable' }}>
+```
+→ Without this, expanding child folders triggers a vertical scrollbar that narrows the panel, compressing text and counts.
 
 ### Data Table
 **Canonical for QB:** custom `<table>` in `qb-table.tsx` using DS token classes (`TH`, `TD` constants), `Checkbox` from DS, `DropdownMenu` for column headers.
 → Never replace with a raw `<table>` without DS tokens. Never use a third-party grid.
 → Columns are defined in `QB_COLS` constant — add columns there, not ad-hoc.
+
+**DS Table border container rule:**
+```tsx
+// ALWAYS add overflow-hidden when wrapping DS Table with a border+radius container
+<div className="border border-border rounded-lg overflow-hidden">
+  <Table ...>
+```
+→ DS `Table` internally renders `<div class="relative w-full overflow-x-auto"><table>`. Without `overflow-hidden` on the outer div, the rounded corners don't clip the scroll container and borders appear incomplete on all sides.
 
 ### Icons
 **Rule:** Always Font Awesome Pro via `<i className="fa-{weight} fa-{name}" aria-hidden="true" />`
@@ -523,6 +577,10 @@ Import: `from '@exxat/ds/packages/ui/src'`
 → Define a CSS variable in `app/globals.css` under `/* QB color tokens */`
 → Reference as `'var(--token-name)'` in JS
 → QB tokens already defined: `--qb-private`, `--qb-question-set`, `--qb-locked`, `--qb-trust-*`, `--qb-split-divider`
+
+**QB folder selected background:**
+→ `--qb-folder-selected-bg` = `var(--sidebar-accent)` — the canonical DS token for active states on brand-tinted surfaces.
+→ Do NOT use `color-mix(in oklch, var(--brand-color) 10%, var(--background))` — that mixes the dark accent color and produces a result inconsistent with the DS token scale.
 
 ### Badges / Status Chips
 **Canonical:** `StatusBadge`, `TypeBadge`, `DiffBadge`, `BloomsBadge`, `PBisCell` — all in `components/qb/badges.tsx`

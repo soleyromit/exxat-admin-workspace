@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react'
 import type { FolderNode, Question, Persona, ColumnId } from '@/lib/qb-types'
 import { MOCK_QB_FOLDERS, MOCK_QB_QUESTIONS, MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
+// MOCK_QB_FOLDERS used as reference for path computation in moveQuestionToFolder
 
 interface QBState {
   currentPersona: Persona
@@ -19,11 +20,13 @@ interface QBState {
   expandedFolderIds: Set<string>
   toggleFolder: (id: string) => void
   folders: FolderNode[]
-  createFolder: (name: string, parentId: string) => void
+  createFolder: (name: string, parentId: string | null) => void
   renameFolder: (id: string, name: string) => void
   deleteFolder: (id: string) => void
   moveFolder: (id: string, newParentId: string) => void
   setFolderIcon: (id: string, icon: string) => void
+  addFolderCollaborator: (folderId: string, personaId: string) => void
+  removeFolderCollaborator: (folderId: string, personaId: string) => void
 
   sidebarSearch: string
   setSidebarSearch: (v: string) => void
@@ -43,6 +46,10 @@ interface QBState {
   setColumnOrder: (order: ColumnId[]) => void
 
   questions: Question[]
+  updateQuestion: (id: string, updates: Partial<Question>) => void
+  deleteQuestion: (id: string) => void
+  duplicateQuestion: (id: string) => void
+  moveQuestionToFolder: (id: string, folderId: string) => void
   selectedQuestionIds: Set<string>
   toggleQuestionSelection: (id: string) => void
   selectAllQuestions: () => void
@@ -63,6 +70,9 @@ interface QBState {
 
   collaboratorsModalFolderId: string | null
   setCollaboratorsModalFolderId: (id: string | null) => void
+
+  dialogActive: boolean
+  setDialogActive: (v: boolean) => void
 
   visibleQuestions: Question[]
   selectedFolder: FolderNode | null
@@ -113,6 +123,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
   const [favoritedIds, setFavoritedIds] = useState<Set<string>>(
     new Set(MOCK_QB_QUESTIONS.filter(q => q.favorited === true).map(q => q.id))
   )
+  const [questionsState, setQuestionsState] = useState<Question[]>(MOCK_QB_QUESTIONS)
   const [columnOrder, setColumnOrder] = useState<ColumnId[]>(DEFAULT_COLUMN_ORDER)
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<Set<string>>(new Set())
   const [rowHoverId, setRowHoverId] = useState<string | null>(null)
@@ -121,6 +132,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null)
   const [openMenuQuestionId, setOpenMenuQuestionId] = useState<string | null>(null)
   const [collaboratorsModalFolderId, setCollaboratorsModalFolderId] = useState<string | null>(null)
+  const [dialogActive, setDialogActive] = useState(false)
   const [folders, setFolders] = useState<FolderNode[]>(MOCK_QB_FOLDERS)
 
   const isAdmin = currentPersona.role === 'Admin'
@@ -128,29 +140,38 @@ export function QBProvider({ children }: { children: ReactNode }) {
   const accessibleFolderIds = useMemo<Set<string>>(() => {
     if (isAdmin) return new Set(folders.map(f => f.id))
     const accessible = new Set<string>()
+    // Any folder where this persona is a direct collaborator grants access to that folder + all descendants
     folders
-      .filter(f => f.parentId === null && (f.collaborators ?? []).includes(currentPersona.id))
-      .forEach(course => {
-        getDescendantIds(course.id, folders).forEach(id => accessible.add(id))
+      .filter(f => (f.collaborators ?? []).includes(currentPersona.id))
+      .forEach(folder => {
+        getDescendantIds(folder.id, folders).forEach(id => accessible.add(id))
       })
     return accessible
   }, [isAdmin, currentPersona.id, folders])
 
-  // Auto-select first accessible course folder for Faculty on persona change
+  // Ref so the effect can read the current selectedFolderId without adding it as a dep
+  const selectedFolderIdRef = useRef(selectedFolderId)
+  selectedFolderIdRef.current = selectedFolderId
+
+  // Auto-navigate Faculty to first accessible folder whenever their access set changes
+  // (covers both persona switch and real-time access grants by Admin)
   useEffect(() => {
     if (isAdmin) return
-    const firstAccessibleCourse = folders.find(
-      f => f.parentId === null && accessibleFolderIds.has(f.id)
-    )
-    if (firstAccessibleCourse) {
-      setSelectedFolderIdState(firstAccessibleCourse.id)
+    // If Faculty already has an accessible folder selected, leave navigation alone
+    if (selectedFolderIdRef.current && accessibleFolderIds.has(selectedFolderIdRef.current)) return
+    // Prefer a root-level course; fall back to any accessible folder
+    const firstAccessible =
+      folders.find(f => f.parentId === null && accessibleFolderIds.has(f.id)) ??
+      folders.find(f => accessibleFolderIds.has(f.id)) ??
+      null
+    if (firstAccessible) {
+      setSelectedFolderIdState(firstAccessible.id)
       setNavViewState('folder')
     } else {
-      // No access to any folder — show empty state
       setSelectedFolderIdState(null)
       setNavViewState('my')
     }
-  }, [currentPersona]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isAdmin, accessibleFolderIds]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function setCurrentPersona(p: Persona) {
     setCurrentPersonaState(p)
@@ -211,10 +232,11 @@ export function QBProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  const createFolder = useCallback((name: string, parentId: string) => {
+  const createFolder = useCallback((name: string, parentId: string | null) => {
     const newId = `folder-${Date.now()}`
-    setFolders(prev => [...prev, { id: newId, name, parentId, count: 0 }])
-    setExpandedFolderIds(prev => new Set([...prev, parentId]))
+    const isCourse = parentId === null
+    setFolders(prev => [...prev, { id: newId, name, parentId, count: 0, isCourse }])
+    if (parentId) setExpandedFolderIds(prev => new Set([...prev, parentId]))
     setTimeout(() => setSelectedFolderIdState(newId), 50)
   }, [])
 
@@ -245,6 +267,68 @@ export function QBProvider({ children }: { children: ReactNode }) {
     setFolders(prev => prev.map(f => f.id === id ? { ...f, icon } : f))
   }, [])
 
+  const addFolderCollaborator = useCallback((folderId: string, personaId: string) => {
+    setFolders(prev => prev.map(f => {
+      if (f.id !== folderId) return f
+      const existing = f.collaborators ?? []
+      if (existing.includes(personaId)) return f
+      return { ...f, collaborators: [...existing, personaId] }
+    }))
+  }, [])
+
+  const removeFolderCollaborator = useCallback((folderId: string, personaId: string) => {
+    setFolders(prev => prev.map(f => {
+      if (f.id !== folderId) return f
+      return { ...f, collaborators: (f.collaborators ?? []).filter(id => id !== personaId) }
+    }))
+  }, [])
+
+  const updateQuestion = useCallback((id: string, updates: Partial<Question>) => {
+    setQuestionsState(prev => prev.map(q => q.id === id ? { ...q, ...updates } : q))
+  }, [])
+
+  const deleteQuestion = useCallback((id: string) => {
+    setQuestionsState(prev => prev.filter(q => q.id !== id))
+    setSelectedQuestionIds(prev => { const next = new Set(prev); next.delete(id); return next })
+  }, [])
+
+  const duplicateQuestion = useCallback((id: string) => {
+    setQuestionsState(prev => {
+      const original = prev.find(q => q.id === id)
+      if (!original) return prev
+      const copy: Question = {
+        ...original,
+        id: `q-${Date.now()}`,
+        title: `Copy of ${original.title}`,
+        status: 'Draft',
+        version: 1,
+        usage: 0,
+        pbis: null,
+        pbisDir: null,
+        age: 'just now',
+        lastEditedBy: undefined,
+      }
+      const idx = prev.findIndex(q => q.id === id)
+      const next = [...prev]
+      next.splice(idx + 1, 0, copy)
+      return next
+    })
+  }, [])
+
+  const moveQuestionToFolder = useCallback((id: string, folderId: string) => {
+    setQuestionsState(prev => prev.map(q => {
+      if (q.id !== id) return q
+      const folder = MOCK_QB_FOLDERS.find(f => f.id === folderId)
+      const parts: string[] = []
+      let node = folder
+      while (node) {
+        parts.unshift(node.name)
+        node = node.parentId ? MOCK_QB_FOLDERS.find(f => f.id === node!.parentId) : undefined
+      }
+      return { ...q, folder: folderId, folderPath: parts.join(' / ') }
+    }))
+  }, [])
+
   const toggleQuestionFavorited = useCallback((id: string) => {
     setFavoritedIds(prev => {
       const next = new Set(prev)
@@ -254,13 +338,12 @@ export function QBProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  const visibleQuestions = useMemo(() => MOCK_QB_QUESTIONS.filter(q => {
-    // Faculty: folder must be accessible
+  const visibleQuestions = useMemo(() => questionsState.filter(q => {
+    // Non-admin: folder must be accessible
     if (!isAdmin && !accessibleFolderIds.has(q.folder)) return false
 
-    const roleVisible = isAdmin
-      ? true
-      : q.status === 'Saved' || (q.status === 'Draft' && q.creator === currentPersona.id)
+    // Draft questions are only visible to their creator, regardless of role
+    const roleVisible = q.status === 'Saved' || (q.status === 'Draft' && q.creator === currentPersona.id)
 
     const navVisible = navView === 'all'
       ? true
@@ -274,7 +357,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
     const favFilter = favoritesFilter ? favoritedIds.has(q.id) : true
 
     return roleVisible && navVisible && myFilter && favFilter
-  }), [isAdmin, currentPersona.id, navView, selectedFolderId, myQuestionsOnly, favoritesFilter, favoritedIds, folders, accessibleFolderIds])
+  }), [isAdmin, currentPersona.id, navView, selectedFolderId, myQuestionsOnly, favoritesFilter, favoritedIds, folders, accessibleFolderIds, questionsState])
 
   const toggleQuestionSelection = useCallback((id: string) => {
     setSelectedQuestionIds(prev => {
@@ -305,14 +388,15 @@ export function QBProvider({ children }: { children: ReactNode }) {
     sidebarOpen, setSidebarOpen,
     selectedFolderId, setSelectedFolderId,
     expandedFolderIds, toggleFolder,
-    folders, createFolder, renameFolder, deleteFolder, moveFolder, setFolderIcon,
+    folders, createFolder, renameFolder, deleteFolder, moveFolder, setFolderIcon, addFolderCollaborator, removeFolderCollaborator,
     sidebarSearch, setSidebarSearch,
     highlightedFolderId, setHighlightedFolderId, navigateToFolder,
     myQuestionsOnly, setMyQuestionsOnly,
     favoritesFilter, setFavoritesFilter,
     favoritedIds, toggleQuestionFavorited,
     columnOrder, setColumnOrder,
-    questions: MOCK_QB_QUESTIONS,
+    questions: questionsState,
+    updateQuestion, deleteQuestion, duplicateQuestion, moveQuestionToFolder,
     selectedQuestionIds, toggleQuestionSelection, selectAllQuestions, clearSelection,
     rowHoverId, setRowHoverId,
     draggedQuestionId, setDraggedQuestionId,
@@ -320,6 +404,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
     dragOverFolderId, setDragOverFolderId,
     openMenuQuestionId, setOpenMenuQuestionId,
     collaboratorsModalFolderId, setCollaboratorsModalFolderId,
+    dialogActive, setDialogActive,
     visibleQuestions, selectedFolder, accessibleFolderIds,
     closeAllOverlays,
   }

@@ -76,7 +76,32 @@ This branch is never merged to main without Himanshu review.
 
 ---
 
-## 4. Workspace Config (confirmed from actual files)
+## 4. Running the Dev Server
+
+The monorepo root (`/Users/romitsoley/Work`) has **no `package.json`** — `pnpm dev --filter` does NOT work from there.
+
+**Always run from the app directory:**
+```bash
+cd /Users/romitsoley/Work/apps/exam-management/admin && pnpm dev
+# → starts on port 3001
+
+cd /Users/romitsoley/Work/apps/exam-management/student && pnpm dev
+# → starts on port 3002
+```
+
+**For a persistent background process (survives shell close):**
+```bash
+kill $(lsof -ti :3001) 2>/dev/null   # clear port first
+nohup bash -c 'cd /Users/romitsoley/Work/apps/exam-management/admin && pnpm dev' \
+  > /tmp/exam-admin-dev.log 2>&1 &
+# tail /tmp/exam-admin-dev.log to check status
+```
+
+If port is already in use: `kill $(lsof -ti :PORT)` before restarting.
+
+---
+
+## 5. Workspace Config (confirmed from actual files)
 
 ### pnpm-workspace.yaml
 ```yaml

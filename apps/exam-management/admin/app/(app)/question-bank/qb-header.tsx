@@ -3,33 +3,152 @@ import { useQB } from './qb-state'
 import {
   Button, Badge, useSidebar,
   DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuItem,
+  Popover, PopoverTrigger, PopoverContent,
   Tooltip, TooltipContent, TooltipTrigger,
   Avatar, AvatarFallback,
-  Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator,
 } from '@exxat/ds/packages/ui/src'
-import type { Persona, FolderNode } from '@/lib/qb-types'
+import type { FolderNode, Persona } from '@/lib/qb-types'
+
+function courseFolderLabel(name: string): string {
+  const match = name.match(/^([A-Z0-9]+)\s/)
+  if (!match) return name
+  return `${match[1]} · Question Bank`
+}
+
+function buildFolderPath(folderId: string | null, folders: FolderNode[]): FolderNode[] {
+  if (!folderId) return []
+  const parts: FolderNode[] = []
+  let cur = folders.find(f => f.id === folderId)
+  while (cur) {
+    parts.unshift(cur)
+    cur = cur.parentId ? folders.find(f => f.id === cur!.parentId) : undefined
+  }
+  return parts
+}
+
+// Compact breadcrumb: root + "..." (popover for intermediates) + leaf
+// Rules:
+//   0 segments → just "Question Bank"
+//   1 segment  → "Question Bank > Leaf"
+//   2+ segments → "Question Bank > … > Leaf"  (… opens popover with intermediates)
+function QBBreadcrumb() {
+  const { folders, selectedFolderId, navView, setNavView, navigateToFolder } = useQB()
+
+  const folderPath = navView === 'folder' ? buildFolderPath(selectedFolderId, folders) : []
+  // segments = all folder nodes from root → leaf
+  // first = root course folder, last = selected folder
+  const first = folderPath[0] ?? null
+  const last  = folderPath[folderPath.length - 1] ?? null
+  const intermediates = folderPath.slice(1, -1) // everything between root and leaf
+
+  const SEP = () => (
+    <i className="fa-light fa-chevron-right" aria-hidden="true"
+      style={{ fontSize: 10, color: 'var(--muted-foreground)', flexShrink: 0, margin: '0 1px' }} />
+  )
+
+  const crumbBtn = (label: string, onClick: () => void, muted = false) => (
+    <Button
+      variant="ghost" size="xs"
+      onClick={onClick}
+      style={{ fontSize: 13, fontWeight: muted ? 400 : 500, color: muted ? 'var(--muted-foreground)' : 'var(--foreground)', height: 24, padding: '0 4px' }}
+    >
+      {label}
+    </Button>
+  )
+
+  // Root label always navigates to "My Questions"
+  const rootBtn = crumbBtn('Question Bank', () => setNavView('my'), folderPath.length > 0)
+
+  if (folderPath.length === 0) {
+    // My Questions / All Questions — just "Question Bank"
+    return (
+      <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)' }}>
+        Question Bank
+      </span>
+    )
+  }
+
+  if (folderPath.length === 1) {
+    // One level: Question Bank > CourseName
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        {rootBtn}
+        <SEP />
+        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>
+          {first ? (first.isCourse ? courseFolderLabel(first.name) : first.name) : ''}
+        </span>
+      </div>
+    )
+  }
+
+  // 2+ levels: Question Bank > [... popover if intermediates exist] > Leaf
+  const hasIntermediates = intermediates.length > 0
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0 }}>
+      {rootBtn}
+      <SEP />
+
+      {hasIntermediates && (
+        <>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost" size="xs"
+                aria-label="Show intermediate folders"
+                style={{ fontSize: 13, color: 'var(--muted-foreground)', height: 24, padding: '0 4px', flexShrink: 0 }}
+              >
+                …
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-56 p-2">
+              <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', padding: '4px 8px 6px' }}>
+                Parent folders
+              </div>
+              {/* First node (course) */}
+              <button
+                onClick={() => navigateToFolder(first!.id)}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '6px 8px', borderRadius: 6, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--accent)' }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent' }}
+              >
+                <i className="fa-light fa-graduation-cap" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)', width: 14, flexShrink: 0 }} />
+                <span style={{ fontSize: 13, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {first ? courseFolderLabel(first.name) : ''}
+                </span>
+              </button>
+              {/* Intermediate nodes */}
+              {intermediates.map(node => (
+                <button
+                  key={node.id}
+                  onClick={() => navigateToFolder(node.id)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '6px 8px', borderRadius: 6, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--accent)' }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent' }}
+                >
+                  <i className="fa-light fa-folder" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)', width: 14, flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {node.name}
+                  </span>
+                </button>
+              ))}
+            </PopoverContent>
+          </Popover>
+          <SEP />
+        </>
+      )}
+
+      {/* Leaf — always the current folder, not clickable */}
+      <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>
+        {last ? last.name : ''}
+      </span>
+    </div>
+  )
+}
 
 export function QBHeader() {
-  const { currentPersona, setCurrentPersona, personas, folders, selectedFolderId, navigateToFolder } = useQB()
+  const { currentPersona, setCurrentPersona, personas } = useQB()
   const { toggleSidebar, state: sidebarState } = useSidebar()
-
-  function courseFolderLabel(name: string): string {
-    const match = name.match(/^([A-Z0-9]+)\s/)
-    if (!match) return name
-    return `${match[1]} · Question Bank`
-  }
-
-  function buildPath(folderId: string | null): FolderNode[] {
-    if (!folderId) return []
-    const parts: FolderNode[] = []
-    let cur = folders.find(f => f.id === folderId)
-    while (cur) {
-      parts.unshift(cur)
-      cur = cur.parentId ? folders.find(f => f.id === cur!.parentId) : undefined
-    }
-    return parts
-  }
-  const breadcrumbPath = buildPath(selectedFolderId)
 
   return (
     <header style={{
@@ -42,7 +161,7 @@ export function QBHeader() {
       gap: 8,
     }}>
       {/* Left: sidebar toggle + breadcrumb */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1, overflow: 'hidden' }}>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -60,113 +179,28 @@ export function QBHeader() {
 
         <div style={{ width: 1, height: 16, background: 'var(--border)', flexShrink: 0 }} />
 
-        {/* Breadcrumb — shown only when a folder is selected */}
-        {breadcrumbPath.length > 0 && (
-          <Breadcrumb style={{ minWidth: 0 }}>
-            <ol style={{ display: 'flex', alignItems: 'center', gap: 0, listStyle: 'none', margin: 0, padding: 0, flexWrap: 'nowrap', overflow: 'hidden' }}>
-              {breadcrumbPath.length <= 3 ? (
-                breadcrumbPath.map((node, i) => (
-                  <BreadcrumbItem key={node.id} style={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
-                    {i > 0 && <BreadcrumbSeparator style={{ color: 'var(--muted-foreground)', fontSize: 10, padding: '0 4px' }}>/</BreadcrumbSeparator>}
-                    <BreadcrumbLink asChild>
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        onClick={() => navigateToFolder(node.id)}
-                        style={{
-                          fontSize: 12,
-                          color: i === breadcrumbPath.length - 1 ? 'var(--foreground)' : 'var(--muted-foreground)',
-                          fontWeight: i === breadcrumbPath.length - 1 ? 500 : 400,
-                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 160,
-                          height: 'auto', padding: '2px 4px',
-                        }}
-                      >
-                        {node.isCourse ? courseFolderLabel(node.name) : node.name}
-                      </Button>
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                ))
-              ) : (
-                <>
-                  <BreadcrumbItem>
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      onClick={() => navigateToFolder(breadcrumbPath[0].id)}
-                      style={{ fontSize: 12, color: 'var(--muted-foreground)', height: 'auto', padding: '2px 4px' }}
-                    >
-                      {breadcrumbPath[0].isCourse ? courseFolderLabel(breadcrumbPath[0].name) : breadcrumbPath[0].name}
-                    </Button>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator style={{ color: 'var(--muted-foreground)', fontSize: 10, padding: '0 4px' }}>/</BreadcrumbSeparator>
-                  <BreadcrumbItem>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon-xs" aria-label="Show more breadcrumb items" style={{ fontSize: 12 }}>
-                          …
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-48">
-                        {breadcrumbPath.slice(1, -1).map(node => (
-                          <DropdownMenuItem key={node.id} onClick={() => navigateToFolder(node.id)}>
-                            <i className="fa-light fa-folder" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
-                            {node.name}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator style={{ color: 'var(--muted-foreground)', fontSize: 10, padding: '0 4px' }}>/</BreadcrumbSeparator>
-                  <BreadcrumbItem>
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      onClick={() => navigateToFolder(breadcrumbPath[breadcrumbPath.length - 1].id)}
-                      style={{ fontSize: 12, fontWeight: 500, color: 'var(--foreground)', height: 'auto', padding: '2px 4px', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                    >
-                      {breadcrumbPath[breadcrumbPath.length - 1].name}
-                    </Button>
-                  </BreadcrumbItem>
-                </>
-              )}
-            </ol>
-          </Breadcrumb>
-        )}
+        <QBBreadcrumb />
       </div>
 
       {/* Right: persona switcher + Ask Leo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-        {/* Persona switcher */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-2 h-8 px-2"
-              aria-label="Switch persona"
-            >
+            <Button variant="ghost" size="sm" className="gap-2 h-8 px-2" aria-label="Switch persona">
               <Avatar style={{ width: 24, height: 24 }}>
                 <AvatarFallback style={{ backgroundColor: currentPersona.color, color: 'var(--primary-foreground)', fontSize: 9, fontWeight: 700 }}>
                   {currentPersona.initials}
                 </AvatarFallback>
               </Avatar>
-              <span style={{ fontSize: 12, fontWeight: 500 }}>
-                {currentPersona.name}
-              </span>
-              <Badge variant="secondary" className="rounded" style={{ fontSize: 10 }}>
-                {currentPersona.role}
-              </Badge>
-              <i className="fa-light fa-chevron-down" aria-hidden="true"
-                style={{ fontSize: 10, color: 'var(--muted-foreground)' }} />
+              <span style={{ fontSize: 12, fontWeight: 500 }}>{currentPersona.name}</span>
+              <Badge variant="secondary" className="rounded" style={{ fontSize: 10 }}>{currentPersona.role}</Badge>
+              <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 10, color: 'var(--muted-foreground)' }} />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-56">
             <DropdownMenuLabel>Switch Persona</DropdownMenuLabel>
-            {personas.map(p => (
-              <DropdownMenuItem
-                key={p.id}
-                onClick={() => setCurrentPersona(p)}
-              >
+            {personas.map((p: Persona) => (
+              <DropdownMenuItem key={p.id} onClick={() => setCurrentPersona(p)}>
                 <Avatar style={{ width: 24, height: 24 }}>
                   <AvatarFallback style={{ backgroundColor: p.color, color: 'var(--primary-foreground)', fontSize: 9, fontWeight: 700 }}>
                     {p.initials}
@@ -189,13 +223,7 @@ export function QBHeader() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Ask Leo — outline sm, star-christmas icon, brand-color */}
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1.5 text-xs font-medium"
-          aria-label="Ask Leo AI"
-        >
+        <Button variant="outline" size="sm" className="gap-1.5 text-xs font-medium" aria-label="Ask Leo AI">
           <i className="fa-duotone fa-solid fa-star-christmas text-xs" style={{ color: 'var(--brand-color)' }} aria-hidden="true" />
           Ask Leo
         </Button>
