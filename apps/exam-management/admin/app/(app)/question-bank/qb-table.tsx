@@ -517,6 +517,7 @@ function FilterPropertiesSheet({
   rowHeight, onRowHeightChange,
   conditionalRules, onAddConditionalRule, onRemoveConditionalRule, onUpdateConditionalRule,
   initialPanel,
+  filterFields = QB_FILTER_FIELDS,
 }: {
   open: boolean
   onOpenChange: (v: boolean) => void
@@ -550,6 +551,7 @@ function FilterPropertiesSheet({
   onRemoveConditionalRule: (id: string) => void
   onUpdateConditionalRule: (id: string, patch: Partial<Omit<QBConditionalRule, 'id'>>) => void
   initialPanel?: SheetPanel
+  filterFields?: typeof QB_FILTER_FIELDS
 }) {
   const [panel, setPanel] = useState<SheetPanel>('main')
   const [condExpandedIds, setCondExpandedIds] = useState<Set<string>>(new Set())
@@ -723,7 +725,7 @@ function FilterPropertiesSheet({
               ) : (
                 <>
                   {activeFilters.map((f, idx) => {
-                    const fieldDef = QB_FILTER_FIELDS.find(fd => fd.key === f.fieldKey)
+                    const fieldDef = filterFields.find(fd => fd.key === f.fieldKey)
                     if (!fieldDef) return null
                     return (
                       <React.Fragment key={f.id}>
@@ -794,7 +796,7 @@ function FilterPropertiesSheet({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-48">
                     <DropdownMenuLabel style={{ fontSize: 11, color: 'var(--muted-foreground)', fontWeight: 400 }}>Filter by field</DropdownMenuLabel>
-                    {QB_FILTER_FIELDS.map(f => (
+                    {filterFields.map(f => (
                       <DropdownMenuItem key={f.key} onClick={() => onAddFilter(f.key)}>
                         <i className={`fa-light ${f.icon}`} aria-hidden="true" />
                         {f.label}
@@ -976,7 +978,7 @@ function FilterPropertiesSheet({
                 </div>
               ) : (
                 conditionalRules.map(rule => {
-                  const fieldDef = QB_FILTER_FIELDS.find(fd => fd.key === rule.fieldKey)
+                  const fieldDef = filterFields.find(fd => fd.key === rule.fieldKey)
                   if (!fieldDef) return null
                   const isExpanded = condExpandedIds.has(rule.id)
                   return (
@@ -1067,7 +1069,7 @@ function FilterPropertiesSheet({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-48">
-                  {QB_FILTER_FIELDS.map(f => (
+                  {filterFields.map(f => (
                     <DropdownMenuItem key={f.key} onClick={() => {
                       const id = `cond-${f.key}-${Date.now()}`
                       onAddConditionalRule({ id, fieldKey: f.key, operator: 'is', values: [], bgColor: QB_RULE_COLORS[0].bg })
@@ -1842,10 +1844,12 @@ export function QBTable() {
     if (bookmarkOnly && !favoritedIds.has(q.id)) return false
     for (const f of activeNonEmptyFilters) {
       let val = ''
-      if (f.fieldKey === 'status')     val = q.status
-      if (f.fieldKey === 'type')       val = q.type
-      if (f.fieldKey === 'difficulty') val = q.difficulty
-      if (f.fieldKey === 'blooms')     val = q.blooms
+      if (f.fieldKey === 'status')        val = q.status
+      if (f.fieldKey === 'type')          val = q.type
+      if (f.fieldKey === 'difficulty')    val = q.difficulty
+      if (f.fieldKey === 'blooms')        val = q.blooms
+      if (f.fieldKey === 'creator')       val = personas.find(p => p.id === q.creator)?.name ?? ''
+      if (f.fieldKey === 'lastEditedBy')  val = personas.find(p => p.id === q.lastEditedBy)?.name ?? ''
       const matches = f.values.includes(val)
       if (f.operator === 'is'     && !matches) return false
       if (f.operator === 'is_not' &&  matches) return false
@@ -2887,6 +2891,7 @@ export function QBTable() {
         onRemoveConditionalRule={removeConditionalRule}
         onUpdateConditionalRule={updateConditionalRule}
         initialPanel={initialPropertiesPanel}
+        filterFields={qbFilterFields}
       />
 
       {/* ── Question Detail Sheet ── */}
