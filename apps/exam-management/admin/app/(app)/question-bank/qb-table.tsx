@@ -1449,6 +1449,9 @@ function ColHeader({
   className,
   distQuestions,
   bloomsQuestions,
+  filterOptions,
+  filterSet,
+  onFilterToggle,
   draggable, onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd, dragOverStyle,
 }: {
   col: typeof QB_COLS[number]
@@ -1467,6 +1470,9 @@ function ColHeader({
   className?: string
   distQuestions?: Question[]
   bloomsQuestions?: Question[]
+  filterOptions?: string[]
+  filterSet?: Set<string>
+  onFilterToggle?: (v: string) => void
   draggable?: boolean
   onDragStart?: () => void
   onDragOver?: (e: React.DragEvent) => void
@@ -1487,6 +1493,12 @@ function ColHeader({
   const [bloomsHoverOpen, setBloomsHoverOpen] = useState(false)
   const bloomsHoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const [colSearch, setColSearch] = useState('')
+  const hasInlineFilter = !!filterOptions && filterOptions.length > 0
+  const filteredColOptions = colSearch
+    ? (filterOptions ?? []).filter(o => o.toLowerCase().includes(colSearch.toLowerCase()))
+    : (filterOptions ?? [])
+
   useEffect(() => {
     return () => {
       if (diffHoverTimerRef.current) clearTimeout(diffHoverTimerRef.current)
@@ -1505,7 +1517,7 @@ function ColHeader({
       onDrop={onDrop}
       onDragEnd={onDragEnd}
     >
-      <DropdownMenu>
+      <DropdownMenu onOpenChange={open => { if (!open) setColSearch('') }}>
         <div
           className="flex items-center gap-1 group/col-hdr cursor-pointer select-none w-full"
           onClick={() => col.sortKey && onSort(col.key, isActive && sortDir === 'asc' ? 'desc' : 'asc')}
@@ -1572,6 +1584,48 @@ function ColHeader({
         </div>
 
         <DropdownMenuContent align="start" className="w-52" onCloseAutoFocus={e => e.preventDefault()}>
+          {/* Inline column value search — filterable columns only */}
+          {hasInlineFilter && (
+            <>
+              <div className="px-2 pt-2 pb-1" onKeyDown={e => e.stopPropagation()}>
+                <Input
+                  placeholder="Search values…"
+                  value={colSearch}
+                  onChange={e => setColSearch(e.target.value)}
+                  className="h-7 text-xs"
+                  style={{ fontSize: 12 }}
+                />
+              </div>
+              <div className="max-h-40 overflow-y-auto py-0.5">
+                {filteredColOptions.length === 0 ? (
+                  <p className="px-3 py-2 text-xs text-muted-foreground">No matches</p>
+                ) : filteredColOptions.map(opt => {
+                  const checked = filterSet?.has(opt) ?? false
+                  return (
+                    <DropdownMenuItem
+                      key={opt}
+                      onSelect={e => { e.preventDefault(); onFilterToggle?.(opt) }}
+                      className="gap-2 text-xs"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="inline-flex items-center justify-center shrink-0 rounded-[3px] border transition-colors"
+                        style={{
+                          width: 13, height: 13,
+                          background: checked ? 'var(--primary)' : 'var(--background)',
+                          borderColor: checked ? 'var(--primary)' : 'var(--border-control-3)',
+                        }}
+                      >
+                        {checked && <i className="fa-solid fa-check text-primary-foreground" aria-hidden="true" style={{ fontSize: 7 }} />}
+                      </span>
+                      {opt}
+                    </DropdownMenuItem>
+                  )
+                })}
+              </div>
+              <DropdownMenuSeparator />
+            </>
+          )}
           {/* Pin actions */}
           {pinnedLeft || pinnedRight ? (
             <DropdownMenuItem onClick={() => onUnpin(col.key)}>
@@ -1784,10 +1838,12 @@ export function QBTable() {
   })
 
   const FILTERABLE_COL_VALUES: Partial<Record<ColKey, string[]>> = {
-    status: ['Saved', 'Draft'],
-    type: ['MCQ', 'Fill blank', 'Hotspot', 'Ordering', 'Matching'],
-    difficulty: ['Easy', 'Medium', 'Hard'],
-    blooms: ['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'],
+    status:       ['Saved', 'Draft'],
+    type:         ['MCQ', 'Fill blank', 'Hotspot', 'Ordering', 'Matching'],
+    difficulty:   ['Easy', 'Medium', 'Hard'],
+    blooms:       ['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'],
+    creator:      qbFilterFields.find(f => f.key === 'creator')?.options ?? [],
+    lastEditedBy: qbFilterFields.find(f => f.key === 'lastEditedBy')?.options ?? [],
   }
 
   function getColFilterSet(colKey: ColKey): Set<string> | undefined {
@@ -2229,6 +2285,9 @@ export function QBTable() {
                         onOpenFilterPanel={() => { setInitialPropertiesPanel('filter'); setPropertiesOpen(true) }}
                         distQuestions={col.key === 'difficulty' ? filteredQuestions : undefined}
                         bloomsQuestions={col.key === 'blooms' ? filteredQuestions : undefined}
+                        filterOptions={qbFilterFields.find(f => f.key === col.key)?.options}
+                        filterSet={getColFilterSet(col.key)}
+                        onFilterToggle={getColFilterToggler(col.key)}
                         className={
                           col.key === 'status'       ? 'w-28' :
                           col.key === 'type'         ? 'w-24' :
