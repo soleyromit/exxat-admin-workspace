@@ -1,0 +1,81 @@
+---
+description: Use only fonts, components, and icons from the style guide — never create new elements
+alwaysApply: true
+---
+
+# Style Guide Only — No New Elements
+
+**Always use existing design system assets.** Do not introduce new fonts, components, HTML tags, icons, or other elements.
+
+## Fonts
+
+Use only from `src/styles/globals.css` / `src/index.css`:
+
+| Use | Font |
+|-----|------|
+| Body | Inter (default, 14px base) |
+| Display / Headings | IvyPresto Headline (`font-display`) |
+
+```tsx
+// ✅ Use Tailwind typography tokens
+text-sm text-base text-lg text-xl text-2xl
+font-normal font-medium font-semibold font-bold
+
+// ❌ Never add custom font-family or @font-face
+font-family: "Some New Font"
+```
+
+## Components
+
+Use only from `@/components/ui/` and `@/components/shared/`:
+
+- **Primitives**: Button, Badge, Input, Card, Tabs, Dialog, DropdownMenu, Tooltip, Avatar, Skeleton, Alert, Progress, Switch, Checkbox, Select, Separator, Label, etc.
+- **Composites**: PrimaryPageTemplate, ReportPageTemplate, DataTable, FilterBar, MetricCard, SectionWithHeader, etc.
+
+```tsx
+// ✅
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { SectionWithHeader } from "@/components/shared/section-with-header";
+
+// ❌ Never create new custom components for basic UI
+// ❌ Never use raw HTML for styled elements (e.g. <a> instead of Button with asChild)
+```
+
+## Icons
+
+Use only `FontAwesomeIcon` from `@/components/brand/font-awesome-icon` with names from `fontAwesomeIcons`:
+
+```tsx
+// ✅
+import { FontAwesomeIcon } from "@/components/brand/font-awesome-icon";
+<FontAwesomeIcon name="home" />
+<FontAwesomeIcon name="bookOpen" weight="solid" />
+
+// ❌ Never use Lucide or other icon libraries as primary
+// ❌ Never use inline SVG icons unless from design system
+// Need a new icon? Add it to font-awesome-icon.tsx first, then use it.
+```
+
+## Tags & Elements
+
+- Use semantic HTML (`div`, `span`, `section`, `header`, etc.) only as wrappers.
+- For interactive elements: use `Button`, `Card`, `Badge` — not raw `<button>`, `<a>`, or custom-styled divs.
+- For lists: use `DataTable` or existing list patterns — not custom table markup.
+- For forms: use `Input`, `Select`, `Checkbox`, `Label` — not raw form elements.
+
+## Design Tokens
+
+- Colors: `bg-primary`, `text-foreground`, `bg-muted`, etc. — never hex or custom colors.
+- Spacing: `gap-4`, `p-6`, `px-4 lg:px-6` — from design tokens.
+- Radius: `rounded-xl`, `rounded-md`, `rounded-full` — from design tokens.
+- **Form fields:** Border `border-[var(--control-border)]`, height `var(--control-height)` — see `docs/design-system/tokens.md`.
+
+```tsx
+// ✅
+<div className="bg-card text-foreground rounded-xl border border-border p-6" />
+<Input className="border-[var(--control-border)]" />  // form fields
+
+// ❌
+<div className="bg-[#fff] rounded-[12px]" style={{ padding: 24 }} />
+```

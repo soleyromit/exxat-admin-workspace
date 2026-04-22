@@ -1,0 +1,8 @@
+# Cloudflare Pages — live site: https://exxat-one-student-ux-3q8.pages.dev/
+# Project name must match the dashboard / `wrangler pages project list`.
+# IMPORTANT: `wrangler pages deploy --branch` must match the project's "Production branch"
+# (Dashboard → Settings → Builds & deployments). Using e.g. `--branch=production` when
+# production is `main` only updates production.<project>.pages.dev, not the apex *.pages.dev URL.
+name = "exxat-one-student-ux"
+compatibility_date = "2025-03-01"
+pages_build_output_dir = "build"

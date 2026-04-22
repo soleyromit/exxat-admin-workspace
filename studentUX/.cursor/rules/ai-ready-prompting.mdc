@@ -1,0 +1,86 @@
+---
+description: How to interpret PM/designer natural language prompts into design-system-correct code
+globs: src/**/*.tsx, src/**/*.ts
+alwaysApply: true
+---
+
+# AI-Ready Prompting Guide
+
+Full interactive prompt library: **Design System page → Prompt Library tab** · Docs: `docs/prompt-templates/`
+
+## Interpreting Natural Language → Component Selections
+
+When a PM or designer says... map it to:
+
+| Natural Language | Component / Pattern |
+|-----------------|-------------------|
+| "list page", "table of X", "manage X" | `PrimaryPageTemplate` + `DataTable` |
+| "dashboard", "overview", "analytics", "charts" | `ReportPageTemplate` + `SectionWithHeader` sections |
+| "detail view", "record page", "profile page" | Custom sticky header + `Tabs` + `SectionWithHeader` |
+| "metrics", "KPIs", "stats row" | `KeyMetricsShowcase` or `MetricCard` grid |
+| "chart", "trend", "over time" | `ChartAreaInteractive` or Recharts with chart-1 → chart-5 tokens |
+| "filter by X", "search by X" | Add `FilterBar` config + filter logic |
+| "add column Y" | `ColumnConfig` entry in `DataTable` columns array |
+| "empty state" | `ActionCard` with icon + message + CTA |
+| "AI insight", "insight callout" | `InsightCard` + `AskLeoButton` |
+| "confirm dialog", "are you sure" | `Dialog` with `DialogFooter` Cancel + Confirm |
+| "settings panel", "view settings", "filters config" | `Drawer` (not Modal) — preserves context |
+| "status badge", "label" | `Badge` (default/secondary/destructive/outline) |
+| "settings toggle" | `Switch` |
+| "multi-select", "row selection" | `Checkbox` + DataTable `selectedRows` prop |
+| "breadcrumb back" | `SiteHeader` with `breadcrumbs` prop |
+
+## Page Type Decision Tree
+
+```
+Does it show a list/table of records?
+  YES → PrimaryPageTemplate + DataTable
+  NO  → Is it analytics/charts/reports?
+         YES → ReportPageTemplate
+         NO  → Is it a detail view for a specific record?
+                YES → Custom layout (sticky header + Tabs + SectionWithHeader)
+                NO  → Use SectionWithHeader sections inside existing page tab
+```
+
+## Default Assumptions (when not specified)
+
+- **Metrics**: Include 3-4 metrics if the entity has meaningful counts (Total, Active, Pending, Rate)
+- **Tabs**: Default to status-based tabs (Active, Pending, Completed) if not specified
+- **Columns**: Always include: name/title (pinned left) + 2-4 content columns + status badge + actions (pinned right)
+- **Filters**: Filter by Status by default; add 1-2 more for main categorical fields
+- **Mock data**: 15-25 rows using `generateStudentScheduleData` pattern or inline array
+- **Scroll**: List pages = fixed header / scrolling content; Report pages = full-page scroll
+- **Bulk actions**: "Export" always; add domain-specific actions (Send Reminder, Approve, etc.)
+
+## Code Generation Rules
+
+Every file generated MUST follow these rules (no exceptions):
+
+1. **No hardcoded colors** — always `bg-muted`, `text-chart-1`, etc.
+2. **`cn()` for conditionals** — never template literals with ternary
+3. **Full static Tailwind classes** — never `bg-${variable}/10`
+4. **FontAwesomeIcon primary** — Lucide only when FA doesn't have the icon
+5. **Named exports** — `export function PageName()` not default export
+6. **Dates via `formatDate`** from `@/utils/date-utils`
+7. **Navigation via `useAppStore`** — `navigateToPage()`, `navigateToScheduleDetail()`
+8. **Specialization = plain text** — never `<Badge>`
+9. **`ErrorBoundary`** — wrap new page content blocks
+10. **Accessible (WCAG AA)** — `aria-label` on icon-only buttons; add `Tooltip` for hover/focus; `role="region"` + `aria-label` on floating UI; custom tabs need Arrow key handlers; `htmlFor` on all Labels
+
+## File Structure
+
+```
+src/components/pages/{entity-kebab}-page.tsx     ← PrimaryPageTemplate pages
+src/components/pages/{entity-kebab}-detail.tsx   ← Detail views
+src/components/pages/{name}-page.tsx             ← ReportPageTemplate pages
+src/components/shared/{component-name}.tsx       ← New shared composites
+src/data/{domain}-data.ts                        ← Mock data
+```
+
+## When Adding to Existing Pages
+
+1. Read the target file completely before editing
+2. Find where the relevant array/config is defined (columns, metrics, filters, views)
+3. Add the new entry following the existing pattern exactly
+4. Update mock data to include any new fields
+5. Do NOT refactor surrounding code — only add what's needed

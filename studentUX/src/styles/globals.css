@@ -1,0 +1,1326 @@
+/* ==========================================================================
+   EXXAT ONE DESIGN SYSTEM - OPTIMIZED
+   ========================================================================== */
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+
+@import url("https://use.typekit.net/kmo8bbz.css");
+
+/* Font Awesome Pro Kit Integration */
+@import url('https://kit.fontawesome.com/bff072b36d.css');
+
+@custom-variant dark (&:is(.dark *));
+
+/* ==========================================================================
+   DESIGN TOKENS
+   ========================================================================== */
+
+:root {
+  /* Typography - 14px base; 87.5% respects user's browser font-size (accessibility) */
+  font-size: 87.5%; /* 14px when browser default is 16px */
+  --font-size: 1rem;
+  --font-size-20: 1.25rem; /* 20px — detail/sticky titles */
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 0.75rem;
+  --spacing-lg: 1rem;
+  --spacing-xl: 1.5rem;
+  --spacing-2xl: 2rem;
+  --spacing-3xl: 3rem;
+  --spacing-4xl: 4rem;
+
+  /* Border Radius — 4px base scale */
+  --radius-base: 4px;
+  --radius: 8px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 24px;
+
+  /* Brand — Exxat One Lavender (hue 286.1). Canonical surface = provided swatch. */
+  --brand-color-surface: oklch(0.9676 0.016 286.1);
+  --brand-color-light: oklch(0.985 0.009 286.1);
+  --brand-color-soft: oklch(0.915 0.048 286.1);
+  --brand-color: oklch(0.535 0.132 286.1);
+  --brand-color-dark: oklch(0.395 0.105 286.1);
+  --brand-color-deep: oklch(0.28 0.078 286.1);
+  --brand-color-lavender: oklch(0.535 0.132 286.1);
+  --exxat-one-lavender-bg: oklch(0.9676 0.016 286.1);
+  
+  /* Core Colors - OKLCH Format with subtle brand tint */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.26 0.008 286.1);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.95 0.0058 286.1);
+  --secondary-foreground: oklch(0.082 0 0);
+  --muted: oklch(0.945 0.004 286.1);
+  --muted-foreground: oklch(0.55 0.012 286.1);
+  --accent: oklch(0.925 0.012 286.1);
+  --accent-foreground: oklch(0.082 0 0);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(1 0 0);
+  /* Border System — Two sets for different use cases */
+  /* 1. Decorative borders — cards, separators, dividers (no AA requirement) */
+  --border: oklch(0.92 0.004 286.1);
+  /* 2. Field borders — textbox, select, checkbox, etc. */
+  --border-control: oklch(0.82 0.006 286.1); /* Very light grey — subtle, soft border */
+  /* Form field borders — use lighter AA-compliant grey (3:1) by default */
+  --control-border: var(--border-control-3);
+  /* 3. Borders with 3.5:1 contrast against adjacent background (WCAG enhanced) */
+  --border-control-35: oklch(0.25 0.01 286.1);
+  /* 4. Lighter field border — soft grey (≈#90929A). Note: L=0.62 fails WCAG 3:1 for form boundaries. */
+  --border-control-3: oklch(0.6196 0.011 286.1);
+
+  /* Focus ring — 3:1+ contrast on light bg (WCAG 2.4.11) */
+  --ring: oklch(0.25 0 0);
+  --input: oklch(0.82 0.006 286.1);
+  --input-background: oklch(0.97 0.006 286.1);
+
+  /* Elevation shadows — derived from foreground (theme-safe) */
+  --shadow-table-pin-end: 2px 0 8px -2px color-mix(in oklch, var(--foreground) 10%, transparent);
+  --shadow-table-pin-start: -2px 0 8px -2px color-mix(in oklch, var(--foreground) 10%, transparent);
+  --shadow-sticky-bar: 0 -2px 8px color-mix(in oklch, var(--foreground) 8%, transparent);
+  --shadow-modal-deep: 0 -25px 50px -12px color-mix(in oklch, var(--foreground) 35%, transparent),
+    0 50px 80px -20px color-mix(in oklch, var(--foreground) 40%, transparent),
+    0 0 0 1px color-mix(in oklch, var(--foreground) 6%, transparent);
+  --shadow-drawer-elevated: 0 25px 80px -20px color-mix(in oklch, var(--foreground) 50%, transparent),
+    0 10px 40px -15px color-mix(in oklch, var(--foreground) 30%, transparent);
+
+  /* Typography — prefer over raw px in components */
+  --font-size-xs: 0.75rem;
+  --font-size-display-journey: 4rem;
+  --spacing-career-journey-y: 12rem;
+  --spacing-career-journey-y-compact: 3rem;
+
+  /* Outline buttons: no bottom sheen (dark primary mix reads as a heavy shadow on hover) */
+  --button-glow-outline: none;
+  --button-glow-default: radial-gradient(at bottom, color-mix(in oklch, var(--primary-foreground) 22%, transparent), transparent);
+
+  /* Email templates — matches Typekit + page display font */
+  --font-display-email-stack: "ivypresto-display", "ivypresto-headline", Georgia, serif;
+
+  /* Chart Colors */
+  --chart-1: oklch(0.55 0.22 264.116);
+  --chart-2: oklch(0.48 0.15 184.704);
+  --chart-3: oklch(0.32 0.08 227.392);
+  --chart-4: oklch(0.65 0.18 84.429);
+  --chart-5: oklch(0.58 0.18 70.08);
+  --shadow-chart-accent-glow: 0 0 24px 0 color-mix(in oklch, var(--chart-2) 30%, transparent);
+
+  /* Chip Colors — WCAG AA compliant (4.5:1 on light bg). Same hues as chart, darker for text. */
+  --chip-1: oklch(0.38 0.18 264);
+  --chip-2: oklch(0.35 0.14 184);
+  --chip-3: oklch(0.32 0.08 227);
+  --chip-4: oklch(0.42 0.12 84);
+  --chip-5: oklch(0.42 0.14 70);
+  --chip-destructive: oklch(0.40 0.18 25);
+  /* Schedule "Compliant" chip — solid OKLCH (avoid color-mix() here: invalid mix → transparent chip → chart-4 gradient shows as tan) */
+  --schedule-compliant-bg: oklch(0.93 0.055 145);
+
+  /* Exxat Prism promo banner — always rose hue 343 regardless of color theme */
+  --banner-prism-bg: oklch(0.97 0.02 343);
+
+  /* Sidebar — brand surface + tints (hue 286.1) */
+  --sidebar: var(--brand-color-surface);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.082 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.93 0.042 286.1);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.90 0.032 286.1);
+
+  /* Tabs Colors */
+  --tabs-background: oklch(0.75 0 0);
+  --tabs-foreground: oklch(0.145 0 0);
+
+  /* Table Colors */
+  --table-border: oklch(0.32 0.006 286.1);
+  --table-hover: transparent;
+  --table-stripe: oklch(0.18 0 0);
+
+  /* Density — Radix-style scaling. 100% = comfortable, 90% = compact. */
+  --scaling: 1;
+  --density: comfortable;
+  --control-height: calc(40px * var(--scaling));
+  --control-height-sm: calc(32px * var(--scaling));
+  --control-height-touch: 44px; /* WCAG 2.5.5 minimum touch target */
+  --control-padding-y: calc(8px * var(--scaling));
+  --control-padding-x: calc(12px * var(--scaling));
+  --table-row-height: calc(48px * var(--scaling));
+  --table-header-height: calc(48px * var(--scaling));
+  --line-height-dense: 1.5;
+  /* Content rail: 1040px desktop (lg+), 768px tablet (md), full width mobile */
+  --content-max-width-desktop: 1040px;
+  --content-max-width-tablet: 768px;
+  --content-max-width-mobile: 100%;
+  --content-gutter: calc(24px * var(--scaling));
+  --content-gutter-mobile: 1rem;
+
+  /* Transitions */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease-in-out;
+  --transition-colors: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+
+  /* Shadows */
+  --shadow-sm: oklch(0 0 0 / 0.1) 0px 1px 2px 0px;
+  --shadow-md: oklch(0 0 0 / 0.1) 0px 1px 3px 0px, oklch(0 0 0 / 0.1) 0px 1px 2px -1px;
+  --shadow-lg: oklch(0 0 0 / 0.1) 0px 4px 6px -1px, oklch(0 0 0 / 0.1) 0px 2px 4px -2px;
+}
+
+/* Profile card dialog — form field styling
+ * Mobile: 44px (WCAG 2.5.5 touch target). Desktop/tablet: 32px.
+ * Use px (not rem) so heights are correct despite root font-size 87.5%.
+ * Apply `.profile-dialog-field` directly on fields so the rules are not lost
+ * when utility classes are assembled from JS constants.
+ */
+.profile-card-dialog-form {
+  --control-height: 44px;
+  --control-height-sm: 32px;
+  --control-padding-y: 6px;
+}
+@media (min-width: 768px) {
+  .profile-card-dialog-form {
+    --control-height: 32px;
+  }
+}
+.profile-dialog-field {
+  min-height: 44px !important;
+  height: 44px !important;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+  background-color: var(--background) !important;
+  border-color: var(--control-border) !important;
+}
+@media (min-width: 768px) {
+  .profile-dialog-field {
+    min-height: 32px !important;
+    height: 32px !important;
+  }
+}
+
+/* Compact density — 90% scaling for spacing/controls only; typography stays comfortable */
+html[data-density="compact"] {
+  --scaling: 0.9;
+  --density: compact;
+  --line-height-dense: 1.25;
+  /* Tailwind spacing scales with --scaling */
+  --spacing: calc(0.25rem * var(--scaling));
+  /* Typography NOT scaled — keeps fonts readable on Windows / compact */
+  font-size: 87.5%;
+  --font-size: 1rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+}
+
+/* Apply typography to body when compact (same as comfortable) */
+html[data-density="compact"] body {
+  line-height: var(--line-height-dense);
+  font-size: var(--font-size);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   COLOR THEMES (applied via class on <html>)
+   Must have exactly one theme class for selection to work.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Rose Theme — pink hue 343 (explicit, matches :root) */
+.theme-rose {
+  --brand-color-surface: oklch(0.97 0.02 343);
+  --brand-color: oklch(0.57 0.24 342);
+  --brand-color-dark: oklch(0.42 0.24 342);
+  --ring: var(--brand-color-dark);
+  --sidebar: oklch(0.97 0.02 343);
+  --sidebar-accent: oklch(0.945 0.025 343);
+  --sidebar-border: oklch(0.92 0.025 343);
+  --secondary: oklch(0.95 0.012 270);
+  --accent: oklch(0.925 0.015 270);
+  --muted: oklch(0.945 0.008 270);
+}
+
+/* Lavender Theme — matches default lavender sidebar (hue 286.1) */
+.theme-lavender {
+  --brand-color-surface: oklch(0.9676 0.016 286.1);
+  --brand-color-light: oklch(0.985 0.009 286.1);
+  --brand-color-soft: oklch(0.915 0.048 286.1);
+  --brand-color: oklch(0.535 0.132 286.1);
+  --brand-color-dark: oklch(0.395 0.105 286.1);
+  --brand-color-deep: oklch(0.28 0.078 286.1);
+  --brand-color-lavender: oklch(0.535 0.132 286.1);
+  --exxat-one-lavender-bg: oklch(0.9676 0.016 286.1);
+  --ring: var(--brand-color-dark);
+  --sidebar: var(--brand-color-surface);
+  --sidebar-accent: oklch(0.93 0.042 286.1);
+  --sidebar-border: oklch(0.90 0.032 286.1);
+  --secondary: oklch(0.95 0.012 286.1);
+  --accent: oklch(0.925 0.018 286.1);
+  --muted: oklch(0.945 0.01 286.1);
+}
+
+.theme-lavender.dark,
+.dark.theme-lavender {
+  --ring: var(--brand-color);
+  --brand-color-surface: oklch(0.22 0.024 286.1);
+  --brand-color-light: oklch(0.28 0.028 286.1);
+  --brand-color-soft: oklch(0.32 0.034 286.1);
+  --brand-color: oklch(0.72 0.12 286.1);
+  --brand-color-dark: oklch(0.58 0.11 286.1);
+  --brand-color-deep: oklch(0.44 0.09 286.1);
+  --brand-color-lavender: oklch(0.72 0.12 286.1);
+  --background: oklch(0.15 0.006 286.1);
+  --sidebar: oklch(0.20 0.012 286.1);
+  --sidebar-accent: oklch(0.26 0.016 286.1);
+  --sidebar-border: oklch(0.34 0.014 286.1);
+}
+
+/* Sage Theme — cool green hue ~155 */
+.theme-sage {
+  --brand-color-surface: oklch(0.96 0.02 155);
+  --brand-color: oklch(0.55 0.15 155);
+  --brand-color-dark: oklch(0.40 0.15 155);
+  --ring: var(--brand-color-dark);
+  --sidebar: oklch(0.96 0.02 155);
+  --sidebar-accent: oklch(0.935 0.025 155);
+  --sidebar-border: oklch(0.91 0.02 155);
+  --secondary: oklch(0.95 0.01 155);
+  --accent: oklch(0.925 0.012 155);
+  --muted: oklch(0.945 0.006 155);
+}
+
+.theme-sage.dark,
+.dark.theme-sage {
+  --ring: var(--brand-color);
+  --brand-color-surface: oklch(0.24 0.016 155);
+  --background: oklch(0.15 0.008 155);
+  --sidebar: oklch(0.22 0.012 155);
+  --sidebar-accent: oklch(0.28 0.01 155);
+  --sidebar-border: oklch(0.38 0.008 155);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   HIGH CONTRAST MODE
+   - Manual: html[data-contrast="high"]
+   - Auto: @media (prefers-contrast: more) — respects OS "Increase Contrast"
+   - WCAG: Improves legibility for low vision users
+   - forced-colors: active — Windows HCM; browser overrides colors
+   ══════════════════════════════════════════════════════════════ */
+
+/* Manual high contrast toggle */
+html[data-contrast="high"] {
+  --foreground: oklch(0.08 0 0);
+  --muted-foreground: oklch(0.2 0 0);
+  --border: oklch(0.25 0 0);
+  --border-control: oklch(0.2 0 0);
+  --border-control-35: oklch(0.2 0 0);
+  --border-control-3: oklch(0.25 0 0);
+  --ring: oklch(0.08 0 0);
+  --tabs-background: oklch(0.88 0 0);
+  --muted: oklch(0.92 0 0);
+  --input-background: oklch(0.98 0 0);
+  --primary: oklch(0.15 0 0);
+  --accent-foreground: oklch(0.08 0 0);
+}
+
+html[data-contrast="high"].dark {
+  --foreground: oklch(0.99 0 0);
+  --muted-foreground: oklch(0.85 0 0);
+  --border: oklch(0.6 0 0);
+  --border-control: oklch(0.65 0 0);
+  --border-control-35: oklch(0.65 0 0);
+  --border-control-3: oklch(0.7 0 0);
+  --ring: oklch(0.95 0 0);
+  --tabs-background: oklch(0.25 0 0);
+  --muted: oklch(0.28 0 0);
+  --input-background: oklch(0.22 0 0);
+  --primary: oklch(0.95 0 0);
+  --accent-foreground: oklch(0.99 0 0);
+}
+
+/* OS-level "Increase Contrast" (macOS, Windows, etc.) */
+@media (prefers-contrast: more) {
+  :root:not([data-contrast="off"]) {
+    --foreground: oklch(0.08 0 0);
+    --muted-foreground: oklch(0.2 0 0);
+    --border: oklch(0.25 0 0);
+    --border-control: oklch(0.2 0 0);
+    --border-control-35: oklch(0.2 0 0);
+    --border-control-3: oklch(0.25 0 0);
+    --ring: oklch(0.08 0 0);
+  }
+
+  .dark:not([data-contrast="off"]) {
+    --foreground: oklch(0.99 0 0);
+    --muted-foreground: oklch(0.85 0 0);
+    --border: oklch(0.6 0 0);
+    --border-control: oklch(0.65 0 0);
+    --border-control-35: oklch(0.65 0 0);
+    --border-control-3: oklch(0.7 0 0);
+    --ring: oklch(0.95 0 0);
+  }
+
+  /* Structural HC: borders over elevation; hide decorative brand gradients — see docs/design-system/high-contrast-style-guidelines.md */
+  :root:not([data-contrast="off"]) [data-slot="card"] {
+    border-width: 2px;
+    border-color: var(--border);
+  }
+
+  :root:not([data-contrast="off"]) .shadow-sm,
+  :root:not([data-contrast="off"]) .shadow-md,
+  :root:not([data-contrast="off"]) .shadow-lg {
+    box-shadow: none !important;
+  }
+
+  :root:not([data-contrast="off"]) [data-slot="brand-gradient"] {
+    display: none !important;
+  }
+}
+
+/* Manual high contrast — same structural rules as prefers-contrast: more */
+html[data-contrast="high"] [data-slot="card"] {
+  border-width: 2px;
+  border-color: var(--border);
+}
+
+html[data-contrast="high"] .shadow-sm,
+html[data-contrast="high"] .shadow-md,
+html[data-contrast="high"] .shadow-lg {
+  box-shadow: none !important;
+}
+
+html[data-contrast="high"] [data-slot="brand-gradient"] {
+  display: none !important;
+}
+
+/* Windows High Contrast Mode — respect forced colors; box-shadow forced to none */
+@media (forced-colors: active) {
+  :root {
+    --border: CanvasText;
+    --border-control: CanvasText;
+    --border-control-35: CanvasText;
+    --border-control-3: CanvasText;
+    --ring: Highlight;
+  }
+
+  /* Focus must use system Highlight (WCAG 2.4.11 in HCM) */
+  :focus-visible {
+    outline: 2px solid Highlight !important;
+    outline-offset: 2px !important;
+  }
+
+  /* Ensure body and surfaces use system colors */
+  body {
+    background-color: Canvas;
+    color: CanvasText;
+  }
+
+  a {
+    color: LinkText;
+  }
+
+  /* Cards, buttons, inputs need visible borders (box-shadow is forced to none) */
+  [data-slot="card"],
+  .card,
+  .bg-card {
+    border: 1px solid CanvasText;
+  }
+}
+
+/* Dark Mode */
+.dark {
+  --background: oklch(0.15 0.008 342);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  /* Decorative borders — visible but not washed out on dark backgrounds */
+  --border: oklch(0.38 0.01 286.1);
+  --ring: oklch(0.439 0 0);
+  --input: oklch(0.72 0.014 286.1);
+  --input-background: oklch(0.205 0 0);
+  /* Field borders — 3:1 contrast against dark input background */
+  --border-control: oklch(0.72 0.014 286.1);
+  /* Borders with 3.5:1 contrast against dark background */
+  --border-control-35: oklch(0.75 0.014 286.1);
+  /* Lighter field border (dark mode: lighter = higher L for contrast on dark bg) */
+  --border-control-3: oklch(0.78 0.014 286.1);
+  --chart-1: oklch(0.7 0.22 264.376);
+  --chart-2: oklch(0.75 0.15 162.48);
+  --chart-3: oklch(0.78 0.12 227.392);
+  --chart-4: oklch(0.8 0.18 84.429);
+  --chart-5: oklch(0.75 0.18 70.08);
+  --chip-1: oklch(0.72 0.18 264);
+  --chip-2: oklch(0.72 0.14 184);
+  --chip-3: oklch(0.78 0.12 227);
+  --chip-4: oklch(0.78 0.14 84);
+  --chip-5: oklch(0.78 0.16 70);
+  --chip-destructive: oklch(0.72 0.18 25);
+  --sidebar: oklch(0.22 0.015 342);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.28 0.012 342);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.38 0.01 342);
+  --tabs-background: oklch(0.18 0.004 286.1);
+  --tabs-foreground: oklch(0.985 0 0);
+  --table-border: oklch(0.32 0.006 286.1);
+  --table-stripe: oklch(0.18 0 0);
+  --schedule-compliant-bg: oklch(0.34 0.09 145);
+}
+
+/* Tailwind V4 Theme Configuration */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-border-control: var(--border-control);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chip-1: var(--chip-1);
+  --color-chip-2: var(--chip-2);
+  --color-chip-3: var(--chip-3);
+  --color-chip-4: var(--chip-4);
+  --color-chip-5: var(--chip-5);
+  --color-chip-destructive: var(--chip-destructive);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-tabs-background: var(--tabs-background);
+  --color-tabs-foreground: var(--tabs-foreground);
+  --color-brand: var(--brand-color);
+  --color-brand-dark: var(--brand-color-dark);
+  --color-brand-surface: var(--brand-color-surface);
+  --color-brand-light: var(--brand-color-light);
+  --color-brand-soft: var(--brand-color-soft);
+  --color-brand-deep: var(--brand-color-deep);
+  --color-banner-prism: var(--banner-prism-bg);
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 24px;
+  
+  /* Custom font sizes for 14px base - NO DECIMALS */
+  --font-size-xs: 0.857rem;    /* 12px */
+  --font-size-sm: 0.857rem;    /* 12px */
+  --font-size-base: 1rem;      /* 14px */
+  --font-size-lg: 1.143rem;    /* 16px */
+  --font-size-xl: 1.286rem;    /* 18px */
+  --font-size-2xl: 1.5rem;     /* 21px */
+  --font-size-3xl: 1.714rem;   /* 24px */
+  --font-size-4xl: 2rem;       /* 28px */
+  --font-size-20: 1.25rem;    /* 20px — detail titles */
+}
+
+/* Chip utilities — AA-compliant text/border colors (Tailwind may not generate these) */
+@layer utilities {
+  .text-chip-1 { color: var(--chip-1); }
+  .text-chip-2 { color: var(--chip-2); }
+  .text-chip-3 { color: var(--chip-3); }
+  .text-chip-4 { color: var(--chip-4); }
+  .text-chip-5 { color: var(--chip-5); }
+  .text-chip-destructive { color: var(--chip-destructive); }
+  .border-chip-1 { border-color: var(--chip-1); }
+  .border-chip-2 { border-color: var(--chip-2); }
+  .border-chip-3 { border-color: var(--chip-3); }
+  .border-chip-4 { border-color: var(--chip-4); }
+  .border-chip-5 { border-color: var(--chip-5); }
+  .border-chip-destructive { border-color: var(--chip-destructive); }
+  .border-l-chip-3 { border-left-color: var(--chip-3); }
+  .border-l-chip-4 { border-left-color: var(--chip-4); }
+
+  /**
+   * Schedule "Compliant" chip — explicit green hue (not chart-2/teal) + near-black text.
+   * Avoids low-contrast white/light text on mid green (especially on dark surfaces).
+   */
+  /* !important: must beat Tailwind .bg-transparent on JobTag when both classes slip through twMerge */
+  .schedule-status-compliant {
+    /* Fallback first: if var() fails, still get a green tint (not transparent → no tan bleed-through) */
+    background-color: oklch(0.93 0.055 145) !important;
+    background-color: var(--schedule-compliant-bg) !important;
+    color: oklch(0.12 0 0);
+    border-color: oklch(0.36 0.13 145);
+  }
+
+  .dark .schedule-status-compliant {
+    color: oklch(0.96 0 0);
+    border-color: oklch(0.62 0.12 145);
+  }
+
+  /**
+   * Warning icon on red/destructive chips — Font Awesome uses <i>, not <svg>.
+   * High-luminance chart-4 helps protan/deutan users (red/green confusion).
+   */
+  .schedule-status-destructive-warn-icon > i:first-of-type {
+    color: var(--chart-4);
+    filter: drop-shadow(0 0 0.5px oklch(0.2 0 0));
+  }
+}
+
+/* Filled chip backgrounds — My Jobs, Quick Access (Tailwind may not generate /25) */
+.bg-chip-filled-1 { background-color: color-mix(in oklch, var(--chart-1) 25%, transparent); }
+.bg-chip-filled-2 { background-color: color-mix(in oklch, var(--chart-2) 25%, transparent); }
+.bg-chip-filled-3 { background-color: color-mix(in oklch, var(--chart-3) 25%, transparent); }
+.bg-chip-filled-4 { background-color: color-mix(in oklch, var(--chart-4) 25%, transparent); }
+.bg-chip-filled-5 { background-color: color-mix(in oklch, var(--chart-5) 25%, transparent); }
+
+/* Chip border opacity variants */
+.border-chip-1\/40 { border-color: color-mix(in oklch, var(--chip-1) 40%, transparent); }
+.border-chip-2\/40 { border-color: color-mix(in oklch, var(--chip-2) 40%, transparent); }
+.border-chip-3\/40 { border-color: color-mix(in oklch, var(--chip-3) 40%, transparent); }
+.border-chip-4\/40 { border-color: color-mix(in oklch, var(--chip-4) 40%, transparent); }
+.border-chip-5\/40 { border-color: color-mix(in oklch, var(--chip-5) 40%, transparent); }
+.border-chip-destructive\/40 { border-color: color-mix(in oklch, var(--chip-destructive) 40%, transparent); }
+
+/* ==========================================================================
+   BASE STYLES
+   ========================================================================== */
+
+@layer base {
+  html {
+    /* font-size set in :root (87.5%) — respects user browser font-size for accessibility */
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    scroll-behavior: smooth;
+  }
+
+  /* Global focus fallback — 3:1+ contrast (WCAG 2.4.11) */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-weight: var(--font-weight-normal);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Links — underline by default (WCAG 1.4.1: non-color cue for links) */
+  a[href] {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  /* Interactive controls — 3:1 contrast for boundaries (WCAG 1.4.11).
+   * Uses --control-border (default: --border-control-3, lighter grey) not --border-control-35.
+   */
+  input,
+  textarea,
+  select,
+  button:not([role="switch"]) {
+    border-color: var(--control-border);
+  }
+
+  /* Custom Scrollbar Styles */
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: var(--radius-sm);
+    border: 3px solid var(--background);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
+  }
+
+  /* Firefox scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  /* Typography System */
+  :where(:not([class*=" text-"]):not([class^="text-"])) {
+    h1 {
+      font-size: 2rem;
+      font-weight: var(--font-weight-bold);
+      line-height: 1.4;
+      color: var(--foreground);
+      margin: 0;
+    }
+
+    h2 {
+      font-size: 1.75rem;
+      font-weight: var(--font-weight-semibold);
+      line-height: 1.4;
+      color: var(--foreground);
+      margin: 0;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+      color: var(--foreground);
+      margin: 0;
+    }
+
+    h4 {
+      font-size: 1rem;
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+      color: var(--foreground);
+      margin: 0;
+    }
+
+    p, label, button, input, textarea, select, td, th, li {
+      font-size: 1rem;
+      font-weight: var(--font-weight-normal);
+      line-height: 1.5;
+      color: var(--foreground);
+      margin: 0;
+    }
+
+    th, button, label {
+      font-weight: var(--font-weight-medium);
+    }
+
+    small, caption {
+      font-size: 0.875rem;
+      color: var(--muted-foreground);
+    }
+  }
+}
+
+/* ==========================================================================
+   COMPONENTS
+   ========================================================================== */
+
+@layer components {
+  /* Line tabs — active indicator */
+  .tab-line-indicator {
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
+  [data-state="active"] > .tab-line-indicator {
+    opacity: 1;
+  }
+
+  /* Underline tabs — profile-style 2px primary underline on active */
+  .tabs-underline [data-state="active"] {
+    border-bottom: 2px solid var(--primary) !important;
+  }
+
+  /* Sidebar */
+  .sidebar-base {
+    background-color: var(--sidebar);
+    color: var(--sidebar-foreground);
+    border-right: 1px solid var(--sidebar-border);
+    min-height: 100vh;
+    min-height: 100dvh; /* Mobile: dynamic viewport, fixes landscape/address bar */
+  }
+
+  /* Mobile landscape: ensure scrollable content and usable heights */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .sidebar-base {
+      min-height: 100dvh;
+    }
+  }
+
+  [data-sidebar="menu-button"][data-active="true"],
+  [data-sidebar="menu-sub-button"][data-active="true"] {
+    background-color: oklch(1 0 0) !important;
+    color: oklch(0.082 0 0) !important;
+    font-weight: var(--font-weight-semibold) !important;
+  }
+
+  [data-sidebar="menu-button"]:hover:not([data-active="true"]),
+  [data-sidebar="menu-sub-button"]:hover:not([data-active="true"]) {
+    background-color: var(--sidebar-accent) !important;
+    color: oklch(0.082 0 0) !important;
+  }
+
+  .dark [data-sidebar="menu-button"][data-active="true"],
+  .dark [data-sidebar="menu-sub-button"][data-active="true"] {
+    background-color: oklch(0.3 0.006 286.1) !important;
+    color: oklch(0.985 0 0) !important;
+  }
+
+  .dark [data-sidebar="menu-button"]:hover:not([data-active="true"]),
+  .dark [data-sidebar="menu-sub-button"]:hover:not([data-active="true"]) {
+    background-color: oklch(0.3 0.006 286.1) !important;
+    color: oklch(0.985 0 0) !important;
+  }
+
+  /* Tabs */
+  [data-slot="tabs-list"] {
+    background-color: var(--tabs-background);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-xs);
+  }
+
+  [data-slot="tabs-trigger"] {
+    border-radius: var(--radius-sm);
+    font-weight: var(--font-weight-medium);
+    font-size: 1rem;
+    color: var(--muted-foreground);
+    background-color: transparent;
+    transition: all 0.2s ease;
+  }
+
+  [data-slot="tabs-trigger"][data-state="active"] {
+    background-color: oklch(1 0 0);
+    color: var(--foreground);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .dark [data-slot="tabs-trigger"][data-state="active"] {
+    background-color: oklch(0.3 0.006 286.1);
+    color: oklch(0.985 0 0);
+  }
+
+  /* Enhanced Checkbox — High visibility (3.5:1 contrast, WCAG AA) */
+  button[role="checkbox"] {
+    border: 1.5px solid var(--border-control-35) !important;
+    border-radius: var(--radius-sm) !important;
+    width: 16px !important;
+    height: 16px !important;
+    background-color: var(--background) !important;
+  }
+
+  button[role="checkbox"][data-state="checked"] {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+  }
+
+  button[role="checkbox"]:focus-visible {
+    outline: 2px solid var(--ring) !important;
+    outline-offset: 2px !important;
+  }
+
+  /* Data Table Styles */
+  .data-table-header {
+    background-color: var(--muted);
+  }
+
+  .dark .data-table-header {
+    background-color: oklch(0.22 0.006 286.1);
+  }
+
+  /* Clickable table links — underline by default (WCAG 1.4.1: non-color cue) */
+  .data-table-clickable {
+    color: var(--accent-foreground);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: opacity 0.15s ease;
+  }
+
+  .data-table-clickable:hover {
+    opacity: 0.8;
+  }
+
+  .data-table-clickable:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+    border-radius: var(--radius-sm);
+  }
+
+  /* Display font utility — IvyPresto Headline only (no Georgia/serif fallbacks) */
+  .font-display {
+    font-family: "ivypresto-headline" !important;
+    font-weight: 300 !important; /* Light weight for page titles — consistent across app */
+  }
+  .font-display.font-display-bold {
+    font-weight: 700 !important;
+  }
+  .font-display.font-display-light {
+    font-weight: 300 !important;
+  }
+
+  /* Hero header — Ivy font, 40px, bold, foreground (Welcome, landing hero) */
+  .hero-header {
+    font-family: "ivypresto-headline" !important;
+    font-weight: 700 !important;
+    font-size: 2.5rem; /* 40px */
+    line-height: 1.2;
+    letter-spacing: -0.08px;
+    color: var(--foreground);
+  }
+
+  /* Page title — Ivy font, 32px, light weight, foreground (hero: Home, Jobs, Schedule) */
+  .page-title {
+    font-family: "ivypresto-headline" !important;
+    font-weight: 300 !important;
+    font-size: 2rem; /* 32px */
+    line-height: 1.2;
+    color: var(--foreground);
+  }
+
+  /* Page title (list/detail) — Ivy font, 24px, light weight, foreground */
+  .page-title-sm {
+    font-family: "ivypresto-headline" !important;
+    font-weight: 300 !important;
+    font-size: 1.5rem; /* 24px */
+    line-height: 1.3;
+    color: var(--foreground);
+  }
+
+  /* Promo/card title — Ivy font, 24px, light weight, foreground (matches page-title-sm) */
+  .promo-card-title {
+    font-family: "ivypresto-headline" !important;
+    font-weight: 300 !important;
+    font-size: 1.5rem; /* 24px */
+    line-height: 1.3;
+    color: var(--foreground);
+  }
+
+  /* font-serif also uses Ivy (no Georgia/serif fallbacks) */
+  .font-serif {
+    font-family: "ivypresto-headline" !important;
+  }
+
+  .font-extrabold {
+    font-weight: var(--font-weight-extrabold) !important;
+  }
+
+  /* Detail/sticky page title — 20px (between text-xl and text-2xl) */
+  .text-detail-title {
+    font-size: var(--font-size-20);
+  }
+
+  /* Tab underline — active indicator (matches tabs-underline) */
+  .tab-active-underline {
+    border-bottom: 2px solid var(--primary);
+  }
+
+  /* Map preview iframe — subtle desaturation for embedded maps */
+  .map-preview-filter {
+    filter: saturate(0.6) brightness(1.08) contrast(0.95);
+  }
+
+  /* Card title min-height — consistent line-clamp height for 2-line titles */
+  .min-h-title {
+    min-height: 2.75rem;
+  }
+  @media (min-width: 768px) {
+    .min-h-title {
+      min-height: 3.25rem;
+    }
+  }
+
+  /* Content rail — responsive max-width for consistent layout
+   * Mobile (<768px): full width, 16px gutters
+   * Tablet (768–1023px): 768px max
+   * Desktop (≥1024px): 1040px max
+   */
+  .content-rail {
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+    max-width: var(--content-max-width-mobile);
+    padding-left: var(--content-gutter-mobile);
+    padding-right: var(--content-gutter-mobile);
+  }
+  @media (min-width: 768px) {
+    .content-rail {
+      max-width: var(--content-max-width-tablet);
+      padding-left: var(--content-gutter);
+      padding-right: var(--content-gutter);
+    }
+  }
+  @media (min-width: 1024px) {
+    .content-rail {
+      max-width: var(--content-max-width-desktop);
+    }
+  }
+  /* Jobs page — wider content, side space matches top padding (p-4/p-6) */
+  .jobs-page .content-rail {
+    max-width: min(1400px, 96vw);
+  }
+  /* Schedule page — wider boards for Upcoming / In-Process / Completed columns */
+  .schedule-page .content-rail {
+    max-width: min(1400px, 96vw);
+  }
+  /* Submit preferences map view — full bleed, no page scroll (cards scroll internally) */
+  .schedule-page .content-rail:has(.map-full-bleed) {
+    max-width: none;
+    padding-left: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    gap: 0;
+    overflow: hidden;
+    flex: 1 1 0;
+    min-height: 0;
+  }
+  /* Map view container — fill remaining height so cards/map can scroll internally */
+  .map-full-bleed .map-view-fill {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+  /* Welcome page template — 1200px desktop, 900px tablet for two-column + image */
+  .welcome-page-template .content-rail {
+    max-width: var(--content-max-width-mobile);
+  }
+  @media (min-width: 768px) {
+    .welcome-page-template .content-rail {
+      max-width: 900px;
+    }
+  }
+  @media (min-width: 1024px) {
+    .welcome-page-template .content-rail {
+      max-width: 1200px;
+    }
+  }
+}
+
+/* Minimum font size: 12px across the app (accessibility) — unlayered to override Tailwind */
+.text-xs {
+  font-size: 12px !important;
+}
+
+/* Ensure no font size goes below 12px — override arbitrary small sizes */
+.text-\[10px\],
+.text-\[11px\] {
+  font-size: 12px !important;
+}
+
+/* Top bar — fixed 40px height */
+.top-bar,
+[data-top-bar] {
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+}
+
+/* Safari: fix logo sizing — ensure img respects height and uses auto width */
+@supports (-webkit-touch-callout: none) {
+  [data-exxat-logo] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    width: fit-content !important;
+  }
+  [data-exxat-logo] img {
+    height: 100% !important;
+    width: auto !important;
+    object-fit: contain !important;
+  }
+}
+
+/* ButtonGroup — connect child buttons (strip inner radii + duplicate borders) */
+[data-slot="button-group"]:not([data-orientation="vertical"]) > *:not(:first-child) {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-left-width: 0 !important;
+}
+[data-slot="button-group"]:not([data-orientation="vertical"]) > *:not(:last-child) {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+[data-slot="button-group"][data-orientation="vertical"] > *:not(:first-child) {
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+  border-top-width: 0 !important;
+}
+[data-slot="button-group"][data-orientation="vertical"] > *:not(:last-child) {
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+/* Grouped button selected state — mostly surface + hint of brand (Discover/My Jobs, Schedule/Wishlist) */
+.grouped-button-selected {
+  background-color: color-mix(in oklch, var(--brand-color-surface) 82%, var(--brand-color) 18%);
+}
+
+/* Skip to content — WCAG 2.4.1 Bypass Blocks (Level A). Visible on keyboard focus. */
+.skip-to-content {
+  position: absolute;
+  top: -100%;
+  left: 0.5rem;
+  z-index: 9999;
+  padding: 0.5rem 1rem;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  box-shadow: var(--shadow-md);
+  transition: top 0.2s ease;
+}
+.skip-to-content:focus {
+  top: 0.5rem;
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Home page: gap between sections (To Do, Career Opportunities, etc.) — matches gap-12 */
+.home-sections-gap {
+  gap: 3rem !important; /* 48px = gap-12 */
+}
+
+/* Auth / marketing hero — chart + surface tokens */
+.login-hero-bg {
+  background-image:
+    radial-gradient(2115.19% 433.84% at 50.9% 425%, transparent 57.94%, color-mix(in oklch, var(--muted) 90%, var(--background)) 100%),
+    linear-gradient(
+      89deg,
+      color-mix(in oklch, var(--chart-1) 48%, var(--card)) -3.47%,
+      color-mix(in oklch, var(--chart-4) 42%, var(--card)) 14.97%,
+      color-mix(in oklch, var(--chart-5) 38%, var(--card)) 76.29%,
+      color-mix(in oklch, var(--chart-2) 42%, var(--card)) 92.43%
+    );
+}
+
+/* Home career journey — display size + muted tint */
+.text-journey-headline {
+  font-size: var(--font-size-display-journey);
+  color: color-mix(in oklch, var(--muted-foreground) 65%, var(--background));
+}
+
+/* Jobs discover banner — chart + surface tokens */
+.jobs-banner {
+  min-height: 88px;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  background-color: color-mix(in oklch, var(--card) 92%, var(--muted));
+  background-image: linear-gradient(
+      226deg,
+      transparent -147.31%,
+      color-mix(in oklch, var(--card) 88%, transparent) 48.49%
+    ),
+    linear-gradient(
+      53deg,
+      color-mix(in oklch, var(--chart-1) 42%, var(--card)) 34%,
+      color-mix(in oklch, var(--chart-4) 38%, var(--card)) 56%,
+      color-mix(in oklch, var(--chart-5) 35%, var(--card)) 77%,
+      color-mix(in oklch, var(--chart-2) 38%, var(--card)) 97%
+    );
+  isolation: isolate;
+}
+
+/* Job detail — profile CTA strip (warm neutral from card + chart accent) */
+.job-profile-cta-gradient {
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklch, var(--card) 55%, transparent) 0%,
+    var(--card) 40%,
+    color-mix(in oklch, var(--chart-4) 16%, var(--card)) 100%
+  );
+}
+
+.shadow-table-pin-end {
+  box-shadow: var(--shadow-table-pin-end);
+}
+.shadow-table-pin-start {
+  box-shadow: var(--shadow-table-pin-start);
+}
+.shadow-sticky-bar {
+  box-shadow: var(--shadow-sticky-bar);
+}
+/* Banner text offset — clears left illustration on desktop only */
+@media (min-width: 768px) {
+  .jobs-banner .jobs-banner-text {
+    margin-left: 200px;
+  }
+}
+@media (min-width: 1024px) {
+  .jobs-banner .jobs-banner-text {
+    margin-left: 220px;
+  }
+}
+
+/* Jobs search bar — shared styling for consistency (border, height, shape) */
+.search-bar-height {
+  height: var(--control-height);
+}
+.jobs-search-bar {
+  border: 1px solid var(--control-border) !important;
+  border-radius: var(--radius-lg);
+  background-color: var(--background) !important;
+  padding-inline: calc(var(--control-padding-x) / 2);
+  /* Allow in-pill Search button + focus ring to paint past the pill edge */
+  overflow: visible;
+}
+
+/* Home cards: profile 1.5x width, all 3 in same row, equal height */
+/* Mobile: fixed row height to prevent huge cards */
+.home-cards-grid {
+  height: auto;
+  grid-auto-rows: minmax(90px, 1fr);
+}
+@media (max-width: 639px) {
+  .home-cards-grid {
+    grid-auto-rows: 165px;
+  }
+}
+@media (min-width: 640px) {
+  .home-cards-grid {
+    height: 220px;
+    grid-auto-rows: unset;
+    grid-template-columns: 1.5fr 1fr 1fr;
+  }
+}
+
+/* Mobile: gap between profile card and product cards */
+@media (max-width: 767px) {
+  .home-cards-mobile .home-product-cards-grid {
+    margin-top: 1.5rem;
+  }
+}
+
+/* Mobile product cards: enforce height via media query (matches useIsMobile 768px) */
+@media (max-width: 767px) {
+  .home-product-cards-grid {
+    grid-auto-rows: 185px !important;
+  }
+  .home-product-card {
+    height: 185px !important;
+    max-height: 185px !important;
+  }
+}
+
+/* Radio group — shadcn-style: hollow circle unselected, filled circle with white dot when selected */
+[data-slot="radio-group-item"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+[data-slot="radio-group-item"][data-state="checked"] {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+/* Filter chip — selected state: black background */
+.filter-chip-selected {
+  background-color: var(--foreground) !important;
+  border-color: var(--foreground) !important;
+  color: var(--background) !important;
+}
+.filter-chip-selected:hover {
+  opacity: 0.9;
+}
+.filter-chip-selected button {
+  color: var(--background) !important;
+}
+
+/* Home page slide-up from bottom — used when transitioning from welcome */
+@keyframes home-slide-up-from-bottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.home-slide-up-from-bottom {
+  animation: home-slide-up-from-bottom 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Schedule card — gradient accent for due date near (chart-4) and overdue (destructive), bottom to top */
+.schedule-card-due-near {
+  background-image: linear-gradient(
+    to top,
+    color-mix(in oklch, var(--chart-4) 12%, transparent) 0%,
+    transparent 40%
+  );
+  background-origin: border-box;
+}
+.schedule-card-overdue {
+  background-image: linear-gradient(
+    to top,
+    color-mix(in oklch, var(--destructive) 10%, transparent) 0%,
+    transparent 40%
+  );
+}
+
+/* Schedule card — blue gradient when has updates (hasUpdates or unread messages) */
+.schedule-card-has-updates {
+  background-image: linear-gradient(
+    to top,
+    color-mix(in oklch, var(--chart-1) 12%, transparent) 0%,
+    transparent 40%
+  );
+  background-origin: border-box;
+}
+
+/* Schedule card — match sidebar background on hover (when clickable) */
+.schedule-card-hover:hover {
+  background-color: var(--sidebar);
+}
+
+/* Update indicator dot — blue gradient, same style as due date near card (to top, chart-1) */
+.update-dot-gradient {
+  background: linear-gradient(
+    to top,
+    color-mix(in oklch, var(--chart-1) 60%, black) 0%,
+    var(--chart-1) 50%,
+    color-mix(in oklch, var(--chart-1) 85%, white) 100%
+  );
+}
+
+/* Safari / WebKit: stop automatic text inflation on some hosts (can look like ~150% zoom on Mac).
+ * Must stay unlayered and late in the bundle so it wins over Tailwind @layer base. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}

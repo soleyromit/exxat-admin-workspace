@@ -1,0 +1,17 @@
+---
+description: ListPageTemplate — shared table state across views, mock + KPI helpers, dashboard tab
+alwaysApply: true
+---
+
+# Exxat DS — list page connected views
+
+**Authoritative detail:** **`exxat-ds/AGENTS.md` §4.1** and **`exxat-ds/docs/data-views-pattern.md`** (mock data, connected views, dashboard view).
+
+## When building `ListPageTemplate` + data client
+
+1. **One `useTableState` per tab’s table** — Pass full mock/API rows into a single table component; **`list` / `board` / `dashboard`** surfaces consume **`tableState.rows`** (same filters/search/sort as the grid).
+2. **`renderContent`** — Always pass **`view={tab.viewType}`**; use **`key={tab.id}`** (not `viewType`) so switching views does not reset table state. Pass **`onViewChange`** into the table component so **`TablePropertiesDrawer`** stays aligned (**`currentView`** + **`updateTab({ viewType, icon: dataListViewIcon(viewType) })`** — see **`exxat-ds/AGENTS.md` §4.2** and **`.cursor/rules/exxat-table-properties-drawer.mdc`**).
+3. **Mock data** — Typed arrays in **`lib/mock/<entity>.ts`**; KPI builders in **`lib/mock/<entity>-kpi.ts`** returning **`MetricItem[]`** / **`MetricInsight`** from **`@/components/key-metrics`**.
+4. **Dashboard view tab** — Use **`KeyMetrics`** (`variant="flat"` or `"card"`) and the **same** KPI functions with **`tableState.rows`**. Do **not** add standalone `Card` metric grids that duplicate those numbers. For chart-heavy dashboards reuse **`ChartsOverview`** / **`DashboardTabs`** patterns from the main dashboard route when appropriate.
+5. **MUST NOT** ship “not wired” / “switch to table” placeholders for list/board/dashboard when the stack supports those views.
+6. **MUST NOT** add a **primary nav** destination that is only placeholder copy with no **`ListPageTemplate`** hub, mock rows, and wired views — see **`exxat-ds/AGENTS.md` §4.1** (no empty hubs).

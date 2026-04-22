@@ -1,0 +1,53 @@
+---
+description: Page and section template patterns (product-agnostic)
+globs: src/components/pages/**/*.tsx
+alwaysApply: false
+---
+
+# Page & Section Patterns
+
+Full docs: `docs/design-system/patterns.md` and `docs/design-system/composites.md`
+
+## Page Structure
+
+- List/pipeline pages: use `PrimaryPageTemplate`.
+- Dashboard/overview: compose `MapSection`, `KeyMetricsShowcase`, `PendingApprovalChartCard`, `AlertsSection`.
+- Section wrapper: `px-4 lg:px-6 space-y-4`; `gap-12` between sections.
+
+## Key Metrics — Full Width, No Margins
+
+- `KeyMetricsShowcase` must be full width with no horizontal margins.
+- Do not add margin-left, margin-right, or wrapper margins. Keep padding (`px-4 lg:px-6`) inside the component.
+
+## Page Scroll
+
+- **List pages** (DataTable): default — only tab content scrolls.
+- **Content pages** (Reports, dashboard-style sections): `fullPageScroll` — whole page scrolls as one unit.
+- Do not add `overflow-auto` to tab content when using `fullPageScroll`.
+
+## Tabs — Consistent Pattern
+
+- `TabsList`: `flex-nowrap w-max` (or `w-fit`)
+- `TabsTrigger`: icon + label (+ optional Badge for counts)
+- `TabsContent`: `m-0`; add `pt-6` for content spacing
+
+## Report Tabs (ReportPageTemplate)
+
+- **Underline variant:** `TabsList` bg-transparent, `TabsTrigger` border-b-2, active = border-primary
+- **Config:** `ReportPageViewConfig` — name, id, icon, optional description (tooltip), optional count
+- **Labels:** Dashboard, Analytics, Charts, Media, Reports (semantic names)
+
+## Sections
+
+- Use `SectionWithHeader` — don't build custom section headers.
+- `variant="withFilter"` when a filter (Select, etc.) appears on the right.
+
+## Metrics
+
+- Use `KeyMetricsShowcase` for metric grids with optional insight card.
+- Ratio: ~70% metrics, ~30% insight when both present.
+
+## Charts
+
+- Use `PendingApprovalChartCard` for bar, pie, donut, line, area charts.
+- Use Recharts with `ResponsiveContainer`; chart-token colors only.

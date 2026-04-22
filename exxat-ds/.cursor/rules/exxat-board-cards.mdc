@@ -1,0 +1,26 @@
+---
+description: Exxat DS — board (kanban) cards; ListPageBoardCard, badges, primitives
+alwaysApply: true
+---
+
+# Exxat DS — board cards
+
+**Authoritative detail:** **`exxat-ds/AGENTS.md` §4.4** and **`.cursor/skills/exxat-board-cards/SKILL.md`**.
+
+## MUST
+
+1. **Shell** — Use **`ListPageBoardCard`** from **`components/data-views/list-page-board-card.tsx`** for product board cards (same **`Card` `size="sm"`** treatment as Placements).
+2. **Hierarchy** — **Title** (`ListPageBoardCardTitleRow`) → optional **avatar** (`ListPageBoardCardAvatar` on `trailing`) → **status row** (`ListPageBoardCardBadgeRow` + **`ListHubStatusBadge`** **`surface="board"`**) when the entity has status → **body** (`ListPageBoardCardBody`) with **`BoardCardTwoLineBlock`** / **`BoardCardIconRow`** (**`components/data-views/board-card-primitives.tsx`**).
+3. **Status** — **Placements** (**`PLACEMENT_STATUS_*`** + **`StatusBadge`** in **`data-list-table-cells.tsx`**), **Team / Compliance / Question bank** (**`ListHubStatusBadge`** + entity maps): all labels/tints/icons live in **`lib/list-status-badges.ts`**. **`surface="table"`** in grid/list rows, **`surface="board"`** on kanban cards. Prefer semantic **`LIST_HUB_STATUS_TINT_*`**. **MUST NOT** use **`uppercase`** on those chips.
+4. **Simple column boards** — **`ListPageBoardTemplate`** + **`renderCard`**; compose **`ListPageBoardCard`** inside **`renderCard`**.
+
+## MUST NOT
+
+- Duplicate **`ListPageBoardCard`** with ad-hoc **`<button>`** + border/padding classes for the same hub pattern.
+- Show **status** only as plain text in the **body** when the hub uses **status** elsewhere — use the **badge row** + shared maps.
+
+## See also
+
+- **`exxat-ds/AGENTS.md` §4.4**, **§13** checklist
+- **`exxat-ds/docs/data-views-pattern.md`** — Board UI reuse
+- **`lib/initials-from-name.ts`** — owner initials when mock has no `initials` field

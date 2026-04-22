@@ -1,0 +1,72 @@
+---
+description: Exxat One School product conventions (navigation, data, business rules)
+globs: src/**/*.tsx, src/**/*.ts
+alwaysApply: false
+---
+
+# Product Conventions
+
+Full docs: `docs/product/` · AI instruction file: `CLAUDE.md` · Registry: `src/design-system/registry.ts`
+
+## Program Context
+
+- App operates within a single selected program (PT, Nursing, OT).
+- **Never** show discipline columns/filters — it's implicit from program selection.
+- Show specialization when relevant (as plain text, never as Badge).
+
+## Dates
+
+- All dates: MM/DD/YYYY using `formatDate(date)` from `@/utils/date-utils`.
+- Date ranges: `03/15/2024 – 05/10/2024`.
+- Never use `toLocaleDateString()` directly.
+
+## State Management
+
+- Use `useAppStore` (Zustand) for navigation and global app state.
+- Keep component-local state (form, UI toggles, tab) as React `useState`.
+- Navigation: `useAppStore.getState().navigateToPage("PageName")`.
+- Leo AI: `useAppStore.getState().openLeoPanelWithQuery("query string")`.
+
+## Navigation
+
+- Sidebar primary/pipeline/supporting groups = top-level pages.
+- In-page tabs = status filters (Requested, Approved, Completed) or view types.
+- Detail pages: parent nav item stays active. Use breadcrumbs in SiteHeader.
+- Back navigation: `navigateBackFromScheduleDetail()` or `navigateToPage()`.
+
+## Data Tables
+
+- Specialization: plain text — **never** `<Badge>` or chip.
+- Row links: `text-chart-1` — never non-theme blues or underlines without hover.
+- Tables with 8+ columns: pin first identifier column left, last action column right.
+- Row click → navigate to detail page (never inline expand in list view).
+- Empty state: `ActionCard` with message + CTA — never bare empty `<tbody>`.
+
+## Page Patterns (Quick Reference)
+
+```
+List page     → PrimaryPageTemplate + DataTable + FilterBar + KeyMetricsShowcase
+Report page   → ReportPageTemplate + SectionWithHeader + ChartAreaInteractive
+Detail page   → Custom layout: sticky header + Tabs + SectionWithHeader sections
+New section   → SectionWithHeader wrapper + content + InsightCard + AskLeoButton
+```
+
+## Adding New Pages (Checklist)
+
+1. `src/components/pages/{entity-kebab}-page.tsx` — create with named export
+2. `src/App.tsx` — add `React.lazy()` import + `case "PageName":` in `renderContent()`
+3. `src/components/layout/app-sidebar.tsx` — add to `navMain` or `support` array
+4. `src/data/{domain}-data.ts` — add mock data if needed
+5. Update `src/design-system/registry.ts` if creating a reusable composite
+
+## AI Prompt Patterns (for PMs/Designers)
+
+See `docs/prompt-templates/` for full copy-paste prompts. Short versions:
+
+```
+"Create a PrimaryPageTemplate list page for [Entity] with tabs [T1,T2,T3] and columns [C1,C2,C3,Status]"
+"Add a [FieldName] filter to [page-file].tsx with options [O1,O2,O3]"
+"Add a [ColumnName] column (type: badge|date|text|link) to the DataTable in [page-file].tsx"
+"Create a ReportPageTemplate page titled [Name] with tabs [T1,T2] and a chart showing [data]"
+"Add a SectionWithHeader section titled [Title] to the [Tab] tab of [page-file].tsx"
+```

@@ -1,0 +1,31 @@
+---
+description: Exxat DS — follow AGENTS.md; DataTable, ListPageTemplate, primary hubs, export, Kbd
+alwaysApply: true
+---
+
+# Exxat DS — AI handbook (binding)
+
+**App location:** `exxat-ds/` when the workspace is the repo root; if you opened **only** the app folder as the workspace, you are already inside it.
+
+**Read `AGENTS.md`:** `exxat-ds/AGENTS.md` from the monorepo root, or `./AGENTS.md` at the workspace root when the workspace is the app folder only (same file).
+
+Before implementing or reviewing **list / table / board / dashboard / data-heavy** pages, read **AGENTS.md** (rule precedence, MUST/MUST NOT, file references, §4.1–§4.4, **§6.4** page vs drawer, **§6.5** no toast, §7.1 command palette, §13 checklist).
+
+## Non‑negotiables (if anything conflicts, open AGENTS.md §12–§13)
+
+1. **Product data lists** → `DataTable` + search + shared filters + `TablePropertiesDrawer` — not raw `<table>` / ui `Table` alone / ad-hoc grids. With **`ListPageTemplate`** view tabs, pass **`currentView`** + **`onViewChange`** into **`TablePropertiesDrawer`** (**`AGENTS.md` §4.2**, **`.cursor/rules/exxat-table-properties-drawer.mdc`**).
+2. **Main `DataTable` surface** → wrapped in **`ListPageTemplate`** (view tabs). All tab view types share **`useTableState`**; list/board/dashboard read **`tableState.rows`**. Reference: `DataListClient`, `TeamClient`, `TeamTable`.
+3. **Do not double-indent** the toolbar/table — avoid extra `px`/`mx` wrappers around `DataTable` when it already applies horizontal inset.
+4. **Primary hub + large/complex data** → same composition as Placements/Team: `ListPageTemplate` + metrics/export pattern as in `DataListClient` / `TeamClient`, not `PageHeader`-only. **Do not** ship empty or “replace later” placeholder pages for nav-linked hubs (**`AGENTS.md` §4.1**).
+5. **Exportable pages** → filled primary CTA; **⋯** menu with Export → `ExportDrawer` pattern (see `PlacementsPageHeader`).
+6. **Keyboard hints** → `.cursor/rules/exxat-kbd-shortcuts.mdc`; pair hints with behavior.
+7. **Accessibility** → `.cursor/rules/exxat-accessibility.mdc` + **`exxat-ds/AGENTS.md` §8** + `.cursor/skills/exxat-accessibility/SKILL.md`.
+8. **Data view dashboard charts** → **`exxat-ds/AGENTS.md` §4.3** + **`exxat-ds/.cursor/rules/exxat-dashboard-view-charts.mdc`** (centralized storage, `chart-keyboard-selection`, `ChartFigure`).
+9. **Board (kanban) cards** → **`exxat-ds/AGENTS.md` §4.4** + **`exxat-board-cards.mdc`** + **`.cursor/skills/exxat-board-cards/SKILL.md`** (`ListPageBoardCard`, **`ListHubStatusBadge`** + **`lib/list-status-badges.ts`**, primitives).
+10. **No toast** → **`exxat-ds/AGENTS.md` §6.5** + **`exxat-no-toast.mdc`** — do not use **`toast()`** / Sonner / snackbars for product messaging; use banners, inline status, or dialogs.
+
+## Also read
+
+- `exxat-ds/docs/data-views-pattern.md` — architecture narrative (from monorepo root); or `docs/data-views-pattern.md` from app workspace. Includes **Page vs drawer** (§6.4 in `AGENTS.md`) and **board UI** (§4.4).
+- `exxat-ds/docs/command-menu-pattern.md` — global ⌘K palette (search + quick AI vs Ask Leo).
+- `.cursor/rules/exxat-data-tables.mdc`, `exxat-list-page-connected-views.mdc`, `exxat-table-properties-drawer.mdc`, **`exxat-board-cards.mdc`**, **`exxat-page-vs-drawer.mdc`**, **`exxat-no-toast.mdc`**, **`exxat-command-menu.mdc`**, `exxat-kbd-shortcuts.mdc`, `exxat-accessibility.mdc` at repo root; **`exxat-ds/.cursor/rules/exxat-dashboard-view-charts.mdc`** for Data tab charts.

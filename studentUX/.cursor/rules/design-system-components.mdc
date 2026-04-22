@@ -1,0 +1,100 @@
+---
+description: Design system tokens, components, and styling rules (product-agnostic)
+globs: src/components/**/*.tsx
+alwaysApply: false
+---
+
+# Design System
+
+Full docs: `docs/design-system/` · Live catalog: Design System page in the app · Registry: `src/design-system/registry.ts`
+
+## Component Registry
+
+```typescript
+import { registry, findComponents, getComponent } from "@/design-system/registry"
+// Find components by tag: findComponents({ tags: ["table"] })
+// Get props + examples: getComponent("primary-page-template")
+```
+
+## Component Selection Guide
+
+| Need | Use |
+|------|-----|
+| Any list/table page | `PrimaryPageTemplate` from `@/components/shared/primary-page-template` |
+| Any report/analytics page | `ReportPageTemplate` from `@/components/shared/report-page-template` |
+| Data table | `DataTable` from `@/components/shared/data-table` |
+| Active filters UI | `FilterBar` from `@/components/shared/filter-bar` |
+| KPI metrics row | `KeyMetricsShowcase` from `@/components/shared/key-metrics-showcase` |
+| Single metric | `MetricCard` from `@/components/shared/metric-card` |
+| Section with title | `SectionWithHeader` from `@/components/shared/section-with-header` |
+| Empty state / CTA | `ActionCard` from `@/components/shared/action-card` |
+| AI insight callout | `InsightCard` from `@/components/shared/insight-card` |
+| Open Leo AI | `AskLeoButton` from `@/components/shared/ask-leo-button` |
+| Buttons | `Button` variants: default / outline / secondary / ghost / destructive / link |
+| Status labels | `Badge` variants: default / secondary / destructive / outline |
+| Content container | `Card` + `CardHeader` + `CardContent` with `rounded-xl border` |
+| Settings / filters panel | `Drawer` from `@/components/shared/drawer` |
+| Confirmations, short forms | `Dialog` (Modal) |
+
+**Drawer vs Modal vs Full page:** See `docs/design-system/patterns.md` — Use Drawer for settings/filters (context preserved); Modal for confirmations/short forms; Full page for complex forms/detail views.
+
+## Tokens
+
+- Use Tailwind utilities from design tokens — `text-primary`, `bg-muted`, `rounded-xl`, `gap-6`, `px-4 lg:px-6`.
+- Never hardcode colors (`#E31C79`, `text-blue-500`, `oklch(...)` inline).
+- Page padding: `px-4 lg:px-6`. Section gaps: `gap-12`. Card padding: `px-6 pt-6 pb-6`.
+- Chart colors only for data viz: `bg-chart-1` through `bg-chart-5`.
+- Link-style text: `text-chart-1` (never non-theme blues).
+
+## Conditional Classes
+
+Always use `cn()` — never template literal concatenation:
+
+```tsx
+// ✅
+<div className={cn("p-4 rounded-lg", isUser ? "bg-primary" : "bg-muted")} />
+// ❌
+<div className={`p-4 rounded-lg ${isUser ? "bg-primary" : "bg-muted"}`} />
+```
+
+For status/trend colors, use a mapping object:
+```tsx
+const STATUS_COLOR = {
+  active: "bg-chart-1/10 text-chart-1",
+  pending: "bg-muted text-muted-foreground",
+  overdue: "bg-destructive/10 text-destructive",
+} as const;
+```
+
+## Dynamic Tailwind
+
+Never use dynamic class fragments — pass full static class strings:
+```tsx
+// ❌  <div className={`bg-${color}/10`} />
+// ✅  <div className={cn("rounded-lg", item.bgColor)} />  // item.bgColor = "bg-destructive/10"
+```
+
+## Icons
+
+- Font Awesome (primary): `<FontAwesomeIcon name="home" weight="regular" />`
+- Lucide (secondary, only when FA doesn't have it): `import { Search } from "lucide-react"`
+- Sizes: `h-4 w-4` (default), `h-3.5 w-3.5` (compact), `h-5 w-5` (medium)
+- Decorative icons: `aria-hidden="true"`
+- Active nav icons: `weight="solid"`, inactive: `weight="regular"`
+
+## Accessibility (WCAG 2.1 AA)
+
+- **Icon-only buttons:** `aria-label` required; add `Tooltip` for hover/focus context. Decorative icons: `aria-hidden="true"`.
+- **Regions:** Floating UI (bulk bar, panels): `role="region"` + `aria-label`.
+- **Tabs:** Custom tabs need `tabIndex`, `aria-selected`, Arrow key handlers (`onKeyDown`).
+- **Forms:** Visible `<label>` with `htmlFor`/`id`, or `aria-label` on search. `Select` triggers: `aria-label`.
+- **Focus:** Never remove focus ring. Use `focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`.
+- **Contrast:** 4.5:1 text, 3:1 UI controls. Touch targets ≥ 44×44px.
+- Full guide: `docs/design-system/accessibility.md`.
+
+## Data Display Rules
+
+- Specialization: plain text — **never** `<Badge>`.
+- Dates: `formatDate(value)` from `@/utils/date-utils` — always MM/DD/YYYY.
+- Tables with 8+ columns: auto-suggest pinning (first identifier left, last action right).
+- Row click → detail navigation (never open inline edit in list view).

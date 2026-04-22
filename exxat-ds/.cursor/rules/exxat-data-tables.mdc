@@ -1,0 +1,31 @@
+---
+description: Exxat DS — product data tables must use DataTable with search, filters, and table properties; no alternate table stacks.
+alwaysApply: true
+---
+
+# Exxat DS — data tables (mandatory pattern)
+
+## Use one stack for product data lists
+
+For **any app screen that shows a browsable, filterable grid of records** (lists, directories, placements, etc.):
+
+1. **Base table:** `DataTable` from `@/components/data-table` (optionally wrapped with `DataTablePaginated` when pagination is required).
+2. **Search:** Wire the table’s search/query UX (toolbar search or equivalent) — do not ship a “bare” table without find-in-list behavior when the page is a data list.
+3. **Filters:** Use the shared filter model (filter chips / `FilterFieldDef` and operators) consistent with existing list pages — not one-off filter UIs that bypass the table stack.
+4. **Table properties:** Include **Table properties** via `TablePropertiesDrawer` from `@/components/table-properties/drawer` (or the same toolbar + drawer pattern used on reference pages such as placements / data list). Users must be able to adjust columns, density, and related table settings from one place.
+5. **Active view:** On **`ListPageTemplate`** pages with **table / list / board / dashboard** tabs, **`TablePropertiesDrawer`** **MUST** receive **`currentView`** and **`onViewChange`** (see **`exxat-ds/AGENTS.md` §4.2** and **`.cursor/rules/exxat-table-properties-drawer.mdc`**) so Properties matches the selected view (not table-only copy on Board).
+
+**Reference implementation:** `components/data-list-table.tsx` (placements) shows how `DataTable`, filters, and `TablePropertiesDrawer` compose together.
+
+## Do not
+
+- Do **not** build product list pages with `@/components/ui/table` alone, raw `<table>` markup, or third-party data grids.
+- Do **not** introduce a second “table component” pattern for the same product surfaces (splitting search/filters/properties across incompatible implementations).
+
+## Exceptions
+
+- **Tiny, read-only tables inside charts or analytics cards** (e.g. chart figure captions / summary matrices) may use minimal markup when they are not primary data-list experiences — still prefer tokens and accessibility, but the full DataTable stack is not required there.
+
+## See also
+
+- **`exxat-ds/AGENTS.md`** — full MUST/MUST NOT, list-page template, primary hubs, checklist.

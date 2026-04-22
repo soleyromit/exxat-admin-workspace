@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Exxat DS — Next.js (Turbopack)",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "export PATH=/Users/himanshusuthar/.nvm/versions/node/v24.11.1/bin:$PATH && cd '/Users/himanshusuthar/Exxat Projects/Github/Exxat-DS-Workspace' && pnpm dev:web"],
+      "port": 3000,
+      "autoPort": true
+    }
+  ]
+}

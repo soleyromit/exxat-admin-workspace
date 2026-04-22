@@ -1,0 +1,65 @@
+# Publish @exxat-ds/ui to npm when you push a matching git tag.
+#
+# Prerequisite: add an npm token with publish rights for the @exxat-ds scope
+# as repository secret NPM_TOKEN (org/repo → Settings → Secrets).
+#
+# Release flow:
+# 1. Bump "version" in packages/ui/package.json on main (via PR or direct commit).
+# 2. git tag ui-v<version>   e.g. git tag ui-v0.0.2
+# 3. git push origin ui-v0.0.2
+#
+# The tag version (after "ui-v") must exactly match packages/ui/package.json "version".
+
+name: Publish @exxat-ds/ui
+
+on:
+  push:
+    tags:
+      - "ui-v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Match tag to package version
+        id: match
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VER="${TAG#ui-v}"
+          if [[ "$TAG" == "$VER" ]]; then
+            echo "::error::Tag must look like ui-v1.2.3 (got: $TAG)"
+            exit 1
+          fi
+          PKG="$(node -p "require('./packages/ui/package.json').version")"
+          if [[ "$PKG" != "$VER" ]]; then
+            echo "::error::packages/ui/package.json version is $PKG but tag implies $VER. Bump the file to match ui-v$PKG or fix the tag."
+            exit 1
+          fi
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "Ready to publish @exxat-ds/ui@$VER"
+
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: pnpm --filter @exxat-ds/ui publish --access public --no-git-checks

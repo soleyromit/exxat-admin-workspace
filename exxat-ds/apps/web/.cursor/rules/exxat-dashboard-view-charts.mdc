@@ -1,0 +1,53 @@
+---
+description: Data view dashboard — centralized charts, storage, keyboard parity with gallery, edit layout, coach marks
+alwaysApply: true
+---
+
+# Exxat DS — Data view dashboard (list hubs)
+
+**Authoritative detail:** **`exxat-ds/AGENTS.md` §4.3** and **`exxat-dashboard-view-charts`** (this rule).
+
+## Two dashboard surfaces (do not fork chart engines)
+
+| Surface | Entry | Shared building blocks |
+|--------|--------|-------------------------|
+| **Full-page dashboard** | `app/(app)/dashboard/page.tsx` | `DashboardTabs`, `ChartsOverview` / gallery demos in `charts-overview.tsx` |
+| **Data tab** on Placements / Team / Compliance | `DataListTable`, `TeamTable`, `ComplianceTable` → `*DashboardChartsSection` | `ChartFigure`, `ChartCard`, `useChartVariant()`, `data-view-dashboard-charts*.tsx` |
+
+**MUST NOT** duplicate “another” chart system for Data view — extend **`charts-overview`** patterns and **`lib/chart-keyboard-selection`**.
+
+## MUST — accessibility & data
+
+1. **`ChartFigure`** + **`ChartDataTable`** (`sr-only`) for every chart on the Data dashboard — same as **`charts-overview.tsx`**.
+2. **`ChartCard`** wraps chart content; **`KeyMetrics`** **`variant="card"`** for the **`key-metrics`** tile; KPI count **1–4** persisted in layout.
+
+## MUST — keyboard selection (parity with `/dashboard` gallery)
+
+- Import **`CHART_KBD_ACTIVE_BAR`** and **`CHART_KBD_ACTIVE_PIE_SHAPE`** from **`@/lib/chart-keyboard-selection`**.
+- **Bar** series: **`activeBar={CHART_KBD_ACTIVE_BAR}`** + **`activeIndex={activeIndex ?? undefined}`** (and **`Cell`** only for per-bar **fill**, not opacity-only selection).
+- **Pie / donut:** **`activeShape={CHART_KBD_ACTIVE_PIE_SHAPE}`** + **`activeIndex`** + slice **`stroke`** / **`strokeWidth`** consistent with gallery donuts.
+- **MUST NOT** use **`fillOpacity` dimming alone** on **`Cell`** as the sole “selected” state for keyboard exploration.
+
+## MUST — customisation UX
+
+- **Edit layout** control: **`aria-label="Edit dashboard layout"`** (toolbar pen-ruler). Coach marks may target **`[aria-label='Edit dashboard layout']`**.
+- On-canvas: drag reorder, remove, width (half / full), chart type, add/remove cards, reset. **No** separate Sheet for layout.
+- While **`layoutEditMode`**: hide **`DataTableToolbar`** (search / filters / Properties row); **Done** / **Cancel** on canvas.
+
+## MUST — persistence (centralized)
+
+- **One bundle:** **`lib/data-view-dashboard-storage.ts`** — key **`exxat-ds:data-view-dashboards:v1`**, scopes **`placements` | `team` | `compliance`**.
+- Placements helpers: **`loadDashboardLayout`** / **`saveDashboardLayout`** in **`data-view-dashboard-charts.tsx`** (wrap storage API).
+- **MUST NOT** introduce parallel **`localStorage`** keys for the same **`DashboardLayout`** shape without updating the storage module.
+
+## SHOULD — coach marks
+
+- Register **customize dashboard** flows in **`lib/coach-mark-registry.ts`**; shared copy in **`lib/dashboard-customize-coach-mark.ts`**.
+- Use **`useCoachMark`** **`enabled`** / **`dependsOnDismissedFlowId`** when a tour only applies on **dashboard** view or after another flow (**`COACH_MARK_FLOW_COMPLETED_EVENT`**).
+
+## Reference files
+
+- `components/data-view-dashboard-charts.tsx` (Placements)
+- `components/data-view-dashboard-charts-team.tsx`, `data-view-dashboard-charts-compliance.tsx`
+- `components/data-list-table.tsx` — `DataListDashboardShell`
+- `lib/chart-keyboard-selection.ts`, `lib/data-view-dashboard-storage.ts`, `lib/dashboard-customize-coach-mark.ts`

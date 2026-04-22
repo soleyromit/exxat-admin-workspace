@@ -1,0 +1,40 @@
+---
+description: TablePropertiesDrawer must receive currentView and onViewChange when used with ListPageTemplate view tabs
+alwaysApply: true
+---
+
+# Exxat DS — Table properties + active view
+
+**Authoritative detail:** **`AGENTS.md` §4.2** (at repo root).
+
+## Why this exists
+
+`TablePropertiesDrawer` uses **`currentView`** (`DataListViewType`) for the first summary row (“Board display” vs “Table display”, matching icons/descriptions) and to show **table-only** vs **board-only** sub-panels. If **`currentView`** is omitted, the drawer assumes **table** — wrong when the tab is **Board**, **List**, or **Dashboard**.
+
+## MUST
+
+When **`ListPageTemplate`** drives **`tab.viewType`** and the page renders **`TablePropertiesDrawer`** (directly or via a toolbar slot):
+
+1. Pass **`currentView={view}`** (same value as **`tab.viewType`** passed into your table component).
+2. Pass **`onViewChange`** from **`renderContent={(tab, updateTab) => ...}`** so the drawer’s view-type tiles stay in sync with the tab:
+
+   ```tsx
+   import { dataListViewIcon, type DataListViewType } from "@/lib/data-list-view"
+
+   onViewChange={(v: DataListViewType) =>
+     updateTab({ viewType: v, icon: dataListViewIcon(v) })
+   }
+   ```
+
+3. Thread **`view`** and **`onViewChange`** through: **client → table component → drawer toolbar → `TablePropertiesDrawer`**.
+
+**Reference implementations:** `components/data-list-table.tsx` (`DataListTable`), `components/team-client.tsx` + `team-table.tsx`, `components/compliance-client.tsx` + `compliance-table.tsx`.
+
+## MUST NOT
+
+- Mount **`TablePropertiesDrawer`** on a multi-view list page **without** **`currentView`** when the active view is known from the tab.
+- Omit **`onViewChange`** if the product shows the **view type** control inside Properties (otherwise tiles cannot update the tab).
+
+## See also
+
+- **`./AGENTS.md` §4.2**, **§13** checklist

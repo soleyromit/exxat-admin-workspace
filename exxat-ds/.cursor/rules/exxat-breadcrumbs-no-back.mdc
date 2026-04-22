@@ -1,0 +1,21 @@
+---
+description: Do not duplicate parent navigation with a Back control when breadcrumbs exist
+globs: exxat-ds/**/*.tsx
+alwaysApply: false
+---
+
+# Exxat DS — breadcrumbs and back navigation
+
+## MUST NOT
+
+When a page uses **`SiteHeader`** with **`breadcrumbs`** (a visible trail such as Patterns → Library → current title), **do not** add a **“Back to …”** link or button in the page body that goes to the same parent as the breadcrumb segment. Breadcrumbs already provide hierarchy and one-click navigation up the tree.
+
+## MAY
+
+- Rely on **`SiteHeader`** breadcrumbs only for returning to parent routes.
+- Use a **single** explicit back affordance on flows that **omit** breadcrumbs by design (e.g. full-screen step, modal route) where product copy requires it.
+
+## See also
+
+- `components/site-header.tsx`
+- `components/templates/primary-page-template.tsx`

@@ -1,0 +1,1136 @@
+/* ==========================================================================
+   EXXAT DESIGN SYSTEM — globals.css
+   Brands: Exxat One (Lavender · hue 270) · Exxat Prism (Rose · hue 343)
+   Standard: WCAG 2.1 Level AA
+     • Text contrast ≥ 4.5 : 1  (SC 1.4.3)
+     • UI control contrast ≥ 3 : 1  (SC 1.4.11)
+     • Focus ring ≥ 3 : 1  (SC 2.4.11)
+     • Touch targets ≥ 44 × 44 px  (SC 2.5.5 / mobile)
+   ========================================================================== */
+
+/* Tailwind, tw-animate-css, and shadcn/tailwind.css are imported by the
+   consuming app's globals.css — NOT here. This file only provides the
+   design-system theme tokens, custom variants, and base-layer styles. */
+
+/* RTL layout direction support */
+@custom-variant dark (&:is(.dark *));
+
+/* --------------------------------------------------------------------------
+   Tailwind v4 theme bridge — maps CSS custom-props → utility classes
+   -------------------------------------------------------------------------- */
+@theme inline {
+  /* Typography */
+  --font-heading: "ivypresto-text";
+  --font-sans:    "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* Minimum product text: 11px — use `text-xs` or larger; avoid arbitrary classes below 11px */
+  --text-xs: 0.6875rem; /* 11px at 16px root */
+
+  /* Semantic color map */
+  --color-background:              var(--background);
+  --color-foreground:              var(--foreground);
+  --color-card:                    var(--card);
+  --color-card-foreground:         var(--card-foreground);
+  --color-popover:                 var(--popover);
+  --color-popover-foreground:      var(--popover-foreground);
+  --color-primary:                 var(--primary);
+  --color-primary-foreground:      var(--primary-foreground);
+  --color-secondary:               var(--secondary);
+  --color-secondary-foreground:    var(--secondary-foreground);
+  --color-muted:                   var(--muted);
+  --color-muted-foreground:        var(--muted-foreground);
+  --color-accent:                  var(--accent);
+  --color-accent-foreground:       var(--accent-foreground);
+  --color-destructive:             var(--destructive);
+  --color-destructive-foreground:  var(--destructive-foreground);
+  --color-border:                  var(--border);
+  --color-border-control:          var(--border-control);
+  --color-input:                   var(--input);
+  --color-input-background:        var(--input-background);
+  --color-ring:                    var(--ring);
+  /* Modal / sheet / drawer scrim */
+  --color-overlay:                 var(--overlay);
+
+  /* Chart tokens */
+  --color-chart-1:  var(--chart-1);
+  --color-chart-2:  var(--chart-2);
+  --color-chart-3:  var(--chart-3);
+  --color-chart-4:  var(--chart-4);
+  --color-chart-5:  var(--chart-5);
+
+  /* Chip / badge tokens (AA-compliant on light bg: ≥ 4.5:1) */
+  --color-chip-1:            var(--chip-1);
+  --color-chip-2:            var(--chip-2);
+  --color-chip-3:            var(--chip-3);
+  --color-chip-4:            var(--chip-4);
+  --color-chip-5:            var(--chip-5);
+  --color-chip-destructive:  var(--chip-destructive);
+
+  /* Brand accent + Exxat One tint scale (see :root --brand-*) */
+  --color-brand:              var(--brand-color);
+  --color-brand-dark:         var(--brand-color-dark);
+  --color-brand-foreground:   var(--brand-foreground);
+  --color-brand-tint:         var(--brand-tint);
+  --color-brand-tint-light:   var(--brand-tint-light);
+  --color-brand-tint-subtle:  var(--brand-tint-subtle);
+  --color-brand-color-light:  var(--brand-color-light);
+  --color-brand-deep:         var(--brand-color-deep);
+
+  /* Prism banner highlight */
+  --color-banner-prism:  var(--banner-prism-bg);
+
+  /* Sidebar */
+  --color-sidebar:                    var(--sidebar);
+  --color-sidebar-foreground:         var(--sidebar-foreground);
+  --color-sidebar-primary:            var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent:             var(--sidebar-accent);
+  --color-sidebar-accent-foreground:  var(--sidebar-accent-foreground);
+  --color-sidebar-border:             var(--sidebar-border);
+  --color-sidebar-ring:               var(--sidebar-ring);
+  /* WCAG 1.4.3 — always mixed against real --sidebar (lavender / rose / dark) */
+  --color-sidebar-section-label:      var(--sidebar-section-label-foreground);
+
+  /* Interactive hover — single source for ghost controls, lists, table chrome */
+  --color-interactive-hover:                    var(--interactive-hover);
+  --color-interactive-hover-foreground:         var(--interactive-hover-foreground);
+  --color-interactive-hover-subtle:             var(--interactive-hover-subtle);
+  --color-interactive-hover-soft:               var(--interactive-hover-soft);
+  --color-interactive-hover-medium:             var(--interactive-hover-medium);
+  --color-interactive-hover-strong:             var(--interactive-hover-strong);
+  --color-interactive-hover-row:                var(--interactive-hover-row);
+
+  /* Border-radius scale (4 px base → 8 px default) */
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 24px;
+}
+
+/* ==========================================================================
+   :root — Exxat One · Light Mode (brand hue 286.1)
+   All contrast ratios verified against oklch(1 0 0) white background.
+   ========================================================================== */
+:root {
+  /* font-size intentionally NOT overridden here.
+     Shadcn components assume 1rem = 16px (browser default).
+     Overriding to 87.5% / 14px breaks rem-based spacing on all devices,
+     and compounds incorrectly at Windows 150% system zoom.
+     If a compact 14px density is needed, apply it at the component/page level
+     via a scoped class, not globally on :root. */
+  /* Minimum readable UI copy: 11px (`text-xs` / --text-xs). Do not use smaller arbitrary sizes. */
+
+  /* ── Typography ─────────────────────────────────────────────── */
+  /* Ivy Presto loaded via Adobe Fonts Kit wuk5wqn (use.typekit.net) */
+  --font-heading: "ivypresto-text";
+
+  /* ── Brand — Exxat One (hue 286.1) ─────────────────────────── */
+  /* Primary surface — requested token */
+  --brand-tint:        oklch(0.9676 0.016 286.1);
+  /* Lighter / darker washes (same hue) for nested UI & hovers */
+  --brand-tint-light:  oklch(0.993 0.007 286.1);
+  --brand-tint-subtle: oklch(0.935 0.024 286.1);
+  /* Interactive accent + scale (readable on white; pairs with --brand-tint) */
+  --brand-color:       oklch(0.50 0.14 286.1);
+  --brand-color-light: oklch(0.78 0.09 286.1);
+  --brand-color-dark:  oklch(0.38 0.11 286.1);
+  --brand-color-deep:  oklch(0.28 0.085 286.1);
+  --brand-foreground:  oklch(0.985 0 0);
+  /* Fixed swatches for brand picker (Exxat One vs Prism), independent of active theme */
+  --brand-preview-one:   var(--brand-tint);
+  --brand-preview-prism: oklch(0.57 0.24 342);
+
+  /* ── Surfaces ────────────────────────────────────────────────── */
+  --background:         oklch(1 0 0);
+  --foreground:         oklch(0.145 0 0);           /* ≈ #1A1A1A — 17:1 on white ✓ */
+  --card:               oklch(1 0 0);
+  --card-foreground:    oklch(0.145 0 0);
+  --popover:            oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+
+  /* ── Primary ─────────────────────────────────────────────────── */
+  /* Default / ghost / solid primary actions — neutral charcoal (style guide) */
+  --primary:            oklch(0.3457 0.0052 286.13);
+  --primary-foreground: oklch(0.985 0 0);
+
+  /* ── Secondary / Muted / Accent ──────────────────────────────── */
+  --secondary:             oklch(0.95 0.0058 264.53);
+  --secondary-foreground:  oklch(0.082 0 0);
+  --muted:                 oklch(0.945 0.002 270);
+  --muted-foreground:      oklch(0.50 0.012 270);   /* 5.5:1 on white ✓ */
+  --accent:                oklch(0.925 0.005 260);
+  --accent-foreground:     oklch(0.082 0 0);
+
+  /* ── Destructive ─────────────────────────────────────────────── */
+  /* oklch(0.55 0.22 25) ≈ #C0392B — 5.1:1 on white ✓             */
+  --destructive:            oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(1 0 0);
+
+  /* ── Borders ─────────────────────────────────────────────────── */
+  /* Decorative: cards, dividers — no AA contrast requirement        */
+  --border: oklch(0.92 0.002 270);
+
+  /* Form-field boundary — WCAG 1.4.11 requires 3:1 against bg.
+     --border-control-3: L=0.62 ≈ #90929A → borderline; use with care.
+     --border-control-35: L=0.25 → ≥ 3.5:1 — recommended for inputs.   */
+  --border-control:    oklch(0.82 0.004 270);   /* subtle (layout use only) */
+  --border-control-3:  oklch(0.6196 0.0092 270); /* ≈ 3:1 on white (minimum) */
+  --border-control-35: oklch(0.25 0.01 270);    /* ≈ 3.5:1+ (recommended)   */
+  --control-border:    var(--border-control-3);  /* default form-field border */
+
+  /* ── Input ───────────────────────────────────────────────────── */
+  /* 3:1 on white — WCAG 1.4.11 compliant for interactive element borders */
+  --input:            oklch(0.6694 0.0063 264.52);
+  --input-background: oklch(0.97 0.002 270);
+
+  /* ── Focus ring ──────────────────────────────────────────────── */
+  /* 3:1+ contrast on both light & dark backgrounds (WCAG 2.4.11)  */
+  --ring: oklch(0.25 0 0);
+
+  /* ── Charts ──────────────────────────────────────────────────── */
+  --chart-1: oklch(0.55 0.22 264.116);
+  --chart-2: oklch(0.48 0.15 184.704);
+  --chart-3: oklch(0.32 0.08 227.392);
+  --chart-4: oklch(0.65 0.18 84.429);
+  --chart-5: oklch(0.58 0.18 70.08);
+
+  /* ── Chip / Badge ────────────────────────────────────────────── */
+  /* AA-compliant on white: all ≥ 4.5:1 (WCAG 1.4.3)              */
+  --chip-1:           oklch(0.38 0.18 264);   /* indigo   */
+  --chip-2:           oklch(0.35 0.14 184);   /* teal     */
+  --chip-3:           oklch(0.32 0.08 227);   /* slate    */
+  --chip-4:           oklch(0.42 0.12 84);    /* amber    */
+  --chip-5:           oklch(0.42 0.14 70);    /* orange   */
+  --chip-destructive: oklch(0.40 0.18 25);    /* red      */
+
+  /* ── Prism promo banner ──────────────────────────────────────── */
+  /* Rose hue 343 — used universally regardless of active theme    */
+  --banner-prism-bg: oklch(0.97 0.02 343);
+
+  /* ── Sidebar — Exxat One brand tint ───────────────────────────── */
+  --sidebar:                    var(--brand-tint);
+  --sidebar-foreground:         oklch(0.145 0 0);
+  --sidebar-primary:            oklch(0.082 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent:             oklch(0.945 0.025 286.1);
+  --sidebar-accent-foreground:  oklch(0.3457 0.0052 286.13);
+  --sidebar-border:             oklch(0.92 0.025 286.1);
+  --sidebar-ring:               oklch(0.25 0 0);
+  /* Nav section titles — ≥4.5:1 vs --sidebar (not vs page white) */
+  --sidebar-section-label-foreground: color-mix(in oklch, var(--sidebar-foreground) 58%, var(--sidebar));
+  --secondary-panel-bg:         oklch(0.99 0.008 286.1);
+
+  /* Browser UI (meta theme-color) — aligned with --brand-tint */
+  --theme-color-chrome: #f3f2f8;
+
+  /* ── Border radius ───────────────────────────────────────────── */
+  --radius: 0.5rem; /* 8px base */
+
+  /* ── Density / touch targets ─────────────────────────────────── */
+  --scaling:              1;
+  --control-height:       calc(40px * var(--scaling));
+  --control-height-sm:    calc(32px * var(--scaling));
+  /* WCAG 2.5.5 — minimum 44×44 px touch target (mobile only)     */
+  --control-height-touch: 44px;
+  --control-padding-y:    calc(8px  * var(--scaling));
+  --control-padding-x:    calc(12px * var(--scaling));
+  --table-row-height:     calc(48px * var(--scaling));
+
+  /* ── Interactive hover (ties to --muted / --accent — theme overrides apply) ─ */
+  --interactive-hover:            var(--muted);
+  --interactive-hover-foreground: var(--foreground);
+  --interactive-hover-subtle:     color-mix(in oklch, var(--muted) 50%, transparent);
+  --interactive-hover-soft:       color-mix(in oklch, var(--muted) 40%, transparent);
+  --interactive-hover-medium:     color-mix(in oklch, var(--muted) 60%, transparent);
+  --interactive-hover-strong:     color-mix(in oklch, var(--muted) 70%, transparent);
+  --interactive-hover-row:        color-mix(in oklch, var(--accent) 50%, transparent);
+
+  /* ── Transitions ─────────────────────────────────────────────── */
+  --transition-fast:   0.15s ease;
+  --transition-normal: 0.25s ease-in-out;
+  --transition-colors: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+
+  /* ── Shadows ─────────────────────────────────────────────────── */
+  --shadow-sm: oklch(0 0 0 / 0.08) 0px 1px 2px 0px;
+  --shadow-md: oklch(0 0 0 / 0.08) 0px 2px 4px -1px, oklch(0 0 0 / 0.06) 0px 1px 2px;
+  --shadow-lg: oklch(0 0 0 / 0.10) 0px 4px 8px -2px, oklch(0 0 0 / 0.06) 0px 2px 4px;
+
+  /* ── Sticky column edge fade (data tables) ───────────────────── */
+  --sticky-edge-fade: oklch(0 0 0 / 0.08);
+
+  /* ── Overlay scrim (Sheet / Drawer / Dialog) ─────────────────── */
+  /* Softer than raw bg-black/10; follows foreground hue (not pure black) */
+  --overlay: color-mix(in oklch, var(--foreground) 5%, transparent);
+
+  /* ── Avatar initials (table) ───────────────────────────────────── */
+  /* Soft brand wash + brand ink — no black fills; ≥4.5:1 on white rows */
+  --avatar-initials-bg: color-mix(in oklch, var(--brand-color) 14%, oklch(1 0 0));
+  --avatar-initials-fg: var(--brand-color-dark);
+
+  /* ── KPI insight severity (KeyMetrics) ────────────────────────── */
+  --insight-severity-warning-bg: color-mix(in oklch, var(--chart-4) 15%, transparent);
+  --insight-severity-warning-fg: color-mix(in oklch, var(--chart-4) 75%, var(--foreground));
+  --insight-severity-info-bg: color-mix(in oklch, var(--chart-1) 14%, transparent);
+  --insight-severity-info-fg: color-mix(in oklch, var(--chart-1) 75%, var(--foreground));
+
+  /* ── Conditional formatting rule backgrounds (table drawer) ─── */
+  --conditional-rule-green: color-mix(in oklch, var(--chart-2) 22%, transparent);
+  --conditional-rule-yellow: color-mix(in oklch, var(--chart-4) 30%, transparent);
+  --conditional-rule-blue: color-mix(in oklch, var(--chart-1) 22%, transparent);
+  --conditional-rule-red: color-mix(in oklch, var(--destructive) 22%, transparent);
+  --conditional-rule-purple: color-mix(in oklch, var(--brand-color) 22%, transparent);
+  --conditional-rule-orange: color-mix(in oklch, var(--chart-5) 25%, transparent);
+}
+
+/* ==========================================================================
+   Dark Mode — Exxat One base (neutral surfaces; brand uses --brand-*)
+   ========================================================================== */
+.dark {
+  --sticky-edge-fade: oklch(0 0 0 / 0.32);
+
+  /* Canvas — charcoal grey (not near-black) */
+  --background:         oklch(0.20 0.008 270);
+  --foreground:         oklch(0.985 0 0);
+  --card:               oklch(0.255 0.008 270);
+  --card-foreground:    oklch(0.985 0 0);
+  --popover:            oklch(0.255 0.008 270);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary:            oklch(0.985 0 0);
+  --primary-foreground: oklch(0.3457 0.0052 286.13);
+  --secondary:          oklch(0.31 0.04 270);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted:              oklch(0.31 0.04 270);
+  --muted-foreground:   oklch(0.72 0.012 270);   /* ≥ 4.5:1 on dark bg ✓ */
+  --accent:             oklch(0.33 0.06 270);
+  --accent-foreground:  oklch(0.985 0 0);
+  --destructive:        oklch(0.65 0.20 25);      /* brighter for dark bg */
+  --destructive-foreground: oklch(0.10 0 0);
+
+  /* Borders — visible but not washed out on dark surfaces */
+  --border:            oklch(0.38 0.008 270);
+  --border-control:    oklch(0.72 0.012 270);
+  --border-control-3:  oklch(0.78 0.012 270);
+  --border-control-35: oklch(0.75 0.012 270);
+  --control-border:    var(--border-control-3);
+
+  --input:             oklch(0.72 0.012 270);
+  --input-background:  oklch(0.255 0 0);
+
+  /* Focus ring — 3:1+ on dark bg */
+  --ring: oklch(0.85 0 0);
+
+  /* Charts — higher lightness for dark surfaces */
+  --chart-1: oklch(0.70 0.22 264.376);
+  --chart-2: oklch(0.75 0.15 162.48);
+  --chart-3: oklch(0.78 0.12 227.392);
+  --chart-4: oklch(0.80 0.18 84.429);
+  --chart-5: oklch(0.75 0.18 70.08);
+
+  /* Chips — AA-compliant on dark bg (L raised) */
+  --chip-1:           oklch(0.72 0.18 264);
+  --chip-2:           oklch(0.72 0.14 184);
+  --chip-3:           oklch(0.78 0.12 227);
+  --chip-4:           oklch(0.78 0.14 84);
+  --chip-5:           oklch(0.78 0.16 70);
+  --chip-destructive: oklch(0.72 0.18 25);
+
+  /* Sidebar */
+  --sidebar:                    oklch(0.245 0.015 270);
+  --sidebar-foreground:         oklch(0.985 0 0);
+  --sidebar-primary:            oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent:             oklch(0.30 0.012 270);
+  --sidebar-accent-foreground:  oklch(0.985 0 0);
+  --sidebar-border:             oklch(0.38 0.010 270);
+  --sidebar-ring:               oklch(0.85 0 0);
+  --sidebar-section-label-foreground: color-mix(in oklch, var(--sidebar-foreground) 48%, var(--sidebar));
+  --secondary-panel-bg:         oklch(0.23 0.02 270);
+  --theme-color-chrome:         #2f2d36;
+
+  /* Lifted scrim on dark — white-tinted veil, not heavy black */
+  --overlay: color-mix(in oklch, var(--foreground) 10%, transparent);
+
+  /* Mid lavender chip + light text — no black circle; contrasts on dark table rows */
+  --avatar-initials-bg: color-mix(in oklch, var(--brand-color) 38%, oklch(0.40 0.05 286.1));
+  --avatar-initials-fg: oklch(0.99 0.01 286.1);
+}
+
+/* ==========================================================================
+   Theme: Exxat One · Lavender (explicit — also applied as :root default)
+   Usage: <html class="theme-one"> or <html class="theme-lavender">
+   ========================================================================== */
+.theme-one,
+.theme-lavender {
+  --brand-tint:         oklch(0.9676 0.016 286.1);
+  --brand-tint-light:   oklch(0.993 0.007 286.1);
+  --brand-tint-subtle:  oklch(0.935 0.024 286.1);
+  --brand-color:        oklch(0.50 0.14 286.1);
+  --brand-color-light:  oklch(0.78 0.09 286.1);
+  --brand-color-dark:   oklch(0.38 0.11 286.1);
+  --brand-color-deep:   oklch(0.28 0.085 286.1);
+  --ring:               var(--brand-color-dark);
+}
+
+/* Light surfaces only — must NOT override .dark (otherwise muted/accent stay “paper white” in dark mode) */
+.theme-one:not(.dark),
+.theme-lavender:not(.dark) {
+  --sidebar:        var(--brand-tint);
+  --sidebar-accent: oklch(0.945 0.025 286.1);
+  --sidebar-border: oklch(0.92 0.025 286.1);
+  --secondary:      oklch(0.95 0.012 286.1);
+  --accent:         oklch(0.925 0.015 286.1);
+  --muted:          oklch(0.945 0.008 286.1);
+}
+
+.theme-one.dark,
+.dark.theme-one,
+.theme-lavender.dark,
+.dark.theme-lavender {
+  --ring:             var(--brand-color);
+  --background:       oklch(0.20 0.008 286.1);
+  --sidebar:          oklch(0.245 0.015 286.1);
+  --sidebar-accent:   oklch(0.30 0.012 286.1);
+  --sidebar-border:   oklch(0.38 0.010 286.1);
+  /* Restore dark surfaces (base .dark is overridden by :not(.dark) rules above when both classes apply) */
+  --secondary:        oklch(0.31 0.04 286.1);
+  --muted:            oklch(0.31 0.04 286.1);
+  --accent:           oklch(0.33 0.06 286.1);
+}
+
+/* ==========================================================================
+   Theme: Exxat Prism · Rose · hue 343
+   Usage: <html class="theme-prism"> or <html class="theme-rose">
+   ========================================================================== */
+.theme-prism,
+.theme-rose {
+  --brand-color:      oklch(0.57 0.24 342);   /* Prism rose */
+  --brand-color-dark: oklch(0.42 0.24 342);
+  --ring:             var(--brand-color-dark);
+}
+
+.theme-prism:not(.dark),
+.theme-rose:not(.dark) {
+  --sidebar:          oklch(0.97 0.02 343);
+  --sidebar-accent:   oklch(0.945 0.025 343);
+  --sidebar-border:   oklch(0.92 0.025 343);
+  --secondary:        oklch(0.95 0.012 343);
+  --accent:           oklch(0.925 0.015 343);
+  --muted:            oklch(0.945 0.008 343);
+  --banner-prism-bg:  oklch(0.97 0.02 343);
+  --theme-color-chrome: #fff5f9;
+}
+
+.theme-prism.dark,
+.dark.theme-prism,
+.theme-rose.dark,
+.dark.theme-rose {
+  --ring:             var(--brand-color);
+  --background:       oklch(0.20 0.008 342);
+  --sidebar:          oklch(0.245 0.015 342);
+  --sidebar-accent:   oklch(0.30 0.012 342);
+  --sidebar-border:   oklch(0.38 0.010 342);
+  --secondary:        oklch(0.31 0.04 342);
+  --muted:              oklch(0.31 0.04 342);
+  --accent:             oklch(0.33 0.06 342);
+  --theme-color-chrome: #2a2428;
+}
+
+/* ==========================================================================
+   HIGH CONTRAST MODE
+   ──────────────────────────────────────────────────────────────────────────
+   Three guiding principles (WCAG 1.4.6 Enhanced + research-backed UX):
+
+   1. FORCED-COLORS APPROACH
+      Strip gradients, shadows, and background images.
+      Use borders to define shape and elevation — not fills.
+      Limited palette: 4–6 named tokens, nothing decorative.
+
+   2. DON'T RELY ON COLOR ALONE
+      Error/warning states get a thick border AND an icon differentiator.
+      Charts and badges use luminance separation (grayscale steps), not hue.
+      Interactive state (hover / focus / active) is communicated via outline,
+      not background-color change alone.
+
+   3. DARK MODE ≠ HIGH CONTRAST
+      Dark mode  = aesthetic; uses subtle greys.
+      High-contrast dark = functional; uses near-black grey canvas, pure white
+      (#FFF), and a "hot" neon-yellow focus accent for maximum visibility.
+   ========================================================================== */
+
+/* ── Light High Contrast ─────────────────────────────────────────────────── */
+html[data-contrast="high"]:not(.dark) {
+  /* Pure palette — 4 roles */
+  --background:         oklch(1 0 0);        /* pure white canvas             */
+  --foreground:         oklch(0.06 0 0);     /* near-black  — 19:1 on white ✓ */
+  --card:               oklch(1 0 0);
+  --card-foreground:    oklch(0.06 0 0);
+  --popover:            oklch(1 0 0);
+  --popover-foreground: oklch(0.06 0 0);
+
+  /* Primary CTA — solid black button, white label */
+  --primary:            oklch(0.06 0 0);
+  --primary-foreground: oklch(1 0 0);
+
+  /* Secondary — white bg, black border (no fill) */
+  --secondary:            oklch(1 0 0);
+  --secondary-foreground: oklch(0.06 0 0);
+
+  /* Muted — very light grey container only; text is NEVER "muted" in HC */
+  --muted:            oklch(0.94 0 0);
+  --muted-foreground: oklch(0.10 0 0);  /* still very dark — 15:1 ✓        */
+
+  /* Accent — near-white surface, near-black text */
+  --accent:            oklch(0.94 0 0);
+  --accent-foreground: oklch(0.06 0 0);
+
+  /* Destructive — saturated red (stronger than AA default) + enforced icon */
+  --destructive:            oklch(0.42 0.26 25);  /* ≈ 5.8:1 on white ✓      */
+  --destructive-foreground: oklch(1 0 0);
+
+  /* Borders — all thick and dark; no decorative-only borders */
+  --border:            oklch(0.10 0 0);   /* 2px enforced via structural CSS  */
+  --border-control:    oklch(0.06 0 0);
+  --border-control-3:  oklch(0.06 0 0);
+  --border-control-35: oklch(0.06 0 0);
+  --control-border:    oklch(0.06 0 0);
+
+  /* Input */
+  --input:            oklch(0.06 0 0);
+  --input-background: oklch(1 0 0);
+
+  /* Focus ring — 3 px solid near-black (WCAG 2.4.11 + 2.4.12) */
+  --ring: oklch(0.06 0 0);
+
+  /* Sidebar — white bg, defined by left border */
+  --sidebar:                    oklch(1 0 0);
+  --sidebar-foreground:         oklch(0.06 0 0);
+  --sidebar-primary:            oklch(0.06 0 0);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent:             oklch(0.94 0 0);
+  --sidebar-accent-foreground:  oklch(0.06 0 0);
+  --sidebar-border:             oklch(0.06 0 0);
+  --sidebar-ring:               oklch(0.06 0 0);
+  --sidebar-section-label-foreground: color-mix(in oklch, var(--sidebar-foreground) 50%, var(--sidebar));
+
+  /* Charts — grayscale luminance steps (readable in B&W printout / grayscale test) */
+  --chart-1: oklch(0.10 0 0);   /* near-black  */
+  --chart-2: oklch(0.30 0 0);   /* dark grey   */
+  --chart-3: oklch(0.50 0 0);   /* mid grey    */
+  --chart-4: oklch(0.65 0 0);   /* light grey  */
+  --chart-5: oklch(0.80 0 0);   /* very light  */
+
+  /* Chips — high-contrast on white; all ≥ 7:1 (WCAG AAA) */
+  --chip-1:           oklch(0.14 0 0);
+  --chip-2:           oklch(0.14 0 0);
+  --chip-3:           oklch(0.14 0 0);
+  --chip-4:           oklch(0.14 0 0);
+  --chip-5:           oklch(0.14 0 0);
+  --chip-destructive: oklch(0.42 0.26 25);
+
+  --overlay: color-mix(in oklch, var(--foreground) 18%, transparent);
+}
+
+/* ── Dark High Contrast ──────────────────────────────────────────────────── */
+/*    Rule: dark grey canvas + pure white + ONE "hot" neon-yellow accent.     */
+/*    Neon yellow = oklch(0.97 0.19 110) — highest luminance, max visibility  */
+/*    on dark surfaces; does NOT cause hue-vibration against grey/white.      */
+html[data-contrast="high"].dark {
+  --hc-hot: oklch(0.97 0.19 110);   /* neon yellow — focus / accent anchor  */
+
+  --background:         oklch(0.15 0 0);    /* dark grey canvas (not #000) */
+  --foreground:         oklch(1 0 0);    /* pure white — strong contrast ✓ */
+  --card:               oklch(0.15 0 0);
+  --card-foreground:    oklch(1 0 0);
+  --popover:            oklch(0.22 0 0); /* slightly lifted for layering   */
+  --popover-foreground: oklch(1 0 0);
+
+  /* Primary CTA — pure white button, near-black label */
+  --primary:            oklch(1 0 0);
+  --primary-foreground: oklch(0.08 0 0);
+
+  /* Secondary — canvas bg, white border */
+  --secondary:            oklch(0.15 0 0);
+  --secondary-foreground: oklch(1 0 0);
+
+  /* Muted — lifted grey surface; text stays near-white */
+  --muted:            oklch(0.22 0 0);
+  --muted-foreground: oklch(0.88 0 0);  /* strong on dark grey ✓            */
+
+  /* Accent — slightly lifted dark surface */
+  --accent:            oklch(0.22 0 0);
+  --accent-foreground: oklch(1 0 0);
+
+  /* Destructive — bright orange-red, visible on dark grey */
+  --destructive:            oklch(0.68 0.26 25);
+  --destructive-foreground: oklch(0.08 0 0);
+
+  /* Borders — pure white; enforced 2px via structural CSS */
+  --border:            oklch(1 0 0);
+  --border-control:    oklch(0.88 0 0);
+  --border-control-3:  oklch(0.88 0 0);
+  --border-control-35: oklch(1 0 0);
+  --control-border:    oklch(0.88 0 0);
+
+  /* Input */
+  --input:            oklch(0.88 0 0);
+  --input-background: oklch(0.12 0 0);
+
+  /* Focus ring — neon yellow; 3 px; unmissable on dark or white surfaces */
+  --ring: var(--hc-hot);
+
+  /* Sidebar */
+  --sidebar:                    oklch(0.15 0 0);
+  --sidebar-foreground:         oklch(1 0 0);
+  --sidebar-primary:            oklch(1 0 0);
+  --sidebar-primary-foreground: oklch(0.08 0 0);
+  --sidebar-accent:             oklch(0.22 0 0);
+  --sidebar-accent-foreground:  oklch(1 0 0);
+  --sidebar-border:             oklch(1 0 0);
+  --sidebar-ring:               var(--hc-hot);
+  --sidebar-section-label-foreground: color-mix(in oklch, var(--sidebar-foreground) 45%, var(--sidebar));
+
+  /* Charts — white → grey steps + neon yellow for emphasis series */
+  --chart-1: oklch(1 0 0);           /* white        */
+  --chart-2: oklch(0.82 0 0);        /* light grey   */
+  --chart-3: oklch(0.65 0 0);        /* mid grey     */
+  --chart-4: oklch(0.50 0 0);        /* dark grey    */
+  --chart-5: oklch(0.97 0.19 110);   /* neon yellow  */
+
+  /* Chips — high-contrast on dark grey */
+  --chip-1:           oklch(0.90 0 0);
+  --chip-2:           oklch(0.90 0 0);
+  --chip-3:           oklch(0.90 0 0);
+  --chip-4:           oklch(0.90 0 0);
+  --chip-5:           oklch(0.90 0 0);
+  --chip-destructive: oklch(0.68 0.26 25);
+
+  --overlay: color-mix(in oklch, var(--foreground) 22%, transparent);
+}
+
+
+/* ── Structural rules shared by BOTH light and dark HC ──────────────────── */
+/*    Pattern 1: "Borders over Fills" — strip decorative chrome              */
+html[data-contrast="high"] {
+
+  /* 1a. Remove ALL box-shadows (elevation via outline, not shadow) */
+  & * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* 1b. Strip gradient fills from cards; use border to define shape */
+  & [data-slot="card"] {
+    background-image: none !important;
+    border: 2px solid var(--foreground) !important;
+  }
+
+  /* 1c. Thicker borders on all form controls (WCAG 1.4.11: 3:1 UI contrast) */
+  & [data-slot="input"],
+  & [data-slot="select-trigger"],
+  & [data-slot="textarea"],
+  & [data-slot="checkbox"],
+  & [data-slot="switch"] {
+    border-width: 2px !important;
+    border-color: var(--foreground) !important;
+  }
+
+  /* 1d. Sidebar defined by its edge border, not background colour */
+  & [data-slot="sidebar"] {
+    border-inline-end: 2px solid var(--sidebar-border) !important;
+  }
+
+  /* 1e. Tab list — border not fill */
+  & [data-slot="tabs-list"] {
+    background-color: transparent !important;
+    border: 2px solid var(--foreground) !important;
+  }
+
+  /* 1f. Badge / chip — border-based; fill only for destructive */
+  & [data-slot="badge"] {
+    border-width: 2px !important;
+    border-color: currentColor !important;
+    background-color: transparent !important;
+    font-weight: 700 !important;
+    box-shadow: none !important;
+    outline: none !important;
+    color: var(--foreground) !important;
+  }
+
+  & [data-slot="badge"] * {
+    color: var(--foreground) !important;
+  }
+
+  /* Sidebar wrapper is positioning-only when it wraps Badge — avoid double border */
+  & [data-slot="sidebar-menu-badge"]:has([data-slot="badge"]) {
+    border-width: 0 !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  & [data-slot="view-toolbar-count"] {
+    border-width: 2px !important;
+    border-color: currentColor !important;
+    background-color: transparent !important;
+    font-weight: 700 !important;
+    color: var(--foreground) !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  & [data-slot="sidebar-menu-badge"]:not(:has([data-slot="badge"])) {
+    border-width: 2px !important;
+    border-color: currentColor !important;
+    background-color: transparent !important;
+    font-weight: 700 !important;
+    color: var(--foreground) !important;
+  }
+
+  /* Segmented tab buttons: global HC button border + count pill border = double ring */
+  & button[data-slot="view-segmented-item"] {
+    border-width: 0 !important;
+    border-color: transparent !important;
+  }
+
+  /* Radix Tabs — active state must not rely on muted fill / pseudo underline only */
+  & [data-slot="tabs-trigger"] {
+    color: var(--foreground) !important;
+    opacity: 1 !important;
+  }
+
+  & [data-slot="tabs-trigger"][data-state="active"] {
+    outline: 2px solid currentColor !important;
+    outline-offset: -2px !important;
+    font-weight: 600 !important;
+  }
+
+  /* KPI strip + chart card mini-metrics — force readable copy (muted grays fail in HC) */
+  & [data-slot="key-metrics"] :where(span, p, button, a, i, label, div) {
+    color: var(--foreground) !important;
+  }
+
+  & [data-slot="key-metrics"] :where(svg) {
+    color: var(--foreground) !important;
+  }
+
+  /* List / menu rows — highlighted row uses inverted pair */
+  & [data-slot="dropdown-menu-item"][data-highlighted],
+  & [data-slot="dropdown-menu-checkbox-item"][data-highlighted],
+  & [data-slot="dropdown-menu-radio-item"][data-highlighted],
+  & [data-slot="dropdown-menu-sub-trigger"][data-highlighted],
+  & [data-slot="select-item"][data-highlighted],
+  & [data-slot="command-item"][data-selected],
+  & [data-slot="command-item"][aria-selected="true"] {
+    background-color: var(--foreground) !important;
+    color: var(--background) !important;
+  }
+
+  & [data-slot="dropdown-menu-item"][data-highlighted] *,
+  & [data-slot="dropdown-menu-checkbox-item"][data-highlighted] *,
+  & [data-slot="dropdown-menu-radio-item"][data-highlighted] *,
+  & [data-slot="dropdown-menu-sub-trigger"][data-highlighted] *,
+  & [data-slot="select-item"][data-highlighted] *,
+  & [data-slot="command-item"][data-selected] *,
+  & [data-slot="command-item"][aria-selected="true"] * {
+    color: var(--background) !important;
+  }
+
+  /* List hub views toolbar + segmented radiogroup (not Radix Tabs / tabs-list) */
+  & [data-slot="view-segmented-toolbar"] {
+    background-color: transparent !important;
+    border: 2px solid var(--foreground) !important;
+  }
+
+  & [data-slot="view-segmented-item"][aria-pressed="true"],
+  & [data-slot="view-segmented-item"][aria-checked="true"] {
+    outline: 2px solid currentColor !important;
+    outline-offset: -2px !important;
+  }
+
+  /* Floating surfaces — portal menus, popovers, sheets, dialogs */
+  & [data-slot="dropdown-menu-content"],
+  & [data-slot="dropdown-menu-sub-content"],
+  & [data-slot="popover-content"],
+  & [data-slot="select-content"],
+  & [data-slot="dialog-content"],
+  & [data-slot="sheet-content"],
+  & [data-slot="drawer-content"] {
+    border: 2px solid var(--foreground) !important;
+    background-color: var(--background) !important;
+    color: var(--foreground) !important;
+  }
+
+  & [data-slot="command"] {
+    background-color: var(--background) !important;
+    color: var(--foreground) !important;
+  }
+
+  /* ── Pattern 2: Stronger focus ring (WCAG 2.4.11 / 2.4.12) ── */
+  & :focus-visible {
+    outline: 3px solid var(--ring) !important;
+    outline-offset: 3px !important;
+  }
+
+  /* ── Pattern 2: Error state — thick border + no colour-only signal ── */
+  & [aria-invalid="true"],
+  & [data-invalid] {
+    border-width: 3px !important;
+    border-color: var(--destructive) !important;
+    /* Downstream: pair with a ⚠ icon in the component for non-colour signal */
+  }
+
+  /* ── Pattern 3: Active nav / toggle items use outline not bg-fill ── */
+  & [data-slot="sidebar-menu-button"][data-active="true"],
+  & [data-slot="toggle-group-item"][data-state="on"] {
+    outline: 2px solid currentColor !important;
+    outline-offset: -2px !important;
+  }
+}
+
+/* ── OS-level "Increase Contrast" — macOS / iOS / Android ───────────────── */
+@media (prefers-contrast: more) {
+  :root:not([data-contrast="off"]) {
+    --foreground:        oklch(0.06 0 0);
+    --muted-foreground:  oklch(0.10 0 0);
+    --border:            oklch(0.10 0 0);
+    --border-control:    oklch(0.06 0 0);
+    --border-control-35: oklch(0.06 0 0);
+    --border-control-3:  oklch(0.06 0 0);
+    --ring:              oklch(0.06 0 0);
+  }
+  .dark:not([data-contrast="off"]) {
+    --foreground:        oklch(1 0 0);
+    --muted-foreground:  oklch(0.88 0 0);
+    --border:            oklch(1 0 0);
+    --border-control:    oklch(0.88 0 0);
+    --border-control-35: oklch(0.88 0 0);
+    --border-control-3:  oklch(0.88 0 0);
+    --ring:              oklch(0.97 0.19 110);  /* neon yellow on dark */
+  }
+}
+
+/* ── Windows Forced Colors (High Contrast Mode in OS) ───────────────────── */
+/*    When `forced-colors: active`, Windows REPLACES our colours entirely.   */
+/*    Our job: map semantic roles to system palette keywords so the OS       */
+/*    colouring makes sense, and ensure borders/outlines remain visible.     */
+@media (forced-colors: active) {
+  :root {
+    --border:            CanvasText;
+    --border-control:    CanvasText;
+    --border-control-35: CanvasText;
+    --border-control-3:  CanvasText;
+    --ring:              Highlight;
+    --destructive:       LinkText;
+  }
+
+  /* Always show a 2px outline so focus is forced-color-safe */
+  :focus-visible {
+    outline: 2px solid Highlight !important;
+    outline-offset: 2px !important;
+  }
+
+  body {
+    background-color: Canvas;
+    color: CanvasText;
+  }
+
+  a          { color: LinkText; }
+  button     { border: 1px solid ButtonText !important; }
+
+  /* Cards: OS strips bg fills — add explicit border so shape is preserved */
+  [data-slot="card"],
+  .card {
+    border: 2px solid CanvasText !important;
+  }
+
+  /* Sidebar edge */
+  [data-slot="sidebar"] {
+    border-inline-end: 2px solid CanvasText !important;
+  }
+
+  /* Wrapper-only sidebar badge (no inner Badge) — rare; keep single ring */
+  [data-slot="sidebar-menu-badge"]:not(:has([data-slot="badge"])) {
+    border: 2px solid CanvasText !important;
+    background-color: Canvas !important;
+    color: CanvasText !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Positioning shell around <Badge/> — do not draw a second ring */
+  [data-slot="sidebar-menu-badge"]:has([data-slot="badge"]) {
+    border: none !important;
+    background: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  [data-slot="badge"],
+  [data-slot="view-toolbar-count"] {
+    border: 2px solid CanvasText !important;
+    background-color: Canvas !important;
+    color: CanvasText !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  [data-slot="badge"] *,
+  [data-slot="view-toolbar-count"] * {
+    color: CanvasText !important;
+  }
+
+  /* Avoid button chrome + inner count pill = double border */
+  button[data-slot="view-segmented-item"] {
+    border: none !important;
+  }
+
+  /* Radix Tabs (ChartCard, library, etc.) — gray inactive + invisible active in OS HC */
+  [data-slot="tabs-list"] {
+    border: 2px solid CanvasText !important;
+    background-color: transparent !important;
+  }
+
+  [data-slot="tabs-trigger"] {
+    color: CanvasText !important;
+    background-color: transparent !important;
+    opacity: 1 !important;
+  }
+
+  [data-slot="tabs-trigger"][data-state="active"] {
+    outline: 2px solid Highlight !important;
+    outline-offset: -2px !important;
+    font-weight: 600 !important;
+  }
+
+  /* Key metrics strip — labels/values/trend icons must not stay muted */
+  [data-slot="key-metrics"] :where(span, p, button, a, i, label, div) {
+    color: CanvasText !important;
+  }
+
+  /* Menu / select / command palette — accent fill is often low-contrast in forced mode */
+  [data-slot="dropdown-menu-item"][data-highlighted]:not([data-disabled]),
+  [data-slot="dropdown-menu-checkbox-item"][data-highlighted]:not([data-disabled]),
+  [data-slot="dropdown-menu-radio-item"][data-highlighted]:not([data-disabled]),
+  [data-slot="dropdown-menu-sub-trigger"][data-highlighted]:not([data-disabled]),
+  [data-slot="select-item"][data-highlighted]:not([data-disabled]),
+  [data-slot="command-item"][data-selected]:not([data-disabled]),
+  [data-slot="command-item"][aria-selected="true"]:not([data-disabled]) {
+    background-color: Highlight !important;
+    color: HighlightText !important;
+  }
+
+  [data-slot="dropdown-menu-item"][data-highlighted] *,
+  [data-slot="dropdown-menu-checkbox-item"][data-highlighted] *,
+  [data-slot="dropdown-menu-radio-item"][data-highlighted] *,
+  [data-slot="dropdown-menu-sub-trigger"][data-highlighted] *,
+  [data-slot="select-item"][data-highlighted] *,
+  [data-slot="command-item"][data-selected] *,
+  [data-slot="command-item"][aria-selected="true"] * {
+    color: HighlightText !important;
+  }
+
+  /* Views toolbar (list hubs) + segmented radiogroup — selection via outline, not fill */
+  [data-slot="view-segmented-toolbar"] {
+    border: 2px solid CanvasText !important;
+    background: transparent !important;
+  }
+
+  [data-slot="view-segmented-item"] {
+    color: CanvasText !important;
+    background: transparent !important;
+  }
+
+  [data-slot="view-segmented-item"][aria-pressed="true"],
+  [data-slot="view-segmented-item"][aria-checked="true"] {
+    outline: 2px solid Highlight !important;
+    outline-offset: -2px !important;
+  }
+
+  /* Portal overlays — explicit Canvas pairing (OS often strips popover fills) */
+  [data-slot="dropdown-menu-content"],
+  [data-slot="dropdown-menu-sub-content"],
+  [data-slot="popover-content"],
+  [data-slot="select-content"],
+  [data-slot="dialog-content"],
+  [data-slot="sheet-content"],
+  [data-slot="drawer-content"] {
+    border: 2px solid CanvasText !important;
+    background-color: Canvas !important;
+    color: CanvasText !important;
+  }
+
+  [data-slot="command"] {
+    background-color: Canvas !important;
+    color: CanvasText !important;
+  }
+
+  /* Charts — forced-colors strips SVG fills; add stroke as fallback */
+  svg path, svg rect, svg circle {
+    forced-color-adjust: none;
+  }
+}
+
+/* ==========================================================================
+   Base layer — global element defaults with AA focus management
+   ========================================================================== */
+@layer base {
+  /* Reset + border-color default */
+  *, *::before, *::after {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  /* Body — outer canvas matches sidebar; main column uses bg-background (white in light) */
+  body {
+    @apply bg-sidebar text-foreground;
+    font-family: var(--font-sans);
+    /* 14px baseline on body. 1rem stays = 16px so all shadcn rem-based
+       layout (spacing, heights, radii) is unaffected at any zoom level. */
+    font-size: 0.875rem;
+    line-height: 1.5;
+    /* font-smoothing: shadcn uses `antialiased` via the html className in layout.tsx.
+       We do NOT override it here because:
+       - macOS: antialiased (greyscale) looks correct
+       - Windows: ClearType (subpixel) is the OS default and looks better than antialiased
+       - `antialiased` on Windows thins fonts and hurts legibility at 150% system zoom
+       Next.js layout.tsx className="antialiased" already handles macOS.
+       Windows browsers ignore -webkit-font-smoothing and use ClearType natively. */
+  }
+
+  html {
+    @apply font-sans;
+    color-scheme: light;
+    /* Match sidebar canvas (body) on overscroll */
+    background-color: var(--sidebar);
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  /* ── Focus management (WCAG 2.4.11 / 2.4.7) ──────────────────── */
+  /* Visible on keyboard navigation only; hidden for mouse users    */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm, 4px);
+  }
+
+  /* Suppress outline for mouse/touch (Safari workaround) */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* ── Reduced motion (WCAG 2.3.3) ────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* ── Touch targets (WCAG 2.5.5) ─────────────────────────────── */
+  /* Applied via utility: min-h-[var(--control-height-touch)]      */
+  /* Global touch-target baseline for interactive elements on mobile */
+  @media (max-width: 767px) {
+    button,
+    [role="button"],
+    [role="checkbox"],
+    [role="radio"],
+    [role="switch"],
+    [role="menuitem"],
+    [role="tab"],
+    a {
+      min-height: var(--control-height-touch, 44px);
+    }
+  }
+
+  /* ── Heading hierarchy ───────────────────────────────────────── */
+  /* Ivy Presto (font-heading) applied ONLY via explicit class/inline style
+     on PageHeader <h1>. All other headings use Inter (font-sans). */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--foreground);
+  }
+
+  /* ── Skip to main content (WCAG 2.4.1) ─────────────────────── */
+  .skip-to-content {
+    position: absolute;
+    left: -9999px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    z-index: 9999;
+  }
+
+  .skip-to-content:focus {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: auto;
+    height: auto;
+    padding: 0.75rem 1.25rem;
+    background: var(--background);
+    color: var(--foreground);
+    border: 2px solid var(--ring);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 1rem;
+    z-index: 9999;
+  }
+}
+
+/* ==========================================================================
+   Utility layer — design-system helpers
+   ========================================================================== */
+@layer utilities {
+  /* Visually hidden but accessible to screen readers (WCAG 1.3.1) */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* AA-safe muted text — use instead of text-muted-foreground on light bg */
+  .text-aa-muted {
+    color: oklch(0.50 0.012 270); /* 5.5:1 on white ✓ */
+  }
+
+  /* Touch-target wrapper for icon buttons (mobile only) */
+  .touch-target {
+    min-height: var(--control-height-touch, 44px);
+    min-width:  var(--control-height-touch, 44px);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  @media (min-width: 768px) {
+    .touch-target {
+      min-height: unset;
+      min-width:  unset;
+    }
+  }
+
+  /* Form field border — use --control-border (3:1 minimum) */
+  .field-border {
+    border-color: var(--control-border);
+  }
+
+  /* Exxat Prism highlight banner */
+  .banner-prism {
+    background-color: var(--banner-prism-bg);
+  }
+}

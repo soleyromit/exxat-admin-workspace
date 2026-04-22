@@ -1,0 +1,25 @@
+---
+description: Exxat DS — do not use toast / sonner / transient snackbars for product messaging.
+alwaysApply: true
+---
+
+# Exxat DS — no toast
+
+## MUST NOT
+
+- Do **not** use **`toast()`** (e.g. **Sonner**), **snackbar**, or other **transient corner notifications** for product feedback in this app.
+- Do **not** add new imports from **`sonner`** or wire **`Toaster`** for feature surfaces.
+
+## Use instead
+
+- **`LocalBanner`** / **`SystemBanner`** for persistent, readable messaging.
+- **Inline status** next to the action (e.g. button label change, subtle text under the control, row-level state).
+- **Dialog / drawer** confirmations when the user must acknowledge an outcome.
+
+## Why
+
+Toasts are easy to miss, stack poorly with complex layouts, and behave inconsistently with screen readers and focus. This product standardizes on **banners + inline + dialogs**.
+
+## Authoritative detail
+
+- **`exxat-ds/AGENTS.md` §6.5**

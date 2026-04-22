@@ -1,0 +1,25 @@
+---
+description: Exxat DS — WCAG 2.1 AA, ARIA tablists, 24px targets, contrast; see AGENTS.md §8
+alwaysApply: true
+---
+
+# Exxat DS — accessibility (binding summary)
+
+**Full checklist:** monorepo **`.cursor/skills/exxat-accessibility/SKILL.md`** when the parent repo is open.
+
+**Product rules:** **`./AGENTS.md` §8**.
+
+## Non‑negotiables
+
+1. **Target:** **WCAG 2.1 Level AA** (2.2 where noted — e.g. target size).
+2. **`role="tablist"`** — only **`role="tab"`** as tab semantics. **MUST NOT** put `role="button"`, menus (`aria-haspopup`), or other controls **inside** the same **`tablist`** container.
+3. **Composite view switchers** (tabs + per-tab menu + remove): **`role="toolbar"`** + **`aria-label`**; **`aria-pressed`** on toggles — **MUST NOT** misuse `tab`/`tablist`.
+4. **Touch targets (2.5.8):** **≥ 24×24 CSS px** or **24px** spacing — **`min-h-6 min-w-6` / `size-6`** for icon-only; avoid **`size-4`** as sole target.
+5. **Contrast:** normal text **≥ 4.5:1**; UI / focus **≥ 3:1** where required; muted on tinted surfaces use correct surface tokens.
+6. **Minimum text size:** visible product copy **≥ 11px** — **`text-xs`** or larger (**`AGENTS.md` §8.3**, **`app/globals.css`** `--text-xs`).
+7. **Dialogs / sheets / drawers:** must have a **Title** (`DialogTitle` / `SheetTitle` / `DrawerTitle`); **`sr-only`** if hidden.
+8. **Format hints persistent, not placeholders (SC 3.3.2, 1.3.1).** Fields with required formats — **date, time, phone, currency, GPA, IDs, URLs, unit-bearing numbers** — MUST render the format via **`FormDescription`** (or equivalent `aria-describedby` helper text). Placeholders disappear on focus and **MUST NOT** be the sole carrier. Prefer picker primitives (e.g. `DatePickerField`) over free-text where available.
+
+Re-run **axe** on **Placements** (or affected page) after changing **views toolbar** or **tabs**.
+
+**Charts:** Keyboard exploration uses **`ChartFigure`**; selected points use **`chart-keyboard-selection`** (ring/stroke parity with gallery) — see **`AGENTS.md` §4.3** and **`.cursor/rules/exxat-dashboard-view-charts.mdc`**.

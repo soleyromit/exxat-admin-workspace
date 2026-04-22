@@ -1,0 +1,34 @@
+
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="referrer" content="origin" />
+      <meta name="build-version" content="0.1.3" />
+      <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, shrink-to-fit=no" />
+      <title>Exxat Student</title>
+      <link rel="stylesheet" href="https://use.typekit.net/kmo8bbz.css" />
+      <script>
+        (function() {
+          var saved = localStorage.getItem("colorTheme");
+          var migrated = localStorage.getItem("colorThemeMigrated");
+          var theme = "lavender";
+          if (saved === "lavender" || saved === "sage") theme = saved;
+          else if (saved === "rose") {
+            if (!migrated) {
+              localStorage.setItem("colorTheme", "lavender");
+              localStorage.setItem("colorThemeMigrated", "1");
+            } else theme = "rose";
+          }
+          document.documentElement.classList.remove("theme-lavender", "theme-sage", "theme-rose");
+          document.documentElement.classList.add("theme-" + theme);
+        })();
+      </script>
+    </head>
+
+    <body style="background-color: #fff; margin: 0; min-height: 100vh;">
+      <div id="root" style="min-height: 100vh;"></div>
+      <script type="module" src="/src/main.tsx"></script>
+    </body>
+  </html>
+  

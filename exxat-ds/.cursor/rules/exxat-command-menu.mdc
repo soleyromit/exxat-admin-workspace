@@ -1,0 +1,22 @@
+---
+description: Exxat DS — global command palette (⌘K) as search + quick AI vs Ask Leo for long answers.
+alwaysApply: true
+---
+
+# Exxat DS — global command palette (`CommandMenu`)
+
+## Intent
+
+- **`CommandMenu`** (**⌘K** / **Ctrl+K**) is **global search** (routes, library, patterns, AI starters, optional row data such as placements / student names)—see **`exxat-ds/AGENTS.md` §7.1** (or `./AGENTS.md` when the workspace is the app folder) and **`exxat-ds/docs/command-menu-pattern.md`**.
+- **Quick / lookup / short AI:** Prefer **results inside the palette** when the product can return compact answers or lightweight “research” without leaving the flow.
+- **Long or complex answers:** **Ask Leo** side panel (**⌘⌥K** / **Ctrl+Alt+K**)—not forced into the palette.
+
+## Implementation pointers
+
+- Shell: `exxat-ds/components/command-menu.tsx`; config **`buildCommandMenuConfig()`** in **`exxat-ds/lib/command-menu-config.ts`**; optional **`dataGroups`** from **`exxat-ds/lib/command-menu-search-data.ts`** (e.g. **`getCommandMenuSearchDataGroups()`**), wired in **`exxat-ds/app/(app)/layout.tsx`**. Keep domain mapping out of the shell.
+- Large indexes: set **`searchOnly: true`** on **`CommandMenuGroup`** so **`command-menu.tsx`** skips the group until the user types (avoids listing every row on open; cmdk shows all items when the search string is empty).
+
+## See also
+
+- **`exxat-ds/AGENTS.md` §7.1**
+- **`exxat-kbd-shortcuts.mdc`** (⌘K vs ⌘⌥K)
