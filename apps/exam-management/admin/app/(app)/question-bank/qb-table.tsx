@@ -1837,15 +1837,6 @@ export function QBTable() {
     return { ...f, options }
   })
 
-  const FILTERABLE_COL_VALUES: Partial<Record<ColKey, string[]>> = {
-    status:       ['Saved', 'Draft'],
-    type:         ['MCQ', 'Fill blank', 'Hotspot', 'Ordering', 'Matching'],
-    difficulty:   ['Easy', 'Medium', 'Hard'],
-    blooms:       ['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'],
-    creator:      qbFilterFields.find(f => f.key === 'creator')?.options ?? [],
-    lastEditedBy: qbFilterFields.find(f => f.key === 'lastEditedBy')?.options ?? [],
-  }
-
   function getColFilterSet(colKey: ColKey): Set<string> | undefined {
     const fieldKey = colKey as QBFilterKey
     if (!QB_FILTER_FIELDS.some(f => f.key === fieldKey)) return undefined
@@ -1884,7 +1875,7 @@ export function QBTable() {
 
   const activeFilterChips: ChipDef[] = [
     ...activeNonEmptyFilters.map(f => {
-      const fieldDef = QB_FILTER_FIELDS.find(fd => fd.key === f.fieldKey)!
+      const fieldDef = qbFilterFields.find(fd => fd.key === f.fieldKey)!
       const countLabel = f.values.length === 1 ? f.values[0] : `${f.values.length} selected`
       return {
         key: `filter-${f.id}`,
