@@ -27,17 +27,21 @@ function FolderTreePicker({
   currentFolderId,
   value,
   onChange,
-  expandNodeId,
+  inlineCreateInFolderId,
+  onInlineCreateDone,
 }: {
   currentFolderId: string | null
   value: string | null
   onChange: (id: string) => void
-  expandNodeId?: string | null
+  inlineCreateInFolderId: string | null
+  onInlineCreateDone: () => void
 }) {
-  const { folders, accessibleFolderIds, currentPersona } = useQB()
+  const { folders, accessibleFolderIds, currentPersona, createFolder } = useQB()
   const isExamAdmin = currentPersona.role === 'exam_admin'
   const [search, setSearch] = useState('')
   const searchRef = useRef<HTMLInputElement>(null)
+  const [inlineNewName, setInlineNewName] = useState('')
+  const inlineInputRef = useRef<HTMLInputElement>(null)
 
   const [expanded, setExpanded] = useState<Set<string>>(() => {
     const init = new Set<string>()
@@ -45,10 +49,14 @@ function FolderTreePicker({
     return init
   })
 
-  // Expand a specific node (e.g. after new folder creation)
+  // When inline create activates, expand the target folder and focus the input
   useEffect(() => {
-    if (expandNodeId) setExpanded(prev => { const n = new Set(prev); n.add(expandNodeId); return n })
-  }, [expandNodeId])
+    if (inlineCreateInFolderId) {
+      setExpanded(prev => { const n = new Set(prev); n.add(inlineCreateInFolderId); return n })
+      setInlineNewName('')
+      setTimeout(() => inlineInputRef.current?.focus(), 50)
+    }
+  }, [inlineCreateInFolderId])
 
   function toggle(id: string, e: React.MouseEvent) {
     e.stopPropagation()
@@ -69,52 +77,44 @@ function FolderTreePicker({
     return parts.join(' › ')
   }
 
-  function folderRowStyle(isSelected: boolean, isEligible: boolean, isCurrent: boolean) {
-    return {
-      display: 'flex' as const, alignItems: 'center' as const, gap: 6,
-      paddingRight: 8, height: 36,
-      borderRadius: 6, margin: '1px 0',
-      cursor: (isCurrent || !isEligible) ? 'default' : 'pointer',
-      backgroundColor: isSelected ? 'color-mix(in oklch, var(--brand-color) 10%, var(--background))' : 'transparent',
-      border: `1px solid ${isSelected ? 'color-mix(in oklch, var(--brand-color) 30%, transparent)' : 'transparent'}`,
-      opacity: isCurrent ? 0.45 : 1,
-      transition: 'background 80ms',
-    }
+  function handleInlineCreate() {
+    const name = inlineNewName.trim()
+    if (!name || !inlineCreateInFolderId) return
+    createFolder(name, inlineCreateInFolderId)
+    setInlineNewName('')
+    onInlineCreateDone()
   }
 
-  function FolderRowContent({ node, isSelected, isCurrent, isExpanded, hasChildren }: {
-    node: typeof folders[number]; isSelected: boolean; isCurrent: boolean; isExpanded: boolean; hasChildren: boolean
-  }) {
-    return (
-      <>
-        <i className={`fa-light ${node.isCourse ? 'fa-graduation-cap' : isExpanded && hasChildren ? 'fa-folder-open' : 'fa-folder'}`}
-          aria-hidden="true"
-          style={{ fontSize: 12, flexShrink: 0, color: isSelected ? 'var(--brand-color)' : 'var(--muted-foreground)' }}
-        />
-        <span style={{ fontSize: 13, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          color: isSelected ? 'var(--brand-color)' : 'var(--foreground)', fontWeight: isSelected ? 500 : 400 }}>
-          {getFolderLabel(node)}
-        </span>
-        {isCurrent && <span style={{ fontSize: 10, color: 'var(--muted-foreground)', flexShrink: 0 }}>current</span>}
-        {isSelected && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, color: 'var(--brand-color)', flexShrink: 0 }} />}
-      </>
-    )
+  function cancelInlineCreate() {
+    setInlineNewName('')
+    onInlineCreateDone()
   }
 
   function renderNode(node: typeof folders[number], depth: number): React.ReactNode {
     const children = folders.filter(f => f.parentId === node.id)
-    const hasChildren = children.length > 0
+    const showingInline = inlineCreateInFolderId === node.id
+    const hasChildren = children.length > 0 || showingInline
     const isExpanded = expanded.has(node.id)
     const isCurrent = node.id === currentFolderId
     const isSelected = value === node.id
     const isEligible = !isCurrent && (isExamAdmin || accessibleFolderIds.has(node.id))
     const indentPx = 8 + depth * 20
+    const childIndentPx = 8 + (depth + 1) * 20
 
     return (
       <React.Fragment key={node.id}>
         <div
           onClick={() => { if (isEligible) { onChange(node.id); if (hasChildren) setExpanded(prev => { const n = new Set(prev); n.add(node.id); return n }) } }}
-          style={{ ...folderRowStyle(isSelected, isEligible, isCurrent), paddingLeft: indentPx }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            paddingLeft: indentPx, paddingRight: 8, height: 36,
+            borderRadius: 6, margin: '1px 0',
+            cursor: (isCurrent || !isEligible) ? 'default' : 'pointer',
+            backgroundColor: isSelected ? 'var(--sidebar-accent)' : 'transparent',
+            border: `1px solid ${isSelected ? 'var(--sidebar-border)' : 'transparent'}`,
+            opacity: isCurrent ? 0.45 : 1,
+            transition: 'background 80ms',
+          }}
           onMouseEnter={e => { if (isEligible && !isSelected) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--accent)' }}
           onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent' }}
         >
@@ -126,9 +126,52 @@ function FolderTreePicker({
             <i className="fa-light fa-chevron-right" aria-hidden="true"
               style={{ fontSize: 9, transition: 'transform 150ms', transform: isExpanded ? 'rotate(90deg)' : 'none' }} />
           </button>
-          <FolderRowContent node={node} isSelected={isSelected} isCurrent={isCurrent} isExpanded={isExpanded} hasChildren={hasChildren} />
+          <i className={`fa-light ${node.isCourse ? 'fa-graduation-cap' : isExpanded && hasChildren ? 'fa-folder-open' : 'fa-folder'}`}
+            aria-hidden="true"
+            style={{ fontSize: 12, flexShrink: 0, color: isSelected ? 'var(--sidebar-accent-foreground)' : 'var(--muted-foreground)' }}
+          />
+          <span style={{ fontSize: 13, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            color: isSelected ? 'var(--sidebar-accent-foreground)' : 'var(--foreground)', fontWeight: isSelected ? 500 : 400 }}>
+            {getFolderLabel(node)}
+          </span>
+          {isCurrent && <span style={{ fontSize: 10, color: 'var(--muted-foreground)', flexShrink: 0 }}>current</span>}
+          {isSelected && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, color: 'var(--sidebar-accent-foreground)', flexShrink: 0 }} />}
         </div>
-        {isExpanded && hasChildren && children.map(child => renderNode(child, depth + 1))}
+        {isExpanded && (
+          <>
+            {children.map(child => renderNode(child, depth + 1))}
+            {/* Inline new folder row — appears at the bottom of children, correctly indented */}
+            {showingInline && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                paddingLeft: childIndentPx, paddingRight: 8, height: 34,
+                borderRadius: 6, margin: '1px 0',
+                border: '1px solid var(--sidebar-border)',
+                backgroundColor: 'var(--sidebar-accent)',
+              }}>
+                <div style={{ width: 16, flexShrink: 0 }} />
+                <i className="fa-light fa-folder" aria-hidden="true" style={{ fontSize: 12, color: 'var(--sidebar-accent-foreground)', flexShrink: 0 }} />
+                <input
+                  ref={inlineInputRef}
+                  value={inlineNewName}
+                  onChange={e => setInlineNewName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleInlineCreate(); if (e.key === 'Escape') cancelInlineCreate() }}
+                  placeholder="Folder name…"
+                  style={{ flex: 1, fontSize: 13, background: 'transparent', border: 'none', outline: 'none', color: 'var(--foreground)', minWidth: 0 }}
+                  aria-label="New folder name"
+                />
+                <Button size="icon-xs" variant="ghost" onClick={handleInlineCreate} disabled={!inlineNewName.trim()} aria-label="Create folder"
+                  style={{ color: 'var(--sidebar-accent-foreground)', flexShrink: 0 }}>
+                  <i className="fa-light fa-check" aria-hidden="true" style={{ fontSize: 11 }} />
+                </Button>
+                <Button size="icon-xs" variant="ghost" onClick={cancelInlineCreate} aria-label="Cancel"
+                  style={{ flexShrink: 0 }}>
+                  <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 11 }} />
+                </Button>
+              </div>
+            )}
+          </>
+        )}
       </React.Fragment>
     )
   }
@@ -147,7 +190,7 @@ function FolderTreePicker({
   return (
     <div>
       {/* Search */}
-      <div style={{ padding: '0 12px 8px', position: 'relative', display: 'flex', alignItems: 'center' }}>
+      <div style={{ padding: '8px 12px', position: 'relative', display: 'flex', alignItems: 'center' }}>
         <i className="fa-light fa-magnifying-glass" aria-hidden="true"
           style={{ position: 'absolute', left: 22, fontSize: 12, color: 'var(--muted-foreground)', pointerEvents: 'none' }} />
         <Input
@@ -169,33 +212,40 @@ function FolderTreePicker({
       </div>
 
       {/* Tree or search results */}
-      <div style={{ maxHeight: 272, overflowY: 'auto', padding: '0 12px 4px' }}>
+      <div style={{ height: 256, overflowY: 'auto', padding: '0 8px 8px' }}>
         {searchResults ? (
           searchResults.length > 0 ? searchResults.map(f => {
             const isSelected = value === f.id
-            const isEligible = true
             const ancestorPath = getAncestorPath(f)
             return (
               <div key={f.id}
                 onClick={() => onChange(f.id)}
-                style={{ ...folderRowStyle(isSelected, isEligible, false), paddingLeft: 8, height: 'auto', minHeight: 40, paddingBlock: 6, flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '6px 8px', borderRadius: 6, margin: '1px 0', cursor: 'pointer',
+                  backgroundColor: isSelected ? 'var(--sidebar-accent)' : 'transparent',
+                  border: `1px solid ${isSelected ? 'var(--sidebar-border)' : 'transparent'}`,
+                }}
                 onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--accent)' }}
                 onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent' }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}>
-                  <i className="fa-light fa-folder" aria-hidden="true" style={{ fontSize: 12, color: isSelected ? 'var(--brand-color)' : 'var(--muted-foreground)', flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, flex: 1, fontWeight: isSelected ? 500 : 400, color: isSelected ? 'var(--brand-color)' : 'var(--foreground)' }}>{getFolderLabel(f)}</span>
-                  {isSelected && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, color: 'var(--brand-color)', flexShrink: 0 }} />}
+                <i className={`fa-light ${f.isCourse ? 'fa-graduation-cap' : 'fa-folder'}`} aria-hidden="true"
+                  style={{ fontSize: 12, color: isSelected ? 'var(--sidebar-accent-foreground)' : 'var(--muted-foreground)', flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: isSelected ? 500 : 400, color: isSelected ? 'var(--sidebar-accent-foreground)' : 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {getFolderLabel(f)}
+                  </div>
+                  {ancestorPath && (
+                    <div style={{ fontSize: 11, color: 'var(--muted-foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {ancestorPath}
+                    </div>
+                  )}
                 </div>
-                {ancestorPath && (
-                  <span style={{ fontSize: 11, color: 'var(--muted-foreground)', paddingLeft: 18, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
-                    {ancestorPath}
-                  </span>
-                )}
+                {isSelected && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, color: 'var(--sidebar-accent-foreground)', flexShrink: 0 }} />}
               </div>
             )
           }) : (
-            <p style={{ fontSize: 13, color: 'var(--muted-foreground)', textAlign: 'center', padding: '20px 0' }}>
+            <p style={{ fontSize: 13, color: 'var(--muted-foreground)', textAlign: 'center', padding: '24px 0' }}>
               No folders match &ldquo;{search}&rdquo;
             </p>
           )
@@ -207,176 +257,107 @@ function FolderTreePicker({
   )
 }
 
-// ── Shared move dialog footer with "New folder" ───────────────────────────────
-function MoveDialogFooter({
-  targetId,
-  targetName,
-  onNewFolder,
+// ── Move dialog shell (shared by single-question + bulk move) ─────────────────
+function MoveFolderDialog({
+  title,
+  subtitle,
+  currentFolderId,
   onCancel,
   onConfirm,
-  creatingFolder,
-  newFolderName,
-  setNewFolderName,
-  onNewFolderConfirm,
-  onNewFolderCancel,
+  open,
+  onOpenChange,
 }: {
-  targetId: string | null
-  targetName: string
-  onNewFolder: () => void
+  title: string
+  subtitle?: string
+  currentFolderId: string | null
   onCancel: () => void
-  onConfirm: () => void
-  creatingFolder: boolean
-  newFolderName: string
-  setNewFolderName: (v: string) => void
-  onNewFolderConfirm: () => void
-  onNewFolderCancel: () => void
+  onConfirm: (targetId: string) => void
+  open: boolean
+  onOpenChange: (v: boolean) => void
 }) {
-  const newFolderInputRef = useRef<HTMLInputElement>(null)
-  useEffect(() => { if (creatingFolder) setTimeout(() => newFolderInputRef.current?.focus(), 50) }, [creatingFolder])
+  const [targetId, setTargetId] = useState<string | null>(null)
+  const [inlineCreateInFolderId, setInlineCreateInFolderId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (open) { setTargetId(null); setInlineCreateInFolderId(null) }
+  }, [open])
 
   return (
-    <div style={{ borderTop: '1px solid var(--border)' }}>
-      {creatingFolder && (
-        <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', backgroundColor: 'var(--muted)', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: 0 }}>
-            New subfolder inside <strong style={{ color: 'var(--foreground)' }}>{targetName}</strong>
-          </p>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <i className="fa-light fa-folder" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)', flexShrink: 0 }} />
-            <Input
-              ref={newFolderInputRef}
-              placeholder="Folder name…"
-              value={newFolderName}
-              onChange={e => setNewFolderName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') onNewFolderConfirm(); if (e.key === 'Escape') onNewFolderCancel() }}
-              style={{ flex: 1, fontSize: 13, height: 32 }}
-            />
-            <Button size="icon-sm" variant="ghost" onClick={onNewFolderConfirm} disabled={!newFolderName.trim()} aria-label="Create folder">
-              <i className="fa-light fa-check" aria-hidden="true" style={{ fontSize: 12 }} />
-            </Button>
-            <Button size="icon-sm" variant="ghost" onClick={onNewFolderCancel} aria-label="Cancel">
-              <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 12 }} />
-            </Button>
-          </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md p-0 gap-0" style={{ overflow: 'hidden' }}>
+        <DialogHeader className="px-5 pt-5 pb-3 border-b border-border shrink-0">
+          <DialogTitle>{title}</DialogTitle>
+          {subtitle && (
+            <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {subtitle}
+            </p>
+          )}
+        </DialogHeader>
+
+        <FolderTreePicker
+          currentFolderId={currentFolderId}
+          value={targetId}
+          onChange={setTargetId}
+          inlineCreateInFolderId={inlineCreateInFolderId}
+          onInlineCreateDone={() => setInlineCreateInFolderId(null)}
+        />
+
+        {/* Footer */}
+        <div style={{ borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', padding: '12px 16px', gap: 8 }}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Button
+                  variant="ghost" size="sm"
+                  onClick={() => { if (targetId) setInlineCreateInFolderId(targetId) }}
+                  disabled={!targetId || !!inlineCreateInFolderId}
+                  style={{ gap: 6, fontSize: 12 }}
+                >
+                  <i className="fa-light fa-folder-plus" aria-hidden="true" style={{ fontSize: 12 }} />
+                  New folder
+                </Button>
+              </span>
+            </TooltipTrigger>
+            {!targetId && <TooltipContent>Select a folder first</TooltipContent>}
+          </Tooltip>
+          <div style={{ flex: 1 }} />
+          <Button variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
+          <Button size="sm" onClick={() => targetId && onConfirm(targetId)} disabled={!targetId}>
+            Move here
+          </Button>
         </div>
-      )}
-      <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', gap: 8 }}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span>
-              <Button
-                variant="ghost" size="sm"
-                onClick={onNewFolder}
-                disabled={!targetId || creatingFolder}
-                style={{ gap: 6, fontSize: 12 }}
-              >
-                <i className="fa-light fa-folder-plus" aria-hidden="true" style={{ fontSize: 12 }} />
-                New folder
-              </Button>
-            </span>
-          </TooltipTrigger>
-          {!targetId && <TooltipContent>Select a folder first</TooltipContent>}
-        </Tooltip>
-        <div style={{ flex: 1 }} />
-        <Button variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
-        <Button size="sm" onClick={onConfirm} disabled={!targetId}>Move here</Button>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
 // ── Move Question Dialog ───────────────────────────────────────────────────────
 function MoveQuestionDialog({ question, open, onClose }: { question: { id: string; title: string; folder: string }; open: boolean; onClose: () => void }) {
-  const { moveQuestionToFolder, createFolder, folders } = useQB()
-  const [targetId, setTargetId] = useState<string | null>(null)
-  const [creatingFolder, setCreatingFolder] = useState(false)
-  const [newFolderName, setNewFolderName] = useState('')
-  const [expandNodeId, setExpandNodeId] = useState<string | null>(null)
-
-  const targetFolder = targetId ? folders.find(f => f.id === targetId) : null
-
-  function handleConfirm() {
-    if (!targetId) return
-    moveQuestionToFolder(question.id, targetId)
-    onClose()
-  }
-
-  function handleNewFolderConfirm() {
-    const name = newFolderName.trim()
-    if (!name || !targetId) return
-    createFolder(name, targetId)
-    setExpandNodeId(targetId)
-    setCreatingFolder(false)
-    setNewFolderName('')
-  }
-
+  const { moveQuestionToFolder } = useQB()
   return (
-    <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
-      <DialogContent className="sm:max-w-md p-0 gap-0" style={{ overflow: 'hidden' }}>
-        <DialogHeader className="px-5 pt-5 pb-3 border-b border-border">
-          <DialogTitle>Move to folder</DialogTitle>
-          <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 2 }}>
-            {question.title.length > 72 ? question.title.slice(0, 72) + '…' : question.title}
-          </p>
-        </DialogHeader>
-        <FolderTreePicker currentFolderId={question.folder} value={targetId} onChange={setTargetId} expandNodeId={expandNodeId} />
-        <MoveDialogFooter
-          targetId={targetId}
-          targetName={targetFolder ? (targetFolder.isCourse ? courseFolderShortLabel(targetFolder.name) : targetFolder.name) : ''}
-          onNewFolder={() => setCreatingFolder(true)}
-          onCancel={onClose}
-          onConfirm={handleConfirm}
-          creatingFolder={creatingFolder}
-          newFolderName={newFolderName}
-          setNewFolderName={setNewFolderName}
-          onNewFolderConfirm={handleNewFolderConfirm}
-          onNewFolderCancel={() => { setCreatingFolder(false); setNewFolderName('') }}
-        />
-      </DialogContent>
-    </Dialog>
+    <MoveFolderDialog
+      title="Move to folder"
+      subtitle={question.title.length > 72 ? question.title.slice(0, 72) + '…' : question.title}
+      currentFolderId={question.folder}
+      onCancel={onClose}
+      onConfirm={targetId => { moveQuestionToFolder(question.id, targetId); onClose() }}
+      open={open}
+      onOpenChange={v => { if (!v) onClose() }}
+    />
   )
 }
 
 // ── Bulk Move Dialog ──────────────────────────────────────────────────────────
 function BulkMoveDialog({ count, onConfirm, onClose }: { count: number; onConfirm: (targetId: string) => void; onClose: () => void }) {
-  const { createFolder, folders } = useQB()
-  const [targetId, setTargetId] = useState<string | null>(null)
-  const [creatingFolder, setCreatingFolder] = useState(false)
-  const [newFolderName, setNewFolderName] = useState('')
-  const [expandNodeId, setExpandNodeId] = useState<string | null>(null)
-
-  const targetFolder = targetId ? folders.find(f => f.id === targetId) : null
-
-  function handleNewFolderConfirm() {
-    const name = newFolderName.trim()
-    if (!name || !targetId) return
-    createFolder(name, targetId)
-    setExpandNodeId(targetId)
-    setCreatingFolder(false)
-    setNewFolderName('')
-  }
-
   return (
-    <Dialog open onOpenChange={v => { if (!v) onClose() }}>
-      <DialogContent className="sm:max-w-md p-0 gap-0" style={{ overflow: 'hidden' }}>
-        <DialogHeader className="px-5 pt-5 pb-3 border-b border-border">
-          <DialogTitle>Move {count} question{count !== 1 ? 's' : ''} to folder</DialogTitle>
-        </DialogHeader>
-        <FolderTreePicker currentFolderId={null} value={targetId} onChange={setTargetId} expandNodeId={expandNodeId} />
-        <MoveDialogFooter
-          targetId={targetId}
-          targetName={targetFolder ? (targetFolder.isCourse ? courseFolderShortLabel(targetFolder.name) : targetFolder.name) : ''}
-          onNewFolder={() => setCreatingFolder(true)}
-          onCancel={onClose}
-          onConfirm={() => targetId && onConfirm(targetId)}
-          creatingFolder={creatingFolder}
-          newFolderName={newFolderName}
-          setNewFolderName={setNewFolderName}
-          onNewFolderConfirm={handleNewFolderConfirm}
-          onNewFolderCancel={() => { setCreatingFolder(false); setNewFolderName('') }}
-        />
-      </DialogContent>
-    </Dialog>
+    <MoveFolderDialog
+      title={`Move ${count} question${count !== 1 ? 's' : ''} to folder`}
+      currentFolderId={null}
+      onCancel={onClose}
+      onConfirm={onConfirm}
+      open
+      onOpenChange={v => { if (!v) onClose() }}
+    />
   )
 }
 
