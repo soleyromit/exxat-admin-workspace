@@ -17,25 +17,119 @@ import type { Question, QStatus } from '@/lib/qb-types'
 import { MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
 import { RequestEditAccessModal } from './qb-modals'
 
+// ── Folder Tree Picker (shared by single + bulk move dialogs) ─────────────────
+function courseFolderShortLabel(name: string): string {
+  const match = name.match(/^([A-Z0-9]+)\s/)
+  return match ? `${match[1]} · Question Bank` : name
+}
+
+function FolderTreePicker({
+  currentFolderId,
+  value,
+  onChange,
+}: {
+  currentFolderId: string | null
+  value: string | null
+  onChange: (id: string) => void
+}) {
+  const { folders, accessibleFolderIds, currentPersona } = useQB()
+  const isExamAdmin = currentPersona.role === 'exam_admin'
+
+  const [expanded, setExpanded] = useState<Set<string>>(() => {
+    const init = new Set<string>()
+    folders.filter(f => f.isCourse).forEach(f => init.add(f.id))
+    return init
+  })
+
+  function toggle(id: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    setExpanded(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+  }
+
+  function renderNode(node: typeof folders[number], depth: number): React.ReactNode {
+    const children = folders.filter(f => f.parentId === node.id)
+    const hasChildren = children.length > 0
+    const isExpanded = expanded.has(node.id)
+    const isCurrent = node.id === currentFolderId
+    const isSelected = value === node.id
+    const isEligible = !isCurrent && (isExamAdmin || accessibleFolderIds.has(node.id))
+    const indentPx = 8 + depth * 20
+
+    return (
+      <React.Fragment key={node.id}>
+        <div
+          onClick={() => { if (isEligible) { onChange(node.id); if (hasChildren) setExpanded(prev => { const n = new Set(prev); n.add(node.id); return n }) } }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            paddingLeft: indentPx, paddingRight: 8, height: 36,
+            borderRadius: 6, margin: '1px 0',
+            cursor: isCurrent ? 'default' : isEligible ? 'pointer' : 'default',
+            backgroundColor: isSelected ? 'color-mix(in oklch, var(--brand-color) 10%, var(--background))' : 'transparent',
+            border: `1px solid ${isSelected ? 'color-mix(in oklch, var(--brand-color) 30%, transparent)' : 'transparent'}`,
+            opacity: isCurrent ? 0.45 : 1,
+            transition: 'background 80ms',
+          }}
+          onMouseEnter={e => { if (isEligible && !isSelected) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--accent)' }}
+          onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent' }}
+        >
+          {/* Expand/collapse chevron — 16px placeholder keeps alignment */}
+          <button
+            tabIndex={-1}
+            aria-label={isExpanded ? 'Collapse' : 'Expand'}
+            onClick={e => toggle(node.id, e)}
+            style={{
+              width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'none', border: 'none', padding: 0, flexShrink: 0,
+              cursor: hasChildren ? 'pointer' : 'default',
+              color: 'var(--muted-foreground)',
+              opacity: hasChildren ? 1 : 0,
+            }}
+          >
+            <i
+              className="fa-light fa-chevron-right"
+              aria-hidden="true"
+              style={{ fontSize: 9, transition: 'transform 150ms', transform: isExpanded ? 'rotate(90deg)' : 'none' }}
+            />
+          </button>
+          {/* Folder icon */}
+          <i
+            className={`fa-light ${node.isCourse ? 'fa-graduation-cap' : isExpanded && hasChildren ? 'fa-folder-open' : 'fa-folder'}`}
+            aria-hidden="true"
+            style={{ fontSize: 12, flexShrink: 0, color: isSelected ? 'var(--brand-color)' : 'var(--muted-foreground)' }}
+          />
+          {/* Name */}
+          <span style={{
+            fontSize: 13, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            color: isSelected ? 'var(--brand-color)' : 'var(--foreground)',
+            fontWeight: isSelected ? 500 : 400,
+          }}>
+            {node.isCourse ? courseFolderShortLabel(node.name) : node.name}
+          </span>
+          {isCurrent && (
+            <span style={{ fontSize: 10, color: 'var(--muted-foreground)', flexShrink: 0, marginLeft: 4 }}>current</span>
+          )}
+          {isSelected && (
+            <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, color: 'var(--brand-color)', flexShrink: 0, marginLeft: 4 }} />
+          )}
+        </div>
+        {isExpanded && hasChildren && children.map(child => renderNode(child, depth + 1))}
+      </React.Fragment>
+    )
+  }
+
+  const courseFolders = folders.filter(f => f.isCourse && f.parentId === null)
+
+  return (
+    <div style={{ maxHeight: 300, overflowY: 'auto', padding: '4px 2px' }}>
+      {courseFolders.map(course => renderNode(course, 0))}
+    </div>
+  )
+}
+
 // ── Move Question Dialog ───────────────────────────────────────────────────────
 function MoveQuestionDialog({ question, open, onClose }: { question: { id: string; title: string; folder: string }; open: boolean; onClose: () => void }) {
-  const { folders, moveQuestionToFolder, accessibleFolderIds, currentPersona } = useQB()
-  const isExamAdmin = currentPersona.role === 'exam_admin'
+  const { moveQuestionToFolder } = useQB()
   const [targetId, setTargetId] = useState<string | null>(null)
-
-  const eligible = folders.filter(f => f.id !== question.folder && (isExamAdmin || accessibleFolderIds.has(f.id)))
-
-  function getFolderPath(f: typeof folders[number]): string {
-    const parts: string[] = [f.name]
-    let cur = f
-    while (cur.parentId) {
-      const parent = folders.find(x => x.id === cur.parentId)
-      if (!parent) break
-      parts.unshift(parent.name)
-      cur = parent
-    }
-    return parts.join(' / ')
-  }
 
   function handleConfirm() {
     if (!targetId) return
@@ -45,40 +139,40 @@ function MoveQuestionDialog({ question, open, onClose }: { question: { id: strin
 
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md p-0 gap-0" style={{ overflow: 'hidden' }}>
+        <DialogHeader className="px-5 pt-5 pb-3 border-b border-border">
           <DialogTitle>Move to folder</DialogTitle>
+          <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 2 }}>
+            {question.title.length > 72 ? question.title.slice(0, 72) + '…' : question.title}
+          </p>
         </DialogHeader>
-        <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 4 }}>
-          {question.title.slice(0, 60)}{question.title.length > 60 ? '…' : ''}
-        </p>
-        <div style={{ maxHeight: 280, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {eligible.map(f => (
-            <Button
-              key={f.id}
-              variant="ghost"
-              onClick={() => setTargetId(f.id)}
-              className="w-full justify-start"
-              style={{
-                background: targetId === f.id ? 'var(--brand-tint)' : 'transparent',
-                border: targetId === f.id ? '1px solid var(--brand-color)' : '1px solid transparent',
-                borderRadius: 6, fontSize: 12, height: 'auto', padding: '6px 10px',
-              }}
-            >
-              <i className={`fa-light ${f.isCourse ? 'fa-graduation-cap' : 'fa-folder'}`} aria-hidden="true"
-                style={{ fontSize: 12, color: 'var(--muted-foreground)', width: 14, flexShrink: 0 }} />
-              <span style={{ textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {getFolderPath(f)}
-              </span>
-            </Button>
-          ))}
-          {eligible.length === 0 && (
-            <p style={{ fontSize: 12, color: 'var(--muted-foreground)', padding: '8px 0' }}>No other folders available.</p>
-          )}
+        <div style={{ padding: '8px 12px' }}>
+          <FolderTreePicker currentFolderId={question.folder} value={targetId} onChange={setTargetId} />
         </div>
-        <DialogFooter>
+        <DialogFooter className="px-5 py-4 border-t border-border">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleConfirm} disabled={!targetId}>Move here</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── Bulk Move Dialog ──────────────────────────────────────────────────────────
+function BulkMoveDialog({ count, onConfirm, onClose }: { count: number; onConfirm: (targetId: string) => void; onClose: () => void }) {
+  const [targetId, setTargetId] = useState<string | null>(null)
+  return (
+    <Dialog open onOpenChange={v => { if (!v) onClose() }}>
+      <DialogContent className="sm:max-w-md p-0 gap-0" style={{ overflow: 'hidden' }}>
+        <DialogHeader className="px-5 pt-5 pb-3 border-b border-border">
+          <DialogTitle>Move {count} question{count !== 1 ? 's' : ''} to folder</DialogTitle>
+        </DialogHeader>
+        <div style={{ padding: '8px 12px' }}>
+          <FolderTreePicker currentFolderId={null} value={targetId} onChange={setTargetId} />
+        </div>
+        <DialogFooter className="px-5 py-4 border-t border-border">
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => targetId && onConfirm(targetId)} disabled={!targetId}>Move here</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -1136,7 +1230,7 @@ function mockVersionHistory(q: Question): { v: number; editor: string; date: str
 }
 
 // ── Question Detail Sheet ─────────────────────────────────────────────────────
-function QuestionDetailSheet({ question, open, onClose }: { question: Question | null; open: boolean; onClose: () => void }) {
+function QuestionDetailSheet({ question, open, onClose, onMove }: { question: Question | null; open: boolean; onClose: () => void; onMove: (q: { id: string; title: string; folder: string }) => void }) {
   const { folders, updateQuestion, duplicateQuestion, currentPersona, accessibleFolderIds } = useQB()
   const router = useRouter()
   const [versionHistoryOpen, setVersionHistoryOpen] = useState(false)
@@ -1192,8 +1286,8 @@ function QuestionDetailSheet({ question, open, onClose }: { question: Question |
             {question.title}
           </p>
           {canEdit ? (
-            <div style={{ display: 'flex', gap: 6 }}>
-              <Button size="sm" variant="default" style={{ flex: 1, fontSize: 12 }} onClick={() => router.push(`/questions/${question.id}`)}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <Button size="sm" variant="default" style={{ flex: 1, fontSize: 12, minWidth: 0 }} onClick={() => router.push(`/questions/${question.id}`)}>
                 <i className="fa-light fa-pen" aria-hidden="true" />
                 Edit question
               </Button>
@@ -1210,6 +1304,11 @@ function QuestionDetailSheet({ question, open, onClose }: { question: Question |
                   Revert to Draft
                 </Button>
               )}
+              <Button size="sm" variant="outline" style={{ fontSize: 12 }}
+                onClick={() => onMove({ id: question.id, title: question.title, folder: question.folder })}>
+                <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" />
+                Move
+              </Button>
             </div>
           ) : (
             <Button size="sm" variant="outline" className="w-full" style={{ fontSize: 12 }}
@@ -2684,7 +2783,7 @@ export function QBTable() {
               style={{ fontSize: 12, gap: 6, height: 32 }}
             >
               <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 12 }} />
-              Move
+              Move to folder
             </Button>
 
             {/* Status change dropdown */}
@@ -2874,52 +2973,16 @@ export function QBTable() {
       {/* ── Bulk move to folder ── */}
       {bulkMoveOpen && (() => {
         const selectedQs = visibleQuestions.filter(q => selectedQuestionIds.has(q.id))
-        const eligible = folders.filter(f => !f.isCourse)
         return (
-          <Dialog open onOpenChange={v => { if (!v) setBulkMoveOpen(false) }}>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Move {selectedQs.length} question{selectedQs.length !== 1 ? 's' : ''} to folder</DialogTitle>
-              </DialogHeader>
-              <div style={{ maxHeight: 280, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {eligible.map(f => {
-                  const parts: string[] = [f.name]
-                  let cur = f
-                  while (cur.parentId) {
-                    const parent = folders.find(x => x.id === cur.parentId)
-                    if (!parent) break
-                    parts.unshift(parent.name)
-                    cur = parent
-                  }
-                  const path = parts.join(' / ')
-                  return (
-                    <Button
-                      key={f.id}
-                      variant="ghost"
-                      onClick={() => {
-                        selectedQs.forEach(q => moveQuestionToFolder(q.id, f.id))
-                        clearSelection()
-                        setBulkMoveOpen(false)
-                      }}
-                      className="w-full justify-start h-auto py-2 text-left"
-                      style={{ gap: 10 }}
-                    >
-                      <i className="fa-light fa-folder" aria-hidden="true" style={{ fontSize: 13, color: 'var(--muted-foreground)', flexShrink: 0 }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</div>
-                        {parts.length > 1 && (
-                          <div style={{ fontSize: 11, color: 'var(--muted-foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{path}</div>
-                        )}
-                      </div>
-                    </Button>
-                  )
-                })}
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setBulkMoveOpen(false)}>Cancel</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <BulkMoveDialog
+            count={selectedQs.length}
+            onConfirm={targetId => {
+              selectedQs.forEach(q => moveQuestionToFolder(q.id, targetId))
+              clearSelection()
+              setBulkMoveOpen(false)
+            }}
+            onClose={() => setBulkMoveOpen(false)}
+          />
         )
       })()}
 
@@ -2965,6 +3028,7 @@ export function QBTable() {
         question={detailQuestion}
         open={!!detailQuestionId}
         onClose={() => setDetailQuestionId(null)}
+        onMove={q => { setDetailQuestionId(null); setMoveTarget(q) }}
       />
 
       {/* ── Request Edit Access Modal ── */}

@@ -32,20 +32,19 @@ function buildFolderPath(folderId: string | null, folders: FolderNode[]): Folder
   return parts
 }
 
-// Compact breadcrumb: root + "..." (popover for intermediates) + leaf
-// Rules:
-//   0 segments → just "Question Bank"
-//   1 segment  → "Question Bank > Leaf"
-//   2+ segments → "Question Bank > … > Leaf"  (… opens popover with intermediates)
+// Breadcrumb rules:
+//   0 segments → "Question Bank"
+//   1 segment  → "Question Bank > Root"
+//   2 segments → "Question Bank > Parent > Leaf"
+//   3+ segments → "Question Bank > … > Parent > Leaf"  (… collapses root + everything before parent)
 function QBBreadcrumb() {
   const { folders, selectedFolderId, navView, setNavView, navigateToFolder } = useQB()
 
   const folderPath = navView === 'folder' ? buildFolderPath(selectedFolderId, folders) : []
-  // segments = all folder nodes from root → leaf
-  // first = root course folder, last = selected folder
-  const first = folderPath[0] ?? null
-  const last  = folderPath[folderPath.length - 1] ?? null
-  const intermediates = folderPath.slice(1, -1) // everything between root and leaf
+  const last   = folderPath[folderPath.length - 1] ?? null
+  const parent = folderPath.length >= 2 ? folderPath[folderPath.length - 2] : null
+  // collapsedNodes: root + everything between root and parent (shown in … popover)
+  const collapsedNodes = folderPath.slice(0, -2)
 
   const SEP = () => (
     <i className="fa-light fa-chevron-right" aria-hidden="true"
@@ -62,92 +61,79 @@ function QBBreadcrumb() {
     </Button>
   )
 
-  // Root label always navigates to "My Questions"
   const rootBtn = crumbBtn('Question Bank', () => setNavView('my'), folderPath.length > 0)
 
+  const leafSpan = (node: FolderNode) => (
+    <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>
+      {node.isCourse ? courseFolderLabel(node.name) : node.name}
+    </span>
+  )
+
   if (folderPath.length === 0) {
-    // My Questions / All Questions — just "Question Bank"
-    return (
-      <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)' }}>
-        Question Bank
-      </span>
-    )
+    return <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)' }}>Question Bank</span>
   }
 
   if (folderPath.length === 1) {
-    // One level: Question Bank > CourseName
+    // Question Bank > Root (root IS the leaf)
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        {rootBtn}
-        <SEP />
-        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>
-          {first ? (first.isCourse ? courseFolderLabel(first.name) : first.name) : ''}
-        </span>
+        {rootBtn}<SEP />{leafSpan(last!)}
       </div>
     )
   }
 
-  // 2+ levels: Question Bank > [... popover if intermediates exist] > Leaf
-  const hasIntermediates = intermediates.length > 0
+  if (folderPath.length === 2) {
+    // Question Bank > Parent > Leaf — show both, no ellipsis needed
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0 }}>
+        {rootBtn}
+        <SEP />
+        {crumbBtn(parent!.isCourse ? courseFolderLabel(parent!.name) : parent!.name, () => navigateToFolder(parent!.id), true)}
+        <SEP />
+        {leafSpan(last!)}
+      </div>
+    )
+  }
 
+  // 3+ levels: Question Bank > … > Parent > Leaf
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0 }}>
       {rootBtn}
       <SEP />
-
-      {hasIntermediates && (
-        <>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="ghost" size="xs"
-                aria-label="Show intermediate folders"
-                style={{ fontSize: 13, color: 'var(--muted-foreground)', height: 24, padding: '0 4px', flexShrink: 0 }}
-              >
-                …
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-56 p-2">
-              <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', padding: '4px 8px 6px' }}>
-                Parent folders
-              </div>
-              {/* First node (course) */}
-              <button
-                onClick={() => navigateToFolder(first!.id)}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '6px 8px', borderRadius: 6, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--accent)' }}
-                onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent' }}
-              >
-                <i className="fa-light fa-graduation-cap" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)', width: 14, flexShrink: 0 }} />
-                <span style={{ fontSize: 13, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {first ? courseFolderLabel(first.name) : ''}
-                </span>
-              </button>
-              {/* Intermediate nodes */}
-              {intermediates.map(node => (
-                <button
-                  key={node.id}
-                  onClick={() => navigateToFolder(node.id)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '6px 8px', borderRadius: 6, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--accent)' }}
-                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent' }}
-                >
-                  <i className="fa-light fa-folder" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)', width: 14, flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {node.name}
-                  </span>
-                </button>
-              ))}
-            </PopoverContent>
-          </Popover>
-          <SEP />
-        </>
-      )}
-
-      {/* Leaf — always the current folder, not clickable */}
-      <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>
-        {last ? last.name : ''}
-      </span>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost" size="xs"
+            aria-label="Show parent folders"
+            style={{ fontSize: 13, color: 'var(--muted-foreground)', height: 24, padding: '0 4px', flexShrink: 0 }}
+          >
+            …
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-56 p-2">
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', padding: '4px 8px 6px' }}>
+            Parent folders
+          </div>
+          {collapsedNodes.map(node => (
+            <button
+              key={node.id}
+              onClick={() => navigateToFolder(node.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '6px 8px', borderRadius: 6, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--accent)' }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent' }}
+            >
+              <i className={`fa-light ${node.isCourse ? 'fa-graduation-cap' : 'fa-folder'}`} aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)', width: 14, flexShrink: 0 }} />
+              <span style={{ fontSize: 13, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {node.isCourse ? courseFolderLabel(node.name) : node.name}
+              </span>
+            </button>
+          ))}
+        </PopoverContent>
+      </Popover>
+      <SEP />
+      {crumbBtn(parent!.isCourse ? courseFolderLabel(parent!.name) : parent!.name, () => navigateToFolder(parent!.id), true)}
+      <SEP />
+      {leafSpan(last!)}
     </div>
   )
 }
