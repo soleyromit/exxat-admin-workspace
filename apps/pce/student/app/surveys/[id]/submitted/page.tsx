@@ -53,14 +53,14 @@ export default function SubmittedPage() {
           {/* Heading */}
           <div className="flex flex-col gap-2">
             <h1 className="text-2xl font-semibold" style={{ color: 'var(--foreground)' }}>
-              Thank you!
+              Response submitted anonymously.
             </h1>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
               Your evaluation for{' '}
               <span className="font-medium" style={{ color: 'var(--foreground)' }}>
                 {courseCode && `${courseCode} — `}{courseName}
               </span>{' '}
-              has been submitted. Your feedback helps improve the quality of instruction and course content.
+              has been recorded. Your identity is never linked to your responses.
             </p>
           </div>
 

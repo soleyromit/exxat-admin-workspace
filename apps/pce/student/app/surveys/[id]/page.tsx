@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { buttonVariants } from '@exxat/student/components/ui/button'
 import { MOCK_STUDENT_SURVEYS } from '@/lib/mock-surveys'
@@ -9,7 +9,41 @@ import Link from 'next/link'
 
 type Answers = Record<string, number | string>
 
+interface SavedProgress {
+  answers: Answers
+  currentSection: number
+}
+
 const RATING_LABELS = ['', 'Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree']
+
+function progressKey(surveyId: string) {
+  return `pce-survey-${surveyId}`
+}
+
+function loadProgress(surveyId: string): SavedProgress | null {
+  try {
+    const raw = localStorage.getItem(progressKey(surveyId))
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+function saveProgress(surveyId: string, data: SavedProgress) {
+  try {
+    localStorage.setItem(progressKey(surveyId), JSON.stringify(data))
+  } catch {
+    // localStorage unavailable — continue without save
+  }
+}
+
+function clearProgress(surveyId: string) {
+  try {
+    localStorage.removeItem(progressKey(surveyId))
+  } catch {
+    // ignore
+  }
+}
 
 export default function TakeSurveyPage() {
   const { id } = useParams<{ id: string }>()
@@ -19,6 +53,33 @@ export default function TakeSurveyPage() {
   const [currentSection, setCurrentSection] = useState(0)
   const [answers, setAnswers] = useState<Answers>({})
   const [submitting, setSubmitting] = useState(false)
+  const [resumed, setResumed] = useState(false)
+
+  // Restore saved progress on mount
+  useEffect(() => {
+    if (!id) return
+    const saved = loadProgress(id)
+    if (saved && Object.keys(saved.answers).length > 0) {
+      setAnswers(saved.answers)
+      setCurrentSection(saved.currentSection)
+      setResumed(true)
+      setTimeout(() => setResumed(false), 3000)
+    }
+  }, [id])
+
+  const handleAnswer = useCallback((qId: string, value: number | string) => {
+    setAnswers(prev => {
+      const next = { ...prev, [qId]: value }
+      saveProgress(id, { answers: next, currentSection })
+      return next
+    })
+  }, [id, currentSection])
+
+  // Save section index whenever it changes
+  useEffect(() => {
+    if (!id || Object.keys(answers).length === 0) return
+    saveProgress(id, { answers, currentSection })
+  }, [currentSection, id, answers])
 
   if (!survey) {
     return (
@@ -59,6 +120,7 @@ export default function TakeSurveyPage() {
   const handleNext = () => {
     if (isLastSection) {
       setSubmitting(true)
+      clearProgress(id)
       setTimeout(() => {
         router.push(`/surveys/${id}/submitted`)
       }, 800)
@@ -90,10 +152,28 @@ export default function TakeSurveyPage() {
             {survey.courseCode}
           </span>
         </div>
-        <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-          {currentSection + 1} of {totalSections}
-        </span>
+        <div className="flex items-center gap-3">
+          {/* Auto-save indicator */}
+          <span className="text-xs flex items-center gap-1" style={{ color: 'var(--muted-foreground)' }}>
+            <i className="fa-light fa-cloud-check" aria-hidden="true" style={{ fontSize: 11 }} />
+            Progress saved
+          </span>
+          <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+            {currentSection + 1} of {totalSections}
+          </span>
+        </div>
       </header>
+
+      {/* Resume banner */}
+      {resumed && (
+        <div
+          className="flex items-center gap-2 px-6 py-2 text-sm"
+          style={{ backgroundColor: 'var(--brand-color-surface)', color: 'var(--brand-color-dark)' }}
+        >
+          <i className="fa-light fa-rotate-left" aria-hidden="true" style={{ fontSize: 12 }} />
+          Resumed where you left off
+        </div>
+      )}
 
       {/* Progress bar */}
       <div
@@ -152,7 +232,7 @@ export default function TakeSurveyPage() {
         <SectionForm
           section={section}
           answers={answers}
-          onAnswer={(qId, value) => setAnswers(prev => ({ ...prev, [qId]: value }))}
+          onAnswer={handleAnswer}
         />
       </main>
 

@@ -15,12 +15,13 @@ const SENTIMENT_STYLE: Record<string, { color: string; icon: string }> = {
 
 export default function FacultyResultsPage() {
   const { id } = useParams<{ id: string }>()
-  const { surveys, templates } = usePce()
+  const { surveys, templates, hiddenComments } = usePce()
 
   const survey = surveys.find(s => s.id === id)
   const template = survey ? templates.find(t => t.id === survey.templateId) : null
   const isReleased = survey?.status === 'released' || survey?.status === 'closed'
   const responses = isReleased ? MOCK_RESPONSES.find(r => r.surveyId === id) : null
+  const hidden = hiddenComments[id] ?? []
 
   if (!survey) {
     return (
@@ -89,7 +90,9 @@ export default function FacultyResultsPage() {
             {/* Section results */}
             {template?.sections.map(section => {
               const sectionScore = responses.sectionScores.find(s => s.section === section)
-              const sectionComments = responses.comments.filter(c => c.section === section)
+              const sectionComments = responses.comments
+                .map((c, i) => ({ ...c, globalIndex: i }))
+                .filter(c => c.section === section && !hidden.includes(c.globalIndex))
               if (!sectionScore) return null
 
               return (

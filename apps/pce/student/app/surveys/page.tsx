@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Badge } from '@exxat/student/components/ui/badge'
+import { badgeVariants } from '@exxat/student/components/ui/badge'
 import { buttonVariants } from '@exxat/student/components/ui/button'
 import { MOCK_STUDENT_SURVEYS, STUDENT_METRICS } from '@/lib/mock-surveys'
 import type { StudentSurvey } from '@/lib/mock-surveys'
@@ -136,7 +136,7 @@ function SurveyCard({ survey }: { survey: StudentSurvey }) {
           <span className="text-sm font-semibold truncate" style={{ color: 'var(--foreground)' }}>
             {survey.courseCode}
           </span>
-          <Badge variant={cfg.variant}>{cfg.label}</Badge>
+          <div className={badgeVariants({ variant: cfg.variant })}>{cfg.label}</div>
         </div>
         <span className="text-sm truncate" style={{ color: 'var(--muted-foreground)' }}>
           {survey.courseName}

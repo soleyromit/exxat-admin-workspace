@@ -8,6 +8,7 @@ interface PceState {
   user: PceUser
   surveys: PceSurvey[]
   templates: PceTemplate[]
+  hiddenComments: Record<string, number[]>
   toggleRole: () => void
   releaseSurvey: (id: string) => void
   closeSurvey: (id: string) => void
@@ -17,6 +18,7 @@ interface PceState {
   updateTemplate: (id: string, update: Partial<PceTemplate>) => void
   addGuestInstructor: (surveyId: string, instructor: { id: string; name: string; initials: string }) => void
   removeInstructor: (surveyId: string, instructorId: string) => void
+  toggleHideComment: (surveyId: string, commentIndex: number) => void
 }
 
 const PceContext = createContext<PceState | null>(null)
@@ -25,6 +27,7 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<PceUser>(MOCK_CURRENT_USER)
   const [surveys, setSurveys] = useState<PceSurvey[]>(MOCK_SURVEYS)
   const [templates, setTemplates] = useState<PceTemplate[]>(MOCK_TEMPLATES)
+  const [hiddenComments, setHiddenComments] = useState<Record<string, number[]>>({})
 
   const toggleRole = useCallback(() => {
     setUser(u => ({ ...u, role: u.role === 'admin' ? 'faculty' : 'admin' }))
@@ -91,12 +94,25 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
     ))
   }, [])
 
+  const toggleHideComment = useCallback((surveyId: string, commentIndex: number) => {
+    setHiddenComments(prev => {
+      const current = prev[surveyId] ?? []
+      const isHidden = current.includes(commentIndex)
+      return {
+        ...prev,
+        [surveyId]: isHidden
+          ? current.filter(i => i !== commentIndex)
+          : [...current, commentIndex],
+      }
+    })
+  }, [])
+
   return (
     <PceContext.Provider value={{
-      user, surveys, templates, toggleRole,
+      user, surveys, templates, hiddenComments, toggleRole,
       releaseSurvey, closeSurvey, createSurvey,
       deleteTemplate, createTemplate, updateTemplate,
-      addGuestInstructor, removeInstructor,
+      addGuestInstructor, removeInstructor, toggleHideComment,
     }}>
       {children}
     </PceContext.Provider>

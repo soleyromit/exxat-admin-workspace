@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams } from 'next/navigation'
-import { Button, Separator, SidebarTrigger, Badge } from '@exxat/ds/packages/ui/src'
+import { Button, Separator, SidebarTrigger, Tooltip, TooltipTrigger, TooltipContent } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { ResponseGauge } from '@/components/pce/response-gauge'
@@ -16,11 +16,11 @@ const SENTIMENT_STYLE: Record<string, { color: string; icon: string }> = {
 
 export default function SurveyResponsesPage() {
   const { id } = useParams<{ id: string }>()
-  const { surveys, templates } = usePce()
+  const { surveys, hiddenComments, toggleHideComment } = usePce()
 
   const survey = surveys.find(s => s.id === id)
-  const template = survey ? templates.find(t => t.id === survey.templateId) : null
   const responses = MOCK_RESPONSES.find(r => r.surveyId === id)
+  const hidden = hiddenComments[id] ?? []
 
   if (!survey) {
     return (
@@ -56,6 +56,8 @@ export default function SurveyResponsesPage() {
     )
   }
 
+  const hiddenCount = hidden.length
+
   return (
     <>
       <header className="flex items-center gap-2 px-4 py-3 border-b border-border shrink-0">
@@ -66,6 +68,11 @@ export default function SurveyResponsesPage() {
         <Link href={`/surveys/${id}`} className="text-sm" style={{ color: 'var(--muted-foreground)' }}>{survey.courseCode}</Link>
         <i className="fa-light fa-chevron-right text-xs" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
         <span className="text-sm font-semibold flex-1">Responses</span>
+        {hiddenCount > 0 && (
+          <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
+            {hiddenCount} hidden from faculty
+          </span>
+        )}
         <SurveyStatusBadge status={survey.status} />
       </header>
 
@@ -89,70 +96,114 @@ export default function SurveyResponsesPage() {
                   <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
                     {SECTION_LABELS[s.section]}
                   </p>
-                  <p className="text-lg font-semibold tabular-nums">{s.avg}<span className="text-sm font-normal text-muted-foreground">/5</span></p>
+                  <p className="text-lg font-semibold tabular-nums">{s.avg}<span className="text-sm font-normal" style={{ color: 'var(--muted-foreground)' }}>/5</span></p>
                 </div>
               ))}
             </div>
           </div>
 
+          {/* Moderation note */}
+          <div
+            className="flex items-start gap-3 rounded-lg border px-4 py-3 text-sm"
+            style={{ borderColor: 'var(--border)', backgroundColor: 'var(--muted)' }}
+          >
+            <i className="fa-light fa-circle-info mt-0.5 shrink-0" aria-hidden="true" style={{ fontSize: 13, color: 'var(--muted-foreground)' }} />
+            <p style={{ color: 'var(--muted-foreground)' }}>
+              Hide individual comments to remove them from the faculty view before releasing results. Hidden comments remain in the system and are never deleted.
+            </p>
+          </div>
+
           {/* Per-section scores */}
-          {responses.sectionScores.map(sectionScore => (
-            <div key={sectionScore.section} className="border border-border rounded-lg overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                <h3 className="text-sm font-semibold">{SECTION_LABELS[sectionScore.section]}</h3>
-                <span className="text-sm tabular-nums font-semibold">
-                  avg {sectionScore.avg}/5
-                </span>
-              </div>
+          {responses.sectionScores.map(sectionScore => {
+            const sectionComments = responses.comments
+              .map((c, globalIndex) => ({ ...c, globalIndex }))
+              .filter(c => c.section === sectionScore.section)
+            const visibleCount = sectionComments.filter(c => !hidden.includes(c.globalIndex)).length
 
-              {/* Score bar */}
-              <div className="px-4 py-3 border-b border-border">
-                <div
-                  style={{
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: 'var(--pce-rate-bar-track)',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div
-                    style={{
-                      height: '100%',
-                      width: `${(sectionScore.avg / 5) * 100}%`,
-                      borderRadius: 4,
-                      backgroundColor: 'var(--pce-rate-bar-fill)',
-                    }}
-                  />
+            return (
+              <div key={sectionScore.section} className="border border-border rounded-lg overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                  <h3 className="text-sm font-semibold">{SECTION_LABELS[sectionScore.section]}</h3>
+                  <span className="text-sm tabular-nums font-semibold">
+                    avg {sectionScore.avg}/5
+                  </span>
                 </div>
-              </div>
 
-              {/* Comments for this section */}
-              {responses.comments.filter(c => c.section === sectionScore.section).length > 0 && (
-                <div className="px-4 py-3">
-                  <p className="text-xs font-medium mb-2" style={{ color: 'var(--muted-foreground)' }}>
-                    Comments ({responses.comments.filter(c => c.section === sectionScore.section).length})
-                  </p>
-                  <div className="flex flex-col gap-2">
-                    {responses.comments
-                      .filter(c => c.section === sectionScore.section)
-                      .map((comment, i) => {
-                        const style = SENTIMENT_STYLE[comment.sentiment]
+                {/* Score bar */}
+                <div className="px-4 py-3 border-b border-border">
+                  <div style={{ height: 8, borderRadius: 4, backgroundColor: 'var(--pce-rate-bar-track)', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${(sectionScore.avg / 5) * 100}%`, borderRadius: 4, backgroundColor: 'var(--pce-rate-bar-fill)' }} />
+                  </div>
+                </div>
+
+                {/* Comments */}
+                {sectionComments.length > 0 && (
+                  <div className="px-4 py-3 flex flex-col gap-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
+                        Comments — {visibleCount} visible to faculty
+                        {sectionComments.length - visibleCount > 0 && (
+                          <span> · {sectionComments.length - visibleCount} hidden</span>
+                        )}
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      {sectionComments.map((comment) => {
+                        const isHidden = hidden.includes(comment.globalIndex)
+                        const sStyle = SENTIMENT_STYLE[comment.sentiment]
                         return (
-                          <div key={i} className="flex items-start gap-2 text-sm">
+                          <div
+                            key={comment.globalIndex}
+                            className="group flex items-start gap-2 rounded-lg px-3 py-2.5 transition-colors"
+                            style={{
+                              backgroundColor: isHidden ? 'var(--muted)' : 'transparent',
+                            }}
+                          >
                             <i
-                              className={`fa-light ${style.icon} mt-0.5 shrink-0`}
+                              className={`fa-light ${sStyle.icon} mt-0.5 shrink-0`}
                               aria-hidden="true"
-                              style={{ color: style.color, fontSize: 13 }}
+                              style={{ color: isHidden ? 'var(--muted-foreground)' : sStyle.color, fontSize: 13 }}
                             />
-                            <span style={{ color: 'var(--foreground)' }}>&ldquo;{comment.text}&rdquo;</span>
+                            <span
+                              className="flex-1 text-sm"
+                              style={{
+                                color: isHidden ? 'var(--muted-foreground)' : 'var(--foreground)',
+                                textDecoration: isHidden ? 'line-through' : 'none',
+                                fontStyle: 'italic',
+                              }}
+                            >
+                              &ldquo;{comment.text}&rdquo;
+                            </span>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  aria-label={isHidden ? 'Restore comment' : 'Hide from faculty'}
+                                  onClick={() => toggleHideComment(id, comment.globalIndex)}
+                                  className="opacity-0 group-hover:opacity-100 shrink-0"
+                                  style={{ transition: 'opacity 150ms' }}
+                                >
+                                  <i
+                                    className={`fa-light ${isHidden ? 'fa-eye' : 'fa-eye-slash'}`}
+                                    aria-hidden="true"
+                                    style={{ fontSize: 12 }}
+                                  />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {isHidden ? 'Restore — show to faculty' : 'Hide from faculty view'}
+                              </TooltipContent>
+                            </Tooltip>
                           </div>
                         )
                       })}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          ))}
+                )}
+              </div>
+            )
+          })}
         </div>
       </main>
     </>
