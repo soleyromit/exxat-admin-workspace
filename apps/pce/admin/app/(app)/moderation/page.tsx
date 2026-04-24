@@ -34,10 +34,10 @@ export default function ModerationPage() {
   if (pending.length === 0) {
     return (
       <>
-        <header className="flex items-center gap-2 px-4 py-3 border-b border-border shrink-0">
+        <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
           <SidebarTrigger className="-ms-1" />
           <Separator orientation="vertical" className="h-4" />
-          <h1 className="text-sm font-semibold">Review & Moderation</h1>
+          <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 400 }}>Review & Moderation</h1>
         </header>
         <div className="flex flex-col items-center justify-center flex-1 gap-3 text-center py-20">
           <i
@@ -59,10 +59,10 @@ export default function ModerationPage() {
 
   return (
     <>
-      <header className="flex items-center gap-2 px-4 py-3 border-b border-border shrink-0">
+      <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
-        <h1 className="text-sm font-semibold flex-1">Review & Moderation</h1>
+        <h1 className="flex-1" style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 400 }}>Review & Moderation</h1>
         {selected.length > 0 && (
           <Button size="sm" onClick={() => setBulkOpen(true)}>
             Release {selected.length} selected
@@ -70,13 +70,13 @@ export default function ModerationPage() {
         )}
       </header>
 
-      <div className="px-4 py-2 border-b border-border shrink-0">
+      <div className="py-2 border-b border-border shrink-0" style={{ paddingInline: 28 }}>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
           {pending.length} {pending.length === 1 ? 'survey' : 'surveys'} pending review
         </p>
       </div>
 
-      <main className="flex-1 overflow-auto p-4">
+      <main className="flex-1 overflow-auto" style={{ padding: '0 28px 28px' }}>
         <div className="border border-border rounded-lg overflow-hidden">
           <Table>
             <TableHeader>
@@ -145,11 +145,11 @@ function ModerationRow({
       </TableCell>
       <TableCell>
         <div className="flex flex-col gap-0.5">
-          <span className="font-medium text-sm">{survey.courseCode}</span>
-          <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>{survey.term}</span>
+          <span style={{ fontSize: 13, fontWeight: 500 }}>{survey.courseCode}</span>
+          <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{survey.term}</span>
         </div>
       </TableCell>
-      <TableCell className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+      <TableCell style={{ fontSize: 13, fontWeight: 500, color: 'var(--muted-foreground)' }}>
         {survey.deadline}
       </TableCell>
       <TableCell>
@@ -164,7 +164,7 @@ function ModerationRow({
         <div className="flex items-center gap-1">
           {survey.instructors.slice(0, 2).map(i => (
             <Avatar key={i.id} className="h-6 w-6">
-              <AvatarFallback className="text-xs bg-primary text-primary-foreground">{i.initials}</AvatarFallback>
+              <AvatarFallback style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)', fontSize: 11 }}>{i.initials}</AvatarFallback>
             </Avatar>
           ))}
           {survey.instructors.length > 2 && (
