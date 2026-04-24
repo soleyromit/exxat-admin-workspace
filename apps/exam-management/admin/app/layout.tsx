@@ -11,7 +11,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="theme-one">
+    <html lang="en" className="theme-one" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="stylesheet" href="https://use.typekit.net/wuk5wqn.css" />

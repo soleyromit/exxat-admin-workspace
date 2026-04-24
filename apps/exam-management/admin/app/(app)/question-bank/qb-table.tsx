@@ -851,18 +851,26 @@ function FilterPropertiesSheet({
     main: 'Properties', 'table-display': 'Table', filter: 'Filter', sort: 'Sort', group: 'Group', columns: 'Columns', conditional: 'Conditional Rules',
   }
 
-  const BackClose = ({ onBack }: { onBack: () => void }) => (
+  const BackClose = ({ onBack, subtitle, helpTooltip }: { onBack: () => void; subtitle?: string; helpTooltip?: string }) => (
     <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-3 border-b border-border" style={{ flexShrink: 0 }}>
       <div className="flex items-center gap-2 min-w-0 flex-1">
         <Button variant="ghost" size="icon-sm" onClick={onBack} aria-label="Back to Properties">
           <i className="fa-light fa-chevron-left text-[13px]" aria-hidden="true" />
         </Button>
         <div className="min-w-0">
-          <SheetTitle className="text-sm font-semibold leading-tight">{PANEL_LABELS[panel]}</SheetTitle>
-          {panel === 'filter' && (
-            <p className="text-xs text-muted-foreground mt-0.5" aria-live="polite">
-              {activeFilterCount === 0 ? `Showing all ${totalCount} questions` : `${filteredCount} of ${totalCount} match · ${activeFilterCount} active`}
-            </p>
+          <div className="flex items-center gap-1.5">
+            <SheetTitle className="text-sm font-semibold leading-tight">{PANEL_LABELS[panel]}</SheetTitle>
+            {helpTooltip && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <i className="fa-light fa-circle-question text-muted-foreground cursor-help" aria-hidden="true" style={{ fontSize: 12 }} />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-48">{helpTooltip}</TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+          {subtitle && (
+            <p className="text-xs text-muted-foreground mt-0.5" aria-live="polite">{subtitle}</p>
           )}
         </div>
       </div>
@@ -926,11 +934,12 @@ function FilterPropertiesSheet({
               {/* Appearance */}
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Appearance</p>
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   {([
-                    { id: 'gridlines', icon: 'fa-border-all',  label: 'Gridlines',  checked: showGridlines, onChange: onShowGridlinesChange },
+                    { id: 'gridlines',  icon: 'fa-border-all',    label: 'Gridlines',   checked: showGridlines, onChange: onShowGridlinesChange },
+                    { id: 'pagination', icon: 'fa-table-list',     label: 'Pagination',  checked: false,         onChange: () => {} },
                   ] as { id: string; icon: string; label: string; checked: boolean; onChange: (v: boolean) => void }[]).map(row => (
-                    <div key={row.id} className="flex items-center justify-between py-2">
+                    <div key={row.id} className="flex items-center justify-between py-2.5">
                       <div className="flex items-center gap-2.5 text-sm">
                         <i className={`fa-light ${row.icon} text-muted-foreground w-4 text-center`} aria-hidden="true" />
                         <label htmlFor={`toggle-${row.id}`} className="cursor-pointer select-none">{row.label}</label>
@@ -945,24 +954,25 @@ function FilterPropertiesSheet({
               <div className="border-t border-border pt-4">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Row height</p>
                 <div className="grid grid-cols-3 gap-2">
-                  {(['compact', 'default', 'comfortable'] as QBRowHeight[]).map(h => (
-                    <button
+                  {([
+                    { h: 'compact',     icon: 'fa-arrow-down-to-line' },
+                    { h: 'default',     icon: 'fa-arrows-up-down' },
+                    { h: 'comfortable', icon: 'fa-arrow-up-to-line' },
+                  ] as { h: QBRowHeight; icon: string }[]).map(({ h, icon }) => (
+                    <Button
                       key={h}
-                      type="button"
+                      variant="ghost"
                       onClick={() => onRowHeightChange(h)}
-                      className="flex flex-col items-center gap-1.5 p-2.5 rounded-lg border transition-colors cursor-pointer"
+                      className="flex flex-col items-center gap-1.5 h-auto py-3 px-2 rounded-lg border transition-colors"
                       style={{
                         borderColor: rowHeight === h ? 'var(--brand-color)' : 'var(--border)',
                         backgroundColor: rowHeight === h ? 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' : 'var(--background)',
                       }}
                     >
-                      <div className="flex flex-col justify-center gap-px" style={{ width: 24, height: 20 }}>
-                        {h === 'compact'     && [0,1,2,3].map(i => <div key={i} style={{ height: 3, background: rowHeight === h ? 'var(--brand-color)' : 'var(--muted-foreground)', borderRadius: 1, opacity: 0.7 }} />)}
-                        {h === 'default'     && [0,1,2].map(i => <div key={i} style={{ height: 4, background: rowHeight === h ? 'var(--brand-color)' : 'var(--muted-foreground)', borderRadius: 1, opacity: 0.7 }} />)}
-                        {h === 'comfortable' && [0,1].map(i => <div key={i} style={{ height: 7, background: rowHeight === h ? 'var(--brand-color)' : 'var(--muted-foreground)', borderRadius: 1, opacity: 0.7 }} />)}
-                      </div>
+                      <i className={`fa-light ${icon}`} aria-hidden="true"
+                        style={{ fontSize: 16, color: rowHeight === h ? 'var(--brand-color)' : 'var(--muted-foreground)' }} />
                       <span className="text-xs capitalize" style={{ color: rowHeight === h ? 'var(--brand-color)' : 'var(--foreground)', fontWeight: rowHeight === h ? 600 : 400 }}>{h}</span>
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -971,12 +981,20 @@ function FilterPropertiesSheet({
               <div className="border-t border-border pt-4 space-y-1">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Display options</p>
                 {([
-                  { id: 'col-labels', label: 'Column labels',    desc: 'Show headers in the table.' },
-                ] as { id: string; label: string; desc: string }[]).map(row => (
-                  <div key={row.id} className="flex items-center justify-between gap-2 py-2">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground leading-tight">{row.label}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{row.desc}</p>
+                  { id: 'table-title', icon: 'fa-heading',      label: 'Table title',    desc: 'Show the page heading and subtitle.' },
+                  { id: 'col-labels',  icon: 'fa-table-columns', label: 'Column labels', desc: 'Column headers in the table.' },
+                  { id: 'search',      icon: 'fa-magnifying-glass', label: 'Search',     desc: 'Toolbar search for this view.' },
+                ] as { id: string; icon: string; label: string; desc: string }[]).map(row => (
+                  <div key={row.id} className="flex items-center justify-between gap-3 py-2">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <span className="inline-flex items-center justify-center shrink-0"
+                        style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'var(--secondary)', border: '1px solid var(--border)' }}>
+                        <i className={`fa-light ${row.icon} text-secondary-foreground`} aria-hidden="true" style={{ fontSize: 13 }} />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground leading-tight">{row.label}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{row.desc}</p>
+                      </div>
                     </div>
                     <ToggleSwitch id={`toggle-display-${row.id}`} checked={true} onChange={() => {}} />
                   </div>
@@ -989,19 +1007,33 @@ function FilterPropertiesSheet({
         {/* ── Filter sub-panel ── */}
         {panel === 'filter' && (
           <>
-            <BackClose onBack={() => setPanel('main')} />
+            <BackClose
+              onBack={() => setPanel('main')}
+              subtitle={activeFilterCount === 0 ? `Showing all ${totalCount} questions` : `${filteredCount} of ${totalCount} match · ${activeFilterCount} active`}
+              helpTooltip="Use AND to match all filters; use OR to match any filter."
+            />
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
               {activeFilters.length === 0 && !bookmarkOnly ? (
-                <div className="rounded-xl border border-border bg-muted/40 p-4 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center justify-center" style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--background)', border: '1px solid var(--border)' }}>
-                      <i className="fa-light fa-filter text-muted-foreground text-xs" aria-hidden="true" />
+                <div className="rounded-xl border border-border bg-muted/40 p-4 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex items-center justify-center shrink-0"
+                      style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--background)', border: '1px solid var(--border)' }}>
+                      <i className="fa-light fa-filter text-muted-foreground" aria-hidden="true" style={{ fontSize: 14 }} />
                     </span>
-                    <p className="text-sm font-medium text-foreground">No filters yet</p>
+                    <p className="text-sm font-semibold text-foreground">No filters yet</p>
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Use filters to show only the questions you need. Click &ldquo;Add filter&rdquo; below to get started.
+                    Use filters to show only the questions you need. With multiple filters, use <strong className="text-foreground">and</strong> or <strong className="text-foreground">or</strong> between them to control how they combine.
                   </p>
+                  <div className="space-y-1.5">
+                    {['Click “Add filter” below', 'Choose a field to filter by', 'Pick a condition and value'].map((step, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center justify-center shrink-0 rounded-full border border-border font-semibold"
+                          style={{ width: 16, height: 16, fontSize: 9, lineHeight: 1 }}>{i + 1}</span>
+                        {step}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <>
@@ -1064,10 +1096,21 @@ function FilterPropertiesSheet({
                   )}
                 </>
               )}
+
+              {/* Enable filter bar — in scrollable area with description */}
+              <div className="border-t border-border pt-3 mt-1">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">Enable filter bar</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Show filters above the table.</p>
+                  </div>
+                  <ToggleSwitch id="toggle-filter-bar" checked={filterBarVisible} onChange={onFilterBarVisibleChange} />
+                </div>
+              </div>
             </div>
 
-            {/* Footer: Add filter + Remove all + Enable filter bar */}
-            <div className="p-3 border-t border-border space-y-2.5" style={{ flexShrink: 0 }}>
+            {/* Footer: Add filter + Remove all */}
+            <div className="p-3 border-t border-border" style={{ flexShrink: 0 }}>
               <div className="flex items-center gap-2">
                 <DropdownMenu modal={false}>
                   <DropdownMenuTrigger asChild>
@@ -1097,10 +1140,6 @@ function FilterPropertiesSheet({
                   </Button>
                 )}
               </div>
-              <div className="flex items-center justify-between py-1">
-                <label htmlFor="toggle-filter-bar" className="text-xs text-muted-foreground cursor-pointer select-none">Enable filter bar</label>
-                <ToggleSwitch id="toggle-filter-bar" checked={filterBarVisible} onChange={onFilterBarVisibleChange} />
-              </div>
             </div>
           </>
         )}
@@ -1118,14 +1157,14 @@ function FilterPropertiesSheet({
                       PRIMARY
                     </Badge>
                     <span className="text-sm font-medium text-foreground flex-1 min-w-0 truncate">{activeSortLabel}</span>
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost" size="xs"
                       onClick={() => onSort(sortCol, sortDir === 'asc' ? 'desc' : 'asc')}
-                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-muted shrink-0"
+                      className="gap-1 text-xs text-muted-foreground shrink-0"
                     >
                       {sortDir === 'asc' ? 'Ascending' : 'Descending'}
                       <i className="fa-light fa-chevron-down text-[10px]" aria-hidden="true" />
-                    </button>
+                    </Button>
                     <Button variant="ghost" size="icon-xs" onClick={() => onSort('', 'asc')} aria-label="Remove sort" className="text-muted-foreground hover:text-destructive shrink-0">
                       <i className="fa-light fa-trash text-xs" aria-hidden="true" />
                     </Button>
@@ -1171,35 +1210,39 @@ function FilterPropertiesSheet({
         {/* ── Group sub-panel ── */}
         {panel === 'group' && (
           <>
-            <BackClose onBack={() => setPanel('main')} />
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-0.5">
-              {/* None option */}
+            <BackClose onBack={() => setPanel('main')} subtitle={groupByLabel ? `Grouped by ${groupByLabel}.` : undefined} />
+            <div className="flex-1 overflow-y-auto px-3 py-2 space-y-0.5">
+              {/* None */}
               <Button
                 variant="ghost"
                 onClick={() => onGroupByChange(null)}
-                className="w-full h-auto justify-start gap-3 px-3 py-2.5 rounded-lg font-normal hover:bg-muted/60"
+                className="w-full h-auto justify-start gap-3 px-3 py-2.5 rounded-lg font-normal"
+                style={{ backgroundColor: groupBy === null ? 'var(--accent)' : undefined }}
               >
-                <i className={`fa-light ${groupBy === null ? 'fa-circle-dot' : 'fa-circle'} text-sm`} aria-hidden="true"
-                  style={{ color: groupBy === null ? 'var(--brand-color)' : 'var(--muted-foreground)', width: 14 }} />
-                <span className="text-sm" style={{ color: groupBy === null ? 'var(--brand-color)' : 'var(--foreground)', fontWeight: groupBy === null ? 500 : 400 }}>
+                <i className="fa-light fa-ban text-sm shrink-0" aria-hidden="true"
+                  style={{ width: 16, color: 'var(--muted-foreground)' }} />
+                <span className="flex-1 text-sm text-left" style={{ color: groupBy === null ? 'var(--brand-color)' : 'var(--foreground)', fontWeight: groupBy === null ? 500 : 400 }}>
                   None
                 </span>
+                {groupBy === null && <i className="fa-solid fa-check text-xs shrink-0" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />}
               </Button>
 
-              <div className="h-px bg-border my-1" />
+              <div className="h-px bg-border mx-1 my-1" />
 
               {QB_COLS.filter(c => c.key !== 'select' && c.key !== 'actions' && c.key !== 'title').map(col => (
                 <Button
                   key={col.key}
                   variant="ghost"
                   onClick={() => onGroupByChange(col.key)}
-                  className="w-full h-auto justify-start gap-3 px-3 py-2.5 rounded-lg font-normal hover:bg-muted/60"
+                  className="w-full h-auto justify-start gap-3 px-3 py-2.5 rounded-lg font-normal"
+                  style={{ backgroundColor: groupBy === col.key ? 'var(--accent)' : undefined }}
                 >
-                  <i className={`fa-light ${groupBy === col.key ? 'fa-circle-dot' : 'fa-circle'} text-sm`} aria-hidden="true"
-                    style={{ color: groupBy === col.key ? 'var(--brand-color)' : 'var(--muted-foreground)', width: 14 }} />
-                  <span className="text-sm" style={{ color: groupBy === col.key ? 'var(--brand-color)' : 'var(--foreground)', fontWeight: groupBy === col.key ? 500 : 400 }}>
+                  <i className="fa-light fa-layer-group text-sm shrink-0" aria-hidden="true"
+                    style={{ width: 16, color: groupBy === col.key ? 'var(--brand-color)' : 'var(--muted-foreground)' }} />
+                  <span className="flex-1 text-sm text-left" style={{ color: groupBy === col.key ? 'var(--brand-color)' : 'var(--foreground)', fontWeight: groupBy === col.key ? 500 : 400 }}>
                     {col.label}
                   </span>
+                  {groupBy === col.key && <i className="fa-solid fa-check text-xs shrink-0" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />}
                 </Button>
               ))}
             </div>
