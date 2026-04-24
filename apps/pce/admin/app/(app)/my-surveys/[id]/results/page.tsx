@@ -1,16 +1,107 @@
 'use client'
 
 import { useParams } from 'next/navigation'
-import { Button, Separator, SidebarTrigger } from '@exxat/ds/packages/ui/src'
+import { Badge, Button, Separator, SidebarTrigger } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
-import { MOCK_RESPONSES, SECTION_LABELS } from '@/lib/pce-mock-data'
+import { MOCK_RESPONSES, FACULTY_SECTION_LABELS, SECTION_LABELS } from '@/lib/pce-mock-data'
+import type { TemplateSection, ResponseComment } from '@/lib/pce-mock-data'
 import Link from 'next/link'
 
-const SENTIMENT_STYLE: Record<string, { color: string; icon: string }> = {
-  positive: { color: 'var(--pce-status-released-fg)', icon: 'fa-face-smile' },
-  neutral:  { color: 'var(--muted-foreground)',        icon: 'fa-face-meh'   },
-  concern:  { color: 'var(--destructive)',             icon: 'fa-face-frown' },
+type Sentiment = 'positive' | 'neutral' | 'concern'
+
+const SENTIMENT_CONFIG: Record<Sentiment, {
+  icon: string
+  label: string
+  countSuffix: string
+  containerBorder: string
+  headerBg: string
+  labelColor: string
+  countBg: string
+  quotesBg: string
+  quotesBorder: string
+  quoteDivider: string
+}> = {
+  positive: {
+    icon: '😊',
+    label: 'What students appreciated',
+    countSuffix: 'highlight',
+    containerBorder: 'color-mix(in oklch, var(--chart-2) 30%, transparent)',
+    headerBg:       'color-mix(in oklch, var(--chart-2) 12%, transparent)',
+    labelColor:     'color-mix(in oklch, var(--chart-2) 80%, var(--foreground))',
+    countBg:        'color-mix(in oklch, var(--chart-2) 20%, transparent)',
+    quotesBg:       'color-mix(in oklch, var(--chart-2) 8%, transparent)',
+    quotesBorder:   'color-mix(in oklch, var(--chart-2) 25%, transparent)',
+    quoteDivider:   'color-mix(in oklch, var(--chart-2) 20%, transparent)',
+  },
+  neutral: {
+    icon: '💭',
+    label: 'Students also noted',
+    countSuffix: 'observation',
+    containerBorder: 'var(--border)',
+    headerBg:        'var(--muted)',
+    labelColor:      'var(--muted-foreground)',
+    countBg:         'var(--border)',
+    quotesBg:        'var(--muted)',
+    quotesBorder:    'var(--border)',
+    quoteDivider:    'var(--border-control)',
+  },
+  concern: {
+    icon: '📌',
+    label: 'Areas for consideration',
+    countSuffix: 'consideration',
+    containerBorder: 'color-mix(in oklch, var(--chart-4) 30%, transparent)',
+    headerBg:        'var(--insight-severity-warning-bg)',
+    labelColor:      'var(--insight-severity-warning-fg)',
+    countBg:         'color-mix(in oklch, var(--chart-4) 20%, transparent)',
+    quotesBg:        'var(--insight-severity-warning-bg)',
+    quotesBorder:    'color-mix(in oklch, var(--chart-4) 25%, transparent)',
+    quoteDivider:    'color-mix(in oklch, var(--chart-4) 20%, transparent)',
+  },
+}
+
+function CommentGroup({
+  sentiment,
+  comments,
+}: {
+  sentiment: Sentiment
+  comments: Pick<ResponseComment, 'text'>[]
+}) {
+  if (comments.length === 0) return null
+  const cfg = SENTIMENT_CONFIG[sentiment]
+  const countLabel = `${comments.length} ${cfg.countSuffix}${comments.length !== 1 ? 's' : ''}`
+
+  return (
+    <div style={{ border: `1px solid ${cfg.containerBorder}`, borderRadius: 8, overflow: 'hidden' }}>
+      <div style={{ background: cfg.headerBg, padding: '7px 10px', display: 'flex', alignItems: 'center', gap: 7 }}>
+        <span style={{ fontSize: 13 }}>{cfg.icon}</span>
+        <span style={{ fontSize: 11, fontWeight: 700, flex: 1, color: cfg.labelColor }}>{cfg.label}</span>
+        <span style={{
+          fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 10,
+          background: cfg.countBg, color: cfg.labelColor,
+        }}>
+          {countLabel}
+        </span>
+      </div>
+      <div style={{ background: cfg.quotesBg, borderTop: `1px solid ${cfg.quotesBorder}`, padding: '2px 10px 7px' }}>
+        {comments.map((comment, i) => (
+          <div
+            key={i}
+            style={{
+              fontSize: 11,
+              fontStyle: 'italic',
+              color: 'var(--foreground)',
+              padding: '5px 0',
+              borderBottom: i < comments.length - 1 ? `1px dashed ${cfg.quoteDivider}` : 'none',
+              lineHeight: 1.5,
+            }}
+          >
+            &ldquo;{comment.text}&rdquo;
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export default function FacultyResultsPage() {
@@ -34,6 +125,10 @@ export default function FacultyResultsPage() {
     )
   }
 
+  const sharedDate = survey.status === 'released' && survey.releasedAt
+    ? `Shared ${survey.releasedAt}`
+    : null
+
   return (
     <>
       <header className="flex items-center gap-2 px-4 py-3 border-b border-border shrink-0">
@@ -44,28 +139,28 @@ export default function FacultyResultsPage() {
         <span className="text-sm font-semibold flex-1 truncate">
           {survey.courseCode} — {survey.courseName}
         </span>
-        <SurveyStatusBadge status={survey.status} />
+        {sharedDate ? (
+          <Badge variant="secondary" className="rounded-full font-medium">{sharedDate}</Badge>
+        ) : (
+          <SurveyStatusBadge status={survey.status} />
+        )}
       </header>
 
       <main className="flex-1 overflow-auto p-6">
         {!isReleased ? (
-          /* Locked state */
           <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
             <div
               className="flex items-center justify-center w-16 h-16 rounded-full"
-              style={{ backgroundColor: 'var(--pce-locked-bg)' }}
+              style={{ backgroundColor: 'var(--muted)' }}
             >
-              <i
-                className="fa-light fa-lock-keyhole"
-                aria-hidden="true"
-                style={{ fontSize: 28, color: 'var(--muted-foreground)' }}
-              />
+              <i className="fa-light fa-lock-keyhole" aria-hidden="true"
+                style={{ fontSize: 28, color: 'var(--muted-foreground)' }} />
             </div>
             <div className="flex flex-col gap-2 max-w-sm">
               <p className="text-base font-semibold">Results aren&apos;t available yet</p>
               <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                The program administrator reviews all responses before releasing them to instructors.
-                You&apos;ll be notified by email when your results are ready.
+                The program administrator reviews all responses before sharing them with instructors.
+                You&apos;ll be notified when your results are ready.
               </p>
             </div>
             <Button variant="outline" size="sm" asChild>
@@ -73,51 +168,44 @@ export default function FacultyResultsPage() {
             </Button>
           </div>
         ) : !responses ? (
-          /* Released but no responses */
           <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
             <i className="fa-light fa-chart-bar text-4xl" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
             <p className="text-sm font-medium">No responses were collected for this survey.</p>
           </div>
         ) : (
-          /* Released with responses */
           <div className="max-w-2xl flex flex-col gap-6">
-
-            {/* Release meta */}
-            <div className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-              Released {survey.releasedAt ?? ''}
-            </div>
-
-            {/* Section results */}
-            {template?.sections.map(section => {
+            {template?.sections.map((section: TemplateSection) => {
               const sectionScore = responses.sectionScores.find(s => s.section === section)
+              if (!sectionScore) return null
+
               const sectionComments = responses.comments
                 .map((c, i) => ({ ...c, globalIndex: i }))
                 .filter(c => c.section === section && !hidden.includes(c.globalIndex))
-              if (!sectionScore) return null
+
+              const positive = sectionComments.filter(c => c.sentiment === 'positive').slice(0, 3)
+              const neutral  = sectionComments.filter(c => c.sentiment === 'neutral').slice(0, 3)
+              const concern  = sectionComments.filter(c => c.sentiment === 'concern').slice(0, 3)
+              const hasAnyComments = positive.length + neutral.length + concern.length > 0
+
+              const sectionLabel = FACULTY_SECTION_LABELS[section] ?? SECTION_LABELS[section]
 
               return (
                 <div key={section} className="border border-border rounded-lg overflow-hidden">
+                  {/* Section header */}
                   <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                    <h2 className="text-sm font-semibold">{SECTION_LABELS[section]}</h2>
+                    <h2 className="text-sm font-semibold">{sectionLabel}</h2>
                     <span className="text-sm font-bold tabular-nums">avg {sectionScore.avg}/5</span>
                   </div>
 
                   {/* Score bar */}
                   <div className="px-4 py-4 border-b border-border flex flex-col gap-2">
-                    <div
-                      style={{
-                        height: 8,
-                        borderRadius: 4,
-                        backgroundColor: 'var(--pce-rate-bar-track)',
-                        overflow: 'hidden',
-                      }}
-                    >
+                    <div style={{ height: 8, borderRadius: 4, backgroundColor: 'var(--muted)', overflow: 'hidden' }}>
                       <div
                         style={{
                           height: '100%',
                           width: `${(sectionScore.avg / 5) * 100}%`,
                           borderRadius: 4,
-                          backgroundColor: 'var(--pce-rate-bar-fill)',
+                          backgroundColor: 'var(--brand-color)',
                           transition: 'width 600ms ease',
                         }}
                       />
@@ -127,35 +215,29 @@ export default function FacultyResultsPage() {
                     </p>
                   </div>
 
-                  {/* Comments */}
-                  {sectionComments.length > 0 && (
-                    <div className="px-4 py-4">
-                      <p className="text-xs font-medium mb-3" style={{ color: 'var(--muted-foreground)' }}>
-                        Comments ({sectionComments.length})
-                      </p>
-                      <div className="flex flex-col gap-3">
-                        {sectionComments.map((comment, i) => {
-                          const style = SENTIMENT_STYLE[comment.sentiment]
-                          return (
-                            <div key={i} className="flex items-start gap-2.5 text-sm">
-                              <i
-                                className={`fa-light ${style.icon} mt-0.5 shrink-0`}
-                                aria-hidden="true"
-                                style={{ color: style.color, fontSize: 14 }}
-                              />
-                              <span style={{ color: 'var(--foreground)', fontStyle: 'italic' }}>
-                                &ldquo;{comment.text}&rdquo;
-                              </span>
-                            </div>
-                          )
-                        })}
-                      </div>
+                  {/* Three sentiment groups */}
+                  {hasAnyComments && (
+                    <div className="px-3 py-3 flex flex-col gap-2">
+                      <CommentGroup sentiment="positive" comments={positive} />
+                      <CommentGroup sentiment="neutral"  comments={neutral}  />
+                      <CommentGroup sentiment="concern"  comments={concern}  />
+                    </div>
+                  )}
+
+                  {/* Attribution */}
+                  {hasAnyComments && (
+                    <div
+                      className="px-4 py-2.5 text-center"
+                      style={{ borderTop: '1px solid var(--border)' }}
+                    >
+                      <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                        Highlights selected by your program administrator
+                      </span>
                     </div>
                   )}
                 </div>
               )
             })}
-
           </div>
         )}
       </main>
