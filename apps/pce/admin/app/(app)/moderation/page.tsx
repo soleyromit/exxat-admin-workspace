@@ -13,7 +13,7 @@ import type { PceSurvey } from '@/lib/pce-mock-data'
 export default function ModerationPage() {
   const { surveys, releaseSurvey } = usePce()
   const [selected, setSelected] = useState<string[]>([])
-  const [releaseSurvey_, setReleaseSurvey] = useState<PceSurvey | null>(null)
+  const [surveyToRelease, setSurveyToRelease] = useState<PceSurvey | null>(null)
   const [bulkOpen, setBulkOpen] = useState(false)
 
   const pending = surveys.filter(s => s.status === 'pending_review')
@@ -31,34 +31,9 @@ export default function ModerationPage() {
     setSelected([])
   }
 
-  if (pending.length === 0) {
-    return (
-      <>
-        <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
-          <SidebarTrigger className="-ms-1" />
-          <Separator orientation="vertical" className="h-4" />
-          <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 400 }}>Review & Moderation</h1>
-        </header>
-        <div className="flex flex-col items-center justify-center flex-1 gap-3 text-center py-20">
-          <i
-            className="fa-light fa-shield-check"
-            aria-hidden="true"
-            style={{ fontSize: 48, color: 'var(--brand-color)' }}
-          />
-          <div className="flex flex-col gap-1">
-            <p className="text-sm font-medium">All caught up</p>
-            <p className="text-sm" style={{ color: 'var(--muted-foreground)', maxWidth: 360 }}>
-              No surveys are waiting for review. When a survey closes, it will appear here
-              before faculty can see results.
-            </p>
-          </div>
-        </div>
-      </>
-    )
-  }
-
   return (
-    <>
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Single shared header */}
       <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
@@ -70,50 +45,71 @@ export default function ModerationPage() {
         )}
       </header>
 
-      <div className="py-2 border-b border-border shrink-0" style={{ paddingInline: 28 }}>
-        <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-          {pending.length} {pending.length === 1 ? 'survey' : 'surveys'} pending review
-        </p>
-      </div>
-
-      <main className="flex-1 overflow-auto" style={{ padding: '0 28px 28px' }}>
-        <div className="border border-border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10">
-                  <Checkbox
-                    checked={selected.length === pending.length && pending.length > 0 ? true : selected.length > 0 ? 'indeterminate' : false}
-                    onCheckedChange={toggleAll}
-                    aria-label="Select all"
-                  />
-                </TableHead>
-                <TableHead>Course</TableHead>
-                <TableHead>Closed</TableHead>
-                <TableHead>Responses</TableHead>
-                <TableHead>Instructors</TableHead>
-                <TableHead className="w-32" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pending.map(survey => (
-                <ModerationRow
-                  key={survey.id}
-                  survey={survey}
-                  isSelected={selected.includes(survey.id)}
-                  onToggle={() => toggleSelect(survey.id)}
-                  onReview={() => setReleaseSurvey(survey)}
-                />
-              ))}
-            </TableBody>
-          </Table>
+      {/* Toolbar — only show when surveys exist */}
+      {pending.length > 0 && (
+        <div className="py-2 border-b border-border shrink-0" style={{ paddingInline: 28 }}>
+          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+            {pending.length} {pending.length === 1 ? 'survey' : 'surveys'} pending review
+          </p>
         </div>
+      )}
+
+      {/* Main — show empty state or table */}
+      <main className="flex-1 overflow-auto" style={{ padding: '0 28px 28px' }}>
+        {pending.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-20">
+            <i
+              className="fa-light fa-shield-check"
+              aria-hidden="true"
+              style={{ fontSize: 48, color: 'var(--brand-color)' }}
+            />
+            <div className="flex flex-col gap-1">
+              <p className="text-sm font-medium">All caught up</p>
+              <p className="text-sm" style={{ color: 'var(--muted-foreground)', maxWidth: 360 }}>
+                No surveys are waiting for review. When a survey closes, it will appear here
+                before faculty can see results.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="border border-border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={selected.length === pending.length && pending.length > 0 ? true : selected.length > 0 ? 'indeterminate' : false}
+                      onCheckedChange={toggleAll}
+                      aria-label="Select all"
+                    />
+                  </TableHead>
+                  <TableHead>Course</TableHead>
+                  <TableHead>Deadline</TableHead>
+                  <TableHead>Responses</TableHead>
+                  <TableHead>Instructors</TableHead>
+                  <TableHead className="w-32" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pending.map(survey => (
+                  <ModerationRow
+                    key={survey.id}
+                    survey={survey}
+                    isSelected={selected.includes(survey.id)}
+                    onToggle={() => toggleSelect(survey.id)}
+                    onReview={() => setSurveyToRelease(survey)}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </main>
 
       <ReleaseSheet
-        open={!!releaseSurvey_}
-        onOpenChange={v => { if (!v) setReleaseSurvey(null) }}
-        survey={releaseSurvey_}
+        open={!!surveyToRelease}
+        onOpenChange={v => { if (!v) setSurveyToRelease(null) }}
+        survey={surveyToRelease}
       />
       <ReleaseBulkDialog
         open={bulkOpen}
@@ -121,7 +117,7 @@ export default function ModerationPage() {
         surveyIds={selected}
         onConfirm={handleBulkRelease}
       />
-    </>
+    </div>
   )
 }
 
