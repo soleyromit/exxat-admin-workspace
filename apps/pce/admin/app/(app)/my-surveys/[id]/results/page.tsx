@@ -23,7 +23,7 @@ const SENTIMENT_CONFIG: Record<Sentiment, {
   quoteDivider: string
 }> = {
   positive: {
-    icon: '😊',
+    icon: 'fa-light fa-face-smile',
     label: 'What students appreciated',
     countSuffix: 'highlight',
     containerBorder: 'color-mix(in oklch, var(--chart-2) 30%, transparent)',
@@ -35,7 +35,7 @@ const SENTIMENT_CONFIG: Record<Sentiment, {
     quoteDivider:   'color-mix(in oklch, var(--chart-2) 20%, transparent)',
   },
   neutral: {
-    icon: '💭',
+    icon: 'fa-light fa-face-meh',
     label: 'Students also noted',
     countSuffix: 'observation',
     containerBorder: 'var(--border)',
@@ -47,7 +47,7 @@ const SENTIMENT_CONFIG: Record<Sentiment, {
     quoteDivider:    'var(--border-control)',
   },
   concern: {
-    icon: '📌',
+    icon: 'fa-light fa-thumbtack',
     label: 'Areas for consideration',
     countSuffix: 'consideration',
     containerBorder: 'color-mix(in oklch, var(--chart-4) 30%, transparent)',
@@ -74,7 +74,7 @@ function CommentGroup({
   return (
     <div style={{ border: `1px solid ${cfg.containerBorder}`, borderRadius: 8, overflow: 'hidden' }}>
       <div style={{ background: cfg.headerBg, padding: '7px 10px', display: 'flex', alignItems: 'center', gap: 7 }}>
-        <span style={{ fontSize: 13 }}>{cfg.icon}</span>
+        <i className={cfg.icon} aria-hidden="true" style={{ fontSize: 13, color: cfg.labelColor }} />
         <span style={{ fontSize: 11, fontWeight: 700, flex: 1, color: cfg.labelColor }}>{cfg.label}</span>
         <span style={{
           fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 10,

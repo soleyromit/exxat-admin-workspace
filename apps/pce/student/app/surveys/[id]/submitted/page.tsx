@@ -124,6 +124,33 @@ export default function SubmittedPage() {
             <i className="fa-light fa-arrow-right ms-1.5" aria-hidden="true" style={{ fontSize: 12 }} />
           </Link>
 
+          {/* Re-edit path — only while survey is still editable */}
+          {survey?.status === 'submitted' && (
+            <>
+              <div
+                className="w-full rounded-xl px-4 py-3 flex items-start gap-2.5 text-sm"
+                style={{
+                  backgroundColor: 'color-mix(in oklch, var(--chart-4) 15%, transparent)',
+                  color: 'color-mix(in oklch, var(--chart-4) 65%, var(--foreground))',
+                }}
+              >
+                <i className="fa-light fa-pen-to-square shrink-0 mt-0.5" aria-hidden="true" style={{ fontSize: 13 }} />
+                <span>
+                  Changed your mind? You can edit your responses until this survey closes
+                  {survey.deadline ? ` on ${survey.deadline}` : ''}.
+                </span>
+              </div>
+              <Link
+                href={`/surveys/${id}`}
+                className={buttonVariants({ variant: 'outline', size: 'default' })}
+                style={{ width: '100%' }}
+              >
+                <i className="fa-light fa-pen me-1.5" aria-hidden="true" style={{ fontSize: 12 }} />
+                Edit my responses
+              </Link>
+            </>
+          )}
+
           <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
             Questions? Contact your program coordinator.
           </p>
