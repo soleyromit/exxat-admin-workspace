@@ -16,6 +16,7 @@ import {
 import type { Question, QStatus, ColumnId } from '@/lib/qb-types'
 import { MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
 import { RequestEditAccessModal } from './qb-modals'
+import { QBTitle } from './qb-title'
 
 // ── Folder Tree Picker (shared by single + bulk move dialogs) ─────────────────
 function courseFolderShortLabel(name: string): string {
@@ -790,7 +791,11 @@ function FilterPropertiesSheet({
   sortCol, sortDir, onSort,
   groupBy, onGroupByChange,
   showGridlines, onShowGridlinesChange,
+  paginationEnabled, onPaginationEnabledChange,
   rowHeight, onRowHeightChange,
+  showTableTitle, onShowTableTitleChange,
+  showColumnLabels, onShowColumnLabelsChange,
+  showSearch, onShowSearchChange,
   conditionalRules, onAddConditionalRule, onRemoveConditionalRule, onUpdateConditionalRule,
   columnOrder, onColumnOrderChange,
   initialPanel,
@@ -821,8 +826,16 @@ function FilterPropertiesSheet({
   onGroupByChange: (key: string | null) => void
   showGridlines: boolean
   onShowGridlinesChange: (v: boolean) => void
+  paginationEnabled: boolean
+  onPaginationEnabledChange: (v: boolean) => void
   rowHeight: QBRowHeight
   onRowHeightChange: (v: QBRowHeight) => void
+  showTableTitle: boolean
+  onShowTableTitleChange: (v: boolean) => void
+  showColumnLabels: boolean
+  onShowColumnLabelsChange: (v: boolean) => void
+  showSearch: boolean
+  onShowSearchChange: (v: boolean) => void
   conditionalRules: QBConditionalRule[]
   onAddConditionalRule: (rule: QBConditionalRule) => void
   onRemoveConditionalRule: (id: string) => void
@@ -936,8 +949,8 @@ function FilterPropertiesSheet({
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Appearance</p>
                 <div className="space-y-0.5">
                   {([
-                    { id: 'gridlines',  icon: 'fa-border-all',    label: 'Gridlines',   checked: showGridlines, onChange: onShowGridlinesChange },
-                    { id: 'pagination', icon: 'fa-table-list',     label: 'Pagination',  checked: false,         onChange: () => {} },
+                    { id: 'gridlines',  icon: 'fa-border-all',  label: 'Gridlines',  checked: showGridlines,     onChange: onShowGridlinesChange },
+                    { id: 'pagination', icon: 'fa-table-list',  label: 'Pagination', checked: paginationEnabled, onChange: onPaginationEnabledChange },
                   ] as { id: string; icon: string; label: string; checked: boolean; onChange: (v: boolean) => void }[]).map(row => (
                     <div key={row.id} className="flex items-center justify-between py-2.5">
                       <div className="flex items-center gap-2.5 text-sm">
@@ -966,7 +979,7 @@ function FilterPropertiesSheet({
                       className="flex flex-col items-center gap-1.5 h-auto py-3 px-2 rounded-lg border transition-colors"
                       style={{
                         borderColor: rowHeight === h ? 'var(--brand-color)' : 'var(--border)',
-                        backgroundColor: rowHeight === h ? 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' : 'var(--background)',
+                        backgroundColor: rowHeight === h ? 'var(--brand-tint)' : 'var(--background)',
                       }}
                     >
                       <i className={`fa-light ${icon}`} aria-hidden="true"
@@ -981,10 +994,10 @@ function FilterPropertiesSheet({
               <div className="border-t border-border pt-4 space-y-1">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Display options</p>
                 {([
-                  { id: 'table-title', icon: 'fa-heading',      label: 'Table title',    desc: 'Show the page heading and subtitle.' },
-                  { id: 'col-labels',  icon: 'fa-table-columns', label: 'Column labels', desc: 'Column headers in the table.' },
-                  { id: 'search',      icon: 'fa-magnifying-glass', label: 'Search',     desc: 'Toolbar search for this view.' },
-                ] as { id: string; icon: string; label: string; desc: string }[]).map(row => (
+                  { id: 'table-title', icon: 'fa-heading',         label: 'Table title',   desc: 'Show the page heading and subtitle.', checked: showTableTitle,    onChange: onShowTableTitleChange },
+                  { id: 'col-labels',  icon: 'fa-table-columns',   label: 'Column labels', desc: 'Column headers in the table.',        checked: showColumnLabels,  onChange: onShowColumnLabelsChange },
+                  { id: 'search',      icon: 'fa-magnifying-glass', label: 'Search',        desc: 'Toolbar search for this view.',       checked: showSearch,        onChange: onShowSearchChange },
+                ] as { id: string; icon: string; label: string; desc: string; checked: boolean; onChange: (v: boolean) => void }[]).map(row => (
                   <div key={row.id} className="flex items-center justify-between gap-3 py-2">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       <span className="inline-flex items-center justify-center shrink-0"
@@ -996,7 +1009,7 @@ function FilterPropertiesSheet({
                         <p className="text-xs text-muted-foreground mt-0.5">{row.desc}</p>
                       </div>
                     </div>
-                    <ToggleSwitch id={`toggle-display-${row.id}`} checked={true} onChange={() => {}} />
+                    <ToggleSwitch id={`toggle-display-${row.id}`} checked={row.checked} onChange={row.onChange} />
                   </div>
                 ))}
               </div>
@@ -1428,28 +1441,39 @@ function FilterPropertiesSheet({
               )}
             </div>
 
-            {/* Footer: Add rule */}
+            {/* Footer: Add rule + Remove all */}
             <div className="p-3 border-t border-border" style={{ flexShrink: 0 }}>
-              <DropdownMenu modal={false}>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full gap-1.5 h-8 border-dashed text-muted-foreground">
-                    <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                    Add rule
+              <div className="flex items-center gap-2">
+                <DropdownMenu modal={false}>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="flex-1 gap-1.5 h-8 border-dashed text-muted-foreground">
+                      <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                      Add rule
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-48">
+                    {filterFields.map(f => (
+                      <DropdownMenuItem key={f.key} onClick={() => {
+                        const id = `cond-${f.key}-${Date.now()}`
+                        onAddConditionalRule({ id, fieldKey: f.key, operator: 'is', values: [], bgColor: QB_RULE_COLORS[0].bg })
+                        setCondExpandedIds(prev => new Set([...prev, id]))
+                      }}>
+                        <i className={`fa-light ${f.icon}`} aria-hidden="true" />
+                        {f.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {conditionalRules.length > 0 && (
+                  <Button
+                    variant="ghost" size="sm"
+                    className="shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => { conditionalRules.forEach(r => onRemoveConditionalRule(r.id)); setCondExpandedIds(new Set()) }}
+                  >
+                    Remove all
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48">
-                  {filterFields.map(f => (
-                    <DropdownMenuItem key={f.key} onClick={() => {
-                      const id = `cond-${f.key}-${Date.now()}`
-                      onAddConditionalRule({ id, fieldKey: f.key, operator: 'is', values: [], bgColor: QB_RULE_COLORS[0].bg })
-                      setCondExpandedIds(prev => new Set([...prev, id]))
-                    }}>
-                      <i className={`fa-light ${f.icon}`} aria-hidden="true" />
-                      {f.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                )}
+              </div>
             </div>
           </>
         )}
@@ -2124,6 +2148,14 @@ export function QBTable() {
   const [groupBy, setGroupBy] = useState<string | null>(null)
   const [showGridlines, setShowGridlines] = useState(false)
   const [rowHeight, setRowHeight] = useState<QBRowHeight>('default')
+  const rowPy = rowHeight === 'compact' ? 'py-1' : rowHeight === 'comfortable' ? 'py-4' : 'py-2.5'
+  // Shadow the module-level TD so all cells pick up the current density + optional gridlines
+  const TD = `px-3 ${rowPy} align-middle border-b border-border group-last/row:border-b-0 whitespace-nowrap${showGridlines ? ' border-r border-border last:border-r-0' : ''}`
+  const [paginationEnabled, setPaginationEnabled] = useState(true)
+  const [showTableTitle, setShowTableTitle] = useState(true)
+  const [showColumnLabels, setShowColumnLabels] = useState(true)
+  const [showSearch, setShowSearch] = useState(true)
+
   const [conditionalRules, setConditionalRules] = useState<QBConditionalRule[]>([])
   const searchRef = useRef<HTMLInputElement>(null)
 
@@ -2295,13 +2327,50 @@ export function QBTable() {
     })
   })()
 
+  // ── Group value extractor ─────────────────────────────────────────────────
+  function getGroupValue(q: Question): string {
+    if (!groupBy) return ''
+    if (groupBy === 'status')       return q.status ?? 'Unknown'
+    if (groupBy === 'type')         return q.type ?? 'Unknown'
+    if (groupBy === 'difficulty')   return q.difficulty ?? 'Unknown'
+    if (groupBy === 'blooms')       return q.blooms ?? 'Unknown'
+    if (groupBy === 'creator')      return MOCK_QB_PERSONAS.find(p => p.id === q.creator)?.name ?? q.creator ?? 'Unknown'
+    if (groupBy === 'lastEditedBy') return MOCK_QB_PERSONAS.find(p => p.id === q.lastEditedBy)?.name ?? q.lastEditedBy ?? 'Unknown'
+    return 'Unknown'
+  }
+
+  // ── Pagination ────────────────────────────────────────────────────────────
   const [page, setPage] = useState(1)
   const perPage = 20
-  const totalPages = Math.ceil(sortedQuestions.length / perPage)
-  const pageQuestions = sortedQuestions.slice((page - 1) * perPage, page * perPage)
+  const totalPages = paginationEnabled ? Math.ceil(sortedQuestions.length / perPage) : 1
+  const pageQuestions = paginationEnabled
+    ? sortedQuestions.slice((page - 1) * perPage, page * perPage)
+    : sortedQuestions
 
-  // Reset to page 1 when filters/sort change
-  useEffect(() => { setPage(1) }, [search, activeFilters, bookmarkOnly, sortCol, sortDir])
+  // Reset to page 1 when filters/sort/pagination change
+  useEffect(() => { setPage(1) }, [search, activeFilters, bookmarkOnly, sortCol, sortDir, paginationEnabled])
+
+  // ── Grouped table rows ────────────────────────────────────────────────────
+  type TableRowItem =
+    | { type: 'header'; label: string; count: number }
+    | { type: 'row'; question: Question }
+
+  const tableRows: TableRowItem[] = groupBy
+    ? (() => {
+        const buckets = new Map<string, Question[]>()
+        for (const q of pageQuestions) {
+          const key = getGroupValue(q)
+          if (!buckets.has(key)) buckets.set(key, [])
+          buckets.get(key)!.push(q)
+        }
+        const rows: TableRowItem[] = []
+        for (const [label, qs] of buckets) {
+          rows.push({ type: 'header', label, count: qs.length })
+          for (const q of qs) rows.push({ type: 'row', question: q })
+        }
+        return rows
+      })()
+    : pageQuestions.map(q => ({ type: 'row' as const, question: q }))
 
   const allSelected = pageQuestions.length > 0 && pageQuestions.every(q => selectedQuestionIds.has(q.id))
   const someSelected = pageQuestions.some(q => selectedQuestionIds.has(q.id)) && !allSelected
@@ -2315,7 +2384,9 @@ export function QBTable() {
   const isTrulyEmpty = visibleQuestions.length === 0 && activeFilters.length === 0 && !search && !bookmarkOnly
 
   return (
-    <div className="flex flex-col flex-1 overflow-auto pb-4" style={{ padding: '16px 16px 0' }}>
+    <div className="flex flex-col flex-1 overflow-hidden">
+      {showTableTitle && <QBTitle />}
+      <div className="flex flex-col flex-1 overflow-auto pb-4" style={{ padding: '16px 16px 0' }}>
       {/* ── Toolbar: filter chips left, icon controls right ── */}
       <div style={{ display: isTrulyEmpty ? 'none' : 'flex', alignItems: 'center', gap: 6, marginBottom: 10, minHeight: 32 }}>
         {/* Left: active filter chips (gated by filterBarVisible) */}
@@ -2336,7 +2407,7 @@ export function QBTable() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
 
           {/* Search — smooth width-transition expand */}
-          <div style={{
+          {showSearch && <div style={{
             display: 'flex', alignItems: 'center',
             width: searchOpen ? 204 : 32,
             overflow: 'hidden',
@@ -2383,7 +2454,7 @@ export function QBTable() {
                 <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 13 }} />
               </Button>
             )}
-          </div>
+          </div>}
 
           {/* Bookmark toggle — star icon */}
           <Button
@@ -2603,7 +2674,7 @@ export function QBTable() {
           {/* ── Table container — matches DS DataTable visual ── */}
           <div className="border border-border rounded-lg overflow-hidden">
             <Table className="w-full text-sm border-separate border-spacing-0">
-              <TableHeader>
+              {showColumnLabels && <TableHeader>
                 <TableRow>
                   {/* Select all */}
                   <TableHead className={`${TH} w-10 text-center`}>
@@ -2693,9 +2764,33 @@ export function QBTable() {
                     style={{ position: 'sticky', right: 0, zIndex: 2, background: 'var(--dt-header-bg)', boxShadow: '-2px 0 4px var(--sticky-edge-fade)' }}
                   />
                 </TableRow>
-              </TableHeader>
+              </TableHeader>}
               <TableBody className="[&_tr:last-child]:border-b-0">
-                {pageQuestions.map((q) => {
+                {tableRows.map((item) => {
+                  if (item.type === 'header') {
+                    return (
+                      <TableRow key={`group-header-${item.label}`} className="select-none">
+                        <TableCell
+                          colSpan={visibleCols.length + 1}
+                          style={{
+                            padding: '6px 12px',
+                            backgroundColor: 'var(--sidebar)',
+                            borderBottom: '1px solid var(--sidebar-border)',
+                            position: 'sticky',
+                            top: 0,
+                            zIndex: 1,
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <i className="fa-light fa-layer-group" aria-hidden="true" style={{ fontSize: 11, color: 'var(--muted-foreground)' }} />
+                            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)' }}>{item.label}</span>
+                            <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{item.count} question{item.count !== 1 ? 's' : ''}</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  }
+                  const q = item.question
                   const isSelected = selectedQuestionIds.has(q.id)
                   const isHovered = rowHoverId === q.id
                   const isOwner = q.creator === currentPersona.id
@@ -3288,8 +3383,16 @@ export function QBTable() {
         onGroupByChange={setGroupBy}
         showGridlines={showGridlines}
         onShowGridlinesChange={setShowGridlines}
+        paginationEnabled={paginationEnabled}
+        onPaginationEnabledChange={setPaginationEnabled}
         rowHeight={rowHeight}
         onRowHeightChange={setRowHeight}
+        showTableTitle={showTableTitle}
+        onShowTableTitleChange={setShowTableTitle}
+        showColumnLabels={showColumnLabels}
+        onShowColumnLabelsChange={setShowColumnLabels}
+        showSearch={showSearch}
+        onShowSearchChange={setShowSearch}
         conditionalRules={conditionalRules}
         onAddConditionalRule={addConditionalRule}
         onRemoveConditionalRule={removeConditionalRule}
@@ -3334,6 +3437,7 @@ export function QBTable() {
           onClose={() => setDeleteTarget(null)}
         />
       )}
+      </div>
     </div>
   )
 }

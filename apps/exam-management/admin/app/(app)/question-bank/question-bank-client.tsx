@@ -3,7 +3,6 @@ import { QBProvider } from './qb-state'
 import { QBLayoutInner } from './qb-layout'
 import { QBHeader } from './qb-header'
 import { QBSidebar } from './qb-sidebar'
-import { QBTitle } from './qb-title'
 import { QBTable } from './qb-table'
 import { useQB } from './qb-state'
 
@@ -40,10 +39,7 @@ function QBContent() {
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <QBTitle />
-      <div style={{ flex: 1, overflowY: 'auto' }}>
-        <QBTable />
-      </div>
+      <QBTable />
     </div>
   )
 }
