@@ -65,20 +65,20 @@ export const MOCK_STUDENT_SURVEYS: StudentSurvey[] = [
     sections: [
       {
         id: 'cc',
-        title: 'Course Content',
+        title: 'About the Course',
         description: 'Help us understand how well the course content supported your learning.',
         questions: COURSE_CONTENT_QUESTIONS,
       },
       {
         id: 'fp-patel',
-        title: 'Faculty Performance — Dr. Anita Patel',
-        description: 'Share your experience with Dr. Patel as an instructor.',
+        title: 'About Dr. Anita Patel',
+        description: 'Share your experience with Dr. Patel as your instructor.',
         questions: FACULTY_PERFORMANCE_QUESTIONS,
       },
       {
         id: 'fp-chen',
-        title: 'Faculty Performance — Dr. Kevin Chen',
-        description: 'Share your experience with Dr. Chen as a guest lecturer.',
+        title: 'About Dr. Kevin Chen',
+        description: 'Share your experience with Dr. Chen as your guest lecturer.',
         questions: FACULTY_PERFORMANCE_QUESTIONS,
       },
     ],
@@ -94,14 +94,14 @@ export const MOCK_STUDENT_SURVEYS: StudentSurvey[] = [
     sections: [
       {
         id: 'cc',
-        title: 'Course Content',
+        title: 'About the Course',
         description: 'Help us understand how well the course content supported your learning.',
         questions: COURSE_CONTENT_QUESTIONS,
       },
       {
         id: 'fp-williams',
-        title: 'Faculty Performance — Dr. Maria Williams',
-        description: 'Share your experience with Dr. Williams as an instructor.',
+        title: 'About Dr. Maria Williams',
+        description: 'Share your experience with Dr. Williams as your instructor.',
         questions: FACULTY_PERFORMANCE_QUESTIONS,
       },
     ],
@@ -118,14 +118,14 @@ export const MOCK_STUDENT_SURVEYS: StudentSurvey[] = [
     sections: [
       {
         id: 'cc',
-        title: 'Course Content',
+        title: 'About the Course',
         description: 'Help us understand how well the course content supported your learning.',
         questions: COURSE_CONTENT_QUESTIONS,
       },
       {
         id: 'fp-williams',
-        title: 'Faculty Performance — Dr. Maria Williams',
-        description: 'Share your experience with Dr. Williams as an instructor.',
+        title: 'About Dr. Maria Williams',
+        description: 'Share your experience with Dr. Williams as your instructor.',
         questions: FACULTY_PERFORMANCE_QUESTIONS,
       },
     ],
@@ -142,14 +142,14 @@ export const MOCK_STUDENT_SURVEYS: StudentSurvey[] = [
     sections: [
       {
         id: 'cc',
-        title: 'Course Content',
+        title: 'About the Course',
         description: 'Help us understand how well the course content supported your learning.',
         questions: COURSE_CONTENT_QUESTIONS,
       },
       {
         id: 'fp-kim',
-        title: 'Faculty Performance — Dr. James Kim',
-        description: 'Share your experience with Dr. Kim as an instructor.',
+        title: 'About Dr. James Kim',
+        description: 'Share your experience with Dr. Kim as your instructor.',
         questions: FACULTY_PERFORMANCE_QUESTIONS,
       },
     ],
