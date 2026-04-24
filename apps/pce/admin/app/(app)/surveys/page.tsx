@@ -48,17 +48,17 @@ export default function SurveysPage() {
 
   return (
     <>
-      <header className="flex items-center gap-2 px-4 py-3 border-b border-border shrink-0">
+      <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
-        <h1 className="text-sm font-semibold flex-1">Surveys</h1>
+        <h1 className="flex-1" style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 400 }}>Surveys</h1>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
           <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
           Create Survey
         </Button>
       </header>
 
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-border shrink-0 flex-wrap">
+      <div className="flex items-center gap-2 py-2 border-b border-border shrink-0 flex-wrap" style={{ paddingInline: 28 }}>
         <InputGroup className="w-56">
           <InputGroupAddon align="inline-start">
             <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)' }} />
@@ -82,7 +82,7 @@ export default function SurveysPage() {
         </Select>
       </div>
 
-      <main className="flex-1 overflow-auto px-4 pb-4">
+      <main className="flex-1 overflow-auto" style={{ padding: '0 28px 28px' }}>
         {!hasResults ? (
           <EmptySurveys
             onCreate={() => setCreateOpen(true)}
@@ -176,8 +176,8 @@ function SurveyRow({ survey, onClose }: { survey: PceSurvey; onClose: () => void
     >
       <TableCell>
         <Link href={`/surveys/${survey.id}`} className="flex flex-col gap-0.5 hover:underline">
-          <span className="font-semibold text-sm">{survey.courseCode}</span>
-          <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>{survey.courseName}</span>
+          <span style={{ fontSize: 13, fontWeight: 600 }}>{survey.courseCode}</span>
+          <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{survey.courseName}</span>
         </Link>
       </TableCell>
       <TableCell>
@@ -193,7 +193,7 @@ function SurveyRow({ survey, onClose }: { survey: PceSurvey; onClose: () => void
                     {primary.initials}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-sm truncate max-w-32">{primary.name}</span>
+                <span style={{ fontSize: 13 }} className="truncate max-w-32">{primary.name}</span>
                 {extraCount > 0 && (
                   <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
                     +{extraCount}
@@ -222,7 +222,7 @@ function SurveyRow({ survey, onClose }: { survey: PceSurvey; onClose: () => void
           showBar={survey.responseRate > 0}
         />
       </TableCell>
-      <TableCell className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+      <TableCell style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>
         {survey.deadline}
       </TableCell>
       <TableCell>
