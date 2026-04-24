@@ -13,7 +13,7 @@ import {
   InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput,
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@exxat/ds/packages/ui/src'
-import type { Question, QStatus } from '@/lib/qb-types'
+import type { Question, QStatus, ColumnId } from '@/lib/qb-types'
 import { MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
 import { RequestEditAccessModal } from './qb-modals'
 
@@ -146,11 +146,11 @@ function FolderTreePicker({
                 display: 'flex', alignItems: 'center', gap: 6,
                 paddingLeft: childIndentPx, paddingRight: 8, height: 34,
                 borderRadius: 6, margin: '1px 0',
-                border: '1px solid var(--sidebar-border)',
-                backgroundColor: 'var(--sidebar-accent)',
+                border: '1px solid var(--border)',
+                backgroundColor: 'var(--muted)',
               }}>
                 <div style={{ width: 16, flexShrink: 0 }} />
-                <i className="fa-light fa-folder" aria-hidden="true" style={{ fontSize: 12, color: 'var(--sidebar-accent-foreground)', flexShrink: 0 }} />
+                <i className="fa-light fa-folder" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)', flexShrink: 0 }} />
                 <input
                   ref={inlineInputRef}
                   value={inlineNewName}
@@ -161,7 +161,7 @@ function FolderTreePicker({
                   aria-label="New folder name"
                 />
                 <Button size="icon-xs" variant="ghost" onClick={handleInlineCreate} disabled={!inlineNewName.trim()} aria-label="Create folder"
-                  style={{ color: 'var(--sidebar-accent-foreground)', flexShrink: 0 }}>
+                  style={{ color: 'var(--brand-color)', flexShrink: 0 }}>
                   <i className="fa-light fa-check" aria-hidden="true" style={{ fontSize: 11 }} />
                 </Button>
                 <Button size="icon-xs" variant="ghost" onClick={cancelInlineCreate} aria-label="Cancel"
@@ -792,6 +792,7 @@ function FilterPropertiesSheet({
   showGridlines, onShowGridlinesChange,
   rowHeight, onRowHeightChange,
   conditionalRules, onAddConditionalRule, onRemoveConditionalRule, onUpdateConditionalRule,
+  columnOrder, onColumnOrderChange,
   initialPanel,
   filterFields = QB_FILTER_FIELDS,
 }: {
@@ -826,11 +827,15 @@ function FilterPropertiesSheet({
   onAddConditionalRule: (rule: QBConditionalRule) => void
   onRemoveConditionalRule: (id: string) => void
   onUpdateConditionalRule: (id: string, patch: Partial<Omit<QBConditionalRule, 'id'>>) => void
+  columnOrder: ColumnId[]
+  onColumnOrderChange: (order: ColumnId[]) => void
   initialPanel?: SheetPanel
   filterFields?: typeof QB_FILTER_FIELDS
 }) {
   const [panel, setPanel] = useState<SheetPanel>('main')
   const [condExpandedIds, setCondExpandedIds] = useState<Set<string>>(new Set())
+  const sheetDragColRef = useRef<string | null>(null)
+  const [dragOverColSheet, setDragOverColSheet] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open) { setPanel('main'); return }
@@ -1007,14 +1012,15 @@ function FilterPropertiesSheet({
                       <React.Fragment key={f.id}>
                         {idx > 0 && (
                           <div className="flex justify-center">
-                            <button
-                              type="button"
+                            <Button
+                              variant="outline"
+                              size="xs"
                               onClick={onToggleFilterLogic}
-                              className="text-xs font-semibold px-3 py-0.5 rounded-full border border-border hover:border-brand-color transition-colors"
-                              style={{ color: 'var(--muted-foreground)', backgroundColor: 'var(--background)' }}
+                              className="rounded-full text-xs font-semibold"
+                              style={{ color: 'var(--muted-foreground)' }}
                             >
                               {filterLogic.toUpperCase()}
-                            </button>
+                            </Button>
                           </div>
                         )}
                         <QBFilterCard
@@ -1208,10 +1214,41 @@ function FilterPropertiesSheet({
               {hiddenColCount === 0 ? 'All columns visible.' : `${hiddenColCount} column${hiddenColCount !== 1 ? 's' : ''} hidden.`}
             </div>
             <div className="flex-1 overflow-y-auto px-3 py-1 space-y-0.5">
-              {QB_COLS.filter(c => c.hideable).map(col => {
-                const visible = !hiddenCols.has(col.key)
+              {columnOrder.map(key => {
+                const col = QB_COLS.find(c => c.key === key && c.hideable)
+                if (!col) return null
+                const visible = !hiddenCols.has(col.key as ColKey)
+                const isDragTarget = dragOverColSheet === col.key
                 return (
-                  <div key={col.key} className="flex items-center gap-2 px-2 py-2.5 rounded-lg hover:bg-muted/40 transition-colors">
+                  <div
+                    key={col.key}
+                    draggable
+                    onDragStart={e => { sheetDragColRef.current = col.key; e.dataTransfer.effectAllowed = 'move' }}
+                    onDragOver={e => { e.preventDefault(); setDragOverColSheet(col.key) }}
+                    onDragLeave={() => { if (dragOverColSheet === col.key) setDragOverColSheet(null) }}
+                    onDrop={e => {
+                      e.preventDefault()
+                      const from = sheetDragColRef.current
+                      const to = col.key
+                      if (!from || from === to) { sheetDragColRef.current = null; setDragOverColSheet(null); return }
+                      const next = [...columnOrder]
+                      const fromIdx = next.indexOf(from as ColumnId)
+                      const toIdx = next.indexOf(to as ColumnId)
+                      if (fromIdx >= 0 && toIdx >= 0) {
+                        next.splice(fromIdx, 1)
+                        next.splice(toIdx, 0, from as ColumnId)
+                        onColumnOrderChange(next)
+                      }
+                      sheetDragColRef.current = null
+                      setDragOverColSheet(null)
+                    }}
+                    onDragEnd={() => { sheetDragColRef.current = null; setDragOverColSheet(null) }}
+                    className="flex items-center gap-2 px-2 py-2.5 rounded-lg hover:bg-muted/40 transition-colors"
+                    style={{
+                      outline: isDragTarget ? '2px dashed var(--brand-color)' : undefined,
+                      outlineOffset: isDragTarget ? '-2px' : undefined,
+                    }}
+                  >
                     <i className="fa-light fa-grip-dots-vertical text-muted-foreground/50 shrink-0" aria-hidden="true" style={{ fontSize: 13, cursor: 'grab' }} />
                     <span className="flex-1 text-sm" style={{ color: visible ? 'var(--foreground)' : 'var(--muted-foreground)' }}>{col.label}</span>
                     <ToggleSwitch
@@ -1219,7 +1256,7 @@ function FilterPropertiesSheet({
                       checked={visible}
                       onChange={() => setHiddenCols(prev => {
                         const next = new Set(prev)
-                        if (next.has(col.key)) next.delete(col.key); else next.add(col.key)
+                        if (next.has(col.key as ColKey)) next.delete(col.key as ColKey); else next.add(col.key as ColKey)
                         return next
                       })}
                     />
@@ -1263,7 +1300,20 @@ function FilterPropertiesSheet({
                       <div className="flex items-start justify-between px-3 pt-2.5 pb-2 gap-2">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-foreground">{fieldDef.label}</p>
-                          <p className="text-xs text-muted-foreground">{rule.operator === 'is' ? 'is' : 'is not'} {rule.values.join(', ') || '—'}</p>
+                          <div className="flex items-center gap-1 flex-wrap min-w-0">
+                            <Button
+                              variant="ghost" size="xs"
+                              onClick={() => onUpdateConditionalRule(rule.id, { operator: rule.operator === 'is' ? 'is_not' : 'is' })}
+                              className="h-auto py-0 px-1 -ms-1 text-xs text-muted-foreground font-normal gap-1"
+                              aria-label={`Operator: ${rule.operator === 'is' ? 'is' : 'is not'} — click to cycle`}
+                            >
+                              {rule.operator === 'is' ? 'is' : 'is not'}
+                              <i className="fa-light fa-chevron-down text-xs" aria-hidden="true" />
+                            </Button>
+                            <span className="text-xs text-muted-foreground truncate">
+                              {rule.values.join(', ') || '—'}
+                            </span>
+                          </div>
                         </div>
                         <div className="flex items-center gap-0.5 shrink-0 self-start">
                           <Button variant="ghost" size="icon-sm" onClick={() => onRemoveConditionalRule(rule.id)} aria-label="Remove rule"
@@ -3201,6 +3251,8 @@ export function QBTable() {
         onAddConditionalRule={addConditionalRule}
         onRemoveConditionalRule={removeConditionalRule}
         onUpdateConditionalRule={updateConditionalRule}
+        columnOrder={columnOrder}
+        onColumnOrderChange={order => setColumnOrder(order)}
         initialPanel={initialPropertiesPanel}
         filterFields={qbFilterFields}
       />
