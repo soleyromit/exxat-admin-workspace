@@ -50,7 +50,7 @@ function UserFooter() {
               tooltip={user.name}
             >
               <Avatar className="h-8 w-8 rounded-full shrink-0">
-                <AvatarFallback className="rounded-full text-xs font-bold bg-primary text-primary-foreground">
+                <AvatarFallback className="rounded-full text-xs font-bold" style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>
                   {user.initials}
                 </AvatarFallback>
               </Avatar>
@@ -71,7 +71,7 @@ function UserFooter() {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-sm">
                 <Avatar className="h-8 w-8 rounded-full">
-                  <AvatarFallback className="rounded-full text-xs font-bold bg-primary text-primary-foreground">
+                  <AvatarFallback className="rounded-full text-xs font-bold" style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>
                     {user.initials}
                   </AvatarFallback>
                 </Avatar>

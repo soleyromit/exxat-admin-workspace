@@ -41,7 +41,7 @@ export default function SurveyDetailPage() {
   return (
     <>
       {/* Header */}
-      <header className="flex items-center gap-2 px-4 py-3 border-b border-border shrink-0">
+      <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
         <Link href="/surveys" className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Surveys</Link>

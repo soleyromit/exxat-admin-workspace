@@ -58,8 +58,6 @@
   --pce-status-released-fg:       oklch(0.28 0.12 155);
   --pce-status-released-border:   oklch(0.72 0.12 155);
 
-  --pce-rate-bar-fill:            var(--brand-color);
-  --pce-rate-bar-track:           var(--muted);
   --pce-locked-bg:                color-mix(in oklch, var(--muted) 40%, var(--background));
 
   --pce-impact-bg:                color-mix(in oklch, var(--destructive) 8%, var(--background));
