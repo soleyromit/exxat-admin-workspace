@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { buttonVariants } from '@exxat/student/components/ui/button'
+import { Button, buttonVariants } from '@exxat/student/components/ui/button'
 import { MOCK_STUDENT_SURVEYS } from '@/lib/mock-surveys'
 import type { SurveySection, Question } from '@/lib/mock-surveys'
 import Link from 'next/link'
@@ -93,12 +93,12 @@ export default function TakeSurveyPage() {
     )
   }
 
-  if (survey.status !== 'open') {
+  if (survey.status !== 'open' && survey.status !== 'submitted') {
     return (
       <div className="flex min-h-screen items-center justify-center flex-col gap-3 text-center px-6">
         <i className="fa-light fa-lock-keyhole" aria-hidden="true" style={{ fontSize: 40, color: 'var(--muted-foreground)' }} />
         <p className="text-base font-semibold" style={{ color: 'var(--foreground)' }}>
-          {survey.status === 'submitted' ? 'Already submitted' : 'This survey is closed'}
+          This survey is closed
         </p>
         <Link href="/surveys" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
           Back to Surveys
@@ -158,8 +158,8 @@ export default function TakeSurveyPage() {
             <i className="fa-light fa-cloud-check" aria-hidden="true" style={{ fontSize: 11 }} />
             Progress saved
           </span>
-          <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-            {currentSection + 1} of {totalSections}
+          <span className="text-sm font-medium" style={{ color: 'var(--brand-color)' }}>
+            Section {currentSection + 1} of {totalSections}
           </span>
         </div>
       </header>
@@ -172,6 +172,23 @@ export default function TakeSurveyPage() {
         >
           <i className="fa-light fa-rotate-left" aria-hidden="true" style={{ fontSize: 12 }} />
           Resumed where you left off
+        </div>
+      )}
+
+      {/* Editing banner — shown when re-entering a submitted survey */}
+      {survey.status === 'submitted' && (
+        <div
+          className="flex items-center gap-2 px-6 py-3 text-sm border-b"
+          style={{
+            backgroundColor: 'color-mix(in oklch, var(--chart-4) 15%, transparent)',
+            borderColor: 'var(--border)',
+            color: 'color-mix(in oklch, var(--chart-4) 65%, var(--foreground))',
+          }}
+        >
+          <i className="fa-light fa-pen-to-square shrink-0" aria-hidden="true" style={{ fontSize: 13 }} />
+          <span>
+            You&apos;re editing your previous submission. Re-submitting will replace your earlier answers.
+          </span>
         </div>
       )}
 
@@ -201,9 +218,11 @@ export default function TakeSurveyPage() {
             {i > 0 && (
               <i className="fa-light fa-chevron-right text-xs" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
             )}
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => i < currentSection && setCurrentSection(i)}
-              className="text-xs px-2 py-1 rounded-full transition-colors"
+              className="text-xs h-auto px-2 py-1 rounded-full"
               style={{
                 backgroundColor: i === currentSection
                   ? 'var(--brand-color)'
@@ -211,7 +230,7 @@ export default function TakeSurveyPage() {
                     ? 'var(--brand-color-soft)'
                     : 'transparent',
                 color: i === currentSection
-                  ? 'white'
+                  ? 'var(--primary-foreground)'
                   : i < currentSection
                     ? 'var(--brand-color-dark)'
                     : 'var(--muted-foreground)',
@@ -222,7 +241,7 @@ export default function TakeSurveyPage() {
                 <i className="fa-solid fa-check me-1 text-xs" aria-hidden="true" />
               )}
               {s.title.split(' — ')[0]}
-            </button>
+            </Button>
           </div>
         ))}
       </div>
@@ -241,21 +260,15 @@ export default function TakeSurveyPage() {
         className="sticky bottom-0 flex items-center justify-between border-t px-6 py-4"
         style={{ borderColor: 'var(--border)', backgroundColor: 'var(--background)' }}
       >
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => setCurrentSection(c => c - 1)}
           disabled={currentSection === 0}
-          className="text-sm"
-          style={{
-            color: currentSection === 0 ? 'var(--muted-foreground)' : 'var(--brand-color)',
-            background: 'none',
-            border: 'none',
-            cursor: currentSection === 0 ? 'default' : 'pointer',
-            padding: 0,
-          }}
         >
           <i className="fa-light fa-arrow-left me-1" aria-hidden="true" style={{ fontSize: 12 }} />
           Previous
-        </button>
+        </Button>
 
         <div className="flex items-center gap-1.5">
           {survey.sections.map((_, i) => (
@@ -272,16 +285,11 @@ export default function TakeSurveyPage() {
           ))}
         </div>
 
-        <button
+        <Button
+          variant={sectionAnswered && !submitting ? 'default' : 'secondary'}
+          size="sm"
           onClick={handleNext}
           disabled={!sectionAnswered || submitting}
-          className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-opacity"
-          style={{
-            backgroundColor: sectionAnswered && !submitting ? 'var(--brand-color)' : 'var(--muted)',
-            color: sectionAnswered && !submitting ? 'white' : 'var(--muted-foreground)',
-            border: 'none',
-            cursor: sectionAnswered && !submitting ? 'pointer' : 'default',
-          }}
         >
           {submitting ? (
             <>
@@ -299,7 +307,7 @@ export default function TakeSurveyPage() {
               <i className="fa-light fa-arrow-right ms-1" aria-hidden="true" style={{ fontSize: 12 }} />
             </>
           )}
-        </button>
+        </Button>
       </footer>
     </div>
   )
@@ -324,6 +332,26 @@ function SectionForm({
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
           {section.description}
         </p>
+        {(() => {
+          const requiredQs = section.questions.filter(q => q.type === 'rating')
+          if (requiredQs.length === 0) return null
+          return (
+            <div style={{ display: 'flex', gap: 5, marginTop: 4 }}>
+              {requiredQs.map(q => (
+                <div
+                  key={q.id}
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    backgroundColor: answers[q.id] !== undefined ? 'var(--brand-color)' : 'var(--border)',
+                    transition: 'background-color 0.15s ease',
+                  }}
+                />
+              ))}
+            </div>
+          )
+        })()}
       </div>
 
       {/* Questions */}
@@ -405,10 +433,11 @@ function RatingInput({
       {/* Mobile: vertical list */}
       <div className="flex flex-col gap-1.5 sm:hidden">
         {[1, 2, 3, 4, 5].map(n => (
-          <button
+          <Button
             key={n}
+            variant="outline"
             onClick={() => onChange(n)}
-            className="flex items-center gap-3 rounded-lg border px-4 py-3 text-left text-sm transition-colors"
+            className="flex items-center gap-3 rounded-lg px-4 py-3 h-auto justify-start text-sm"
             style={{
               borderColor: value === n ? 'var(--brand-color)' : 'var(--border)',
               backgroundColor: value === n ? 'var(--brand-color-surface)' : 'var(--background)',
@@ -419,13 +448,13 @@ function RatingInput({
               className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold"
               style={{
                 backgroundColor: value === n ? 'var(--brand-color)' : 'var(--muted)',
-                color: value === n ? 'white' : 'var(--muted-foreground)',
+                color: value === n ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
               }}
             >
               {n}
             </span>
             {RATING_LABELS[n]}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -433,10 +462,11 @@ function RatingInput({
       <div className="hidden sm:flex flex-col gap-2">
         <div className="flex gap-2">
           {[1, 2, 3, 4, 5].map(n => (
-            <button
+            <Button
               key={n}
+              variant="outline"
               onClick={() => onChange(n)}
-              className="flex flex-1 flex-col items-center gap-1.5 rounded-xl border py-3 transition-all"
+              className="flex flex-1 flex-col items-center gap-1.5 rounded-xl h-auto py-3"
               style={{
                 borderColor: value === n ? 'var(--brand-color)' : 'var(--border)',
                 backgroundColor: value === n ? 'var(--brand-color-surface)' : 'var(--background)',
@@ -446,7 +476,7 @@ function RatingInput({
                 className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold"
                 style={{
                   backgroundColor: value === n ? 'var(--brand-color)' : 'var(--muted)',
-                  color: value === n ? 'white' : 'var(--muted-foreground)',
+                  color: value === n ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
                 }}
               >
                 {n}
@@ -454,7 +484,7 @@ function RatingInput({
               <span className="text-xs text-center px-1 leading-tight" style={{ color: 'var(--muted-foreground)' }}>
                 {RATING_LABELS[n]}
               </span>
-            </button>
+            </Button>
           ))}
         </div>
         <div className="flex justify-between text-xs" style={{ color: 'var(--muted-foreground)' }}>
