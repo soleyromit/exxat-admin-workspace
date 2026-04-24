@@ -237,8 +237,10 @@ export const MOCK_RESPONSES: PceResponse[] = [
     ],
     comments: [
       { section: 'faculty_performance', text: 'Dr. Williams is an excellent communicator.', sentiment: 'positive' },
-      { section: 'course_content', text: 'Some topics could be covered in more depth.', sentiment: 'neutral' },
       { section: 'faculty_performance', text: 'Office hours were very helpful.', sentiment: 'positive' },
+      { section: 'faculty_performance', text: 'Pace of lectures was sometimes too fast to follow.', sentiment: 'neutral' },
+      { section: 'course_content', text: 'Some topics could be covered in more depth.', sentiment: 'neutral' },
+      { section: 'course_content', text: 'More worked examples in assessments would help.', sentiment: 'concern' },
     ],
   },
   {
@@ -260,6 +262,12 @@ export const SECTION_LABELS: Record<TemplateSection, string> = {
   course_content: 'Course Content',
   faculty_performance: 'Faculty Performance',
   course_director: 'Course Director',
+}
+
+export const FACULTY_SECTION_LABELS: Record<TemplateSection, string> = {
+  course_content: 'About the Course',
+  faculty_performance: 'About Your Teaching',
+  course_director: 'About the Course Director',
 }
 
 export const SECTION_ABBREV: Record<TemplateSection, string> = {
