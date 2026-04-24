@@ -40,10 +40,10 @@ function MySurveysContent() {
 
   return (
     <>
-      <header className="flex items-center gap-2 px-4 py-3 border-b border-border shrink-0">
+      <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
-        <h1 className="text-sm font-semibold flex-1">
+        <h1 className="flex-1" style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 400 }}>
           {filterParam === 'released' ? 'Results' : 'My Surveys'}
         </h1>
         <Select value={term} onValueChange={setTerm}>
@@ -56,7 +56,7 @@ function MySurveysContent() {
         </Select>
       </header>
 
-      <main className="flex-1 overflow-auto p-4">
+      <main className="flex-1 overflow-auto" style={{ padding: '0 28px 28px' }}>
         {displayed.length === 0 ? (
           <EmptyFaculty filterParam={filterParam} term={term} />
         ) : (
@@ -78,8 +78,8 @@ function MySurveysContent() {
                     <TableRow key={survey.id}>
                       <TableCell>
                         <div className="flex flex-col gap-0.5">
-                          <span className="font-medium text-sm">{survey.courseCode}</span>
-                          <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>{survey.term}</span>
+                          <span style={{ fontSize: 13, fontWeight: 500 }}>{survey.courseCode}</span>
+                          <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{survey.courseName}</span>
                         </div>
                       </TableCell>
                       <TableCell><SurveyStatusBadge status={survey.status} /></TableCell>
@@ -91,7 +91,7 @@ function MySurveysContent() {
                           showBar={survey.responseRate > 0}
                         />
                       </TableCell>
-                      <TableCell className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                      <TableCell style={{ fontSize: 13, fontWeight: 500, color: 'var(--muted-foreground)' }}>
                         {survey.deadline}
                       </TableCell>
                       <TableCell>
@@ -103,7 +103,7 @@ function MySurveysContent() {
                             </Link>
                           </Button>
                         ) : (
-                          <div className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                          <div className="flex items-center gap-1.5" style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>
                             <i className="fa-light fa-lock-keyhole" aria-hidden="true" style={{ fontSize: 12 }} />
                             Pending review
                           </div>
