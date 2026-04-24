@@ -36,7 +36,7 @@ export default function SurveyResponsesPage() {
   if (!responses) {
     return (
       <>
-        <header className="flex items-center gap-2 px-4 py-3 border-b border-border shrink-0">
+        <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
           <SidebarTrigger className="-ms-1" />
           <Separator orientation="vertical" className="h-4" />
           <Link href="/surveys" className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Surveys</Link>
@@ -60,7 +60,7 @@ export default function SurveyResponsesPage() {
 
   return (
     <>
-      <header className="flex items-center gap-2 px-4 py-3 border-b border-border shrink-0">
+      <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
         <Link href="/surveys" className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Surveys</Link>
@@ -76,7 +76,7 @@ export default function SurveyResponsesPage() {
         <SurveyStatusBadge status={survey.status} />
       </header>
 
-      <main className="flex-1 overflow-auto p-6">
+      <main className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
         <div className="max-w-2xl flex flex-col gap-6">
 
           {/* Overall summary */}
@@ -131,8 +131,8 @@ export default function SurveyResponsesPage() {
 
                 {/* Score bar */}
                 <div className="px-4 py-3 border-b border-border">
-                  <div style={{ height: 8, borderRadius: 4, backgroundColor: 'var(--pce-rate-bar-track)', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${(sectionScore.avg / 5) * 100}%`, borderRadius: 4, backgroundColor: 'var(--pce-rate-bar-fill)' }} />
+                  <div style={{ height: 8, borderRadius: 4, backgroundColor: 'var(--muted)', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${(sectionScore.avg / 5) * 100}%`, borderRadius: 4, backgroundColor: 'var(--brand-color)' }} />
                   </div>
                 </div>
 
@@ -165,8 +165,9 @@ export default function SurveyResponsesPage() {
                               style={{ color: isHidden ? 'var(--muted-foreground)' : sStyle.color, fontSize: 13 }}
                             />
                             <span
-                              className="flex-1 text-sm"
                               style={{
+                                flex: 1,
+                                fontSize: 13,
                                 color: isHidden ? 'var(--muted-foreground)' : 'var(--foreground)',
                                 textDecoration: isHidden ? 'line-through' : 'none',
                                 fontStyle: 'italic',
