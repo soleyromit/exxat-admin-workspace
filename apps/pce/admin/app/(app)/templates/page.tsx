@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import {
-  Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+  Button, Input, InputGroup, InputGroupAddon, Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
   Tooltip, TooltipTrigger, TooltipContent, SidebarTrigger, Separator,
 } from '@exxat/ds/packages/ui/src'
@@ -38,20 +38,17 @@ export default function TemplatesPage() {
 
       {/* Toolbar */}
       <div className="flex items-center gap-2 px-4 py-2 border-b border-border shrink-0">
-        <div className="relative">
-          <i
-            className="fa-light fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2"
-            aria-hidden="true"
-            style={{ fontSize: 12, color: 'var(--muted-foreground)' }}
-          />
-          <input
-            className="h-8 rounded-md border border-border bg-background pl-7 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0"
-            style={{ width: 220 }}
+        <InputGroup className="w-56">
+          <InputGroupAddon align="inline-start">
+            <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)' }} />
+          </InputGroupAddon>
+          <Input
             placeholder="Search templates…"
             value={search}
             onChange={e => setSearch(e.target.value)}
+            className="h-8 text-sm"
           />
-        </div>
+        </InputGroup>
       </div>
 
       {/* Content */}
@@ -136,12 +133,9 @@ function TemplateRow({
       <TableCell className="text-right tabular-nums text-sm">{template.questionCount}</TableCell>
       <TableCell className="text-right">
         {template.usedBySurveyCount > 0 ? (
-          <button
-            className="text-sm tabular-nums underline"
-            style={{ color: 'var(--brand-color)', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
+          <Button variant="link" size="sm" className="h-auto p-0 text-sm tabular-nums">
             {template.usedBySurveyCount}
-          </button>
+          </Button>
         ) : (
           <span className="text-sm tabular-nums" style={{ color: 'var(--muted-foreground)' }}>0</span>
         )}

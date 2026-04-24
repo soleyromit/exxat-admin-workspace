@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams } from 'next/navigation'
-import { Button, Separator, SidebarTrigger, Tooltip, TooltipTrigger, TooltipContent } from '@exxat/ds/packages/ui/src'
+import { Badge, Button, Separator, SidebarTrigger, Tooltip, TooltipTrigger, TooltipContent } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { ResponseGauge } from '@/components/pce/response-gauge'
@@ -69,9 +69,9 @@ export default function SurveyResponsesPage() {
         <i className="fa-light fa-chevron-right text-xs" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
         <span className="text-sm font-semibold flex-1">Responses</span>
         {hiddenCount > 0 && (
-          <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
+          <Badge variant="secondary">
             {hiddenCount} hidden from faculty
-          </span>
+          </Badge>
         )}
         <SurveyStatusBadge status={survey.status} />
       </header>
