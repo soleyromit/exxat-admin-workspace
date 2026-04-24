@@ -193,7 +193,7 @@ function SurveyRow({ survey, onClose }: { survey: PceSurvey; onClose: () => void
                     {primary.initials}
                   </AvatarFallback>
                 </Avatar>
-                <span style={{ fontSize: 13 }} className="truncate max-w-32">{primary.name}</span>
+                <span style={{ fontSize: 13, fontWeight: 500 }} className="truncate max-w-32">{primary.name}</span>
                 {extraCount > 0 && (
                   <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
                     +{extraCount}
@@ -222,7 +222,7 @@ function SurveyRow({ survey, onClose }: { survey: PceSurvey; onClose: () => void
           showBar={survey.responseRate > 0}
         />
       </TableCell>
-      <TableCell style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>
+      <TableCell style={{ fontSize: 13, fontWeight: 500, color: 'var(--muted-foreground)' }}>
         {survey.deadline}
       </TableCell>
       <TableCell>
