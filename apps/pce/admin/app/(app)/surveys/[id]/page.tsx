@@ -63,7 +63,7 @@ export default function SurveyDetailPage() {
             <span>This survey has closed. Review responses and release to faculty.</span>
           </div>
           <Button size="sm" onClick={() => setReleaseOpen(true)}>
-            Review & Release
+            Share with Faculty
             <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 12 }} />
           </Button>
         </div>
@@ -106,14 +106,13 @@ export default function SurveyDetailPage() {
                 </SendReminderPopover>
               )}
               {canClose && (
-                <Button variant="outline" size="sm" onClick={() => setCloseOpen(true)}
-                  style={{ color: 'var(--destructive)', borderColor: 'var(--destructive)' }}>
+                <Button variant="destructive" size="sm" onClick={() => setCloseOpen(true)}>
                   Close Survey
                 </Button>
               )}
               {isPendingReview && (
                 <Button size="sm" onClick={() => setReleaseOpen(true)}>
-                  Release to Faculty
+                  Share with Faculty
                 </Button>
               )}
             </div>
@@ -167,7 +166,7 @@ export default function SurveyDetailPage() {
               >
                 <div className="flex items-center gap-3">
                   <Avatar className="h-8 w-8">
-                    <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                    <AvatarFallback className="text-xs" style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>
                       {instructor.initials}
                     </AvatarFallback>
                   </Avatar>

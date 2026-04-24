@@ -441,7 +441,7 @@ export function ReleaseSheet({ open, onOpenChange, survey }: ReleaseSheetProps) 
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-96 sm:max-w-96 flex flex-col gap-0 p-0">
         <SheetHeader className="px-6 py-5 border-b border-border">
-          <SheetTitle>Release to Faculty</SheetTitle>
+          <SheetTitle>Share with Faculty</SheetTitle>
           <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
             {survey.courseCode} — {survey.term}
           </p>
@@ -484,7 +484,7 @@ export function ReleaseSheet({ open, onOpenChange, survey }: ReleaseSheetProps) 
               {survey.instructors.map(i => (
                 <div key={i.id} className="flex items-center gap-2">
                   <Avatar className="h-6 w-6 shrink-0">
-                    <AvatarFallback className="text-xs bg-primary text-primary-foreground">{i.initials}</AvatarFallback>
+                    <AvatarFallback className="text-xs" style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>{i.initials}</AvatarFallback>
                   </Avatar>
                   <span className="text-sm">{i.name}</span>
                   {i.role === 'guest' && (
@@ -502,7 +502,7 @@ export function ReleaseSheet({ open, onOpenChange, survey }: ReleaseSheetProps) 
             onClick={() => { releaseSurvey(survey.id); onOpenChange(false) }}
             className="flex-1"
           >
-            Release to Faculty
+            Share with Faculty
           </Button>
         </SheetFooter>
       </SheetContent>
