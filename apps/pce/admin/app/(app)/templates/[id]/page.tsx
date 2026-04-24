@@ -56,7 +56,7 @@ export default function TemplateDetailPage() {
   return (
     <>
       {/* Header */}
-      <header className="flex items-center gap-2 px-4 py-3 border-b border-border shrink-0">
+      <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
         <Link href="/templates" className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
@@ -70,15 +70,15 @@ export default function TemplateDetailPage() {
         </Button>
       </header>
 
-      <main className="flex-1 overflow-auto p-6">
+      <main className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
         <div className="max-w-2xl flex flex-col gap-6">
 
           {/* Meta */}
           <div className="flex flex-col gap-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex flex-col gap-1">
-                <h2 className="text-lg font-semibold">{template.name}</h2>
-                <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 400 }}>{template.name}</h2>
+                <p style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>
                   Created by {template.createdBy} · Last modified {template.lastModified}
                 </p>
               </div>
@@ -116,7 +116,7 @@ export default function TemplateDetailPage() {
           {template.sections.map(section => (
             <div key={section} className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold">{SECTION_LABELS[section]}</h3>
+                <h3 style={{ fontSize: 13, fontWeight: 600 }}>{SECTION_LABELS[section]}</h3>
                 <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
                   {MOCK_QUESTIONS[section].length} questions
                 </span>
@@ -137,7 +137,7 @@ export default function TemplateDetailPage() {
                     >
                       {i + 1}
                     </span>
-                    <span style={{ color: 'var(--foreground)' }}>{q}</span>
+                    <span style={{ fontSize: 13, color: 'var(--foreground)' }}>{q}</span>
                   </div>
                 ))}
               </div>
