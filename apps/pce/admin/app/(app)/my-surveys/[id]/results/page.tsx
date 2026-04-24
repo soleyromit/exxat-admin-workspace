@@ -131,7 +131,7 @@ export default function FacultyResultsPage() {
 
   return (
     <>
-      <header className="flex items-center gap-2 px-4 py-3 border-b border-border shrink-0">
+      <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
         <Link href="/my-surveys" className="text-sm" style={{ color: 'var(--muted-foreground)' }}>My Surveys</Link>
@@ -146,7 +146,7 @@ export default function FacultyResultsPage() {
         )}
       </header>
 
-      <main className="flex-1 overflow-auto p-6">
+      <main className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
         {!isReleased ? (
           <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
             <div
