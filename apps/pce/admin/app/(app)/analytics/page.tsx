@@ -17,7 +17,7 @@ function ScoreBar({ score, max = 5 }: { score: number; max?: number }) {
           height: 6,
           width: 80,
           borderRadius: 3,
-          backgroundColor: 'var(--pce-rate-bar-track)',
+          backgroundColor: 'var(--muted)',
           overflow: 'hidden',
           flexShrink: 0,
         }}
@@ -27,11 +27,11 @@ function ScoreBar({ score, max = 5 }: { score: number; max?: number }) {
             height: '100%',
             width: `${(score / max) * 100}%`,
             borderRadius: 3,
-            backgroundColor: 'var(--pce-rate-bar-fill)',
+            backgroundColor: 'var(--brand-color)',
           }}
         />
       </div>
-      <span className="text-sm font-semibold tabular-nums">{score}</span>
+      <span className="tabular-nums" style={{ fontSize: 13, fontWeight: 600 }}>{score}</span>
     </div>
   )
 }
@@ -80,10 +80,10 @@ export default function AnalyticsPage() {
 
   return (
     <>
-      <header className="flex items-center gap-2 px-4 py-3 border-b border-border shrink-0">
+      <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
-        <h1 className="text-sm font-semibold flex-1">Analytics</h1>
+        <h1 className="flex-1" style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 400 }}>Analytics</h1>
         <Select value={term} onValueChange={setTerm}>
           <SelectTrigger className="h-8 w-36 text-sm">
             <SelectValue />
@@ -98,7 +98,7 @@ export default function AnalyticsPage() {
         </Button>
       </header>
 
-      <main className="flex-1 overflow-auto p-6">
+      <main className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
         {!hasData ? (
           <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
             <i className="fa-light fa-chart-mixed" aria-hidden="true" style={{ fontSize: 40, color: 'var(--muted-foreground)' }} />
@@ -129,7 +129,7 @@ export default function AnalyticsPage() {
                   style={{
                     height: 8,
                     borderRadius: 4,
-                    backgroundColor: 'var(--pce-rate-bar-track)',
+                    backgroundColor: 'var(--muted)',
                     overflow: 'hidden',
                   }}
                 >
@@ -138,7 +138,7 @@ export default function AnalyticsPage() {
                       height: '100%',
                       width: `${totalRate}%`,
                       borderRadius: 4,
-                      backgroundColor: 'var(--pce-rate-bar-fill)',
+                      backgroundColor: 'var(--brand-color)',
                     }}
                   />
                 </div>
@@ -195,24 +195,24 @@ export default function AnalyticsPage() {
                         <TableRow key={survey.id}>
                           <TableCell>
                             <div className="flex flex-col gap-0.5">
-                              <span className="font-medium text-sm">{survey.courseCode}</span>
+                              <span style={{ fontSize: 13, fontWeight: 500 }}>{survey.courseCode}</span>
                               <span className="text-xs truncate max-w-32" style={{ color: 'var(--muted-foreground)' }}>
                                 {survey.courseName}
                               </span>
                             </div>
                           </TableCell>
-                          <TableCell className="text-sm">{primary?.name ?? '—'}</TableCell>
+                          <TableCell><span style={{ fontSize: 13, fontWeight: 500 }}>{primary?.name ?? '—'}</span></TableCell>
                           <TableCell>
-                            <span className="text-sm tabular-nums font-medium">{survey.responseRate}%</span>
+                            <span className="tabular-nums" style={{ fontSize: 13, fontWeight: 600 }}>{survey.responseRate}%</span>
                           </TableCell>
                           <TableCell>
-                            {cc ? <span className="text-sm tabular-nums">{cc.avg}</span> : <span style={{ color: 'var(--muted-foreground)' }}>—</span>}
+                            {cc ? <span className="tabular-nums" style={{ fontSize: 13, fontWeight: 600 }}>{cc.avg}</span> : <span style={{ color: 'var(--muted-foreground)' }}>—</span>}
                           </TableCell>
                           <TableCell>
-                            {fp ? <span className="text-sm tabular-nums">{fp.avg}</span> : <span style={{ color: 'var(--muted-foreground)' }}>—</span>}
+                            {fp ? <span className="tabular-nums" style={{ fontSize: 13, fontWeight: 600 }}>{fp.avg}</span> : <span style={{ color: 'var(--muted-foreground)' }}>—</span>}
                           </TableCell>
                           <TableCell>
-                            {cd ? <span className="text-sm tabular-nums">{cd.avg}</span> : <span style={{ color: 'var(--muted-foreground)' }}>—</span>}
+                            {cd ? <span className="tabular-nums" style={{ fontSize: 13, fontWeight: 600 }}>{cd.avg}</span> : <span style={{ color: 'var(--muted-foreground)' }}>—</span>}
                           </TableCell>
                         </TableRow>
                       )

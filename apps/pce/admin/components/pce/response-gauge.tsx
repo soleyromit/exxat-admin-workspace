@@ -22,7 +22,7 @@ export function ResponseGauge({
           style={{
             height: size === 'md' ? 6 : 4,
             borderRadius: 3,
-            backgroundColor: 'var(--pce-rate-bar-track)',
+            backgroundColor: 'var(--muted)',
             overflow: 'hidden',
             minWidth: 80,
           }}
@@ -32,7 +32,7 @@ export function ResponseGauge({
               height: '100%',
               width: `${rate}%`,
               borderRadius: 3,
-              backgroundColor: 'var(--pce-rate-bar-fill)',
+              backgroundColor: 'var(--brand-color)',
               transition: 'width 400ms ease',
             }}
           />
