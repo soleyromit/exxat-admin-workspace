@@ -1057,15 +1057,6 @@ export function QBSidebar() {
                 <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--foreground)', marginBottom: 4, lineHeight: 1.4 }}>Your question banks will appear here</p>
                 <p style={{ fontSize: 11, color: 'var(--muted-foreground)', lineHeight: 1.5 }}>Once your department admin shares a course folder with you, it&apos;ll show up right here — ready to use.</p>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full gap-1.5 rounded-lg"
-                style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', color: 'var(--brand-color)', fontSize: 11 }}
-              >
-                <i className="fa-light fa-envelope" aria-hidden="true" style={{ fontSize: 11 }} />
-                Contact your admin to request access
-              </Button>
             </div>
           )}
         </div>
