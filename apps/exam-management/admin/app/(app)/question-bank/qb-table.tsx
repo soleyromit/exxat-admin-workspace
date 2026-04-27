@@ -3156,26 +3156,42 @@ export function QBTable() {
             <span style={{ fontSize: 12, color: 'var(--muted-foreground)', marginRight: 6, whiteSpace: 'nowrap' }}>
               {(page - 1) * perPage + 1}–{Math.min(page * perPage, sortedQuestions.length)} of {sortedQuestions.length}
             </span>
-            {totalPages > 1 && (
-              <>
-                <div style={{ width: 1, height: 16, backgroundColor: 'var(--border)', margin: '0 4px' }} aria-hidden="true" />
+            <div style={{ width: 1, height: 16, backgroundColor: 'var(--border)', margin: '0 4px' }} aria-hidden="true" />
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon-xs" disabled={page === 1} onClick={() => setPage(1)} aria-label="First page">
                   <i className="fa-light fa-angles-left" aria-hidden="true" style={{ fontSize: 11 }} />
                 </Button>
+              </TooltipTrigger>
+              <TooltipContent>First page</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon-xs" disabled={page === 1} onClick={() => setPage(p => p - 1)} aria-label="Previous page">
                   <i className="fa-light fa-angle-left" aria-hidden="true" style={{ fontSize: 11 }} />
                 </Button>
-                <span style={{ fontSize: 12, color: 'var(--foreground)', padding: '0 6px', whiteSpace: 'nowrap' }}>
-                  {page}/{totalPages}
-                </span>
+              </TooltipTrigger>
+              <TooltipContent>Previous page</TooltipContent>
+            </Tooltip>
+            <span style={{ fontSize: 12, color: 'var(--foreground)', padding: '0 6px', whiteSpace: 'nowrap' }}>
+              {page} / {totalPages}
+            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon-xs" disabled={page === totalPages} onClick={() => setPage(p => p + 1)} aria-label="Next page">
                   <i className="fa-light fa-angle-right" aria-hidden="true" style={{ fontSize: 11 }} />
                 </Button>
+              </TooltipTrigger>
+              <TooltipContent>Next page</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon-xs" disabled={page === totalPages} onClick={() => setPage(totalPages)} aria-label="Last page">
                   <i className="fa-light fa-angles-right" aria-hidden="true" style={{ fontSize: 11 }} />
                 </Button>
-              </>
-            )}
+              </TooltipTrigger>
+              <TooltipContent>Last page</TooltipContent>
+            </Tooltip>
           </div>
         </div>
       )}
