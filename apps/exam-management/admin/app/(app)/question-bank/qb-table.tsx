@@ -2347,8 +2347,8 @@ export function QBTable() {
     ? sortedQuestions.slice((page - 1) * perPage, page * perPage)
     : sortedQuestions
 
-  // Reset to page 1 when filters/sort/pagination change
-  useEffect(() => { setPage(1) }, [search, activeFilters, bookmarkOnly, sortCol, sortDir, paginationEnabled])
+  // Reset to page 1 when filters/sort/pagination change (incl. folder/sidebar context changes)
+  useEffect(() => { setPage(1) }, [search, activeFilters, bookmarkOnly, sortCol, sortDir, paginationEnabled, visibleQuestions])
 
   // ── Grouped table rows ────────────────────────────────────────────────────
   type TableRowItem =
