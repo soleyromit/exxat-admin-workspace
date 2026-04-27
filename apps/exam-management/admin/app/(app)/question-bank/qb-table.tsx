@@ -2384,9 +2384,9 @@ export function QBTable() {
   const isTrulyEmpty = visibleQuestions.length === 0 && activeFilters.length === 0 && !search && !bookmarkOnly
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
       {showTableTitle && <QBTitle />}
-      <div className="flex flex-col flex-1 min-h-0 overflow-auto" style={{ padding: '16px 16px 4px' }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', padding: '16px 16px 4px' }}>
       {/* ── Toolbar: filter chips left, icon controls right ── */}
       <div style={{ display: isTrulyEmpty ? 'none' : 'flex', alignItems: 'center', gap: 6, marginBottom: 10, minHeight: 32 }}>
         {/* Left: active filter chips (gated by filterBarVisible) */}
@@ -3095,22 +3095,29 @@ export function QBTable() {
       </div>
 
       {/* ── Pagination ── */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-2 text-xs text-muted-foreground" style={{ flexShrink: 0, borderTop: '1px solid var(--border)' }}>
-          <span>Showing {(page - 1) * perPage + 1}–{Math.min(page * perPage, sortedQuestions.length)} of {sortedQuestions.length}</span>
-          <div className="flex gap-1">
-            <Button variant="outline" size="xs" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
-              Previous
-            </Button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-              <Button key={p} variant={p === page ? 'default' : 'outline'} size="xs" onClick={() => setPage(p)}>
-                {p}
+      {paginationEnabled && sortedQuestions.length > 0 && (
+        <div
+          className="flex items-center justify-between px-4"
+          style={{ borderTop: '1px solid var(--border)', minHeight: 40, gap: 8, flexShrink: 0 }}
+        >
+          <span className="text-xs text-muted-foreground">
+            Showing {(page - 1) * perPage + 1}–{Math.min(page * perPage, sortedQuestions.length)} of {sortedQuestions.length}
+          </span>
+          {totalPages > 1 && (
+            <div className="flex gap-1">
+              <Button variant="outline" size="xs" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
+                Previous
               </Button>
-            ))}
-            <Button variant="outline" size="xs" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>
-              Next
-            </Button>
-          </div>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                <Button key={p} variant={p === page ? 'default' : 'outline'} size="xs" onClick={() => setPage(p)}>
+                  {p}
+                </Button>
+              ))}
+              <Button variant="outline" size="xs" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>
+                Next
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
