@@ -2446,37 +2446,47 @@ export function QBTable() {
                 </InputGroupAddon>
               </InputGroup>
             ) : (
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => setSearchOpen(true)}
-                aria-label="Search questions"
-                style={search ? { color: 'var(--brand-color)' } : {}}
-              >
-                <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 13 }} />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setSearchOpen(true)}
+                    aria-label="Search questions"
+                    style={search ? { color: 'var(--brand-color)' } : {}}
+                  >
+                    <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 13 }} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Search</TooltipContent>
+              </Tooltip>
             )}
           </div>}
 
-          {/* Bookmark toggle — star icon */}
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => setBookmarkOnly(v => !v)}
-            aria-pressed={bookmarkOnly}
-            aria-label={bookmarkOnly ? 'Show all questions' : 'Show bookmarked only'}
-            style={bookmarkOnly ? {
-              borderColor: 'var(--chart-4)',
-              color: 'var(--chart-4)',
-              backgroundColor: 'color-mix(in oklch, var(--chart-4) 10%, var(--background))',
-            } : {}}
-          >
-            <i
-              className={bookmarkOnly ? 'fa-solid fa-star' : 'fa-light fa-star'}
-              aria-hidden="true"
-              style={{ fontSize: 13 }}
-            />
-          </Button>
+          {/* Bookmark toggle */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setBookmarkOnly(v => !v)}
+                aria-pressed={bookmarkOnly}
+                aria-label={bookmarkOnly ? 'Show all questions' : 'Show bookmarked only'}
+                style={bookmarkOnly ? {
+                  borderColor: 'var(--chart-4)',
+                  color: 'var(--chart-4)',
+                  backgroundColor: 'color-mix(in oklch, var(--chart-4) 10%, var(--background))',
+                } : {}}
+              >
+                <i
+                  className={bookmarkOnly ? 'fa-solid fa-star' : 'fa-light fa-star'}
+                  aria-hidden="true"
+                  style={{ fontSize: 13 }}
+                />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{bookmarkOnly ? 'Show all questions' : 'Bookmarked only'}</TooltipContent>
+          </Tooltip>
 
           {/* My Questions toggle */}
           <Tooltip>
@@ -2496,15 +2506,20 @@ export function QBTable() {
 
           {/* Properties / filter sheet trigger */}
           <div style={{ position: 'relative' }}>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => setPropertiesOpen(true)}
-              aria-label="Table properties"
-              style={activeFilterCount > 0 || hiddenCols.size > 0 ? { borderColor: 'var(--brand-color)', color: 'var(--brand-color)', backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' } : {}}
-            >
-              <i className="fa-light fa-sliders" aria-hidden="true" style={{ fontSize: 13 }} />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => setPropertiesOpen(true)}
+                  aria-label="Table properties"
+                  style={activeFilterCount > 0 || hiddenCols.size > 0 ? { borderColor: 'var(--brand-color)', color: 'var(--brand-color)', backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' } : {}}
+                >
+                  <i className="fa-light fa-sliders" aria-hidden="true" style={{ fontSize: 13 }} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Filters &amp; properties</TooltipContent>
+            </Tooltip>
             {activeFilterCount > 0 && (
               <span style={{
                 position: 'absolute', top: -5, right: -5,
@@ -2770,7 +2785,7 @@ export function QBTable() {
                     )
                   })}
                   <TableHead
-                    className={`${TH} w-10`}
+                    className={`${TH} w-8`}
                     style={{ position: 'sticky', right: 0, zIndex: 2, background: 'var(--dt-header-bg)', boxShadow: '-2px 0 4px var(--sticky-edge-fade)' }}
                   />
                 </TableRow>
@@ -3031,35 +3046,31 @@ export function QBTable() {
                         }
                       })}
 
-                      {/* Actions ⋯ — sticky right, invisible until row hover */}
+                      {/* Actions ⋯ — sticky right, always visible, narrower column */}
                       <TableCell
-                        className={`${TD} w-10 text-right`}
+                        className={`${TD} w-8 text-right`}
                         onClick={e => e.stopPropagation()}
                         style={{
                           position: 'sticky', right: 0, zIndex: 1,
-                          background: (isHovered || openMenuQuestionId === q.id)
-                            ? (isSelected ? 'var(--dt-row-selected)' : 'var(--dt-row-hover)')
-                            : 'transparent',
-                          boxShadow: (isHovered || openMenuQuestionId === q.id)
-                            ? '-2px 0 6px var(--sticky-edge-fade)'
-                            : 'none',
-                          transition: 'background 150ms, box-shadow 150ms',
+                          background: isSelected ? 'var(--dt-row-selected)' : isHovered ? 'var(--dt-row-hover)' : 'var(--dt-row-bg)',
+                          boxShadow: '-2px 0 4px var(--sticky-edge-fade)',
                         }}
                       >
                         <DropdownMenu open={openMenuQuestionId === q.id} onOpenChange={open => setOpenMenuQuestionId(open ? q.id : null)}>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost" size="icon-sm"
-                              aria-label={`Actions for ${q.title}`}
-                              onClick={e => e.stopPropagation()}
-                              style={{
-                                opacity: (isHovered || openMenuQuestionId === q.id) ? 1 : 0,
-                                transition: 'opacity 150ms',
-                              }}
-                            >
-                              <i className={`fa-${openMenuQuestionId === q.id ? 'solid' : 'regular'} fa-ellipsis`} aria-hidden="true" />
-                            </Button>
-                          </DropdownMenuTrigger>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost" size="icon-xs"
+                                  aria-label={`More options for ${q.title}`}
+                                  onClick={e => e.stopPropagation()}
+                                >
+                                  <i className={`fa-${openMenuQuestionId === q.id ? 'solid' : 'regular'} fa-ellipsis`} aria-hidden="true" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                            </TooltipTrigger>
+                            <TooltipContent>More options</TooltipContent>
+                          </Tooltip>
                           <DropdownMenuContent align="end" className="w-56">
                             <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); duplicateQuestion(q.id) }}>
                               <i className="fa-light fa-copy" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
