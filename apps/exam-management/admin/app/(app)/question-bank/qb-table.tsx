@@ -2769,10 +2769,6 @@ export function QBTable() {
                       />
                     )
                   })}
-                  <TableHead
-                    className={`${TH} w-10`}
-                    style={{ position: 'sticky', right: 0, zIndex: 2, background: 'var(--dt-header-bg)', boxShadow: '-2px 0 4px var(--sticky-edge-fade)' }}
-                  />
                 </TableRow>
               </TableHeader>}
               <TableBody className="[&_tr:last-child]:border-b-0">
@@ -2831,6 +2827,7 @@ export function QBTable() {
                         opacity: (!isExamAdmin && !isCourseDirector && !isOwner) ? 0.72 : 1,
                         borderLeft: isPrivate ? '3px solid var(--qb-private)' : undefined,
                         cursor: 'pointer',
+                        position: 'relative',
                       }}
                     >
                       {/* Cells — ordered by visibleCols to respect drag-reorder */}
@@ -3030,70 +3027,76 @@ export function QBTable() {
                         }
                       })}
 
-                      {/* Actions ⋯ — DS DropdownMenu (always last, sticky right) */}
-                      <TableCell
-                        className={`${TD} w-10 text-right`}
-                        onClick={e => e.stopPropagation()}
-                        style={{ position: 'sticky', right: 0, zIndex: 1, background: isSelected ? 'var(--dt-row-selected)' : 'var(--dt-row-bg)', boxShadow: '-2px 0 4px var(--sticky-edge-fade)' }}
-                      >
-                        <DropdownMenu open={openMenuQuestionId === q.id} onOpenChange={open => setOpenMenuQuestionId(open ? q.id : null)}>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${q.title}`} onClick={e => e.stopPropagation()}>
-                              <i className={`fa-${openMenuQuestionId === q.id ? 'solid' : 'regular'} fa-ellipsis`} aria-hidden="true" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-56">
-                            {/* Duplicate — always available; creates a new draft owned by current user */}
-                            <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); duplicateQuestion(q.id) }}>
-                              <i className="fa-light fa-copy" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                              Duplicate to Draft
-                            </DropdownMenuItem>
-                            {canEditRow && (
-                              <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); setMoveTarget({ id: q.id, title: q.title, folder: q.folder }) }}>
-                                <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                                Move to folder
+                      {/* Actions ⋯ — overlaid on row, no column space */}
+                      <td aria-hidden="true" style={{ padding: 0, width: 0, border: 'none' }}>
+                        <div
+                          onClick={e => e.stopPropagation()}
+                          style={{
+                            position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                            opacity: (isHovered || openMenuQuestionId === q.id) ? 1 : 0,
+                            pointerEvents: (isHovered || openMenuQuestionId === q.id) ? 'auto' : 'none',
+                            transition: 'opacity 100ms',
+                            zIndex: 2,
+                            borderRadius: 6,
+                            background: isSelected
+                              ? 'var(--dt-row-selected)'
+                              : isHovered
+                              ? 'var(--interactive-hover)'
+                              : 'transparent',
+                          }}
+                        >
+                          <DropdownMenu open={openMenuQuestionId === q.id} onOpenChange={open => setOpenMenuQuestionId(open ? q.id : null)}>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${q.title}`} onClick={e => e.stopPropagation()}>
+                                <i className={`fa-${openMenuQuestionId === q.id ? 'solid' : 'regular'} fa-ellipsis`} aria-hidden="true" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                              <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); duplicateQuestion(q.id) }}>
+                                <i className="fa-light fa-copy" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                                Duplicate to Draft
                               </DropdownMenuItem>
-                            )}
-                            {canEditRow && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Saved' }) }}
-                                  disabled={q.status === 'Saved'}
-                                >
-                                  <i className="fa-light fa-circle-check" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                                  Mark as Saved
+                              {canEditRow && (
+                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); setMoveTarget({ id: q.id, title: q.title, folder: q.folder }) }}>
+                                  <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                                  Move to folder
                                 </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Draft' }) }}
-                                  disabled={q.status === 'Draft'}
-                                >
-                                  <i className="fa-light fa-rotate-left" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                                  Revert to Draft
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                            {isExamAdmin && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); setCollaboratorsModalFolderId(q.folder) }}>
-                                  <i className="fa-light fa-users" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                                  Manage folder access
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                            {canDeleteRow && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem variant="destructive" onClick={() => { setOpenMenuQuestionId(null); setDeleteTarget({ id: q.id, title: q.title }) }}>
-                                  <i className="fa-light fa-trash-can" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                                  Delete question
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+                              )}
+                              {canEditRow && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Saved' }) }} disabled={q.status === 'Saved'}>
+                                    <i className="fa-light fa-circle-check" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                                    Mark as Saved
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Draft' }) }} disabled={q.status === 'Draft'}>
+                                    <i className="fa-light fa-rotate-left" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                                    Revert to Draft
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                              {isExamAdmin && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); setCollaboratorsModalFolderId(q.folder) }}>
+                                    <i className="fa-light fa-users" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                                    Manage folder access
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                              {canDeleteRow && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem variant="destructive" onClick={() => { setOpenMenuQuestionId(null); setDeleteTarget({ id: q.id, title: q.title }) }}>
+                                    <i className="fa-light fa-trash-can" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                                    Delete question
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </td>
                     </TableRow>
                   )
                 })}
