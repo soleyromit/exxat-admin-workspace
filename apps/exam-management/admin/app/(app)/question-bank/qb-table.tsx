@@ -11,7 +11,8 @@ import {
   Popover, PopoverTrigger, PopoverContent,
   Tooltip, TooltipTrigger, TooltipContent,
   InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput,
-  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@exxat/ds/packages/ui/src'
 import type { Question, QStatus, ColumnId } from '@/lib/qb-types'
 import { MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
@@ -2341,14 +2342,14 @@ export function QBTable() {
 
   // ── Pagination ────────────────────────────────────────────────────────────
   const [page, setPage] = useState(1)
-  const perPage = 20
+  const [perPage, setPerPage] = useState(20)
   const totalPages = paginationEnabled ? Math.ceil(sortedQuestions.length / perPage) : 1
   const pageQuestions = paginationEnabled
     ? sortedQuestions.slice((page - 1) * perPage, page * perPage)
     : sortedQuestions
 
-  // Reset to page 1 when filters/sort/pagination change (incl. folder/sidebar context changes)
-  useEffect(() => { setPage(1) }, [search, activeFilters, bookmarkOnly, sortCol, sortDir, paginationEnabled, visibleQuestions])
+  // Reset to page 1 when filters/sort/pagination/perPage change
+  useEffect(() => { setPage(1) }, [search, activeFilters, bookmarkOnly, sortCol, sortDir, paginationEnabled, perPage, visibleQuestions])
 
   // ── Grouped table rows ────────────────────────────────────────────────────
   type TableRowItem =
@@ -2386,9 +2387,10 @@ export function QBTable() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
       {showTableTitle && <QBTitle />}
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', padding: '16px 16px 4px' }}>
-      {/* ── Toolbar: filter chips left, icon controls right ── */}
-      <div style={{ display: isTrulyEmpty ? 'none' : 'flex', alignItems: 'center', gap: 6, marginBottom: 10, minHeight: 32 }}>
+
+      {/* ── Toolbar: pinned outside scroll — filter chips left, icon controls right ── */}
+      {!isTrulyEmpty && (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', minHeight: 48, flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
         {/* Left: active filter chips (gated by filterBarVisible) */}
         {filterBarVisible ? (
           <FilterChips
@@ -2519,6 +2521,10 @@ export function QBTable() {
 
         </div>
       </div>
+      )}
+
+      {/* ── Single scroll context: handles both H and V ── */}
+      <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
 
       {filteredQuestions.length === 0 ? (
         visibleQuestions.length === 0 ? (
@@ -2671,9 +2677,10 @@ export function QBTable() {
         )
       ) : (
         <>
-          {/* ── Table container — matches DS DataTable visual ── */}
+          {/* width: fit-content lets the border container grow wider than viewport for H-scroll */}
+          <div style={{ minWidth: '100%', width: 'fit-content', padding: '16px' }}>
           <div className="border border-border rounded-lg overflow-hidden">
-            <Table className="w-full text-sm border-separate border-spacing-0">
+            <table className="w-full text-sm border-separate border-spacing-0">
               {showColumnLabels && <TableHeader>
                 <TableRow>
                   {/* Select all */}
@@ -3088,36 +3095,62 @@ export function QBTable() {
                   )
                 })}
               </TableBody>
-            </Table>
+            </table>
+          </div>
           </div>
         </>
       )}
       </div>
 
-      {/* ── Pagination ── */}
+      {/* ── Pagination footer — pinned below scroll, matches DS DataTable ── */}
       {paginationEnabled && sortedQuestions.length > 0 && (
-        <div
-          className="flex items-center justify-between px-4"
-          style={{ borderTop: '1px solid var(--border)', minHeight: 40, gap: 8, flexShrink: 0 }}
-        >
-          <span className="text-xs text-muted-foreground">
-            Showing {(page - 1) * perPage + 1}–{Math.min(page * perPage, sortedQuestions.length)} of {sortedQuestions.length}
-          </span>
-          {totalPages > 1 && (
-            <div className="flex gap-1">
-              <Button variant="outline" size="xs" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
-                Previous
-              </Button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                <Button key={p} variant={p === page ? 'default' : 'outline'} size="xs" onClick={() => setPage(p)}>
-                  {p}
+        <div style={{
+          flexShrink: 0, borderTop: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0 12px', height: 44,
+        }}>
+          {/* Left: Rows per page */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 12, color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>Rows per page</span>
+            <Select value={String(perPage)} onValueChange={v => setPerPage(Number(v))}>
+              <SelectTrigger style={{ height: 28, fontSize: 12, width: 64 }}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Right: count + first/prev/page-indicator/next/last */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <span style={{ fontSize: 12, color: 'var(--muted-foreground)', marginRight: 6, whiteSpace: 'nowrap' }}>
+              {(page - 1) * perPage + 1}–{Math.min(page * perPage, sortedQuestions.length)} of {sortedQuestions.length}
+            </span>
+            {totalPages > 1 && (
+              <>
+                <div style={{ width: 1, height: 16, backgroundColor: 'var(--border)', margin: '0 4px' }} aria-hidden="true" />
+                <Button variant="ghost" size="icon-xs" disabled={page === 1} onClick={() => setPage(1)} aria-label="First page">
+                  <i className="fa-light fa-angles-left" aria-hidden="true" style={{ fontSize: 11 }} />
                 </Button>
-              ))}
-              <Button variant="outline" size="xs" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>
-                Next
-              </Button>
-            </div>
-          )}
+                <Button variant="ghost" size="icon-xs" disabled={page === 1} onClick={() => setPage(p => p - 1)} aria-label="Previous page">
+                  <i className="fa-light fa-angle-left" aria-hidden="true" style={{ fontSize: 11 }} />
+                </Button>
+                <span style={{ fontSize: 12, color: 'var(--foreground)', padding: '0 6px', whiteSpace: 'nowrap' }}>
+                  {page}/{totalPages}
+                </span>
+                <Button variant="ghost" size="icon-xs" disabled={page === totalPages} onClick={() => setPage(p => p + 1)} aria-label="Next page">
+                  <i className="fa-light fa-angle-right" aria-hidden="true" style={{ fontSize: 11 }} />
+                </Button>
+                <Button variant="ghost" size="icon-xs" disabled={page === totalPages} onClick={() => setPage(totalPages)} aria-label="Last page">
+                  <i className="fa-light fa-angles-right" aria-hidden="true" style={{ fontSize: 11 }} />
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       )}
 
