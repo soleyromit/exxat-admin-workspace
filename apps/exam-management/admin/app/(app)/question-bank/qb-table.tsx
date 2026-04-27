@@ -2684,7 +2684,7 @@ export function QBTable() {
           {/* Inner scroll — both H and V — table expands to fit-content width */}
           <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
             <table className="text-sm border-separate border-spacing-0" style={{ minWidth: '100%' }}>
-              {showColumnLabels && <TableHeader>
+              {showColumnLabels && <TableHeader style={{ position: 'sticky', top: 0, zIndex: 4 }}>
                 <TableRow>
                   {/* Select all */}
                   <TableHead className={`${TH} w-10 text-center`}>
