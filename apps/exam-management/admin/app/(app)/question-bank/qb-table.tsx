@@ -2523,8 +2523,8 @@ export function QBTable() {
       </div>
       )}
 
-      {/* ── Single scroll context: handles both H and V ── */}
-      <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+      {/* ── Content area: provides padding context, does not scroll ── */}
+      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
       {filteredQuestions.length === 0 ? (
         visibleQuestions.length === 0 ? (
@@ -2677,10 +2677,13 @@ export function QBTable() {
         )
       ) : (
         <>
-          {/* width: fit-content lets the border container grow wider than viewport for H-scroll */}
-          <div style={{ minWidth: '100%', width: 'fit-content', padding: '16px' }}>
-          <div className="border border-border rounded-lg overflow-hidden">
-            <table className="w-full text-sm border-separate border-spacing-0">
+          {/* Padding wrapper — the border container fills remaining height */}
+          <div style={{ flex: 1, minHeight: 0, padding: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          {/* Border container clips rounded corners; inner div does the actual scrolling */}
+          <div className="border border-border rounded-lg overflow-hidden" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          {/* Inner scroll — both H and V — table expands to fit-content width */}
+          <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+            <table className="text-sm border-separate border-spacing-0" style={{ minWidth: '100%' }}>
               {showColumnLabels && <TableHeader>
                 <TableRow>
                   {/* Select all */}
@@ -3096,8 +3099,9 @@ export function QBTable() {
                 })}
               </TableBody>
             </table>
-          </div>
-          </div>
+          </div>{/* inner scroll */}
+          </div>{/* border container */}
+          </div>{/* padding wrapper */}
         </>
       )}
       </div>
