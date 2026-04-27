@@ -3035,7 +3035,16 @@ export function QBTable() {
                       <TableCell
                         className={`${TD} w-10 text-right`}
                         onClick={e => e.stopPropagation()}
-                        style={{ position: 'sticky', right: 0, zIndex: 1, background: isSelected ? 'var(--dt-row-selected)' : isHovered ? 'var(--dt-row-hover)' : 'var(--dt-row-bg)', boxShadow: '-2px 0 4px var(--sticky-edge-fade)' }}
+                        style={{
+                          position: 'sticky', right: 0, zIndex: 1,
+                          background: (isHovered || openMenuQuestionId === q.id)
+                            ? (isSelected ? 'var(--dt-row-selected)' : 'var(--dt-row-hover)')
+                            : 'transparent',
+                          boxShadow: (isHovered || openMenuQuestionId === q.id)
+                            ? '-2px 0 6px var(--sticky-edge-fade)'
+                            : 'none',
+                          transition: 'background 150ms, box-shadow 150ms',
+                        }}
                       >
                         <DropdownMenu open={openMenuQuestionId === q.id} onOpenChange={open => setOpenMenuQuestionId(open ? q.id : null)}>
                           <DropdownMenuTrigger asChild>
