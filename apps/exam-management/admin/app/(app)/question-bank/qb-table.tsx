@@ -386,10 +386,10 @@ function DeleteQuestionDialog({ question, open, onClose }: { question: { id: str
 }
 
 // ── Shared header cell class (matches DS DataTable th) ───────────────────────
-const TH = '!h-12 px-3 text-left align-middle text-sm font-medium text-foreground bg-dt-header-bg border-b border-border select-none whitespace-nowrap'
+const TH = 'h-9 px-3 text-left align-middle text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg border-b border-border select-none whitespace-nowrap'
 
 // ── Shared body cell class (matches DS DataTable td) ─────────────────────────
-const TD = 'px-3 align-middle border-b border-border group-last/row:border-b-0 whitespace-nowrap'
+const TD = 'px-3 py-2.5 align-middle border-b border-border group-last/row:border-b-0 whitespace-nowrap'
 
 // ── Column definitions ────────────────────────────────────────────────────────
 const QB_COLS = [
@@ -2847,7 +2847,6 @@ export function QBTable() {
                         borderLeft: isPrivate ? '3px solid var(--qb-private)' : undefined,
                         cursor: 'pointer',
                         position: 'relative',
-                        height: 'var(--table-row-height)',
                       }}
                     >
                       {/* Cells — ordered by visibleCols to respect drag-reorder */}
