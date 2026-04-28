@@ -2692,12 +2692,10 @@ export function QBTable() {
         )
       ) : (
         <>
-          {/* Padding wrapper — the border container fills remaining height */}
+          {/* Padding wrapper */}
           <div style={{ flex: 1, minHeight: 0, padding: '16px', display: 'flex', flexDirection: 'column' }}>
-          {/* Border container — border + radius only, no overflow-hidden so scrollbars aren't clipped */}
-          <div className="border border-border rounded-lg" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          {/* Inner scroll — overflow:auto with matching border-radius clips corners natively */}
-          <div style={{ flex: 1, minHeight: 0, overflow: 'auto', borderRadius: 'calc(0.5rem - 1px)' }}>
+          {/* Single element: border + overflow on same node so scrollbar never conflicts with border rendering */}
+          <div className="border border-border rounded-lg" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
             <table className="text-sm border-separate border-spacing-0" style={{ minWidth: '100%' }}>
               {showColumnLabels && <TableHeader style={{ position: 'sticky', top: 0, zIndex: 4 }}>
                 <TableRow>
@@ -3121,8 +3119,7 @@ export function QBTable() {
                 })}
               </TableBody>
             </table>
-          </div>{/* inner scroll */}
-          </div>{/* border container */}
+          </div>{/* scroll+border container */}
           </div>{/* padding wrapper */}
         </>
       )}
