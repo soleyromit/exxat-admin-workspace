@@ -2695,7 +2695,7 @@ export function QBTable() {
           {/* Padding wrapper */}
           <div style={{ flex: 1, minHeight: 0, padding: '16px', display: 'flex', flexDirection: 'column' }}>
           {/* Single element: border + overflow on same node so scrollbar never conflicts with border rendering */}
-          <div className="border border-border rounded-lg" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+          <div className="qb-table-scroll border border-border rounded-lg" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
             <table className="text-sm border-separate border-spacing-0" style={{ minWidth: '100%' }}>
               {showColumnLabels && <TableHeader style={{ position: 'sticky', top: 0, zIndex: 4 }}>
                 <TableRow>

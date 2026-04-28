@@ -99,6 +99,12 @@
 /* Hide scrollbar on QB folder name scroll area */
 .qb-name-scroll::-webkit-scrollbar { display: none; }
 
+/* QB table — thin custom scrollbar, transparent track so no cut-off visual */
+.qb-table-scroll { scrollbar-width: thin; scrollbar-color: var(--border-control) transparent; }
+.qb-table-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
+.qb-table-scroll::-webkit-scrollbar-track { background: transparent; }
+.qb-table-scroll::-webkit-scrollbar-thumb { background: var(--border-control); border-radius: 3px; }
+
 /* QB hover behaviors */
 .qb-folder-menu-btn {
   opacity: 0;
