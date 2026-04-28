@@ -7,3 +7,5 @@ node_modules/
 dist/
 /Admin/
 /Student/
+.vercel
+.superpowers/
