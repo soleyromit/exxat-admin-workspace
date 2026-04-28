@@ -1752,8 +1752,8 @@ function QuestionDetailSheet({ question, open, onClose, onMove }: { question: Qu
 
 // ── Pinned column sticky style helper ────────────────────────────────────────
 function pinnedStyle(colKey: string, pinnedLeftCols: Set<string>, pinnedRightCols?: Set<string>): React.CSSProperties {
-  if (pinnedLeftCols.has(colKey)) return { position: 'sticky', left: 0, zIndex: 1, background: 'var(--dt-row-bg)', boxShadow: '2px 0 4px var(--sticky-edge-fade)' }
-  if (pinnedRightCols?.has(colKey)) return { position: 'sticky', right: 0, zIndex: 1, background: 'var(--dt-row-bg)', boxShadow: '-2px 0 4px var(--sticky-edge-fade)' }
+  if (pinnedLeftCols.has(colKey)) return { position: 'sticky', left: 0, background: 'var(--dt-row-bg)', boxShadow: '2px 0 4px var(--sticky-edge-fade)' }
+  if (pinnedRightCols?.has(colKey)) return { position: 'sticky', right: 0, background: 'var(--dt-row-bg)', boxShadow: '-2px 0 4px var(--sticky-edge-fade)' }
   return {}
 }
 
@@ -3051,7 +3051,7 @@ export function QBTable() {
                         className={`${TD} w-8 text-right`}
                         onClick={e => e.stopPropagation()}
                         style={{
-                          position: 'sticky', right: 0, zIndex: 1,
+                          position: 'sticky', right: 0,
                           background: isSelected ? 'var(--dt-row-selected)' : isHovered ? 'var(--dt-row-hover)' : 'var(--dt-row-bg)',
                           boxShadow: '-2px 0 4px var(--sticky-edge-fade)',
                         }}
