@@ -91,14 +91,14 @@ export default function AssessmentBuilderClient() {
         background: 'var(--ab-selector-bar-bg)',
         flexShrink: 0,
       }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)' }}>Course</span>
+        <span className="text-xs font-semibold text-muted-foreground">Course</span>
         <Select value={courseId} onValueChange={(val) => {
           setCourseId(val)
           const first = mockCourseOfferings.find(o => o.courseId === val)
           if (first) setOfferingId(first.id)
           setActiveAsmt(null)
         }}>
-          <SelectTrigger style={{ width: 180, height: 32, fontSize: 12 }}>
+          <SelectTrigger className="text-sm" style={{ width: 180, height: 32 }}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -107,9 +107,9 @@ export default function AssessmentBuilderClient() {
             ))}
           </SelectContent>
         </Select>
-        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)' }}>Offering</span>
+        <span className="text-xs font-semibold text-muted-foreground">Offering</span>
         <Select value={offeringId} onValueChange={(val) => { setOfferingId(val); setActiveAsmt(null) }}>
-          <SelectTrigger style={{ width: 148, height: 32, fontSize: 12 }}>
+          <SelectTrigger className="text-sm" style={{ width: 148, height: 32 }}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -154,7 +154,7 @@ export default function AssessmentBuilderClient() {
             color: 'var(--muted-foreground)',
           }}>
             <i className="fa-light fa-pen-ruler" aria-hidden="true" style={{ fontSize: 32, opacity: 0.4 }} />
-            <span style={{ fontSize: 13 }}>Select an assessment to start picking questions</span>
+            <span className="text-sm">Select an assessment to start picking questions</span>
           </div>
         )}
       </div>
@@ -180,13 +180,8 @@ function ABAssessmentList({ assessments, activeId, onOpen, onCreate }: {
       overflow: 'hidden',
       background: 'var(--ab-panel-bg)',
     }}>
-      <div style={{
+      <div className="text-[10px] font-bold uppercase tracking-[.07em] text-muted-foreground" style={{
         padding: '10px 10px 4px',
-        fontSize: 10,
-        fontWeight: 700,
-        textTransform: 'uppercase',
-        letterSpacing: '.07em',
-        color: 'var(--muted-foreground)',
         flexShrink: 0,
       }}>
         Assessments
@@ -213,8 +208,8 @@ function ABAssessmentList({ assessments, activeId, onOpen, onCreate }: {
                 borderColor: isActive ? 'var(--ab-active-border)' : 'transparent',
               }}
             >
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)' }}>{a.title}</div>
-              <div style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: '2px 0 6px' }}>
+              <div className="text-sm font-semibold text-foreground">{a.title}</div>
+              <div className="text-xs text-muted-foreground" style={{ margin: '2px 0 6px' }}>
                 {a.questionCount} questions
               </div>
               <div style={{
@@ -236,8 +231,8 @@ function ABAssessmentList({ assessments, activeId, onOpen, onCreate }: {
           variant="outline"
           size="sm"
           onClick={onCreate}
-          className="w-full mt-1"
-          style={{ borderStyle: 'dashed', fontSize: 12, color: 'var(--muted-foreground)' }}
+          className="w-full mt-1 text-sm text-muted-foreground"
+          style={{ borderStyle: 'dashed' }}
         >
           <i className="fa-light fa-plus" aria-hidden="true" />
           {' '}New assessment
@@ -307,8 +302,8 @@ function ABQuestionPicker({ selectedIds, onToggle, activeAsmt, smartViews, activ
         gap: 8,
         flexShrink: 0,
       }}>
-        <span style={{ fontSize: 12, fontWeight: 600 }}>{activeAsmt.title}</span>
-        <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>· {selectedIds.size} questions selected</span>
+        <span className="text-sm font-semibold">{activeAsmt.title}</span>
+        <span className="text-xs text-muted-foreground">· {selectedIds.size} questions selected</span>
       </div>
 
       {/* Smart view chips */}
@@ -369,14 +364,15 @@ function ABQuestionPicker({ selectedIds, onToggle, activeAsmt, smartViews, activ
           <TableBody>
             {filteredQuestions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--muted-foreground)', fontSize: 13 }}>
+                <TableCell colSpan={5} className="text-sm text-muted-foreground" style={{ textAlign: 'center', padding: '40px 20px' }}>
                   No questions match this view
                 </TableCell>
               </TableRow>
             ) : filteredQuestions.map(q => {
               const isPicked = selectedIds.has(q.id)
-              const diffStyles: Record<string, { fontWeight: number; color: string }> = {
-                Easy:   { fontWeight: 400, color: 'var(--qb-diff-easy)' },
+              // Custom qb tokens — kept in style (no Tailwind class exists)
+              const diffStyles: Record<string, React.CSSProperties> = {
+                Easy:   { color: 'var(--qb-diff-easy)' },
                 Medium: { fontWeight: 600, color: 'var(--qb-diff-medium)' },
                 Hard:   { fontWeight: 800, color: 'var(--qb-diff-hard)' },
               }
@@ -394,7 +390,7 @@ function ABQuestionPicker({ selectedIds, onToggle, activeAsmt, smartViews, activ
                       aria-label={`Select ${q.title}`}
                     />
                   </TableCell>
-                  <TableCell style={{ fontSize: 12, maxWidth: 400 }}>
+                  <TableCell className="text-sm" style={{ maxWidth: 400 }}>
                     <div style={{
                       lineHeight: 1.4,
                       display: '-webkit-box',
@@ -406,12 +402,12 @@ function ABQuestionPicker({ selectedIds, onToggle, activeAsmt, smartViews, activ
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span style={{ fontSize: 11.5, ...(diffStyles[q.difficulty] ?? {}) }}>{q.difficulty}</span>
+                    <span className="text-xs" style={diffStyles[q.difficulty] ?? {}}>{q.difficulty}</span>
                   </TableCell>
-                  <TableCell style={{ fontSize: 11.5, color: 'var(--muted-foreground)', fontWeight: 500 }}>
+                  <TableCell className="text-xs text-muted-foreground font-medium">
                     {q.type}
                   </TableCell>
-                  <TableCell style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+                  <TableCell className="text-xs text-muted-foreground">
                     {(q.usage ?? 0) > 0 ? `${q.usage}×` : '—'}
                   </TableCell>
                 </TableRow>
@@ -435,7 +431,7 @@ function ABQuestionPicker({ selectedIds, onToggle, activeAsmt, smartViews, activ
           <DialogHeader>
             <DialogTitle>Save smart view</DialogTitle>
           </DialogHeader>
-          <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 8 }}>
+          <p className="text-sm text-muted-foreground" style={{ marginBottom: 8 }}>
             Saves the current filter configuration as &ldquo;{activeView?.label}&rdquo; with a custom name.
           </p>
           <Input
@@ -484,7 +480,7 @@ function ABDiffChart({ distribution, saveConfirmed, onSave, onCancel: _onCancel 
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 48 }}>
         {bars.map(bar => (
           <div key={bar.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-            <span style={{ fontSize: 11, fontWeight: 600, color: bar.color }}>
+            <span className="text-xs font-semibold" style={{ color: bar.color }}>
               {bar.count > 0 ? bar.count : ''}
             </span>
             <div style={{
@@ -500,13 +496,13 @@ function ABDiffChart({ distribution, saveConfirmed, onSave, onCancel: _onCancel 
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         {bars.map(bar => (
-          <div key={bar.label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
+          <div key={bar.label} className="text-xs" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontWeight: bar.weight, color: bar.color, width: 44 }}>{bar.label}</span>
-            <span style={{ color: 'var(--muted-foreground)' }}>
+            <span className="text-muted-foreground">
               {bar.count} question{bar.count !== 1 ? 's' : ''}
             </span>
             {total > 0 && (
-              <span style={{ color: 'var(--muted-foreground)', opacity: 0.6 }}>
+              <span className="text-muted-foreground" style={{ opacity: 0.6 }}>
                 ({Math.round((bar.count / total) * 100)}%)
               </span>
             )}
@@ -515,7 +511,7 @@ function ABDiffChart({ distribution, saveConfirmed, onSave, onCancel: _onCancel 
       </div>
       <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
         {total === 0 && (
-          <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+          <span className="text-xs text-muted-foreground">
             Select questions to build assessment
           </span>
         )}

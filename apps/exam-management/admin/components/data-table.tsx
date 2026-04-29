@@ -34,8 +34,7 @@ export function DataTable<T extends { id: string | number }>({
               <th
                 key={col.key}
                 scope="col"
-                className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${col.className ?? ''}`}
-                style={{ color: 'var(--muted-foreground)' }}
+                className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground ${col.className ?? ''}`}
               >
                 {col.header}
               </th>
@@ -47,8 +46,7 @@ export function DataTable<T extends { id: string | number }>({
             <tr>
               <td
                 colSpan={columns.length}
-                className="px-4 py-8 text-center text-sm"
-                style={{ color: 'var(--muted-foreground)' }}
+                className="px-4 py-8 text-center text-sm text-muted-foreground"
               >
                 {emptyMessage}
               </td>

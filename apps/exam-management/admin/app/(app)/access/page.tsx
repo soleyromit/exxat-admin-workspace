@@ -1,6 +1,7 @@
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
 import { DataTable, type Column } from '@/components/data-table'
+import { Badge, Button } from '@exxat/ds/packages/ui/src'
 
 interface AccessEntry {
   id: string
@@ -64,7 +65,7 @@ const columns: Column<AccessEntry>[] = [
     key: 'email',
     header: 'Email',
     render: (row) => (
-      <span style={{ color: 'var(--muted-foreground)' }}>{row.email}</span>
+      <span className="text-muted-foreground">{row.email}</span>
     ),
   },
   {
@@ -73,12 +74,13 @@ const columns: Column<AccessEntry>[] = [
     render: (row) => {
       const s = ROLE_COLORS[row.role]
       return (
-        <span
-          className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+        <Badge
+          variant="secondary"
+          className="rounded-full text-xs font-medium"
           style={{ backgroundColor: s.bg, color: s.color }}
         >
           {row.role}
-        </span>
+        </Badge>
       )
     },
   },
@@ -86,7 +88,7 @@ const columns: Column<AccessEntry>[] = [
     key: 'addedDate',
     header: 'Added',
     render: (row) => (
-      <span style={{ color: 'var(--muted-foreground)' }}>{row.addedDate}</span>
+      <span className="text-muted-foreground">{row.addedDate}</span>
     ),
   },
 ]
@@ -100,17 +102,10 @@ export default function AccessPage() {
           title="Share Access"
           subtitle="Manage who can access and collaborate on your question bank"
           actions={
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors"
-              style={{
-                backgroundColor: 'var(--primary)',
-                color: 'var(--primary-foreground)',
-              }}
-            >
+            <Button variant="default" size="sm">
               <i className="fa-light fa-user-plus" aria-hidden="true" />
               Invite
-            </button>
+            </Button>
           }
         />
         <div className="flex-1 p-6">

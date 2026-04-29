@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Badge } from '@exxat/ds/packages/ui/src'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
 import { DataTable, type Column } from '@/components/data-table'
@@ -18,8 +19,7 @@ const columns: Column<Question>[] = [
     render: (row) => (
       <Link
         href={`/questions/${row.id}`}
-        className="font-medium hover:underline"
-        style={{ color: 'var(--primary)' }}
+        className="font-medium hover:underline text-primary"
       >
         {row.title}
       </Link>
@@ -29,29 +29,23 @@ const columns: Column<Question>[] = [
     key: 'type',
     header: 'Type',
     render: (row) => (
-      <span
-        className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
-        style={{
-          backgroundColor: 'var(--secondary)',
-          color: 'var(--secondary-foreground)',
-        }}
-      >
+      <Badge variant="secondary" className="rounded-full text-xs font-medium">
         {TYPE_LABELS[row.type]}
-      </span>
+      </Badge>
     ),
   },
   {
     key: 'course',
     header: 'Course',
     render: (row) => (
-      <span style={{ color: 'var(--foreground)' }}>{row.course}</span>
+      <span className="text-foreground">{row.course}</span>
     ),
   },
   {
     key: 'updatedAt',
     header: 'Updated',
     render: (row) => (
-      <span style={{ color: 'var(--muted-foreground)' }}>{row.updatedAt}</span>
+      <span className="text-muted-foreground">{row.updatedAt}</span>
     ),
   },
 ]

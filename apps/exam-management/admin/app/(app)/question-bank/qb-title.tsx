@@ -44,7 +44,7 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
         >
           {shown.map((p, i) => (
             <Avatar key={p.id} style={{ width: 22, height: 22, marginLeft: i === 0 ? 0 : -7, border: '2px solid var(--background)', borderRadius: '50%', zIndex: shown.length - i, position: 'relative' }}>
-              <AvatarFallback style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)', fontSize: 8, fontWeight: 700 }}>
+              <AvatarFallback className="text-[8px] font-bold" style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>
                 {p.initials}
               </AvatarFallback>
             </Avatar>
@@ -64,7 +64,7 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
           {personas.map((p, i) => (
             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Avatar style={{ width: 28, height: 28, flexShrink: 0 }}>
-                <AvatarFallback style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)', fontSize: 10, fontWeight: 700 }}>
+                <AvatarFallback className="text-[10px] font-bold" style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>
                   {p.initials}
                 </AvatarFallback>
               </Avatar>

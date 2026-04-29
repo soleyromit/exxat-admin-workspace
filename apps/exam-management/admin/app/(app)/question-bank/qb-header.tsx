@@ -117,18 +117,18 @@ function QBBreadcrumb() {
             Parent folders
           </div>
           {collapsedNodes.map(node => (
-            <button
+            <Button
               key={node.id}
+              variant="ghost"
+              size="sm"
               onClick={() => navigateToFolder(node.id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '6px 8px', borderRadius: 6, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--accent)' }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent' }}
+              className="w-full justify-start gap-2 text-sm text-foreground font-normal h-auto py-1.5 px-2"
             >
-              <i className={`fa-light ${node.isCourse ? 'fa-graduation-cap' : 'fa-folder'}`} aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)', width: 14, flexShrink: 0 }} />
-              <span className="text-sm text-foreground" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <i className={`fa-light ${node.isCourse ? 'fa-graduation-cap' : 'fa-folder'}`} aria-hidden="true" style={{ fontSize: 12, width: 14, flexShrink: 0 }} />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {node.isCourse ? courseFolderLabel(node.name) : node.name}
               </span>
-            </button>
+            </Button>
           ))}
         </PopoverContent>
       </Popover>
@@ -183,7 +183,7 @@ export function QBHeader() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="gap-2 h-8 px-2" aria-label="Switch persona">
               <Avatar style={{ width: 24, height: 24 }}>
-                <AvatarFallback style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)', fontSize: 9, fontWeight: 700 }}>
+                <AvatarFallback className="text-[9px] font-bold" style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>
                   {currentPersona.initials}
                 </AvatarFallback>
               </Avatar>

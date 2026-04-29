@@ -4,7 +4,7 @@ import { useQB } from './qb-state'
 import type { Persona } from '@/lib/qb-types'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
-  Button, Avatar, AvatarFallback,
+  Button, Avatar, AvatarFallback, Input,
 } from '@exxat/ds/packages/ui/src'
 
 function PersonAvatar({ persona }: { persona: Persona }) {
@@ -133,9 +133,8 @@ export function ManageAccessDialog() {
                   aria-hidden="true"
                   style={{ fontSize: 13, color: searchFocused ? 'var(--brand-color)' : 'var(--muted-foreground)' }}
                 />
-                <input
+                <Input
                   ref={inputRef}
-                  type="text"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   onFocus={() => setSearchFocused(true)}
@@ -143,7 +142,7 @@ export function ManageAccessDialog() {
                   placeholder="Invite by name or role…"
                   aria-label="Search people to invite"
                   className="text-sm text-foreground"
-                  style={{ flex: 1, background: 'transparent', outline: 'none', border: 'none' }}
+                  style={{ flex: 1, background: 'transparent', outline: 'none', border: 'none', boxShadow: 'none', height: 'auto', padding: 0 }}
                 />
                 {search && (
                   <Button

@@ -120,14 +120,20 @@ function FolderTreePicker({
           onMouseEnter={e => { if (isEligible && !isSelected) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--accent)' }}
           onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent' }}
         >
-          <button tabIndex={-1} aria-label={isExpanded ? 'Collapse' : 'Expand'} onClick={e => toggle(node.id, e)}
-            style={{ width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'none', border: 'none', padding: 0, flexShrink: 0,
-              cursor: hasChildren ? 'pointer' : 'default', color: 'var(--muted-foreground)', opacity: hasChildren ? 1 : 0 }}
+          <Button
+            variant="ghost" size="icon-xs"
+            tabIndex={-1}
+            aria-label={isExpanded ? 'Collapse' : 'Expand'}
+            onClick={e => toggle(node.id, e)}
+            style={{
+              width: 16, height: 16, padding: 0, flexShrink: 0,
+              cursor: hasChildren ? 'pointer' : 'default', opacity: hasChildren ? 1 : 0,
+            }}
+            className="text-muted-foreground"
           >
             <i className="fa-light fa-chevron-right" aria-hidden="true"
               style={{ fontSize: 9, transition: 'transform 150ms', transform: isExpanded ? 'rotate(90deg)' : 'none' }} />
-          </button>
+          </Button>
           <i className={`fa-light ${node.isCourse ? 'fa-graduation-cap' : isExpanded && hasChildren ? 'fa-folder-open' : 'fa-folder'}`}
             aria-hidden="true"
             style={{ fontSize: 12, flexShrink: 0, color: isSelected ? 'var(--sidebar-accent-foreground)' : 'var(--muted-foreground)' }}
@@ -153,14 +159,14 @@ function FolderTreePicker({
               }}>
                 <div style={{ width: 16, flexShrink: 0 }} />
                 <i className="fa-light fa-folder" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)', flexShrink: 0 }} />
-                <input
+                <Input
                   ref={inlineInputRef}
                   value={inlineNewName}
                   onChange={e => setInlineNewName(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') handleInlineCreate(); if (e.key === 'Escape') cancelInlineCreate() }}
                   placeholder="Folder name…"
                   className="text-sm text-foreground"
-                  style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', minWidth: 0 }}
+                  style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', boxShadow: 'none', minWidth: 0, height: 'auto', padding: 0 }}
                   aria-label="New folder name"
                 />
                 <Button size="icon-xs" variant="ghost" onClick={handleInlineCreate} disabled={!inlineNewName.trim()} aria-label="Create folder"
@@ -1394,12 +1400,14 @@ function FilterPropertiesSheet({
                         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Highlight color</p>
                         <div className="flex flex-wrap gap-1.5">
                           {QB_RULE_COLORS.map(c => (
-                            <button
+                            <Button
                               key={c.name}
                               type="button"
+                              variant="ghost"
+                              size="icon-xs"
                               aria-label={c.name}
                               onClick={() => onUpdateConditionalRule(rule.id, { bgColor: c.bg })}
-                              className="size-5 rounded-md border-2 transition-all"
+                              className="size-5 rounded-md border-2 transition-all p-0"
                               style={{
                                 background: c.bg,
                                 borderColor: rule.bgColor === c.bg ? 'var(--foreground)' : 'transparent',
@@ -1642,7 +1650,7 @@ function QuestionDetailSheet({ question, open, onClose, onMove }: { question: Qu
             <DetailRow label="Created by">
               {creatorPersona ? (
                 <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                  <span style={{ width: 22, height: 22, borderRadius: '50%', backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)', fontSize: 8, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span className="text-[8px] font-bold" style={{ width: 22, height: 22, borderRadius: '50%', backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     {creatorPersona.initials}
                   </span>
                   {creatorPersona.name}
@@ -2921,10 +2929,10 @@ export function QBTable() {
                             return (
                               <TableCell key="creator" className={`${TD} w-40`} style={pinnedStyle('creator', pinnedCols, pinnedRightCols)}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                  <div style={{
+                                  <div className="text-[8px] font-bold" style={{
                                     width: 22, height: 22, borderRadius: '50%',
                                     backgroundColor: 'var(--avatar-initials-bg)',
-                                    color: 'var(--avatar-initials-fg)', fontSize: 8, fontWeight: 700,
+                                    color: 'var(--avatar-initials-fg)',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                                   }}>
                                     {creatorPersona.initials}
@@ -2945,10 +2953,10 @@ export function QBTable() {
                             return (
                               <TableCell key="lastEditedBy" className={`${TD} w-32`} style={pinnedStyle('lastEditedBy', pinnedCols, pinnedRightCols)}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                  <div style={{
+                                  <div className="text-[8px] font-bold" style={{
                                     width: 22, height: 22, borderRadius: '50%',
                                     backgroundColor: 'var(--avatar-initials-bg)',
-                                    color: 'var(--avatar-initials-fg)', fontSize: 8, fontWeight: 700,
+                                    color: 'var(--avatar-initials-fg)',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                                   }}>
                                     {editorPersona.initials}
@@ -3259,8 +3267,8 @@ export function QBTable() {
               variant="ghost" size="sm"
               aria-label="Delete selected"
               onClick={() => setBulkDeleteOpen(true)}
-              className="text-xs gap-1.5"
-              style={{ height: 32, color: 'var(--destructive)' }}
+              className="text-xs gap-1.5 text-destructive"
+              style={{ height: 32 }}
             >
               <i className="fa-light fa-trash-can" aria-hidden="true" style={{ fontSize: 12 }} />
               Delete
@@ -3341,7 +3349,7 @@ export function QBTable() {
                 <div style={{ borderRadius: 8, border: '1px solid color-mix(in oklch, var(--destructive) 30%, transparent)', backgroundColor: 'color-mix(in oklch, var(--destructive) 6%, var(--background))', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 13, color: 'var(--destructive)', flexShrink: 0 }} />
-                    <span className="text-xs font-semibold" style={{ color: 'var(--destructive)' }}>Impact summary</span>
+                    <span className="text-xs font-semibold text-destructive">Impact summary</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -3374,7 +3382,7 @@ export function QBTable() {
                     <i className="fa-light fa-rectangle-list" aria-hidden="true" style={{ fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0 }} />
                     <span className="flex-1 text-xs text-foreground" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.title}</span>
                     {q.usage > 0 && (
-                      <span className="text-xs font-semibold shrink-0" style={{ color: 'var(--destructive)' }}>{q.usage}×</span>
+                      <span className="text-xs font-semibold shrink-0 text-destructive">{q.usage}×</span>
                     )}
                   </div>
                 ))}

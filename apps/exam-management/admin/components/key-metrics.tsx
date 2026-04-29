@@ -29,24 +29,13 @@ export function KeyMetrics({ metrics }: KeyMetricsProps) {
             borderLeft: index > 0 ? '1px solid var(--border)' : undefined,
           }}
         >
-          <span
-            className="text-sm font-medium"
-            style={{ color: 'var(--muted-foreground)' }}
-          >
+          <span className="text-sm font-medium text-muted-foreground">
             {metric.label}
           </span>
           <span className="text-2xl font-bold">{metric.value}</span>
           {metric.delta !== undefined && (
             <span
-              className="flex items-center gap-1 text-xs"
-              style={{
-                color:
-                  metric.trend === 'up'
-                    ? 'var(--primary)'
-                    : metric.trend === 'down'
-                      ? 'var(--destructive)'
-                      : 'var(--muted-foreground)',
-              }}
+              className={`flex items-center gap-1 text-xs ${metric.trend === 'up' ? 'text-primary' : metric.trend === 'down' ? 'text-destructive' : 'text-muted-foreground'}`}
             >
               {metric.trend === 'up' && (
                 <i className="fa-light fa-arrow-up" aria-hidden="true" />

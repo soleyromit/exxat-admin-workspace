@@ -28,8 +28,8 @@ export default function CoursesClient() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <div style={{ padding: '18px 28px 14px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'flex-end', gap: 16 }}>
         <div>
-          <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 400, color: 'var(--foreground)' }}>Courses</h1>
-          <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 2 }}>
+          <h1 className="text-foreground" style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 400 }}>Courses</h1>
+          <p className="text-sm text-muted-foreground" style={{ marginTop: 2 }}>
             {mockCourses.length} courses · {mockCourseOfferings.length} offerings
           </p>
         </div>
@@ -72,9 +72,9 @@ export default function CoursesClient() {
                         {course.code}
                       </Badge>
                     </TableCell>
-                    <TableCell style={{ fontSize: 13, fontWeight: 500 }}>{course.name}</TableCell>
-                    <TableCell style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{offerings.length} offering{offerings.length !== 1 ? 's' : ''}</TableCell>
-                    <TableCell style={{ fontSize: 12, color: 'var(--foreground)', fontWeight: 500 }}>{totalStudents(course.id)} total</TableCell>
+                    <TableCell className="text-sm font-medium">{course.name}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{offerings.length} offering{offerings.length !== 1 ? 's' : ''}</TableCell>
+                    <TableCell className="text-sm text-foreground font-medium">{totalStudents(course.id)} total</TableCell>
                     <TableCell>—</TableCell>
                     <TableCell>
                       <Button variant="ghost" size="sm" className="text-xs h-7 gap-1"
@@ -103,10 +103,10 @@ export default function CoursesClient() {
                         <TableCell style={{ paddingLeft: 28 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <div style={{ width: 7, height: 7, borderRadius: '50%', background: active ? 'var(--brand-color)' : 'var(--muted-foreground)', flexShrink: 0 }} />
-                            <span style={{ fontSize: 12, fontWeight: 500 }}>{o.semester}</span>
+                            <span className="text-sm font-medium">{o.semester}</span>
                           </div>
                         </TableCell>
-                        <TableCell style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{active ? 'Active offering' : 'Past offering'}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{active ? 'Active offering' : 'Past offering'}</TableCell>
                         <TableCell>
                           <Badge variant="secondary" className="rounded text-[11px]"
                             style={active ? { background: 'var(--brand-tint)', color: 'var(--brand-color)' } : {}}>
@@ -119,7 +119,7 @@ export default function CoursesClient() {
                             {active ? '● Active' : 'Past'}
                           </Badge>
                         </TableCell>
-                        <TableCell style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+                        <TableCell className="text-xs text-muted-foreground">
                           {mockAssessments.filter(a => a.offeringId === o.id).length} assessments
                         </TableCell>
                         <TableCell>
@@ -139,7 +139,7 @@ export default function CoursesClient() {
           </TableBody>
         </Table>
       </div>
-      <div style={{ padding: '10px 28px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', fontSize: 11, color: 'var(--muted-foreground)' }}>
+      <div className="text-xs text-muted-foreground" style={{ padding: '10px 28px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center' }}>
         {mockCourses.length} courses · {mockCourseOfferings.length} offerings
       </div>
     </div>

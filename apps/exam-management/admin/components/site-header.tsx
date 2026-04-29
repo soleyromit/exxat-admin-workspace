@@ -16,9 +16,8 @@ export function SiteHeader({ title, breadcrumbs }: SiteHeaderProps) {
       style={{
         borderBottom: '1px solid var(--border)',
         backgroundColor: 'var(--background)',
-        color: 'var(--foreground)',
       }}
-      className="flex h-14 items-center px-6"
+      className="flex h-14 items-center px-6 text-foreground"
     >
       {breadcrumbs && breadcrumbs.length > 0 ? (
         <nav aria-label="Breadcrumb">
@@ -35,14 +34,13 @@ export function SiteHeader({ title, breadcrumbs }: SiteHeaderProps) {
                 {crumb.href ? (
                   <Link
                     href={crumb.href}
-                    style={{ color: 'var(--muted-foreground)' }}
-                    className="hover:underline"
+                    className="text-muted-foreground hover:underline"
                   >
                     {crumb.label}
                   </Link>
                 ) : (
                   <span
-                    style={{ color: 'var(--foreground)' }}
+                    className="text-foreground"
                     aria-current="page"
                   >
                     {crumb.label}

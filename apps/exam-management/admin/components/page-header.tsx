@@ -12,17 +12,13 @@ export function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
       style={{
         borderBottom: '1px solid var(--border)',
         backgroundColor: 'var(--background)',
-        color: 'var(--foreground)',
       }}
-      className="flex items-center justify-between px-6 py-4"
+      className="flex items-center justify-between px-6 py-4 text-foreground"
     >
       <div>
         <h2 className="text-xl font-semibold">{title}</h2>
         {subtitle && (
-          <p
-            className="mt-0.5 text-sm"
-            style={{ color: 'var(--muted-foreground)' }}
-          >
+          <p className="mt-0.5 text-sm text-muted-foreground">
             {subtitle}
           </p>
         )}

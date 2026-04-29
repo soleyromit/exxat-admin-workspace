@@ -51,7 +51,7 @@ export default async function QuestionDetailPage({ params }: PageProps) {
             <Badge variant="secondary" className="rounded">
               {question.status}
             </Badge>
-            <Badge variant="secondary" className="rounded" style={{ fontFamily: 'monospace', fontSize: 11 }}>
+            <Badge variant="secondary" className="rounded font-mono text-xs">
               {question.code}
             </Badge>
           </div>
@@ -60,32 +60,32 @@ export default async function QuestionDetailPage({ params }: PageProps) {
 
           <dl className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <dt style={{ color: 'var(--muted-foreground)' }}>Difficulty</dt>
+              <dt className="text-muted-foreground">Difficulty</dt>
               <dd className="mt-1 font-medium">{question.difficulty}</dd>
             </div>
             <div>
-              <dt style={{ color: 'var(--muted-foreground)' }}>Bloom&apos;s Level</dt>
+              <dt className="text-muted-foreground">Bloom&apos;s Level</dt>
               <dd className="mt-1 font-medium">{question.blooms}</dd>
             </div>
             <div>
-              <dt style={{ color: 'var(--muted-foreground)' }}>Folder</dt>
+              <dt className="text-muted-foreground">Folder</dt>
               <dd className="mt-1 font-medium">{folder?.name ?? question.folder}</dd>
             </div>
             <div>
-              <dt style={{ color: 'var(--muted-foreground)' }}>Version</dt>
+              <dt className="text-muted-foreground">Version</dt>
               <dd className="mt-1 font-medium">v{question.version}</dd>
             </div>
             <div>
-              <dt style={{ color: 'var(--muted-foreground)' }}>Last Updated</dt>
+              <dt className="text-muted-foreground">Last Updated</dt>
               <dd className="mt-1 font-medium">{question.age}</dd>
             </div>
             <div>
-              <dt style={{ color: 'var(--muted-foreground)' }}>Usage</dt>
+              <dt className="text-muted-foreground">Usage</dt>
               <dd className="mt-1 font-medium">{question.usage} assessment{question.usage !== 1 ? 's' : ''}</dd>
             </div>
             {question.tags.length > 0 && (
               <div className="col-span-2">
-                <dt style={{ color: 'var(--muted-foreground)' }}>Tags</dt>
+                <dt className="text-muted-foreground">Tags</dt>
                 <dd className="mt-1 flex flex-wrap gap-1">
                   {question.tags.map((tag) => (
                     <Badge key={tag} variant="outline" className="rounded text-xs">

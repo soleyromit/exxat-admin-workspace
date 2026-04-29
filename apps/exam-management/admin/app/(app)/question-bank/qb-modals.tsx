@@ -96,7 +96,7 @@ export function ManageCollaboratorsModal() {
                   onClick={() => addCollaborator(p.id)}
                 >
                   <Avatar style={{ width: 24, height: 24, flexShrink: 0 }}>
-                    <AvatarFallback style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)', fontSize: 9, fontWeight: 700 }}>
+                    <AvatarFallback className="text-[9px] font-bold" style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>
                       {p.initials}
                     </AvatarFallback>
                   </Avatar>
@@ -133,7 +133,7 @@ export function ManageCollaboratorsModal() {
           {collaborators.map((p, i) => (
             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 4px', borderRadius: 8 }}>
               <Avatar style={{ width: 32, height: 32, flexShrink: 0 }}>
-                <AvatarFallback style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)', fontSize: 11, fontWeight: 700 }}>
+                <AvatarFallback className="text-[11px] font-bold" style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>
                   {p.initials}
                 </AvatarFallback>
               </Avatar>

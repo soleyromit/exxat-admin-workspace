@@ -28,8 +28,8 @@ function QBContent() {
 
         {/* Text */}
         <div style={{ textAlign: 'center', maxWidth: 400 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 10, color: 'var(--foreground)', fontFamily: 'var(--font-heading)', letterSpacing: '-0.01em' }}>No question banks assigned yet</h2>
-          <p style={{ fontSize: 13, color: 'var(--muted-foreground)', lineHeight: 1.6 }}>
+          <h2 className="text-xl font-bold text-foreground" style={{ marginBottom: 10, fontFamily: 'var(--font-heading)', letterSpacing: '-0.01em' }}>No question banks assigned yet</h2>
+          <p className="text-sm text-muted-foreground" style={{ lineHeight: 1.6 }}>
             Once your department admin shares a course folder with you, questions from that course will appear here — filtered to what&apos;s relevant to your teaching.
           </p>
         </div>

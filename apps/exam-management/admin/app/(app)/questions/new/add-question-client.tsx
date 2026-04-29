@@ -3,6 +3,12 @@
 import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { MOCK_QB_FOLDERS } from '@/lib/qb-mock-data'
+import {
+  Button, Input,
+  Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
+  RadioGroup, RadioGroupItem,
+  Label,
+} from '@exxat/ds/packages/ui/src'
 
 type Step = 1 | 2 | 3
 
@@ -22,18 +28,13 @@ function StepIndicator({ current }: { current: Step }) {
           <div key={step.number} className="flex items-center gap-4">
             {index > 0 && (
               <div
-                className="h-px w-12"
-                style={{ backgroundColor: isCompleted ? 'var(--primary)' : 'var(--border)' }}
+                className={`h-px w-12 ${isCompleted ? 'bg-primary' : 'bg-border'}`}
                 aria-hidden="true"
               />
             )}
             <div className="flex items-center gap-2">
               <div
-                className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium"
-                style={{
-                  backgroundColor: isCompleted || isCurrent ? 'var(--primary)' : 'var(--muted)',
-                  color: isCompleted || isCurrent ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
-                }}
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${isCompleted || isCurrent ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
                 aria-current={isCurrent ? 'step' : undefined}
               >
                 {isCompleted ? (
@@ -42,10 +43,7 @@ function StepIndicator({ current }: { current: Step }) {
                   step.number
                 )}
               </div>
-              <span
-                className="text-sm font-medium"
-                style={{ color: isCurrent ? 'var(--foreground)' : 'var(--muted-foreground)' }}
-              >
+              <span className={`text-sm font-medium ${isCurrent ? 'text-foreground' : 'text-muted-foreground'}`}>
                 {step.label}
               </span>
             </div>
@@ -60,33 +58,32 @@ function Step1() {
   return (
     <div className="space-y-4">
       <div>
-        <label htmlFor="question-title" className="block text-sm font-medium" style={{ color: 'var(--foreground)' }}>
+        <Label htmlFor="question-title" className="text-sm font-medium text-foreground">
           Question Title <span aria-hidden="true">*</span>
-        </label>
-        <input
+        </Label>
+        <Input
           id="question-title"
           type="text"
           required
           placeholder="Enter your question..."
-          className="mt-1 w-full rounded-md px-3 py-2 text-sm"
-          style={{ border: '1px solid var(--border)', backgroundColor: 'var(--background)', color: 'var(--foreground)' }}
+          className="mt-1 w-full"
         />
       </div>
       <div>
-        <label htmlFor="question-type" className="block text-sm font-medium" style={{ color: 'var(--foreground)' }}>
+        <Label htmlFor="question-type" className="text-sm font-medium text-foreground">
           Question Type <span aria-hidden="true">*</span>
-        </label>
-        <select
-          id="question-type"
-          className="mt-1 w-full rounded-md px-3 py-2 text-sm"
-          style={{ border: '1px solid var(--border)', backgroundColor: 'var(--background)', color: 'var(--foreground)' }}
-        >
-          <option value="">Select type...</option>
-          <option value="mcq">Multiple Choice (MCQ)</option>
-          <option value="true-false">True / False</option>
-          <option value="short-answer">Short Answer</option>
-          <option value="essay">Essay</option>
-        </select>
+        </Label>
+        <Select>
+          <SelectTrigger id="question-type" className="mt-1 w-full">
+            <SelectValue placeholder="Select type..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="mcq">Multiple Choice (MCQ)</SelectItem>
+            <SelectItem value="true-false">True / False</SelectItem>
+            <SelectItem value="short-answer">Short Answer</SelectItem>
+            <SelectItem value="essay">Essay</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   )
@@ -95,22 +92,23 @@ function Step1() {
 function Step2() {
   return (
     <div className="space-y-4">
-      <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+      <p className="text-sm text-muted-foreground">
         Add answer options. Mark the correct answer.
       </p>
-      {['A', 'B', 'C', 'D'].map((letter) => (
-        <div key={letter} className="flex items-center gap-3">
-          <input type="radio" name="correct-answer" id={`option-${letter}`} value={letter} aria-label={`Option ${letter} is correct`} />
-          <label htmlFor={`option-${letter}`} className="sr-only">Option {letter}</label>
-          <input
-            type="text"
-            placeholder={`Option ${letter}`}
-            className="flex-1 rounded-md px-3 py-2 text-sm"
-            style={{ border: '1px solid var(--border)', backgroundColor: 'var(--background)', color: 'var(--foreground)' }}
-            aria-label={`Text for option ${letter}`}
-          />
-        </div>
-      ))}
+      <RadioGroup name="correct-answer">
+        {['A', 'B', 'C', 'D'].map((letter) => (
+          <div key={letter} className="flex items-center gap-3">
+            <RadioGroupItem value={letter} id={`option-${letter}`} aria-label={`Option ${letter} is correct`} />
+            <Label htmlFor={`option-${letter}`} className="sr-only">Option {letter}</Label>
+            <Input
+              type="text"
+              placeholder={`Option ${letter}`}
+              className="flex-1"
+              aria-label={`Text for option ${letter}`}
+            />
+          </div>
+        ))}
+      </RadioGroup>
     </div>
   )
 }
@@ -118,7 +116,6 @@ function Step2() {
 function Step3({ preselectedFolderId }: { preselectedFolderId: string | null }) {
   const folder = preselectedFolderId ? MOCK_QB_FOLDERS.find(f => f.id === preselectedFolderId) : null
 
-  // Build folder path label: "PHAR101 QB / Antibiotics / Gram-Positive"
   function buildFolderPath(folderId: string): string {
     const parts: string[] = []
     let node = MOCK_QB_FOLDERS.find(f => f.id === folderId)
@@ -133,32 +130,32 @@ function Step3({ preselectedFolderId }: { preselectedFolderId: string | null }) 
     <div className="space-y-4">
       {/* Folder — pre-populated and locked when coming from QB */}
       <div>
-        <label className="block text-sm font-medium" style={{ color: 'var(--foreground)' }}>
+        <Label className="text-sm font-medium text-foreground">
           Folder
-        </label>
+        </Label>
         {folder ? (
           <div
-            className="mt-1 flex items-center gap-2 rounded-md px-3 py-2"
-            style={{ border: '1px solid var(--border)', backgroundColor: 'var(--muted)', color: 'var(--foreground)', fontSize: 14 }}
+            className="mt-1 flex items-center gap-2 rounded-md px-3 py-2 text-sm text-foreground"
+            style={{ border: '1px solid var(--border)', backgroundColor: 'var(--muted)' }}
           >
             <i className="fa-light fa-folder" aria-hidden="true" style={{ fontSize: 12, color: 'var(--brand-color)', flexShrink: 0 }} />
-            <span style={{ flex: 1 }}>{buildFolderPath(folder.id)}</span>
-            <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>Pre-selected</span>
+            <span className="flex-1">{buildFolderPath(folder.id)}</span>
+            <span className="text-xs text-muted-foreground">Pre-selected</span>
           </div>
         ) : (
-          <select
-            id="question-folder"
-            className="mt-1 w-full rounded-md px-3 py-2 text-sm"
-            style={{ border: '1px solid var(--border)', backgroundColor: 'var(--background)', color: 'var(--foreground)' }}
-          >
-            <option value="">Select a folder...</option>
-            {MOCK_QB_FOLDERS.filter(f => !f.isCourse).map(f => (
-              <option key={f.id} value={f.id}>{f.name}</option>
-            ))}
-          </select>
+          <Select>
+            <SelectTrigger id="question-folder" className="mt-1 w-full">
+              <SelectValue placeholder="Select a folder..." />
+            </SelectTrigger>
+            <SelectContent>
+              {MOCK_QB_FOLDERS.filter(f => !f.isCourse).map(f => (
+                <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         )}
         {folder && (
-          <p className="mt-1 text-xs" style={{ color: 'var(--muted-foreground)' }}>
+          <p className="mt-1 text-xs text-muted-foreground">
             This question will be added to the folder you were browsing. You can move it later.
           </p>
         )}
@@ -166,31 +163,30 @@ function Step3({ preselectedFolderId }: { preselectedFolderId: string | null }) 
 
       <div>
         <fieldset>
-          <legend className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Access Scope</legend>
-          <div className="mt-2 space-y-2">
+          <legend className="text-sm font-medium text-foreground">Access Scope</legend>
+          <RadioGroup name="scope" defaultValue="private" className="mt-2 space-y-2">
             {[
               { value: 'private', label: 'Private — only visible to me' },
               { value: 'shared', label: 'Shared — visible to all faculty' },
             ].map((opt) => (
-              <label key={opt.value} className="flex items-center gap-2 text-sm">
-                <input type="radio" name="scope" value={opt.value} defaultChecked={opt.value === 'private'} />
-                <span style={{ color: 'var(--foreground)' }}>{opt.label}</span>
-              </label>
+              <div key={opt.value} className="flex items-center gap-2">
+                <RadioGroupItem value={opt.value} id={`scope-${opt.value}`} />
+                <Label htmlFor={`scope-${opt.value}`} className="text-sm text-foreground">{opt.label}</Label>
+              </div>
             ))}
-          </div>
+          </RadioGroup>
         </fieldset>
       </div>
 
       <div>
-        <label htmlFor="question-tags" className="block text-sm font-medium" style={{ color: 'var(--foreground)' }}>
+        <Label htmlFor="question-tags" className="text-sm font-medium text-foreground">
           Tags
-        </label>
-        <input
+        </Label>
+        <Input
           id="question-tags"
           type="text"
           placeholder="e.g. diabetes, endocrinology (comma-separated)"
-          className="mt-1 w-full rounded-md px-3 py-2 text-sm"
-          style={{ border: '1px solid var(--border)', backgroundColor: 'var(--background)', color: 'var(--foreground)' }}
+          className="mt-1 w-full"
         />
       </div>
     </div>
@@ -231,22 +227,22 @@ function AddQuestionForm() {
           </div>
 
           <div className="flex items-center justify-between pt-4" style={{ borderTop: '1px solid var(--border)' }}>
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={goBack}
-              className="rounded-md px-4 py-2 text-sm font-medium"
-              style={{ border: '1px solid var(--border)', backgroundColor: 'transparent', color: 'var(--foreground)' }}
             >
               {step === 1 ? 'Cancel' : 'Back'}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="default"
+              size="sm"
               onClick={goForward}
-              className="rounded-md px-4 py-2 text-sm font-medium"
-              style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
             >
               {step === 3 ? 'Save Question' : 'Continue'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
