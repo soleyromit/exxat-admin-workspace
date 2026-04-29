@@ -60,7 +60,7 @@ export function ManageCollaboratorsModal() {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Manage Access</DialogTitle>
-          <DialogDescription style={{ fontSize: 13 }}>
+          <DialogDescription className="text-sm">
             {folder?.name} · {collaborators.length} collaborator{collaborators.length !== 1 ? 's' : ''}
           </DialogDescription>
         </DialogHeader>
@@ -101,8 +101,8 @@ export function ManageCollaboratorsModal() {
                     </AvatarFallback>
                   </Avatar>
                   <div style={{ textAlign: 'left' }}>
-                    <div style={{ fontSize: 13, fontWeight: 500 }}>{p.name}</div>
-                    <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{p.role}</div>
+                    <div className="text-sm font-medium">{p.name}</div>
+                    <div className="text-xs text-muted-foreground">{p.role}</div>
                   </div>
                   <i className="fa-light fa-plus ml-auto" aria-hidden="true" style={{ fontSize: 11, color: 'var(--brand-color)' }} />
                 </Button>
@@ -115,14 +115,14 @@ export function ManageCollaboratorsModal() {
               background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 8,
               boxShadow: 'var(--shadow-md)', padding: '10px 12px',
             }}>
-              <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>No matching users found</span>
+              <span className="text-xs text-muted-foreground">No matching users found</span>
             </div>
           )}
         </div>
 
         {/* Undo banner */}
         {pendingRemoveId && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: 8, backgroundColor: 'var(--muted)', fontSize: 13 }}>
+          <div className="text-sm" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: 8, backgroundColor: 'var(--muted)' }}>
             <span>Collaborator removed.</span>
             <Button variant="ghost" size="sm" onClick={undoRemove} className="text-xs h-6 px-2">Undo</Button>
           </div>
@@ -138,8 +138,8 @@ export function ManageCollaboratorsModal() {
                 </AvatarFallback>
               </Avatar>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{p.name}</div>
-                <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{p.role}</div>
+                <div className="text-sm font-semibold">{p.name}</div>
+                <div className="text-xs text-muted-foreground">{p.role}</div>
               </div>
               {i === 0
                 ? <Badge variant="secondary" className="rounded text-xs">Owner</Badge>
@@ -163,7 +163,7 @@ export function ManageCollaboratorsModal() {
             </div>
           ))}
           {collaborators.length === 0 && !pendingRemoveId && (
-            <p style={{ fontSize: 12, color: 'var(--muted-foreground)', padding: '8px 4px' }}>No collaborators yet. Add someone above.</p>
+            <p className="text-xs text-muted-foreground" style={{ padding: '8px 4px' }}>No collaborators yet. Add someone above.</p>
           )}
         </div>
 
@@ -209,7 +209,7 @@ export function RequestEditAccessModal({ questionTitle, open, onOpenChange }: {
             </div>
             <div>
               <DialogTitle>Request Edit Access</DialogTitle>
-              <DialogDescription style={{ fontSize: 12, marginTop: 2 }}>
+              <DialogDescription className="text-xs" style={{ marginTop: 2 }}>
                 The owner will be notified and can approve or decline.
               </DialogDescription>
             </div>
@@ -223,8 +223,8 @@ export function RequestEditAccessModal({ questionTitle, open, onOpenChange }: {
                 <i className="fa-light fa-circle-check" aria-hidden="true" style={{ fontSize: 22, color: 'var(--qb-status-saved-fg)' }} />
               </div>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>Request sent</div>
-                <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 2 }}>
+                <div className="text-sm font-semibold">Request sent</div>
+                <div className="text-xs text-muted-foreground" style={{ marginTop: 2 }}>
                   You&apos;ll get an email when the owner responds.
                 </div>
               </div>
@@ -233,7 +233,7 @@ export function RequestEditAccessModal({ questionTitle, open, onOpenChange }: {
           : (
             <>
               {/* Question context preview */}
-              <div style={{ padding: '8px 12px', borderRadius: 8, backgroundColor: 'var(--muted)', fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1.4 }}>
+              <div className="text-xs text-muted-foreground" style={{ padding: '8px 12px', borderRadius: 8, backgroundColor: 'var(--muted)', lineHeight: 1.4 }}>
                 <i className="fa-light fa-file-lines" aria-hidden="true" style={{ marginRight: 6 }} />
                 {questionTitle.length > 80 ? questionTitle.slice(0, 80) + '…' : questionTitle}
               </div>
@@ -246,7 +246,8 @@ export function RequestEditAccessModal({ questionTitle, open, onOpenChange }: {
                   value={message}
                   onChange={e => setMessage(e.target.value)}
                   rows={3}
-                  style={{ resize: 'none', fontSize: 13 }}
+                  className="text-sm"
+                  style={{ resize: 'none' }}
                 />
               </Field>
 

@@ -132,11 +132,11 @@ function FolderTreePicker({
             aria-hidden="true"
             style={{ fontSize: 12, flexShrink: 0, color: isSelected ? 'var(--sidebar-accent-foreground)' : 'var(--muted-foreground)' }}
           />
-          <span style={{ fontSize: 13, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            color: isSelected ? 'var(--sidebar-accent-foreground)' : 'var(--foreground)', fontWeight: isSelected ? 500 : 400 }}>
+          <span className={`flex-1 text-sm truncate ${isSelected ? 'font-medium' : 'font-normal'}`}
+            style={{ color: isSelected ? 'var(--sidebar-accent-foreground)' : 'var(--foreground)' }}>
             {getFolderLabel(node)}
           </span>
-          {isCurrent && <span style={{ fontSize: 10, color: 'var(--muted-foreground)', flexShrink: 0 }}>current</span>}
+          {isCurrent && <span className="text-[10px] text-muted-foreground shrink-0">current</span>}
           {isSelected && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, color: 'var(--sidebar-accent-foreground)', flexShrink: 0 }} />}
         </div>
         {isExpanded && (
@@ -159,7 +159,8 @@ function FolderTreePicker({
                   onChange={e => setInlineNewName(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') handleInlineCreate(); if (e.key === 'Escape') cancelInlineCreate() }}
                   placeholder="Folder name…"
-                  style={{ flex: 1, fontSize: 13, background: 'transparent', border: 'none', outline: 'none', color: 'var(--foreground)', minWidth: 0 }}
+                  className="text-sm text-foreground"
+                  style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', minWidth: 0 }}
                   aria-label="New folder name"
                 />
                 <Button size="icon-xs" variant="ghost" onClick={handleInlineCreate} disabled={!inlineNewName.trim()} aria-label="Create folder"
@@ -200,7 +201,8 @@ function FolderTreePicker({
           placeholder="Search folders…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          style={{ paddingLeft: 32, fontSize: 13, height: 36 }}
+          className="text-sm"
+          style={{ paddingLeft: 32, height: 36 }}
         />
         {search && (
           <Button variant="ghost" size="icon-xs" tabIndex={-1}
@@ -234,11 +236,12 @@ function FolderTreePicker({
                 <i className={`fa-light ${f.isCourse ? 'fa-graduation-cap' : 'fa-folder'}`} aria-hidden="true"
                   style={{ fontSize: 12, color: isSelected ? 'var(--sidebar-accent-foreground)' : 'var(--muted-foreground)', flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: isSelected ? 500 : 400, color: isSelected ? 'var(--sidebar-accent-foreground)' : 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div className={`text-sm truncate ${isSelected ? 'font-medium' : 'font-normal'}`}
+                    style={{ color: isSelected ? 'var(--sidebar-accent-foreground)' : 'var(--foreground)' }}>
                     {getFolderLabel(f)}
                   </div>
                   {ancestorPath && (
-                    <div style={{ fontSize: 11, color: 'var(--muted-foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div className="text-xs text-muted-foreground truncate">
                       {ancestorPath}
                     </div>
                   )}
@@ -247,7 +250,7 @@ function FolderTreePicker({
               </div>
             )
           }) : (
-            <p style={{ fontSize: 13, color: 'var(--muted-foreground)', textAlign: 'center', padding: '24px 0' }}>
+            <p className="text-sm text-muted-foreground text-center" style={{ padding: '24px 0' }}>
               No folders match &ldquo;{search}&rdquo;
             </p>
           )
@@ -290,7 +293,7 @@ function MoveFolderDialog({
         <DialogHeader className="px-5 pt-5 pb-3 border-b border-border shrink-0">
           <DialogTitle>{title}</DialogTitle>
           {subtitle && (
-            <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <p className="text-xs text-muted-foreground truncate" style={{ marginTop: 2 }}>
               {subtitle}
             </p>
           )}
@@ -313,7 +316,8 @@ function MoveFolderDialog({
                   variant="ghost" size="sm"
                   onClick={() => { if (targetId) setInlineCreateInFolderId(targetId) }}
                   disabled={!targetId || !!inlineCreateInFolderId}
-                  style={{ gap: 6, fontSize: 12 }}
+                  className="text-xs"
+                  style={{ gap: 6 }}
                 >
                   <i className="fa-light fa-folder-plus" aria-hidden="true" style={{ fontSize: 12 }} />
                   New folder
@@ -373,7 +377,7 @@ function DeleteQuestionDialog({ question, open, onClose }: { question: { id: str
         <DialogHeader>
           <DialogTitle>Delete question?</DialogTitle>
         </DialogHeader>
-        <p style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>
+        <p className="text-sm text-muted-foreground">
           &ldquo;{question.title.slice(0, 80)}{question.title.length > 80 ? '…' : ''}&rdquo; will be permanently removed.
         </p>
         <DialogFooter>
@@ -413,7 +417,7 @@ type ColKey = (typeof QB_COLS)[number]['key']
 // ── Location path cell ───────────────────────────────────────────────────────
 function LocationCell({ question }: { question: Question }) {
   const { folders, navigateToFolder } = useQB()
-  if (!question.folderPath) return <span style={{ color: 'var(--muted-foreground)', fontSize: 11 }}>—</span>
+  if (!question.folderPath) return <span className="text-xs text-muted-foreground">—</span>
   const parts = question.folderPath.split(' / ')
   // Show the deepest folder (last segment)
   const displayName = parts[parts.length - 1]
@@ -424,8 +428,8 @@ function LocationCell({ question }: { question: Question }) {
       variant="ghost"
       size="icon-xs"
       onClick={(e) => { e.stopPropagation(); if (targetFolder) navigateToFolder(targetFolder.id) }}
-      className="h-auto w-auto p-0 font-normal text-left"
-      style={{ color: 'var(--brand-color)', textDecoration: 'underline', textUnderlineOffset: 2, fontSize: 11, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}
+      className="h-auto w-auto p-0 font-normal text-left text-xs"
+      style={{ color: 'var(--brand-color)', textDecoration: 'underline', textUnderlineOffset: 2, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}
       aria-label={`Navigate to ${displayName}`}
     >
       {displayName}
@@ -456,10 +460,10 @@ type ChipDef = { key: string; icon: string; label: string; onRemove: () => void 
 // Simple chip — bookmark, no popover
 function SimpleChip({ chip }: { chip: ChipDef }) {
   return (
-    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, height: 28, padding: '0 4px 0 8px', borderRadius: 6, border: '1px solid var(--border)', backgroundColor: 'var(--background)', fontSize: 12, color: 'var(--foreground)', flexShrink: 0 }}>
+    <div className="text-xs text-foreground" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, height: 28, padding: '0 4px 0 8px', borderRadius: 6, border: '1px solid var(--border)', backgroundColor: 'var(--background)', flexShrink: 0 }}>
       <i className={`fa-light ${chip.icon}`} aria-hidden="true" style={{ fontSize: 10, color: 'var(--muted-foreground)' }} />
-      <span style={{ fontWeight: 500 }}>{chip.label}</span>
-      <Button variant="ghost" size="icon-xs" aria-label={`Remove ${chip.label}`} onClick={chip.onRemove} style={{ width: 16, height: 16, padding: 0, marginLeft: 2, color: 'var(--muted-foreground)' }}>
+      <span className="font-medium">{chip.label}</span>
+      <Button variant="ghost" size="icon-xs" aria-label={`Remove ${chip.label}`} onClick={chip.onRemove} className="text-muted-foreground" style={{ width: 16, height: 16, padding: 0, marginLeft: 2 }}>
         <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 9 }} />
       </Button>
     </div>
@@ -496,17 +500,18 @@ function FilterPill({ filter, onUpdate, onRemove, autoOpen = false, fieldDefs = 
         <div
           role="button" tabIndex={0}
           onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setOpen(v => !v) }}
+          className="text-xs"
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 4,
             height: 28, padding: '0 4px 0 8px', borderRadius: 6,
             border: hasValues ? '1px solid var(--brand-color)' : '1.5px dashed var(--border)',
             backgroundColor: hasValues ? 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' : 'var(--background)',
-            fontSize: 12, color: hasValues ? 'var(--brand-color)' : 'var(--foreground)',
+            color: hasValues ? 'var(--brand-color)' : 'var(--foreground)',
             cursor: 'pointer', flexShrink: 0, userSelect: 'none',
           }}
         >
           <i className={`fa-light ${fieldDef.icon}`} aria-hidden="true" style={{ fontSize: 10 }} />
-          <span style={{ fontWeight: 500 }}>{pillLabel}</span>
+          <span className="font-medium">{pillLabel}</span>
           <Button
             variant="ghost" size="icon-xs"
             aria-label={`Remove ${fieldDef.label} filter`}
@@ -520,11 +525,12 @@ function FilterPill({ filter, onUpdate, onRemove, autoOpen = false, fieldDefs = 
       <PopoverContent align="start" style={{ width: 260, padding: 0, overflow: 'hidden' }}>
         {/* Header: field + operator + delete */}
         <div style={{ display: 'flex', alignItems: 'center', padding: '10px 12px 8px', gap: 4, borderBottom: '1px solid var(--border)' }}>
-          <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--foreground)' }}>{fieldDef.label}</span>
+          <span className="text-sm font-semibold text-foreground">{fieldDef.label}</span>
           <Button
             variant="ghost" size="xs"
             onClick={() => onUpdate(filter.id, { operator: filter.operator === 'is' ? 'is_not' : 'is' })}
-            style={{ height: 20, padding: '0 4px', fontSize: 12, color: 'var(--muted-foreground)', gap: 2 }}
+            className="text-xs text-muted-foreground"
+            style={{ height: 20, padding: '0 4px', gap: 2 }}
           >
             {filter.operator === 'is' ? 'is' : 'is not'}
             <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 8 }} />
@@ -540,12 +546,12 @@ function FilterPill({ filter, onUpdate, onRemove, autoOpen = false, fieldDefs = 
         </div>
         {/* Search options */}
         <div style={{ padding: '8px 10px 6px' }}>
-          <Input placeholder="Search options…" value={optSearch} onChange={e => setOptSearch(e.target.value)} className="h-8" style={{ fontSize: 13 }} />
+          <Input placeholder="Search options…" value={optSearch} onChange={e => setOptSearch(e.target.value)} className="h-8 text-sm" />
         </div>
         {/* Checkbox list */}
         <div role="listbox" aria-multiselectable="true" style={{ maxHeight: 232, overflowY: 'auto', padding: '2px 0 8px' }}>
           {filteredOpts.length === 0
-            ? <p style={{ padding: '8px 12px', fontSize: 12, color: 'var(--muted-foreground)' }}>No matches</p>
+            ? <p className="text-xs text-muted-foreground" style={{ padding: '8px 12px' }}>No matches</p>
             : filteredOpts.map(opt => {
               const checked = filter.values.includes(opt)
               return (
@@ -554,7 +560,8 @@ function FilterPill({ filter, onUpdate, onRemove, autoOpen = false, fieldDefs = 
                   role="option" aria-selected={checked} tabIndex={0}
                   onClick={() => toggleValue(opt)}
                   onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleValue(opt) } }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', cursor: 'pointer', fontSize: 13, color: 'var(--foreground)' }}
+                  className="text-sm text-foreground"
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', cursor: 'pointer' }}
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--interactive-hover)')}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
                 >
@@ -579,14 +586,15 @@ function AddFilterDropdown({ onAdd, fieldDefs = QB_FILTER_FIELDS }: {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost" size="xs"
-          style={{ height: 28, padding: '0 10px', borderRadius: 6, border: '1.5px dashed var(--border)', color: 'var(--muted-foreground)', fontSize: 11, gap: 4, flexShrink: 0 }}
+          className="text-xs text-muted-foreground"
+          style={{ height: 28, padding: '0 10px', borderRadius: 6, border: '1.5px dashed var(--border)', gap: 4, flexShrink: 0 }}
         >
           <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 9 }} />
           Add filter
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-44">
-        <DropdownMenuLabel style={{ fontSize: 11, color: 'var(--muted-foreground)', fontWeight: 400 }}>Filter by field</DropdownMenuLabel>
+        <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">Filter by field</DropdownMenuLabel>
         {fieldDefs.map(f => (
           <DropdownMenuItem key={f.key} onClick={() => onAdd(f.key)}>
             <i className={`fa-light ${f.icon}`} aria-hidden="true" />
@@ -628,7 +636,7 @@ function FilterChips({
       {bookmarkChips.map(chip => <SimpleChip key={chip.key} chip={chip} />)}
       <AddFilterDropdown onAdd={onAddFilter} fieldDefs={filterFields} />
       {hasActive && (
-        <Button variant="ghost" size="xs" onClick={onClearAll} style={{ height: 28, padding: '0 6px', fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0 }}>
+        <Button variant="ghost" size="xs" onClick={onClearAll} className="text-xs text-muted-foreground" style={{ height: 28, padding: '0 6px', flexShrink: 0 }}>
           Clear all
         </Button>
       )}
@@ -723,7 +731,6 @@ function QBFilterCard({
               value={optSearch}
               onChange={e => setOptSearch(e.target.value)}
               className="h-8 text-sm"
-              style={{ fontSize: 13 }}
             />
           </div>
           <div role="listbox" aria-multiselectable="true" aria-label={`${fieldDef.label} options`}
@@ -739,8 +746,7 @@ function QBFilterCard({
                   tabIndex={0}
                   onClick={() => toggleValue(opt)}
                   onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleValue(opt) } }}
-                  className="flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer select-none focus-visible:outline-none"
-                  style={{ color: 'var(--foreground)' }}
+                  className="flex items-center gap-2.5 px-3 py-2 text-sm text-foreground cursor-pointer select-none focus-visible:outline-none"
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--interactive-hover)')}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
                 >
@@ -985,7 +991,7 @@ function FilterPropertiesSheet({
                     >
                       <i className={`fa-light ${icon}`} aria-hidden="true"
                         style={{ fontSize: 16, color: rowHeight === h ? 'var(--brand-color)' : 'var(--muted-foreground)' }} />
-                      <span className="text-xs capitalize" style={{ color: rowHeight === h ? 'var(--brand-color)' : 'var(--foreground)', fontWeight: rowHeight === h ? 600 : 400 }}>{h}</span>
+                      <span className={`text-xs capitalize ${rowHeight === h ? 'font-semibold' : 'font-normal'}`} style={{ color: rowHeight === h ? 'var(--brand-color)' : 'var(--foreground)' }}>{h}</span>
                     </Button>
                   ))}
                 </div>
@@ -1042,8 +1048,8 @@ function FilterPropertiesSheet({
                   <div className="space-y-1.5">
                     {['Click “Add filter” below', 'Choose a field to filter by', 'Pick a condition and value'].map((step, i) => (
                       <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span className="inline-flex items-center justify-center shrink-0 rounded-full border border-border font-semibold"
-                          style={{ width: 16, height: 16, fontSize: 9, lineHeight: 1 }}>{i + 1}</span>
+                        <span className="inline-flex items-center justify-center shrink-0 rounded-full border border-border font-semibold text-[9px]"
+                          style={{ width: 16, height: 16, lineHeight: 1 }}>{i + 1}</span>
                         {step}
                       </div>
                     ))}
@@ -1062,8 +1068,7 @@ function FilterPropertiesSheet({
                               variant="outline"
                               size="xs"
                               onClick={onToggleFilterLogic}
-                              className="rounded-full text-xs font-semibold"
-                              style={{ color: 'var(--muted-foreground)' }}
+                              className="rounded-full text-xs font-semibold text-muted-foreground"
                             >
                               {filterLogic.toUpperCase()}
                             </Button>
@@ -1134,7 +1139,7 @@ function FilterPropertiesSheet({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-48">
-                    <DropdownMenuLabel style={{ fontSize: 11, color: 'var(--muted-foreground)', fontWeight: 400 }}>Filter by field</DropdownMenuLabel>
+                    <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">Filter by field</DropdownMenuLabel>
                     {filterFields.map(f => (
                       <DropdownMenuItem key={f.key} onClick={() => onAddFilter(f.key)}>
                         <i className={`fa-light ${f.icon}`} aria-hidden="true" />
@@ -1167,7 +1172,7 @@ function FilterPropertiesSheet({
               {sortCol ? (
                 <div className="rounded-lg border border-border overflow-hidden">
                   <div className="flex items-center gap-2 px-3 py-2.5">
-                    <Badge variant="secondary" className="rounded text-[10px] px-1.5 py-0.5 shrink-0" style={{ backgroundColor: 'var(--brand-tint)', color: 'var(--brand-color-dark)' }}>
+                    <Badge variant="secondary" className="rounded text-[10px] px-1.5 py-0.5 shrink-0" style={{ backgroundColor: 'var(--sidebar-accent)', color: 'var(--sidebar-accent-foreground)' }}>
                       PRIMARY
                     </Badge>
                     <span className="text-sm font-medium text-foreground flex-1 min-w-0 truncate">{activeSortLabel}</span>
@@ -1235,7 +1240,7 @@ function FilterPropertiesSheet({
               >
                 <i className="fa-light fa-ban text-sm shrink-0" aria-hidden="true"
                   style={{ width: 16, color: 'var(--muted-foreground)' }} />
-                <span className="flex-1 text-sm text-left" style={{ color: groupBy === null ? 'var(--brand-color)' : 'var(--foreground)', fontWeight: groupBy === null ? 500 : 400 }}>
+                <span className={`flex-1 text-sm text-left ${groupBy === null ? 'font-medium' : 'font-normal'}`} style={{ color: groupBy === null ? 'var(--brand-color)' : 'var(--foreground)' }}>
                   None
                 </span>
                 {groupBy === null && <i className="fa-solid fa-check text-xs shrink-0" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />}
@@ -1253,7 +1258,7 @@ function FilterPropertiesSheet({
                 >
                   <i className="fa-light fa-layer-group text-sm shrink-0" aria-hidden="true"
                     style={{ width: 16, color: groupBy === col.key ? 'var(--brand-color)' : 'var(--muted-foreground)' }} />
-                  <span className="flex-1 text-sm text-left" style={{ color: groupBy === col.key ? 'var(--brand-color)' : 'var(--foreground)', fontWeight: groupBy === col.key ? 500 : 400 }}>
+                  <span className={`flex-1 text-sm text-left ${groupBy === col.key ? 'font-medium' : 'font-normal'}`} style={{ color: groupBy === col.key ? 'var(--brand-color)' : 'var(--foreground)' }}>
                     {col.label}
                   </span>
                   {groupBy === col.key && <i className="fa-solid fa-check text-xs shrink-0" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />}
@@ -1307,7 +1312,7 @@ function FilterPropertiesSheet({
                     }}
                   >
                     <i className="fa-light fa-grip-dots-vertical text-muted-foreground/50 shrink-0" aria-hidden="true" style={{ fontSize: 13, cursor: 'grab' }} />
-                    <span className="flex-1 text-sm" style={{ color: visible ? 'var(--foreground)' : 'var(--muted-foreground)' }}>{col.label}</span>
+                    <span className={`flex-1 text-sm ${visible ? 'text-foreground' : 'text-muted-foreground'}`}>{col.label}</span>
                     <ToggleSwitch
                       id={`col-toggle-${col.key}`}
                       checked={visible}
@@ -1485,21 +1490,11 @@ function FilterPropertiesSheet({
 }
 
 // ── Detail sheet helpers ──────────────────────────────────────────────────────
-const SECTION_LABEL: React.CSSProperties = {
-  fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.09em',
-  color: 'var(--muted-foreground)', marginBottom: 10,
-}
-const DETAIL_LABEL: React.CSSProperties = {
-  fontSize: 13, color: 'var(--muted-foreground)', width: 100, flexShrink: 0,
-}
-const DETAIL_VALUE: React.CSSProperties = {
-  fontSize: 13, color: 'var(--foreground)', flex: 1,
-}
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBlock: 5 }}>
-      <span style={DETAIL_LABEL}>{label}</span>
-      <span style={DETAIL_VALUE}>{children}</span>
+      <span className="text-sm text-muted-foreground" style={{ width: 100, flexShrink: 0 }}>{label}</span>
+      <span className="text-sm text-foreground" style={{ flex: 1 }}>{children}</span>
     </div>
   )
 }
@@ -1573,7 +1568,7 @@ function QuestionDetailSheet({ question, open, onClose, onMove }: { question: Qu
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <StatusBadge status={question.status} />
               {question.tags.includes('private') && (
-                <Badge variant="secondary" className="rounded" style={{ fontSize: 10, backgroundColor: 'color-mix(in oklch, var(--qb-private) 12%, var(--background))', color: 'var(--qb-private)' }}>
+                <Badge variant="secondary" className="rounded text-[10px]" style={{ backgroundColor: 'color-mix(in oklch, var(--qb-private) 12%, var(--background))', color: 'var(--qb-private)' }}>
                   <i className="fa-solid fa-lock-keyhole" aria-hidden="true" style={{ fontSize: 8, marginRight: 3 }} />Private
                 </Badge>
               )}
@@ -1582,36 +1577,36 @@ function QuestionDetailSheet({ question, open, onClose, onMove }: { question: Qu
               <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 13 }} />
             </Button>
           </div>
-          <p style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.45, color: 'var(--foreground)', marginBottom: 10 }}>
+          <p className="text-sm font-semibold text-foreground" style={{ lineHeight: 1.45, marginBottom: 10 }}>
             {question.title}
           </p>
           {canEdit ? (
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              <Button size="sm" variant="default" style={{ flex: 1, fontSize: 12, minWidth: 0 }} onClick={() => router.push(`/questions/${question.id}`)}>
+              <Button size="sm" variant="default" style={{ flex: 1, minWidth: 0 }} onClick={() => router.push(`/questions/${question.id}`)}>
                 <i className="fa-light fa-pen" aria-hidden="true" />
                 Edit question
               </Button>
               {question.status === 'Draft' ? (
-                <Button size="sm" variant="outline" style={{ fontSize: 12 }}
+                <Button size="sm" variant="outline"
                   onClick={() => updateQuestion(question.id, { status: 'Saved' })}>
                   <i className="fa-light fa-circle-check" aria-hidden="true" />
                   Mark as Saved
                 </Button>
               ) : (
-                <Button size="sm" variant="outline" style={{ fontSize: 12 }}
+                <Button size="sm" variant="outline"
                   onClick={() => updateQuestion(question.id, { status: 'Draft' })}>
                   <i className="fa-light fa-hourglass" aria-hidden="true" />
                   Revert to Draft
                 </Button>
               )}
-              <Button size="sm" variant="outline" style={{ fontSize: 12 }}
+              <Button size="sm" variant="outline"
                 onClick={() => onMove({ id: question.id, title: question.title, folder: question.folder })}>
                 <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" />
                 Move
               </Button>
             </div>
           ) : (
-            <Button size="sm" variant="outline" className="w-full" style={{ fontSize: 12 }}
+            <Button size="sm" variant="outline" className="w-full"
               onClick={() => duplicateQuestion(question.id)}>
               <i className="fa-light fa-copy" aria-hidden="true" />
               Duplicate as Draft
@@ -1624,18 +1619,18 @@ function QuestionDetailSheet({ question, open, onClose, onMove }: { question: Qu
 
           {/* ── Section 1: Tags & Classification ── */}
           <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--border)' }}>
-            <p style={SECTION_LABEL}>Tags &amp; Classification</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.09em] text-muted-foreground" style={{ marginBottom: 10 }}>Tags &amp; Classification</p>
             <DetailRow label="Bloom's"><BloomsBadge blooms={question.blooms} /></DetailRow>
             <DetailRow label="Difficulty"><DiffBadge diff={question.difficulty} /></DetailRow>
-            <DetailRow label="Type"><span style={{ fontSize: 13 }}>{question.type}</span></DetailRow>
-            <DetailRow label="Folder"><span style={{ fontSize: 13 }}>{folderLabel}</span></DetailRow>
+            <DetailRow label="Type"><span>{question.type}</span></DetailRow>
+            <DetailRow label="Folder"><span>{folderLabel}</span></DetailRow>
             <DetailRow label="Code">
-              <Badge variant="secondary" className="rounded font-mono border border-border" style={{ fontSize: 10, padding: '1px 5px' }}>{question.code}</Badge>
+              <Badge variant="secondary" className="rounded font-mono border border-border text-[10px]" style={{ padding: '1px 5px' }}>{question.code}</Badge>
             </DetailRow>
             {visibleTags.length > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 10 }}>
                 {visibleTags.map(tag => (
-                  <Badge key={tag} variant="outline" className="rounded" style={{ fontSize: 11, padding: '2px 7px' }}>#{tag}</Badge>
+                  <Badge key={tag} variant="outline" className="rounded text-xs" style={{ padding: '2px 7px' }}>#{tag}</Badge>
                 ))}
               </div>
             )}
@@ -1643,7 +1638,7 @@ function QuestionDetailSheet({ question, open, onClose, onMove }: { question: Qu
 
           {/* ── Section 2: Creator & History ── */}
           <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--border)' }}>
-            <p style={SECTION_LABEL}>Creator &amp; History</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.09em] text-muted-foreground" style={{ marginBottom: 10 }}>Creator &amp; History</p>
 
             <DetailRow label="Created by">
               {creatorPersona ? (
@@ -1657,21 +1652,21 @@ function QuestionDetailSheet({ question, open, onClose, onMove }: { question: Qu
             </DetailRow>
 
             <DetailRow label="Last edited">
-              <span style={{ fontSize: 13 }}>
+              <span>
                 {question.age}{editorPersona && editorPersona.id !== question.creator ? ` by ${editorPersona.name}` : editorPersona ? ` by ${editorPersona.name}` : ''}
               </span>
             </DetailRow>
 
             <DetailRow label="Version">
-              <span style={{ fontSize: 13 }}>v{question.version}</span>
+              <span>v{question.version}</span>
             </DetailRow>
 
             {/* Version history toggle */}
             <Button
               variant="ghost"
               size="sm"
-              className="mt-2 gap-1.5 px-0 font-medium"
-              style={{ color: 'var(--brand-color)', fontSize: 13 }}
+              className="mt-2 gap-1.5 px-0 font-medium text-sm"
+              style={{ color: 'var(--brand-color)' }}
               onClick={() => setVersionHistoryOpen(v => !v)}
             >
               <i className={`fa-light fa-chevron-${versionHistoryOpen ? 'down' : 'right'}`} aria-hidden="true" style={{ fontSize: 10 }} />
@@ -1685,27 +1680,27 @@ function QuestionDetailSheet({ question, open, onClose, onMove }: { question: Qu
                     {/* Version badge */}
                     <Badge
                       variant="secondary"
-                      className="rounded font-mono shrink-0"
-                      style={{ fontSize: 9, padding: '2px 6px', marginTop: 1, ...(i === 0 ? { backgroundColor: 'var(--brand-tint)', color: 'var(--brand-color-dark)' } : {}) }}
+                      className="rounded font-mono shrink-0 text-[9px]"
+                      style={{ padding: '2px 6px', marginTop: 1, ...(i === 0 ? { backgroundColor: 'var(--sidebar-accent)', color: 'var(--sidebar-accent-foreground)' } : {}) }}
                     >
                       v{vh.v}
                     </Badge>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--foreground)', marginBottom: 2 }}>{vh.summary}</div>
-                      <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginBottom: vh.pbis !== null || vh.score !== null ? 6 : 0 }}>
+                      <div className="text-xs font-medium text-foreground" style={{ marginBottom: 2 }}>{vh.summary}</div>
+                      <div className="text-xs text-muted-foreground" style={{ marginBottom: vh.pbis !== null || vh.score !== null ? 6 : 0 }}>
                         {vh.editor} · {vh.date}
                       </div>
                       {/* Metrics for this version */}
                       {(vh.pbis !== null || vh.score !== null) && (
                         <div style={{ display: 'flex', gap: 10 }}>
                           {vh.pbis !== null && (
-                            <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
-                              P-bis <span style={{ fontWeight: 600, color: 'var(--foreground)' }}>{vh.pbis.toFixed(2)}</span>
+                            <span className="text-xs text-muted-foreground">
+                              P-bis <span className="font-semibold text-foreground">{vh.pbis.toFixed(2)}</span>
                             </span>
                           )}
                           {vh.score !== null && (
-                            <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
-                              Avg <span style={{ fontWeight: 600, color: 'var(--foreground)' }}>{vh.score}%</span>
+                            <span className="text-xs text-muted-foreground">
+                              Avg <span className="font-semibold text-foreground">{vh.score}%</span>
                             </span>
                           )}
                         </div>
@@ -1719,29 +1714,29 @@ function QuestionDetailSheet({ question, open, onClose, onMove }: { question: Qu
 
           {/* ── Section 3: Usage ── */}
           <div style={{ padding: '16px 18px' }}>
-            <p style={SECTION_LABEL}>Usage</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.09em] text-muted-foreground" style={{ marginBottom: 10 }}>Usage</p>
             <DetailRow label="Used in">
-              <span style={{ fontSize: 13 }}>{question.usage > 0 ? `${question.usage} exam${question.usage !== 1 ? 's' : ''}` : '—'}</span>
+              <span>{question.usage > 0 ? `${question.usage} exam${question.usage !== 1 ? 's' : ''}` : '—'}</span>
             </DetailRow>
             {question.pbis !== null && (
               <DetailRow label="PBis">
-                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)' }}>
+                <span className="font-semibold text-foreground">
                   {question.pbis?.toFixed(2)}
                 </span>
               </DetailRow>
             )}
             {avgScore !== null && (
               <DetailRow label="Avg score">
-                <span style={{ fontSize: 13 }}>{avgScore}% correct</span>
+                <span>{avgScore}% correct</span>
               </DetailRow>
             )}
             {lastUsed && (
               <DetailRow label="Last used">
-                <span style={{ fontSize: 13 }}>{lastUsed} · {question.age}</span>
+                <span>{lastUsed} · {question.age}</span>
               </DetailRow>
             )}
             {question.usage === 0 && question.pbis === null && (
-              <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>Not yet used in any assessment.</p>
+              <p className="text-xs text-muted-foreground" style={{ marginTop: 4 }}>Not yet used in any assessment.</p>
             )}
           </div>
         </div>
@@ -1762,7 +1757,7 @@ const BLOOMS_ORDER = ['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 
 
 function BloomsDistributionPopover({ questions }: { questions: Question[] }) {
   const total = questions.length
-  if (total === 0) return <p style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>No questions visible</p>
+  if (total === 0) return <p className="text-xs text-muted-foreground">No questions visible</p>
 
   const entries = BLOOMS_ORDER
     .map(level => ({ level, count: questions.filter(q => q.blooms === level).length }))
@@ -1771,7 +1766,7 @@ function BloomsDistributionPopover({ questions }: { questions: Question[] }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--foreground)' }}>
+      <div className="text-xs font-semibold text-foreground">
         Bloom&apos;s — {total} visible
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -1779,11 +1774,11 @@ function BloomsDistributionPopover({ questions }: { questions: Question[] }) {
           const pct = maxCount > 0 ? Math.round(count / maxCount * 100) : 0
           return (
             <div key={level} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 11, color: 'var(--muted-foreground)', width: 68, flexShrink: 0 }}>{level}</span>
+              <span className="text-xs text-muted-foreground" style={{ width: 68, flexShrink: 0 }}>{level}</span>
               <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'var(--muted)', overflow: 'hidden' }}>
                 <div style={{ width: `${pct}%`, height: '100%', background: 'var(--qb-blooms-bar)', borderRadius: 3 }} />
               </div>
-              <span style={{ fontSize: 11, color: 'var(--foreground)', fontWeight: 500, width: 20, textAlign: 'right', flexShrink: 0 }}>
+              <span className="text-xs font-medium text-foreground" style={{ width: 20, textAlign: 'right', flexShrink: 0 }}>
                 {count}
               </span>
             </div>
@@ -1801,11 +1796,11 @@ function DiffDistributionPopover({ questions }: { questions: Question[] }) {
   const medium = questions.filter(q => q.difficulty === 'Medium').length
   const hard   = questions.filter(q => q.difficulty === 'Hard').length
 
-  if (total === 0) return <p style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>No questions visible</p>
+  if (total === 0) return <p className="text-xs text-muted-foreground">No questions visible</p>
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--foreground)' }}>
+      <div className="text-xs font-semibold text-foreground">
         Difficulty — {total} visible
       </div>
       <div style={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', gap: 1 }}>
@@ -1821,8 +1816,8 @@ function DiffDistributionPopover({ questions }: { questions: Question[] }) {
         ] as const).map(([label, count, color]) => (
           <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ width: 8, height: 8, borderRadius: 2, background: color, flexShrink: 0 }} />
-            <span style={{ flex: 1, fontSize: 11, color: 'var(--foreground)' }}>{label}</span>
-            <span style={{ fontSize: 11, color: 'var(--muted-foreground)', fontWeight: 500 }}>
+            <span className="flex-1 text-xs text-foreground">{label}</span>
+            <span className="text-xs font-medium text-muted-foreground">
               {count} ({Math.round(count / total * 100)}%)
             </span>
           </div>
@@ -1986,7 +1981,6 @@ function ColHeader({
                   value={colSearch}
                   onChange={e => setColSearch(e.target.value)}
                   className="h-7 text-xs"
-                  style={{ fontSize: 12 }}
                 />
               </div>
               <div className="max-h-40 overflow-y-auto py-0.5">
@@ -2521,11 +2515,10 @@ export function QBTable() {
               <TooltipContent>Filters &amp; properties</TooltipContent>
             </Tooltip>
             {activeFilterCount > 0 && (
-              <span style={{
+              <span className="text-[8px] font-bold" style={{
                 position: 'absolute', top: -5, right: -5,
                 width: 15, height: 15, borderRadius: '50%',
                 backgroundColor: 'var(--brand-color)', color: 'var(--primary-foreground)',
-                fontSize: 8, fontWeight: 700,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 pointerEvents: 'none',
               }}>
@@ -2553,10 +2546,10 @@ export function QBTable() {
                 </span>
               </div>
               <div style={{ textAlign: 'center', maxWidth: 360 }}>
-                <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--foreground)', marginBottom: 8, fontFamily: 'var(--font-heading)', letterSpacing: '-0.01em' }}>
+                <p className="text-base text-foreground font-bold" style={{ marginBottom: 8, fontFamily: 'var(--font-heading)', letterSpacing: '-0.01em' }}>
                   This folder is empty
                 </p>
-                <p style={{ fontSize: 13, color: 'var(--muted-foreground)', lineHeight: 1.6 }}>
+                <p className="text-sm text-muted-foreground" style={{ lineHeight: 1.6 }}>
                   Add your first question to start building this bank — or move existing questions in from another folder.
                 </p>
               </div>
@@ -2566,7 +2559,7 @@ export function QBTable() {
                   <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
                   Add first question
                 </Button>
-                <Button variant="ghost" size="xs" style={{ fontSize: 12, color: 'var(--muted-foreground)' }}
+                <Button variant="ghost" size="xs" className="text-xs text-muted-foreground"
                   onClick={() => setNavView('all')}>
                   Or browse other folders to move questions in
                 </Button>
@@ -2579,15 +2572,15 @@ export function QBTable() {
                 <i className="fa-light fa-books" aria-hidden="true" style={{ fontSize: 28, color: 'var(--muted-foreground)', opacity: 0.6 }} />
               </div>
               <div style={{ textAlign: 'center', maxWidth: 340 }}>
-                <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--foreground)', marginBottom: 8, fontFamily: 'var(--font-heading)', letterSpacing: '-0.01em' }}>
+                <p className="text-base text-foreground font-bold" style={{ marginBottom: 8, fontFamily: 'var(--font-heading)', letterSpacing: '-0.01em' }}>
                   No questions here yet
                 </p>
-                <p style={{ fontSize: 13, color: 'var(--muted-foreground)', lineHeight: 1.6 }}>
+                <p className="text-sm text-muted-foreground" style={{ lineHeight: 1.6 }}>
                   This folder doesn&apos;t have any questions yet. Your department admin can add questions or give you edit access.
                 </p>
               </div>
               <Button variant="ghost" size="sm"
-                style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, var(--background))', color: 'var(--brand-color)', fontSize: 12, gap: 5 }}>
+                style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, var(--background))', color: 'var(--brand-color)', gap: 5 }}>
                 <i className="fa-light fa-envelope" aria-hidden="true" style={{ fontSize: 11 }} />
                 Contact your admin
               </Button>
@@ -2633,10 +2626,10 @@ export function QBTable() {
 
                 {/* Copy */}
                 <div style={{ textAlign: 'center', maxWidth: 340 }}>
-                  <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--foreground)', marginBottom: 6, fontFamily: 'var(--font-heading)', letterSpacing: '-0.01em' }}>
+                  <p className="text-[15px] text-foreground font-bold" style={{ marginBottom: 6, fontFamily: 'var(--font-heading)', letterSpacing: '-0.01em' }}>
                     Nothing matches these filters
                   </p>
-                  <p style={{ fontSize: 12.5, color: 'var(--muted-foreground)', lineHeight: 1.6 }}>
+                  <p className="text-sm text-muted-foreground" style={{ lineHeight: 1.6 }}>
                     Try a different combination — or pick one of these to see results right away.
                   </p>
                 </div>
@@ -2644,36 +2637,23 @@ export function QBTable() {
                 {/* Suggested filter shortcuts */}
                 {topSuggestions.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, width: '100%', maxWidth: 380 }}>
-                    <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)' }}>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.07em] text-muted-foreground">
                       Try these instead
                     </p>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center' }}>
                       {topSuggestions.map(s => (
-                        <button
+                        <Button
                           key={`${s.fieldKey}-${s.values[0]}`}
-                          type="button"
+                          variant="outline"
+                          size="sm"
                           onClick={() => applySuggestion(s)}
-                          style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 5,
-                            height: 30, padding: '0 10px',
-                            borderRadius: 8, border: '1px solid var(--border)',
-                            backgroundColor: 'var(--background)',
-                            cursor: 'pointer', fontSize: 12, color: 'var(--foreground)',
-                            fontWeight: 500, transition: 'border-color 100ms, background-color 100ms',
-                          }}
-                          onMouseEnter={e => {
-                            e.currentTarget.style.borderColor = 'var(--brand-color)'
-                            e.currentTarget.style.backgroundColor = 'color-mix(in oklch, var(--brand-color) 6%, var(--background))'
-                          }}
-                          onMouseLeave={e => {
-                            e.currentTarget.style.borderColor = 'var(--border)'
-                            e.currentTarget.style.backgroundColor = 'var(--background)'
-                          }}
+                          className="text-xs font-medium text-foreground gap-1.5"
+                          style={{ height: 30, paddingInline: 10 }}
                         >
                           <i className={`fa-light ${s.icon}`} aria-hidden="true" style={{ fontSize: 10, color: 'var(--muted-foreground)' }} />
                           {s.label}
-                          <span style={{ fontSize: 10, color: 'var(--muted-foreground)', fontWeight: 400 }}>({s.count})</span>
-                        </button>
+                          <span className="text-[10px] text-muted-foreground font-normal">({s.count})</span>
+                        </Button>
                       ))}
                     </div>
                   </div>
@@ -2877,9 +2857,9 @@ export function QBTable() {
                                       {isPrivate && (
                                         <Badge
                                           variant="secondary"
-                                          className="rounded shrink-0"
+                                          className="rounded shrink-0 text-[9px] font-semibold"
                                           style={{
-                                            fontSize: 9, fontWeight: 600, padding: '1px 5px',
+                                            padding: '1px 5px',
                                             backgroundColor: 'color-mix(in oklch, var(--qb-private) 12%, var(--background))',
                                             color: 'var(--qb-private)',
                                             border: '1px solid color-mix(in oklch, var(--qb-private) 25%, var(--background))',
@@ -2999,13 +2979,13 @@ export function QBTable() {
                                 <Popover>
                                   <PopoverTrigger asChild>
                                     <Button variant="ghost" size="icon-xs" aria-label="Version history">
-                                      <Badge variant="secondary" className="rounded font-mono" style={{ fontSize: 10, padding: '1px 5px', cursor: 'pointer' }}>
+                                      <Badge variant="secondary" className="rounded font-mono text-[10px]" style={{ padding: '1px 5px', cursor: 'pointer' }}>
                                         V{q.version}
                                       </Badge>
                                     </Button>
                                   </PopoverTrigger>
                                   <PopoverContent align="end" className="w-72 p-3">
-                                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', marginBottom: 10 }}>
+                                    <div className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground" style={{ marginBottom: 10 }}>
                                       Version History
                                     </div>
                                     {Array.from({ length: q.version }, (_, i) => {
@@ -3013,14 +2993,14 @@ export function QBTable() {
                                       const isLatest = i === 0
                                       return (
                                         <div key={vNum} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
-                                          <Badge variant="secondary" className="rounded font-mono shrink-0" style={{ fontSize: 9, padding: '1px 5px', backgroundColor: isLatest ? 'var(--sidebar-accent)' : undefined, color: isLatest ? 'var(--sidebar-accent-foreground)' : undefined }}>
+                                          <Badge variant="secondary" className="rounded font-mono shrink-0 text-[9px]" style={{ padding: '1px 5px', backgroundColor: isLatest ? 'var(--sidebar-accent)' : undefined, color: isLatest ? 'var(--sidebar-accent-foreground)' : undefined }}>
                                             V{vNum}
                                           </Badge>
                                           <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            <div className="text-xs font-medium text-foreground truncate">
                                               {isLatest ? q.title.slice(0, 55) : `Revision ${vNum}`}
                                             </div>
-                                            <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 1 }}>
+                                            <div className="text-xs text-muted-foreground" style={{ marginTop: 1 }}>
                                               {isLatest ? (q.lastEditedBy ?? q.creator ?? 'Unknown') : q.creator ?? 'Unknown'} · {isLatest ? q.age : `${i + 1} months ago`}
                                             </div>
                                           </div>
@@ -3133,9 +3113,9 @@ export function QBTable() {
         }}>
           {/* Left: Rows per page */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 12, color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>Rows per page</span>
+            <span className="text-xs text-muted-foreground" style={{ whiteSpace: 'nowrap' }}>Rows per page</span>
             <Select value={String(perPage)} onValueChange={v => setPerPage(Number(v))}>
-              <SelectTrigger style={{ height: 28, fontSize: 12, width: 64 }}>
+              <SelectTrigger className="text-xs" style={{ height: 28, width: 64 }}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -3149,7 +3129,7 @@ export function QBTable() {
 
           {/* Right: count + first/prev/page-indicator/next/last */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <span style={{ fontSize: 12, color: 'var(--muted-foreground)', marginRight: 6, whiteSpace: 'nowrap' }}>
+            <span className="text-xs text-muted-foreground" style={{ marginRight: 6, whiteSpace: 'nowrap' }}>
               {(page - 1) * perPage + 1}–{Math.min(page * perPage, sortedQuestions.length)} of {sortedQuestions.length}
             </span>
             <div style={{ width: 1, height: 16, backgroundColor: 'var(--border)', margin: '0 4px' }} aria-hidden="true" />
@@ -3169,7 +3149,7 @@ export function QBTable() {
               </TooltipTrigger>
               <TooltipContent>Previous page</TooltipContent>
             </Tooltip>
-            <span style={{ fontSize: 12, color: 'var(--foreground)', padding: '0 6px', whiteSpace: 'nowrap' }}>
+            <span className="text-xs text-foreground" style={{ padding: '0 6px', whiteSpace: 'nowrap' }}>
               {page} / {totalPages}
             </span>
             <Tooltip>
@@ -3206,7 +3186,7 @@ export function QBTable() {
             style={{ boxShadow: '0 8px 32px oklch(0 0 0 / 0.14), 0 2px 8px oklch(0 0 0 / 0.08)', minWidth: 0 }}
           >
             {/* Count */}
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)', paddingInline: 6, whiteSpace: 'nowrap' }}>
+            <span className="text-xs font-semibold text-foreground" style={{ paddingInline: 6, whiteSpace: 'nowrap' }}>
               {selectedQuestionIds.size} selected
             </span>
             <div className="h-4 w-px bg-border mx-0.5" aria-hidden="true" />
@@ -3218,7 +3198,8 @@ export function QBTable() {
               onClick={() => selectedQs.forEach(q => {
                 if (allFavorited ? favoritedIds.has(q.id) : !favoritedIds.has(q.id)) toggleQuestionFavorited(q.id)
               })}
-              style={{ fontSize: 12, gap: 6, height: 32, ...(allFavorited ? { color: 'var(--chart-4)' } : {}) }}
+              className="text-xs gap-1.5"
+              style={{ height: 32, ...(allFavorited ? { color: 'var(--chart-4)' } : {}) }}
             >
               <i className={`${allFavorited ? 'fa-solid' : 'fa-light'} fa-star`} aria-hidden="true" style={{ fontSize: 12 }} />
               {allFavorited ? 'Unfavorite' : 'Favorite'}
@@ -3229,7 +3210,8 @@ export function QBTable() {
               variant="ghost" size="sm"
               aria-label="Move to folder"
               onClick={() => setBulkMoveOpen(true)}
-              style={{ fontSize: 12, gap: 6, height: 32 }}
+              className="text-xs gap-1.5"
+              style={{ height: 32 }}
             >
               <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 12 }} />
               Move to folder
@@ -3238,14 +3220,14 @@ export function QBTable() {
             {/* Status change dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" style={{ fontSize: 12, gap: 5, height: 32 }}>
+                <Button variant="ghost" size="sm" className="text-xs gap-1.5" style={{ height: 32 }}>
                   <i className="fa-light fa-circle-half-stroke" aria-hidden="true" style={{ fontSize: 12 }} />
                   Status
                   <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 9 }} />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="w-52">
-                <DropdownMenuLabel style={{ fontSize: 10, color: 'var(--muted-foreground)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                <DropdownMenuLabel className="text-[10px] text-muted-foreground font-semibold uppercase tracking-[0.06em]">
                   Change status to
                 </DropdownMenuLabel>
                 <DropdownMenuItem
@@ -3255,7 +3237,7 @@ export function QBTable() {
                   <i className="fa-light fa-circle-check" aria-hidden="true" style={{ fontSize: 12, width: 14, color: 'var(--qb-status-saved-fg)' }} />
                   <span style={{ flex: 1 }}>Mark as Saved</span>
                   {draftCount > 0 && (
-                    <span style={{ fontSize: 11, color: 'var(--muted-foreground)', marginLeft: 8 }}>{draftCount}</span>
+                    <span className="text-xs text-muted-foreground" style={{ marginLeft: 8 }}>{draftCount}</span>
                   )}
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -3265,7 +3247,7 @@ export function QBTable() {
                   <i className="fa-light fa-hourglass" aria-hidden="true" style={{ fontSize: 12, width: 14, color: 'var(--qb-status-draft-fg)' }} />
                   <span style={{ flex: 1 }}>Revert to Draft</span>
                   {savedCount > 0 && (
-                    <span style={{ fontSize: 11, color: 'var(--muted-foreground)', marginLeft: 8 }}>{savedCount}</span>
+                    <span className="text-xs text-muted-foreground" style={{ marginLeft: 8 }}>{savedCount}</span>
                   )}
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -3278,7 +3260,8 @@ export function QBTable() {
               variant="ghost" size="sm"
               aria-label="Delete selected"
               onClick={() => setBulkDeleteOpen(true)}
-              style={{ fontSize: 12, gap: 6, height: 32, color: 'var(--destructive)' }}
+              className="text-xs gap-1.5"
+              style={{ height: 32, color: 'var(--destructive)' }}
             >
               <i className="fa-light fa-trash-can" aria-hidden="true" style={{ fontSize: 12 }} />
               Delete
@@ -3311,19 +3294,19 @@ export function QBTable() {
               <DialogHeader>
                 <DialogTitle>Change status to {statusLabel}?</DialogTitle>
               </DialogHeader>
-              <p style={{ fontSize: 13, color: 'var(--muted-foreground)', marginBottom: 8 }}>
+              <p className="text-sm text-muted-foreground" style={{ marginBottom: 8 }}>
                 {affected.length} question{affected.length !== 1 ? 's' : ''} will be marked as{' '}
-                <span style={{ fontWeight: 600, color: 'var(--foreground)' }}>{statusLabel}</span>.
+                <span className="font-semibold text-foreground">{statusLabel}</span>.
               </p>
               <div style={{ maxHeight: 200, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4, border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px' }}>
                 {affected.slice(0, 12).map(q => (
                   <div key={q.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <i className={`fa-light ${statusIcon}`} aria-hidden="true" style={{ fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0 }} />
-                    <span style={{ fontSize: 12, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.title}</span>
+                    <span className="text-xs text-foreground" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.title}</span>
                   </div>
                 ))}
                 {affected.length > 12 && (
-                  <p style={{ fontSize: 11, color: 'var(--muted-foreground)', fontStyle: 'italic', margin: 0 }}>
+                  <p className="text-xs text-muted-foreground italic" style={{ margin: 0 }}>
                     and {affected.length - 12} more…
                   </p>
                 )}
@@ -3359,27 +3342,27 @@ export function QBTable() {
                 <div style={{ borderRadius: 8, border: '1px solid color-mix(in oklch, var(--destructive) 30%, transparent)', backgroundColor: 'color-mix(in oklch, var(--destructive) 6%, var(--background))', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 13, color: 'var(--destructive)', flexShrink: 0 }} />
-                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--destructive)' }}>Impact summary</span>
+                    <span className="text-xs font-semibold" style={{ color: 'var(--destructive)' }}>Impact summary</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--destructive)', flexShrink: 0 }} />
-                      <span style={{ fontSize: 12, color: 'var(--foreground)' }}>
-                        <span style={{ fontWeight: 600 }}>{withUsage.length}</span> question{withUsage.length !== 1 ? 's are' : ' is'} used in active assessments
+                      <span className="text-xs text-foreground">
+                        <span className="font-semibold">{withUsage.length}</span> question{withUsage.length !== 1 ? 's are' : ' is'} used in active assessments
                       </span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--destructive)', flexShrink: 0 }} />
-                      <span style={{ fontSize: 12, color: 'var(--foreground)' }}>
-                        <span style={{ fontWeight: 600 }}>{totalUsage}</span> total usage{totalUsage !== 1 ? 's' : ''} across all assessments
+                      <span className="text-xs text-foreground">
+                        <span className="font-semibold">{totalUsage}</span> total usage{totalUsage !== 1 ? 's' : ''} across all assessments
                       </span>
                     </div>
                     {allSections.length > 0 && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--destructive)', flexShrink: 0 }} />
-                        <span style={{ fontSize: 12, color: 'var(--foreground)' }}>
-                          Affects <span style={{ fontWeight: 600 }}>{allSections.length}</span> section{allSections.length !== 1 ? 's' : ''}:{' '}
-                          <span style={{ color: 'var(--muted-foreground)' }}>{allSections.slice(0, 3).join(', ')}{allSections.length > 3 ? ` +${allSections.length - 3} more` : ''}</span>
+                        <span className="text-xs text-foreground">
+                          Affects <span className="font-semibold">{allSections.length}</span> section{allSections.length !== 1 ? 's' : ''}:{' '}
+                          <span className="text-muted-foreground">{allSections.slice(0, 3).join(', ')}{allSections.length > 3 ? ` +${allSections.length - 3} more` : ''}</span>
                         </span>
                       </div>
                     )}
@@ -3390,19 +3373,19 @@ export function QBTable() {
                 {selectedQs.slice(0, 10).map(q => (
                   <div key={q.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <i className="fa-light fa-rectangle-list" aria-hidden="true" style={{ fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0 }} />
-                    <span style={{ flex: 1, fontSize: 12, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.title}</span>
+                    <span className="flex-1 text-xs text-foreground" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.title}</span>
                     {q.usage > 0 && (
-                      <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--destructive)', flexShrink: 0 }}>{q.usage}×</span>
+                      <span className="text-xs font-semibold shrink-0" style={{ color: 'var(--destructive)' }}>{q.usage}×</span>
                     )}
                   </div>
                 ))}
                 {selectedQs.length > 10 && (
-                  <p style={{ fontSize: 11, color: 'var(--muted-foreground)', fontStyle: 'italic', margin: 0 }}>
+                  <p className="text-xs text-muted-foreground italic" style={{ margin: 0 }}>
                     and {selectedQs.length - 10} more…
                   </p>
                 )}
               </div>
-              <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: 0 }}>This action cannot be undone.</p>
+              <p className="text-xs text-muted-foreground" style={{ margin: 0 }}>This action cannot be undone.</p>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setBulkDeleteOpen(false)}>Cancel</Button>
                 <Button variant="destructive" onClick={() => {

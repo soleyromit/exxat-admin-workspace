@@ -35,10 +35,10 @@ function getCapabilityLabel(role: Persona['role']): string {
 function PersonInfo({ persona }: { persona: Persona }) {
   return (
     <div style={{ flex: 1, minWidth: 0 }}>
-      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <p className="text-sm font-medium text-foreground" style={{ margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {persona.name}
       </p>
-      <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: 0 }}>{getCapabilityLabel(persona.role)}</p>
+      <p className="text-xs text-muted-foreground" style={{ margin: 0 }}>{getCapabilityLabel(persona.role)}</p>
     </div>
   )
 }
@@ -142,7 +142,8 @@ export function ManageAccessDialog() {
                   onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
                   placeholder="Invite by name or role…"
                   aria-label="Search people to invite"
-                  style={{ flex: 1, background: 'transparent', fontSize: 14, color: 'var(--foreground)', outline: 'none', border: 'none' }}
+                  className="text-sm text-foreground"
+                  style={{ flex: 1, background: 'transparent', outline: 'none', border: 'none' }}
                 />
                 {search && (
                   <Button
@@ -202,7 +203,7 @@ export function ManageAccessDialog() {
           <div className="flex items-center gap-3 py-1.5">
             <PersonAvatar persona={currentPersona} />
             <PersonInfo persona={currentPersona} />
-            <span style={{ fontSize: 12, color: 'var(--muted-foreground)', flexShrink: 0 }}>
+            <span className="text-xs text-muted-foreground" style={{ flexShrink: 0 }}>
               Owner
             </span>
           </div>
@@ -217,7 +218,8 @@ export function ManageAccessDialog() {
                 size="icon-xs"
                 aria-label={`Remove ${p.name}`}
                 onClick={() => removeCollaborator(p.id)}
-                style={{ width: 24, color: 'var(--muted-foreground)', flexShrink: 0 }}
+                className="text-muted-foreground"
+              style={{ width: 24, flexShrink: 0 }}
               >
                 <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 13 }} />
               </Button>
@@ -251,7 +253,7 @@ function SearchResultRow({ persona, onAdd }: { persona: Persona; onAdd: () => vo
         <p className="text-sm font-medium text-foreground truncate">{persona.name}</p>
         <p className="text-xs text-muted-foreground">{getCapabilityLabel(persona.role)}</p>
       </div>
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0, pointerEvents: 'none' }}>
+      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground" style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid var(--border)', flexShrink: 0, pointerEvents: 'none' }}>
         <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 9 }} />
         Invite
       </span>

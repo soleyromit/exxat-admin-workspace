@@ -33,7 +33,7 @@ const TYPE_ICONS: Record<QType, string> = {
 
 export function TypeBadge({ type }: { type: QType }) {
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>
+    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
       <i className={`fa-light ${TYPE_ICONS[type]}`} aria-hidden="true" style={{ fontSize: 11 }} />
       {type}
     </span>
@@ -43,7 +43,7 @@ export function TypeBadge({ type }: { type: QType }) {
 // ── Difficulty — neutral weight text ─────────────────────────────────────────
 export function DiffBadge({ diff }: { diff: QDiff }) {
   return (
-    <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)' }}>
+    <span className="text-xs font-medium text-muted-foreground">
       {diff}
     </span>
   )
@@ -52,7 +52,7 @@ export function DiffBadge({ diff }: { diff: QDiff }) {
 // ── Blooms Badge ──────────────────────────────────────────────────────────────
 export function BloomsBadge({ blooms }: { blooms: QBlooms }) {
   return (
-    <span style={{ fontSize: 12, color: 'var(--muted-foreground)', fontWeight: 500 }}>
+    <span className="text-xs font-medium text-muted-foreground">
       {blooms}
     </span>
   )
@@ -60,9 +60,9 @@ export function BloomsBadge({ blooms }: { blooms: QBlooms }) {
 
 // ── pBIS Cell ─────────────────────────────────────────────────────────────────
 export function PBisCell({ pbis }: { pbis: number | null }) {
-  if (pbis === null) return <span style={{ color: 'var(--muted-foreground)', fontSize: 12 }}>—</span>
+  if (pbis === null) return <span className="text-xs text-muted-foreground">—</span>
   return (
-    <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--foreground)' }}>
+    <span className="text-xs font-medium text-foreground">
       {pbis.toFixed(2)}
     </span>
   )

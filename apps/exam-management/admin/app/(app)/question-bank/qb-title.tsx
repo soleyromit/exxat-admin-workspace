@@ -57,7 +57,7 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-60 p-3">
-        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', marginBottom: 8 }}>
+        <div className="text-xs font-bold uppercase tracking-[0.07em] text-muted-foreground" style={{ marginBottom: 8 }}>
           {personas.length} Collaborator{personas.length !== 1 ? 's' : ''}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -69,8 +69,8 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
                 </AvatarFallback>
               </Avatar>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{p.name}</div>
-                <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{i === 0 ? 'Owner' : p.role}</div>
+                <div className="text-sm font-semibold">{p.name}</div>
+                <div className="text-xs text-muted-foreground">{i === 0 ? 'Owner' : p.role}</div>
               </div>
             </div>
           ))}
@@ -138,12 +138,9 @@ export function QBTitle() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, overflow: 'hidden' }}>
           {/* Heading: current node name */}
-          <span style={{
-            fontSize: 20,
-            fontWeight: 700,
+          <span className="text-xl font-bold text-foreground" style={{
             fontFamily: 'var(--font-heading)',
             letterSpacing: '-0.02em',
-            color: 'var(--foreground)',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
@@ -155,7 +152,7 @@ export function QBTitle() {
           {navView === 'folder' && siblings.length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon-xs" aria-label="Switch to sibling folder" style={{ color: 'var(--muted-foreground)', width: 18, height: 18, flexShrink: 0 }}>
+                <Button variant="ghost" size="icon-xs" aria-label="Switch to sibling folder" className="text-muted-foreground" style={{ width: 18, height: 18, flexShrink: 0 }}>
                   <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 9 }} />
                 </Button>
               </DropdownMenuTrigger>
@@ -163,8 +160,8 @@ export function QBTitle() {
                 {siblings.map(s => (
                   <DropdownMenuItem key={s.id} onClick={() => navigateToFolder(s.id)}>
                     <i className="fa-light fa-folder" aria-hidden="true" />
-                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
-                    <span style={{ fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0 }}>{folderCount(s.id)}</span>
+                    <span className="flex-1" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
+                    <span className="text-xs text-muted-foreground" style={{ flexShrink: 0 }}>{folderCount(s.id)}</span>
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
@@ -180,7 +177,7 @@ export function QBTitle() {
 
       {/* Subtitle: count + collaborators */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
-        <span style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>
+        <span className="text-sm text-muted-foreground">
           {count} question{count !== 1 ? 's' : ''} · Last updated now
         </span>
         {collaboratorIds.length > 0 && (
@@ -193,7 +190,7 @@ export function QBTitle() {
           <Button
             variant="ghost" size="icon-xs"
             aria-label="Manage access"
-            style={{ color: 'var(--muted-foreground)' }}
+            className="text-muted-foreground"
             onClick={() => setCollaboratorsModalFolderId(selectedFolderId)}
           >
             <i className="fa-light fa-user-plus" aria-hidden="true" style={{ fontSize: 11 }} />

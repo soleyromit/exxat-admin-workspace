@@ -64,7 +64,7 @@ function DeleteFolderDialog({
           <DialogTitle>Delete &quot;{node.name}&quot;?</DialogTitle>
         </DialogHeader>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <p style={{ fontSize: 13, color: 'var(--foreground)' }}>
+          <p className="text-sm text-foreground">
             This will permanently delete the folder and all subfolders.
           </p>
           {affectedQuestions.length > 0 && (
@@ -73,20 +73,20 @@ function DeleteFolderDialog({
               backgroundColor: 'var(--qb-delete-impact-bg)',
               border: '1px solid var(--qb-delete-impact-border)',
             }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--destructive)', marginBottom: 6 }}>
+              <p className="text-xs font-semibold text-destructive" style={{ marginBottom: 6 }}>
                 <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ marginRight: 6 }} />
                 Impact: {affectedQuestions.length} question{affectedQuestions.length !== 1 ? 's' : ''} will be removed
               </p>
               {usedQuestions.length > 0 && (
                 <>
-                  <p style={{ fontSize: 11, color: 'var(--destructive)', marginBottom: 4 }}>
+                  <p className="text-xs text-destructive" style={{ marginBottom: 4 }}>
                     {usedQuestions.length} question{usedQuestions.length !== 1 ? 's are' : ' is'} used in assessments:
                   </p>
                   <div style={{ maxHeight: 120, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
                     {usedQuestions.map(q => (
-                      <div key={q.id} style={{ fontSize: 11, color: 'var(--foreground)' }}>
+                      <div key={q.id} className="text-xs text-foreground">
                         · {q.title.slice(0, 60)}{q.title.length > 60 ? '…' : ''}{' '}
-                        <span style={{ color: 'var(--muted-foreground)' }}>
+                        <span className="text-muted-foreground">
                           ({(q.usedInSections ?? []).join(', ')})
                         </span>
                       </div>
@@ -180,7 +180,8 @@ function MoveFolderDialog({ node, open, onClose }: { node: FolderNode; open: boo
           <Button
             variant="ghost" size="xs"
             onClick={() => navigate(null)}
-            style={{ height: 24, padding: '0 6px', fontSize: 12, gap: 4, fontWeight: currentId === null ? 600 : 400, color: currentId === null ? 'var(--foreground)' : 'var(--brand-color)' }}
+            className={currentId === null ? 'text-xs font-semibold text-foreground' : 'text-xs font-normal'}
+          style={{ height: 24, padding: '0 6px', gap: 4, color: currentId !== null ? 'var(--brand-color)' : undefined }}
           >
             <i className="fa-light fa-graduation-cap" aria-hidden="true" style={{ fontSize: 11 }} />
             Question Bank
@@ -191,7 +192,8 @@ function MoveFolderDialog({ node, open, onClose }: { node: FolderNode; open: boo
               <Button
                 variant="ghost" size="xs"
                 onClick={() => navigate(crumb.id)}
-                style={{ height: 24, padding: '0 6px', fontSize: 12, fontWeight: i === breadcrumbs.length - 1 ? 600 : 400, color: i === breadcrumbs.length - 1 ? 'var(--foreground)' : 'var(--brand-color)' }}
+                className={i === breadcrumbs.length - 1 ? 'text-xs font-semibold text-foreground' : 'text-xs font-normal'}
+                style={{ height: 24, padding: '0 6px', color: i !== breadcrumbs.length - 1 ? 'var(--brand-color)' : undefined }}
               >
                 {crumb.isCourse ? courseFolderLabel(crumb.name) : crumb.name}
               </Button>
@@ -204,9 +206,9 @@ function MoveFolderDialog({ node, open, onClose }: { node: FolderNode; open: boo
         {/* ── Folder list ── */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {children.length === 0 && !isCreating ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 8, color: 'var(--muted-foreground)' }}>
+            <div className="text-muted-foreground" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 8 }}>
               <i className="fa-light fa-folder-open" aria-hidden="true" style={{ fontSize: 28, opacity: 0.35 }} />
-              <span style={{ fontSize: 12 }}>No subfolders here</span>
+              <span className="text-xs">No subfolders here</span>
             </div>
           ) : (
             <div style={{ padding: '4px 0' }}>
@@ -228,7 +230,7 @@ function MoveFolderDialog({ node, open, onClose }: { node: FolderNode; open: boo
                       aria-hidden="true"
                       style={{ fontSize: 14, color: 'var(--muted-foreground)', width: 16, textAlign: 'center', flexShrink: 0 }}
                     />
-                    <span style={{ flex: 1, fontSize: 13, color: 'var(--foreground)' }}>{label}</span>
+                    <span className="flex-1 text-sm text-foreground">{label}</span>
                     {hasChildren && (
                       <i className="fa-light fa-chevron-right" aria-hidden="true" style={{ fontSize: 10, color: 'var(--muted-foreground)' }} />
                     )}
@@ -247,7 +249,8 @@ function MoveFolderDialog({ node, open, onClose }: { node: FolderNode; open: boo
                     onBlur={() => { if (!newName.trim()) setIsCreating(false) }}
                     placeholder="New folder name…"
                     autoFocus
-                    style={{ flex: 1, height: 30, fontSize: 13 }}
+                    className="text-sm"
+                    style={{ flex: 1, height: 30 }}
                   />
                   <Button variant="ghost" size="icon-xs" onClick={handleCreateFolder} aria-label="Confirm">
                     <i className="fa-light fa-check" aria-hidden="true" style={{ fontSize: 11, color: 'var(--brand-color)' }} />
@@ -269,7 +272,8 @@ function MoveFolderDialog({ node, open, onClose }: { node: FolderNode; open: boo
             variant="ghost" size="sm"
             onClick={() => { setIsCreating(true); setTimeout(() => newInputRef.current?.focus(), 50) }}
             disabled={currentId === null || isCreating}
-            style={{ gap: 6, fontSize: 12 }}
+            className="text-xs"
+            style={{ gap: 6 }}
           >
             <i className="fa-light fa-folder-plus" aria-hidden="true" style={{ fontSize: 12 }} />
             New folder
@@ -406,7 +410,8 @@ function InlineFolderInput({
           if (e.key === 'Escape') cancel()
         }}
         onBlur={handleBlur}
-        style={{ flex: 1, fontSize: 12 }}
+        className="text-xs"
+        style={{ flex: 1 }}
         placeholder="Folder name…"
       />
       <Button variant="ghost" size="icon-xs" onClick={confirm} aria-label="Confirm">
@@ -443,21 +448,21 @@ function FolderDiffPopover({ folderId }: { folderId: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {/* Full folder name */}
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', lineHeight: 1.35, wordBreak: 'break-word', paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>
+      <div className="text-sm font-semibold text-foreground" style={{ lineHeight: 1.35, wordBreak: 'break-word', paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>
         {folderLabel}
       </div>
 
       {total === 0 ? (
-        <p style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>No questions yet</p>
+        <p className="text-xs text-muted-foreground">No questions yet</p>
       ) : (
         <>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--foreground)' }}>
+          <div className="text-xs font-semibold text-foreground">
             {total} question{total !== 1 ? 's' : ''}
           </div>
 
           {/* Difficulty */}
           <div>
-            <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: 5 }}>Difficulty</div>
+            <div className="text-xs font-medium text-muted-foreground" style={{ marginBottom: 5 }}>Difficulty</div>
             <div style={{ display: 'flex', height: 7, borderRadius: 4, overflow: 'hidden', gap: 1 }}>
               {easy   > 0 && <div style={{ flex: easy,   background: 'var(--qb-diff-bar-easy)' }} />}
               {medium > 0 && <div style={{ flex: medium, background: 'var(--qb-diff-bar-medium)' }} />}
@@ -466,7 +471,7 @@ function FolderDiffPopover({ folderId }: { folderId: string }) {
             <div style={{ display: 'flex', gap: 10, marginTop: 5, flexWrap: 'nowrap' }}>
               {([['Easy', easy, 'var(--qb-diff-bar-easy)'], ['Medium', medium, 'var(--qb-diff-bar-medium)'], ['Hard', hard, 'var(--qb-diff-bar-hard)']] as const).map(([label, count, color]) =>
                 count > 0 && (
-                  <span key={label} style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  <span key={label} className="text-xs inline-flex items-center gap-1 whitespace-nowrap shrink-0">
                     <span style={{ width: 8, height: 8, borderRadius: 2, background: color, display: 'inline-block', flexShrink: 0 }} />
                     {label}: {count}
                   </span>
@@ -477,7 +482,7 @@ function FolderDiffPopover({ folderId }: { folderId: string }) {
 
           {/* Bloom's */}
           <div>
-            <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: 5 }}>Bloom&apos;s</div>
+            <div className="text-xs font-medium text-muted-foreground" style={{ marginBottom: 5 }}>Bloom&apos;s</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
               {BLOOMS_ORDER.map(level => {
                 const count = folderQuestions.filter(q => q.blooms === level).length
@@ -485,11 +490,11 @@ function FolderDiffPopover({ folderId }: { folderId: string }) {
                 const pct = Math.round(count / total * 100)
                 return (
                   <div key={level} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 11, color: 'var(--muted-foreground)', width: 62, flexShrink: 0 }}>{level}</span>
+                    <span className="text-xs text-muted-foreground" style={{ width: 62, flexShrink: 0 }}>{level}</span>
                     <div style={{ flex: 1, height: 5, borderRadius: 2, background: 'var(--muted)', overflow: 'hidden' }}>
                       <div style={{ width: `${pct}%`, height: '100%', background: 'var(--qb-blooms-bar)', borderRadius: 2 }} />
                     </div>
-                    <span style={{ fontSize: 11, color: 'var(--foreground)', fontWeight: 500, width: 18, textAlign: 'right', flexShrink: 0 }}>
+                    <span className="text-xs font-medium text-foreground" style={{ width: 18, textAlign: 'right', flexShrink: 0 }}>
                       {count}
                     </span>
                   </div>
@@ -498,9 +503,9 @@ function FolderDiffPopover({ folderId }: { folderId: string }) {
             </div>
           </div>
 
-          <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+          <div className="text-xs text-muted-foreground">
             Avg. pBIS:{' '}
-            <span style={{ fontWeight: 600, color: 'var(--foreground)' }}>
+            <span className="font-semibold text-foreground">
               {avgPbis !== null ? avgPbis.toFixed(2) : '—'}
             </span>
             {withPbis.length < total && ` (${withPbis.length} of ${total} scored)`}
@@ -735,24 +740,21 @@ function FolderRow({
               setIsRenaming(false)
             }}
             onClick={e => e.stopPropagation()}
-            style={{ flex: 1, fontSize: 12, color: 'var(--brand-color)', fontWeight: 500 }}
+            className="text-xs font-medium"
+            style={{ flex: 1, color: 'var(--brand-color)' }}
           />
         ) : (
           <div className="qb-name-scroll" style={{ flex: 1, minWidth: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
-            <span style={{
-              display: 'block',
-              fontSize: 13,
-              whiteSpace: 'nowrap',
-              fontWeight: isSelected ? 500 : 400,
-              color: isSelected ? 'var(--brand-color)' : 'var(--foreground)',
-            }}>
+            <span className={`block text-sm whitespace-nowrap ${isSelected ? 'font-medium' : 'font-normal'}`}
+            style={{ color: isSelected ? 'var(--brand-color)' : 'var(--foreground)' }}
+          >
               {node.isCourse ? courseFolderLabel(node.name) : node.name}
             </span>
           </div>
         )}
 
         {/* Count */}
-        <span style={{ fontSize: 10, color: 'var(--muted-foreground)', flexShrink: 0, marginLeft: 6 }}>
+        <span className="text-[10px] text-muted-foreground shrink-0" style={{ marginLeft: 6 }}>
           {folderQuestionCount}
         </span>
 
@@ -930,14 +932,10 @@ export function QBSidebar() {
         aria-hidden="true"
         style={{ fontSize: 13, color: active ? 'var(--foreground)' : 'var(--muted-foreground)', width: 16, textAlign: 'center', flexShrink: 0 }}
       />
-      <span style={{
-        flex: 1, fontSize: 13, textAlign: 'left',
-        color: 'var(--foreground)',
-        fontWeight: active ? 500 : 400,
-      }}>
+      <span className={`flex-1 text-sm text-left text-foreground ${active ? 'font-medium' : 'font-normal'}`}>
         {label}
       </span>
-      <span style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>
+      <span className="text-[10px] text-muted-foreground">
         {count}
       </span>
     </Button>
@@ -964,10 +962,7 @@ export function QBSidebar() {
         height: 40, display: 'flex', alignItems: 'center',
         padding: '0 12px', borderBottom: '1px solid var(--border)', flexShrink: 0,
       }}>
-        <span style={{
-          fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-          letterSpacing: '0.07em', color: 'var(--muted-foreground)',
-        }}>
+        <span className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
           Library
         </span>
       </div>
@@ -998,7 +993,8 @@ export function QBSidebar() {
                   value={sidebarSearch}
                   onChange={e => setSidebarSearch(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Escape') { setSidebarSearch(''); setSearchExpanded(false) } }}
-                  style={{ height: 26, fontSize: 12 }}
+                  className="text-xs"
+                  style={{ height: 26 }}
                 />
                 <InputGroupAddon align="inline-end">
                   <i className="fa-light fa-magnifying-glass" aria-hidden="true"
@@ -1016,11 +1012,7 @@ export function QBSidebar() {
           ) : (
             /* Collapsed: label + search icon button */
             <>
-              <span style={{
-                flex: 1,
-                fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-                letterSpacing: '0.07em', color: 'var(--muted-foreground)',
-              }}>
+              <span className="flex-1 text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
                 {'Question Bank'}
               </span>
               <Button
@@ -1054,8 +1046,8 @@ export function QBSidebar() {
                 </span>
               </div>
               <div>
-                <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--foreground)', marginBottom: 4, lineHeight: 1.4 }}>Your question banks will appear here</p>
-                <p style={{ fontSize: 11, color: 'var(--muted-foreground)', lineHeight: 1.5 }}>Once your department admin shares a course folder with you, it&apos;ll show up right here — ready to use.</p>
+                <p className="text-xs font-bold text-foreground" style={{ marginBottom: 4, lineHeight: 1.4 }}>Your question banks will appear here</p>
+                <p className="text-xs text-muted-foreground" style={{ lineHeight: 1.5 }}>Once your department admin shares a course folder with you, it&apos;ll show up right here — ready to use.</p>
               </div>
             </div>
           )}

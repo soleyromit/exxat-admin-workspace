@@ -71,8 +71,8 @@ function InstitutionCard() {
         >
           <Avatar className="h-9 w-9 rounded-full shrink-0">
             <AvatarFallback
-              className="rounded-full text-xs font-bold"
-              style={{ backgroundColor: 'var(--muted)', color: 'var(--foreground)' }}
+              className="rounded-full text-xs font-bold text-foreground"
+              style={{ backgroundColor: 'var(--muted)' }}
             >
               SU
             </AvatarFallback>
@@ -86,9 +86,9 @@ function InstitutionCard() {
             </span>
           </div>
           <i
-            className="fa-light fa-chevron-right ms-auto shrink-0"
+            className="fa-light fa-chevron-right ms-auto shrink-0 text-muted-foreground"
             aria-hidden="true"
-            style={{ fontSize: 11, color: 'var(--muted-foreground)' }}
+            style={{ fontSize: 11 }}
           />
         </SidebarMenuButton>
       </SidebarMenuItem>

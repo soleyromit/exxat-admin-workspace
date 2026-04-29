@@ -47,15 +47,16 @@ function QBBreadcrumb() {
   const collapsedNodes = folderPath.slice(0, -2)
 
   const SEP = () => (
-    <i className="fa-light fa-chevron-right" aria-hidden="true"
-      style={{ fontSize: 10, color: 'var(--muted-foreground)', flexShrink: 0, margin: '0 1px' }} />
+    <i className="fa-light fa-chevron-right text-muted-foreground" aria-hidden="true"
+      style={{ fontSize: 10, flexShrink: 0, margin: '0 1px' }} />
   )
 
   const crumbBtn = (label: string, onClick: () => void, muted = false) => (
     <Button
       variant="ghost" size="xs"
       onClick={onClick}
-      style={{ fontSize: 13, fontWeight: muted ? 400 : 500, color: muted ? 'var(--muted-foreground)' : 'var(--foreground)', height: 24, padding: '0 4px' }}
+      className={muted ? 'text-xs text-muted-foreground font-normal' : 'text-sm font-medium text-foreground'}
+      style={{ height: 24, padding: '0 4px' }}
     >
       {label}
     </Button>
@@ -64,13 +65,13 @@ function QBBreadcrumb() {
   const rootBtn = crumbBtn('Question Bank', () => setNavView('my'), folderPath.length > 0)
 
   const leafSpan = (node: FolderNode) => (
-    <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>
+    <span className="text-sm font-medium text-foreground" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>
       {node.isCourse ? courseFolderLabel(node.name) : node.name}
     </span>
   )
 
   if (folderPath.length === 0) {
-    return <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)' }}>Question Bank</span>
+    return <span className="text-sm font-medium text-foreground">Question Bank</span>
   }
 
   if (folderPath.length === 1) {
@@ -105,13 +106,14 @@ function QBBreadcrumb() {
           <Button
             variant="ghost" size="xs"
             aria-label="Show parent folders"
-            style={{ fontSize: 13, color: 'var(--muted-foreground)', height: 24, padding: '0 4px', flexShrink: 0 }}
+            className="text-sm text-muted-foreground"
+            style={{ height: 24, padding: '0 4px', flexShrink: 0 }}
           >
             …
           </Button>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-56 p-2">
-          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', padding: '4px 8px 6px' }}>
+          <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider" style={{ padding: '4px 8px 6px' }}>
             Parent folders
           </div>
           {collapsedNodes.map(node => (
@@ -123,7 +125,7 @@ function QBBreadcrumb() {
               onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent' }}
             >
               <i className={`fa-light ${node.isCourse ? 'fa-graduation-cap' : 'fa-folder'}`} aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)', width: 14, flexShrink: 0 }} />
-              <span style={{ fontSize: 13, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span className="text-sm text-foreground" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {node.isCourse ? courseFolderLabel(node.name) : node.name}
               </span>
             </button>
@@ -161,7 +163,8 @@ export function QBHeader() {
               size="icon-sm"
               onClick={toggleSidebar}
               aria-label={sidebarState === 'collapsed' ? 'Expand navigation' : 'Collapse navigation'}
-              style={{ color: sidebarState !== 'collapsed' ? 'var(--foreground)' : 'var(--muted-foreground)', flexShrink: 0 }}
+              className={sidebarState !== 'collapsed' ? 'text-foreground' : 'text-muted-foreground'}
+              style={{ flexShrink: 0 }}
             >
               <i className="fa-light fa-sidebar" aria-hidden="true" style={{ fontSize: 16 }} />
             </Button>
@@ -184,8 +187,8 @@ export function QBHeader() {
                   {currentPersona.initials}
                 </AvatarFallback>
               </Avatar>
-              <span style={{ fontSize: 12, fontWeight: 500 }}>{currentPersona.name}</span>
-              <Badge variant="secondary" className="rounded" style={{ fontSize: 10 }}>{getRoleLabel(currentPersona.role)}</Badge>
+              <span className="text-xs font-medium">{currentPersona.name}</span>
+              <Badge variant="secondary" className="rounded text-[10px]">{getRoleLabel(currentPersona.role)}</Badge>
               <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 10, color: 'var(--muted-foreground)' }} />
             </Button>
           </DropdownMenuTrigger>
@@ -199,8 +202,8 @@ export function QBHeader() {
                   </AvatarFallback>
                 </Avatar>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{p.name}</div>
-                  <div style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>{getRoleLabel(p.role)}</div>
+                  <div className="text-sm font-semibold">{p.name}</div>
+                  <div className="text-xs text-muted-foreground">{getRoleLabel(p.role)}</div>
                 </div>
                 {p.id === currentPersona.id && (
                   <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 11, color: 'var(--brand-color)' }} />
@@ -208,7 +211,7 @@ export function QBHeader() {
               </DropdownMenuItem>
             ))}
             <div style={{ margin: '4px 12px 4px', padding: '8px 0 0', borderTop: '1px solid var(--border)' }}>
-              <p style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>
+              <p className="text-xs text-muted-foreground">
                 Trust level determines auto-approval behavior for new questions.
               </p>
             </div>
