@@ -1648,12 +1648,12 @@ function QuestionDetailSheet({ question, open, onClose, onMove }: { question: Qu
             <DetailRow label="Created by">
               {creatorPersona ? (
                 <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                  <span style={{ width: 22, height: 22, borderRadius: '50%', background: creatorPersona.color, color: 'var(--primary-foreground)', fontSize: 8, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ width: 22, height: 22, borderRadius: '50%', backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)', fontSize: 8, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     {creatorPersona.initials}
                   </span>
                   {creatorPersona.name}
                 </span>
-              ) : <span style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>—</span>}
+              ) : <span className="text-sm text-muted-foreground">—</span>}
             </DetailRow>
 
             <DetailRow label="Last edited">
@@ -2805,9 +2805,9 @@ export function QBTable() {
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <i className="fa-light fa-layer-group" aria-hidden="true" style={{ fontSize: 11, color: 'var(--muted-foreground)' }} />
-                            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)' }}>{item.label}</span>
-                            <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{item.count} question{item.count !== 1 ? 's' : ''}</span>
+                            <i className="fa-light fa-layer-group text-muted-foreground" aria-hidden="true" style={{ fontSize: 11 }} />
+                            <span className="text-sm font-semibold text-foreground">{item.label}</span>
+                            <span className="text-xs text-muted-foreground">{item.count} question{item.count !== 1 ? 's' : ''}</span>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -2891,8 +2891,7 @@ export function QBTable() {
                                     </div>
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <div style={{
-                                          fontSize: 12.5, fontWeight: 500, color: 'var(--foreground)', lineHeight: 1.4,
+                                        <div className="text-sm font-medium text-foreground leading-snug" style={{
                                           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
                                           cursor: 'default'
                                         }}>
@@ -2918,9 +2917,7 @@ export function QBTable() {
                           case 'type':
                             return (
                               <TableCell key="type" className={`${TD} w-24`} style={pinnedStyle('type', pinnedCols, pinnedRightCols)}>
-                                <span style={{ fontSize: 12, color: 'var(--foreground)' }}>
-                                  {q.type}
-                                </span>
+                                <span className="text-sm text-foreground">{q.type}</span>
                               </TableCell>
                             )
                           case 'difficulty':
@@ -2946,13 +2943,14 @@ export function QBTable() {
                               <TableCell key="creator" className={`${TD} w-40`} style={pinnedStyle('creator', pinnedCols, pinnedRightCols)}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                   <div style={{
-                                    width: 22, height: 22, borderRadius: '50%', background: creatorPersona.color,
-                                    color: 'var(--primary-foreground)', fontSize: 8, fontWeight: 700,
+                                    width: 22, height: 22, borderRadius: '50%',
+                                    backgroundColor: 'var(--avatar-initials-bg)',
+                                    color: 'var(--avatar-initials-fg)', fontSize: 8, fontWeight: 700,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                                   }}>
                                     {creatorPersona.initials}
                                   </div>
-                                  <span style={{ fontSize: 12, color: 'var(--foreground)' }}>{creatorPersona.name}</span>
+                                  <span className="text-sm text-foreground">{creatorPersona.name}</span>
                                 </div>
                               </TableCell>
                             )
@@ -2960,7 +2958,7 @@ export function QBTable() {
                             const editorId = q.lastEditedBy ?? q.creator
                             if (!editorId) return (
                               <TableCell key="lastEditedBy" className={`${TD} w-32`} style={pinnedStyle('lastEditedBy', pinnedCols, pinnedRightCols)}>
-                                <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>—</span>
+                                <span className="text-sm text-muted-foreground">—</span>
                               </TableCell>
                             )
                             const editorPersona = MOCK_QB_PERSONAS.find(p => p.id === editorId)
@@ -2969,13 +2967,14 @@ export function QBTable() {
                               <TableCell key="lastEditedBy" className={`${TD} w-32`} style={pinnedStyle('lastEditedBy', pinnedCols, pinnedRightCols)}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                   <div style={{
-                                    width: 22, height: 22, borderRadius: '50%', background: editorPersona.color,
-                                    color: 'var(--primary-foreground)', fontSize: 8, fontWeight: 700,
+                                    width: 22, height: 22, borderRadius: '50%',
+                                    backgroundColor: 'var(--avatar-initials-bg)',
+                                    color: 'var(--avatar-initials-fg)', fontSize: 8, fontWeight: 700,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                                   }}>
                                     {editorPersona.initials}
                                   </div>
-                                  <span style={{ fontSize: 12, color: 'var(--foreground)' }}>{editorPersona.name}</span>
+                                  <span className="text-sm text-foreground">{editorPersona.name}</span>
                                 </div>
                               </TableCell>
                             )
@@ -2984,8 +2983,8 @@ export function QBTable() {
                             return (
                               <TableCell key="usage" className={`${TD} w-16`} style={pinnedStyle('usage', pinnedCols, pinnedRightCols)}>
                                 {(q.usage ?? 0) === 0
-                                  ? <span style={{ color: 'var(--muted-foreground)', fontSize: 12 }}>—</span>
-                                  : <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--foreground)' }}>×{q.usage}</span>}
+                                  ? <span className="text-sm text-muted-foreground">—</span>
+                                  : <span className="text-sm font-medium text-foreground">×{q.usage}</span>}
                               </TableCell>
                             )
                           case 'pbis':
@@ -3014,7 +3013,7 @@ export function QBTable() {
                                       const isLatest = i === 0
                                       return (
                                         <div key={vNum} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
-                                          <Badge variant="secondary" className="rounded font-mono shrink-0" style={{ fontSize: 9, padding: '1px 5px', backgroundColor: isLatest ? 'var(--brand-tint)' : undefined, color: isLatest ? 'var(--brand-color-dark)' : undefined }}>
+                                          <Badge variant="secondary" className="rounded font-mono shrink-0" style={{ fontSize: 9, padding: '1px 5px', backgroundColor: isLatest ? 'var(--sidebar-accent)' : undefined, color: isLatest ? 'var(--sidebar-accent-foreground)' : undefined }}>
                                             V{vNum}
                                           </Badge>
                                           <div style={{ flex: 1, minWidth: 0 }}>
