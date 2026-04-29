@@ -395,10 +395,11 @@ function DeleteQuestionDialog({ question, open, onClose }: { question: { id: str
   )
 }
 
-// ── DS Table source: TableHead = h-10 px-2 text-start align-middle font-medium text-foreground whitespace-nowrap
-// ── DS Table source: TableCell = p-2 align-middle whitespace-nowrap
-const TH = 'h-10 px-2 text-start align-middle font-medium text-foreground bg-dt-header-bg border-b border-border select-none whitespace-nowrap'
-const TD = 'p-2 align-middle border-b border-border group-last/row:border-b-0 whitespace-nowrap'
+// ── DS DataTable source (apps/web/components/data-table/index.tsx):
+// ── TH = h-9 px-3 text-left align-middle select-none
+// ── TD default = px-3 py-2.5 | compact = py-1 | comfortable = py-4
+const TH = 'h-9 px-3 text-start align-middle font-medium text-foreground bg-dt-header-bg border-b border-border select-none whitespace-nowrap'
+const TD = 'px-3 py-2.5 align-middle border-b border-border group-last/row:border-b-0 whitespace-nowrap'
 
 // ── Column definitions ────────────────────────────────────────────────────────
 const QB_COLS = [
@@ -2152,11 +2153,11 @@ export function QBTable() {
   const [groupBy, setGroupBy] = useState<string | null>(null)
   const [showGridlines, setShowGridlines] = useState(true)
   const [rowHeight, setRowHeight] = useState<QBRowHeight>('default')
-  const rowPy = rowHeight === 'compact' ? 'py-0.5' : rowHeight === 'comfortable' ? 'py-4' : 'py-2'
+  const rowPy = rowHeight === 'compact' ? 'py-1' : rowHeight === 'comfortable' ? 'py-4' : 'py-2.5'
   // Shadow the module-level TD so all cells pick up the current density + optional gridlines
-  const TD = `px-2 ${rowPy} align-middle border-b border-border group-last/row:border-b-0 whitespace-nowrap${showGridlines ? ' border-r border-border last:border-r-0' : ''}`
+  const TD = `px-3 ${rowPy} align-middle border-b border-border group-last/row:border-b-0 whitespace-nowrap${showGridlines ? ' border-r border-border last:border-r-0' : ''}`
   // Shadow TH so header cells get matching vertical gridlines
-  const TH_CLS = `h-10 px-2 text-start align-middle font-medium text-foreground bg-dt-header-bg border-b border-border select-none whitespace-nowrap${showGridlines ? ' border-r border-border last:border-r-0' : ''}`
+  const TH_CLS = `h-9 px-3 text-start align-middle font-medium text-foreground bg-dt-header-bg border-b border-border select-none whitespace-nowrap${showGridlines ? ' border-r border-border last:border-r-0' : ''}`
   const [paginationEnabled, setPaginationEnabled] = useState(true)
   const [showTableTitle, setShowTableTitle] = useState(true)
   const [showColumnLabels, setShowColumnLabels] = useState(true)
