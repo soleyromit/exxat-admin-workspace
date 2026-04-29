@@ -2691,8 +2691,8 @@ export function QBTable() {
               {showColumnLabels && <TableHeader style={{ position: 'sticky', top: 0, zIndex: 4 }}>
                 <TableRow>
                   {/* Select all */}
-                  <TableHead className={`${TH_CLS} w-10 text-center`}>
-                    <div className="flex items-center justify-center">
+                  <TableHead className={TH_CLS} style={{ width: 40, minWidth: 40, maxWidth: 40, paddingInline: 0 }}>
+                    <div className="flex items-center justify-center h-full">
                       <span className="sr-only">Select all</span>
                       <Checkbox
                         checked={allSelected ? true : someSelected ? 'indeterminate' : false}
@@ -2775,8 +2775,8 @@ export function QBTable() {
                     )
                   })}
                   <TableHead
-                    className={`${TH_CLS} w-8`}
-                    style={{ position: 'sticky', right: 0, zIndex: 2, background: 'var(--dt-header-bg)', boxShadow: '-2px 0 4px var(--sticky-edge-fade)' }}
+                    className={TH_CLS}
+                    style={{ width: 32, minWidth: 32, maxWidth: 32, paddingInline: 0, position: 'sticky', right: 0, zIndex: 2, background: 'var(--dt-header-bg)', boxShadow: '-2px 0 4px var(--sticky-edge-fade)' }}
                   />
                 </TableRow>
               </TableHeader>}
@@ -2844,7 +2844,7 @@ export function QBTable() {
                         switch (col.key) {
                           case 'select':
                             return (
-                              <TableCell key="select" className={`${TD} w-10 text-center`}>
+                              <TableCell key="select" className={TD} style={{ width: 40, minWidth: 40, maxWidth: 40, paddingInline: 0 }}>
                                 <div
                                   className={`flex items-center justify-center transition-opacity ${
                                     anySelected ? 'opacity-100' : 'opacity-0 group-hover/row:opacity-100'
@@ -3037,9 +3037,10 @@ export function QBTable() {
 
                       {/* Actions ⋯ — sticky right, always visible, narrower column */}
                       <TableCell
-                        className={`${TD} w-8 text-right`}
+                        className={TD}
                         onClick={e => e.stopPropagation()}
                         style={{
+                          width: 32, minWidth: 32, maxWidth: 32, paddingInline: 0,
                           position: 'sticky', right: 0,
                           background: isSelected ? 'var(--dt-row-selected)' : isHovered ? 'var(--dt-row-hover)' : 'var(--dt-row-bg)',
                           boxShadow: '-2px 0 4px var(--sticky-edge-fade)',
