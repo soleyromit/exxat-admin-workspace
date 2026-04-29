@@ -389,11 +389,10 @@ function DeleteQuestionDialog({ question, open, onClose }: { question: { id: str
   )
 }
 
-// ── Shared header cell class (matches DS DataTable th) ───────────────────────
-const TH = 'h-9 px-3 text-left align-middle text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg border-b border-border select-none whitespace-nowrap'
-
-// ── Shared body cell class (matches DS DataTable td) ─────────────────────────
-const TD = 'px-3 py-2.5 align-middle border-b border-border group-last/row:border-b-0 whitespace-nowrap'
+// ── DS Table source: TableHead = h-10 px-2 text-start align-middle font-medium text-foreground whitespace-nowrap
+// ── DS Table source: TableCell = p-2 align-middle whitespace-nowrap
+const TH = 'h-10 px-2 text-start align-middle font-medium text-foreground bg-dt-header-bg border-b border-border select-none whitespace-nowrap'
+const TD = 'p-2 align-middle border-b border-border group-last/row:border-b-0 whitespace-nowrap'
 
 // ── Column definitions ────────────────────────────────────────────────────────
 const QB_COLS = [
@@ -2143,9 +2142,9 @@ export function QBTable() {
   const [groupBy, setGroupBy] = useState<string | null>(null)
   const [showGridlines, setShowGridlines] = useState(false)
   const [rowHeight, setRowHeight] = useState<QBRowHeight>('default')
-  const rowPy = rowHeight === 'compact' ? 'py-1' : rowHeight === 'comfortable' ? 'py-4' : 'py-2.5'
+  const rowPy = rowHeight === 'compact' ? 'py-0.5' : rowHeight === 'comfortable' ? 'py-4' : 'py-2'
   // Shadow the module-level TD so all cells pick up the current density + optional gridlines
-  const TD = `px-3 ${rowPy} align-middle border-b border-border group-last/row:border-b-0 whitespace-nowrap${showGridlines ? ' border-r border-border last:border-r-0' : ''}`
+  const TD = `px-2 ${rowPy} align-middle border-b border-border group-last/row:border-b-0 whitespace-nowrap${showGridlines ? ' border-r border-border last:border-r-0' : ''}`
   const [paginationEnabled, setPaginationEnabled] = useState(true)
   const [showTableTitle, setShowTableTitle] = useState(true)
   const [showColumnLabels, setShowColumnLabels] = useState(true)
@@ -2818,7 +2817,7 @@ export function QBTable() {
                       draggable={isExamAdmin}
                       onDragStart={() => setDraggedQuestionId(q.id)}
                       onDragEnd={() => setDraggedQuestionId(null)}
-                      className="group/row transition-colors hover:!bg-dt-row-hover"
+                      className="group/row transition-colors hover:!bg-interactive-hover-subtle"
                       style={{
                         backgroundColor: rowBg,
                         opacity: (!isExamAdmin && !isCourseDirector && !isOwner) ? 0.72 : 1,
