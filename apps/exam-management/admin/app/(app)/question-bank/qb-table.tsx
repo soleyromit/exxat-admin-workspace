@@ -422,7 +422,7 @@ type ColKey = (typeof QB_COLS)[number]['key']
 // ── Location path cell ───────────────────────────────────────────────────────
 function LocationCell({ question }: { question: Question }) {
   const { folders, navigateToFolder } = useQB()
-  if (!question.folderPath) return <span className="text-xs text-muted-foreground">—</span>
+  if (!question.folderPath) return <span className="text-sm text-muted-foreground">—</span>
   const parts = question.folderPath.split(' / ')
   // Show the deepest folder (last segment)
   const displayName = parts[parts.length - 1]
@@ -433,7 +433,7 @@ function LocationCell({ question }: { question: Question }) {
       variant="ghost"
       size="icon-xs"
       onClick={(e) => { e.stopPropagation(); if (targetFolder) navigateToFolder(targetFolder.id) }}
-      className="h-auto w-auto p-0 font-normal text-left text-xs"
+      className="h-auto w-auto p-0 font-normal text-left text-sm"
       style={{ color: 'var(--brand-color)', textDecoration: 'underline', textUnderlineOffset: 2, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}
       aria-label={`Navigate to ${displayName}`}
     >
@@ -1848,6 +1848,7 @@ function ColHeader({
   filterSet,
   onFilterToggle,
   draggable, onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd, dragOverStyle,
+  thClass,
 }: {
   col: typeof QB_COLS[number]
   sortCol: string | null
@@ -1875,6 +1876,7 @@ function ColHeader({
   onDrop?: () => void
   onDragEnd?: () => void
   dragOverStyle?: React.CSSProperties
+  thClass?: string
 }) {
   const isActive = sortCol === col.key
   const stickyStyle: React.CSSProperties = pinnedLeft
@@ -1903,7 +1905,7 @@ function ColHeader({
 
   return (
     <TableHead
-      className={`${TH} ${className ?? ''}`}
+      className={`${thClass ?? TH} ${className ?? ''}`}
       style={{ ...(dragOverStyle ?? stickyStyle), ...(draggable ? { cursor: 'grab' } : {}) }}
       draggable={draggable}
       onDragStart={onDragStart}
@@ -2153,6 +2155,8 @@ export function QBTable() {
   const rowPy = rowHeight === 'compact' ? 'py-0.5' : rowHeight === 'comfortable' ? 'py-4' : 'py-2'
   // Shadow the module-level TD so all cells pick up the current density + optional gridlines
   const TD = `px-2 ${rowPy} align-middle border-b border-border group-last/row:border-b-0 whitespace-nowrap${showGridlines ? ' border-r border-border last:border-r-0' : ''}`
+  // Shadow TH so header cells get matching vertical gridlines
+  const TH_CLS = `h-10 px-2 text-start align-middle font-medium text-foreground bg-dt-header-bg border-b border-border select-none whitespace-nowrap${showGridlines ? ' border-r border-border last:border-r-0' : ''}`
   const [paginationEnabled, setPaginationEnabled] = useState(true)
   const [showTableTitle, setShowTableTitle] = useState(true)
   const [showColumnLabels, setShowColumnLabels] = useState(true)
@@ -2687,7 +2691,7 @@ export function QBTable() {
               {showColumnLabels && <TableHeader style={{ position: 'sticky', top: 0, zIndex: 4 }}>
                 <TableRow>
                   {/* Select all */}
-                  <TableHead className={`${TH} w-10 text-center`}>
+                  <TableHead className={`${TH_CLS} w-10 text-center`}>
                     <div className="flex items-center justify-center">
                       <span className="sr-only">Select all</span>
                       <Checkbox
@@ -2766,11 +2770,12 @@ export function QBTable() {
                           outlineOffset: '-2px',
                           ...stickyStyle,
                         } : stickyStyle}
+                        thClass={TH_CLS}
                       />
                     )
                   })}
                   <TableHead
-                    className={`${TH} w-8`}
+                    className={`${TH_CLS} w-8`}
                     style={{ position: 'sticky', right: 0, zIndex: 2, background: 'var(--dt-header-bg)', boxShadow: '-2px 0 4px var(--sticky-edge-fade)' }}
                   />
                 </TableRow>
