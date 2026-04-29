@@ -922,22 +922,22 @@ export function QBSidebar() {
         width: '100%',
         backgroundColor: active ? 'var(--sidebar-accent)' : 'transparent',
         borderRadius: 6,
-        color: active ? 'var(--brand-color)' : 'var(--foreground)',
+        color: 'var(--foreground)',
       }}
     >
       <i
         className={active ? `fa-solid ${icon}` : `fa-regular ${icon}`}
         aria-hidden="true"
-        style={{ fontSize: 13, color: active ? 'var(--brand-color)' : 'var(--muted-foreground)', width: 16, textAlign: 'center', flexShrink: 0 }}
+        style={{ fontSize: 13, color: active ? 'var(--foreground)' : 'var(--muted-foreground)', width: 16, textAlign: 'center', flexShrink: 0 }}
       />
       <span style={{
         flex: 1, fontSize: 13, textAlign: 'left',
-        color: active ? 'var(--brand-color)' : 'var(--foreground)',
+        color: 'var(--foreground)',
         fontWeight: active ? 500 : 400,
       }}>
         {label}
       </span>
-      <span style={{ fontSize: 10, color: active ? 'var(--brand-color)' : 'var(--muted-foreground)' }}>
+      <span style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>
         {count}
       </span>
     </Button>
