@@ -60,9 +60,9 @@ export function BloomsBadge({ blooms }: { blooms: QBlooms }) {
 
 // ── pBIS Cell ─────────────────────────────────────────────────────────────────
 export function PBisCell({ pbis }: { pbis: number | null }) {
-  if (pbis === null) return <span className="text-xs text-muted-foreground">—</span>
+  if (pbis === null) return <span className="text-sm text-muted-foreground">—</span>
   return (
-    <span className="text-xs font-medium text-foreground">
+    <span className="text-sm text-foreground">
       {pbis.toFixed(2)}
     </span>
   )

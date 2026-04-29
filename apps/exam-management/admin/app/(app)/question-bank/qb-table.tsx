@@ -2683,10 +2683,10 @@ export function QBTable() {
         )
       ) : (
         <>
-          {/* Padding wrapper */}
-          <div style={{ flex: 1, minHeight: 0, padding: '16px', display: 'flex', flexDirection: 'column' }}>
-          {/* Single element: border + overflow on same node so scrollbar never conflicts with border rendering */}
-          <div className="qb-table-scroll border border-border rounded-lg" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+          {/* Padding wrapper — flex column so footer attaches flush to table */}
+          <div style={{ flex: 1, minHeight: 0, padding: '16px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+          {/* Table: rounded-t when pagination attaches below, rounded-lg when standalone */}
+          <div className={`qb-table-scroll border border-border ${paginationEnabled && sortedQuestions.length > 0 ? 'rounded-t-lg' : 'rounded-lg'}`} style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
             <table className="text-sm border-separate border-spacing-0" style={{ minWidth: '100%' }}>
               {showColumnLabels && <TableHeader style={{ position: 'sticky', top: 0, zIndex: 4 }}>
                 <TableRow>
@@ -2865,8 +2865,8 @@ export function QBTable() {
                               <TableCell key="title" className={TD} style={{ minWidth: 280, maxWidth: 380, ...pinnedStyle('title', pinnedCols, pinnedRightCols) }}>
                                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
                                   <div style={{ minWidth: 0, flex: 1 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
-                                      {isPrivate && (
+                                    {isPrivate && (
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
                                         <Badge
                                           variant="secondary"
                                           className="rounded shrink-0 text-[9px] font-semibold"
@@ -2879,8 +2879,8 @@ export function QBTable() {
                                         >
                                           <i className="fa-solid fa-lock-keyhole" aria-hidden="true" style={{ fontSize: 7 }} /> Private
                                         </Badge>
-                                      )}
-                                    </div>
+                                      </div>
+                                    )}
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <div className="text-sm font-medium text-foreground leading-snug" style={{
@@ -3111,78 +3111,73 @@ export function QBTable() {
               </TableBody>
             </table>
           </div>{/* scroll+border container */}
+
+          {/* ── Pagination footer — border-x border-b rounded-b-lg attaches flush to table (DS DataTablePaginated pattern) */}
+          {paginationEnabled && sortedQuestions.length > 0 && (
+            <div className="border-x border-b border-border rounded-b-lg overflow-hidden flex items-center justify-between px-4 py-2.5 bg-background select-none text-sm" style={{ flexShrink: 0 }}>
+              {/* Left: Rows per page */}
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <span className="whitespace-nowrap">Rows per page</span>
+                <Select value={String(perPage)} onValueChange={v => setPerPage(Number(v))}>
+                  <SelectTrigger className="inline-flex items-center gap-1 px-2 py-1 rounded border border-input bg-background hover:bg-interactive-hover text-foreground text-sm h-auto focus-visible:ring-ring" style={{ width: 64 }}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Right: count + first/prev/page-indicator/next/last */}
+              <div className="flex items-center gap-3">
+                <span role="status" aria-live="polite" className="text-muted-foreground tabular-nums whitespace-nowrap">
+                  {(page - 1) * perPage + 1}–{Math.min(page * perPage, sortedQuestions.length)} of {sortedQuestions.length}
+                </span>
+                <div className="flex items-center gap-1">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon-xs" disabled={page === 1} onClick={() => setPage(1)} aria-label="First page">
+                        <i className="fa-light fa-chevrons-left text-xs" aria-hidden="true" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">First page</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon-xs" disabled={page === 1} onClick={() => setPage(p => p - 1)} aria-label="Previous page">
+                        <i className="fa-light fa-chevron-left text-xs" aria-hidden="true" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Previous page</TooltipContent>
+                  </Tooltip>
+                  <span className="px-2 text-muted-foreground tabular-nums">{page} / {totalPages}</span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon-xs" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} aria-label="Next page">
+                        <i className="fa-light fa-chevron-right text-xs" aria-hidden="true" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Next page</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon-xs" disabled={page >= totalPages} onClick={() => setPage(totalPages)} aria-label="Last page">
+                        <i className="fa-light fa-chevrons-right text-xs" aria-hidden="true" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Last page</TooltipContent>
+                  </Tooltip>
+                </div>
+              </div>
+            </div>
+          )}
           </div>{/* padding wrapper */}
         </>
       )}
       </div>
-
-      {/* ── Pagination footer — pinned below scroll, matches DS DataTable ── */}
-      {paginationEnabled && sortedQuestions.length > 0 && (
-        <div style={{
-          flexShrink: 0, borderTop: '1px solid var(--border)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 12px', height: 44,
-        }}>
-          {/* Left: Rows per page */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span className="text-xs text-muted-foreground" style={{ whiteSpace: 'nowrap' }}>Rows per page</span>
-            <Select value={String(perPage)} onValueChange={v => setPerPage(Number(v))}>
-              <SelectTrigger className="text-xs" style={{ height: 28, width: 64 }}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
-                <SelectItem value="25">25</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Right: count + first/prev/page-indicator/next/last */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <span className="text-xs text-muted-foreground" style={{ marginRight: 6, whiteSpace: 'nowrap' }}>
-              {(page - 1) * perPage + 1}–{Math.min(page * perPage, sortedQuestions.length)} of {sortedQuestions.length}
-            </span>
-            <div style={{ width: 1, height: 16, backgroundColor: 'var(--border)', margin: '0 4px' }} aria-hidden="true" />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon-xs" disabled={page === 1} onClick={() => setPage(1)} aria-label="First page">
-                  <i className="fa-light fa-angles-left" aria-hidden="true" style={{ fontSize: 11 }} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>First page</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon-xs" disabled={page === 1} onClick={() => setPage(p => p - 1)} aria-label="Previous page">
-                  <i className="fa-light fa-angle-left" aria-hidden="true" style={{ fontSize: 11 }} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Previous page</TooltipContent>
-            </Tooltip>
-            <span className="text-xs text-foreground" style={{ padding: '0 6px', whiteSpace: 'nowrap' }}>
-              {page} / {totalPages}
-            </span>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon-xs" disabled={page === totalPages} onClick={() => setPage(p => p + 1)} aria-label="Next page">
-                  <i className="fa-light fa-angle-right" aria-hidden="true" style={{ fontSize: 11 }} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Next page</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon-xs" disabled={page === totalPages} onClick={() => setPage(totalPages)} aria-label="Last page">
-                  <i className="fa-light fa-angles-right" aria-hidden="true" style={{ fontSize: 11 }} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Last page</TooltipContent>
-            </Tooltip>
-          </div>
-        </div>
-      )}
 
       {/* ── Floating bulk-action bar ── */}
       {anySelected && (() => {
