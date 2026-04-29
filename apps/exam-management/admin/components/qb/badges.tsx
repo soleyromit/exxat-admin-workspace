@@ -33,17 +33,17 @@ const TYPE_ICONS: Record<QType, string> = {
 
 export function TypeBadge({ type }: { type: QType }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
+    <span className="inline-flex items-center gap-1.5 text-sm text-foreground whitespace-nowrap">
       <i className={`fa-light ${TYPE_ICONS[type]}`} aria-hidden="true" style={{ fontSize: 11 }} />
       {type}
     </span>
   )
 }
 
-// ── Difficulty — neutral weight text ─────────────────────────────────────────
+// ── Difficulty — plain cell text ─────────────────────────────────────────────
 export function DiffBadge({ diff }: { diff: QDiff }) {
   return (
-    <span className="text-xs font-medium text-muted-foreground">
+    <span className="text-sm text-foreground">
       {diff}
     </span>
   )
@@ -52,7 +52,7 @@ export function DiffBadge({ diff }: { diff: QDiff }) {
 // ── Blooms Badge ──────────────────────────────────────────────────────────────
 export function BloomsBadge({ blooms }: { blooms: QBlooms }) {
   return (
-    <span className="text-xs font-medium text-muted-foreground">
+    <span className="text-sm text-foreground">
       {blooms}
     </span>
   )

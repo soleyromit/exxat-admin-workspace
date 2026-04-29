@@ -2148,7 +2148,7 @@ export function QBTable() {
   const [filterBarVisible, setFilterBarVisible] = useState(true)
   const [filterLogic, setFilterLogic] = useState<'and' | 'or'>('and')
   const [groupBy, setGroupBy] = useState<string | null>(null)
-  const [showGridlines, setShowGridlines] = useState(false)
+  const [showGridlines, setShowGridlines] = useState(true)
   const [rowHeight, setRowHeight] = useState<QBRowHeight>('default')
   const rowPy = rowHeight === 'compact' ? 'py-0.5' : rowHeight === 'comfortable' ? 'py-4' : 'py-2'
   // Shadow the module-level TD so all cells pick up the current density + optional gridlines

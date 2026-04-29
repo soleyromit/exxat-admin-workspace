@@ -28,12 +28,12 @@ function getDescendantIds(id: string, folders: FolderNode[]): Set<string> {
 
 function getFolderIcon(node: FolderNode, expanded: boolean, selected: boolean) {
   if (node.icon) {
-    return { cls: `fa-light ${node.icon}`, color: selected ? 'var(--brand-color)' : 'var(--muted-foreground)' }
+    return { cls: `fa-light ${node.icon}`, color: selected ? 'var(--foreground)' : 'var(--muted-foreground)' }
   }
-  if (node.isCourse) return { cls: 'fa-solid fa-graduation-cap', color: selected ? 'var(--brand-color)' : 'var(--muted-foreground)' }
+  if (node.isCourse) return { cls: 'fa-solid fa-graduation-cap', color: selected ? 'var(--foreground)' : 'var(--muted-foreground)' }
   return {
     cls: expanded ? 'fa-solid fa-folder-open' : (selected ? 'fa-solid fa-folder' : 'fa-regular fa-folder'),
-    color: selected ? 'var(--brand-color)' : 'var(--muted-foreground)',
+    color: selected ? 'var(--foreground)' : 'var(--muted-foreground)',
   }
 }
 
@@ -746,7 +746,7 @@ function FolderRow({
         ) : (
           <div className="qb-name-scroll" style={{ flex: 1, minWidth: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
             <span className={`block text-sm whitespace-nowrap ${isSelected ? 'font-medium' : 'font-normal'}`}
-            style={{ color: isSelected ? 'var(--brand-color)' : 'var(--foreground)' }}
+            style={{ color: 'var(--foreground)' }}
           >
               {node.isCourse ? courseFolderLabel(node.name) : node.name}
             </span>
