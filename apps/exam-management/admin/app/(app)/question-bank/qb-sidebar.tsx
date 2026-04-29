@@ -920,7 +920,7 @@ export function QBSidebar() {
         padding: '0 8px',
         height: 32,
         width: '100%',
-        backgroundColor: active ? 'var(--brand-tint)' : 'transparent',
+        backgroundColor: active ? 'var(--sidebar-accent)' : 'transparent',
         borderRadius: 6,
         color: active ? 'var(--brand-color)' : 'var(--foreground)',
       }}

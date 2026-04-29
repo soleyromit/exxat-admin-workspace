@@ -180,7 +180,7 @@ export function QBHeader() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="gap-2 h-8 px-2" aria-label="Switch persona">
               <Avatar style={{ width: 24, height: 24 }}>
-                <AvatarFallback style={{ backgroundColor: currentPersona.color, color: 'var(--primary-foreground)', fontSize: 9, fontWeight: 700 }}>
+                <AvatarFallback style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)', fontSize: 9, fontWeight: 700 }}>
                   {currentPersona.initials}
                 </AvatarFallback>
               </Avatar>
@@ -194,7 +194,7 @@ export function QBHeader() {
             {personas.map((p: Persona) => (
               <DropdownMenuItem key={p.id} onClick={() => setCurrentPersona(p)}>
                 <Avatar style={{ width: 24, height: 24 }}>
-                  <AvatarFallback style={{ backgroundColor: p.color, color: 'var(--primary-foreground)', fontSize: 9, fontWeight: 700 }}>
+                  <AvatarFallback style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)', fontSize: 9, fontWeight: 700 }}>
                     {p.initials}
                   </AvatarFallback>
                 </Avatar>

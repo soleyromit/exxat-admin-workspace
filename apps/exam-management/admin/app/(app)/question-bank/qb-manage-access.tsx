@@ -12,7 +12,7 @@ function PersonAvatar({ persona }: { persona: Persona }) {
     <Avatar className="h-9 w-9 shrink-0 rounded-full">
       <AvatarFallback
         className="rounded-full text-[11px] font-bold"
-        style={{ backgroundColor: persona.color, color: 'var(--primary-foreground)' }}
+        style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}
       >
         {persona.initials}
       </AvatarFallback>
