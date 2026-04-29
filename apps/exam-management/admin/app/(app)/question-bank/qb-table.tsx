@@ -396,9 +396,9 @@ function DeleteQuestionDialog({ question, open, onClose }: { question: { id: str
 }
 
 // ── DS DataTable source (apps/web/components/data-table/index.tsx):
-// ── TH = h-9 px-3 text-left align-middle select-none
+// ── TH = h-9 px-3 text-left align-middle text-xs font-medium text-muted-foreground tracking-wide select-none
 // ── TD default = px-3 py-2.5 | compact = py-1 | comfortable = py-4
-const TH = 'h-9 px-3 text-start align-middle font-medium text-foreground bg-dt-header-bg border-b border-border select-none whitespace-nowrap'
+const TH = 'h-9 px-3 text-start align-middle text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg border-b border-border select-none whitespace-nowrap'
 const TD = 'px-3 py-2.5 align-middle border-b border-border group-last/row:border-b-0 whitespace-nowrap'
 
 // ── Column definitions ────────────────────────────────────────────────────────
@@ -1924,7 +1924,7 @@ function ColHeader({
             <Popover open={diffHoverOpen} onOpenChange={setDiffHoverOpen}>
               <PopoverTrigger asChild>
                 <span
-                  className="flex-1 truncate cursor-default"
+                  className={`flex-1 truncate cursor-default${isActive ? ' text-foreground' : ''}`}
                   onMouseEnter={() => {
                     if (diffHoverTimerRef.current) clearTimeout(diffHoverTimerRef.current)
                     diffHoverTimerRef.current = setTimeout(() => setDiffHoverOpen(true), 400)
@@ -1942,7 +1942,7 @@ function ColHeader({
             <Popover open={bloomsHoverOpen} onOpenChange={setBloomsHoverOpen}>
               <PopoverTrigger asChild>
                 <span
-                  className="flex-1 truncate cursor-default"
+                  className={`flex-1 truncate cursor-default${isActive ? ' text-foreground' : ''}`}
                   onMouseEnter={() => {
                     if (bloomsHoverTimerRef.current) clearTimeout(bloomsHoverTimerRef.current)
                     bloomsHoverTimerRef.current = setTimeout(() => setBloomsHoverOpen(true), 400)
@@ -1957,12 +1957,11 @@ function ColHeader({
               </PopoverContent>
             </Popover>
           ) : (
-            <span className="flex-1 truncate">{col.label}</span>
+            <span className={`flex-1 truncate${isActive ? ' text-foreground' : ''}`}>{col.label}</span>
           )}
           {isActive && (
             <i
-              className={`fa-solid ${sortDir === 'asc' ? 'fa-arrow-up' : 'fa-arrow-down'} text-[9px]`}
-              style={{ color: 'var(--brand-color)' }}
+              className={`fa-solid ${sortDir === 'asc' ? 'fa-arrow-up' : 'fa-arrow-down'} ml-1 text-xs`}
               aria-hidden="true"
             />
           )}
@@ -2157,7 +2156,7 @@ export function QBTable() {
   // Shadow the module-level TD so all cells pick up the current density + optional gridlines
   const TD = `px-3 ${rowPy} align-middle border-b border-border group-last/row:border-b-0 whitespace-nowrap${showGridlines ? ' border-r border-border last:border-r-0' : ''}`
   // Shadow TH so header cells get matching vertical gridlines
-  const TH_CLS = `h-9 px-3 text-start align-middle font-medium text-foreground bg-dt-header-bg border-b border-border select-none whitespace-nowrap${showGridlines ? ' border-r border-border last:border-r-0' : ''}`
+  const TH_CLS = `h-9 px-3 text-start align-middle text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg border-b border-border select-none whitespace-nowrap${showGridlines ? ' border-r border-border last:border-r-0' : ''}`
   const [paginationEnabled, setPaginationEnabled] = useState(true)
   const [showTableTitle, setShowTableTitle] = useState(true)
   const [showColumnLabels, setShowColumnLabels] = useState(true)
