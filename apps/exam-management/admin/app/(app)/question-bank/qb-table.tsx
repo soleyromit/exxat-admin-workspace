@@ -992,7 +992,7 @@ function FilterPropertiesSheet({
                       className="flex flex-col items-center gap-1.5 h-auto py-3 px-2 rounded-lg border transition-colors"
                       style={{
                         borderColor: rowHeight === h ? 'var(--brand-color)' : 'var(--border)',
-                        backgroundColor: rowHeight === h ? 'var(--brand-tint)' : 'var(--background)',
+                        backgroundColor: rowHeight === h ? 'var(--sidebar-accent)' : 'var(--background)',
                       }}
                     >
                       <i className={`fa-light ${icon}`} aria-hidden="true"
