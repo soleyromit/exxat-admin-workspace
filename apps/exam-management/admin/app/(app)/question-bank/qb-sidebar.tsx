@@ -660,7 +660,7 @@ function FolderRow({
         }}
         style={{
           position: 'relative',
-          display: 'flex', alignItems: 'flex-start', gap: 4,
+          display: 'flex', alignItems: 'center', gap: 4,
           minHeight: 32,
           paddingBlock: 5,
           paddingLeft: indentPx,
@@ -701,7 +701,6 @@ function FolderRow({
             height: 16,
             padding: 0,
             flexShrink: 0,
-            marginTop: 1,
           }}
           tabIndex={-1}
         >
@@ -714,7 +713,7 @@ function FolderRow({
 
         {/* Icon */}
         <i className={`${icon.cls} ${icon.colorCls}`} aria-hidden="true"
-          style={{ fontSize: 13, width: 16, textAlign: 'center', flexShrink: 0, marginTop: 2 }} />
+          style={{ fontSize: 13, width: 16, textAlign: 'center', flexShrink: 0 }} />
 
         {/* Name */}
         {isRenaming ? (
@@ -747,7 +746,7 @@ function FolderRow({
           />
         ) : (
           <div style={{ flex: 1, minWidth: 0 }}>
-            <span className={`block text-sm line-clamp-2 leading-snug text-foreground ${isSelected ? 'font-medium' : 'font-normal'}`}>
+            <span className={`block text-sm truncate text-foreground ${isSelected ? 'font-medium' : 'font-normal'}`}>
               {node.isCourse ? courseFolderLabel(node.name) : node.name}
             </span>
           </div>
