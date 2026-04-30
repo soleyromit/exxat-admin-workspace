@@ -661,7 +661,8 @@ function FolderRow({
         style={{
           position: 'relative',
           display: 'flex', alignItems: 'center', gap: 4,
-          height: 32,
+          minHeight: 32,
+          paddingBlock: 5,
           paddingLeft: indentPx,
           paddingRight: 8,
           cursor: 'pointer',
@@ -744,9 +745,8 @@ function FolderRow({
             style={{ flex: 1, color: 'var(--brand-color)' }}
           />
         ) : (
-          <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-            <span className={`block text-sm truncate text-foreground ${isSelected ? 'font-medium' : 'font-normal'}`}
-          >
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <span className={`block text-sm line-clamp-2 leading-snug text-foreground ${isSelected ? 'font-medium' : 'font-normal'}`}>
               {node.isCourse ? courseFolderLabel(node.name) : node.name}
             </span>
           </div>
