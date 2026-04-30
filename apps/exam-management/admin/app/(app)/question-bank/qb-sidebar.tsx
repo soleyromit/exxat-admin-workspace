@@ -5,7 +5,7 @@ import type { FolderNode } from '@/lib/qb-types'
 import {
   Button,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
-  InputGroup, InputGroupAddon, Input,
+  InputGroup, InputGroupAddon, InputGroupInput, Input,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Separator,
   Popover, PopoverTrigger, PopoverContent,
 } from '@exxat/ds/packages/ui/src'
@@ -991,7 +991,7 @@ export function QBSidebar() {
                   <i className="fa-light fa-magnifying-glass" aria-hidden="true"
                     style={{ fontSize: 11, color: 'var(--brand-color)', padding: '0 6px' }} />
                 </InputGroupAddon>
-                <Input
+                <InputGroupInput
                   autoFocus
                   placeholder="Search folders…"
                   value={sidebarSearch}
