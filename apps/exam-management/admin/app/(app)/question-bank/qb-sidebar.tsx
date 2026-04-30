@@ -660,7 +660,7 @@ function FolderRow({
         }}
         style={{
           position: 'relative',
-          display: 'flex', alignItems: 'center', gap: 4,
+          display: 'flex', alignItems: 'flex-start', gap: 4,
           minHeight: 32,
           paddingBlock: 5,
           paddingLeft: indentPx,
@@ -701,6 +701,7 @@ function FolderRow({
             height: 16,
             padding: 0,
             flexShrink: 0,
+            marginTop: 1,
           }}
           tabIndex={-1}
         >
@@ -713,7 +714,7 @@ function FolderRow({
 
         {/* Icon */}
         <i className={`${icon.cls} ${icon.colorCls}`} aria-hidden="true"
-          style={{ fontSize: 13, width: 16, textAlign: 'center', flexShrink: 0 }} />
+          style={{ fontSize: 13, width: 16, textAlign: 'center', flexShrink: 0, marginTop: 2 }} />
 
         {/* Name */}
         {isRenaming ? (
@@ -985,7 +986,11 @@ export function QBSidebar() {
           {searchExpanded ? (
             /* Expanded: full search input inline */
             <>
-              <InputGroup style={{ flex: 1 }}>
+              <InputGroup style={{ flex: 1, borderColor: 'var(--brand-color)', boxShadow: '0 0 0 3px color-mix(in oklch, var(--brand-color) 18%, transparent)' }}>
+                <InputGroupAddon align="inline-start">
+                  <i className="fa-light fa-magnifying-glass" aria-hidden="true"
+                    style={{ fontSize: 11, color: 'var(--brand-color)', padding: '0 6px' }} />
+                </InputGroupAddon>
                 <Input
                   autoFocus
                   placeholder="Search folders…"
@@ -995,10 +1000,6 @@ export function QBSidebar() {
                   className="text-xs"
                   style={{ height: 26 }}
                 />
-                <InputGroupAddon align="inline-end">
-                  <i className="fa-light fa-magnifying-glass text-muted-foreground" aria-hidden="true"
-                    style={{ fontSize: 11, padding: '0 6px' }} />
-                </InputGroupAddon>
               </InputGroup>
               <Button
                 variant="ghost" size="icon-xs"

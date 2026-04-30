@@ -200,26 +200,31 @@ function FolderTreePicker({
   return (
     <div>
       {/* Search */}
-      <div style={{ padding: '8px 12px', position: 'relative', display: 'flex', alignItems: 'center' }}>
-        <i className="fa-light fa-magnifying-glass text-muted-foreground" aria-hidden="true"
-          style={{ position: 'absolute', left: 22, fontSize: 12, pointerEvents: 'none' }} />
-        <Input
-          ref={searchRef}
-          placeholder="Search folders…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="text-sm"
-          style={{ paddingLeft: 32, height: 36 }}
-        />
-        {search && (
-          <Button variant="ghost" size="icon-xs" tabIndex={-1}
-            onClick={() => { setSearch(''); searchRef.current?.focus() }}
-            style={{ position: 'absolute', right: 16 }}
-            aria-label="Clear search"
-          >
-            <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 11 }} />
-          </Button>
-        )}
+      <div style={{ padding: '8px 12px' }}>
+        <InputGroup style={{ borderColor: 'var(--brand-color)', boxShadow: '0 0 0 3px color-mix(in oklch, var(--brand-color) 18%, transparent)' }}>
+          <InputGroupAddon align="inline-start">
+            <i className="fa-light fa-magnifying-glass" aria-hidden="true"
+              style={{ fontSize: 12, color: 'var(--brand-color)', padding: '0 6px' }} />
+          </InputGroupAddon>
+          <InputGroupInput
+            ref={searchRef}
+            placeholder="Search folders…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="text-sm"
+            style={{ height: 36 }}
+          />
+          {search && (
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton size="icon-xs" tabIndex={-1}
+                onClick={() => { setSearch(''); searchRef.current?.focus() }}
+                aria-label="Clear search"
+              >
+                <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 11 }} />
+              </InputGroupButton>
+            </InputGroupAddon>
+          )}
+        </InputGroup>
       </div>
 
       {/* Tree or search results */}
@@ -2425,12 +2430,12 @@ export function QBTable() {
             flexShrink: 0,
           }}>
             {searchOpen ? (
-              <InputGroup style={{ width: 200, flexShrink: 0 }}>
+              <InputGroup style={{ width: 200, flexShrink: 0, borderColor: 'var(--brand-color)', boxShadow: '0 0 0 3px color-mix(in oklch, var(--brand-color) 18%, transparent)' }}>
                 <InputGroupAddon align="inline-start">
                   <i
                     className="fa-light fa-magnifying-glass"
                     aria-hidden="true"
-                    style={{ fontSize: 12, color: search ? 'var(--brand-color)' : 'var(--muted-foreground)' }}
+                    style={{ fontSize: 12, color: 'var(--brand-color)' }}
                   />
                 </InputGroupAddon>
                 <InputGroupInput
@@ -2441,7 +2446,6 @@ export function QBTable() {
                   placeholder="Search questions…"
                   aria-label="Search questions"
                   autoFocus
-                  style={search ? { borderColor: 'var(--brand-color)' } : {}}
                 />
                 <InputGroupAddon align="inline-end">
                   <InputGroupButton
@@ -2780,7 +2784,7 @@ export function QBTable() {
                   })}
                   <TableHead
                     className={TH_CLS}
-                    style={{ width: 32, minWidth: 32, maxWidth: 32, paddingInline: 0, position: 'sticky', right: 0, zIndex: 2, background: 'var(--dt-header-bg)', boxShadow: '-2px 0 4px var(--sticky-edge-fade)' }}
+                    style={{ width: 40, minWidth: 40, maxWidth: 40, paddingInline: 0, position: 'sticky', right: 0, zIndex: 2, background: 'var(--dt-header-bg)', boxShadow: '-2px 0 4px var(--sticky-edge-fade)' }}
                   />
                 </TableRow>
               </TableHeader>}
@@ -3037,12 +3041,13 @@ export function QBTable() {
                         className={TD}
                         onClick={e => e.stopPropagation()}
                         style={{
-                          width: 32, minWidth: 32, maxWidth: 32, paddingInline: 0,
+                          width: 40, minWidth: 40, maxWidth: 40, paddingInline: 0,
                           position: 'sticky', right: 0,
                           background: isSelected ? 'var(--dt-row-selected)' : isHovered ? 'var(--dt-row-hover)' : 'var(--dt-row-bg)',
                           boxShadow: '-2px 0 4px var(--sticky-edge-fade)',
                         }}
                       >
+                        <div className="flex items-center justify-center">
                         <DropdownMenu open={openMenuQuestionId === q.id} onOpenChange={open => setOpenMenuQuestionId(open ? q.id : null)}>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -3102,6 +3107,7 @@ export function QBTable() {
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
+                        </div>
                       </TableCell>
                     </TableRow>
                   )
