@@ -5,6 +5,7 @@ import { useQB } from './qb-state'
 import { StatusBadge, DiffBadge, PBisCell, BloomsBadge } from '@/components/qb/badges'
 import {
   Button, Badge, Checkbox, Input, ToggleSwitch,
+  Avatar, AvatarFallback,
   Sheet, SheetContent, SheetTitle,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuLabel,
@@ -134,12 +135,12 @@ function FolderTreePicker({
             <i className="fa-light fa-chevron-right" aria-hidden="true"
               style={{ fontSize: 9, transition: 'transform 150ms', transform: isExpanded ? 'rotate(90deg)' : 'none' }} />
           </Button>
-          <i className={`fa-light ${node.isCourse ? 'fa-graduation-cap' : isExpanded && hasChildren ? 'fa-folder-open' : 'fa-folder'}`}
+          <i className={`fa-light ${node.isCourse ? 'fa-graduation-cap' : isExpanded && hasChildren ? 'fa-folder-open' : 'fa-folder'} ${isSelected ? '' : 'text-muted-foreground'}`}
             aria-hidden="true"
-            style={{ fontSize: 12, flexShrink: 0, color: isSelected ? 'var(--sidebar-accent-foreground)' : 'var(--muted-foreground)' }}
+            style={{ fontSize: 12, flexShrink: 0, color: isSelected ? 'var(--sidebar-accent-foreground)' : undefined }}
           />
-          <span className={`flex-1 text-sm truncate ${isSelected ? 'font-medium' : 'font-normal'}`}
-            style={{ color: isSelected ? 'var(--sidebar-accent-foreground)' : 'var(--foreground)' }}>
+          <span className={`flex-1 text-sm truncate ${isSelected ? 'font-medium' : 'font-normal text-foreground'}`}
+            style={{ color: isSelected ? 'var(--sidebar-accent-foreground)' : undefined }}>
             {getFolderLabel(node)}
           </span>
           {isCurrent && <span className="text-[10px] text-muted-foreground shrink-0">current</span>}
@@ -200,8 +201,8 @@ function FolderTreePicker({
     <div>
       {/* Search */}
       <div style={{ padding: '8px 12px', position: 'relative', display: 'flex', alignItems: 'center' }}>
-        <i className="fa-light fa-magnifying-glass" aria-hidden="true"
-          style={{ position: 'absolute', left: 22, fontSize: 12, color: 'var(--muted-foreground)', pointerEvents: 'none' }} />
+        <i className="fa-light fa-magnifying-glass text-muted-foreground" aria-hidden="true"
+          style={{ position: 'absolute', left: 22, fontSize: 12, pointerEvents: 'none' }} />
         <Input
           ref={searchRef}
           placeholder="Search folders…"
@@ -239,11 +240,11 @@ function FolderTreePicker({
                 onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--accent)' }}
                 onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent' }}
               >
-                <i className={`fa-light ${f.isCourse ? 'fa-graduation-cap' : 'fa-folder'}`} aria-hidden="true"
-                  style={{ fontSize: 12, color: isSelected ? 'var(--sidebar-accent-foreground)' : 'var(--muted-foreground)', flexShrink: 0 }} />
+                <i className={`fa-light ${f.isCourse ? 'fa-graduation-cap' : 'fa-folder'} ${isSelected ? '' : 'text-muted-foreground'}`} aria-hidden="true"
+                  style={{ fontSize: 12, color: isSelected ? 'var(--sidebar-accent-foreground)' : undefined, flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className={`text-sm truncate ${isSelected ? 'font-medium' : 'font-normal'}`}
-                    style={{ color: isSelected ? 'var(--sidebar-accent-foreground)' : 'var(--foreground)' }}>
+                  <div className={`text-sm truncate ${isSelected ? 'font-medium' : 'font-normal text-foreground'}`}
+                    style={{ color: isSelected ? 'var(--sidebar-accent-foreground)' : undefined }}>
                     {getFolderLabel(f)}
                   </div>
                   {ancestorPath && (
@@ -387,8 +388,8 @@ function DeleteQuestionDialog({ question, open, onClose }: { question: { id: str
           &ldquo;{question.title.slice(0, 80)}{question.title.length > 80 ? '…' : ''}&rdquo; will be permanently removed.
         </p>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+          <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+          <Button variant="destructive" size="sm" onClick={handleDelete}>Delete</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -432,13 +433,15 @@ function LocationCell({ question }: { question: Question }) {
   return (
     <Button
       variant="ghost"
-      size="icon-xs"
+      size="sm"
       onClick={(e) => { e.stopPropagation(); if (targetFolder) navigateToFolder(targetFolder.id) }}
-      className="h-auto w-auto p-0 font-normal text-left text-sm"
-      style={{ color: 'var(--brand-color)', textDecoration: 'underline', textUnderlineOffset: 2, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}
+      className="h-auto p-0 font-normal text-left text-sm"
+      style={{ color: 'var(--brand-color)', textDecoration: 'underline', textUnderlineOffset: 2 }}
       aria-label={`Navigate to ${displayName}`}
     >
-      {displayName}
+      <span style={{ display: 'block', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {displayName}
+      </span>
     </Button>
   )
 }
@@ -452,8 +455,8 @@ function FavoritedCell({ questionId }: { questionId: string }) {
       variant="ghost" size="icon-xs"
       aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
       onClick={e => { e.stopPropagation(); e.preventDefault(); toggleQuestionFavorited(questionId) }}
-      style={{ color: isFav ? 'var(--chart-4)' : 'var(--muted-foreground)', flexShrink: 0 }}
-      className={`transition-all ${isFav ? 'opacity-100' : 'opacity-0 group-hover/row:opacity-60 hover:!opacity-100'}`}
+      style={{ color: isFav ? 'var(--chart-4)' : undefined, flexShrink: 0 }}
+      className={`transition-all ${isFav ? 'opacity-100' : 'opacity-0 group-hover/row:opacity-60 hover:!opacity-100 text-muted-foreground'}`}
     >
       <i className={isFav ? 'fa-solid fa-star' : 'fa-light fa-star'} aria-hidden="true" style={{ fontSize: 13 }} />
     </Button>
@@ -503,17 +506,17 @@ function FilterPill({ filter, onUpdate, onRemove, autoOpen = false, fieldDefs = 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <div
-          role="button" tabIndex={0}
-          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setOpen(v => !v) }}
-          className="text-xs"
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`text-xs gap-1 h-7 shrink-0${!hasValues ? ' text-foreground' : ''}`}
           style={{
-            display: 'inline-flex', alignItems: 'center', gap: 4,
-            height: 28, padding: '0 4px 0 8px', borderRadius: 6,
+            padding: '0 4px 0 8px',
+            borderRadius: 6,
             border: hasValues ? '1px solid var(--brand-color)' : '1.5px dashed var(--border)',
             backgroundColor: hasValues ? 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' : 'var(--background)',
-            color: hasValues ? 'var(--brand-color)' : 'var(--foreground)',
-            cursor: 'pointer', flexShrink: 0, userSelect: 'none',
+            color: hasValues ? 'var(--brand-color)' : undefined,
+            userSelect: 'none',
           }}
         >
           <i className={`fa-light ${fieldDef.icon}`} aria-hidden="true" style={{ fontSize: 10 }} />
@@ -526,7 +529,7 @@ function FilterPill({ filter, onUpdate, onRemove, autoOpen = false, fieldDefs = 
           >
             <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 9 }} />
           </Button>
-        </div>
+        </Button>
       </PopoverTrigger>
       <PopoverContent align="start" style={{ width: 260, padding: 0, overflow: 'hidden' }}>
         {/* Header: field + operator + delete */}
@@ -995,9 +998,9 @@ function FilterPropertiesSheet({
                         backgroundColor: rowHeight === h ? 'var(--sidebar-accent)' : 'var(--background)',
                       }}
                     >
-                      <i className={`fa-light ${icon}`} aria-hidden="true"
-                        style={{ fontSize: 16, color: rowHeight === h ? 'var(--brand-color)' : 'var(--muted-foreground)' }} />
-                      <span className={`text-xs capitalize ${rowHeight === h ? 'font-semibold' : 'font-normal'}`} style={{ color: rowHeight === h ? 'var(--brand-color)' : 'var(--foreground)' }}>{h}</span>
+                      <i className={`fa-light ${icon} ${rowHeight === h ? '' : 'text-muted-foreground'}`} aria-hidden="true"
+                        style={{ fontSize: 16, color: rowHeight === h ? 'var(--brand-color)' : undefined }} />
+                      <span className={`text-xs capitalize ${rowHeight === h ? 'font-semibold' : 'font-normal text-foreground'}`} style={{ color: rowHeight === h ? 'var(--brand-color)' : undefined }}>{h}</span>
                     </Button>
                   ))}
                 </div>
@@ -1139,7 +1142,7 @@ function FilterPropertiesSheet({
               <div className="flex items-center gap-2">
                 <DropdownMenu modal={false}>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="flex-1 gap-1.5 h-8 border-dashed text-muted-foreground">
+                    <Button variant="outline" size="sm" className="flex-1 gap-1.5 border-dashed text-muted-foreground">
                       <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                       Add filter
                     </Button>
@@ -1212,7 +1215,7 @@ function FilterPropertiesSheet({
             <div className="p-3 border-t border-border" style={{ flexShrink: 0 }}>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full gap-1.5 h-8 border-dashed text-muted-foreground">
+                  <Button variant="outline" size="sm" className="w-full gap-1.5 border-dashed text-muted-foreground">
                     <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                     Add sort
                   </Button>
@@ -1221,8 +1224,8 @@ function FilterPropertiesSheet({
                   {QB_COLS.filter(c => c.sortKey).map(col => (
                     <DropdownMenuItem key={col.key} onClick={() => onSort(col.key, 'asc')}
                       style={{ color: sortCol === col.key ? 'var(--brand-color)' : undefined }}>
-                      <i className={`fa-light ${sortCol === col.key ? 'fa-check' : 'fa-minus'} text-xs`} aria-hidden="true"
-                        style={{ width: 14, color: sortCol === col.key ? 'var(--brand-color)' : 'var(--muted-foreground)' }} />
+                      <i className={`fa-light ${sortCol === col.key ? 'fa-check' : 'fa-minus'} text-xs ${sortCol === col.key ? '' : 'text-muted-foreground'}`} aria-hidden="true"
+                        style={{ width: 14, color: sortCol === col.key ? 'var(--brand-color)' : undefined }} />
                       {col.label}
                     </DropdownMenuItem>
                   ))}
@@ -1244,9 +1247,9 @@ function FilterPropertiesSheet({
                 className="w-full h-auto justify-start gap-3 px-3 py-2.5 rounded-lg font-normal"
                 style={{ backgroundColor: groupBy === null ? 'var(--accent)' : undefined }}
               >
-                <i className="fa-light fa-ban text-sm shrink-0" aria-hidden="true"
-                  style={{ width: 16, color: 'var(--muted-foreground)' }} />
-                <span className={`flex-1 text-sm text-left ${groupBy === null ? 'font-medium' : 'font-normal'}`} style={{ color: groupBy === null ? 'var(--brand-color)' : 'var(--foreground)' }}>
+                <i className="fa-light fa-ban text-sm shrink-0 text-muted-foreground" aria-hidden="true"
+                  style={{ width: 16 }} />
+                <span className={`flex-1 text-sm text-left ${groupBy === null ? 'font-medium' : 'font-normal text-foreground'}`} style={{ color: groupBy === null ? 'var(--brand-color)' : undefined }}>
                   None
                 </span>
                 {groupBy === null && <i className="fa-solid fa-check text-xs shrink-0" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />}
@@ -1262,9 +1265,9 @@ function FilterPropertiesSheet({
                   className="w-full h-auto justify-start gap-3 px-3 py-2.5 rounded-lg font-normal"
                   style={{ backgroundColor: groupBy === col.key ? 'var(--accent)' : undefined }}
                 >
-                  <i className="fa-light fa-layer-group text-sm shrink-0" aria-hidden="true"
-                    style={{ width: 16, color: groupBy === col.key ? 'var(--brand-color)' : 'var(--muted-foreground)' }} />
-                  <span className={`flex-1 text-sm text-left ${groupBy === col.key ? 'font-medium' : 'font-normal'}`} style={{ color: groupBy === col.key ? 'var(--brand-color)' : 'var(--foreground)' }}>
+                  <i className={`fa-light fa-layer-group text-sm shrink-0 ${groupBy === col.key ? '' : 'text-muted-foreground'}`} aria-hidden="true"
+                    style={{ width: 16, color: groupBy === col.key ? 'var(--brand-color)' : undefined }} />
+                  <span className={`flex-1 text-sm text-left ${groupBy === col.key ? 'font-medium' : 'font-normal text-foreground'}`} style={{ color: groupBy === col.key ? 'var(--brand-color)' : undefined }}>
                     {col.label}
                   </span>
                   {groupBy === col.key && <i className="fa-solid fa-check text-xs shrink-0" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />}
@@ -1460,7 +1463,7 @@ function FilterPropertiesSheet({
               <div className="flex items-center gap-2">
                 <DropdownMenu modal={false}>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="flex-1 gap-1.5 h-8 border-dashed text-muted-foreground">
+                    <Button variant="outline" size="sm" className="flex-1 gap-1.5 border-dashed text-muted-foreground">
                       <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                       Add rule
                     </Button>
@@ -2526,10 +2529,10 @@ export function QBTable() {
               <TooltipContent>Filters &amp; properties</TooltipContent>
             </Tooltip>
             {activeFilterCount > 0 && (
-              <span className="text-[8px] font-bold" style={{
+              <span className="text-[8px] font-bold text-primary-foreground" style={{
                 position: 'absolute', top: -5, right: -5,
                 width: 15, height: 15, borderRadius: '50%',
-                backgroundColor: 'var(--brand-color)', color: 'var(--primary-foreground)',
+                backgroundColor: 'var(--brand-color)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 pointerEvents: 'none',
               }}>
@@ -2685,8 +2688,9 @@ export function QBTable() {
         <>
           {/* Padding wrapper — flex column so footer attaches flush to table */}
           <div style={{ flex: 1, minHeight: 0, padding: '16px', display: 'flex', flexDirection: 'column', gap: 0 }}>
-          {/* Table: rounded-t when pagination attaches below, rounded-lg when standalone */}
-          <div className={`qb-table-scroll border border-border ${paginationEnabled && sortedQuestions.length > 0 ? 'rounded-t-lg' : 'rounded-lg'}`} style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+          {/* Table: outer clips corners, inner scrolls — overflow-hidden required for border-radius to clip table content */}
+          <div className="border border-border overflow-hidden rounded-lg" style={{ maxHeight: '100%', display: 'flex', flexDirection: 'column' }}>
+          <div className="qb-table-scroll" style={{ overflow: 'auto' }}>
             <table className="text-sm border-separate border-spacing-0" style={{ minWidth: '100%' }}>
               {showColumnLabels && <TableHeader style={{ position: 'sticky', top: 0, zIndex: 4 }}>
                 <TableRow>
@@ -2883,8 +2887,7 @@ export function QBTable() {
                                     )}
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <div className="text-sm font-medium text-foreground leading-snug" style={{
-                                          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                                        <div className="text-sm font-medium text-foreground leading-snug line-clamp-2" style={{
                                           cursor: 'default'
                                         }}>
                                           {q.title}
@@ -2933,16 +2936,13 @@ export function QBTable() {
                           case 'creator':
                             return (
                               <TableCell key="creator" className={`${TD} w-40`} style={pinnedStyle('creator', pinnedCols, pinnedRightCols)}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                  <div className="text-[8px] font-bold" style={{
-                                    width: 22, height: 22, borderRadius: '50%',
-                                    backgroundColor: 'var(--avatar-initials-bg)',
-                                    color: 'var(--avatar-initials-fg)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                                  }}>
-                                    {creatorPersona.initials}
-                                  </div>
-                                  <span className="text-sm text-foreground">{creatorPersona.name}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                                  <Avatar className="shrink-0">
+                                    <AvatarFallback className="text-xs font-bold" style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>
+                                      {creatorPersona.initials}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span className="text-sm text-foreground truncate">{creatorPersona.name}</span>
                                 </div>
                               </TableCell>
                             )
@@ -2957,16 +2957,13 @@ export function QBTable() {
                               ?? { initials: editorId.slice(0, 2).toUpperCase(), color: 'var(--muted)', name: editorId, trustLevel: 'junior' as const, id: editorId, role: 'instructor' as const }
                             return (
                               <TableCell key="lastEditedBy" className={`${TD} w-32`} style={pinnedStyle('lastEditedBy', pinnedCols, pinnedRightCols)}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                  <div className="text-[8px] font-bold" style={{
-                                    width: 22, height: 22, borderRadius: '50%',
-                                    backgroundColor: 'var(--avatar-initials-bg)',
-                                    color: 'var(--avatar-initials-fg)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                                  }}>
-                                    {editorPersona.initials}
-                                  </div>
-                                  <span className="text-sm text-foreground">{editorPersona.name}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                                  <Avatar className="shrink-0">
+                                    <AvatarFallback className="text-xs font-bold" style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>
+                                      {editorPersona.initials}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span className="text-sm text-foreground truncate">{editorPersona.name}</span>
                                 </div>
                               </TableCell>
                             )
@@ -3111,11 +3108,10 @@ export function QBTable() {
                 })}
               </TableBody>
             </table>
-          </div>{/* scroll+border container */}
-
-          {/* ── Pagination footer — border-x border-b rounded-b-lg attaches flush to table (DS DataTablePaginated pattern) */}
+          </div>{/* inner scroll */}
+          {/* ── Pagination footer — inside clip, border-t separates from table rows */}
           {paginationEnabled && sortedQuestions.length > 0 && (
-            <div className="border-x border-b border-border rounded-b-lg overflow-hidden flex items-center justify-between px-4 py-2.5 bg-background select-none text-sm" style={{ flexShrink: 0 }}>
+            <div className="border-t border-border flex items-center justify-between px-4 py-2.5 bg-background select-none text-sm" style={{ flexShrink: 0 }}>
               {/* Left: Rows per page */}
               <div className="flex items-center gap-2 text-muted-foreground">
                 <span className="whitespace-nowrap">Rows per page</span>
@@ -3175,6 +3171,7 @@ export function QBTable() {
               </div>
             </div>
           )}
+          </div>{/* outer clip+border */}
           </div>{/* padding wrapper */}
         </>
       )}
@@ -3191,7 +3188,7 @@ export function QBTable() {
             role="status"
             aria-live="polite"
             className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1.5 rounded-xl border border-border bg-background shadow-xl px-3 py-2 animate-in fade-in-0 slide-in-from-bottom-3 duration-150"
-            style={{ boxShadow: '0 8px 32px oklch(0 0 0 / 0.14), 0 2px 8px oklch(0 0 0 / 0.08)', minWidth: 0 }}
+            style={{ boxShadow: 'var(--qb-bulk-bar-shadow)', minWidth: 0 }}
           >
             {/* Count */}
             <span className="text-xs font-semibold text-foreground" style={{ paddingInline: 6, whiteSpace: 'nowrap' }}>
@@ -3320,8 +3317,8 @@ export function QBTable() {
                 )}
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setBulkStatusTarget(null)}>Cancel</Button>
-                <Button onClick={() => {
+                <Button variant="outline" size="sm" onClick={() => setBulkStatusTarget(null)}>Cancel</Button>
+                <Button variant="default" size="sm" onClick={() => {
                   affected.forEach(q => updateQuestion(q.id, { status: bulkStatusTarget }))
                   setBulkStatusTarget(null)
                 }}>
@@ -3395,8 +3392,8 @@ export function QBTable() {
               </div>
               <p className="text-xs text-muted-foreground" style={{ margin: 0 }}>This action cannot be undone.</p>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setBulkDeleteOpen(false)}>Cancel</Button>
-                <Button variant="destructive" onClick={() => {
+                <Button variant="outline" size="sm" onClick={() => setBulkDeleteOpen(false)}>Cancel</Button>
+                <Button variant="destructive" size="sm" onClick={() => {
                   selectedQs.forEach(q => deleteQuestion(q.id))
                   clearSelection()
                   setBulkDeleteOpen(false)

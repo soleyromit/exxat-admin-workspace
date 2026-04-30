@@ -92,6 +92,7 @@ export function ManageCollaboratorsModal() {
                 <Button
                   key={p.id}
                   variant="ghost"
+                  size="sm"
                   className="w-full justify-start gap-2 h-auto py-1.5 px-2 rounded-md"
                   onClick={() => addCollaborator(p.id)}
                 >
@@ -168,7 +169,7 @@ export function ManageCollaboratorsModal() {
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setCollaboratorsModalFolderId(null)}>Done</Button>
+          <Button variant="outline" size="sm" onClick={() => setCollaboratorsModalFolderId(null)}>Done</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -252,8 +253,8 @@ export function RequestEditAccessModal({ questionTitle, open, onOpenChange }: {
               </Field>
 
               <DialogFooter>
-                <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                <Button onClick={submit}>
+                <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Cancel</Button>
+                <Button variant="default" size="sm" onClick={submit}>
                   <i className="fa-light fa-paper-plane" aria-hidden="true" />
                   Send Request
                 </Button>

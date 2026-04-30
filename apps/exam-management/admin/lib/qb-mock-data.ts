@@ -358,7 +358,7 @@ export const mockCourseOfferings: CourseOffering[] = [
 ]
 
 export const mockAssessments: Assessment[] = [
-  { id: 'asmt-001', courseId: 'course-phar101', offeringId: 'offering-phar101-f25', title: 'Midterm Exam',  questionCount: 40, diffDistribution: { Easy: 10, Medium: 20, Hard: 10 } },
-  { id: 'asmt-002', courseId: 'course-phar101', offeringId: 'offering-phar101-f25', title: 'Final Exam',   questionCount: 60, diffDistribution: { Easy: 15, Medium: 25, Hard: 20 } },
-  { id: 'asmt-003', courseId: 'course-biol201', offeringId: 'offering-biol201-f25', title: 'Unit 1 Quiz',  questionCount: 20, diffDistribution: { Easy: 8,  Medium: 8,  Hard: 4  } },
+  { id: 'asmt-001', courseId: 'course-phar101', offeringId: 'offering-phar101-f25', title: 'Midterm Exam',  questionCount: 40, diffDistribution: { Easy: 10, Medium: 20, Hard: 10 }, durationMinutes: 90  },
+  { id: 'asmt-002', courseId: 'course-phar101', offeringId: 'offering-phar101-f25', title: 'Final Exam',   questionCount: 60, diffDistribution: { Easy: 15, Medium: 25, Hard: 20 }, durationMinutes: 150 },
+  { id: 'asmt-003', courseId: 'course-biol201', offeringId: 'offering-biol201-f25', title: 'Unit 1 Quiz',  questionCount: 20, diffDistribution: { Easy: 8,  Medium: 8,  Hard: 4  }, durationMinutes: 30  },
 ]

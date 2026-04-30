@@ -27,13 +27,14 @@ function getDescendantIds(id: string, folders: FolderNode[]): Set<string> {
 }
 
 function getFolderIcon(node: FolderNode, expanded: boolean, selected: boolean) {
+  const colorCls = selected ? 'text-foreground' : 'text-muted-foreground'
   if (node.icon) {
-    return { cls: `fa-light ${node.icon}`, color: selected ? 'var(--foreground)' : 'var(--muted-foreground)' }
+    return { cls: `${selected ? 'fa-solid' : 'fa-light'} ${node.icon}`, colorCls }
   }
-  if (node.isCourse) return { cls: 'fa-solid fa-graduation-cap', color: selected ? 'var(--foreground)' : 'var(--muted-foreground)' }
+  if (node.isCourse) return { cls: selected ? 'fa-solid fa-graduation-cap' : 'fa-light fa-graduation-cap', colorCls }
   return {
     cls: expanded ? 'fa-solid fa-folder-open' : (selected ? 'fa-solid fa-folder' : 'fa-regular fa-folder'),
-    color: selected ? 'var(--foreground)' : 'var(--muted-foreground)',
+    colorCls,
   }
 }
 
@@ -98,8 +99,8 @@ function DeleteFolderDialog({
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button variant="destructive" onClick={handleDelete}>Delete folder</Button>
+          <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+          <Button variant="destructive" size="sm" onClick={handleDelete}>Delete folder</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -188,7 +189,7 @@ function MoveFolderDialog({ node, open, onClose }: { node: FolderNode; open: boo
           </Button>
           {breadcrumbs.map((crumb, i) => (
             <span key={crumb.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-              <i className="fa-light fa-chevron-right" aria-hidden="true" style={{ fontSize: 9, color: 'var(--muted-foreground)' }} />
+              <i className="fa-light fa-chevron-right text-muted-foreground" aria-hidden="true" style={{ fontSize: 9 }} />
               <Button
                 variant="ghost" size="xs"
                 onClick={() => navigate(crumb.id)}
@@ -216,25 +217,24 @@ function MoveFolderDialog({ node, open, onClose }: { node: FolderNode; open: boo
                 const hasChildren = folders.some(c => c.parentId === f.id && !excludedIds.has(c.id))
                 const label = f.isCourse ? courseFolderLabel(f.name) : f.name
                 return (
-                  <div
+                  <Button
                     key={f.id}
-                    role="button" tabIndex={0}
+                    variant="ghost"
+                    size="sm"
                     onClick={() => navigate(f.id)}
-                    onKeyDown={e => { if (e.key === 'Enter') navigate(f.id) }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 20px', cursor: 'pointer', userSelect: 'none' }}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--interactive-hover)')}
-                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
+                    className="w-full justify-start gap-[10px]"
+                    style={{ padding: '9px 20px', height: 'auto', userSelect: 'none' }}
                   >
                     <i
-                      className={`fa-light ${f.isCourse ? 'fa-graduation-cap' : 'fa-folder'}`}
+                      className={`fa-light ${f.isCourse ? 'fa-graduation-cap' : 'fa-folder'} text-muted-foreground`}
                       aria-hidden="true"
-                      style={{ fontSize: 14, color: 'var(--muted-foreground)', width: 16, textAlign: 'center', flexShrink: 0 }}
+                      style={{ fontSize: 14, width: 16, textAlign: 'center', flexShrink: 0 }}
                     />
-                    <span className="flex-1 text-sm text-foreground">{label}</span>
+                    <span className="flex-1 text-sm text-foreground text-left">{label}</span>
                     {hasChildren && (
                       <i className="fa-light fa-chevron-right" aria-hidden="true" style={{ fontSize: 10, color: 'var(--muted-foreground)' }} />
                     )}
-                  </div>
+                  </Button>
                 )
               })}
               {/* Inline new folder input */}
@@ -279,8 +279,8 @@ function MoveFolderDialog({ node, open, onClose }: { node: FolderNode; open: boo
             New folder
           </Button>
           <div style={{ display: 'flex', gap: 8 }}>
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
-            <Button onClick={handleMoveHere} disabled={!canMoveHere}>Move here</Button>
+            <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+            <Button variant="default" size="sm" onClick={handleMoveHere} disabled={!canMoveHere}>Move here</Button>
           </div>
         </div>
       </DialogContent>
@@ -711,8 +711,8 @@ function FolderRow({
         </Button>
 
         {/* Icon */}
-        <i className={icon.cls} aria-hidden="true"
-          style={{ fontSize: 13, color: icon.color, width: 16, textAlign: 'center', flexShrink: 0 }} />
+        <i className={`${icon.cls} ${icon.colorCls}`} aria-hidden="true"
+          style={{ fontSize: 13, width: 16, textAlign: 'center', flexShrink: 0 }} />
 
         {/* Name */}
         {isRenaming ? (
@@ -744,9 +744,8 @@ function FolderRow({
             style={{ flex: 1, color: 'var(--brand-color)' }}
           />
         ) : (
-          <div className="qb-name-scroll" style={{ flex: 1, minWidth: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
-            <span className={`block text-sm whitespace-nowrap ${isSelected ? 'font-medium' : 'font-normal'}`}
-            style={{ color: 'var(--foreground)' }}
+          <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+            <span className={`block text-sm truncate text-foreground ${isSelected ? 'font-medium' : 'font-normal'}`}
           >
               {node.isCourse ? courseFolderLabel(node.name) : node.name}
             </span>
@@ -916,21 +915,21 @@ export function QBSidebar() {
     <div style={{ padding: '2px 4px' }}>
     <Button
       variant="ghost"
+      size="sm"
       onClick={onClick}
-      className="w-full justify-start"
+      className="w-full justify-start text-foreground"
       style={{
         padding: '0 8px',
         height: 32,
         width: '100%',
         backgroundColor: active ? 'var(--sidebar-accent)' : 'transparent',
         borderRadius: 6,
-        color: 'var(--foreground)',
       }}
     >
       <i
-        className={active ? `fa-solid ${icon}` : `fa-regular ${icon}`}
+        className={`${active ? `fa-solid ${icon}` : `fa-regular ${icon}`} ${active ? 'text-foreground' : 'text-muted-foreground'}`}
         aria-hidden="true"
-        style={{ fontSize: 13, color: active ? 'var(--foreground)' : 'var(--muted-foreground)', width: 16, textAlign: 'center', flexShrink: 0 }}
+        style={{ fontSize: 13, width: 16, textAlign: 'center', flexShrink: 0 }}
       />
       <span className={`flex-1 text-sm text-left text-foreground ${active ? 'font-medium' : 'font-normal'}`}>
         {label}
@@ -950,7 +949,7 @@ export function QBSidebar() {
         minWidth: sidebarOpen ? 248 : 0,
         display: 'flex',
         flexDirection: 'column',
-        borderRight: '1px solid var(--border)',
+        borderRight: sidebarOpen ? '1px solid var(--border)' : 'none',
         backgroundColor: 'var(--background)',
         overflow: 'hidden',
         transition: 'width 200ms ease, min-width 200ms ease',
@@ -997,8 +996,8 @@ export function QBSidebar() {
                   style={{ height: 26 }}
                 />
                 <InputGroupAddon align="inline-end">
-                  <i className="fa-light fa-magnifying-glass" aria-hidden="true"
-                    style={{ fontSize: 11, color: 'var(--muted-foreground)', padding: '0 6px' }} />
+                  <i className="fa-light fa-magnifying-glass text-muted-foreground" aria-hidden="true"
+                    style={{ fontSize: 11, padding: '0 6px' }} />
                 </InputGroupAddon>
               </InputGroup>
               <Button

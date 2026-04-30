@@ -1,7 +1,17 @@
+import type { ReactNode } from 'react'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@exxat/ds/packages/ui/src'
+
 export interface Column<T> {
   key: string
   header: string
-  render?: (row: T) => React.ReactNode
+  render?: (row: T) => ReactNode
   className?: string
 }
 
@@ -17,64 +27,42 @@ export function DataTable<T extends { id: string | number }>({
   emptyMessage = 'No data found.',
 }: DataTableProps<T>) {
   return (
-    <div
-      className="overflow-hidden rounded-lg"
-      style={{ border: '1px solid var(--border)' }}
-    >
-      <table
-        className="w-full text-sm"
-        style={{
-          backgroundColor: 'var(--card)',
-          color: 'var(--card-foreground)',
-        }}
-      >
-        <thead>
-          <tr style={{ borderBottom: '1px solid var(--border)' }}>
+    <div className="border border-border rounded-lg overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
             {columns.map((col) => (
-              <th
-                key={col.key}
-                scope="col"
-                className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground ${col.className ?? ''}`}
-              >
+              <TableHead key={col.key} className={col.className}>
                 {col.header}
-              </th>
+              </TableHead>
             ))}
-          </tr>
-        </thead>
-        <tbody>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {data.length === 0 ? (
-            <tr>
-              <td
+            <TableRow>
+              <TableCell
                 colSpan={columns.length}
                 className="px-4 py-8 text-center text-sm text-muted-foreground"
               >
                 {emptyMessage}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ) : (
-            data.map((row, rowIndex) => (
-              <tr
-                key={row.id}
-                style={{
-                  borderBottom:
-                    rowIndex < data.length - 1
-                      ? '1px solid var(--border)'
-                      : undefined,
-                }}
-                className="transition-colors hover:opacity-80"
-              >
+            data.map((row) => (
+              <TableRow key={row.id}>
                 {columns.map((col) => (
-                  <td key={col.key} className={`px-4 py-3 ${col.className ?? ''}`}>
+                  <TableCell key={col.key} className={col.className}>
                     {col.render
                       ? col.render(row)
-                      : ((row as Record<string, unknown>)[col.key] as React.ReactNode)}
-                  </td>
+                      : ((row as Record<string, unknown>)[col.key] as ReactNode)}
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
             ))
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   )
 }

@@ -55,7 +55,7 @@ function QBBreadcrumb() {
     <Button
       variant="ghost" size="xs"
       onClick={onClick}
-      className={muted ? 'text-xs text-muted-foreground font-normal' : 'text-sm font-medium text-foreground'}
+      className={muted ? 'text-sm text-muted-foreground font-normal' : 'text-sm font-medium text-foreground'}
       style={{ height: 24, padding: '0 4px' }}
     >
       {label}
@@ -189,7 +189,7 @@ export function QBHeader() {
               </Avatar>
               <span className="text-xs font-medium">{currentPersona.name}</span>
               <Badge variant="secondary" className="rounded text-[10px]">{getRoleLabel(currentPersona.role)}</Badge>
-              <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 10, color: 'var(--muted-foreground)' }} />
+              <i className="fa-light fa-chevron-down text-muted-foreground" aria-hidden="true" style={{ fontSize: 10 }} />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-56">
@@ -197,7 +197,7 @@ export function QBHeader() {
             {personas.map((p: Persona) => (
               <DropdownMenuItem key={p.id} onClick={() => setCurrentPersona(p)}>
                 <Avatar style={{ width: 24, height: 24 }}>
-                  <AvatarFallback style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)', fontSize: 9, fontWeight: 700 }}>
+                  <AvatarFallback className="text-[9px] font-bold" style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>
                     {p.initials}
                   </AvatarFallback>
                 </Avatar>

@@ -78,6 +78,9 @@
   --qb-diff-bar-medium: var(--qb-diff-medium-color);
   --qb-diff-bar-hard:   var(--qb-diff-hard-color);
   --qb-folder-selected-bg: var(--sidebar-accent);
+
+  /* Bulk-action floating bar shadow */
+  --qb-bulk-bar-shadow: 0 8px 32px oklch(0 0 0 / 0.14), 0 2px 8px oklch(0 0 0 / 0.08);
 }
 
 /* Courses table row tints */

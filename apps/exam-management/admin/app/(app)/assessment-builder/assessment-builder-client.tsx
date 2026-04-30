@@ -1,5 +1,5 @@
 'use client'
-import { useState, useMemo, useCallback } from 'react'
+import React, { useState, useMemo, useCallback } from 'react'
 import {
   Button, Badge,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
@@ -9,8 +9,33 @@ import {
   Checkbox,
 } from '@exxat/ds/packages/ui/src'
 import { mockCourses, mockCourseOfferings, mockAssessments, MOCK_QB_QUESTIONS } from '@/lib/qb-mock-data'
-import type { AssessmentDraft, SmartView } from '@/lib/qb-types'
+import type { AssessmentDraft, SmartView, QType, QDiff } from '@/lib/qb-types'
 import { SYSTEM_SMART_VIEWS } from '@/lib/qb-types'
+
+// Estimated minutes per question type (base, before difficulty adjustment)
+const TIME_BY_TYPE: Record<QType, number> = {
+  'MCQ':        1.5,
+  'Fill blank':  2.0,
+  'Hotspot':    2.5,
+  'Ordering':   3.0,
+  'Matching':   3.0,
+}
+
+// Difficulty multiplier on base time
+const DIFF_MULT: Record<QDiff, number> = {
+  Easy:   1.0,
+  Medium: 1.25,
+  Hard:   1.5,
+}
+
+function formatMin(min: number): string {
+  if (!min || !isFinite(min)) return '—'
+  const rounded = Math.round(min)
+  if (rounded < 60) return `~${rounded} min`
+  const h = Math.floor(rounded / 60)
+  const m = rounded % 60
+  return m > 0 ? `${h}h ${m}m` : `${h}h`
+}
 
 export default function AssessmentBuilderClient() {
   const [courseId, setCourseId] = useState(mockCourses[0]?.id ?? '')
@@ -47,6 +72,7 @@ export default function AssessmentBuilderClient() {
       courseId: source.courseId,
       offeringId: source.offeringId,
       questions: [],
+      durationMinutes: source.durationMinutes,
     })
   }
 
@@ -57,6 +83,7 @@ export default function AssessmentBuilderClient() {
       courseId,
       offeringId,
       questions: [],
+      durationMinutes: 60,
     })
   }
 
@@ -138,20 +165,20 @@ export default function AssessmentBuilderClient() {
             selectedIds={selectedIds}
             onToggle={toggleQuestion}
             activeAsmt={activeAsmt}
+            onDurationChange={(min) => setActiveAsmt(prev => prev ? { ...prev, durationMinutes: min } : prev)}
             smartViews={allSmartViews}
             activeViewId={smartViewId}
             onViewChange={setSmartViewId}
             onSaveView={saveSmartView}
           />
         ) : (
-          <div style={{
+          <div className="text-muted-foreground" style={{
             flex: 1,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexDirection: 'column',
             gap: 12,
-            color: 'var(--muted-foreground)',
           }}>
             <i className="fa-light fa-pen-ruler" aria-hidden="true" style={{ fontSize: 32, opacity: 0.4 }} />
             <span className="text-sm">Select an assessment to start picking questions</span>
@@ -220,9 +247,9 @@ function ABAssessmentList({ assessments, activeId, onOpen, onCreate }: {
                 gap: 1,
                 width: '100%',
               }}>
-                <div style={{ width: `${pct(diff.Easy)}%`, background: 'var(--qb-diff-easy)', opacity: 0.7, borderRadius: 2, transition: 'width .2s' }} />
-                <div style={{ width: `${pct(diff.Medium)}%`, background: 'var(--qb-diff-medium)', opacity: 0.85, borderRadius: 2, transition: 'width .2s' }} />
-                <div style={{ width: `${pct(diff.Hard)}%`, background: 'var(--qb-diff-hard)', borderRadius: 2, transition: 'width .2s' }} />
+                <div style={{ width: `${pct(diff.Easy)}%`, background: 'var(--qb-diff-bar-easy)', opacity: 0.7, borderRadius: 2, transition: 'width .2s' }} />
+                <div style={{ width: `${pct(diff.Medium)}%`, background: 'var(--qb-diff-bar-medium)', opacity: 0.85, borderRadius: 2, transition: 'width .2s' }} />
+                <div style={{ width: `${pct(diff.Hard)}%`, background: 'var(--qb-diff-bar-hard)', borderRadius: 2, transition: 'width .2s' }} />
               </div>
             </Button>
           )
@@ -244,10 +271,22 @@ function ABAssessmentList({ assessments, activeId, onOpen, onCreate }: {
 
 // ─── Question picker (Task 14) ────────────────────────────────────────────────
 
-function ABQuestionPicker({ selectedIds, onToggle, activeAsmt, smartViews, activeViewId, onViewChange, onSaveView }: {
+const DURATION_OPTIONS = [
+  { label: '20 min',  value: 20  },
+  { label: '30 min',  value: 30  },
+  { label: '45 min',  value: 45  },
+  { label: '60 min',  value: 60  },
+  { label: '90 min',  value: 90  },
+  { label: '2 hours', value: 120 },
+  { label: '2.5 hrs', value: 150 },
+  { label: '3 hours', value: 180 },
+]
+
+function ABQuestionPicker({ selectedIds, onToggle, activeAsmt, onDurationChange, smartViews, activeViewId, onViewChange, onSaveView }: {
   selectedIds: Set<string>
   onToggle: (id: string) => void
   activeAsmt: AssessmentDraft
+  onDurationChange: (min: number) => void
   smartViews: SmartView[]
   activeViewId: string
   onViewChange: (id: string) => void
@@ -278,6 +317,34 @@ function ABQuestionPicker({ selectedIds, onToggle, activeAsmt, smartViews, activ
       Hard:   picked.filter(q => q.difficulty === 'Hard').length,
     }
   }, [selectedIds])
+
+  const bloomsMetrics = useMemo(() => {
+    const picked = MOCK_QB_QUESTIONS.filter(q => selectedIds.has(q.id))
+    if (picked.length === 0) return []
+    const counts: Record<string, number> = {}
+    for (const q of picked) counts[q.blooms] = (counts[q.blooms] ?? 0) + 1
+    const total = picked.length
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([level, count]) => ({ level, count, pct: Math.round((count / total) * 100) }))
+  }, [selectedIds])
+
+  const timeMetrics = useMemo(() => {
+    const picked = MOCK_QB_QUESTIONS.filter(q => selectedIds.has(q.id))
+    if (picked.length === 0) return { totalMin: 0, avgMin: 0 }
+    const totalMin = picked.reduce(
+      (sum, q) => sum + (TIME_BY_TYPE[q.type] ?? 2) * (DIFF_MULT[q.difficulty] ?? 1),
+      0
+    )
+    return { totalMin, avgMin: totalMin / picked.length }
+  }, [selectedIds])
+
+  const overtimeMetrics = useMemo(() => {
+    if (timeMetrics.totalMin === 0) return null
+    const delta = timeMetrics.totalMin - activeAsmt.durationMinutes
+    const pct = Math.round((timeMetrics.totalMin / activeAsmt.durationMinutes) * 100)
+    return { allottedMin: activeAsmt.durationMinutes, delta, pct }
+  }, [timeMetrics.totalMin, activeAsmt.durationMinutes])
 
   function handleSaveView() {
     if (!newViewName.trim()) return
@@ -371,10 +438,13 @@ function ABQuestionPicker({ selectedIds, onToggle, activeAsmt, smartViews, activ
             ) : filteredQuestions.map(q => {
               const isPicked = selectedIds.has(q.id)
               // Custom qb tokens — kept in style (no Tailwind class exists)
-              const diffStyles: Record<string, React.CSSProperties> = {
-                Easy:   { color: 'var(--qb-diff-easy)' },
-                Medium: { fontWeight: 600, color: 'var(--qb-diff-medium)' },
-                Hard:   { fontWeight: 800, color: 'var(--qb-diff-hard)' },
+              const diffColor: Record<string, string> = {
+                Easy:   'var(--qb-diff-bar-easy)',
+                Medium: 'var(--qb-diff-bar-medium)',
+                Hard:   'var(--qb-diff-bar-hard)',
+              }
+              const diffWeight: Record<string, string> = {
+                Easy: 'font-normal', Medium: 'font-semibold', Hard: 'font-extrabold',
               }
               return (
                 <TableRow
@@ -402,7 +472,7 @@ function ABQuestionPicker({ selectedIds, onToggle, activeAsmt, smartViews, activ
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="text-xs" style={diffStyles[q.difficulty] ?? {}}>{q.difficulty}</span>
+                    <span className={`text-xs ${diffWeight[q.difficulty] ?? ''}`} style={{ color: diffColor[q.difficulty] }}>{q.difficulty}</span>
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground font-medium">
                     {q.type}
@@ -420,6 +490,11 @@ function ABQuestionPicker({ selectedIds, onToggle, activeAsmt, smartViews, activ
       {/* Footer diff chart */}
       <ABDiffChart
         distribution={distribution}
+        timeMetrics={timeMetrics}
+        overtimeMetrics={overtimeMetrics}
+        durationMinutes={activeAsmt.durationMinutes}
+        onDurationChange={onDurationChange}
+        bloomsMetrics={bloomsMetrics}
         saveConfirmed={saveConfirmed}
         onSave={() => { setSaveConfirmed(true); setTimeout(() => setSaveConfirmed(false), 2000) }}
         onCancel={() => {}}
@@ -443,7 +518,7 @@ function ABQuestionPicker({ selectedIds, onToggle, activeAsmt, smartViews, activ
           />
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setSaveDialogOpen(false)}>Cancel</Button>
-            <Button size="sm" onClick={handleSaveView} disabled={!newViewName.trim()}>Save</Button>
+            <Button variant="default" size="sm" onClick={handleSaveView} disabled={!newViewName.trim()}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -453,69 +528,157 @@ function ABQuestionPicker({ selectedIds, onToggle, activeAsmt, smartViews, activ
 
 // ─── Difficulty distribution chart (Task 15) ─────────────────────────────────
 
-function ABDiffChart({ distribution, saveConfirmed, onSave, onCancel: _onCancel }: {
+function ABDiffChart({ distribution, timeMetrics, overtimeMetrics, durationMinutes, onDurationChange, bloomsMetrics, saveConfirmed, onSave, onCancel: _onCancel }: {
   distribution: { Easy: number; Medium: number; Hard: number }
+  timeMetrics: { totalMin: number; avgMin: number }
+  overtimeMetrics: { allottedMin: number; delta: number; pct: number } | null
+  durationMinutes: number
+  onDurationChange: (min: number) => void
+  bloomsMetrics: { level: string; count: number; pct: number }[]
   saveConfirmed: boolean
   onSave: () => void
   onCancel: () => void
 }) {
+  const [inputMin, setInputMin] = useState(String(durationMinutes))
+  // Sync input when durationMinutes changes externally (e.g. opening a different assessment)
+  React.useEffect(() => { setInputMin(String(durationMinutes)) }, [durationMinutes])
+
+  function commitInput(raw: string) {
+    const n = parseInt(raw)
+    if (!isNaN(n) && n >= 5) onDurationChange(n)
+    else setInputMin(String(durationMinutes))
+  }
+
   const total = distribution.Easy + distribution.Medium + distribution.Hard
   const bars = [
-    { label: 'Easy',   count: distribution.Easy,   color: 'var(--qb-diff-easy)',   weight: 400 },
-    { label: 'Medium', count: distribution.Medium, color: 'var(--qb-diff-medium)', weight: 600 },
-    { label: 'Hard',   count: distribution.Hard,   color: 'var(--qb-diff-hard)',   weight: 800 },
+    { label: 'E', count: distribution.Easy,   color: 'var(--qb-diff-bar-easy)'   },
+    { label: 'M', count: distribution.Medium, color: 'var(--qb-diff-bar-medium)' },
+    { label: 'H', count: distribution.Hard,   color: 'var(--qb-diff-bar-hard)'   },
   ]
   const maxCount = Math.max(...bars.map(b => b.count), 1)
 
+  const overtime = overtimeMetrics ? (() => {
+    const { delta } = overtimeMetrics
+    if (delta > 0)  return { icon: 'fa-triangle-exclamation', label: `+${Math.round(delta)} min over`, color: 'var(--destructive)',         cls: 'text-destructive'         }
+    if (delta > -5) return { icon: 'fa-clock',                label: 'Tight',                          color: 'var(--chart-4)',             cls: 'text-[color:var(--chart-4)]' }
+    return               { icon: 'fa-circle-check',           label: 'On time',                        color: 'var(--qb-trust-senior-color)', cls: 'text-[color:var(--qb-trust-senior-color)]' }
+  })() : null
+
+  const SEP = () => <div style={{ width: 1, alignSelf: 'stretch', background: 'var(--border)', margin: '0 4px' }} />
+
   return (
     <div style={{
-      padding: '10px 16px 12px',
+      padding: '12px 20px',
       borderTop: '1px solid var(--border)',
       display: 'flex',
       alignItems: 'center',
-      gap: 20,
+      gap: 24,
       flexShrink: 0,
       background: 'var(--ab-chart-bg)',
     }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 48 }}>
+      {/* Difficulty bar chart */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 52 }}>
         {bars.map(bar => (
           <div key={bar.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-            <span className="text-xs font-semibold" style={{ color: bar.color }}>
+            <span className="text-xs font-semibold" style={{ color: bar.color, lineHeight: 1 }}>
               {bar.count > 0 ? bar.count : ''}
             </span>
             <div style={{
-              width: 28,
-              borderRadius: '3px 3px 0 0',
+              width: 24, borderRadius: '3px 3px 0 0',
               background: bar.color,
               height: bar.count === 0 ? 3 : `${(bar.count / maxCount) * 32}px`,
               transition: 'height .2s ease',
-              opacity: bar.count === 0 ? 0.25 : 1,
+              opacity: bar.count === 0 ? 0.2 : 1,
             }} />
+            <span className="text-xs text-muted-foreground" style={{ lineHeight: 1 }}>{bar.label}</span>
           </div>
         ))}
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        {bars.map(bar => (
-          <div key={bar.label} className="text-xs" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontWeight: bar.weight, color: bar.color, width: 44 }}>{bar.label}</span>
-            <span className="text-muted-foreground">
-              {bar.count} question{bar.count !== 1 ? 's' : ''}
+
+      <SEP />
+
+      {/* Est. time + overtime */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+          {/* Total */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <span className="text-[10px] text-muted-foreground" style={{ whiteSpace: 'nowrap' }}>Total</span>
+            <span className="text-sm font-semibold text-foreground" style={{ lineHeight: 1 }}>{formatMin(timeMetrics.totalMin)}</span>
+          </div>
+          {/* Avg / question */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <span className="text-[10px] text-muted-foreground" style={{ whiteSpace: 'nowrap' }}>Avg / Q</span>
+            <span className="text-sm font-semibold text-foreground" style={{ lineHeight: 1 }}>
+              {timeMetrics.avgMin > 0 ? formatMin(timeMetrics.avgMin) : '—'}
             </span>
-            {total > 0 && (
-              <span className="text-muted-foreground" style={{ opacity: 0.6 }}>
-                ({Math.round((bar.count / total) * 100)}%)
-              </span>
+          </div>
+          {/* Allotted — number input + preset select */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <span className="text-[10px] text-muted-foreground" style={{ whiteSpace: 'nowrap' }}>Allotted</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Input
+                type="number"
+                min={5}
+                step={5}
+                value={inputMin}
+                onChange={e => setInputMin(e.target.value)}
+                onBlur={e => commitInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') commitInput(inputMin) }}
+                className="text-sm font-semibold text-foreground text-center"
+                style={{ width: 48, height: 26, padding: '0 4px' }}
+              />
+              <Select
+                value={DURATION_OPTIONS.some(o => o.value === durationMinutes) ? String(durationMinutes) : ''}
+                onValueChange={v => { onDurationChange(Number(v)); setInputMin(v) }}
+              >
+                <SelectTrigger className="text-xs" style={{ width: 76, height: 26 }}>
+                  <SelectValue placeholder="preset" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DURATION_OPTIONS.map(o => (
+                    <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+        {overtime ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <i className={`fa-solid ${overtime.icon}`} aria-hidden="true" style={{ fontSize: 11, color: overtime.color }} />
+            <span className={`text-[11px] font-semibold ${overtime.cls}`}>{overtime.label}</span>
+          </div>
+        ) : (
+          <span className="text-[10px] text-muted-foreground">Select questions to estimate</span>
+        )}
+      </div>
+
+      {/* Bloom's */}
+      {bloomsMetrics.length > 0 && (
+        <>
+          <SEP />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <span className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
+              Bloom&rsquo;s
+            </span>
+            {bloomsMetrics.slice(0, 3).map(b => (
+              <div key={b.level} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, minWidth: 136 }}>
+                <span className="text-xs text-foreground">{b.level}</span>
+                <span className="text-xs font-semibold text-foreground">{b.pct}%</span>
+              </div>
+            ))}
+            {bloomsMetrics.length > 3 && (
+              <span className="text-[10px] text-muted-foreground">+{bloomsMetrics.length - 3} more</span>
             )}
           </div>
-        ))}
-      </div>
+        </>
+      )}
+
       <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
         {total === 0 && (
-          <span className="text-xs text-muted-foreground">
-            Select questions to build assessment
-          </span>
+          <span className="text-xs text-muted-foreground">Select questions to build</span>
         )}
-        <Button size="sm" disabled={total === 0 || saveConfirmed} onClick={onSave}>
+        <Button variant="default" size="sm" disabled={total === 0 || saveConfirmed} onClick={onSave}>
           {saveConfirmed ? 'Saved ✓' : 'Save assessment'}
         </Button>
       </div>

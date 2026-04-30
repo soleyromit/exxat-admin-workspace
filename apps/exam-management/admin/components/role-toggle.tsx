@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Button } from '@exxat/ds/packages/ui/src'
 
 type Role = 'admin' | 'faculty'
 
@@ -24,21 +25,19 @@ export function RoleToggle({ onChange }: RoleToggleProps) {
       aria-label="Role switcher"
     >
       {(['admin', 'faculty'] as const).map((r) => (
-        <button
+        <Button
           key={r}
-          type="button"
+          variant="ghost"
+          size="sm"
           aria-pressed={role === r}
           onClick={() => handleSelect(r)}
-          className="px-4 py-1.5 text-sm font-medium capitalize transition-colors"
+          className={`px-4 rounded-none capitalize font-medium${role === r ? ' text-primary-foreground' : ''}`}
           style={{
-            backgroundColor:
-              role === r ? 'var(--primary)' : 'transparent',
-            color:
-              role === r ? 'var(--primary-foreground)' : 'var(--foreground)',
+            backgroundColor: role === r ? 'var(--primary)' : 'transparent',
           }}
         >
           {r === 'admin' ? 'Admin' : 'Faculty'}
-        </button>
+        </Button>
       ))}
     </div>
   )

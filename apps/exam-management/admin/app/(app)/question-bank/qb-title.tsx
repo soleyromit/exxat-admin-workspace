@@ -50,7 +50,7 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
             </Avatar>
           ))}
           {overflow > 0 && (
-            <Badge variant="secondary" className="rounded-full" style={{ fontSize: 9, height: 22, minWidth: 22, marginLeft: -7, border: '2px solid var(--background)', position: 'relative', padding: '0 4px' }}>
+            <Badge variant="secondary" className="rounded-full text-[9px]" style={{ height: 22, minWidth: 22, marginLeft: -7, border: '2px solid var(--background)', position: 'relative', padding: '0 4px' }}>
               +{overflow}
             </Badge>
           )}

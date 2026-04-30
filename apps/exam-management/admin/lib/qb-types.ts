@@ -80,6 +80,7 @@ export interface Assessment {
   title: string
   questionCount: number
   diffDistribution: Record<QDiff, number>
+  durationMinutes: number
 }
 
 export interface AssessmentQuestion {
@@ -93,6 +94,7 @@ export interface AssessmentDraft {
   courseId: string
   offeringId: string
   questions: AssessmentQuestion[]
+  durationMinutes: number
 }
 
 export interface SmartView {

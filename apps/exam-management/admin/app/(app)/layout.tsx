@@ -10,7 +10,7 @@ export default function AppLayout({
     <TooltipProvider>
       <SidebarProvider className="h-svh">
         <AppSidebar />
-        <SidebarInset className="flex flex-col overflow-x-hidden">
+        <SidebarInset className="flex flex-col overflow-x-hidden" style={{ paddingBottom: 0 }}>
           {children}
         </SidebarInset>
       </SidebarProvider>
