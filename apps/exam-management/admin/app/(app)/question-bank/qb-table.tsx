@@ -2691,7 +2691,7 @@ export function QBTable() {
           {/* Table: outer clips corners, inner scrolls — overflow-hidden required for border-radius to clip table content */}
           <div className="border border-border overflow-hidden rounded-lg" style={{ maxHeight: '100%', display: 'flex', flexDirection: 'column' }}>
           <div className="qb-table-scroll" style={{ overflow: 'auto' }}>
-            <table className="text-sm border-separate border-spacing-0" style={{ minWidth: '100%' }}>
+            <table className="text-sm border-separate border-spacing-0 table-fixed" style={{ minWidth: '100%' }}>
               {showColumnLabels && <TableHeader style={{ position: 'sticky', top: 0, zIndex: 4 }}>
                 <TableRow>
                   {/* Select all */}
@@ -2887,7 +2887,7 @@ export function QBTable() {
                                     )}
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <div className="text-sm font-medium text-foreground leading-snug line-clamp-2" style={{
+                                        <div className="text-sm font-medium text-foreground leading-snug line-clamp-2 whitespace-normal" style={{
                                           cursor: 'default'
                                         }}>
                                           {q.title}
@@ -2942,7 +2942,7 @@ export function QBTable() {
                                       {creatorPersona.initials}
                                     </AvatarFallback>
                                   </Avatar>
-                                  <span className="text-sm text-foreground truncate">{creatorPersona.name}</span>
+                                  <span className="text-sm text-foreground truncate min-w-0">{creatorPersona.name}</span>
                                 </div>
                               </TableCell>
                             )
@@ -2963,7 +2963,7 @@ export function QBTable() {
                                       {editorPersona.initials}
                                     </AvatarFallback>
                                   </Avatar>
-                                  <span className="text-sm text-foreground truncate">{editorPersona.name}</span>
+                                  <span className="text-sm text-foreground truncate min-w-0">{editorPersona.name}</span>
                                 </div>
                               </TableCell>
                             )
