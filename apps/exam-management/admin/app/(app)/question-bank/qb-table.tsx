@@ -1046,7 +1046,7 @@ function FilterPropertiesSheet({
               subtitle={activeFilterCount === 0 ? `Showing all ${totalCount} questions` : `${filteredCount} of ${totalCount} match · ${activeFilterCount} active`}
               helpTooltip="Use AND to match all filters; use OR to match any filter."
             />
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2 pb-4">
               {activeFilters.length === 0 && !bookmarkOnly ? (
                 <div className="rounded-xl border border-border bg-muted/40 p-4 space-y-3">
                   <div className="flex items-center gap-3">
@@ -1130,21 +1130,8 @@ function FilterPropertiesSheet({
                 </>
               )}
 
-              {/* Enable filter bar — in scrollable area with description */}
-              <div className="border-t border-border pt-3 mt-1">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground">Enable filter bar</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Show filters above the table.</p>
-                  </div>
-                  <ToggleSwitch id="toggle-filter-bar" checked={filterBarVisible} onChange={onFilterBarVisibleChange} />
-                </div>
-              </div>
-            </div>
-
-            {/* Footer: Add filter + Remove all */}
-            <div className="p-3 border-t border-border" style={{ flexShrink: 0 }}>
-              <div className="flex items-center gap-2">
+              {/* Add filter + Remove all — inline in scroll area */}
+              <div className="flex items-center gap-2 pt-1">
                 <DropdownMenu modal={false}>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex-1 gap-1.5 border-dashed text-muted-foreground">
@@ -1173,6 +1160,17 @@ function FilterPropertiesSheet({
                   </Button>
                 )}
               </div>
+
+              {/* Enable filter bar — separator + toggle */}
+              <div className="border-t border-border pt-3 mt-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">Enable filter bar</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Show filters above the table.</p>
+                  </div>
+                  <ToggleSwitch id="toggle-filter-bar" checked={filterBarVisible} onChange={onFilterBarVisibleChange} />
+                </div>
+              </div>
             </div>
           </>
         )}
@@ -1181,11 +1179,12 @@ function FilterPropertiesSheet({
         {panel === 'sort' && (
           <>
             <BackClose onBack={() => setPanel('main')} />
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 pb-4">
               {/* Active sort card */}
               {sortCol ? (
                 <div className="rounded-lg border border-border overflow-hidden">
                   <div className="flex items-center gap-2 px-3 py-2.5">
+                    <i className="fa-light fa-grip-dots-vertical text-muted-foreground/40 shrink-0" aria-hidden="true" style={{ fontSize: 13 }} />
                     <Badge variant="secondary" className="rounded text-[10px] px-1.5 py-0.5 shrink-0" style={{ backgroundColor: 'var(--sidebar-accent)', color: 'var(--sidebar-accent-foreground)' }}>
                       PRIMARY
                     </Badge>
@@ -1214,28 +1213,34 @@ function FilterPropertiesSheet({
                   <p className="text-xs text-muted-foreground leading-relaxed">Add a sort rule below to order questions by a column.</p>
                 </div>
               )}
-            </div>
 
-            {/* Footer: Add sort dropdown */}
-            <div className="p-3 border-t border-border" style={{ flexShrink: 0 }}>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="w-full gap-1.5 border-dashed text-muted-foreground">
-                    <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                    Add sort
+              {/* Add sort + Remove all — inline */}
+              <div className="flex items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="flex-1 gap-1.5 border-dashed text-muted-foreground">
+                      <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                      Add sort
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-52">
+                    {QB_COLS.filter(c => c.sortKey).map(col => (
+                      <DropdownMenuItem key={col.key} onClick={() => onSort(col.key, 'asc')}
+                        style={{ color: sortCol === col.key ? 'var(--brand-color)' : undefined }}>
+                        <i className={`fa-light ${sortCol === col.key ? 'fa-check' : 'fa-minus'} text-xs ${sortCol === col.key ? '' : 'text-muted-foreground'}`} aria-hidden="true"
+                          style={{ width: 14, color: sortCol === col.key ? 'var(--brand-color)' : undefined }} />
+                        {col.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {sortCol && (
+                  <Button variant="ghost" size="sm" className="shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => onSort('', 'asc')}>
+                    Remove all
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-52">
-                  {QB_COLS.filter(c => c.sortKey).map(col => (
-                    <DropdownMenuItem key={col.key} onClick={() => onSort(col.key, 'asc')}
-                      style={{ color: sortCol === col.key ? 'var(--brand-color)' : undefined }}>
-                      <i className={`fa-light ${sortCol === col.key ? 'fa-check' : 'fa-minus'} text-xs ${sortCol === col.key ? '' : 'text-muted-foreground'}`} aria-hidden="true"
-                        style={{ width: 14, color: sortCol === col.key ? 'var(--brand-color)' : undefined }} />
-                      {col.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                )}
+              </div>
             </div>
           </>
         )}
@@ -1352,7 +1357,7 @@ function FilterPropertiesSheet({
         {panel === 'conditional' && (
           <>
             <BackClose onBack={() => setPanel('main')} />
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2 pb-4">
               {conditionalRules.length === 0 ? (
                 <div className="rounded-xl border border-border bg-muted/40 p-4 space-y-2">
                   <div className="flex items-center gap-2">
@@ -1407,20 +1412,21 @@ function FilterPropertiesSheet({
                       {/* Highlight color swatch row — always visible */}
                       <div className="border-t border-border px-3 py-2.5">
                         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Highlight color</p>
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap gap-2">
                           {QB_RULE_COLORS.map(c => (
                             <Button
                               key={c.name}
                               type="button"
                               variant="ghost"
-                              size="icon-xs"
+                              size="icon-sm"
                               aria-label={c.name}
                               onClick={() => onUpdateConditionalRule(rule.id, { bgColor: c.bg })}
-                              className="size-5 rounded-md border-2 transition-all p-0"
+                              className="rounded-xl border-2 transition-all p-0"
                               style={{
+                                width: 28, height: 28,
                                 background: c.bg,
                                 borderColor: rule.bgColor === c.bg ? 'var(--foreground)' : 'transparent',
-                                transform: rule.bgColor === c.bg ? 'scale(1.15)' : undefined,
+                                transform: rule.bgColor === c.bg ? 'scale(1.1)' : undefined,
                               }}
                             />
                           ))}
@@ -1461,11 +1467,9 @@ function FilterPropertiesSheet({
                   )
                 })
               )}
-            </div>
 
-            {/* Footer: Add rule + Remove all */}
-            <div className="p-3 border-t border-border" style={{ flexShrink: 0 }}>
-              <div className="flex items-center gap-2">
+              {/* Add rule + Remove all — inline */}
+              <div className="flex items-center gap-2 pt-1">
                 <DropdownMenu modal={false}>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex-1 gap-1.5 border-dashed text-muted-foreground">

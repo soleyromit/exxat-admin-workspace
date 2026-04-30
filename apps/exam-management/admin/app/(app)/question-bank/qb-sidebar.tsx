@@ -912,16 +912,16 @@ export function QBSidebar() {
     count: number,
     onClick: () => void,
   ) => (
-    <div style={{ padding: '2px 4px' }}>
+    <div style={{ margin: '1px 4px' }}>
     <Button
       variant="ghost"
       size="sm"
       onClick={onClick}
       className="w-full justify-start text-foreground"
       style={{
-        padding: '0 8px',
+        paddingLeft: 8,
+        paddingRight: 8,
         height: 32,
-        width: '100%',
         backgroundColor: active ? 'var(--sidebar-accent)' : 'transparent',
         borderRadius: 6,
       }}
