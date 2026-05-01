@@ -173,8 +173,7 @@ export function AppSidebar() {
                           {item.key === 'moderation' && pendingCount > 0 && (
                             <Badge
                               variant="default"
-                              className="rounded-full h-5 min-w-5 px-1.5 ms-auto tabular-nums"
-                              style={{ fontSize: 10 }}
+                              className="rounded-full h-5 min-w-5 px-1.5 ms-auto tabular-nums text-[10px]"
                             >
                               {pendingCount}
                             </Badge>

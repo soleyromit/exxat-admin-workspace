@@ -28,8 +28,8 @@ export default function SubmittedPage() {
             <i className="fa-light fa-paper-plane text-white text-sm" aria-hidden="true" />
           </div>
           <div>
-            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Exxat</p>
-            <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>Post Course Evaluations</p>
+            <p className="text-xs text-muted-foreground">Exxat</p>
+            <p className="text-sm font-semibold text-foreground">Post Course Evaluations</p>
           </div>
         </div>
       </header>
@@ -52,12 +52,12 @@ export default function SubmittedPage() {
 
           {/* Heading */}
           <div className="flex flex-col gap-2">
-            <h1 className="text-2xl font-semibold" style={{ color: 'var(--foreground)' }}>
+            <h1 className="text-2xl font-semibold text-foreground">
               Response submitted anonymously.
             </h1>
-            <p className="text-sm leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
+            <p className="text-sm leading-relaxed text-muted-foreground">
               Your evaluation for{' '}
-              <span className="font-medium" style={{ color: 'var(--foreground)' }}>
+              <span className="font-medium text-foreground">
                 {courseCode && `${courseCode} — `}{courseName}
               </span>{' '}
               has been recorded. Your identity is never linked to your responses.
@@ -69,7 +69,7 @@ export default function SubmittedPage() {
             className="w-full rounded-xl border px-5 py-4 text-left flex flex-col gap-3"
             style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}
           >
-            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted-foreground)' }}>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               What happens next
             </p>
             <div className="flex flex-col gap-3">
@@ -102,10 +102,10 @@ export default function SubmittedPage() {
                     />
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <p className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
+                    <p className="text-sm font-medium text-foreground">
                       {item.title}
                     </p>
-                    <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                    <p className="text-xs text-muted-foreground">
                       {item.desc}
                     </p>
                   </div>
@@ -151,7 +151,7 @@ export default function SubmittedPage() {
             </>
           )}
 
-          <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+          <p className="text-xs text-muted-foreground">
             Questions? Contact your program coordinator.
           </p>
         </div>

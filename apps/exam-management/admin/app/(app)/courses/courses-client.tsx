@@ -28,7 +28,7 @@ export default function CoursesClient() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <div style={{ padding: '18px 28px 14px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'flex-end', gap: 16 }}>
         <div>
-          <h1 className="text-foreground" style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 400 }}>Courses</h1>
+          <h1 className="text-[22px] font-normal text-foreground" style={{ fontFamily: 'var(--font-heading)' }}>Courses</h1>
           <p className="text-sm text-muted-foreground" style={{ marginTop: 2 }}>
             {mockCourses.length} courses · {mockCourseOfferings.length} offerings
           </p>

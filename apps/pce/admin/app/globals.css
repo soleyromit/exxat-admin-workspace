@@ -48,6 +48,7 @@
 
   --pce-status-collecting-bg:     oklch(0.945 0.040 184);
   --pce-status-collecting-fg:     oklch(0.28 0.12 184);
+  --pce-status-collecting-dot:    oklch(0.48 0.15 184);
   --pce-status-collecting-border: oklch(0.72 0.12 184);
 
   --pce-status-pending-bg:        oklch(0.955 0.022 75);

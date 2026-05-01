@@ -73,7 +73,7 @@ export function CreateTemplateSheet({ open, onOpenChange, template }: CreateTemp
                   <Checkbox checked disabled />
                   <span className="text-sm font-medium">Course Content</span>
                 </div>
-                <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>required</span>
+                <span className="text-xs text-muted-foreground">required</span>
               </div>
               <Separator />
               <div className="flex items-center gap-2">
@@ -111,7 +111,7 @@ export function CreateTemplateSheet({ open, onOpenChange, template }: CreateTemp
 
         <SheetFooter className="px-6 py-4 border-t border-border flex gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">Cancel</Button>
-          <Button onClick={handleSave} disabled={!name.trim()} className="flex-1">
+          <Button variant="default" onClick={handleSave} disabled={!name.trim()} className="flex-1">
             {template ? 'Save Changes' : 'Create Template'}
           </Button>
         </SheetFooter>
@@ -152,8 +152,8 @@ export function DeleteTemplateDialog({ open, onOpenChange, template }: DeleteTem
             className="rounded-lg px-4 py-3 text-sm flex items-start gap-2"
             style={{ backgroundColor: 'var(--pce-impact-bg)', border: '1px solid var(--pce-impact-border)' }}
           >
-            <i className="fa-light fa-triangle-exclamation mt-0.5 shrink-0" aria-hidden="true" style={{ color: 'var(--destructive)' }} />
-            <span style={{ color: 'var(--foreground)' }}>
+            <i className="fa-light fa-triangle-exclamation mt-0.5 shrink-0 text-destructive" aria-hidden="true" />
+            <span className="text-foreground">
               {template.usedBySurveyCount} {template.usedBySurveyCount === 1 ? 'survey uses' : 'surveys use'} this template.
             </span>
           </div>
@@ -286,6 +286,7 @@ export function CreateSurveySheet({ open, onOpenChange }: CreateSurveySheetProps
         <SheetFooter className="px-6 py-4 border-t border-border flex gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">Cancel</Button>
           <Button
+            variant="default"
             onClick={handleCreate}
             disabled={!templateId || !courseCode || !primaryInstructorId}
             className="flex-1"
@@ -343,7 +344,7 @@ export function AddGuestSheet({ open, onOpenChange, surveyId }: AddGuestSheetPro
 
         <SheetFooter className="px-6 py-4 border-t border-border flex gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">Cancel</Button>
-          <Button onClick={handleAdd} disabled={!selectedId} className="flex-1">Add Guest</Button>
+          <Button variant="default" onClick={handleAdd} disabled={!selectedId} className="flex-1">Add Guest</Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>
@@ -402,7 +403,7 @@ export function SendReminderPopover({ survey, children }: SendReminderPopoverPro
           <div className="flex flex-col items-center gap-2 py-2 text-center">
             <i className="fa-light fa-circle-check text-2xl" aria-hidden="true" style={{ color: 'var(--pce-status-released-fg)' }} />
             <p className="text-sm font-medium">Reminder sent</p>
-            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+            <p className="text-xs text-muted-foreground">
               Email sent to {remaining} student{remaining !== 1 ? 's' : ''}.
             </p>
           </div>
@@ -414,7 +415,7 @@ export function SendReminderPopover({ survey, children }: SendReminderPopoverPro
             </p>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" className="flex-1">Cancel</Button>
-              <Button size="sm" className="flex-1" onClick={() => setSent(true)}>Send</Button>
+              <Button variant="default" size="sm" className="flex-1" onClick={() => setSent(true)}>Send</Button>
             </div>
           </div>
         )}
@@ -442,7 +443,7 @@ export function ReleaseSheet({ open, onOpenChange, survey }: ReleaseSheetProps) 
       <SheetContent side="right" className="w-96 sm:max-w-96 flex flex-col gap-0 p-0">
         <SheetHeader className="px-6 py-5 border-b border-border">
           <SheetTitle>Share with Faculty</SheetTitle>
-          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+          <p className="text-sm text-muted-foreground">
             {survey.courseCode} — {survey.term}
           </p>
         </SheetHeader>
@@ -450,13 +451,13 @@ export function ReleaseSheet({ open, onOpenChange, survey }: ReleaseSheetProps) 
         <div className="flex flex-col gap-5 px-6 py-5 flex-1">
           {/* Summary preview */}
           <div className="rounded-lg border border-border p-4 flex flex-col gap-3">
-            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted-foreground)' }}>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Summary Preview
             </p>
             {response ? (
               response.sectionScores.map(s => (
                 <div key={s.section} className="flex items-center justify-between">
-                  <span className="text-sm" style={{ color: 'var(--foreground)' }}>
+                  <span className="text-sm text-foreground">
                     {s.section === 'course_content' ? 'Course Content' :
                      s.section === 'faculty_performance' ? 'Faculty Performance' : 'Course Director'}
                   </span>
@@ -464,7 +465,7 @@ export function ReleaseSheet({ open, onOpenChange, survey }: ReleaseSheetProps) 
                 </div>
               ))
             ) : (
-              <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>No responses yet.</p>
+              <p className="text-sm text-muted-foreground">No responses yet.</p>
             )}
             <Separator />
             <ResponseGauge
@@ -477,7 +478,7 @@ export function ReleaseSheet({ open, onOpenChange, survey }: ReleaseSheetProps) 
 
           {/* Instructor notice */}
           <div className="flex flex-col gap-2">
-            <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+            <p className="text-sm text-muted-foreground">
               Once released, the following instructors will be able to view these results:
             </p>
             <div className="flex flex-col gap-1.5">
@@ -488,7 +489,7 @@ export function ReleaseSheet({ open, onOpenChange, survey }: ReleaseSheetProps) 
                   </Avatar>
                   <span className="text-sm">{i.name}</span>
                   {i.role === 'guest' && (
-                    <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>guest</span>
+                    <span className="text-xs text-muted-foreground">guest</span>
                   )}
                 </div>
               ))}
@@ -499,6 +500,7 @@ export function ReleaseSheet({ open, onOpenChange, survey }: ReleaseSheetProps) 
         <SheetFooter className="px-6 py-4 border-t border-border flex gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">Cancel</Button>
           <Button
+            variant="default"
             onClick={() => { releaseSurvey(survey.id); onOpenChange(false) }}
             className="flex-1"
           >
@@ -532,7 +534,7 @@ export function ReleaseBulkDialog({ open, onOpenChange, surveyIds, onConfirm }: 
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => { onConfirm(); onOpenChange(false) }}>
+          <Button variant="default" onClick={() => { onConfirm(); onOpenChange(false) }}>
             Release {surveyIds.length === 1 ? 'Survey' : 'All'}
           </Button>
         </DialogFooter>

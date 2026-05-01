@@ -5,7 +5,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
   Button, Badge, Avatar, AvatarFallback,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  InputGroup, InputGroupAddon, Input, Textarea,
+  InputGroup, InputGroupAddon, InputGroupInput, Input, Textarea,
   Field, FieldLabel,
 } from '@exxat/ds/packages/ui/src'
 import { MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
@@ -68,7 +68,7 @@ export function ManageCollaboratorsModal() {
         {/* Search + suggestions */}
         <div style={{ position: 'relative' }}>
           <InputGroup>
-            <Input
+            <InputGroupInput
               placeholder="Add collaborator by name…"
               value={search}
               onChange={e => setSearch(e.target.value)}

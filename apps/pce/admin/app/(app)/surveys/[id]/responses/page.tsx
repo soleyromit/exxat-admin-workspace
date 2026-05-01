@@ -39,16 +39,16 @@ export default function SurveyResponsesPage() {
         <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
           <SidebarTrigger className="-ms-1" />
           <Separator orientation="vertical" className="h-4" />
-          <Link href="/surveys" className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Surveys</Link>
-          <i className="fa-light fa-chevron-right text-xs" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
-          <Link href={`/surveys/${id}`} className="text-sm" style={{ color: 'var(--muted-foreground)' }}>{survey.courseCode}</Link>
-          <i className="fa-light fa-chevron-right text-xs" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
+          <Link href="/surveys" className="text-sm text-muted-foreground">Surveys</Link>
+          <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
+          <Link href={`/surveys/${id}`} className="text-sm text-muted-foreground">{survey.courseCode}</Link>
+          <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
           <span className="text-sm font-semibold">Responses</span>
         </header>
         <div className="flex flex-col items-center justify-center flex-1 gap-3 text-center py-20">
-          <i className="fa-light fa-chart-bar text-4xl" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
+          <i className="fa-light fa-chart-bar text-4xl text-muted-foreground" aria-hidden="true" />
           <p className="text-sm font-medium">No responses yet</p>
-          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+          <p className="text-sm text-muted-foreground">
             Responses will appear here once students begin submitting.
           </p>
         </div>
@@ -63,10 +63,10 @@ export default function SurveyResponsesPage() {
       <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
-        <Link href="/surveys" className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Surveys</Link>
-        <i className="fa-light fa-chevron-right text-xs" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
-        <Link href={`/surveys/${id}`} className="text-sm" style={{ color: 'var(--muted-foreground)' }}>{survey.courseCode}</Link>
-        <i className="fa-light fa-chevron-right text-xs" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
+        <Link href="/surveys" className="text-sm text-muted-foreground">Surveys</Link>
+        <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
+        <Link href={`/surveys/${id}`} className="text-sm text-muted-foreground">{survey.courseCode}</Link>
+        <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
         <span className="text-sm font-semibold flex-1">Responses</span>
         {hiddenCount > 0 && (
           <Badge variant="secondary">
@@ -93,10 +93,10 @@ export default function SurveyResponsesPage() {
             <div className="flex gap-6">
               {responses.sectionScores.map(s => (
                 <div key={s.section} className="flex flex-col gap-0.5">
-                  <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                  <p className="text-xs text-muted-foreground">
                     {SECTION_LABELS[s.section]}
                   </p>
-                  <p className="text-lg font-semibold tabular-nums">{s.avg}<span className="text-sm font-normal" style={{ color: 'var(--muted-foreground)' }}>/5</span></p>
+                  <p className="text-lg font-semibold tabular-nums">{s.avg}<span className="text-sm font-normal text-muted-foreground">/5</span></p>
                 </div>
               ))}
             </div>
@@ -107,8 +107,8 @@ export default function SurveyResponsesPage() {
             className="flex items-start gap-3 rounded-lg border px-4 py-3 text-sm"
             style={{ borderColor: 'var(--border)', backgroundColor: 'var(--muted)' }}
           >
-            <i className="fa-light fa-circle-info mt-0.5 shrink-0" aria-hidden="true" style={{ fontSize: 13, color: 'var(--muted-foreground)' }} />
-            <p style={{ color: 'var(--muted-foreground)' }}>
+            <i className="fa-light fa-circle-info mt-0.5 shrink-0 text-muted-foreground" aria-hidden="true" style={{ fontSize: 13 }} />
+            <p className="text-muted-foreground">
               Hide individual comments to remove them from the faculty view before releasing results. Hidden comments remain in the system and are never deleted.
             </p>
           </div>
@@ -140,7 +140,7 @@ export default function SurveyResponsesPage() {
                 {sectionComments.length > 0 && (
                   <div className="px-4 py-3 flex flex-col gap-1">
                     <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
+                      <p className="text-xs font-medium text-muted-foreground">
                         Comments — {visibleCount} visible to faculty
                         {sectionComments.length - visibleCount > 0 && (
                           <span> · {sectionComments.length - visibleCount} hidden</span>
@@ -160,15 +160,15 @@ export default function SurveyResponsesPage() {
                             }}
                           >
                             <i
-                              className={`fa-light ${sStyle.icon} mt-0.5 shrink-0`}
+                              className={`fa-light ${sStyle.icon} mt-0.5 shrink-0 ${isHidden ? 'text-muted-foreground' : ''}`}
                               aria-hidden="true"
-                              style={{ color: isHidden ? 'var(--muted-foreground)' : sStyle.color, fontSize: 13 }}
+                              style={{ color: isHidden ? undefined : sStyle.color, fontSize: 13 }}
                             />
                             <span
+                              className={isHidden ? 'text-muted-foreground' : 'text-foreground'}
                               style={{
                                 flex: 1,
                                 fontSize: 13,
-                                color: isHidden ? 'var(--muted-foreground)' : 'var(--foreground)',
                                 textDecoration: isHidden ? 'line-through' : 'none',
                                 fontStyle: 'italic',
                               }}

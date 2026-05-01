@@ -5,6 +5,7 @@ import type { Assessment } from '@/lib/mock-assessments'
 import { MOCK_ASSESSMENTS, ASSESSMENT_METRICS } from '@/lib/mock-assessments'
 import { buttonVariants } from '@exxat/student/components/ui/button'
 import { Badge } from '@exxat/student/components/ui/badge'
+import { Input } from '@exxat/student/components/ui/input'
 
 const STATUS_VARIANT: Record<Assessment['status'], 'default' | 'secondary' | 'outline' | 'destructive'> = {
   'not-started': 'secondary',
@@ -41,11 +42,11 @@ export function AssessmentsClient() {
         </div>
         <div className="relative">
           <i className="fa-light fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] text-sm" aria-hidden="true" />
-          <input
+          <Input
             type="search"
             placeholder="Search assessments…"
             aria-label="Search assessments"
-            className="rounded-lg border border-[var(--border)] bg-[var(--background)] pl-9 pr-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-color)] w-56"
+            className="pl-9 w-56"
           />
         </div>
       </div>

@@ -26,7 +26,7 @@ export default function SurveyDetailPage() {
   if (!survey) {
     return (
       <div className="flex flex-col items-center justify-center flex-1 gap-3 text-center py-20">
-        <i className="fa-light fa-circle-exclamation text-4xl" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
+        <i className="fa-light fa-circle-exclamation text-4xl text-muted-foreground" aria-hidden="true" />
         <p className="text-sm font-medium">Survey not found</p>
         <Button variant="outline" size="sm" asChild>
           <Link href="/surveys">Back to Surveys</Link>
@@ -44,8 +44,8 @@ export default function SurveyDetailPage() {
       <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
-        <Link href="/surveys" className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Surveys</Link>
-        <i className="fa-light fa-chevron-right text-xs" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
+        <Link href="/surveys" className="text-sm text-muted-foreground">Surveys</Link>
+        <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
         <span className="text-sm font-semibold flex-1 truncate">
           {survey.courseCode} — {survey.courseName}
         </span>
@@ -62,7 +62,7 @@ export default function SurveyDetailPage() {
             <i className="fa-light fa-circle-info" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
             <span>This survey has closed. Review responses and release to faculty.</span>
           </div>
-          <Button size="sm" onClick={() => setReleaseOpen(true)}>
+          <Button variant="default" size="sm" onClick={() => setReleaseOpen(true)}>
             Share with Faculty
             <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 12 }} />
           </Button>
@@ -77,7 +77,7 @@ export default function SurveyDetailPage() {
             <h2 className="text-sm font-semibold">Overview</h2>
             <div className="grid grid-cols-3 gap-6">
               <div className="flex flex-col gap-2">
-                <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Response Rate</p>
+                <p className="text-xs text-muted-foreground">Response Rate</p>
                 <ResponseGauge
                   rate={survey.responseRate}
                   responseCount={survey.responseCount}
@@ -87,11 +87,11 @@ export default function SurveyDetailPage() {
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Deadline</p>
+                <p className="text-xs text-muted-foreground">Deadline</p>
                 <p className="text-sm font-medium">{survey.deadline}</p>
               </div>
               <div className="flex flex-col gap-1">
-                <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Template</p>
+                <p className="text-xs text-muted-foreground">Template</p>
                 <p className="text-sm font-medium">{template?.name ?? '—'}</p>
               </div>
             </div>
@@ -111,7 +111,7 @@ export default function SurveyDetailPage() {
                 </Button>
               )}
               {isPendingReview && (
-                <Button size="sm" onClick={() => setReleaseOpen(true)}>
+                <Button variant="default" size="sm" onClick={() => setReleaseOpen(true)}>
                   Share with Faculty
                 </Button>
               )}
@@ -134,12 +134,12 @@ export default function SurveyDetailPage() {
                   <div className="flex flex-col gap-0.5">
                     <span className="font-medium">{SECTION_LABELS[section]}</span>
                     {section === 'faculty_performance' && (
-                      <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                      <span className="text-xs text-muted-foreground">
                         {survey.instructors.map(i => i.name).join(' · ')}
                       </span>
                     )}
                   </div>
-                  <span style={{ color: 'var(--muted-foreground)' }}>
+                  <span className="text-muted-foreground">
                     {sectionResponse ? `${sectionResponse.count} responses` : `${survey.responseCount} responses`}
                   </span>
                 </div>
@@ -172,7 +172,7 @@ export default function SurveyDetailPage() {
                   </Avatar>
                   <div className="flex flex-col gap-0.5">
                     <span className="text-sm font-medium">{instructor.name}</span>
-                    <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                    <span className="text-xs text-muted-foreground">
                       {instructor.role === 'primary' ? 'Primary instructor' : 'Guest lecturer'}
                     </span>
                   </div>
@@ -182,7 +182,7 @@ export default function SurveyDetailPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => removeInstructor(survey.id, instructor.id)}
-                    style={{ color: 'var(--destructive)' }}
+                    className="text-destructive"
                   >
                     Remove
                   </Button>
@@ -190,7 +190,7 @@ export default function SurveyDetailPage() {
               </div>
             ))}
             {survey.instructors.length === 0 && (
-              <div className="px-4 py-6 text-center text-sm" style={{ color: 'var(--muted-foreground)' }}>
+              <div className="px-4 py-6 text-center text-sm text-muted-foreground">
                 No instructors assigned.
               </div>
             )}

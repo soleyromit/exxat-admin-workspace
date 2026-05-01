@@ -40,12 +40,12 @@ export function ResponseGauge({
       )}
       <div className="flex items-baseline gap-1.5">
         <span
-          className="font-semibold tabular-nums"
-          style={{ fontSize: size === 'md' ? 14 : 13, color: 'var(--foreground)' }}
+          className="font-semibold tabular-nums text-foreground"
+          style={{ fontSize: size === 'md' ? 14 : 13 }}
         >
           {rate}%
         </span>
-        <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+        <span className="text-xs text-muted-foreground">
           {responseCount} / {enrollmentCount}
         </span>
       </div>

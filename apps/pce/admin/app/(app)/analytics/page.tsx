@@ -31,7 +31,7 @@ function ScoreBar({ score, max = 5 }: { score: number; max?: number }) {
           }}
         />
       </div>
-      <span className="tabular-nums" style={{ fontSize: 13, fontWeight: 600 }}>{score}</span>
+      <span className="tabular-nums text-sm font-semibold">{score}</span>
     </div>
   )
 }
@@ -83,7 +83,7 @@ export default function AnalyticsPage() {
       <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
-        <h1 className="flex-1" style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 400 }}>Analytics</h1>
+        <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Analytics</h1>
         <Select value={term} onValueChange={setTerm}>
           <SelectTrigger className="h-8 w-36 text-sm">
             <SelectValue />
@@ -101,10 +101,10 @@ export default function AnalyticsPage() {
       <main className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
         {!hasData ? (
           <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-            <i className="fa-light fa-chart-mixed" aria-hidden="true" style={{ fontSize: 40, color: 'var(--muted-foreground)' }} />
+            <i className="fa-light fa-chart-mixed text-muted-foreground" aria-hidden="true" style={{ fontSize: 40 }} />
             <div className="flex flex-col gap-1">
               <p className="text-sm font-medium">No analytics data for {term}</p>
-              <p className="text-sm" style={{ color: 'var(--muted-foreground)', maxWidth: 320 }}>
+              <p className="text-sm text-muted-foreground" style={{ maxWidth: 320 }}>
                 Release surveys to faculty to see aggregated results here.
               </p>
             </div>
@@ -116,12 +116,12 @@ export default function AnalyticsPage() {
             <div className="grid grid-cols-2 gap-4">
               {/* Response rates card */}
               <div className="border border-border rounded-lg p-5 flex flex-col gap-3">
-                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted-foreground)' }}>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Response Rates
                 </p>
                 <div className="flex flex-col gap-1">
                   <p className="text-2xl font-bold tabular-nums">{totalRate}%</p>
-                  <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                  <p className="text-sm text-muted-foreground">
                     overall average
                   </p>
                 </div>
@@ -142,30 +142,30 @@ export default function AnalyticsPage() {
                     }}
                   />
                 </div>
-                <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                <p className="text-xs text-muted-foreground">
                   {completedCount} of {termSurveys.length} surveys complete
                 </p>
               </div>
 
               {/* Avg scores card */}
               <div className="border border-border rounded-lg p-5 flex flex-col gap-3">
-                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted-foreground)' }}>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Avg Scores by Section
                 </p>
                 {sectionSummary.length > 0 ? (
                   <div className="flex flex-col gap-3">
                     {sectionSummary.map(({ section, avg }) => (
                       <div key={section} className="flex items-center justify-between gap-3">
-                        <span className="text-sm flex-1" style={{ color: 'var(--muted-foreground)' }}>
+                        <span className="text-sm flex-1 text-muted-foreground">
                           {SECTION_LABELS[section as keyof typeof SECTION_LABELS] ?? section}
                         </span>
                         <ScoreBar score={avg} />
-                        <span className="text-xs w-6 text-right" style={{ color: 'var(--muted-foreground)' }}>/5</span>
+                        <span className="text-xs w-6 text-right text-muted-foreground">/5</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>No released data yet.</p>
+                  <p className="text-sm text-muted-foreground">No released data yet.</p>
                 )}
               </div>
             </div>
@@ -195,24 +195,24 @@ export default function AnalyticsPage() {
                         <TableRow key={survey.id}>
                           <TableCell>
                             <div className="flex flex-col gap-0.5">
-                              <span style={{ fontSize: 13, fontWeight: 500 }}>{survey.courseCode}</span>
-                              <span className="text-xs truncate max-w-32" style={{ color: 'var(--muted-foreground)' }}>
+                              <span className="text-sm font-medium">{survey.courseCode}</span>
+                              <span className="text-xs truncate max-w-32 text-muted-foreground">
                                 {survey.courseName}
                               </span>
                             </div>
                           </TableCell>
-                          <TableCell><span style={{ fontSize: 13, fontWeight: 500 }}>{primary?.name ?? '—'}</span></TableCell>
+                          <TableCell><span className="text-sm font-medium">{primary?.name ?? '—'}</span></TableCell>
                           <TableCell>
-                            <span className="tabular-nums" style={{ fontSize: 13, fontWeight: 600 }}>{survey.responseRate}%</span>
+                            <span className="tabular-nums text-sm font-semibold">{survey.responseRate}%</span>
                           </TableCell>
                           <TableCell>
-                            {cc ? <span className="tabular-nums" style={{ fontSize: 13, fontWeight: 600 }}>{cc.avg}</span> : <span style={{ color: 'var(--muted-foreground)' }}>—</span>}
+                            {cc ? <span className="tabular-nums text-sm font-semibold">{cc.avg}</span> : <span className="text-muted-foreground">—</span>}
                           </TableCell>
                           <TableCell>
-                            {fp ? <span className="tabular-nums" style={{ fontSize: 13, fontWeight: 600 }}>{fp.avg}</span> : <span style={{ color: 'var(--muted-foreground)' }}>—</span>}
+                            {fp ? <span className="tabular-nums text-sm font-semibold">{fp.avg}</span> : <span className="text-muted-foreground">—</span>}
                           </TableCell>
                           <TableCell>
-                            {cd ? <span className="tabular-nums" style={{ fontSize: 13, fontWeight: 600 }}>{cd.avg}</span> : <span style={{ color: 'var(--muted-foreground)' }}>—</span>}
+                            {cd ? <span className="tabular-nums text-sm font-semibold">{cd.avg}</span> : <span className="text-muted-foreground">—</span>}
                           </TableCell>
                         </TableRow>
                       )

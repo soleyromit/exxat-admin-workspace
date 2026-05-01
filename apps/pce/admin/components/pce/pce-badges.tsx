@@ -9,7 +9,7 @@ const STATUS_CONFIG: Record<SurveyStatus, { label: string; bg: string; fg: strin
     label: 'Draft',
     bg: 'var(--pce-status-draft-bg)',
     fg: 'var(--pce-status-draft-fg)',
-    dot: 'oklch(0.42 0.12 68)',
+    dot: 'var(--pce-status-draft-fg)',
   },
   active: {
     label: 'Active',
@@ -21,19 +21,19 @@ const STATUS_CONFIG: Record<SurveyStatus, { label: string; bg: string; fg: strin
     label: 'Collecting',
     bg: 'var(--pce-status-collecting-bg)',
     fg: 'var(--pce-status-collecting-fg)',
-    dot: 'oklch(0.48 0.15 184)',
+    dot: 'var(--pce-status-collecting-dot)',
   },
   pending_review: {
     label: 'Pending Review',
     bg: 'var(--pce-status-pending-bg)',
     fg: 'var(--pce-status-pending-fg)',
-    dot: 'oklch(0.42 0.12 68)',
+    dot: 'var(--pce-status-pending-fg)',
   },
   released: {
     label: 'Released',
     bg: 'var(--pce-status-released-bg)',
     fg: 'var(--pce-status-released-fg)',
-    dot: 'oklch(0.28 0.12 155)',
+    dot: 'var(--pce-status-released-fg)',
   },
   closed: {
     label: 'Closed',
@@ -67,8 +67,7 @@ export function TemplateSectionChips({ sections }: { sections: TemplateSection[]
         <Badge
           key={s}
           variant="outline"
-          className="rounded font-mono border-border"
-          style={{ fontSize: 10, padding: '1px 5px' }}
+          className="rounded font-mono border-border text-[10px] px-[5px] py-[1px]"
         >
           {SECTION_ABBREV[s]}
         </Badge>

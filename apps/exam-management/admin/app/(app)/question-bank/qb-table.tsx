@@ -340,7 +340,7 @@ function MoveFolderDialog({
           </Tooltip>
           <div style={{ flex: 1 }} />
           <Button variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
-          <Button size="sm" onClick={() => targetId && onConfirm(targetId)} disabled={!targetId}>
+          <Button variant="default" size="sm" onClick={() => targetId && onConfirm(targetId)} disabled={!targetId}>
             Move here
           </Button>
         </div>

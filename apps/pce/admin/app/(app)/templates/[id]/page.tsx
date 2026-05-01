@@ -59,10 +59,10 @@ export default function TemplateDetailPage() {
       <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
-        <Link href="/templates" className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+        <Link href="/templates" className="text-sm text-muted-foreground">
           Templates
         </Link>
-        <i className="fa-light fa-chevron-right text-xs" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
+        <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
         <span className="text-sm font-semibold flex-1 truncate">{template.name}</span>
         <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
           <i className="fa-light fa-pen" aria-hidden="true" style={{ fontSize: 12 }} />
@@ -77,8 +77,8 @@ export default function TemplateDetailPage() {
           <div className="flex flex-col gap-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex flex-col gap-1">
-                <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 400 }}>{template.name}</h2>
-                <p style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>
+                <h2 className="text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>{template.name}</h2>
+                <p className="text-sm text-muted-foreground">
                   Created by {template.createdBy} · Last modified {template.lastModified}
                 </p>
               </div>
@@ -96,15 +96,15 @@ export default function TemplateDetailPage() {
 
             <div className="flex items-center gap-6 text-sm">
               <div className="flex flex-col gap-0.5">
-                <span style={{ color: 'var(--muted-foreground)' }}>Sections</span>
+                <span className="text-muted-foreground">Sections</span>
                 <TemplateSectionChips sections={template.sections} />
               </div>
               <div className="flex flex-col gap-0.5">
-                <span style={{ color: 'var(--muted-foreground)' }}>Questions</span>
+                <span className="text-muted-foreground">Questions</span>
                 <span className="font-medium">{template.questionCount}</span>
               </div>
               <div className="flex flex-col gap-0.5">
-                <span style={{ color: 'var(--muted-foreground)' }}>Used by surveys</span>
+                <span className="text-muted-foreground">Used by surveys</span>
                 <span className="font-medium">{template.usedBySurveyCount}</span>
               </div>
             </div>
@@ -116,8 +116,8 @@ export default function TemplateDetailPage() {
           {template.sections.map(section => (
             <div key={section} className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
-                <h3 style={{ fontSize: 13, fontWeight: 600 }}>{SECTION_LABELS[section]}</h3>
-                <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                <h3 className="text-sm font-semibold">{SECTION_LABELS[section]}</h3>
+                <span className="text-xs text-muted-foreground">
                   {MOCK_QUESTIONS[section].length} questions
                 </span>
               </div>
@@ -132,12 +132,12 @@ export default function TemplateDetailPage() {
                     }}
                   >
                     <span
-                      className="tabular-nums mt-0.5 shrink-0 text-xs"
-                      style={{ color: 'var(--muted-foreground)', minWidth: 16 }}
+                      className="tabular-nums mt-0.5 shrink-0 text-xs text-muted-foreground"
+                      style={{ minWidth: 16 }}
                     >
                       {i + 1}
                     </span>
-                    <span style={{ fontSize: 13, color: 'var(--foreground)' }}>{q}</span>
+                    <span className="text-sm text-foreground">{q}</span>
                   </div>
                 ))}
               </div>

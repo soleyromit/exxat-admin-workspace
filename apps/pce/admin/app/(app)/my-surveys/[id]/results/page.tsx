@@ -75,9 +75,9 @@ function CommentGroup({
     <div style={{ border: `1px solid ${cfg.containerBorder}`, borderRadius: 8, overflow: 'hidden' }}>
       <div style={{ background: cfg.headerBg, padding: '7px 10px', display: 'flex', alignItems: 'center', gap: 7 }}>
         <i className={cfg.icon} aria-hidden="true" style={{ fontSize: 13, color: cfg.labelColor }} />
-        <span style={{ fontSize: 11, fontWeight: 700, flex: 1, color: cfg.labelColor }}>{cfg.label}</span>
-        <span style={{
-          fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 10,
+        <span className="text-xs font-bold flex-1" style={{ color: cfg.labelColor }}>{cfg.label}</span>
+        <span className="text-[10px] font-semibold" style={{
+          padding: '1px 6px', borderRadius: 10,
           background: cfg.countBg, color: cfg.labelColor,
         }}>
           {countLabel}
@@ -87,10 +87,10 @@ function CommentGroup({
         {comments.map((comment, i) => (
           <div
             key={i}
+            className="text-foreground"
             style={{
               fontSize: 11,
               fontStyle: 'italic',
-              color: 'var(--foreground)',
               padding: '5px 0',
               borderBottom: i < comments.length - 1 ? `1px dashed ${cfg.quoteDivider}` : 'none',
               lineHeight: 1.5,
@@ -134,8 +134,8 @@ export default function FacultyResultsPage() {
       <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
-        <Link href="/my-surveys" className="text-sm" style={{ color: 'var(--muted-foreground)' }}>My Surveys</Link>
-        <i className="fa-light fa-chevron-right text-xs" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
+        <Link href="/my-surveys" className="text-sm text-muted-foreground">My Surveys</Link>
+        <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
         <span className="text-sm font-semibold flex-1 truncate">
           {survey.courseCode} — {survey.courseName}
         </span>
@@ -153,12 +153,12 @@ export default function FacultyResultsPage() {
               className="flex items-center justify-center w-16 h-16 rounded-full"
               style={{ backgroundColor: 'var(--muted)' }}
             >
-              <i className="fa-light fa-lock-keyhole" aria-hidden="true"
-                style={{ fontSize: 28, color: 'var(--muted-foreground)' }} />
+              <i className="fa-light fa-lock-keyhole text-muted-foreground" aria-hidden="true"
+                style={{ fontSize: 28 }} />
             </div>
             <div className="flex flex-col gap-2 max-w-sm">
               <p className="text-base font-semibold">Results aren&apos;t available yet</p>
-              <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+              <p className="text-sm text-muted-foreground">
                 The program administrator reviews all responses before sharing them with instructors.
                 You&apos;ll be notified when your results are ready.
               </p>
@@ -169,7 +169,7 @@ export default function FacultyResultsPage() {
           </div>
         ) : !responses ? (
           <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-            <i className="fa-light fa-chart-bar text-4xl" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
+            <i className="fa-light fa-chart-bar text-4xl text-muted-foreground" aria-hidden="true" />
             <p className="text-sm font-medium">No responses were collected for this survey.</p>
           </div>
         ) : (
@@ -210,7 +210,7 @@ export default function FacultyResultsPage() {
                         }}
                       />
                     </div>
-                    <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                    <p className="text-xs text-muted-foreground">
                       Based on {sectionScore.count} responses
                     </p>
                   </div>
@@ -230,7 +230,7 @@ export default function FacultyResultsPage() {
                       className="px-4 py-2.5 text-center"
                       style={{ borderTop: '1px solid var(--border)' }}
                     >
-                      <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                      <span className="text-xs text-muted-foreground">
                         Highlights selected by your program administrator
                       </span>
                     </div>

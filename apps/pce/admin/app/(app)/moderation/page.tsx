@@ -37,9 +37,9 @@ export default function ModerationPage() {
       <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
-        <h1 className="flex-1" style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 400 }}>Review & Moderation</h1>
+        <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Review & Moderation</h1>
         {selected.length > 0 && (
-          <Button size="sm" onClick={() => setBulkOpen(true)}>
+          <Button variant="default" size="sm" onClick={() => setBulkOpen(true)}>
             Release {selected.length} selected
           </Button>
         )}
@@ -48,7 +48,7 @@ export default function ModerationPage() {
       {/* Toolbar — only show when surveys exist */}
       {pending.length > 0 && (
         <div className="py-2 border-b border-border shrink-0" style={{ paddingInline: 28 }}>
-          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+          <p className="text-sm text-muted-foreground">
             {pending.length} {pending.length === 1 ? 'survey' : 'surveys'} pending review
           </p>
         </div>
@@ -65,7 +65,7 @@ export default function ModerationPage() {
             />
             <div className="flex flex-col gap-1">
               <p className="text-sm font-medium">All caught up</p>
-              <p className="text-sm" style={{ color: 'var(--muted-foreground)', maxWidth: 360 }}>
+              <p className="text-sm text-muted-foreground" style={{ maxWidth: 360 }}>
                 No surveys are waiting for review. When a survey closes, it will appear here
                 before faculty can see results.
               </p>
@@ -141,11 +141,11 @@ function ModerationRow({
       </TableCell>
       <TableCell>
         <div className="flex flex-col gap-0.5">
-          <span style={{ fontSize: 13, fontWeight: 500 }}>{survey.courseCode}</span>
-          <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{survey.term}</span>
+          <span className="text-sm font-medium">{survey.courseCode}</span>
+          <span className="text-xs text-muted-foreground">{survey.term}</span>
         </div>
       </TableCell>
-      <TableCell style={{ fontSize: 13, fontWeight: 500, color: 'var(--muted-foreground)' }}>
+      <TableCell className="text-sm font-medium text-muted-foreground">
         {survey.deadline}
       </TableCell>
       <TableCell>
@@ -160,11 +160,11 @@ function ModerationRow({
         <div className="flex items-center gap-1">
           {survey.instructors.slice(0, 2).map(i => (
             <Avatar key={i.id} className="h-6 w-6">
-              <AvatarFallback style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)', fontSize: 11 }}>{i.initials}</AvatarFallback>
+              <AvatarFallback className="text-xs" style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>{i.initials}</AvatarFallback>
             </Avatar>
           ))}
           {survey.instructors.length > 2 && (
-            <span className="text-xs ml-1" style={{ color: 'var(--muted-foreground)' }}>
+            <span className="text-xs ml-1 text-muted-foreground">
               +{survey.instructors.length - 2}
             </span>
           )}

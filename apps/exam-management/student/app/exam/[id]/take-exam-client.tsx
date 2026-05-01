@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Button } from '@exxat/student/components/ui/button'
+import { Textarea } from '@exxat/student/components/ui/textarea'
+import { RadioGroup, RadioGroupItem } from '@exxat/student/components/ui/radio-group'
 import { MOCK_EXAM_QUESTIONS } from '@/lib/mock-exam-questions'
 import { MOCK_ASSESSMENTS } from '@/lib/mock-assessments'
 
@@ -63,7 +66,12 @@ export function TakeExamClient({ id }: { id: string }) {
           <p className="text-base font-medium text-[var(--foreground)] leading-relaxed">{q.text}</p>
 
           {q.type === 'mcq' && q.options && (
-            <div className="flex flex-col gap-2" role="radiogroup" aria-label="Answer options">
+            <RadioGroup
+              className="flex flex-col gap-2"
+              value={answers[q.id] !== undefined ? String(answers[q.id]) : ''}
+              onValueChange={(v) => setAnswer(Number(v))}
+              aria-label="Answer options"
+            >
               {q.options.map((opt, i) => (
                 <label
                   key={i}
@@ -73,22 +81,20 @@ export function TakeExamClient({ id }: { id: string }) {
                       : 'border-[var(--border)] hover:bg-[var(--accent)]'
                   }`}
                 >
-                  <input
-                    type="radio"
-                    name={q.id}
-                    value={i}
-                    checked={answers[q.id] === i}
-                    onChange={() => setAnswer(i)}
-                    className="accent-[var(--brand-color)]"
-                  />
+                  <RadioGroupItem value={String(i)} />
                   <span className="text-sm text-[var(--foreground)]">{opt}</span>
                 </label>
               ))}
-            </div>
+            </RadioGroup>
           )}
 
           {q.type === 'true-false' && (
-            <div className="flex gap-3" role="radiogroup" aria-label="True or false">
+            <RadioGroup
+              className="flex gap-3"
+              value={answers[q.id] !== undefined ? String(answers[q.id]) : ''}
+              onValueChange={(v) => setAnswer(v === 'true')}
+              aria-label="True or false"
+            >
               {([true, false] as const).map(val => (
                 <label
                   key={String(val)}
@@ -98,56 +104,49 @@ export function TakeExamClient({ id }: { id: string }) {
                       : 'border-[var(--border)] hover:bg-[var(--accent)]'
                   }`}
                 >
-                  <input
-                    type="radio"
-                    name={q.id}
-                    value={String(val)}
-                    checked={answers[q.id] === val}
-                    onChange={() => setAnswer(val)}
-                    className="accent-[var(--brand-color)]"
-                  />
+                  <RadioGroupItem value={String(val)} />
                   <span className="text-sm font-medium text-[var(--foreground)]">{val ? 'True' : 'False'}</span>
                 </label>
               ))}
-            </div>
+            </RadioGroup>
           )}
 
           {q.type === 'short-answer' && (
-            <textarea
+            <Textarea
               rows={4}
               value={String(answers[q.id] ?? '')}
               onChange={e => setAnswer(e.target.value)}
               placeholder="Type your answer here…"
               aria-label="Short answer"
-              className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-color)] resize-none"
+              className="resize-none"
             />
           )}
 
           <div className="flex items-center justify-between pt-2">
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={() => setCurrent(c => Math.max(0, c - 1))}
               disabled={current === 0}
-              className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Previous
-            </button>
+            </Button>
             {current < questions.length - 1 ? (
-              <button
+              <Button
                 type="button"
+                variant="default"
                 onClick={() => setCurrent(c => c + 1)}
-                className="rounded-xl bg-[var(--brand-color)] px-6 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
               >
                 Next
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
                 type="button"
+                variant="default"
                 onClick={handleSubmit}
-                className="rounded-xl bg-[var(--brand-color)] px-6 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
               >
                 Submit Exam
-              </button>
+              </Button>
             )}
           </div>
         </div>

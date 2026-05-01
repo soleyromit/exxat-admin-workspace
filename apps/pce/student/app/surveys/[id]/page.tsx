@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button, buttonVariants } from '@exxat/student/components/ui/button'
+import { Textarea } from '@exxat/student/components/ui/textarea'
 import { MOCK_STUDENT_SURVEYS } from '@/lib/mock-surveys'
 import type { SurveySection, Question } from '@/lib/mock-surveys'
 import Link from 'next/link'
@@ -84,8 +85,8 @@ export default function TakeSurveyPage() {
   if (!survey) {
     return (
       <div className="flex min-h-screen items-center justify-center flex-col gap-3 text-center px-6">
-        <i className="fa-light fa-circle-exclamation" aria-hidden="true" style={{ fontSize: 40, color: 'var(--muted-foreground)' }} />
-        <p className="text-base font-semibold" style={{ color: 'var(--foreground)' }}>Survey not found</p>
+        <i className="fa-light fa-circle-exclamation text-muted-foreground" aria-hidden="true" style={{ fontSize: 40 }} />
+        <p className="text-base font-semibold text-foreground">Survey not found</p>
         <Link href="/surveys" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
           Back to Surveys
         </Link>
@@ -96,8 +97,8 @@ export default function TakeSurveyPage() {
   if (survey.status !== 'open' && survey.status !== 'submitted') {
     return (
       <div className="flex min-h-screen items-center justify-center flex-col gap-3 text-center px-6">
-        <i className="fa-light fa-lock-keyhole" aria-hidden="true" style={{ fontSize: 40, color: 'var(--muted-foreground)' }} />
-        <p className="text-base font-semibold" style={{ color: 'var(--foreground)' }}>
+        <i className="fa-light fa-lock-keyhole text-muted-foreground" aria-hidden="true" style={{ fontSize: 40 }} />
+        <p className="text-base font-semibold text-foreground">
           This survey is closed
         </p>
         <Link href="/surveys" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
@@ -141,8 +142,7 @@ export default function TakeSurveyPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/surveys"
-            className="flex items-center gap-1.5 text-sm"
-            style={{ color: 'var(--muted-foreground)' }}
+            className="flex items-center gap-1.5 text-sm text-muted-foreground"
           >
             <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 12 }} />
             Surveys
@@ -154,7 +154,7 @@ export default function TakeSurveyPage() {
         </div>
         <div className="flex items-center gap-3">
           {/* Auto-save indicator */}
-          <span className="text-xs flex items-center gap-1" style={{ color: 'var(--muted-foreground)' }}>
+          <span className="text-xs flex items-center gap-1 text-muted-foreground">
             <i className="fa-light fa-cloud-check" aria-hidden="true" style={{ fontSize: 11 }} />
             Progress saved
           </span>
@@ -326,10 +326,10 @@ function SectionForm({
     <div className="flex flex-col gap-8">
       {/* Section header */}
       <div className="flex flex-col gap-1.5">
-        <h1 className="text-lg font-semibold" style={{ color: 'var(--foreground)' }}>
+        <h1 className="text-lg font-semibold text-foreground">
           {section.title}
         </h1>
-        <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+        <p className="text-sm text-muted-foreground">
           {section.description}
         </p>
         {(() => {
@@ -383,15 +383,14 @@ function QuestionItem({
     <div className="flex flex-col gap-3">
       <div className="flex gap-3">
         <span
-          className="text-sm font-medium tabular-nums mt-0.5 shrink-0 w-5 text-right"
-          style={{ color: 'var(--muted-foreground)' }}
+          className="text-sm font-medium tabular-nums mt-0.5 shrink-0 w-5 text-right text-muted-foreground"
         >
           {index + 1}.
         </span>
-        <p className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
+        <p className="text-sm font-medium text-foreground">
           {question.text}
           {question.type === 'rating' && (
-            <span className="ms-1 text-xs font-normal" style={{ color: 'var(--muted-foreground)' }}>
+            <span className="ms-1 text-xs font-normal text-muted-foreground">
               (required)
             </span>
           )}
@@ -402,14 +401,9 @@ function QuestionItem({
         <RatingInput value={value as number | undefined} onChange={onAnswer} />
       ) : (
         <div className="ms-8">
-          <textarea
-            className="w-full rounded-lg border px-3 py-2.5 text-sm resize-none outline-none focus:ring-2 transition-shadow"
-            style={{
-              borderColor: 'var(--border-control-3)',
-              backgroundColor: 'var(--input-background)',
-              color: 'var(--foreground)',
-              minHeight: 80,
-            }}
+          <Textarea
+            className="resize-none"
+            style={{ minHeight: 80 }}
             placeholder="Share your thoughts… (optional)"
             value={(value as string) ?? ''}
             onChange={e => onAnswer(e.target.value)}
@@ -481,13 +475,13 @@ function RatingInput({
               >
                 {n}
               </span>
-              <span className="text-xs text-center px-1 leading-tight" style={{ color: 'var(--muted-foreground)' }}>
+              <span className="text-xs text-center px-1 leading-tight text-muted-foreground">
                 {RATING_LABELS[n]}
               </span>
             </Button>
           ))}
         </div>
-        <div className="flex justify-between text-xs" style={{ color: 'var(--muted-foreground)' }}>
+        <div className="flex justify-between text-xs text-muted-foreground">
           <span>Strongly Disagree</span>
           <span>Strongly Agree</span>
         </div>

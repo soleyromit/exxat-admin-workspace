@@ -29,8 +29,8 @@ export default function SurveysPage() {
             <i className="fa-light fa-paper-plane text-white text-sm" aria-hidden="true" />
           </div>
           <div>
-            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Exxat</p>
-            <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>Post Course Evaluations</p>
+            <p className="text-xs text-muted-foreground">Exxat</p>
+            <p className="text-sm font-semibold text-foreground">Post Course Evaluations</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -42,8 +42,8 @@ export default function SurveysPage() {
             AJ
           </div>
           <div className="hidden sm:block text-right">
-            <p className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Alex Johnson</p>
-            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Spring 2026</p>
+            <p className="text-sm font-medium text-foreground">Alex Johnson</p>
+            <p className="text-xs text-muted-foreground">Spring 2026</p>
           </div>
         </div>
       </header>
@@ -56,8 +56,8 @@ export default function SurveysPage() {
             className="flex flex-1 flex-col gap-0.5 px-6 py-4"
             style={{ backgroundColor: 'var(--background)', borderRight: i < STUDENT_METRICS.length - 1 ? '1px solid var(--border)' : 'none' }}
           >
-            <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>{m.label}</span>
-            <span className="text-xl font-bold tabular-nums" style={{ color: 'var(--foreground)' }}>{m.value}</span>
+            <span className="text-xs text-muted-foreground">{m.label}</span>
+            <span className="text-xl font-bold tabular-nums text-foreground">{m.value}</span>
           </div>
         ))}
       </div>
@@ -68,10 +68,10 @@ export default function SurveysPage() {
         {open.length > 0 && (
           <section className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold" style={{ color: 'var(--foreground)' }}>
+              <h2 className="text-base font-semibold text-foreground">
                 Awaiting your response
               </h2>
-              <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+              <span className="text-sm text-muted-foreground">
                 {open.length} survey{open.length !== 1 ? 's' : ''}
               </span>
             </div>
@@ -86,7 +86,7 @@ export default function SurveysPage() {
         {/* Completed surveys */}
         {completed.length > 0 && (
           <section className="flex flex-col gap-3">
-            <h2 className="text-sm font-semibold" style={{ color: 'var(--muted-foreground)' }}>
+            <h2 className="text-sm font-semibold text-muted-foreground">
               Completed
             </h2>
             <div className="flex flex-col gap-2">
@@ -104,10 +104,10 @@ export default function SurveysPage() {
               aria-hidden="true"
               style={{ fontSize: 40, color: 'var(--brand-color)' }}
             />
-            <p className="text-base font-semibold" style={{ color: 'var(--foreground)' }}>
+            <p className="text-base font-semibold text-foreground">
               All done — no surveys to complete
             </p>
-            <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+            <p className="text-sm text-muted-foreground">
               Check back after your courses conclude for new evaluations.
             </p>
           </div>
@@ -133,15 +133,15 @@ function SurveyCard({ survey }: { survey: StudentSurvey }) {
     >
       <div className="flex flex-col gap-1.5 flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold truncate" style={{ color: 'var(--foreground)' }}>
+          <span className="text-sm font-semibold truncate text-foreground">
             {survey.courseCode}
           </span>
           <div className={badgeVariants({ variant: cfg.variant })}>{cfg.label}</div>
         </div>
-        <span className="text-sm truncate" style={{ color: 'var(--muted-foreground)' }}>
+        <span className="text-sm truncate text-muted-foreground">
           {survey.courseName}
         </span>
-        <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--muted-foreground)' }}>
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span>
             <i className="fa-light fa-users me-1" aria-hidden="true" />
             {survey.instructors.map(i => i.name).join(', ')}
@@ -182,7 +182,7 @@ function SurveyCard({ survey }: { survey: StudentSurvey }) {
           </Link>
         )}
         {survey.status === 'closed' && (
-          <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Closed</span>
+          <span className="text-xs text-muted-foreground">Closed</span>
         )}
       </div>
     </div>

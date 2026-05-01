@@ -8,7 +8,7 @@ import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Tooltip, TooltipTrigger, TooltipContent,
   SidebarTrigger, Separator, Avatar, AvatarFallback, Badge,
-  Input, InputGroup, InputGroupAddon,
+  InputGroup, InputGroupAddon, InputGroupInput,
 } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
@@ -51,8 +51,8 @@ export default function SurveysPage() {
       <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
-        <h1 className="flex-1" style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 400 }}>Surveys</h1>
-        <Button size="sm" onClick={() => setCreateOpen(true)}>
+        <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Surveys</h1>
+        <Button variant="default" size="sm" onClick={() => setCreateOpen(true)}>
           <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
           Create Survey
         </Button>
@@ -61,9 +61,9 @@ export default function SurveysPage() {
       <div className="flex items-center gap-2 py-2 border-b border-border shrink-0 flex-wrap" style={{ paddingInline: 28 }}>
         <InputGroup className="w-56">
           <InputGroupAddon align="inline-start">
-            <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)' }} />
+            <i className="fa-light fa-magnifying-glass text-muted-foreground" aria-hidden="true" style={{ fontSize: 12 }} />
           </InputGroupAddon>
-          <Input
+          <InputGroupInput
             placeholder="Search…"
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -109,8 +109,7 @@ export default function SurveysPage() {
                       aria-label={isOpen ? `Collapse ${group.label}` : `Expand ${group.label}`}
                     >
                       <span
-                        className="text-xs font-semibold uppercase tracking-wide flex-1 text-left"
-                        style={{ color: 'var(--muted-foreground)' }}
+                        className="text-xs font-semibold uppercase tracking-wide flex-1 text-left text-muted-foreground"
                       >
                         {group.label}
                       </span>
@@ -176,8 +175,8 @@ function SurveyRow({ survey, onClose }: { survey: PceSurvey; onClose: () => void
     >
       <TableCell>
         <Link href={`/surveys/${survey.id}`} className="flex flex-col gap-0.5 hover:underline">
-          <span style={{ fontSize: 13, fontWeight: 600 }}>{survey.courseCode}</span>
-          <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{survey.courseName}</span>
+          <span className="text-sm font-semibold">{survey.courseCode}</span>
+          <span className="text-xs text-muted-foreground">{survey.courseName}</span>
         </Link>
       </TableCell>
       <TableCell>
@@ -193,9 +192,9 @@ function SurveyRow({ survey, onClose }: { survey: PceSurvey; onClose: () => void
                     {primary.initials}
                   </AvatarFallback>
                 </Avatar>
-                <span style={{ fontSize: 13, fontWeight: 500 }} className="truncate max-w-32">{primary.name}</span>
+                <span className="text-sm font-medium truncate max-w-32">{primary.name}</span>
                 {extraCount > 0 && (
-                  <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                  <span className="text-xs text-muted-foreground">
                     +{extraCount}
                   </span>
                 )}
@@ -222,7 +221,7 @@ function SurveyRow({ survey, onClose }: { survey: PceSurvey; onClose: () => void
           showBar={survey.responseRate > 0}
         />
       </TableCell>
-      <TableCell style={{ fontSize: 13, fontWeight: 500, color: 'var(--muted-foreground)' }}>
+      <TableCell className="text-sm font-medium text-muted-foreground">
         {survey.deadline}
       </TableCell>
       <TableCell>
@@ -264,19 +263,19 @@ function SurveyRow({ survey, onClose }: { survey: PceSurvey; onClose: () => void
 function EmptySurveys({ onCreate, hasFilters }: { onCreate: () => void; hasFilters: boolean }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-      <i className="fa-light fa-paper-plane" aria-hidden="true" style={{ fontSize: 40, color: 'var(--muted-foreground)' }} />
+      <i className="fa-light fa-paper-plane text-muted-foreground" aria-hidden="true" style={{ fontSize: 40 }} />
       <div className="flex flex-col gap-1">
         <p className="text-sm font-medium">
           {hasFilters ? 'No surveys match these filters' : 'No surveys yet'}
         </p>
-        <p className="text-sm" style={{ color: 'var(--muted-foreground)', maxWidth: 320 }}>
+        <p className="text-sm text-muted-foreground" style={{ maxWidth: 320 }}>
           {hasFilters
             ? 'Try adjusting your filters.'
             : 'Create a survey from a template to start collecting responses.'}
         </p>
       </div>
       {!hasFilters && (
-        <Button size="sm" onClick={onCreate}>
+        <Button variant="default" size="sm" onClick={onCreate}>
           <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
           Create Survey
         </Button>

@@ -43,7 +43,7 @@ function MySurveysContent() {
       <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
-        <h1 className="flex-1" style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 400 }}>
+        <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>
           {filterParam === 'released' ? 'Results' : 'My Surveys'}
         </h1>
         <Select value={term} onValueChange={setTerm}>
@@ -78,8 +78,8 @@ function MySurveysContent() {
                     <TableRow key={survey.id}>
                       <TableCell>
                         <div className="flex flex-col gap-0.5">
-                          <span style={{ fontSize: 13, fontWeight: 500 }}>{survey.courseCode}</span>
-                          <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{survey.courseName}</span>
+                          <span className="text-sm font-medium">{survey.courseCode}</span>
+                          <span className="text-xs text-muted-foreground">{survey.courseName}</span>
                         </div>
                       </TableCell>
                       <TableCell><SurveyStatusBadge status={survey.status} /></TableCell>
@@ -91,7 +91,7 @@ function MySurveysContent() {
                           showBar={survey.responseRate > 0}
                         />
                       </TableCell>
-                      <TableCell style={{ fontSize: 13, fontWeight: 500, color: 'var(--muted-foreground)' }}>
+                      <TableCell className="text-sm font-medium text-muted-foreground">
                         {survey.deadline}
                       </TableCell>
                       <TableCell>
@@ -103,7 +103,7 @@ function MySurveysContent() {
                             </Link>
                           </Button>
                         ) : (
-                          <div className="flex items-center gap-1.5" style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>
+                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                             <i className="fa-light fa-lock-keyhole" aria-hidden="true" style={{ fontSize: 12 }} />
                             Pending review
                           </div>
@@ -141,10 +141,10 @@ function EmptyFaculty({ filterParam, term }: { filterParam: string | null; term:
   if (filterParam === 'released') {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-        <i className="fa-light fa-chart-bar" aria-hidden="true" style={{ fontSize: 40, color: 'var(--muted-foreground)' }} />
+        <i className="fa-light fa-chart-bar text-muted-foreground" aria-hidden="true" style={{ fontSize: 40 }} />
         <div className="flex flex-col gap-1">
           <p className="text-sm font-medium">No results available for {term}</p>
-          <p className="text-sm" style={{ color: 'var(--muted-foreground)', maxWidth: 320 }}>
+          <p className="text-sm text-muted-foreground" style={{ maxWidth: 320 }}>
             Results will appear here once your surveys are released by the program administrator.
           </p>
         </div>
@@ -153,10 +153,10 @@ function EmptyFaculty({ filterParam, term }: { filterParam: string | null; term:
   }
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-      <i className="fa-light fa-paper-plane" aria-hidden="true" style={{ fontSize: 40, color: 'var(--muted-foreground)' }} />
+      <i className="fa-light fa-paper-plane text-muted-foreground" aria-hidden="true" style={{ fontSize: 40 }} />
       <div className="flex flex-col gap-1">
         <p className="text-sm font-medium">No surveys assigned to you for {term}</p>
-        <p className="text-sm" style={{ color: 'var(--muted-foreground)', maxWidth: 360 }}>
+        <p className="text-sm text-muted-foreground" style={{ maxWidth: 360 }}>
           Contact your program administrator if you expected to see surveys here.
         </p>
       </div>

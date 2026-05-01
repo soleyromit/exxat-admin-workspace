@@ -41,6 +41,24 @@ Any `style={{...}}` containing `fontSize` or `fontWeight` on elements that are N
 ### R7 — Inline oklch/hex/rgb color values
 Any `oklch(`, `#[0-9a-f]{3,6}`, `rgb(`, `rgba(` in a style prop → define a CSS variable in globals.css instead
 
+### R8 — Wrong InputGroup composition
+`<Input` as a direct child of `<InputGroup` → must use `<InputGroupInput` (border-stripped variant).
+`<input` inside any group → same.
+Using `<div>` + `<input>` for a search bar → must use `InputGroup` + `InputGroupAddon` + `InputGroupInput`.
+
+### R9 — Icon-only Button missing aria-label
+`<Button size="icon` (icon, icon-sm, icon-xs, icon-lg) without an `aria-label` prop is a violation.
+Every icon-only button must have `aria-label="..."`.
+
+### R10 — Non-Font-Awesome icons in admin app
+Any import from `lucide-react`, `@heroicons`, `react-icons`, or `phosphor-react` in an admin app file → must use Font Awesome `<i className="fa-...">` instead.
+
+### R11 — white in color-mix
+`color-mix(in oklch, ... white)` or `color-mix(in oklch, white ...)` → use `var(--background)` instead of `white`.
+
+### R12 — Missing overflow-hidden on rounded DS Table wrapper
+`<div className="... rounded-lg ...">` or `rounded-xl` containing `<Table` without `overflow-hidden` → add `overflow-hidden` to the wrapper div, otherwise rounded corners don't clip the scroll container.
+
 ## Output format
 
 For each violation, print:

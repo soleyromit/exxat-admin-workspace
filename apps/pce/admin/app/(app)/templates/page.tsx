@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import {
-  Button, Input, InputGroup, InputGroupAddon, Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+  Button, InputGroup, InputGroupAddon, InputGroupInput, Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
   Tooltip, TooltipTrigger, TooltipContent, SidebarTrigger, Separator,
 } from '@exxat/ds/packages/ui/src'
@@ -29,8 +29,8 @@ export default function TemplatesPage() {
       <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
-        <h1 className="flex-1" style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 400 }}>Templates</h1>
-        <Button size="sm" onClick={() => setCreateOpen(true)}>
+        <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Templates</h1>
+        <Button variant="default" size="sm" onClick={() => setCreateOpen(true)}>
           <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
           New Template
         </Button>
@@ -40,9 +40,9 @@ export default function TemplatesPage() {
       <div className="flex items-center gap-2 py-2 border-b border-border shrink-0" style={{ paddingInline: 28 }}>
         <InputGroup className="w-56">
           <InputGroupAddon align="inline-start">
-            <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)' }} />
+            <i className="fa-light fa-magnifying-glass text-muted-foreground" aria-hidden="true" style={{ fontSize: 12 }} />
           </InputGroupAddon>
-          <Input
+          <InputGroupInput
             placeholder="Search templates…"
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -123,27 +123,26 @@ function TemplateRow({
       <TableCell>
         <Link
           href={`/templates/${template.id}`}
-          className="font-medium hover:underline"
-          style={{ color: 'var(--foreground)', fontSize: 13 }}
+          className="font-medium hover:underline text-sm text-foreground"
         >
           {template.name}
         </Link>
       </TableCell>
       <TableCell><TemplateSectionChips sections={template.sections} /></TableCell>
-      <TableCell className="text-right tabular-nums" style={{ fontSize: 13 }}>{template.questionCount}</TableCell>
+      <TableCell className="text-right tabular-nums text-sm">{template.questionCount}</TableCell>
       <TableCell className="text-right">
         {template.usedBySurveyCount > 0 ? (
-          <Button variant="link" size="sm" className="h-auto p-0 tabular-nums" style={{ fontSize: 13 }}>
+          <Button variant="link" size="sm" className="h-auto p-0 tabular-nums text-sm">
             {template.usedBySurveyCount}
           </Button>
         ) : (
-          <span className="tabular-nums" style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>0</span>
+          <span className="tabular-nums text-sm text-muted-foreground">0</span>
         )}
       </TableCell>
       <TableCell>
         <SurveyStatusBadge status={template.status} />
       </TableCell>
-      <TableCell style={{ fontSize: 13, fontWeight: 500, color: 'var(--muted-foreground)' }}>
+      <TableCell className="text-sm font-medium text-muted-foreground">
         {template.lastModified}
       </TableCell>
       <TableCell>
@@ -193,7 +192,7 @@ function EmptyState({ onCreate, hasSearch }: { onCreate: () => void; hasSearch: 
         <p className="text-sm font-medium">
           {hasSearch ? 'No templates match your search' : 'No templates yet'}
         </p>
-        <p className="text-sm" style={{ color: 'var(--muted-foreground)', maxWidth: 320 }}>
+        <p className="text-sm text-muted-foreground" style={{ maxWidth: 320 }}>
           {hasSearch
             ? 'Try a different search term.'
             : 'Create a template to start distributing post course evaluations.'
@@ -201,7 +200,7 @@ function EmptyState({ onCreate, hasSearch }: { onCreate: () => void; hasSearch: 
         </p>
       </div>
       {!hasSearch && (
-        <Button size="sm" onClick={onCreate}>
+        <Button variant="default" size="sm" onClick={onCreate}>
           <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
           Create Template
         </Button>

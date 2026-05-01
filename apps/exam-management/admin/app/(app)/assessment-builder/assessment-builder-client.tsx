@@ -645,7 +645,7 @@ function ABDiffChart({ distribution, timeMetrics, overtimeMetrics, durationMinut
         </div>
         {overtime ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <i className={`fa-solid ${overtime.icon}`} aria-hidden="true" style={{ fontSize: 11, color: overtime.color }} />
+            <i className={`fa-solid ${overtime.icon} ${overtime.cls}`} aria-hidden="true" style={{ fontSize: 11 }} />
             <span className={`text-[11px] font-semibold ${overtime.cls}`}>{overtime.label}</span>
           </div>
         ) : (

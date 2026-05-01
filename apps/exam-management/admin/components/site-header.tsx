@@ -26,8 +26,7 @@ export function SiteHeader({ title, breadcrumbs }: SiteHeaderProps) {
               <li key={index} className="flex items-center gap-2">
                 {index > 0 && (
                   <i
-                    className="fa-light fa-chevron-right text-xs"
-                    style={{ color: 'var(--muted-foreground)' }}
+                    className="fa-light fa-chevron-right text-xs text-muted-foreground"
                     aria-hidden="true"
                   />
                 )}
