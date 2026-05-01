@@ -1,0 +1,71 @@
+import React from 'react'
+import { ChevronRightIcon, ChevronLeftIcon } from 'lucide-react'
+
+// --- merged from src/Button.tsx ---
+export type ButtonVariant = 'primary' | 'secondary'
+export type ButtonSize = 'default' | 'sm'
+export interface ButtonProps {
+  label?: string
+  variant?: ButtonVariant
+  size?: ButtonSize
+  icon?: React.ReactNode
+  /** Show leading chevron arrow (previous/back variant) */
+  leadingIcon?: boolean
+  /** Show trailing chevron arrow (primary variant) */
+  trailingIcon?: boolean
+  onClick?: () => void
+  disabled?: boolean
+  type?: 'button' | 'submit' | 'reset'
+  className?: string
+  'data-id'?: string
+}
+const variantStyles: Record<ButtonVariant, string> = {
+  primary:
+    'btn-primary bg-[#db2777] text-white shadow-sm hover:bg-[#C01568] active:bg-[#A01257]',
+  secondary:
+    'bg-white text-[#334155] border border-[#94a3b8] shadow-sm hover:bg-slate-50 active:bg-slate-100',
+}
+const sizeStyles: Record<ButtonSize, string> = {
+  default: 'h-[46px] px-6 text-base rounded-[6px]',
+  sm: 'h-[50px] px-5 text-base rounded-lg',
+}
+export const Button = ({
+  label = 'Button',
+  variant = 'primary',
+  size = 'default',
+  icon,
+  leadingIcon = false,
+  trailingIcon = false,
+  onClick,
+  disabled = false,
+  type = 'button',
+  className = '',
+  'data-id': dataId,
+}: ButtonProps) => {
+  return (
+    <button
+      data-id={dataId}
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      className={`
+        inline-flex items-center justify-center gap-2
+        font-button font-normal not-italic leading-6
+        transition-all duration-150
+        disabled:opacity-50 disabled:cursor-not-allowed
+        ${variantStyles[variant]}
+        ${sizeStyles[size]}
+        ${className}
+      `}
+    >
+      {leadingIcon && (
+        <ChevronLeftIcon className="w-5 h-5 flex-shrink-0" strokeWidth={2.5} />
+      )}
+      {icon && <span className="flex-shrink-0 flex items-center">{icon}</span>}
+      <span>{label}</span>
+      {trailingIcon && (
+        <ChevronRightIcon className="w-5 h-5 flex-shrink-0" strokeWidth={2.5} />
+      )}
+    </button>
+  )
+}
