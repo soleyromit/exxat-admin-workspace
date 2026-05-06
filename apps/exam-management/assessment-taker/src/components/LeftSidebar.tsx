@@ -1,4 +1,4 @@
-import React from 'react';
+
 /**
  * LeftSidebar — Exxat Exam Management
  *
@@ -21,16 +21,13 @@ import React from 'react';
  *   ActiveExamTab has borderRadius=0 (full-bleed strip). In Figma, ensure
  *   this frame has "Clip content" on and no corner radius to match intent.
  */
-import { FileEditIcon } from 'lucide-react';
 import { tokens } from '../tokens/design-tokens';
+import { Button as DSButton } from '@exxat/ds/packages/ui/src';
 export interface LeftSidebarProps {
   examTitle: string;
   attemptNumber: number;
 }
-export function LeftSidebar({
-  examTitle,
-  attemptNumber
-}: LeftSidebarProps) {
+export function LeftSidebar(_props: LeftSidebarProps) {
   return (
     // Figma layer: "LeftSidebar"
     <div className="flex flex-col shrink-0" style={{
@@ -44,15 +41,9 @@ export function LeftSidebar({
         gap: '8px'
       }}>
         {/* Figma layer: "MenuButton" */}
-        <button className="flex items-center justify-center rounded-md transition-colors hover:bg-slate-100" style={{
-          width: '32px',
-          height: '32px'
-        }} aria-label="Menu">
-          {/* Figma layer: "MenuIcon" — custom SVG, convert to component in Figma */}
-          <svg width="17.5" height="20" viewBox="0 0 18 20" fill="none">
-            <path d="M1 4H17M1 10H17M1 16H17" stroke={tokens.text.muted} strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-        </button>
+        <DSButton variant="ghost" size="icon-sm" aria-label="Menu">
+          <i className="fa-light fa-bars" aria-hidden="true" style={{ fontSize: 18 }} />
+        </DSButton>
 
         {/* Figma layer: "ActiveExamTab"
              ⚠️ Full-bleed strip — borderRadius intentionally 0, clips to sidebar width */}
@@ -62,12 +53,7 @@ export function LeftSidebar({
           backgroundColor: tokens.sidebar.activeBg,
           borderRadius: 0
         }}>
-          {/* Figma layer: "FileEditIcon" */}
-          <FileEditIcon style={{
-            width: '24px',
-            height: '24px',
-            color: tokens.text.inverse
-          }} />
+          <i className="fa-light fa-file-pen" aria-hidden="true" style={{ fontSize: 24, color: tokens.text.inverse }} />
         </div>
       </div>
     </div>);

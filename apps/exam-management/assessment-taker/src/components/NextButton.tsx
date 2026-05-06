@@ -1,65 +1,47 @@
-import React from 'react';
 /**
- * NextButton — Exxat Exam Management
+ * NextButton — Exxat Exam Management (DS-wrapped).
  *
- * FIGMA LAYER GUIDE
- * ─────────────────
- * NextButton                  [Frame, Auto Layout horizontal, hug×hug]
- *   ├── Label                 [Text, Source Sans 3 SemiBold 14px]
- *   └── TrailingIcon          [Instance: Icon/ChevronRight, 14×14]
- *
- * FIGMA VARIANTS
- *   state: default | hover | disabled
- *
- * TOKEN USAGE
- *   bg        → Brand/Primary (#E4077D)
- *   bg hover  → Brand/PrimaryHover (#C9026D)
- *   text      → Text/Inverse (#FFFFFF)
- *   border    → Brand/Primary (#E4077D)
+ * Brand-pink "Next" CTA used during exam navigation. Wraps DS `Button` and
+ * overrides bg/color to use `--brand-color` because the DS `default` token
+ * resolves to dark gray in theme-prism — we keep the original brand-filled
+ * intent of this CTA.
  */
-import { ChevronRightIcon } from 'lucide-react';
-import { tokens } from '../tokens/design-tokens';
+
+import { Button as DSButton } from '@exxat/ds/packages/ui/src'
+
 export interface NextButtonProps {
-  label?: string;
-  onClick?: () => void;
-  disabled?: boolean;
-  className?: string;
+  label?: string
+  onClick?: () => void
+  disabled?: boolean
+  className?: string
 }
+
 export function NextButton({
   label = 'Next',
   onClick,
   disabled = false,
-  className = ''
+  className,
 }: NextButtonProps) {
   return (
-    // Figma layer: "NextButton"
-    <button type="button" onClick={onClick} disabled={disabled} className={`
-        inline-flex items-center justify-center
-        font-heading font-semibold rounded-lg
-        transition-all duration-150 select-none
-        hover:opacity-90 active:opacity-80
-        ${disabled ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}
-        ${className}
-      `} style={{
-      height: '40px',
-      padding: '0 18px',
-      fontSize: '14px',
-      gap: '6px',
-      lineHeight: 1,
-      whiteSpace: 'nowrap',
-      backgroundColor: tokens.brand.primary,
-      color: tokens.text.inverse,
-      border: `1px solid ${tokens.brand.primary}`
-    }}>
-      {/* Figma layer: "Label" */}
+    <DSButton
+      type="button"
+      variant="default"
+      size="default"
+      disabled={disabled}
+      onClick={onClick}
+      className={className}
+      style={{
+        backgroundColor: 'var(--brand-color)',
+        color: 'var(--brand-foreground)',
+        borderColor: 'var(--brand-color)',
+      }}
+    >
       {label}
-
-      {/* Figma layer: "TrailingIcon" */}
-      <ChevronRightIcon style={{
-        width: '14px',
-        height: '14px',
-        flexShrink: 0
-      }} />
-    </button>);
-
+      <i
+        className="fa-light fa-chevron-right"
+        aria-hidden="true"
+        style={{ fontSize: 14, flexShrink: 0 }}
+      />
+    </DSButton>
+  )
 }

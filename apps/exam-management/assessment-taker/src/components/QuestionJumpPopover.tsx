@@ -1,11 +1,4 @@
 import React, { useEffect, useState, useRef } from 'react';
-import {
-  CheckCircleIcon,
-  FlagIcon,
-  CircleIcon,
-  ChevronDownIcon,
-  ChevronRightIcon } from
-'lucide-react';
 import { Question } from '../data/questions';
 export interface QuestionJumpPopoverProps {
   questions: Question[];
@@ -62,7 +55,6 @@ export function QuestionJumpPopover({
       unanswered.push(entry);
     }
   });
-  const total = questions.length;
   const answeredCount = answered.length;
   const flaggedCount = flagged.length;
   const unansweredCount = unanswered.length;
@@ -80,8 +72,8 @@ export function QuestionJumpPopover({
       className="absolute top-full left-0 mt-2 z-50 animate-pop-in flex flex-col overflow-hidden"
       style={{
         width: '320px',
-        backgroundColor: 'var(--surface-white)',
-        border: '1px solid var(--border-default)',
+        backgroundColor: 'var(--card)',
+        border: '1px solid var(--border)',
         borderRadius: '12px',
         boxShadow: '0 12px 40px rgba(0,0,0,0.12)'
       }}>
@@ -90,7 +82,7 @@ export function QuestionJumpPopover({
         className="w-full"
         style={{
           height: '1px',
-          backgroundColor: 'var(--border-default)'
+          backgroundColor: 'var(--border)'
         }} />
       
 
@@ -117,11 +109,7 @@ export function QuestionJumpPopover({
             badgeColor="var(--state-flagged-text)"
             badgeBg="var(--state-flagged-bg)"
             renderIcon={() =>
-            <FlagIcon
-              size={13}
-              style={{
-                color: 'var(--state-flagged-text)'
-              }} />
+            <i className="fa-solid fa-flag" aria-hidden="true" style={{ fontSize: 13, color: 'var(--state-flagged-text)' }} />
 
             } />
           
@@ -129,7 +117,7 @@ export function QuestionJumpPopover({
             className="w-full"
             style={{
               height: '1px',
-              backgroundColor: 'var(--border-default)'
+              backgroundColor: 'var(--border)'
             }} />
           
           </>
@@ -146,14 +134,10 @@ export function QuestionJumpPopover({
           onNavigate={onNavigate}
           onClose={onClose}
           truncate={truncate}
-          badgeColor="var(--text-muted)"
-          badgeBg="var(--surface-subtle)"
+          badgeColor="var(--muted-foreground)"
+          badgeBg="var(--muted)"
           renderIcon={() =>
-          <CircleIcon
-            size={14}
-            style={{
-              color: 'var(--text-subtle)'
-            }} />
+          <i className="fa-light fa-circle" aria-hidden="true" style={{ fontSize: 14, color: 'var(--muted-foreground)' }} />
 
           } />
         
@@ -162,7 +146,7 @@ export function QuestionJumpPopover({
           className="w-full"
           style={{
             height: '1px',
-            backgroundColor: 'var(--border-default)'
+            backgroundColor: 'var(--border)'
           }} />
         
 
@@ -180,11 +164,7 @@ export function QuestionJumpPopover({
           badgeColor="var(--state-answered-text)"
           badgeBg="var(--state-answered-bg)"
           renderIcon={() =>
-          <CheckCircleIcon
-            size={14}
-            style={{
-              color: 'var(--state-answered-text)'
-            }} />
+          <i className="fa-solid fa-circle-check" aria-hidden="true" style={{ fontSize: 14, color: 'var(--state-answered-text)' }} />
 
           } />
         
@@ -221,7 +201,6 @@ function SectionGroup({
   badgeBg,
   renderIcon
 }: SectionGroupProps) {
-  const ChevronComp = isCollapsed ? ChevronRightIcon : ChevronDownIcon;
   return (
     <div>
       {/* Section header */}
@@ -229,26 +208,24 @@ function SectionGroup({
         onClick={onToggle}
         className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors hover:opacity-80"
         style={{
-          backgroundColor: 'var(--surface-subtle)'
+          backgroundColor: 'var(--muted)'
         }}>
-        
-        <ChevronComp
-          size={14}
-          style={{
-            color: 'var(--text-muted)',
-            flexShrink: 0
-          }} />
+
+        <i
+          className={`fa-light ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-down'}`}
+          aria-hidden="true"
+          style={{ fontSize: 14, color: 'var(--muted-foreground)', flexShrink: 0 }} />
         
         <span
-          className="font-heading font-semibold text-xs flex-1"
+          className="font-semibold text-xs flex-1"
           style={{
-            color: 'var(--text-primary)'
+            color: 'var(--foreground)'
           }}>
           
           {title}
         </span>
         <span
-          className="text-[11px] font-heading font-bold px-1.5 py-0.5 rounded-full"
+          className="text-[11px] font-bold px-1.5 py-0.5 rounded-full"
           style={{
             color: badgeColor,
             backgroundColor: badgeBg
@@ -263,9 +240,9 @@ function SectionGroup({
       <div className="flex flex-col">
           {items.length === 0 ?
         <div
-          className="px-3 py-3 text-[11px] font-heading"
+          className="px-3 py-3 text-[11px]"
           style={{
-            color: 'var(--text-subtle)'
+            color: 'var(--muted-foreground)'
           }}>
           
               No questions in this group
@@ -292,11 +269,11 @@ function SectionGroup({
               
                   {/* Question number */}
                   <span
-                className="font-heading font-bold text-xs w-6 text-center flex-shrink-0"
+                className="font-bold text-xs w-6 text-center flex-shrink-0"
                 style={{
                   color: isCurrent ?
                   'var(--exam-accent)' :
-                  'var(--text-primary)'
+                  'var(--foreground)'
                 }}>
                 
                     {i + 1}
@@ -308,7 +285,7 @@ function SectionGroup({
                 style={{
                   color: isCurrent ?
                   'var(--exam-accent)' :
-                  'var(--text-secondary)'
+                  'var(--muted-foreground)'
                 }}>
                 
                     {truncate(q.text, 40)}

@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { XIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Button as DSButton } from '@exxat/ds/packages/ui/src';
 export interface VirtualKeyboardProps {
   isOpen: boolean;
   onClose: () => void;
@@ -172,15 +172,15 @@ export function VirtualKeyboard({
       <div
         className="p-4 rounded-xl shadow-lg border w-full"
         style={{
-          backgroundColor: 'var(--surface-white)',
-          borderColor: 'var(--border-default)'
+          backgroundColor: 'var(--card)',
+          borderColor: 'var(--border)'
         }}>
         
         <div className="flex justify-between items-center mb-3 px-2">
           <span
-            className="font-heading text-sm font-medium flex items-center gap-2"
+            className="text-sm font-medium flex items-center gap-2"
             style={{
-              color: 'var(--text-secondary)'
+              color: 'var(--muted-foreground)'
             }}>
             
             <div
@@ -202,15 +202,9 @@ export function VirtualKeyboard({
               </span>
             }
           </span>
-          <button
-            onClick={onClose}
-            className="p-1 rounded transition-colors"
-            style={{
-              color: 'var(--text-muted)'
-            }}>
-            
-            <XIcon size={18} />
-          </button>
+          <DSButton variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close virtual keyboard">
+            <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 18 }} />
+          </DSButton>
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -250,17 +244,17 @@ export function VirtualKeyboard({
                     e.preventDefault(); // Prevent stealing focus from textarea
                     handleKeyClick(key);
                   }}
-                  className={`${flexClass} min-w-0 h-9 md:h-10 rounded-lg font-heading text-xs md:text-sm font-medium transition-colors flex items-center justify-center truncate px-1 active:scale-95`}
+                  className={`${flexClass} min-w-0 h-9 md:h-10 rounded-lg text-xs md:text-sm font-medium transition-colors flex items-center justify-center truncate px-1 active:scale-95`}
                   style={{
                     backgroundColor: isActive ?
                     'var(--exam-accent-light)' :
                     isModifier ?
-                    'var(--surface-subtle)' :
-                    'var(--surface-white)',
+                    'var(--muted)' :
+                    'var(--card)',
                     color: isActive ?
                     'var(--exam-accent)' :
-                    'var(--text-primary)',
-                    border: '1px solid var(--border-default)',
+                    'var(--foreground)',
+                    border: '1px solid var(--border)',
                     boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
                   }}>
                   

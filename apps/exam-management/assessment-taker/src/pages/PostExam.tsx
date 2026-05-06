@@ -8,8 +8,8 @@
  *   - Comment/flag review note for faculty (if allowComments was enabled)
  */
 
-import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Button } from '@exxat/ds/packages/ui/src';
 import { MOCK_ASSESSMENTS } from '../data/assessments';
 
 const t = {
@@ -18,7 +18,7 @@ const t = {
   muted: 'var(--muted)',
   brand: 'var(--brand-color)',
   brandDark: 'var(--brand-color-dark)',
-  brandSurface: 'var(--brand-tint-light, #F5F3FF)',
+  brandSurface: 'var(--brand-color-light, #F5F3FF)',
   brandBorder: 'var(--brand-tint, #EDE9FE)',
   fg: 'var(--foreground)',
   fgMuted: 'var(--muted-foreground)',
@@ -35,60 +35,44 @@ export function PostExam() {
   const isPending = isHighStakes;
 
   return (
-    <div style={{ minHeight: '100vh', background: t.bg, fontFamily: 'Inter, system-ui, sans-serif', display: 'flex', flexDirection: 'column' }}>
-      {/* Header */}
-      <header style={{
-        background: t.card, borderBottom: `1px solid ${t.border}`,
-        padding: '0 24px', height: 56,
-        display: 'flex', alignItems: 'center',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 8, background: t.brand, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ color: '#FFF', fontSize: 13, fontWeight: 800 }}>E</span>
-          </div>
-          <span style={{ fontWeight: 700, fontSize: 15, color: t.fg }}>Exxat One</span>
-        </div>
-      </header>
-
-      {/* Main */}
-      <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
+    <div style={{ background: t.bg, fontFamily: 'Inter, system-ui, sans-serif', minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
         <div style={{ maxWidth: 520, width: '100%', textAlign: 'center' }}>
 
           {/* Success icon */}
           <div style={{
             width: 80, height: 80, borderRadius: '50%',
-            background: '#DCFCE7', border: '3px solid #4ADE80',
+            background: 'var(--state-success-bg-soft)', border: '3px solid var(--state-success-accent)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 24px',
           }}>
-            <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 36, color: '#15803D' }} />
+            <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 36, color: 'var(--state-success-dark)' }} />
           </div>
 
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: t.fg, marginBottom: 8 }}>Exam Submitted</h1>
+          <h1 className="font-heading" style={{ fontSize: 28, fontWeight: 700, color: t.fg, marginBottom: 8, lineHeight: 1.2 }}>Exam Submitted</h1>
           <p style={{ fontSize: 16, color: t.fgMuted, marginBottom: 32 }}>
             Your responses for <strong style={{ color: t.fg }}>{exam?.title}</strong> have been recorded.
           </p>
 
           {/* Publication status card */}
           <div style={{
-            background: isPending ? '#FFFBEB' : '#F0FDF4',
-            border: `1.5px solid ${isPending ? '#FDE68A' : '#4ADE80'}`,
+            background: isPending ? 'var(--state-warning-bg)' : 'var(--state-success-bg)',
+            border: `1.5px solid ${isPending ? 'var(--state-warning-border)' : 'var(--state-success-accent)'}`,
             borderRadius: 14, padding: 24, marginBottom: 28, textAlign: 'left',
           }}>
             <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
               <div style={{
                 width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                background: isPending ? '#FEF3C7' : '#DCFCE7',
+                background: isPending ? 'var(--state-warning-bg-soft)' : 'var(--state-success-bg-soft)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
                 <i
                   className={`fa-light ${isPending ? 'fa-hourglass-half' : 'fa-chart-bar'}`}
                   aria-hidden="true"
-                  style={{ color: isPending ? '#D97706' : '#15803D', fontSize: 20 }}
+                  style={{ color: isPending ? 'var(--state-warning-dark)' : 'var(--state-success-dark)', fontSize: 20 }}
                 />
               </div>
               <div>
-                <p style={{ fontSize: 15, fontWeight: 700, color: isPending ? '#92400E' : '#15803D', marginBottom: 6 }}>
+                <p style={{ fontSize: 15, fontWeight: 700, color: isPending ? 'var(--state-warning-darkest)' : 'var(--state-success-dark)', marginBottom: 6 }}>
                   {isPending ? 'Results Pending Faculty Review' : 'Results Available Now'}
                 </p>
                 <p style={{ fontSize: 14, color: t.fg, lineHeight: 1.6, marginBottom: isPending ? 12 : 0 }}>
@@ -100,9 +84,9 @@ export function PostExam() {
                 {isPending && exam?.resultsHoldUntil && (
                   <div style={{
                     display: 'inline-flex', alignItems: 'center', gap: 6,
-                    background: '#FEF3C7', border: '1px solid #FDE68A',
+                    background: 'var(--state-warning-bg-soft)', border: '1px solid var(--state-warning-border)',
                     borderRadius: 8, padding: '6px 12px',
-                    fontSize: 13, color: '#92400E', fontWeight: 600,
+                    fontSize: 13, color: 'var(--state-warning-darkest)', fontWeight: 600,
                   }}>
                     <i className="fa-light fa-calendar-check" aria-hidden="true" />
                     Estimated release: {exam.resultsHoldUntil.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
@@ -129,34 +113,26 @@ export function PostExam() {
           {/* Actions */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {!isPending && (
-              <button
+              <Button
+                size="lg"
                 onClick={() => navigate(`/exam/${id ?? exam?.id}/results`)}
-                style={{
-                  padding: '14px', borderRadius: 10,
-                  background: t.brand, color: '#FFF',
-                  border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                }}
+                className="w-full"
               >
                 <i className="fa-light fa-chart-bar" aria-hidden="true" />
                 View My Results
-              </button>
+              </Button>
             )}
-            <button
+            <Button
+              variant="outline"
+              size="lg"
               onClick={() => navigate('/')}
-              style={{
-                padding: '12px', borderRadius: 10,
-                background: t.muted, color: t.fg,
-                border: `1px solid ${t.border}`, fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              }}
+              className="w-full"
             >
               <i className="fa-light fa-house" aria-hidden="true" />
               Back to Dashboard
-            </button>
+            </Button>
           </div>
         </div>
-      </main>
     </div>
   );
 }

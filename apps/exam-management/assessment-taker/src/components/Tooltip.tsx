@@ -17,7 +17,7 @@ export function Tooltip({
     y: 0
   });
   const triggerRef = useRef<HTMLDivElement>(null);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const show = () => {
     timeoutRef.current = setTimeout(() => {
       setVisible(true);
@@ -95,11 +95,11 @@ export function Tooltip({
         }}>
         
           <div
-          className="px-3 py-2 rounded-lg text-xs font-heading font-medium max-w-[240px] text-center leading-snug shadow-lg border backdrop-blur-sm"
+          className="px-3 py-2 rounded-lg text-xs font-medium max-w-[240px] text-center leading-snug shadow-lg border backdrop-blur-sm"
           style={{
-            backgroundColor: 'var(--surface-white)',
-            color: 'var(--text-primary)',
-            borderColor: 'var(--border-medium)',
+            backgroundColor: 'var(--card)',
+            color: 'var(--foreground)',
+            borderColor: 'var(--border)',
             boxShadow:
             '0 4px 16px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08)',
             animation: 'tooltip-in 0.15s ease-out'

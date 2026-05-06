@@ -1,205 +1,210 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap');
-@import url('https://fonts.googleapis.com/icon?family=Material+Icons+Outlined');
+/* ─── Exxat-DS foundation (Tailwind v4) ──────────────────────────────────────
+   Loads the admin DS theme tokens (--background, --foreground, --primary,
+   --brand-color, --brand-tint*, --sidebar*, etc.) plus the @theme inline
+   bridge that surfaces them as Tailwind v4 utility classes.
+   ────────────────────────────────────────────────────────────────────────── */
+@import '../../../../exxat-ds/packages/ui/src/theme.css';
+@import 'tailwindcss';
 
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
+/* Scan Exxat-DS source so its classes (bg-primary, text-foreground, etc.)
+   are picked up when DS components are imported into this app. */
+@source '../../../../exxat-ds/packages/ui/src/**/*.{ts,tsx}';
 
-/* ─── Design Token CSS Variables ─────────────────────────────────────────── */
+/* ─── App-local tokens (no DS equivalent) ─────────────────────────────────── */
 :root {
-  /* Brand — delegates to exxat-ds CSS custom properties (Exxat One lavender).
-     Fallback hex values activate when exxat-ds globals.css is not loaded upstream
-     (e.g. standalone lockdown browser context). */
-  --brand-primary:        var(--brand-color, #7C3AED);
-  --brand-primary-hover:  var(--brand-color-dark, #5B21B6);
-  --brand-primary-active: var(--brand-color-deep, #3B0764);
-  --brand-primary-bg:     var(--brand-tint-light, #F5F3FF);
-  --brand-primary-border: var(--brand-tint, #EDE9FE);
-  --brand-primary-mid:    var(--brand-color, #7C3AED);
-  --brand-primary-mid-bg: var(--brand-tint-subtle, #DDD6FE);
-  --brand-primary-text:   var(--brand-foreground, #FFFFFF);
-  /* Surface — delegates to exxat-ds */
-  --surface-page:   var(--background, #F8FAFC);
-  --surface-white:  var(--card, #FFFFFF);
-  --surface-subtle: var(--muted, #F1F5F9);
-  --surface-muted:  var(--muted, #F8FAFC);
-  /* Text — delegates to exxat-ds */
-  --text-primary:     var(--foreground, #0F172A);
-  --text-secondary:   var(--muted-foreground, #334155);
-  --text-muted:       var(--muted-foreground, #475569);
-  --text-subtle:      var(--muted-foreground, #64748B);
-  --text-placeholder: var(--muted-foreground, #9CA3AF);
-  --text-inverse:     var(--primary-foreground, #FFFFFF);
-  /* Border — delegates to exxat-ds */
-  --border-default: var(--border, #E2E8F0);
-  --border-medium:  var(--border-control, #CBD5E1);
-  --border-focus:   var(--ring, #A78BFA);
-  /* State — studentUX-specific (no exxat-ds equivalent) */
+  /* DataTable — defined in admin app's globals.css too; mirrored here for
+     parity in case any imported DS component reads these. */
+  --dt-header-bg:       var(--background);
+  --dt-row-bg:          var(--background);
+  --dt-row-hover:       oklch(0.972 0.001 270);
+  --dt-row-selected:    oklch(0.962 0.003 260);
+  --dt-row-selected-fg: var(--foreground);
+  --dt-group-bg:        oklch(0.972 0.001 270);
+  --sticky-edge-fade:   oklch(0 0 0 / 0.08);
+
+  /* Shadow tokens — sized for exam-card depth */
+  --shadow-card:  rgba(0, 0, 0, 0.06);
+  --shadow-heavy: rgba(0, 0, 0, 0.15);
+  --shadow-brand: color-mix(in oklch, var(--brand-color) 30%, transparent);
+
+  /* Avatar initials — derived from brand */
+  --avatar-initials-bg: color-mix(in oklch, var(--brand-color) 14%, var(--background));
+  --avatar-initials-fg: var(--brand-color-dark);
+
+  /* Exam state tokens — answered / flagged / current */
   --state-answered-bg:     #DCFCE7;
   --state-answered-border: #4ADE80;
   --state-answered-text:   #15803D;
   --state-flagged-bg:      #FEF9C3;
   --state-flagged-border:  #FACC15;
   --state-flagged-text:    #92400E;
-  --state-current-bg:      var(--brand-color, #7C3AED);
-  /* Exam accent */
+
+  /* Exam blue accent — distinct from brand to keep correct/info chrome neutral */
   --exam-accent:        #2563EB;
   --exam-accent-hover:  #1D4ED8;
   --exam-accent-light:  #EFF6FF;
   --exam-accent-border: #BFDBFE;
   --exam-accent-mid:    #3B82F6;
-  --exam-accent-text:   #FFFFFF;
-  /* Semantic — error delegates to exxat-ds --destructive */
-  --semantic-error-text:   var(--destructive, #DC2626);
-  --semantic-error-bg:     #FEF2F2;
-  --semantic-error-border: #FECACA;
-  --semantic-error-dot:    var(--destructive, #EF4444);
-  /* Required pill — subtle, informational (not alarming) */
+
+  /* Status / banner palettes */
+  --state-success-text:     #22C55E;
+  --state-success-bg:       #F0FDF4;
+  --state-success-accent:   #4ADE80;
+  --state-success-bg-soft:  #DCFCE7;
+  --state-success-dark:     #15803D;
+  --state-warning-text:     #F59E0B;
+  --state-warning-bg:       #FFFBEB;
+  --state-warning-accent:   #FACC15;
+  --state-warning-bg-soft:  #FEF3C7;
+  --state-warning-border:   #FDE68A;
+  --state-warning-dark:     #D97706;
+  --state-warning-darkest:  #92400E;
+  --state-info-blue-dark:   #2563EB;
+  --state-info-blue-bg:     #EFF6FF;
+  --state-info-blue-border: #BFDBFE;
+  --state-info-blue-mid:    #3B82F6;
+  --state-error-accent:     #EF4444;
+  --state-error-text-dark:  #B91C1C;
+  --state-error-bg-soft:    #FEF2F2;
+  --state-error-border-soft:#FECACA;
+  --state-bar-fail:         #F87171;
+
+  /* Required-field pill */
   --required-text:   #92400E;
   --required-bg:     #FFFBEB;
   --required-border: #FDE68A;
-  /* Highlight */
+
+  /* Highlight / cross-out (exam annotation tools) */
   --highlight-bg:     #FEF08A;
   --highlight-bg-end: #FDE047;
   --highlight-text:   #422006;
-  --highlight-shadow: rgba(250,204,21,0.4);
-  /* Cross-out */
+  --highlight-shadow: rgba(250, 204, 21, 0.4);
   --crossout-text:    #94A3B8;
   --crossout-opacity: 0.45;
+
+  /* Calculator display */
+  --calc-display-bg: #1E293B;
 }
-/* Dark theme */
+
+/* Sidebar token — admin DS provides .theme-prism / .theme-rose definitions
+   for --sidebar via theme.css; this fallback only kicks in if neither class
+   is on <html> (shouldn't happen — see index.html). */
+:root {
+  --sidebar: var(--brand-tint);
+}
+
+/* ─── Dark theme overrides ────────────────────────────────────────────────── */
 .theme-dark {
-  --surface-page: #0F172A;
-  --surface-white: #1E293B;
-  --surface-subtle: #334155;
-  --surface-muted: #1E293B;
-  --text-primary: #F1F5F9;
-  --text-secondary: #CBD5E1;
-  --text-muted: #94A3B8;
-  --text-subtle: #64748B;
-  --text-placeholder: #475569;
-  --border-default: #334155;
-  --border-medium: #475569;
-  --exam-accent: #3B82F6;
-  --exam-accent-hover: #2563EB;
-  --exam-accent-light: #172554;
-  --exam-accent-border: #3B82F6;
-  --exam-accent-mid: #60A5FA;
+  --shadow-card:  rgba(0, 0, 0, 0.4);
+  --shadow-heavy: rgba(0, 0, 0, 0.6);
   --state-answered-bg: #064E3B;
   --state-answered-border: #059669;
   --state-answered-text: #34D399;
   --state-flagged-bg: #78350F;
   --state-flagged-border: #D97706;
   --state-flagged-text: #FBBF24;
-  --semantic-error-text: #FCA5A5;
-  --semantic-error-bg: #450A0A;
-  --semantic-error-border: #7F1D1D;
-  --required-text: #FBBF24;
-  --required-bg: #422006;
-  --required-border: #78350F;
   --highlight-bg:     #854D0E;
   --highlight-bg-end: #713F12;
   --highlight-text:   #FEF9C3;
-  --highlight-shadow: rgba(202,138,4,0.3);
+  --highlight-shadow: rgba(202, 138, 4, 0.3);
   --crossout-text:    #64748B;
   --crossout-opacity: 0.55;
 }
-/* High contrast theme */
+
+/* ─── High contrast theme ─────────────────────────────────────────────────── */
 .theme-high-contrast {
-  --surface-page: #000000;
-  --surface-white: #1A1A1A;
-  --surface-subtle: #2A2A2A;
-  --surface-muted: #000000;
-  --text-primary: #FFFFFF;
-  --text-secondary: #F0F0F0;
-  --text-muted: #E0E0E0;
-  --text-subtle: #CCCCCC;
-  --text-placeholder: #999999;
-  --border-default: #666666;
-  --border-medium: #888888;
-  --brand-primary: #FFFF00;
-  --brand-primary-hover: #CCCC00;
-  --brand-primary-active: #999900;
-  --brand-primary-bg: #333300;
-  --brand-primary-border: #FFFF00;
-  --brand-primary-text: #000000;
-  --exam-accent: #00FFFF;
-  --exam-accent-hover: #00CCCC;
-  --exam-accent-light: #003333;
-  --exam-accent-border: #00FFFF;
-  --exam-accent-text: #000000;
-  --semantic-error-text: #FFFF00;
-  --semantic-error-bg: #4A0000;
-  --semantic-error-border: #FF6666;
-  --required-text: #FFD700;
-  --required-bg: #2A2A00;
-  --required-border: #888800;
   --state-answered-bg: #003300;
   --state-answered-border: #00FF00;
   --state-answered-text: #00FF00;
   --state-flagged-bg: #332200;
   --state-flagged-border: #FFCC00;
   --state-flagged-text: #FFCC00;
-  --state-current-bg: #00FFFF;
+  --exam-accent: #00FFFF;
+  --exam-accent-hover: #00CCCC;
+  --exam-accent-light: #003333;
+  --exam-accent-border: #00FFFF;
   --highlight-bg:     #FFFF00;
   --highlight-bg-end: #FFFF00;
   --highlight-text:   #000000;
-  --highlight-shadow: rgba(255,255,0,0.6);
+  --highlight-shadow: rgba(255, 255, 0, 0.6);
   --crossout-text:    #888888;
   --crossout-opacity: 0.7;
 }
+
+/* ─── Sidebar polish — match Prism reference (flat items, soft active fill) ──
+   The DS SidebarMenuButton CVA in Tailwind v4 ends up matching `data-active:`
+   utilities for any data-active value (including "false") in this app's
+   compile environment, plus Radix DropdownMenu sets data-state on triggers.
+   Force every row truly flat except the one with data-active="true". */
+html body [data-slot="sidebar-menu-button"]:not([data-active="true"]) {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  --tw-shadow: 0 0 #0000 !important;
+  --tw-shadow-colored: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-color: transparent !important;
+  --tw-ring-width: 0 !important;
+  border-color: transparent !important;
+  font-weight: 500 !important;
+  color: var(--sidebar-foreground) !important;
+}
+html body [data-slot="sidebar-menu-button"]:not([data-active="true"]):hover {
+  background-color: var(--sidebar-accent) !important;
+  color: var(--sidebar-accent-foreground) !important;
+}
+html body [data-slot="sidebar-menu-button"][data-active="true"] {
+  background-color: var(--sidebar-accent) !important;
+  background-image: none !important;
+  color: var(--sidebar-accent-foreground) !important;
+  box-shadow: none !important;
+  --tw-shadow: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-color: transparent !important;
+  --tw-ring-width: 0 !important;
+  border-color: transparent !important;
+  font-weight: 600 !important;
+}
+html body [data-slot="sidebar-menu-button"][data-state="open"] {
+  background-color: var(--sidebar-accent) !important;
+  color: var(--sidebar-accent-foreground) !important;
+}
+
 /* ─── Typography ─────────────────────────────────────────────────────────── */
 * {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 .font-heading {
-  font-family: 'Source Sans 3', 'Inter', system-ui, sans-serif;
+  font-family: 'ivypresto-text', Georgia, serif;
 }
 .font-timer {
   font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
 }
-/* ─── Scrollbar — polished, theme-aware, hover-reveal ────────────────────── */
 
-/* Firefox */
+/* ─── Scrollbar — polished, theme-aware, hover-reveal ────────────────────── */
 * {
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
 }
 *:hover {
-  scrollbar-color: var(--border-medium) transparent;
+  scrollbar-color: var(--border) transparent;
 }
-/* Webkit — vertical */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-  border-radius: 3px;
-}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; border-radius: 3px; }
 ::-webkit-scrollbar-thumb {
   background: transparent;
   border-radius: 3px;
   transition: background 0.2s ease;
 }
-::-webkit-scrollbar-corner {
-  background: transparent;
-}
-/* Show thumb on hover of scrollable container */
-*:hover::-webkit-scrollbar-thumb {
-  background: var(--border-medium);
-}
-*:hover::-webkit-scrollbar-thumb:hover {
-  background: var(--text-placeholder);
-}
-*:hover::-webkit-scrollbar-thumb:active {
-  background: var(--text-subtle);
-}
+::-webkit-scrollbar-corner { background: transparent; }
+*:hover::-webkit-scrollbar-thumb { background: var(--border); }
+*:hover::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+*:hover::-webkit-scrollbar-thumb:active { background: var(--foreground); }
+
 /* ─── Tab bar — hidden scrollbar + gradient fade masks ───────────────────── */
-.tab-scroll-container {
-  position: relative;
-  overflow: hidden;
-}
+.tab-scroll-container { position: relative; overflow: hidden; }
 .tab-scroll-container::before,
 .tab-scroll-container::after {
   content: '';
@@ -212,79 +217,53 @@
   opacity: 0;
   transition: opacity 0.2s ease;
 }
-.tab-scroll-container::before {
-  left: 0;
-  background: linear-gradient(to right, var(--surface-subtle) 0%, transparent 100%);
-}
-.tab-scroll-container::after {
-  right: 0;
-  background: linear-gradient(to left, var(--surface-subtle) 0%, transparent 100%);
-}
+.tab-scroll-container::before { left: 0;  background: linear-gradient(to right, var(--muted) 0%, transparent 100%); }
+.tab-scroll-container::after  { right: 0; background: linear-gradient(to left,  var(--muted) 0%, transparent 100%); }
 .tab-scroll-container.fade-left::before  { opacity: 1; }
 .tab-scroll-container.fade-right::after  { opacity: 1; }
-/* Hide scrollbar on tab bars entirely */
-.tab-scroll-hide {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.tab-scroll-hide::-webkit-scrollbar {
-  display: none;
-}
-/* Popovers & panels — always visible but subtle */
+.tab-scroll-hide { scrollbar-width: none; -ms-overflow-style: none; }
+.tab-scroll-hide::-webkit-scrollbar { display: none; }
+
 .overflow-y-auto::-webkit-scrollbar-thumb,
-.overflow-x-auto::-webkit-scrollbar-thumb {
-  background: var(--border-default);
-}
+.overflow-x-auto::-webkit-scrollbar-thumb { background: var(--border); }
 .overflow-y-auto:hover::-webkit-scrollbar-thumb,
-.overflow-x-auto:hover::-webkit-scrollbar-thumb {
-  background: var(--border-medium);
-}
+.overflow-x-auto:hover::-webkit-scrollbar-thumb { background: var(--muted-foreground); }
 .overflow-y-auto::-webkit-scrollbar-thumb:hover,
-.overflow-x-auto::-webkit-scrollbar-thumb:hover {
-  background: var(--text-placeholder);
-}
+.overflow-x-auto::-webkit-scrollbar-thumb:hover { background: var(--foreground); }
+
 /* ─── Focus visible (WCAG) ───────────────────────────────────────────────── */
 .exam-focus:focus-visible {
   outline: 2px solid var(--exam-accent);
   outline-offset: 2px;
   border-radius: 4px;
 }
-/* High contrast: always show interactive controls */
-.theme-high-contrast .high-contrast-visible {
-  opacity: 1 !important;
-}
-/* ─── Card entrance animation ────────────────────────────────────────────── */
+.theme-high-contrast .high-contrast-visible { opacity: 1 !important; }
+
+/* ─── Animations ─────────────────────────────────────────────────────────── */
 @keyframes card-enter {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.animate-card-enter {
-  animation: card-enter 0.35s cubic-bezier(0.22,1,0.36,1) both;
-}
-/* ─── Popover animation ──────────────────────────────────────────────────── */
+.animate-card-enter { animation: card-enter 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
 @keyframes pop-in {
   from { opacity: 0; transform: scale(0.95) translateY(-4px); }
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
-.animate-pop-in {
-  animation: pop-in 0.2s cubic-bezier(0.22,1,0.36,1) both;
-}
-/* ─── Slide-in drawer ────────────────────────────────────────────────────── */
+.animate-pop-in { animation: pop-in 0.2s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
 @keyframes slide-in-left {
   from { transform: translateX(-100%); }
   to   { transform: translateX(0); }
 }
-.animate-slide-in-left {
-  animation: slide-in-left 0.3s cubic-bezier(0.22,1,0.36,1) both;
-}
-/* ─── Slide-up keyboard ──────────────────────────────────────────────────── */
+.animate-slide-in-left { animation: slide-in-left 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
 @keyframes slide-up {
   from { transform: translateY(100%); }
   to   { transform: translateY(0); }
 }
-.animate-slide-up {
-  animation: slide-up 0.3s cubic-bezier(0.22,1,0.36,1) both;
-}
+.animate-slide-up { animation: slide-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
 /* ─── Highlight glow for text selection ──────────────────────────────────── */
 .highlight-glow {
   background: linear-gradient(120deg, var(--highlight-bg) 0%, var(--highlight-bg-end) 100%);
@@ -300,6 +279,7 @@
   opacity: var(--crossout-opacity);
   transition: all 0.2s ease;
 }
+
 /* ─── Speech waveform animations ─────────────────────────────────────────── */
 @keyframes waveform-1 { 0%,100%{height:4px} 50%{height:18px} }
 @keyframes waveform-2 { 0%,100%{height:6px} 50%{height:24px} }
@@ -311,19 +291,21 @@
 .waveform-bar-3 { animation: waveform-3 0.7s  ease-in-out infinite 0.2s; }
 .waveform-bar-4 { animation: waveform-4 0.9s  ease-in-out infinite 0.15s; }
 .waveform-bar-5 { animation: waveform-5 0.65s ease-in-out infinite 0.05s; }
-/* ─── Mic pulse ring ─────────────────────────────────────────────────────── */
+
+/* ─── Mic pulse ring (rose-tinted) ───────────────────────────────────────── */
 @keyframes pulse-ring {
-  /* Uses exxat-ds brand lavender — matches --brand-color (#7C3AED ≈ oklch 0.50 0.14 286) */
-  0%   { box-shadow: 0 0 0 0   rgba(124,58,237,0.5); }
-  70%  { box-shadow: 0 0 0 8px rgba(124,58,237,0); }
-  100% { box-shadow: 0 0 0 0   rgba(124,58,237,0); }
+  0%   { box-shadow: 0 0 0 0   color-mix(in oklch, var(--brand-color) 50%, transparent); }
+  70%  { box-shadow: 0 0 0 8px color-mix(in oklch, var(--brand-color)  0%, transparent); }
+  100% { box-shadow: 0 0 0 0   color-mix(in oklch, var(--brand-color)  0%, transparent); }
 }
 .mic-pulse-ring { animation: pulse-ring 1.5s ease-out infinite; }
+
 /* ─── Tooltip animation ──────────────────────────────────────────────────── */
 @keyframes tooltip-in {
   0%   { opacity: 0; transform: scale(0.95); }
   100% { opacity: 1; transform: scale(1); }
 }
+
 /* ─── Custom select dropdowns ────────────────────────────────────────────── */
 .exam-select {
   appearance: none;
@@ -339,26 +321,16 @@
 }
 .exam-select:hover {
   border-color: var(--exam-accent-mid) !important;
-  background-color: var(--surface-white);
+  background-color: var(--card);
 }
 .exam-select:focus {
   outline: none;
   border-color: var(--exam-accent) !important;
   box-shadow: 0 0 0 3px var(--exam-accent-light);
 }
-.exam-select option {
-  padding: 8px 12px;
-  background-color: var(--surface-white);
-  color: var(--text-primary);
-}
-.exam-select option:checked {
-  background-color: var(--exam-accent-light);
-  color: var(--exam-accent);
-}
-.exam-select option:disabled {
-  color: var(--text-placeholder);
-}
-/* Dark / high-contrast chevron override */
+.exam-select option { padding: 8px 12px; background-color: var(--card); color: var(--foreground); }
+.exam-select option:checked { background-color: var(--exam-accent-light); color: var(--exam-accent); }
+.exam-select option:disabled { color: var(--muted-foreground); }
 .theme-dark .exam-select,
 .theme-high-contrast .exam-select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");

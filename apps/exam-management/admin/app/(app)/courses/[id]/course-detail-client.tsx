@@ -1,0 +1,270 @@
+'use client'
+
+/**
+ * COURSE DETAIL — Aarti's "four main sections per course" + the curricular loop.
+ *
+ * Follows canonical admin shell: SiteHeader → main → PageHeader → tabs region → content.
+ * Breadcrumbs surface in SiteHeader; PageHeader provides the title + actions row.
+ * Tabs sit between PageHeader and the scrollable tab-content region.
+ *
+ * Tabs:
+ *   1. Overview (default)  — KPI strip + Course Objectives (curricular loop)
+ *   2. Questions           — filtered question list with embedded psychometrics
+ *   3. Assessments         — list with approval-workflow states + reviewer panel
+ *   4. Students            — roster with per-course performance + bottom-20% flag
+ *   5. Accommodations      — read-only, approver attribution
+ */
+
+import { useMemo, useState } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import {
+  Button, Tabs, TabsList, TabsTrigger, TabsContent,
+  Tooltip, TooltipTrigger, TooltipContent,
+} from '@exxat/ds/packages/ui/src'
+import { SiteHeader } from '@/components/site-header'
+import { PageHeader } from '@/components/page-header'
+import { mockCourses, mockCourseOfferings, mockAssessments } from '@/lib/qb-mock-data'
+import {
+  facultyStudents, facultyAccommodations, courseObjectives,
+  facultyExtraAssessments,
+} from '@/lib/faculty-mock-data'
+import { useFacultySession } from '@/lib/faculty-session'
+import { useAssessmentReviews } from '@/lib/assessment-review-store'
+import { AccessLevelChip, StatusPill } from '@/components/faculty-ui-kit'
+
+import { OverviewTab } from './tabs/overview-tab'
+import { AssessmentsTab } from './tabs/assessments-tab'
+import { StudentsTab } from './tabs/students-tab'
+import { AccommodationsTab } from './tabs/accommodations-tab'
+
+const ALL_ASSESSMENTS = [...mockAssessments, ...facultyExtraAssessments]
+
+export default function CourseDetailClient({ courseId }: { courseId: string }) {
+  const router = useRouter()
+  const { role, faculty, accessFor, hydrated } = useFacultySession()
+  const { reviewByAssessment } = useAssessmentReviews()
+  const [activeTab, setActiveTab] = useState('overview')
+
+  const course = useMemo(() => mockCourses.find(c => c.id === courseId), [courseId])
+  const offerings = useMemo(
+    () => mockCourseOfferings.filter(o => o.courseId === courseId),
+    [courseId]
+  )
+  const activeOffering = useMemo(
+    () => offerings.find(o => o.semester.includes('2026')) ?? offerings[0],
+    [offerings]
+  )
+  const courseAssessments = useMemo(
+    () => ALL_ASSESSMENTS.filter(a => a.courseId === courseId),
+    [courseId]
+  )
+  const courseStudents = useMemo(
+    () => facultyStudents.filter(s => s.enrolledCourseIds.includes(courseId)),
+    [courseId]
+  )
+  const courseAccommodations = useMemo(
+    () => facultyAccommodations.filter(a => a.courseId === courseId),
+    [courseId]
+  )
+  const courseObjectivesList = useMemo(
+    () => courseObjectives.filter(o => o.courseId === courseId),
+    [courseId]
+  )
+
+  if (!hydrated) return null
+
+  if (!course) {
+    return (
+      <>
+        <SiteHeader title="Courses" />
+        <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col items-center justify-center text-center px-6 outline-none">
+          <i className="fa-light fa-circle-exclamation text-muted-foreground text-4xl mb-4" aria-hidden="true" />
+          <h2 className="font-heading text-xl font-semibold text-foreground">Course not found</h2>
+          <p className="text-sm text-muted-foreground mt-1">The course you&apos;re trying to open doesn&apos;t exist or you don&apos;t have access.</p>
+          <Button variant="outline" size="sm" className="mt-4 gap-2" onClick={() => router.push('/courses')}>
+            <i className="fa-light fa-arrow-left" aria-hidden="true" />
+            Back to courses
+          </Button>
+        </main>
+      </>
+    )
+  }
+
+  const accessLevel = accessFor(courseId)
+  if (role === 'faculty' && !accessLevel) {
+    return (
+      <>
+        <SiteHeader title="Courses" breadcrumbs={[{ label: 'My courses', href: '/courses' }, { label: course.name }]} />
+        <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col items-center justify-center text-center px-6 outline-none">
+          <div className="flex size-14 items-center justify-center rounded-full mb-3 bg-destructive/12">
+            <i className="fa-light fa-lock text-destructive text-xl" aria-hidden="true" />
+          </div>
+          <h2 className="font-heading text-xl font-semibold text-foreground">
+            You don&apos;t have access to this course
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1 max-w-md">
+            Your faculty account isn&apos;t associated with {course.name}. Contact your program administrator to request access.
+          </p>
+          <Button variant="outline" size="sm" className="mt-4 gap-2" onClick={() => router.push('/courses')}>
+            <i className="fa-light fa-arrow-left" aria-hidden="true" />
+            Back to my courses
+          </Button>
+        </main>
+      </>
+    )
+  }
+
+  const isViewer = accessLevel === 'viewer'
+
+  const liveCount = courseAssessments.filter(a => reviewByAssessment.get(a.id)?.state === 'in-progress').length
+  const pendingReview = courseAssessments.filter(a => {
+    const s = reviewByAssessment.get(a.id)?.state
+    return s === 'pending-chair' || s === 'changes-requested'
+  }).length
+
+  const breadcrumbs = [
+    { label: role === 'faculty' ? 'My courses' : 'Courses', href: '/courses' },
+    { label: course.name },
+  ]
+
+  const subtitle = [
+    activeOffering?.semester ?? '—',
+    `${courseStudents.length || activeOffering?.studentCount || 0} students`,
+    role === 'faculty' && faculty ? `${faculty.title} ${faculty.name}` : null,
+  ].filter(Boolean).join(' · ')
+
+  const headerActions = (
+    <div className="flex items-center gap-2">
+      {accessLevel && <AccessLevelChip level={accessLevel} />}
+      {liveCount > 0 && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => {
+                const id = courseAssessments.find(a => reviewByAssessment.get(a.id)?.state === 'in-progress')?.id
+                if (id) router.push(`/assessments/${id}/monitor`)
+              }}
+            >
+              <span className="inline-block size-1.5 rounded-full bg-chart-1 [animation:pulse-soft_1.6s_ease-in-out_infinite]" aria-hidden="true" />
+              <span>Live monitor</span>
+              <StatusPill tone="info" label={String(liveCount)} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{liveCount} {liveCount === 1 ? 'assessment' : 'assessments'} in progress now</TooltipContent>
+        </Tooltip>
+      )}
+      <PrimaryAction isViewer={isViewer} courseId={courseId} />
+    </div>
+  )
+
+  return (
+    <>
+      <SiteHeader title={course.name} breadcrumbs={breadcrumbs} />
+      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none overflow-hidden">
+        <PageHeader
+          title={course.name}
+          subtitle={subtitle}
+          actions={headerActions}
+        />
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-1 flex-col overflow-hidden">
+          <div className="px-6 border-b border-border shrink-0">
+            <TabsList variant="line" className="gap-0">
+              <TabsTrigger value="overview" className="gap-2">
+                <i className="fa-light fa-grid-2 text-xs" aria-hidden="true" />
+                Overview
+              </TabsTrigger>
+              {/* Questions tab removed — per Vishaka: questions live in
+                  Question Bank only. Course detail = 4 sections (Overview,
+                  Assessments, Students, Accommodations). Two places to
+                  create questions = cognitive confusion. */}
+              <TabsTrigger value="assessments" className="gap-2">
+                <i className="fa-light fa-clipboard-list text-xs" aria-hidden="true" />
+                Assessments
+                {(pendingReview > 0 || liveCount > 0) && (
+                  <span className={`inline-flex items-center justify-center rounded-full text-[9px] font-bold min-w-4 h-4 px-1 text-primary-foreground ${pendingReview > 0 ? 'bg-chart-4' : 'bg-chart-1'}`}>
+                    {pendingReview + liveCount}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="students" className="gap-2">
+                <i className="fa-light fa-users text-xs" aria-hidden="true" />
+                Students
+                <span className="text-muted-foreground text-xs font-normal">{courseStudents.length}</span>
+              </TabsTrigger>
+              <TabsTrigger value="accommodations" className="gap-2">
+                <i className="fa-light fa-universal-access text-xs" aria-hidden="true" />
+                Accommodations
+                {courseAccommodations.length > 0 && (
+                  <span className="text-muted-foreground text-xs font-normal">{courseAccommodations.length}</span>
+                )}
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <div className="flex-1 overflow-auto p-6">
+            <TabsContent value="overview" className="m-0">
+              <OverviewTab
+                course={course}
+                students={courseStudents}
+                assessments={courseAssessments}
+                objectives={courseObjectivesList}
+                reviewByAssessment={reviewByAssessment}
+                onJumpToTab={setActiveTab}
+              />
+            </TabsContent>
+            <TabsContent value="assessments" className="m-0">
+              <AssessmentsTab
+                assessments={courseAssessments}
+                reviewByAssessment={reviewByAssessment}
+                isViewer={isViewer}
+                courseId={courseId}
+              />
+            </TabsContent>
+            <TabsContent value="students" className="m-0">
+              <StudentsTab
+                students={courseStudents}
+                courseId={courseId}
+                accommodations={courseAccommodations}
+              />
+            </TabsContent>
+            <TabsContent value="accommodations" className="m-0">
+              <AccommodationsTab
+                accommodations={courseAccommodations}
+                students={courseStudents}
+              />
+            </TabsContent>
+          </div>
+        </Tabs>
+      </main>
+    </>
+  )
+}
+
+function PrimaryAction({ isViewer, courseId }: { isViewer: boolean; courseId: string }) {
+  if (isViewer) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="outline" size="sm" disabled className="gap-2">
+            <i className="fa-light fa-lock" aria-hidden="true" />
+            View-only
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Read-only access — you can&apos;t create assessments in this course.</TooltipContent>
+      </Tooltip>
+    )
+  }
+  return (
+    <Button asChild size="sm" className="gap-2">
+      <Link href={`/assessment-builder?courseId=${courseId}`}>
+        <i className="fa-light fa-plus" aria-hidden="true" />
+        New assessment
+      </Link>
+    </Button>
+  )
+}

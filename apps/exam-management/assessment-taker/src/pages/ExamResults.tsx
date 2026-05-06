@@ -9,8 +9,10 @@
  *   - Three-tier architecture: assessment → course → program (program deferred 2027)
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Button } from '@exxat/ds/packages/ui/src';
+import { ExamBadge } from '../components/ExamBadge';
 import { MOCK_ASSESSMENTS, ContentArea } from '../data/assessments';
 
 const t = {
@@ -19,12 +21,12 @@ const t = {
   muted: 'var(--muted)',
   brand: 'var(--brand-color)',
   brandDark: 'var(--brand-color-dark)',
-  brandSurface: 'var(--brand-tint-light, #F5F3FF)',
+  brandSurface: 'var(--brand-color-light, #F5F3FF)',
   brandBorder: 'var(--brand-tint, #EDE9FE)',
   fg: 'var(--foreground)',
   fgMuted: 'var(--muted-foreground)',
   border: 'var(--border)',
-  borderControl: 'var(--border-control)',
+  borderControl: 'var(--border)',
 };
 
 function ScoreRing({ score, passing }: { score: number; passing: number }) {
@@ -41,7 +43,7 @@ function ScoreRing({ score, passing }: { score: number; passing: number }) {
         {/* Progress */}
         <circle
           cx={70} cy={70} r={radius} fill="none"
-          stroke={passed ? '#4ADE80' : '#F87171'}
+          stroke={passed ? 'var(--state-success-accent)' : 'var(--state-bar-fail)'}
           strokeWidth={10}
           strokeDasharray={circ}
           strokeDashoffset={circ * (1 - pct)}
@@ -54,13 +56,14 @@ function ScoreRing({ score, passing }: { score: number; passing: number }) {
         position: 'absolute', inset: 0,
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       }}>
-        <span style={{ fontSize: 28, fontWeight: 800, color: passed ? '#15803D' : '#B91C1C', lineHeight: 1 }}>{score}%</span>
-        <span style={{
-          fontSize: 11, fontWeight: 700, marginTop: 4, padding: '2px 8px', borderRadius: 99,
-          background: passed ? '#DCFCE7' : '#FEE2E2', color: passed ? '#15803D' : '#B91C1C',
-        }}>
+        <span style={{ fontSize: 28, fontWeight: 800, color: passed ? 'var(--state-success-dark)' : 'var(--state-error-text-dark)', lineHeight: 1 }}>{score}%</span>
+        <ExamBadge
+          bg={passed ? 'var(--state-success-bg-soft)' : 'var(--state-error-bg-soft)'}
+          fg={passed ? 'var(--state-success-dark)' : 'var(--state-error-text-dark)'}
+          className="mt-1"
+        >
           {passed ? 'PASSED' : 'BELOW PASSING'}
-        </span>
+        </ExamBadge>
       </div>
     </div>
   );
@@ -68,7 +71,6 @@ function ScoreRing({ score, passing }: { score: number; passing: number }) {
 
 function ContentAreaBar({ ca, maxScore = 100 }: { ca: ContentArea; maxScore?: number }) {
   const score = ca.score ?? 0;
-  const passed = score >= 70;
   return (
     <div style={{ marginBottom: 14 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
@@ -78,7 +80,7 @@ function ContentAreaBar({ ca, maxScore = 100 }: { ca: ContentArea; maxScore?: nu
         </div>
         <span style={{
           fontSize: 15, fontWeight: 800,
-          color: score >= 80 ? '#15803D' : score >= 70 ? '#D97706' : '#B91C1C',
+          color: score >= 80 ? 'var(--state-success-dark)' : score >= 70 ? 'var(--state-warning-dark)' : 'var(--state-error-text-dark)',
         }}>
           {score}%
         </span>
@@ -88,7 +90,7 @@ function ContentAreaBar({ ca, maxScore = 100 }: { ca: ContentArea; maxScore?: nu
           height: '100%',
           width: `${(score / maxScore) * 100}%`,
           borderRadius: 99,
-          background: score >= 80 ? '#4ADE80' : score >= 70 ? '#FACC15' : '#F87171',
+          background: score >= 80 ? 'var(--state-success-accent)' : score >= 70 ? 'var(--state-warning-accent)' : 'var(--state-bar-fail)',
           transition: 'width 0.7s ease',
         }} />
       </div>
@@ -126,42 +128,8 @@ export function ExamResults() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: t.bg, fontFamily: 'Inter, system-ui, sans-serif' }}>
-      {/* Header */}
-      <header style={{
-        background: t.card, borderBottom: `1px solid ${t.border}`,
-        padding: '0 24px', height: 56,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button
-            onClick={() => navigate('/')}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: t.fgMuted, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            <i className="fa-light fa-arrow-left" aria-hidden="true" />
-            Dashboard
-          </button>
-          <span style={{ color: t.border }}>|</span>
-          <span style={{ fontSize: 14, fontWeight: 600, color: t.fg, maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {exam?.title}
-          </span>
-        </div>
-        {hasReview && (
-          <button
-            style={{
-              padding: '8px 16px', borderRadius: 8,
-              background: '#2563EB', color: '#FFF',
-              border: 'none', fontWeight: 600, fontSize: 13, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 6,
-            }}
-          >
-            <i className="fa-light fa-lock" aria-hidden="true" />
-            Enter Review Session
-          </button>
-        )}
-      </header>
-
-      <main style={{ maxWidth: 780, margin: '0 auto', padding: '28px 24px 60px' }}>
+    <div style={{ background: t.bg, fontFamily: 'Inter, system-ui, sans-serif', minHeight: '100%' }}>
+      <div style={{ maxWidth: 780, margin: '0 auto', padding: '28px 24px 60px' }}>
         {/* Score hero */}
         <div style={{
           background: t.card, border: `1px solid ${t.border}`,
@@ -171,16 +139,16 @@ export function ExamResults() {
           <ScoreRing score={score} passing={passing} />
 
           <div style={{ flex: 1, minWidth: 200 }}>
-            <h1 style={{ fontSize: 20, fontWeight: 800, color: t.fg, marginBottom: 4 }}>{exam?.title}</h1>
+            <h1 className="font-heading" style={{ fontSize: 24, fontWeight: 700, color: t.fg, marginBottom: 4, lineHeight: 1.2 }}>{exam?.title}</h1>
             <p style={{ fontSize: 14, color: t.fgMuted, marginBottom: 16 }}>
               {exam?.courseCode} · {exam?.courseName}
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
               {[
-                { label: 'Your Score', value: `${score}%`, color: passed ? '#15803D' : '#B91C1C' },
+                { label: 'Your Score', value: `${score}%`, color: passed ? 'var(--state-success-dark)' : 'var(--state-error-text-dark)' },
                 { label: 'Passing Score', value: `${passing}%`, color: t.fg },
-                { label: 'Percentile', value: `${percentile}th`, color: '#2563EB' },
+                { label: 'Percentile', value: `${percentile}th`, color: 'var(--state-info-blue-dark)' },
               ].map(item => (
                 <div key={item.label} style={{
                   background: t.muted, borderRadius: 10, padding: '10px 12px', textAlign: 'center',
@@ -196,52 +164,79 @@ export function ExamResults() {
         {/* Review session banner */}
         {hasReview && (
           <div style={{
-            background: '#EFF6FF', border: '1.5px solid #BFDBFE',
+            background: 'var(--state-info-blue-bg)', border: '1.5px solid var(--state-info-blue-border)',
             borderRadius: 12, padding: '14px 20px', marginBottom: 24,
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <i className="fa-light fa-calendar-check" aria-hidden="true" style={{ color: '#2563EB', fontSize: 20 }} />
+              <i className="fa-light fa-calendar-check" aria-hidden="true" style={{ color: 'var(--state-info-blue-dark)', fontSize: 20 }} />
               <div>
-                <p style={{ fontSize: 14, fontWeight: 700, color: '#1E40AF' }}>Review Session Available</p>
-                <p style={{ fontSize: 13, color: '#3B82F6' }}>
+                <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--state-info-blue-dark)' }}>Review Session Available</p>
+                <p style={{ fontSize: 13, color: 'var(--state-info-blue-mid)' }}>
                   View correct answers and rationale in a lockdown environment ·{' '}
                   {exam?.reviewSessionEnd && `Closes ${exam.reviewSessionEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
                 </p>
               </div>
             </div>
-            <button style={{
-              padding: '8px 18px', borderRadius: 8,
-              background: '#2563EB', color: '#FFF',
-              border: 'none', fontWeight: 700, fontSize: 13, cursor: 'pointer',
-            }}>
-              Enter Review <i className="fa-solid fa-arrow-right" aria-hidden="true" style={{ marginLeft: 4 }} />
-            </button>
+            <Button
+              size="sm"
+              onClick={() => navigate(`/exam/${id ?? exam?.id}/review`)}
+              style={{ background: 'var(--state-info-blue-dark)' }}
+            >
+              Enter Review <i className="fa-solid fa-arrow-right" aria-hidden="true" />
+            </Button>
           </div>
         )}
+
+        {/* Faculty Q&A banner — gated by institution + course chat capability.
+            For the demo this is always visible; in production check the
+            institution + course flags before rendering. */}
+        <div style={{
+          background: 'color-mix(in oklch, var(--brand-color) 6%, var(--card))',
+          border: '1px solid color-mix(in oklch, var(--brand-color) 18%, var(--border))',
+          borderLeft: '4px solid var(--brand-color)',
+          borderRadius: 12, padding: '14px 20px', marginBottom: 24,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <i className="fa-duotone fa-solid fa-comments" aria-hidden="true" style={{ color: 'var(--brand-color)', fontSize: 20 }} />
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--foreground)' }}>Faculty Q&amp;A is open for this assessment</p>
+              <p style={{ fontSize: 13, color: t.fgMuted }}>
+                Have a question on a specific item or your performance? Message your course coordinator. Replies typically within 24 hours.
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => navigate(`/exam/${id ?? exam?.id}/chat`)}
+            style={{ background: 'var(--brand-color)', color: 'var(--brand-foreground)' }}
+          >
+            <i className="fa-light fa-paper-plane" aria-hidden="true" />
+            Message faculty
+          </Button>
+        </div>
 
         {/* Tabs */}
         <div style={{
           display: 'flex', borderBottom: `1px solid ${t.border}`, marginBottom: 24, gap: 0,
         }} role="tablist">
           {tabs.map(tab => (
-            <button
+            <Button
               key={tab}
+              variant="ghost"
               role="tab"
               aria-selected={activeTab === tab}
               onClick={() => setActiveTab(tab)}
+              className="rounded-none px-5 py-2.5 h-auto -mb-px text-sm"
               style={{
-                padding: '10px 20px', background: 'none',
-                border: 'none', borderBottom: activeTab === tab ? `2px solid ${t.brand}` : '2px solid transparent',
+                borderBottom: activeTab === tab ? `2px solid ${t.brand}` : '2px solid transparent',
                 color: activeTab === tab ? t.brand : t.fgMuted,
                 fontWeight: activeTab === tab ? 700 : 500,
-                fontSize: 14, cursor: 'pointer',
-                marginBottom: -1,
-                transition: 'all 0.15s ease',
               }}
             >
               {tabLabels[tab]}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -254,10 +249,10 @@ export function ExamResults() {
               gap: 12, marginBottom: 24,
             }}>
               {[
-                { icon: 'fa-check-circle', label: 'Correct', value: `${Math.round(score / 100 * (exam?.questionCount ?? 50))}`, color: '#15803D', bg: '#DCFCE7' },
-                { icon: 'fa-times-circle', label: 'Incorrect', value: `${Math.round((100 - score) / 100 * (exam?.questionCount ?? 50))}`, color: '#B91C1C', bg: '#FEE2E2' },
-                { icon: 'fa-flag', label: 'Flagged', value: '3', color: '#D97706', bg: '#FEF3C7' },
-                { icon: 'fa-message-lines', label: 'Comments', value: exam?.allowComments ? '2' : '—', color: '#7C3AED', bg: '#F5F3FF' },
+                { icon: 'fa-check-circle', label: 'Correct', value: `${Math.round(score / 100 * (exam?.questionCount ?? 50))}`, color: 'var(--state-success-dark)', bg: 'var(--state-success-bg-soft)' },
+                { icon: 'fa-times-circle', label: 'Incorrect', value: `${Math.round((100 - score) / 100 * (exam?.questionCount ?? 50))}`, color: 'var(--state-error-text-dark)', bg: 'var(--state-error-bg-soft)' },
+                { icon: 'fa-flag', label: 'Flagged', value: '3', color: 'var(--state-warning-dark)', bg: 'var(--state-warning-bg-soft)' },
+                { icon: 'fa-message-lines', label: 'Comments', value: exam?.allowComments ? '2' : '—', color: 'var(--state-purple-dark)', bg: 'var(--state-purple-bg)' },
               ].map(item => (
                 <div key={item.label} style={{
                   background: t.card, border: `1px solid ${t.border}`,
@@ -278,18 +273,18 @@ export function ExamResults() {
 
             {/* Performance insight */}
             <div style={{
-              background: passed ? '#F0FDF4' : '#FEF2F2',
-              border: `1px solid ${passed ? '#4ADE80' : '#FECACA'}`,
+              background: passed ? 'var(--state-success-bg)' : 'var(--state-error-bg-soft)',
+              border: `1px solid ${passed ? 'var(--state-success-accent)' : 'var(--state-error-border-soft)'}`,
               borderRadius: 12, padding: '16px 20px',
               display: 'flex', gap: 12, alignItems: 'flex-start',
             }}>
               <i
                 className={`fa-light ${passed ? 'fa-circle-check' : 'fa-triangle-exclamation'}`}
                 aria-hidden="true"
-                style={{ color: passed ? '#15803D' : '#B91C1C', fontSize: 20, marginTop: 1 }}
+                style={{ color: passed ? 'var(--state-success-dark)' : 'var(--state-error-text-dark)', fontSize: 20, marginTop: 1 }}
               />
               <div>
-                <p style={{ fontSize: 14, fontWeight: 700, color: passed ? '#15803D' : '#B91C1C', marginBottom: 4 }}>
+                <p style={{ fontSize: 14, fontWeight: 700, color: passed ? 'var(--state-success-dark)' : 'var(--state-error-text-dark)', marginBottom: 4 }}>
                   {passed ? `Strong performance — you cleared the ${passing}% threshold` : `Score below the ${passing}% passing threshold`}
                 </p>
                 <p style={{ fontSize: 13, color: t.fg, lineHeight: 1.6 }}>
@@ -313,9 +308,9 @@ export function ExamResults() {
                 <p style={{ fontSize: 13, fontWeight: 700, color: t.fg }}>Performance by Content Area</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 11, color: t.fgMuted }}>
                   {[
-                    { color: '#4ADE80', label: '≥80% Strong' },
-                    { color: '#FACC15', label: '70–79% Passing' },
-                    { color: '#F87171', label: '<70% Below' },
+                    { color: 'var(--state-success-accent)', label: '≥80% Strong' },
+                    { color: 'var(--state-warning-accent)', label: '70–79% Passing' },
+                    { color: 'var(--state-bar-fail)', label: '<70% Below' },
                   ].map(l => (
                     <span key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                       <span style={{ width: 8, height: 8, borderRadius: 2, background: l.color }} />
@@ -346,21 +341,13 @@ export function ExamResults() {
                 <p style={{ fontSize: 14, fontWeight: 700, color: t.brand }}>See how this maps to your course competencies</p>
                 <p style={{ fontSize: 13, color: t.fgMuted }}>View aggregated performance across all {exam?.courseName} assessments</p>
               </div>
-              <button
-                onClick={() => navigate('/competency')}
-                style={{
-                  padding: '8px 16px', borderRadius: 8,
-                  background: t.brand, color: '#FFF',
-                  border: 'none', fontWeight: 600, fontSize: 13, cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                }}
-              >
+              <Button size="sm" onClick={() => navigate('/competency')} className="whitespace-nowrap">
                 Course Dashboard <i className="fa-light fa-arrow-right" aria-hidden="true" />
-              </button>
+              </Button>
             </div>
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

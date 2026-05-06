@@ -1,6 +1,7 @@
-import React from 'react';
-import { XIcon, TypeIcon, ContrastIcon, MoveIcon } from 'lucide-react';
+import { useState } from 'react';
 import { tokens } from '../tokens/design-tokens';
+import { Button as DSButton, ToggleSwitch } from '@exxat/ds/packages/ui/src';
+
 export interface AccessibilityPanelProps {
   isOpen: boolean;
   onClose: () => void;
@@ -8,6 +9,7 @@ export interface AccessibilityPanelProps {
   zoomIn: () => void;
   zoomOut: () => void;
 }
+
 export function AccessibilityPanel({
   isOpen,
   onClose,
@@ -15,87 +17,98 @@ export function AccessibilityPanel({
   zoomIn,
   zoomOut
 }: AccessibilityPanelProps) {
+  const [highContrast, setHighContrast] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
+
   if (!isOpen) return null;
-  return <div className="fixed top-20 right-20 z-50 animate-pop-in shadow-2xl rounded-2xl overflow-hidden border" style={{
-    width: '320px',
-    backgroundColor: tokens.surface.white,
-    borderColor: tokens.border.default
-  }}>
-      <div className="flex justify-between items-center p-4 border-b" style={{
-      backgroundColor: tokens.surface.subtle,
-      borderColor: tokens.border.default
-    }}>
-        <span className="font-heading font-semibold text-sm flex items-center gap-2" style={{
-        color: tokens.text.primary
-      }}>
-          <TypeIcon size={16} />
+
+  return (
+    <div
+      className="fixed top-20 right-20 z-50 animate-pop-in shadow-2xl rounded-2xl overflow-hidden border"
+      style={{
+        width: '320px',
+        backgroundColor: tokens.surface.white,
+        borderColor: tokens.border.default
+      }}
+      role="dialog"
+      aria-label="Accessibility options"
+    >
+      <div
+        className="flex justify-between items-center p-4 border-b"
+        style={{
+          backgroundColor: tokens.surface.subtle,
+          borderColor: tokens.border.default
+        }}
+      >
+        <span className="font-semibold text-sm flex items-center gap-2" style={{ color: tokens.text.primary }}>
+          <i className="fa-light fa-universal-access" aria-hidden="true" style={{ fontSize: 16 }} />
           Accessibility Options
         </span>
-        <button onClick={onClose} className="hover:bg-slate-200 p-1 rounded transition-colors">
-          <XIcon size={16} style={{
-          color: tokens.text.muted
-        }} />
-        </button>
+        <DSButton variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close accessibility panel">
+          <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 16 }} />
+        </DSButton>
       </div>
 
       <div className="p-5 flex flex-col gap-6">
         {/* Text Size */}
         <div>
-          <label className="block font-heading text-sm font-semibold mb-3 text-slate-700">
+          <label className="block text-sm font-semibold mb-3 text-slate-700">
             Text Size
           </label>
-          <div className="flex items-center gap-4 bg-slate-50 p-2 rounded-lg border" style={{
-          borderColor: tokens.border.default
-        }}>
-            <button onClick={zoomOut} className="w-10 h-10 flex items-center justify-center rounded bg-white border shadow-sm hover:bg-slate-50 transition-colors text-lg font-bold" style={{
-            borderColor: tokens.border.default,
-            color: tokens.text.primary
-          }} aria-label="Decrease text size">
+          <div
+            className="flex items-center gap-4 bg-slate-50 p-2 rounded-lg border"
+            style={{ borderColor: tokens.border.default }}
+          >
+            <DSButton
+              variant="outline"
+              size="icon"
+              onClick={zoomOut}
+              aria-label="Decrease text size"
+              className="font-bold text-lg shadow-sm"
+            >
               A-
-            </button>
+            </DSButton>
             <div className="flex-1 text-center font-mono font-bold text-slate-700">
               {zoomPercent}%
             </div>
-            <button onClick={zoomIn} className="w-10 h-10 flex items-center justify-center rounded bg-white border shadow-sm hover:bg-slate-50 transition-colors text-xl font-bold" style={{
-            borderColor: tokens.border.default,
-            color: tokens.text.primary
-          }} aria-label="Increase text size">
+            <DSButton
+              variant="outline"
+              size="icon"
+              onClick={zoomIn}
+              aria-label="Increase text size"
+              className="font-bold text-xl shadow-sm"
+            >
               A+
-            </button>
+            </DSButton>
           </div>
         </div>
 
-        {/* High Contrast (Mock) */}
-        <div>
-          <label className="flex items-center justify-between font-heading text-sm font-semibold text-slate-700 cursor-pointer">
-            <span className="flex items-center gap-2">
-              <ContrastIcon size={16} />
-              High Contrast
-            </span>
-            <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-              <input type="checkbox" name="toggle" id="contrast-toggle" className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer" style={{
-              borderColor: tokens.border.default
-            }} />
-              <label htmlFor="contrast-toggle" className="toggle-label block overflow-hidden h-5 rounded-full bg-slate-300 cursor-pointer"></label>
-            </div>
+        {/* High Contrast */}
+        <div className="flex items-center justify-between">
+          <label htmlFor="contrast-toggle" className="flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer">
+            <i className="fa-light fa-circle-half-stroke" aria-hidden="true" style={{ fontSize: 16 }} />
+            High Contrast
           </label>
+          <ToggleSwitch
+            id="contrast-toggle"
+            checked={highContrast}
+            onChange={setHighContrast}
+          />
         </div>
 
-        {/* Reduce Motion (Mock) */}
-        <div>
-          <label className="flex items-center justify-between font-heading text-sm font-semibold text-slate-700 cursor-pointer">
-            <span className="flex items-center gap-2">
-              <MoveIcon size={16} />
-              Reduce Motion
-            </span>
-            <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-              <input type="checkbox" name="toggle" id="motion-toggle" className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer" style={{
-              borderColor: tokens.border.default
-            }} />
-              <label htmlFor="motion-toggle" className="toggle-label block overflow-hidden h-5 rounded-full bg-slate-300 cursor-pointer"></label>
-            </div>
+        {/* Reduce Motion */}
+        <div className="flex items-center justify-between">
+          <label htmlFor="motion-toggle" className="flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer">
+            <i className="fa-light fa-arrows-up-down-left-right" aria-hidden="true" style={{ fontSize: 16 }} />
+            Reduce Motion
           </label>
+          <ToggleSwitch
+            id="motion-toggle"
+            checked={reduceMotion}
+            onChange={setReduceMotion}
+          />
         </div>
       </div>
-    </div>;
+    </div>
+  );
 }

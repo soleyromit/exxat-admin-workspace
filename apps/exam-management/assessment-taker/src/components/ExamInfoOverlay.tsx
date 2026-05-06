@@ -1,4 +1,4 @@
-import React from 'react';
+
 /**
  * ExamInfoOverlay — Exxat Exam Management
  *
@@ -40,34 +40,34 @@ import React from 'react';
  *   stat card border → Border/Default
  *   icon badge bg    → Semantic/* (blue/green/amber/purple)
  */
-import { XIcon, FileTextIcon, CheckCircleIcon, ClockIcon, ZapIcon } from 'lucide-react';
 import { Button } from './Button';
 import { tokens } from '../tokens/design-tokens';
+import { Button as DSButton } from '@exxat/ds/packages/ui/src';
 export interface ExamInfoOverlayProps {
   onClose: () => void;
 }
 const STAT_CARDS = [{
   label: 'Total Points',
   value: '100',
-  icon: FileTextIcon,
+  faIcon: 'fa-file-lines',
   iconColor: tokens.semantic.infoIcon,
   badgeBg: tokens.semantic.infoBg
 }, {
   label: 'Passing Score',
   value: '70',
-  icon: CheckCircleIcon,
+  faIcon: 'fa-circle-check',
   iconColor: tokens.semantic.successIcon,
   badgeBg: tokens.semantic.successBg
 }, {
   label: 'Time Limit',
   value: '60 min',
-  icon: ClockIcon,
+  faIcon: 'fa-clock',
   iconColor: tokens.semantic.amberIcon,
   badgeBg: tokens.semantic.amberBg
 }, {
   label: 'Difficulty',
   value: 'Medium',
-  icon: ZapIcon,
+  faIcon: 'fa-bolt',
   iconColor: tokens.semantic.purpleIcon,
   badgeBg: tokens.semantic.purpleBg
 }];
@@ -87,7 +87,7 @@ export function ExamInfoOverlay({
       <div className="relative overflow-hidden" style={{
         backgroundColor: tokens.surface.white,
         borderRadius: '16px',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+        boxShadow: '0 20px 60px var(--shadow-heavy)',
         width: '100%',
         maxWidth: '680px',
         margin: '0 16px'
@@ -101,15 +101,13 @@ export function ExamInfoOverlay({
             gap: '12px'
           }}>
             {/* Figma layer: "Modal/Title" */}
-            <h2 className="font-heading font-bold" style={{
-              fontSize: '20px',
+            <h2 className="font-bold text-xl" style={{
               color: tokens.text.primary
             }}>
               Exam Information
             </h2>
             {/* Figma layer: "AttemptBadge" */}
-            <span className="font-heading font-semibold" style={{
-              fontSize: '12px',
+            <span className="font-semibold text-xs" style={{
               color: tokens.text.secondary,
               border: `1px solid ${tokens.border.medium}`,
               borderRadius: '9999px',
@@ -119,16 +117,9 @@ export function ExamInfoOverlay({
             </span>
           </div>
           {/* Figma layer: "CloseButton" */}
-          <button onClick={onClose} className="flex items-center justify-center rounded-lg transition-colors hover:bg-slate-100" style={{
-            width: '32px',
-            height: '32px'
-          }} aria-label="Close exam information">
-            <XIcon style={{
-              width: '20px',
-              height: '20px',
-              color: tokens.text.placeholder
-            }} />
-          </button>
+          <DSButton variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close exam information">
+            <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 18 }} />
+          </DSButton>
         </div>
 
         {/* Figma layer: "Modal/Body" */}
@@ -140,8 +131,7 @@ export function ExamInfoOverlay({
         }}>
           {/* Figma layer: "Modal/Instructions" */}
           <div>
-            <h3 className="font-heading font-bold" style={{
-              fontSize: '12px',
+            <h3 className="font-bold text-xs" style={{
               color: tokens.text.primary,
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
@@ -161,15 +151,13 @@ export function ExamInfoOverlay({
                 margin: 0,
                 padding: 0
               }}>
-                <li className="flex items-start font-heading" style={{
+                <li className="flex items-start text-sm" style={{
                   gap: '8px',
-                  fontSize: '14px',
                   color: tokens.text.secondary
                 }}>
-                  <span style={{
+                  <span className="text-xs" style={{
                     color: tokens.brand.primary,
-                    marginTop: '6px',
-                    fontSize: '12px'
+                    marginTop: '6px'
                   }}>
                     •
                   </span>
@@ -182,8 +170,7 @@ export function ExamInfoOverlay({
           {/* Figma layer: "Modal/ExamDetails"
             ⚠️ 4-column grid — use Auto Layout with wrap or fixed-width children in Figma */}
           <div>
-            <h3 className="font-heading font-bold" style={{
-              fontSize: '12px',
+            <h3 className="font-bold text-xs" style={{
               color: tokens.text.primary,
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
@@ -199,7 +186,7 @@ export function ExamInfoOverlay({
               {STAT_CARDS.map(({
                 label,
                 value,
-                icon: Icon,
+                faIcon,
                 iconColor,
                 badgeBg
               }) =>
@@ -217,23 +204,17 @@ export function ExamInfoOverlay({
                   borderRadius: '8px',
                   backgroundColor: badgeBg
                 }}>
-                      <Icon style={{
-                    width: '18px',
-                    height: '18px',
-                    color: iconColor
-                  }} />
+                      <i className={`fa-light ${faIcon}`} aria-hidden="true" style={{ fontSize: 18, color: iconColor }} />
                     </div>
                     {/* Figma layer: "StatContent" */}
                     <div>
-                      <p className="font-heading" style={{
-                    fontSize: '12px',
+                      <p className="text-xs" style={{
                     color: tokens.text.subtle,
                     marginBottom: '2px'
                   }}>
                         {label}
                       </p>
-                      <p className="font-heading font-bold" style={{
-                    fontSize: '18px',
+                      <p className="font-bold text-lg" style={{
                     color: tokens.text.primary
                   }}>
                         {value}
@@ -245,18 +226,14 @@ export function ExamInfoOverlay({
 
           {/* Figma layer: "Modal/Description" */}
           <div>
-            <h3 className="font-heading font-bold flex items-center" style={{
-              fontSize: '12px',
+            <h3 className="font-bold text-xs flex items-center" style={{
               color: tokens.text.primary,
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
               marginBottom: '12px',
               gap: '6px'
             }}>
-              <FileTextIcon style={{
-                width: '14px',
-                height: '14px'
-              }} />
+              <i className="fa-light fa-file-lines" aria-hidden="true" style={{ fontSize: 14 }} />
               Description
             </h3>
             {/* Figma layer: "DescBox" */}
@@ -266,8 +243,7 @@ export function ExamInfoOverlay({
               borderRadius: '8px',
               padding: '16px 20px'
             }}>
-              <p className="font-heading" style={{
-                fontSize: '14px',
+              <p className="text-sm" style={{
                 color: tokens.text.secondary
               }}>
                 Assessment on cell injury, inflammation, neoplasia, and basic

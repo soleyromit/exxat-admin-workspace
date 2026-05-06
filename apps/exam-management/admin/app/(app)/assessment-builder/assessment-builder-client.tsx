@@ -9,8 +9,15 @@ import {
   Checkbox,
 } from '@exxat/ds/packages/ui/src'
 import { mockCourses, mockCourseOfferings, mockAssessments, MOCK_QB_QUESTIONS } from '@/lib/qb-mock-data'
-import type { AssessmentDraft, SmartView, QType, QDiff } from '@/lib/qb-types'
+import type { AssessmentDraft, Question, SmartView, QType, QDiff } from '@/lib/qb-types'
 import { SYSTEM_SMART_VIEWS } from '@/lib/qb-types'
+import { courseObjectives } from '@/lib/faculty-mock-data'
+import { useFacultySession } from '@/lib/faculty-session'
+import { AiGenerateModal } from '@/components/ai-generate-modal'
+import { QuestionEditor } from '@/components/question-editor/question-editor'
+import {
+  createDraft, toQuestion, type QuestionDraft, type SaveDestination,
+} from '@/lib/question-editor-types'
 
 // Estimated minutes per question type (base, before difficulty adjustment)
 const TIME_BY_TYPE: Record<QType, number> = {
@@ -38,6 +45,7 @@ function formatMin(min: number): string {
 }
 
 export default function AssessmentBuilderClient() {
+  const { currentPersona } = useFacultySession()
   const [courseId, setCourseId] = useState(mockCourses[0]?.id ?? '')
   const [offeringId, setOfferingId] = useState(
     mockCourseOfferings.find(o => o.courseId === mockCourses[0]?.id)?.id ?? ''
@@ -50,6 +58,12 @@ export default function AssessmentBuilderClient() {
       return stored ? JSON.parse(stored) : []
     } catch { return [] }
   })
+
+  // Session-scoped user-created questions (from inline "New question" panel)
+  const [userCreated, setUserCreated] = useState<Question[]>([])
+
+  // AI generate modal — opened from the AI source tab in the picker
+  const [aiOpen, setAiOpen] = useState(false)
 
   const offerings = mockCourseOfferings.filter(o => o.courseId === courseId)
   const assessments = mockAssessments.filter(a => a.courseId === courseId && a.offeringId === offeringId)
@@ -101,6 +115,67 @@ export default function AssessmentBuilderClient() {
     })
   }
 
+  // Project a fully-edited `QuestionDraft` (from QuestionEditor) into a QB
+  // `Question` row, append it to userCreated, and add it to the active
+  // assessment. Used by the inline editor in the picker's "new-question" tab.
+  function createQuestionFromDraft(draft: QuestionDraft, dest: SaveDestination): Question {
+    const folderPrefix = (mockCourses.find(c => c.id === activeAsmt?.courseId)?.code ?? 'COURSE').toLowerCase()
+    const folderPath = dest === 'bank'
+      ? `${folderPrefix.toUpperCase()} QB / Faculty drafts`
+      : 'User-created · this session'
+    const q: Question = toQuestion(draft, {
+      folder: `${folderPrefix}-${dest === 'bank' ? 'faculty-drafts' : 'user-created'}`,
+      folderPath,
+    })
+    setUserCreated(prev => [q, ...prev])
+    if (activeAsmt && (dest === 'assessment' || dest === 'bank')) {
+      setActiveAsmt(prev => prev ? {
+        ...prev,
+        questions: [...prev.questions, { questionId: q.id, order: prev.questions.length + 1 }],
+      } : prev)
+    }
+    return q
+  }
+
+  // Create a brand-new question inline and add it to the assessment.
+  // Persists in `userCreated` state so the picker can also display it
+  // when the user switches back to the QB-source view.
+  function createQuestion(input: {
+    title: string
+    options: string[]
+    correctIdx: number
+  }): Question {
+    const id = `user-${Date.now()}`
+    const code = `USR-${String(userCreated.length + 1).padStart(3, '0')}`
+    const folderPrefix = (mockCourses.find(c => c.id === activeAsmt?.courseId)?.code ?? 'COURSE').toLowerCase()
+    const q: Question = {
+      id,
+      code,
+      version: 1,
+      age: 'just now',
+      title: input.title.trim(),
+      type: 'MCQ',
+      status: 'Draft',
+      difficulty: 'Medium',
+      blooms: 'Apply',
+      folder: `${folderPrefix}-user-created`,
+      folderPath: 'User-created · this session',
+      tags: [],
+      usage: 0,
+      pbis: null,
+      pbisDir: 'flat',
+    }
+    setUserCreated(prev => [q, ...prev])
+    // Add it to the active assessment immediately
+    if (activeAsmt) {
+      setActiveAsmt(prev => prev ? {
+        ...prev,
+        questions: [...prev.questions, { questionId: q.id, order: prev.questions.length + 1 }],
+      } : prev)
+    }
+    return q
+  }
+
   const selectedIds = useMemo(
     () => new Set(activeAsmt?.questions.map(q => q.questionId) ?? []),
     [activeAsmt]
@@ -130,7 +205,7 @@ export default function AssessmentBuilderClient() {
           </SelectTrigger>
           <SelectContent>
             {mockCourses.map(c => (
-              <SelectItem key={c.id} value={c.id}>{c.code} — {c.name}</SelectItem>
+              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -170,6 +245,11 @@ export default function AssessmentBuilderClient() {
             activeViewId={smartViewId}
             onViewChange={setSmartViewId}
             onSaveView={saveSmartView}
+            userCreated={userCreated}
+            onCreateQuestion={createQuestion}
+            onCreateFromDraft={createQuestionFromDraft}
+            authorPersonaId={currentPersona.id}
+            onOpenAi={() => setAiOpen(true)}
           />
         ) : (
           <div className="text-muted-foreground" style={{
@@ -185,6 +265,25 @@ export default function AssessmentBuilderClient() {
           </div>
         )}
       </div>
+
+      {/* AI Generate modal — opened from the AI source tab in the picker.
+          On accept, the chosen drafts flow through createQuestion so they
+          land directly in the active assessment. */}
+      <AiGenerateModal
+        open={aiOpen}
+        onOpenChange={setAiOpen}
+        objectives={courseObjectives.filter(o => o.courseId === activeAsmt?.courseId && !o.lastAssessed)}
+        acceptLabel="Add to assessment"
+        onAccept={(drafts) => {
+          drafts.forEach(d => {
+            createQuestion({
+              title: d.stem,
+              options: d.options,
+              correctIdx: d.correctIdx,
+            })
+          })
+        }}
+      />
     </div>
   )
 }
@@ -282,7 +381,18 @@ const DURATION_OPTIONS = [
   { label: '3 hours', value: 180 },
 ]
 
-function ABQuestionPicker({ selectedIds, onToggle, activeAsmt, onDurationChange, smartViews, activeViewId, onViewChange, onSaveView }: {
+// ─── Question source — Vishaka: questions can come from multiple places ────
+//   1. THIS course's question bank (default)
+//   2. OTHER courses' question banks (e.g. shared bug content across micro + immuno)
+//   3. NEW question created inline within this assessment
+//   4. AI generate from course objectives (Aarti's principle)
+type PickerSource = 'this-course' | 'other-courses' | 'new-question' | 'ai-generate'
+
+function ABQuestionPicker({
+  selectedIds, onToggle, activeAsmt, onDurationChange,
+  smartViews, activeViewId, onViewChange, onSaveView,
+  userCreated, onCreateQuestion, onCreateFromDraft, authorPersonaId, onOpenAi,
+}: {
   selectedIds: Set<string>
   onToggle: (id: string) => void
   activeAsmt: AssessmentDraft
@@ -291,23 +401,55 @@ function ABQuestionPicker({ selectedIds, onToggle, activeAsmt, onDurationChange,
   activeViewId: string
   onViewChange: (id: string) => void
   onSaveView: (v: SmartView) => void
+  userCreated: Question[]
+  onCreateQuestion: (input: { title: string; options: string[]; correctIdx: number }) => Question
+  onCreateFromDraft: (draft: QuestionDraft, dest: SaveDestination) => Question
+  authorPersonaId: string
+  onOpenAi: () => void
 }) {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   const [saveConfirmed, setSaveConfirmed] = useState(false)
   const [newViewName, setNewViewName] = useState('')
+  const [source, setSource] = useState<PickerSource>('this-course')
+  const [otherCourseId, setOtherCourseId] = useState<string>('')
 
   const activeView = smartViews.find(v => v.id === activeViewId) ?? smartViews[0]
 
+  // The current course's folder prefix is derived from its code
+  // (e.g. "PHAR101" → "phar101").
+  const thisCourse = mockCourses.find(c => c.id === activeAsmt.courseId)
+  const thisCourseFolderPrefix = thisCourse?.code.toLowerCase() ?? ''
+
+  const otherCourses = useMemo(
+    () => mockCourses.filter(c => c.id !== activeAsmt.courseId),
+    [activeAsmt.courseId]
+  )
+
+  // Source-scoped questions: only questions tagged to the relevant QB folder.
+  const sourcedQuestions = useMemo(() => {
+    if (source === 'this-course') {
+      return MOCK_QB_QUESTIONS.filter(q => q.folder.startsWith(thisCourseFolderPrefix))
+    }
+    if (source === 'other-courses') {
+      if (!otherCourseId) return []
+      const other = mockCourses.find(c => c.id === otherCourseId)
+      if (!other) return []
+      const prefix = other.code.toLowerCase()
+      return MOCK_QB_QUESTIONS.filter(q => q.folder.startsWith(prefix))
+    }
+    return [] // new-question + ai-generate render their own UI
+  }, [source, thisCourseFolderPrefix, otherCourseId])
+
   const filteredQuestions = useMemo(() => {
     const { difficulty, type, blooms, unusedOnly } = activeView?.filters ?? {}
-    return MOCK_QB_QUESTIONS.filter(q => {
+    return sourcedQuestions.filter(q => {
       if (difficulty?.length && !difficulty.includes(q.difficulty)) return false
       if (type?.length && !type.includes(q.type)) return false
       if (blooms?.length && !blooms.includes(q.blooms)) return false
       if (unusedOnly && (q.usage ?? 0) > 0) return false
       return true
     })
-  }, [activeView])
+  }, [activeView, sourcedQuestions])
 
   const distribution = useMemo(() => {
     const picked = MOCK_QB_QUESTIONS.filter(q => selectedIds.has(q.id))
@@ -358,6 +500,15 @@ function ABQuestionPicker({ selectedIds, onToggle, activeAsmt, onDurationChange,
     setSaveDialogOpen(false)
   }
 
+  const sourceTabs: Array<{ id: PickerSource; label: string; icon: string; sub: string }> = [
+    { id: 'this-course',   label: thisCourse ? `${thisCourse.code} bank` : 'This course',   icon: 'fa-folder',          sub: 'Default — pull from this course' },
+    { id: 'other-courses', label: 'Other courses',     icon: 'fa-folder-tree',     sub: 'Pull from another course\'s QB' },
+    { id: 'new-question',  label: 'New question',      icon: 'fa-pen-to-square',   sub: 'Create inline in this assessment' },
+    { id: 'ai-generate',   label: 'AI generate',       icon: 'fa-sparkles',        sub: 'From course objectives' },
+  ]
+
+  const isQbSource = source === 'this-course' || source === 'other-courses'
+
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Assessment context header */}
@@ -373,50 +524,140 @@ function ABQuestionPicker({ selectedIds, onToggle, activeAsmt, onDurationChange,
         <span className="text-xs text-muted-foreground">· {selectedIds.size} questions selected</span>
       </div>
 
-      {/* Smart view chips */}
+      {/* Source bar — Vishaka: questions can come from multiple places. Make
+          the source explicit and switchable, default to this course's QB. */}
       <div style={{
         display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        padding: '8px 16px',
+        alignItems: 'stretch',
         borderBottom: '1px solid var(--border)',
-        overflowX: 'auto',
+        background: 'var(--card)',
         flexShrink: 0,
-        background: 'var(--ab-smart-view-bar-bg)',
+        overflowX: 'auto',
       }}>
-        {smartViews.map(view => {
-          const isActive = activeViewId === view.id
+        {sourceTabs.map(t => {
+          const isActive = source === t.id
           return (
-            <Button
-              key={view.id}
-              variant={isActive ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => onViewChange(view.id)}
-              className="shrink-0 rounded-full text-[11px] h-7 px-3"
-              style={!view.isSystem && !isActive
-                ? { borderStyle: 'dashed', color: 'var(--brand-color)', borderColor: 'var(--brand-color)' }
-                : undefined}
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setSource(t.id)}
+              className="flex flex-col items-start gap-0.5 px-4 py-2.5 transition-colors text-start shrink-0 focus-visible:outline-none focus-visible:bg-muted/40"
+              style={{
+                borderBottom: isActive ? '2px solid var(--brand-color)' : '2px solid transparent',
+                background: isActive ? 'color-mix(in oklch, var(--brand-color) 6%, var(--background))' : 'transparent',
+                color: isActive ? 'var(--foreground)' : 'var(--muted-foreground)',
+              }}
+              aria-current={isActive ? 'page' : undefined}
             >
-              {!view.isSystem && (
-                <i className="fa-solid fa-star text-[9px] mr-1" aria-hidden="true" />
-              )}
-              {view.label}
-            </Button>
+              <span className="text-xs font-semibold flex items-center gap-1.5">
+                <i className={`fa-light ${t.icon}`} aria-hidden="true" />
+                {t.label}
+              </span>
+              <span className="text-[10px] text-muted-foreground">{t.sub}</span>
+            </button>
           )
         })}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setSaveDialogOpen(true)}
-          className="shrink-0 rounded-full text-[11px] h-7 px-3"
-          style={{ color: 'var(--brand-color)', opacity: 0.7 }}
-        >
-          <i className="fa-light fa-plus" aria-hidden="true" />
-          {' '}Save view
-        </Button>
       </div>
 
-      {/* Question list */}
+      {/* Other-courses picker — only shown when 'other-courses' is the active source */}
+      {source === 'other-courses' && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '8px 16px',
+          borderBottom: '1px solid var(--border)',
+          background: 'var(--muted)',
+          flexShrink: 0,
+        }}>
+          <span className="text-xs font-semibold text-muted-foreground">Pick a course:</span>
+          <Select value={otherCourseId} onValueChange={setOtherCourseId}>
+            <SelectTrigger className="text-sm" style={{ width: 240, height: 28 }}>
+              <SelectValue placeholder="Select a course's question bank…" />
+            </SelectTrigger>
+            <SelectContent>
+              {otherCourses.map(c => (
+                <SelectItem key={c.id} value={c.id}>{c.code} · {c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {otherCourseId && (
+            <span className="text-[11px] text-muted-foreground">
+              {sourcedQuestions.length} questions available
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Smart view chips — only for QB sources (this/other) */}
+      {isQbSource && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '8px 16px',
+          borderBottom: '1px solid var(--border)',
+          overflowX: 'auto',
+          flexShrink: 0,
+          background: 'var(--ab-smart-view-bar-bg)',
+        }}>
+          {smartViews.map(view => {
+            const isActive = activeViewId === view.id
+            return (
+              <Button
+                key={view.id}
+                variant={isActive ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => onViewChange(view.id)}
+                className="shrink-0 rounded-full text-[11px] h-7 px-3"
+                style={!view.isSystem && !isActive
+                  ? { borderStyle: 'dashed', color: 'var(--brand-color)', borderColor: 'var(--brand-color)' }
+                  : undefined}
+              >
+                {!view.isSystem && (
+                  <i className="fa-solid fa-star text-[9px] mr-1" aria-hidden="true" />
+                )}
+                {view.label}
+              </Button>
+            )
+          })}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSaveDialogOpen(true)}
+            className="shrink-0 rounded-full text-[11px] h-7 px-3"
+            style={{ color: 'var(--brand-color)', opacity: 0.7 }}
+          >
+            <i className="fa-light fa-plus" aria-hidden="true" />
+            {' '}Save view
+          </Button>
+        </div>
+      )}
+
+      {/* New-question source — inline editor (full type/form-control coverage)
+          Switching back to a different source preserves nothing; the editor is
+          remounted via React's `key` whenever the assessment changes. */}
+      {source === 'new-question' && (
+        <NewQuestionEditorPanel
+          key={activeAsmt.id}
+          activeAsmt={activeAsmt}
+          authorPersonaId={authorPersonaId}
+          onCreateFromDraft={onCreateFromDraft}
+          userCreated={userCreated}
+          onCancel={() => setSource('this-course')}
+        />
+      )}
+
+      {/* AI-generate source — entry point to gap-fill wizard */}
+      {source === 'ai-generate' && (
+        <AiGeneratePanel
+          courseLabel={thisCourse ? `${thisCourse.code} · ${thisCourse.name}` : 'this course'}
+          onOpen={onOpenAi}
+        />
+      )}
+
+      {/* Question list — only for QB sources */}
+      {isQbSource && (
       <div style={{ flex: 1, overflow: 'auto' }}>
         <Table style={{ width: '100%' }}>
           <TableHeader>
@@ -486,6 +727,7 @@ function ABQuestionPicker({ selectedIds, onToggle, activeAsmt, onDurationChange,
           </TableBody>
         </Table>
       </div>
+      )}
 
       {/* Footer diff chart */}
       <ABDiffChart
@@ -681,6 +923,163 @@ function ABDiffChart({ distribution, timeMetrics, overtimeMetrics, durationMinut
         <Button variant="default" size="sm" disabled={total === 0 || saveConfirmed} onClick={onSave}>
           {saveConfirmed ? 'Saved ✓' : 'Save assessment'}
         </Button>
+      </div>
+    </div>
+  )
+}
+
+// ─── New question — inline editor (full type/form-control coverage) ─────────
+//
+// Hosts the unified `QuestionEditor` so faculty can author any question type
+// without leaving the assessment builder. On save, the draft is projected to
+// a QB `Question` row and added to the active assessment (and optionally the
+// faculty drafts folder of the QB).
+function NewQuestionEditorPanel({
+  activeAsmt,
+  authorPersonaId,
+  onCreateFromDraft,
+  userCreated,
+  onCancel,
+}: {
+  activeAsmt: AssessmentDraft
+  authorPersonaId: string
+  onCreateFromDraft: (draft: QuestionDraft, dest: SaveDestination) => Question
+  userCreated: Question[]
+  onCancel: () => void
+}) {
+  const objectives = useMemo(
+    () => courseObjectives.filter(o => o.courseId === activeAsmt.courseId),
+    [activeAsmt.courseId]
+  )
+
+  const [draft, setDraft] = useState<QuestionDraft>(() =>
+    createDraft({ authorPersonaId })
+  )
+  const [confirmation, setConfirmation] = useState<string | null>(null)
+
+  function handleSave(d: QuestionDraft, dest: SaveDestination) {
+    if (dest === 'draft') {
+      setDraft({ ...d, state: 'draft' })
+      setConfirmation('Saved as draft')
+    } else {
+      onCreateFromDraft({ ...d, state: 'saved' }, dest)
+      setConfirmation(dest === 'bank' ? 'Saved to bank + added to assessment' : 'Added to assessment')
+      // Reset for the next question
+      setDraft(createDraft({ authorPersonaId }))
+    }
+    setTimeout(() => setConfirmation(null), 2000)
+  }
+
+  return (
+    <div style={{ flex: 1, overflow: 'auto', background: 'var(--background)' }}>
+      {confirmation && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="mx-auto max-w-3xl mt-4 rounded-md px-3 py-2 text-xs flex items-center gap-2"
+          style={{
+            backgroundColor: 'color-mix(in oklch, var(--chart-2) 12%, var(--background))',
+            color: 'var(--chart-2)',
+            border: '1px solid color-mix(in oklch, var(--chart-2) 30%, transparent)',
+          }}
+        >
+          <i className="fa-light fa-circle-check" aria-hidden="true" />
+          {confirmation}
+        </div>
+      )}
+      <QuestionEditor
+        draft={draft}
+        onChange={setDraft}
+        objectives={objectives}
+        compact
+        showAddToAssessment
+        onSave={handleSave}
+        onCancel={onCancel}
+      />
+      {userCreated.length > 0 && (
+        <div className="mx-auto max-w-3xl mb-6 px-4 py-3 border-t border-border flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <i className="fa-light fa-clock-rotate-left text-muted-foreground" aria-hidden="true" style={{ fontSize: 12 }} />
+            <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">
+              Added this session · {userCreated.length}
+            </span>
+          </div>
+          <ul className="flex flex-col gap-1">
+            {userCreated.map(q => (
+              <li
+                key={q.id}
+                className="rounded-md px-3 py-2 text-xs flex items-center gap-2"
+                style={{
+                  background: 'color-mix(in oklch, var(--brand-color) 5%, var(--card))',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                <Badge
+                  variant="secondary"
+                  className="rounded font-mono text-[9px] uppercase tracking-wider"
+                  style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}
+                >
+                  {q.code}
+                </Badge>
+                <span className="flex-1 truncate text-foreground">{q.title}</span>
+                <span className="text-[10px] text-muted-foreground">{q.age}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── AI generate — entry point to gap-fill wizard ────────────────────────────
+//
+// Aarti's differentiator: generate questions from course objectives, targeting
+// gaps the curriculum hasn't covered. This panel surfaces the concept with a
+// clear CTA. Full wizard (objective picker → AI stream → review/edit → publish)
+// is a separate flow built off this entry point.
+function AiGeneratePanel({ courseLabel, onOpen }: { courseLabel: string; onOpen: () => void }) {
+  return (
+    <div style={{ flex: 1, overflow: 'auto', padding: 24, background: 'var(--background)' }}>
+      <div
+        className="rounded-xl border border-border p-5 max-w-2xl flex flex-col gap-4"
+        style={{
+          background: 'color-mix(in oklch, var(--brand-color) 5%, var(--card))',
+          borderLeft: '4px solid var(--brand-color)',
+        }}
+      >
+        <div className="flex items-center gap-2">
+          <i className="fa-duotone fa-solid fa-sparkles" style={{ color: 'var(--brand-color)', fontSize: 18 }} aria-hidden="true" />
+          <h3 className="text-base font-semibold text-foreground font-heading">
+            AI-generated questions from course objectives
+          </h3>
+        </div>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          For <strong className="text-foreground">{courseLabel}</strong>, the AI scans untested or under-tested
+          course objectives, generates candidate questions matched to your difficulty + Bloom mix, and lets
+          you review/edit each one before adding to the assessment.
+        </p>
+        <ul className="flex flex-col gap-1.5 text-xs text-muted-foreground">
+          <li className="flex items-start gap-2">
+            <i className="fa-light fa-circle-check text-brand mt-0.5" aria-hidden="true" />
+            Targets gaps in your curriculum mapping (objectives never assessed)
+          </li>
+          <li className="flex items-start gap-2">
+            <i className="fa-light fa-circle-check text-brand mt-0.5" aria-hidden="true" />
+            Honours your difficulty/Blooms targets configured for this assessment
+          </li>
+          <li className="flex items-start gap-2">
+            <i className="fa-light fa-circle-check text-brand mt-0.5" aria-hidden="true" />
+            Every generated question is editable before it&apos;s added — and optionally written back to the question bank
+          </li>
+        </ul>
+        <div className="flex items-center gap-2 pt-1">
+          <Button variant="default" size="sm" className="gap-2" onClick={onOpen}>
+            <i className="fa-duotone fa-solid fa-sparkles" aria-hidden="true" />
+            Open generator
+          </Button>
+          <span className="text-[11px] text-muted-foreground">Wizard launches in a side panel</span>
+        </div>
       </div>
     </div>
   )

@@ -1,100 +1,62 @@
-import React from 'react';
 /**
- * Button — Exxat Exam Management
+ * Button — Exxat Exam Management (DS-wrapped).
  *
- * FIGMA LAYER GUIDE
- * ─────────────────
- * Button                      [Frame, Auto Layout horizontal, hug×hug]
- *   ├── LeadingIcon?          [Instance: Icon/ChevronLeft, 14×14]
- *   ├── Label                 [Text, Source Sans 3 SemiBold]
- *   └── TrailingIcon?         [Instance: any Lucide icon, 14×14]
+ * Wraps the DS `Button` from @exxat/ds while preserving the engine-local API
+ * (`label`, `icon`, `leadingIcon`, etc.) so every existing consumer in the
+ * exam engine picks up DS styling without touching a single callsite.
  *
- * FIGMA VARIANTS
- *   variant:  primary | secondary | ghost | danger
- *   size:     sm | md | lg
- *   state:    default | hover | disabled
- *   hasLeadingIcon:  true | false
- *   hasTrailingIcon: true | false
+ * Variant mapping (engine → DS):
+ *   primary   → DS `default` + brand-color override   (pink Prism CTA — the
+ *               DS `default` token resolves to dark gray in theme-prism, which
+ *               loses the brand identity. We override bg/color to brand-color.)
+ *   secondary → DS `outline`                          (bordered, neutral)
+ *   ghost     → DS `ghost`
+ *   danger    → DS `destructive`
  *
- * TOKEN USAGE
- *   primary bg      → Brand/Primary (#E4077D)
- *   primary hover   → Brand/PrimaryHover (#C9026D)
- *   secondary bg    → Surface/White (#FFFFFF)
- *   secondary border→ Border/Medium (#CBD5E1)
- *   text on primary → Text/Inverse (#FFFFFF)
- *   text on secondary → Text/Secondary (#334155)
+ * Size mapping (engine → DS):
+ *   sm → sm  ·  md → default (h-9)  ·  lg → lg (h-10)
  */
-import { ChevronLeftIcon } from 'lucide-react';
-import { tokens } from '../tokens/design-tokens';
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
-export type ButtonSize = 'sm' | 'md' | 'lg';
+
+import React from 'react'
+import { Button as DSButton } from '@exxat/ds/packages/ui/src'
+
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
+export type ButtonSize    = 'sm' | 'md' | 'lg'
+
 export interface ButtonProps {
-  label: string;
-  variant?: ButtonVariant;
-  size?: ButtonSize;
-  icon?: React.ReactNode; // trailing icon
-  leadingIcon?: boolean; // chevron-left (Previous nav)
-  disabled?: boolean;
-  onClick?: () => void;
-  className?: string;
-  type?: 'button' | 'submit' | 'reset';
+  label: string
+  variant?: ButtonVariant
+  size?: ButtonSize
+  icon?: React.ReactNode    // trailing icon
+  leadingIcon?: boolean      // chevron-left (Previous nav)
+  disabled?: boolean
+  onClick?: () => void
+  className?: string
+  type?: 'button' | 'submit' | 'reset'
+  'aria-label'?: string
 }
-// ─── Size scale ───────────────────────────────────────────────────────────────
-const SIZE: Record<ButtonSize, {
-  height: string;
-  px: string;
-  fontSize: string;
-  gap: string;
-}> = {
-  sm: {
-    height: '34px',
-    px: '14px',
-    fontSize: '13px',
-    gap: '6px'
-  },
-  md: {
-    height: '40px',
-    px: '18px',
-    fontSize: '14px',
-    gap: '7px'
-  },
-  lg: {
-    height: '46px',
-    px: '22px',
-    fontSize: '15px',
-    gap: '8px'
-  }
-};
-// ─── Variant styles (all values from design-tokens.ts) ───────────────────────
-const VARIANT_STYLE: Record<ButtonVariant, React.CSSProperties> = {
-  primary: {
-    backgroundColor: tokens.brand.primary,
-    color: tokens.text.inverse,
-    border: `1px solid ${tokens.brand.primary}`
-  },
-  secondary: {
-    backgroundColor: tokens.surface.white,
-    color: tokens.text.secondary,
-    border: `1px solid ${tokens.border.medium}`
-  },
-  ghost: {
-    backgroundColor: 'transparent',
-    color: tokens.text.muted,
-    border: '1px solid transparent'
-  },
-  danger: {
-    backgroundColor: tokens.semantic.errorBg,
-    color: tokens.semantic.errorText,
-    border: `1px solid ${tokens.semantic.errorBorder}`
-  }
-};
-// Tailwind hover classes (can't use CSS vars in tw arbitrary directly)
-const VARIANT_HOVER: Record<ButtonVariant, string> = {
-  primary: 'hover:opacity-90',
-  secondary: 'hover:bg-slate-50 hover:border-slate-300',
-  ghost: 'hover:bg-slate-100',
-  danger: 'hover:bg-red-100'
-};
+
+const VARIANT_MAP: Record<ButtonVariant, React.ComponentProps<typeof DSButton>['variant']> = {
+  primary:   'default',
+  secondary: 'outline',
+  ghost:     'ghost',
+  danger:    'destructive',
+}
+
+const SIZE_MAP: Record<ButtonSize, React.ComponentProps<typeof DSButton>['size']> = {
+  sm: 'sm',
+  md: 'default',
+  lg: 'lg',
+}
+
+// Primary buttons in the exam engine are brand-pink, not the DS dark-gray
+// `--primary` token. Apply the override only to `primary` consumers.
+const PRIMARY_BRAND_OVERRIDE: React.CSSProperties = {
+  backgroundColor: 'var(--brand-color)',
+  color: 'var(--brand-foreground)',
+  borderColor: 'var(--brand-color)',
+}
+
 export function Button({
   label,
   variant = 'secondary',
@@ -103,46 +65,34 @@ export function Button({
   leadingIcon = false,
   disabled = false,
   onClick,
-  className = '',
-  type = 'button'
+  className,
+  type = 'button',
+  'aria-label': ariaLabel,
 }: ButtonProps) {
-  const sz = SIZE[size];
   return (
-    // Figma layer: "Button"
-    <button type={type} onClick={onClick} disabled={disabled} className={`
-        inline-flex items-center justify-center
-        font-heading font-semibold rounded-lg
-        transition-all duration-150 select-none cursor-pointer
-        ${VARIANT_HOVER[variant]}
-        ${disabled ? 'opacity-40 cursor-not-allowed pointer-events-none' : ''}
-        ${className}
-      `} style={{
-      height: sz.height,
-      padding: `0 ${sz.px}`,
-      fontSize: sz.fontSize,
-      gap: sz.gap,
-      lineHeight: 1,
-      whiteSpace: 'nowrap',
-      ...VARIANT_STYLE[variant]
-    }}>
-      {/* Figma layer: "LeadingIcon" — present only when leadingIcon=true */}
-      {leadingIcon && <ChevronLeftIcon style={{
-        width: '14px',
-        height: '14px',
-        flexShrink: 0
-      }} />}
-
-      {/* Figma layer: "Label" */}
+    <DSButton
+      type={type}
+      variant={VARIANT_MAP[variant]}
+      size={SIZE_MAP[size]}
+      disabled={disabled}
+      onClick={onClick}
+      className={className}
+      aria-label={ariaLabel}
+      style={variant === 'primary' ? PRIMARY_BRAND_OVERRIDE : undefined}
+    >
+      {leadingIcon && (
+        <i
+          className="fa-light fa-chevron-left"
+          aria-hidden="true"
+          style={{ fontSize: 14, flexShrink: 0 }}
+        />
+      )}
       {label}
-
-      {/* Figma layer: "TrailingIcon" — present only when icon is passed */}
-      {icon && !leadingIcon && <span style={{
-        display: 'flex',
-        alignItems: 'center',
-        flexShrink: 0
-      }}>
+      {icon && !leadingIcon && (
+        <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
           {icon}
-        </span>}
-    </button>);
-
+        </span>
+      )}
+    </DSButton>
+  )
 }

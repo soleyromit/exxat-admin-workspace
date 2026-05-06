@@ -1,5 +1,7 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { questions } from './data/questions';
+import { MOCK_ASSESSMENTS } from './data/assessments';
 import { useTimer } from './hooks/useTimer';
 import { useZoom } from './hooks/useZoom';
 import { ExamToolbar } from './components/ExamToolbar';
@@ -34,9 +36,20 @@ const MCQ_TYPES = new Set([
 'chart']
 );
 export function App() {
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, any>>({});
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
+  // Aarti-mandated: per-question comments — students flag perceived errors,
+  // faculty review post-exam. Driven by Assessment.allowComments.
+  const [comments, setComments] = useState<Record<number, string>>({});
+  const assessment =
+    MOCK_ASSESSMENTS.find(a => a.id === id) ?? MOCK_ASSESSMENTS[0];
+  const allowComments = assessment?.allowComments ?? false;
+  const handleCommentChange = useCallback((questionId: number, text: string) => {
+    setComments(prev => ({ ...prev, [questionId]: text }));
+  }, []);
   // UI States
   const [showSidebar, setShowSidebar] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
@@ -56,7 +69,7 @@ export function App() {
   useState(true);
   const { formatted: timerFormatted, totalSeconds } = useTimer(7200);
   const isLastFiveMinutes = totalSeconds <= 300;
-  const { zoomPercent, setZoom, zoomIn, zoomOut, announcement } = useZoom();
+  const { zoomPercent, zoomIn, zoomOut, announcement } = useZoom();
   const currentQuestion = questions[currentIndex];
   const answeredIndices = new Set(
     questions.
@@ -91,16 +104,11 @@ export function App() {
     });
   }, [currentIndex]);
   const handleSubmit = useCallback(() => {
-    const unanswered = questions.length - Object.keys(answers).length;
-    alert(
-      unanswered > 0 ?
-      `You have ${unanswered} unanswered questions. Submit anyway?` :
-      'Exam submitted successfully!'
-    );
-  }, [answers]);
+    navigate(`/exam/${id ?? 'demo'}/submitted`);
+  }, [navigate, id]);
   const handleExit = useCallback(() => {
-    alert('You have exited the exam. Your progress may not be saved.');
-  }, []);
+    navigate('/');
+  }, [navigate]);
   // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -161,7 +169,7 @@ export function App() {
     <div
       className={`h-screen w-full flex flex-col overflow-hidden transition-colors duration-300 theme-${theme}`}
       style={{
-        backgroundColor: 'var(--surface-page)',
+        backgroundColor: 'var(--background)',
         filter:
         colorBlindMode === 'none' ?
         undefined :
@@ -211,8 +219,8 @@ export function App() {
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-md focus:font-heading focus:text-sm focus:font-bold"
         style={{
-          backgroundColor: 'var(--brand-primary)',
-          color: 'var(--brand-primary-text)'
+          backgroundColor: 'var(--brand-color)',
+          color: 'var(--brand-foreground)'
         }}>
         
         Skip to question content
@@ -302,8 +310,11 @@ export function App() {
             onToggleKeyboard={() => setShowKeyboard(!showKeyboard)}
             needsCalculator={needsCalculator}
             needsKeyboard={needsKeyboard}
-            voiceNarrator={voiceNarrator} />
-          
+            voiceNarrator={voiceNarrator}
+            allowComments={allowComments}
+            comment={comments[currentQuestion.id]}
+            onCommentChange={handleCommentChange} />
+
         </main>
       </div>
 

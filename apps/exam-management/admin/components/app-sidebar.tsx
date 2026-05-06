@@ -16,14 +16,16 @@ import {
   Avatar,
   AvatarFallback,
   DropdownMenu,
+  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  Badge,
   useSidebar,
 } from '@exxat/ds/packages/ui/src'
+import { useFacultySession } from '@/lib/faculty-session'
 
 // ── Brand header ──────────────────────────────────────────────────────────────
 function AppHeader() {
@@ -96,10 +98,79 @@ function InstitutionCard() {
   )
 }
 
-// ── User footer ───────────────────────────────────────────────────────────────
+// ── Faculty mode banner — only when role=faculty ──────────────────────────────
+function FacultyModeBadge() {
+  const { role, faculty, hydrated } = useFacultySession()
+  const { state } = useSidebar()
+
+  if (!hydrated || role !== 'faculty' || !faculty) return null
+
+  if (state === 'collapsed') {
+    return (
+      <div
+        className="mx-auto my-1 size-1.5 rounded-full bg-brand ring-3 ring-brand/20"
+        aria-label="Faculty session active"
+      />
+    )
+  }
+
+  const editorCount = faculty.courses.filter(c => c.level === 'editor').length
+  const viewerCount = faculty.courses.filter(c => c.level === 'viewer').length
+
+  return (
+    <div
+      className="mx-2 mb-1 rounded-md px-3 py-1.5 flex items-center gap-2 border-l-2 border-l-brand bg-card border-y border-r border-border"
+      role="status"
+      aria-label="Faculty session active"
+    >
+      <i className="fa-solid fa-id-badge text-brand text-xs" aria-hidden="true" />
+      <div className="grid flex-1 leading-tight min-w-0">
+        <span className="text-[10px] font-medium uppercase tracking-wider text-foreground">
+          Faculty Mode
+        </span>
+        <span className="text-[10px] truncate text-muted-foreground">
+          {editorCount} editor · {viewerCount} viewer
+        </span>
+      </div>
+    </div>
+  )
+}
+
+// ── User footer (role-aware) ──────────────────────────────────────────────────
+const ADMIN_USER = {
+  name: 'Dr. Sarah Thompson',
+  email: 'thompson@university.edu',
+  initials: 'ST',
+  title: 'Academic Administrator',
+}
+
 function UserFooter() {
   const { isMobile } = useSidebar()
-  const user = { name: 'Dr. Thompson', email: 'thompson@university.edu', initials: 'DT' }
+  const { role, faculty, hydrated } = useFacultySession()
+
+  if (!hydrated) {
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton size="lg" className="cursor-default" aria-hidden="true">
+            <div className="h-8 w-8 rounded-full" style={{ background: 'var(--muted)' }} />
+            <div className="grid flex-1 leading-tight min-w-0">
+              <span className="h-3 w-20 rounded" style={{ background: 'var(--muted)' }} />
+            </div>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    )
+  }
+
+  const user = role === 'faculty' && faculty
+    ? {
+        name: `${faculty.title} ${faculty.name}`,
+        email: faculty.email,
+        initials: faculty.initials,
+        title: faculty.department,
+      }
+    : ADMIN_USER
 
   return (
     <SidebarMenu>
@@ -113,13 +184,15 @@ function UserFooter() {
               tooltip={user.name}
             >
               <Avatar className="h-8 w-8 rounded-full shrink-0">
-                <AvatarFallback className="rounded-full text-xs font-bold bg-primary text-primary-foreground">
+                <AvatarFallback
+                  className={`rounded-full text-xs font-bold ${role === 'faculty' ? 'bg-brand text-brand-foreground' : 'bg-primary text-primary-foreground'}`}
+                >
                   {user.initials}
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-start text-sm leading-tight min-w-0">
                 <span className="truncate font-medium">{user.name}</span>
-                <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+                <span className="truncate text-xs text-muted-foreground">{user.title}</span>
               </div>
               <i
                 className="fa-light fa-ellipsis-vertical ms-auto shrink-0"
@@ -130,26 +203,37 @@ function UserFooter() {
           </DropdownMenuTrigger>
 
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-60 rounded-lg"
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-72 rounded-lg"
             side={isMobile ? 'bottom' : 'right'}
             align="end"
             sideOffset={4}
           >
             <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-sm">
-                <Avatar className="h-8 w-8 rounded-full">
-                  <AvatarFallback className="rounded-full text-xs font-bold bg-primary text-primary-foreground">
+              <div className="flex items-center gap-3 px-2 py-2 text-sm">
+                <Avatar className="h-10 w-10 rounded-full">
+                  <AvatarFallback
+                    className={`rounded-full text-sm font-bold ${role === 'faculty' ? 'bg-brand text-brand-foreground' : 'bg-primary text-primary-foreground'}`}
+                  >
                     {user.initials}
                   </AvatarFallback>
                 </Avatar>
-                <div className="grid flex-1 text-start leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
+                <div className="grid flex-1 text-start leading-tight min-w-0">
+                  <span className="truncate font-semibold">{user.name}</span>
                   <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+                  <Badge
+                    variant="secondary"
+                    className="mt-1 w-fit rounded font-mono text-[10px] uppercase tracking-wider bg-muted text-foreground"
+                  >
+                    {role}
+                  </Badge>
                 </div>
               </div>
             </DropdownMenuLabel>
 
             <DropdownMenuSeparator />
+
+            {/* Persona switching now lives in the SiteHeader top-right (PersonaSwitcher).
+                Sidebar shows only profile + log-out. */}
 
             <DropdownMenuGroup>
               <DropdownMenuItem>
@@ -164,7 +248,7 @@ function UserFooter() {
 
             <DropdownMenuSeparator />
 
-            <DropdownMenuItem>
+            <DropdownMenuItem variant="destructive">
               <i className="fa-light fa-arrow-right-from-bracket" aria-hidden="true" />
               Log out
             </DropdownMenuItem>
@@ -176,13 +260,15 @@ function UserFooter() {
 }
 
 // ── Primary nav items ─────────────────────────────────────────────────────────
-const NAV_ITEMS = [
-  {
-    key: 'question-bank',
-    title: 'Question Bank',
-    href: '/question-bank',
-    icon: 'fa-books',
-  },
+//
+// Per Vishaka (May 5 review):
+//   - "Assessment Builder" removed as a top-level entry. Assessments are
+//     ALWAYS built from a course in phase 1. Faculty enters a course →
+//     Assessments tab → Create assessment. The standalone builder violates
+//     this entry point.
+//   - "Student Accommodations" added as a top-level item — it's a one-time
+//     setup per student that follows them to every registered course.
+const NAV_ITEMS_BASE = [
   {
     key: 'courses',
     title: 'Courses',
@@ -190,15 +276,28 @@ const NAV_ITEMS = [
     icon: 'fa-graduation-cap',
   },
   {
-    key: 'assessment-builder',
-    title: 'Assessment Builder',
-    href: '/assessment-builder',
-    icon: 'fa-clipboard-list',
+    key: 'question-bank',
+    title: 'Question Bank',
+    href: '/question-bank',
+    icon: 'fa-books',
+  },
+  {
+    key: 'accommodations',
+    title: 'Student Accommodations',
+    href: '/accommodations',
+    icon: 'fa-universal-access',
+  },
+  {
+    key: 'competency',
+    title: 'Competency',
+    href: '/competency',
+    icon: 'fa-bullseye-arrow',
   },
 ]
 
 // ── Footer utility items ──────────────────────────────────────────────────────
-const FOOTER_NAV = [
+const FOOTER_NAV_BASE = [
+  { key: 'access', title: 'Roles & Access', href: '/access', icon: 'fa-user-gear', adminOnly: true },
   { key: 'settings', title: 'Settings', href: '/settings', icon: 'fa-gear' },
   { key: 'help', title: 'Get Help', href: '/help', icon: 'fa-circle-question' },
 ]
@@ -206,6 +305,10 @@ const FOOTER_NAV = [
 // ── AppSidebar ────────────────────────────────────────────────────────────────
 export function AppSidebar() {
   const pathname = usePathname()
+  const { role, hydrated } = useFacultySession()
+
+  const NAV_ITEMS = NAV_ITEMS_BASE
+  const FOOTER_NAV = FOOTER_NAV_BASE.filter(item => !item.adminOnly || role === 'admin' || !hydrated)
 
   return (
     <Sidebar variant="inset" collapsible="icon">
@@ -216,6 +319,8 @@ export function AppSidebar() {
           <AppHeader />
           <InstitutionCard />
         </SidebarHeader>
+
+        <FacultyModeBadge />
 
         <SidebarSeparator />
 

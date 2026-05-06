@@ -1,6 +1,6 @@
-import React from 'react';
-import { MenuIcon, ChevronUpIcon } from 'lucide-react';
+
 import { tokens } from '../tokens/design-tokens';
+import { Button as DSButton } from '@exxat/ds/packages/ui/src';
 export interface CollapsedNavigatorProps {
   currentIndex: number;
   totalQuestions: number;
@@ -20,8 +20,7 @@ export function CollapsedNavigator({
     borderTop: `1px solid ${tokens.border.default}`
   }}>
       <div className="flex items-center gap-4 overflow-x-auto whitespace-nowrap hide-scrollbar">
-        <span className="font-heading font-bold" style={{
-        fontSize: '16px',
+        <span className="font-bold text-base" style={{
         color: tokens.text.primary
       }}>
           Q{currentIndex + 1} of {totalQuestions}
@@ -31,8 +30,7 @@ export function CollapsedNavigator({
         backgroundColor: tokens.border.medium
       }} />
 
-        <span className="font-heading" style={{
-        fontSize: '14px',
+        <span className="text-sm" style={{
         color: tokens.text.secondary
       }}>
           Answered: <span className="font-bold">{answeredCount}</span>
@@ -42,32 +40,23 @@ export function CollapsedNavigator({
         backgroundColor: tokens.border.medium
       }} />
 
-        <span className="font-heading" style={{
-        fontSize: '14px',
+        <span className="text-sm" style={{
         color: tokens.text.secondary
       }}>
           Flagged: <span className="font-bold">{flaggedCount}</span>
         </span>
       </div>
 
-      <button onClick={onExpand} className="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 shrink-0 ml-4" style={{
-      border: `1px solid ${tokens.border.medium}`,
-      color: tokens.text.primary,
-      outlineColor: tokens.brand.primary
-    }} aria-label="Expand Question Navigator">
-        <MenuIcon style={{
-        width: '16px',
-        height: '16px'
-      }} />
-        <span className="font-heading font-semibold hidden sm:inline" style={{
-        fontSize: '14px'
-      }}>
-          Navigator
-        </span>
-        <ChevronUpIcon style={{
-        width: '16px',
-        height: '16px'
-      }} />
-      </button>
+      <DSButton
+        variant="outline"
+        size="sm"
+        onClick={onExpand}
+        aria-label="Expand Question Navigator"
+        className="shrink-0 ml-4"
+      >
+        <i className="fa-light fa-bars" aria-hidden="true" style={{ fontSize: 14 }} />
+        <span className="font-semibold hidden sm:inline">Navigator</span>
+        <i className="fa-light fa-chevron-up" aria-hidden="true" style={{ fontSize: 14 }} />
+      </DSButton>
     </div>;
 }

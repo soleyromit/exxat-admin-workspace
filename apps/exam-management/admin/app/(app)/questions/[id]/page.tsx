@@ -1,5 +1,6 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Badge } from '@exxat/ds/packages/ui/src'
+import { Badge, Button } from '@exxat/ds/packages/ui/src'
 import { SiteHeader } from '@/components/site-header'
 import { MOCK_QB_QUESTIONS } from '@/lib/qb-mock-data'
 import { MOCK_QB_FOLDERS } from '@/lib/qb-mock-data'
@@ -44,7 +45,7 @@ export default async function QuestionDetailPage({ params }: PageProps) {
             color: 'var(--card-foreground)',
           }}
         >
-          <div className="mb-6 flex flex-wrap gap-2">
+          <div className="mb-6 flex flex-wrap items-center gap-2">
             <Badge variant="secondary" className="rounded">
               {TYPE_LABELS[question.type] ?? question.type}
             </Badge>
@@ -54,6 +55,12 @@ export default async function QuestionDetailPage({ params }: PageProps) {
             <Badge variant="secondary" className="rounded font-mono text-xs">
               {question.code}
             </Badge>
+            <Button asChild variant="outline" size="sm" className="ms-auto gap-1.5">
+              <Link href={`/questions/${question.id}/edit`}>
+                <i className="fa-light fa-pen" aria-hidden="true" />
+                Edit question
+              </Link>
+            </Button>
           </div>
 
           <h2 className="mb-6 text-xl font-semibold">{question.title}</h2>

@@ -7,13 +7,48 @@
 
 ## This Product's Identity
 
-| App | Package | Port | Path |
-|---|---|---|---|
-| Admin | @exxat/exam-management-admin | 3001 | apps/exam-management/admin/ |
-| Student | @exxat/exam-management-student | 3002 | apps/exam-management/student/ |
+| App | Package | Port | Path | Stack |
+|---|---|---|---|---|
+| Admin | @exxat/exam-management-admin | 3001 | apps/exam-management/admin/ | Next.js 16 + Tailwind v4 + Exxat-DS |
+| Student (Next) | @exxat/exam-management-student | 3002 | apps/exam-management/student/ | scaffolded · empty |
+| Assessment Taker | @exxat/exam-management-student (Vite) | 5174 | apps/exam-management/assessment-taker/ | Vite 5 + React 19 + Tailwind v4 + **Exxat-DS** |
 
-**Status:** Active build — Question Bank hub is the current focus.
+**Status:** Active build — Question Bank hub (admin) + Assessment Taker UI pass (student exam-taking surface) are the current focus.
 **Design reference:** https://www.magicpatterns.com/c/kq8sem88owbpxfzmopj8in/preview
+
+### DS choice — assessment-taker exception
+
+The workspace-level CLAUDE.md says "Admin DS for admin apps, Student DS (studentUX) for student apps." The `assessment-taker/` is a student-facing surface but **uses Exxat-DS (admin DS)** — exception, scoped to this app.
+
+**Why:** studentUX DS source has setup gaps that block reliable use in this app today:
+- Components include version-pinned imports (`@radix-ui/react-slot@1.1.2`) that require Vite alias rewrites in every consuming app.
+- `studentUX/src/components/ui/badge.tsx` has a TS conflict (`style` prop typed as `"solid" | "outline" | "soft"` collides with `React.CSSProperties`), so the component can't be used with inline styles.
+- studentUX's compiled CSS is Tailwind v4-only output; consuming a v3 app dropped most utility classes silently.
+
+Exxat-DS imports cleanly into the assessment-taker once the app is on Tailwind v4 + React 19 (matches the admin app's stack).
+
+**Switch-back path:** When studentUX resolves the issues above, swap `@exxat/ds/packages/ui/src` imports back to `@exxat/student/components/ui/*`. The `vite.config.ts` and `tsconfig.json` keep the `@exxat/student` alias in place specifically so this is a code-search-and-replace, not a config change.
+
+**Configuration anchors** (verify before/after switching):
+- `apps/exam-management/assessment-taker/vite.config.ts` — `@exxat/ds` and `@exxat/student` aliases both present.
+- `apps/exam-management/assessment-taker/tsconfig.json` — same paths.
+- `apps/exam-management/assessment-taker/src/index.css` — imports `exxat-ds/packages/ui/src/theme.css` today; switch to `studentUX/src/styles/globals.css` when reverting.
+- `apps/exam-management/assessment-taker/index.html` — `class="theme-prism"` (Exxat-DS native); switch to `class="theme-rose"` when on studentUX.
+- `apps/exam-management/assessment-taker/package.json` — Tailwind v4, `@tailwindcss/vite`, React 19. No `tailwind.config.js`, no `postcss.config.js` (v4 uses Vite plugin + CSS `@theme`).
+
+### Local conventions inside assessment-taker
+
+| Surface | Component used |
+|---|---|
+| Buttons | DS `Button` from `@exxat/ds/packages/ui/src` |
+| Avatars | DS `Avatar`, `AvatarFallback` |
+| Status chips (exam-specific colored pills) | Local `components/ExamBadge.tsx` — wraps DS Badge shape, accepts inline `bg`/`fg`/`dot` props for the exam state palette (success/warning/info/error/lockdown) |
+| In-exam comment box | Local `components/QuestionCommentBox.tsx` — Aarti-mandated, gated by `Assessment.allowComments` |
+| Lockdown review session | `pages/ReviewSession.tsx` at `/exam/:id/review` — full-screen, no NavShell, UI-level copy/screenshot block (real lockdown: Q4 2026 / Jan 2027 vendor TBD) |
+
+### Exam engine (`App.tsx` + ~25 components) — outside DS migration scope today
+
+The exam engine still uses local `components/Button.tsx`, `components/NextButton.tsx`, and `tokens/design-tokens.ts`. These are intentionally retained until a focused exam-engine pass — the engine is heavily accessibility-tested and the DS pass risks regressing voice-narrator, zoom, lockdown affordances. Plan to migrate engine in a separate sweep post-Vishaka (May 5) / Aarti (May 7) reviews.
 
 ---
 

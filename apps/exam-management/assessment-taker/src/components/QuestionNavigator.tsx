@@ -39,7 +39,6 @@ import React from 'react';
  * TOKEN USAGE
  *   See VARIANT STATES above — all from tokens/design-tokens.ts
  */
-import { FlagIcon } from 'lucide-react';
 import { Button } from './Button';
 import { questions } from '../data/questions';
 import { tokens } from '../tokens/design-tokens';
@@ -63,7 +62,7 @@ function getGridItemStyle(index: number, currentIndex: number, answeredSet: Set<
     backgroundColor: tokens.state.currentBg,
     color: tokens.text.inverse,
     border: `1px solid ${tokens.state.currentBg}`,
-    boxShadow: '0px 2px 4px -2px rgba(0,0,0,0.1)'
+    boxShadow: '0px 2px 4px -2px var(--shadow-card, rgba(0,0,0,0.1))'
   };
   if (isFlagged) return {
     backgroundColor: tokens.state.flaggedBg,
@@ -110,7 +109,7 @@ export function QuestionNavigator({
       <div className="flex flex-col" style={{
         backgroundColor: tokens.surface.white,
         borderRadius: '8px',
-        boxShadow: '0px 1px 2px rgba(0,0,0,0.05)'
+        boxShadow: '0px 1px 2px var(--shadow-card, rgba(0,0,0,0.05))'
       }}>
         {/* Figma layer: "Nav/Header" */}
         <div style={{
@@ -120,16 +119,14 @@ export function QuestionNavigator({
             gap: '2px'
           }}>
             {/* Figma layer: "Nav/Title" */}
-            <h3 className="font-heading font-bold" style={{
-              fontSize: '16px',
+            <h3 className="font-bold text-base" style={{
               lineHeight: '24px',
               color: tokens.text.primary
             }}>
               Question Navigator
             </h3>
             {/* Figma layer: "Nav/Subtitle" */}
-            <p className="font-heading" style={{
-              fontSize: '14px',
+            <p className="text-sm" style={{
               lineHeight: '24px',
               color: tokens.text.subtle
             }}>
@@ -153,11 +150,10 @@ export function QuestionNavigator({
             }, (_, i) =>
             // Figma layer: "GridItem" (variant state applied via getGridItemStyle)
             <div key={i} className="relative">
-                  <button onClick={() => onNavigate(i)} className="font-heading font-semibold transition-all hover:opacity-80" style={{
+                  <button onClick={() => onNavigate(i)} className="font-semibold text-sm transition-all hover:opacity-80" style={{
                 width: '40px',
                 height: '40px',
                 borderRadius: '8px',
-                fontSize: '14px',
                 lineHeight: '20px',
                 display: 'flex',
                 alignItems: 'center',
@@ -178,8 +174,7 @@ export function QuestionNavigator({
                 bottom: '-3px',
                 right: '-2px'
               }}>
-                        <span className="font-heading font-bold" style={{
-                  fontSize: '8px',
+                        <span className="font-bold text-[8px]" style={{
                   color: tokens.text.inverse
                 }}>
                           !
@@ -230,8 +225,7 @@ export function QuestionNavigator({
                 border: `1px solid ${border}`,
                 display: 'inline-block'
               }} />
-                <span className="font-heading" style={{
-                fontSize: '12px',
+                <span className="text-xs" style={{
                 lineHeight: '16px',
                 color: tokens.text.muted
               }}>
@@ -253,17 +247,17 @@ export function QuestionNavigator({
                 borderRadius: '9999px',
                 backgroundColor: tokens.semantic.errorDot,
                 border: `1px solid ${tokens.surface.white}`,
-                boxShadow: '0px 1px 2px rgba(0,0,0,0.05)',
+                boxShadow: '0px 1px 2px var(--shadow-card, rgba(0,0,0,0.05))',
                 display: 'inline-flex'
               }}>
-                <span className="font-heading font-bold" style={{
+                <span className="font-bold" style={{
                   fontSize: '8px',
                   color: tokens.text.inverse
                 }}>
                   !
                 </span>
               </span>
-              <span className="font-heading" style={{
+              <span className="" style={{
                 fontSize: '12px',
                 lineHeight: '16px',
                 color: tokens.text.muted
@@ -281,10 +275,7 @@ export function QuestionNavigator({
           flexDirection: 'column',
           gap: '8px'
         }}>
-          <Button label={isFlaggedCurrent ? 'Unflag Question' : 'Flag for Review'} variant="secondary" icon={<FlagIcon style={{
-            width: '14px',
-            height: '14px'
-          }} />} onClick={onToggleFlag} className={`w-full ${isFlaggedCurrent ? '!border-amber-400 !text-amber-600 !bg-amber-50' : ''}`} />
+          <Button label={isFlaggedCurrent ? 'Unflag Question' : 'Flag for Review'} variant="secondary" icon={<i className={`${isFlaggedCurrent ? 'fa-solid' : 'fa-light'} fa-flag`} aria-hidden="true" style={{ fontSize: 14 }} />} onClick={onToggleFlag} className={`w-full ${isFlaggedCurrent ? '!border-amber-400 !text-amber-600 !bg-amber-50' : ''}`} />
           <Button label="Submit Exam" variant="primary" onClick={onSubmit} className="w-full" />
         </div>
 
@@ -298,8 +289,7 @@ export function QuestionNavigator({
           <div className="flex items-center justify-between" style={{
             marginBottom: '8px'
           }}>
-            {[`Answered: ${answeredCount}`, `Flagged: ${flaggedCount}`, `Skipped: ${skippedCount}`].map((label) => <span key={label} className="font-heading" style={{
-              fontSize: '14px',
+            {[`Answered: ${answeredCount}`, `Flagged: ${flaggedCount}`, `Skipped: ${skippedCount}`].map((label) => <span key={label} className="text-sm" style={{
               lineHeight: '20px',
               color: tokens.text.muted
             }}>

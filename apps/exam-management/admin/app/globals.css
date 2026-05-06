@@ -2,6 +2,28 @@
 @import "tailwindcss";
 @source '../../../../exxat-ds/packages/ui/src/**/*.{ts,tsx}';
 
+/* ── DS Tabs fix — DS sets data-orientation="horizontal" but its Tailwind
+   classes look for `data-horizontal` (a non-existent attribute). That breaks
+   both the column layout and the line-variant active underline. Mirror the
+   intended styles here so consumers get DS behavior without per-page hacks. */
+[data-slot="tabs"][data-orientation="horizontal"] {
+  display: flex;
+  flex-direction: column;
+}
+[data-slot="tabs"][data-orientation="vertical"] {
+  display: flex;
+  flex-direction: row;
+}
+[data-slot="tabs-list"][data-variant="line"] [data-slot="tabs-trigger"][data-active="true"]::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: -5px;
+  height: 2px;
+  background: var(--foreground);
+  opacity: 1;
+}
+
 /* ── Sidebar token — defined in globals.css, not theme.css ─────────────────── */
 :root {
   --sidebar: var(--brand-tint);
@@ -165,4 +187,23 @@
 }
 .folder-highlight {
   animation: folder-highlight 1500ms ease forwards;
+}
+
+/* Soft pulse for "live now" badges and real-time indicators */
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(0.95); }
+}
+
+/* Sidebar icon pop — referenced by app-sidebar */
+@keyframes sidebar-icon-pop {
+  0%   { transform: scale(1); }
+  60%  { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+/* Course-card open-row tokens (admin courses table only — DO NOT touch QB tokens) */
+:root {
+  --courses-row-open-bg: color-mix(in oklch, var(--brand-tint) 50%, var(--background));
+  --courses-offering-row-bg: color-mix(in oklch, var(--brand-tint) 22%, var(--background));
 }

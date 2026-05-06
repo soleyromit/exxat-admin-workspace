@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { MinusIcon, PlusIcon, AArrowUpIcon, AArrowDownIcon } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
 import { tokens } from '../tokens/design-tokens';
+import { Button as DSButton } from '@exxat/ds/packages/ui/src';
 export interface ZoomControlProps {
   zoomPercent: number;
   setZoom: (val: number) => void;
@@ -56,39 +56,42 @@ export function ZoomControl({
   const sliderPercent = (zoomPercent - 100) / 300 * 100;
   return <div className="relative">
       {/* Trigger Button */}
-      <button ref={triggerRef} onClick={() => setIsOpen(!isOpen)} className="flex items-center justify-center rounded-lg transition-colors hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 relative group" style={{
-      width: '44px',
-      height: '44px',
-      backgroundColor: isOpen ? tokens.brand.primaryBg : 'transparent',
-      color: isOpen ? tokens.brand.primary : tokens.text.placeholder,
-      outlineColor: tokens.brand.primary
-    }} aria-label={`Text size (currently ${zoomPercent}%)`} aria-expanded={isOpen} aria-haspopup="dialog" title="Ctrl + = to increase, Ctrl + - to decrease">
+      <DSButton
+        ref={triggerRef}
+        variant="ghost"
+        size="icon-lg"
+        onClick={() => setIsOpen(!isOpen)}
+        aria-label={`Text size (currently ${zoomPercent}%)`}
+        aria-expanded={isOpen}
+        aria-haspopup="dialog"
+        title="Ctrl + = to increase, Ctrl + - to decrease"
+        className="relative group"
+        style={{
+          backgroundColor: isOpen ? tokens.brand.primaryBg : undefined,
+          color: isOpen ? tokens.brand.primary : tokens.text.placeholder,
+        }}
+      >
         <div className="flex items-end gap-[1px]">
-          <span className="font-heading font-bold" style={{
-          fontSize: '12px'
-        }}>
-            A
-          </span>
-          <span className="font-heading font-bold" style={{
-          fontSize: '18px',
-          lineHeight: '18px'
-        }}>
-            A
-          </span>
+          <span className="font-bold text-xs">A</span>
+          <span className="font-bold text-lg" style={{ lineHeight: '18px' }}>A</span>
         </div>
 
         {/* Persistent Badge */}
-        {zoomPercent > 100 && <span className="absolute -bottom-1 -right-1 font-heading font-bold rounded-full flex items-center justify-center" style={{
-        backgroundColor: tokens.brand.primary,
-        color: tokens.text.inverse,
-        fontSize: '9px',
-        padding: '2px 4px',
-        border: `1px solid ${tokens.surface.white}`,
-        lineHeight: 1
-      }}>
+        {zoomPercent > 100 && (
+          <span
+            className="absolute -bottom-1 -right-1 font-bold text-[9px] rounded-full flex items-center justify-center"
+            style={{
+              backgroundColor: tokens.brand.primary,
+              color: tokens.text.inverse,
+              padding: '2px 4px',
+              border: `1px solid ${tokens.surface.white}`,
+              lineHeight: 1,
+            }}
+          >
             {zoomPercent}%
-          </span>}
-      </button>
+          </span>
+        )}
+      </DSButton>
 
       {/* Floating Panel */}
       {isOpen && <div ref={panelRef} className="absolute top-full mt-2 right-0 z-50 overflow-hidden" role="dialog" aria-label="Text size controls" style={{
@@ -97,7 +100,7 @@ export function ZoomControl({
       border: `1px solid ${tokens.border.default}`,
       borderRadius: '12px',
       // Using border instead of heavy shadow for lockdown browser compatibility
-      boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+      boxShadow: '0 4px 12px var(--shadow-card, rgba(0,0,0,0.08))'
     }}>
           {/* Header */}
           <div className="flex items-center justify-between" style={{
@@ -105,14 +108,12 @@ export function ZoomControl({
         backgroundColor: tokens.surface.subtle,
         borderBottom: `1px solid ${tokens.border.default}`
       }}>
-            <span className="font-heading font-semibold" style={{
-          fontSize: '14px',
+            <span className="font-semibold text-sm" style={{
           color: tokens.text.primary
         }}>
               Text size
             </span>
-            <span className="font-heading font-bold" style={{
-          fontSize: '14px',
+            <span className="font-bold text-sm" style={{
           color: tokens.brand.primary
         }}>
               {zoomPercent}%
@@ -127,25 +128,17 @@ export function ZoomControl({
             <div className="flex items-center justify-between mb-6" style={{
           gap: '12px'
         }}>
-              <button onClick={zoomOut} disabled={zoomPercent <= 100} className="flex items-center justify-center rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2" style={{
-            width: '32px',
-            height: '32px',
-            flexShrink: 0,
-            border: `1px solid ${zoomPercent > 100 ? tokens.border.default : tokens.surface.subtle}`,
-            color: zoomPercent > 100 ? tokens.text.secondary : tokens.text.placeholder,
-            cursor: zoomPercent > 100 ? 'pointer' : 'not-allowed',
-            outlineColor: tokens.brand.primary
-          }} aria-label="Decrease text size">
-                <span className="font-heading font-bold" style={{
-              fontSize: '12px'
-            }}>
-                  A
-                </span>
-                <MinusIcon style={{
-              width: '10px',
-              height: '10px'
-            }} />
-              </button>
+              <DSButton
+                variant="outline"
+                size="icon-sm"
+                onClick={zoomOut}
+                disabled={zoomPercent <= 100}
+                aria-label="Decrease text size"
+                className="shrink-0"
+              >
+                <span className="font-bold text-xs">A</span>
+                <i className="fa-light fa-minus" aria-hidden="true" style={{ fontSize: 10 }} />
+              </DSButton>
 
               <div className="relative flex-1 flex items-center h-8">
                 {/* Custom Slider Track */}
@@ -166,10 +159,8 @@ export function ZoomControl({
                       <div className="w-[1px] h-1 mb-1" style={{
                   backgroundColor: tokens.border.medium
                 }} />
-                      <span className="font-heading" style={{
-                  fontSize: '10px',
-                  color: tick === zoomPercent ? tokens.brand.primary : tokens.text.muted,
-                  fontWeight: tick === zoomPercent ? 600 : 400
+                      <span className={`text-[10px] ${tick === zoomPercent ? 'font-semibold' : 'font-normal'}`} style={{
+                  color: tick === zoomPercent ? tokens.brand.primary : tokens.text.muted
                 }}>
                         {tick}
                       </span>
@@ -187,25 +178,17 @@ export function ZoomControl({
             }} />
               </div>
 
-              <button onClick={zoomIn} disabled={zoomPercent >= 400} className="flex items-center justify-center rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2" style={{
-            width: '32px',
-            height: '32px',
-            flexShrink: 0,
-            border: `1px solid ${zoomPercent < 400 ? tokens.border.default : tokens.surface.subtle}`,
-            color: zoomPercent < 400 ? tokens.text.secondary : tokens.text.placeholder,
-            cursor: zoomPercent < 400 ? 'pointer' : 'not-allowed',
-            outlineColor: tokens.brand.primary
-          }} aria-label="Increase text size">
-                <span className="font-heading font-bold" style={{
-              fontSize: '16px'
-            }}>
-                  A
-                </span>
-                <PlusIcon style={{
-              width: '10px',
-              height: '10px'
-            }} />
-              </button>
+              <DSButton
+                variant="outline"
+                size="icon-sm"
+                onClick={zoomIn}
+                disabled={zoomPercent >= 400}
+                aria-label="Increase text size"
+                className="shrink-0"
+              >
+                <span className="font-bold text-base">A</span>
+                <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 10 }} />
+              </DSButton>
             </div>
 
             {/* Live Preview */}
@@ -214,7 +197,7 @@ export function ZoomControl({
           border: `1px solid ${tokens.border.default}`,
           minHeight: '60px'
         }} aria-hidden="true">
-              <span className="font-heading text-center whitespace-nowrap" style={{
+              <span className="text-center whitespace-nowrap" style={{
             fontSize: `${14 * (zoomPercent / 100)}px`,
             color: tokens.text.primary,
             lineHeight: 1.2
@@ -225,13 +208,14 @@ export function ZoomControl({
 
             {/* Reset Link */}
             <div className="text-center">
-              <button onClick={resetZoom} disabled={zoomPercent === 100} className="font-heading text-sm hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 rounded px-2 py-1" style={{
-            color: zoomPercent === 100 ? tokens.text.placeholder : tokens.text.subtle,
-            cursor: zoomPercent === 100 ? 'default' : 'pointer',
-            outlineColor: tokens.brand.primary
-          }}>
+              <DSButton
+                variant="link"
+                size="sm"
+                onClick={resetZoom}
+                disabled={zoomPercent === 100}
+              >
                 Reset to default
-              </button>
+              </DSButton>
             </div>
           </div>
         </div>}

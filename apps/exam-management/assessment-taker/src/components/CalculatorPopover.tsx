@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { XIcon } from 'lucide-react';
+import { useState } from 'react';
+import { Button as DSButton } from '@exxat/ds/packages/ui/src';
 export interface CalculatorPopoverProps {
   isOpen: boolean;
   onClose: () => void;
@@ -107,55 +107,42 @@ export function CalculatorPopover({
       <div
         className="shadow-lg rounded-2xl overflow-hidden border"
         style={{
-          backgroundColor: 'var(--surface-white)',
-          borderColor: 'var(--border-default)',
+          backgroundColor: 'var(--card)',
+          borderColor: 'var(--border)',
           maxWidth: inline ? '320px' : undefined
         }}>
         
         <div
           className="flex justify-between items-center p-3 border-b"
           style={{
-            backgroundColor: 'var(--surface-subtle)',
-            borderColor: 'var(--border-default)'
+            backgroundColor: 'var(--muted)',
+            borderColor: 'var(--border)'
           }}>
           
           <span
-            className="font-heading font-semibold text-sm"
+            className="font-semibold text-sm"
             style={{
-              color: 'var(--text-primary)'
+              color: 'var(--foreground)'
             }}>
             
             Calculator
           </span>
-          <button
-            onClick={onClose}
-            className="p-1 rounded transition-colors"
-            style={{
-              color: 'var(--text-muted)'
-            }}
-            onMouseEnter={(e) => {
-              ;(e.currentTarget as HTMLElement).style.backgroundColor =
-              'var(--surface-subtle)';
-            }}
-            onMouseLeave={(e) => {
-              ;(e.currentTarget as HTMLElement).style.backgroundColor = '';
-            }}>
-            
-            <XIcon size={16} />
-          </button>
+          <DSButton variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close calculator">
+            <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 16 }} />
+          </DSButton>
         </div>
 
         <div
           className="p-4"
           style={{
-            backgroundColor: 'var(--surface-subtle)'
+            backgroundColor: 'var(--muted)'
           }}>
           
           <div
             className="w-full p-3 text-right font-mono text-3xl rounded-lg mb-4 overflow-hidden"
             style={{
-              backgroundColor: '#1E293B',
-              color: '#FFFFFF'
+              backgroundColor: 'var(--calc-display-bg, #1E293B)',
+              color: 'var(--primary-foreground)'
             }}>
             
             {display}
@@ -190,19 +177,19 @@ export function CalculatorPopover({
                 <button
                   key={i}
                   onClick={() => handleButton(btn)}
-                  className={`h-12 rounded-lg font-heading text-lg font-medium transition-colors active:scale-95 ${isZero ? 'col-span-2' : ''}`}
+                  className={`h-12 rounded-lg text-lg font-medium transition-colors active:scale-95 ${isZero ? 'col-span-2' : ''}`}
                   style={{
                     backgroundColor: isEquals ?
-                    'var(--brand-primary)' :
+                    'var(--brand-color)' :
                     isOp ?
-                    'var(--surface-subtle)' :
-                    'var(--surface-white)',
+                    'var(--muted)' :
+                    'var(--card)',
                     color: isEquals ?
-                    '#FFFFFF' :
+                    'var(--primary-foreground)' :
                     isOp ?
-                    'var(--text-primary)' :
-                    'var(--text-primary)',
-                    border: `1px solid var(--border-default)`
+                    'var(--foreground)' :
+                    'var(--foreground)',
+                    border: `1px solid var(--border)`
                   }}>
                   
                   {btn}

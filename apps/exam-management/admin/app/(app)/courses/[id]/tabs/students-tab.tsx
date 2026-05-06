@@ -1,0 +1,308 @@
+'use client'
+
+/**
+ * STUDENTS TAB — course-scoped student roster.
+ *
+ * Aarti's email: "Students registered for that course" as one of the four sections.
+ * Surfaces:
+ *   - Per-student average across course assessments
+ *   - At-risk flagging (bottom-20%) for intervention
+ *   - Accommodation chip when applicable
+ *   - Click row → drawer with per-assessment breakdown (scaffolded)
+ */
+
+import { useState, useMemo } from 'react'
+import {
+  Avatar, AvatarFallback,
+  Button, InputGroup, InputGroupAddon, InputGroupInput,
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+  Tooltip, TooltipTrigger, TooltipContent,
+} from '@exxat/ds/packages/ui/src'
+import { StatusPill, MetricBar } from '@/components/faculty-ui-kit'
+import { InterventionDialog } from '@/components/intervention-dialog'
+import { StubButton } from '@/components/stub-button'
+import { courseObjectives } from '@/lib/faculty-mock-data'
+import type { Student, Accommodation } from '@/lib/faculty-mock-data'
+
+interface StudentsTabProps {
+  students: Student[]
+  courseId: string
+  accommodations: Accommodation[]
+}
+
+type FilterState = 'all' | 'at-risk' | 'top-performer' | 'with-accommodation'
+
+export function StudentsTab({ students, courseId, accommodations }: StudentsTabProps) {
+  const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState<FilterState>('all')
+  const [interveneStudent, setInterveneStudent] = useState<Student | null>(null)
+  const courseObjs = useMemo(
+    () => courseObjectives.filter(o => o.courseId === courseId),
+    [courseId]
+  )
+
+  const accByStudent = useMemo(() => {
+    const m = new Map<string, Accommodation[]>()
+    for (const a of accommodations) {
+      if (!m.has(a.studentId)) m.set(a.studentId, [])
+      m.get(a.studentId)!.push(a)
+    }
+    return m
+  }, [accommodations])
+
+  const filtered = useMemo(() => {
+    return students.filter(s => {
+      const matchQuery = !query ||
+        s.firstName.toLowerCase().includes(query.toLowerCase()) ||
+        s.lastName.toLowerCase().includes(query.toLowerCase()) ||
+        s.studentId.toLowerCase().includes(query.toLowerCase())
+      if (filter === 'all') return matchQuery
+      if (filter === 'at-risk') return matchQuery && s.status === 'at-risk'
+      if (filter === 'top-performer') return matchQuery && s.status === 'top-performer'
+      if (filter === 'with-accommodation') return matchQuery && accByStudent.has(s.id)
+      return matchQuery
+    })
+  }, [students, query, filter, accByStudent])
+
+  const atRiskCount = students.filter(s => s.status === 'at-risk').length
+  const topCount = students.filter(s => s.status === 'top-performer').length
+  const withAcc = students.filter(s => accByStudent.has(s.id)).length
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Roster summary strip */}
+      <section className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(160px,1fr))]">
+        <RosterTile icon="fa-users" label="Enrolled" value={students.length} tone="brand" active={filter === 'all'} onClick={() => setFilter('all')} />
+        <RosterTile icon="fa-triangle-exclamation" label="At-risk" value={atRiskCount} tone="warning" sub="Bottom 20% by avg" active={filter === 'at-risk'} onClick={() => setFilter('at-risk')} />
+        <RosterTile icon="fa-trophy" label="Top performers" value={topCount} tone="success" sub="Top 20% by avg" active={filter === 'top-performer'} onClick={() => setFilter('top-performer')} />
+        <RosterTile icon="fa-universal-access" label="With accommodation" value={withAcc} tone="info" active={filter === 'with-accommodation'} onClick={() => setFilter('with-accommodation')} />
+      </section>
+
+      {/* Toolbar */}
+      <section className="flex items-center gap-3 flex-wrap">
+        <InputGroup className="w-full max-w-sm">
+          <InputGroupAddon align="inline-start">
+            <i className="fa-light fa-magnifying-glass text-muted-foreground" aria-hidden="true" />
+          </InputGroupAddon>
+          <InputGroupInput
+            type="search"
+            placeholder="Search by name or student ID…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </InputGroup>
+        <Select value={filter} onValueChange={(v) => setFilter(v as FilterState)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All students</SelectItem>
+            <SelectItem value="at-risk">At-risk only</SelectItem>
+            <SelectItem value="top-performer">Top performers</SelectItem>
+            <SelectItem value="with-accommodation">With accommodation</SelectItem>
+          </SelectContent>
+        </Select>
+        <span className="ms-auto text-xs text-muted-foreground">
+          {filtered.length} of {students.length} students
+        </span>
+        <StubButton variant="outline" size="sm" className="gap-1.5">
+          <i className="fa-light fa-arrow-down-to-line" aria-hidden="true" />
+          Export
+        </StubButton>
+      </section>
+
+      {/* Roster table */}
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="grid items-center gap-3 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border grid-cols-[32px_minmax(220px,2fr)_110px_100px_110px_60px]">
+          <div></div>
+          <div>Student</div>
+          <div>Cohort</div>
+          <div>Avg score</div>
+          <div>Last activity</div>
+          <div></div>
+        </div>
+        {filtered.length === 0 ? (
+          <div className="px-6 py-12 text-center">
+            <p className="font-semibold text-foreground">No students match this filter</p>
+            <p className="text-sm text-muted-foreground mt-1">Try adjusting your search.</p>
+          </div>
+        ) : (
+          filtered.map(s => (
+            <StudentRow
+              key={s.id}
+              student={s}
+              accommodations={accByStudent.get(s.id) ?? []}
+              courseId={courseId}
+              onIntervene={() => setInterveneStudent(s)}
+            />
+          ))
+        )}
+      </div>
+
+      {/* Intervention dialog — Aarti's bottom-20% workflow */}
+      <InterventionDialog
+        open={!!interveneStudent}
+        onOpenChange={(open) => !open && setInterveneStudent(null)}
+        student={interveneStudent}
+        courseId={courseId}
+        objectives={courseObjs}
+        accommodations={accommodations}
+      />
+    </div>
+  )
+}
+
+// ─── Roster tone classes ────────────────────────────────────────────────────
+const TILE_TONE: Record<'brand' | 'info' | 'warning' | 'success', {
+  iconBg: string; iconFg: string; valueFg: string; activeBg: string; activeBorder: string
+}> = {
+  brand:   { iconBg: 'bg-brand/12',     iconFg: 'text-brand-dark',   valueFg: 'text-brand-dark',   activeBg: 'bg-brand/7',     activeBorder: 'border-brand/40' },
+  info:    { iconBg: 'bg-chart-1/14',   iconFg: 'text-chart-1',      valueFg: 'text-chart-1',      activeBg: 'bg-chart-1/7',   activeBorder: 'border-chart-1/40' },
+  warning: { iconBg: 'bg-chart-4/16',   iconFg: 'text-chart-4',      valueFg: 'text-chart-4',      activeBg: 'bg-chart-4/8',   activeBorder: 'border-chart-4/40' },
+  success: { iconBg: 'bg-chart-2/16',   iconFg: 'text-chart-2',      valueFg: 'text-chart-2',      activeBg: 'bg-chart-2/8',   activeBorder: 'border-chart-2/40' },
+}
+
+function RosterTile({
+  icon, label, value, tone, sub, active, onClick,
+}: {
+  icon: string; label: string; value: number; tone: 'brand' | 'info' | 'warning' | 'success'
+  sub?: string; active: boolean; onClick: () => void
+}) {
+  const t = TILE_TONE[tone]
+  return (
+    <button
+      onClick={onClick}
+      className={`text-start rounded-xl border bg-card px-4 py-3 flex items-center gap-3 transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer ${active ? `${t.activeBg} ${t.activeBorder}` : 'border-border'}`}
+      aria-pressed={active}
+    >
+      <div className={`flex size-9 items-center justify-center rounded-lg shrink-0 ${t.iconBg}`}>
+        <i className={`fa-light ${icon} ${t.iconFg} text-sm`} aria-hidden="true" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
+        <div className="flex items-baseline gap-1.5">
+          <span className={`text-lg font-bold ${t.valueFg}`}>{value}</span>
+          {sub && <span className="text-[10px] text-muted-foreground truncate">{sub}</span>}
+        </div>
+      </div>
+    </button>
+  )
+}
+
+// ─── Student row ────────────────────────────────────────────────────────────
+function StudentRow({
+  student, accommodations, courseId, onIntervene,
+}: {
+  student: Student; accommodations: Accommodation[]; courseId: string
+  onIntervene: () => void
+}) {
+  const score = student.avgScore[courseId] ?? 0
+  const scoreTone: 'success' | 'info' | 'warning' | 'neutral' = score >= 85 ? 'success' : score >= 70 ? 'info' : score > 0 ? 'warning' : 'neutral'
+  const scoreColor =
+    scoreTone === 'success' ? 'text-chart-2' :
+    scoreTone === 'info' ? 'text-chart-1' :
+    scoreTone === 'warning' ? 'text-chart-4' : 'text-muted-foreground'
+  const hasAcc = accommodations.length > 0
+
+  return (
+    <div className="grid items-center gap-3 px-4 py-3 text-sm border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors group grid-cols-[32px_minmax(220px,2fr)_110px_100px_110px_60px]">
+      <Avatar className="size-8 rounded-full">
+        <AvatarFallback className={`rounded-full text-[10px] font-bold ${student.status === 'at-risk' ? 'bg-chart-4/16 text-chart-4' : 'bg-muted text-foreground'}`}>
+          {student.initials}
+        </AvatarFallback>
+      </Avatar>
+
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="font-medium text-foreground truncate">
+            {student.firstName} {student.lastName}
+          </p>
+          {student.status === 'at-risk' && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="cursor-help">
+                  <StatusPill tone="warning" icon="fa-triangle-exclamation" label="At-risk" uppercase />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>Bottom 20% by course average · consider intervention</TooltipContent>
+            </Tooltip>
+          )}
+          {student.status === 'top-performer' && (
+            <StatusPill tone="success" icon="fa-trophy" label="Top" uppercase />
+          )}
+          {hasAcc && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="cursor-help">
+                  <StatusPill tone="info" icon="fa-universal-access" label="Accommodation" uppercase />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                {accommodations.map(a => a.detail).join(' · ')}
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground mt-0.5 truncate">
+          {student.studentId} · {student.email}
+        </p>
+      </div>
+
+      <div className="text-xs text-muted-foreground truncate">{student.cohort}</div>
+
+      <div className="flex items-center gap-2">
+        <MetricBar value={score} tone={scoreTone === 'neutral' ? 'info' : scoreTone} width="w-16" />
+        <span className={`text-xs font-bold tabular-nums w-9 text-right ${scoreColor}`}>
+          {score}%
+        </span>
+      </div>
+
+      <div className="text-xs text-muted-foreground">
+        {relativeTime(student.lastActivity)}
+      </div>
+
+      <div className="text-end flex items-center justify-end gap-1">
+        {student.status === 'at-risk' && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => { e.stopPropagation(); onIntervene() }}
+                className="gap-1.5 text-[11px] h-7 px-2 border-chart-4/40 text-chart-4 hover:bg-chart-4/10"
+              >
+                <i className="fa-light fa-life-ring" aria-hidden="true" />
+                Intervene
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Assign practice questions + notify advisor</TooltipContent>
+          </Tooltip>
+        )}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-disabled="true"
+              className="opacity-60 pointer-events-none"
+              aria-label="View student detail (coming soon)"
+            >
+              <i className="fa-light fa-arrow-right text-muted-foreground" aria-hidden="true" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Per-student detail · coming soon</TooltipContent>
+        </Tooltip>
+      </div>
+    </div>
+  )
+}
+
+function relativeTime(iso: string): string {
+  const then = new Date(iso).getTime()
+  const days = Math.round((Date.now() - then) / 86_400_000)
+  if (days < 1) return 'today'
+  if (days === 1) return 'yesterday'
+  if (days < 7) return `${days}d ago`
+  if (days < 30) return `${Math.round(days / 7)}w ago`
+  return `${Math.round(days / 30)}mo ago`
+}

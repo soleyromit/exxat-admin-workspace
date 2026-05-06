@@ -1,6 +1,6 @@
-import React from 'react';
-import { ArrowLeftIcon, ArrowRightIcon, FlagIcon } from 'lucide-react';
+
 import { Tooltip } from './Tooltip';
+import { Button as DSButton } from '@exxat/ds/packages/ui/src';
 interface StickyFooterProps {
   currentIndex: number;
   totalQuestions: number;
@@ -35,25 +35,21 @@ export function StickyFooter({
     <div
       className="fixed bottom-0 left-0 right-0 border-t backdrop-blur-sm z-30 px-6 py-4 flex items-center justify-between transition-colors"
       style={{
-        backgroundColor: 'var(--surface-white)',
-        borderColor: 'var(--border-default)'
+        backgroundColor: 'var(--card)',
+        borderColor: 'var(--border)'
       }}>
       
       <Tooltip content="Go to the previous question (←)" position="top">
-        <button
+        <DSButton
+          variant="outline"
+          size="lg"
           onClick={() => currentIndex > 0 && onNavigate(currentIndex - 1)}
           disabled={currentIndex === 0}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-lg border font-heading text-sm font-semibold transition-all hover:opacity-80 exam-focus disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{
-            borderColor: 'var(--border-medium)',
-            color: 'var(--text-secondary)',
-            backgroundColor: 'var(--surface-white)'
-          }}
-          aria-label="Previous question">
-          
-          <ArrowLeftIcon size={16} />
+          aria-label="Previous question"
+        >
+          <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 16 }} />
           Previous
-        </button>
+        </DSButton>
       </Tooltip>
 
       {/* Contextual shortcut legend */}
@@ -68,46 +64,37 @@ export function StickyFooter({
 
       <div className="flex items-center gap-3">
         <Tooltip content="Flag this question for review (F)" position="top">
-          <button
+          <DSButton
+            variant="outline"
+            size="lg"
             onClick={onToggleFlag}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg border font-heading text-sm font-semibold transition-all exam-focus"
-            style={{
-              backgroundColor: isFlaggedCurrent ?
-              'var(--state-flagged-bg)' :
-              'var(--surface-white)',
-              borderColor: isFlaggedCurrent ?
-              'var(--state-flagged-border)' :
-              'var(--border-medium)',
-              color: isFlaggedCurrent ?
-              'var(--state-flagged-text)' :
-              'var(--text-secondary)'
-            }}
-            aria-label={isFlaggedCurrent ? 'Unflag Question' : 'Flag Question'}>
-            
-            <FlagIcon
-              size={16}
-              fill={isFlaggedCurrent ? 'currentColor' : 'none'} />
-            
+            aria-label={isFlaggedCurrent ? 'Unflag Question' : 'Flag Question'}
+            style={
+              isFlaggedCurrent
+                ? {
+                    backgroundColor: 'var(--state-flagged-bg)',
+                    borderColor: 'var(--state-flagged-border)',
+                    color: 'var(--state-flagged-text)',
+                  }
+                : undefined
+            }
+          >
+            <i className={`${isFlaggedCurrent ? 'fa-solid' : 'fa-light'} fa-flag`} aria-hidden="true" style={{ fontSize: 16 }} />
             {isFlaggedCurrent ? 'Flagged' : 'Flag'}
-          </button>
+          </DSButton>
         </Tooltip>
 
         <Tooltip content="Go to the next question (Enter or →)" position="top">
-          <button
-            onClick={() =>
-            currentIndex < totalQuestions - 1 && onNavigate(currentIndex + 1)
-            }
+          <DSButton
+            variant="default"
+            size="lg"
+            onClick={() => currentIndex < totalQuestions - 1 && onNavigate(currentIndex + 1)}
             disabled={currentIndex === totalQuestions - 1}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg font-heading text-sm font-semibold transition-all hover:opacity-90 exam-focus disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{
-              backgroundColor: 'var(--exam-accent)',
-              color: 'var(--exam-accent-text)'
-            }}
-            aria-label="Next question">
-            
+            aria-label="Next question"
+          >
             Next
-            <ArrowRightIcon size={16} />
-          </button>
+            <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 16 }} />
+          </DSButton>
         </Tooltip>
       </div>
     </div>);
@@ -122,9 +109,9 @@ function ShortcutLegend({ keys, label }: {keys: string[];label: string;}) {
           key={i}
           className="font-mono text-[11px] font-bold px-1.5 py-0.5 rounded border"
           style={{
-            color: 'var(--text-muted)',
-            borderColor: 'var(--border-default)',
-            backgroundColor: 'var(--surface-subtle)'
+            color: 'var(--muted-foreground)',
+            borderColor: 'var(--border)',
+            backgroundColor: 'var(--muted)'
           }}>
           
             {k}
@@ -132,9 +119,9 @@ function ShortcutLegend({ keys, label }: {keys: string[];label: string;}) {
         )}
       </div>
       <span
-        className="text-xs font-heading font-medium"
+        className="text-xs font-medium"
         style={{
-          color: 'var(--text-subtle)'
+          color: 'var(--muted-foreground)'
         }}>
         
         {label}

@@ -1,13 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import {
-  XIcon,
-  FileTextIcon,
-  ClockIcon,
-  CheckCircleIcon,
-  ZapIcon } from
-'lucide-react';
 import { tokens } from '../tokens/design-tokens';
 import { Question } from '../data/questions';
+import { Button as DSButton } from '@exxat/ds/packages/ui/src';
 export interface SidebarDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -57,7 +51,7 @@ export function SidebarDrawer({
         tabIndex={-1}
         className="relative w-full max-w-sm h-full shadow-2xl flex flex-col animate-slide-in-left outline-none transition-colors"
         style={{
-          backgroundColor: 'var(--surface-white)'
+          backgroundColor: 'var(--card)'
         }}
         role="dialog"
         aria-label="Exam Information">
@@ -65,7 +59,7 @@ export function SidebarDrawer({
         <div
           className="flex items-center justify-between p-5 border-b"
           style={{
-            borderColor: 'var(--border-default)'
+            borderColor: 'var(--border)'
           }}>
           
           <div className="flex items-center gap-3">
@@ -81,7 +75,7 @@ export function SidebarDrawer({
               }} />
             
             <span
-              className="font-heading font-semibold text-xs px-2 py-0.5 rounded-full"
+              className="font-semibold text-xs px-2 py-0.5 rounded-full"
               style={{
                 color: 'var(--exam-accent)',
                 backgroundColor: 'var(--exam-accent-light)',
@@ -91,32 +85,25 @@ export function SidebarDrawer({
               Attempt #1
             </span>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-md flex items-center justify-center transition-colors exam-focus"
-            style={{
-              color: 'var(--text-muted)'
-            }}
-            aria-label="Close sidebar">
-            
-            <XIcon size={18} />
-          </button>
+          <DSButton variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close sidebar">
+            <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 18 }} />
+          </DSButton>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
           <div>
             <h2
-              className="font-heading font-bold text-xl mb-1"
+              className="font-bold text-xl mb-1"
               style={{
-                color: 'var(--text-primary)'
+                color: 'var(--foreground)'
               }}>
               
               Introduction to Pathology
             </h2>
             <p
-              className="font-heading text-sm"
+              className="text-sm"
               style={{
-                color: 'var(--text-subtle)'
+                color: 'var(--muted-foreground)'
               }}>
               
               Midterm Examination • Fall 2026
@@ -125,40 +112,40 @@ export function SidebarDrawer({
 
           <div className="grid grid-cols-2 gap-3">
             <StatCard
-              icon={<FileTextIcon size={16} />}
+              icon={<i className="fa-light fa-file-lines" aria-hidden="true" style={{ fontSize: 16 }} />}
               label="Questions"
               value={`${questions.length} Total`}
               color="var(--exam-accent)"
               bg="var(--exam-accent-light)" />
-            
+
             <StatCard
-              icon={<ClockIcon size={16} />}
+              icon={<i className="fa-light fa-clock" aria-hidden="true" style={{ fontSize: 16 }} />}
               label="Time Limit"
               value="60 Mins"
-              color="#F59E0B"
-              bg="#FFFBEB" />
-            
+              color="var(--state-warning-text)"
+              bg="var(--state-warning-bg)" />
+
             <StatCard
-              icon={<CheckCircleIcon size={16} />}
+              icon={<i className="fa-light fa-circle-check" aria-hidden="true" style={{ fontSize: 16 }} />}
               label="Passing"
               value="70%"
-              color="#22C55E"
-              bg="#F0FDF4" />
-            
+              color="var(--state-success-text)"
+              bg="var(--state-success-bg)" />
+
             <StatCard
-              icon={<ZapIcon size={16} />}
+              icon={<i className="fa-light fa-bolt" aria-hidden="true" style={{ fontSize: 16 }} />}
               label="Difficulty"
               value="Medium"
-              color="#A855F7"
-              bg="#FAF5FF" />
+              color="var(--state-info-text)"
+              bg="var(--state-info-bg)" />
             
           </div>
 
           <div>
             <h3
-              className="font-heading font-bold text-xs uppercase tracking-wider mb-3"
+              className="font-bold text-xs uppercase tracking-wider mb-3"
               style={{
-                color: 'var(--text-primary)'
+                color: 'var(--foreground)'
               }}>
               
               Instructions
@@ -182,9 +169,9 @@ export function SidebarDrawer({
           {/* Question Navigator — always shown */}
           <div>
             <h3
-              className="font-heading font-bold text-xs uppercase tracking-wider mb-3"
+              className="font-bold text-xs uppercase tracking-wider mb-3"
               style={{
-                color: 'var(--text-primary)'
+                color: 'var(--foreground)'
               }}>
               
               Question Navigator
@@ -194,13 +181,13 @@ export function SidebarDrawer({
                 const isCurrent = i === currentIndex;
                 const isAnswered = answeredSet.has(i);
                 const isFlagged = flaggedSet.has(i);
-                let bg = 'var(--surface-white)';
-                let border = 'var(--border-medium)';
-                let color = 'var(--text-muted)';
+                let bg = 'var(--card)';
+                let border = 'var(--border)';
+                let color = 'var(--muted-foreground)';
                 if (isCurrent) {
                   bg = 'var(--exam-accent)';
                   border = 'var(--exam-accent)';
-                  color = '#FFFFFF';
+                  color = 'var(--primary-foreground)';
                 } else if (isFlagged) {
                   bg = 'var(--state-flagged-bg)';
                   border = 'var(--state-flagged-border)';
@@ -217,7 +204,7 @@ export function SidebarDrawer({
                       onNavigate(i);
                       onClose();
                     }}
-                    className="h-10 rounded-lg font-heading font-semibold text-sm transition-all hover:opacity-80 exam-focus relative flex items-center justify-center"
+                    className="h-10 rounded-lg font-semibold text-sm transition-all hover:opacity-80 exam-focus relative flex items-center justify-center"
                     style={{
                       backgroundColor: bg,
                       border: `1px solid ${border}`,
@@ -230,7 +217,7 @@ export function SidebarDrawer({
                       className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2"
                       style={{
                         backgroundColor: 'var(--semantic-error-dot)',
-                        borderColor: 'var(--surface-white)'
+                        borderColor: 'var(--card)'
                       }} />
 
                     }
@@ -261,8 +248,8 @@ function StatCard({
     <div
       className="p-3 rounded-xl border"
       style={{
-        borderColor: 'var(--border-default)',
-        backgroundColor: 'var(--surface-white)'
+        borderColor: 'var(--border)',
+        backgroundColor: 'var(--card)'
       }}>
       
       <div className="flex items-center gap-2 mb-1">
@@ -276,18 +263,18 @@ function StatCard({
           {icon}
         </div>
         <span
-          className="font-heading text-xs font-medium"
+          className="text-xs font-medium"
           style={{
-            color: 'var(--text-subtle)'
+            color: 'var(--muted-foreground)'
           }}>
           
           {label}
         </span>
       </div>
       <p
-        className="font-heading font-bold text-sm"
+        className="font-bold text-sm"
         style={{
-          color: 'var(--text-primary)'
+          color: 'var(--foreground)'
         }}>
         
         {value}
@@ -298,18 +285,17 @@ function StatCard({
 function InstructionItem({ text }: {text: string;}) {
   return (
     <li
-      className="flex items-start gap-2 font-heading text-sm"
+      className="flex items-start gap-2 text-sm"
       style={{
-        color: 'var(--text-secondary)'
+        color: 'var(--muted-foreground)'
       }}>
       
       <span
+        className="text-[10px]"
         style={{
           color: 'var(--exam-accent)',
-          marginTop: '5px',
-          fontSize: '10px'
+          marginTop: '5px'
         }}>
-        
         ●
       </span>
       {text}

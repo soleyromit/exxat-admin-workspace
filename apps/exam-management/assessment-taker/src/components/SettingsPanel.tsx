@@ -1,16 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
-  CalculatorIcon,
-  KeyboardIcon,
-  ZoomInIcon,
-  ZoomOutIcon,
-  SunIcon,
-  MoonIcon,
-  ContrastIcon,
-  Volume2Icon,
-  EyeIcon,
-  SendIcon } from
-'lucide-react';
+  Button as DSButton,
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+  Kbd as DSKbd,
+} from '@exxat/ds/packages/ui/src';
 export type ColorBlindMode =
 'none' |
 'protanopia' |
@@ -54,7 +47,7 @@ export function SettingsPanel({
   onSubmit,
   colorBlindMode = 'none',
   onColorBlindModeChange,
-  onExit
+  onExit: _onExit
 }: SettingsPanelProps) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -70,24 +63,24 @@ export function SettingsPanel({
   return (
     <div
       ref={ref}
-      className="absolute top-full right-0 mt-2 w-[300px] rounded-xl shadow-lg py-2 z-50 animate-pop-in font-heading"
+      className="absolute top-full right-0 mt-2 w-[300px] rounded-xl shadow-lg py-2 z-50 animate-pop-in"
       style={{
-        backgroundColor: 'var(--surface-white)',
-        color: 'var(--text-primary)',
-        border: '1px solid var(--border-default)'
+        backgroundColor: 'var(--card)',
+        color: 'var(--foreground)',
+        border: '1px solid var(--border)'
       }}>
       
       {/* Theme Section */}
       <div
         className="px-4 py-3"
         style={{
-          borderBottom: '1px solid var(--border-default)'
+          borderBottom: '1px solid var(--border)'
         }}>
         
         <div
           className="text-xs font-semibold mb-3 uppercase tracking-wider"
           style={{
-            color: 'var(--text-muted)'
+            color: 'var(--muted-foreground)'
           }}>
           
           Theme
@@ -95,26 +88,26 @@ export function SettingsPanel({
         <div
           className="flex rounded-lg p-1"
           style={{
-            backgroundColor: 'var(--surface-subtle)',
-            border: '1px solid var(--border-default)'
+            backgroundColor: 'var(--muted)',
+            border: '1px solid var(--border)'
           }}>
           
           <ThemeButton
             active={theme === 'light'}
             onClick={() => onThemeChange('light')}
-            icon={<SunIcon size={14} />}
+            icon={<i className="fa-light fa-sun" aria-hidden="true" style={{ fontSize: 14 }} />}
             label="Light" />
-          
+
           <ThemeButton
             active={theme === 'dark'}
             onClick={() => onThemeChange('dark')}
-            icon={<MoonIcon size={14} />}
+            icon={<i className="fa-light fa-moon" aria-hidden="true" style={{ fontSize: 14 }} />}
             label="Dark" />
-          
+
           <ThemeButton
             active={theme === 'high-contrast'}
             onClick={() => onThemeChange('high-contrast')}
-            icon={<ContrastIcon size={14} />}
+            icon={<i className="fa-light fa-circle-half-stroke" aria-hidden="true" style={{ fontSize: 14 }} />}
             label="Contrast" />
           
         </div>
@@ -123,19 +116,19 @@ export function SettingsPanel({
       {/* Tools Section */}
       <div
         style={{
-          borderBottom: '1px solid var(--border-default)'
+          borderBottom: '1px solid var(--border)'
         }}>
         
         <SettingsItem
-          icon={<CalculatorIcon size={17} />}
+          icon={<i className="fa-light fa-calculator" aria-hidden="true" style={{ fontSize: 17 }} />}
           label="Calculator"
           onClick={() => {
             onToggleCalculator();
             onClose();
           }} />
-        
+
         <SettingsItem
-          icon={<KeyboardIcon size={17} />}
+          icon={<i className="fa-light fa-keyboard" aria-hidden="true" style={{ fontSize: 17 }} />}
           label="Virtual Keyboard"
           onClick={() => {
             onToggleKeyboard();
@@ -143,20 +136,16 @@ export function SettingsPanel({
           }} />
         
         <div
-          className="px-4 py-2.5 flex items-center justify-between transition-colors hover:bg-[var(--surface-subtle)] cursor-pointer"
+          className="px-4 py-2.5 flex items-center justify-between transition-colors hover:bg-[var(--muted)] cursor-pointer"
           onClick={onToggleVoiceNarrator}>
           
           <div
             className="flex items-center gap-3 text-[13px] font-medium"
             style={{
-              color: 'var(--text-primary)'
+              color: 'var(--foreground)'
             }}>
             
-            <Volume2Icon
-              size={17}
-              style={{
-                color: 'var(--text-muted)'
-              }} />
+            <i className="fa-light fa-volume" aria-hidden="true" style={{ fontSize: 17, color: 'var(--muted-foreground)' }} />
             
             <span>Voice Narrator</span>
           </div>
@@ -165,7 +154,7 @@ export function SettingsPanel({
             style={{
               backgroundColor: voiceNarrator ?
               'var(--exam-accent)' :
-              'var(--border-medium)'
+              'var(--border)'
             }}>
             
             <div
@@ -182,13 +171,13 @@ export function SettingsPanel({
       <div
         className="px-4 py-3"
         style={{
-          borderBottom: '1px solid var(--border-default)'
+          borderBottom: '1px solid var(--border)'
         }}>
         
         <div
           className="text-xs font-semibold mb-3 uppercase tracking-wider"
           style={{
-            color: 'var(--text-muted)'
+            color: 'var(--muted-foreground)'
           }}>
           
           Accessibility
@@ -202,65 +191,40 @@ export function SettingsPanel({
           }}>
           
           <div className="flex items-center gap-3 text-[13px] font-medium">
-            <ZoomInIcon
-              size={17}
-              style={{
-                color: 'var(--text-muted)'
-              }} />
+            <i className="fa-light fa-magnifying-glass-plus" aria-hidden="true" style={{ fontSize: 17, color: 'var(--muted-foreground)' }} />
             
             <span>Text Size</span>
           </div>
           <div
-            className="flex items-center gap-2 rounded-md"
+            className="flex items-center gap-1 rounded-md p-0.5"
             style={{
-              backgroundColor: 'var(--surface-subtle)',
-              border: '1px solid var(--border-default)'
+              backgroundColor: 'var(--muted)',
+              border: '1px solid var(--border)'
             }}>
-            
-            <button
+            <DSButton
+              variant="ghost"
+              size="icon-xs"
               onClick={zoomOut}
-              className="p-1 rounded-l-md transition-colors"
-              style={{
-                color: 'var(--text-secondary)'
-              }}
-              onMouseEnter={(e) => {
-                ;(e.currentTarget as HTMLElement).style.backgroundColor =
-                'var(--border-default)';
-              }}
-              onMouseLeave={(e) => {
-                ;(e.currentTarget as HTMLElement).style.backgroundColor = '';
-              }}
               aria-label="Zoom out"
-              title="Decrease text size">
-              
-              <ZoomOutIcon size={14} />
-            </button>
+              title="Decrease text size"
+            >
+              <i className="fa-light fa-magnifying-glass-minus" aria-hidden="true" style={{ fontSize: 13 }} />
+            </DSButton>
             <span
               className="text-xs font-mono w-11 text-center font-semibold"
-              style={{
-                color: 'var(--text-primary)'
-              }}>
-              
+              style={{ color: 'var(--foreground)' }}
+            >
               {zoomPercent}%
             </span>
-            <button
+            <DSButton
+              variant="ghost"
+              size="icon-xs"
               onClick={zoomIn}
-              className="p-1 rounded-r-md transition-colors"
-              style={{
-                color: 'var(--text-secondary)'
-              }}
-              onMouseEnter={(e) => {
-                ;(e.currentTarget as HTMLElement).style.backgroundColor =
-                'var(--border-default)';
-              }}
-              onMouseLeave={(e) => {
-                ;(e.currentTarget as HTMLElement).style.backgroundColor = '';
-              }}
               aria-label="Zoom in"
-              title="Increase text size">
-              
-              <ZoomInIcon size={14} />
-            </button>
+              title="Increase text size"
+            >
+              <i className="fa-light fa-magnifying-glass-plus" aria-hidden="true" style={{ fontSize: 13 }} />
+            </DSButton>
           </div>
         </div>
 
@@ -274,36 +238,32 @@ export function SettingsPanel({
           <div
             className="flex items-center gap-3 text-[13px] font-medium"
             style={{
-              color: 'var(--text-primary)'
+              color: 'var(--foreground)'
             }}>
             
-            <EyeIcon
-              size={17}
-              style={{
-                color: 'var(--text-muted)'
-              }} />
+            <i className="fa-light fa-eye" aria-hidden="true" style={{ fontSize: 17, color: 'var(--muted-foreground)' }} />
             
             <span>Color Vision</span>
           </div>
-          <select
+          <Select
             value={colorBlindMode}
-            onChange={(e) =>
-            onColorBlindModeChange?.(e.target.value as ColorBlindMode)
-            }
-            className="text-[13px] font-heading font-medium rounded-md px-3 py-1.5 exam-focus"
-            style={{
-              backgroundColor: 'var(--surface-white)',
-              border: '1px solid var(--border-medium)',
-              color: 'var(--text-primary)'
-            }}
-            aria-label="Select color vision mode">
-            
-            <option value="none">Normal</option>
-            <option value="protanopia">Protanopia</option>
-            <option value="deuteranopia">Deuteranopia</option>
-            <option value="tritanopia">Tritanopia</option>
-            <option value="achromatopsia">Monochrome</option>
-          </select>
+            onValueChange={(v) => onColorBlindModeChange?.(v as ColorBlindMode)}
+          >
+            <SelectTrigger
+              size="sm"
+              className="w-[140px] text-[13px] font-medium"
+              aria-label="Select color vision mode"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Normal</SelectItem>
+              <SelectItem value="protanopia">Protanopia</SelectItem>
+              <SelectItem value="deuteranopia">Deuteranopia</SelectItem>
+              <SelectItem value="tritanopia">Tritanopia</SelectItem>
+              <SelectItem value="achromatopsia">Monochrome</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -311,13 +271,13 @@ export function SettingsPanel({
       <div
         className="px-4 py-3"
         style={{
-          borderBottom: '1px solid var(--border-default)'
+          borderBottom: '1px solid var(--border)'
         }}>
         
         <div
           className="text-xs font-semibold mb-3 uppercase tracking-wider"
           style={{
-            color: 'var(--text-muted)'
+            color: 'var(--muted-foreground)'
           }}>
           
           Keyboard Shortcuts
@@ -353,14 +313,14 @@ function ThemeButton({
       onClick={onClick}
       className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[11px] font-semibold transition-colors"
       style={{
-        backgroundColor: active ? 'var(--brand-primary)' : 'transparent',
-        color: active ? 'var(--brand-primary-text)' : 'var(--text-muted)',
-        boxShadow: active ? '0 1px 2px rgba(0,0,0,0.15)' : 'none'
+        backgroundColor: active ? 'var(--brand-color)' : 'transparent',
+        color: active ? 'var(--brand-foreground)' : 'var(--muted-foreground)',
+        boxShadow: active ? '0 1px 2px var(--shadow-card, rgba(0,0,0,0.15))' : 'none'
       }}
       onMouseEnter={(e) => {
         if (!active)
         (e.currentTarget as HTMLElement).style.backgroundColor =
-        'var(--surface-subtle)';
+        'var(--muted)';
       }}
       onMouseLeave={(e) => {
         if (!active)
@@ -388,11 +348,11 @@ function SettingsItem({
       onClick={onClick}
       className="w-full flex items-center justify-between px-4 py-2.5 transition-colors text-[13px] font-medium"
       style={{
-        color: 'var(--text-primary)'
+        color: 'var(--foreground)'
       }}
       onMouseEnter={(e) => {
         ;(e.currentTarget as HTMLElement).style.backgroundColor =
-        'var(--surface-subtle)';
+        'var(--muted)';
       }}
       onMouseLeave={(e) => {
         ;(e.currentTarget as HTMLElement).style.backgroundColor = '';
@@ -401,7 +361,7 @@ function SettingsItem({
       <div className="flex items-center gap-3">
         <span
           style={{
-            color: 'var(--text-muted)'
+            color: 'var(--muted-foreground)'
           }}>
           
           {icon}
@@ -412,7 +372,7 @@ function SettingsItem({
       <span
         className="text-[10px] font-mono"
         style={{
-          color: 'var(--text-muted)'
+          color: 'var(--muted-foreground)'
         }}>
         
           {shortcut}
@@ -423,71 +383,68 @@ function SettingsItem({
 }
 function SubmitButton({
   onSubmit,
-  onClose
-
-
-
-}: {onSubmit: () => void;onClose: () => void;}) {
+  onClose,
+}: {
+  onSubmit: () => void;
+  onClose: () => void;
+}) {
   const [confirming, setConfirming] = useState(false);
+
   if (confirming) {
     return (
       <div className="flex flex-col gap-1.5">
         <p
-          className="text-[10px] font-heading font-medium leading-tight"
-          style={{
-            color: 'var(--text-primary)'
-          }}>
-          
+          className="text-[10px] font-medium leading-tight"
+          style={{ color: 'var(--foreground)' }}
+        >
           Submit exam? You cannot change answers after submission.
         </p>
         <div className="flex gap-1.5">
-          <button
+          <DSButton
+            variant="default"
+            size="sm"
+            className="flex-1 font-bold"
+            style={{
+              backgroundColor: 'var(--brand-color)',
+              color: 'var(--brand-foreground)',
+              borderColor: 'var(--brand-color)',
+            }}
             onClick={() => {
               onClose();
               onSubmit();
             }}
-            className="flex-1 py-1.5 rounded-md text-[10px] font-heading font-bold transition-colors"
-            style={{
-              backgroundColor: 'var(--brand-primary)',
-              color: 'var(--brand-primary-text)'
-            }}>
-            
+          >
             Yes, Submit
-          </button>
-          <button
+          </DSButton>
+          <DSButton
+            variant="outline"
+            size="sm"
+            className="flex-1"
             onClick={() => setConfirming(false)}
-            className="flex-1 py-1.5 rounded-md border text-[10px] font-heading font-semibold transition-colors"
-            style={{
-              borderColor: 'var(--border-medium)',
-              color: 'var(--text-secondary)',
-              backgroundColor: 'var(--surface-white)'
-            }}>
-            
+          >
             Cancel
-          </button>
+          </DSButton>
         </div>
-      </div>);
-
+      </div>
+    );
   }
-  return (
-    <button
-      onClick={() => setConfirming(true)}
-      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-heading font-bold transition-colors shadow-sm"
-      style={{
-        backgroundColor: 'var(--brand-primary)',
-        color: 'var(--brand-primary-text)'
-      }}
-      onMouseEnter={(e) => {
-        ;(e.currentTarget as HTMLElement).style.opacity = '0.9';
-      }}
-      onMouseLeave={(e) => {
-        ;(e.currentTarget as HTMLElement).style.opacity = '1';
-      }}>
-      
-      <SendIcon size={16} />
-      Submit Exam
-    </button>);
 
+  return (
+    <DSButton
+      variant="default"
+      size="default"
+      className="w-full font-bold shadow-sm"
+      style={{
+        backgroundColor: 'var(--brand-color)',
+        color: 'var(--brand-foreground)',
+        borderColor: 'var(--brand-color)',
+      }}
+      onClick={() => setConfirming(true)}
+    >
+      <i className="fa-light fa-paper-plane" aria-hidden="true" style={{ fontSize: 16 }} />
+      Submit Exam
+    </DSButton>
+  );
 }
 function ShortcutRow({ keys, label }: {keys: string[];label: string;}) {
   return (
@@ -495,25 +452,15 @@ function ShortcutRow({ keys, label }: {keys: string[];label: string;}) {
       <span
         className="text-[10px]"
         style={{
-          color: 'var(--text-subtle)'
+          color: 'var(--muted-foreground)'
         }}>
         
         {label}
       </span>
       <div className="flex gap-0.5">
-        {keys.map((k, i) =>
-        <kbd
-          key={i}
-          className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded"
-          style={{
-            color: 'var(--text-secondary)',
-            border: '1px solid var(--border-medium)',
-            backgroundColor: 'var(--surface-subtle)'
-          }}>
-          
-            {k}
-          </kbd>
-        )}
+        {keys.map((k, i) => (
+          <DSKbd key={i}>{k}</DSKbd>
+        ))}
       </div>
     </div>);
 

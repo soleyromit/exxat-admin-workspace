@@ -5,9 +5,9 @@ import React, {
   useRef,
   Fragment } from
 'react';
-import { MicIcon, SquareIcon, CheckSquareIcon, EyeOffIcon } from 'lucide-react';
 import { Question } from '../data/questions';
 import { useSpeechToText } from '../hooks/useSpeechToText';
+import { Button as DSButton, Textarea as DSTextarea } from '@exxat/ds/packages/ui/src';
 const SHORTCUT_KEYS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 interface RendererProps {
   question: Question;
@@ -62,15 +62,15 @@ function KeyBadge({
 }: {letter: string;isSelected: boolean;}) {
   return (
     <span
-      className="inline-flex items-center justify-center rounded-md font-heading font-bold text-[0.75em] shrink-0 transition-colors"
+      className="inline-flex items-center justify-center rounded-md font-bold text-[0.75em] shrink-0 transition-colors"
       style={{
         width: '2em',
         height: '2em',
         backgroundColor: isSelected ?
         'var(--exam-accent)' :
-        'var(--surface-subtle)',
-        color: isSelected ? 'var(--exam-accent-text)' : 'var(--text-muted)',
-        border: isSelected ? 'none' : '1px solid var(--border-default)'
+        'var(--muted)',
+        color: isSelected ? 'var(--exam-accent-text)' : 'var(--muted-foreground)',
+        border: isSelected ? 'none' : '1px solid var(--border)'
       }}>
       
       {letter}
@@ -89,16 +89,16 @@ function CrossOutButton({
       onClick={onClick}
       className="p-[0.5em] rounded-lg border transition-colors exam-focus shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100 high-contrast-visible"
       style={{
-        borderColor: 'var(--border-default)',
-        color: isCrossed ? 'var(--semantic-error-text)' : 'var(--text-muted)',
+        borderColor: 'var(--border)',
+        color: isCrossed ? 'var(--semantic-error-text)' : 'var(--muted-foreground)',
         backgroundColor: isCrossed ?
-        'var(--surface-subtle)' :
-        'var(--surface-white)'
+        'var(--muted)' :
+        'var(--card)'
       }}
       aria-label={isCrossed ? 'Remove cross-out' : 'Cross out option'}
       title={isCrossed ? 'Remove cross-out' : 'Cross out this option'}>
       
-      <EyeOffIcon size={16} />
+      <i className="fa-light fa-eye-slash" aria-hidden="true" style={{ fontSize: 16 }} />
     </button>);
 
 }
@@ -145,11 +145,11 @@ export function RadioMCQRenderer({
                 borderColor:
                 isSelected && !isCrossed ?
                 'var(--exam-accent)' :
-                'var(--border-default)',
+                'var(--border)',
                 backgroundColor:
                 isSelected && !isCrossed ?
                 'var(--exam-accent-light)' :
-                'var(--surface-white)',
+                'var(--card)',
                 cursor: 'pointer'
               }}
               role="radio"
@@ -171,12 +171,12 @@ export function RadioMCQRenderer({
                   isSelected={isSelected && !isCrossed} />
                 
                 <span
-                  className={`font-heading text-[1em] flex-1 ${isCrossed ? 'line-through' : ''}`}
+                  className={`text-[1em] flex-1 ${isCrossed ? 'line-through' : ''}`}
                   style={{
                     color:
                     isSelected && !isCrossed ?
-                    'var(--text-primary)' :
-                    'var(--text-secondary)'
+                    'var(--foreground)' :
+                    'var(--muted-foreground)'
                   }}>
                   
                   {option}
@@ -235,11 +235,11 @@ export function CheckboxRenderer({
                 borderColor:
                 isSelected && !isCrossed ?
                 'var(--exam-accent)' :
-                'var(--border-default)',
+                'var(--border)',
                 backgroundColor:
                 isSelected && !isCrossed ?
                 'var(--exam-accent-light)' :
-                'var(--surface-white)',
+                'var(--card)',
                 cursor: 'pointer'
               }}
               aria-label={`Option ${SHORTCUT_KEYS[idx]}: ${option}. Click to toggle this selection.`}
@@ -251,27 +251,16 @@ export function CheckboxRenderer({
                 isSelected={isSelected && !isCrossed} />
               
               {isSelected && !isCrossed ?
-              <CheckSquareIcon
-                size={24}
-                style={{
-                  color: 'var(--exam-accent)'
-                }} /> :
-
-
-              <SquareIcon
-                size={24}
-                style={{
-                  color: 'var(--border-medium)'
-                }} />
-
+              <i className="fa-solid fa-square-check" aria-hidden="true" style={{ fontSize: 24, color: 'var(--exam-accent)' }} /> :
+              <i className="fa-light fa-square" aria-hidden="true" style={{ fontSize: 24, color: 'var(--border)' }} />
               }
               <span
-                className={`font-heading text-[1em] flex-1 ${isCrossed ? 'line-through' : ''}`}
+                className={`text-[1em] flex-1 ${isCrossed ? 'line-through' : ''}`}
                 style={{
                   color:
                   isSelected && !isCrossed ?
-                  'var(--text-primary)' :
-                  'var(--text-secondary)'
+                  'var(--foreground)' :
+                  'var(--muted-foreground)'
                 }}>
                 
                 {option}
@@ -324,10 +313,10 @@ export function CrossOutRenderer({
               style={{
                 borderColor: isSelected ?
                 'var(--exam-accent)' :
-                'var(--border-default)',
+                'var(--border)',
                 backgroundColor: isSelected ?
                 'var(--exam-accent-light)' :
-                'var(--surface-white)',
+                'var(--card)',
                 cursor: 'pointer'
               }}
               aria-label={`Option ${SHORTCUT_KEYS[idx]}: ${option}. Click to select, or use the cross-out button to eliminate.`}
@@ -336,9 +325,9 @@ export function CrossOutRenderer({
               
               <KeyBadge letter={SHORTCUT_KEYS[idx]} isSelected={isSelected} />
               <span
-                className={`font-heading text-[1em] ${isCrossed ? 'line-through opacity-50' : ''}`}
+                className={`text-[1em] ${isCrossed ? 'line-through opacity-50' : ''}`}
                 style={{
-                  color: 'var(--text-secondary)'
+                  color: 'var(--muted-foreground)'
                 }}>
                 
                 {option}
@@ -437,15 +426,15 @@ export function HighlightRenderer({
     <div
       className="p-[1.5em] rounded-xl border leading-relaxed text-[1em] select-none"
       style={{
-        borderColor: 'var(--border-default)',
-        backgroundColor: 'var(--surface-white)',
-        color: 'var(--text-secondary)'
+        borderColor: 'var(--border)',
+        backgroundColor: 'var(--card)',
+        color: 'var(--muted-foreground)'
       }}>
       
       <p
-        className="text-[0.75em] font-heading mb-3"
+        className="text-[0.75em] mb-3"
         style={{
-          color: 'var(--text-muted)'
+          color: 'var(--muted-foreground)'
         }}>
         
         Click or drag to highlight sentences
@@ -465,7 +454,7 @@ export function HighlightRenderer({
             onMouseOver={(e) => {
               if (!isHighlighted)
               (e.currentTarget as HTMLElement).style.backgroundColor =
-              'var(--surface-subtle)';
+              'var(--muted)';
             }}
             onMouseOut={(e) => {
               if (!isHighlighted)
@@ -511,20 +500,16 @@ export function ShortAnswerRenderer({
   return (
     <div className="flex flex-col gap-3">
       <div className="relative">
-        <textarea
+        <DSTextarea
           ref={textareaRef}
           value={selectedAnswer || ''}
           onChange={(e) => onSelectAnswer(question.id, e.target.value)}
-          className="w-full p-[1em] rounded-xl border-2 resize-y min-h-[200px] font-heading text-[1em] exam-focus"
-          style={{
-            borderColor: 'var(--border-default)',
-            color: 'var(--text-primary)',
-            backgroundColor: 'var(--surface-white)'
-          }}
+          className="w-full resize-y min-h-[200px] text-[1em]"
           placeholder="Type your answer here..."
           maxLength={question.maxChars}
           aria-label="Type your answer in this text area"
-          title="Answer text area" />
+          title="Answer text area"
+        />
         
         {isSupported &&
         <button
@@ -533,22 +518,22 @@ export function ShortAnswerRenderer({
           style={{
             backgroundColor: isListening ?
             'var(--exam-accent-light)' :
-            'var(--surface-white)',
-            color: isListening ? 'var(--exam-accent)' : 'var(--text-muted)',
-            border: `1px solid ${isListening ? 'var(--exam-accent-border)' : 'var(--border-default)'}`
+            'var(--card)',
+            color: isListening ? 'var(--exam-accent)' : 'var(--muted-foreground)',
+            border: `1px solid ${isListening ? 'var(--exam-accent-border)' : 'var(--border)'}`
           }}
           aria-label={isListening ? 'Stop dictation' : 'Start dictation'}
           title={isListening ? 'Stop dictation' : 'Start dictation'}>
           
-            <MicIcon size={20} />
+            <i className="fa-light fa-microphone" aria-hidden="true" style={{ fontSize: 20 }} />
           </button>
         }
       </div>
       {question.maxChars &&
       <div
-        className="text-right text-[0.75em] font-heading"
+        className="text-right text-[0.75em]"
         style={{
-          color: 'var(--text-subtle)'
+          color: 'var(--muted-foreground)'
         }}>
         
           {(selectedAnswer || '').length} / {question.maxChars} characters
@@ -563,7 +548,7 @@ export function FillBlankRenderer({
   onSelectAnswer,
   voiceNarrator
 }: RendererProps) {
-  const { narrateProps } = useNarrate(voiceNarrator);
+  useNarrate(voiceNarrator);
   const answers = selectedAnswer || {};
   const handleSelect = (blankId: string, val: string) => {
     onSelectAnswer(question.id, {
@@ -574,11 +559,11 @@ export function FillBlankRenderer({
   const parts = question.passageTemplate?.split(/(\{\{.*?\}\})/) || [];
   return (
     <div
-      className="p-[1.5em] rounded-xl border font-heading text-[1.125em]"
+      className="p-[1.5em] rounded-xl border text-[1.125em]"
       style={{
-        borderColor: 'var(--border-default)',
-        backgroundColor: 'var(--surface-white)',
-        color: 'var(--text-primary)',
+        borderColor: 'var(--border)',
+        backgroundColor: 'var(--card)',
+        color: 'var(--foreground)',
         lineHeight: '2.8'
       }}>
       
@@ -591,20 +576,20 @@ export function FillBlankRenderer({
               key={i}
               value={answers[blankId] || ''}
               onChange={(e) => handleSelect(blankId, e.target.value)}
-              className="exam-select py-[0.3em] pl-[0.6em] rounded-md border-2 font-heading text-[0.8em] font-semibold align-middle"
+              className="exam-select py-[0.3em] pl-[0.6em] rounded-md border-2 text-[0.8em] font-semibold align-middle"
               style={{
                 borderColor: answers[blankId] ?
                 'var(--exam-accent)' :
-                'var(--border-default)',
+                'var(--border)',
                 color: answers[blankId] ?
                 'var(--exam-accent)' :
-                'var(--text-muted)',
+                'var(--muted-foreground)',
                 backgroundColor: answers[blankId] ?
                 'var(--exam-accent-light)' :
-                'var(--surface-white)',
+                'var(--card)',
                 boxShadow: answers[blankId] ?
                 '0 0 0 2px var(--exam-accent-light)' :
-                '0 1px 2px rgba(0,0,0,0.05)',
+                '0 1px 2px var(--shadow-card)',
                 minWidth: '9em',
                 margin: '0 0.3em',
                 lineHeight: '1.4'
@@ -646,14 +631,14 @@ export function MatchingRenderer({
         key={idx}
         className="flex items-center gap-4 p-[1em] rounded-xl border"
         style={{
-          borderColor: 'var(--border-default)',
-          backgroundColor: 'var(--surface-white)'
+          borderColor: 'var(--border)',
+          backgroundColor: 'var(--card)'
         }}>
         
           <div
-          className="flex-1 font-heading font-semibold text-[1em]"
+          className="flex-1 font-semibold text-[1em]"
           style={{
-            color: 'var(--text-primary)'
+            color: 'var(--foreground)'
           }}>
           
             {pair.left}
@@ -666,20 +651,20 @@ export function MatchingRenderer({
             [pair.left]: e.target.value
           })
           }
-          className="exam-select flex-1 py-[0.65em] pl-[0.85em] rounded-lg border-2 font-heading text-[0.9375em]"
+          className="exam-select flex-1 py-[0.65em] pl-[0.85em] rounded-lg border-2 text-[0.9375em]"
           style={{
             borderColor: answers[pair.left] ?
             'var(--exam-accent)' :
-            'var(--border-default)',
+            'var(--border)',
             backgroundColor: answers[pair.left] ?
             'var(--exam-accent-light)' :
-            'var(--surface-white)',
+            'var(--card)',
             color: answers[pair.left] ?
             'var(--exam-accent)' :
-            'var(--text-muted)',
+            'var(--muted-foreground)',
             boxShadow: answers[pair.left] ?
             '0 0 0 3px var(--exam-accent-light)' :
-            '0 1px 2px rgba(0,0,0,0.05)'
+            '0 1px 2px var(--shadow-card)'
           }}
           aria-label={`Match "${pair.left}" with the correct option`}
           title={`Choose the matching term for "${pair.left}"`}
@@ -720,14 +705,14 @@ export function AnatomyRenderer({
     <div
       className="relative inline-block border rounded-xl overflow-hidden"
       style={{
-        borderColor: 'var(--border-default)'
+        borderColor: 'var(--border)'
       }}>
       
       {imgError ?
       <div
         className="w-full h-[400px] relative"
         style={{
-          backgroundColor: 'var(--surface-subtle)'
+          backgroundColor: 'var(--muted)'
         }}>
         
           {/* Schematic heart outline as fallback */}
@@ -774,7 +759,7 @@ export function AnatomyRenderer({
             y1="90"
             x2="200"
             y2="300"
-            stroke="var(--border-medium)"
+            stroke="var(--border)"
             strokeWidth="1"
             strokeDasharray="4 4" />
           
@@ -783,7 +768,7 @@ export function AnatomyRenderer({
             y1="200"
             x2="300"
             y2="200"
-            stroke="var(--border-medium)"
+            stroke="var(--border)"
             strokeWidth="1"
             strokeDasharray="4 4" />
           
@@ -791,10 +776,10 @@ export function AnatomyRenderer({
             x="200"
             y="30"
             textAnchor="middle"
-            className="font-heading"
+            className=""
             style={{
               fontSize: '12px',
-              fill: 'var(--text-muted)'
+              fill: 'var(--muted-foreground)'
             }}>
             
               Select a hotspot on the diagram
@@ -821,7 +806,7 @@ export function AnatomyRenderer({
               top: `${spot.y}%`,
               backgroundColor: isSelected ?
               'var(--exam-accent)' :
-              'rgba(255,255,255,0.8)',
+              'var(--card-80, rgba(255,255,255,0.8))',
               borderColor: isSelected ?
               'var(--exam-accent-text)' :
               'var(--exam-accent)',
@@ -846,23 +831,23 @@ export function TableRenderer({
       <div
         className="overflow-x-auto rounded-xl border"
         style={{
-          borderColor: 'var(--border-default)'
+          borderColor: 'var(--border)'
         }}>
         
         <table className="w-full text-left border-collapse">
           <thead>
             <tr
               style={{
-                backgroundColor: 'var(--surface-subtle)'
+                backgroundColor: 'var(--muted)'
               }}>
               
               {question.tableData?.headers.map((h, i) =>
               <th
                 key={i}
-                className="p-[1em] font-heading font-bold text-[0.875em] border-b"
+                className="p-[1em] font-bold text-[0.875em] border-b"
                 style={{
-                  color: 'var(--text-primary)',
-                  borderColor: 'var(--border-default)'
+                  color: 'var(--foreground)',
+                  borderColor: 'var(--border)'
                 }}>
                 
                   {h}
@@ -876,16 +861,16 @@ export function TableRenderer({
               key={i}
               className="border-b last:border-0"
               style={{
-                borderColor: 'var(--border-default)',
-                backgroundColor: 'var(--surface-white)'
+                borderColor: 'var(--border)',
+                backgroundColor: 'var(--card)'
               }}>
               
                 {row.map((cell, j) =>
               <td
                 key={j}
-                className="p-[1em] font-heading text-[0.875em]"
+                className="p-[1em] text-[0.875em]"
                 style={{
-                  color: 'var(--text-secondary)'
+                  color: 'var(--muted-foreground)'
                 }}>
                 
                     {cell}
@@ -914,8 +899,8 @@ export function PDFRenderer({
       <div
         className="w-full h-[600px] border rounded-xl overflow-hidden"
         style={{
-          borderColor: 'var(--border-default)',
-          backgroundColor: 'var(--surface-subtle)'
+          borderColor: 'var(--border)',
+          backgroundColor: 'var(--muted)'
         }}>
         
         <iframe
@@ -964,32 +949,29 @@ export function EssayRenderer({
     <div className="flex flex-col gap-4">
       {question.essayPrompt &&
       <div
-        className="p-[1.5em] border rounded-xl text-[1em] font-heading"
+        className="p-[1.5em] border rounded-xl text-[1em]"
         style={{
-          backgroundColor: 'var(--surface-subtle)',
-          borderColor: 'var(--border-default)',
-          color: 'var(--text-secondary)'
+          backgroundColor: 'var(--muted)',
+          borderColor: 'var(--border)',
+          color: 'var(--muted-foreground)'
         }}>
         
           <strong>Prompt:</strong> {question.essayPrompt}
         </div>
       }
       <div className="relative">
-        <textarea
+        <DSTextarea
           ref={textareaRef}
           value={answerText}
           onChange={(e) => onSelectAnswer(question.id, e.target.value)}
-          className="w-full p-[1em] rounded-xl border-2 resize-y min-h-[300px] font-heading text-[1em] exam-focus"
+          className="w-full resize-y min-h-[300px] text-[1em]"
           style={{
-            borderColor: isListening ?
-            'var(--exam-accent)' :
-            'var(--border-default)',
-            color: 'var(--text-primary)',
-            backgroundColor: 'var(--surface-white)'
+            borderColor: isListening ? 'var(--exam-accent)' : undefined,
           }}
           placeholder="Begin typing your essay here..."
           aria-label="Type your essay answer in this text area"
-          title="Essay text area" />
+          title="Essay text area"
+        />
         
         {isSupported &&
         <button
@@ -998,21 +980,21 @@ export function EssayRenderer({
           style={{
             backgroundColor: isListening ?
             'var(--exam-accent-light)' :
-            'var(--surface-white)',
-            color: isListening ? 'var(--exam-accent)' : 'var(--text-muted)',
-            border: `1px solid ${isListening ? 'var(--exam-accent-border)' : 'var(--border-default)'}`
+            'var(--card)',
+            color: isListening ? 'var(--exam-accent)' : 'var(--muted-foreground)',
+            border: `1px solid ${isListening ? 'var(--exam-accent-border)' : 'var(--border)'}`
           }}
           aria-label={isListening ? 'Stop dictation' : 'Start dictation'}
           title={isListening ? 'Stop dictation' : 'Start dictation'}>
           
-            <MicIcon size={20} />
+            <i className="fa-light fa-microphone" aria-hidden="true" style={{ fontSize: 20 }} />
           </button>
         }
       </div>
       <div
-        className="flex justify-between items-center text-[0.875em] font-heading"
+        className="flex justify-between items-center text-[0.875em]"
         style={{
-          color: 'var(--text-muted)'
+          color: 'var(--muted-foreground)'
         }}>
         
         <div>
@@ -1052,17 +1034,17 @@ export function WordHighlightRenderer({
   );
   return (
     <div
-      className="p-[1.5em] rounded-xl border leading-loose text-[1.125em] font-heading select-none"
+      className="p-[1.5em] rounded-xl border leading-loose text-[1.125em] select-none"
       style={{
-        borderColor: 'var(--border-default)',
-        backgroundColor: 'var(--surface-white)',
-        color: 'var(--text-primary)'
+        borderColor: 'var(--border)',
+        backgroundColor: 'var(--card)',
+        color: 'var(--foreground)'
       }}>
       
       <p
         className="text-[0.65em] mb-3"
         style={{
-          color: 'var(--text-muted)'
+          color: 'var(--muted-foreground)'
         }}>
         
         Click or drag across words to highlight
@@ -1079,7 +1061,7 @@ export function WordHighlightRenderer({
               onMouseOver={(e) => {
                 if (!isHighlighted)
                 (e.currentTarget as HTMLElement).style.backgroundColor =
-                'var(--surface-subtle)';
+                'var(--muted)';
               }}
               onMouseOut={(e) => {
                 if (!isHighlighted)
@@ -1106,11 +1088,11 @@ export function PassageRenderer({
   return (
     <div className="flex flex-col gap-6">
       <div
-        className="p-[1.5em] border rounded-xl overflow-y-auto max-h-[400px] text-[1em] leading-relaxed font-heading"
+        className="p-[1.5em] border rounded-xl overflow-y-auto max-h-[400px] text-[1em] leading-relaxed"
         style={{
-          borderColor: 'var(--border-default)',
-          backgroundColor: 'var(--surface-subtle)',
-          color: 'var(--text-secondary)'
+          borderColor: 'var(--border)',
+          backgroundColor: 'var(--muted)',
+          color: 'var(--muted-foreground)'
         }}>
         
         {question.passageText}
@@ -1142,14 +1124,14 @@ export function ChartRenderer({ question }: RendererProps) {
       <div
         className="w-full p-4 rounded-xl border flex flex-col items-center"
         style={{
-          borderColor: 'var(--border-default)',
-          backgroundColor: 'var(--surface-white)'
+          borderColor: 'var(--border)',
+          backgroundColor: 'var(--card)'
         }}>
         
         <h3
-          className="font-heading font-bold mb-4"
+          className="font-bold mb-4"
           style={{
-            color: 'var(--text-primary)'
+            color: 'var(--foreground)'
           }}>
           
           {title}
@@ -1172,7 +1154,7 @@ export function ChartRenderer({ question }: RendererProps) {
             y1={padding + chartHeight * pct}
             x2={width - padding}
             y2={padding + chartHeight * pct}
-            stroke="var(--border-default)"
+            stroke="var(--border)"
             strokeWidth="1" />
 
           )}
@@ -1187,8 +1169,8 @@ export function ChartRenderer({ question }: RendererProps) {
                 y={height - 10}
                 textAnchor="middle"
                 fontSize="12"
-                fill="var(--text-muted)"
-                className="font-heading">
+                fill="var(--muted-foreground)"
+                className="">
                 
                 {label}
               </text>);
@@ -1241,8 +1223,8 @@ export function ChartRenderer({ question }: RendererProps) {
                 x="20"
                 y="10"
                 fontSize="12"
-                fill="var(--text-secondary)"
-                className="font-heading">
+                fill="var(--muted-foreground)"
+                className="">
                 
                   {s.name}
                 </text>

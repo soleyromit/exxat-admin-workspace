@@ -1,0 +1,123 @@
+/**
+ * Question comment box — Aarti-mandated:
+ *
+ *   "During an exam, students should be able to flag questions they believe
+ *    have errors via a comment box. Faculty would review these post-exam,
+ *    not in real time."
+ *
+ * Visibility is institution/course-level (assessment.allowComments). Surfaced
+ * here unconditionally; parent decides whether to render based on that flag.
+ */
+
+import { useState } from 'react';
+import { Button, Textarea } from '@exxat/ds/packages/ui/src';
+
+export interface QuestionCommentBoxProps {
+  questionId: number;
+  initialComment?: string;
+  onSave?: (questionId: number, comment: string) => void;
+}
+
+export function QuestionCommentBox({ questionId, initialComment = '', onSave }: QuestionCommentBoxProps) {
+  const [open, setOpen] = useState(Boolean(initialComment));
+  const [text, setText] = useState(initialComment);
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = () => {
+    onSave?.(questionId, text.trim());
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
+  };
+
+  if (!open) {
+    return (
+      <div className="mt-6 flex justify-end">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setOpen(true)}
+          aria-label="Flag this question for faculty review"
+        >
+          <i className="fa-light fa-flag" aria-hidden="true" />
+          Flag this question
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="mt-6 rounded-xl"
+      style={{
+        background: 'var(--state-warning-bg)',
+        border: '1px solid var(--state-warning-border)',
+        padding: '16px 20px',
+      }}
+    >
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2">
+          <i
+            className="fa-light fa-flag"
+            aria-hidden="true"
+            style={{ color: 'var(--state-warning-darkest)', fontSize: 14 }}
+          />
+          <p
+            className="text-xs font-bold uppercase tracking-wider"
+            style={{ color: 'var(--state-warning-darkest)' }}
+          >
+            Flag question for faculty review
+          </p>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => setOpen(false)}
+          aria-label="Close comment box"
+        >
+          <i className="fa-light fa-xmark" aria-hidden="true" />
+        </Button>
+      </div>
+
+      <p className="text-xs mb-3" style={{ color: 'var(--state-warning-dark)' }}>
+        Describe the issue (typo, ambiguous wording, suspected error). Faculty will review post-exam — you will not receive a real-time response.
+      </p>
+
+      <Textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        rows={3}
+        placeholder="e.g. Option C and D appear to describe the same condition…"
+        aria-label="Question comment"
+        className="bg-card"
+      />
+
+      <div className="flex items-center justify-between gap-3 mt-3">
+        <span
+          className="text-xs"
+          style={{
+            color: saved ? 'var(--state-success-dark)' : 'var(--muted-foreground)',
+            fontWeight: saved ? 600 : 400,
+          }}
+          aria-live="polite"
+        >
+          {saved ? (
+            <>
+              <i className="fa-solid fa-check" aria-hidden="true" /> Comment saved · Faculty will review
+            </>
+          ) : (
+            'Saved comments are submitted with your exam'
+          )}
+        </span>
+        <Button
+          size="sm"
+          onClick={handleSave}
+          disabled={text.trim().length === 0}
+          aria-label="Save comment"
+        >
+          <i className="fa-light fa-floppy-disk" aria-hidden="true" />
+          Save Comment
+        </Button>
+      </div>
+    </div>
+  );
+}

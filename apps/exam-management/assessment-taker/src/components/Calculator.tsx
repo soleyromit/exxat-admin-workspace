@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 /**
  * Calculator — Exxat Exam Management
  *
@@ -34,8 +34,8 @@ import React, { useState } from 'react';
  * TOKEN USAGE
  *   All values from tokens.calc.* in design-tokens.ts
  */
-import { XIcon } from 'lucide-react';
 import { tokens } from '../tokens/design-tokens';
+import { Button as DSButton } from '@exxat/ds/packages/ui/src';
 export interface CalculatorProps {
   onClose: () => void;
 }
@@ -186,7 +186,7 @@ export function Calculator({
       backgroundColor: tokens.surface.white,
       border: `1px solid ${tokens.border.default}`,
       borderRadius: '12px',
-      boxShadow: '0 20px 60px rgba(0,0,0,0.15)'
+      boxShadow: '0 20px 60px var(--shadow-heavy, rgba(0,0,0,0.15))'
     }}>
       {/* Figma layer: "Calc/Header" */}
       <div className="flex items-center justify-between" style={{
@@ -200,9 +200,8 @@ export function Calculator({
         }}>
           {(['standard', 'scientific'] as CalcMode[]).map((m) =>
           // Figma layer: "ModeBtn/{m}" (variant: active | default)
-          <button key={m} onClick={() => setMode(m)} className="font-semibold rounded-md transition-colors" style={{
+          <button key={m} onClick={() => setMode(m)} className="font-semibold text-xs rounded-md transition-colors" style={{
             padding: '4px 12px',
-            fontSize: '12px',
             backgroundColor: mode === m ? tokens.calc.equalBtn : 'transparent',
             color: mode === m ? tokens.text.inverse : tokens.text.subtle
           }}>
@@ -210,14 +209,9 @@ export function Calculator({
             </button>)}
         </div>
         {/* Figma layer: "CloseButton" */}
-        <button onClick={onClose} className="transition-colors hover:text-gray-600" style={{
-          color: tokens.text.placeholder
-        }}>
-          <XIcon style={{
-            width: '16px',
-            height: '16px'
-          }} />
-        </button>
+        <DSButton variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close calculator">
+          <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 16 }} />
+        </DSButton>
       </div>
 
       {/* Figma layer: "Calc/Display"
@@ -227,18 +221,15 @@ export function Calculator({
         backgroundColor: tokens.calc.displayBg,
         textAlign: 'right'
       }}>
-        <div style={{
+        <div className="text-xs" style={{
           height: '16px',
           marginBottom: '4px',
-          fontSize: '12px',
           color: tokens.text.placeholder,
           fontFamily: 'monospace'
         }}>
           {previousValue !== null && operation ? `${previousValue} ${operation}` : ''}
         </div>
-        <div style={{
-          fontSize: '30px',
-          fontWeight: 700,
+        <div className="text-[30px] font-bold" style={{
           color: tokens.text.inverse,
           fontFamily: 'monospace',
           overflow: 'hidden',

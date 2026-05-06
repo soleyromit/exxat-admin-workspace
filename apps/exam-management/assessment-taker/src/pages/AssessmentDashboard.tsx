@@ -17,8 +17,10 @@
  *   - Standalone assessment login (header shows standalone mode)
  */
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@exxat/ds/packages/ui/src';
+import { ExamBadge } from '../components/ExamBadge';
 import {
   MOCK_ASSESSMENTS,
   Assessment,
@@ -37,12 +39,12 @@ const t = {
   muted: 'var(--muted)',
   brand: 'var(--brand-color)',
   brandDark: 'var(--brand-color-dark)',
-  brandSurface: 'var(--brand-tint-light, #F5F3FF)',
+  brandSurface: 'var(--brand-color-light, #F5F3FF)',
   brandBorder: 'var(--brand-tint, #EDE9FE)',
   fg: 'var(--foreground)',
   fgMuted: 'var(--muted-foreground)',
   border: 'var(--border)',
-  borderControl: 'var(--border-control)',
+  borderControl: 'var(--border)',
   ring: 'var(--ring)',
   destructive: 'var(--destructive)',
 };
@@ -50,49 +52,26 @@ const t = {
 // ─── Status badge ─────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: AssessmentStatus }) {
   const config: Record<string, { label: string; bg: string; text: string; dot?: string }> = {
-    active:            { label: 'Ready to Start', bg: '#DCFCE7', text: '#15803D', dot: '#4ADE80' },
+    active:            { label: 'Ready to Start', bg: 'var(--state-success-bg-soft)', text: 'var(--state-success-dark)', dot: 'var(--state-success-accent)' },
     in_progress:       { label: 'In Progress',    bg: t.brandSurface, text: 'var(--brand-color-dark)', dot: t.brand },
     upcoming:          { label: 'Upcoming',        bg: 'var(--muted)', text: 'var(--muted-foreground)' },
-    submitted:         { label: 'Submitted',       bg: '#FFFBEB', text: '#92400E', dot: '#FACC15' },
-    results_pending:   { label: 'Results Pending', bg: '#FFFBEB', text: '#92400E', dot: '#F59E0B' },
-    results_published: { label: 'Results Available', bg: '#DCFCE7', text: '#15803D', dot: '#4ADE80' },
-    review_available:  { label: 'Review Open',    bg: '#EFF6FF', text: '#1D4ED8', dot: '#3B82F6' },
+    submitted:         { label: 'Submitted',       bg: 'var(--state-warning-bg)', text: 'var(--state-warning-darkest)', dot: 'var(--state-warning-accent)' },
+    results_pending:   { label: 'Results Pending', bg: 'var(--state-warning-bg)', text: 'var(--state-warning-darkest)', dot: 'var(--state-warning-text)' },
+    results_published: { label: 'Results Available', bg: 'var(--state-success-bg-soft)', text: 'var(--state-success-dark)', dot: 'var(--state-success-accent)' },
+    review_available:  { label: 'Review Open',    bg: 'var(--state-info-blue-bg)', text: 'var(--state-info-blue-dark)', dot: 'var(--state-info-blue-mid)' },
     review_complete:   { label: 'Review Complete', bg: 'var(--muted)', text: 'var(--muted-foreground)' },
   };
   const c = config[status] ?? config.upcoming;
-  return (
-    <span
-      style={{
-        display: 'inline-flex', alignItems: 'center', gap: 5,
-        padding: '3px 10px', borderRadius: 99,
-        background: c.bg, color: c.text,
-        fontSize: 11, fontWeight: 600, letterSpacing: 0.3,
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {c.dot && (
-        <span style={{ width: 6, height: 6, borderRadius: '50%', background: c.dot, flexShrink: 0 }} />
-      )}
-      {c.label}
-    </span>
-  );
+  return <ExamBadge bg={c.bg} fg={c.text} dot={c.dot}>{c.label}</ExamBadge>;
 }
 
 // ─── Accommodation chip ───────────────────────────────────────────────────────
 function AccommodationChip({ timeMultiplier }: { timeMultiplier: number }) {
   return (
-    <span
-      style={{
-        display: 'inline-flex', alignItems: 'center', gap: 5,
-        padding: '3px 10px', borderRadius: 99,
-        background: '#EFF6FF', color: '#1D4ED8',
-        fontSize: 11, fontWeight: 600,
-      }}
-      title="Time accommodation approved by Student Services"
-    >
+    <ExamBadge bg="var(--state-info-blue-bg)" fg="var(--state-info-blue-dark)" title="Time accommodation approved by Student Services">
       <i className="fa-light fa-clock" aria-hidden="true" />
       {timeMultiplier}× Time
-    </span>
+    </ExamBadge>
   );
 }
 
@@ -126,7 +105,7 @@ function ActiveExamCard({ exam }: { exam: Assessment }) {
         border: `2px solid ${t.brand}`,
         borderRadius: 16,
         padding: 28,
-        boxShadow: '0 4px 24px rgba(124,58,237,0.10)',
+        boxShadow: '0 4px 24px var(--shadow-brand)',
         position: 'relative',
         overflow: 'hidden',
       }}
@@ -141,7 +120,7 @@ function ActiveExamCard({ exam }: { exam: Assessment }) {
             <StatusBadge status={exam.status} />
             {exam.accommodation && <AccommodationChip timeMultiplier={exam.accommodation.timeMultiplier} />}
             {exam.isHighStakes && (
-              <span style={{ fontSize: 11, fontWeight: 600, color: '#92400E', background: '#FFFBEB', padding: '3px 10px', borderRadius: 99 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--state-warning-darkest)', background: 'var(--state-warning-bg)', padding: '3px 10px', borderRadius: 99 }}>
                 High-Stakes
               </span>
             )}
@@ -163,7 +142,7 @@ function ActiveExamCard({ exam }: { exam: Assessment }) {
               <i className="fa-light fa-clock" aria-hidden="true" style={{ color: t.brand }} />
               {formatDuration(getEffectiveDuration(exam))} total
               {exam.accommodation && (
-                <span style={{ color: '#2563EB', fontSize: 12 }}>
+                <span style={{ color: 'var(--state-info-blue-dark)', fontSize: 12 }}>
                   ({formatDuration(exam.durationMinutes)} + {((exam.accommodation.timeMultiplier - 1) * 100).toFixed(0)}% accommodation)
                 </span>
               )}
@@ -181,41 +160,32 @@ function ActiveExamCard({ exam }: { exam: Assessment }) {
             <div
               style={{
                 textAlign: 'center',
-                background: isWarning ? '#FEF2F2' : t.brandSurface,
-                border: `1px solid ${isWarning ? '#FECACA' : t.brandBorder}`,
+                background: isWarning ? 'var(--state-error-bg-soft)' : t.brandSurface,
+                border: `1px solid ${isWarning ? 'var(--state-error-border-soft)' : t.brandBorder}`,
                 borderRadius: 12, padding: '10px 20px',
               }}
               aria-live="polite"
               aria-label={`Time remaining: ${formatCountdown(countdown)}`}
             >
-              <p style={{ fontSize: 11, fontWeight: 600, color: isWarning ? '#B91C1C' : t.fgMuted, marginBottom: 2 }}>TIME REMAINING</p>
-              <p style={{ fontFamily: 'Menlo, Monaco, monospace', fontSize: 26, fontWeight: 700, color: isWarning ? '#B91C1C' : t.brand, letterSpacing: 2 }}>
+              <p style={{ fontSize: 11, fontWeight: 600, color: isWarning ? 'var(--state-error-text-dark)' : t.fgMuted, marginBottom: 2 }}>TIME REMAINING</p>
+              <p style={{ fontFamily: 'Menlo, Monaco, monospace', fontSize: 26, fontWeight: 700, color: isWarning ? 'var(--state-error-text-dark)' : t.brand, letterSpacing: 2 }}>
                 {formatCountdown(countdown)}
               </p>
               {/* Progress bar */}
               <div style={{ marginTop: 6, height: 3, background: t.muted, borderRadius: 99, width: 120, margin: '6px auto 0' }}>
-                <div style={{ height: '100%', background: isWarning ? '#EF4444' : t.brand, borderRadius: 99, width: `${Math.min(100, pct)}%`, transition: 'width 1s linear' }} />
+                <div style={{ height: '100%', background: isWarning ? 'var(--state-error-accent)' : t.brand, borderRadius: 99, width: `${Math.min(100, pct)}%`, transition: 'width 1s linear' }} />
               </div>
             </div>
           )}
 
-          <button
+          <Button
+            size="lg"
             onClick={() => navigate(isInProgress ? `/exam/${exam.id}/take` : `/exam/${exam.id}/setup`)}
-            style={{
-              background: t.brand, color: '#FFFFFF',
-              border: 'none', borderRadius: 10,
-              padding: '14px 28px', fontSize: 15, fontWeight: 700,
-              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
-              boxShadow: '0 2px 8px rgba(124,58,237,0.25)',
-              transition: 'background 0.15s ease',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = t.brandDark)}
-            onMouseLeave={e => (e.currentTarget.style.background = t.brand)}
             aria-label={isInProgress ? `Continue ${exam.title}` : `Start ${exam.title}`}
           >
             <i className={`fa-solid ${isInProgress ? 'fa-play' : 'fa-arrow-right'}`} aria-hidden="true" />
             {isInProgress ? 'Continue Exam' : 'Start Exam'}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -255,7 +225,7 @@ function UpcomingCard({ exam }: { exam: Assessment }) {
       transition: 'box-shadow 0.15s ease, border-color 0.15s ease',
     }}
       onMouseEnter={e => {
-        e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)';
+        e.currentTarget.style.boxShadow = '0 4px 16px var(--shadow-card)';
         e.currentTarget.style.borderColor = t.borderControl;
       }}
       onMouseLeave={e => {
@@ -315,7 +285,7 @@ function PastAssessmentRow({ exam, onView }: { exam: Assessment; onView: () => v
         {isPublished && exam.score !== undefined && (
           <span style={{
             fontSize: 14, fontWeight: 700,
-            color: exam.score >= exam.passingScore ? '#15803D' : '#B91C1C',
+            color: exam.score >= exam.passingScore ? 'var(--state-success-dark)' : 'var(--state-error-text-dark)',
           }}>
             {exam.score}%
           </span>
@@ -326,17 +296,13 @@ function PastAssessmentRow({ exam, onView }: { exam: Assessment; onView: () => v
           </span>
         )}
         {(isPublished || hasReview) && (
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={onView}
-            style={{
-              padding: '6px 14px', borderRadius: 8,
-              border: `1px solid ${t.brandBorder}`,
-              background: t.brandSurface, color: t.brand,
-              fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            }}
           >
             {hasReview ? 'Enter Review' : 'View Results'}
-          </button>
+          </Button>
         )}
       </div>
     </div>
@@ -353,16 +319,15 @@ function CompetencySummaryStrip({ onViewAll }: { onViewAll: () => void }) {
           <h3 style={{ fontSize: 15, fontWeight: 700, color: t.fg }}>Competency Progress</h3>
           <p style={{ fontSize: 13, color: t.fgMuted }}>Cross-assessment performance by content area</p>
         </div>
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={onViewAll}
-          style={{
-            fontSize: 13, color: t.brand, fontWeight: 600,
-            background: 'none', border: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 4,
-          }}
+          className="font-semibold"
+          style={{ color: t.brand }}
         >
           View full dashboard <i className="fa-light fa-arrow-right" aria-hidden="true" />
-        </button>
+        </Button>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
         {published.map(course =>
@@ -372,7 +337,7 @@ function CompetencySummaryStrip({ onViewAll }: { onViewAll: () => void }) {
                 <span style={{ fontSize: 12, color: t.fgMuted, flex: 1, paddingRight: 8 }}>{ca.name}</span>
                 <span style={{
                   fontSize: 12, fontWeight: 700,
-                  color: ca.score >= 75 ? '#15803D' : ca.score >= 60 ? '#D97706' : '#B91C1C',
+                  color: ca.score >= 75 ? 'var(--state-success-dark)' : ca.score >= 60 ? 'var(--state-warning-dark)' : 'var(--state-error-text-dark)',
                 }}>
                   {ca.score}%
                 </span>
@@ -381,7 +346,7 @@ function CompetencySummaryStrip({ onViewAll }: { onViewAll: () => void }) {
                 <div style={{
                   height: '100%', borderRadius: 99,
                   width: `${ca.score}%`,
-                  background: ca.score >= 75 ? '#4ADE80' : ca.score >= 60 ? '#FACC15' : '#F87171',
+                  background: ca.score >= 75 ? 'var(--state-success-accent)' : ca.score >= 60 ? 'var(--state-warning-accent)' : 'var(--state-bar-fail)',
                   transition: 'width 0.6s ease',
                 }} />
               </div>
@@ -405,65 +370,8 @@ export function AssessmentDashboard() {
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: t.bg, fontFamily: 'Inter, system-ui, sans-serif' }}>
-
-      {/* ─── Header ─────────────────────────────────────────────────────────── */}
-      <header style={{
-        background: t.card, borderBottom: `1px solid ${t.border}`,
-        padding: '0 24px', height: 56,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        position: 'sticky', top: 0, zIndex: 100,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          {/* Exxat wordmark */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{
-              width: 28, height: 28, borderRadius: 8,
-              background: t.brand, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <span style={{ color: '#FFF', fontSize: 13, fontWeight: 800 }}>E</span>
-            </div>
-            <span style={{ fontWeight: 700, fontSize: 15, color: t.fg }}>Exxat One</span>
-          </div>
-          {/* Breadcrumb */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: t.fgMuted, fontSize: 13 }}>
-            <i className="fa-light fa-chevron-right" aria-hidden="true" style={{ fontSize: 10 }} />
-            <span style={{ color: t.fg, fontWeight: 500 }}>Exam Management</span>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          {/* Notification bell */}
-          <button
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: t.fgMuted, fontSize: 17, position: 'relative' }}
-            aria-label="Notifications"
-          >
-            <i className="fa-light fa-bell" aria-hidden="true" />
-            <span style={{
-              position: 'absolute', top: -3, right: -3,
-              width: 8, height: 8, borderRadius: '50%',
-              background: '#EF4444', border: `2px solid ${t.card}`,
-            }} aria-label="You have unread notifications" />
-          </button>
-          {/* Student avatar */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: '50%',
-              background: t.brandSurface, border: `2px solid ${t.brandBorder}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: t.brand }}>RS</span>
-            </div>
-            <div style={{ display: 'none' }}>
-              <p style={{ fontSize: 13, fontWeight: 600, color: t.fg }}>Ramona Sanchez</p>
-              <p style={{ fontSize: 11, color: t.fgMuted }}>ANAT 601 · PT Program</p>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* ─── Page content ───────────────────────────────────────────────────── */}
-      <main id="main-content" tabIndex={-1} style={{ maxWidth: 900, margin: '0 auto', padding: '28px 24px 60px' }}>
+    <div style={{ background: t.bg, fontFamily: 'Inter, system-ui, sans-serif', minHeight: '100%' }}>
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '28px 24px 60px' }}>
 
         {/* Page title */}
         <div style={{ marginBottom: 24 }}>
@@ -477,7 +385,7 @@ export function AssessmentDashboard() {
         {active.length > 0 && (
           <section aria-label="Active exams" style={{ marginBottom: 32 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ADE80', flexShrink: 0 }} />
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--state-success-accent)', flexShrink: 0 }} />
               <h2 style={{ fontSize: 12, fontWeight: 700, color: t.fgMuted, textTransform: 'uppercase', letterSpacing: 0.8 }}>
                 Active Now
               </h2>
@@ -490,34 +398,30 @@ export function AssessmentDashboard() {
         {reviewOpen.length > 0 && (
           <section aria-label="Open review sessions" style={{ marginBottom: 32 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <i className="fa-light fa-eye" aria-hidden="true" style={{ color: '#2563EB', fontSize: 13 }} />
+              <i className="fa-light fa-eye" aria-hidden="true" style={{ color: 'var(--state-info-blue-dark)', fontSize: 13 }} />
               <h2 style={{ fontSize: 12, fontWeight: 700, color: t.fgMuted, textTransform: 'uppercase', letterSpacing: 0.8 }}>
                 Review Sessions Open
               </h2>
             </div>
             {reviewOpen.map(exam => (
               <div key={exam.id} style={{
-                background: '#EFF6FF', border: '1.5px solid #BFDBFE', borderRadius: 12, padding: '16px 20px',
+                background: 'var(--state-info-blue-bg)', border: '1.5px solid var(--state-info-blue-border)', borderRadius: 12, padding: '16px 20px',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
               }}>
                 <div>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: '#1E40AF' }}>{exam.title}</p>
-                  <p style={{ fontSize: 13, color: '#3B82F6' }}>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--state-info-blue-dark)' }}>{exam.title}</p>
+                  <p style={{ fontSize: 13, color: 'var(--state-info-blue-mid)' }}>
                     <i className="fa-light fa-lock" aria-hidden="true" style={{ marginRight: 5 }} />
                     Lockdown review · Correct answers + rationale visible ·{' '}
                     {exam.reviewSessionEnd && `Closes ${exam.reviewSessionEnd.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`}
                   </p>
                 </div>
-                <button
+                <Button
                   onClick={() => navigate(`/exam/${exam.id}/results`)}
-                  style={{
-                    padding: '8px 18px', borderRadius: 8,
-                    background: '#2563EB', color: '#FFF',
-                    border: 'none', fontWeight: 600, fontSize: 13, cursor: 'pointer',
-                  }}
+                  style={{ background: 'var(--state-info-blue-dark)' }}
                 >
                   Enter Review <i className="fa-solid fa-arrow-right" aria-hidden="true" />
-                </button>
+                </Button>
               </div>
             ))}
           </section>
@@ -573,7 +477,7 @@ export function AssessmentDashboard() {
         ) : (
           <CompetencySummaryStrip onViewAll={() => navigate('/competency')} />
         )}
-      </main>
+      </div>
     </div>
   );
 }

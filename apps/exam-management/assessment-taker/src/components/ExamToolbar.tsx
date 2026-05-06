@@ -1,16 +1,9 @@
-import React, { useState } from 'react';
-import {
-  SettingsIcon,
-  FlagIcon,
-  ChevronDownIcon,
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  Volume2Icon } from
-'lucide-react';
+import { useState } from 'react';
 import { SettingsPanel } from './SettingsPanel';
 import { QuestionJumpPopover } from './QuestionJumpPopover';
 import { Question } from '../data/questions';
 import { Tooltip } from './Tooltip';
+import { Button as DSButton } from '@exxat/ds/packages/ui/src';
 export interface ExamToolbarProps {
   timerFormatted: string;
   answeredCount: number;
@@ -97,8 +90,8 @@ export function ExamToolbar({
     <header
       className="border-b flex flex-col shrink-0 z-40 relative transition-colors"
       style={{
-        backgroundColor: 'var(--surface-white)',
-        borderColor: 'var(--border-default)'
+        backgroundColor: 'var(--card)',
+        borderColor: 'var(--border)'
       }}>
       
       <div className="h-14 flex items-center justify-between px-4">
@@ -112,15 +105,14 @@ export function ExamToolbar({
           <div
             className="w-px h-5 hidden sm:block shrink-0"
             style={{
-              backgroundColor: 'var(--border-medium)'
+              backgroundColor: 'var(--border)'
             }} />
           
           <h1
-            className="font-heading font-bold text-sm truncate max-w-[200px]"
+            className="font-bold text-sm truncate max-w-[200px]"
             style={{
-              color: 'var(--text-primary)'
+              color: 'var(--foreground)'
             }}>
-            
             Introduction to Pathology
           </h1>
 
@@ -130,11 +122,11 @@ export function ExamToolbar({
                 <button
                 onMouseDown={(e) => e.stopPropagation()}
                 onClick={() => setShowJumpPopover(!showJumpPopover)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-heading font-semibold transition-colors hover:opacity-80"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors hover:opacity-80"
                 style={{
-                  backgroundColor: 'var(--surface-subtle)',
-                  borderColor: 'var(--border-medium)',
-                  color: 'var(--text-secondary)'
+                  backgroundColor: 'var(--muted)',
+                  borderColor: 'var(--border)',
+                  color: 'var(--muted-foreground)'
                 }}
                 aria-label="Jump to a specific question">
                 
@@ -145,12 +137,11 @@ export function ExamToolbar({
                   style={{
                     color: 'var(--state-flagged-text)'
                   }}>
-                  
-                      · <FlagIcon size={11} fill="currentColor" />{' '}
+                      · <i className="fa-solid fa-flag" aria-hidden="true" style={{ fontSize: 11 }} />{' '}
                       {flaggedCount}
                     </span>
                 }
-                  <ChevronDownIcon size={14} />
+                  <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 14 }} />
                 </button>
               </Tooltip>
               <QuestionJumpPopover
@@ -174,13 +165,13 @@ export function ExamToolbar({
               style={{
                 backgroundColor: isLastFiveMinutes ?
                 'var(--semantic-error-bg)' :
-                'var(--surface-subtle)',
+                'var(--muted)',
                 borderColor: isLastFiveMinutes ?
                 'var(--semantic-error-border)' :
-                'var(--border-medium)',
+                'var(--border)',
                 color: isLastFiveMinutes ?
                 'var(--semantic-error-text)' :
-                'var(--text-primary)'
+                'var(--foreground)'
               }}
               aria-label={`Time remaining: ${timerFormatted}`}>
               
@@ -194,111 +185,100 @@ export function ExamToolbar({
           {/* Quick narrator toggle — visible only when narrator is ON */}
           {voiceNarrator &&
           <Tooltip content="Turn off voice narrator" position="bottom">
-              <button
-              onClick={onToggleVoiceNarrator}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-heading font-semibold transition-all exam-focus shrink-0 animate-pulse"
-              style={{
-                backgroundColor: 'var(--exam-accent-light)',
-                color: 'var(--exam-accent)',
-                border: '1px solid var(--exam-accent-border)'
-              }}
-              aria-label="Voice narrator is on — click to turn off">
-              
-                <Volume2Icon size={14} />
+              <DSButton
+                variant="outline"
+                size="sm"
+                onClick={onToggleVoiceNarrator}
+                aria-label="Voice narrator is on — click to turn off"
+                className="animate-pulse shrink-0"
+                style={{
+                  backgroundColor: 'var(--exam-accent-light)',
+                  color: 'var(--exam-accent)',
+                  borderColor: 'var(--exam-accent-border)',
+                }}
+              >
+                <i className="fa-light fa-volume" aria-hidden="true" style={{ fontSize: 14 }} />
                 <span className="hidden sm:inline">Narrator On</span>
-              </button>
+              </DSButton>
             </Tooltip>
           }
 
           {/* Previous button */}
           {currentIndex > 0 &&
-          <Tooltip
-            content="Go to the previous question (←)"
-            position="bottom">
-            
-              <button
-              onClick={() => onNavigate(currentIndex - 1)}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-md border text-sm font-heading font-normal transition-all hover:opacity-80 exam-focus shrink-0"
-              style={{
-                borderColor: 'var(--border-medium)',
-                color: 'var(--text-secondary)',
-                backgroundColor: 'var(--surface-white)'
-              }}
-              aria-label="Previous question">
-              
-                <ArrowLeftIcon size={14} />
+          <Tooltip content="Go to the previous question (←)" position="bottom">
+              <DSButton
+                variant="outline"
+                size="sm"
+                onClick={() => onNavigate(currentIndex - 1)}
+                aria-label="Previous question"
+                className="shrink-0"
+              >
+                <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 14 }} />
                 <span className="hidden sm:inline">Previous</span>
-              </button>
+              </DSButton>
             </Tooltip>
           }
 
           {/* Flag button */}
-          <Tooltip
-            content="Flag this question for review later"
-            position="bottom">
-            
-            <button
+          <Tooltip content="Flag this question for review later" position="bottom">
+            <DSButton
+              variant="outline"
+              size="sm"
               onClick={onToggleFlag}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-md border text-sm font-heading font-normal transition-all exam-focus shrink-0"
-              style={{
-                backgroundColor: isFlaggedCurrent ?
-                'var(--state-flagged-bg)' :
-                'var(--surface-white)',
-                borderColor: isFlaggedCurrent ?
-                'var(--state-flagged-border)' :
-                'var(--border-medium)',
-                color: isFlaggedCurrent ?
-                'var(--state-flagged-text)' :
-                'var(--text-secondary)'
-              }}
-              aria-label={
-              isFlaggedCurrent ? 'Unflag Question' : 'Flag Question'
-              }>
-              
-              <FlagIcon
-                size={14}
-                fill={isFlaggedCurrent ? 'currentColor' : 'none'} />
-              
+              aria-label={isFlaggedCurrent ? 'Unflag Question' : 'Flag Question'}
+              className="shrink-0"
+              style={
+                isFlaggedCurrent
+                  ? {
+                      backgroundColor: 'var(--state-flagged-bg)',
+                      borderColor: 'var(--state-flagged-border)',
+                      color: 'var(--state-flagged-text)',
+                    }
+                  : undefined
+              }
+            >
+              <i className={`${isFlaggedCurrent ? 'fa-solid' : 'fa-light'} fa-flag`} aria-hidden="true" style={{ fontSize: 14 }} />
               <span className="hidden sm:inline">
                 {isFlaggedCurrent ? 'Flagged' : 'Flag'}
               </span>
-            </button>
+            </DSButton>
           </Tooltip>
 
           {/* Next button */}
           {!isLastQuestion &&
-          <Tooltip
-            content="Go to the next question (Enter or →)"
-            position="bottom">
-            
-              <button
-              onClick={() => onNavigate(currentIndex + 1)}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-heading font-normal transition-all hover:opacity-90 exam-focus shrink-0"
-              style={{
-                backgroundColor: 'var(--exam-accent)',
-                color: 'var(--exam-accent-text)'
-              }}
-              aria-label="Next question">
-              
+          <Tooltip content="Go to the next question (Enter or →)" position="bottom">
+              <DSButton
+                variant="default"
+                size="sm"
+                onClick={() => onNavigate(currentIndex + 1)}
+                aria-label="Next question"
+                className="shrink-0"
+                style={{
+                  backgroundColor: 'var(--exam-accent)',
+                  color: 'var(--exam-accent-text)',
+                }}
+              >
                 <span className="hidden sm:inline">Next</span>
-                <ArrowRightIcon size={14} />
-              </button>
+                <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 14 }} />
+              </DSButton>
             </Tooltip>
           }
 
           {/* Submit — always visible */}
           <Tooltip content="Submit your exam for grading" position="bottom">
-            <button
+            <DSButton
+              variant="default"
+              size="sm"
               onClick={onSubmit}
-              className="ml-1 px-4 py-1.5 rounded-md font-heading text-sm font-bold transition-all hover:opacity-90 exam-focus shrink-0 shadow-sm"
+              aria-label="Submit exam"
+              className="ml-1 shrink-0 font-bold shadow-sm"
               style={{
-                backgroundColor: 'var(--brand-primary)',
-                color: 'var(--brand-primary-text)'
+                backgroundColor: 'var(--brand-color)',
+                color: 'var(--brand-foreground)',
               }}
-              aria-label="Submit exam">
-              
+            >
               Submit
-            </button>
+            </DSButton>
           </Tooltip>
 
           {/* Settings — last in order */}
@@ -311,14 +291,14 @@ export function ExamToolbar({
                 style={{
                   color: showSettings ?
                   'var(--exam-accent)' :
-                  'var(--text-secondary)',
+                  'var(--muted-foreground)',
                   backgroundColor: showSettings ?
                   'var(--exam-accent-light)' :
                   'transparent'
                 }}
                 aria-label="Settings">
                 
-                <SettingsIcon size={18} />
+                <i className="fa-light fa-gear" aria-hidden="true" style={{ fontSize: 18 }} />
               </button>
             </Tooltip>
 
@@ -353,7 +333,7 @@ export function ExamToolbar({
         style={{
           width: '100%',
           height: '3px',
-          backgroundColor: 'var(--border-default)'
+          backgroundColor: 'var(--border)'
         }}>
         
         <div

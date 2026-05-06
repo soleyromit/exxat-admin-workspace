@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 /**
  * QuestionCard — Exxat Exam Management
  *
@@ -44,11 +44,11 @@ import React, { useEffect, useState, useRef } from 'react';
  *   Points badge      → Brand/PrimaryMidBg / Brand/PrimaryMid
  *   Required badge    → Semantic/ErrorBg / Semantic/ErrorText / Semantic/ErrorBorder
  */
-import { MicIcon, MicOffIcon, ChevronDownIcon } from 'lucide-react';
 import { Question } from '../data/questions';
 import { Button } from './Button';
 import { NextButton } from './NextButton';
 import { tokens } from '../tokens/design-tokens';
+import { Button as DSButton, Textarea as DSTextarea } from '@exxat/ds/packages/ui/src';
 export type FontSizeLevel = 'normal' | 'large' | 'xlarge';
 export interface QuestionCardProps {
   question: Question;
@@ -113,7 +113,7 @@ export function QuestionCard({
       backgroundColor: tokens.surface.white,
       border: `1px solid ${tokens.border.default}`,
       borderRadius: '12px',
-      boxShadow: '0px 1px 2px rgba(0,0,0,0.05)'
+      boxShadow: '0px 1px 2px var(--shadow-card)'
     }}>
       {/* Figma layer: "Card/ScrollArea"
                        ⚠️ Mark as vertically scrollable in Figma — use "Clip content" */}
@@ -139,7 +139,7 @@ export function QuestionCard({
                 gap: '12px'
               }}>
                 {/* Figma layer: "QuestionLabel" */}
-                <span className="font-heading font-semibold" style={{
+                <span className="font-semibold" style={{
                   fontSize: '0.875em',
                   lineHeight: 1.43,
                   letterSpacing: '0.3px',
@@ -149,7 +149,7 @@ export function QuestionCard({
                   QUESTION {questionIndex + 1} OF {totalQuestions}
                 </span>
                 {/* Figma layer: "RequiredBadge" */}
-                {question.required && <span className="font-heading font-medium" style={{
+                {question.required && <span className="font-medium" style={{
                   fontSize: '0.75em',
                   lineHeight: 1.33,
                   color: tokens.semantic.errorText,
@@ -162,7 +162,7 @@ export function QuestionCard({
                   </span>}
               </div>
               {/* Figma layer: "PointsBadge" */}
-              <span className="font-heading font-medium" style={{
+              <span className="font-medium" style={{
                 fontSize: '0.875em',
                 lineHeight: 1.43,
                 color: tokens.brand.primaryMid,
@@ -179,7 +179,7 @@ export function QuestionCard({
               gap: '4px'
             }}>
               {/* Figma layer: "QuestionH2" */}
-              <h2 className="font-heading font-normal" style={{
+              <h2 className="font-normal" style={{
                 fontSize: '1.5em',
                 lineHeight: 1.25,
                 color: tokens.text.primary
@@ -187,7 +187,7 @@ export function QuestionCard({
                 {question.text}
               </h2>
               {/* Figma layer: "RequiredAsterisk" */}
-              {question.required && <span className="font-heading shrink-0" style={{
+              {question.required && <span className="shrink-0" style={{
                 fontSize: '1.5em',
                 lineHeight: 1.25,
                 color: tokens.semantic.errorDot
@@ -246,7 +246,7 @@ export function QuestionCard({
                       }} />}
                       </div>
                       {/* Figma layer: "OptionLabel" */}
-                      <span className="font-heading" style={{
+                      <span className="" style={{
                       fontSize: '1em',
                       lineHeight: 1.5,
                       color: isSelected ? tokens.text.primary : tokens.text.secondary,
@@ -283,16 +283,14 @@ export function QuestionCard({
                 paddingRight: '18px',
                 outlineColor: tokens.brand.primary
               }} aria-expanded={dropdownOpen} aria-haspopup="listbox">
-                  <span className="font-heading" style={{
+                  <span className="" style={{
                   fontSize: '1em',
                   lineHeight: 1.5,
                   color: selectedAnswer ? tokens.text.primary : tokens.text.subtle
                 }}>
                     {selectedAnswer || 'Select an option...'}
                   </span>
-                  <ChevronDownIcon className={`w-5 h-5 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} style={{
-                  color: tokens.text.subtle
-                }} />
+                  <i className={`fa-light fa-chevron-down transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} aria-hidden="true" style={{ fontSize: 14, color: tokens.text.subtle }} />
                 </button>
 
                 {/* Figma layer: "DropdownList" — absolutely positioned overlay */}
@@ -300,19 +298,18 @@ export function QuestionCard({
                 backgroundColor: tokens.surface.white,
                 border: `1px solid ${tokens.border.default}`,
                 borderRadius: '12px',
-                boxShadow: '0px 4px 12px rgba(0,0,0,0.1)'
+                boxShadow: '0 4px 12px var(--shadow-card)'
               }}>
                     {question.options.map((option, idx) => {
                   const isSelected = selectedAnswer === option;
                   return (
                     // Figma layer: "DropdownOption" (variant: selected | default)
-                    <button key={idx} onClick={() => handleDropdownSelect(option)} className="w-full text-left font-heading transition-colors" style={{
+                    <button key={idx} onClick={() => handleDropdownSelect(option)} className={`w-full text-left transition-colors ${isSelected ? 'font-medium' : 'font-normal'}`} style={{
                       fontSize: '1em',
                       lineHeight: 1.5,
                       padding: '14px 18px',
                       color: isSelected ? tokens.brand.primary : tokens.text.secondary,
-                      backgroundColor: isSelected ? tokens.brand.primaryBg : tokens.surface.white,
-                      fontWeight: isSelected ? 500 : 400
+                      backgroundColor: isSelected ? tokens.brand.primaryBg : tokens.surface.white
                     }} role="option" aria-selected={isSelected}>
                           {option}
                         </button>);
@@ -333,67 +330,67 @@ export function QuestionCard({
               <div className="relative">
                 {/* Figma layer: "TextAreaInput"
                 ⚠️ Textarea is a form element — use a Figma text area placeholder component */}
-                <textarea value={displayValue} onChange={(e) => handleTextChange(e.target.value)} placeholder="Write your detailed explanation here..." className="w-full font-heading resize-none focus:outline-none transition-colors" style={{
-                fontSize: '1em',
-                lineHeight: 1.5,
-                height: '200px',
-                padding: '16px',
-                borderRadius: '12px',
-                border: `2px solid ${tokens.border.default}`,
-                color: tokens.text.primary,
-                backgroundColor: tokens.surface.white
-              }} onFocus={(e) => {
-                e.currentTarget.style.borderColor = tokens.border.focus;
-              }} onBlur={(e) => {
-                e.currentTarget.style.borderColor = tokens.border.default;
-              }} aria-label="Short answer input" maxLength={maxChars} />
+                <DSTextarea
+                  value={displayValue}
+                  onChange={(e) => handleTextChange(e.target.value)}
+                  placeholder="Write your detailed explanation here..."
+                  className="w-full resize-none"
+                  style={{
+                    fontSize: '1em',
+                    lineHeight: 1.5,
+                    height: '200px',
+                    padding: '16px',
+                    borderRadius: '12px',
+                  }}
+                  aria-label="Short answer input"
+                  maxLength={maxChars}
+                />
 
                 {/* Figma layer: "DictateButton"
                 ⚠️ Create as variant: state=idle | state=recording */}
-                {isSpeechSupported && <button onClick={isSpeechListening ? onStopSpeech : onStartSpeech} className={`absolute top-3 right-3 flex items-center rounded-lg font-heading font-medium transition-all ${isSpeechListening ? 'bg-red-500 text-white shadow-md' : 'bg-slate-100 hover:bg-slate-200'}`} style={{
-                fontSize: '0.8125em',
-                gap: '6px',
-                padding: '6px 12px',
-                color: isSpeechListening ? tokens.text.inverse : tokens.text.secondary
-              }} aria-label={isSpeechListening ? 'Stop dictation' : 'Start dictation'}>
-                    {isSpeechListening ? <>
-                        <MicOffIcon style={{
-                    width: '14px',
-                    height: '14px'
-                  }} />
+                {isSpeechSupported && (
+                  <DSButton
+                    variant={isSpeechListening ? 'default' : 'secondary'}
+                    size="sm"
+                    onClick={isSpeechListening ? onStopSpeech : onStartSpeech}
+                    aria-label={isSpeechListening ? 'Stop dictation' : 'Start dictation'}
+                    className="absolute top-3 right-3 shadow-md"
+                    style={
+                      isSpeechListening
+                        ? { backgroundColor: '#ef4444', color: 'white', borderColor: '#ef4444' }
+                        : undefined
+                    }
+                  >
+                    {isSpeechListening ? (
+                      <>
+                        <i className="fa-light fa-microphone-slash" aria-hidden="true" style={{ fontSize: 14 }} />
                         <span>Stop</span>
-                        <span className="relative flex" style={{
-                    width: '8px',
-                    height: '8px',
-                    marginLeft: '2px'
-                  }}>
+                        <span className="relative flex" style={{ width: '8px', height: '8px', marginLeft: '2px' }}>
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-                          <span className="relative inline-flex rounded-full bg-white" style={{
-                      width: '8px',
-                      height: '8px'
-                    }} />
+                          <span className="relative inline-flex rounded-full bg-white" style={{ width: '8px', height: '8px' }} />
                         </span>
-                      </> : <>
-                        <MicIcon style={{
-                    width: '14px',
-                    height: '14px'
-                  }} />
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa-light fa-microphone" aria-hidden="true" style={{ fontSize: 14 }} />
                         <span>Dictate</span>
-                      </>}
-                  </button>}
+                      </>
+                    )}
+                  </DSButton>
+                )}
               </div>
 
               {/* Figma layer: "WordCharCount" */}
               <div className="flex items-center justify-between" style={{
               marginTop: '12px'
             }}>
-                <span className="font-heading" style={{
+                <span className="" style={{
                 fontSize: '0.8125em',
                 color: tokens.text.muted
               }}>
                   Words: {wordCount}
                 </span>
-                <span className="font-heading" style={{
+                <span className="" style={{
                 fontSize: '0.8125em',
                 color: tokens.text.muted
               }}>
@@ -401,7 +398,7 @@ export function QuestionCard({
                 </span>
               </div>
 
-              {!isSpeechSupported && <p className="font-heading" style={{
+              {!isSpeechSupported && <p className="" style={{
               marginTop: '8px',
               fontSize: '0.75em',
               color: tokens.semantic.warningText

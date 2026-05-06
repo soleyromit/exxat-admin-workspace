@@ -8,8 +8,8 @@
  *   - Shows aggregated content area scores across all assessments in a course
  */
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Button } from '@exxat/ds/packages/ui/src';
 import { MOCK_COURSE_COMPETENCIES, MOCK_ASSESSMENTS, CourseCompetency } from '../data/assessments';
 
 const t = {
@@ -18,12 +18,12 @@ const t = {
   muted: 'var(--muted)',
   brand: 'var(--brand-color)',
   brandDark: 'var(--brand-color-dark)',
-  brandSurface: 'var(--brand-tint-light, #F5F3FF)',
+  brandSurface: 'var(--brand-color-light, #F5F3FF)',
   brandBorder: 'var(--brand-tint, #EDE9FE)',
   fg: 'var(--foreground)',
   fgMuted: 'var(--muted-foreground)',
   border: 'var(--border)',
-  borderControl: 'var(--border-control)',
+  borderControl: 'var(--border)',
 };
 
 function ProgressBar({ value, max = 100, color }: { value: number; max?: number; color: string }) {
@@ -39,16 +39,16 @@ function ProgressBar({ value, max = 100, color }: { value: number; max?: number;
 }
 
 function ScoreColor(score: number): string {
-  if (score >= 85) return '#15803D';
-  if (score >= 75) return '#D97706';
-  if (score >= 60) return '#EF4444';
-  return '#B91C1C';
+  if (score >= 85) return 'var(--state-success-dark)';
+  if (score >= 75) return 'var(--state-warning-dark)';
+  if (score >= 60) return 'var(--state-error-accent)';
+  return 'var(--state-error-text-dark)';
 }
 
 function BarColor(score: number): string {
-  if (score >= 85) return '#4ADE80';
-  if (score >= 75) return '#FACC15';
-  return '#F87171';
+  if (score >= 85) return 'var(--state-success-accent)';
+  if (score >= 75) return 'var(--state-warning-accent)';
+  return 'var(--state-bar-fail)';
 }
 
 function CourseCard({ course }: { course: CourseCompetency }) {
@@ -100,18 +100,17 @@ function CourseCard({ course }: { course: CourseCompetency }) {
 
         {/* Expand toggle */}
         {haData && (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setExpanded(e => !e)}
-            style={{
-              marginTop: 14, background: 'none', border: 'none', cursor: 'pointer',
-              color: t.brand, fontSize: 13, fontWeight: 600,
-              display: 'flex', alignItems: 'center', gap: 5, padding: 0,
-            }}
             aria-expanded={expanded}
+            className="mt-3.5 px-0 h-auto"
+            style={{ color: t.brand }}
           >
             <i className={`fa-light ${expanded ? 'fa-chevron-up' : 'fa-chevron-down'}`} aria-hidden="true" />
             {expanded ? 'Hide' : 'Show'} content area breakdown
-          </button>
+          </Button>
         )}
       </div>
 
@@ -140,8 +139,6 @@ function CourseCard({ course }: { course: CourseCompetency }) {
 }
 
 export function CompetencyDashboard() {
-  const navigate = useNavigate();
-
   const published = MOCK_ASSESSMENTS.filter(a => a.status === 'results_published');
   const overallScores = published.map(a => a.score ?? 0).filter(s => s > 0);
   const overallAvg = overallScores.length > 0
@@ -149,34 +146,10 @@ export function CompetencyDashboard() {
     : 0;
 
   return (
-    <div style={{ minHeight: '100vh', background: t.bg, fontFamily: 'Inter, system-ui, sans-serif' }}>
-      {/* Header */}
-      <header style={{
-        background: t.card, borderBottom: `1px solid ${t.border}`,
-        padding: '0 24px', height: 56,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        position: 'sticky', top: 0, zIndex: 100,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button
-            onClick={() => navigate('/')}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: t.fgMuted, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            <i className="fa-light fa-arrow-left" aria-hidden="true" />
-            Dashboard
-          </button>
-          <span style={{ color: t.border }}>|</span>
-          <span style={{ fontSize: 14, fontWeight: 600, color: t.fg }}>Competency Progress</span>
-        </div>
-        <span style={{ fontSize: 12, color: t.fgMuted, background: '#FEF3C7', padding: '3px 10px', borderRadius: 99, fontWeight: 600 }}>
-          <i className="fa-light fa-flask" aria-hidden="true" style={{ marginRight: 4 }} />
-          Program-level view coming 2027
-        </span>
-      </header>
-
-      <main style={{ maxWidth: 860, margin: '0 auto', padding: '28px 24px 60px' }}>
+    <div style={{ background: t.bg, fontFamily: 'Inter, system-ui, sans-serif', minHeight: '100%' }}>
+      <div style={{ maxWidth: 860, margin: '0 auto', padding: '28px 24px 60px' }}>
         <div style={{ marginBottom: 28 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: t.fg, marginBottom: 4 }}>Competency Progress</h1>
+          <h1 className="font-heading" style={{ fontSize: 26, fontWeight: 700, color: t.fg, marginBottom: 4, lineHeight: 1.2 }}>Competency Progress</h1>
           <p style={{ fontSize: 14, color: t.fgMuted }}>
             Your cumulative performance across assessments and content areas — by course.
           </p>
@@ -193,7 +166,7 @@ export function CompetencyDashboard() {
               label: 'Overall Average',
               value: overallAvg > 0 ? `${overallAvg}%` : '—',
               color: overallAvg > 0 ? ScoreColor(overallAvg) : t.fgMuted,
-              bg: overallAvg >= 75 ? '#DCFCE7' : overallAvg > 0 ? '#FEF3C7' : t.muted,
+              bg: overallAvg >= 75 ? 'var(--state-success-bg-soft)' : overallAvg > 0 ? 'var(--state-warning-bg-soft)' : t.muted,
             },
             {
               icon: 'fa-clipboard-check',
@@ -205,13 +178,13 @@ export function CompetencyDashboard() {
               icon: 'fa-graduation-cap',
               label: 'Courses Active',
               value: `${MOCK_COURSE_COMPETENCIES.length}`,
-              color: '#2563EB', bg: '#EFF6FF',
+              color: 'var(--state-info-blue-dark)', bg: 'var(--state-info-blue-bg)',
             },
             {
               icon: 'fa-bullseye-arrow',
               label: 'Content Areas Tracked',
               value: `${MOCK_COURSE_COMPETENCIES.reduce((n, c) => n + c.contentAreas.length, 0)}`,
-              color: '#7C3AED', bg: '#F5F3FF',
+              color: 'var(--state-purple-dark)', bg: 'var(--state-purple-bg)',
             },
           ].map(item => (
             <div key={item.label} style={{
@@ -247,18 +220,18 @@ export function CompetencyDashboard() {
         {/* Program tier placeholder */}
         <div style={{
           marginTop: 32, padding: '20px 24px',
-          background: '#FFFBEB', border: '1px dashed #FDE68A', borderRadius: 14,
+          background: 'var(--state-warning-bg)', border: '1px dashed var(--state-warning-border)', borderRadius: 14,
           display: 'flex', alignItems: 'center', gap: 16,
         }}>
-          <i className="fa-light fa-map-location-dot" aria-hidden="true" style={{ color: '#D97706', fontSize: 28, flexShrink: 0 }} />
+          <i className="fa-light fa-map-location-dot" aria-hidden="true" style={{ color: 'var(--state-warning-dark)', fontSize: 28, flexShrink: 0 }} />
           <div>
-            <p style={{ fontSize: 14, fontWeight: 700, color: '#92400E', marginBottom: 4 }}>Program-Level View — Coming 2027</p>
-            <p style={{ fontSize: 13, color: '#D97706', lineHeight: 1.5 }}>
+            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--state-warning-darkest)', marginBottom: 4 }}>Program-Level View — Coming 2027</p>
+            <p style={{ fontSize: 13, color: 'var(--state-warning-dark)', lineHeight: 1.5 }}>
               Cross-course competency aggregation across your full program (PT, OT, PA, Nursing, Social Work) is in development. This view will map your cumulative performance against CAPTE, ACOTE, CCNE, and CAAHEP accreditation standards.
             </p>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

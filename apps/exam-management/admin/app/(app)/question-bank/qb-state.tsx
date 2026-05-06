@@ -2,8 +2,28 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react'
 import type { FolderNode, Question, Persona, ColumnId } from '@/lib/qb-types'
-import { MOCK_QB_FOLDERS, MOCK_QB_QUESTIONS, MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
+import { MOCK_QB_FOLDERS, MOCK_QB_QUESTIONS } from '@/lib/qb-mock-data'
+import { PERSONAS as GLOBAL_PERSONAS, type Persona as GlobalPersona } from '@/lib/personas'
+import { useFacultySession } from '@/lib/faculty-session'
 // MOCK_QB_FOLDERS used as reference for path computation in moveQuestionToFolder
+
+/**
+ * Adapter — global Persona → QB's Persona shape.
+ * QB internals key off `id` and `role`; everything else (color, initials,
+ * trustLevel) carries through directly from the global record.
+ */
+function toQBPersona(p: GlobalPersona): Persona {
+  return {
+    id:           p.id,
+    name:         p.name,
+    initials:     p.initials,
+    role:         p.qbRole,
+    color:        p.color,
+    trustLevel:   p.trustLevel,
+  }
+}
+
+const QB_PERSONAS: Persona[] = GLOBAL_PERSONAS.map(toQBPersona)
 
 interface QBState {
   currentPersona: Persona
@@ -109,7 +129,9 @@ function getDescendantIds(id: string, folders: FolderNode[]): Set<string> {
 }
 
 export function QBProvider({ children }: { children: ReactNode }) {
-  const [currentPersona, setCurrentPersonaState] = useState<Persona>(MOCK_QB_PERSONAS[0])
+  // Global session is the source of truth — QB no longer holds its own persona state.
+  const { currentPersona: globalPersona, setCurrentPersona: setGlobalPersona } = useFacultySession()
+  const currentPersona = useMemo(() => toQBPersona(globalPersona), [globalPersona])
   const [navView, setNavViewState] = useState<'all' | 'my' | 'folder'>('my')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [selectedFolderId, setSelectedFolderIdState] = useState<string | null>(null)
@@ -174,7 +196,9 @@ export function QBProvider({ children }: { children: ReactNode }) {
   }, [isExamAdmin, accessibleFolderIds]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function setCurrentPersona(p: Persona) {
-    setCurrentPersonaState(p)
+    // Map back to the global persona, then push through global session.
+    const next = GLOBAL_PERSONAS.find(g => g.id === p.id)
+    if (next) setGlobalPersona(next)
     setSelectedFolderIdState(null)
     setNavViewState('my')
   }
@@ -383,7 +407,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
     : null
 
   const value: QBState = {
-    currentPersona, setCurrentPersona, personas: MOCK_QB_PERSONAS,
+    currentPersona, setCurrentPersona, personas: QB_PERSONAS,
     navView, setNavView,
     sidebarOpen, setSidebarOpen,
     selectedFolderId, setSelectedFolderId,

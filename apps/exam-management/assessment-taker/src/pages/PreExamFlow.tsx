@@ -15,6 +15,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Button } from '@exxat/ds/packages/ui/src';
+import { ExamBadge } from '../components/ExamBadge';
 import { MOCK_ASSESSMENTS, getEffectiveDuration, formatDuration, Assessment } from '../data/assessments';
 
 const t = {
@@ -23,12 +25,12 @@ const t = {
   muted: 'var(--muted)',
   brand: 'var(--brand-color)',
   brandDark: 'var(--brand-color-dark)',
-  brandSurface: 'var(--brand-tint-light, #F5F3FF)',
+  brandSurface: 'var(--brand-color-light, #F5F3FF)',
   brandBorder: 'var(--brand-tint, #EDE9FE)',
   fg: 'var(--foreground)',
   fgMuted: 'var(--muted-foreground)',
   border: 'var(--border)',
-  borderControl: 'var(--border-control)',
+  borderControl: 'var(--border)',
 };
 
 const STEPS = [
@@ -52,8 +54,8 @@ function StepIndicator({ current }: { current: number }) {
                 aria-current={active ? 'step' : undefined}
                 style={{
                   width: 36, height: 36, borderRadius: '50%',
-                  background: done ? '#4ADE80' : active ? t.brand : t.muted,
-                  color: done || active ? '#FFF' : t.fgMuted,
+                  background: done ? 'var(--state-success-accent)' : active ? t.brand : t.muted,
+                  color: done || active ? 'var(--primary-foreground)' : t.fgMuted,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: done ? 14 : 13,
                   fontWeight: 700,
@@ -68,14 +70,14 @@ function StepIndicator({ current }: { current: number }) {
               </div>
               <span style={{
                 fontSize: 11, fontWeight: active ? 700 : 500,
-                color: active ? t.brand : done ? '#15803D' : t.fgMuted,
+                color: active ? t.brand : done ? 'var(--state-success-dark)' : t.fgMuted,
                 textAlign: 'center', lineHeight: 1.3, maxWidth: 72,
               }}>
                 {step.label}
               </span>
             </div>
             {i < STEPS.length - 1 && (
-              <div style={{ flex: 1, height: 2, background: i < current ? '#4ADE80' : t.border, marginBottom: 20, transition: 'background 0.3s ease' }} />
+              <div style={{ flex: 1, height: 2, background: i < current ? 'var(--state-success-accent)' : t.border, marginBottom: 20, transition: 'background 0.3s ease' }} />
             )}
           </React.Fragment>
         );
@@ -124,7 +126,7 @@ function SystemCheck({ onNext }: { onNext: () => void }) {
 
   return (
     <div>
-      <h2 style={{ fontSize: 20, fontWeight: 800, color: t.fg, marginBottom: 6 }}>System Check</h2>
+      <h2 className="font-heading" style={{ fontSize: 22, fontWeight: 700, color: t.fg, marginBottom: 6, lineHeight: 1.2 }}>System Check</h2>
       <p style={{ fontSize: 14, color: t.fgMuted, marginBottom: 28 }}>
         We're verifying your setup before the exam begins. This takes a few seconds.
       </p>
@@ -134,35 +136,34 @@ function SystemCheck({ onNext }: { onNext: () => void }) {
           <div key={item.key} style={{
             display: 'flex', alignItems: 'center', gap: 16,
             padding: '14px 18px', borderRadius: 10,
-            background: checks[item.key] ? '#F0FDF4' : t.muted,
-            border: `1px solid ${checks[item.key] ? '#4ADE80' : t.border}`,
+            background: checks[item.key] ? 'var(--state-success-bg)' : t.muted,
+            border: `1px solid ${checks[item.key] ? 'var(--state-success-accent)' : t.border}`,
             transition: 'all 0.3s ease',
           }}>
             <div style={{
               width: 36, height: 36, borderRadius: '50%',
-              background: checks[item.key] ? '#DCFCE7' : t.card,
-              border: `1.5px solid ${checks[item.key] ? '#4ADE80' : t.borderControl}`,
+              background: checks[item.key] ? 'var(--state-success-bg-soft)' : t.card,
+              border: `1.5px solid ${checks[item.key] ? 'var(--state-success-accent)' : t.borderControl}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
             }}>
               {checks[item.key]
-                ? <i className="fa-solid fa-check" aria-hidden="true" style={{ color: '#15803D', fontSize: 14 }} />
+                ? <i className="fa-solid fa-check" aria-hidden="true" style={{ color: 'var(--state-success-dark)', fontSize: 14 }} />
                 : <i className={`fa-light ${item.icon}`} aria-hidden="true" style={{ color: t.fgMuted, fontSize: 14, animation: 'spin 1s linear infinite' }} />
               }
             </div>
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: 14, fontWeight: 600, color: t.fg }}>{item.label}</p>
-              <p style={{ fontSize: 13, color: checks[item.key] ? '#15803D' : t.fgMuted }}>
+              <p style={{ fontSize: 13, color: checks[item.key] ? 'var(--state-success-dark)' : t.fgMuted }}>
                 {checks[item.key] ? item.detail : 'Checking…'}
               </p>
             </div>
-            <span style={{
-              fontSize: 12, fontWeight: 600, padding: '3px 10px', borderRadius: 99,
-              background: checks[item.key] ? '#DCFCE7' : t.muted,
-              color: checks[item.key] ? '#15803D' : t.fgMuted,
-            }}>
+            <ExamBadge
+              bg={checks[item.key] ? 'var(--state-success-bg-soft)' : t.muted}
+              fg={checks[item.key] ? 'var(--state-success-dark)' : t.fgMuted}
+            >
               {checks[item.key] ? 'Passed' : '…'}
-            </span>
+            </ExamBadge>
           </div>
         ))}
 
@@ -170,43 +171,37 @@ function SystemCheck({ onNext }: { onNext: () => void }) {
         <div style={{
           display: 'flex', alignItems: 'center', gap: 16,
           padding: '14px 18px', borderRadius: 10,
-          background: '#FFFBEB', border: '1px solid #FDE68A',
+          background: 'var(--state-warning-bg)', border: '1px solid var(--state-warning-border)',
         }}>
           <div style={{
             width: 36, height: 36, borderRadius: '50%',
-            background: '#FEF3C7', border: '1.5px solid #FACC15',
+            background: 'var(--state-warning-bg-soft)', border: '1.5px solid var(--state-warning-accent)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>
-            <i className="fa-light fa-lock-open" aria-hidden="true" style={{ color: '#D97706', fontSize: 14 }} />
+            <i className="fa-light fa-lock-open" aria-hidden="true" style={{ color: 'var(--state-warning-dark)', fontSize: 14 }} />
           </div>
           <div style={{ flex: 1 }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: '#92400E' }}>Lockdown Browser</p>
-            <p style={{ fontSize: 13, color: '#D97706' }}>
+            <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--state-warning-darkest)' }}>Lockdown Browser</p>
+            <p style={{ fontSize: 13, color: 'var(--state-warning-dark)' }}>
               Not required for this exam · Lockdown enforcement scheduled Q4 2026
             </p>
           </div>
-          <span style={{ fontSize: 12, fontWeight: 600, padding: '3px 10px', borderRadius: 99, background: '#FEF3C7', color: '#D97706' }}>
+          <ExamBadge bg="var(--state-warning-bg-soft)" fg="var(--state-warning-dark)">
             Not Required
-          </span>
+          </ExamBadge>
         </div>
       </div>
 
-      <button
+      <Button
+        size="lg"
         onClick={onNext}
         disabled={!allPassed}
-        style={{
-          width: '100%', padding: '14px', borderRadius: 10,
-          background: allPassed ? t.brand : t.muted,
-          color: allPassed ? '#FFF' : t.fgMuted,
-          border: 'none', fontSize: 15, fontWeight: 700, cursor: allPassed ? 'pointer' : 'not-allowed',
-          transition: 'all 0.2s ease',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        }}
+        className="w-full"
         aria-disabled={!allPassed}
       >
         <i className="fa-light fa-arrow-right" aria-hidden="true" />
         {allPassed ? 'Continue to Instructions' : 'Running checks…'}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -220,7 +215,7 @@ function Instructions({ exam, onNext }: { exam: Assessment; onNext: () => void }
 
   return (
     <div>
-      <h2 style={{ fontSize: 20, fontWeight: 800, color: t.fg, marginBottom: 6 }}>Instructions & Academic Integrity</h2>
+      <h2 className="font-heading" style={{ fontSize: 22, fontWeight: 700, color: t.fg, marginBottom: 6, lineHeight: 1.2 }}>Instructions & Academic Integrity</h2>
       <p style={{ fontSize: 14, color: t.fgMuted, marginBottom: 24 }}>
         Read the following carefully before you begin.
       </p>
@@ -261,7 +256,7 @@ function Instructions({ exam, onNext }: { exam: Assessment; onNext: () => void }
               <ul style={{ paddingLeft: 18, margin: 0 }}>
                 {exam.referenceMaterials.map(m => (
                   <li key={m} style={{ marginBottom: 4 }}>
-                    <i className="fa-light fa-file-pdf" aria-hidden="true" style={{ color: '#EF4444', marginRight: 6 }} />
+                    <i className="fa-light fa-file-pdf" aria-hidden="true" style={{ color: 'var(--state-error-accent)', marginRight: 6 }} />
                     {m}
                   </li>
                 ))}
@@ -324,22 +319,16 @@ function Instructions({ exam, onNext }: { exam: Assessment; onNext: () => void }
         />
       </div>
 
-      <button
+      <Button
+        size="lg"
         onClick={onNext}
         disabled={!canContinue}
-        style={{
-          width: '100%', padding: '14px', borderRadius: 10,
-          background: canContinue ? t.brand : t.muted,
-          color: canContinue ? '#FFF' : t.fgMuted,
-          border: 'none', fontSize: 15, fontWeight: 700,
-          cursor: canContinue ? 'pointer' : 'not-allowed',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        }}
+        className="w-full"
         aria-disabled={!canContinue}
       >
         <i className="fa-light fa-arrow-right" aria-hidden="true" />
         Continue
-      </button>
+      </Button>
     </div>
   );
 }
@@ -351,7 +340,7 @@ function AccommodationConfirmation({ exam, onNext }: { exam: Assessment; onNext:
 
   return (
     <div>
-      <h2 style={{ fontSize: 20, fontWeight: 800, color: t.fg, marginBottom: 6 }}>Accommodation Confirmation</h2>
+      <h2 className="font-heading" style={{ fontSize: 22, fontWeight: 700, color: t.fg, marginBottom: 6, lineHeight: 1.2 }}>Accommodation Confirmation</h2>
       <p style={{ fontSize: 14, color: t.fgMuted, marginBottom: 24 }}>
         Review your approved accommodations before the exam begins. If anything is incorrect, contact Student Services — do not start the exam.
       </p>
@@ -363,19 +352,19 @@ function AccommodationConfirmation({ exam, onNext }: { exam: Assessment; onNext:
               icon: 'fa-clock',
               label: 'Extended Time',
               value: `${acc.timeMultiplier}× — ${formatDuration(effectiveMins)} total (standard: ${formatDuration(exam.durationMinutes)})`,
-              color: '#2563EB', bg: '#EFF6FF', border: '#BFDBFE',
+              color: 'var(--state-info-blue-dark)', bg: 'var(--state-info-blue-bg)', border: 'var(--state-info-blue-border)',
             },
             acc.separateRoom && {
               icon: 'fa-door-open',
               label: 'Separate Testing Room',
               value: 'You will take this exam in a private, distraction-free environment',
-              color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE',
+              color: 'var(--state-purple-dark)', bg: 'var(--state-purple-bg)', border: 'var(--state-purple-border)',
             },
             acc.extendedBreaks && {
               icon: 'fa-mug-hot',
               label: 'Extended Breaks',
               value: acc.additionalNotes ?? 'Scheduled breaks during the exam',
-              color: '#0891B2', bg: '#ECFEFF', border: '#A5F3FC',
+              color: 'var(--state-cyan-dark)', bg: 'var(--state-cyan-bg)', border: 'var(--state-cyan-border)',
             },
           ].filter(Boolean).map((item: any) => (
             <div key={item.label} style={{
@@ -385,7 +374,7 @@ function AccommodationConfirmation({ exam, onNext }: { exam: Assessment; onNext:
             }}>
               <div style={{
                 width: 36, height: 36, borderRadius: 10,
-                background: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                background: 'var(--card)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               }}>
                 <i className={`fa-light ${item.icon}`} aria-hidden="true" style={{ color: item.color, fontSize: 16 }} />
               </div>
@@ -430,18 +419,10 @@ function AccommodationConfirmation({ exam, onNext }: { exam: Assessment; onNext:
         Contact Student Services if accommodations are incorrect
       </a>
 
-      <button
-        onClick={onNext}
-        style={{
-          width: '100%', padding: '14px', borderRadius: 10,
-          background: t.brand, color: '#FFF',
-          border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        }}
-      >
+      <Button size="lg" onClick={onNext} className="w-full">
         <i className="fa-light fa-arrow-right" aria-hidden="true" />
         Accommodations are correct — Continue
-      </button>
+      </Button>
     </div>
   );
 }
@@ -452,14 +433,14 @@ function ReadyToStart({ exam, onStart }: { exam: Assessment; onStart: () => void
     <div style={{ textAlign: 'center' }}>
       <div style={{
         width: 72, height: 72, borderRadius: '50%',
-        background: '#DCFCE7', border: '3px solid #4ADE80',
+        background: 'var(--state-success-bg-soft)', border: '3px solid var(--state-success-accent)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         margin: '0 auto 20px',
       }}>
-        <i className="fa-solid fa-circle-check" aria-hidden="true" style={{ color: '#15803D', fontSize: 32 }} />
+        <i className="fa-solid fa-circle-check" aria-hidden="true" style={{ color: 'var(--state-success-dark)', fontSize: 32 }} />
       </div>
 
-      <h2 style={{ fontSize: 22, fontWeight: 800, color: t.fg, marginBottom: 8 }}>You're Ready</h2>
+      <h2 className="font-heading" style={{ fontSize: 26, fontWeight: 700, color: t.fg, marginBottom: 8, lineHeight: 1.2 }}>You're Ready</h2>
       <p style={{ fontSize: 14, color: t.fgMuted, marginBottom: 28 }}>
         All checks passed. Your exam is ready to begin. The timer starts when you click Start.
       </p>
@@ -489,22 +470,15 @@ function ReadyToStart({ exam, onStart }: { exam: Assessment; onStart: () => void
         </div>
       </div>
 
-      <button
+      <Button
+        size="lg"
         onClick={onStart}
-        style={{
-          width: '100%', padding: '16px', borderRadius: 12,
-          background: t.brand, color: '#FFF',
-          border: 'none', fontSize: 16, fontWeight: 800, cursor: 'pointer',
-          boxShadow: '0 4px 16px rgba(124,58,237,0.3)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-          transition: 'background 0.15s ease',
-        }}
-        onMouseEnter={e => (e.currentTarget.style.background = t.brandDark)}
-        onMouseLeave={e => (e.currentTarget.style.background = t.brand)}
+        className="w-full font-extrabold"
+        style={{ boxShadow: '0 4px 16px var(--shadow-brand)' }}
       >
         <i className="fa-solid fa-play" aria-hidden="true" />
         Start Exam — Timer Begins Now
-      </button>
+      </Button>
 
       <p style={{ fontSize: 12, color: t.fgMuted, marginTop: 12 }}>
         <i className="fa-light fa-circle-info" aria-hidden="true" style={{ marginRight: 4 }} />
@@ -527,9 +501,9 @@ export function PreExamFlow() {
       <div style={{ minHeight: '100vh', background: t.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
           <p style={{ fontSize: 18, color: t.fg }}>Assessment not found.</p>
-          <button onClick={() => navigate('/')} style={{ marginTop: 16, color: t.brand, background: 'none', border: 'none', cursor: 'pointer', fontSize: 14 }}>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="mt-4" style={{ color: t.brand }}>
             ← Back to Dashboard
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -550,35 +524,34 @@ export function PreExamFlow() {
   const handleStart = () => navigate(`/exam/${id}/take`);
 
   return (
-    <div style={{ minHeight: '100vh', background: t.bg, fontFamily: 'Inter, system-ui, sans-serif' }}>
-      {/* Header */}
-      <header style={{
+    <div style={{ background: t.bg, fontFamily: 'Inter, system-ui, sans-serif', minHeight: '100%' }}>
+      {/* Step breadcrumb bar */}
+      <div style={{
         background: t.card, borderBottom: `1px solid ${t.border}`,
-        padding: '0 24px', height: 56,
+        padding: '0 24px', height: 44,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button
-            onClick={() => step === 0 ? navigate('/') : setStep(s => s - 1)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: t.fgMuted, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            <i className="fa-light fa-arrow-left" aria-hidden="true" />
-            {step === 0 ? 'Back to Dashboard' : 'Previous Step'}
-          </button>
-          <span style={{ color: t.border }}>|</span>
-          <span style={{ fontSize: 14, fontWeight: 600, color: t.fg }}>{exam.title}</span>
-        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => step === 0 ? navigate('/') : setStep(s => s - 1)}
+          className="h-auto py-1 px-2 text-xs"
+          style={{ color: t.fgMuted }}
+        >
+          <i className="fa-light fa-arrow-left" aria-hidden="true" />
+          {step === 0 ? 'Back to Dashboard' : 'Previous Step'}
+        </Button>
         <span style={{ fontSize: 13, color: t.fgMuted }}>Step {step + 1} of {STEPS.length}</span>
-      </header>
+      </div>
 
-      <main style={{ maxWidth: 580, margin: '0 auto', padding: '36px 24px 60px' }}>
+      <div style={{ maxWidth: 580, margin: '0 auto', padding: '36px 24px 60px' }}>
         <StepIndicator current={step} />
 
         {step === 0 && <SystemCheck onNext={() => setStep(1)} />}
         {step === 1 && <Instructions exam={exam} onNext={handleNext} />}
         {step === 2 && <AccommodationConfirmation exam={exam} onNext={() => setStep(3)} />}
         {step === 3 && <ReadyToStart exam={exam} onStart={handleStart} />}
-      </main>
+      </div>
     </div>
   );
 }

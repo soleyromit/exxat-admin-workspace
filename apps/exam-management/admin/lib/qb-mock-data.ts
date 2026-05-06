@@ -333,13 +333,19 @@ export const MOCK_QB_QUESTIONS: Question[] = [
 ]
 
 // ─── Personas ────────────────────────────────────────────────────────────────
+// Derived from the unified persona registry. Keep `id` lookups working for
+// creator/lastEditedBy/collaborator references; display name/initials/role
+// flow from one source of truth.
+import { PERSONAS as GLOBAL_PERSONAS } from './personas'
 
-export const MOCK_QB_PERSONAS: Persona[] = [
-  { id: 'persona-thompson', name: 'Dr. Thompson', initials: 'DT', role: 'exam_admin',      color: 'var(--brand-color)', trustLevel: 'senior' },
-  { id: 'persona-chen',     name: 'Dr. Chen',     initials: 'SC', role: 'course_director', color: 'var(--chart-1)',  trustLevel: 'mid' },
-  { id: 'persona-patel',    name: 'Dr. Patel',    initials: 'JP', role: 'instructor',      color: 'var(--chart-2)',  trustLevel: 'junior', assignedFolders: ['phar101'] },
-  { id: 'persona-kim',      name: 'Dr. Kim',      initials: 'MK', role: 'instructor',      color: 'var(--chart-4)',  assignedFolders: ['skel101'] },
-]
+export const MOCK_QB_PERSONAS: Persona[] = GLOBAL_PERSONAS.map(g => ({
+  id:         g.id,
+  name:       `${g.title} ${g.name}`.trim(),
+  initials:   g.initials,
+  role:       g.qbRole,
+  color:      g.color,
+  trustLevel: g.trustLevel,
+}))
 
 // ─── Courses ─────────────────────────────────────────────────────────────────
 

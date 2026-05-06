@@ -1,13 +1,7 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
-import {
-  CalculatorIcon,
-  KeyboardIcon,
-  ImageOffIcon,
-  FileTextIcon,
-  LoaderIcon } from
-'lucide-react';
 import { Question, QuestionType } from '../data/questions';
 import { Tooltip } from './Tooltip';
+import { QuestionCommentBox } from './QuestionCommentBox';
 /* ── Keyboard shortcut hints per question type ──────────────────────────── */
 interface ShortcutDef {
   keys: string[];
@@ -94,9 +88,9 @@ function ShortcutHints({ type }: {type: QuestionType;}) {
             key={j}
             className="font-mono text-xs font-bold px-1.5 py-0.5 rounded"
             style={{
-              color: 'var(--text-secondary)',
-              backgroundColor: 'var(--surface-subtle)',
-              border: '1px solid var(--border-default)'
+              color: 'var(--muted-foreground)',
+              backgroundColor: 'var(--muted)',
+              border: '1px solid var(--border)'
             }}>
             
                 {k}
@@ -104,9 +98,9 @@ function ShortcutHints({ type }: {type: QuestionType;}) {
           )}
           </span>
           <span
-          className="text-xs font-heading"
+          className="text-xs"
           style={{
-            color: 'var(--text-muted)'
+            color: 'var(--muted-foreground)'
           }}>
           
             {s.label}
@@ -168,8 +162,8 @@ function ImagePanel({ src, alt }: {src: string;alt: string;}) {
     <div
       className="rounded-xl overflow-hidden border flex items-center justify-center relative"
       style={{
-        borderColor: 'var(--border-default)',
-        backgroundColor: 'var(--surface-subtle)',
+        borderColor: 'var(--border)',
+        backgroundColor: 'var(--muted)',
         minHeight: '280px'
       }}>
       
@@ -177,11 +171,11 @@ function ImagePanel({ src, alt }: {src: string;alt: string;}) {
       <div
         className="flex flex-col items-center gap-3 py-12"
         style={{
-          color: 'var(--text-muted)'
+          color: 'var(--muted-foreground)'
         }}>
         
-          <ImageOffIcon size={40} strokeWidth={1.5} />
-          <span className="font-heading text-sm">
+          <i className="fa-light fa-image-slash" aria-hidden="true" style={{ fontSize: 40 }} />
+          <span className="text-sm">
             Image could not be loaded
           </span>
         </div> :
@@ -191,11 +185,11 @@ function ImagePanel({ src, alt }: {src: string;alt: string;}) {
         <div
           className="flex flex-col items-center gap-3 py-12 absolute inset-0 z-10 justify-center"
           style={{
-            color: 'var(--text-muted)'
+            color: 'var(--muted-foreground)'
           }}>
           
-              <LoaderIcon size={24} className="animate-spin" />
-              <span className="font-heading text-sm">Loading image…</span>
+              <i className="fa-light fa-spinner-third fa-spin" aria-hidden="true" style={{ fontSize: 24 }} />
+              <span className="text-sm">Loading image…</span>
             </div>
         }
           <img
@@ -224,11 +218,8 @@ import {
   FillBlankRenderer,
   MatchingRenderer,
   AnatomyRenderer,
-  TableRenderer,
-  PDFRenderer,
   EssayRenderer,
   WordHighlightRenderer,
-  PassageRenderer,
   ChartRenderer } from
 './QuestionRenderers';
 import { CalculatorPopover } from './CalculatorPopover';
@@ -246,6 +237,13 @@ export interface SplitQuestionViewProps {
   needsCalculator?: boolean;
   needsKeyboard?: boolean;
   voiceNarrator?: boolean;
+  /**
+   * Aarti-mandated: per-question comment/flag box. Driven by
+   * Assessment.allowComments at the institution/course level.
+   */
+  allowComments?: boolean;
+  comment?: string;
+  onCommentChange?: (questionId: number, comment: string) => void;
 }
 export function SplitQuestionView({
   question,
@@ -259,12 +257,15 @@ export function SplitQuestionView({
   onToggleKeyboard,
   needsCalculator = false,
   needsKeyboard = false,
-  voiceNarrator = false
+  voiceNarrator = false,
+  allowComments = false,
+  comment = '',
+  onCommentChange,
 }: SplitQuestionViewProps) {
   const [activeTab, setActiveTab] = useState(0);
   const [pdfLoaded, setPdfLoaded] = useState(false);
   const [pdfError, setPdfError] = useState(false);
-  const pdfTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const pdfTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
     setActiveTab(0);
     setPdfLoaded(false);
@@ -323,9 +324,9 @@ export function SplitQuestionView({
   <div className="mb-[1.5em]">
       <div className="flex items-center gap-3 mb-[0.75em]">
         <span
-        className="font-heading font-bold text-[1.125em]"
+        className="font-bold text-[1.125em]"
         style={{
-          color: 'var(--text-primary)'
+          color: 'var(--foreground)'
         }}>
         
           Question {questionIndex + 1}
@@ -345,17 +346,17 @@ export function SplitQuestionView({
         <span
         className="px-[0.5em] py-[0.125em] rounded text-[0.625em] font-bold uppercase tracking-wider"
         style={{
-          backgroundColor: 'var(--surface-subtle)',
-          color: 'var(--text-muted)'
+          backgroundColor: 'var(--muted)',
+          color: 'var(--muted-foreground)'
         }}>
         
           {question.points} pts
         </span>
       </div>
       <h2
-      className="font-heading text-[1.25em] font-semibold leading-relaxed transition-colors"
+      className="text-[1.25em] font-semibold leading-relaxed transition-colors"
       style={{
-        color: 'var(--text-primary)',
+        color: 'var(--foreground)',
         cursor: voiceNarrator ? 'pointer' : undefined,
         borderRadius: '8px',
         padding: voiceNarrator ? '0.25em 0.5em' : undefined,
@@ -388,16 +389,16 @@ export function SplitQuestionView({
       <div
         className="rounded-xl border overflow-hidden flex flex-col"
         style={{
-          borderColor: 'var(--border-default)',
-          backgroundColor: 'var(--surface-white)',
+          borderColor: 'var(--border)',
+          backgroundColor: 'var(--card)',
           minHeight: '300px'
         }}>
         
           {/* Tab bar — hidden scrollbar with gradient fade masks */}
           <TabScrollContainer
           style={{
-            backgroundColor: 'var(--surface-subtle)',
-            borderBottom: '1px solid var(--border-default)'
+            backgroundColor: 'var(--muted)',
+            borderBottom: '1px solid var(--border)'
           }}>
           
             {question.tabs.map((t, i) => {
@@ -406,13 +407,13 @@ export function SplitQuestionView({
               <button
                 key={i}
                 onClick={() => setActiveTab(i)}
-                className="relative px-4 py-2.5 font-heading text-[0.875em] font-semibold transition-colors whitespace-nowrap shrink-0"
+                className="relative px-4 py-2.5 text-[0.875em] font-semibold transition-colors whitespace-nowrap shrink-0"
                 style={{
                   color: isActive ?
                   'var(--exam-accent)' :
-                  'var(--text-muted)',
+                  'var(--muted-foreground)',
                   backgroundColor: isActive ?
-                  'var(--surface-white)' :
+                  'var(--card)' :
                   'transparent',
                   borderBottom: isActive ?
                   '2px solid var(--exam-accent)' :
@@ -437,9 +438,9 @@ export function SplitQuestionView({
             {question.tabs[activeTab]?.content.map((p, i) =>
           <p
             key={i}
-            className="font-heading text-[0.875em] leading-relaxed"
+            className="text-[0.875em] leading-relaxed"
             style={{
-              color: 'var(--text-secondary)'
+              color: 'var(--muted-foreground)'
             }}>
             
                 {p}
@@ -451,7 +452,7 @@ export function SplitQuestionView({
         <div
           className="p-[1em] border-t"
           style={{
-            borderColor: 'var(--border-default)'
+            borderColor: 'var(--border)'
           }}>
           
               <ImagePanel
@@ -471,7 +472,7 @@ export function SplitQuestionView({
       <div
         className="rounded-xl overflow-hidden border flex flex-col"
         style={{
-          borderColor: 'var(--border-default)',
+          borderColor: 'var(--border)',
           backgroundColor: '#000000',
           minHeight: '280px'
         }}>
@@ -492,8 +493,8 @@ export function SplitQuestionView({
       <div
         className="rounded-xl border p-[1.5em] flex flex-col items-center justify-center gap-4"
         style={{
-          borderColor: 'var(--border-default)',
-          backgroundColor: 'var(--surface-subtle)',
+          borderColor: 'var(--border)',
+          backgroundColor: 'var(--muted)',
           minHeight: '120px'
         }}>
         
@@ -511,23 +512,23 @@ export function SplitQuestionView({
       <div
         className="overflow-x-auto rounded-xl border"
         style={{
-          borderColor: 'var(--border-default)'
+          borderColor: 'var(--border)'
         }}>
         
           <table className="w-full text-left border-collapse">
             <thead>
               <tr
               style={{
-                backgroundColor: 'var(--surface-subtle)'
+                backgroundColor: 'var(--muted)'
               }}>
               
                 {question.tableData.headers.map((h, i) =>
               <th
                 key={i}
-                className="p-[1em] font-heading font-bold text-[0.875em] border-b"
+                className="p-[1em] font-bold text-[0.875em] border-b"
                 style={{
-                  color: 'var(--text-primary)',
-                  borderColor: 'var(--border-default)'
+                  color: 'var(--foreground)',
+                  borderColor: 'var(--border)'
                 }}>
                 
                     {h}
@@ -541,16 +542,16 @@ export function SplitQuestionView({
               key={i}
               className="border-b last:border-0"
               style={{
-                borderColor: 'var(--border-default)',
-                backgroundColor: 'var(--surface-white)'
+                borderColor: 'var(--border)',
+                backgroundColor: 'var(--card)'
               }}>
               
                   {row.map((cell, j) =>
               <td
                 key={j}
-                className="p-[1em] font-heading text-[0.875em]"
+                className="p-[1em] text-[0.875em]"
                 style={{
-                  color: 'var(--text-secondary)'
+                  color: 'var(--muted-foreground)'
                 }}>
                 
                       {cell}
@@ -568,8 +569,8 @@ export function SplitQuestionView({
       <div
         className="rounded-xl border overflow-hidden flex flex-col"
         style={{
-          borderColor: 'var(--border-default)',
-          backgroundColor: 'var(--surface-subtle)',
+          borderColor: 'var(--border)',
+          backgroundColor: 'var(--muted)',
           minHeight: '500px'
         }}>
         
@@ -604,26 +605,22 @@ export function SplitQuestionView({
               backgroundColor: 'var(--exam-accent-light)'
             }}>
             
-                <FileTextIcon
-              size={32}
-              style={{
-                color: 'var(--exam-accent)'
-              }} />
+                <i className="fa-light fa-file-lines" aria-hidden="true" style={{ fontSize: 32, color: 'var(--exam-accent)' }} />
             
               </div>
               <div className="text-center">
                 <p
-              className="font-heading font-semibold text-[1em] mb-1"
+              className="font-semibold text-[1em] mb-1"
               style={{
-                color: 'var(--text-primary)'
+                color: 'var(--foreground)'
               }}>
               
                   PDF Document
                 </p>
                 <p
-              className="font-heading text-[0.875em] mb-4"
+              className="text-[0.875em] mb-4"
               style={{
-                color: 'var(--text-muted)'
+                color: 'var(--muted-foreground)'
               }}>
               
                   The PDF viewer could not load in this environment.
@@ -632,13 +629,13 @@ export function SplitQuestionView({
               href={question.pdfUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-heading font-semibold text-[0.875em] transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-[0.875em] transition-colors"
               style={{
                 backgroundColor: 'var(--exam-accent)',
                 color: 'var(--exam-accent-text)'
               }}>
               
-                  <FileTextIcon size={16} />
+                  <i className="fa-light fa-file-lines" aria-hidden="true" style={{ fontSize: 16 }} />
                   Open PDF in New Tab
                 </a>
               </div>
@@ -648,21 +645,17 @@ export function SplitQuestionView({
           <div
           className="flex items-center gap-2 px-4 py-2 border-t shrink-0"
           style={{
-            borderColor: 'var(--border-default)',
-            backgroundColor: 'var(--surface-subtle)'
+            borderColor: 'var(--border)',
+            backgroundColor: 'var(--muted)'
           }}>
           
-            <FileTextIcon
-            size={14}
-            style={{
-              color: 'var(--text-muted)'
-            }} />
+            <i className="fa-light fa-file-lines" aria-hidden="true" style={{ fontSize: 14, color: 'var(--muted-foreground)' }} />
           
             <a
             href={question.pdfUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs font-heading font-medium underline"
+            className="text-xs font-medium underline"
             style={{
               color: 'var(--exam-accent)'
             }}>
@@ -676,11 +669,11 @@ export function SplitQuestionView({
       // Render ONLY the passage text — no answer choices
       content =
       <div
-        className="p-[1.5em] border rounded-xl overflow-y-auto text-[1em] leading-relaxed font-heading"
+        className="p-[1.5em] border rounded-xl overflow-y-auto text-[1em] leading-relaxed"
         style={{
-          borderColor: 'var(--border-default)',
-          backgroundColor: 'var(--surface-subtle)',
-          color: 'var(--text-secondary)',
+          borderColor: 'var(--border)',
+          backgroundColor: 'var(--muted)',
+          color: 'var(--muted-foreground)',
           maxHeight: '500px'
         }}>
         
@@ -701,11 +694,11 @@ export function SplitQuestionView({
         {content}
         {question.caption &&
         <div
-          className="text-sm font-heading p-3 rounded-lg border"
+          className="text-sm p-3 rounded-lg border"
           style={{
-            backgroundColor: 'var(--surface-subtle)',
-            borderColor: 'var(--border-default)',
-            color: 'var(--text-secondary)'
+            backgroundColor: 'var(--muted)',
+            borderColor: 'var(--border)',
+            color: 'var(--muted-foreground)'
           }}>
           
             <strong>Caption:</strong> {question.caption}
@@ -713,11 +706,11 @@ export function SplitQuestionView({
         }
         {question.chartData?.caption && !question.caption &&
         <div
-          className="text-sm font-heading p-3 rounded-lg border"
+          className="text-sm p-3 rounded-lg border"
           style={{
-            backgroundColor: 'var(--surface-subtle)',
-            borderColor: 'var(--border-default)',
-            color: 'var(--text-secondary)'
+            backgroundColor: 'var(--muted)',
+            borderColor: 'var(--border)',
+            color: 'var(--muted-foreground)'
           }}>
           
             <strong>Caption:</strong> {question.chartData.caption}
@@ -768,11 +761,11 @@ export function SplitQuestionView({
           <select
             value={selectedAnswer || ''}
             onChange={(e) => onSelectAnswer(question.id, e.target.value)}
-            className="w-full p-[1em] rounded-xl border-2 font-heading text-[1em] exam-focus"
+            className="w-full p-[1em] rounded-xl border-2 text-[1em] exam-focus"
             style={{
-              borderColor: 'var(--border-default)',
-              backgroundColor: 'var(--surface-white)',
-              color: 'var(--text-primary)'
+              borderColor: 'var(--border)',
+              backgroundColor: 'var(--card)',
+              color: 'var(--foreground)'
             }}
             aria-label="Select your answer from the dropdown options">
             
@@ -795,7 +788,7 @@ export function SplitQuestionView({
       <div
         className="flex items-center gap-2 mt-4 pt-3 shrink-0"
         style={{
-          borderTop: '1px solid var(--border-default)'
+          borderTop: '1px solid var(--border)'
         }}>
         
         {/* Tools on the left */}
@@ -807,21 +800,21 @@ export function SplitQuestionView({
             
               <button
               onClick={onToggleCalculator}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-heading font-semibold transition-colors exam-focus"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors exam-focus"
               style={{
                 backgroundColor: showCalculator ?
                 'var(--exam-accent-light)' :
-                'var(--surface-white)',
+                'var(--card)',
                 borderColor: showCalculator ?
                 'var(--exam-accent-border)' :
-                'var(--border-default)',
+                'var(--border)',
                 color: showCalculator ?
                 'var(--exam-accent)' :
-                'var(--text-secondary)'
+                'var(--muted-foreground)'
               }}
               aria-label="Toggle Calculator">
               
-                <CalculatorIcon size={14} />
+                <i className="fa-light fa-calculator" aria-hidden="true" style={{ fontSize: 14 }} />
                 Calculator
               </button>
             </Tooltip>
@@ -842,21 +835,21 @@ export function SplitQuestionView({
           
             <button
             onClick={onToggleKeyboard}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-heading font-semibold transition-colors exam-focus"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors exam-focus"
             style={{
               backgroundColor: showKeyboard ?
               'var(--exam-accent-light)' :
-              'var(--surface-white)',
+              'var(--card)',
               borderColor: showKeyboard ?
               'var(--exam-accent-border)' :
-              'var(--border-default)',
+              'var(--border)',
               color: showKeyboard ?
               'var(--exam-accent)' :
-              'var(--text-secondary)'
+              'var(--muted-foreground)'
             }}
             aria-label="Toggle Virtual Keyboard">
             
-              <KeyboardIcon size={14} />
+              <i className="fa-light fa-keyboard" aria-hidden="true" style={{ fontSize: 14 }} />
               Keyboard
             </button>
           </Tooltip>
@@ -895,8 +888,8 @@ export function SplitQuestionView({
           <div
           className="w-1/2 min-h-0 overflow-y-auto rounded-2xl border shadow-sm p-[2em] flex flex-col gap-4"
           style={{
-            borderColor: 'var(--border-default)',
-            backgroundColor: 'var(--surface-white)'
+            borderColor: 'var(--border)',
+            backgroundColor: 'var(--card)'
           }}>
           
             {renderQuestionStem()}
@@ -907,15 +900,15 @@ export function SplitQuestionView({
           <div
           className="w-1/2 min-h-0 overflow-y-auto rounded-2xl border shadow-sm p-[2em]"
           style={{
-            borderColor: 'var(--border-default)',
-            backgroundColor: 'var(--surface-white)'
+            borderColor: 'var(--border)',
+            backgroundColor: 'var(--card)'
           }}>
           
             <div className="mb-4">
               <h3
-              className="font-heading font-semibold text-[1em]"
+              className="font-semibold text-[1em]"
               style={{
-                color: 'var(--text-muted)'
+                color: 'var(--muted-foreground)'
               }}>
               
                 Select your answer:
@@ -924,6 +917,13 @@ export function SplitQuestionView({
             {renderInteractive()}
             {renderToolbar()}
             {renderInlineTools()}
+            {allowComments && (
+              <QuestionCommentBox
+                questionId={question.id}
+                initialComment={comment}
+                onSave={onCommentChange}
+              />
+            )}
           </div>
         </div> :
 
@@ -931,14 +931,21 @@ export function SplitQuestionView({
           <div
           className="max-w-4xl mx-auto rounded-2xl p-[2em] shadow-sm border flex flex-col"
           style={{
-            borderColor: 'var(--border-default)',
-            backgroundColor: 'var(--surface-white)'
+            borderColor: 'var(--border)',
+            backgroundColor: 'var(--card)'
           }}>
-          
+
             {renderQuestionStem()}
             {renderInteractive()}
             {renderToolbar()}
             {renderInlineTools()}
+            {allowComments && (
+              <QuestionCommentBox
+                questionId={question.id}
+                initialComment={comment}
+                onSave={onCommentChange}
+              />
+            )}
           </div>
         </div>
       }
