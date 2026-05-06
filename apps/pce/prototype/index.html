@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PCE Post Course Evaluation: Prototype</title>
+<link rel="stylesheet" href="https://use.typekit.net/wuk5wqn.css">
+<link href="https://kit.fontawesome.com/d9bd5774e0.css" rel="stylesheet">
+<style>
+:root{
+  --bg:oklch(0.985 0.002 270);
+  --surface:white;
+  --foreground:oklch(0.18 0.01 270);
+  --muted-fg:oklch(0.50 0.012 270);
+  --border:oklch(0.92 0.004 270);
+  --brand-tint:oklch(0.9676 0.016 286.1);
+  --brand-color:oklch(0.50 0.14 286.1);
+  --brand-color-dark:oklch(0.38 0.11 286.1);
+  --brand-color-deep:oklch(0.28 0.085 286.1);
+  --shadow-md:0 2px 6px oklch(0 0 0 / 0.08);
+  --shadow-lg:0 8px 24px oklch(0 0 0 / 0.10);
+  --radius:8px;
+  --radius-lg:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Inter", -apple-system, sans-serif;background:var(--bg);color:var(--foreground);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:760px;width:100%}
+.brand{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--brand-color-deep);margin-bottom:20px}
+.brand-icon{width:28px;height:28px;border-radius:7px;background:var(--brand-color);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+h1{font-family:"ivypresto-text", Georgia, serif;font-size:36px;font-weight:500;letter-spacing:-0.01em;line-height:1.1;margin-bottom:14px}
+.lede{font-size:15px;color:var(--muted-fg);max-width:600px;margin-bottom:28px;line-height:1.6}
+.card{background:white;border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px;box-shadow:var(--shadow-md);margin-bottom:14px;display:flex;align-items:center;gap:18px;text-decoration:none;color:inherit;transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease}
+.card:hover{transform:translateY(-1px);box-shadow:var(--shadow-lg);border-color:var(--brand-color)}
+.card-icon{width:48px;height:48px;border-radius:10px;background:var(--brand-tint);color:var(--brand-color);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.card-icon.handoff{background:oklch(0.95 0.04 264);color:oklch(0.45 0.16 264)}
+.card-icon.ref{background:oklch(0.96 0.003 270);color:var(--muted-fg)}
+.card-content{flex:1;min-width:0}
+.card-title{font-size:16px;font-weight:600;color:var(--foreground);margin-bottom:4px;letter-spacing:-0.01em}
+.card-sub{font-size:13px;color:var(--muted-fg);line-height:1.5}
+.card-meta{display:flex;gap:14px;margin-top:8px;font-size:11px;color:var(--muted-fg)}
+.card-meta i{margin-right:4px}
+.card-arrow{color:var(--muted-fg);font-size:14px;flex-shrink:0}
+.card:hover .card-arrow{color:var(--brand-color);transform:translateX(2px);transition:transform .15s ease}
+.tag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600;background:var(--brand-tint);color:var(--brand-color-dark);text-transform:uppercase;letter-spacing:.06em}
+.section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted-fg);margin:24px 0 12px}
+.foot{margin-top:32px;font-size:12px;color:var(--muted-fg);line-height:1.6;border-top:1px solid var(--border);padding-top:18px}
+@media (max-width:600px){h1{font-size:28px}.card{padding:16px;gap:14px}.card-icon{width:40px;height:40px;font-size:17px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><div class="brand-icon">P</div>PCE Post Course Evaluation <span class="tag">Prototype</span></div>
+
+  <h1>Engineering handoff for the post-course evaluation product.</h1>
+  <p class="lede">Three artifacts: the canonical product prototype across 8 personas, a written engineering spec, and the earlier exploratory prototypes for reference.</p>
+
+  <a class="card" href="pce-evaluation.html">
+    <div class="card-icon"><i class="fa-light fa-rocket-launch"></i></div>
+    <div class="card-content">
+      <div class="card-title">Product prototype</div>
+      <div class="card-sub">End-to-end flow across 8 personas: Program Director, Coordinator, Faculty, Student, Curriculum Committee Chair, Department Chair, DCE, Adjunct. Setup, autopilot, surveys, results, CQI loop, accreditation export.</div>
+      <div class="card-meta"><span><i class="fa-light fa-file-code"></i>pce-evaluation.html</span><span><i class="fa-light fa-keyboard"></i>Keyboard accessible</span></div>
+    </div>
+    <div class="card-arrow"><i class="fa-light fa-arrow-right"></i></div>
+  </a>
+
+  <a class="card" href="HANDOFF.md">
+    <div class="card-icon handoff"><i class="fa-light fa-file-lines"></i></div>
+    <div class="card-content">
+      <div class="card-title">Engineering handoff</div>
+      <div class="card-sub">Personas, FR-by-FR coverage, data model, state machines, API surface, integrations, design tokens, component-to-DS mapping, open product questions.</div>
+      <div class="card-meta"><span><i class="fa-light fa-file-lines"></i>HANDOFF.md</span></div>
+    </div>
+    <div class="card-arrow"><i class="fa-light fa-arrow-right"></i></div>
+  </a>
+
+  <div class="section-label">Reference (do not implement from these)</div>
+
+  <a class="card" href="_reference/pce-autopilot.html">
+    <div class="card-icon ref"><i class="fa-light fa-folder-open"></i></div>
+    <div class="card-content">
+      <div class="card-title">Autopilot exploration</div>
+      <div class="card-sub">Earlier prototype for the term-anchored autopilot model. Concepts already incorporated into the canonical product.</div>
+    </div>
+    <div class="card-arrow"><i class="fa-light fa-arrow-right"></i></div>
+  </a>
+
+  <a class="card" href="_reference/pce-interactive.html">
+    <div class="card-icon ref"><i class="fa-light fa-folder-open"></i></div>
+    <div class="card-content">
+      <div class="card-title">Manual-flow exploration</div>
+      <div class="card-sub">Original prototype before the autopilot pivot. Mental model has been replaced; kept here for context only.</div>
+    </div>
+    <div class="card-arrow"><i class="fa-light fa-arrow-right"></i></div>
+  </a>
+
+  <div class="foot">
+    Source repo: <a href="https://github.com/soleyromit/exxat-admin-workspace/tree/main/apps/pce/prototype" style="color:var(--brand-color)">soleyromit/exxat-admin-workspace</a> · <code>apps/pce/prototype/</code>
+  </div>
+</div>
+</body>
+</html>
