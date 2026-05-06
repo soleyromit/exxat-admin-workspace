@@ -1,0 +1,2624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PCE Autopilot · Director View</title>
+<link rel="stylesheet" href="https://use.typekit.net/wuk5wqn.css">
+<link href="https://kit.fontawesome.com/d9bd5774e0.css" rel="stylesheet">
+<style>
+:root{
+  --bg:oklch(0.985 0.002 270);
+  --surface:white;
+  --foreground:oklch(0.18 0.01 270);
+  --muted-fg:oklch(0.50 0.012 270);
+  --muted-fg-2:oklch(0.62 0.008 270);
+  --muted:oklch(0.96 0.003 270);
+  --muted-2:oklch(0.93 0.004 270);
+  --border:oklch(0.92 0.004 270);
+  --border-strong:oklch(0.82 0.006 270);
+  --brand-tint:oklch(0.9676 0.016 286.1);
+  --brand-tint-2:oklch(0.935 0.024 286.1);
+  --brand-color:oklch(0.50 0.14 286.1);
+  --brand-color-dark:oklch(0.38 0.11 286.1);
+  --brand-color-deep:oklch(0.28 0.085 286.1);
+  --brand-color-light:oklch(0.78 0.09 286.1);
+  --c-indigo:oklch(0.45 0.16 264);
+  --c-indigo-bg:oklch(0.95 0.04 264);
+  --c-teal:oklch(0.42 0.13 184);
+  --c-teal-bg:oklch(0.95 0.04 184);
+  --c-amber:oklch(0.62 0.16 84);
+  --c-amber-fg:oklch(0.42 0.15 68);
+  --c-amber-bg:oklch(0.96 0.04 84);
+  --c-rose:oklch(0.50 0.18 343);
+  --c-rose-bg:oklch(0.96 0.03 343);
+  --c-green:oklch(0.45 0.14 155);
+  --c-green-fg:oklch(0.32 0.10 155);
+  --c-green-bg:oklch(0.95 0.04 155);
+  --destructive:oklch(0.55 0.22 25);
+  --destructive-fg:oklch(0.42 0.20 25);
+  --destructive-bg:oklch(0.96 0.03 25);
+  --radius:8px;
+  --radius-sm:5px;
+  --radius-md:8px;
+  --radius-lg:12px;
+  --radius-xl:16px;
+  --shadow-sm:0 1px 2px oklch(0 0 0 / 0.06);
+  --shadow-md:0 2px 6px oklch(0 0 0 / 0.08);
+  --shadow-lg:0 8px 24px oklch(0 0 0 / 0.10);
+  --tr:.15s ease;
+  --font-sans:"Inter", -apple-system, sans-serif;
+  --font-heading:"ivypresto-text", Georgia, serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--font-sans);
+  background:var(--bg);color:var(--foreground);
+  font-size:14px;line-height:1.4;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+}
+button{font-family:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,textarea,select{font-family:inherit;color:inherit;font-size:inherit}
+a{color:var(--brand-color);text-decoration:none}
+
+/* ── App shell ───────────────────────────────────────────────────────── */
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.topbar{
+  height:54px;flex-shrink:0;background:white;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 18px;gap:18px;
+}
+.brand-mark{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;color:var(--brand-color-deep)}
+.brand-mark .b-icon{width:24px;height:24px;border-radius:6px;background:var(--brand-color);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.brand-tag{font-size:9px;background:var(--brand-tint);color:var(--brand-color-dark);padding:2px 7px;border-radius:99px;margin-left:2px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.tb-divider{width:1px;height:22px;background:var(--border)}
+.tb-tabs{display:flex;gap:1px}
+.tb-tab{padding:7px 13px;font-size:13px;color:var(--muted-fg);border-radius:var(--radius-sm);transition:var(--tr);font-weight:500;display:flex;align-items:center;gap:6px}
+.tb-tab i{font-size:11px}
+.tb-tab:hover{background:var(--muted);color:var(--foreground)}
+.tb-tab.active{background:var(--brand-tint);color:var(--brand-color-deep);font-weight:600}
+.tb-spacer{flex:1}
+.tb-term{font-size:12px;color:var(--muted-fg);display:flex;align-items:center;gap:8px}
+.tb-term-pill{background:var(--brand-tint);color:var(--brand-color-deep);padding:3px 10px;border-radius:99px;font-weight:600;font-size:12px}
+.tb-user{display:flex;align-items:center;gap:8px}
+.tb-avatar{width:30px;height:30px;border-radius:50%;background:color-mix(in oklch, var(--brand-color) 14%, white);color:var(--brand-color-dark);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
+.tb-user-info{display:flex;flex-direction:column;line-height:1.15}
+.tb-user-name{font-size:12px;font-weight:600;color:var(--foreground)}
+.tb-user-role{font-size:10px;color:var(--muted-fg)}
+
+.screens{flex:1;overflow:hidden;position:relative}
+.screen{display:none;height:100%;overflow-y:auto;padding:22px 28px 40px;scroll-behavior:smooth}
+.screen.active{display:block}
+
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:20px}
+.page-title{font-family:var(--font-heading);font-size:26px;font-weight:500;color:var(--foreground);line-height:1.15}
+.page-subtitle{font-size:13px;color:var(--muted-fg);margin-top:6px;max-width:640px;line-height:1.5}
+.page-actions{display:flex;gap:8px;flex-shrink:0}
+
+/* ── Buttons ─────────────────────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:0 12px;height:32px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;transition:var(--tr);border:1px solid transparent;white-space:nowrap}
+.btn-sm{height:28px;font-size:12px;padding:0 10px}
+.btn-xs{height:24px;font-size:11px;padding:0 8px;gap:4px}
+.btn-icon{width:32px;padding:0;justify-content:center}
+.btn-icon-sm{width:28px;height:28px;padding:0;justify-content:center}
+.btn-primary{background:var(--brand-color);color:white}
+.btn-primary:hover{background:var(--brand-color-dark)}
+.btn-outline{border-color:var(--border-strong);background:white;color:var(--foreground)}
+.btn-outline:hover{background:var(--muted);border-color:var(--brand-color-light)}
+.btn-ghost{color:var(--muted-fg)}
+.btn-ghost:hover{background:var(--muted);color:var(--foreground)}
+.btn-amber{background:var(--c-amber);color:white}
+.btn-amber:hover{background:oklch(0.55 0.18 84)}
+.btn-amber-outline{border-color:color-mix(in oklch, var(--c-amber) 30%, white);background:var(--c-amber-bg);color:var(--c-amber-fg)}
+.btn-amber-outline:hover{background:color-mix(in oklch, var(--c-amber) 18%, white)}
+.btn-danger{background:var(--destructive);color:white}
+.btn-danger:hover{background:oklch(0.45 0.20 25)}
+.btn-danger-outline{border-color:color-mix(in oklch, var(--destructive) 25%, white);background:var(--destructive-bg);color:var(--destructive-fg)}
+.btn-danger-outline:hover{background:color-mix(in oklch, var(--destructive) 12%, white)}
+.btn-link{padding:0;color:var(--brand-color);height:auto;font-weight:500}
+.btn-link:hover{color:var(--brand-color-dark);text-decoration:underline}
+.btn:disabled{opacity:0.5;cursor:not-allowed;pointer-events:none}
+
+/* ── Cards ──────────────────────────────────────────────────────────── */
+.card{background:white;border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;box-shadow:var(--shadow-sm)}
+.card-flush{padding:0;overflow:hidden}
+.card-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;gap:14px}
+.card-title{font-size:14px;font-weight:600;color:var(--foreground);display:flex;align-items:center;gap:8px}
+.card-title i{font-size:13px;color:var(--brand-color)}
+.card-sub{font-size:12px;color:var(--muted-fg);margin-top:3px;line-height:1.5}
+.card-body{}
+.card-section{padding:14px 18px;border-bottom:1px solid var(--border)}
+.card-section:last-child{border-bottom:none}
+
+/* ── Badges ─────────────────────────────────────────────────────────── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:600;line-height:1.5}
+.badge i{font-size:9px}
+.badge-default{background:var(--muted);color:var(--foreground)}
+.badge-success{background:color-mix(in oklch, var(--c-green) 12%, white);color:var(--c-green-fg);border:1px solid color-mix(in oklch, var(--c-green) 25%, white)}
+.badge-info{background:var(--c-indigo-bg);color:var(--c-indigo);border:1px solid color-mix(in oklch, var(--c-indigo) 22%, white)}
+.badge-warn{background:var(--c-amber-bg);color:var(--c-amber-fg);border:1px solid color-mix(in oklch, var(--c-amber) 25%, white)}
+.badge-rose{background:var(--c-rose-bg);color:var(--c-rose);border:1px solid color-mix(in oklch, var(--c-rose) 22%, white)}
+.badge-teal{background:var(--c-teal-bg);color:var(--c-teal);border:1px solid color-mix(in oklch, var(--c-teal) 22%, white)}
+.badge-amber{background:var(--c-amber-bg);color:var(--c-amber-fg);border:1px solid color-mix(in oklch, var(--c-amber) 25%, white)}
+.badge-brand{background:var(--brand-tint);color:var(--brand-color-dark);border:1px solid color-mix(in oklch, var(--brand-color) 20%, white)}
+.badge-muted{background:var(--muted);color:var(--muted-fg);border:1px solid var(--border)}
+.badge-danger{background:var(--destructive-bg);color:var(--destructive-fg);border:1px solid color-mix(in oklch, var(--destructive) 22%, white)}
+.badge-outline{background:white;color:var(--muted-fg);border:1px solid var(--border-strong)}
+.badge-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px}
+
+/* ── Forms ──────────────────────────────────────────────────────────── */
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.field-label{font-size:12px;font-weight:600;color:var(--foreground)}
+.field-help{font-size:11px;color:var(--muted-fg);line-height:1.4}
+.input,.select,.textarea{
+  width:100%;height:34px;padding:0 10px;background:white;
+  border:1px solid var(--border-strong);border-radius:var(--radius-sm);
+  font-size:13px;color:var(--foreground);transition:border-color var(--tr);
+}
+.input:focus,.select:focus,.textarea:focus{outline:none;border-color:var(--brand-color);box-shadow:0 0 0 2px color-mix(in oklch, var(--brand-color) 15%, transparent)}
+.textarea{height:auto;padding:8px 10px;resize:vertical;min-height:80px;line-height:1.5}
+.select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path fill='none' stroke='%23666' stroke-width='1.5' d='M3 4.5l3 3 3-3'/></svg>");background-repeat:no-repeat;background-position:right 8px center;padding-right:28px}
+.input-search{padding-left:32px;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'><circle cx='6' cy='6' r='4.5' fill='none' stroke='%23999' stroke-width='1.4'/><path fill='none' stroke='%23999' stroke-width='1.4' stroke-linecap='round' d='M9.5 9.5l3 3'/></svg>");background-repeat:no-repeat;background-position:10px center}
+
+.toggle{position:relative;display:inline-block;width:36px;height:20px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;cursor:pointer;inset:0;background:var(--border-strong);border-radius:99px;transition:var(--tr)}
+.toggle-track:before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:white;border-radius:50%;transition:var(--tr)}
+.toggle input:checked + .toggle-track{background:var(--brand-color)}
+.toggle input:checked + .toggle-track:before{transform:translateX(16px)}
+
+/* ── Autopilot screen ──────────────────────────────────────────────── */
+.autopilot-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:18px}
+.autopilot-grid > .full{grid-column:1 / -1}
+
+.hero-card{
+  background:linear-gradient(135deg, var(--brand-tint) 0%, color-mix(in oklch, var(--brand-color) 6%, white) 100%);
+  border:1px solid color-mix(in oklch, var(--brand-color) 18%, white);
+  border-radius:var(--radius-lg);padding:22px 24px;
+  display:flex;align-items:center;gap:20px;
+}
+.hero-icon{
+  width:56px;height:56px;border-radius:50%;
+  background:color-mix(in oklch, var(--c-green) 18%, white);
+  color:var(--c-green-fg);display:flex;align-items:center;justify-content:center;
+  font-size:22px;flex-shrink:0;
+}
+.hero-icon.warn{background:color-mix(in oklch, var(--c-amber) 18%, white);color:var(--c-amber-fg)}
+.hero-content{flex:1}
+.hero-title{font-family:var(--font-heading);font-size:20px;font-weight:500;color:var(--brand-color-deep);margin-bottom:5px}
+.hero-sub{font-size:13px;color:var(--brand-color-dark);line-height:1.55}
+.hero-meta{display:flex;gap:18px;margin-top:11px}
+.hero-meta-item{display:flex;flex-direction:column;line-height:1.2}
+.hero-meta-num{font-size:18px;font-weight:700;color:var(--brand-color-deep)}
+.hero-meta-lbl{font-size:10px;color:var(--brand-color-dark);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-top:2px}
+
+.upcoming-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);transition:background var(--tr);cursor:pointer}
+.upcoming-row:last-child{border-bottom:none}
+.upcoming-row:hover{background:var(--muted)}
+.upcoming-row.disabled{opacity:0.55}
+.upcoming-row.disabled .upcoming-code{text-decoration:line-through}
+.upcoming-when{flex-shrink:0;display:flex;flex-direction:column;align-items:center;width:50px}
+.upcoming-when-num{font-size:18px;font-weight:700;color:var(--foreground);line-height:1}
+.upcoming-when-lbl{font-size:9px;color:var(--muted-fg);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-top:2px}
+.upcoming-info{flex:1;min-width:0}
+.upcoming-code{font-size:13px;font-weight:600;color:var(--foreground)}
+.upcoming-name{font-size:12px;color:var(--muted-fg);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.upcoming-meta{display:flex;align-items:center;gap:8px;margin-top:4px}
+.upcoming-meta span{font-size:11px;color:var(--muted-fg);display:inline-flex;align-items:center;gap:3px}
+.upcoming-meta i{font-size:9px}
+.upcoming-actions{display:flex;align-items:center;gap:5px;flex-shrink:0}
+
+.collecting-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--border)}
+.collecting-row:last-child{border-bottom:none}
+.collecting-info{flex:1;min-width:0}
+.collecting-code{font-size:13px;font-weight:600;color:var(--foreground)}
+.collecting-name{font-size:11px;color:var(--muted-fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.collecting-bar-wrap{flex-shrink:0;width:120px}
+.collecting-bar{width:100%;height:6px;background:var(--muted-2);border-radius:99px;overflow:hidden}
+.collecting-bar-fill{height:100%;background:var(--brand-color);border-radius:99px;transition:width var(--tr)}
+.collecting-bar-fill.warn{background:var(--c-amber)}
+.collecting-pct{display:flex;align-items:center;justify-content:space-between;margin-top:3px}
+.collecting-pct-num{font-size:11px;font-weight:600;color:var(--foreground)}
+.collecting-pct-meta{font-size:10px;color:var(--muted-fg)}
+
+.activity-row{display:flex;gap:11px;padding:10px 0;border-bottom:1px solid var(--border)}
+.activity-row:last-child{border-bottom:none}
+.activity-icon{
+  width:28px;height:28px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:12px;
+  background:var(--muted);color:var(--muted-fg);
+}
+.activity-icon.success{background:var(--c-green-bg);color:var(--c-green-fg)}
+.activity-icon.info{background:var(--c-indigo-bg);color:var(--c-indigo)}
+.activity-icon.warn{background:var(--c-amber-bg);color:var(--c-amber-fg)}
+.activity-content{flex:1}
+.activity-text{font-size:12px;color:var(--foreground);line-height:1.45}
+.activity-text strong{font-weight:600}
+.activity-time{font-size:11px;color:var(--muted-fg);margin-top:3px}
+
+.health-row{display:flex;align-items:flex-start;gap:11px;padding:11px 14px;border-bottom:1px solid var(--border)}
+.health-row:last-child{border-bottom:none}
+.health-icon{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;margin-top:1px}
+.health-icon.ok{background:var(--c-green-bg);color:var(--c-green-fg)}
+.health-icon.warn{background:var(--c-amber-bg);color:var(--c-amber-fg)}
+.health-icon.err{background:var(--destructive-bg);color:var(--destructive-fg)}
+.health-content{flex:1;min-width:0}
+.health-title{font-size:13px;font-weight:600;color:var(--foreground)}
+.health-msg{font-size:11px;color:var(--muted-fg);margin-top:2px;line-height:1.5}
+.health-action{font-size:11px;color:var(--brand-color);font-weight:600;margin-top:5px;display:inline-flex;align-items:center;gap:4px}
+.health-action:hover{color:var(--brand-color-dark);text-decoration:underline}
+
+.lms-summary{display:flex;align-items:center;gap:18px;padding:8px 0}
+.lms-logo{width:48px;height:48px;border-radius:var(--radius);background:oklch(0.55 0.20 25);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;letter-spacing:-.02em}
+.lms-info{flex:1}
+.lms-status{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--foreground)}
+.lms-status .badge{margin-left:4px}
+.lms-meta{font-size:11px;color:var(--muted-fg);margin-top:3px;line-height:1.5}
+.lms-counts{display:flex;gap:14px;margin-top:8px}
+.lms-count{font-size:11px;color:var(--muted-fg)}
+.lms-count strong{color:var(--foreground);font-weight:600;font-size:13px;display:block}
+
+/* ── Analytics screen ──────────────────────────────────────────────── */
+.an-toolbar{display:flex;align-items:center;gap:10px;padding:14px 0 18px;flex-wrap:wrap}
+.an-toolbar-grow{flex:1;min-width:200px}
+.an-segment{display:inline-flex;background:var(--muted);border-radius:var(--radius-sm);padding:3px;gap:1px}
+.an-segment-btn{padding:4px 11px;font-size:12px;color:var(--muted-fg);font-weight:500;border-radius:4px;transition:var(--tr)}
+.an-segment-btn:hover{color:var(--foreground)}
+.an-segment-btn.active{background:white;color:var(--foreground);box-shadow:var(--shadow-sm);font-weight:600}
+
+.an-tbl-wrap{background:white;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm)}
+.an-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.an-th{padding:10px 14px;background:var(--muted);text-align:left;font-size:11px;font-weight:700;color:var(--muted-fg);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);user-select:none;cursor:pointer;transition:background var(--tr)}
+.an-th:hover{background:var(--muted-2)}
+.an-th.active{color:var(--brand-color-deep)}
+.an-th-sortable{display:flex;align-items:center;gap:4px}
+.an-th i{font-size:9px;opacity:0.4}
+.an-th.active i{opacity:1}
+.an-tr{border-bottom:1px solid var(--border);transition:background var(--tr);cursor:pointer}
+.an-tr:hover{background:var(--brand-tint)}
+.an-tr:last-child{border-bottom:none}
+.an-td{padding:13px 14px;vertical-align:middle}
+.an-td-rank{width:48px;color:var(--muted-fg);font-weight:600;font-size:13px;text-align:center}
+.an-td-rank-medal{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:11px;font-weight:700}
+.an-td-rank-medal.gold{background:oklch(0.86 0.12 85);color:oklch(0.42 0.10 80)}
+.an-td-rank-medal.silver{background:oklch(0.88 0.008 270);color:oklch(0.42 0.012 270)}
+.an-td-rank-medal.bronze{background:oklch(0.78 0.10 55);color:oklch(0.40 0.10 50)}
+.course-cell-name{font-weight:600;color:var(--foreground)}
+.course-cell-sub{font-size:11px;color:var(--muted-fg);margin-top:2px}
+.score-cell{display:flex;align-items:center;gap:8px}
+.score-num{font-size:14px;font-weight:700;color:var(--foreground);min-width:32px}
+.score-bar{flex:1;height:5px;background:var(--muted-2);border-radius:99px;overflow:hidden;max-width:80px}
+.score-bar-fill{height:100%;background:var(--brand-color);border-radius:99px}
+.trend-up{color:var(--c-green-fg);font-weight:600;font-size:12px;display:inline-flex;align-items:center;gap:3px}
+.trend-down{color:var(--destructive-fg);font-weight:600;font-size:12px;display:inline-flex;align-items:center;gap:3px}
+.trend-flat{color:var(--muted-fg);font-weight:500;font-size:12px;display:inline-flex;align-items:center;gap:3px}
+.completion-mini{display:flex;align-items:center;gap:8px}
+.completion-mini-bar{width:50px;height:4px;background:var(--muted-2);border-radius:99px;overflow:hidden}
+.completion-mini-fill{height:100%;background:var(--brand-color)}
+.completion-mini-fill.warn{background:var(--c-amber)}
+
+/* ── Course detail ─────────────────────────────────────────────────── */
+.cd-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:18px}
+.cd-back{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted-fg);margin-bottom:8px;font-weight:500}
+.cd-back:hover{color:var(--brand-color)}
+.cd-title-wrap{display:flex;align-items:center;gap:12px}
+.cd-title{font-family:var(--font-heading);font-size:24px;font-weight:500;color:var(--foreground)}
+.cd-meta{font-size:13px;color:var(--muted-fg);margin-top:4px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.cd-meta-item{display:inline-flex;align-items:center;gap:5px}
+.cd-meta-item i{font-size:11px}
+.cd-actions{display:flex;gap:6px;flex-shrink:0}
+
+.cd-kpi-grid{display:grid;grid-template-columns:repeat(4, 1fr);gap:14px;margin-bottom:18px}
+.cd-kpi{background:white;border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow-sm)}
+.cd-kpi-label{font-size:11px;font-weight:600;color:var(--muted-fg);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.cd-kpi-val{font-size:24px;font-weight:700;color:var(--foreground);line-height:1;display:flex;align-items:baseline;gap:6px}
+.cd-kpi-val small{font-size:13px;color:var(--muted-fg);font-weight:500}
+.cd-kpi-meta{font-size:11px;color:var(--muted-fg);margin-top:6px;display:flex;align-items:center;gap:5px;line-height:1.5}
+
+.cd-tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:16px}
+.cd-tab{padding:9px 16px;font-size:13px;color:var(--muted-fg);font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px;transition:var(--tr)}
+.cd-tab:hover{color:var(--foreground)}
+.cd-tab.active{color:var(--brand-color-deep);border-bottom-color:var(--brand-color);font-weight:600}
+
+.cd-grid-2{display:grid;grid-template-columns:1.4fr 1fr;gap:18px}
+
+/* Trend chart */
+.trend-chart{padding:8px 0;position:relative}
+.trend-svg{width:100%;height:200px;display:block}
+.trend-legend{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap}
+.trend-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted-fg)}
+.trend-legend-dot{width:10px;height:3px;border-radius:2px}
+
+/* Rank visualization */
+.rank-viz{padding:14px 0}
+.rank-rank{font-size:42px;font-weight:700;color:var(--brand-color-deep);line-height:1;font-family:var(--font-heading)}
+.rank-of{font-size:14px;color:var(--muted-fg);margin-left:4px;font-weight:500}
+.rank-context{font-size:12px;color:var(--muted-fg);margin-top:4px;line-height:1.5}
+.rank-bar{position:relative;height:8px;background:linear-gradient(to right, oklch(0.92 0.05 25), oklch(0.92 0.05 84), oklch(0.92 0.05 155));border-radius:99px;margin:18px 0 8px}
+.rank-marker{position:absolute;top:-3px;width:14px;height:14px;border-radius:50%;background:var(--brand-color);border:2px solid white;box-shadow:0 0 0 1px var(--brand-color),var(--shadow-sm);transform:translateX(-50%)}
+.rank-marker-label{position:absolute;top:18px;font-size:10px;font-weight:600;color:var(--brand-color-deep);transform:translateX(-50%);white-space:nowrap}
+.rank-scale{display:flex;justify-content:space-between;font-size:10px;color:var(--muted-fg);font-weight:500}
+
+/* Per-question distribution */
+.q-card{background:white;border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;margin-bottom:14px;box-shadow:var(--shadow-sm)}
+.q-card-head{display:flex;justify-content:space-between;gap:14px;margin-bottom:14px}
+.q-card-meta{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.q-card-num{font-size:11px;color:var(--muted-fg);font-weight:600}
+.q-card-text{font-size:14px;font-weight:500;color:var(--foreground);line-height:1.5}
+.q-card-stats{display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;text-align:right}
+.q-card-avg{font-size:24px;font-weight:700;color:var(--foreground);line-height:1}
+.q-card-avg-lbl{font-size:10px;color:var(--muted-fg);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-top:3px}
+
+.q-dist{display:flex;flex-direction:column;gap:6px}
+.q-dist-row{display:grid;grid-template-columns:24px 1fr 80px;gap:10px;align-items:center}
+.q-dist-label{font-size:11px;font-weight:600;color:var(--muted-fg);text-align:right}
+.q-dist-bar-wrap{height:18px;background:var(--muted);border-radius:4px;overflow:hidden;position:relative}
+.q-dist-bar-fill{height:100%;border-radius:4px;transition:width .3s ease;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;color:white;font-size:10px;font-weight:600}
+.q-dist-fill-1{background:var(--destructive)}
+.q-dist-fill-2{background:oklch(0.62 0.18 40)}
+.q-dist-fill-3{background:var(--c-amber)}
+.q-dist-fill-4{background:oklch(0.52 0.13 130)}
+.q-dist-fill-5{background:var(--c-green)}
+.q-dist-meta{font-size:11px;color:var(--muted-fg);text-align:right;font-variant-numeric:tabular-nums}
+.q-dist-meta strong{color:var(--foreground);font-weight:600;font-size:12px}
+
+.q-card-compare{display:flex;gap:18px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:11px;color:var(--muted-fg)}
+.q-card-compare-item{display:flex;align-items:center;gap:5px}
+.q-card-compare-item strong{color:var(--foreground);font-weight:600}
+
+.q-text-card{background:var(--muted);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:8px}
+.q-text-meta{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.q-text-text{font-size:12px;color:var(--foreground);font-style:italic;line-height:1.55}
+
+/* Themes */
+.theme-card{background:white;border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;margin-bottom:10px}
+.theme-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.theme-name{font-size:13px;font-weight:600;color:var(--foreground)}
+.theme-bar{height:6px;background:var(--muted-2);border-radius:99px;overflow:hidden;margin:7px 0}
+.theme-bar-fill{height:100%;background:var(--brand-color);border-radius:99px}
+.theme-quote{font-size:12px;color:var(--muted-fg);font-style:italic;line-height:1.55;padding:6px 0 0;border-top:1px dashed var(--border);margin-top:7px}
+
+.sentiment-bar{display:flex;height:24px;border-radius:6px;overflow:hidden;margin-top:8px}
+.sentiment-pos{background:var(--c-green);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
+.sentiment-neu{background:var(--muted-fg);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
+.sentiment-neg{background:var(--c-amber);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
+
+/* ── Setup screen ──────────────────────────────────────────────────── */
+.setup-layout{display:grid;grid-template-columns:220px 1fr;gap:22px;align-items:flex-start}
+.setup-nav{position:sticky;top:0;background:white;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm)}
+.setup-nav-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:var(--tr);font-size:13px;color:var(--foreground)}
+.setup-nav-item:last-child{border-bottom:none}
+.setup-nav-item:hover{background:var(--muted)}
+.setup-nav-item.active{background:var(--brand-tint);color:var(--brand-color-deep);font-weight:600;border-left:3px solid var(--brand-color);padding-left:11px}
+.setup-nav-icon{width:22px;text-align:center;font-size:13px;color:var(--muted-fg)}
+.setup-nav-item.active .setup-nav-icon{color:var(--brand-color)}
+.setup-nav-status{margin-left:auto;font-size:10px;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.setup-nav-status.ok{background:var(--c-green-bg);color:var(--c-green-fg)}
+.setup-nav-status.warn{background:var(--c-amber-bg);color:var(--c-amber-fg)}
+.setup-nav-status.err{background:var(--destructive-bg);color:var(--destructive-fg)}
+
+.setup-section-title{font-family:var(--font-heading);font-size:22px;font-weight:500;color:var(--foreground);margin-bottom:5px}
+.setup-section-sub{font-size:13px;color:var(--muted-fg);margin-bottom:18px;line-height:1.55;max-width:640px}
+
+/* Course types grid */
+.ct-grid{display:grid;grid-template-columns:repeat(2, 1fr);gap:12px}
+.ct-card{background:white;border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow-sm)}
+.ct-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.ct-card-name{font-size:14px;font-weight:600;color:var(--foreground);display:flex;align-items:center;gap:8px}
+.ct-card-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.ct-card-desc{font-size:12px;color:var(--muted-fg);line-height:1.5}
+.ct-card-meta{display:flex;align-items:center;gap:14px;font-size:11px;color:var(--muted-fg);padding-top:8px;border-top:1px solid var(--border)}
+.ct-card-meta-item{display:inline-flex;align-items:center;gap:4px}
+.ct-card-meta-item i{font-size:10px}
+.ct-template-pill{background:var(--brand-tint);color:var(--brand-color-deep);padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600}
+.ct-template-missing{background:var(--c-amber-bg);color:var(--c-amber-fg);padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+
+/* Templates list */
+.tmpl-row{display:flex;align-items:center;gap:14px;padding:14px 16px;background:white;border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:8px;transition:var(--tr)}
+.tmpl-row:hover{border-color:var(--brand-color-light)}
+.tmpl-icon{width:38px;height:38px;border-radius:var(--radius);background:var(--brand-tint);color:var(--brand-color);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.tmpl-info{flex:1;min-width:0}
+.tmpl-name{font-size:13px;font-weight:600;color:var(--foreground)}
+.tmpl-meta{font-size:11px;color:var(--muted-fg);margin-top:3px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tmpl-binding{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;min-width:140px}
+.tmpl-binding-lbl{font-size:10px;color:var(--muted-fg);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.tmpl-binding-types{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+
+/* Terms */
+.term-row{display:flex;align-items:center;gap:14px;padding:14px 16px;background:white;border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:8px}
+.term-status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.term-status-dot.active{background:var(--c-green);box-shadow:0 0 0 4px var(--c-green-bg)}
+.term-status-dot.upcoming{background:var(--c-indigo);box-shadow:0 0 0 4px var(--c-indigo-bg)}
+.term-status-dot.closed{background:var(--muted-fg);box-shadow:0 0 0 4px var(--muted)}
+.term-info{flex:1}
+.term-name{font-size:13px;font-weight:600;color:var(--foreground)}
+.term-dates{font-size:11px;color:var(--muted-fg);margin-top:3px}
+.term-schedule{font-size:11px;color:var(--muted-fg);text-align:right;flex-shrink:0;line-height:1.6;min-width:200px}
+.term-schedule strong{color:var(--foreground);font-weight:600}
+
+/* LMS panel */
+.lms-panel{background:white;border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px;box-shadow:var(--shadow-sm)}
+.lms-head{display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--border)}
+.lms-head-logo{width:54px;height:54px;border-radius:var(--radius);background:oklch(0.55 0.20 25);color:white;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;letter-spacing:-.02em}
+.lms-head-info h3{font-size:16px;font-weight:600;color:var(--foreground);display:flex;align-items:center;gap:8px}
+.lms-head-info p{font-size:12px;color:var(--muted-fg);margin-top:3px}
+
+.lms-stat-grid{display:grid;grid-template-columns:repeat(3, 1fr);gap:12px;margin-bottom:18px}
+.lms-stat{background:var(--muted);border-radius:var(--radius);padding:13px}
+.lms-stat-num{font-size:22px;font-weight:700;color:var(--foreground);line-height:1}
+.lms-stat-lbl{font-size:11px;color:var(--muted-fg);margin-top:5px;font-weight:500}
+
+.lms-detail-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:12px}
+.lms-detail-row:last-child{border-bottom:none}
+.lms-detail-key{color:var(--muted-fg);font-weight:500}
+.lms-detail-val{color:var(--foreground);font-weight:600}
+
+/* Decision admin */
+.admin-card{background:white;border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px;box-shadow:var(--shadow-sm)}
+.admin-head{display:flex;align-items:center;gap:14px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.admin-avatar{width:54px;height:54px;border-radius:50%;background:color-mix(in oklch, var(--brand-color) 14%, white);color:var(--brand-color-dark);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600}
+.admin-info{flex:1}
+.admin-info h3{font-size:16px;font-weight:600;color:var(--foreground)}
+.admin-info p{font-size:12px;color:var(--muted-fg);margin-top:3px}
+.admin-notif{display:flex;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid var(--border)}
+.admin-notif:last-child{border-bottom:none}
+.admin-notif-info{flex:1}
+.admin-notif-title{font-size:13px;font-weight:600;color:var(--foreground)}
+.admin-notif-sub{font-size:11px;color:var(--muted-fg);margin-top:2px;line-height:1.5}
+
+/* ── Modal system ──────────────────────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:oklch(0 0 0 / .42);z-index:100;display:none;align-items:center;justify-content:center;padding:20px;animation:fadeIn .15s}
+.modal-overlay.open{display:flex}
+.modal{background:white;border-radius:var(--radius-lg);width:520px;max-width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);animation:slideUp .2s}
+.modal-lg{width:680px}
+.modal-xl{width:820px}
+.modal-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:14px;font-weight:600;color:var(--foreground);text-transform:uppercase;letter-spacing:.05em}
+.modal-close{color:var(--muted-fg);font-size:14px;width:28px;height:28px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center}
+.modal-close:hover{background:var(--muted);color:var(--foreground)}
+.modal-body{padding:18px 22px;overflow-y:auto;flex:1}
+.modal-foot{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+.modal-section{margin-bottom:14px}
+.modal-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted-fg);margin-bottom:8px}
+.modal-info-grid{display:grid;grid-template-columns:120px 1fr;gap:8px 14px;font-size:13px}
+.modal-info-key{color:var(--muted-fg);font-weight:500}
+.modal-info-val{color:var(--foreground);font-weight:500}
+.modal-info-val strong{font-weight:600}
+
+/* ── Empty / utility ───────────────────────────────────────────────── */
+.empty{padding:40px 20px;text-align:center;color:var(--muted-fg);font-size:13px}
+.empty-icon{font-size:24px;margin-bottom:10px;color:var(--border-strong)}
+.divider{height:1px;background:var(--border);margin:14px 0}
+.section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted-fg);margin-bottom:10px}
+.list-tight > * + *{margin-top:6px}
+.row-actions{display:flex;gap:5px;flex-shrink:0}
+.muted{color:var(--muted-fg)}
+.fw-600{font-weight:600}
+.text-sm{font-size:12px}
+.text-xs{font-size:11px}
+
+.disable-row-banner{background:var(--c-amber-bg);border:1px solid color-mix(in oklch, var(--c-amber) 25%, white);border-radius:var(--radius);padding:10px 12px;font-size:12px;color:var(--c-amber-fg);display:flex;align-items:flex-start;gap:8px;margin-top:10px}
+
+/* compact tables in modals */
+.mtbl{width:100%;font-size:12px;border-collapse:collapse}
+.mtbl th{text-align:left;padding:7px 9px;background:var(--muted);font-weight:600;color:var(--muted-fg);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.mtbl td{padding:8px 9px;border-bottom:1px solid var(--border)}
+.mtbl tr:last-child td{border-bottom:none}
+
+@media (max-width: 1100px){
+  .autopilot-grid{grid-template-columns:1fr}
+  .cd-grid-2{grid-template-columns:1fr}
+  .cd-kpi-grid{grid-template-columns:repeat(2, 1fr)}
+  .setup-layout{grid-template-columns:1fr}
+  .setup-nav{position:static}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ── Topbar ─────────────────────────────────────────────────────── -->
+  <div class="topbar">
+    <div class="brand-mark">
+      <div class="b-icon">P</div>
+      <span>PCE Post Course Evaluation</span>
+    </div>
+    <div class="tb-divider"></div>
+    <div class="tb-tabs">
+      <button class="tb-tab active" data-screen="autopilot" onclick="switchScreen('autopilot')"><i class="fa-light fa-rocket-launch"></i>Autopilot</button>
+      <button class="tb-tab" data-screen="analytics" onclick="switchScreen('analytics')"><i class="fa-light fa-chart-line-up"></i>Analytics</button>
+      <button class="tb-tab" data-screen="setup" onclick="switchScreen('setup')"><i class="fa-light fa-gear"></i>Setup</button>
+    </div>
+    <div class="tb-spacer"></div>
+    <div class="tb-term">
+      <span>Active term:</span>
+      <span class="tb-term-pill" id="tb-term">Spring 2026</span>
+    </div>
+    <div class="tb-divider"></div>
+    <div class="tb-user">
+      <div class="tb-avatar">SM</div>
+      <div class="tb-user-info">
+        <span class="tb-user-name">Dr. Sarah Mitchell</span>
+        <span class="tb-user-role">Program Director</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Screens ────────────────────────────────────────────────────── -->
+  <div class="screens">
+    <div class="screen active" id="screen-autopilot"></div>
+    <div class="screen" id="screen-analytics"></div>
+    <div class="screen" id="screen-setup"></div>
+  </div>
+</div>
+
+<!-- ── Generic modal ─────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this) closeModal()">
+  <div class="modal" id="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-title">Title</div>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close"><i class="fa-light fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot" id="modal-foot"></div>
+  </div>
+</div>
+
+<div id="banner-host"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════
+   DATA
+   ════════════════════════════════════════════════════════════════════ */
+
+const TODAY = new Date('2026-04-29');
+
+const COURSE_TYPES = [
+  {id:'ct1', name:'Didactic',          desc:'Lecture-based courses',                      color:'oklch(0.55 0.13 264)', badge:'badge-indigo'},
+  {id:'ct2', name:'Clinical Rotation', desc:'Hands-on clinical experience with preceptors', color:'oklch(0.50 0.13 184)', badge:'badge-teal'},
+  {id:'ct3', name:'Lab',               desc:'Practical lab and skills sessions',           color:'oklch(0.62 0.16 70)', badge:'badge-amber'},
+  {id:'ct4', name:'Seminar',           desc:'Discussion-based seminars and journal club',  color:'oklch(0.50 0.18 358)', badge:'badge-rose'},
+];
+
+const TEMPLATES = [
+  {id:'tp1', name:'Didactic Course Evaluation',     boundTypes:['ct1'], lastUpdated:'Mar 12, 2026', questionCount:11, status:'active', sectionCount:2},
+  {id:'tp2', name:'Clinical Rotation Evaluation',   boundTypes:['ct2'], lastUpdated:'Feb 28, 2026', questionCount:13, status:'active', sectionCount:3},
+  {id:'tp3', name:'Lab Performance Evaluation',     boundTypes:['ct3'], lastUpdated:'Mar 5, 2026',  questionCount:9,  status:'active', sectionCount:2},
+];
+
+const TERMS = [
+  {id:'tm1', name:'Fall 2025',   startDate:'2025-08-25', endDate:'2025-12-15', surveyOpenOffset:14, surveyCloseOffset:7,  status:'closed'},
+  {id:'tm2', name:'Spring 2026', startDate:'2026-01-12', endDate:'2026-04-30', surveyOpenOffset:14, surveyCloseOffset:7,  status:'active'},
+  {id:'tm3', name:'Summer 2026', startDate:'2026-05-15', endDate:'2026-08-15', surveyOpenOffset:14, surveyCloseOffset:7,  status:'upcoming'},
+];
+
+const DECISION_ADMIN = {
+  name:'Dr. Sarah Mitchell',
+  email:'mitchell@pa.edu',
+  role:'Program Director',
+  notif:{
+    weekBeforeTrigger:true,
+    dayOfTrigger:true,
+    lowCompletion:true,
+    completionThreshold:50,
+    weeklyDigest:false,
+  }
+};
+
+const LMS = {
+  connected:true, provider:'Canvas', lastSync:'2026-04-29 06:00 AM',
+  syncedCourses:42, syncedStudents:48, syncedFaculty:18,
+  nextSync:'2026-04-30 06:00 AM',
+  syncFrequency:'daily',
+};
+
+/* Courses: 32 total spread across types and terms.
+   Each Spring 2026 course has rich data for the analytics deep dive. */
+const COURSES = [
+  // === Didactic / Spring 2026 (8 courses) ===
+  {id:'c1',  code:'PHYS 401', name:'Advanced Pathophysiology',     typeId:'ct1', termId:'tm2', credits:4, enrolled:45, instructor:'Dr. Chen',      avg:4.6, prev:4.4, completion:84},
+  {id:'c2',  code:'PHYS 301', name:'Pharmacology I',                typeId:'ct1', termId:'tm2', credits:3, enrolled:45, instructor:'Dr. Rodriguez', avg:4.4, prev:4.5, completion:71},
+  {id:'c3',  code:'DIDX 401', name:'Clinical Decision Making',      typeId:'ct1', termId:'tm2', credits:3, enrolled:45, instructor:'Dr. Brown',     avg:4.3, prev:4.1, completion:78},
+  {id:'c4',  code:'DIDX 201', name:'Medical History & Physical',    typeId:'ct1', termId:'tm2', credits:3, enrolled:45, instructor:'Dr. Wu',        avg:4.1, prev:4.2, completion:69},
+  {id:'c5',  code:'PHYS 402', name:'Advanced Clinical Medicine',    typeId:'ct1', termId:'tm2', credits:3, enrolled:45, instructor:'Dr. Patel',     avg:4.0, prev:3.8, completion:73},
+  {id:'c6',  code:'DIDX 301', name:'Evidence-Based Practice',       typeId:'ct1', termId:'tm2', credits:2, enrolled:45, instructor:'Dr. Brown',     avg:3.8, prev:3.9, completion:62},
+  {id:'c7',  code:'DIDX 101', name:'Medical Biochemistry',          typeId:'ct1', termId:'tm2', credits:3, enrolled:45, instructor:'Dr. Thompson',  avg:3.6, prev:4.0, completion:55},
+  {id:'c8',  code:'PHYS 201', name:'Anatomy & Physiology II',       typeId:'ct1', termId:'tm2', credits:4, enrolled:45, instructor:'Dr. Lee',       avg:3.5, prev:3.7, completion:48},
+
+  // === Clinical Rotation / Spring 2026 (6 courses) ===
+  {id:'c9',  code:'CLIN 302', name:'Clinical Practicum III',        typeId:'ct2', termId:'tm2', credits:5, enrolled:45, instructor:'Dr. Martinez',  avg:4.7, prev:4.5, completion:80},
+  {id:'c10', code:'CLIN 401', name:'Internal Medicine Rotation',    typeId:'ct2', termId:'tm2', credits:6, enrolled:45, instructor:'Dr. Johnson',   avg:4.2, prev:4.1, completion:67},
+  {id:'c11', code:'CLIN 411', name:'Family Medicine Rotation',      typeId:'ct2', termId:'tm2', credits:6, enrolled:45, instructor:'Dr. Park',      avg:4.0, prev:4.0, completion:64},
+  {id:'c12', code:'CLIN 421', name:'Pediatrics Rotation',           typeId:'ct2', termId:'tm2', credits:6, enrolled:45, instructor:'Dr. Adams',     avg:3.9, prev:4.2, completion:58},
+  {id:'c13', code:'CLIN 431', name:'OB/GYN Rotation',               typeId:'ct2', termId:'tm2', credits:6, enrolled:45, instructor:'Dr. Nguyen',    avg:3.7, prev:3.6, completion:52},
+  {id:'c14', code:'CLIN 441', name:'Surgery Rotation',              typeId:'ct2', termId:'tm2', credits:6, enrolled:45, instructor:'Dr. Wilson',    avg:3.5, prev:3.9, completion:46},
+
+  // === Lab / Spring 2026 (4 courses) ===
+  {id:'c15', code:'LAB 301',  name:'Clinical Skills Lab III',       typeId:'ct3', termId:'tm2', credits:2, enrolled:45, instructor:'Dr. Kim',       avg:4.5, prev:4.4, completion:79},
+  {id:'c16', code:'LAB 311',  name:'Procedural Skills Lab',         typeId:'ct3', termId:'tm2', credits:2, enrolled:45, instructor:'Dr. Kim',       avg:4.2, prev:4.0, completion:72},
+  {id:'c17', code:'LAB 321',  name:'Diagnostic Imaging Lab',        typeId:'ct3', termId:'tm2', credits:2, enrolled:45, instructor:'Dr. Hall',      avg:3.9, prev:4.1, completion:60},
+  {id:'c18', code:'LAB 331',  name:'Pharmacology Skills Lab',       typeId:'ct3', termId:'tm2', credits:2, enrolled:45, instructor:'Dr. Rodriguez', avg:3.6, prev:3.8, completion:54},
+
+  // === Seminar / Spring 2026 (3 courses): NO TEMPLATE = warning ===
+  {id:'c19', code:'SEM 401',  name:'Bioethics Seminar',             typeId:'ct4', termId:'tm2', credits:1, enrolled:45, instructor:'Dr. Khan',      avg:null, prev:null, completion:0},
+  {id:'c20', code:'SEM 411',  name:'Healthcare Policy Seminar',     typeId:'ct4', termId:'tm2', credits:1, enrolled:45, instructor:'Dr. Khan',      avg:null, prev:null, completion:0},
+  {id:'c21', code:'SEM 421',  name:'Journal Club',                  typeId:'ct4', termId:'tm2', credits:1, enrolled:45, instructor:'Dr. Patel',     avg:null, prev:null, completion:0},
+
+  // === Summer 2026 / Upcoming ===
+  {id:'c22', code:'CLIN 501', name:'Emergency Medicine',            typeId:'ct2', termId:'tm3', credits:4, enrolled:45, instructor:'Dr. Williams',  avg:null, prev:4.2, completion:0},
+  {id:'c23', code:'CLIN 511', name:'Critical Care Rotation',        typeId:'ct2', termId:'tm3', credits:4, enrolled:45, instructor:'Dr. Martinez',  avg:null, prev:4.4, completion:0},
+  {id:'c24', code:'PHYS 501', name:'Advanced Pharmacotherapy',      typeId:'ct1', termId:'tm3', credits:3, enrolled:45, instructor:'Dr. Rodriguez', avg:null, prev:4.5, completion:0},
+  {id:'c25', code:'DIDX 501', name:'Capstone Project Seminar',      typeId:'ct1', termId:'tm3', credits:2, enrolled:45, instructor:'Dr. Brown',     avg:null, prev:4.1, completion:0},
+  {id:'c26', code:'LAB 501',  name:'Advanced Procedural Lab',       typeId:'ct3', termId:'tm3', credits:2, enrolled:45, instructor:'Dr. Kim',       avg:null, prev:4.3, completion:0},
+
+  // === Fall 2025 / Closed (for trend reference) ===
+  {id:'c27', code:'PHYS 401', name:'Advanced Pathophysiology',     typeId:'ct1', termId:'tm1', credits:4, enrolled:42, instructor:'Dr. Chen',     avg:4.4, prev:4.3, completion:82},
+  {id:'c28', code:'PHYS 301', name:'Pharmacology I',               typeId:'ct1', termId:'tm1', credits:3, enrolled:42, instructor:'Dr. Rodriguez',avg:4.5, prev:4.4, completion:75},
+  {id:'c29', code:'CLIN 301', name:'Clinical Practicum II',        typeId:'ct2', termId:'tm1', credits:5, enrolled:42, instructor:'Dr. Martinez', avg:4.5, prev:4.3, completion:78},
+  {id:'c30', code:'DIDX 101', name:'Medical Biochemistry',         typeId:'ct1', termId:'tm1', credits:3, enrolled:42, instructor:'Dr. Thompson', avg:4.0, prev:4.1, completion:80},
+  {id:'c31', code:'PHYS 201', name:'Anatomy & Physiology II',      typeId:'ct1', termId:'tm1', credits:4, enrolled:42, instructor:'Dr. Lee',      avg:3.7, prev:3.9, completion:71},
+  {id:'c32', code:'LAB 201',  name:'Clinical Skills Lab II',       typeId:'ct3', termId:'tm1', credits:2, enrolled:42, instructor:'Dr. Kim',      avg:4.4, prev:4.2, completion:77},
+];
+
+/* Per-question response distribution for each Spring 2026 course with a template.
+   Each course has 5 rating questions. Distribution sums to total responses. */
+const RESPONSE_DATA = {};
+function makeDist(avg, total){
+  /* Generate plausible 1-5 distribution that hits target avg.
+     Uses a normal-ish distribution skewed to the avg. */
+  const buckets=[0,0,0,0,0];
+  for(let i=0;i<total;i++){
+    const r=Math.random();
+    let cum=0;
+    /* Weight distribution to favor avg */
+    const weights=[0,0,0,0,0];
+    for(let s=1;s<=5;s++){
+      const dist=Math.abs(s-avg);
+      weights[s-1]=Math.max(0.05, 1.5-dist*0.45);
+    }
+    const wsum=weights.reduce((a,b)=>a+b,0);
+    for(let s=0;s<5;s++){
+      cum+=weights[s]/wsum;
+      if(r<=cum){ buckets[s]++; break; }
+    }
+  }
+  return buckets;
+}
+
+const TEMPLATE_QUESTIONS = {
+  ct1:[
+    'The learning objectives were clearly communicated.',
+    'Course content was relevant to clinical practice.',
+    'Course materials were helpful for my learning.',
+    'The instructor explained concepts clearly.',
+    'Overall, I was satisfied with this course.',
+  ],
+  ct2:[
+    'The rotation provided adequate patient exposure.',
+    'I had opportunities to apply clinical skills.',
+    'The preceptor provided clear, actionable feedback.',
+    'The preceptor adapted teaching to my level.',
+    'Overall, I was satisfied with this rotation.',
+  ],
+  ct3:[
+    'The lab provided sufficient hands-on practice.',
+    'Equipment and supplies were appropriate.',
+    'The instructor demonstrated procedures clearly.',
+    'I received useful feedback on my technique.',
+    'Overall, I was satisfied with this lab.',
+  ],
+};
+
+/* Build response data for each course with avg + completion */
+COURSES.filter(c=>c.avg!==null && c.typeId!=='ct4').forEach(c=>{
+  const responded=Math.round(c.enrolled*c.completion/100);
+  const qs=TEMPLATE_QUESTIONS[c.typeId]||[];
+  RESPONSE_DATA[c.id]={
+    responded:responded,
+    questions:qs.map((q,i)=>{
+      const qAvg=Math.max(2.0, Math.min(5.0, c.avg + (Math.sin(i*1.7+c.id.charCodeAt(c.id.length-1))*0.3)));
+      return {
+        text:q,
+        avg:parseFloat(qAvg.toFixed(2)),
+        dist:makeDist(qAvg, responded),
+      };
+    }),
+  };
+});
+
+/* AI themes per course (shared shape) */
+const COURSE_THEMES = {
+  c1:[
+    {name:'Clear, well-paced lectures', mentions:18, sentiment:'positive', quotes:['Dr. Chen builds each lecture on the last so concepts compound.','Best-organized course in the program.']},
+    {name:'Heavy reading load before exams', mentions:7, sentiment:'concern',  quotes:['The pacing felt rushed before the second exam.','Three textbook chapters per week was a lot.']},
+    {name:'Excellent practice cases', mentions:11, sentiment:'positive', quotes:['Practice cases mirrored the exam format perfectly.']},
+  ],
+  c2:[
+    {name:'Effective use of clinical examples', mentions:14, sentiment:'positive', quotes:['Real prescriptions made the material stick.']},
+    {name:'Wants more drug interaction practice', mentions:8, sentiment:'concern', quotes:['I would have liked more spaced repetition on interactions.']},
+  ],
+  c9:[
+    {name:'Highly engaged preceptor',           mentions:16, sentiment:'positive', quotes:['Dr. Martinez treats us as future colleagues.','Best clinical experience I have had.']},
+    {name:'Schedule changes were common',       mentions:5,  sentiment:'concern',  quotes:['The schedule shifted multiple times mid-rotation.']},
+    {name:'Strong feedback culture',            mentions:9,  sentiment:'positive', quotes:['SOAP-note feedback came back fast and was specific.']},
+  ],
+  c14:[
+    {name:'Limited hands-on procedure time', mentions:11, sentiment:'concern', quotes:['We mostly observed; I expected more hands-on.','Surgical assist time was very limited.']},
+    {name:'Schedule unpredictable', mentions:8, sentiment:'concern', quotes:['On-call hours were not predictable enough to plan study time.']},
+    {name:'Strong didactic conferences', mentions:6, sentiment:'positive', quotes:['Wednesday conferences were a highlight.']},
+  ],
+};
+function getThemes(cid){
+  if(COURSE_THEMES[cid]) return COURSE_THEMES[cid];
+  /* Fallback: synthesize 2 themes from avg score */
+  const c=COURSES.find(x=>x.id===cid);
+  if(!c||c.avg===null) return [];
+  const positive=c.avg>=4.0;
+  return [
+    {name: positive?'Generally positive engagement':'Pacing felt uneven',
+     mentions: positive?12:8,
+     sentiment: positive?'positive':'concern',
+     quotes:[positive?'I learned a lot from this course.':'I would benefit from more time on each topic.']},
+    {name: positive?'Good materials and structure':'Asks for more practice opportunities',
+     mentions: positive?7:6,
+     sentiment: positive?'positive':'concern',
+     quotes:[positive?'Materials were clear and well-organized.':'More practice problems would help.']},
+  ];
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   STATE + UTILITIES
+   ════════════════════════════════════════════════════════════════════ */
+
+const state = {
+  screen:'autopilot',
+  termId:'tm2',
+  setupTab:'lms',
+  analyticsView:'list', // 'list' | 'detail'
+  detailCourseId:null,
+  detailTab:'overview',
+  sortBy:'rank',        // 'rank' | 'type' | 'rating' | 'trend' | 'completion'
+  sortDir:'asc',
+  filterPercentile:'all', // 'all' | 'top50' | 'bottom50'
+  filterType:'all',
+  search:'',
+  surveys:[],           // populated by buildSurveys()
+  disabledSurveyIds:new Set(),
+  activity:[
+    {when:'2026-04-29 09:14', icon:'fa-paper-plane', cat:'success', text:'Reminder emails sent to <strong>13 students</strong> who have not responded to PHYS 301.'},
+    {when:'2026-04-28 06:01', icon:'fa-rotate', cat:'info', text:'LMS sync completed: 1 new course (CLIN 511) detected for Summer 2026.'},
+    {when:'2026-04-26 17:30', icon:'fa-check-circle', cat:'success', text:'<strong>CLIN 302 results</strong> released to Dr. Martinez after admin review.'},
+    {when:'2026-04-23 09:00', icon:'fa-bell', cat:'info', text:'Weekly autopilot summary sent to Dr. Mitchell. <strong>3 surveys</strong> triggered this week.'},
+    {when:'2026-04-21 12:00', icon:'fa-triangle-exclamation', cat:'warn', text:'Completion alert: <strong>LAB 331</strong> dropped below 55% with 4 days remaining.'},
+    {when:'2026-04-19 09:00', icon:'fa-rocket-launch', cat:'success', text:'Autopilot triggered <strong>14 Spring 2026 surveys</strong> as scheduled.'},
+  ],
+};
+
+function fmtDate(iso){
+  const d = new Date(iso+'T12:00:00');
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+function shortDate(iso){
+  const d = new Date(iso+'T12:00:00');
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+function daysBetween(a,b){
+  const ms = (new Date(b)) - (new Date(a));
+  return Math.round(ms / (1000*60*60*24));
+}
+function addDays(iso, n){
+  const d = new Date(iso+'T12:00:00');
+  d.setDate(d.getDate()+n);
+  return d.toISOString().slice(0,10);
+}
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function trendArrow(curr, prev){
+  if(curr===null||prev===null) return `<span class="trend-flat"><i class="fa-light fa-minus"></i>--</span>`;
+  const diff = +(curr-prev).toFixed(1);
+  if(Math.abs(diff)<0.05) return `<span class="trend-flat"><i class="fa-light fa-minus"></i>±0.0</span>`;
+  if(diff>0) return `<span class="trend-up"><i class="fa-solid fa-arrow-trend-up"></i>+${diff.toFixed(1)}</span>`;
+  return `<span class="trend-down"><i class="fa-solid fa-arrow-trend-down"></i>${diff.toFixed(1)}</span>`;
+}
+function typeOf(typeId){ return COURSE_TYPES.find(t=>t.id===typeId); }
+function termOf(termId){ return TERMS.find(t=>t.id===termId); }
+function templateForType(typeId){ return TEMPLATES.find(t=>t.boundTypes.includes(typeId)); }
+
+/* ── Survey scheduling logic (autopilot core) ──────────────────────── */
+function buildSurveys(){
+  /* Generate one survey per course where the type has a bound template
+     For active and upcoming terms */
+  state.surveys = [];
+  COURSES.forEach(c=>{
+    const term = termOf(c.termId);
+    if(!term || term.status==='closed') return;
+    const tmpl = templateForType(c.typeId);
+    if(!tmpl) return; // No template = no survey
+    const openDate  = addDays(term.endDate, -term.surveyOpenOffset);
+    const closeDate = addDays(term.endDate,  term.surveyCloseOffset);
+    const todayIso  = '2026-04-29';
+    let status;
+    if(state.disabledSurveyIds.has(c.id)){
+      status='disabled';
+    } else if(todayIso < openDate){
+      status='scheduled';
+    } else if(todayIso <= closeDate){
+      status='collecting';
+    } else {
+      status='closed';
+    }
+    state.surveys.push({
+      courseId:c.id, code:c.code, name:c.name,
+      typeId:c.typeId, termId:c.termId,
+      templateId:tmpl.id, templateName:tmpl.name,
+      instructor:c.instructor, enrolled:c.enrolled,
+      openDate, closeDate, status,
+      completion:c.completion, avg:c.avg,
+    });
+  });
+  return state.surveys;
+}
+
+function untemplatedTypes(){
+  return COURSE_TYPES.filter(t=>!templateForType(t.id));
+}
+function coursesNeedingType(){ return []; /* All have type in this dataset */ }
+
+/* ════════════════════════════════════════════════════════════════════
+   SCREEN SWITCHING
+   ════════════════════════════════════════════════════════════════════ */
+
+function switchScreen(name){
+  state.screen = name;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.querySelectorAll('.tb-tab').forEach(t=>t.classList.toggle('active', t.dataset.screen===name));
+  if(name==='autopilot') renderAutopilot();
+  if(name==='analytics') renderAnalytics();
+  if(name==='setup') renderSetup();
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   AUTOPILOT SCREEN
+   ════════════════════════════════════════════════════════════════════ */
+
+function renderAutopilot(){
+  buildSurveys();
+  const term = termOf(state.termId);
+  const surveys = state.surveys.filter(s=>s.termId===state.termId);
+
+  const totalSched   = surveys.length;
+  const collectingN  = surveys.filter(s=>s.status==='collecting').length;
+  const scheduledN   = surveys.filter(s=>s.status==='scheduled').length;
+  const closedN      = surveys.filter(s=>s.status==='closed').length;
+  const disabledN    = surveys.filter(s=>s.status==='disabled').length;
+
+  const warnings = untemplatedTypes();
+  const heroStatus = warnings.length ? 'warn' : 'ok';
+  const daysToClose = daysBetween('2026-04-29', term.endDate);
+
+  const hero = `
+    <div class="hero-card">
+      <div class="hero-icon ${heroStatus==='warn'?'warn':''}">
+        <i class="fa-light ${heroStatus==='warn'?'fa-triangle-exclamation':'fa-circle-check'}"></i>
+      </div>
+      <div class="hero-content">
+        <div class="hero-title">${heroStatus==='warn'?'Autopilot is running with warnings':'Autopilot is running for '+term.name}</div>
+        <div class="hero-sub">${heroStatus==='warn'
+          ? `${warnings.length} course type${warnings.length>1?'s have':' has'} no template. ${warnings.map(w=>w.name).join(', ')} courses will be skipped this term unless you bind a template.`
+          : `All courses with bound templates are scheduled. Surveys open ${term.surveyOpenOffset} days before term end and close ${term.surveyCloseOffset} days after.`}</div>
+        <div class="hero-meta">
+          <div class="hero-meta-item"><span class="hero-meta-num">${totalSched}</span><span class="hero-meta-lbl">Scheduled</span></div>
+          <div class="hero-meta-item"><span class="hero-meta-num">${collectingN}</span><span class="hero-meta-lbl">Collecting</span></div>
+          <div class="hero-meta-item"><span class="hero-meta-num">${closedN}</span><span class="hero-meta-lbl">Closed</span></div>
+          <div class="hero-meta-item"><span class="hero-meta-num">${daysToClose>0?daysToClose+'d':'today'}</span><span class="hero-meta-lbl">Until ${term.name} ends</span></div>
+        </div>
+      </div>
+      <div>
+        <button class="btn btn-outline" onclick="openTriggerPlanModal()"><i class="fa-light fa-list-check"></i>View trigger plan</button>
+      </div>
+    </div>
+  `;
+
+  /* Triggering this week (scheduled, opening within 7 days) */
+  const upcoming = surveys.filter(s=>{
+    if(s.status!=='scheduled') return false;
+    const d = daysBetween('2026-04-29', s.openDate);
+    return d>=0 && d<=7;
+  }).sort((a,b)=>a.openDate.localeCompare(b.openDate));
+  const upcomingScheduled = surveys.filter(s=>s.status==='scheduled').length;
+
+  const upcomingHtml = upcoming.length
+    ? upcoming.map(s=>renderUpcomingRow(s)).join('')
+    : `<div class="empty"><div class="empty-icon"><i class="fa-light fa-calendar-check"></i></div>No surveys triggering in the next 7 days.</div>`;
+
+  /* Currently collecting */
+  const collecting = surveys.filter(s=>s.status==='collecting').sort((a,b)=>b.completion-a.completion);
+  const collectingHtml = collecting.length
+    ? collecting.slice(0,6).map(s=>renderCollectingRow(s)).join('')
+    : `<div class="empty"><div class="empty-icon"><i class="fa-light fa-inbox"></i></div>No surveys are currently collecting.</div>`;
+
+  /* Activity log */
+  const activityHtml = state.activity.slice(0,6).map(a=>`
+    <div class="activity-row">
+      <div class="activity-icon ${a.cat}"><i class="fa-light ${a.icon}"></i></div>
+      <div class="activity-content">
+        <div class="activity-text">${a.text}</div>
+        <div class="activity-time">${a.when.replace(' ',' · ')}</div>
+      </div>
+    </div>
+  `).join('');
+
+  /* Health check */
+  const healthItems = [];
+  if(LMS.connected){
+    healthItems.push({icon:'ok',title:'LMS integration connected',msg:`Last sync ${LMS.lastSync}. ${LMS.syncedCourses} courses, ${LMS.syncedFaculty} faculty, ${LMS.syncedStudents} students mirrored.`});
+  } else {
+    healthItems.push({icon:'err',title:'LMS not connected',msg:'Course and roster data must be imported from the LMS for autopilot to work.',action:{label:'Connect LMS',onclick:'switchScreen(\'setup\');state.setupTab=\'lms\';renderSetup();'}});
+  }
+  warnings.forEach(t=>{
+    const ct = COURSES.filter(c=>c.typeId===t.id && termOf(c.termId)?.status!=='closed').length;
+    healthItems.push({icon:'warn',title:`No template bound to ${t.name}`,msg:`${ct} ${t.name.toLowerCase()} course${ct===1?' is':'s are'} scheduled but will be skipped. Bind a template to include them.`,action:{label:'Open Templates',onclick:'switchScreen(\'setup\');state.setupTab=\'templates\';renderSetup();'}});
+  });
+  if(!healthItems.find(h=>h.icon!=='ok')){
+    healthItems.push({icon:'ok',title:'All course types have a template',msg:`${COURSE_TYPES.length-warnings.length} of ${COURSE_TYPES.length} types are bound to a template.`});
+  }
+  /* low completion warnings */
+  const lowComp = surveys.filter(s=>s.status==='collecting' && s.completion<55);
+  if(lowComp.length){
+    healthItems.push({icon:'warn',title:`${lowComp.length} survey${lowComp.length>1?'s have':' has'} completion below 55%`,msg:`${lowComp.map(s=>s.code).join(', ')} ${lowComp.length>1?'are':'is'} below the alert threshold. Consider sending reminders.`,action:{label:'Review',onclick:'switchScreen(\'analytics\');renderAnalytics();'}});
+  }
+
+  const healthHtml = healthItems.map(h=>`
+    <div class="health-row">
+      <div class="health-icon ${h.icon}"><i class="fa-light ${h.icon==='ok'?'fa-check':h.icon==='warn'?'fa-triangle-exclamation':'fa-xmark'}"></i></div>
+      <div class="health-content">
+        <div class="health-title">${escapeHtml(h.title)}</div>
+        <div class="health-msg">${h.msg}</div>
+        ${h.action?`<a class="health-action" onclick="${h.action.onclick}">${h.action.label}<i class="fa-light fa-arrow-right"></i></a>`:''}
+      </div>
+    </div>
+  `).join('');
+
+  /* LMS summary card */
+  const lmsHtml = `
+    <div class="lms-summary">
+      <div class="lms-logo">canvas</div>
+      <div class="lms-info">
+        <div class="lms-status">
+          ${LMS.provider}
+          <span class="badge badge-success"><i class="fa-light fa-check"></i>Connected</span>
+        </div>
+        <div class="lms-meta">Last synced ${LMS.lastSync} · Next sync ${LMS.nextSync}</div>
+        <div class="lms-counts">
+          <div class="lms-count"><strong>${LMS.syncedCourses}</strong>Courses</div>
+          <div class="lms-count"><strong>${LMS.syncedFaculty}</strong>Faculty</div>
+          <div class="lms-count"><strong>${LMS.syncedStudents}</strong>Students</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const html = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">Autopilot</div>
+        <div class="page-subtitle">Surveys are triggered automatically based on each term's end date. The decision admin is notified one week before each batch and can disable any individual survey.</div>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-outline btn-sm" onclick="openTermSwitchModal()"><i class="fa-light fa-calendar-days"></i>Switch term</button>
+        <button class="btn btn-outline btn-sm" onclick="syncLmsNow()"><i class="fa-light fa-rotate"></i>Sync LMS</button>
+      </div>
+    </div>
+
+    ${hero}
+
+    <div style="height:18px"></div>
+
+    <div class="autopilot-grid">
+      <div class="card card-flush">
+        <div class="card-section" style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="card-title"><i class="fa-light fa-rocket-launch"></i>Triggering this week</div>
+            <div class="card-sub">Surveys that will open in the next 7 days. You can disable any of them.</div>
+          </div>
+          ${upcomingScheduled>upcoming.length?`<button class="btn btn-link btn-sm" onclick="openTriggerPlanModal()">View all ${upcomingScheduled} scheduled<i class="fa-light fa-arrow-right" style="font-size:10px"></i></button>`:''}
+        </div>
+        <div>${upcomingHtml}</div>
+      </div>
+
+      <div class="card card-flush">
+        <div class="card-section">
+          <div class="card-title"><i class="fa-light fa-inbox-in"></i>Currently collecting</div>
+          <div class="card-sub">Live response rates as of today. Click any course for details.</div>
+        </div>
+        <div>${collectingHtml}</div>
+        ${collecting.length>6?`<div style="padding:10px 14px;border-top:1px solid var(--border)"><button class="btn btn-link btn-sm" onclick="switchScreen('analytics');renderAnalytics();">View all in Analytics<i class="fa-light fa-arrow-right" style="font-size:10px"></i></button></div>`:''}
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title"><i class="fa-light fa-stethoscope"></i>System health</div>
+            <div class="card-sub">Issues that prevent autopilot from working as expected.</div>
+          </div>
+        </div>
+        <div>${healthHtml}</div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title"><i class="fa-light fa-clock-rotate-left"></i>Recent activity</div>
+            <div class="card-sub">Notifications sent and actions taken by autopilot.</div>
+          </div>
+        </div>
+        <div>${activityHtml}</div>
+      </div>
+
+      <div class="card full">
+        <div class="card-head">
+          <div>
+            <div class="card-title"><i class="fa-light fa-plug"></i>LMS integration</div>
+            <div class="card-sub">Course rosters, instructors, and term schedules sync nightly from your LMS.</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="switchScreen('setup');state.setupTab='lms';renderSetup();"><i class="fa-light fa-gear"></i>Configure</button>
+        </div>
+        ${lmsHtml}
+      </div>
+    </div>
+  `;
+
+  document.getElementById('screen-autopilot').innerHTML = html;
+}
+
+function renderUpcomingRow(s){
+  const days = daysBetween('2026-04-29', s.openDate);
+  const dayLbl = days===0?'Today':days===1?'Tomorrow':`In ${days}d`;
+  const t = typeOf(s.typeId);
+  const isDisabled = s.status==='disabled';
+  return `
+    <div class="upcoming-row ${isDisabled?'disabled':''}" onclick="openSurveyPreviewModal('${s.courseId}')">
+      <div class="upcoming-when">
+        <div class="upcoming-when-num">${days===0?'Now':days}</div>
+        <div class="upcoming-when-lbl">${days===0?'Open':days===1?'day':'days'}</div>
+      </div>
+      <div class="upcoming-info">
+        <div class="upcoming-code">${s.code} <span style="color:var(--muted-fg);font-weight:400;margin-left:5px">${s.name}</span></div>
+        <div class="upcoming-meta">
+          <span class="badge ${t.badge}"><span class="badge-dot" style="background:${t.color}"></span>${t.name}</span>
+          <span><i class="fa-light fa-user"></i>${s.instructor}</span>
+          <span><i class="fa-light fa-calendar"></i>Opens ${shortDate(s.openDate)}, closes ${shortDate(s.closeDate)}</span>
+          <span><i class="fa-light fa-users"></i>${s.enrolled} students</span>
+        </div>
+      </div>
+      <div class="upcoming-actions" onclick="event.stopPropagation()">
+        ${isDisabled
+          ? `<button class="btn btn-outline btn-xs" onclick="enableSurvey('${s.courseId}')"><i class="fa-light fa-rotate-left"></i>Re-enable</button>`
+          : `<button class="btn btn-outline btn-xs" onclick="openEditScheduleModal('${s.courseId}')"><i class="fa-light fa-pen"></i>Edit</button>
+             <button class="btn btn-amber-outline btn-xs" onclick="openDisableModal('${s.courseId}')"><i class="fa-light fa-ban"></i>Disable</button>`}
+      </div>
+    </div>
+  `;
+}
+
+function renderCollectingRow(s){
+  const c = COURSES.find(x=>x.id===s.courseId);
+  const responded = Math.round(c.enrolled*c.completion/100);
+  const warn = c.completion < 55;
+  return `
+    <div class="collecting-row" onclick="openCourseDetail('${s.courseId}')" style="cursor:pointer">
+      <div class="collecting-info">
+        <div class="collecting-code">${s.code}</div>
+        <div class="collecting-name">${escapeHtml(s.name)} · ${escapeHtml(s.instructor)}</div>
+      </div>
+      <div class="collecting-bar-wrap">
+        <div class="collecting-bar"><div class="collecting-bar-fill ${warn?'warn':''}" style="width:${c.completion}%"></div></div>
+        <div class="collecting-pct">
+          <span class="collecting-pct-num">${c.completion}%</span>
+          <span class="collecting-pct-meta">${responded}/${c.enrolled}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ── Autopilot actions ─────────────────────────────────────────────── */
+function syncLmsNow(){
+  if(!LMS.connected){ toast('LMS is not connected. Reconnect to sync.','warning'); return; }
+  const now = new Date();
+  LMS.lastSync = now.toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true});
+  state.activity.unshift({when:now.toISOString().slice(0,16).replace('T',' '), icon:'fa-rotate', cat:'info', text:'Manual LMS sync triggered. <strong>0 changes</strong> detected.'});
+  if(state.screen==='autopilot') renderAutopilot();
+  if(state.screen==='setup' && state.setupTab==='lms') renderSetup();
+  toast('LMS sync complete. No changes detected.','success');
+}
+function reauthLms(){
+  LMS.connected = true;
+  LMS.lastAuth = new Date().toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true});
+  state.activity.unshift({when:'2026-04-29 ' + new Date().toTimeString().slice(0,5), icon:'fa-key', cat:'info', text:'Canvas LMS connection re-authenticated by Dr. Mitchell.'});
+  renderSetup();
+  toast('Canvas connection re-authenticated.','success');
+}
+function openDisconnectLmsModal(){
+  showModal({
+    title:'Disconnect Canvas',
+    body:`
+      <p style="margin-bottom:12px">Disconnecting the LMS will stop autopilot from running.</p>
+      <div class="disable-row-banner" style="background:var(--destructive-bg);border-color:color-mix(in oklch, var(--destructive) 25%, white);color:var(--destructive-fg)">
+        <i class="fa-light fa-triangle-exclamation" style="margin-top:2px"></i>
+        <div>
+          <strong>This will:</strong>
+          <ul style="margin:6px 0 0 16px;font-size:12px;line-height:1.7">
+            <li>Stop nightly course and roster sync</li>
+            <li>Pause all scheduled survey triggers</li>
+            <li>Block any new survey from opening until reconnected</li>
+          </ul>
+          <div style="margin-top:8px">Existing data and historical results are preserved.</div>
+        </div>
+      </div>
+    `,
+    actions:`
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDisconnectLms()"><i class="fa-light fa-plug-circle-xmark"></i>Disconnect Anyway</button>
+    `,
+  });
+}
+function confirmDisconnectLms(){
+  LMS.connected = false;
+  state.activity.unshift({when:'2026-04-29 ' + new Date().toTimeString().slice(0,5), icon:'fa-plug-circle-xmark', cat:'warn', text:'Canvas LMS <strong>disconnected</strong>. All scheduled survey triggers are paused.'});
+  closeModal();
+  renderSetup();
+  toast('Canvas disconnected. Autopilot is paused until you reconnect.','warning');
+}
+function reconnectLms(){
+  LMS.connected = true;
+  LMS.lastSync = new Date().toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true});
+  state.activity.unshift({when:'2026-04-29 ' + new Date().toTimeString().slice(0,5), icon:'fa-plug', cat:'success', text:'Canvas LMS <strong>reconnected</strong>. Autopilot resumed.'});
+  renderSetup();
+  toast('Canvas reconnected. Autopilot has resumed.','success');
+}
+
+function openSurveyPreviewModal(courseId){
+  const c = COURSES.find(x=>x.id===courseId);
+  const s = state.surveys.find(x=>x.courseId===courseId);
+  const t = typeOf(c.typeId);
+  const tmpl = TEMPLATES.find(x=>x.id===s.templateId);
+  const days = daysBetween('2026-04-29', s.openDate);
+  const dayMsg = days<=0?'Already open':days===1?'Opens tomorrow':`Opens in ${days} days`;
+  showModal({
+    title: `${c.code}: Survey preview`,
+    body: `
+      <div class="modal-section">
+        <div class="modal-info-grid">
+          <div class="modal-info-key">Course</div>
+          <div class="modal-info-val"><strong>${c.code}</strong> · ${escapeHtml(c.name)}</div>
+          <div class="modal-info-key">Type</div>
+          <div class="modal-info-val"><span class="badge ${t.badge}"><span class="badge-dot" style="background:${t.color}"></span>${t.name}</span></div>
+          <div class="modal-info-key">Instructor</div>
+          <div class="modal-info-val">${escapeHtml(c.instructor)}</div>
+          <div class="modal-info-key">Template</div>
+          <div class="modal-info-val">${escapeHtml(tmpl.name)} · ${tmpl.questionCount} questions</div>
+          <div class="modal-info-key">Enrollment</div>
+          <div class="modal-info-val">${c.enrolled} students</div>
+        </div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-label">Schedule</div>
+        <div class="modal-info-grid">
+          <div class="modal-info-key">Opens</div>
+          <div class="modal-info-val"><strong>${fmtDate(s.openDate)}</strong> · ${dayMsg}</div>
+          <div class="modal-info-key">Closes</div>
+          <div class="modal-info-val">${fmtDate(s.closeDate)}</div>
+          <div class="modal-info-key">Results released</div>
+          <div class="modal-info-val">${fmtDate(addDays(s.closeDate,3))} (after admin review)</div>
+        </div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-label">Recipients</div>
+        <div style="font-size:13px;color:var(--muted-fg);line-height:1.55">
+          ${c.enrolled} students will receive an email link when the survey opens. Reminders go out at 7 days, 3 days, and 1 day before close.
+        </div>
+      </div>
+    `,
+    actions: `
+      <button class="btn btn-outline" onclick="closeModal()">Close</button>
+      <button class="btn btn-amber-outline" onclick="closeModal();openDisableModal('${courseId}')"><i class="fa-light fa-ban"></i>Disable this survey</button>
+      <button class="btn btn-outline" onclick="closeModal();openEditScheduleModal('${courseId}')"><i class="fa-light fa-pen"></i>Edit schedule</button>
+    `
+  });
+}
+
+function openDisableModal(courseId){
+  const c = COURSES.find(x=>x.id===courseId);
+  showModal({
+    title: `Disable survey: ${c.code}`,
+    body: `
+      <p style="margin-bottom:12px">Skip the autopilot survey for <strong>${escapeHtml(c.name)}</strong> this term?</p>
+      <div class="disable-row-banner">
+        <i class="fa-light fa-circle-info" style="margin-top:2px"></i>
+        <div>
+          Students will not receive an email or have a survey to complete for this course. Other courses in ${c.code.split(' ')[0]} are not affected. You can re-enable it later if you change your mind.
+        </div>
+      </div>
+      <div class="field" style="margin-top:14px">
+        <label class="field-label">Reason (optional, internal note)</label>
+        <textarea class="textarea" id="disable-reason" placeholder="e.g., Course was cancelled mid-term"></textarea>
+      </div>
+    `,
+    actions: `
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-amber" onclick="confirmDisable('${courseId}')"><i class="fa-light fa-ban"></i>Disable Survey</button>
+    `
+  });
+}
+function confirmDisable(courseId){
+  state.disabledSurveyIds.add(courseId);
+  const c = COURSES.find(x=>x.id===courseId);
+  state.activity.unshift({
+    when:'2026-04-29 ' + new Date().toTimeString().slice(0,5),
+    icon:'fa-ban', cat:'warn',
+    text:`Survey for <strong>${c.code}</strong> was manually disabled by Dr. Mitchell.`
+  });
+  closeModal();
+  renderAutopilot();
+  toast(`${c.code} survey disabled. Re-enable any time from Triggering this week.`,'warning');
+}
+function enableSurvey(courseId){
+  state.disabledSurveyIds.delete(courseId);
+  const c = COURSES.find(x=>x.id===courseId);
+  state.activity.unshift({
+    when:'2026-04-29 ' + new Date().toTimeString().slice(0,5),
+    icon:'fa-rotate-left', cat:'info',
+    text:`Survey for <strong>${c.code}</strong> was re-enabled.`
+  });
+  renderAutopilot();
+  toast(`${c.code} survey re-enabled.`,'success');
+}
+
+function openEditScheduleModal(courseId){
+  const c = COURSES.find(x=>x.id===courseId);
+  const s = state.surveys.find(x=>x.courseId===courseId);
+  showModal({
+    title: `Edit schedule: ${c.code}`,
+    body: `
+      <p style="font-size:13px;color:var(--muted-fg);margin-bottom:14px">Override the autopilot schedule for this survey only. Other courses in this term are not affected.</p>
+      <div class="field">
+        <label class="field-label">Open date</label>
+        <input class="input" type="date" id="edit-open" value="${s.openDate}">
+        <div class="field-help">Default: ${termOf(c.termId).surveyOpenOffset} days before term end</div>
+      </div>
+      <div class="field">
+        <label class="field-label">Close date</label>
+        <input class="input" type="date" id="edit-close" value="${s.closeDate}">
+        <div class="field-help">Default: ${termOf(c.termId).surveyCloseOffset} days after term end</div>
+      </div>
+    `,
+    actions: `
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSchedule('${courseId}')">Save</button>
+    `
+  });
+}
+function saveSchedule(courseId){
+  const newOpen = document.getElementById('edit-open').value;
+  const newClose = document.getElementById('edit-close').value;
+  const c = COURSES.find(x=>x.id===courseId);
+  /* Persist override on the course (ad-hoc property used at render) */
+  c.customOpen = newOpen;
+  c.customClose = newClose;
+  /* Patch survey */
+  const s = state.surveys.find(x=>x.courseId===courseId);
+  if(s){ s.openDate=newOpen; s.closeDate=newClose; }
+  state.activity.unshift({
+    when:'2026-04-29 ' + new Date().toTimeString().slice(0,5),
+    icon:'fa-calendar-pen', cat:'info',
+    text:`Schedule for <strong>${c.code}</strong> overridden: opens ${shortDate(newOpen)}, closes ${shortDate(newClose)}.`
+  });
+  closeModal();
+  renderAutopilot();
+  toast(`Schedule updated for ${c.code}.`,'success');
+}
+
+function openTermSwitchModal(){
+  const opts = TERMS.map(t=>`
+    <div onclick="setTerm('${t.id}')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid ${t.id===state.termId?'var(--brand-color)':'var(--border)'};border-radius:var(--radius);cursor:pointer;margin-bottom:7px;background:${t.id===state.termId?'var(--brand-tint)':'white'}">
+      <div class="term-status-dot ${t.status}"></div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600">${t.name}</div>
+        <div style="font-size:11px;color:var(--muted-fg);margin-top:2px">${fmtDate(t.startDate)} → ${fmtDate(t.endDate)} · ${t.status}</div>
+      </div>
+      ${t.id===state.termId?'<i class="fa-light fa-check" style="color:var(--brand-color)"></i>':''}
+    </div>
+  `).join('');
+  showModal({
+    title:'Switch active term',
+    body: opts,
+    actions:`<button class="btn btn-outline" onclick="closeModal()">Cancel</button>`,
+  });
+}
+function setTerm(id){
+  state.termId=id;
+  document.getElementById('tb-term').textContent = termOf(id).name;
+  closeModal();
+  renderAutopilot();
+}
+
+function openTriggerPlanModal(){
+  buildSurveys();
+  const term = termOf(state.termId);
+  const list = state.surveys.filter(s=>s.termId===state.termId).sort((a,b)=>a.openDate.localeCompare(b.openDate));
+  const rows = list.map(s=>{
+    const c = COURSES.find(x=>x.id===s.courseId);
+    const t = typeOf(s.typeId);
+    const days = daysBetween('2026-04-29', s.openDate);
+    const statusBadge = s.status==='collecting'
+      ? `<span class="badge badge-success">Collecting</span>`
+      : s.status==='closed'
+      ? `<span class="badge badge-muted">Closed</span>`
+      : s.status==='disabled'
+      ? `<span class="badge badge-amber">Disabled</span>`
+      : `<span class="badge badge-info">Scheduled</span>`;
+    return `<tr>
+      <td><strong>${c.code}</strong><div style="font-size:11px;color:var(--muted-fg);margin-top:2px">${escapeHtml(c.name)}</div></td>
+      <td><span class="badge ${t.badge}">${t.name}</span></td>
+      <td>${shortDate(s.openDate)}<div style="font-size:10px;color:var(--muted-fg)">${days<0?'Already open':days===0?'Today':'in '+days+'d'}</div></td>
+      <td>${shortDate(s.closeDate)}</td>
+      <td>${statusBadge}</td>
+    </tr>`;
+  }).join('');
+  const skipped = COURSES.filter(c=>c.termId===state.termId && !templateForType(c.typeId));
+  const skippedHtml = skipped.length ? `
+    <div class="modal-section" style="margin-top:18px">
+      <div class="modal-section-label">Skipped: no template bound</div>
+      <table class="mtbl">
+        ${skipped.map(c=>`<tr><td><strong>${c.code}</strong>: ${escapeHtml(c.name)}</td><td><span class="badge ${typeOf(c.typeId).badge}">${typeOf(c.typeId).name}</span></td></tr>`).join('')}
+      </table>
+      <div style="margin-top:8px"><button class="btn btn-link" onclick="closeModal();switchScreen('setup');state.setupTab='templates';renderSetup();">Open Templates to fix this</button></div>
+    </div>
+  ` : '';
+  showModal({
+    title:`${term.name} trigger plan`,
+    size:'modal-xl',
+    body: `
+      <p style="font-size:13px;color:var(--muted-fg);margin-bottom:14px">${list.length} survey${list.length===1?'':'s'} scheduled. Anchored to term end date <strong>${fmtDate(term.endDate)}</strong>: open ${term.surveyOpenOffset} days before, close ${term.surveyCloseOffset} days after.</p>
+      <table class="mtbl">
+        <thead><tr><th>Course</th><th>Type</th><th>Opens</th><th>Closes</th><th>Status</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      ${skippedHtml}
+    `,
+    actions:`<button class="btn btn-outline" onclick="closeModal()">Close</button>`,
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ANALYTICS SCREEN
+   ════════════════════════════════════════════════════════════════════ */
+
+function renderAnalytics(){
+  if(state.analyticsView==='detail') return renderCourseDetail();
+  renderCourseList();
+}
+
+function renderCourseList(){
+  const term = termOf(state.termId);
+  /* Show courses for the active term that have data */
+  let rows = COURSES.filter(c=>c.termId===state.termId && c.avg!==null);
+
+  /* Search */
+  if(state.search){
+    const q=state.search.toLowerCase();
+    rows = rows.filter(c=>c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q) || c.instructor.toLowerCase().includes(q));
+  }
+  /* Filter type */
+  if(state.filterType!=='all'){
+    rows = rows.filter(c=>c.typeId===state.filterType);
+  }
+  /* Compute rank by avg score (always against term cohort, before percentile filter) */
+  const ranked = [...COURSES].filter(c=>c.termId===state.termId && c.avg!==null).sort((a,b)=>b.avg-a.avg);
+  const rankMap = {};
+  ranked.forEach((c,i)=>{ rankMap[c.id]=i+1; });
+  const totalRanked = ranked.length;
+
+  /* Percentile filter */
+  if(state.filterPercentile==='top50'){
+    rows = rows.filter(c=>rankMap[c.id] <= Math.ceil(totalRanked/2));
+  } else if(state.filterPercentile==='bottom50'){
+    rows = rows.filter(c=>rankMap[c.id] >  Math.ceil(totalRanked/2));
+  }
+
+  /* Sort */
+  const dir = state.sortDir==='asc'?1:-1;
+  rows.sort((a,b)=>{
+    if(state.sortBy==='rank')        return (rankMap[a.id]-rankMap[b.id]) * dir;
+    if(state.sortBy==='type')        return (typeOf(a.typeId).name.localeCompare(typeOf(b.typeId).name)) * dir;
+    if(state.sortBy==='rating')      return (b.avg-a.avg) * dir;
+    if(state.sortBy==='trend')       return (((b.avg||0)-(b.prev||0)) - ((a.avg||0)-(a.prev||0))) * dir;
+    if(state.sortBy==='completion')  return (b.completion-a.completion) * dir;
+    return 0;
+  });
+
+  /* KPI strip */
+  const allTermCourses = COURSES.filter(c=>c.termId===state.termId && c.avg!==null);
+  const avgScore = allTermCourses.length ? (allTermCourses.reduce((a,c)=>a+c.avg,0)/allTermCourses.length).toFixed(2) : '--';
+  const avgComp  = allTermCourses.length ? Math.round(allTermCourses.reduce((a,c)=>a+c.completion,0)/allTermCourses.length) : 0;
+  const trending = allTermCourses.filter(c=>c.prev && c.avg<c.prev-0.1).length;
+
+  const kpiHtml = `
+    <div class="cd-kpi-grid" style="margin-bottom:0">
+      <div class="cd-kpi"><div class="cd-kpi-label">Courses with results</div><div class="cd-kpi-val">${allTermCourses.length}<small>of ${COURSES.filter(c=>c.termId===state.termId).length} this term</small></div><div class="cd-kpi-meta"><i class="fa-light fa-graduation-cap"></i>Spring 2026</div></div>
+      <div class="cd-kpi"><div class="cd-kpi-label">Program avg score</div><div class="cd-kpi-val">${avgScore}<small>/ 5.0</small></div><div class="cd-kpi-meta">${trendArrow(parseFloat(avgScore), 4.05)} vs Fall 2025</div></div>
+      <div class="cd-kpi"><div class="cd-kpi-label">Avg completion</div><div class="cd-kpi-val">${avgComp}%</div><div class="cd-kpi-meta"><i class="fa-light fa-${avgComp>=65?'check':'triangle-exclamation'}"></i>${avgComp>=65?'Above ARC-PA target':'Below 65% ARC-PA target'}</div></div>
+      <div class="cd-kpi"><div class="cd-kpi-label">Trending down</div><div class="cd-kpi-val">${trending}</div><div class="cd-kpi-meta"><i class="fa-light fa-arrow-trend-down"></i>Courses dropped &gt;0.1 vs last offering</div></div>
+    </div>
+  `;
+
+  /* Toolbar */
+  const typeOpts = ['<option value="all">All types</option>'].concat(COURSE_TYPES.map(t=>`<option value="${t.id}" ${state.filterType===t.id?'selected':''}>${t.name}</option>`)).join('');
+  const toolbar = `
+    <div class="an-toolbar">
+      <div class="an-toolbar-grow" style="max-width:340px"><input class="input input-search" id="an-search" placeholder="Search course, code, or instructor…" value="${escapeHtml(state.search)}" oninput="state.search=this.value;renderCourseList();window.requestAnimationFrame(()=>document.getElementById('an-search').focus())"></div>
+      <div class="an-segment">
+        <button class="an-segment-btn ${state.filterPercentile==='all'?'active':''}" onclick="state.filterPercentile='all';renderCourseList()">All</button>
+        <button class="an-segment-btn ${state.filterPercentile==='top50'?'active':''}" onclick="state.filterPercentile='top50';renderCourseList()">Top 50%</button>
+        <button class="an-segment-btn ${state.filterPercentile==='bottom50'?'active':''}" onclick="state.filterPercentile='bottom50';renderCourseList()">Bottom 50%</button>
+      </div>
+      <select class="select" style="width:auto" onchange="state.filterType=this.value;renderCourseList()">${typeOpts}</select>
+      <select class="select" style="width:auto" onchange="state.sortBy=this.value;renderCourseList()">
+        <option value="rank" ${state.sortBy==='rank'?'selected':''}>Sort: Rank</option>
+        <option value="type" ${state.sortBy==='type'?'selected':''}>Sort: Type</option>
+        <option value="rating" ${state.sortBy==='rating'?'selected':''}>Sort: Rating</option>
+        <option value="trend" ${state.sortBy==='trend'?'selected':''}>Sort: Trend</option>
+        <option value="completion" ${state.sortBy==='completion'?'selected':''}>Sort: Completion</option>
+      </select>
+      <button class="btn btn-outline btn-sm" onclick="state.sortDir=state.sortDir==='asc'?'desc':'asc';renderCourseList()" title="Sort direction"><i class="fa-light fa-arrow-${state.sortDir==='asc'?'down-short-wide':'up-short-wide'}"></i>${state.sortDir==='asc'?'Asc':'Desc'}</button>
+    </div>
+  `;
+
+  /* Table rows */
+  const rowHtml = rows.map(c=>{
+    const t = typeOf(c.typeId);
+    const rank = rankMap[c.id];
+    const responded = Math.round(c.enrolled*c.completion/100);
+    const medalCls = rank===1?'gold':rank===2?'silver':rank===3?'bronze':'';
+    const rankCell = medalCls
+      ? `<div class="an-td-rank-medal ${medalCls}">${rank}</div>`
+      : `<span style="font-weight:600;color:var(--muted-fg)">${rank}</span>`;
+    return `<tr class="an-tr" onclick="openCourseDetail('${c.id}')">
+      <td class="an-td an-td-rank">${rankCell}</td>
+      <td class="an-td">
+        <div class="course-cell-name">${c.code}</div>
+        <div class="course-cell-sub">${escapeHtml(c.name)}</div>
+      </td>
+      <td class="an-td"><span class="badge ${t.badge}"><span class="badge-dot" style="background:${t.color}"></span>${t.name}</span></td>
+      <td class="an-td">${escapeHtml(c.instructor)}</td>
+      <td class="an-td"><div class="score-cell"><span class="score-num">${c.avg.toFixed(1)}</span><div class="score-bar"><div class="score-bar-fill" style="width:${c.avg/5*100}%"></div></div></div></td>
+      <td class="an-td">${trendArrow(c.avg, c.prev)}</td>
+      <td class="an-td"><div class="completion-mini"><div class="completion-mini-bar"><div class="completion-mini-fill ${c.completion<55?'warn':''}" style="width:${c.completion}%"></div></div><span style="font-size:12px;font-weight:600">${c.completion}%</span><span class="muted text-xs">${responded}/${c.enrolled}</span></div></td>
+    </tr>`;
+  }).join('');
+
+  const html = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">Course analytics</div>
+        <div class="page-subtitle">All courses with evaluation data, ranked by average score. Click a course to drill into per-question response distributions, themes, and trend over time.</div>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-outline btn-sm" onclick="exportCsv()"><i class="fa-light fa-arrow-down-to-line"></i>Export CSV</button>
+      </div>
+    </div>
+    ${kpiHtml}
+    ${toolbar}
+    <div class="an-tbl-wrap">
+      <table class="an-tbl">
+        <thead><tr>
+          <th class="an-th ${state.sortBy==='rank'?'active':''}" onclick="setSort('rank')"><div class="an-th-sortable">Rank<i class="fa-solid fa-sort"></i></div></th>
+          <th class="an-th">Course</th>
+          <th class="an-th ${state.sortBy==='type'?'active':''}" onclick="setSort('type')"><div class="an-th-sortable">Type<i class="fa-solid fa-sort"></i></div></th>
+          <th class="an-th">Instructor</th>
+          <th class="an-th ${state.sortBy==='rating'?'active':''}" onclick="setSort('rating')"><div class="an-th-sortable">Avg score<i class="fa-solid fa-sort"></i></div></th>
+          <th class="an-th ${state.sortBy==='trend'?'active':''}" onclick="setSort('trend')"><div class="an-th-sortable">Trend vs last<i class="fa-solid fa-sort"></i></div></th>
+          <th class="an-th ${state.sortBy==='completion'?'active':''}" onclick="setSort('completion')"><div class="an-th-sortable">Completion<i class="fa-solid fa-sort"></i></div></th>
+        </tr></thead>
+        <tbody>${rowHtml || `<tr><td colspan="7" class="empty">No courses match your filters.</td></tr>`}</tbody>
+      </table>
+    </div>
+  `;
+  document.getElementById('screen-analytics').innerHTML = html;
+}
+
+function setSort(by){
+  if(state.sortBy===by){
+    state.sortDir = state.sortDir==='asc'?'desc':'asc';
+  } else {
+    state.sortBy=by;
+    state.sortDir = (by==='rank' || by==='type') ? 'asc' : 'desc';
+  }
+  renderCourseList();
+}
+
+function openCourseDetail(courseId){
+  state.detailCourseId = courseId;
+  state.analyticsView='detail';
+  state.detailTab='overview';
+  switchScreen('analytics');
+}
+function backToCourseList(){
+  state.analyticsView='list';
+  state.detailCourseId=null;
+  renderAnalytics();
+}
+
+function renderCourseDetail(){
+  const c = COURSES.find(x=>x.id===state.detailCourseId);
+  if(!c){ backToCourseList(); return; }
+  const t = typeOf(c.typeId);
+  const tmpl = templateForType(c.typeId);
+  /* Compute rank within term */
+  const ranked = [...COURSES].filter(x=>x.termId===c.termId && x.avg!==null).sort((a,b)=>b.avg-a.avg);
+  const rank = ranked.findIndex(x=>x.id===c.id)+1;
+  const total = ranked.length;
+  /* Same-type avg */
+  const sameType = COURSES.filter(x=>x.termId===c.termId && x.typeId===c.typeId && x.avg!==null);
+  const typeAvg = sameType.length ? +(sameType.reduce((a,x)=>a+x.avg,0)/sameType.length).toFixed(2) : null;
+  const programAvg = ranked.length ? +(ranked.reduce((a,x)=>a+x.avg,0)/ranked.length).toFixed(2) : null;
+  const responded = Math.round(c.enrolled*c.completion/100);
+
+  const sharedBadge = c.sharedAt
+    ? `<span class="badge badge-success" title="Shared ${new Date(c.sharedAt).toLocaleString()}"><i class="fa-light fa-share-nodes"></i>Shared with faculty</span>`
+    : '';
+  const header = `
+    <div>
+      <a class="cd-back" onclick="backToCourseList()"><i class="fa-light fa-arrow-left"></i>Back to course list</a>
+      <div class="cd-title-wrap">
+        <span class="badge ${t.badge}" style="font-size:12px;padding:4px 10px"><span class="badge-dot" style="background:${t.color}"></span>${t.name}</span>
+        <div>
+          <div class="cd-title">${c.code}: ${escapeHtml(c.name)} ${sharedBadge}</div>
+          <div class="cd-meta">
+            <span class="cd-meta-item"><i class="fa-light fa-user"></i>${escapeHtml(c.instructor)}</span>
+            <span class="cd-meta-item"><i class="fa-light fa-graduation-cap"></i>${termOf(c.termId).name}</span>
+            <span class="cd-meta-item"><i class="fa-light fa-users"></i>${c.enrolled} enrolled · ${responded} responded</span>
+            <span class="cd-meta-item"><i class="fa-light fa-file-lines"></i>${tmpl.name}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  const shareBtn = c.sharedAt
+    ? `<button class="btn btn-outline btn-sm" onclick="openShareModal('${c.id}')"><i class="fa-light fa-rotate"></i>Re-share</button>`
+    : `<button class="btn btn-primary btn-sm" onclick="openShareModal('${c.id}')"><i class="fa-light fa-share-nodes"></i>Share with faculty</button>`;
+  const cdActions = `
+    <div class="cd-actions">
+      ${shareBtn}
+      <button class="btn btn-outline btn-sm" onclick="exportCourseReport('${c.id}')"><i class="fa-light fa-arrow-down-to-line"></i>Export CSV</button>
+    </div>
+  `;
+
+  const kpis = `
+    <div class="cd-kpi-grid">
+      <div class="cd-kpi">
+        <div class="cd-kpi-label">Avg score</div>
+        <div class="cd-kpi-val">${c.avg.toFixed(2)}<small>/ 5.0</small></div>
+        <div class="cd-kpi-meta">${trendArrow(c.avg, c.prev)} vs last offering (${c.prev?c.prev.toFixed(1):'--'})</div>
+      </div>
+      <div class="cd-kpi">
+        <div class="cd-kpi-label">Rank in term</div>
+        <div class="cd-kpi-val">#${rank}<small>of ${total}</small></div>
+        <div class="cd-kpi-meta">Top ${Math.round(rank/total*100)}% of all courses</div>
+      </div>
+      <div class="cd-kpi">
+        <div class="cd-kpi-label">Completion</div>
+        <div class="cd-kpi-val">${c.completion}%<small>${responded}/${c.enrolled}</small></div>
+        <div class="cd-kpi-meta"><i class="fa-light fa-${c.completion>=65?'check':'triangle-exclamation'}"></i>${c.completion>=65?'Above ARC-PA target':'Below 65% ARC-PA target'}</div>
+      </div>
+      <div class="cd-kpi">
+        <div class="cd-kpi-label">vs ${t.name} avg</div>
+        <div class="cd-kpi-val">${typeAvg?typeAvg.toFixed(2):'--'}<small>type avg</small></div>
+        <div class="cd-kpi-meta">${typeAvg?trendArrow(c.avg, typeAvg):''} this course vs type</div>
+      </div>
+    </div>
+  `;
+
+  const tabs = `
+    <div class="cd-tabs">
+      <button class="cd-tab ${state.detailTab==='overview'?'active':''}" onclick="state.detailTab='overview';renderCourseDetail()">Overview</button>
+      <button class="cd-tab ${state.detailTab==='questions'?'active':''}" onclick="state.detailTab='questions';renderCourseDetail()">Per-question (${RESPONSE_DATA[c.id]?.questions.length||0})</button>
+      <button class="cd-tab ${state.detailTab==='comments'?'active':''}" onclick="state.detailTab='comments';renderCourseDetail()">Themes &amp; comments</button>
+    </div>
+  `;
+
+  let body='';
+  if(state.detailTab==='overview') body = renderDetailOverview(c, typeAvg, programAvg, rank, total);
+  else if(state.detailTab==='questions') body = renderDetailQuestions(c, typeAvg);
+  else body = renderDetailComments(c);
+
+  const html = `
+    <div class="cd-header">${header}${cdActions}</div>
+    ${kpis}
+    ${tabs}
+    ${body}
+  `;
+  document.getElementById('screen-analytics').innerHTML = html;
+}
+
+function renderDetailOverview(c, typeAvg, programAvg, rank, total){
+  /* Build trend chart using historical data per type/code */
+  const history = buildHistory(c);
+  return `
+    <div class="cd-grid-2">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title"><i class="fa-light fa-chart-line-up"></i>Score trend over time</div>
+            <div class="card-sub">${c.code} compared to ${typeOf(c.typeId).name} type average and program average.</div>
+          </div>
+        </div>
+        ${renderTrendSvg(history)}
+        <div class="trend-legend">
+          <div class="trend-legend-item"><span class="trend-legend-dot" style="background:var(--brand-color)"></span>${c.code}</div>
+          <div class="trend-legend-item"><span class="trend-legend-dot" style="background:var(--c-teal)"></span>${typeOf(c.typeId).name} avg</div>
+          <div class="trend-legend-item"><span class="trend-legend-dot" style="background:var(--muted-fg)"></span>Program avg</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title"><i class="fa-light fa-ranking-star"></i>Where this course ranks</div>
+            <div class="card-sub">Position out of ${total} courses with results in ${termOf(c.termId).name}.</div>
+          </div>
+        </div>
+        <div class="rank-viz">
+          <div><span class="rank-rank">#${rank}</span><span class="rank-of">of ${total}</span></div>
+          <div class="rank-context">Top ${Math.round(rank/total*100)}% · Score ${c.avg.toFixed(2)} of 5.0</div>
+          <div class="rank-bar">
+            <div class="rank-marker" style="left:${(1-(rank-1)/(total-1))*100}%">
+              <div class="rank-marker-label">${c.code}</div>
+            </div>
+          </div>
+          <div class="rank-scale"><span>Lowest</span><span>Median</span><span>Highest</span></div>
+        </div>
+        <div class="divider"></div>
+        <div style="font-size:12px;color:var(--muted-fg);line-height:1.6">
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span>vs ${typeOf(c.typeId).name} type</span><strong style="color:var(--foreground)">${trendArrow(c.avg, typeAvg)}</strong></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span>vs Program avg</span><strong style="color:var(--foreground)">${trendArrow(c.avg, programAvg)}</strong></div>
+          <div style="display:flex;justify-content:space-between"><span>vs Last offering</span><strong style="color:var(--foreground)">${trendArrow(c.avg, c.prev)}</strong></div>
+        </div>
+      </div>
+
+      <div class="card full" style="grid-column:1 / -1">
+        <div class="card-head">
+          <div>
+            <div class="card-title"><i class="fa-light fa-square-poll-vertical"></i>Question score summary</div>
+            <div class="card-sub">Average score per question. Click a question to see the full distribution.</div>
+          </div>
+          <button class="btn btn-link btn-sm" onclick="state.detailTab='questions';renderCourseDetail()">Open per-question view<i class="fa-light fa-arrow-right" style="font-size:10px"></i></button>
+        </div>
+        ${renderQuestionMiniList(c)}
+      </div>
+    </div>
+  `;
+}
+
+function renderQuestionMiniList(c){
+  const data = RESPONSE_DATA[c.id];
+  if(!data) return `<div class="empty">No response data yet.</div>`;
+  return `<div class="list-tight">${data.questions.map((q,i)=>`
+    <div onclick="state.detailTab='questions';renderCourseDetail()" style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:var(--radius-sm);cursor:pointer;transition:background var(--tr)" onmouseover="this.style.background='var(--muted)'" onmouseout="this.style.background='transparent'">
+      <span style="width:18px;text-align:right;font-size:11px;font-weight:600;color:var(--muted-fg)">Q${i+1}</span>
+      <span style="flex:1;font-size:13px;color:var(--foreground)">${escapeHtml(q.text)}</span>
+      <div style="display:flex;align-items:center;gap:8px;width:160px">
+        <div style="flex:1;height:5px;background:var(--muted-2);border-radius:99px;overflow:hidden"><div style="height:100%;width:${q.avg/5*100}%;background:var(--brand-color);border-radius:99px"></div></div>
+        <span style="font-size:13px;font-weight:600;width:32px;text-align:right">${q.avg.toFixed(1)}</span>
+      </div>
+    </div>
+  `).join('')}</div>`;
+}
+
+function renderDetailQuestions(c, typeAvg){
+  const data = RESPONSE_DATA[c.id];
+  if(!data) return `<div class="card empty"><div class="empty-icon"><i class="fa-light fa-square-poll-vertical"></i></div>No response data yet for this course.</div>`;
+  const programQAvg = 4.0; /* mock benchmark */
+  const cards = data.questions.map((q,i)=>{
+    const total = q.dist.reduce((a,b)=>a+b,0);
+    const max = Math.max(...q.dist);
+    const distRows = [5,4,3,2,1].map(s=>{
+      const count = q.dist[s-1];
+      const pct = total ? Math.round(count/total*100) : 0;
+      const w = max ? Math.round(count/max*100) : 0;
+      return `<div class="q-dist-row">
+        <div class="q-dist-label">${s}</div>
+        <div class="q-dist-bar-wrap"><div class="q-dist-bar-fill q-dist-fill-${s}" style="width:${w}%">${count>0&&w>15?count:''}</div></div>
+        <div class="q-dist-meta"><strong>${count}</strong> · ${pct}%</div>
+      </div>`;
+    }).join('');
+    return `<div class="q-card">
+      <div class="q-card-head">
+        <div style="flex:1">
+          <div class="q-card-meta">
+            <span class="q-card-num">Question ${i+1} of ${data.questions.length}</span>
+            <span class="badge badge-muted">Rating 1–5</span>
+          </div>
+          <div class="q-card-text">${escapeHtml(q.text)}</div>
+        </div>
+        <div class="q-card-stats">
+          <div class="q-card-avg">${q.avg.toFixed(2)}</div>
+          <div class="q-card-avg-lbl">Avg / 5.0</div>
+        </div>
+      </div>
+      <div class="q-dist">${distRows}</div>
+      <div class="q-card-compare">
+        <div class="q-card-compare-item"><span>${total} responses</span></div>
+        <div class="q-card-compare-item">vs ${typeOf(c.typeId).name} avg <strong>${typeAvg?typeAvg.toFixed(2):'--'}</strong> ${typeAvg?trendArrow(q.avg, typeAvg):''}</div>
+        <div class="q-card-compare-item">vs Program avg <strong>${programQAvg.toFixed(2)}</strong> ${trendArrow(q.avg, programQAvg)}</div>
+      </div>
+    </div>`;
+  }).join('');
+  return `
+    <div style="margin-bottom:12px;padding:11px 14px;background:var(--brand-tint);border:1px solid color-mix(in oklch, var(--brand-color) 18%, white);border-radius:var(--radius);font-size:12px;color:var(--brand-color-deep);display:flex;align-items:center;gap:8px">
+      <i class="fa-light fa-eye-slash"></i>${data.responded} students responded anonymously. Individual responses are not visible.
+    </div>
+    ${cards}
+  `;
+}
+
+function renderDetailComments(c){
+  const themes = getThemes(c.id);
+  const totalMentions = themes.reduce((a,t)=>a+t.mentions,0);
+  const positiveCount = themes.filter(t=>t.sentiment==='positive').reduce((a,t)=>a+t.mentions,0);
+  const concernCount = themes.filter(t=>t.sentiment==='concern').reduce((a,t)=>a+t.mentions,0);
+  const neutralCount = totalMentions-positiveCount-concernCount;
+  const posPct = totalMentions ? Math.round(positiveCount/totalMentions*100) : 0;
+  const neuPct = totalMentions ? Math.round(neutralCount/totalMentions*100) : 0;
+  const negPct = 100-posPct-neuPct;
+
+  const themeCards = themes.length ? themes.map(t=>{
+    const pct = Math.round(t.mentions/totalMentions*100);
+    const sentBadge = t.sentiment==='positive'
+      ? `<span class="badge badge-success"><i class="fa-light fa-thumbs-up"></i>Positive</span>`
+      : t.sentiment==='concern'
+      ? `<span class="badge badge-amber"><i class="fa-light fa-circle-exclamation"></i>Concern</span>`
+      : `<span class="badge badge-muted">Neutral</span>`;
+    return `<div class="theme-card">
+      <div class="theme-head">
+        <div class="theme-name">${escapeHtml(t.name)}</div>
+        ${sentBadge}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted-fg)">
+        <span>${t.mentions} mentions · ${pct}% of comments</span>
+      </div>
+      <div class="theme-bar"><div class="theme-bar-fill" style="width:${pct}%"></div></div>
+      ${t.quotes.map(q=>`<div class="theme-quote">"${escapeHtml(q)}"</div>`).join('')}
+    </div>`;
+  }).join('') : `<div class="empty"><div class="empty-icon"><i class="fa-light fa-comments"></i></div>No comment themes available yet.</div>`;
+
+  return `
+    <div class="cd-grid-2">
+      <div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title"><i class="fa-duotone fa-solid fa-star-christmas" style="color:var(--brand-color)"></i>AI-extracted themes</div>
+              <div class="card-sub">Themes detected across ${totalMentions} qualitative responses. Quotes shown are anonymized.</div>
+            </div>
+          </div>
+          ${themeCards}
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title"><i class="fa-light fa-face-smile"></i>Sentiment summary</div>
+              <div class="card-sub">Overall emotional tone of free-text responses.</div>
+            </div>
+          </div>
+          <div class="sentiment-bar">
+            <div class="sentiment-pos" style="width:${posPct}%">${posPct>10?posPct+'% positive':''}</div>
+            <div class="sentiment-neu" style="width:${neuPct}%">${neuPct>10?neuPct+'% neutral':''}</div>
+            <div class="sentiment-neg" style="width:${negPct}%">${negPct>10?negPct+'% concern':''}</div>
+          </div>
+          <div style="font-size:12px;color:var(--muted-fg);margin-top:14px;line-height:1.6">
+            <p>${posPct>=60?'Comments lean strongly positive':posPct>=40?'Comments are mixed with a positive tilt':'Most concerns relate to pacing or instructor availability'}. Comments are anonymized and attributed to the course or instructor, never to individual students.</p>
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <div class="card-head">
+            <div>
+              <div class="card-title"><i class="fa-light fa-comment-quote"></i>Compare across courses</div>
+              <div class="card-sub">${c.code} themes vs other ${typeOf(c.typeId).name} courses.</div>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--muted-fg);line-height:1.55">
+            "${escapeHtml(themes[0]?.name||'')}" appears in <strong style="color:var(--foreground)">${COURSES.filter(x=>x.termId===c.termId&&x.typeId===c.typeId&&x.avg!==null).length}</strong> other ${typeOf(c.typeId).name} course${COURSES.filter(x=>x.termId===c.termId&&x.typeId===c.typeId&&x.avg!==null).length===1?'':'s'} this term, suggesting it's a program-wide pattern rather than course-specific.
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function buildHistory(c){
+  /* 5 prior terms of mock data: this course, type avg, program avg */
+  const labels = ['Sp 24','Fa 24','Sp 25','Fa 25','Sp 26'];
+  /* Build plausible series */
+  const target = c.avg;
+  const prev = c.prev || target;
+  const drift = (target - prev) * 0.5;
+  const courseSeries = [
+    +(prev - drift*1.5).toFixed(2),
+    +(prev - drift*0.7).toFixed(2),
+    +prev.toFixed(2),
+    +((prev+target)/2).toFixed(2),
+    +target.toFixed(2),
+  ];
+  const typeAvg = courseSeries.map((v,i)=>+(v - 0.15 + Math.sin(i)*0.08).toFixed(2));
+  const progAvg = courseSeries.map((v,i)=>+(v - 0.25 + Math.cos(i)*0.06).toFixed(2));
+  return {labels, course:courseSeries, type:typeAvg, program:progAvg};
+}
+
+function renderTrendSvg(h){
+  const W=560, H=200, P=30;
+  const xs = h.labels.map((_,i)=>P + i*((W-2*P)/(h.labels.length-1)));
+  const yMin=2.5, yMax=5.0;
+  const yScale = v => H-P - ((v-yMin)/(yMax-yMin))*(H-2*P);
+  const path = (series, color, dashed)=>{
+    const d = series.map((v,i)=>`${i===0?'M':'L'} ${xs[i]} ${yScale(v).toFixed(1)}`).join(' ');
+    return `<path d="${d}" fill="none" stroke="${color}" stroke-width="${dashed?'1.5':'2.5'}" ${dashed?'stroke-dasharray="4 3"':''} stroke-linecap="round" stroke-linejoin="round"/>` +
+           series.map((v,i)=>`<circle cx="${xs[i]}" cy="${yScale(v)}" r="${dashed?2.5:3.5}" fill="${color}"/>`).join('');
+  };
+  /* Y gridlines */
+  const ys = [3,3.5,4,4.5,5];
+  const gridlines = ys.map(y=>`
+    <line x1="${P}" x2="${W-P}" y1="${yScale(y)}" y2="${yScale(y)}" stroke="oklch(0.93 0.003 270)" stroke-width="1"/>
+    <text x="${P-6}" y="${yScale(y)+4}" text-anchor="end" fill="oklch(0.55 0.012 270)" font-size="10" font-family="Inter">${y.toFixed(1)}</text>
+  `).join('');
+  const xlabels = h.labels.map((l,i)=>`<text x="${xs[i]}" y="${H-8}" text-anchor="middle" fill="oklch(0.55 0.012 270)" font-size="10" font-family="Inter">${l}</text>`).join('');
+  return `<div class="trend-chart">
+    <svg class="trend-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+      ${gridlines}
+      ${path(h.program, 'oklch(0.55 0.012 270)', true)}
+      ${path(h.type, 'oklch(0.42 0.13 184)', true)}
+      ${path(h.course, 'oklch(0.50 0.14 286.1)', false)}
+      ${xlabels}
+    </svg>
+  </div>`;
+}
+
+function downloadFile(filename, content, mime){
+  const blob = new Blob([content], {type: mime||'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+function csvCell(v){
+  if(v===null||v===undefined) return '';
+  const s = String(v);
+  return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+}
+function exportCsv(){
+  /* Export the courses currently visible in the analytics list with applied sort/filter */
+  const term = termOf(state.termId);
+  let rows = COURSES.filter(c=>c.termId===state.termId && c.avg!==null);
+  if(state.search){ const q=state.search.toLowerCase(); rows = rows.filter(c=>c.code.toLowerCase().includes(q)||c.name.toLowerCase().includes(q)||c.instructor.toLowerCase().includes(q)); }
+  if(state.filterType!=='all') rows = rows.filter(c=>c.typeId===state.filterType);
+  const ranked = [...COURSES].filter(c=>c.termId===state.termId && c.avg!==null).sort((a,b)=>b.avg-a.avg);
+  const rankMap = {}; ranked.forEach((c,i)=>rankMap[c.id]=i+1);
+  if(state.filterPercentile==='top50') rows = rows.filter(c=>rankMap[c.id]<=Math.ceil(ranked.length/2));
+  if(state.filterPercentile==='bottom50') rows = rows.filter(c=>rankMap[c.id]>Math.ceil(ranked.length/2));
+  const dir = state.sortDir==='asc'?1:-1;
+  rows.sort((a,b)=>{
+    if(state.sortBy==='rank') return (rankMap[a.id]-rankMap[b.id])*dir;
+    if(state.sortBy==='type') return typeOf(a.typeId).name.localeCompare(typeOf(b.typeId).name)*dir;
+    if(state.sortBy==='rating') return (b.avg-a.avg)*dir;
+    if(state.sortBy==='trend') return (((b.avg||0)-(b.prev||0))-((a.avg||0)-(a.prev||0)))*dir;
+    if(state.sortBy==='completion') return (b.completion-a.completion)*dir;
+    return 0;
+  });
+  const header = ['Rank','Code','Name','Type','Instructor','Avg Score','Previous','Trend','Enrolled','Responded','Completion %'];
+  const body = rows.map(c=>{
+    const responded = Math.round(c.enrolled*c.completion/100);
+    const trend = c.prev ? +(c.avg-c.prev).toFixed(2) : '';
+    return [rankMap[c.id], c.code, c.name, typeOf(c.typeId).name, c.instructor, c.avg.toFixed(2), c.prev?.toFixed(2)||'', trend, c.enrolled, responded, c.completion];
+  });
+  const csv = [header, ...body].map(r=>r.map(csvCell).join(',')).join('\n');
+  const fn = `pce-${term.name.toLowerCase().replace(/\s+/g,'-')}-courses.csv`;
+  downloadFile(fn, csv, 'text/csv;charset=utf-8');
+  toast(`Downloaded ${fn} (${rows.length} courses).`,'success');
+}
+function exportCourseReport(id){
+  const c = COURSES.find(x=>x.id===id);
+  const term = termOf(c.termId);
+  const t = typeOf(c.typeId);
+  const data = RESPONSE_DATA[c.id];
+  const ranked = [...COURSES].filter(x=>x.termId===c.termId && x.avg!==null).sort((a,b)=>b.avg-a.avg);
+  const rank = ranked.findIndex(x=>x.id===c.id)+1;
+  const responded = Math.round(c.enrolled*c.completion/100);
+  const lines = [];
+  lines.push(`PCE Course Report,${c.code} - ${c.name}`);
+  lines.push(`Term,${term.name}`);
+  lines.push(`Type,${t.name}`);
+  lines.push(`Instructor,${c.instructor}`);
+  lines.push(`Enrolled,${c.enrolled}`);
+  lines.push(`Responded,${responded}`);
+  lines.push(`Completion,${c.completion}%`);
+  lines.push(`Average Score,${c.avg.toFixed(2)} of 5.0`);
+  lines.push(`Previous Offering,${c.prev?c.prev.toFixed(2):''}`);
+  lines.push(`Rank,${rank} of ${ranked.length}`);
+  lines.push('');
+  if(data){
+    lines.push('Per-Question Distribution');
+    lines.push(['#','Question','Avg','1','2','3','4','5','Total'].join(','));
+    data.questions.forEach((q,i)=>{
+      const total = q.dist.reduce((a,b)=>a+b,0);
+      lines.push([i+1, csvCell(q.text), q.avg.toFixed(2), q.dist[0], q.dist[1], q.dist[2], q.dist[3], q.dist[4], total].join(','));
+    });
+    lines.push('');
+  }
+  const themes = getThemes(c.id);
+  if(themes.length){
+    lines.push('AI-Extracted Themes');
+    lines.push(['Theme','Sentiment','Mentions'].join(','));
+    themes.forEach(th=>lines.push([csvCell(th.name), th.sentiment, th.mentions].join(',')));
+  }
+  const fn = `pce-${c.code.toLowerCase().replace(/\s+/g,'-')}-${term.name.toLowerCase().replace(/\s+/g,'-')}.csv`;
+  downloadFile(fn, lines.join('\n'), 'text/csv;charset=utf-8');
+  toast(`Downloaded ${fn}.`,'success');
+}
+function openShareModal(courseId){
+  const c = COURSES.find(x=>x.id===courseId);
+  showModal({
+    title:`Share results: ${c.code}`,
+    body: `
+      <p style="font-size:13px;color:var(--muted-fg);margin-bottom:14px">Share aggregated results with <strong>${escapeHtml(c.instructor)}</strong>. Comments and identifying information stay hidden until you mark them visible.</p>
+      <div class="field">
+        <label class="field-label">Include in shared report</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 0"><input type="checkbox" checked>Per-question scores and distributions</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 0"><input type="checkbox" checked>Average score and rank</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 0"><input type="checkbox" checked>AI-extracted themes</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 0"><input type="checkbox">Individual student comments</label>
+      </div>
+      <div class="field">
+        <label class="field-label">Note to faculty (optional)</label>
+        <textarea class="textarea" placeholder="e.g., Strong term overall: happy to discuss the open feedback at our next 1:1."></textarea>
+      </div>
+    `,
+    actions:`
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="doShareResults('${courseId}')"><i class="fa-light fa-share-nodes"></i>Share Results</button>
+    `,
+  });
+}
+function doShareResults(courseId){
+  const c = COURSES.find(x=>x.id===courseId);
+  const incScores   = document.querySelectorAll('#modal-body input[type=checkbox]')[0]?.checked;
+  const incRank     = document.querySelectorAll('#modal-body input[type=checkbox]')[1]?.checked;
+  const incThemes   = document.querySelectorAll('#modal-body input[type=checkbox]')[2]?.checked;
+  const incComments = document.querySelectorAll('#modal-body input[type=checkbox]')[3]?.checked;
+  const note = document.querySelector('#modal-body textarea')?.value || '';
+  c.sharedAt = new Date().toISOString();
+  c.sharedConfig = {scores:incScores, rank:incRank, themes:incThemes, comments:incComments, note};
+  state.activity.unshift({
+    when:'2026-04-29 ' + new Date().toTimeString().slice(0,5),
+    icon:'fa-share-nodes', cat:'success',
+    text:`Results for <strong>${c.code}</strong> shared with ${escapeHtml(c.instructor)}.`
+  });
+  closeModal();
+  if(state.screen==='analytics' && state.analyticsView==='detail') renderCourseDetail();
+  toast(`Results shared with ${c.instructor}. They will receive an email shortly.`,'success');
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   SETUP SCREEN
+   ════════════════════════════════════════════════════════════════════ */
+
+function renderSetup(){
+  /* Build nav with status icons */
+  const navItems = [
+    {id:'lms',       label:'LMS Integration', icon:'fa-plug',         status: LMS.connected?'ok':'err'},
+    {id:'types',     label:'Course Types',    icon:'fa-tags',         status:'ok'},
+    {id:'templates', label:'Templates',       icon:'fa-file-lines',   status: untemplatedTypes().length?'warn':'ok'},
+    {id:'terms',     label:'Terms',           icon:'fa-calendar',     status:'ok'},
+    {id:'admin',     label:'Decision Admin',  icon:'fa-user-tie',     status:'ok'},
+  ];
+  const nav = `
+    <div class="setup-nav">
+      ${navItems.map(n=>`
+        <div class="setup-nav-item ${state.setupTab===n.id?'active':''}" onclick="state.setupTab='${n.id}';renderSetup()">
+          <i class="fa-light ${n.icon} setup-nav-icon"></i>
+          <span>${n.label}</span>
+          <span class="setup-nav-status ${n.status}"><i class="fa-light ${n.status==='ok'?'fa-check':n.status==='warn'?'fa-triangle-exclamation':'fa-xmark'}" style="font-size:8px"></i></span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  let body='';
+  if(state.setupTab==='lms')       body = renderSetupLms();
+  else if(state.setupTab==='types')body = renderSetupTypes();
+  else if(state.setupTab==='templates') body = renderSetupTemplates();
+  else if(state.setupTab==='terms')body = renderSetupTerms();
+  else                             body = renderSetupAdmin();
+
+  document.getElementById('screen-setup').innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">Setup</div>
+        <div class="page-subtitle">Configure the building blocks autopilot uses to schedule and trigger surveys. Most of this is set once per academic year.</div>
+      </div>
+    </div>
+    <div class="setup-layout">
+      ${nav}
+      <div>${body}</div>
+    </div>
+  `;
+}
+
+function renderSetupLms(){
+  if(!LMS.connected){
+    return `
+      <div class="setup-section-title">LMS integration</div>
+      <div class="setup-section-sub">Course rosters, instructors, and term schedules are pulled from your LMS daily. Autopilot uses this as the source of truth, so manual roster updates aren't needed.</div>
+      <div class="lms-panel">
+        <div class="lms-head">
+          <div class="lms-head-logo" style="background:var(--muted-fg);opacity:.6">canvas</div>
+          <div class="lms-head-info" style="flex:1">
+            <h3>Canvas <span class="badge badge-danger"><i class="fa-light fa-plug-circle-xmark"></i>Disconnected</span></h3>
+            <p>All scheduled survey triggers are paused until you reconnect.</p>
+          </div>
+          <button class="btn btn-primary" onclick="reconnectLms()"><i class="fa-light fa-plug"></i>Reconnect Canvas</button>
+        </div>
+        <div class="disable-row-banner" style="background:var(--destructive-bg);border-color:color-mix(in oklch, var(--destructive) 25%, white);color:var(--destructive-fg);margin-top:0">
+          <i class="fa-light fa-triangle-exclamation" style="margin-top:2px"></i>
+          <div>Autopilot cannot schedule new surveys without a working LMS connection. Existing data is preserved.</div>
+        </div>
+      </div>
+    `;
+  }
+  return `
+    <div class="setup-section-title">LMS integration</div>
+    <div class="setup-section-sub">Course rosters, instructors, and term schedules are pulled from your LMS daily. Autopilot uses this as the source of truth, so manual roster updates aren't needed.</div>
+    <div class="lms-panel">
+      <div class="lms-head">
+        <div class="lms-head-logo">canvas</div>
+        <div class="lms-head-info" style="flex:1">
+          <h3>Canvas <span class="badge badge-success"><i class="fa-light fa-check"></i>Connected</span></h3>
+          <p>Connected by Dr. Mitchell on Jan 8, 2026 · Sync runs daily at 6:00 AM</p>
+        </div>
+        <button class="btn btn-outline" onclick="syncLmsNow()"><i class="fa-light fa-rotate"></i>Sync now</button>
+      </div>
+      <div class="lms-stat-grid">
+        <div class="lms-stat"><div class="lms-stat-num">${LMS.syncedCourses}</div><div class="lms-stat-lbl">Courses synced</div></div>
+        <div class="lms-stat"><div class="lms-stat-num">${LMS.syncedFaculty}</div><div class="lms-stat-lbl">Faculty mirrored</div></div>
+        <div class="lms-stat"><div class="lms-stat-num">${LMS.syncedStudents}</div><div class="lms-stat-lbl">Students enrolled</div></div>
+      </div>
+      <div class="lms-detail-row"><span class="lms-detail-key">Last sync</span><span class="lms-detail-val">${LMS.lastSync}</span></div>
+      <div class="lms-detail-row"><span class="lms-detail-key">Next sync</span><span class="lms-detail-val">${LMS.nextSync}</span></div>
+      <div class="lms-detail-row"><span class="lms-detail-key">Sync frequency</span><span class="lms-detail-val">
+        <select class="select" style="width:auto;height:28px" onchange="LMS.syncFrequency=this.value;toast('Sync frequency updated to '+this.value,'success')">
+          <option value="hourly" ${LMS.syncFrequency==='hourly'?'selected':''}>Every hour</option>
+          <option value="daily" ${LMS.syncFrequency==='daily'?'selected':''}>Daily at 6:00 AM</option>
+          <option value="weekly" ${LMS.syncFrequency==='weekly'?'selected':''}>Weekly on Mondays</option>
+        </select>
+      </span></div>
+      <div class="lms-detail-row"><span class="lms-detail-key">Mapped fields</span><span class="lms-detail-val">Course code, name, term, instructor, roster, term dates</span></div>
+      <div class="lms-detail-row"><span class="lms-detail-key">Connection</span><span class="lms-detail-val"><a href="#" onclick="event.preventDefault();reauthLms()">Re-authenticate</a> · <a href="#" onclick="event.preventDefault();openDisconnectLmsModal()" style="color:var(--destructive-fg)">Disconnect</a></span></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div class="card-head">
+        <div>
+          <div class="card-title"><i class="fa-light fa-circle-info"></i>Why LMS integration is required</div>
+        </div>
+      </div>
+      <div style="font-size:13px;color:var(--muted-fg);line-height:1.65">
+        Autopilot uses LMS data as the single source of truth so survey rosters never drift from real enrollment. Without it, instructors who joined late get missed (the Dr. Wu issue) and dropped students keep getting reminders. The LMS connection must be active before January for any client onboarding the course evaluation product.
+      </div>
+    </div>
+  `;
+}
+
+function renderSetupTypes(){
+  const cards = COURSE_TYPES.map(t=>{
+    const tmpl = templateForType(t.id);
+    const courseCount = COURSES.filter(c=>c.typeId===t.id).length;
+    return `<div class="ct-card">
+      <div class="ct-card-head">
+        <div class="ct-card-name"><span class="ct-card-dot" style="background:${t.color}"></span>${escapeHtml(t.name)}</div>
+        <button class="btn btn-ghost btn-icon-sm" onclick="openEditTypeModal('${t.id}')" aria-label="Edit"><i class="fa-light fa-pen"></i></button>
+      </div>
+      <div class="ct-card-desc">${escapeHtml(t.desc)}</div>
+      <div class="ct-card-meta">
+        <div class="ct-card-meta-item"><i class="fa-light fa-graduation-cap"></i>${courseCount} course${courseCount===1?'':'s'}</div>
+        <div class="ct-card-meta-item">${tmpl ? `<span class="ct-template-pill"><i class="fa-light fa-check" style="font-size:9px;margin-right:3px"></i>${escapeHtml(tmpl.name)}</span>` : `<span class="ct-template-missing"><i class="fa-light fa-triangle-exclamation"></i>No template bound</span>`}</div>
+      </div>
+    </div>`;
+  }).join('');
+  return `
+    <div class="setup-section-title">Course types</div>
+    <div class="setup-section-sub">Course types determine which evaluation template a course uses. Each course inherits its type from the LMS or is set manually here. This is a one-time setup that rarely changes.</div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+      <button class="btn btn-primary btn-sm" onclick="openEditTypeModal()"><i class="fa-light fa-plus"></i>Add Course Type</button>
+    </div>
+    <div class="ct-grid">${cards}</div>
+  `;
+}
+
+function openEditTypeModal(id){
+  const t = id ? COURSE_TYPES.find(x=>x.id===id) : {name:'',desc:'',color:'oklch(0.55 0.13 264)'};
+  showModal({
+    title: id?'Edit course type':'Add course type',
+    body: `
+      <div class="field">
+        <label class="field-label">Name</label>
+        <input class="input" id="ct-name" value="${escapeHtml(t.name)}" placeholder="e.g., Practicum">
+      </div>
+      <div class="field">
+        <label class="field-label">Description</label>
+        <textarea class="textarea" id="ct-desc" placeholder="What kind of courses use this type?">${escapeHtml(t.desc)}</textarea>
+      </div>
+      <div class="field">
+        <label class="field-label">Color</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${['oklch(0.55 0.13 264)','oklch(0.50 0.13 184)','oklch(0.62 0.16 70)','oklch(0.50 0.18 358)','oklch(0.55 0.22 296)','oklch(0.55 0.22 25)','oklch(0.50 0.14 155)'].map(c=>`<button onclick="document.getElementById('ct-color-val').value='${c}';document.querySelectorAll('.ct-color-swatch').forEach(s=>s.style.outline='2px solid transparent');this.style.outline='2px solid ${c}'" class="ct-color-swatch" style="width:24px;height:24px;border-radius:50%;background:${c};cursor:pointer;outline:2px solid ${c===t.color?c:'transparent'};outline-offset:2px"></button>`).join('')}
+          <input type="hidden" id="ct-color-val" value="${t.color}">
+        </div>
+      </div>
+    `,
+    actions: `
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCourseType('${id||''}')">${id?'Save':'Add Type'}</button>
+    `
+  });
+}
+function saveCourseType(id){
+  const name = document.getElementById('ct-name').value.trim();
+  const desc = document.getElementById('ct-desc').value.trim();
+  const color = document.getElementById('ct-color-val').value;
+  if(!name){ toast('Name is required','warning'); return; }
+  if(id){
+    const t = COURSE_TYPES.find(x=>x.id===id);
+    t.name=name; t.desc=desc; t.color=color;
+    toast(`${name} updated.`,'success');
+  } else {
+    const newId = 'ct'+(Date.now());
+    COURSE_TYPES.push({id:newId,name,desc,color,badge:'badge-default'});
+    toast(`${name} added.`,'success');
+  }
+  closeModal();
+  renderSetup();
+}
+
+function renderSetupTemplates(){
+  const rows = TEMPLATES.map(tp=>{
+    const types = tp.boundTypes.map(tid=>{
+      const t = typeOf(tid);
+      return `<span class="badge ${t.badge}"><span class="badge-dot" style="background:${t.color}"></span>${t.name}</span>`;
+    }).join(' ');
+    return `<div class="tmpl-row">
+      <div class="tmpl-icon"><i class="fa-light fa-file-lines"></i></div>
+      <div class="tmpl-info">
+        <div class="tmpl-name">${escapeHtml(tp.name)}</div>
+        <div class="tmpl-meta">
+          <span><i class="fa-light fa-list-check"></i>${tp.questionCount} questions in ${tp.sectionCount} sections</span>
+          <span><i class="fa-light fa-clock"></i>Updated ${tp.lastUpdated}</span>
+        </div>
+      </div>
+      <div class="tmpl-binding">
+        <div class="tmpl-binding-lbl">Used by</div>
+        <div class="tmpl-binding-types">${types}</div>
+      </div>
+      <div class="row-actions">
+        <button class="btn btn-outline btn-sm" onclick="openTemplateBindingModal('${tp.id}')"><i class="fa-light fa-link"></i>Bindings</button>
+        <button class="btn btn-outline btn-sm" onclick="openTemplateEditModal('${tp.id}')"><i class="fa-light fa-pen"></i>Edit</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  /* Validation panel: types without templates */
+  const missing = untemplatedTypes();
+  const missingHtml = missing.length ? `
+    <div style="background:var(--c-amber-bg);border:1px solid color-mix(in oklch, var(--c-amber) 25%, white);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <i class="fa-light fa-triangle-exclamation" style="color:var(--c-amber-fg);margin-top:3px"></i>
+        <div style="flex:1">
+          <div style="font-weight:600;color:var(--c-amber-fg);font-size:13px">${missing.length} course type${missing.length>1?'s have':' has'} no template</div>
+          <div style="font-size:12px;color:var(--c-amber-fg);margin-top:4px;line-height:1.55">Courses of type${missing.length>1?'s':''} <strong>${missing.map(m=>m.name).join(', ')}</strong> will be skipped by autopilot until you bind a template.</div>
+          <div style="margin-top:8px"><button class="btn btn-amber btn-sm" onclick="openCreateTemplateForTypeModal('${missing[0].id}')"><i class="fa-light fa-plus"></i>Create template for ${escapeHtml(missing[0].name)}</button></div>
+        </div>
+      </div>
+    </div>
+  ` : '';
+
+  return `
+    <div class="setup-section-title">Templates</div>
+    <div class="setup-section-sub">Each template is bound to one or more course types. When autopilot schedules a survey, it picks the template bound to the course's type. Update a template at any time, future surveys will use the new version.</div>
+    ${missingHtml}
+    <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+      <button class="btn btn-primary btn-sm" onclick="openTemplateEditModal()"><i class="fa-light fa-plus"></i>Add Template</button>
+    </div>
+    <div>${rows}</div>
+  `;
+}
+
+function openCreateTemplateForTypeModal(typeId){
+  const t = typeOf(typeId);
+  showModal({
+    title:`Create template for ${t.name}`,
+    body: `
+      <div class="field">
+        <label class="field-label">Template name</label>
+        <input class="input" id="ct-tmpl-name" value="${escapeHtml(t.name+' Evaluation')}" >
+      </div>
+      <div class="field">
+        <label class="field-label">Starting point</label>
+        <select class="select" id="ct-tmpl-start">
+          <option value="blank">Blank (build from scratch)</option>
+          ${TEMPLATES.map(tp=>`<option value="${tp.id}">Copy from ${escapeHtml(tp.name)}</option>`).join('')}
+        </select>
+        <div class="field-help">A copy lets you reuse questions, then customize for ${t.name}.</div>
+      </div>
+      <div class="field">
+        <label class="field-label">Bind to course types</label>
+        <div style="border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:8px">
+          ${COURSE_TYPES.map(ct=>`<label style="display:flex;align-items:center;gap:8px;padding:6px 4px;font-size:13px"><input type="checkbox" ${ct.id===typeId?'checked':''} value="${ct.id}" class="ct-bind-cb">${ct.name}</label>`).join('')}
+        </div>
+      </div>
+    `,
+    actions:`
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmCreateTemplate('${typeId}')"><i class="fa-light fa-check"></i>Create Template</button>
+    `,
+  });
+}
+function confirmCreateTemplate(forTypeId){
+  const name = document.getElementById('ct-tmpl-name').value.trim();
+  const start = document.getElementById('ct-tmpl-start').value;
+  const bindings = Array.from(document.querySelectorAll('.ct-bind-cb:checked')).map(cb=>cb.value);
+  if(!name){ toast('Template name is required','warning'); return; }
+  if(!bindings.length){ toast('Bind to at least one course type','warning'); return; }
+  const baseQ = start==='blank' ? 5 : (TEMPLATES.find(t=>t.id===start)?.questionCount || 5);
+  TEMPLATES.push({
+    id:'tp'+(Date.now()), name, boundTypes:bindings,
+    lastUpdated: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),
+    questionCount: baseQ, status:'active', sectionCount:2
+  });
+  closeModal();
+  renderSetup();
+  toast(`${name} created and bound to ${bindings.map(b=>typeOf(b).name).join(', ')}.`,'success');
+}
+
+function openTemplateBindingModal(templateId){
+  const tp = TEMPLATES.find(x=>x.id===templateId);
+  showModal({
+    title:`Course type bindings: ${tp.name}`,
+    body: `
+      <p style="font-size:13px;color:var(--muted-fg);margin-bottom:12px">Pick the course types that should use this template. A type can be bound to only one template at a time, so checking here may unbind another template.</p>
+      <div style="border:1px solid var(--border);border-radius:var(--radius)">
+        ${COURSE_TYPES.map(t=>{
+          const otherTmpl = TEMPLATES.find(x=>x.id!==templateId && x.boundTypes.includes(t.id));
+          return `<label style="display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border-bottom:1px solid var(--border);cursor:pointer">
+            <input type="checkbox" ${tp.boundTypes.includes(t.id)?'checked':''} value="${t.id}" class="bind-edit-cb" style="margin-top:3px">
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:600;color:var(--foreground);display:flex;align-items:center;gap:6px"><span class="badge-dot" style="background:${t.color}"></span>${t.name}</div>
+              <div style="font-size:11px;color:var(--muted-fg);margin-top:2px">${otherTmpl?`<i class="fa-light fa-triangle-exclamation" style="color:var(--c-amber-fg);margin-right:4px"></i>Currently bound to <strong>${otherTmpl.name}</strong>. Will switch to ${tp.name}.`:`Currently uses ${tp.boundTypes.includes(t.id)?'this template':'no template'}.`}</div>
+            </div>
+          </label>`;
+        }).join('')}
+      </div>
+    `,
+    actions:`
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTemplateBindings('${templateId}')"><i class="fa-light fa-check"></i>Save Bindings</button>
+    `,
+  });
+}
+function saveTemplateBindings(templateId){
+  const tp = TEMPLATES.find(x=>x.id===templateId);
+  const checked = Array.from(document.querySelectorAll('.bind-edit-cb:checked')).map(cb=>cb.value);
+  /* Remove these types from any other template */
+  TEMPLATES.forEach(t=>{
+    if(t.id!==templateId){
+      t.boundTypes = t.boundTypes.filter(b=>!checked.includes(b));
+    }
+  });
+  tp.boundTypes = checked;
+  tp.lastUpdated = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  closeModal();
+  renderSetup();
+  toast(`Bindings updated for ${tp.name}. Future surveys will use the new mapping.`,'success');
+}
+
+function openTemplateEditModal(id){
+  const tp = id ? TEMPLATES.find(x=>x.id===id) : {name:'',questionCount:5,sectionCount:2,boundTypes:[]};
+  showModal({
+    title: id?`Edit template: ${tp.name}`:'New template',
+    size:'modal-lg',
+    body: `
+      <div class="field">
+        <label class="field-label">Template name</label>
+        <input class="input" id="te-name" value="${escapeHtml(tp.name)}">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="field">
+          <label class="field-label">Sections</label>
+          <input class="input" id="te-sections" type="number" min="1" max="6" value="${tp.sectionCount}">
+        </div>
+        <div class="field">
+          <label class="field-label">Total questions</label>
+          <input class="input" id="te-qcount" type="number" min="1" max="40" value="${tp.questionCount}">
+        </div>
+      </div>
+      <div class="modal-section-label" style="margin-top:8px">Sections (preview)</div>
+      <div style="background:var(--muted);border-radius:var(--radius);padding:12px;font-size:12px;color:var(--muted-fg);line-height:1.6">
+        ${id ? '<strong>1. Course Experience</strong>: 5 rating questions, 1 open text<br><strong>2. Instructor Effectiveness</strong>: 5 rating questions, 1 open text' : 'Sections will be created with starter questions you can edit after saving.'}
+      </div>
+      <div class="field" style="margin-top:14px">
+        <label class="field-label">Status</label>
+        <select class="select" id="te-status">
+          <option value="active" selected>Active: used by autopilot</option>
+          <option value="draft">Draft: not used yet</option>
+        </select>
+      </div>
+    `,
+    actions:`
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTemplate('${id||''}')"><i class="fa-light fa-check"></i>${id?'Save Changes':'Create Template'}</button>
+    `,
+  });
+}
+function saveTemplate(id){
+  const name = document.getElementById('te-name').value.trim();
+  const qc = parseInt(document.getElementById('te-qcount').value);
+  const sc = parseInt(document.getElementById('te-sections').value);
+  const status = document.getElementById('te-status').value;
+  if(!name){ toast('Template name required','warning'); return; }
+  if(id){
+    const tp = TEMPLATES.find(x=>x.id===id);
+    tp.name=name; tp.questionCount=qc; tp.sectionCount=sc; tp.status=status;
+    tp.lastUpdated = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    toast(`${name} updated. Future surveys use the new version.`,'success');
+  } else {
+    TEMPLATES.push({id:'tp'+Date.now(), name, questionCount:qc, sectionCount:sc, status, boundTypes:[],
+      lastUpdated: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})});
+    toast(`${name} created. Bind it to a course type to start using it.`,'success');
+  }
+  closeModal();
+  renderSetup();
+}
+
+function renderSetupTerms(){
+  const rows = TERMS.map(t=>{
+    const surveyOpen = addDays(t.endDate, -t.surveyOpenOffset);
+    const surveyClose = addDays(t.endDate, t.surveyCloseOffset);
+    const courseCount = COURSES.filter(c=>c.termId===t.id).length;
+    const surveyCount = COURSES.filter(c=>c.termId===t.id && templateForType(c.typeId)).length;
+    const statusBadge = t.status==='active' ? `<span class="badge badge-success">Active</span>` :
+                       t.status==='upcoming' ? `<span class="badge badge-info">Upcoming</span>` :
+                       `<span class="badge badge-muted">Closed</span>`;
+    return `<div class="term-row">
+      <div class="term-status-dot ${t.status}"></div>
+      <div class="term-info">
+        <div class="term-name">${t.name} ${statusBadge}</div>
+        <div class="term-dates">${fmtDate(t.startDate)} → ${fmtDate(t.endDate)} · ${courseCount} courses (${surveyCount} survey${surveyCount===1?'':'s'} scheduled)</div>
+      </div>
+      <div class="term-schedule">
+        Survey opens <strong>${shortDate(surveyOpen)}</strong> (term end −${t.surveyOpenOffset}d)<br>
+        Survey closes <strong>${shortDate(surveyClose)}</strong> (term end +${t.surveyCloseOffset}d)
+      </div>
+      <div class="row-actions">
+        <button class="btn btn-outline btn-sm" onclick="openTermEditModal('${t.id}')"><i class="fa-light fa-pen"></i>Edit</button>
+      </div>
+    </div>`;
+  }).join('');
+  return `
+    <div class="setup-section-title">Terms</div>
+    <div class="setup-section-sub">Autopilot anchors all survey scheduling to the term end date. Set the offsets once and surveys open/close automatically every term. Term dates can come from your LMS or be set manually.</div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+      <button class="btn btn-primary btn-sm" onclick="openTermEditModal()"><i class="fa-light fa-plus"></i>Add Term</button>
+    </div>
+    <div>${rows}</div>
+    <div class="card" style="margin-top:14px">
+      <div class="card-head">
+        <div>
+          <div class="card-title"><i class="fa-light fa-circle-info"></i>How term-anchored scheduling works</div>
+        </div>
+      </div>
+      <div style="font-size:13px;color:var(--muted-fg);line-height:1.65">
+        For every course in a term that has a bound template, autopilot creates a survey that opens <strong>(term end date) − (open offset)</strong> and closes <strong>(term end date) + (close offset)</strong>. The defaults of 14 days before to 7 days after work for most semester programs. Override per-survey only when needed.
+      </div>
+    </div>
+  `;
+}
+
+function openTermEditModal(id){
+  const t = id ? TERMS.find(x=>x.id===id) : {name:'',startDate:'',endDate:'',surveyOpenOffset:14,surveyCloseOffset:7,status:'upcoming'};
+  showModal({
+    title: id?`Edit term: ${t.name}`:'Add term',
+    body: `
+      <div class="field"><label class="field-label">Term name</label><input class="input" id="tm-name" value="${escapeHtml(t.name)}" placeholder="e.g., Fall 2026"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="field"><label class="field-label">Start date</label><input class="input" type="date" id="tm-start" value="${t.startDate}"></div>
+        <div class="field"><label class="field-label">End date</label><input class="input" type="date" id="tm-end" value="${t.endDate}"></div>
+      </div>
+      <div class="modal-section-label" style="margin-top:6px">Survey schedule (auto-applied to all surveys in this term)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="field"><label class="field-label">Open offset (days before end)</label><input class="input" type="number" min="0" max="60" id="tm-open" value="${t.surveyOpenOffset}"></div>
+        <div class="field"><label class="field-label">Close offset (days after end)</label><input class="input" type="number" min="0" max="60" id="tm-close" value="${t.surveyCloseOffset}"></div>
+      </div>
+      <div class="field"><label class="field-label">Status</label>
+        <select class="select" id="tm-status">
+          <option value="upcoming" ${t.status==='upcoming'?'selected':''}>Upcoming</option>
+          <option value="active" ${t.status==='active'?'selected':''}>Active</option>
+          <option value="closed" ${t.status==='closed'?'selected':''}>Closed</option>
+        </select>
+      </div>
+    `,
+    actions:`
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTerm('${id||''}')">${id?'Save':'Add Term'}</button>
+    `,
+  });
+}
+function saveTerm(id){
+  const name = document.getElementById('tm-name').value.trim();
+  const start = document.getElementById('tm-start').value;
+  const end = document.getElementById('tm-end').value;
+  const oOff = parseInt(document.getElementById('tm-open').value);
+  const cOff = parseInt(document.getElementById('tm-close').value);
+  const status = document.getElementById('tm-status').value;
+  if(!name||!end){ toast('Name and end date are required','warning'); return; }
+  if(id){
+    const t = TERMS.find(x=>x.id===id);
+    t.name=name; t.startDate=start; t.endDate=end; t.surveyOpenOffset=oOff; t.surveyCloseOffset=cOff; t.status=status;
+    toast(`${name} updated. Schedules recalculated.`,'success');
+  } else {
+    TERMS.push({id:'tm'+Date.now(),name,startDate:start,endDate:end,surveyOpenOffset:oOff,surveyCloseOffset:cOff,status});
+    toast(`${name} added.`,'success');
+  }
+  closeModal();
+  renderSetup();
+}
+
+function renderSetupAdmin(){
+  const a = DECISION_ADMIN;
+  const initials = a.name.replace('Dr. ','').split(' ').map(w=>w[0]).join('').slice(0,2);
+  return `
+    <div class="setup-section-title">Decision admin</div>
+    <div class="setup-section-sub">The decision admin is the human point of contact for autopilot. They receive notifications a week before any batch of surveys triggers, and can disable individual surveys before they go live.</div>
+    <div class="admin-card">
+      <div class="admin-head">
+        <div class="admin-avatar">${initials}</div>
+        <div class="admin-info">
+          <h3>${escapeHtml(a.name)}</h3>
+          <p>${escapeHtml(a.role)} · ${escapeHtml(a.email)}</p>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="openAdminEditModal()"><i class="fa-light fa-pen"></i>Change Admin</button>
+      </div>
+
+      <div class="modal-section-label" style="margin-bottom:10px">Notifications</div>
+
+      <div class="admin-notif">
+        <div class="admin-notif-info">
+          <div class="admin-notif-title">One week before surveys trigger</div>
+          <div class="admin-notif-sub">"X surveys will trigger starting Monday. Review and disable any if needed."</div>
+        </div>
+        <label class="toggle"><input type="checkbox" ${a.notif.weekBeforeTrigger?'checked':''} onchange="DECISION_ADMIN.notif.weekBeforeTrigger=this.checked;toast('Setting saved','success')"><span class="toggle-track"></span></label>
+      </div>
+
+      <div class="admin-notif">
+        <div class="admin-notif-info">
+          <div class="admin-notif-title">Day-of trigger summary</div>
+          <div class="admin-notif-sub">Sent the morning surveys go live, listing every course included.</div>
+        </div>
+        <label class="toggle"><input type="checkbox" ${a.notif.dayOfTrigger?'checked':''} onchange="DECISION_ADMIN.notif.dayOfTrigger=this.checked;toast('Setting saved','success')"><span class="toggle-track"></span></label>
+      </div>
+
+      <div class="admin-notif">
+        <div class="admin-notif-info">
+          <div class="admin-notif-title">Low completion alerts</div>
+          <div class="admin-notif-sub">Notify when a survey's completion rate drops below the threshold.</div>
+        </div>
+        <label class="toggle"><input type="checkbox" ${a.notif.lowCompletion?'checked':''} onchange="DECISION_ADMIN.notif.lowCompletion=this.checked;toast('Setting saved','success')"><span class="toggle-track"></span></label>
+      </div>
+
+      <div class="admin-notif">
+        <div class="admin-notif-info">
+          <div class="admin-notif-title">Low completion threshold</div>
+          <div class="admin-notif-sub">Send an alert when completion drops below this percentage with the survey still open.</div>
+        </div>
+        <input class="input" type="number" min="0" max="100" value="${a.notif.completionThreshold}" style="width:80px" onchange="DECISION_ADMIN.notif.completionThreshold=parseInt(this.value);toast('Threshold updated to '+this.value+'%','success')">
+      </div>
+
+      <div class="admin-notif">
+        <div class="admin-notif-info">
+          <div class="admin-notif-title">Weekly digest</div>
+          <div class="admin-notif-sub">Mondays at 9 AM, summarizing the prior week's autopilot activity.</div>
+        </div>
+        <label class="toggle"><input type="checkbox" ${a.notif.weeklyDigest?'checked':''} onchange="DECISION_ADMIN.notif.weeklyDigest=this.checked;toast('Setting saved','success')"><span class="toggle-track"></span></label>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="card-head">
+        <div>
+          <div class="card-title"><i class="fa-light fa-circle-info"></i>What happens when I disable a survey?</div>
+        </div>
+      </div>
+      <div style="font-size:13px;color:var(--muted-fg);line-height:1.65">
+        Disabling a survey from the trigger plan removes it from the queue, no email goes to students, and no record is collected. Other courses in the same term are not affected. You can re-enable any survey before the term ends if you change your mind.
+      </div>
+    </div>
+  `;
+}
+
+function openAdminEditModal(){
+  const a = DECISION_ADMIN;
+  showModal({
+    title:'Change decision admin',
+    body: `
+      <p style="font-size:13px;color:var(--muted-fg);margin-bottom:12px">Reassign autopilot's primary contact. Notification settings carry over.</p>
+      <div class="field"><label class="field-label">Name</label><input class="input" id="ad-name" value="${escapeHtml(a.name)}"></div>
+      <div class="field"><label class="field-label">Role</label><input class="input" id="ad-role" value="${escapeHtml(a.role)}"></div>
+      <div class="field"><label class="field-label">Email</label><input class="input" id="ad-email" type="email" value="${escapeHtml(a.email)}"></div>
+    `,
+    actions:`
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAdmin()">Save</button>
+    `,
+  });
+}
+function saveAdmin(){
+  DECISION_ADMIN.name = document.getElementById('ad-name').value.trim() || DECISION_ADMIN.name;
+  DECISION_ADMIN.role = document.getElementById('ad-role').value.trim() || DECISION_ADMIN.role;
+  DECISION_ADMIN.email = document.getElementById('ad-email').value.trim() || DECISION_ADMIN.email;
+  closeModal();
+  renderSetup();
+  toast('Decision admin updated.','success');
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   MODAL + TOAST
+   ════════════════════════════════════════════════════════════════════ */
+
+function showModal({title, body, actions, size}){
+  const modal = document.getElementById('modal');
+  modal.className = 'modal' + (size?' '+size:'');
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = body;
+  document.getElementById('modal-foot').innerHTML = actions || '';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal(){ document.getElementById('modal-overlay').classList.remove('open'); }
+
+function toast(msg, kind){
+  const host = document.getElementById('banner-host');
+  const div = document.createElement('div');
+  div.className = 'sys-banner ' + (kind||'info');
+  const icon = kind==='success'?'fa-circle-check':kind==='warning'?'fa-triangle-exclamation':kind==='info'?'fa-circle-info':'fa-circle-info';
+  div.innerHTML = `<i class="fa-light ${icon}"></i><span style="flex:1">${msg}</span><button class="sys-banner-close" aria-label="Dismiss"><i class="fa-light fa-xmark"></i></button>`;
+  div.querySelector('.sys-banner-close').onclick = ()=>div.remove();
+  host.appendChild(div);
+  setTimeout(()=>div.remove(), 4500);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   INIT
+   ════════════════════════════════════════════════════════════════════ */
+
+renderAutopilot();
+
+/* Keyboard: ESC closes modal */
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape') closeModal();
+});
+
+</script>
+</body>
+</html>
