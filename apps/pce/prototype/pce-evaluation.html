@@ -5010,6 +5010,25 @@ function renderAdjunct(){
 }
 
 /* INIT */
+/* Deep-link from the storyboard landing: read URL fragment for persona+view */
+(function applyDeepLink(){
+  const h = (location.hash||'').replace(/^#/,'');
+  if(!h) return;
+  const params = Object.fromEntries(h.split('&').map(p=>p.split('=').map(decodeURIComponent)));
+  if(params.persona && PERSONAS[params.persona]) state.persona = params.persona;
+  if(state.persona==='pd' && params.view) state.pdView = params.view;
+  if(state.persona==='coord' && params.view) state.coordView = params.view;
+  if(state.persona==='fac' && params.view) state.facView = params.view;
+  if(state.persona==='stu' && params.view) state.stuView = params.view;
+  if(state.persona==='ccc' && params.view) state.cccView = params.view;
+  if(state.persona==='chair' && params.view) state.chairView = params.view;
+  if(state.persona==='dce' && params.view) state.dceView = params.view;
+  if(params.tab && state.persona==='pd' && state.pdView==='setup') state.pdSetupTab = params.tab;
+  if(params.wizardStep) state.wizardStep = parseInt(params.wizardStep);
+  if(params.surveyDetail){ state.surveyDetailId = params.surveyDetail; state.surveyDetailFromPersona = state.persona; }
+  if(params.facCourse) state.facCourseId = params.facCourse;
+  if(params.stuCourse){ state.stuCourseId = params.stuCourse; state.stuView='survey'; state.stuSection=0; }
+})();
 renderAll();
 document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModal(); state.demoOpen=false; renderDemoPanel(); }});
 

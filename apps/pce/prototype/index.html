@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PCE Post Course Evaluation: Prototype</title>
+<title>PCE Post Course Evaluation</title>
 <link rel="stylesheet" href="https://use.typekit.net/wuk5wqn.css">
 <link href="https://kit.fontawesome.com/d9bd5774e0.css" rel="stylesheet">
 <style>
@@ -11,82 +11,611 @@
   --bg:oklch(0.985 0.002 270);
   --surface:white;
   --foreground:oklch(0.18 0.01 270);
+  --ink-2:oklch(0.42 0.012 270);
   --muted-fg:oklch(0.50 0.012 270);
+  --muted:oklch(0.96 0.003 270);
+  --muted-2:oklch(0.93 0.004 270);
   --border:oklch(0.92 0.004 270);
+  --hairline:oklch(0.93 0.003 270);
   --brand-tint:oklch(0.9676 0.016 286.1);
-  --brand-color:oklch(0.50 0.14 286.1);
-  --brand-color-dark:oklch(0.38 0.11 286.1);
-  --brand-color-deep:oklch(0.28 0.085 286.1);
-  --shadow-md:0 2px 6px oklch(0 0 0 / 0.08);
-  --shadow-lg:0 8px 24px oklch(0 0 0 / 0.10);
+  --brand-tint-2:oklch(0.935 0.024 286.1);
+  --brand:oklch(0.50 0.14 286.1);
+  --brand-dark:oklch(0.38 0.11 286.1);
+  --brand-deep:oklch(0.28 0.085 286.1);
+  --brand-soft:oklch(0.78 0.09 286.1);
+  --pos:oklch(0.45 0.14 155);
+  --pos-bg:oklch(0.95 0.04 155);
+  --neg:oklch(0.55 0.22 25);
+  --neg-bg:oklch(0.96 0.03 25);
+  --warn:oklch(0.62 0.16 84);
+  --warn-fg:oklch(0.42 0.15 68);
+  --warn-bg:oklch(0.96 0.04 84);
+  --indigo:oklch(0.45 0.16 264);
+  --indigo-bg:oklch(0.95 0.04 264);
+  --teal:oklch(0.42 0.13 184);
+  --teal-bg:oklch(0.95 0.04 184);
+  --rose:oklch(0.50 0.18 343);
+  --rose-bg:oklch(0.96 0.03 343);
+  --shadow-sm:0 1px 2px oklch(0 0 0 / 0.06);
+  --shadow-md:0 6px 18px oklch(0 0 0 / 0.06), 0 2px 6px oklch(0 0 0 / 0.04);
+  --shadow-lg:0 14px 38px oklch(0 0 0 / 0.08), 0 4px 12px oklch(0 0 0 / 0.05);
   --radius:8px;
-  --radius-lg:12px;
+  --radius-md:10px;
+  --radius-lg:14px;
+  --radius-xl:20px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:"Inter", -apple-system, sans-serif;background:var(--bg);color:var(--foreground);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px;line-height:1.55;-webkit-font-smoothing:antialiased}
-.wrap{max-width:760px;width:100%}
-.brand{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--brand-color-deep);margin-bottom:20px}
-.brand-icon{width:28px;height:28px;border-radius:7px;background:var(--brand-color);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
-h1{font-family:"ivypresto-text", Georgia, serif;font-size:36px;font-weight:500;letter-spacing:-0.01em;line-height:1.1;margin-bottom:14px}
-.lede{font-size:15px;color:var(--muted-fg);max-width:600px;margin-bottom:28px;line-height:1.6}
-.card{background:white;border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px;box-shadow:var(--shadow-md);margin-bottom:14px;display:flex;align-items:center;gap:18px;text-decoration:none;color:inherit;transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease}
-.card:hover{transform:translateY(-1px);box-shadow:var(--shadow-lg);border-color:var(--brand-color)}
-.card-icon{width:48px;height:48px;border-radius:10px;background:var(--brand-tint);color:var(--brand-color);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
-.card-icon.handoff{background:oklch(0.95 0.04 264);color:oklch(0.45 0.16 264)}
-.card-icon.ref{background:oklch(0.96 0.003 270);color:var(--muted-fg)}
-.card-content{flex:1;min-width:0}
-.card-title{font-size:16px;font-weight:600;color:var(--foreground);margin-bottom:4px;letter-spacing:-0.01em}
-.card-sub{font-size:13px;color:var(--muted-fg);line-height:1.5}
-.card-meta{display:flex;gap:14px;margin-top:8px;font-size:11px;color:var(--muted-fg)}
-.card-meta i{margin-right:4px}
-.card-arrow{color:var(--muted-fg);font-size:14px;flex-shrink:0}
-.card:hover .card-arrow{color:var(--brand-color);transform:translateX(2px);transition:transform .15s ease}
-.tag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600;background:var(--brand-tint);color:var(--brand-color-dark);text-transform:uppercase;letter-spacing:.06em}
-.section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted-fg);margin:24px 0 12px}
-.foot{margin-top:32px;font-size:12px;color:var(--muted-fg);line-height:1.6;border-top:1px solid var(--border);padding-top:18px}
-@media (max-width:600px){h1{font-size:28px}.card{padding:16px;gap:14px}.card-icon{width:40px;height:40px;font-size:17px}}
+body{font-family:"Inter",-apple-system,sans-serif;background:var(--bg);color:var(--foreground);line-height:1.5;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+a{color:var(--brand);text-decoration:none}
+button{font-family:inherit;cursor:pointer}
+
+/* ── Topbar ───────────────────────────────────────────────────── */
+.bar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.bar-inner{max-width:1180px;margin:0 auto;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.brand{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:var(--brand-deep);letter-spacing:-0.01em}
+.brand-icon{width:26px;height:26px;border-radius:7px;background:var(--brand);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.brand small{font-size:9px;background:var(--brand-tint);color:var(--brand-dark);padding:2px 7px;border-radius:99px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-left:3px}
+.bar-cta{display:inline-flex;align-items:center;gap:6px;background:var(--foreground);color:white;padding:7px 14px;border-radius:99px;font-size:12px;font-weight:600;border:none;transition:transform .12s ease, opacity .12s ease;letter-spacing:-0.005em}
+.bar-cta:hover{opacity:0.92;transform:translateY(-1px)}
+.bar-cta i{font-size:10px}
+
+/* ── Hero ─────────────────────────────────────────────────────── */
+.hero{max-width:1180px;margin:0 auto;padding:80px 28px 60px;display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--brand);background:var(--brand-tint);padding:5px 12px;border-radius:99px;margin-bottom:18px}
+.hero h1{font-family:"ivypresto-text",Georgia,serif;font-size:54px;font-weight:500;line-height:1.06;letter-spacing:-0.02em;color:var(--foreground);margin-bottom:18px}
+.hero h1 span{color:var(--brand)}
+.hero-lede{font-size:16px;color:var(--muted-fg);max-width:520px;line-height:1.6;margin-bottom:26px}
+.hero-meta{display:flex;gap:20px;flex-wrap:wrap;font-size:12px;color:var(--muted-fg)}
+.hero-meta strong{color:var(--foreground);font-weight:600}
+.hero-cta{display:inline-flex;align-items:center;gap:8px;background:var(--brand);color:white;padding:12px 22px;border-radius:99px;font-size:14px;font-weight:600;border:none;margin-right:10px;transition:transform .12s ease, box-shadow .15s ease;box-shadow:0 6px 20px oklch(0.50 0.14 286.1 / 0.30)}
+.hero-cta:hover{transform:translateY(-2px);box-shadow:0 10px 28px oklch(0.50 0.14 286.1 / 0.38)}
+.hero-cta-secondary{display:inline-flex;align-items:center;gap:7px;color:var(--ink-2);padding:11px 16px;font-size:13px;font-weight:500;background:none;border:none}
+.hero-cta-secondary:hover{color:var(--brand)}
+
+/* ── Hero illustration: stacked persona cards ─────────────────── */
+.hero-art{position:relative;height:440px}
+.persona-stack{position:absolute;background:white;border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;box-shadow:var(--shadow-md);transition:transform .18s ease, box-shadow .18s ease}
+.persona-stack:hover{transform:translateY(-3px) rotate(0deg) !important;box-shadow:var(--shadow-lg);z-index:5}
+.persona-stack .p-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;margin-bottom:10px}
+.persona-stack .p-role{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted-fg);margin-bottom:4px}
+.persona-stack .p-name{font-size:15px;font-weight:600;letter-spacing:-0.01em;line-height:1.25;margin-bottom:5px}
+.persona-stack .p-quote{font-size:11px;color:var(--muted-fg);line-height:1.5;font-style:italic}
+.ps-1{top:0;left:0;width:240px;transform:rotate(-2.5deg)}
+.ps-1 .p-icon{background:var(--pos-bg);color:var(--pos)}
+.ps-2{top:42px;left:200px;width:240px;transform:rotate(1.5deg);z-index:2}
+.ps-2 .p-icon{background:var(--brand-tint);color:var(--brand-dark)}
+.ps-3{top:170px;left:60px;width:230px;transform:rotate(2deg)}
+.ps-3 .p-icon{background:var(--rose-bg);color:var(--rose)}
+.ps-4{top:240px;left:240px;width:230px;transform:rotate(-1.5deg);z-index:3}
+.ps-4 .p-icon{background:var(--teal-bg);color:var(--teal)}
+.connector{position:absolute;border-top:1.5px dashed var(--brand-soft);opacity:0.55}
+.c-1{top:80px;left:240px;width:60px;transform:rotate(15deg)}
+.c-2{top:215px;left:230px;width:50px;transform:rotate(-25deg)}
+.c-3{top:285px;left:200px;width:60px;transform:rotate(15deg)}
+
+/* ── Narrative section ───────────────────────────────────────── */
+.story{max-width:1180px;margin:0 auto;padding:40px 28px 80px;position:relative}
+.story-eyebrow{display:flex;align-items:center;gap:14px;margin-bottom:24px}
+.story-eyebrow-line{flex:1;height:1px;background:var(--border)}
+.story-eyebrow-text{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted-fg)}
+.story-h2{font-family:"ivypresto-text",Georgia,serif;font-size:38px;font-weight:500;line-height:1.1;letter-spacing:-0.015em;margin-bottom:14px;max-width:640px}
+.story-sub{font-size:14px;color:var(--muted-fg);max-width:600px;line-height:1.65;margin-bottom:48px}
+
+.timeline{position:relative}
+.timeline:before{content:'';position:absolute;left:30px;top:18px;bottom:24px;width:2px;background:linear-gradient(to bottom, var(--brand-soft) 0%, var(--brand-soft) 70%, transparent 100%);border-radius:1px}
+
+.scene{position:relative;display:grid;grid-template-columns:60px 1fr;gap:28px;margin-bottom:56px;align-items:flex-start}
+.scene-num{width:60px;display:flex;flex-direction:column;align-items:center;flex-shrink:0;position:relative;z-index:2}
+.scene-num-circle{width:36px;height:36px;border-radius:50%;background:white;border:2px solid var(--border);color:var(--brand-deep);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm)}
+.scene.active .scene-num-circle{background:var(--brand);border-color:var(--brand);color:white;box-shadow:0 0 0 6px var(--brand-tint), var(--shadow-md)}
+.scene-num-tag{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted-fg);margin-top:8px;text-align:center}
+
+.scene-card{background:white;border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow-sm);transition:transform .18s ease, box-shadow .22s ease, border-color .22s ease}
+.scene-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);border-color:var(--brand-soft)}
+.scene-body{padding:32px;display:grid;grid-template-columns:1fr 1.1fr;gap:36px;align-items:center}
+.scene-text{}
+.persona-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:99px;font-size:10px;font-weight:600;letter-spacing:0.02em;margin-bottom:12px}
+.persona-pill .pdot{width:6px;height:6px;border-radius:50%}
+.pp-pd{background:var(--pos-bg);color:var(--pos)}
+.pp-pd .pdot{background:var(--pos)}
+.pp-coord{background:var(--brand-tint);color:var(--brand-dark)}
+.pp-coord .pdot{background:var(--brand)}
+.pp-stu{background:var(--teal-bg);color:var(--teal)}
+.pp-stu .pdot{background:var(--teal)}
+.pp-fac{background:var(--rose-bg);color:var(--rose)}
+.pp-fac .pdot{background:var(--rose)}
+.pp-ccc{background:var(--indigo-bg);color:var(--indigo)}
+.pp-ccc .pdot{background:var(--indigo)}
+.scene-h{font-family:"ivypresto-text",Georgia,serif;font-size:26px;font-weight:500;line-height:1.18;letter-spacing:-0.01em;color:var(--foreground);margin-bottom:10px}
+.scene-desc{font-size:14px;color:var(--muted-fg);line-height:1.65;margin-bottom:18px;max-width:420px}
+.scene-cta{display:inline-flex;align-items:center;gap:7px;background:var(--foreground);color:white;padding:10px 18px;border-radius:99px;font-size:13px;font-weight:600;border:none;transition:transform .12s ease, opacity .15s ease}
+.scene-cta:hover{transform:translateX(2px)}
+.scene-cta i{font-size:11px}
+.scene-meta{display:flex;gap:14px;font-size:11px;color:var(--muted-fg);margin-top:16px;flex-wrap:wrap}
+.scene-meta strong{color:var(--ink-2);font-weight:600}
+
+/* ── Scene visuals ────────────────────────────────────────────── */
+.viz{background:linear-gradient(135deg, var(--brand-tint) 0%, white 100%);border-radius:var(--radius-lg);padding:24px;min-height:240px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;border:1px solid color-mix(in oklch, var(--brand) 10%, white)}
+.viz.green-tint{background:linear-gradient(135deg, var(--pos-bg) 0%, white 100%);border-color:color-mix(in oklch, var(--pos) 14%, white)}
+.viz.warn-tint{background:linear-gradient(135deg, var(--warn-bg) 0%, white 100%);border-color:color-mix(in oklch, var(--warn) 14%, white)}
+.viz.teal-tint{background:linear-gradient(135deg, var(--teal-bg) 0%, white 100%);border-color:color-mix(in oklch, var(--teal) 14%, white)}
+.viz.rose-tint{background:linear-gradient(135deg, var(--rose-bg) 0%, white 100%);border-color:color-mix(in oklch, var(--rose) 14%, white)}
+.viz.indigo-tint{background:linear-gradient(135deg, var(--indigo-bg) 0%, white 100%);border-color:color-mix(in oklch, var(--indigo) 14%, white)}
+
+/* viz: setup checklist */
+.setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+.setup-tile{background:white;border-radius:10px;padding:14px;border:1px solid var(--hairline);box-shadow:var(--shadow-sm)}
+.setup-tile-icon{width:28px;height:28px;border-radius:7px;background:var(--pos-bg);color:var(--pos);display:flex;align-items:center;justify-content:center;font-size:12px;margin-bottom:8px}
+.setup-tile-title{font-size:11px;font-weight:700;letter-spacing:-0.01em}
+.setup-tile-meta{font-size:10px;color:var(--muted-fg);margin-top:3px}
+
+/* viz: wizard stepper */
+.wiz{width:100%}
+.wiz-row{display:flex;align-items:center;gap:6px;margin-bottom:14px}
+.wiz-step{flex:1;background:white;border:1px solid var(--hairline);border-radius:10px;padding:10px 12px;text-align:center;font-size:11px;color:var(--muted-fg);font-weight:500}
+.wiz-step.done{background:var(--pos);border-color:var(--pos);color:white}
+.wiz-step.done .wiz-step-num{color:white}
+.wiz-step.active{background:var(--brand);border-color:var(--brand);color:white;box-shadow:0 4px 14px oklch(0.50 0.14 286.1 / 0.32)}
+.wiz-step-num{font-size:9px;font-weight:700;color:var(--muted-fg);display:block;margin-bottom:2px}
+.wiz-result{background:white;border-radius:10px;padding:14px;border:1px solid var(--hairline);box-shadow:var(--shadow-sm)}
+.wiz-result-num{font-size:28px;font-weight:700;color:var(--brand);letter-spacing:-0.02em;line-height:1}
+.wiz-result-lbl{font-size:11px;color:var(--muted-fg);margin-top:4px}
+
+/* viz: timeline */
+.tl{width:100%;background:white;border-radius:10px;padding:18px;border:1px solid var(--hairline)}
+.tl-axis{position:relative;height:80px}
+.tl-line{position:absolute;left:0;right:0;top:40px;height:2px;background:var(--hairline)}
+.tl-marker{position:absolute;top:32px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.tl-dot{width:14px;height:14px;border-radius:50%;background:white;border:2px solid var(--brand)}
+.tl-dot.fired{background:var(--brand)}
+.tl-dot.alert{background:var(--neg-bg);border-color:var(--neg)}
+.tl-lbl{font-size:9px;color:var(--muted-fg);font-weight:600;text-align:center;white-space:nowrap;margin-top:5px}
+.tl-summary{display:flex;justify-content:space-between;margin-top:12px;font-size:10px;color:var(--muted-fg)}
+
+/* viz: phone mockup */
+.phone{width:200px;background:oklch(0.10 0.01 270);border-radius:24px;padding:6px;box-shadow:var(--shadow-md);position:relative}
+.phone-screen{background:white;border-radius:18px;padding:14px;height:280px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.phone-anon{background:var(--pos-bg);border:1px solid color-mix(in oklch, var(--pos) 25%, white);border-radius:8px;padding:8px 10px;display:flex;gap:7px;font-size:9px;color:oklch(0.32 0.10 155);align-items:flex-start}
+.phone-anon i{margin-top:1px}
+.phone-section{font-size:10px;font-weight:700;color:var(--brand-dark);text-transform:uppercase;letter-spacing:.06em}
+.phone-q{font-size:11px;color:var(--foreground);line-height:1.4;margin-bottom:6px}
+.phone-likert{display:flex;gap:4px}
+.phone-l-btn{flex:1;height:24px;border-radius:5px;border:1px solid var(--hairline);font-size:9px;color:var(--muted-fg);display:flex;align-items:center;justify-content:center;font-weight:600}
+.phone-l-btn.sel{background:var(--brand);color:white;border-color:var(--brand)}
+.phone-tabs{display:flex;gap:6px;font-size:9px;color:var(--muted-fg);overflow:hidden;border-bottom:1px solid var(--hairline);padding-bottom:5px;margin-top:auto}
+.phone-tab{white-space:nowrap;padding:2px 5px;flex-shrink:0}
+.phone-tab.active{color:var(--brand-dark);font-weight:700;border-bottom:2px solid var(--brand);padding-bottom:3px;margin-bottom:-6px}
+
+/* viz: comment moderation */
+.mod{width:100%;display:flex;flex-direction:column;gap:8px}
+.mod-step{background:white;border-radius:10px;padding:11px 13px;border:1px solid var(--hairline);display:flex;align-items:center;gap:10px;font-size:11px}
+.mod-step-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.mod-step.done .mod-step-num{background:var(--pos);color:white}
+.mod-step.done .mod-step-text{color:var(--ink-2);text-decoration:line-through;text-decoration-color:var(--pos);text-decoration-thickness:1.5px}
+.mod-step.active .mod-step-num{background:var(--brand);color:white;box-shadow:0 0 0 4px var(--brand-tint)}
+.mod-step.active{border-color:var(--brand);background:var(--brand-tint)}
+.mod-step.locked .mod-step-num{background:var(--muted);color:var(--muted-fg)}
+.mod-step.locked .mod-step-text{color:var(--muted-fg)}
+.mod-step-text{flex:1;font-weight:600}
+
+/* viz: faculty results */
+.fac{width:100%;background:white;border-radius:10px;padding:18px;border:1px solid var(--hairline)}
+.fac-row{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px}
+.fac-score{font-family:"ivypresto-text",Georgia,serif;font-size:42px;font-weight:500;line-height:1;letter-spacing:-0.02em}
+.fac-score small{font-size:14px;color:var(--muted-fg);font-weight:400}
+.fac-trend{font-size:11px;font-weight:700;color:var(--pos);background:var(--pos-bg);padding:4px 9px;border-radius:99px}
+.fac-q{padding:8px 0;border-bottom:1px solid var(--hairline);display:flex;align-items:center;gap:10px;font-size:10px;color:var(--muted-fg)}
+.fac-q-bar{flex:1;height:4px;background:var(--muted);border-radius:99px;overflow:hidden}
+.fac-q-fill{height:100%;background:var(--brand);border-radius:99px}
+.fac-reflect{margin-top:14px;background:var(--brand-tint);border-radius:8px;padding:10px 12px;font-size:10px;color:var(--brand-dark)}
+.fac-reflect strong{color:var(--brand-deep)}
+
+/* viz: CQI pipeline */
+.cqi{width:100%;background:white;border-radius:10px;padding:18px;border:1px solid var(--hairline)}
+.cqi-bar{height:30px;background:var(--muted);border-radius:99px;overflow:hidden;display:flex;margin-bottom:16px}
+.cqi-seg{height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:white}
+.cqi-open{background:var(--warn);width:33%}
+.cqi-due{background:var(--neg);width:25%}
+.cqi-closed{background:var(--pos);width:42%}
+.cqi-legend{display:flex;justify-content:space-between;font-size:9px;color:var(--muted-fg)}
+.cqi-legend-item{display:flex;align-items:center;gap:5px}
+.cqi-legend-dot{width:7px;height:7px;border-radius:50%}
+
+/* ── Footer / personas grid ────────────────────────────────── */
+.personas{max-width:1180px;margin:60px auto 0;padding:50px 28px;background:white;border-radius:var(--radius-xl);border:1px solid var(--border)}
+.personas h3{font-family:"ivypresto-text",Georgia,serif;font-size:24px;font-weight:500;letter-spacing:-0.01em;margin-bottom:8px}
+.personas p{font-size:13px;color:var(--muted-fg);margin-bottom:28px;max-width:520px}
+.personas-grid{display:grid;grid-template-columns:repeat(4, 1fr);gap:14px}
+.p-tile{padding:18px;border:1px solid var(--border);border-radius:var(--radius-md);text-decoration:none;color:inherit;transition:border-color .15s ease, transform .15s ease;background:white}
+.p-tile:hover{border-color:var(--brand);transform:translateY(-2px)}
+.p-tile-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;margin-bottom:10px}
+.p-tile-role{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted-fg);margin-bottom:4px}
+.p-tile-name{font-size:13px;font-weight:600;letter-spacing:-0.005em;line-height:1.3;margin-bottom:4px}
+.p-tile-task{font-size:11px;color:var(--muted-fg);line-height:1.5}
+
+/* ── Footer ─────────────────────────────────────────────────── */
+.footer{max-width:1180px;margin:60px auto;padding:30px 28px;font-size:11px;color:var(--muted-fg);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;border-top:1px solid var(--border)}
+.footer a{color:var(--ink-2);font-weight:500}
+.footer a:hover{color:var(--brand)}
+
+@media (max-width:920px){
+  .hero{grid-template-columns:1fr;padding:50px 22px;gap:30px}
+  .hero-art{height:340px}
+  .hero h1{font-size:38px}
+  .scene-body{grid-template-columns:1fr;gap:20px;padding:24px}
+  .personas-grid{grid-template-columns:repeat(2,1fr)}
+  .timeline:before{left:18px}
+  .scene{grid-template-columns:36px 1fr;gap:14px}
+  .scene-num{width:36px}
+  .scene-num-circle{width:28px;height:28px;font-size:11px}
+}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="brand"><div class="brand-icon">P</div>PCE Post Course Evaluation <span class="tag">Prototype</span></div>
 
-  <h1>Post-course evaluation product walkthrough.</h1>
-  <p class="lede">End-to-end prototype across 8 personas: program leadership, coordinator, faculty, and student. One canonical product plus earlier exploratory prototypes for context.</p>
-
-  <a class="card" href="pce-evaluation.html">
-    <div class="card-icon"><i class="fa-light fa-rocket-launch"></i></div>
-    <div class="card-content">
-      <div class="card-title">Product prototype</div>
-      <div class="card-sub">End-to-end flow across 8 personas: Program Director, Coordinator, Faculty, Student, Curriculum Committee Chair, Department Chair, DCE, Adjunct. Setup, autopilot, surveys, results, CQI loop, accreditation export.</div>
-      <div class="card-meta"><span><i class="fa-light fa-file-code"></i>pce-evaluation.html</span><span><i class="fa-light fa-keyboard"></i>Keyboard accessible</span></div>
+<div class="bar">
+  <div class="bar-inner">
+    <div class="brand">
+      <div class="brand-icon">P</div>
+      PCE Post Course Evaluation <small>Prototype</small>
     </div>
-    <div class="card-arrow"><i class="fa-light fa-arrow-right"></i></div>
-  </a>
-
-  <div class="section-label">Reference (do not implement from these)</div>
-
-  <a class="card" href="_reference/pce-autopilot.html">
-    <div class="card-icon ref"><i class="fa-light fa-folder-open"></i></div>
-    <div class="card-content">
-      <div class="card-title">Autopilot exploration</div>
-      <div class="card-sub">Earlier prototype for the term-anchored autopilot model. Concepts already incorporated into the canonical product.</div>
-    </div>
-    <div class="card-arrow"><i class="fa-light fa-arrow-right"></i></div>
-  </a>
-
-  <a class="card" href="_reference/pce-interactive.html">
-    <div class="card-icon ref"><i class="fa-light fa-folder-open"></i></div>
-    <div class="card-content">
-      <div class="card-title">Manual-flow exploration</div>
-      <div class="card-sub">Original prototype before the autopilot pivot. Mental model has been replaced; kept here for context only.</div>
-    </div>
-    <div class="card-arrow"><i class="fa-light fa-arrow-right"></i></div>
-  </a>
-
-  <div class="foot">
-    Source repo: <a href="https://github.com/soleyromit/exxat-admin-workspace/tree/main/apps/pce/prototype" style="color:var(--brand-color)">soleyromit/exxat-admin-workspace</a> · <code>apps/pce/prototype/</code>
+    <a class="bar-cta" href="pce-evaluation.html">
+      Open prototype <i class="fa-light fa-arrow-right"></i>
+    </a>
   </div>
 </div>
+
+<!-- ── Hero ── -->
+<section class="hero">
+  <div>
+    <div class="hero-eyebrow"><i class="fa-light fa-rocket-launch" style="font-size:9px"></i>Built for Aarti's autopilot vision</div>
+    <h1>Set up <span>once</span>.<br>Run automatically.<br>Close the loop, every term.</h1>
+    <p class="hero-lede">
+      Course evaluations have eight stakeholders, four time horizons, and one accreditation deadline that does not move. This prototype shows how the work flows end to end &mdash; not as a feature list, but as a single product story.
+    </p>
+    <a class="hero-cta" href="pce-evaluation.html">Walk the prototype <i class="fa-solid fa-arrow-right"></i></a>
+    <button class="hero-cta-secondary" onclick="document.getElementById('story').scrollIntoView({behavior:'smooth'})">See the story below <i class="fa-light fa-arrow-down"></i></button>
+    <div class="hero-meta" style="margin-top:30px">
+      <div><strong>8</strong> personas</div>
+      <div><strong>7</strong> lifecycle scenes</div>
+      <div><strong>1</strong> canonical product</div>
+      <div><strong>5K+</strong> lines of design</div>
+    </div>
+  </div>
+  <div class="hero-art" aria-hidden="true">
+    <div class="connector c-1"></div>
+    <div class="connector c-2"></div>
+    <div class="connector c-3"></div>
+
+    <div class="persona-stack ps-1">
+      <div class="p-icon"><i class="fa-light fa-clipboard-list-check"></i></div>
+      <div class="p-role">Program Director</div>
+      <div class="p-name">Set the templates, watch the dashboard</div>
+      <div class="p-quote">"Empty CQI inbox = audit-clean."</div>
+    </div>
+    <div class="persona-stack ps-2">
+      <div class="p-icon"><i class="fa-light fa-wand-magic-sparkles"></i></div>
+      <div class="p-role">Coordinator</div>
+      <div class="p-name">Push surveys, hand off to autopilot</div>
+      <div class="p-quote">"Autopilot fires Day 3, 7, 10 reminders."</div>
+    </div>
+    <div class="persona-stack ps-3">
+      <div class="p-icon"><i class="fa-light fa-mobile"></i></div>
+      <div class="p-role">Student</div>
+      <div class="p-name">3 minutes, anonymous, mobile</div>
+      <div class="p-quote">"My feedback shaped this term."</div>
+    </div>
+    <div class="persona-stack ps-4">
+      <div class="p-icon"><i class="fa-light fa-chart-bar"></i></div>
+      <div class="p-role">Faculty</div>
+      <div class="p-name">Reflect, post a note, improve</div>
+      <div class="p-quote">"Last cohort said pacing felt rushed."</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Story ── -->
+<section class="story" id="story">
+  <div class="story-eyebrow">
+    <span class="story-eyebrow-text">The journey, end to end</span>
+    <span class="story-eyebrow-line"></span>
+  </div>
+  <h2 class="story-h2">Seven scenes from a single term.</h2>
+  <p class="story-sub">
+    Each scene below is a real screen in the prototype. Click any "Open this view" to drop into the product as the right persona, on the right tab.
+  </p>
+
+  <div class="timeline">
+
+    <!-- Scene 1 -->
+    <div class="scene active">
+      <div class="scene-num">
+        <div class="scene-num-circle">1</div>
+        <div class="scene-num-tag">Year-round</div>
+      </div>
+      <div class="scene-card">
+        <div class="scene-body">
+          <div class="scene-text">
+            <div class="persona-pill pp-pd"><span class="pdot"></span>Program Director</div>
+            <h3 class="scene-h">Set up once, then leave it alone.</h3>
+            <p class="scene-desc">Bind course types to evaluation templates. Configure terms with their offsets. Connect Canvas. Assign a decision admin. Done for the academic year.</p>
+            <a class="scene-cta" href="pce-evaluation.html#persona=pd&view=setup&tab=lms">Open Setup <i class="fa-solid fa-arrow-right"></i></a>
+            <div class="scene-meta">
+              <span><i class="fa-light fa-tags" style="margin-right:4px"></i><strong>4</strong> course types</span>
+              <span><i class="fa-light fa-file-lines" style="margin-right:4px"></i><strong>3</strong> templates</span>
+              <span><i class="fa-light fa-plug" style="margin-right:4px"></i>Canvas synced</span>
+            </div>
+          </div>
+          <div class="viz green-tint">
+            <div class="setup-grid">
+              <div class="setup-tile"><div class="setup-tile-icon"><i class="fa-light fa-plug"></i></div><div class="setup-tile-title">Canvas LMS</div><div class="setup-tile-meta">42 courses synced</div></div>
+              <div class="setup-tile"><div class="setup-tile-icon"><i class="fa-light fa-tags"></i></div><div class="setup-tile-title">Course Types</div><div class="setup-tile-meta">4 configured</div></div>
+              <div class="setup-tile"><div class="setup-tile-icon"><i class="fa-light fa-calendar"></i></div><div class="setup-tile-title">Terms</div><div class="setup-tile-meta">Spring 2026 active</div></div>
+              <div class="setup-tile"><div class="setup-tile-icon"><i class="fa-light fa-user-tie"></i></div><div class="setup-tile-title">Decision Admin</div><div class="setup-tile-meta">Dr. Mitchell</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scene 2 -->
+    <div class="scene">
+      <div class="scene-num">
+        <div class="scene-num-circle">2</div>
+        <div class="scene-num-tag">Term start</div>
+      </div>
+      <div class="scene-card">
+        <div class="scene-body">
+          <div class="scene-text">
+            <div class="persona-pill pp-coord"><span class="pdot"></span>Program Coordinator</div>
+            <h3 class="scene-h">A four-step wizard creates the term.</h3>
+            <p class="scene-desc">Confirm scope. Assign templates per course type. Review LMS rosters. Push to autopilot. Twelve surveys queued in under three minutes.</p>
+            <a class="scene-cta" href="pce-evaluation.html#persona=coord&view=wizard&wizardStep=4">Open the Wizard <i class="fa-solid fa-arrow-right"></i></a>
+            <div class="scene-meta">
+              <span><i class="fa-light fa-list-check" style="margin-right:4px"></i><strong>4</strong> steps</span>
+              <span><i class="fa-light fa-graduation-cap" style="margin-right:4px"></i><strong>12</strong> surveys ready</span>
+            </div>
+          </div>
+          <div class="viz">
+            <div class="wiz">
+              <div class="wiz-row">
+                <div class="wiz-step done"><span class="wiz-step-num">STEP 1</span>Scope</div>
+                <div class="wiz-step done"><span class="wiz-step-num">STEP 2</span>Templates</div>
+                <div class="wiz-step done"><span class="wiz-step-num">STEP 3</span>Rosters</div>
+                <div class="wiz-step active"><span class="wiz-step-num">STEP 4</span>Push</div>
+              </div>
+              <div class="wiz-result">
+                <div class="wiz-result-num">12</div>
+                <div class="wiz-result-lbl">surveys queued for Spring 2026, anchored to term end Apr 30</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scene 3 -->
+    <div class="scene">
+      <div class="scene-num">
+        <div class="scene-num-circle">3</div>
+        <div class="scene-num-tag">14 days</div>
+      </div>
+      <div class="scene-card">
+        <div class="scene-body">
+          <div class="scene-text">
+            <div class="persona-pill pp-coord"><span class="pdot"></span>Autopilot</div>
+            <h3 class="scene-h">Distribution runs on rails.</h3>
+            <p class="scene-desc">Surveys open 14 days before term end. Day 3 + Day 7 reminders fire only to non-completers. Day 10 alerts the coordinator if completion is below 50 percent.</p>
+            <a class="scene-cta" href="pce-evaluation.html#persona=coord&view=autopilot">Open Autopilot <i class="fa-solid fa-arrow-right"></i></a>
+            <div class="scene-meta">
+              <span><i class="fa-light fa-bell" style="margin-right:4px"></i>D3 / D7 / D10 cadence</span>
+              <span><i class="fa-light fa-shield-check" style="margin-right:4px"></i>Anonymous magic-token email</span>
+            </div>
+          </div>
+          <div class="viz teal-tint">
+            <div class="tl">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted-fg);margin-bottom:14px">14-day distribution window</div>
+              <div class="tl-axis">
+                <div class="tl-line"></div>
+                <div class="tl-marker" style="left:0%"><div class="tl-dot fired"></div><div class="tl-lbl">Open</div></div>
+                <div class="tl-marker" style="left:21%"><div class="tl-dot fired"></div><div class="tl-lbl">Day 3</div></div>
+                <div class="tl-marker" style="left:50%"><div class="tl-dot fired"></div><div class="tl-lbl">Day 7</div></div>
+                <div class="tl-marker" style="left:71%"><div class="tl-dot alert"></div><div class="tl-lbl">Day 10</div></div>
+                <div class="tl-marker" style="left:100%"><div class="tl-dot"></div><div class="tl-lbl">Close</div></div>
+              </div>
+              <div class="tl-summary"><span><strong style="color:var(--ink-2)">71%</strong> response rate</span><span><strong style="color:var(--ink-2)">3</strong> reminders fired</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scene 4 -->
+    <div class="scene">
+      <div class="scene-num">
+        <div class="scene-num-circle">4</div>
+        <div class="scene-num-tag">3 minutes</div>
+      </div>
+      <div class="scene-card">
+        <div class="scene-body">
+          <div class="scene-text">
+            <div class="persona-pill pp-stu"><span class="pdot"></span>Student</div>
+            <h3 class="scene-h">Three minutes, anonymous, with the loop closed up front.</h3>
+            <p class="scene-desc">Mobile-first. Anonymity badge front-and-center. The instructor's note from last cohort sits at the top of the survey &mdash; "you said the cardio block felt rushed; I split it into two weeks." Three-tier model: course content + course director + each instructor as their own section.</p>
+            <a class="scene-cta" href="pce-evaluation.html#persona=stu&stuCourse=c1">Open Student survey <i class="fa-solid fa-arrow-right"></i></a>
+            <div class="scene-meta">
+              <span><i class="fa-light fa-shield-check" style="margin-right:4px"></i>No IP, no name link</span>
+              <span><i class="fa-light fa-layer-group" style="margin-right:4px"></i>Tier 2 + Tier 3 sections</span>
+            </div>
+          </div>
+          <div class="viz teal-tint" style="justify-content:center">
+            <div class="phone">
+              <div class="phone-screen">
+                <div class="phone-anon"><i class="fa-light fa-shield-check"></i><div><strong>Anonymous</strong><br>No IP. No name link.</div></div>
+                <div>
+                  <div class="phone-section">Faculty: Dr. Chen</div>
+                  <div class="phone-q">The instructor explained concepts clearly.</div>
+                  <div class="phone-likert">
+                    <div class="phone-l-btn">1</div>
+                    <div class="phone-l-btn">2</div>
+                    <div class="phone-l-btn">3</div>
+                    <div class="phone-l-btn">4</div>
+                    <div class="phone-l-btn sel">5</div>
+                  </div>
+                </div>
+                <div class="phone-tabs">
+                  <span class="phone-tab">Course</span>
+                  <span class="phone-tab">Director</span>
+                  <span class="phone-tab active">Faculty: Chen</span>
+                  <span class="phone-tab">Faculty: Patel</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scene 5 -->
+    <div class="scene">
+      <div class="scene-num">
+        <div class="scene-num-circle">5</div>
+        <div class="scene-num-tag">After close</div>
+      </div>
+      <div class="scene-card">
+        <div class="scene-body">
+          <div class="scene-text">
+            <div class="persona-pill pp-pd"><span class="pdot"></span>Program Director</div>
+            <h3 class="scene-h">Two gates before faculty see anything.</h3>
+            <p class="scene-desc">The instant a survey closes it goes to "Pending admin review." Grades must post to SIS first. Then admin moderates comments &mdash; hide unprofessional ones, never edit. Then publish. Watermark and CourseEval do this. We do it better, with the gates explicit.</p>
+            <a class="scene-cta" href="pce-evaluation.html#persona=pd&surveyDetail=c4">Open the moderation queue <i class="fa-solid fa-arrow-right"></i></a>
+            <div class="scene-meta">
+              <span><i class="fa-light fa-shield-halved" style="margin-right:4px"></i>FERPA-flagged comments</span>
+              <span><i class="fa-light fa-eye-slash" style="margin-right:4px"></i>Hide, never edit</span>
+            </div>
+          </div>
+          <div class="viz warn-tint">
+            <div class="mod">
+              <div class="mod-step done"><div class="mod-step-num"><i class="fa-light fa-check"></i></div><div class="mod-step-text">Grades posted to SIS</div></div>
+              <div class="mod-step active"><div class="mod-step-num">2</div><div class="mod-step-text">Moderate 7 comments &mdash; 1 flagged</div></div>
+              <div class="mod-step locked"><div class="mod-step-num">3</div><div class="mod-step-text">Publish to faculty</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scene 6 -->
+    <div class="scene">
+      <div class="scene-num">
+        <div class="scene-num-circle">6</div>
+        <div class="scene-num-tag">Loop close</div>
+      </div>
+      <div class="scene-card">
+        <div class="scene-body">
+          <div class="scene-text">
+            <div class="persona-pill pp-fac"><span class="pdot"></span>Faculty</div>
+            <h3 class="scene-h">See your own results, reflect, post for next year.</h3>
+            <p class="scene-desc">Faculty unlock only their own sections (Tier 2 if director, Tier 3 if instructor). Module breakdown, 5-term trend, AI themes from open-text. A required 3-question reflection, then a 2-sentence note that appears at the top of next year's survey.</p>
+            <a class="scene-cta" href="pce-evaluation.html#persona=fac&view=results&facCourse=c1">Open Faculty results <i class="fa-solid fa-arrow-right"></i></a>
+            <div class="scene-meta">
+              <span><i class="fa-light fa-lock" style="margin-right:4px"></i>Co-instructors private</span>
+              <span><i class="fa-light fa-comment-dots" style="margin-right:4px"></i>Note for next cohort</span>
+            </div>
+          </div>
+          <div class="viz rose-tint">
+            <div class="fac">
+              <div class="fac-row"><div class="fac-score">4.62<small>/ 5.0</small></div><div class="fac-trend"><i class="fa-solid fa-arrow-trend-up"></i> +0.2 vs Fa 25</div></div>
+              <div class="fac-q"><span style="flex:1">Explained concepts clearly</span><div class="fac-q-bar"><div class="fac-q-fill" style="width:94%"></div></div><strong style="color:var(--ink-2)">4.7</strong></div>
+              <div class="fac-q"><span style="flex:1">Inclusive learning environment</span><div class="fac-q-bar"><div class="fac-q-fill" style="width:90%"></div></div><strong style="color:var(--ink-2)">4.5</strong></div>
+              <div class="fac-q"><span style="flex:1">Helpful, timely feedback</span><div class="fac-q-bar"><div class="fac-q-fill" style="width:92%"></div></div><strong style="color:var(--ink-2)">4.6</strong></div>
+              <div class="fac-reflect"><strong>Your reflection &raquo;</strong> "I'll reduce practice cases from 12 to 8 per block and add optional self-paced modules."</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scene 7 -->
+    <div class="scene">
+      <div class="scene-num">
+        <div class="scene-num-circle">7</div>
+        <div class="scene-num-tag">Continuous</div>
+      </div>
+      <div class="scene-card">
+        <div class="scene-body">
+          <div class="scene-text">
+            <div class="persona-pill pp-pd"><span class="pdot"></span>Program Director</div>
+            <h3 class="scene-h">CAPTE 2C, automatically.</h3>
+            <p class="scene-desc">Every at-risk course flows into a CQI action. Each action links a result to the change made and the reassessment outcome a term later. One click exports the full evidence chain for accreditation. No more hand-built spreadsheets.</p>
+            <a class="scene-cta" href="pce-evaluation.html#persona=pd&view=cqi">Open CQI Log <i class="fa-solid fa-arrow-right"></i></a>
+            <div class="scene-meta">
+              <span><i class="fa-light fa-clipboard-list-check" style="margin-right:4px"></i>Result &rarr; Action &rarr; Reassess</span>
+              <span><i class="fa-light fa-arrow-down-to-line" style="margin-right:4px"></i>One-click export</span>
+            </div>
+          </div>
+          <div class="viz indigo-tint">
+            <div class="cqi">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted-fg);margin-bottom:12px">CQI evidence pipeline</div>
+              <div class="cqi-bar">
+                <div class="cqi-seg cqi-open">3</div>
+                <div class="cqi-seg cqi-due">1</div>
+                <div class="cqi-seg cqi-closed">5</div>
+              </div>
+              <div class="cqi-legend">
+                <div class="cqi-legend-item"><div class="cqi-legend-dot" style="background:var(--warn)"></div>3 Open</div>
+                <div class="cqi-legend-item"><div class="cqi-legend-dot" style="background:var(--neg)"></div>1 Due reassessment</div>
+                <div class="cqi-legend-item"><div class="cqi-legend-dot" style="background:var(--pos)"></div>5 Closed (CAPTE-ready)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── All personas grid ── -->
+<section class="personas">
+  <h3>And four read-only personas that consume this data.</h3>
+  <p>Each one drops into the prototype as that role, with the right surface as the landing.</p>
+  <div class="personas-grid">
+    <a class="p-tile" href="pce-evaluation.html#persona=ccc&view=trends">
+      <div class="p-tile-icon" style="background:var(--indigo-bg);color:var(--indigo)"><i class="fa-light fa-chart-line"></i></div>
+      <div class="p-tile-role">Curriculum Committee</div>
+      <div class="p-tile-name">Dr. Reyes</div>
+      <div class="p-tile-task">Multi-cohort trends, competency coverage matrix, cross-course themes.</div>
+    </a>
+    <a class="p-tile" href="pce-evaluation.html#persona=chair&view=roster">
+      <div class="p-tile-icon" style="background:var(--rose-bg);color:var(--rose)"><i class="fa-light fa-id-card"></i></div>
+      <div class="p-tile-role">Department Chair</div>
+      <div class="p-tile-name">Dr. Anders</div>
+      <div class="p-tile-task">Faculty roster + longitudinal dossier for promotion review.</div>
+    </a>
+    <a class="p-tile" href="pce-evaluation.html#persona=dce&view=clinical">
+      <div class="p-tile-icon" style="background:var(--brand-tint);color:var(--brand-dark)"><i class="fa-light fa-stethoscope"></i></div>
+      <div class="p-tile-role">DCE</div>
+      <div class="p-tile-name">Dr. Martinez</div>
+      <div class="p-tile-task">Clinical rotation dashboard + cohort readiness facets.</div>
+    </a>
+    <a class="p-tile" href="pce-evaluation.html#persona=adj&view=digest">
+      <div class="p-tile-icon" style="background:var(--teal-bg);color:var(--teal)"><i class="fa-light fa-envelope"></i></div>
+      <div class="p-tile-role">Adjunct Faculty</div>
+      <div class="p-tile-name">Dr. Khan</div>
+      <div class="p-tile-task">Email-only digest. No app login. Per PRD scope.</div>
+    </a>
+  </div>
+</section>
+
+<div class="footer">
+  <div>
+    <a href="pce-evaluation.html" style="font-weight:600">Open the prototype</a>
+    &nbsp;&middot;&nbsp;
+    <a href="https://github.com/soleyromit/exxat-admin-workspace/tree/main/apps/pce/prototype">Source on GitHub</a>
+  </div>
+  <div>Source: PRD v3.0 + autopilot vision + customer feedback (Apr 2026).</div>
+</div>
+
 </body>
 </html>
