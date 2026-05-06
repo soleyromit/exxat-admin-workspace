@@ -646,29 +646,29 @@ const TERMS = [
 
 /* ════════════════════════════════════════════════════════════════════
    COURSES  (Spring 2026 active term, with grade-lock + completion state)
-   gradeWindow:
-     - 'open'                 : course in session, survey not yet open
-     - 'survey-open'          : 1-2 weeks before term end, survey open
-     - 'survey-closed'        : survey closed, grades not yet submitted
-     - 'grades-submitted'     : grades submitted, faculty results unlocked
+   surveyStatus:
+     - 'scheduled'            : course in session, survey scheduled (not yet open)
+     - 'live'                 : 1-2 weeks before term end, survey collecting
+     - 'pending-review'       : survey closed, admin reviewing comments + grade-lock
+     - 'results-available'    : admin published results (post-moderation), faculty unlocked
    ════════════════════════════════════════════════════════════════════ */
 const COURSES = [
   /* Didactic / Spring 2026 */
-  {id:'c1', code:'PHYS 401', name:'Advanced Pathophysiology', typeId:'ct1', termId:'tm2', credits:4, enrolled:45, instructor:'Dr. Chen',      avg:4.6, prev:4.4, completion:84, gradeWindow:'grades-submitted'},
-  {id:'c2', code:'PHYS 301', name:'Pharmacology I',           typeId:'ct1', termId:'tm2', credits:3, enrolled:45, instructor:'Dr. Rodriguez', avg:4.4, prev:4.5, completion:71, gradeWindow:'survey-open'},
-  {id:'c3', code:'DIDX 401', name:'Clinical Decision Making', typeId:'ct1', termId:'tm2', credits:3, enrolled:45, instructor:'Dr. Brown',     avg:4.3, prev:4.1, completion:78, gradeWindow:'survey-closed'},
-  {id:'c4', code:'DIDX 201', name:'Medical History & Physical', typeId:'ct1', termId:'tm2', credits:3, enrolled:45, instructor:'Dr. Wu',      avg:3.6, prev:4.2, completion:78, gradeWindow:'grades-submitted'},
-  {id:'c5', code:'PHYS 402', name:'Advanced Clinical Medicine', typeId:'ct1', termId:'tm2', credits:3, enrolled:45, instructor:'Dr. Patel',  avg:4.0, prev:3.8, completion:65, gradeWindow:'survey-open'},
-  {id:'c6', code:'DIDX 301', name:'Evidence-Based Practice',   typeId:'ct1', termId:'tm2', credits:2, enrolled:45, instructor:'Dr. Brown',   avg:3.8, prev:3.9, completion:58, gradeWindow:'survey-open'},
-  {id:'c7', code:'PHYS 201', name:'Anatomy & Physiology II',   typeId:'ct1', termId:'tm2', credits:4, enrolled:45, instructor:'Dr. Lee',     avg:3.5, prev:3.7, completion:71, gradeWindow:'grades-submitted'},
+  {id:'c1', code:'PHYS 401', name:'Advanced Pathophysiology', typeId:'ct1', termId:'tm2', credits:4, enrolled:45, instructor:'Dr. Chen',      avg:4.6, prev:4.4, completion:84, surveyStatus:'results-available'},
+  {id:'c2', code:'PHYS 301', name:'Pharmacology I',           typeId:'ct1', termId:'tm2', credits:3, enrolled:45, instructor:'Dr. Rodriguez', avg:4.4, prev:4.5, completion:71, surveyStatus:'live'},
+  {id:'c3', code:'DIDX 401', name:'Clinical Decision Making', typeId:'ct1', termId:'tm2', credits:3, enrolled:45, instructor:'Dr. Brown',     avg:4.3, prev:4.1, completion:78, surveyStatus:'pending-review'},
+  {id:'c4', code:'DIDX 201', name:'Medical History & Physical', typeId:'ct1', termId:'tm2', credits:3, enrolled:45, instructor:'Dr. Wu',      avg:3.6, prev:4.2, completion:78, surveyStatus:'pending-review', gradesPosted:true},
+  {id:'c5', code:'PHYS 402', name:'Advanced Clinical Medicine', typeId:'ct1', termId:'tm2', credits:3, enrolled:45, instructor:'Dr. Patel',  avg:4.0, prev:3.8, completion:65, surveyStatus:'live'},
+  {id:'c6', code:'DIDX 301', name:'Evidence-Based Practice',   typeId:'ct1', termId:'tm2', credits:2, enrolled:45, instructor:'Dr. Brown',   avg:3.8, prev:3.9, completion:58, surveyStatus:'live'},
+  {id:'c7', code:'PHYS 201', name:'Anatomy & Physiology II',   typeId:'ct1', termId:'tm2', credits:4, enrolled:45, instructor:'Dr. Lee',     avg:3.5, prev:3.7, completion:71, surveyStatus:'pending-review', gradesPosted:false},
   /* Clinical / Spring 2026 */
-  {id:'c9',  code:'CLIN 302', name:'Clinical Practicum III',     typeId:'ct2', termId:'tm2', credits:5, enrolled:45, instructor:'Dr. Martinez', avg:4.7, prev:4.5, completion:80, gradeWindow:'grades-submitted'},
-  {id:'c10', code:'CLIN 401', name:'Internal Medicine Rotation', typeId:'ct2', termId:'tm2', credits:6, enrolled:45, instructor:'Dr. Johnson',  avg:4.2, prev:4.1, completion:67, gradeWindow:'survey-open'},
-  {id:'c14', code:'CLIN 441', name:'Surgery Rotation',           typeId:'ct2', termId:'tm2', credits:6, enrolled:45, instructor:'Dr. Wilson',   avg:3.5, prev:3.9, completion:73, gradeWindow:'grades-submitted'},
+  {id:'c9',  code:'CLIN 302', name:'Clinical Practicum III',     typeId:'ct2', termId:'tm2', credits:5, enrolled:45, instructor:'Dr. Martinez', avg:4.7, prev:4.5, completion:80, surveyStatus:'results-available'},
+  {id:'c10', code:'CLIN 401', name:'Internal Medicine Rotation', typeId:'ct2', termId:'tm2', credits:6, enrolled:45, instructor:'Dr. Johnson',  avg:4.2, prev:4.1, completion:67, surveyStatus:'live'},
+  {id:'c14', code:'CLIN 441', name:'Surgery Rotation',           typeId:'ct2', termId:'tm2', credits:6, enrolled:45, instructor:'Dr. Wilson',   avg:3.5, prev:3.9, completion:73, surveyStatus:'results-available'},
   /* Lab / Spring 2026 */
-  {id:'c15', code:'LAB 301',  name:'Clinical Skills Lab III',    typeId:'ct3', termId:'tm2', credits:2, enrolled:45, instructor:'Dr. Kim',      avg:4.5, prev:4.4, completion:79, gradeWindow:'survey-open'},
+  {id:'c15', code:'LAB 301',  name:'Clinical Skills Lab III',    typeId:'ct3', termId:'tm2', credits:2, enrolled:45, instructor:'Dr. Kim',      avg:4.5, prev:4.4, completion:79, surveyStatus:'live'},
   /* Small cohort for min-N=5 demo */
-  {id:'c16', code:'SEM 401',  name:'Bioethics Seminar (Cohort B)', typeId:'ct1', termId:'tm2', credits:1, enrolled:8, instructor:'Dr. Khan',   avg:null, prev:null, completion:38, gradeWindow:'grades-submitted', minNFail:true},
+  {id:'c16', code:'SEM 401',  name:'Bioethics Seminar (Cohort B)', typeId:'ct1', termId:'tm2', credits:1, enrolled:8, instructor:'Dr. Khan',   avg:null, prev:null, completion:38, surveyStatus:'results-available', minNFail:true},
 ];
 
 /* ════════════════════════════════════════════════════════════════════
@@ -925,6 +925,32 @@ const ADJUNCT_DIGEST = {
   keyComment:'Dr. Khan made what could have been an abstract topic feel deeply practical. The case discussions were the highlight.',
   sentimentSummary:'Strongly positive (87% positive sentiment across 8 open-text responses)',
 };
+
+/* ════════════════════════════════════════════════════════════════════
+   SURVEY OPEN-TEXT COMMENTS (per course)
+   Used by the comment moderation flow (Pending Review status). Admin
+   reviews each comment, hides any that are unprofessional or out-of-scope,
+   then "Publish Results" releases the visible set to faculty.
+   Per VB: scores are never modifiable; comments are hidden, never edited.
+   ════════════════════════════════════════════════════════════════════ */
+const SURVEY_COMMENTS = {
+  c4:[ /* DIDX 201, sharp drop 4.2 → 3.6, Dr. Wu */
+    {id:'cm1', text:'Dr. Wu was incredibly patient and adapted to my learning pace. The Saturday office hours saved me twice.', sentiment:'positive', hidden:false, sectionRef:'tier-3'},
+    {id:'cm2', text:'The history-taking framework taught here feels stuck in 2018. Could we update to align with the 2024 ACP guidelines?', sentiment:'constructive', hidden:false, sectionRef:'course'},
+    {id:'cm3', text:'Way too much rote memorization. Half of what we did will not show up clinically.', sentiment:'concern', hidden:false, sectionRef:'course'},
+    {id:'cm4', text:'Honestly, Dr. Wu just needs to retire. The course is unsalvageable.', sentiment:'unprofessional', hidden:false, sectionRef:'tier-3', flagReason:'Personal attack on instructor'},
+    {id:'cm5', text:'I appreciate the detailed SOAP-note feedback. Got better at structuring assessment in 6 weeks.', sentiment:'positive', hidden:false, sectionRef:'tier-3'},
+    {id:'cm6', text:'The pacing in weeks 4-5 was rushed. We needed two weeks for cardiovascular instead of one.', sentiment:'constructive', hidden:false, sectionRef:'course'},
+    {id:'cm7', text:'Dr. Wu yelled at a student for asking a basic question on day 1. Not the vibe.', sentiment:'concern', hidden:false, sectionRef:'tier-3', flagReason:'Specific incident, factual claim, keep visible per FERPA review with note to faculty'},
+  ],
+  c7:[ /* PHYS 201, repeat decline, Dr. Lee: only show 2 since grades not yet posted */
+    {id:'cm10', text:'Anatomy lab was the highlight, but the physiology lectures need to slow down.', sentiment:'constructive', hidden:false, sectionRef:'course'},
+    {id:'cm11', text:'I learned more from YouTube than I did from this course. That is not on Dr. Lee, just a fact.', sentiment:'concern', hidden:false, sectionRef:'tier-3'},
+  ],
+};
+/* Helper for the moderation UI */
+function commentsFor(cid){ return SURVEY_COMMENTS[cid] || []; }
+function visibleCommentsFor(cid){ return commentsFor(cid).filter(c=>!c.hidden); }
 
 /* ════════════════════════════════════════════════════════════════════
    AI THEMES per course (used in faculty self-view)
@@ -1430,22 +1456,22 @@ function responseCount(courseId){
   if(!c) return 0;
   return Math.round(c.enrolled * c.completion / 100);
 }
-function gradeWindowLabel(gw){
+function surveyStatusLabel(st){
   return ({
-    'open':'Course in session',
-    'survey-open':'Survey open',
-    'survey-closed':'Survey closed, grades pending',
-    'grades-submitted':'Grades submitted, results released',
-  })[gw] || gw;
+    'scheduled':'Scheduled',
+    'live':'Live, collecting',
+    'pending-review':'Pending admin review',
+    'results-available':'Results available',
+  })[st] || st;
 }
-function gradeWindowBadge(gw){
+function surveyStatusBadge(st){
   const map = {
-    'open':'badge-muted',
-    'survey-open':'badge-info',
-    'survey-closed':'badge-warn',
-    'grades-submitted':'badge-success',
+    'scheduled':'badge-muted',
+    'live':'badge-info',
+    'pending-review':'badge-warn',
+    'results-available':'badge-success',
   };
-  return map[gw] || 'badge-default';
+  return map[st] || 'badge-default';
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -1837,7 +1863,8 @@ function renderPdSetupAdmin(){
 /* ── PD Dashboard ───────────────────────────────────────────────── */
 function renderPdDashboard(){
   const allTermCourses = COURSES.filter(c=>c.termId===state.termId);
-  const released = allTermCourses.filter(c=>c.gradeWindow==='grades-submitted' && c.avg!==null && !c.minNFail);
+  const released = allTermCourses.filter(c=>c.surveyStatus==='results-available' && c.avg!==null && !c.minNFail);
+  const pendingReviewCourses = allTermCourses.filter(c=>c.surveyStatus==='pending-review');
   const avgScore = released.length ? (released.reduce((a,c)=>a+c.avg,0)/released.length).toFixed(2) : '--';
   /* At-risk = released, score below 3.7, AND no CQI action yet for this course this term.
      Title says "no CQI action yet" so the filter must enforce that. */
@@ -1912,7 +1939,7 @@ function renderPdDashboard(){
     <div class="kpi-grid">
       <div class="kpi"><div class="kpi-label">Program avg score</div><div class="kpi-val">${avgScore}<small>/ 5.0</small></div><div class="kpi-meta">${released.length} of ${allTermCourses.length} courses released</div></div>
       <div class="kpi"><div class="kpi-label">At-risk courses</div><div class="kpi-val">${atRisk.length}</div><div class="kpi-meta"><i class="fa-light fa-triangle-exclamation"></i>Below 3.7 average</div></div>
-      <div class="kpi"><div class="kpi-label">Open CQI actions</div><div class="kpi-val">${openCqi+dueReassess}<small>${dueReassess} due</small></div><div class="kpi-meta">${closedCqi} closed this year</div></div>
+      <div class="kpi"><div class="kpi-label">Pending review</div><div class="kpi-val">${pendingReviewCourses.length}</div><div class="kpi-meta"><i class="fa-light fa-shield-halved"></i>Surveys awaiting moderation</div></div>
       <div class="kpi" style="display:flex;align-items:center;gap:14px;padding:12px 16px"><div style="flex:1;min-width:0"><div class="kpi-label">Reflection rate</div><div class="kpi-val">${reflectionRate}%</div><div class="kpi-meta">${REFLECTIONS.length} of ${released.length} faculty</div></div>${chartCompletionDonut(reflectionRate, 'reflected')}</div>
     </div>
 
@@ -1965,6 +1992,29 @@ function renderPdDashboard(){
           </div>
         </div>
         <div>${atRiskHtml}</div>
+      </div>
+
+      <div class="card card-flush" style="${pendingReviewCourses.length?'border-color:color-mix(in oklch, var(--c-amber) 35%, white)':''}">
+        <div class="card-section">
+          <div class="card-title"><i class="fa-light fa-shield-halved" style="color:var(--c-amber-fg)"></i>Pending admin review</div>
+          <div class="card-sub">Surveys closed, awaiting comment moderation + grade-lock confirmation before results release to faculty.</div>
+        </div>
+        ${pendingReviewCourses.length ? pendingReviewCourses.map(c=>{
+          const cms = commentsFor(c.id);
+          const flagged = cms.filter(x=>x.flagReason).length;
+          const gradeReady = c.gradesPosted;
+          return `<div onclick="openSurveyDetail('${c.id}','pd')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600">${c.code}: ${escapeHtml(c.name)}</div>
+              <div style="font-size:11px;color:var(--muted-fg);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap">
+                <span><i class="fa-light fa-comments"></i> ${cms.length} comment${cms.length===1?'':'s'} ${flagged?'<strong style="color:var(--c-amber-fg)">('+flagged+' flagged)</strong>':''}</span>
+                <span><i class="fa-light fa-${gradeReady?'check':'lock'}" style="color:${gradeReady?'var(--c-green-fg)':'var(--c-amber-fg)'}"></i> Grades ${gradeReady?'posted':'pending'}</span>
+                <span><i class="fa-light fa-user"></i> ${escapeHtml(c.instructor)}</span>
+              </div>
+            </div>
+            <button class="btn btn-${gradeReady?'primary':'amber-outline'} btn-xs" onclick="event.stopPropagation();openSurveyDetail('${c.id}','pd')"><i class="fa-light fa-${gradeReady?'paper-plane':'shield-halved'}"></i>${gradeReady?'Review &amp; publish':'Moderate'}</button>
+          </div>`;
+        }).join('') : `<div style="padding:32px;text-align:center"><div style="font-size:24px;color:var(--c-green-fg);margin-bottom:8px"><i class="fa-light fa-circle-check"></i></div><div style="font-size:13px;color:var(--c-green-fg);font-weight:600">No surveys awaiting review</div><div style="font-size:11px;color:var(--muted-fg);margin-top:6px">All closed surveys have been moderated and published to faculty.</div></div>`}
       </div>
 
       <div class="card card-flush">
@@ -2108,9 +2158,9 @@ function renderCoord(){
 function renderCoordAutopilot(){
   const term = termOf(state.termId);
   const surveys = COURSES.filter(c=>c.termId===state.termId);
-  const collecting = surveys.filter(s=>s.gradeWindow==='survey-open');
-  const closed = surveys.filter(s=>['survey-closed','grades-submitted'].includes(s.gradeWindow));
-  const upcoming = surveys.filter(s=>s.gradeWindow==='open');
+  const collecting = surveys.filter(s=>s.surveyStatus==='live');
+  const closed = surveys.filter(s=>['pending-review','results-available'].includes(s.surveyStatus));
+  const upcoming = surveys.filter(s=>s.surveyStatus==='scheduled');
   const untemplated = COURSE_TYPES.filter(t=>!TEMPLATES.find(tp=>tp.boundCourseTypes.includes(t.id)));
   const lowComp = collecting.filter(c=>c.completion<55);
 
@@ -2226,19 +2276,19 @@ function renderCoordAutopilot(){
       /* Build lifecycle funnel for THIS term */
       const all = COURSES.filter(c=>c.termId===state.termId);
       const tmplBound = all.filter(c=>templateForCourse(c)).length;
-      const collectingN = all.filter(c=>c.gradeWindow==='survey-open').length;
-      const closedN = all.filter(c=>['survey-closed','grades-submitted'].includes(c.gradeWindow)).length;
-      const releasedN = all.filter(c=>c.gradeWindow==='grades-submitted').length;
+      const collectingN = all.filter(c=>c.surveyStatus==='live').length;
+      const closedN = all.filter(c=>['pending-review','results-available'].includes(c.surveyStatus)).length;
+      const releasedN = all.filter(c=>c.surveyStatus==='results-available').length;
       const responded = all.reduce((a,c)=>a+responseCount(c.id),0);
       const enrolled = all.reduce((a,c)=>a+c.enrolled,0);
       const overall = enrolled? Math.round(responded/enrolled*100):0;
       /* 14-day timeline items */
       const today = new Date('2026-05-06');
-      const timelineItems = all.filter(c=>['open','survey-open'].includes(c.gradeWindow)).map(c=>{
+      const timelineItems = all.filter(c=>['scheduled','live'].includes(c.surveyStatus)).map(c=>{
         const term = termOf(c.termId);
         const open = new Date(addDaysIso(term.endDate, -14));
         const dayOffset = Math.max(0, Math.min(14, Math.ceil((open-today)/86400000)));
-        const isOpen = c.gradeWindow==='survey-open';
+        const isOpen = c.surveyStatus==='live';
         return {courseId:c.id, code:c.code, dayOffset:isOpen?0:dayOffset, label:isOpen?`Collecting (${c.completion}%)`:'Opens', color: isOpen?'oklch(0.42 0.13 184)':'oklch(0.50 0.14 286.1)'};
       }).sort((a,b)=>a.dayOffset-b.dayOffset).slice(0,8);
 
@@ -2300,7 +2350,7 @@ function openTriggerPlanModal(){
   const rows = eligible.map(c=>{
     const t = typeOf(c.typeId);
     const tmpl = templateForCourse(c);
-    const status = c.gradeWindow==='survey-open'?'<span class="badge badge-success">Collecting</span>':c.gradeWindow==='grades-submitted'?'<span class="badge badge-muted">Released</span>':c.gradeWindow==='survey-closed'?'<span class="badge badge-warn">Awaiting grades</span>':'<span class="badge badge-info">Scheduled</span>';
+    const status = c.surveyStatus==='live'?'<span class="badge badge-success">Collecting</span>':c.surveyStatus==='results-available'?'<span class="badge badge-muted">Released</span>':c.surveyStatus==='pending-review'?'<span class="badge badge-warn">Awaiting grades</span>':'<span class="badge badge-info">Scheduled</span>';
     return `<tr><td><strong>${c.code}</strong><div style="font-size:11px;color:var(--muted-fg);margin-top:2px">${escapeHtml(c.name)}</div></td><td><span class="badge ${t.badge}">${t.name}</span></td><td>${escapeHtml(tmpl.name)} <span class="badge badge-version">v${tmpl.version}</span></td><td>${shortDate(addDaysIso(term.endDate,-14))}</td><td>${shortDate(addDaysIso(term.endDate,7))}</td><td>${status}</td></tr>`;
   }).join('');
   const skippedHtml = skipped.length ? `<div style="margin-top:18px"><div class="section-label">Skipped: no template bound</div><table class="mtbl">${skipped.map(c=>`<tr><td><strong>${c.code}</strong>: ${escapeHtml(c.name)}</td><td><span class="badge ${typeOf(c.typeId).badge}">${typeOf(c.typeId).name}</span></td></tr>`).join('')}</table><button class="btn btn-link" style="margin-top:8px" onclick="closeModal();setPersona('pd');state.pdView='setup';state.pdSetupTab='types';renderAll()">Open Setup → Course Types to fix</button></div>` : '';
@@ -2353,11 +2403,11 @@ function renderSurveyDetail(){
   /* Lifecycle timeline */
   const events = [
     {when:openIso+' 09:00', label:'Survey created + opened', detail:`Invitation emailed to ${c.enrolled} students via anonymous magic-token link.`, icon:'fa-paper-plane', state:'done', emailKind:'invitation'},
-    {when:addDaysIso(openIso,3)+' 09:00', label:'Day 3 reminder fired', detail:`Sent only to non-completers. ${Math.max(0,c.enrolled-Math.round(c.enrolled*Math.min(c.completion+25,75)/100))} students received it.`, icon:'fa-bell', state:c.gradeWindow==='open'?'pending':'done', emailKind:'reminder3'},
-    {when:addDaysIso(openIso,7)+' 09:00', label:'Day 7 reminder fired', detail:`References prior cohort feedback note. ${Math.max(0,c.enrolled-Math.round(c.enrolled*Math.min(c.completion+10,85)/100))} students received it.`, icon:'fa-bell', state:c.gradeWindow==='open'||(todayIso<addDaysIso(openIso,7))?'pending':'done', emailKind:'reminder7'},
+    {when:addDaysIso(openIso,3)+' 09:00', label:'Day 3 reminder fired', detail:`Sent only to non-completers. ${Math.max(0,c.enrolled-Math.round(c.enrolled*Math.min(c.completion+25,75)/100))} students received it.`, icon:'fa-bell', state:c.surveyStatus==='scheduled'?'pending':'done', emailKind:'reminder3'},
+    {when:addDaysIso(openIso,7)+' 09:00', label:'Day 7 reminder fired', detail:`References prior cohort feedback note. ${Math.max(0,c.enrolled-Math.round(c.enrolled*Math.min(c.completion+10,85)/100))} students received it.`, icon:'fa-bell', state:c.surveyStatus==='scheduled'||(todayIso<addDaysIso(openIso,7))?'pending':'done', emailKind:'reminder7'},
     ...(c.completion<50?[{when:addDaysIso(openIso,10)+' 09:00', label:'Day 10 alert', detail:`Completion at ${c.completion}% with survey still open. Coordinator notified.`, icon:'fa-triangle-exclamation', state:'done', alert:true}]:[]),
-    {when:closeIso+' 17:00', label:'Survey closed', detail:`${responded} of ${c.enrolled} students responded (${c.completion}%).`, icon:'fa-lock', state:['survey-closed','grades-submitted'].includes(c.gradeWindow)?'done':'pending'},
-    {when:addDaysIso(closeIso,2)+' 10:30', label:'Grades submitted to SIS', detail:'Grade-lock signal received. Faculty results unlocked.', icon:'fa-unlock', state:c.gradeWindow==='grades-submitted'?'done':'pending'},
+    {when:closeIso+' 17:00', label:'Survey closed', detail:`${responded} of ${c.enrolled} students responded (${c.completion}%).`, icon:'fa-lock', state:['pending-review','results-available'].includes(c.surveyStatus)?'done':'pending'},
+    {when:addDaysIso(closeIso,2)+' 10:30', label:'Grades submitted to SIS', detail:'Grade-lock signal received. Faculty results unlocked.', icon:'fa-unlock', state:c.surveyStatus==='results-available'?'done':'pending'},
     ...(reflection?[{when:reflection.savedAt.slice(0,10)+' 14:00', label:'Faculty reflection saved', detail:`${escapeHtml(c.instructor)} completed the 3-question structured reflection.`, icon:'fa-pen-to-square', state:'done'}]:[]),
     ...(note?[{when:note.postedAt+' 14:00', label:'Next-cohort note posted', detail:`Will appear at the top of next ${c.code} survey.`, icon:'fa-comment-dots', state:'done'}]:[]),
     ...(cqi?[{when:cqi.createdAt+' 11:00', label:'CQI action created', detail:escapeHtml(cqi.action.slice(0,120))+'...', icon:'fa-clipboard-list-check', state:'done'}]:[]),
@@ -2389,7 +2439,7 @@ function renderSurveyDetail(){
       <div style="display:flex;justify-content:space-between;gap:14px;margin-bottom:7px;align-items:center"><span style="font-size:12px;flex:1">${escapeHtml(q.text)}</span><strong style="font-size:13px">${q.avg.toFixed(2)}</strong><i class="fa-light fa-chevron-right" style="color:var(--muted-fg);font-size:11px"></i></div>
       <div style="display:flex;gap:6px;align-items:center;font-size:10px;color:var(--muted-fg)">${[5,4,3,2,1].map(s=>{const ct=q.dist[s-1];const w=max?Math.round(ct/max*100):0;const fill=s===5?'var(--c-green)':s===4?'oklch(0.52 0.13 130)':s===3?'var(--c-amber)':s===2?'oklch(0.62 0.18 40)':'var(--destructive)';return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><div style="width:100%;height:14px;background:var(--muted);border-radius:3px;overflow:hidden;display:flex;align-items:flex-end"><div style="width:100%;background:${fill};height:${w}%;border-radius:3px 3px 0 0"></div></div><span>${s}: ${ct}</span></div>`}).join('')}</div>
     </div>`;
-  }).join('') : `<div style="padding:24px;text-align:center;color:var(--muted-fg);font-size:12px"><div style="font-size:24px;margin-bottom:8px;color:var(--border-strong)"><i class="fa-light fa-square-poll-vertical"></i></div>Per-question distribution unlocks after grades are submitted to the SIS. ${c.gradeWindow==='survey-open'?'Survey is still open, '+responseCount(c.id)+' of '+c.enrolled+' responses in.':c.gradeWindow==='survey-closed'?'Awaiting grade submission to release results.':'No data yet.'}</div>`;
+  }).join('') : `<div style="padding:24px;text-align:center;color:var(--muted-fg);font-size:12px"><div style="font-size:24px;margin-bottom:8px;color:var(--border-strong)"><i class="fa-light fa-square-poll-vertical"></i></div>Per-question distribution unlocks after grades are submitted to the SIS. ${c.surveyStatus==='live'?'Survey is still open, '+responseCount(c.id)+' of '+c.enrolled+' responses in.':c.surveyStatus==='pending-review'?'Awaiting grade submission to release results.':'No data yet.'}</div>`;
 
   /* Themes preview */
   const themesHtml = themes.length ? themes.slice(0,3).map((t,ti)=>{
@@ -2403,7 +2453,7 @@ function renderSurveyDetail(){
         <a class="btn btn-link" onclick="closeSurveyDetail()"><i class="fa-light fa-arrow-left"></i>Back</a>
         <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
           <span class="badge ${t.badge}" style="font-size:12px;padding:4px 10px"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${t.color};margin-right:4px"></span>${t.name}</span>
-          <span class="badge ${gradeWindowBadge(c.gradeWindow)}">${gradeWindowLabel(c.gradeWindow)}</span>
+          <span class="badge ${surveyStatusBadge(c.surveyStatus)}">${surveyStatusLabel(c.surveyStatus)}</span>
           <span class="badge badge-version">${tmpl.name} v${tmpl.version}</span>
           ${c.disabled?'<span class="badge badge-amber"><i class="fa-light fa-ban"></i>Disabled</span>':''}
         </div>
@@ -2411,11 +2461,14 @@ function renderSurveyDetail(){
         <div style="font-size:13px;color:var(--muted-fg);margin-top:4px"><i class="fa-light fa-user" style="margin-right:4px"></i>${escapeHtml(c.instructor)}  ·  <i class="fa-light fa-graduation-cap" style="margin-right:4px"></i>${term.name}  ·  <i class="fa-light fa-users" style="margin-right:4px"></i>${c.enrolled} enrolled</div>
       </div>
       <div class="page-actions">
-        ${c.gradeWindow==='survey-open'?`<button class="btn btn-outline btn-sm" onclick="sendReminderManual('${c.id}')"><i class="fa-light fa-bell"></i>Send reminder</button>`:''}
+        ${c.surveyStatus==='live'?`<button class="btn btn-outline btn-sm" onclick="sendReminderManual('${c.id}')"><i class="fa-light fa-bell"></i>Send reminder</button>`:''}
         <button class="btn btn-outline btn-sm" onclick="previewEmailModal('invitation','${c.id}')"><i class="fa-light fa-envelope"></i>Preview emails</button>
-        ${c.gradeWindow==='survey-closed'?`<button class="btn btn-primary btn-sm" onclick="markGradesSubmitted('${c.id}')"><i class="fa-light fa-unlock"></i>Confirm grades submitted</button>`:''}
+        ${c.surveyStatus==='pending-review'&&!c.gradesPosted?`<button class="btn btn-outline btn-sm" onclick="markGradesSubmitted('${c.id}')"><i class="fa-light fa-unlock"></i>Mark grades posted to SIS</button>`:''}
+        ${c.surveyStatus==='pending-review'&&c.gradesPosted?`<button class="btn btn-primary btn-sm" onclick="publishResults('${c.id}')"><i class="fa-light fa-paper-plane"></i>Publish results to faculty</button>`:''}
       </div>
     </div>
+
+    ${c.surveyStatus==='pending-review' ? renderModerationCard(c) : ''}
 
     <div class="kpi-grid">
       <div class="kpi"><div class="kpi-label">Completion</div><div class="kpi-val">${c.completion}%<small>${responded}/${c.enrolled}</small></div><div class="kpi-meta">${c.completion>=65?'<i class="fa-light fa-check"></i>Above ARC-PA 65%':'<i class="fa-light fa-triangle-exclamation"></i>Below 65% target'}</div></div>
@@ -2752,17 +2805,17 @@ function addDaysIso(iso, n){ const d=new Date(iso+'T12:00:00'); d.setDate(d.getD
 
 /* ── Live Monitor ────────────────────────────────────────────────── */
 function renderCoordMonitor(){
-  const surveys = COURSES.filter(c=>c.termId===state.termId && ['survey-open','survey-closed','grades-submitted'].includes(c.gradeWindow));
+  const surveys = COURSES.filter(c=>c.termId===state.termId && ['live','pending-review','results-available'].includes(c.surveyStatus));
   const term = termOf(state.termId);
   const closeDate = addDaysIso(term.endDate, 7);
   const daysToClose = Math.max(0, Math.ceil(((new Date(closeDate)) - (new Date('2026-04-29')))/86400000));
   const totalEnrolled = surveys.reduce((a,c)=>a+c.enrolled,0);
   const totalResponded = surveys.reduce((a,c)=>a+responseCount(c.id),0);
   const overallPct = totalEnrolled ? Math.round(totalResponded/totalEnrolled*100) : 0;
-  const lowComp = surveys.filter(c=>c.gradeWindow==='survey-open' && c.completion<50);
+  const lowComp = surveys.filter(c=>c.surveyStatus==='live' && c.completion<50);
   const rows = surveys.map(c=>{
     const responded = responseCount(c.id);
-    const status = c.gradeWindow==='survey-open'?'<span class="badge badge-info"><i class="fa-light fa-spinner"></i>Open</span>':c.gradeWindow==='survey-closed'?'<span class="badge badge-warn"><i class="fa-light fa-hourglass"></i>Awaiting grades</span>':'<span class="badge badge-success"><i class="fa-light fa-check"></i>Released</span>';
+    const status = c.surveyStatus==='live'?'<span class="badge badge-info"><i class="fa-light fa-spinner"></i>Open</span>':c.surveyStatus==='pending-review'?'<span class="badge badge-warn"><i class="fa-light fa-hourglass"></i>Awaiting grades</span>':'<span class="badge badge-success"><i class="fa-light fa-check"></i>Released</span>';
     const barCls = c.completion<40?'danger':c.completion<55?'warn':'';
     return `<tr class="mon-tr" style="cursor:pointer" onclick="openSurveyDetail('${c.id}','coord')">
       <td class="mon-td"><strong>${c.code}</strong><div style="font-size:11px;color:var(--muted-fg)">${escapeHtml(c.name)}</div></td>
@@ -2770,7 +2823,7 @@ function renderCoordMonitor(){
       <td class="mon-td">${status}</td>
       <td class="mon-td"><div class="mon-bar"><div class="mon-bar-track"><div class="mon-bar-fill ${barCls}" style="width:${c.completion}%"></div></div><span class="mon-bar-num">${c.completion}%</span></div><div style="font-size:11px;color:var(--muted-fg)">${responded}/${c.enrolled}</div></td>
       <td class="mon-td"><div style="font-size:12px">${shortDate(closeDate)}</div><div style="font-size:11px;color:var(--muted-fg)">${daysToClose}d remaining</div></td>
-      <td class="mon-td" onclick="event.stopPropagation()"><div style="display:flex;gap:5px">${c.gradeWindow==='survey-open'?`<button class="btn btn-outline btn-xs" onclick="sendReminderManual('${c.id}')"><i class="fa-light fa-bell"></i>Remind</button>`:''}${c.gradeWindow==='survey-closed'?`<button class="btn btn-primary btn-xs" onclick="markGradesSubmitted('${c.id}')"><i class="fa-light fa-unlock"></i>Confirm grades</button>`:''}</div></td>
+      <td class="mon-td" onclick="event.stopPropagation()"><div style="display:flex;gap:5px">${c.surveyStatus==='live'?`<button class="btn btn-outline btn-xs" onclick="sendReminderManual('${c.id}')"><i class="fa-light fa-bell"></i>Remind</button>`:''}${c.surveyStatus==='pending-review'?`<button class="btn btn-primary btn-xs" onclick="markGradesSubmitted('${c.id}')"><i class="fa-light fa-unlock"></i>Confirm grades</button>`:''}</div></td>
     </tr>`;
   }).join('');
 
@@ -2837,7 +2890,7 @@ function renderCoordAudit(){
     const openIso = addDaysIso(term.endDate,-14);
     events.push({when:openIso+'T09:00', courseCode:c.code, type:'opened', text:`Survey opened automatically (14 days before term end). Invitation emails sent to ${c.enrolled} students.`});
     /* FR-09 reminder cadence: Day 3, Day 7, Day 10 */
-    if(['survey-open','survey-closed','grades-submitted'].includes(c.gradeWindow)){
+    if(['live','pending-review','results-available'].includes(c.surveyStatus)){
       const non3 = c.enrolled - Math.round(c.enrolled * Math.min(c.completion+25,75)/100);
       events.push({when:addDaysIso(openIso,3)+'T09:00', courseCode:c.code, type:'reminder', text:`Day 3 personalized reminder sent to ${Math.max(0,non3)} non-completers (FR-09).`});
       const non7 = c.enrolled - Math.round(c.enrolled * Math.min(c.completion+10,85)/100);
@@ -2846,10 +2899,10 @@ function renderCoordAudit(){
         events.push({when:addDaysIso(openIso,10)+'T09:00', courseCode:c.code, type:'alert', text:`Day 10 alert: completion at ${c.completion}%, below 50% threshold. Coordinator notified.`});
       }
     }
-    if(['survey-closed','grades-submitted'].includes(c.gradeWindow)){
+    if(['pending-review','results-available'].includes(c.surveyStatus)){
       events.push({when:addDaysIso(term.endDate,7)+'T17:00', courseCode:c.code, type:'closed', text:`Survey closed automatically. ${responseCount(c.id)} of ${c.enrolled} students responded.`});
     }
-    if(c.gradeWindow==='grades-submitted'){
+    if(c.surveyStatus==='results-available'){
       events.push({when:addDaysIso(term.endDate,9)+'T10:30', courseCode:c.code, type:'grades', text:`Final grades submitted by faculty. Faculty results unlocked.`});
     }
   });
@@ -2924,7 +2977,7 @@ function renderFacResults(){
   const courseList = myCourses.map(c=>{
     const sel = state.facCourseId===c.id ? 'background:var(--brand-tint);border-left:3px solid var(--brand-color);padding-left:11px':'';
     let statusBadge = '';
-    if(c.gradeWindow!=='grades-submitted'){
+    if(c.surveyStatus!=='results-available'){
       statusBadge = '<span class="badge badge-locked"><i class="fa-light fa-lock"></i>Locked</span>';
     } else if(c.minNFail || responseCount(c.id)<5){
       statusBadge = '<span class="badge badge-warn"><i class="fa-light fa-eye-slash"></i>Suppressed</span>';
@@ -2945,13 +2998,13 @@ function renderFacResults(){
   state.facCourseId = c.id;
 
   let detailHtml = '';
-  if(c.gradeWindow !== 'grades-submitted'){
+  if(c.surveyStatus !== 'results-available'){
     /* Grade-lock gate (FR-06) */
     detailHtml = `
       <div class="fac-locked">
         <div class="fac-locked-icon"><i class="fa-light fa-lock-keyhole"></i></div>
         <div class="fac-locked-title">Results unlock after you submit final grades</div>
-        <div class="fac-locked-msg">${gradeWindowLabel(c.gradeWindow)} for ${c.code}. This timing protects you and your students from grade-related bias. Once your grades are recorded in the SIS, your evaluation results unlock automatically.</div>
+        <div class="fac-locked-msg">${surveyStatusLabel(c.surveyStatus)} for ${c.code}. This timing protects you and your students from grade-related bias. Once your grades are recorded in the SIS, your evaluation results unlock automatically.</div>
         <div style="margin-top:18px;font-size:12px;color:var(--c-amber-fg);background:white;border-radius:var(--radius-sm);padding:10px 14px;display:inline-flex;align-items:center;gap:8px"><i class="fa-light fa-circle-info"></i>Use the demo controls (bottom-right) to simulate "grades submitted" for ${c.code}.</div>
       </div>
     `;
@@ -3569,7 +3622,7 @@ function renderCqiLog(){
 }
 
 function openCqiCreate(seedCourseId){
-  const releasedCourses = COURSES.filter(c=>c.gradeWindow==='grades-submitted' && c.avg!==null);
+  const releasedCourses = COURSES.filter(c=>c.surveyStatus==='results-available' && c.avg!==null);
   const opts = releasedCourses.map(c=>`<option value="${c.id}" ${seedCourseId===c.id?'selected':''}>${c.code}: ${c.name} (avg ${c.avg.toFixed(1)})</option>`).join('');
   const futureTerms = TERMS.filter(t=>t.status!=='closed').map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
   const seed = seedCourseId ? courseOf(seedCourseId) : null;
@@ -3707,7 +3760,7 @@ function exportAccreditationReport(){
 
 /* ── All Results (PD aggregate view) ─────────────────────────────── */
 function renderAllResults(){
-  const released = COURSES.filter(c=>c.termId===state.termId && c.gradeWindow==='grades-submitted' && c.avg!==null && !c.minNFail);
+  const released = COURSES.filter(c=>c.termId===state.termId && c.surveyStatus==='results-available' && c.avg!==null && !c.minNFail);
   const ranked = [...released].sort((a,b)=>b.avg-a.avg);
   const programAvg = released.length ? (released.reduce((a,c)=>a+c.avg,0)/released.length).toFixed(2) : '-';
 
@@ -3774,10 +3827,10 @@ function renderStudentList(){
   const myCourses = ME_STUDENT.enrolledCourses
     .map(courseOf).filter(Boolean)
     .filter(c=>c.termId===state.termId);
-  const open = myCourses.filter(c=>c.gradeWindow==='survey-open' && !ME_STUDENT.completedSurveys.includes(c.id));
+  const open = myCourses.filter(c=>c.surveyStatus==='live' && !ME_STUDENT.completedSurveys.includes(c.id));
   const done = myCourses.filter(c=>ME_STUDENT.completedSurveys.includes(c.id));
-  const upcoming = myCourses.filter(c=>c.gradeWindow==='open');
-  const closed = myCourses.filter(c=>['survey-closed','grades-submitted'].includes(c.gradeWindow) && !ME_STUDENT.completedSurveys.includes(c.id));
+  const upcoming = myCourses.filter(c=>c.surveyStatus==='scheduled');
+  const closed = myCourses.filter(c=>['pending-review','results-available'].includes(c.surveyStatus) && !ME_STUDENT.completedSurveys.includes(c.id));
 
   const renderItem = c => {
     const tmpl = templateForCourse(c);
@@ -3955,7 +4008,7 @@ function submitSurvey(){
 
 function renderStudentSubmitted(){
   const c = courseOf(state.stuCourseId);
-  const open = ME_STUDENT.enrolledCourses.map(courseOf).filter(c=>c && c.termId===state.termId && c.gradeWindow==='survey-open' && !ME_STUDENT.completedSurveys.includes(c.id));
+  const open = ME_STUDENT.enrolledCourses.map(courseOf).filter(c=>c && c.termId===state.termId && c.surveyStatus==='live' && !ME_STUDENT.completedSurveys.includes(c.id));
   return `
     <div class="phone">
       <div class="phone-notch"></div>
@@ -4038,9 +4091,9 @@ function renderDemoPanel(){
   const courseRows = COURSES.filter(c=>c.termId===state.termId).map(c=>`
     <div style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:11px;border-bottom:1px solid var(--border)">
       <span style="font-weight:600;flex:1">${c.code}</span>
-      <span class="badge ${gradeWindowBadge(c.gradeWindow)}" style="font-size:9px">${c.gradeWindow}</span>
-      ${c.gradeWindow==='survey-closed' ? `<button class="btn btn-xs btn-primary" onclick="markGradesSubmitted('${c.id}')" title="Unlock faculty results">Submit grades</button>` : ''}
-      ${c.gradeWindow==='survey-open' && c.completion < 95 ? `<button class="btn btn-xs btn-outline" onclick="addResponse('${c.id}')" title="Simulate +1 response">+1</button>` : ''}
+      <span class="badge ${surveyStatusBadge(c.surveyStatus)}" style="font-size:9px">${c.surveyStatus}</span>
+      ${c.surveyStatus==='pending-review' ? `<button class="btn btn-xs btn-primary" onclick="markGradesSubmitted('${c.id}')" title="Unlock faculty results">Submit grades</button>` : ''}
+      ${c.surveyStatus==='live' && c.completion < 95 ? `<button class="btn btn-xs btn-outline" onclick="addResponse('${c.id}')" title="Simulate +1 response">+1</button>` : ''}
     </div>
   `).join('');
   panel.innerHTML = `
@@ -4069,6 +4122,8 @@ function renderDemoPanel(){
         <button class="demo-action" onclick="setPersona('fac');state.facView='results';state.facCourseId='c1';renderAll();toggleDemoPanel()" style="margin-top:5px"><i class="fa-light fa-pen-to-square"></i>Faculty: review PHYS 401 results</button>
         <button class="demo-action" onclick="setPersona('fac');state.facView='results';state.facCourseId='c16';renderAll();toggleDemoPanel()" style="margin-top:5px"><i class="fa-light fa-eye-slash"></i>Faculty: see min-N suppression (Bioethics)</button>
         <button class="demo-action" onclick="setPersona('pd');setView('cqi');toggleDemoPanel()" style="margin-top:5px"><i class="fa-light fa-clipboard-list-check"></i>PD: open CQI log</button>
+        <button class="demo-action" onclick="setPersona('pd');openSurveyDetail('c4','pd');toggleDemoPanel()" style="margin-top:5px"><i class="fa-light fa-shield-halved"></i>PD: moderate DIDX 201 comments (pending review)</button>
+        <button class="demo-action" onclick="setPersona('pd');openSurveyDetail('c7','pd');toggleDemoPanel()" style="margin-top:5px"><i class="fa-light fa-lock"></i>PD: PHYS 201 (waiting on grades)</button>
       </div>
       <div class="demo-section">
         <div class="demo-section-title">Reset prototype</div>
@@ -4081,11 +4136,105 @@ function renderDemoPanel(){
 function resetPrototype(){ location.reload(); }
 
 function markGradesSubmitted(cid){
+  /* Confirms SIS grade submission. Status stays in 'pending-review' until
+     admin moderates comments and clicks "Publish Results". */
   const c = courseOf(cid); if(!c) return;
-  c.gradeWindow = 'grades-submitted';
-  state.activity.unshift({when:new Date().toISOString(), text:`Grades submitted for ${c.code}. Faculty results unlocked.`});
+  c.gradesPosted = true;
+  state.activity.unshift({when:new Date().toISOString(), text:`Grades posted to SIS for <strong>${c.code}</strong>. Admin can now publish results once comment moderation is complete.`});
   renderAll();
-  toast(`${c.code}: grades submitted, faculty results now visible.`,'success');
+  toast(`${c.code}: grades posted. Moderate comments and publish to release to faculty.`,'info');
+}
+
+function toggleCommentHidden(cid, commentId){
+  const list = SURVEY_COMMENTS[cid] || [];
+  const cm = list.find(x=>x.id===commentId);
+  if(!cm) return;
+  cm.hidden = !cm.hidden;
+  renderAll();
+  toast(cm.hidden ? `Comment hidden from faculty` : `Comment restored`, 'info');
+}
+
+function renderModerationCard(c){
+  const comments = commentsFor(c.id);
+  const hiddenCount = comments.filter(x=>x.hidden).length;
+  const flaggedCount = comments.filter(x=>x.flagReason && !x.hidden).length;
+  const visibleCount = comments.length - hiddenCount;
+  const gradeReady = c.gradesPosted;
+
+  const stepHtml = (n, title, sub, done, current) => `
+    <div style="display:flex;gap:11px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="width:24px;height:24px;border-radius:50%;background:${done?'var(--c-green-bg)':current?'var(--brand-tint)':'var(--muted)'};color:${done?'var(--c-green-fg)':current?'var(--brand-color-deep)':'var(--muted-fg)'};font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${done?'<i class="fa-light fa-check"></i>':n}</div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:600;color:${done?'var(--foreground)':current?'var(--brand-color-deep)':'var(--muted-fg)'}">${title}</div>
+        <div style="font-size:11px;color:var(--muted-fg);margin-top:2px;line-height:1.5">${sub}</div>
+      </div>
+    </div>
+  `;
+  const sentBadge = s => s==='positive' ? '<span class="badge badge-success" style="font-size:9px"><i class="fa-light fa-thumbs-up"></i>Positive</span>'
+                       : s==='constructive' ? '<span class="badge badge-info" style="font-size:9px"><i class="fa-light fa-lightbulb"></i>Constructive</span>'
+                       : s==='concern' ? '<span class="badge badge-warn" style="font-size:9px"><i class="fa-light fa-circle-exclamation"></i>Concern</span>'
+                       : s==='unprofessional' ? '<span class="badge badge-danger" style="font-size:9px"><i class="fa-light fa-flag"></i>Unprofessional</span>'
+                       : '<span class="badge badge-muted" style="font-size:9px">Neutral</span>';
+
+  const commentsHtml = comments.length ? comments.map(cm=>{
+    const flag = cm.flagReason ? `<div style="font-size:11px;color:var(--c-amber-fg);margin-top:6px;padding:6px 10px;background:var(--c-amber-bg);border-radius:var(--radius-sm);display:flex;align-items:flex-start;gap:6px"><i class="fa-light fa-flag" style="margin-top:2px"></i><div><strong>Flag:</strong> ${escapeHtml(cm.flagReason)}</div></div>` : '';
+    return `<div style="padding:14px 16px;border-bottom:1px solid var(--border);background:${cm.hidden?'var(--muted)':'white'};opacity:${cm.hidden?'0.65':'1'}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          ${sentBadge(cm.sentiment)}
+          <span class="badge badge-outline" style="font-size:9px">${cm.sectionRef==='course'?'Course content':cm.sectionRef==='tier-2'?'Course director':'Faculty'}</span>
+          ${cm.hidden?'<span class="badge badge-muted" style="font-size:9px"><i class="fa-light fa-eye-slash"></i>Hidden from faculty</span>':''}
+        </div>
+        <button class="btn btn-${cm.hidden?'outline':'amber-outline'} btn-xs" onclick="toggleCommentHidden('${c.id}','${cm.id}')"><i class="fa-light ${cm.hidden?'fa-rotate-left':'fa-eye-slash'}"></i>${cm.hidden?'Restore':'Hide'}</button>
+      </div>
+      <div style="font-size:13px;color:${cm.hidden?'var(--muted-fg)':'var(--foreground)'};line-height:1.55;${cm.hidden?'text-decoration:line-through':''}">"${escapeHtml(cm.text)}"</div>
+      ${flag}
+    </div>`;
+  }).join('') : '<div class="empty">No open-text comments to moderate.</div>';
+
+  return `
+    <div class="card" style="margin-bottom:18px;border:1.5px solid color-mix(in oklch, var(--c-amber) 30%, white);background:linear-gradient(180deg, var(--c-amber-bg) 0%, white 100%)">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--c-amber-bg);color:var(--c-amber-fg);display:flex;align-items:center;justify-content:center;font-size:16px"><i class="fa-light fa-shield-halved"></i></div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:700;color:var(--c-amber-fg)">Pending admin review</div>
+          <div style="font-size:11px;color:var(--c-amber-fg);margin-top:2px;line-height:1.5">${c.code} survey closed. Two gates before faculty results unlock: <strong>(1)</strong> grades posted to SIS (FR-06 grade-lock), <strong>(2)</strong> admin moderates comments.</div>
+        </div>
+      </div>
+
+      <div style="background:white;border-radius:var(--radius-sm);padding:8px 14px 4px;margin-bottom:14px">
+        ${stepHtml('1','Grades posted to SIS','Faculty must finalize grades. Until then, results stay locked even after moderation.', gradeReady, !gradeReady)}
+        ${stepHtml('2','Comments moderated','Hide unprofessional or out-of-scope comments. Scores cannot be edited (FR per VB).', false, gradeReady)}
+        ${stepHtml('3','Publish results','Releases visible comments + scores to faculty. Cannot be undone.', false, gradeReady && false)}
+      </div>
+
+      <div class="dash-grid" style="gap:14px;margin-bottom:0">
+        <div class="card card-flush" style="grid-column:1 / -1;background:white">
+          <div class="card-section" style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div class="card-title"><i class="fa-light fa-comments"></i>Open-text comments (${comments.length})</div>
+              <div class="card-sub">${visibleCount} visible to faculty · ${hiddenCount} hidden${flaggedCount?' · '+flaggedCount+' flagged':''}</div>
+            </div>
+            ${gradeReady ? `<button class="btn btn-primary btn-sm" onclick="publishResults('${c.id}')"><i class="fa-light fa-paper-plane"></i>Publish results to faculty</button>` : `<button class="btn btn-outline btn-sm" disabled title="Grades not yet posted"><i class="fa-light fa-lock"></i>Publish blocked: grades pending</button>`}
+          </div>
+          ${commentsHtml}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function publishResults(cid){
+  const c = courseOf(cid); if(!c) return;
+  if(!c.gradesPosted){
+    toast(`${c.code}: confirm grades posted to SIS first (FR-06 grade-lock).`, 'warning');
+    return;
+  }
+  c.surveyStatus = 'results-available';
+  c.publishedAt = new Date().toISOString();
+  state.activity.unshift({when:new Date().toISOString(), text:`Results <strong>published</strong> for ${c.code} after admin review. Faculty notified.`});
+  renderAll();
+  toast(`${c.code}: results published to faculty.`,'success');
 }
 function addResponse(cid){
   const c = courseOf(cid); if(!c) return;
@@ -4660,15 +4809,15 @@ function renderDCE(){
 
 function renderDceClinical(){
   const clinicals = COURSES.filter(c=>c.termId===state.termId && c.typeId==='ct2');
-  const released = clinicals.filter(c=>c.gradeWindow==='grades-submitted' && c.avg!==null);
+  const released = clinicals.filter(c=>c.surveyStatus==='results-available' && c.avg!==null);
   const programAvg = released.length ? +(released.reduce((a,c)=>a+c.avg,0)/released.length).toFixed(2) : null;
 
   const rows = clinicals.map(c=>{
     const responded = responseCount(c.id);
-    const isReleased = c.gradeWindow==='grades-submitted' && c.avg!==null;
+    const isReleased = c.surveyStatus==='results-available' && c.avg!==null;
     const scoreCell = isReleased
       ? `<div class="mon-bar"><div class="mon-bar-track"><div class="mon-bar-fill" style="width:${c.avg/5*100}%"></div></div><span class="mon-bar-num">${c.avg.toFixed(2)}</span></div>`
-      : `<span class="muted text-xs">${gradeWindowLabel(c.gradeWindow)}</span>`;
+      : `<span class="muted text-xs">${surveyStatusLabel(c.surveyStatus)}</span>`;
     return `<tr class="mon-tr" onclick="state.dceCourseId='${c.id}';setView('readiness')" style="cursor:pointer">
       <td class="mon-td"><strong>${c.code}</strong><div style="font-size:11px;color:var(--muted-fg)">${escapeHtml(c.name)}</div></td>
       <td class="mon-td">${escapeHtml(c.instructor)} <span class="muted text-xs">(coordinator)</span></td>
@@ -4714,7 +4863,7 @@ function renderDceClinical(){
 
 function renderDceReadiness(){
   const c = courseOf(state.dceCourseId) || COURSES.find(x=>x.typeId==='ct2'&&x.termId===state.termId);
-  const clinicals = COURSES.filter(co=>co.termId===state.termId && co.typeId==='ct2' && co.gradeWindow==='grades-submitted' && co.avg!==null);
+  const clinicals = COURSES.filter(co=>co.termId===state.termId && co.typeId==='ct2' && co.surveyStatus==='results-available' && co.avg!==null);
   const themes = COURSE_THEMES[c.id] || [];
   const concerns = themes.filter(t=>t.sentiment==='concern');
 
