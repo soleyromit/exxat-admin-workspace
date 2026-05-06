@@ -1,0 +1,9 @@
+{
+  "name": "@exxat/pce-prototype",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Static HTML prototype for the PCE Post Course Evaluation product. No build step.",
+  "scripts": {
+    "build": "echo \"Static site, no build needed\""
+  }
+}
