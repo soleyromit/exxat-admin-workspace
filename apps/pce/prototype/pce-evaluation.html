@@ -496,8 +496,18 @@ const QUESTION_BANKS = {
           {id:'dc8', text:'What would you change about this course?', type:'open', category:'Improvements'},
         ],
       },
+      director: {
+        label: 'Course Director (Tier 2)',
+        questions: [
+          {id:'dd1', text:'The course was well-organized and appropriately paced.', type:'likert', category:'Organization'},
+          {id:'dd2', text:'Course expectations and grading were clearly communicated.', type:'likert', category:'Communication'},
+          {id:'dd3', text:'Materials and assessments aligned with stated objectives.', type:'likert', category:'Alignment'},
+          {id:'dd4', text:'The course director was responsive to course-level concerns.', type:'likert', category:'Responsiveness'},
+          {id:'dd5', text:'What could the course director improve about the course as a whole?', type:'open', category:'Improvements'},
+        ],
+      },
       faculty: {
-        label: 'Faculty Performance',
+        label: 'Faculty Performance (Tier 3)',
         questions: [
           {id:'df1', text:'The instructor explained concepts clearly.', type:'likert', category:'Clarity'},
           {id:'df2', text:'The instructor came to class prepared and organized.', type:'likert', category:'Preparation'},
@@ -563,11 +573,16 @@ const TEMPLATES = [
         {bankId:'didactic', sectionId:'course', questionId:'dc1'},
         {bankId:'didactic', sectionId:'course', questionId:'dc2'},
         {bankId:'didactic', sectionId:'course', questionId:'dc3'},
-        {bankId:'didactic', sectionId:'course', questionId:'dc4'},
         {bankId:'didactic', sectionId:'course', questionId:'dc6'},
         {bankId:'didactic', sectionId:'course', questionId:'dc7'},
       ]},
-      {name:'Faculty Performance', type:'faculty', questions:[
+      {name:'Course Director', type:'tier-2', questions:[
+        {bankId:'didactic', sectionId:'director', questionId:'dd1'},
+        {bankId:'didactic', sectionId:'director', questionId:'dd2'},
+        {bankId:'didactic', sectionId:'director', questionId:'dd3'},
+        {bankId:'didactic', sectionId:'director', questionId:'dd5'},
+      ]},
+      {name:'Faculty', type:'tier-3', questions:[
         {bankId:'didactic', sectionId:'faculty', questionId:'df1'},
         {bankId:'didactic', sectionId:'faculty', questionId:'df2'},
         {bankId:'didactic', sectionId:'faculty', questionId:'df3'},
@@ -590,7 +605,7 @@ const TEMPLATES = [
         {bankId:'clinical', sectionId:'course', questionId:'cc5'},
         {bankId:'clinical', sectionId:'course', questionId:'cc6'},
       ]},
-      {name:'Course Coordinator', type:'faculty', questions:[
+      {name:'Course Coordinator', type:'tier-2', questions:[
         {bankId:'clinical', sectionId:'faculty', questionId:'cf1'},
         {bankId:'clinical', sectionId:'faculty', questionId:'cf2'},
         {bankId:'clinical', sectionId:'faculty', questionId:'cf3'},
@@ -610,7 +625,7 @@ const TEMPLATES = [
         {bankId:'didactic', sectionId:'course', questionId:'dc6'},
         {bankId:'didactic', sectionId:'course', questionId:'dc7'},
       ]},
-      {name:'Lab Instructor', type:'faculty', questions:[
+      {name:'Lab Instructor', type:'tier-3', questions:[
         {bankId:'didactic', sectionId:'faculty', questionId:'df1'},
         {bankId:'didactic', sectionId:'faculty', questionId:'df3'},
         {bankId:'didactic', sectionId:'faculty', questionId:'df5'},
@@ -657,6 +672,95 @@ const COURSES = [
 ];
 
 /* ════════════════════════════════════════════════════════════════════
+   PEOPLE  (Three-Tier Role Model: Stocker draft v0.2, Apr 14 2026)
+   Tiers are PER-COURSE, not per-person. One person, many course-role
+   assignments. Tier 1 = Program Admin (governance only, never evaluated).
+   Tier 2 = Course Director (rated on coordination). Tier 3 = Course
+   Faculty (rated on instruction; section repeats per Tier-3 holder).
+   ════════════════════════════════════════════════════════════════════ */
+const PEOPLE = [
+  {id:'p1',  name:'Dr. Mitchell', email:'mitchell@pa.edu', programTier1:true},
+  {id:'p2',  name:'Dr. Chen',     email:'chen@pa.edu'},
+  {id:'p3',  name:'Dr. Rodriguez',email:'rodriguez@pa.edu'},
+  {id:'p4',  name:'Dr. Brown',    email:'brown@pa.edu'},
+  {id:'p5',  name:'Dr. Wu',       email:'wu@pa.edu'},
+  {id:'p6',  name:'Dr. Patel',    email:'patel@pa.edu'},
+  {id:'p7',  name:'Dr. Lee',      email:'lee@pa.edu'},
+  {id:'p8',  name:'Dr. Martinez', email:'martinez@pa.edu'},
+  {id:'p9',  name:'Dr. Johnson',  email:'johnson@pa.edu'},
+  {id:'p10', name:'Dr. Wilson',   email:'wilson@pa.edu'},
+  {id:'p11', name:'Dr. Kim',      email:'kim@pa.edu'},
+  {id:'p12', name:'Dr. Khan',     email:'khan@partnerclinic.com', adjunct:true},
+  {id:'p13', name:'Dr. Adams',    email:'adams@pa.edu'},
+  {id:'p14', name:'Dr. Park',     email:'park@pa.edu'},
+  {id:'p15', name:'Dr. Thompson', email:'thompson@pa.edu'},
+];
+function personOf(id){ return PEOPLE.find(p=>p.id===id); }
+function personByName(name){ return PEOPLE.find(p=>p.name===name); }
+
+/* Per-course tier assignments. One Tier 2 (or several co-directors) plus
+   zero or more Tier 3 instructors. Tier 1 is program-wide, not per course. */
+const COURSE_ASSIGNMENTS = {
+  c1:  {tier2:['p2'],            tier3:['p2','p6']},               // PHYS 401: Chen directs, Chen + Patel teach
+  c2:  {tier2:['p3'],            tier3:['p3']},                    // PHYS 301: Rodriguez
+  c3:  {tier2:['p4'],            tier3:['p4']},                    // DIDX 401: Brown
+  c4:  {tier2:['p5'],            tier3:['p5']},                    // DIDX 201: Wu
+  c5:  {tier2:['p6'],            tier3:['p6']},                    // PHYS 402: Patel
+  c6:  {tier2:['p4'],            tier3:['p4']},                    // DIDX 301: Brown
+  c7:  {tier2:['p7'],            tier3:['p7']},                    // PHYS 201: Lee
+  c9:  {tier2:['p8'],            tier3:['p8','p13','p14']},        // CLIN 302: Martinez directs, 3 preceptors
+  c10: {tier2:['p9'],            tier3:['p9']},                    // CLIN 401: Johnson
+  c14: {tier2:['p10'],           tier3:['p10','p13']},             // CLIN 441: Wilson + Adams (clinical co-faculty)
+  c15: {tier2:['p11'],           tier3:['p11']},                   // LAB 301: Kim
+  c16: {tier2:['p12'],           tier3:['p12']},                   // SEM 401: Khan
+};
+function tierAssignments(courseId){
+  const a = COURSE_ASSIGNMENTS[courseId] || {tier2:[], tier3:[]};
+  return {
+    courseDirectors: (a.tier2||[]).map(personOf).filter(Boolean),
+    faculty:         (a.tier3||[]).map(personOf).filter(Boolean),
+  };
+}
+function myTiersForCourse(personId, courseId){
+  const a = COURSE_ASSIGNMENTS[courseId] || {};
+  return {
+    tier2: (a.tier2||[]).includes(personId),
+    tier3: (a.tier3||[]).includes(personId),
+  };
+}
+
+/* expandedSurveySections: turns the template's section list into the
+   actual list of sections a student fills out, repeating Tier 2 and Tier 3
+   sections per assigned person on the specific course shell. */
+function expandedSurveySections(course, tmpl){
+  const t = tierAssignments(course.id);
+  const out = [];
+  tmpl.sections.forEach((s, sIdx)=>{
+    const t2compat = s.type==='faculty' && !COURSE_ASSIGNMENTS[course.id]; /* old templates */
+    if(s.type==='course'){
+      out.push({sec:s, sIdx, target:null, label:s.name, kind:'course', keyPrefix:`${course.id}-course-${sIdx}`});
+    } else if(s.type==='tier-2'){
+      const directors = t.courseDirectors.length ? t.courseDirectors : [{id:'unknown', name:course.instructor||'Unassigned'}];
+      directors.forEach(p=>{
+        out.push({sec:s, sIdx, target:p, label:`${s.name}: ${p.name}`, kind:'tier-2', keyPrefix:`${course.id}-t2-${p.id}-${sIdx}`});
+      });
+    } else if(s.type==='tier-3' || t2compat){
+      const fac = t.faculty.length ? t.faculty : [{id:'unknown', name:course.instructor||'Unassigned'}];
+      fac.forEach(p=>{
+        out.push({sec:s, sIdx, target:p, label:`${s.name}: ${p.name}`, kind:'tier-3', keyPrefix:`${course.id}-t3-${p.id}-${sIdx}`});
+      });
+    } else {
+      /* legacy 'faculty' type: treat as tier-3 for assigned courses */
+      const fac = t.faculty.length ? t.faculty : [{id:'unknown', name:course.instructor||'Unassigned'}];
+      fac.forEach(p=>{
+        out.push({sec:s, sIdx, target:p, label:`${s.name}: ${p.name}`, kind:'tier-3', keyPrefix:`${course.id}-t3-${p.id}-${sIdx}`});
+      });
+    }
+  });
+  return out;
+}
+
+/* ════════════════════════════════════════════════════════════════════
    STUDENT: me (mock current user for student persona)
    ════════════════════════════════════════════════════════════════════ */
 const ME_STUDENT = {
@@ -669,7 +773,7 @@ const ME_STUDENT = {
    FACULTY: me (mock current user for faculty persona)
    ════════════════════════════════════════════════════════════════════ */
 const ME_FACULTY = {
-  id:'fa1', name:'Dr. Chen', email:'chen@pa.edu',
+  id:'fa1', personId:'p2', name:'Dr. Chen', email:'chen@pa.edu',
   myCourses:['c1','c5','c16'],
 };
 
@@ -2868,10 +2972,18 @@ function renderFacResults(){
     const reflectionDone = REFLECTIONS.find(r=>r.courseId===c.id && r.facultyId===ME_FACULTY.id);
     const noteAlreadyPosted = FEEDBACK_NOTES.find(n=>n.courseCode===c.code && n.termId===c.termId);
 
-    /* Question scores by section (use deterministic synthesized data based on c.avg) */
-    const sectionsHtml = tmpl.sections.map((sec, sidx)=>{
-      /* Build response data once per course so question-row click maps to a real index */
-      const allRespData = buildResponseData(c);
+    /* Three-tier model (FR-11): faculty sees ONLY their own results.
+       Filter expanded sections to: Course Content + my own Tier 2 (if I direct)
+       + my own Tier 3 (if I teach). Other directors / faculty are never shown. */
+    const myPersonId = ME_FACULTY.personId || personByName(ME_FACULTY.name)?.id;
+    const expanded = expandedSurveySections(c, tmpl);
+    const myExpanded = expanded.filter(e=> e.kind==='course' || (e.target && e.target.id === myPersonId));
+    const allRespData = buildResponseData(c);
+    const myTiers = myPersonId ? myTiersForCourse(myPersonId, c.id) : {};
+    const tierContextBanner = `<div style="background:var(--brand-tint);border:1px solid color-mix(in oklch, var(--brand-color) 18%, white);border-radius:var(--radius-sm);padding:11px 13px;font-size:11px;color:var(--brand-color-deep);margin-bottom:14px;display:flex;align-items:flex-start;gap:8px"><i class="fa-light fa-shield-check" style="margin-top:2px"></i><div>${(myTiers.tier2 && myTiers.tier3)?'You hold both tiers on this course (director + instructor); your results show both sections.':myTiers.tier2?'You direct this course (Tier 2). Co-instructors and other faculty have private results not visible to you.':myTiers.tier3?'You teach this course (Tier 3). You see only your own instruction scores; co-instructors and the course director have separate, private results.':'You are not currently assigned to this course.'}</div></div>`;
+    const sectionsHtml = myExpanded.map(e=>{
+      const sec = e.sec;
+      const tierBadge = e.kind==='tier-2' ? '<span class="badge badge-info" style="font-size:9px;margin-left:6px"><i class="fa-light fa-user-tie"></i>Tier 2</span>' : e.kind==='tier-3' ? '<span class="badge badge-rose" style="font-size:9px;margin-left:6px"><i class="fa-light fa-chalkboard-user"></i>Tier 3</span>' : '';
       const qRows = sec.questions.filter(q=>{ const def=getQuestion(q); return def?.type==='likert'; }).map(q=>{
         const def = getQuestion(q);
         const seed = (c.id + def.id).split('').reduce((a,ch)=>a+ch.charCodeAt(0),0);
@@ -2888,7 +3000,7 @@ function renderFacResults(){
         </div>`;
       }).join('');
       return `<div class="card card-flush" style="margin-bottom:14px">
-        <div class="card-section" style="padding:12px 16px"><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--brand-color-deep)">${escapeHtml(sec.name)}</div></div>
+        <div class="card-section" style="padding:12px 16px"><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--brand-color-deep)">${escapeHtml(e.label)}${tierBadge}</div></div>
         <div>${qRows}</div>
       </div>`;
     }).join('');
@@ -2913,6 +3025,7 @@ function renderFacResults(){
         <div class="kpi"><div class="kpi-label">Reflection</div><div class="kpi-val" style="font-size:18px">${reflectionDone?'Saved':'Pending'}</div><div class="kpi-meta">${reflectionDone?'You can post a note for the next cohort':'Complete to unlock next-cohort note'}</div></div>
       </div>
 
+      ${tierContextBanner}
       ${sectionsHtml}
 
       <div class="card">
@@ -3733,20 +3846,22 @@ function renderStudentSurvey(){
   const c = courseOf(state.stuCourseId);
   const tmpl = templateForCourse(c);
   if(!tmpl){ state.stuView='list'; return renderStudentList(); }
-  const sec = tmpl.sections[state.stuSection];
+  const expanded = expandedSurveySections(c, tmpl);
+  /* Clamp stuSection to valid index */
+  if(state.stuSection >= expanded.length) state.stuSection = expanded.length - 1;
+  if(state.stuSection < 0) state.stuSection = 0;
+  const cur = expanded[state.stuSection];
+  const sec = cur.sec;
   const note = noteForCourse(c.code, c.termId);
-  const totalQs = sec.questions.length;
   const ratingQs = sec.questions.filter(q=>{ const def=getQuestion(q); return def?.type==='likert'; });
-  const answeredRatings = ratingQs.filter((q,i)=>{
-    const def = getQuestion(q);
-    const key = `${state.stuCourseId}-${state.stuSection}-${q.questionId}`;
+  const answeredRatings = ratingQs.filter(q=>{
+    const key = `${cur.keyPrefix}-${q.questionId}`;
     return state.stuRatings[key] !== undefined;
   }).length;
-  const sec0Done = computeSectionDone(c, tmpl, 0);
-  const sec1Done = computeSectionDone(c, tmpl, 1);
   const allRatingsDone = answeredRatings === ratingQs.length;
-  const isLastSection = state.stuSection === tmpl.sections.length-1;
-  const noteHtml = state.stuSection===0 && note ? `
+  const isLastSection = state.stuSection === expanded.length-1;
+  const isFirstCourseSection = cur.kind === 'course' && state.stuSection === 0;
+  const noteHtml = isFirstCourseSection && note ? `
     <div class="fb-loop-card">
       <i class="fa-light fa-comment-dots fb-loop-icon"></i>
       <div>
@@ -3755,16 +3870,21 @@ function renderStudentSurvey(){
         <div class="fb-loop-attrib">Posted after the ${termOf(note.termId).name} cohort gave feedback</div>
       </div>
     </div>` : '';
+  const tierBanner = cur.kind !== 'course' ? `
+    <div style="background:${cur.kind==='tier-2'?'oklch(0.95 0.04 264)':'oklch(0.96 0.03 343)'};margin:10px 18px 0;border-radius:var(--radius-sm);padding:10px 12px;display:flex;align-items:center;gap:10px;font-size:11px;color:${cur.kind==='tier-2'?'oklch(0.45 0.16 264)':'oklch(0.42 0.15 343)'}">
+      <i class="fa-light ${cur.kind==='tier-2'?'fa-user-tie':'fa-chalkboard-user'}"></i>
+      <div>You are rating <strong>${escapeHtml(cur.target.name)}</strong> as ${cur.kind==='tier-2'?'course director (organization, communication, structure)':'an instructor (clarity, preparation, responsiveness)'}.</div>
+    </div>` : '';
 
   const qBlocks = sec.questions.map((qref,qi)=>{
     const def = getQuestion(qref);
     if(!def) return '';
-    const key = `${state.stuCourseId}-${state.stuSection}-${qref.questionId}`;
+    const key = `${cur.keyPrefix}-${qref.questionId}`;
     if(def.type==='likert'){
       const sel = state.stuRatings[key];
       const buttons = [1,2,3,4,5].map(n=>`<button class="likert-btn ${sel===n?'selected':''}" onclick="setRating('${key}',${n})">${n}</button>`).join('');
       return `<div class="q-block">
-        <div class="q-text-stu">${escapeHtml(def.text)}</div>
+        <div class="q-text-stu">${escapeHtml(def.text.replace(/\bthe instructor\b/i, cur.target?'Dr. '+cur.target.name.replace('Dr. ',''):'the instructor').replace(/\bthe course director\b/i, cur.target?cur.target.name:'the course director'))}</div>
         <div class="likert-row">${buttons}</div>
         <div class="likert-anchors"><span>Strongly disagree</span><span>Strongly agree</span></div>
       </div>`;
@@ -3773,6 +3893,13 @@ function renderStudentSurvey(){
       <div class="q-text-stu">${escapeHtml(def.text)}</div>
       <textarea class="text-input-stu" placeholder="Optional, anonymous response..." oninput="setText('${key}',this.value)">${escapeHtml(state.stuTexts[key]||'')}</textarea>
     </div>`;
+  }).join('');
+
+  /* Section tabs: scroll horizontally if many */
+  const tabsHtml = expanded.map((e,i)=>{
+    const done = computeExpandedSectionDone(e);
+    const short = e.kind==='course' ? 'Course' : (e.kind==='tier-2'?'Director: ':'Faculty: ') + (e.target?e.target.name.replace('Dr. ',''):'');
+    return `<button class="section-tab-btn ${state.stuSection===i?'active':''}" onclick="state.stuSection=${i};renderAll()" title="${escapeHtml(e.label)}">${escapeHtml(short)} <span class="pip ${done?'done':''}"></span></button>`;
   }).join('');
 
   return `
@@ -3787,15 +3914,14 @@ function renderStudentSurvey(){
         <div class="phone-title">${c.code}</div>
         <span style="font-size:11px;color:var(--muted-fg)">v${tmpl.version}</span>
       </div>
-      <div class="section-tab">
-        ${tmpl.sections.map((s,i)=>`<button class="section-tab-btn ${state.stuSection===i?'active':''}" onclick="state.stuSection=${i};renderAll()">${escapeHtml(s.name)} <span class="pip ${(i===0?sec0Done:sec1Done)?'done':''}"></span></button>`).join('')}
-      </div>
+      <div class="section-tab" style="overflow-x:auto;-webkit-overflow-scrolling:touch">${tabsHtml}</div>
       <div class="phone-content">
         ${noteHtml}
+        ${tierBanner}
         <div style="padding:14px 18px 4px">
-          <div style="font-size:11px;color:var(--muted-fg);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Section ${state.stuSection+1} of ${tmpl.sections.length}</div>
-          <div style="font-size:14px;font-weight:600;margin-top:4px">${escapeHtml(sec.name)}</div>
-          <div style="font-size:11px;color:var(--muted-fg);margin-top:4px">${answeredRatings} of ${ratingQs.length} ratings · About ${Math.max(1,Math.ceil((totalQs-answeredRatings)*0.4))} min remaining</div>
+          <div style="font-size:11px;color:var(--muted-fg);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Section ${state.stuSection+1} of ${expanded.length}</div>
+          <div style="font-size:14px;font-weight:600;margin-top:4px">${escapeHtml(cur.label)}</div>
+          <div style="font-size:11px;color:var(--muted-fg);margin-top:4px">${answeredRatings} of ${ratingQs.length} ratings</div>
         </div>
         ${qBlocks}
         <div style="padding:8px 18px 22px;font-size:11px;color:var(--muted-fg);text-align:center">
@@ -3804,17 +3930,16 @@ function renderStudentSurvey(){
       </div>
       <div class="phone-foot">
         ${state.stuSection > 0 ? `<button class="btn btn-outline" style="flex:1" onclick="state.stuSection=${state.stuSection-1};renderAll()"><i class="fa-light fa-chevron-left"></i>Back</button>` : ''}
-        ${!isLastSection ? `<button class="btn btn-primary" style="flex:2" onclick="nextSection()" ${!allRatingsDone?'disabled':''}>Next: ${escapeHtml(tmpl.sections[state.stuSection+1]?.name||'')}<i class="fa-light fa-chevron-right"></i></button>` : `<button class="btn btn-primary" style="flex:2" onclick="submitSurvey()" ${!allRatingsDone?'disabled':''}>Submit anonymously<i class="fa-light fa-check"></i></button>`}
+        ${!isLastSection ? `<button class="btn btn-primary" style="flex:2" onclick="nextSection()" ${!allRatingsDone?'disabled':''}>Next<i class="fa-light fa-chevron-right"></i></button>` : `<button class="btn btn-primary" style="flex:2" onclick="submitSurvey()" ${!allRatingsDone?'disabled':''}>Submit anonymously<i class="fa-light fa-check"></i></button>`}
       </div>
     </div>
   `;
 }
 
-function computeSectionDone(course, tmpl, sectionIdx){
-  const sec = tmpl.sections[sectionIdx];
-  const ratingQs = sec.questions.filter(q=>{ const def=getQuestion(q); return def?.type==='likert'; });
-  const answered = ratingQs.filter(q=>state.stuRatings[`${course.id}-${sectionIdx}-${q.questionId}`]!==undefined).length;
-  return answered === ratingQs.length;
+function computeExpandedSectionDone(e){
+  const ratingQs = e.sec.questions.filter(q=>{ const def=getQuestion(q); return def?.type==='likert'; });
+  const answered = ratingQs.filter(q=>state.stuRatings[`${e.keyPrefix}-${q.questionId}`]!==undefined).length;
+  return ratingQs.length>0 && answered === ratingQs.length;
 }
 function setRating(key,n){ state.stuRatings[key]=n; renderAll(); }
 function setText(key,v){ state.stuTexts[key]=v; }
