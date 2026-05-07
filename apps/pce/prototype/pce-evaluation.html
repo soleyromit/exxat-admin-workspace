@@ -320,7 +320,7 @@ a{color:var(--brand-color);text-decoration:none;cursor:pointer}
 .cqi-row:hover{background:var(--brand-tint)}
 .cqi-status{flex-shrink:0;width:8px;height:8px;border-radius:50%;margin-top:7px}
 .cqi-status.open{background:var(--c-amber)}
-.cqi-status.due{background:var(--destructive)}
+.cqi-status.due{background:oklch(0.52 0.16 55)}
 .cqi-status.closed{background:var(--c-green)}
 .cqi-content{flex:1;min-width:0}
 .cqi-title{font-size:13px;font-weight:600;color:var(--foreground)}
@@ -420,7 +420,7 @@ a{color:var(--brand-color);text-decoration:none;cursor:pointer}
 .mon-bar-track{flex:1;height:6px;background:var(--muted-2);border-radius:99px;overflow:hidden;max-width:140px}
 .mon-bar-fill{height:100%;background:var(--brand-color);border-radius:99px;transition:width var(--tr)}
 .mon-bar-fill.warn{background:var(--c-amber)}
-.mon-bar-fill.danger{background:var(--destructive)}
+.mon-bar-fill.danger{background:oklch(0.52 0.16 55)}
 .mon-bar-num{font-size:12px;font-weight:600;width:42px}
 
 /* ── Student mobile shell ──────────────────────────────────── */
@@ -1107,7 +1107,7 @@ const CHART = {
   brandDark:'oklch(0.38 0.11 286.1)',
   brandSoft:'oklch(0.92 0.05 286.1)',
   pos:     'oklch(0.45 0.14 155)',
-  neg:     'oklch(0.55 0.22 25)',
+  neg:     'oklch(0.52 0.16 55)',  /* deep burnt amber instead of red — Aarti dislikes red in score viz */
   warn:    'oklch(0.62 0.16 84)',
 };
 
@@ -1185,41 +1185,27 @@ function chartProgramTrend(series, labels, opts){
 }
 
 function chartCqiPipeline(open, due, closed){
-  /* Continuous segmented bar showing proportional state distribution.
-     One stacked bar with three segments + clear labels under. */
-  const total = open + due + closed;
-  const W = 560, H = 92;
-  const trackY = 26, trackH = 28, padX = 8;
-  const trackW = W - 2*padX;
+  /* Three KPI tiles, one per CQI stage. Replaces the stretched stacked
+     bar that looked broken with single-digit counts. Click any tile to
+     open the CQI log. */
   const stages = [
-    {key:'open',   label:'Open',                count:open,   color:CHART.warn,   sub:'Action documented, in progress'},
-    {key:'due',    label:'Reassessment due',    count:due,    color:CHART.neg,    sub:'Time to evaluate the change'},
-    {key:'closed', label:'Closed',              count:closed, color:CHART.pos,    sub:'Outcome documented; CAPTE-ready'},
+    {key:'open',   label:'Open',              count:open,   icon:'fa-circle-half-stroke', bg:'var(--c-amber-bg)', fg:'var(--c-amber-fg)',  ring:'color-mix(in oklch, var(--c-amber) 22%, white)'},
+    {key:'due',    label:'Reassessment due',  count:due,    icon:'fa-bell-on',             bg:'oklch(0.96 0.04 60)', fg:'oklch(0.42 0.16 55)', ring:'color-mix(in oklch, oklch(0.52 0.16 55) 22%, white)'},
+    {key:'closed', label:'Closed',            count:closed, icon:'fa-circle-check',        bg:'var(--c-green-bg)',   fg:'var(--c-green-fg)',  ring:'color-mix(in oklch, var(--c-green) 22%, white)'},
   ];
+  const total = open + due + closed;
   if(total === 0){
-    return `<figure role="figure" aria-label="No CQI actions yet." style="margin:0"><svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block"><rect x="${padX}" y="${trackY}" width="${trackW}" height="${trackH}" fill="${CHART.bg}" rx="${trackH/2}"/><text x="${W/2}" y="${trackY+trackH/2+5}" text-anchor="middle" font-size="11" fill="${CHART.muted}" font-family="Inter">No CQI actions on record yet</text></svg></figure>`;
+    return `<div style="padding:24px;text-align:center;color:var(--muted-fg);font-size:12px"><i class="fa-light fa-circle-check" style="color:var(--c-green-fg);font-size:18px;margin-right:6px;vertical-align:-3px"></i>No CQI actions on record yet</div>`;
   }
-  let cursor = padX;
-  const segments = stages.map((s,i)=>{
-    const segW = (s.count/total) * trackW;
-    const seg = `<g class="cell" tabindex="0" role="button" aria-label="${s.label}: ${s.count} action${s.count===1?'':'s'}. Press to open CQI log." style="cursor:pointer;outline:none" onclick="setView('cqi')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setView('cqi')}">
-      <rect x="${cursor}" y="${trackY}" width="${segW}" height="${trackH}" fill="${s.color}" ${i===0?`rx="${trackH/2}" mask="url(#cqi-left)"`:i===stages.length-1?`rx="${trackH/2}" mask="url(#cqi-right)"`:''}/>
-      ${segW>40?`<text x="${cursor+segW/2}" y="${trackY+trackH/2+5}" text-anchor="middle" font-size="13" font-weight="700" fill="white" font-family="Inter" font-variant-numeric="tabular-nums">${s.count}</text>`:''}
-    </g>`;
-    cursor += segW;
-    return seg;
-  }).join('');
-  const labels = stages.map((s,i)=>{
-    const x = padX + 4 + (i+0.5)*(trackW/stages.length);
-    return `<g><circle cx="${x-50}" cy="${trackY+trackH+18}" r="3" fill="${s.color}"/><text x="${x-42}" y="${trackY+trackH+22}" font-size="10" font-weight="600" fill="${CHART.ink}" font-family="Inter">${s.label}</text><text x="${x-42}" y="${trackY+trackH+34}" font-size="9" fill="${CHART.muted}" font-family="Inter">${s.count} ${s.count===1?'action':'actions'}</text></g>`;
-  }).join('');
-  return `<figure role="figure" aria-label="CQI pipeline: ${stages.map(s=>`${s.count} ${s.label}`).join(', ')}." style="margin:0">
-    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block">
-      <rect x="${padX}" y="${trackY}" width="${trackW}" height="${trackH}" fill="${CHART.bg}" rx="${trackH/2}"/>
-      ${segments}
-      ${labels}
-    </svg>
-  </figure>`;
+  return `<div style="display:flex;gap:10px">
+    ${stages.map(s=>`<button onclick="setView('cqi')" style="flex:1;display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--r-md);background:${s.bg};border:1px solid ${s.ring};text-align:left;cursor:pointer;transition:filter var(--tr-fast)" onmouseover="this.style.filter='brightness(0.97)'" onmouseout="this.style.filter='none'">
+      <div style="width:34px;height:34px;border-radius:var(--r-pill);background:white;color:${s.fg};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0"><i class="fa-light ${s.icon}"></i></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:${s.fg};line-height:1">${s.label}</div>
+        <div style="font-family:var(--font-heading);font-size:24px;font-weight:500;color:var(--foreground);margin-top:5px;font-variant-numeric:tabular-nums;line-height:1">${s.count}</div>
+      </div>
+    </button>`).join('')}
+  </div>`;
 }
 
 function chartLifecycleFunnel(stages){
@@ -1410,36 +1396,47 @@ function chartFacultyOverTerms(history, courses){
 }
 
 function chartScoreHistogram(courses){
-  /* Histogram using a single brand-intensity color rather than a rainbow. */
-  const buckets = [
-    {label:'< 3.5',  range:[0,3.5]},
-    {label:'3.5-3.7',range:[3.5,3.7]},
-    {label:'3.7-4.0',range:[3.7,4.0]},
-    {label:'4.0-4.3',range:[4.0,4.3]},
-    {label:'4.3-4.5',range:[4.3,4.5]},
-    {label:'>= 4.5', range:[4.5,5.1]},
-  ];
-  buckets.forEach(b=>b.count = courses.filter(c=>c.avg>=b.range[0] && c.avg<b.range[1]).length);
-  const max = Math.max(1,...buckets.map(b=>b.count));
-  const W = 480, H = 180, P = 32, PB = 36;
-  const barW = (W-2*P) / buckets.length;
-  const ticks = [0, Math.ceil(max/2), max];
-  const grid = ticks.map(t=>{
-    const y = H-PB - (t/max) * (H-PB-PT_());
-    return `<line x1="${P}" x2="${W-P}" y1="${y}" y2="${y}" stroke="${CHART.hairline}" stroke-width="1"/><text x="${P-6}" y="${y+3}" text-anchor="end" font-size="9" fill="${CHART.muted}" font-family="Inter">${t}</text>`;
+  /* Dot plot on a 1-5 axis instead of a 6-bucket histogram. With sparse
+     data (1-5 released courses per term) buckets read as broken; a dot
+     plot keeps every course visible and shows spread immediately. */
+  if(!courses.length){
+    return `<div style="padding:24px;text-align:center;color:var(--muted-fg);font-size:12px">No released courses yet this term.</div>`;
+  }
+  const W = 560, H = 96, P = 24, axisY = 56;
+  const xFor = v => P + ((v-1)/4) * (W - 2*P);
+  /* Vertical jitter so overlapping dots don't stack on one another */
+  const sorted = [...courses].sort((a,b)=>a.avg-b.avg);
+  const placed = [];
+  const dots = sorted.map(c=>{
+    const x = xFor(c.avg);
+    const dy = placed.filter(p=>Math.abs(p-x)<14).length * 11;
+    placed.push(x);
+    const fill = c.avg>=4.3 ? 'oklch(0.45 0.14 155)' : c.avg>=3.7 ? 'oklch(0.50 0.14 286.1)' : 'oklch(0.52 0.16 55)';
+    return `<g class="cell" tabindex="0" role="button" aria-label="${c.code}: average ${c.avg.toFixed(2)}. Press to open detail." style="cursor:pointer;outline:none" onclick="openSurveyDetail('${c.id}','pd')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSurveyDetail('${c.id}','pd')}">
+      <circle cx="${x}" cy="${axisY-6-dy}" r="7" fill="${fill}" stroke="white" stroke-width="2"/>
+      <title>${c.code}: ${c.avg.toFixed(2)}</title>
+    </g>`;
   }).join('');
-  const bars = buckets.map((b,i)=>{
-    const h = (b.count/max) * (H - PB - PT_());
-    const x = P + i*barW;
-    const y = H - PB - h;
-    const isConcern = i < 2;
-    const fill = isConcern ? CHART.warn : CHART.brand;
-    const opacity = isConcern ? 0.85 : 0.6 + 0.1*i;
-    return `<g><rect x="${x+8}" y="${y}" width="${barW-16}" height="${h}" fill="${fill}" opacity="${opacity}" rx="3"/>${b.count?`<text x="${x+barW/2}" y="${y-6}" text-anchor="middle" font-size="11" font-weight="700" fill="${CHART.ink}" font-family="Inter" font-variant-numeric="tabular-nums">${b.count}</text>`:''}<text x="${x+barW/2}" y="${H-12}" text-anchor="middle" font-size="9" fill="${CHART.muted}" font-family="Inter">${b.label}</text></g>`;
-  }).join('');
-  function PT_(){ return 24; }
-  return `<figure role="figure" aria-label="Score distribution histogram: ${buckets.map(b=>`${b.count} courses scored ${b.label}`).join(', ')}." style="margin:0">
-    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="width:100%;height:180px;display:block">${grid}${bars}</svg>
+  const threshX = xFor(3.7);
+  const ticks = [1,2,3,4,5].map(t=>`<g><line x1="${xFor(t)}" x2="${xFor(t)}" y1="${axisY-3}" y2="${axisY+3}" stroke="${CHART.muted}" stroke-width="1"/><text x="${xFor(t)}" y="${axisY+18}" text-anchor="middle" font-size="10" fill="${CHART.muted}" font-family="Inter" font-variant-numeric="tabular-nums">${t}.0</text></g>`).join('');
+  const minScore = Math.min(...courses.map(c=>c.avg));
+  const maxScore = Math.max(...courses.map(c=>c.avg));
+  const median = (()=>{const a=[...sorted];const m=Math.floor(a.length/2);return a.length%2?a[m].avg:(a[m-1].avg+a[m].avg)/2;})();
+  const belowThreshold = courses.filter(c=>c.avg<3.7).length;
+  return `<figure role="figure" aria-label="Score distribution: ${courses.length} released courses, range ${minScore.toFixed(2)} to ${maxScore.toFixed(2)}." style="margin:0">
+    <div style="display:flex;align-items:center;gap:18px;font-size:11px;color:var(--muted-fg);margin-bottom:8px;flex-wrap:wrap">
+      <span><strong style="color:var(--foreground);font-variant-numeric:tabular-nums">${courses.length}</strong> released</span>
+      <span>Range <strong style="color:var(--foreground);font-variant-numeric:tabular-nums">${minScore.toFixed(2)} – ${maxScore.toFixed(2)}</strong></span>
+      <span>Median <strong style="color:var(--foreground);font-variant-numeric:tabular-nums">${median.toFixed(2)}</strong></span>
+      ${belowThreshold>0?`<span style="color:var(--c-amber-fg);font-weight:600"><i class="fa-light fa-triangle-exclamation"></i> ${belowThreshold} below 3.7 threshold</span>`:`<span style="color:var(--c-green-fg);font-weight:600"><i class="fa-light fa-check"></i> All above 3.7 threshold</span>`}
+    </div>
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="width:100%;height:96px;display:block">
+      <line x1="${P}" x2="${W-P}" y1="${axisY}" y2="${axisY}" stroke="${CHART.muted}" stroke-width="1"/>
+      <line x1="${threshX}" x2="${threshX}" y1="14" y2="${axisY}" stroke="oklch(0.52 0.16 55)" stroke-width="1.5" stroke-dasharray="3 3"/>
+      <text x="${threshX}" y="10" text-anchor="middle" font-size="9" fill="oklch(0.42 0.16 55)" font-family="Inter" font-weight="600">3.7 threshold</text>
+      ${ticks}
+      ${dots}
+    </svg>
   </figure>`;
 }
 
@@ -1804,7 +1801,7 @@ function openEditTypeModal(id){
     title: id?'Edit course type':'Add course type',
     body: `
       <div class="field"><label class="field-label">Name<span class="req">*</span></label><input class="input" id="ct-name" value="${escapeHtml(t.name)}" placeholder="e.g., Practicum"></div>
-      <div class="field"><label class="field-label">Accent color</label><div style="display:flex;gap:6px;align-items:center">${['oklch(0.55 0.13 264)','oklch(0.50 0.13 184)','oklch(0.62 0.16 70)','oklch(0.50 0.18 358)','oklch(0.50 0.20 296)','oklch(0.55 0.22 25)','oklch(0.50 0.14 150)'].map(c=>`<button onclick="document.getElementById('ct-color-val').value='${c}';document.querySelectorAll('.ct-cs').forEach(s=>s.style.outline='2px solid transparent');this.style.outline='2px solid ${c}'" class="ct-cs" style="width:24px;height:24px;border-radius:50%;background:${c};cursor:pointer;outline:2px solid ${c===t.color?c:'transparent'};outline-offset:2px"></button>`).join('')}<input type="hidden" id="ct-color-val" value="${t.color}"></div></div>
+      <div class="field"><label class="field-label">Accent color</label><div style="display:flex;gap:6px;align-items:center">${['oklch(0.55 0.13 264)','oklch(0.50 0.13 184)','oklch(0.62 0.16 70)','oklch(0.50 0.18 358)','oklch(0.50 0.20 296)','oklch(0.52 0.16 55)','oklch(0.50 0.14 150)'].map(c=>`<button onclick="document.getElementById('ct-color-val').value='${c}';document.querySelectorAll('.ct-cs').forEach(s=>s.style.outline='2px solid transparent');this.style.outline='2px solid ${c}'" class="ct-cs" style="width:24px;height:24px;border-radius:50%;background:${c};cursor:pointer;outline:2px solid ${c===t.color?c:'transparent'};outline-offset:2px"></button>`).join('')}<input type="hidden" id="ct-color-val" value="${t.color}"></div></div>
     `,
     actions: `<button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveCourseType('${id||''}')">${id?'Save':'Add Type'}</button>`,
   });
@@ -1947,7 +1944,7 @@ function renderPdDashboard(){
       <div class="cqi-content">
         <div class="cqi-title">${c.code}: ${escapeHtml(c.name)} ${flagReason}</div>
         <div class="cqi-meta">
-          <span><i class="fa-light fa-star"></i>Score <strong style="color:var(--foreground)">${c.avg.toFixed(2)}</strong> ${drop!==null?`<span style="color:var(--destructive-fg)">(${drop>0?'+':''}${drop.toFixed(1)} vs ${c.prev.toFixed(1)})</span>`:''}</span>
+          <span><i class="fa-light fa-star"></i>Score <strong style="color:var(--foreground)">${c.avg.toFixed(2)}</strong> ${drop!==null?`<span style="color:var(--c-amber-fg)">(${drop>0?'+':''}${drop.toFixed(1)} vs ${c.prev.toFixed(1)})</span>`:''}</span>
           <span><i class="fa-light fa-user"></i>${escapeHtml(c.instructor)}</span>
           <span><i class="fa-light fa-users"></i>${responseCount(c.id)} of ${c.enrolled} responded</span>
         </div>
@@ -1955,7 +1952,7 @@ function renderPdDashboard(){
         <div class="cqi-action-line" style="display:flex;justify-content:space-between;align-items:center;margin-top:7px"><span style="color:var(--brand-color);font-weight:600">No CQI action this term yet. Click to create one.</span><span style="font-size:10px;color:var(--muted-fg)">CAPTE 2C evidence chain</span></div>
       </div>
     </div>`;
-  }).join('') : `<div class="empty"><div class="empty-icon"><i class="fa-light fa-circle-check"></i></div><div style="font-size:14px;font-weight:600;color:var(--foreground);margin-bottom:6px">All released courses scored 3.7 or above this term</div><div style="font-size:12px;color:var(--muted-fg);max-width:440px;margin:0 auto;line-height:1.6">When a course slips below the threshold, it appears here so you can attach a CQI action immediately. CAPTE Standard 2C requires a documented Result -&gt; Action -&gt; Reassessment chain; an empty card means your evidence is clean for ${termOf(state.termId).name}.</div></div>`;
+  }).join('') : `<div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:28px 16px;color:var(--c-green-fg);font-size:13px;font-weight:500"><i class="fa-light fa-circle-check" style="font-size:18px"></i>No at-risk courses · all released courses scored 3.7+</div>`;
 
   const cqiHtml = CQI_ACTIONS.slice(0,4).map(a=>{
     const cls = a.status==='closed'?'closed':a.status==='reassessment-due'?'due':'open';
@@ -2009,14 +2006,14 @@ function renderPdDashboard(){
 
       <div class="card full">
         <div class="card-head">
-          <div><div class="card-title"><i class="fa-light fa-clipboard-list-check"></i>CQI evidence pipeline</div><div class="card-sub">Result -&gt; Action -&gt; Reassessment chain across the year. Click any segment to open the CQI log.</div></div>
+          <div><div class="card-title"><i class="fa-light fa-clipboard-list-check"></i>CQI evidence</div></div>
+          ${dueReassess>0?`<button class="btn btn-amber-outline btn-sm" onclick="setView('cqi')"><i class="fa-light fa-bell-on"></i>${dueReassess} due for reassessment</button>`:''}
         </div>
         ${chartCqiPipeline(openCqi, dueReassess, closedCqi)}
-        <div style="font-size:11px;color:var(--muted-fg);margin-top:6px;line-height:1.55">CAPTE Standard 2C requires documented closure on flagged results. ${dueReassess>0?`<strong style="color:var(--c-amber-fg)">${dueReassess} action${dueReassess>1?'s':''} due for reassessment</strong> this term.`:''}</div>
       </div>
 
       <div class="card full">
-        <div class="card-head"><div><div class="card-title"><i class="fa-light fa-chart-column"></i>Score distribution</div><div class="card-sub">How courses cluster across the 1-5 range. Healthy programs cluster around 4.0; bimodal patterns suggest faculty inconsistency.</div></div></div>
+        <div class="card-head"><div><div class="card-title"><i class="fa-light fa-chart-scatter"></i>Score spread</div></div></div>
         ${chartScoreHistogram(released)}
       </div>
     </div>
@@ -2024,22 +2021,8 @@ function renderPdDashboard(){
     <div class="dash-grid">
       <div class="card card-flush">
         <div class="card-section">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
-            <div>
-              <div class="card-title"><i class="fa-light fa-triangle-exclamation"></i>At-risk courses (no CQI action yet)</div>
-              <div class="card-sub">Released courses scored under 3.7 with no documented action. This is your weekly action queue and the gap report for accreditation.</div>
-            </div>
-            <details style="font-size:11px;color:var(--muted-fg);max-width:42%;flex-shrink:0">
-              <summary style="cursor:pointer;color:var(--brand-color);font-weight:600;list-style:none">When this card matters <i class="fa-light fa-chevron-down" style="font-size:9px"></i></summary>
-              <div style="margin-top:8px;padding:10px 12px;background:var(--muted);border-radius:var(--radius-sm);line-height:1.55">
-                <div style="margin-bottom:6px"><strong>End-of-term review:</strong> Your weekly triage queue.</div>
-                <div style="margin-bottom:6px"><strong>Pre-accreditation:</strong> Empty = audit-clean for CAPTE 2C.</div>
-                <div style="margin-bottom:6px"><strong>Faculty meetings:</strong> Walk in with the action list pre-populated.</div>
-                <div style="margin-bottom:6px"><strong>Site visit defense:</strong> Documents the Result -&gt; Action -&gt; Reassessment chain accreditors ask for.</div>
-                <div><strong>Decay prevention:</strong> Surfaces a 0.4 drop before it compounds into 0.7 next term.</div>
-              </div>
-            </details>
-          </div>
+          <div class="card-title"><i class="fa-light fa-triangle-exclamation"></i>At-risk courses ${atRisk.length?`<span class="badge badge-amber" style="font-size:10px;margin-left:6px">${atRisk.length}</span>`:''}</div>
+          ${atRisk.length?`<div class="card-sub">Released courses below 3.7 with no CQI action yet. Click any row to attach one.</div>`:''}
         </div>
         <div>${atRiskHtml}</div>
       </div>
@@ -2481,21 +2464,155 @@ function renderSurveyDetail(){
   const targetY = H-P-(65/100)*(H-2*P);
   const trajectorySvg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="width:100%;height:160px"><line x1="${P}" x2="${W-P}" y1="${targetY}" y2="${targetY}" stroke="oklch(0.62 0.16 84)" stroke-width="1" stroke-dasharray="4 4"/><text x="${W-P}" y="${targetY-4}" text-anchor="end" font-size="9" fill="oklch(0.42 0.15 68)">ARC-PA 65% target</text>${[0,25,50,75,100].map(p=>{const y=H-P-(p/100)*(H-2*P);return `<line x1="${P}" x2="${W-P}" y1="${y}" y2="${y}" stroke="oklch(0.93 0.003 270)" stroke-width="1"/><text x="${P-6}" y="${y+3}" text-anchor="end" font-size="9" fill="oklch(0.55 0.012 270)">${p}%</text>`}).join('')}<path d="${pathD}" fill="none" stroke="var(--brand-color)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="${pathD} L ${xs[xs.length-1]} ${H-P} L ${P} ${H-P} Z" fill="var(--brand-color)" opacity="0.08"/>${[3,7,10,14,21].map(d=>{const x=P+d*((W-2*P)/days);return `<line x1="${x}" x2="${x}" y1="${P}" y2="${H-P}" stroke="oklch(0.92 0.004 270)" stroke-width="1" stroke-dasharray="2 2"/><text x="${x}" y="${H-P+12}" text-anchor="middle" font-size="9" fill="oklch(0.55 0.012 270)">D${d}</text>`}).join('')}</svg>`;
 
-  /* Per-question summary */
-  const qHtml = data ? data.questions.map((q,i)=>{
-    const max = Math.max(...q.dist);
+  /* Per-question summary — stacked horizontal bar per question.
+     Width of each segment = % of responses at that rating, so the
+     visual mass tells you where the cohort sat without arithmetic.
+     Survey average is shown as a thin marker line on the bar so each
+     question reads as "above or below the survey baseline". */
+  const surveyAvg = c.avg !== null ? c.avg : null;
+  /* Rating segment palette: green→amber sequential gradient.
+     Avoiding red per Aarti's preference — bottom rating reads as deep
+     burnt-amber (hue ~50), not destructive red (hue ~25). */
+  const ratingFill = {
+    5: 'oklch(0.55 0.14 145)',  /* vibrant green */
+    4: 'oklch(0.65 0.10 130)',  /* pale green     */
+    3: 'oklch(0.70 0.10 95)',   /* warm yellow    */
+    2: 'oklch(0.65 0.13 70)',   /* amber          */
+    1: 'oklch(0.52 0.16 55)',   /* deep burnt amber (no red) */
+  };
+  const qLegend = `<div style="display:flex;align-items:center;gap:14px;font-size:10px;color:var(--muted-fg);padding:0 0 12px 0;border-bottom:1px solid var(--hairline-soft);margin-bottom:10px;flex-wrap:wrap">
+    <span style="font-weight:600;text-transform:uppercase;letter-spacing:.06em">Distribution</span>
+    ${[
+      {s:5, label:'5 ★ (Strongly agree)'},
+      {s:4, label:'4 ★'},
+      {s:3, label:'3 ★ (Neutral)'},
+      {s:2, label:'2 ★'},
+      {s:1, label:'1 ★ (Strongly disagree)'},
+    ].map(t=>`<span style="display:inline-flex;align-items:center;gap:5px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${ratingFill[t.s]}"></span>${t.label}</span>`).join('')}
+    ${surveyAvg!==null ? `<span style="margin-left:auto;display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:2px;height:12px;background:var(--foreground);border-radius:1px"></span>Survey average ${surveyAvg.toFixed(2)}</span>` : ''}
+  </div>`;
+  const qHtml = data ? qLegend + data.questions.map((q,i)=>{
     const total = q.dist.reduce((a,b)=>a+b,0);
-    return `<div style="padding:11px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:background var(--tr);margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:var(--radius-sm)" onmouseover="this.style.background='var(--muted)'" onmouseout="this.style.background='transparent'" onclick="openQuestionDrill('${c.id}',${i})">
-      <div style="display:flex;justify-content:space-between;gap:14px;margin-bottom:7px;align-items:center"><span style="font-size:12px;flex:1">${escapeHtml(q.text)}</span><strong style="font-size:13px">${q.avg.toFixed(2)}</strong><i class="fa-light fa-chevron-right" style="color:var(--muted-fg);font-size:11px"></i></div>
-      <div style="display:flex;gap:6px;align-items:center;font-size:10px;color:var(--muted-fg)">${[5,4,3,2,1].map(s=>{const ct=q.dist[s-1];const w=max?Math.round(ct/max*100):0;const fill=s===5?'var(--c-green)':s===4?'oklch(0.52 0.13 130)':s===3?'var(--c-amber)':s===2?'oklch(0.62 0.18 40)':'var(--destructive)';return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><div style="width:100%;height:14px;background:var(--muted);border-radius:3px;overflow:hidden;display:flex;align-items:flex-end"><div style="width:100%;background:${fill};height:${w}%;border-radius:3px 3px 0 0"></div></div><span>${s}: ${ct}</span></div>`}).join('')}</div>
+    const segs = [5,4,3,2,1].map(s=>{
+      const ct = q.dist[s-1];
+      const pct = total ? (ct/total)*100 : 0;
+      return {s, ct, pct, fill: ratingFill[s]};
+    });
+    /* Bar order is 5→1 left-to-right, so high score = leftmost.
+       Map avg (1..5) onto bar position by inverting: avg=5 → 0%, avg=1 → 100% */
+    const markerPct = surveyAvg !== null ? Math.max(0, Math.min(100, (1 - (surveyAvg-1)/4) * 100)) : null;
+    const delta = surveyAvg !== null ? +(q.avg - surveyAvg).toFixed(2) : null;
+    const verdict = q.avg >= 4.3 ? {col:'var(--c-green-fg)',  bg:'var(--c-green-bg)',  ic:'fa-thumbs-up',            lbl:'Strong'}
+                  : q.avg >= 3.7 ? {col:'var(--brand-color)', bg:'var(--brand-tint)',  ic:'fa-circle-check',         lbl:'Acceptable'}
+                  : q.avg >= 3.0 ? {col:'var(--c-amber-fg)',  bg:'var(--c-amber-bg)',  ic:'fa-triangle-exclamation', lbl:'Watch'}
+                                 : {col:'oklch(0.42 0.16 55)', bg:'oklch(0.96 0.04 60)', ic:'fa-circle-exclamation',  lbl:'Below 3.0'};
+    return `<div style="padding:14px 8px;border-bottom:1px solid var(--hairline-soft);cursor:pointer;transition:background var(--tr-fast);border-radius:var(--r-sm);margin:0 -8px" onmouseover="this.style.background='var(--muted)'" onmouseout="this.style.background='transparent'" onclick="openQuestionDrill('${c.id}',${i})">
+      <div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:9px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;color:var(--foreground);line-height:1.5;font-weight:500">${escapeHtml(q.text)}</div>
+          <div style="display:flex;gap:12px;font-size:11px;color:var(--muted-fg);margin-top:5px;align-items:center;flex-wrap:wrap">
+            <span style="font-variant-numeric:tabular-nums">N = ${total}</span>
+            ${delta!==null ? `<span style="display:inline-flex;align-items:center;gap:4px;color:${delta>0.1?'var(--c-green-fg)':delta<-0.1?'var(--c-amber-fg)':'var(--muted-fg)'};font-variant-numeric:tabular-nums"><i class="fa-light fa-${delta>0.1?'arrow-up':delta<-0.1?'arrow-down':'minus'}" style="font-size:9px"></i>${delta>0?'+':''}${delta.toFixed(2)} vs survey avg</span>` : ''}
+            <span class="badge" style="background:${verdict.bg};color:${verdict.col};font-size:10px;font-weight:600;padding:1px 7px;border-radius:var(--r-pill);border:0"><i class="fa-light ${verdict.ic}" style="font-size:9px"></i>${verdict.lbl}</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:9px;flex-shrink:0">
+          <div style="font-family:var(--font-heading);font-size:24px;font-weight:500;color:var(--foreground);line-height:1;font-variant-numeric:tabular-nums">${q.avg.toFixed(2)}</div>
+          <i class="fa-light fa-chevron-right" style="color:var(--muted-fg);font-size:11px"></i>
+        </div>
+      </div>
+      <div style="position:relative;height:24px;background:var(--muted);border-radius:var(--r-sm);overflow:hidden;display:flex;box-shadow:inset 0 0 0 1px var(--hairline-soft)">
+        ${segs.map(seg=>`<div title="${seg.s} stars: ${seg.ct} of ${total} (${Math.round(seg.pct)}%)" style="width:${seg.pct}%;background:${seg.fill};display:flex;align-items:center;justify-content:center;color:white;font-size:10px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.02em;transition:filter var(--tr-fast)" onmouseover="this.style.filter='brightness(1.08)'" onmouseout="this.style.filter='none'">${seg.pct>=10?seg.ct:''}</div>`).join('')}
+        ${markerPct!==null ? `<div style="position:absolute;top:-2px;bottom:-2px;left:calc(${markerPct}% - 1px);width:2px;background:var(--foreground);border-radius:1px;pointer-events:none" aria-label="Survey average marker"></div>` : ''}
+      </div>
     </div>`;
   }).join('') : `<div style="padding:24px;text-align:center;color:var(--muted-fg);font-size:12px"><div style="font-size:24px;margin-bottom:8px;color:var(--border-strong)"><i class="fa-light fa-square-poll-vertical"></i></div>Per-question distribution unlocks after grades are submitted to the SIS. ${c.surveyStatus==='live'?'Survey is still open, '+responseCount(c.id)+' of '+c.enrolled+' responses in.':c.surveyStatus==='pending-review'?'Awaiting grade submission to release results.':'No data yet.'}</div>`;
 
-  /* Themes preview */
-  const themesHtml = themes.length ? themes.slice(0,3).map((t,ti)=>{
-    const sb = t.sentiment==='positive'?'<span class="badge badge-success"><i class="fa-light fa-thumbs-up"></i>Positive</span>':'<span class="badge badge-amber"><i class="fa-light fa-circle-exclamation"></i>Concern</span>';
-    return `<div style="padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:background var(--tr);margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:var(--radius-sm)" onmouseover="this.style.background='var(--muted)'" onmouseout="this.style.background='transparent'" onclick="openThemeDrill('${c.id}',${ti})"><div style="display:flex;justify-content:space-between;align-items:center"><strong style="font-size:13px">${escapeHtml(t.name)}</strong>${sb}</div><div style="font-size:11px;color:var(--muted-fg);margin-top:3px">${t.mentions} mentions <span style="color:var(--brand-color);margin-left:6px">See all quotes <i class="fa-light fa-chevron-right" style="font-size:9px"></i></span></div></div>`;
-  }).join('') : `<div style="padding:24px;text-align:center;color:var(--muted-fg);font-size:12px"><div style="font-size:24px;margin-bottom:8px;color:var(--border-strong)"><i class="fa-light fa-comments"></i></div>AI themes appear after grades are submitted and min-N is met (5 responses).</div>`;
+  /* Action loop — single panel that connects student concerns to faculty
+     reflection to next-cohort note to CQI action. Replaces the two
+     disconnected "Themes" and "Loop closure" cards so the causal chain
+     is visible at a glance. */
+  const concerns = themes.filter(t=>t.sentiment!=='positive');
+  const positives = themes.filter(t=>t.sentiment==='positive');
+  const topConcern = concerns[0] || null;
+  const stepStates = {
+    themes:    themes.length ? 'done' : (c.avg!==null ? 'pending' : 'blocked'),
+    reflect:   reflection ? 'done' : (c.surveyStatus==='results-available' ? 'next' : 'blocked'),
+    note:      note ? 'done' : (reflection ? 'next' : 'blocked'),
+    cqi:       cqi ? 'done' : (topConcern || (c.avg!==null && c.avg<3.7) ? 'next' : 'optional'),
+  };
+  const stateStyle = (s)=>{
+    if(s==='done')    return {bg:'var(--c-green-fg)',          fg:'white',                ring:'var(--c-green-bg)',          dot:'fa-check'};
+    if(s==='next')    return {bg:'var(--brand-color)',          fg:'white',                ring:'var(--brand-tint)',          dot:''};
+    if(s==='pending') return {bg:'color-mix(in oklch, var(--c-amber) 80%, white)', fg:'var(--c-amber-fg)', ring:'var(--c-amber-bg)', dot:''};
+    if(s==='blocked') return {bg:'var(--muted-2)',              fg:'var(--muted-fg)',      ring:'var(--muted)',                dot:'fa-lock'};
+    return                   {bg:'var(--muted-2)',              fg:'var(--muted-fg)',      ring:'var(--muted)',                dot:''};
+  };
+
+  const stepCol = (n, key, title, icon, body)=>{
+    const s = stateStyle(stepStates[key]);
+    return `<div style="flex:1;min-width:170px;display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:32px;height:32px;border-radius:var(--r-pill);background:${s.bg};color:${s.fg};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;box-shadow:0 0 0 4px ${s.ring}">${s.dot?`<i class="fa-light ${s.dot}"></i>`:n}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted-fg);line-height:1">Step ${n}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--foreground);margin-top:3px;display:flex;align-items:center;gap:6px"><i class="fa-light ${icon}" style="color:var(--brand-color);font-size:12px"></i>${title}</div>
+        </div>
+      </div>
+      <div style="font-size:12px;line-height:1.55;color:var(--muted-fg);min-height:64px">${body}</div>
+    </div>`;
+  };
+
+  const themesBody = themes.length
+    ? `${concerns.length ? `<div style="margin-bottom:6px"><span class="badge badge-amber" style="font-size:9px"><i class="fa-light fa-circle-exclamation"></i>${concerns.length} concern${concerns.length>1?'s':''}</span>${positives.length?` <span class="badge badge-success" style="font-size:9px;margin-left:4px"><i class="fa-light fa-thumbs-up"></i>${positives.length} positive</span>`:''}</div>` : `<div style="margin-bottom:6px"><span class="badge badge-success" style="font-size:9px"><i class="fa-light fa-thumbs-up"></i>${positives.length} positive themes</span></div>`}
+       ${themes.slice(0,2).map((t,ti)=>`<div onclick="event.stopPropagation();openThemeDrill('${c.id}',${ti})" style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:var(--r-sm);cursor:pointer;font-size:12px" onmouseover="this.style.background='var(--muted)'" onmouseout="this.style.background='transparent'"><span style="color:var(--foreground);font-weight:500">${t.sentiment==='positive'?'<i class="fa-light fa-thumbs-up" style="color:var(--c-green-fg);font-size:10px;margin-right:5px"></i>':'<i class="fa-light fa-triangle-exclamation" style="color:var(--c-amber-fg);font-size:10px;margin-right:5px"></i>'}${escapeHtml(t.name)}</span><span style="color:var(--muted-fg);font-size:10px;font-variant-numeric:tabular-nums">${t.mentions}</span></div>`).join('')}`
+    : (c.avg!==null
+        ? `<span style="font-style:italic">No themes yet. Min-N of 5 open-text responses required for AI synthesis.</span>`
+        : `<span style="font-style:italic">Themes appear after grades post and results unlock.</span>`);
+
+  const reflectBody = reflection
+    ? `<div style="font-size:11px;color:var(--muted-fg);margin-bottom:4px"><i class="fa-light fa-circle-check" style="color:var(--c-green-fg);margin-right:4px"></i>Saved ${fmtDate(reflection.savedAt.slice(0,10))} by ${escapeHtml(c.instructor)}</div>
+       <div style="font-style:italic;color:var(--foreground);font-size:12px;line-height:1.5">&ldquo;${escapeHtml((reflection.q1||'').slice(0,110))}${(reflection.q1||'').length>110?'…':''}&rdquo;</div>`
+    : c.surveyStatus==='results-available'
+        ? `<div style="margin-bottom:6px;font-size:11px"><i class="fa-light fa-clock" style="color:var(--brand-color);margin-right:4px"></i>Awaiting faculty</div>
+           <div style="font-size:11px">${escapeHtml(c.instructor)} got the unlock email. Will write 3 short prompts addressing what students raised.</div>`
+        : `<span style="font-style:italic">Unlocks when grades post to SIS. Faculty will see top concerns alongside their results.</span>`;
+
+  const noteBody = note
+    ? `<div style="font-size:11px;color:var(--muted-fg);margin-bottom:4px"><i class="fa-light fa-circle-check" style="color:var(--c-green-fg);margin-right:4px"></i>Posted ${fmtDate(note.postedAt)}</div>
+       <div style="font-style:italic;color:var(--foreground);font-size:12px;line-height:1.5">&ldquo;${escapeHtml(note.note.slice(0,110))}${note.note.length>110?'…':''}&rdquo;</div>
+       <div style="font-size:10px;color:var(--brand-color-dark);margin-top:6px"><i class="fa-light fa-arrow-right" style="margin-right:3px"></i>Shows at top of next ${c.code} survey</div>`
+    : reflection
+        ? `<div style="margin-bottom:6px;font-size:11px"><i class="fa-light fa-clock" style="color:var(--brand-color);margin-right:4px"></i>Faculty has reflected, note pending</div>
+           <div style="font-size:11px">2-sentence note will appear at the top of next cohort's survey, closing the feedback loop students can see.</div>`
+        : `<span style="font-style:italic">Posts after faculty saves a reflection. Visible to next cohort to show their predecessors were heard.</span>`;
+
+  const cqiBody = cqi
+    ? `<div style="font-size:11px;color:var(--muted-fg);margin-bottom:4px"><i class="fa-light fa-circle-check" style="color:var(--c-green-fg);margin-right:4px"></i>${cqi.status==='open'?'Open':cqi.status==='reassessment-due'?'Reassessment due':'Closed'} · reassess ${termOf(cqi.reassessTermId)?.name||'?'}</div>
+       <div style="font-style:italic;color:var(--foreground);font-size:12px;line-height:1.5">&ldquo;${escapeHtml((cqi.action||'').slice(0,110))}${(cqi.action||'').length>110?'…':''}&rdquo;</div>
+       <div style="font-size:10px;color:var(--brand-color-dark);margin-top:6px"><i class="fa-light fa-shield-check" style="margin-right:3px"></i>CAPTE 2C evidence chain</div>`
+    : (topConcern || (c.avg!==null && c.avg<3.7))
+        ? `<div style="margin-bottom:6px;font-size:11px"><i class="fa-light fa-circle-exclamation" style="color:var(--c-amber-fg);margin-right:4px"></i>${topConcern?`Top concern: <strong style="color:var(--foreground)">${escapeHtml(topConcern.name)}</strong>`:`Score ${c.avg.toFixed(2)} is below 3.7 threshold`}</div>
+           <button class="btn btn-primary btn-xs" onclick="event.stopPropagation();setPersona('pd');state.pdView='cqi';openCqiCreate('${c.id}')"><i class="fa-light fa-plus"></i>${topConcern?`Create CQI from "${escapeHtml(topConcern.name)}"`:'Create CQI action'}</button>`
+        : `<span style="font-style:italic">No CQI required — all themes positive and avg ≥ 3.7. Logged as "no action" for accreditation evidence.</span>`;
+
+  const railHtml = `
+    <div class="card" style="grid-column:1 / -1">
+      <div class="card-head" style="margin-bottom:14px"><div>
+        <div class="card-title"><i class="fa-light fa-arrows-spin"></i>Action loop</div>
+        <div class="card-sub">From student concerns to next-cohort improvement. Each step unlocks the next; the loop closes when a CQI action is logged for accreditation.</div>
+      </div></div>
+      <div style="position:relative;display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap">
+        <div style="position:absolute;left:32px;right:32px;top:16px;height:2px;background:var(--hairline);z-index:0;pointer-events:none"></div>
+        <div style="display:flex;flex:1;gap:14px;flex-wrap:wrap;position:relative;z-index:1">
+          ${stepCol(1,'themes',  'Students said',     'fa-comments',           themesBody)}
+          ${stepCol(2,'reflect', 'Faculty reflected', 'fa-pen-to-square',      reflectBody)}
+          ${stepCol(3,'note',    'Note for next cohort','fa-comment-dots',     noteBody)}
+          ${stepCol(4,'cqi',     'CQI action',        'fa-clipboard-list-check', cqiBody)}
+        </div>
+      </div>
+    </div>
+  `;
 
   return `
     <div class="page-header">
@@ -2555,17 +2672,7 @@ function renderSurveyDetail(){
         ${qHtml}
       </div>
 
-      <div class="card">
-        <div class="card-head"><div><div class="card-title"><i class="fa-duotone fa-solid fa-star-christmas" style="color:var(--brand-color)"></i>Top themes from open-text</div></div></div>
-        ${themesHtml}
-      </div>
-
-      <div class="card">
-        <div class="card-head"><div><div class="card-title"><i class="fa-light fa-link"></i>Loop closure</div><div class="card-sub">Faculty reflection, next-cohort note, and CQI action linked to this survey.</div></div></div>
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)"><i class="fa-light fa-pen-to-square" style="color:${reflection?'var(--c-green-fg)':'var(--muted-fg)'};opacity:${reflection?1:0.4};width:18px;text-align:center"></i><div style="flex:1;font-size:12px">Faculty reflection ${reflection?`<span class="muted">saved ${fmtDate(reflection.savedAt.slice(0,10))}</span>`:'<span class="muted">not yet</span>'}</div></div>
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)"><i class="fa-light fa-comment-dots" style="color:${note?'var(--c-green-fg)':'var(--muted-fg)'};opacity:${note?1:0.4};width:18px;text-align:center"></i><div style="flex:1;font-size:12px">Next-cohort note ${note?`<span class="muted">posted ${fmtDate(note.postedAt)}</span>`:'<span class="muted">not posted</span>'}</div></div>
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 0"><i class="fa-light fa-clipboard-list-check" style="color:${cqi?'var(--brand-color)':'var(--muted-fg)'};opacity:${cqi?1:0.4};width:18px;text-align:center"></i><div style="flex:1;font-size:12px">CQI action ${cqi?`<span class="muted">${cqi.status} · reassess in ${termOf(cqi.reassessTermId)?.name||'?'}</span>`:'<span class="muted">none yet</span>'} ${!cqi&&c.avg!==null&&c.avg<3.7?`<button class="btn btn-link" style="font-size:11px" onclick="setPersona('pd');state.pdView='cqi';openCqiCreate('${c.id}')">Create one</button>`:''}</div></div>
-      </div>
+      ${railHtml}
     </div>
   `;
 }
@@ -3227,7 +3334,7 @@ function trendArrowFac(curr, prev){
   const diff = +(curr-prev).toFixed(1);
   if(Math.abs(diff)<0.05) return `<span class="muted"><i class="fa-light fa-minus"></i>±0.0</span>`;
   if(diff>0) return `<span style="color:var(--c-green-fg);font-weight:600"><i class="fa-solid fa-arrow-trend-up"></i>+${diff.toFixed(1)}</span>`;
-  return `<span style="color:var(--destructive-fg);font-weight:600"><i class="fa-solid fa-arrow-trend-down"></i>${diff.toFixed(1)}</span>`;
+  return `<span style="color:var(--c-amber-fg);font-weight:600"><i class="fa-solid fa-arrow-trend-down"></i>${diff.toFixed(1)}</span>`;
 }
 
 function renderFacReflection(){
@@ -4314,7 +4421,7 @@ function openQuestionDrill(courseId, questionIdx){
     const ct = q.dist[s-1];
     const pct = total ? Math.round(ct/total*100) : 0;
     const w = max ? Math.round(ct/max*100) : 0;
-    const fill = s===5?'var(--c-green)':s===4?'oklch(0.52 0.13 130)':s===3?'var(--c-amber)':s===2?'oklch(0.62 0.18 40)':'var(--destructive)';
+    const fill = s===5?'oklch(0.55 0.14 145)':s===4?'oklch(0.65 0.10 130)':s===3?'oklch(0.70 0.10 95)':s===2?'oklch(0.65 0.13 70)':'oklch(0.52 0.16 55)';
     return `<div style="display:grid;grid-template-columns:24px 1fr 90px;gap:11px;align-items:center;padding:6px 0">
       <span style="font-size:12px;font-weight:700;text-align:right;color:var(--muted-fg)">${s}</span>
       <div style="height:22px;background:var(--muted);border-radius:4px;overflow:hidden"><div style="width:${w}%;height:100%;background:${fill};border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;color:white;font-size:11px;font-weight:600">${ct>0&&w>20?ct:''}</div></div>
@@ -4417,7 +4524,7 @@ function openDceFacetDrill(courseId, facetIdx){
       <div class="section-label">Why this matters</div>
       <div style="font-size:12px;color:var(--muted-fg);line-height:1.65;margin-bottom:14px">${escapeHtml(fc.context)}</div>
       <div class="section-label">Interpretation for this cohort</div>
-      <div style="background:${score>=4.0?'var(--c-green-bg)':score>=3.5?'var(--c-amber-bg)':'var(--destructive-bg)'};padding:11px 14px;border-radius:var(--radius-sm);font-size:12px;color:${score>=4.0?'var(--c-green-fg)':score>=3.5?'var(--c-amber-fg)':'var(--destructive-fg)'};line-height:1.6"><i class="fa-light ${score>=4.0?'fa-circle-check':score>=3.5?'fa-circle-exclamation':'fa-triangle-exclamation'}" style="margin-right:5px"></i>${interpretation}</div>
+      <div style="background:${score>=4.0?'var(--c-green-bg)':score>=3.5?'var(--c-amber-bg)':'oklch(0.96 0.04 60)'};padding:11px 14px;border-radius:var(--radius-sm);font-size:12px;color:${score>=4.0?'var(--c-green-fg)':score>=3.5?'var(--c-amber-fg)':'oklch(0.42 0.16 55)'};line-height:1.6"><i class="fa-light ${score>=4.0?'fa-circle-check':score>=3.5?'fa-circle-exclamation':'fa-triangle-exclamation'}" style="margin-right:5px"></i>${interpretation}</div>
     `,
     actions:`<button class="btn btn-outline" onclick="closeModal();openSurveyDetail('${courseId}','dce')">Open full survey detail</button><button class="btn btn-primary" onclick="closeModal()">Close</button>`,
   });
@@ -4564,7 +4671,7 @@ function renderSparkline(values){
   const xs = values.map((_,i)=>4 + i*((W-8)/(values.length-1)));
   const ys = values.map(v => H-3 - ((v-min)/(max-min))*(H-6));
   const d = xs.map((x,i)=>`${i===0?'M':'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
-  const trendColor = values[values.length-1]>=values[0] ? 'oklch(0.45 0.14 155)' : 'oklch(0.55 0.22 25)';
+  const trendColor = values[values.length-1]>=values[0] ? 'oklch(0.45 0.14 155)' : 'oklch(0.52 0.16 55)';
   return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><path d="${d}" fill="none" stroke="${trendColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>${values.map((v,i)=>`<circle cx="${xs[i]}" cy="${ys[i]}" r="1.5" fill="${trendColor}"/>`).join('')}</svg>`;
 }
 
@@ -4939,7 +5046,7 @@ function renderDceReadiness(){
     </div>
 
     <div class="kpi-grid" style="grid-template-columns:repeat(4, 1fr)">
-      <div class="kpi"><div class="kpi-label">Cohort readiness</div><div class="kpi-val" style="font-size:18px;color:${readinessSignal==='Strong'?'var(--c-green-fg)':readinessSignal==='Risk'?'var(--destructive-fg)':'var(--c-amber-fg)'}">${readinessSignal}</div><div class="kpi-meta">Composite signal</div></div>
+      <div class="kpi"><div class="kpi-label">Cohort readiness</div><div class="kpi-val" style="font-size:18px;color:${readinessSignal==='Strong'?'var(--c-green-fg)':readinessSignal==='Risk'?'oklch(0.42 0.16 55)':'var(--c-amber-fg)'}">${readinessSignal}</div><div class="kpi-meta">Composite signal</div></div>
       <div class="kpi"><div class="kpi-label">Avg score</div><div class="kpi-val">${c.avg===null?'--':c.avg.toFixed(2)}<small>/ 5.0</small></div><div class="kpi-meta">${trendArrowFac(c.avg, c.prev)}</div></div>
       <div class="kpi"><div class="kpi-label">Responses</div><div class="kpi-val">${responseCount(c.id)}<small>/${c.enrolled}</small></div></div>
       <div class="kpi"><div class="kpi-label">Concerns flagged</div><div class="kpi-val">${concerns.length}</div><div class="kpi-meta">From open-text themes</div></div>
@@ -4959,7 +5066,7 @@ function renderDceReadiness(){
               <div style="font-size:11px;color:var(--muted-fg)">Weight: ${fc.weight}</div>
             </div>
             <div style="display:flex;align-items:center;gap:8px;width:160px">
-              <div style="flex:1;height:5px;background:var(--muted-2);border-radius:99px;overflow:hidden"><div style="height:100%;width:${fc.score?fc.score/5*100:0}%;background:${fc.score>=4.0?'var(--c-green)':fc.score>=3.5?'var(--c-amber)':'var(--destructive)'};border-radius:99px"></div></div>
+              <div style="flex:1;height:5px;background:var(--muted-2);border-radius:99px;overflow:hidden"><div style="height:100%;width:${fc.score?fc.score/5*100:0}%;background:${fc.score>=4.0?'var(--c-green)':fc.score>=3.5?'var(--c-amber)':'oklch(0.52 0.16 55)'};border-radius:99px"></div></div>
               <span style="font-size:13px;font-weight:600;width:34px;text-align:right">${fc.score?fc.score.toFixed(2):'--'}</span>
             </div>
             <i class="fa-light fa-chevron-right" style="color:var(--muted-fg);font-size:11px"></i>
