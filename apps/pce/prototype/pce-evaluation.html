@@ -1388,25 +1388,23 @@ function chartProgramTrend(series, labels, opts){
 }
 
 function chartCqiPipeline(open, due, closed){
-  /* Three KPI tiles, one per CQI stage. Replaces the stretched stacked
-     bar that looked broken with single-digit counts. Click any tile to
-     open the CQI log. */
+  /* Compact status chips, not stretched tiles. Each chip is auto-sized so
+     they cluster left and the card stays slim. Click any chip to open the
+     CQI log. */
   const stages = [
-    {key:'open',   label:'Open',              count:open,   icon:'fa-circle-half-stroke', bg:'var(--c-amber-bg)', fg:'var(--c-amber-fg)',  ring:'color-mix(in oklch, var(--c-amber) 22%, white)'},
-    {key:'due',    label:'Reassessment due',  count:due,    icon:'fa-bell-on',             bg:'oklch(0.96 0.04 60)', fg:'oklch(0.42 0.16 55)', ring:'color-mix(in oklch, oklch(0.52 0.16 55) 22%, white)'},
-    {key:'closed', label:'Closed',            count:closed, icon:'fa-circle-check',        bg:'var(--c-green-bg)',   fg:'var(--c-green-fg)',  ring:'color-mix(in oklch, var(--c-green) 22%, white)'},
+    {key:'open',   label:'Open',           count:open,   icon:'fa-circle-half-stroke', fg:'var(--c-amber-fg)',  bg:'var(--c-amber-bg)', ring:'color-mix(in oklch, var(--c-amber) 22%, white)'},
+    {key:'due',    label:'Reassess due',   count:due,    icon:'fa-bell-on',             fg:'oklch(0.42 0.16 55)', bg:'oklch(0.96 0.04 60)', ring:'color-mix(in oklch, oklch(0.52 0.16 55) 22%, white)'},
+    {key:'closed', label:'Closed',         count:closed, icon:'fa-circle-check',        fg:'var(--c-green-fg)',  bg:'var(--c-green-bg)', ring:'color-mix(in oklch, var(--c-green) 22%, white)'},
   ];
   const total = open + due + closed;
   if(total === 0){
-    return `<div style="padding:24px;text-align:center;color:var(--muted-fg);font-size:12px"><i class="fa-light fa-circle-check" style="color:var(--c-green-fg);font-size:18px;margin-right:6px;vertical-align:-3px"></i>No CQI actions on record yet</div>`;
+    return `<div style="padding:6px 0;color:var(--muted-fg);font-size:12px"><i class="fa-light fa-circle-check" style="color:var(--c-green-fg);margin-right:6px"></i>No CQI actions on record yet</div>`;
   }
-  return `<div style="display:flex;gap:10px">
-    ${stages.map(s=>`<button onclick="setView('cqi')" style="flex:1;display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--r-md);background:${s.bg};border:1px solid ${s.ring};text-align:left;cursor:pointer;transition:filter var(--tr-fast)" onmouseover="this.style.filter='brightness(0.97)'" onmouseout="this.style.filter='none'">
-      <div style="width:34px;height:34px;border-radius:var(--r-pill);background:white;color:${s.fg};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0"><i class="fa-light ${s.icon}"></i></div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:${s.fg};line-height:1">${s.label}</div>
-        <div style="font-family:var(--font-heading);font-size:24px;font-weight:500;color:var(--foreground);margin-top:5px;font-variant-numeric:tabular-nums;line-height:1">${s.count}</div>
-      </div>
+  return `<div style="display:flex;gap:8px;flex-wrap:wrap">
+    ${stages.map(s=>`<button onclick="setView('cqi')" style="display:inline-flex;align-items:center;gap:10px;padding:8px 14px;border-radius:var(--r-md);background:${s.bg};border:1px solid ${s.ring};cursor:pointer;transition:filter var(--tr-fast);font-family:inherit" onmouseover="this.style.filter='brightness(0.97)'" onmouseout="this.style.filter='none'">
+      <i class="fa-light ${s.icon}" style="color:${s.fg};font-size:13px"></i>
+      <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:${s.fg}">${s.label}</span>
+      <span style="font-size:14px;font-weight:700;color:var(--foreground);font-variant-numeric:tabular-nums;line-height:1">${s.count}</span>
     </button>`).join('')}
   </div>`;
 }
@@ -1599,48 +1597,45 @@ function chartFacultyOverTerms(history, courses){
 }
 
 function chartScoreHistogram(courses){
-  /* Dot plot on a 1-5 axis instead of a 6-bucket histogram. With sparse
-     data (1-5 released courses per term) buckets read as broken; a dot
-     plot keeps every course visible and shows spread immediately. */
+  /* CSS-positioned dot plot (no SVG viewBox). Naturally fills the parent
+     width — every horizontal coordinate is a percentage. Stats display
+     inline above the axis so the card reads in two compact rows. */
   if(!courses.length){
-    return `<div style="padding:24px;text-align:center;color:var(--muted-fg);font-size:12px">No released courses yet this term.</div>`;
+    return `<div style="padding:14px 0;color:var(--muted-fg);font-size:12px">No released courses yet this term.</div>`;
   }
-  const W = 560, H = 96, P = 24, axisY = 56;
-  const xFor = v => P + ((v-1)/4) * (W - 2*P);
-  /* Vertical jitter so overlapping dots don't stack on one another */
   const sorted = [...courses].sort((a,b)=>a.avg-b.avg);
+  const minScore = sorted[0].avg;
+  const maxScore = sorted[sorted.length-1].avg;
+  const median = (()=>{const m=Math.floor(sorted.length/2);return sorted.length%2?sorted[m].avg:(sorted[m-1].avg+sorted[m].avg)/2;})();
+  const belowThreshold = courses.filter(c=>c.avg<3.7).length;
+  const xPct = v => Math.max(0, Math.min(100, ((v-1)/4) * 100));
+
   const placed = [];
   const dots = sorted.map(c=>{
-    const x = xFor(c.avg);
-    const dy = placed.filter(p=>Math.abs(p-x)<14).length * 11;
+    const x = xPct(c.avg);
+    const collisions = placed.filter(p=>Math.abs(p-x)<3).length;
     placed.push(x);
     const fill = c.avg>=4.3 ? 'oklch(0.45 0.14 155)' : c.avg>=3.7 ? 'oklch(0.50 0.18 343)' : 'oklch(0.52 0.16 55)';
-    return `<g class="cell" tabindex="0" role="button" aria-label="${c.code}: average ${c.avg.toFixed(2)}. Press to open detail." style="cursor:pointer;outline:none" onclick="openSurveyDetail('${c.id}','pd')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSurveyDetail('${c.id}','pd')}">
-      <circle cx="${x}" cy="${axisY-6-dy}" r="7" fill="${fill}" stroke="white" stroke-width="2"/>
-      <title>${c.code}: ${c.avg.toFixed(2)}</title>
-    </g>`;
+    return `<button title="${c.code}: ${c.avg.toFixed(2)}" aria-label="${c.code}: ${c.avg.toFixed(2)}, open detail" onclick="openSurveyDetail('${c.id}','pd')" style="position:absolute;left:${x.toFixed(2)}%;top:${(50 - collisions*16).toFixed(0)}%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:${fill};border:2px solid white;box-shadow:0 1px 3px oklch(0 0 0 / .15);cursor:pointer;padding:0;font-family:inherit"></button>`;
   }).join('');
-  const threshX = xFor(3.7);
-  const ticks = [1,2,3,4,5].map(t=>`<g><line x1="${xFor(t)}" x2="${xFor(t)}" y1="${axisY-3}" y2="${axisY+3}" stroke="${CHART.muted}" stroke-width="1"/><text x="${xFor(t)}" y="${axisY+18}" text-anchor="middle" font-size="10" fill="${CHART.muted}" font-family="Inter" font-variant-numeric="tabular-nums">${t}.0</text></g>`).join('');
-  const minScore = Math.min(...courses.map(c=>c.avg));
-  const maxScore = Math.max(...courses.map(c=>c.avg));
-  const median = (()=>{const a=[...sorted];const m=Math.floor(a.length/2);return a.length%2?a[m].avg:(a[m-1].avg+a[m].avg)/2;})();
-  const belowThreshold = courses.filter(c=>c.avg<3.7).length;
-  return `<figure role="figure" aria-label="Score distribution: ${courses.length} released courses, range ${minScore.toFixed(2)} to ${maxScore.toFixed(2)}." style="margin:0">
-    <div style="display:flex;align-items:center;gap:18px;font-size:11px;color:var(--muted-fg);margin-bottom:8px;flex-wrap:wrap">
+  const ticks = [1,2,3,4,5].map(t=>`<div style="position:absolute;left:${xPct(t).toFixed(2)}%;top:50%;transform:translate(-50%,0);display:flex;flex-direction:column;align-items:center;gap:4px"><div style="width:1px;height:6px;background:var(--muted-fg)"></div><span style="font-size:10px;color:var(--muted-fg);font-variant-numeric:tabular-nums">${t}.0</span></div>`).join('');
+  const threshLeft = xPct(3.7);
+  return `<div style="margin-top:2px">
+    <div style="display:flex;align-items:center;gap:14px;font-size:11px;color:var(--muted-fg);margin-bottom:14px;flex-wrap:wrap">
       <span><strong style="color:var(--foreground);font-variant-numeric:tabular-nums">${courses.length}</strong> released</span>
       <span>Range <strong style="color:var(--foreground);font-variant-numeric:tabular-nums">${minScore.toFixed(2)} – ${maxScore.toFixed(2)}</strong></span>
       <span>Median <strong style="color:var(--foreground);font-variant-numeric:tabular-nums">${median.toFixed(2)}</strong></span>
-      ${belowThreshold>0?`<span style="color:var(--c-amber-fg);font-weight:600"><i class="fa-light fa-triangle-exclamation"></i> ${belowThreshold} below 3.7 threshold</span>`:`<span style="color:var(--c-green-fg);font-weight:600"><i class="fa-light fa-check"></i> All above 3.7 threshold</span>`}
+      ${belowThreshold>0
+        ? `<span style="color:var(--c-amber-fg);font-weight:600"><i class="fa-light fa-triangle-exclamation"></i> ${belowThreshold} below 3.7 threshold</span>`
+        : `<span style="color:var(--c-green-fg);font-weight:600"><i class="fa-light fa-check"></i> All above 3.7 threshold</span>`}
     </div>
-    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="width:100%;height:96px;display:block">
-      <line x1="${P}" x2="${W-P}" y1="${axisY}" y2="${axisY}" stroke="${CHART.muted}" stroke-width="1"/>
-      <line x1="${threshX}" x2="${threshX}" y1="14" y2="${axisY}" stroke="oklch(0.52 0.16 55)" stroke-width="1.5" stroke-dasharray="3 3"/>
-      <text x="${threshX}" y="10" text-anchor="middle" font-size="9" fill="oklch(0.42 0.16 55)" font-family="Inter" font-weight="600">3.7 threshold</text>
-      ${ticks}
-      ${dots}
-    </svg>
-  </figure>`;
+    <div role="figure" aria-label="Score distribution: ${courses.length} courses, range ${minScore.toFixed(2)} to ${maxScore.toFixed(2)}." style="position:relative;height:64px;padding:0 8px">
+      <div style="position:absolute;top:50%;left:8px;right:8px;height:1px;background:var(--muted-fg);opacity:.4"></div>
+      <div style="position:absolute;top:6px;bottom:0;left:calc(8px + ${threshLeft.toFixed(2)}% - ${(threshLeft*0.16).toFixed(2)}px);width:0;border-left:1.5px dashed oklch(0.52 0.16 55)" aria-hidden="true"></div>
+      <div style="position:absolute;top:-4px;left:calc(8px + ${threshLeft.toFixed(2)}% - ${(threshLeft*0.16).toFixed(2)}px);transform:translateX(-50%);font-size:9px;font-weight:600;color:oklch(0.42 0.16 55);white-space:nowrap;font-variant-numeric:tabular-nums">3.7 threshold</div>
+      <div style="position:relative;height:100%;margin:0 8px">${dots}${ticks}</div>
+    </div>
+  </div>`;
 }
 
 function getThemes(cid){
@@ -2426,30 +2421,30 @@ function renderPdDashboard(){
         <div style="font-size:11px;color:var(--muted-fg);margin-top:8px;line-height:1.55">Same standardized question banks across all terms, so this trend is structurally comparable.</div>
       </div>
 
-      <div class="card full">
-        <div class="card-head">
+      <div class="card">
+        <div class="card-head" style="margin-bottom:10px">
           <div><div class="card-title"><i class="fa-light fa-clipboard-list-check"></i>CQI evidence</div></div>
-          ${dueReassess>0?`<button class="btn btn-amber-outline btn-sm" onclick="setView('cqi')"><i class="fa-light fa-bell-on"></i>${dueReassess} due for reassessment</button>`:''}
+          ${dueReassess>0?`<button class="btn btn-amber-outline btn-xs" onclick="setView('cqi')"><i class="fa-light fa-bell-on"></i>${dueReassess} due</button>`:''}
         </div>
         ${chartCqiPipeline(openCqi, dueReassess, closedCqi)}
       </div>
 
-      <div class="card full">
-        <div class="card-head"><div><div class="card-title"><i class="fa-light fa-chart-scatter"></i>Score spread</div></div></div>
+      <div class="card">
+        <div class="card-head" style="margin-bottom:10px"><div><div class="card-title"><i class="fa-light fa-chart-scatter"></i>Score spread</div></div></div>
         ${chartScoreHistogram(released)}
       </div>
     </div>
 
     <div class="dash-grid">
-      <div class="card card-flush">
+      ${atRisk.length ? `<div class="card card-flush">
         <div class="card-section">
-          <div class="card-title"><i class="fa-light fa-triangle-exclamation"></i>At-risk courses ${atRisk.length?`<span class="badge badge-amber" style="font-size:10px;margin-left:6px">${atRisk.length}</span>`:''}</div>
-          ${atRisk.length?`<div class="card-sub">Released courses below 3.7 with no CQI action yet. Click any row to attach one.</div>`:''}
+          <div class="card-title"><i class="fa-light fa-triangle-exclamation"></i>At-risk courses <span class="badge badge-amber" style="font-size:10px;margin-left:6px">${atRisk.length}</span></div>
+          <div class="card-sub">Released courses below 3.7 with no CQI action yet. Click any row to attach one.</div>
         </div>
         <div>${atRiskHtml}</div>
-      </div>
+      </div>` : ''}
 
-      <div class="card card-flush" style="${pendingReviewCourses.length?'border-color:color-mix(in oklch, var(--c-amber) 35%, white)':''}">
+      <div class="card card-flush ${atRisk.length ? '' : 'full'}" style="${pendingReviewCourses.length?'border-color:color-mix(in oklch, var(--c-amber) 35%, white);':''}${atRisk.length?'':''}">
         <div class="card-section">
           <div class="card-title"><i class="fa-light fa-shield-halved" style="color:var(--c-amber-fg)"></i>Pending admin review</div>
           <div class="card-sub">Surveys closed, awaiting comment moderation + grade-lock confirmation before results release to faculty.</div>
