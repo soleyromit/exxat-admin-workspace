@@ -1388,25 +1388,52 @@ function chartProgramTrend(series, labels, opts){
 }
 
 function chartCqiPipeline(open, due, closed){
-  /* Compact status chips, not stretched tiles. Each chip is auto-sized so
-     they cluster left and the card stays slim. Click any chip to open the
-     CQI log. */
-  const stages = [
-    {key:'open',   label:'Open',           count:open,   icon:'fa-circle-half-stroke', fg:'var(--c-amber-fg)',  bg:'var(--c-amber-bg)', ring:'color-mix(in oklch, var(--c-amber) 22%, white)'},
-    {key:'due',    label:'Reassess due',   count:due,    icon:'fa-bell-on',             fg:'oklch(0.42 0.16 55)', bg:'oklch(0.96 0.04 60)', ring:'color-mix(in oklch, oklch(0.52 0.16 55) 22%, white)'},
-    {key:'closed', label:'Closed',         count:closed, icon:'fa-circle-check',        fg:'var(--c-green-fg)',  bg:'var(--c-green-bg)', ring:'color-mix(in oklch, var(--c-green) 22%, white)'},
-  ];
+  /* Card body — compact status line + recent CQI activity feed.
+     Three-chip layout was wasting space; the actual CQI rows show the
+     audit trail accreditors care about (Result → Action → Reassessment),
+     which is the whole point of this card. */
   const total = open + due + closed;
   if(total === 0){
-    return `<div style="padding:6px 0;color:var(--muted-fg);font-size:12px"><i class="fa-light fa-circle-check" style="color:var(--c-green-fg);margin-right:6px"></i>No CQI actions on record yet</div>`;
+    return `<div style="padding:14px 16px;color:var(--muted-fg);font-size:12px;background:var(--muted);border-radius:var(--r-md)"><i class="fa-light fa-circle-check" style="color:var(--c-green-fg);margin-right:6px"></i>No CQI actions on record yet — empty CAPTE 2C log is acceptable when no released course scored below 3.7.</div>`;
   }
-  return `<div style="display:flex;gap:8px;flex-wrap:wrap">
-    ${stages.map(s=>`<button onclick="setView('cqi')" style="display:inline-flex;align-items:center;gap:10px;padding:8px 14px;border-radius:var(--r-md);background:${s.bg};border:1px solid ${s.ring};cursor:pointer;transition:filter var(--tr-fast);font-family:inherit" onmouseover="this.style.filter='brightness(0.97)'" onmouseout="this.style.filter='none'">
-      <i class="fa-light ${s.icon}" style="color:${s.fg};font-size:13px"></i>
-      <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:${s.fg}">${s.label}</span>
-      <span style="font-size:14px;font-weight:700;color:var(--foreground);font-variant-numeric:tabular-nums;line-height:1">${s.count}</span>
-    </button>`).join('')}
+  const statusFor = (s) => {
+    if(s==='reassessment-due') return {label:'Reassess due', fg:'oklch(0.42 0.16 55)', dot:'oklch(0.52 0.16 55)', icon:'fa-bell-on'};
+    if(s==='closed')           return {label:'Closed',       fg:'var(--c-green-fg)',  dot:'var(--c-green)',     icon:'fa-circle-check'};
+    return                            {label:'Open',         fg:'var(--c-amber-fg)',  dot:'var(--c-amber)',     icon:'fa-circle-half-stroke'};
+  };
+  /* Sort: reassessment-due first (action items), then open, then closed */
+  const order = {'reassessment-due':0, 'open':1, 'closed':2};
+  const sorted = [...CQI_ACTIONS].sort((a,b)=>(order[a.status]??9)-(order[b.status]??9)).slice(0,3);
+  const rows = sorted.map(a=>{
+    const s = statusFor(a.status);
+    const reassess = termOf(a.reassessTermId);
+    const detailLine = a.status==='closed' && a.outcome
+      ? `Outcome: ${escapeHtml(a.outcome.slice(0,90))}${a.outcome.length>90?'…':''}`
+      : a.status==='reassessment-due'
+        ? `Reassess in ${escapeHtml(reassess?.name||'next term')} · current ${a.currentScore?.toFixed(1)||'--'} vs baseline ${a.baselineScore?.toFixed(1)||'--'}`
+        : `${escapeHtml((a.action||'').slice(0,90))}${(a.action||'').length>90?'…':''}`;
+    return `<button onclick="setView('cqi')" style="display:flex;align-items:flex-start;gap:11px;padding:10px 14px;background:transparent;border:0;border-bottom:1px solid var(--hairline-soft);width:100%;text-align:left;cursor:pointer;font-family:inherit;transition:background var(--tr-fast)" onmouseover="this.style.background='var(--muted)'" onmouseout="this.style.background='transparent'">
+      <span style="flex-shrink:0;width:8px;height:8px;border-radius:50%;background:${s.dot};margin-top:6px"></span>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px">
+          <strong style="color:var(--foreground)">${a.courseCode}</strong>
+          <span style="color:var(--muted-fg)">·</span>
+          <span style="color:${s.fg};font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em"><i class="fa-light ${s.icon}" style="font-size:10px;margin-right:3px"></i>${s.label}</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted-fg);margin-top:3px;line-height:1.5">${detailLine}</div>
+      </div>
+      <i class="fa-light fa-chevron-right" style="color:var(--muted-fg);font-size:11px;margin-top:6px;flex-shrink:0"></i>
+    </button>`;
+  }).join('');
+  /* Compact summary strip at top — three counts inline, single line */
+  const summaryLine = `<div style="display:flex;align-items:center;gap:14px;padding:0 0 10px;border-bottom:1px solid var(--hairline-soft);margin-bottom:4px;font-size:11px;color:var(--muted-fg);font-variant-numeric:tabular-nums">
+    <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:7px;height:7px;border-radius:50%;background:var(--c-amber)"></span><strong style="color:var(--foreground)">${open}</strong> Open</span>
+    <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:7px;height:7px;border-radius:50%;background:oklch(0.52 0.16 55)"></span><strong style="color:var(--foreground)">${due}</strong> Reassess due</span>
+    <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:7px;height:7px;border-radius:50%;background:var(--c-green)"></span><strong style="color:var(--foreground)">${closed}</strong> Closed</span>
+    <span style="margin-left:auto"><i class="fa-light fa-shield-check"></i> CAPTE 2C</span>
   </div>`;
+  const more = CQI_ACTIONS.length > sorted.length ? `<button class="btn btn-link btn-sm" onclick="setView('cqi')" style="padding:8px 0 0">View all ${CQI_ACTIONS.length} actions <i class="fa-light fa-arrow-right" style="font-size:10px"></i></button>` : '';
+  return `${summaryLine}<div style="margin:0 -16px">${rows}</div>${more}`;
 }
 
 function chartLifecycleFunnel(stages){
