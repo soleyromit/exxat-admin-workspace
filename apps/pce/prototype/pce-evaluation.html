@@ -533,36 +533,36 @@ const QUESTION_BANKS = {
       course: {
         label: 'Course Content Assessment',
         questions: [
-          {id:'dc1', text:'The learning objectives were clearly communicated.', type:'likert', category:'Clarity'},
-          {id:'dc2', text:'Course content was relevant to clinical practice.', type:'likert', category:'Relevance'},
-          {id:'dc3', text:'Course materials (slides, readings) helped me learn.', type:'likert', category:'Materials'},
-          {id:'dc4', text:'The course was well-paced and appropriately structured.', type:'likert', category:'Pacing'},
-          {id:'dc5', text:'Assessments fairly measured what was taught.', type:'likert', category:'Assessment'},
-          {id:'dc6', text:'Overall, I was satisfied with this course.', type:'likert', category:'Satisfaction'},
-          {id:'dc7', text:'What worked well in this course?', type:'open', category:'Strengths'},
-          {id:'dc8', text:'What would you change about this course?', type:'open', category:'Improvements'},
+          {id:'dc1', text:'The learning objectives were clearly communicated.', type:'likert', category:'Clarity', tags:['CAPTE 7B2']},
+          {id:'dc2', text:'Course content was relevant to clinical practice.', type:'likert', category:'Relevance', tags:['CAPTE 7B1','ARC-PA B2.13']},
+          {id:'dc3', text:'Course materials (slides, readings) helped me learn.', type:'likert', category:'Materials', tags:[]},
+          {id:'dc4', text:'The course was well-paced and appropriately structured.', type:'likert', category:'Pacing', tags:[]},
+          {id:'dc5', text:'Assessments fairly measured what was taught.', type:'likert', category:'Assessment', tags:['CAPTE 7C']},
+          {id:'dc6', text:'Overall, I was satisfied with this course.', type:'likert', category:'Satisfaction', tags:[]},
+          {id:'dc7', text:'What worked well in this course?', type:'open', category:'Strengths', tags:[]},
+          {id:'dc8', text:'What would you change about this course?', type:'open', category:'Improvements', tags:[]},
         ],
       },
       director: {
         label: 'Course Director (Tier 2)',
         questions: [
-          {id:'dd1', text:'The course was well-organized and appropriately paced.', type:'likert', category:'Organization'},
-          {id:'dd2', text:'Course expectations and grading were clearly communicated.', type:'likert', category:'Communication'},
-          {id:'dd3', text:'Materials and assessments aligned with stated objectives.', type:'likert', category:'Alignment'},
-          {id:'dd4', text:'The course director was responsive to course-level concerns.', type:'likert', category:'Responsiveness'},
-          {id:'dd5', text:'What could the course director improve about the course as a whole?', type:'open', category:'Improvements'},
+          {id:'dd1', text:'The course was well-organized and appropriately paced.', type:'likert', category:'Organization', tags:[]},
+          {id:'dd2', text:'Course expectations and grading were clearly communicated.', type:'likert', category:'Communication', tags:['CAPTE 7B2']},
+          {id:'dd3', text:'Materials and assessments aligned with stated objectives.', type:'likert', category:'Alignment', tags:['CAPTE 7C']},
+          {id:'dd4', text:'The course director was responsive to course-level concerns.', type:'likert', category:'Responsiveness', tags:[]},
+          {id:'dd5', text:'What could the course director improve about the course as a whole?', type:'open', category:'Improvements', tags:[]},
         ],
       },
       faculty: {
         label: 'Faculty Performance (Tier 3)',
         questions: [
-          {id:'df1', text:'The instructor explained concepts clearly.', type:'likert', category:'Clarity'},
-          {id:'df2', text:'The instructor came to class prepared and organized.', type:'likert', category:'Preparation'},
-          {id:'df3', text:'The instructor was responsive to student questions.', type:'likert', category:'Responsiveness'},
-          {id:'df4', text:'The instructor created an inclusive learning environment.', type:'likert', category:'Inclusion'},
-          {id:'df5', text:'The instructor provided helpful, timely feedback on my work.', type:'likert', category:'Feedback'},
-          {id:'df6', text:'What did the instructor do well?', type:'open', category:'Strengths'},
-          {id:'df7', text:'What could the instructor improve?', type:'open', category:'Improvements'},
+          {id:'df1', text:'The instructor explained concepts clearly.', type:'likert', category:'Clarity', tags:['CAPTE 7D2']},
+          {id:'df2', text:'The instructor came to class prepared and organized.', type:'likert', category:'Preparation', tags:['CAPTE 7D2']},
+          {id:'df3', text:'The instructor was responsive to student questions.', type:'likert', category:'Responsiveness', tags:[]},
+          {id:'df4', text:'The instructor created an inclusive learning environment.', type:'likert', category:'Inclusion', tags:['CAPTE 6L1']},
+          {id:'df5', text:'The instructor provided helpful, timely feedback on my work.', type:'likert', category:'Feedback', tags:['CAPTE 7D2']},
+          {id:'df6', text:'What did the instructor do well?', type:'open', category:'Strengths', tags:[]},
+          {id:'df7', text:'What could the instructor improve?', type:'open', category:'Improvements', tags:[]},
         ],
       },
     },
@@ -574,27 +574,194 @@ const QUESTION_BANKS = {
       course: {
         label: 'Rotation Experience',
         questions: [
-          {id:'cc1', text:'The rotation provided adequate patient exposure.', type:'likert', category:'Exposure'},
-          {id:'cc2', text:'I had opportunities to apply skills learned in didactics.', type:'likert', category:'Application'},
-          {id:'cc3', text:'The rotation site was well-organized for student learning.', type:'likert', category:'Organization'},
-          {id:'cc4', text:'I received appropriate supervision during patient encounters.', type:'likert', category:'Supervision'},
-          {id:'cc5', text:'Overall, I was satisfied with this rotation.', type:'likert', category:'Satisfaction'},
-          {id:'cc6', text:'What was the most valuable part of this rotation?', type:'open', category:'Strengths'},
-          {id:'cc7', text:'What would you change about this rotation?', type:'open', category:'Improvements'},
+          {id:'cc1', text:'The rotation provided adequate patient exposure.', type:'likert', category:'Exposure', tags:['CAPTE 7D33']},
+          {id:'cc2', text:'I had opportunities to apply skills learned in didactics.', type:'likert', category:'Application', tags:['CAPTE 7B1']},
+          {id:'cc3', text:'The rotation site was well-organized for student learning.', type:'likert', category:'Organization', tags:[]},
+          {id:'cc4', text:'I received appropriate supervision during patient encounters.', type:'likert', category:'Supervision', tags:['CAPTE 7D33']},
+          {id:'cc5', text:'Overall, I was satisfied with this rotation.', type:'likert', category:'Satisfaction', tags:[]},
+          {id:'cc6', text:'What was the most valuable part of this rotation?', type:'open', category:'Strengths', tags:[]},
+          {id:'cc7', text:'What would you change about this rotation?', type:'open', category:'Improvements', tags:[]},
         ],
       },
       faculty: {
         label: 'Course Coordinator (DCE)',
         questions: [
-          {id:'cf1', text:'The course coordinator communicated rotation expectations clearly.', type:'likert', category:'Communication'},
-          {id:'cf2', text:'The coordinator was available when I needed support.', type:'likert', category:'Availability'},
-          {id:'cf3', text:'The coordinator helped resolve site-related issues quickly.', type:'likert', category:'Responsiveness'},
-          {id:'cf4', text:'Any feedback for the course coordinator?', type:'open', category:'Improvements'},
+          {id:'cf1', text:'The course coordinator communicated rotation expectations clearly.', type:'likert', category:'Communication', tags:[]},
+          {id:'cf2', text:'The coordinator was available when I needed support.', type:'likert', category:'Availability', tags:[]},
+          {id:'cf3', text:'The coordinator helped resolve site-related issues quickly.', type:'likert', category:'Responsiveness', tags:[]},
+          {id:'cf4', text:'Any feedback for the course coordinator?', type:'open', category:'Improvements', tags:[]},
         ],
       },
     },
   },
 };
+
+/* ════════════════════════════════════════════════════════════════════
+   ACCREDITATION CODES (manual question tagging — VB P1 differentiator)
+   Programs add these as chips against questions to map evidence to
+   accreditation standards. Catalog is editable; tags are stored on
+   each question and aggregate up to template + program reports.
+   ════════════════════════════════════════════════════════════════════ */
+const ACCREDITATION_CODES = [
+  {code:'CAPTE 7B1',     name:'Curriculum design',                family:'CAPTE'},
+  {code:'CAPTE 7B2',     name:'Course objectives',                family:'CAPTE'},
+  {code:'CAPTE 7C',      name:'Assessment of student learning',   family:'CAPTE'},
+  {code:'CAPTE 7D2',     name:'Faculty teaching effectiveness',   family:'CAPTE'},
+  {code:'CAPTE 7D33',    name:'Evidence-based practice',          family:'CAPTE'},
+  {code:'CAPTE 6L1',     name:'Inclusive learning environment',   family:'CAPTE'},
+  {code:'ARC-PA B2.13',  name:'Curriculum content',               family:'ARC-PA'},
+  {code:'ASHA 4.1',      name:'Curriculum quality',               family:'ASHA'},
+];
+
+/* ════════════════════════════════════════════════════════════════════
+   NOTIFICATIONS (Roadmap CSV: configurable cadence + email templates)
+   Single source of truth for reminder schedule, sender, and email copy.
+   Lifecycle timeline, audit trail, wizard summary, and previewEmailModal
+   all read from this object. Editing the cadence here updates every
+   downstream surface immediately on re-render.
+   ════════════════════════════════════════════════════════════════════ */
+const NOTIFICATIONS = {
+  senderName: 'PCE',
+  senderEmail: 'noreply@exxatprism.com',
+  testEmail:  'mitchell@pa.edu',
+  cadence: [
+    {id:'r1', day:3,  type:'reminder', label:'Day 3 reminder',    target:'non-completers', emailKind:'reminder3'},
+    {id:'r2', day:7,  type:'reminder', label:'Day 7 reminder',    target:'non-completers', emailKind:'reminder7'},
+    {id:'r3', day:10, type:'alert',    label:'Coordinator alert', target:'coordinator',    threshold:50, emailKind:null},
+  ],
+  templates: {
+    invitation: {
+      label:'Survey invitation',
+      audience:'Students (sent on open day)',
+      subject:'{{course_code}}: Your course evaluation is open (about 3 minutes)',
+      headline:'Your feedback shapes next year\'s class.',
+      lede:'Your course evaluation for {{course_code}}: {{course_name}} just opened. About 3 minutes to complete, two short sections (course content + faculty performance).',
+      cta:'Start evaluation (anonymous)',
+      footer:'Survey closes {{close_date}}. Your response is fully anonymous: no IP captured, no timestamp shared, no link to your name. Your instructor sees aggregated results only after submitting your final grade.',
+    },
+    reminder3: {
+      label:'Day 3 reminder',
+      audience:'Non-completers only',
+      subject:'Reminder: {{course_code}} evaluation closes {{close_date}}',
+      headline:'Just 3 minutes.',
+      lede:'Your evaluation for {{course_code}} is still open. Programs that hit 70%+ response rate get the data they need to prove curriculum quality at accreditation. We are at {{completion}}% right now.',
+      cta:'Take 3 minutes now',
+      footer:'Closes {{close_date}}. Anonymous. Sent only because we have not received your response yet.',
+    },
+    reminder7: {
+      label:'Day 7 reminder',
+      audience:'Non-completers only',
+      subject:'{{course_code}}: Last chance, your input changed the course last year',
+      headline:'Your feedback already changed this course.',
+      lede:'Last cohort told us what to change. Your turn this year.',
+      cta:'Submit anonymously now',
+      footer:'Survey closes {{close_date}}. This is the final reminder.',
+    },
+    facultyReady: {
+      label:'Faculty: results ready',
+      audience:'Faculty (sent when grades post to SIS)',
+      subject:'Your {{course_code}} evaluation results are ready',
+      headline:'{{course_code}} results unlocked',
+      lede:'{{responded}} of {{enrolled}} students responded. Average score: {{avg}} / 5.0. Results unlocked because your final grades posted to the SIS.',
+      cta:'View your results',
+      footer:'After viewing, please complete the 3-question reflection. Once saved, you can post a 2-sentence note for next year\'s cohort that will appear at the top of their survey.',
+    },
+  },
+};
+function getCadenceReminders(){ return NOTIFICATIONS.cadence.filter(r=>r.type==='reminder').sort((a,b)=>a.day-b.day); }
+function getCadenceAlerts(){ return NOTIFICATIONS.cadence.filter(r=>r.type==='alert').sort((a,b)=>a.day-b.day); }
+function mergeEmailTokens(str, ctx){
+  return String(str).replace(/\{\{(\w+)\}\}/g, (_,k)=> ctx[k] !== undefined ? ctx[k] : '{{'+k+'}}');
+}
+
+/* Accreditation tag helpers — chips, picker modal, mutation */
+function findQuestionByPath(bankId, sectionId, qid){
+  const sec = QUESTION_BANKS[bankId]?.sections[sectionId];
+  return sec ? sec.questions.find(q=>q.id===qid) : null;
+}
+function tagChips(tags, opts){
+  const o = opts||{};
+  const arr = (tags||[]).slice();
+  if(!arr.length){
+    return o.empty ? `<span style="font-size:10px;color:var(--muted-fg);font-style:italic">${o.empty}</span>` : '';
+  }
+  return arr.map(code=>{
+    const def = ACCREDITATION_CODES.find(x=>x.code===code);
+    const title = def ? `${def.code} — ${def.name}` : code;
+    return `<span class="acc-chip" title="${escapeHtml(title)}" style="display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:var(--r-pill);background:color-mix(in oklch, var(--brand-color) 10%, white);color:var(--brand-color-deep);border:1px solid color-mix(in oklch, var(--brand-color) 22%, white);font-size:10px;font-weight:600;letter-spacing:.01em;line-height:1.5">${escapeHtml(code)}</span>`;
+  }).join(' ');
+}
+function openTagPicker(bankId, sectionId, qid){
+  const q = findQuestionByPath(bankId, sectionId, qid);
+  if(!q) return;
+  if(!q.tags) q.tags = [];
+  const families = [...new Set(ACCREDITATION_CODES.map(c=>c.family))];
+  const checklist = families.map(fam=>{
+    const items = ACCREDITATION_CODES.filter(c=>c.family===fam).map(c=>{
+      const checked = q.tags.includes(c.code);
+      return `<label style="display:flex;align-items:flex-start;gap:9px;padding:9px 12px;border-bottom:1px solid var(--hairline-soft);cursor:pointer">
+        <input type="checkbox" data-code="${escapeHtml(c.code)}" ${checked?'checked':''} style="margin-top:2px">
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:600;color:var(--foreground)">${escapeHtml(c.code)}</div>
+          <div style="font-size:11px;color:var(--muted-fg);margin-top:2px">${escapeHtml(c.name)}</div>
+        </div>
+      </label>`;
+    }).join('');
+    return `<div style="margin-bottom:14px">
+      <div class="section-label" style="margin-bottom:6px">${escapeHtml(fam)}</div>
+      <div style="border:1px solid var(--hairline);border-radius:var(--r-md);overflow:hidden;background:white">${items}</div>
+    </div>`;
+  }).join('');
+
+  showModal({
+    title:'Tag question to accreditation standards',
+    size:'modal-md',
+    body:`<div style="font-size:12px;color:var(--muted-fg);line-height:1.55;margin-bottom:14px">Tag this question with the standards it provides evidence for. Tags roll up to template-level coverage and accreditation export.</div>
+      <div style="background:var(--muted);padding:11px 14px;border-radius:var(--r-md);margin-bottom:14px">
+        <div style="font-size:11px;color:var(--muted-fg);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:4px">Question</div>
+        <div style="font-size:13px;color:var(--foreground);line-height:1.5">${escapeHtml(q.text)}</div>
+      </div>
+      ${checklist}
+      <div>
+        <div class="section-label" style="margin-bottom:6px">Custom tag</div>
+        <div style="display:flex;gap:8px">
+          <input class="input" id="tag-custom-input" type="text" placeholder="e.g. CAPTE 7D9" style="flex:1">
+          <button class="btn btn-outline btn-sm" onclick="addCustomTag('${bankId}','${sectionId}','${qid}')">Add</button>
+        </div>
+      </div>`,
+    actions:`<button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+             <button class="btn btn-primary" onclick="saveTagPicker('${bankId}','${sectionId}','${qid}')">Save tags</button>`,
+  });
+}
+function saveTagPicker(bankId, sectionId, qid){
+  const q = findQuestionByPath(bankId, sectionId, qid);
+  if(!q) return;
+  const next = [];
+  document.querySelectorAll('.modal-body input[type="checkbox"][data-code]').forEach(cb=>{
+    if(cb.checked) next.push(cb.dataset.code);
+  });
+  /* Preserve any custom tags already on the question that aren't in the catalog */
+  (q.tags||[]).forEach(t=>{
+    if(!ACCREDITATION_CODES.find(c=>c.code===t) && !next.includes(t)) next.push(t);
+  });
+  q.tags = next;
+  closeModal();
+  renderAll();
+  toast(`${next.length} tag${next.length===1?'':'s'} saved`,'success');
+}
+function addCustomTag(bankId, sectionId, qid){
+  const input = document.getElementById('tag-custom-input');
+  const val = (input?.value||'').trim();
+  if(!val){ input?.focus(); return; }
+  const q = findQuestionByPath(bankId, sectionId, qid);
+  if(!q) return;
+  if(!q.tags) q.tags = [];
+  if(!q.tags.includes(val)) q.tags.push(val);
+  /* Reopen picker to pick up the new tag in the visible list */
+  closeModal();
+  setTimeout(()=>openTagPicker(bankId, sectionId, qid), 50);
+  toast(`Added "${val}"`,'success');
+}
 
 /* ════════════════════════════════════════════════════════════════════
    COURSE TYPES (mirrored from autopilot prototype)
@@ -1693,10 +1860,11 @@ const LMS = {
 
 function renderPdSetup(){
   const tabs = [
-    {id:'lms',   label:'LMS Integration', icon:'fa-plug',     status: LMS.connected?'ok':'err'},
-    {id:'types', label:'Course Types',    icon:'fa-tags',     status:'ok'},
-    {id:'terms', label:'Terms',           icon:'fa-calendar', status:'ok'},
-    {id:'admin', label:'Decision Admin',  icon:'fa-user-tie', status:'ok'},
+    {id:'lms',           label:'LMS Integration', icon:'fa-plug',     status: LMS.connected?'ok':'err'},
+    {id:'types',         label:'Course Types',    icon:'fa-tags',     status:'ok'},
+    {id:'terms',         label:'Terms',           icon:'fa-calendar', status:'ok'},
+    {id:'admin',         label:'Decision Admin',  icon:'fa-user-tie', status:'ok'},
+    {id:'notifications', label:'Notifications',   icon:'fa-bell',     status:'ok'},
   ];
   const navHtml = tabs.map(t=>{
     const active = state.pdSetupTab===t.id;
@@ -1710,10 +1878,11 @@ function renderPdSetup(){
   }).join('');
 
   let body = '';
-  if(state.pdSetupTab==='lms')   body = renderPdSetupLms();
-  if(state.pdSetupTab==='types') body = renderPdSetupTypes();
-  if(state.pdSetupTab==='terms') body = renderPdSetupTerms();
-  if(state.pdSetupTab==='admin') body = renderPdSetupAdmin();
+  if(state.pdSetupTab==='lms')           body = renderPdSetupLms();
+  if(state.pdSetupTab==='types')         body = renderPdSetupTypes();
+  if(state.pdSetupTab==='terms')         body = renderPdSetupTerms();
+  if(state.pdSetupTab==='admin')         body = renderPdSetupAdmin();
+  if(state.pdSetupTab==='notifications') body = renderPdSetupNotifications();
 
   return `
     <div class="page-header">
@@ -1905,6 +2074,180 @@ function renderPdSetupAdmin(){
       </div>
     </div>
   `;
+}
+
+/* ── Notifications: cadence + email templates ─────────────────────
+   Roadmap CSV calls for configurable reminder cadence + customizable
+   email subject/body/sender + a Send Test action. Everything here
+   reads/writes the NOTIFICATIONS object so downstream surfaces stay
+   in sync without prop drilling.
+   ─────────────────────────────────────────────────────────────── */
+function renderPdSetupNotifications(){
+  const cadenceRows = NOTIFICATIONS.cadence.slice().sort((a,b)=>a.day-b.day).map(r=>{
+    const isReminder = r.type==='reminder';
+    return `<tr>
+      <td style="padding:10px 12px;border-bottom:1px solid var(--hairline-soft);width:80px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:11px;color:var(--muted-fg);text-transform:uppercase;letter-spacing:.04em">Day</span>
+          <input class="input" type="number" min="1" max="60" value="${r.day}" style="width:60px;height:32px;text-align:center;font-variant-numeric:tabular-nums" onchange="updateCadence('${r.id}','day',parseInt(this.value)||1)">
+        </div>
+      </td>
+      <td style="padding:10px 12px;border-bottom:1px solid var(--hairline-soft)">
+        <select class="select" style="width:auto;height:32px" onchange="updateCadence('${r.id}','type',this.value)">
+          <option value="reminder" ${r.type==='reminder'?'selected':''}>Reminder to students</option>
+          <option value="alert" ${r.type==='alert'?'selected':''}>Alert to coordinator</option>
+        </select>
+      </td>
+      <td style="padding:10px 12px;border-bottom:1px solid var(--hairline-soft)">
+        <input class="input" type="text" value="${escapeHtml(r.label)}" style="height:32px" onchange="updateCadence('${r.id}','label',this.value)">
+      </td>
+      <td style="padding:10px 12px;border-bottom:1px solid var(--hairline-soft);width:160px">
+        ${isReminder
+          ? `<span style="font-size:11px;color:var(--muted-fg)">Sent to non-completers only</span>`
+          : `<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted-fg)">If completion below <input class="input" type="number" min="0" max="100" value="${r.threshold||50}" style="width:54px;height:28px;text-align:center;font-variant-numeric:tabular-nums" onchange="updateCadence('${r.id}','threshold',parseInt(this.value)||50)">%</div>`}
+      </td>
+      <td style="padding:10px 12px;border-bottom:1px solid var(--hairline-soft);width:36px;text-align:right">
+        <button class="btn btn-ghost btn-icon-sm" aria-label="Remove reminder" title="Remove" onclick="removeCadence('${r.id}')"><i class="fa-light fa-trash-can"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const tplCards = Object.entries(NOTIFICATIONS.templates).map(([key, t])=>{
+    return `<div class="card" style="margin-bottom:12px;padding:0;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--hairline-soft);background:var(--muted)">
+        <i class="fa-light fa-envelope" style="color:var(--brand-color);font-size:14px"></i>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600">${escapeHtml(t.label)}</div>
+          <div style="font-size:11px;color:var(--muted-fg);margin-top:2px">${escapeHtml(t.audience)}</div>
+        </div>
+        <button class="btn btn-outline btn-xs" onclick="previewEmailTemplate('${key}')"><i class="fa-light fa-eye"></i>Preview</button>
+        <button class="btn btn-outline btn-xs" onclick="sendTestEmail('${key}')"><i class="fa-light fa-paper-plane"></i>Send test</button>
+      </div>
+      <div style="padding:16px 18px">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div>
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted-fg);margin-bottom:5px">Subject line</div>
+            <input class="input" type="text" value="${escapeHtml(t.subject)}" oninput="NOTIFICATIONS.templates['${key}'].subject=this.value">
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted-fg);margin-bottom:5px">Headline</div>
+            <input class="input" type="text" value="${escapeHtml(t.headline)}" oninput="NOTIFICATIONS.templates['${key}'].headline=this.value">
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted-fg);margin-bottom:5px">Body copy</div>
+            <textarea class="input" rows="3" style="font-family:inherit;line-height:1.55;resize:vertical" oninput="NOTIFICATIONS.templates['${key}'].lede=this.value">${escapeHtml(t.lede)}</textarea>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div>
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted-fg);margin-bottom:5px">Call-to-action button</div>
+              <input class="input" type="text" value="${escapeHtml(t.cta)}" oninput="NOTIFICATIONS.templates['${key}'].cta=this.value">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted-fg);margin-bottom:5px">Footer</div>
+              <input class="input" type="text" value="${escapeHtml(t.footer)}" oninput="NOTIFICATIONS.templates['${key}'].footer=this.value">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+    <div style="font-family:var(--font-heading);font-size:22px;font-weight:500;margin-bottom:5px">Notifications</div>
+    <div style="font-size:13px;color:var(--muted-fg);margin-bottom:18px;line-height:1.55">Reminder cadence and email copy for every survey autopilot sends. Changes apply to new surveys; in-flight surveys keep the schedule they shipped with.</div>
+
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:18px">
+      <div style="display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--hairline-soft)">
+        <i class="fa-light fa-bell" style="color:var(--brand-color);font-size:14px"></i>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600">Reminder cadence</div>
+          <div style="font-size:11px;color:var(--muted-fg);margin-top:2px">Days are counted from each survey's open day. Reminders go only to students who have not responded yet. Alerts go to the coordinator.</div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="addCadence()"><i class="fa-light fa-plus"></i>Add reminder</button>
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="background:var(--muted);font-size:11px;color:var(--muted-fg);text-transform:uppercase;letter-spacing:.04em">
+            <th style="padding:8px 12px;text-align:left;font-weight:600">When</th>
+            <th style="padding:8px 12px;text-align:left;font-weight:600">Type</th>
+            <th style="padding:8px 12px;text-align:left;font-weight:600">Label</th>
+            <th style="padding:8px 12px;text-align:left;font-weight:600">Trigger</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>${cadenceRows || '<tr><td colspan="5" class="empty" style="padding:24px;text-align:center;color:var(--muted-fg);font-size:12px">No reminders configured. Students will only see the open-day invitation.</td></tr>'}</tbody>
+      </table>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:18px">
+      <div style="display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--hairline-soft)">
+        <i class="fa-light fa-paper-plane" style="color:var(--brand-color);font-size:14px"></i>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600">Sender + test recipient</div>
+          <div style="font-size:11px;color:var(--muted-fg);margin-top:2px">From-name and address shown to students. Test emails go to the test recipient regardless of audience.</div>
+        </div>
+      </div>
+      <div style="padding:16px 18px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+        <div>
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted-fg);margin-bottom:5px">Sender name</div>
+          <input class="input" type="text" value="${escapeHtml(NOTIFICATIONS.senderName)}" oninput="NOTIFICATIONS.senderName=this.value">
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted-fg);margin-bottom:5px">Sender email</div>
+          <input class="input" type="email" value="${escapeHtml(NOTIFICATIONS.senderEmail)}" oninput="NOTIFICATIONS.senderEmail=this.value">
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted-fg);margin-bottom:5px">Send tests to</div>
+          <input class="input" type="email" value="${escapeHtml(NOTIFICATIONS.testEmail)}" oninput="NOTIFICATIONS.testEmail=this.value">
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div>
+        <div style="font-size:13px;font-weight:600">Email templates</div>
+        <div style="font-size:11px;color:var(--muted-fg);margin-top:2px">Use <code style="background:var(--muted);padding:1px 5px;border-radius:3px;font-size:10px">{{course_code}}</code>, <code style="background:var(--muted);padding:1px 5px;border-radius:3px;font-size:10px">{{course_name}}</code>, <code style="background:var(--muted);padding:1px 5px;border-radius:3px;font-size:10px">{{close_date}}</code>, <code style="background:var(--muted);padding:1px 5px;border-radius:3px;font-size:10px">{{completion}}</code>, <code style="background:var(--muted);padding:1px 5px;border-radius:3px;font-size:10px">{{enrolled}}</code>, <code style="background:var(--muted);padding:1px 5px;border-radius:3px;font-size:10px">{{responded}}</code>, <code style="background:var(--muted);padding:1px 5px;border-radius:3px;font-size:10px">{{avg}}</code> to merge per-survey values.</div>
+      </div>
+    </div>
+    ${tplCards}
+  `;
+}
+
+function updateCadence(id, key, value){
+  const r = NOTIFICATIONS.cadence.find(x=>x.id===id);
+  if(!r) return;
+  r[key] = value;
+  if(key==='type'){
+    if(value==='alert' && r.threshold===undefined) r.threshold = 50;
+    if(value==='reminder' && !r.emailKind) r.emailKind = `reminder${r.day}`;
+  }
+  renderAll();
+  toast('Cadence updated','success');
+}
+function addCadence(){
+  const used = NOTIFICATIONS.cadence.map(r=>r.day);
+  let day = 5; while(used.includes(day) && day<60) day++;
+  NOTIFICATIONS.cadence.push({id:'r'+Date.now(), day, type:'reminder', label:`Day ${day} reminder`, target:'non-completers', emailKind:'reminder3'});
+  renderAll();
+  toast(`Day ${day} reminder added`,'success');
+}
+function removeCadence(id){
+  const i = NOTIFICATIONS.cadence.findIndex(r=>r.id===id);
+  if(i<0) return;
+  const removed = NOTIFICATIONS.cadence.splice(i,1)[0];
+  renderAll();
+  toast(`${removed.label} removed`,'info');
+}
+function sendTestEmail(kind){
+  const t = NOTIFICATIONS.templates[kind];
+  if(!t) return;
+  toast(`Test "${t.label}" sent to ${NOTIFICATIONS.testEmail}`,'success');
+  state.activity.unshift({when:new Date().toISOString(), text:`Test email "${t.label}" sent to ${NOTIFICATIONS.testEmail}.`});
+}
+function previewEmailTemplate(kind){
+  /* Use first course in current term as merge context */
+  const c = COURSES.find(x=>x.termId===state.termId) || COURSES[0];
+  previewEmailModal(kind, c.id);
 }
 
 /* ── PD Dashboard ───────────────────────────────────────────────── */
@@ -2134,11 +2477,13 @@ function renderQuestionBanks(){
         <div class="bank-q">
           <div style="flex:1">
             <div class="bank-q-text">${escapeHtml(q.text)}</div>
-            <div class="bank-q-meta">
+            <div class="bank-q-meta" style="flex-wrap:wrap;gap:5px">
               <span class="badge badge-outline" style="font-size:9px">${q.type==='likert'?'Rating 1-5':'Open text'}</span>
               <span class="bank-q-cat">${q.category}</span>
+              ${tagChips(q.tags)}
             </div>
           </div>
+          <button class="btn btn-ghost btn-icon-sm" aria-label="Tag question" title="Tag to accreditation standards" onclick="openTagPicker('${bankId}','${sid}','${q.id}')"><i class="fa-light fa-tags"></i></button>
         </div>
       `).join('');
       return `<div>
@@ -2150,7 +2495,7 @@ function renderQuestionBanks(){
       <div class="bank-card-head">
         <div class="bank-card-title"><i class="fa-light fa-book-open"></i>${escapeHtml(bank.name)} <span class="badge badge-locked"><i class="fa-light fa-lock"></i>Locked</span></div>
         <div class="bank-card-sub">${escapeHtml(bank.description)}</div>
-        <div style="margin-top:8px;font-size:11px;color:var(--brand-color-dark)"><i class="fa-light fa-list-check" style="margin-right:4px"></i>${totalQs} questions · used in ${usedByTmpls} template${usedByTmpls===1?'':'s'}</div>
+        <div style="margin-top:8px;font-size:11px;color:var(--brand-color-dark);display:flex;align-items:center;gap:14px;flex-wrap:wrap"><span><i class="fa-light fa-list-check" style="margin-right:4px"></i>${totalQs} questions · used in ${usedByTmpls} template${usedByTmpls===1?'':'s'}</span><span><i class="fa-light fa-tags" style="margin-right:4px"></i>${Object.values(bank.sections).reduce((a,s)=>a+s.questions.filter(q=>(q.tags||[]).length>0).length,0)} of ${totalQs} tagged to a standard</span></div>
       </div>
       ${sectionsHtml}
     </div>`;
@@ -2433,12 +2778,22 @@ function renderSurveyDetail(){
   const closeIso = addDaysIso(term.endDate, 7);
   const todayIso = '2026-05-06';
 
-  /* Lifecycle timeline */
+  /* Lifecycle timeline — reads cadence from NOTIFICATIONS so admin edits flow through */
+  const cadenceEvents = NOTIFICATIONS.cadence.slice().sort((a,b)=>a.day-b.day).flatMap(r=>{
+    const when = addDaysIso(openIso, r.day) + ' 09:00';
+    if(r.type==='reminder'){
+      const recipients = Math.max(0, c.enrolled - Math.round(c.enrolled * Math.min(c.completion + Math.max(5, 35-r.day*3), 85)/100));
+      const fired = c.surveyStatus!=='scheduled' && todayIso >= addDaysIso(openIso, r.day);
+      return [{when, label:`${r.label} fired`, detail:`Sent only to non-completers. ${recipients} students received it.`, icon:'fa-bell', state: fired?'done':'pending', emailKind:r.emailKind}];
+    }
+    if(r.type==='alert' && c.completion < (r.threshold||50)){
+      return [{when, label:r.label, detail:`Completion at ${c.completion}% with survey still open. Coordinator notified.`, icon:'fa-triangle-exclamation', state:'done', alert:true}];
+    }
+    return [];
+  });
   const events = [
     {when:openIso+' 09:00', label:'Survey created + opened', detail:`Invitation emailed to ${c.enrolled} students via anonymous magic-token link.`, icon:'fa-paper-plane', state:'done', emailKind:'invitation'},
-    {when:addDaysIso(openIso,3)+' 09:00', label:'Day 3 reminder fired', detail:`Sent only to non-completers. ${Math.max(0,c.enrolled-Math.round(c.enrolled*Math.min(c.completion+25,75)/100))} students received it.`, icon:'fa-bell', state:c.surveyStatus==='scheduled'?'pending':'done', emailKind:'reminder3'},
-    {when:addDaysIso(openIso,7)+' 09:00', label:'Day 7 reminder fired', detail:`References prior cohort feedback note. ${Math.max(0,c.enrolled-Math.round(c.enrolled*Math.min(c.completion+10,85)/100))} students received it.`, icon:'fa-bell', state:c.surveyStatus==='scheduled'||(todayIso<addDaysIso(openIso,7))?'pending':'done', emailKind:'reminder7'},
-    ...(c.completion<50?[{when:addDaysIso(openIso,10)+' 09:00', label:'Day 10 alert', detail:`Completion at ${c.completion}% with survey still open. Coordinator notified.`, icon:'fa-triangle-exclamation', state:'done', alert:true}]:[]),
+    ...cadenceEvents,
     {when:closeIso+' 17:00', label:'Survey closed', detail:`${responded} of ${c.enrolled} students responded (${c.completion}%).`, icon:'fa-lock', state:['pending-review','results-available'].includes(c.surveyStatus)?'done':'pending'},
     {when:addDaysIso(closeIso,2)+' 10:30', label:'Grades submitted to SIS', detail:'Grade-lock signal received. Faculty results unlocked.', icon:'fa-unlock', state:c.surveyStatus==='results-available'?'done':'pending'},
     ...(reflection?[{when:reflection.savedAt.slice(0,10)+' 14:00', label:'Faculty reflection saved', detail:`${escapeHtml(c.instructor)} completed the 3-question structured reflection.`, icon:'fa-pen-to-square', state:'done'}]:[]),
@@ -2640,7 +2995,7 @@ function renderSurveyDetail(){
     <div class="kpi-grid">
       <div class="kpi"><div class="kpi-label">Completion</div><div class="kpi-val">${c.completion}%<small>${responded}/${c.enrolled}</small></div><div class="kpi-meta">${c.completion>=65?'<i class="fa-light fa-check"></i>Above ARC-PA 65%':'<i class="fa-light fa-triangle-exclamation"></i>Below 65% target'}</div></div>
       <div class="kpi"><div class="kpi-label">Avg score</div><div class="kpi-val">${c.avg!==null?c.avg.toFixed(2):'--'}<small>${c.avg!==null?'/ 5.0':''}</small></div><div class="kpi-meta">${c.avg!==null?'vs '+(c.prev||'--')+' prior':'Not yet released'}</div></div>
-      <div class="kpi"><div class="kpi-label">Reminders fired</div><div class="kpi-val">${events.filter(e=>e.icon==='fa-bell'&&e.state==='done').length}<small>of 2</small></div><div class="kpi-meta">Day 3 + Day 7 cadence</div></div>
+      <div class="kpi"><div class="kpi-label">Reminders fired</div><div class="kpi-val">${events.filter(e=>e.icon==='fa-bell'&&e.state==='done').length}<small>of ${getCadenceReminders().length}</small></div><div class="kpi-meta">${getCadenceReminders().map(r=>`Day ${r.day}`).join(' + ')||'no reminders'} cadence</div></div>
       <div class="kpi"><div class="kpi-label">Days remaining</div><div class="kpi-val">${Math.max(0,Math.ceil(((new Date(closeIso))-(new Date(todayIso)))/86400000))}<small>d</small></div><div class="kpi-meta">Closes ${shortDate(closeIso)}</div></div>
     </div>
 
@@ -2678,69 +3033,71 @@ function renderSurveyDetail(){
 }
 
 /* ── Email preview modal ─────────────────────────────────────────── */
+/* Renders the rich email by composing NOTIFICATIONS.templates fields
+   with per-survey merge values. Editing copy in Setup → Notifications
+   re-renders here with the new wording. */
 function previewEmailModal(kind, cid){
   const c = courseOf(cid);
   const note = noteForCourse(c.code, c.termId);
-  const tmpl = templateForCourse(c);
   const term = termOf(c.termId);
   const closeDate = addDaysIso(term.endDate, 7);
   const responded = responseCount(c.id);
   const remaining = c.enrolled - responded;
 
-  const emails = {
-    invitation: {
-      title:'Survey invitation (sent on open day)', from:'PCE <noreply@exxatprism.com>', to:`${c.enrolled} students of ${c.code}`,
-      subject:`${c.code}: Your course evaluation is open (about 3 minutes)`,
-      body:`<h2 style="font-family:var(--font-heading);font-size:18px;font-weight:500;color:var(--foreground)">Your feedback shapes next year's class.</h2>
-        <p style="font-size:13px;line-height:1.6;color:var(--muted-fg);margin:11px 0">Hi,</p>
-        <p style="font-size:13px;line-height:1.6;color:var(--muted-fg)">Your course evaluation for <strong style="color:var(--foreground)">${c.code}: ${escapeHtml(c.name)}</strong> just opened. About 3 minutes to complete, two short sections (course content + faculty performance).</p>
-        ${note?`<div style="background:var(--brand-tint);border-left:3px solid var(--brand-color);padding:12px 14px;border-radius:0 var(--radius-sm) var(--radius-sm) 0;margin:14px 0"><div style="font-size:11px;color:var(--brand-color-deep);font-weight:700;text-transform:uppercase;letter-spacing:.06em">A note from your instructor</div><div style="font-size:12px;color:var(--foreground);font-style:italic;margin-top:6px;line-height:1.55">"${escapeHtml(note.note)}"</div><div style="font-size:10px;color:var(--muted-fg);margin-top:5px">Posted by ${escapeHtml(note.facultyName)} after the ${termOf(note.termId)?.name} cohort gave feedback</div></div>`:''}
-        <a href="#" style="display:inline-block;padding:10px 20px;background:var(--brand-color);color:white;border-radius:var(--radius-sm);font-weight:600;font-size:13px;text-decoration:none;margin:14px 0">Start evaluation (anonymous)</a>
-        <p style="font-size:11px;color:var(--muted-fg);line-height:1.55;margin-top:18px">Survey closes ${fmtDate(closeDate)}. Your response is fully anonymous: no IP captured, no timestamp shared, no link to your name. Your instructor sees aggregated results only after submitting your final grade.</p>`,
-    },
-    reminder3: {
-      title:'Day 3 reminder (sent only to non-completers)', from:'PCE <noreply@exxatprism.com>', to:`${remaining} non-completers of ${c.code}`,
-      subject:`Reminder: ${c.code} evaluation closes ${shortDate(closeDate)}`,
-      body:`<h2 style="font-family:var(--font-heading);font-size:18px;font-weight:500">Just 3 minutes.</h2>
-        <p style="font-size:13px;line-height:1.6;color:var(--muted-fg);margin:11px 0">Your evaluation for <strong style="color:var(--foreground)">${c.code}</strong> is still open.</p>
-        <p style="font-size:13px;line-height:1.6;color:var(--muted-fg)">Quick summary of why this matters: programs that hit 70%+ response rate get the data they need to prove curriculum quality at accreditation. We are at <strong style="color:var(--foreground)">${c.completion}%</strong> right now.</p>
-        <a href="#" style="display:inline-block;padding:10px 20px;background:var(--brand-color);color:white;border-radius:var(--radius-sm);font-weight:600;font-size:13px;text-decoration:none;margin:14px 0">Take 3 minutes now</a>
-        <p style="font-size:11px;color:var(--muted-fg);line-height:1.55;margin-top:14px">Closes ${fmtDate(closeDate)}. Anonymous. Sent only because we have not received your response yet.</p>`,
-    },
-    reminder7: {
-      title:'Day 7 reminder (with prior cohort feedback note)', from:'PCE <noreply@exxatprism.com>', to:`${remaining} non-completers of ${c.code}`,
-      subject:`${c.code}: Last chance, your input changed the course last year`,
-      body:`<h2 style="font-family:var(--font-heading);font-size:18px;font-weight:500">Your feedback already changed this course.</h2>
-        ${note?`<div style="background:var(--brand-tint);border:1px solid color-mix(in oklch, var(--brand-color) 18%, white);padding:14px;border-radius:var(--radius-sm);margin:14px 0"><div style="font-size:11px;color:var(--brand-color-deep);font-weight:700;text-transform:uppercase;letter-spacing:.06em">From ${escapeHtml(note.facultyName)} after last cohort</div><div style="font-size:13px;color:var(--foreground);font-style:italic;margin-top:8px;line-height:1.55">"${escapeHtml(note.note)}"</div></div>`:'<p style="font-size:13px;line-height:1.6;color:var(--muted-fg)">Last cohort told us what to change. Your turn this year.</p>'}
-        <a href="#" style="display:inline-block;padding:10px 20px;background:var(--brand-color);color:white;border-radius:var(--radius-sm);font-weight:600;font-size:13px;text-decoration:none;margin:14px 0">Submit anonymously now</a>
-        <p style="font-size:11px;color:var(--muted-fg);margin-top:14px">Survey closes ${fmtDate(closeDate)}. This is the final reminder.</p>`,
-    },
-    facultyReady: {
-      title:'Faculty: results ready', from:'PCE <noreply@exxatprism.com>', to:c.instructor,
-      subject:`Your ${c.code} evaluation results are ready`,
-      body:`<h2 style="font-family:var(--font-heading);font-size:18px;font-weight:500">${c.code} results unlocked</h2>
-        <p style="font-size:13px;line-height:1.6;color:var(--muted-fg)">${responded} of ${c.enrolled} students responded. Average score: <strong style="color:var(--foreground)">${c.avg?.toFixed(2)||'--'} / 5.0</strong>.</p>
-        <p style="font-size:13px;line-height:1.6;color:var(--muted-fg)">Results unlocked because your final grades posted to the SIS. You will see module-level breakdown, themes from open-text, and a 5-term trend.</p>
-        <a href="#" style="display:inline-block;padding:10px 20px;background:var(--brand-color);color:white;border-radius:var(--radius-sm);font-weight:600;font-size:13px;text-decoration:none;margin:14px 0">View your results</a>
-        <p style="font-size:12px;color:var(--muted-fg);line-height:1.6;margin-top:14px"><strong style="color:var(--foreground)">After viewing,</strong> please complete the 3-question reflection. Once saved, you can post a 2-sentence note for next year's cohort that will appear at the top of their survey.</p>`,
-    },
+  const ctx = {
+    course_code: c.code,
+    course_name: c.name,
+    close_date:  fmtDate(closeDate),
+    completion:  String(c.completion),
+    enrolled:    String(c.enrolled),
+    responded:   String(responded),
+    remaining:   String(remaining),
+    avg:         c.avg!==null ? c.avg.toFixed(2) : '--',
+    instructor:  c.instructor,
   };
-  const e = emails[kind] || emails.invitation;
-  const previewBtns = Object.entries(emails).map(([k,v])=>`<button class="btn ${kind===k?'btn-primary':'btn-outline'} btn-xs" onclick="previewEmailModal('${k}','${cid}')">${v.title.split(' (')[0]}</button>`).join(' ');
+  const m = (s)=> escapeHtml(mergeEmailTokens(s||'', ctx));
+
+  const audienceFor = (k)=>{
+    if(k==='invitation')   return `${c.enrolled} students of ${c.code}`;
+    if(k==='facultyReady') return c.instructor;
+    return `${remaining} non-completers of ${c.code}`;
+  };
+
+  const renderBody = (k, t)=>{
+    const noteBlock = (k==='invitation' || k==='reminder7') && note
+      ? `<div style="background:var(--brand-tint);border-left:3px solid var(--brand-color);padding:12px 14px;border-radius:0 var(--radius-sm) var(--radius-sm) 0;margin:14px 0">
+          <div style="font-size:11px;color:var(--brand-color-deep);font-weight:700;text-transform:uppercase;letter-spacing:.06em">${k==='invitation'?'A note from your instructor':'From '+escapeHtml(note.facultyName)+' after last cohort'}</div>
+          <div style="font-size:12px;color:var(--foreground);font-style:italic;margin-top:6px;line-height:1.55">&ldquo;${escapeHtml(note.note)}&rdquo;</div>
+          ${k==='invitation'?`<div style="font-size:10px;color:var(--muted-fg);margin-top:5px">Posted by ${escapeHtml(note.facultyName)} after the ${termOf(note.termId)?.name} cohort gave feedback</div>`:''}
+        </div>` : '';
+    return `
+      <h2 style="font-family:var(--font-heading);font-size:18px;font-weight:500;color:var(--foreground);margin:0 0 11px">${m(t.headline)}</h2>
+      <p style="font-size:13px;line-height:1.6;color:var(--muted-fg);margin:0 0 14px">${m(t.lede)}</p>
+      ${noteBlock}
+      <a href="#" style="display:inline-block;padding:10px 20px;background:var(--brand-color);color:white;border-radius:var(--radius-sm);font-weight:600;font-size:13px;text-decoration:none;margin:14px 0">${m(t.cta)}</a>
+      <p style="font-size:11px;color:var(--muted-fg);line-height:1.55;margin-top:14px">${m(t.footer)}</p>`;
+  };
+
+  const t = NOTIFICATIONS.templates[kind] || NOTIFICATIONS.templates.invitation;
+  const fromLine = `${NOTIFICATIONS.senderName} <${NOTIFICATIONS.senderEmail}>`;
+  const previewBtns = Object.entries(NOTIFICATIONS.templates).map(([k,v])=>`<button class="btn ${kind===k?'btn-primary':'btn-outline'} btn-xs" onclick="previewEmailModal('${k}','${cid}')">${escapeHtml(v.label)}</button>`).join(' ');
+
   showModal({
     title:'Email preview',
     size:'modal-lg',
     body:`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${previewBtns}</div>
-      <div style="font-size:11px;color:var(--muted-fg);margin-bottom:8px">${escapeHtml(e.title)}</div>
+      <div style="font-size:11px;color:var(--muted-fg);margin-bottom:8px">${escapeHtml(t.label)} — ${escapeHtml(t.audience)}</div>
       <div style="background:white;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
         <div style="padding:12px 16px;background:var(--muted);border-bottom:1px solid var(--border);font-size:11px;color:var(--muted-fg)">
-          <div><strong style="color:var(--foreground)">From:</strong> ${escapeHtml(e.from)}</div>
-          <div style="margin-top:3px"><strong style="color:var(--foreground)">To:</strong> ${escapeHtml(e.to)}</div>
-          <div style="margin-top:3px"><strong style="color:var(--foreground)">Subject:</strong> ${escapeHtml(e.subject)}</div>
+          <div><strong style="color:var(--foreground)">From:</strong> ${escapeHtml(fromLine)}</div>
+          <div style="margin-top:3px"><strong style="color:var(--foreground)">To:</strong> ${escapeHtml(audienceFor(kind))}</div>
+          <div style="margin-top:3px"><strong style="color:var(--foreground)">Subject:</strong> ${m(t.subject)}</div>
         </div>
-        <div style="padding:24px 28px;background:white">${e.body}</div>
+        <div style="padding:24px 28px;background:white">${renderBody(kind, t)}</div>
       </div>`,
-    actions:`<button class="btn btn-outline" onclick="closeModal()">Close</button>`,
+    actions:`<button class="btn btn-outline" onclick="sendTestEmail('${kind}')"><i class="fa-light fa-paper-plane"></i>Send test to ${escapeHtml(NOTIFICATIONS.testEmail)}</button>
+             <button class="btn btn-outline" onclick="closeModal();setPersona('pd');state.pdView='setup';state.pdSetupTab='notifications';renderAll()"><i class="fa-light fa-pen"></i>Edit copy</button>
+             <button class="btn btn-primary" onclick="closeModal()">Close</button>`,
   });
 }
 
@@ -2925,11 +3282,15 @@ function wizStep4(){
     </div>
 
     <div class="card" style="margin-top:14px">
-      <div class="card-head"><div><div class="card-title"><i class="fa-light fa-bell"></i>Reminder cadence</div><div class="card-sub">Per FR-09: only sent to students who have not yet responded</div></div></div>
+      <div class="card-head">
+        <div><div class="card-title"><i class="fa-light fa-bell"></i>Reminder cadence</div><div class="card-sub">Per FR-09: only sent to students who have not yet responded. Edit cadence in Setup → Notifications.</div></div>
+        <button class="btn btn-link btn-sm" onclick="setPersona('pd');state.pdView='setup';state.pdSetupTab='notifications';renderAll()"><i class="fa-light fa-pen"></i>Edit cadence</button>
+      </div>
       <div style="font-size:13px;color:var(--muted-fg);line-height:2">
-        <div><strong style="color:var(--foreground)">Day 3</strong>: Personalized reminder to non-completers</div>
-        <div><strong style="color:var(--foreground)">Day 7</strong>: Second personalized reminder, references the feedback-loop note from prior cohort</div>
-        <div><strong style="color:var(--foreground)">Day 10</strong>: Coordinator alert if completion rate is below 50%</div>
+        ${NOTIFICATIONS.cadence.slice().sort((a,b)=>a.day-b.day).map(r=>{
+          const desc = r.type==='reminder' ? 'Personalized reminder to non-completers' : `Coordinator alert if completion below ${r.threshold||50}%`;
+          return `<div><strong style="color:var(--foreground)">Day ${r.day}</strong>: ${escapeHtml(r.label)} — ${desc}</div>`;
+        }).join('') || '<div class="empty" style="padding:8px 0;font-size:12px">No reminders configured. Students will only see the open-day invitation.</div>'}
       </div>
     </div>
 
@@ -3001,7 +3362,7 @@ function renderCoordMonitor(){
     <div class="page-header">
       <div>
         <div class="page-title">Live Monitor</div>
-        <div class="page-subtitle">Real-time response rates by course. Reminders fire automatically at Day 3, 7 and 10. Manually reach out only if needed.</div>
+        <div class="page-subtitle">Real-time response rates by course. Reminders fire automatically at ${NOTIFICATIONS.cadence.slice().sort((a,b)=>a.day-b.day).map(r=>`Day ${r.day}`).join(', ')||'no scheduled reminders'}. Manually reach out only if needed.</div>
       </div>
       <div class="page-actions">
         <button class="btn btn-outline btn-sm" onclick="setView('wizard')"><i class="fa-light fa-wand-magic-sparkles"></i>Setup wizard</button>
@@ -3046,15 +3407,16 @@ function renderCoordAudit(){
     const term = termOf(c.termId);
     const openIso = addDaysIso(term.endDate,-14);
     events.push({when:openIso+'T09:00', courseCode:c.code, type:'opened', text:`Survey opened automatically (14 days before term end). Invitation emails sent to ${c.enrolled} students.`});
-    /* FR-09 reminder cadence: Day 3, Day 7, Day 10 */
+    /* FR-09 reminder cadence — sourced from NOTIFICATIONS.cadence so audit reflects current config */
     if(['live','pending-review','results-available'].includes(c.surveyStatus)){
-      const non3 = c.enrolled - Math.round(c.enrolled * Math.min(c.completion+25,75)/100);
-      events.push({when:addDaysIso(openIso,3)+'T09:00', courseCode:c.code, type:'reminder', text:`Day 3 personalized reminder sent to ${Math.max(0,non3)} non-completers (FR-09).`});
-      const non7 = c.enrolled - Math.round(c.enrolled * Math.min(c.completion+10,85)/100);
-      events.push({when:addDaysIso(openIso,7)+'T09:00', courseCode:c.code, type:'reminder', text:`Day 7 reminder sent to ${Math.max(0,non7)} non-completers, referencing the prior cohort feedback note.`});
-      if(c.completion < 50){
-        events.push({when:addDaysIso(openIso,10)+'T09:00', courseCode:c.code, type:'alert', text:`Day 10 alert: completion at ${c.completion}%, below 50% threshold. Coordinator notified.`});
-      }
+      NOTIFICATIONS.cadence.slice().sort((a,b)=>a.day-b.day).forEach(r=>{
+        if(r.type==='reminder'){
+          const recipients = Math.max(0, c.enrolled - Math.round(c.enrolled * Math.min(c.completion + Math.max(5, 35-r.day*3), 85)/100));
+          events.push({when:addDaysIso(openIso,r.day)+'T09:00', courseCode:c.code, type:'reminder', text:`${r.label}: sent to ${recipients} non-completers (FR-09).`});
+        } else if(r.type==='alert' && c.completion < (r.threshold||50)){
+          events.push({when:addDaysIso(openIso,r.day)+'T09:00', courseCode:c.code, type:'alert', text:`${r.label}: completion at ${c.completion}%, below ${r.threshold||50}% threshold. Coordinator notified.`});
+        }
+      });
     }
     if(['pending-review','results-available'].includes(c.surveyStatus)){
       events.push({when:addDaysIso(term.endDate,7)+'T17:00', courseCode:c.code, type:'closed', text:`Survey closed automatically. ${responseCount(c.id)} of ${c.enrolled} students responded.`});
@@ -3498,12 +3860,17 @@ function renderTemplateBuilder(){
       if(!def){
         return `<div class="tb-question" style="opacity:0.5"><span class="tb-question-text muted">Missing question</span><button class="btn btn-ghost btn-icon-sm" aria-label="Remove question" onclick="removeTmplQ(${sidx},${qidx})"><i class="fa-light fa-xmark"></i></button></div>`;
       }
-      return `<div class="tb-question">
+      const chips = tagChips(def.tags);
+      return `<div class="tb-question" style="flex-wrap:wrap;align-items:flex-start;row-gap:6px">
         <span class="tb-question-grip" title="Drag to reorder"><i class="fa-solid fa-grip-vertical"></i></span>
         <span class="tb-question-num">${qidx+1}.</span>
-        <span class="tb-question-text">${escapeHtml(def.text)}</span>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+          <span class="tb-question-text">${escapeHtml(def.text)}</span>
+          ${chips ? `<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">${chips}</div>` : ''}
+        </div>
         <span class="tb-question-type">${def.type==='likert'?'1-5':'Text'}</span>
         <div class="tb-question-actions">
+          <button class="btn btn-ghost btn-icon-sm" aria-label="Tag accreditation standards" title="Tag to accreditation standards" onclick="openTagPicker('${qref.bankId}','${qref.sectionId}','${qref.questionId}')"><i class="fa-light fa-tags"></i></button>
           <button class="btn btn-ghost btn-icon-sm" aria-label="Move question up" onclick="moveTmplQ(${sidx},${qidx},-1)" title="Move up" ${qidx===0?'disabled':''}><i class="fa-light fa-arrow-up"></i></button>
           <button class="btn btn-ghost btn-icon-sm" aria-label="Move question down" onclick="moveTmplQ(${sidx},${qidx},1)" title="Move down" ${qidx===sec.questions.length-1?'disabled':''}><i class="fa-light fa-arrow-down"></i></button>
           <button class="btn btn-ghost btn-icon-sm" aria-label="Remove question" onclick="removeTmplQ(${sidx},${qidx})" title="Remove"><i class="fa-light fa-xmark"></i></button>
@@ -3600,6 +3967,22 @@ function renderTemplateBuilder(){
           <div style="font-size:24px;font-weight:700;color:var(--foreground);line-height:1">${Math.max(1,Math.ceil(totalQs*0.4))} <span style="font-size:13px;color:var(--muted-fg);font-weight:500">min</span></div>
           <div style="font-size:11px;color:var(--muted-fg);margin-top:5px">${totalQs} questions · ${ratingQs} ratings, ${totalQs-ratingQs} open-text<br>FR-30 target: under 3 minutes</div>
         </div>
+
+        ${(()=>{
+          const allTags = new Map();
+          tp.sections.forEach(sec=>sec.questions.forEach(q=>{
+            const def = getQuestion(q);
+            (def?.tags||[]).forEach(t=>allTags.set(t,(allTags.get(t)||0)+1));
+          }));
+          const totalQs = tp.sections.reduce((a,s)=>a+s.questions.length,0);
+          const taggedQs = tp.sections.reduce((a,s)=>a+s.questions.filter(q=>{const d=getQuestion(q);return (d?.tags||[]).length>0;}).length,0);
+          const list = [...allTags.entries()].sort((a,b)=>b[1]-a[1]);
+          return `<div class="tb-side-card">
+            <div class="section-label">Accreditation coverage</div>
+            <div style="font-size:11px;color:var(--muted-fg);line-height:1.55;margin-bottom:8px">${taggedQs} of ${totalQs} questions tagged. Click any chip to filter the bank.</div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px">${list.length?list.map(([code,count])=>`<span class="acc-chip" style="display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:var(--r-pill);background:color-mix(in oklch, var(--brand-color) 10%, white);color:var(--brand-color-deep);border:1px solid color-mix(in oklch, var(--brand-color) 22%, white);font-size:10px;font-weight:600"><span>${escapeHtml(code)}</span><span style="background:white;color:var(--brand-color-deep);padding:0 5px;border-radius:var(--r-pill);font-variant-numeric:tabular-nums">${count}</span></span>`).join(''):'<span style="font-size:11px;color:var(--muted-fg);font-style:italic">No questions tagged yet. Use the tag icon on each question.</span>'}</div>
+          </div>`;
+        })()}
 
         <div class="tb-side-card">
           <div class="section-label">Versioning</div>
