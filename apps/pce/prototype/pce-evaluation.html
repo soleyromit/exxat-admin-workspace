@@ -2369,7 +2369,59 @@ function renderPdDashboard(){
         <div class="cqi-action-line" style="display:flex;justify-content:space-between;align-items:center;margin-top:7px"><span style="color:var(--brand-color);font-weight:600">No CQI action this term yet. Click to create one.</span><span style="font-size:10px;color:var(--muted-fg)">CAPTE 2C evidence chain</span></div>
       </div>
     </div>`;
-  }).join('') : `<div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:28px 16px;color:var(--c-green-fg);font-size:13px;font-weight:500"><i class="fa-light fa-circle-check" style="font-size:18px"></i>No at-risk courses · all released courses scored 3.7+</div>`;
+  }).join('') : (()=>{
+    /* No at-risk courses → use the space to show top performers and recent
+       CQI closures so the card stays informative and reads as "system is
+       working" instead of an empty checkmark. */
+    const top = released.slice().sort((a,b)=>b.avg-a.avg).slice(0,3);
+    const recentClosed = CQI_ACTIONS.filter(a=>a.status==='closed').slice(0,2);
+    const trending = released.filter(c=>c.prev && c.avg > c.prev + 0.15).slice(0,2);
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--c-green-bg);border-bottom:1px solid color-mix(in oklch, var(--c-green) 22%, white);color:var(--c-green-fg);font-size:13px;font-weight:600">
+        <i class="fa-light fa-circle-check" style="font-size:14px"></i>
+        <span>No at-risk courses this term · all released courses scored 3.7+</span>
+      </div>
+      <div style="padding:14px 16px 6px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted-fg)">Top performers (${termOf(state.termId).name})</div>
+      ${top.map(c=>{
+        const trend = c.prev ? +(c.avg - c.prev).toFixed(1) : null;
+        const trendChip = trend === null ? '' : trend > 0 ? `<span style="color:var(--c-green-fg);font-size:11px;font-weight:600;font-variant-numeric:tabular-nums"><i class="fa-light fa-arrow-up" style="font-size:9px"></i> +${trend.toFixed(1)}</span>` : trend < -0.1 ? `<span style="color:var(--c-amber-fg);font-size:11px;font-weight:600;font-variant-numeric:tabular-nums"><i class="fa-light fa-arrow-down" style="font-size:9px"></i> ${trend.toFixed(1)}</span>` : `<span style="color:var(--muted-fg);font-size:11px;font-variant-numeric:tabular-nums">±0</span>`;
+        return `<div onclick="openSurveyDetail('${c.id}','pd')" style="display:flex;align-items:center;gap:11px;padding:10px 16px;border-bottom:1px solid var(--hairline-soft);cursor:pointer" onmouseover="this.style.background='var(--muted)'" onmouseout="this.style.background='transparent'">
+          <div style="font-family:var(--font-heading);font-size:18px;font-weight:500;color:var(--c-green-fg);font-variant-numeric:tabular-nums;width:48px">${c.avg.toFixed(2)}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:var(--foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.code}: ${escapeHtml(c.name)}</div>
+            <div style="font-size:11px;color:var(--muted-fg);margin-top:2px;display:flex;gap:10px;flex-wrap:wrap">
+              <span><i class="fa-light fa-user"></i> ${escapeHtml(c.instructor)}</span>
+              <span><i class="fa-light fa-users"></i> ${responseCount(c.id)} of ${c.enrolled}</span>
+            </div>
+          </div>
+          ${trendChip}
+        </div>`;
+      }).join('')}
+      ${trending.length ? `
+        <div style="padding:14px 16px 6px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted-fg);border-top:1px solid var(--hairline-soft)">Improving vs prior cohort</div>
+        ${trending.map(c=>{
+          const delta = +(c.avg - c.prev).toFixed(1);
+          return `<div onclick="openSurveyDetail('${c.id}','pd')" style="display:flex;align-items:center;gap:11px;padding:10px 16px;border-bottom:1px solid var(--hairline-soft);cursor:pointer" onmouseover="this.style.background='var(--muted)'" onmouseout="this.style.background='transparent'">
+            <i class="fa-light fa-arrow-trend-up" style="color:var(--c-green-fg);font-size:14px;width:20px;text-align:center"></i>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600;color:var(--foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.code}: ${escapeHtml(c.name)}</div>
+              <div style="font-size:11px;color:var(--muted-fg);margin-top:2px">${c.prev.toFixed(1)} → <strong style="color:var(--c-green-fg)">${c.avg.toFixed(2)}</strong> (+${delta.toFixed(1)} vs prior cohort)</div>
+            </div>
+          </div>`;
+        }).join('')}
+      ` : ''}
+      ${recentClosed.length ? `
+        <div style="padding:14px 16px 6px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted-fg);border-top:1px solid var(--hairline-soft)">Recent CQI closures · CAPTE 2C evidence</div>
+        ${recentClosed.map(a=>`<div onclick="setView('cqi')" style="display:flex;align-items:center;gap:11px;padding:10px 16px;border-bottom:1px solid var(--hairline-soft);cursor:pointer" onmouseover="this.style.background='var(--muted)'" onmouseout="this.style.background='transparent'">
+          <i class="fa-light fa-clipboard-check" style="color:var(--c-green-fg);font-size:14px;width:20px;text-align:center"></i>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:var(--foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.courseCode}: ${escapeHtml(a.courseName)}</div>
+            <div style="font-size:11px;color:var(--muted-fg);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Closed · ${escapeHtml((a.action||'').slice(0,80))}${(a.action||'').length>80?'…':''}</div>
+          </div>
+        </div>`).join('')}
+      ` : ''}
+    `;
+  })();
 
   const cqiHtml = CQI_ACTIONS.slice(0,4).map(a=>{
     const cls = a.status==='closed'?'closed':a.status==='reassessment-due'?'due':'open';
@@ -2436,15 +2488,15 @@ function renderPdDashboard(){
     </div>
 
     <div class="dash-grid">
-      ${atRisk.length ? `<div class="card card-flush">
+      <div class="card card-flush">
         <div class="card-section">
-          <div class="card-title"><i class="fa-light fa-triangle-exclamation"></i>At-risk courses <span class="badge badge-amber" style="font-size:10px;margin-left:6px">${atRisk.length}</span></div>
-          <div class="card-sub">Released courses below 3.7 with no CQI action yet. Click any row to attach one.</div>
+          <div class="card-title"><i class="fa-light ${atRisk.length?'fa-triangle-exclamation':'fa-heart-pulse'}" style="color:${atRisk.length?'var(--c-amber-fg)':'var(--c-green-fg)'}"></i>${atRisk.length ? 'At-risk courses' : 'Course health'} ${atRisk.length?`<span class="badge badge-amber" style="font-size:10px;margin-left:6px">${atRisk.length}</span>`:''}</div>
+          ${atRisk.length?`<div class="card-sub">Released courses below 3.7 with no CQI action yet. Click any row to attach one.</div>`:`<div class="card-sub">Top performers, recent improvements, and CAPTE 2C closures from this term.</div>`}
         </div>
         <div>${atRiskHtml}</div>
-      </div>` : ''}
+      </div>
 
-      <div class="card card-flush ${atRisk.length ? '' : 'full'}" style="${pendingReviewCourses.length?'border-color:color-mix(in oklch, var(--c-amber) 35%, white);':''}${atRisk.length?'':''}">
+      <div class="card card-flush" style="${pendingReviewCourses.length?'border-color:color-mix(in oklch, var(--c-amber) 35%, white)':''}">
         <div class="card-section">
           <div class="card-title"><i class="fa-light fa-shield-halved" style="color:var(--c-amber-fg)"></i>Pending admin review</div>
           <div class="card-sub">Surveys closed, awaiting comment moderation + grade-lock confirmation before results release to faculty.</div>
