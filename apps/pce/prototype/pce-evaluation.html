@@ -1185,41 +1185,27 @@ function chartProgramTrend(series, labels, opts){
 }
 
 function chartCqiPipeline(open, due, closed){
-  /* Continuous segmented bar showing proportional state distribution.
-     One stacked bar with three segments + clear labels under. */
-  const total = open + due + closed;
-  const W = 560, H = 92;
-  const trackY = 26, trackH = 28, padX = 8;
-  const trackW = W - 2*padX;
+  /* Three KPI tiles, one per CQI stage. Replaces the stretched stacked
+     bar that looked broken with single-digit counts. Click any tile to
+     open the CQI log. */
   const stages = [
-    {key:'open',   label:'Open',                count:open,   color:CHART.warn,   sub:'Action documented, in progress'},
-    {key:'due',    label:'Reassessment due',    count:due,    color:CHART.neg,    sub:'Time to evaluate the change'},
-    {key:'closed', label:'Closed',              count:closed, color:CHART.pos,    sub:'Outcome documented; CAPTE-ready'},
+    {key:'open',   label:'Open',              count:open,   icon:'fa-circle-half-stroke', bg:'var(--c-amber-bg)', fg:'var(--c-amber-fg)',  ring:'color-mix(in oklch, var(--c-amber) 22%, white)'},
+    {key:'due',    label:'Reassessment due',  count:due,    icon:'fa-bell-on',             bg:'oklch(0.96 0.04 60)', fg:'oklch(0.42 0.16 55)', ring:'color-mix(in oklch, oklch(0.52 0.16 55) 22%, white)'},
+    {key:'closed', label:'Closed',            count:closed, icon:'fa-circle-check',        bg:'var(--c-green-bg)',   fg:'var(--c-green-fg)',  ring:'color-mix(in oklch, var(--c-green) 22%, white)'},
   ];
+  const total = open + due + closed;
   if(total === 0){
-    return `<figure role="figure" aria-label="No CQI actions yet." style="margin:0"><svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block"><rect x="${padX}" y="${trackY}" width="${trackW}" height="${trackH}" fill="${CHART.bg}" rx="${trackH/2}"/><text x="${W/2}" y="${trackY+trackH/2+5}" text-anchor="middle" font-size="11" fill="${CHART.muted}" font-family="Inter">No CQI actions on record yet</text></svg></figure>`;
+    return `<div style="padding:24px;text-align:center;color:var(--muted-fg);font-size:12px"><i class="fa-light fa-circle-check" style="color:var(--c-green-fg);font-size:18px;margin-right:6px;vertical-align:-3px"></i>No CQI actions on record yet</div>`;
   }
-  let cursor = padX;
-  const segments = stages.map((s,i)=>{
-    const segW = (s.count/total) * trackW;
-    const seg = `<g class="cell" tabindex="0" role="button" aria-label="${s.label}: ${s.count} action${s.count===1?'':'s'}. Press to open CQI log." style="cursor:pointer;outline:none" onclick="setView('cqi')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setView('cqi')}">
-      <rect x="${cursor}" y="${trackY}" width="${segW}" height="${trackH}" fill="${s.color}" ${i===0?`rx="${trackH/2}" mask="url(#cqi-left)"`:i===stages.length-1?`rx="${trackH/2}" mask="url(#cqi-right)"`:''}/>
-      ${segW>40?`<text x="${cursor+segW/2}" y="${trackY+trackH/2+5}" text-anchor="middle" font-size="13" font-weight="700" fill="white" font-family="Inter" font-variant-numeric="tabular-nums">${s.count}</text>`:''}
-    </g>`;
-    cursor += segW;
-    return seg;
-  }).join('');
-  const labels = stages.map((s,i)=>{
-    const x = padX + 4 + (i+0.5)*(trackW/stages.length);
-    return `<g><circle cx="${x-50}" cy="${trackY+trackH+18}" r="3" fill="${s.color}"/><text x="${x-42}" y="${trackY+trackH+22}" font-size="10" font-weight="600" fill="${CHART.ink}" font-family="Inter">${s.label}</text><text x="${x-42}" y="${trackY+trackH+34}" font-size="9" fill="${CHART.muted}" font-family="Inter">${s.count} ${s.count===1?'action':'actions'}</text></g>`;
-  }).join('');
-  return `<figure role="figure" aria-label="CQI pipeline: ${stages.map(s=>`${s.count} ${s.label}`).join(', ')}." style="margin:0">
-    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block">
-      <rect x="${padX}" y="${trackY}" width="${trackW}" height="${trackH}" fill="${CHART.bg}" rx="${trackH/2}"/>
-      ${segments}
-      ${labels}
-    </svg>
-  </figure>`;
+  return `<div style="display:flex;gap:10px">
+    ${stages.map(s=>`<button onclick="setView('cqi')" style="flex:1;display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--r-md);background:${s.bg};border:1px solid ${s.ring};text-align:left;cursor:pointer;transition:filter var(--tr-fast)" onmouseover="this.style.filter='brightness(0.97)'" onmouseout="this.style.filter='none'">
+      <div style="width:34px;height:34px;border-radius:var(--r-pill);background:white;color:${s.fg};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0"><i class="fa-light ${s.icon}"></i></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:${s.fg};line-height:1">${s.label}</div>
+        <div style="font-family:var(--font-heading);font-size:24px;font-weight:500;color:var(--foreground);margin-top:5px;font-variant-numeric:tabular-nums;line-height:1">${s.count}</div>
+      </div>
+    </button>`).join('')}
+  </div>`;
 }
 
 function chartLifecycleFunnel(stages){
@@ -1410,36 +1396,47 @@ function chartFacultyOverTerms(history, courses){
 }
 
 function chartScoreHistogram(courses){
-  /* Histogram using a single brand-intensity color rather than a rainbow. */
-  const buckets = [
-    {label:'< 3.5',  range:[0,3.5]},
-    {label:'3.5-3.7',range:[3.5,3.7]},
-    {label:'3.7-4.0',range:[3.7,4.0]},
-    {label:'4.0-4.3',range:[4.0,4.3]},
-    {label:'4.3-4.5',range:[4.3,4.5]},
-    {label:'>= 4.5', range:[4.5,5.1]},
-  ];
-  buckets.forEach(b=>b.count = courses.filter(c=>c.avg>=b.range[0] && c.avg<b.range[1]).length);
-  const max = Math.max(1,...buckets.map(b=>b.count));
-  const W = 480, H = 180, P = 32, PB = 36;
-  const barW = (W-2*P) / buckets.length;
-  const ticks = [0, Math.ceil(max/2), max];
-  const grid = ticks.map(t=>{
-    const y = H-PB - (t/max) * (H-PB-PT_());
-    return `<line x1="${P}" x2="${W-P}" y1="${y}" y2="${y}" stroke="${CHART.hairline}" stroke-width="1"/><text x="${P-6}" y="${y+3}" text-anchor="end" font-size="9" fill="${CHART.muted}" font-family="Inter">${t}</text>`;
+  /* Dot plot on a 1-5 axis instead of a 6-bucket histogram. With sparse
+     data (1-5 released courses per term) buckets read as broken; a dot
+     plot keeps every course visible and shows spread immediately. */
+  if(!courses.length){
+    return `<div style="padding:24px;text-align:center;color:var(--muted-fg);font-size:12px">No released courses yet this term.</div>`;
+  }
+  const W = 560, H = 96, P = 24, axisY = 56;
+  const xFor = v => P + ((v-1)/4) * (W - 2*P);
+  /* Vertical jitter so overlapping dots don't stack on one another */
+  const sorted = [...courses].sort((a,b)=>a.avg-b.avg);
+  const placed = [];
+  const dots = sorted.map(c=>{
+    const x = xFor(c.avg);
+    const dy = placed.filter(p=>Math.abs(p-x)<14).length * 11;
+    placed.push(x);
+    const fill = c.avg>=4.3 ? 'oklch(0.45 0.14 155)' : c.avg>=3.7 ? 'oklch(0.50 0.14 286.1)' : 'oklch(0.52 0.16 55)';
+    return `<g class="cell" tabindex="0" role="button" aria-label="${c.code}: average ${c.avg.toFixed(2)}. Press to open detail." style="cursor:pointer;outline:none" onclick="openSurveyDetail('${c.id}','pd')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSurveyDetail('${c.id}','pd')}">
+      <circle cx="${x}" cy="${axisY-6-dy}" r="7" fill="${fill}" stroke="white" stroke-width="2"/>
+      <title>${c.code}: ${c.avg.toFixed(2)}</title>
+    </g>`;
   }).join('');
-  const bars = buckets.map((b,i)=>{
-    const h = (b.count/max) * (H - PB - PT_());
-    const x = P + i*barW;
-    const y = H - PB - h;
-    const isConcern = i < 2;
-    const fill = isConcern ? CHART.warn : CHART.brand;
-    const opacity = isConcern ? 0.85 : 0.6 + 0.1*i;
-    return `<g><rect x="${x+8}" y="${y}" width="${barW-16}" height="${h}" fill="${fill}" opacity="${opacity}" rx="3"/>${b.count?`<text x="${x+barW/2}" y="${y-6}" text-anchor="middle" font-size="11" font-weight="700" fill="${CHART.ink}" font-family="Inter" font-variant-numeric="tabular-nums">${b.count}</text>`:''}<text x="${x+barW/2}" y="${H-12}" text-anchor="middle" font-size="9" fill="${CHART.muted}" font-family="Inter">${b.label}</text></g>`;
-  }).join('');
-  function PT_(){ return 24; }
-  return `<figure role="figure" aria-label="Score distribution histogram: ${buckets.map(b=>`${b.count} courses scored ${b.label}`).join(', ')}." style="margin:0">
-    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="width:100%;height:180px;display:block">${grid}${bars}</svg>
+  const threshX = xFor(3.7);
+  const ticks = [1,2,3,4,5].map(t=>`<g><line x1="${xFor(t)}" x2="${xFor(t)}" y1="${axisY-3}" y2="${axisY+3}" stroke="${CHART.muted}" stroke-width="1"/><text x="${xFor(t)}" y="${axisY+18}" text-anchor="middle" font-size="10" fill="${CHART.muted}" font-family="Inter" font-variant-numeric="tabular-nums">${t}.0</text></g>`).join('');
+  const minScore = Math.min(...courses.map(c=>c.avg));
+  const maxScore = Math.max(...courses.map(c=>c.avg));
+  const median = (()=>{const a=[...sorted];const m=Math.floor(a.length/2);return a.length%2?a[m].avg:(a[m-1].avg+a[m].avg)/2;})();
+  const belowThreshold = courses.filter(c=>c.avg<3.7).length;
+  return `<figure role="figure" aria-label="Score distribution: ${courses.length} released courses, range ${minScore.toFixed(2)} to ${maxScore.toFixed(2)}." style="margin:0">
+    <div style="display:flex;align-items:center;gap:18px;font-size:11px;color:var(--muted-fg);margin-bottom:8px;flex-wrap:wrap">
+      <span><strong style="color:var(--foreground);font-variant-numeric:tabular-nums">${courses.length}</strong> released</span>
+      <span>Range <strong style="color:var(--foreground);font-variant-numeric:tabular-nums">${minScore.toFixed(2)} – ${maxScore.toFixed(2)}</strong></span>
+      <span>Median <strong style="color:var(--foreground);font-variant-numeric:tabular-nums">${median.toFixed(2)}</strong></span>
+      ${belowThreshold>0?`<span style="color:var(--c-amber-fg);font-weight:600"><i class="fa-light fa-triangle-exclamation"></i> ${belowThreshold} below 3.7 threshold</span>`:`<span style="color:var(--c-green-fg);font-weight:600"><i class="fa-light fa-check"></i> All above 3.7 threshold</span>`}
+    </div>
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="width:100%;height:96px;display:block">
+      <line x1="${P}" x2="${W-P}" y1="${axisY}" y2="${axisY}" stroke="${CHART.muted}" stroke-width="1"/>
+      <line x1="${threshX}" x2="${threshX}" y1="14" y2="${axisY}" stroke="oklch(0.52 0.16 55)" stroke-width="1.5" stroke-dasharray="3 3"/>
+      <text x="${threshX}" y="10" text-anchor="middle" font-size="9" fill="oklch(0.42 0.16 55)" font-family="Inter" font-weight="600">3.7 threshold</text>
+      ${ticks}
+      ${dots}
+    </svg>
   </figure>`;
 }
 
@@ -1955,7 +1952,7 @@ function renderPdDashboard(){
         <div class="cqi-action-line" style="display:flex;justify-content:space-between;align-items:center;margin-top:7px"><span style="color:var(--brand-color);font-weight:600">No CQI action this term yet. Click to create one.</span><span style="font-size:10px;color:var(--muted-fg)">CAPTE 2C evidence chain</span></div>
       </div>
     </div>`;
-  }).join('') : `<div class="empty"><div class="empty-icon"><i class="fa-light fa-circle-check"></i></div><div style="font-size:14px;font-weight:600;color:var(--foreground);margin-bottom:6px">All released courses scored 3.7 or above this term</div><div style="font-size:12px;color:var(--muted-fg);max-width:440px;margin:0 auto;line-height:1.6">When a course slips below the threshold, it appears here so you can attach a CQI action immediately. CAPTE Standard 2C requires a documented Result -&gt; Action -&gt; Reassessment chain; an empty card means your evidence is clean for ${termOf(state.termId).name}.</div></div>`;
+  }).join('') : `<div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:28px 16px;color:var(--c-green-fg);font-size:13px;font-weight:500"><i class="fa-light fa-circle-check" style="font-size:18px"></i>No at-risk courses · all released courses scored 3.7+</div>`;
 
   const cqiHtml = CQI_ACTIONS.slice(0,4).map(a=>{
     const cls = a.status==='closed'?'closed':a.status==='reassessment-due'?'due':'open';
@@ -2009,14 +2006,14 @@ function renderPdDashboard(){
 
       <div class="card full">
         <div class="card-head">
-          <div><div class="card-title"><i class="fa-light fa-clipboard-list-check"></i>CQI evidence pipeline</div><div class="card-sub">Result -&gt; Action -&gt; Reassessment chain across the year. Click any segment to open the CQI log.</div></div>
+          <div><div class="card-title"><i class="fa-light fa-clipboard-list-check"></i>CQI evidence</div></div>
+          ${dueReassess>0?`<button class="btn btn-amber-outline btn-sm" onclick="setView('cqi')"><i class="fa-light fa-bell-on"></i>${dueReassess} due for reassessment</button>`:''}
         </div>
         ${chartCqiPipeline(openCqi, dueReassess, closedCqi)}
-        <div style="font-size:11px;color:var(--muted-fg);margin-top:6px;line-height:1.55">CAPTE Standard 2C requires documented closure on flagged results. ${dueReassess>0?`<strong style="color:var(--c-amber-fg)">${dueReassess} action${dueReassess>1?'s':''} due for reassessment</strong> this term.`:''}</div>
       </div>
 
       <div class="card full">
-        <div class="card-head"><div><div class="card-title"><i class="fa-light fa-chart-column"></i>Score distribution</div><div class="card-sub">How courses cluster across the 1-5 range. Healthy programs cluster around 4.0; bimodal patterns suggest faculty inconsistency.</div></div></div>
+        <div class="card-head"><div><div class="card-title"><i class="fa-light fa-chart-scatter"></i>Score spread</div></div></div>
         ${chartScoreHistogram(released)}
       </div>
     </div>
@@ -2024,22 +2021,8 @@ function renderPdDashboard(){
     <div class="dash-grid">
       <div class="card card-flush">
         <div class="card-section">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
-            <div>
-              <div class="card-title"><i class="fa-light fa-triangle-exclamation"></i>At-risk courses (no CQI action yet)</div>
-              <div class="card-sub">Released courses scored under 3.7 with no documented action. This is your weekly action queue and the gap report for accreditation.</div>
-            </div>
-            <details style="font-size:11px;color:var(--muted-fg);max-width:42%;flex-shrink:0">
-              <summary style="cursor:pointer;color:var(--brand-color);font-weight:600;list-style:none">When this card matters <i class="fa-light fa-chevron-down" style="font-size:9px"></i></summary>
-              <div style="margin-top:8px;padding:10px 12px;background:var(--muted);border-radius:var(--radius-sm);line-height:1.55">
-                <div style="margin-bottom:6px"><strong>End-of-term review:</strong> Your weekly triage queue.</div>
-                <div style="margin-bottom:6px"><strong>Pre-accreditation:</strong> Empty = audit-clean for CAPTE 2C.</div>
-                <div style="margin-bottom:6px"><strong>Faculty meetings:</strong> Walk in with the action list pre-populated.</div>
-                <div style="margin-bottom:6px"><strong>Site visit defense:</strong> Documents the Result -&gt; Action -&gt; Reassessment chain accreditors ask for.</div>
-                <div><strong>Decay prevention:</strong> Surfaces a 0.4 drop before it compounds into 0.7 next term.</div>
-              </div>
-            </details>
-          </div>
+          <div class="card-title"><i class="fa-light fa-triangle-exclamation"></i>At-risk courses ${atRisk.length?`<span class="badge badge-amber" style="font-size:10px;margin-left:6px">${atRisk.length}</span>`:''}</div>
+          ${atRisk.length?`<div class="card-sub">Released courses below 3.7 with no CQI action yet. Click any row to attach one.</div>`:''}
         </div>
         <div>${atRiskHtml}</div>
       </div>
