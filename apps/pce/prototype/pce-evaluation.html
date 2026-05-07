@@ -367,10 +367,11 @@ a{color:var(--brand-color);text-decoration:none;cursor:pointer}
 
 /* ── Question bank browser ───────────────────────────────────── */
 .bank-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.bank-card{background:white;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm)}
-.bank-card-head{padding:14px 16px;border-bottom:1px solid var(--border);background:var(--brand-tint)}
-.bank-card-title{font-size:14px;font-weight:600;color:var(--brand-color-deep);display:flex;align-items:center;gap:8px}
-.bank-card-sub{font-size:11px;color:var(--brand-color-dark);margin-top:4px;line-height:1.5}
+.bank-card{background:white;border:1px solid var(--hairline);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-1);transition:border-color var(--tr-base), box-shadow var(--tr-base)}
+.bank-card:hover{border-color:color-mix(in oklch, var(--brand-color) 18%, var(--hairline));box-shadow:var(--shadow-2)}
+.bank-card-head{padding:18px 20px;border-bottom:1px solid var(--hairline);background:var(--brand-tint)}
+.bank-card-title{font-size:14px;font-weight:600;color:var(--brand-color-deep);display:flex;align-items:center;gap:8px;letter-spacing:-0.01em}
+.bank-card-sub{font-size:12px;color:var(--brand-color-dark);margin-top:5px;line-height:1.55;letter-spacing:-0.005em}
 .bank-section-head{padding:10px 16px;background:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted-fg);display:flex;justify-content:space-between}
 .bank-q{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;gap:10px}
 .bank-q:last-child{border-bottom:none}
@@ -1700,13 +1701,16 @@ function renderPdSetup(){
     {id:'terms', label:'Terms',           icon:'fa-calendar', status:'ok'},
     {id:'admin', label:'Decision Admin',  icon:'fa-user-tie', status:'ok'},
   ];
-  const navHtml = tabs.map(t=>`
-    <div onclick="state.pdSetupTab='${t.id}';renderAll()" style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-size:13px;color:var(--foreground);${state.pdSetupTab===t.id?'background:var(--brand-tint);color:var(--brand-color-deep);font-weight:600;border-left:3px solid var(--brand-color);padding-left:11px':''}">
-      <i class="fa-light ${t.icon}" style="width:18px;text-align:center;font-size:13px;color:${state.pdSetupTab===t.id?'var(--brand-color)':'var(--muted-fg)'}"></i>
+  const navHtml = tabs.map(t=>{
+    const active = state.pdSetupTab===t.id;
+    return `
+    <div onclick="state.pdSetupTab='${t.id}';renderAll()" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--hairline-soft);cursor:pointer;font-size:13px;letter-spacing:-0.005em;color:${active?'var(--brand-color-deep)':'var(--ink-2,var(--foreground))'};font-weight:${active?'600':'500'};${active?'background:var(--brand-tint);border-left:3px solid var(--brand-color);padding-left:11px':'border-left:3px solid transparent'};transition:background var(--tr-fast)" onmouseover="if(!${active})this.style.background='var(--muted)'" onmouseout="if(!${active})this.style.background='transparent'">
+      <i class="fa-light ${t.icon}" style="width:18px;text-align:center;font-size:13px;color:${active?'var(--brand-color)':'var(--muted-fg)'}"></i>
       <span>${t.label}</span>
-      <span style="margin-left:auto;font-size:10px;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${t.status==='ok'?'var(--c-green-bg)':'var(--destructive-bg)'};color:${t.status==='ok'?'var(--c-green-fg)':'var(--destructive-fg)'}"><i class="fa-light ${t.status==='ok'?'fa-check':'fa-xmark'}" style="font-size:8px"></i></span>
+      <span style="margin-left:auto;font-size:9px;width:16px;height:16px;border-radius:var(--r-pill);display:flex;align-items:center;justify-content:center;background:${t.status==='ok'?'var(--c-green-bg)':'var(--destructive-bg)'};color:${t.status==='ok'?'var(--c-green-fg)':'var(--destructive-fg)'}"><i class="fa-light ${t.status==='ok'?'fa-check':'fa-xmark'}" style="font-size:8px"></i></span>
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   let body = '';
   if(state.pdSetupTab==='lms')   body = renderPdSetupLms();
@@ -1721,8 +1725,8 @@ function renderPdSetup(){
         <div class="page-subtitle">One-time configuration that autopilot uses to schedule and trigger surveys. Set once per academic year, then maintained as program structure changes.</div>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:240px 1fr;gap:22px;align-items:flex-start">
-      <div style="background:white;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm);position:sticky;top:0">${navHtml}</div>
+    <div style="display:grid;grid-template-columns:240px 1fr;gap:var(--sp-5);align-items:flex-start">
+      <nav style="background:white;border:1px solid var(--hairline);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-1);position:sticky;top:0">${navHtml}</nav>
       <div>${body}</div>
     </div>
   `;
