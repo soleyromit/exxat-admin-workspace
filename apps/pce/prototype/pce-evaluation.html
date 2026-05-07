@@ -107,9 +107,41 @@ button{font-family:inherit;color:inherit;background:none;border:none;cursor:poin
 input,textarea,select{font-family:inherit;color:inherit;font-size:inherit}
 a{color:var(--brand-color);text-decoration:none;cursor:pointer}
 
-/* ── App shell ────────────────────────────────────────────────────── */
-.app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
-.topbar{height:56px;flex-shrink:0;background:rgba(255,255,255,0.92);backdrop-filter:saturate(180%) blur(10px);-webkit-backdrop-filter:saturate(180%) blur(10px);border-bottom:1px solid var(--hairline);display:flex;align-items:center;padding:0 var(--sp-5);gap:var(--sp-4);position:relative;z-index:10}
+/* ── App shell — sidebar + main, mirrors @exxat/exam-management/admin ── */
+.app{display:grid;grid-template-columns:248px 1fr;height:100vh;overflow:hidden;background:var(--bg)}
+.main{display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+/* Sidebar (left rail, mirrors AppSidebar in exam-mgmt) */
+.sb{background:var(--bg);border-right:1px solid var(--hairline);display:flex;flex-direction:column;overflow:hidden;padding:10px 0}
+.sb-brand{display:flex;align-items:center;gap:10px;padding:10px 14px;margin:0 8px;border-radius:var(--r-md);text-decoration:none}
+.sb-brand .b-icon{width:28px;height:28px;border-radius:7px;background:var(--brand-color);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.sb-brand-text{font-family:var(--font-heading);font-weight:500;font-size:16px;color:var(--brand-color-deep);letter-spacing:-0.01em;line-height:1.1}
+.sb-brand-sub{font-size:10px;color:var(--muted-fg);font-weight:500;letter-spacing:0.04em;text-transform:uppercase;margin-top:2px}
+.sb-inst{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:0 8px;border-radius:var(--r-md);cursor:pointer;transition:background var(--tr-fast)}
+.sb-inst:hover{background:var(--muted)}
+.sb-inst-avatar{width:34px;height:34px;border-radius:50%;background:var(--muted);color:var(--foreground);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.sb-inst-info{flex:1;min-width:0}
+.sb-inst-name{font-size:13px;font-weight:600;color:var(--foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-inst-sub{font-size:11px;color:var(--muted-fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.sb-sep{height:1px;background:var(--hairline);margin:8px 16px}
+.sb-nav{flex:1;overflow-y:auto;padding:6px 8px;display:flex;flex-direction:column;gap:1px}
+.sb-nav-item{display:flex;align-items:center;gap:11px;padding:8px 12px;border-radius:var(--r-md);font-size:13px;color:var(--foreground);cursor:pointer;transition:background var(--tr-fast);font-weight:500;letter-spacing:-0.005em;text-align:left;border:none;background:transparent;width:100%;font-family:inherit}
+.sb-nav-item:hover{background:var(--muted)}
+.sb-nav-item.active{background:var(--brand-tint);color:var(--brand-color-deep);font-weight:600}
+.sb-nav-item .sb-icon{width:18px;text-align:center;font-size:14px;color:var(--muted-fg);flex-shrink:0}
+.sb-nav-item.active .sb-icon{color:var(--brand-color)}
+.sb-nav-item .sb-badge{margin-left:auto;background:var(--brand-color);color:white;font-size:9px;padding:1px 7px;border-radius:99px;font-weight:700}
+.sb-nav-group{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted-fg);padding:12px 16px 4px}
+.sb-footer{padding:6px 8px;display:flex;flex-direction:column;gap:1px}
+.sb-user{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-md);cursor:pointer;transition:background var(--tr-fast);border:none;background:transparent;width:100%;text-align:left;font-family:inherit}
+.sb-user:hover{background:var(--muted)}
+.sb-user-avatar{width:32px;height:32px;border-radius:50%;color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;background:var(--brand-color)}
+.sb-user-info{flex:1;min-width:0}
+.sb-user-name{font-size:12px;font-weight:600;color:var(--foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-user-role{font-size:10px;color:var(--muted-fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.sb-user-more{color:var(--muted-fg);font-size:11px}
+
+.topbar{height:52px;flex-shrink:0;background:rgba(255,255,255,0.92);backdrop-filter:saturate(180%) blur(10px);-webkit-backdrop-filter:saturate(180%) blur(10px);border-bottom:1px solid var(--hairline);display:flex;align-items:center;padding:0 var(--sp-5);gap:var(--sp-4);position:relative;z-index:10}
 .brand-mark{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;color:var(--brand-color-deep)}
 .brand-mark .b-icon{width:24px;height:24px;border-radius:6px;background:var(--brand-color);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
 .brand-tag{font-size:9px;background:var(--brand-tint);color:var(--brand-color-dark);padding:2px 7px;border-radius:99px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
@@ -502,8 +534,11 @@ a{color:var(--brand-color);text-decoration:none;cursor:pointer}
 <body>
 
 <div class="app">
-  <div class="topbar" id="topbar"></div>
-  <div class="screens" id="screens"></div>
+  <aside class="sb" id="sidebar" aria-label="Application navigation"></aside>
+  <div class="main">
+    <div class="topbar" id="topbar"></div>
+    <div class="screens" id="screens"></div>
+  </div>
 </div>
 
 <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this) closeModal()">
@@ -1763,33 +1798,76 @@ function setPersona(p){
 }
 
 function renderTopbar(){
+  /* Sidebar (left rail) — brand + institution + per-persona nav + footer.
+     Top header (right) — slim bar with term switcher + persona switcher.
+     Mirrors the exam-management AppSidebar pattern. */
   const p = PERSONAS[state.persona];
-  const tabs = p.tabs.map(t=>{
-    const cur = state.persona==='pd'?state.pdView:state.persona==='coord'?state.coordView:state.persona==='fac'?state.facView:state.stuView;
-    return `<button class="tb-tab ${cur===t.id?'active':''}" onclick="setView('${t.id}')"><i class="fa-light ${t.icon}"></i>${t.label}</button>`;
-  }).join('');
-  document.getElementById('topbar').innerHTML = `
-    <div class="brand-mark">
+  const cur = state.persona==='pd'?state.pdView:state.persona==='coord'?state.coordView:state.persona==='fac'?state.facView:state.persona==='stu'?state.stuView:state.persona==='ccc'?state.cccView:state.persona==='chair'?state.chairView:state.persona==='dce'?state.dceView:state.adjView;
+
+  const navItems = (p.tabs||[]).map(t=>`
+    <button class="sb-nav-item ${cur===t.id?'active':''}" onclick="setView('${t.id}')" aria-current="${cur===t.id?'page':'false'}">
+      <i class="sb-icon fa-${cur===t.id?'solid':'light'} ${t.icon}" aria-hidden="true"></i>
+      <span>${t.label}</span>
+    </button>
+  `).join('') || `<div style="padding:14px;font-size:11px;color:var(--muted-fg);font-style:italic">No views for this persona — check back after grades post.</div>`;
+
+  document.getElementById('sidebar').innerHTML = `
+    <div class="sb-brand" role="img" aria-label="Exxat Prism">
       <div class="b-icon">P</div>
-      <span>PCE Post Course Evaluation</span>
+      <div>
+        <div class="sb-brand-text">Exxat Prism</div>
+        <div class="sb-brand-sub">Post Course Eval</div>
+      </div>
     </div>
-    <div class="tb-divider"></div>
-    <div class="tb-tabs">${tabs}</div>
+    <button class="sb-inst" onclick="openInstitutionSwitcher()" aria-label="Switch institution">
+      <div class="sb-inst-avatar">SU</div>
+      <div class="sb-inst-info">
+        <div class="sb-inst-name">State University</div>
+        <div class="sb-inst-sub">Health Sciences</div>
+      </div>
+      <i class="fa-light fa-chevron-right" style="font-size:11px;color:var(--muted-fg);flex-shrink:0" aria-hidden="true"></i>
+    </button>
+    <div class="sb-sep"></div>
+    <nav class="sb-nav" aria-label="Primary">
+      ${navItems}
+    </nav>
+    <div class="sb-sep"></div>
+    <div class="sb-footer">
+      <button class="sb-nav-item" onclick="toast('Settings stub for prototype','info')">
+        <i class="sb-icon fa-light fa-gear" aria-hidden="true"></i>
+        <span>Settings</span>
+      </button>
+      <button class="sb-nav-item" onclick="toast('Help center stub for prototype','info')">
+        <i class="sb-icon fa-light fa-circle-question" aria-hidden="true"></i>
+        <span>Get Help</span>
+      </button>
+      <button class="sb-user" onclick="openPersonaSwitcher()" aria-label="${p.name}, switch persona">
+        <div class="sb-user-avatar" style="background:var(--persona-${state.persona},var(--brand-color))">${p.initials}</div>
+        <div class="sb-user-info">
+          <div class="sb-user-name">${escapeHtml(p.name)}</div>
+          <div class="sb-user-role">${escapeHtml(p.label)}</div>
+        </div>
+        <i class="fa-light fa-ellipsis-vertical sb-user-more" aria-hidden="true"></i>
+      </button>
+    </div>
+  `;
+
+  document.getElementById('topbar').innerHTML = `
     <div class="tb-spacer"></div>
     <div class="tb-term">
       <span>Term:</span>
       <span class="tb-term-pill" onclick="openTermSwitcher()">${termOf(state.termId).name} <i class="fa-light fa-chevron-down" style="font-size:9px"></i></span>
     </div>
     <div class="tb-divider"></div>
-    <div class="persona-pill ${p.cls}" onclick="openPersonaSwitcher()">
+    <button class="persona-pill ${p.cls}" onclick="openPersonaSwitcher()" style="border:1px solid color-mix(in oklch, currentColor 18%, transparent);font-family:inherit">
       <span class="pdot"></span>${p.label}
       <i class="fa-light fa-chevron-down" style="font-size:9px"></i>
-    </div>
-    <div class="tb-divider"></div>
-    <div class="tb-user" onclick="openPersonaSwitcher()">
-      <div class="tb-avatar">${p.initials}</div>
-    </div>
+    </button>
   `;
+}
+
+function openInstitutionSwitcher(){
+  toast('Institution switcher (stub) — single-tenant prototype','info');
 }
 
 function setView(v){
