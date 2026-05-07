@@ -6,9 +6,6 @@
   "outputDirectory": ".",
   "installCommand": "echo 'no install needed'",
   "framework": null,
-  "rewrites": [
-    { "source": "/", "destination": "/pce-evaluation.html" }
-  ],
   "headers": [
     {
       "source": "/(.*)",
