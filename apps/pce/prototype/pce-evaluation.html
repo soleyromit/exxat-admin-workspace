@@ -1948,6 +1948,14 @@ function renderPD(){
   if(state.pdView==='bank')      return renderQuestionBanks();
   if(state.pdView==='cqi')       return renderCqiLog();
   if(state.pdView==='results')   return renderAllResults();
+  /* Dashboard drill-downs — each card on the dashboard routes here */
+  if(state.pdView==='dd-score-breakdown')      return renderDdScoreBreakdown();
+  if(state.pdView==='dd-at-risk-roster')       return renderDdAtRiskRoster();
+  if(state.pdView==='dd-moderation-queue')     return renderDdModerationQueue();
+  if(state.pdView==='dd-reflection-adoption')  return renderDdReflectionAdoption();
+  if(state.pdView==='dd-term-trend')           return renderDdTermTrend();
+  if(state.pdView==='dd-score-distribution')   return renderDdScoreDistribution();
+  if(state.pdView==='dd-reflection-deep-dive') return renderDdReflectionDeepDive();
   return renderPdDashboard();
 }
 
@@ -2480,10 +2488,10 @@ function renderPdDashboard(){
     </div>
 
     <div class="kpi-grid">
-      <div class="kpi"><div class="kpi-label">Program avg score</div><div class="kpi-val">${avgScore}<small>/ 5.0</small></div><div class="kpi-meta">${released.length} of ${allTermCourses.length} courses released</div></div>
-      <div class="kpi"><div class="kpi-label">At-risk courses</div><div class="kpi-val">${atRisk.length}</div><div class="kpi-meta"><i class="fa-light fa-triangle-exclamation"></i>Below 3.7 average</div></div>
-      <div class="kpi"><div class="kpi-label">Pending review</div><div class="kpi-val">${pendingReviewCourses.length}</div><div class="kpi-meta"><i class="fa-light fa-shield-halved"></i>Surveys awaiting moderation</div></div>
-      <div class="kpi" style="display:flex;align-items:center;gap:14px;padding:12px 16px"><div style="flex:1;min-width:0"><div class="kpi-label">Reflection rate</div><div class="kpi-val">${reflectionRate}%</div><div class="kpi-meta">${REFLECTIONS.length} of ${released.length} faculty</div></div>${chartCompletionDonut(reflectionRate, 'reflected')}</div>
+      <button class="kpi" onclick="setView('dd-score-breakdown')" style="cursor:pointer;text-align:left;font-family:inherit"><div class="kpi-label">Program avg score</div><div class="kpi-val">${avgScore}<small>/ 5.0</small></div><div class="kpi-meta">${released.length} of ${allTermCourses.length} courses released <i class="fa-light fa-arrow-right" style="margin-left:4px;font-size:9px;color:var(--brand-color)"></i></div></button>
+      <button class="kpi" onclick="setView('dd-at-risk-roster')" style="cursor:pointer;text-align:left;font-family:inherit"><div class="kpi-label">At-risk courses</div><div class="kpi-val">${atRisk.length}</div><div class="kpi-meta"><i class="fa-light fa-triangle-exclamation"></i>Below 3.7 average <i class="fa-light fa-arrow-right" style="margin-left:4px;font-size:9px;color:var(--brand-color)"></i></div></button>
+      <button class="kpi" onclick="setView('dd-moderation-queue')" style="cursor:pointer;text-align:left;font-family:inherit"><div class="kpi-label">Pending review</div><div class="kpi-val">${pendingReviewCourses.length}</div><div class="kpi-meta"><i class="fa-light fa-shield-halved"></i>Surveys awaiting moderation <i class="fa-light fa-arrow-right" style="margin-left:4px;font-size:9px;color:var(--brand-color)"></i></div></button>
+      <button class="kpi" onclick="setView('dd-reflection-adoption')" style="display:flex;align-items:center;gap:14px;padding:12px 16px;cursor:pointer;text-align:left;font-family:inherit"><div style="flex:1;min-width:0"><div class="kpi-label">Reflection rate</div><div class="kpi-val">${reflectionRate}%</div><div class="kpi-meta">${REFLECTIONS.length} of ${released.length} faculty <i class="fa-light fa-arrow-right" style="margin-left:4px;font-size:9px;color:var(--brand-color)"></i></div></div>${chartCompletionDonut(reflectionRate, 'reflected')}</button>
     </div>
 
     <div class="dash-grid" style="margin-bottom:18px">
@@ -2494,10 +2502,9 @@ function renderPdDashboard(){
         </div>
         ${released.length ? chartScoreLandscape(released, {persona:'pd'}) : '<div class="empty">No released courses yet for this term.</div>'}
       </div>
-      <div class="card">
-        <div class="card-head"><div><div class="card-title"><i class="fa-light fa-chart-line-up"></i>Program trend</div><div class="card-sub">Last 5 terms, current term highlighted.</div></div></div>
+      <div class="card" onclick="setView('dd-term-trend')" style="cursor:pointer">
+        <div class="card-head"><div><div class="card-title"><i class="fa-light fa-chart-line-up"></i>Program trend</div><div class="card-sub">Last 5 terms, current term highlighted. Click for the deep-dive.</div></div><i class="fa-light fa-arrow-right" style="color:var(--brand-color);font-size:11px"></i></div>
         ${chartProgramTrend([3.95, 4.00, 4.02, 4.05, parseFloat(avgScore)||4.0], ['Sp 24','Fa 24','Sp 25','Fa 25','Sp 26'])}
-        <div style="font-size:11px;color:var(--muted-fg);margin-top:8px;line-height:1.55">Same standardized question banks across all terms, so this trend is structurally comparable.</div>
       </div>
 
       <div class="card">
@@ -2508,8 +2515,8 @@ function renderPdDashboard(){
         ${chartCqiPipeline(openCqi, dueReassess, closedCqi)}
       </div>
 
-      <div class="card">
-        <div class="card-head" style="margin-bottom:10px"><div><div class="card-title"><i class="fa-light fa-chart-scatter"></i>Score spread</div></div></div>
+      <div class="card" onclick="setView('dd-score-distribution')" style="cursor:pointer">
+        <div class="card-head" style="margin-bottom:10px"><div><div class="card-title"><i class="fa-light fa-chart-scatter"></i>Score spread</div><div class="card-sub">Click any dot to drill into a course, or open the full distribution analysis.</div></div><i class="fa-light fa-arrow-right" style="color:var(--brand-color);font-size:11px"></i></div>
         ${chartScoreHistogram(released)}
       </div>
     </div>
@@ -2546,21 +2553,13 @@ function renderPdDashboard(){
         }).join('') : `<div style="padding:32px;text-align:center"><div style="font-size:24px;color:var(--c-green-fg);margin-bottom:8px"><i class="fa-light fa-circle-check"></i></div><div style="font-size:13px;color:var(--c-green-fg);font-weight:600">No surveys awaiting review</div><div style="font-size:11px;color:var(--muted-fg);margin-top:6px">All closed surveys have been moderated and published to faculty.</div></div>`}
       </div>
 
-      <div class="card card-flush">
-        <div class="card-section">
-          <div class="card-title"><i class="fa-light fa-clipboard-list-check"></i>CQI activity</div>
-          <div class="card-sub">Result → Action → Reassessment chain (CAPTE Standard 2C).</div>
-        </div>
-        <div>${cqiHtml}</div>
-      </div>
-
       <div class="card full">
         <div class="card-head">
           <div>
             <div class="card-title"><i class="fa-light fa-comment-dots"></i>Latest faculty reflections</div>
             <div class="card-sub">What faculty noticed and what they will change next term. Faculty engagement = ${reflectionRate}%.</div>
           </div>
-          <button class="btn btn-link btn-sm" onclick="setView('results')">View all results<i class="fa-light fa-arrow-right" style="font-size:10px"></i></button>
+          <button class="btn btn-link btn-sm" onclick="setView('dd-reflection-deep-dive')">All reflections<i class="fa-light fa-arrow-right" style="font-size:10px"></i></button>
         </div>
         ${REFLECTIONS.slice(0,3).map(r=>{
           const c = courseOf(r.courseId);
@@ -4245,6 +4244,446 @@ function saveTemplate(){
   state.templateBuilder = null;
   renderAll();
   toast(`Saved "${orig.name}" v${orig.version}. Future surveys will use this version.`,'success');
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   DASHBOARD DRILL-DOWNS
+   Each card / KPI on the PD dashboard routes to a focused screen with
+   its own viz, actions, and flow. Standard chrome: a back-to-dashboard
+   link, page title + subtitle, KPI strip, primary viz, supporting
+   tables, and explicit actions where they apply.
+   ════════════════════════════════════════════════════════════════════ */
+
+function ddBackHeader(title, subtitle, actions){
+  return `<div class="page-header">
+    <div>
+      <a class="btn btn-link" onclick="setView('dashboard')"><i class="fa-light fa-arrow-left"></i>Back to dashboard</a>
+      <div class="page-title" style="margin-top:6px">${title}</div>
+      ${subtitle?`<div class="page-subtitle">${subtitle}</div>`:''}
+    </div>
+    <div class="page-actions">${actions||''}</div>
+  </div>`;
+}
+
+/* 1 ── Score breakdown ──────────────────────────────────────────── */
+function renderDdScoreBreakdown(){
+  const allTermCourses = COURSES.filter(c=>c.termId===state.termId);
+  const released = allTermCourses.filter(c=>c.surveyStatus==='results-available' && c.avg!==null && !c.minNFail);
+  const sorted = [...released].sort((a,b)=>b.avg-a.avg);
+  const avg = released.length ? +(released.reduce((a,c)=>a+c.avg,0)/released.length).toFixed(2) : 0;
+  const prior = 4.05; /* mock prior-term program avg */
+  const delta = +(avg-prior).toFixed(2);
+  const min = sorted.length?sorted.at(-1).avg:0;
+  const max = sorted.length?sorted[0].avg:0;
+  const median = sorted.length?(sorted.length%2?sorted[Math.floor(sorted.length/2)].avg:(sorted[sorted.length/2-1].avg+sorted[sorted.length/2].avg)/2):0;
+
+  const byType = COURSE_TYPES.map(t=>{
+    const cs = released.filter(c=>c.typeId===t.id);
+    const a = cs.length?+(cs.reduce((s,c)=>s+c.avg,0)/cs.length).toFixed(2):null;
+    return {name:t.name, color:t.color, avg:a, n:cs.length};
+  }).filter(x=>x.n>0);
+
+  const top = sorted.slice(0,5);
+  const bottom = [...sorted].reverse().slice(0,5);
+
+  const courseRow = c => {
+    const trend = c.prev ? +(c.avg-c.prev).toFixed(1) : null;
+    const tCol = trend===null?'var(--muted-fg)':trend>0.1?'var(--c-green-fg)':trend<-0.1?'var(--c-amber-fg)':'var(--muted-fg)';
+    const tIcon = trend===null?'fa-minus':trend>0.1?'fa-arrow-up':trend<-0.1?'fa-arrow-down':'fa-minus';
+    return `<div onclick="openSurveyDetail('${c.id}','pd')" style="display:flex;align-items:center;gap:11px;padding:10px 14px;border-bottom:1px solid var(--hairline-soft);cursor:pointer" onmouseover="this.style.background='var(--muted)'" onmouseout="this.style.background='transparent'">
+      <div style="font-family:var(--font-heading);font-size:18px;font-weight:500;color:var(--foreground);font-variant-numeric:tabular-nums;width:46px">${c.avg.toFixed(2)}</div>
+      <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.code}: ${escapeHtml(c.name)}</div><div style="font-size:11px;color:var(--muted-fg);margin-top:2px">${escapeHtml(c.instructor)}</div></div>
+      ${trend!==null?`<span style="color:${tCol};font-size:11px;font-weight:600;font-variant-numeric:tabular-nums"><i class="fa-light ${tIcon}" style="font-size:9px"></i>${trend>0?'+':''}${trend.toFixed(1)}</span>`:''}
+    </div>`;
+  };
+
+  return `${ddBackHeader('Score breakdown', `How this term's <strong>${avg.toFixed(2)}</strong> program average breaks down across ${released.length} released course${released.length===1?'':'s'}.`, `<button class="btn btn-outline btn-sm" onclick="exportScoreBreakdown()"><i class="fa-light fa-arrow-down-to-line"></i>Export CSV</button>`)}
+
+    <div class="kpi-grid" style="grid-template-columns:repeat(5, 1fr)">
+      <div class="kpi"><div class="kpi-label">This term</div><div class="kpi-val">${avg.toFixed(2)}<small>/ 5.0</small></div><div class="kpi-meta">Spring 2026</div></div>
+      <div class="kpi"><div class="kpi-label">Prior term</div><div class="kpi-val">${prior.toFixed(2)}<small>/ 5.0</small></div><div class="kpi-meta">Fall 2025</div></div>
+      <div class="kpi"><div class="kpi-label">Delta</div><div class="kpi-val" style="color:${delta>0?'var(--c-green-fg)':delta<0?'var(--c-amber-fg)':'var(--muted-fg)'}"><i class="fa-light fa-${delta>0?'arrow-up':delta<0?'arrow-down':'minus'}" style="font-size:14px"></i> ${delta>0?'+':''}${delta.toFixed(2)}</div><div class="kpi-meta">vs prior term</div></div>
+      <div class="kpi"><div class="kpi-label">Range</div><div class="kpi-val" style="font-size:18px">${min.toFixed(2)}–${max.toFixed(2)}</div><div class="kpi-meta">Lowest to highest</div></div>
+      <div class="kpi"><div class="kpi-label">Median</div><div class="kpi-val">${median.toFixed(2)}</div><div class="kpi-meta">Middle course</div></div>
+    </div>
+
+    <div class="dash-grid" style="margin-bottom:18px">
+      <div class="card full">
+        <div class="card-head"><div><div class="card-title"><i class="fa-light fa-chart-line-up"></i>5-term trajectory</div><div class="card-sub">Same standardized question banks across all terms — structurally comparable.</div></div></div>
+        ${chartProgramTrend([3.95, 4.00, 4.02, 4.05, avg||4.0], ['Sp 24','Fa 24','Sp 25','Fa 25','Sp 26'])}
+      </div>
+    </div>
+
+    <div class="dash-grid" style="margin-bottom:18px">
+      <div class="card card-flush">
+        <div class="card-section"><div class="card-title"><i class="fa-light fa-arrow-up" style="color:var(--c-green-fg)"></i>Top 5 performers</div><div class="card-sub">Strongest courses by avg score.</div></div>
+        <div>${top.map(courseRow).join('')||'<div class="empty">No released courses yet.</div>'}</div>
+      </div>
+      <div class="card card-flush">
+        <div class="card-section"><div class="card-title"><i class="fa-light fa-arrow-down" style="color:var(--c-amber-fg)"></i>Bottom 5</div><div class="card-sub">Where to focus CQI attention.</div></div>
+        <div>${bottom.map(courseRow).join('')||'<div class="empty">No released courses yet.</div>'}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div><div class="card-title"><i class="fa-light fa-tags"></i>By course type</div><div class="card-sub">Avg score per course type. Identifies whether one type is dragging the program average.</div></div></div>
+      ${byType.map(t=>{
+        const pct = (t.avg/5)*100;
+        return `<div style="display:flex;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid var(--hairline-soft)">
+          <div style="display:flex;align-items:center;gap:8px;width:160px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${t.color}"></span><span style="font-size:13px;font-weight:500">${escapeHtml(t.name)}</span></div>
+          <div style="flex:1;height:10px;background:var(--muted);border-radius:99px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${t.color};border-radius:99px"></div></div>
+          <div style="width:80px;text-align:right;font-variant-numeric:tabular-nums"><strong>${t.avg.toFixed(2)}</strong> <span style="font-size:11px;color:var(--muted-fg)">· ${t.n} course${t.n===1?'':'s'}</span></div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+function exportScoreBreakdown(){ toast('Score breakdown exported (CSV stub)','success'); }
+
+/* 2 ── At-risk roster ───────────────────────────────────────────── */
+function renderDdAtRiskRoster(){
+  const allTermCourses = COURSES.filter(c=>c.termId===state.termId);
+  const released = allTermCourses.filter(c=>c.surveyStatus==='results-available' && c.avg!==null && !c.minNFail);
+  const atRisk = released.filter(c=>c.avg<3.7 && !CQI_ACTIONS.find(a=>a.courseCode===c.code && a.termId===c.termId));
+  const repeat = atRisk.filter(c=>CQI_ACTIONS.find(a=>a.courseCode===c.code && a.termId!==c.termId));
+  const sharpDrop = atRisk.filter(c=>c.prev && c.prev-c.avg >= 0.4);
+
+  if(!atRisk.length){
+    return `${ddBackHeader('At-risk courses', `All ${released.length} released courses scored 3.7 or above this term — your CAPTE 2C evidence is clean.`)}
+      <div class="card" style="text-align:center;padding:48px;background:var(--c-green-bg);border-color:color-mix(in oklch, var(--c-green) 22%, white)">
+        <div style="font-size:36px;color:var(--c-green-fg);margin-bottom:14px"><i class="fa-light fa-circle-check"></i></div>
+        <div style="font-family:var(--font-heading);font-size:20px;font-weight:500;color:var(--c-green-fg);margin-bottom:8px">No at-risk courses this term</div>
+        <div style="font-size:13px;color:var(--c-green-fg);max-width:480px;margin:0 auto;line-height:1.6">When a course slips below 3.7, it appears here so you can attach a CQI action immediately. Empty here means your accreditation evidence is audit-clean for ${termOf(state.termId).name}.</div>
+      </div>
+    `;
+  }
+
+  return `${ddBackHeader('At-risk courses', `${atRisk.length} released course${atRisk.length===1?'':'s'} below 3.7 with no CQI action yet. Each row is one item in your weekly action queue and your gap report for accreditation.`, `<button class="btn btn-outline btn-sm" onclick="exportAtRiskCsv()"><i class="fa-light fa-arrow-down-to-line"></i>Export CSV</button> <button class="btn btn-primary btn-sm" onclick="bulkCreateCqi()"><i class="fa-light fa-plus"></i>Create CQI for all (${atRisk.length})</button>`)}
+
+    <div class="kpi-grid" style="grid-template-columns:repeat(4, 1fr)">
+      <div class="kpi"><div class="kpi-label">At-risk</div><div class="kpi-val">${atRisk.length}</div><div class="kpi-meta">of ${released.length} released</div></div>
+      <div class="kpi"><div class="kpi-label">Repeat</div><div class="kpi-val">${repeat.length}</div><div class="kpi-meta">Prior term action did not lift the score</div></div>
+      <div class="kpi"><div class="kpi-label">Sharp drop</div><div class="kpi-val">${sharpDrop.length}</div><div class="kpi-meta">−0.4 or more vs prior cohort</div></div>
+      <div class="kpi"><div class="kpi-label">Risk rate</div><div class="kpi-val">${released.length?Math.round(atRisk.length/released.length*100):0}%</div><div class="kpi-meta">of released courses</div></div>
+    </div>
+
+    <div class="card card-flush">
+      ${atRisk.map(c=>{
+        const drop = c.prev?+(c.avg-c.prev).toFixed(1):null;
+        const priorAction = CQI_ACTIONS.find(a=>a.courseCode===c.code && a.termId!==c.termId);
+        const why = priorAction ? {label:'Repeat: prior action did not move the score', icon:'fa-clock-rotate-left', col:'var(--destructive-fg)'}
+                  : drop!==null && drop<=-0.4 ? {label:`Sharp drop: ${drop.toFixed(1)} vs prior cohort`, icon:'fa-arrow-trend-down', col:'var(--c-amber-fg)'}
+                  : {label:'Below 3.7 threshold', icon:'fa-circle-exclamation', col:'var(--c-amber-fg)'};
+        return `<div style="display:grid;grid-template-columns:1fr auto;gap:14px;padding:18px 20px;border-bottom:1px solid var(--hairline-soft);align-items:center">
+          <div style="min-width:0">
+            <div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;margin-bottom:4px"><span style="font-family:var(--font-heading);font-size:20px;font-weight:500;color:var(--foreground);font-variant-numeric:tabular-nums">${c.avg.toFixed(2)}</span>${c.code}: ${escapeHtml(c.name)}</div>
+            <div style="font-size:12px;color:var(--muted-fg);margin-bottom:8px">${escapeHtml(c.instructor)} · ${responseCount(c.id)} of ${c.enrolled} responded · ${c.completion}% completion</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:${why.col};font-weight:600"><i class="fa-light ${why.icon}"></i>${why.label}</div>
+            ${priorAction?`<div style="font-size:11px;color:var(--muted-fg);margin-top:6px;padding:8px 10px;background:var(--muted);border-left:3px solid var(--c-amber);border-radius:0 var(--r-sm) var(--r-sm) 0"><strong>Last attempted:</strong> ${escapeHtml(priorAction.action.slice(0,160))}${priorAction.action.length>160?'…':''}</div>`:''}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+            <button class="btn btn-primary btn-sm" onclick="openCqiCreate('${c.id}')"><i class="fa-light fa-plus"></i>Create CQI</button>
+            <button class="btn btn-outline btn-sm" onclick="openSurveyDetail('${c.id}','pd')">View detail</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+function exportAtRiskCsv(){ toast('At-risk roster exported (CSV stub)','success'); }
+function bulkCreateCqi(){ toast('Bulk-create stub — opens CQI editor pre-filled per course','info'); }
+
+/* 3 ── Moderation queue ─────────────────────────────────────────── */
+function renderDdModerationQueue(){
+  const pending = COURSES.filter(c=>c.termId===state.termId && c.surveyStatus==='pending-review');
+  const totalComments = pending.reduce((a,c)=>a+commentsFor(c.id).length,0);
+  const totalFlagged = pending.reduce((a,c)=>a+commentsFor(c.id).filter(x=>x.flagReason).length,0);
+  const gradesPosted = pending.filter(c=>c.gradesPosted).length;
+
+  if(!pending.length){
+    return `${ddBackHeader('Moderation queue', 'No surveys awaiting moderation. All closed surveys this term have been reviewed and published.')}
+      <div class="card" style="text-align:center;padding:48px;background:var(--c-green-bg);border-color:color-mix(in oklch, var(--c-green) 22%, white)">
+        <div style="font-size:36px;color:var(--c-green-fg);margin-bottom:14px"><i class="fa-light fa-circle-check"></i></div>
+        <div style="font-family:var(--font-heading);font-size:20px;font-weight:500;color:var(--c-green-fg);margin-bottom:8px">Queue is clear</div>
+        <div style="font-size:13px;color:var(--c-green-fg);max-width:440px;margin:0 auto;line-height:1.6">Every closed survey has had its comments moderated and grade-lock confirmed. Faculty have received their results.</div>
+      </div>`;
+  }
+
+  return `${ddBackHeader('Moderation queue', `${pending.length} survey${pending.length===1?'':'s'} closed and awaiting review. Each release requires grade-lock confirmation plus comment moderation before faculty receive results.`)}
+
+    <div class="kpi-grid" style="grid-template-columns:repeat(4, 1fr)">
+      <div class="kpi"><div class="kpi-label">Pending</div><div class="kpi-val">${pending.length}</div><div class="kpi-meta">Surveys closed</div></div>
+      <div class="kpi"><div class="kpi-label">Grades posted</div><div class="kpi-val">${gradesPosted}<small>of ${pending.length}</small></div><div class="kpi-meta">${pending.length-gradesPosted} still waiting</div></div>
+      <div class="kpi"><div class="kpi-label">Comments</div><div class="kpi-val">${totalComments}</div><div class="kpi-meta">Across all pending</div></div>
+      <div class="kpi"><div class="kpi-label">Flagged</div><div class="kpi-val" style="color:${totalFlagged?'var(--c-amber-fg)':'var(--muted-fg)'}">${totalFlagged}</div><div class="kpi-meta">Needs FERPA review</div></div>
+    </div>
+
+    <div class="card card-flush">
+      ${pending.map(c=>{
+        const cms = commentsFor(c.id);
+        const flagged = cms.filter(x=>x.flagReason).length;
+        const moderated = cms.filter(x=>x.hidden || x.flagReason).length;
+        const gradeReady = c.gradesPosted;
+        const stepGrade = gradeReady ? {state:'done', col:'var(--c-green-fg)', icon:'fa-check'} : {state:'wait', col:'var(--c-amber-fg)', icon:'fa-lock'};
+        const stepMod = moderated===cms.length && !flagged ? {state:'done', col:'var(--c-green-fg)', icon:'fa-check'} : flagged ? {state:'wait', col:'var(--c-amber-fg)', icon:'fa-flag'} : {state:'idle', col:'var(--muted-fg)', icon:'fa-comments'};
+        const ready = gradeReady && !flagged;
+        return `<div style="padding:18px 20px;border-bottom:1px solid var(--hairline-soft)">
+          <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:12px">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:14px;font-weight:600;margin-bottom:3px">${c.code}: ${escapeHtml(c.name)}</div>
+              <div style="font-size:12px;color:var(--muted-fg)">${escapeHtml(c.instructor)} · ${responseCount(c.id)} of ${c.enrolled} responded · closed ${shortDate(addDaysIso(termOf(c.termId).endDate, 7))}</div>
+            </div>
+            <button class="btn btn-${ready?'primary':'amber-outline'} btn-sm" onclick="openSurveyDetail('${c.id}','pd')"><i class="fa-light fa-${ready?'paper-plane':'shield-halved'}"></i>${ready?'Review & publish':'Open moderation'}</button>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--muted);border-radius:var(--r-md)">
+              <div style="width:28px;height:28px;border-radius:50%;background:white;color:${stepGrade.col};display:flex;align-items:center;justify-content:center;font-size:11px"><i class="fa-light ${stepGrade.icon}"></i></div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:12px;font-weight:600">Grade-lock</div>
+                <div style="font-size:11px;color:var(--muted-fg)">${gradeReady?'Posted to SIS':'Faculty has not posted grades yet'}</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--muted);border-radius:var(--r-md)">
+              <div style="width:28px;height:28px;border-radius:50%;background:white;color:${stepMod.col};display:flex;align-items:center;justify-content:center;font-size:11px"><i class="fa-light ${stepMod.icon}"></i></div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:12px;font-weight:600">Comments ${cms.length}${flagged?` · ${flagged} flagged`:''}</div>
+                <div style="font-size:11px;color:var(--muted-fg)">${flagged?'FERPA review required':moderated?moderated+' moderated':'Awaiting review'}</div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+/* 4 ── Reflection adoption ──────────────────────────────────────── */
+function renderDdReflectionAdoption(){
+  const released = COURSES.filter(c=>c.termId===state.termId && c.surveyStatus==='results-available' && c.avg!==null && !c.minNFail);
+  const reflected = released.filter(c=>REFLECTIONS.find(r=>r.courseId===c.id));
+  const pending = released.filter(c=>!REFLECTIONS.find(r=>r.courseId===c.id));
+  const rate = released.length?Math.round(reflected.length/released.length*100):0;
+  /* Mock time-to-reflection: closed→saved gap */
+  const ttr = REFLECTIONS.map(r=>{const c=courseOf(r.courseId);if(!c)return null;const closeIso=addDaysIso(termOf(c.termId).endDate,7);return Math.max(0, Math.ceil(((new Date(r.savedAt))-(new Date(closeIso)))/86400000));}).filter(x=>x!==null);
+  const meanTtr = ttr.length?Math.round(ttr.reduce((a,b)=>a+b,0)/ttr.length):0;
+
+  return `${ddBackHeader('Reflection adoption', `${reflected.length} of ${released.length} faculty have completed their structured reflection. Track who has not, what themes are emerging, and send targeted reminders.`, `<button class="btn btn-primary btn-sm" onclick="bulkRemindReflections()" ${pending.length?'':'disabled'}><i class="fa-light fa-bell"></i>Remind ${pending.length} pending</button>`)}
+
+    <div class="kpi-grid" style="grid-template-columns:repeat(4, 1fr)">
+      <div class="kpi" style="display:flex;align-items:center;gap:14px;padding:12px 16px"><div style="flex:1;min-width:0"><div class="kpi-label">Adoption rate</div><div class="kpi-val">${rate}%</div><div class="kpi-meta">${reflected.length} of ${released.length}</div></div>${chartCompletionDonut(rate, 'reflected')}</div>
+      <div class="kpi"><div class="kpi-label">Reflections saved</div><div class="kpi-val">${reflected.length}</div><div class="kpi-meta">Across all released courses</div></div>
+      <div class="kpi"><div class="kpi-label">Avg time-to-reflect</div><div class="kpi-val">${meanTtr}<small>days</small></div><div class="kpi-meta">After grades post</div></div>
+      <div class="kpi"><div class="kpi-label">Pending</div><div class="kpi-val" style="color:${pending.length?'var(--c-amber-fg)':'var(--c-green-fg)'}">${pending.length}</div><div class="kpi-meta">Yet to reflect</div></div>
+    </div>
+
+    <div class="dash-grid">
+      <div class="card card-flush">
+        <div class="card-section"><div class="card-title"><i class="fa-light fa-circle-check" style="color:var(--c-green-fg)"></i>Completed (${reflected.length})</div></div>
+        ${reflected.map(c=>{
+          const r = REFLECTIONS.find(x=>x.courseId===c.id);
+          return `<div onclick="openSurveyDetail('${c.id}','pd')" style="padding:12px 16px;border-bottom:1px solid var(--hairline-soft);cursor:pointer" onmouseover="this.style.background='var(--muted)'" onmouseout="this.style.background='transparent'">
+            <div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600"><i class="fa-light fa-circle-check" style="color:var(--c-green-fg);font-size:11px"></i>${escapeHtml(c.instructor)}</div>
+            <div style="font-size:11px;color:var(--muted-fg);margin-top:2px">${c.code} · saved ${fmtDate(r.savedAt.slice(0,10))}</div>
+            ${r.q1?`<div style="font-size:11px;color:var(--foreground);margin-top:6px;font-style:italic;line-height:1.5">&ldquo;${escapeHtml(r.q1.slice(0,140))}${r.q1.length>140?'…':''}&rdquo;</div>`:''}
+          </div>`;
+        }).join('') || '<div class="empty" style="padding:24px;font-size:12px;text-align:center;color:var(--muted-fg)">No reflections saved yet.</div>'}
+      </div>
+      <div class="card card-flush">
+        <div class="card-section"><div class="card-title"><i class="fa-light fa-clock" style="color:var(--c-amber-fg)"></i>Pending (${pending.length})</div></div>
+        ${pending.length ? pending.map(c=>{
+          const closeIso = addDaysIso(termOf(c.termId).endDate, 7);
+          const today = '2026-05-07';
+          const daysSince = Math.max(0, Math.ceil(((new Date(today))-(new Date(closeIso)))/86400000));
+          return `<div style="padding:12px 16px;border-bottom:1px solid var(--hairline-soft);display:flex;align-items:center;gap:10px">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600">${escapeHtml(c.instructor)}</div>
+              <div style="font-size:11px;color:var(--muted-fg);margin-top:2px">${c.code} · results unlocked ${daysSince}d ago</div>
+            </div>
+            <button class="btn btn-outline btn-xs" onclick="remindReflection('${c.id}')"><i class="fa-light fa-bell"></i>Remind</button>
+          </div>`;
+        }).join('') : '<div class="empty" style="padding:24px;font-size:12px;text-align:center;color:var(--c-green-fg)"><i class="fa-light fa-check"></i> All faculty have reflected this term</div>'}
+      </div>
+    </div>
+  `;
+}
+function bulkRemindReflections(){ toast('Reminder emails queued for pending faculty','success'); }
+function remindReflection(cid){ const c=courseOf(cid); toast(`Reminder sent to ${c.instructor}`,'success'); }
+
+/* 5 ── Term-over-term trend ─────────────────────────────────────── */
+function renderDdTermTrend(){
+  const allTermCourses = COURSES.filter(c=>c.termId===state.termId);
+  const released = allTermCourses.filter(c=>c.surveyStatus==='results-available' && c.avg!==null && !c.minNFail);
+  const avg = released.length ? +(released.reduce((a,c)=>a+c.avg,0)/released.length).toFixed(2) : 0;
+  const series = [3.95, 4.00, 4.02, 4.05, avg||4.0];
+  const labels = ['Sp 24','Fa 24','Sp 25','Fa 25','Sp 26'];
+
+  /* Per-course-type series (mocked with small variance off the program series) */
+  const byType = COURSE_TYPES.slice(0,3).map((t,i)=>({
+    name:t.name, color:t.color,
+    series: series.map((v,j)=>+(v + (i===0?0.05:i===1?-0.10:0.02) + (Math.sin(i*7+j*3)*0.04)).toFixed(2)),
+  }));
+
+  const annotations = [
+    {term:'Fa 24', text:'Cardiovascular block extended from 1 to 2 weeks (PHYS 201 redesign)'},
+    {term:'Sp 25', text:'Faculty pedagogy workshop completed by 6 instructors'},
+    {term:'Sp 26', text:'Standardized question banks v3 (added clinical-relevance question)'},
+  ];
+
+  return `${ddBackHeader('Term-over-term trend', 'Five terms of program-level results, side-by-side. Annotations call out curriculum or staffing changes that may explain inflections.')}
+
+    <div class="kpi-grid" style="grid-template-columns:repeat(4, 1fr)">
+      <div class="kpi"><div class="kpi-label">5-term avg</div><div class="kpi-val">${(series.reduce((a,b)=>a+b,0)/series.length).toFixed(2)}</div><div class="kpi-meta">Long-run program score</div></div>
+      <div class="kpi"><div class="kpi-label">Best term</div><div class="kpi-val">${Math.max(...series).toFixed(2)}</div><div class="kpi-meta">${labels[series.indexOf(Math.max(...series))]}</div></div>
+      <div class="kpi"><div class="kpi-label">Worst term</div><div class="kpi-val">${Math.min(...series).toFixed(2)}</div><div class="kpi-meta">${labels[series.indexOf(Math.min(...series))]}</div></div>
+      <div class="kpi"><div class="kpi-label">Trajectory</div><div class="kpi-val" style="color:${series.at(-1)>=series[0]?'var(--c-green-fg)':'var(--c-amber-fg)'}">${series.at(-1)>=series[0]?'↑':'↓'} ${(series.at(-1)-series[0]).toFixed(2)}</div><div class="kpi-meta">${labels[0]} → ${labels.at(-1)}</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-head"><div><div class="card-title"><i class="fa-light fa-chart-line-up"></i>Program score, 5 terms</div></div></div>
+      ${chartProgramTrend(series, labels)}
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-head"><div><div class="card-title"><i class="fa-light fa-tags"></i>By course type</div><div class="card-sub">Same trend split out by didactic / clinical / lab so you can see which area is moving the program average.</div></div></div>
+      <div style="display:flex;flex-wrap:wrap;gap:18px;font-size:11px;color:var(--muted-fg);margin-bottom:12px">
+        ${byType.map(t=>`<span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${t.color}"></span>${escapeHtml(t.name)}</span>`).join('')}
+      </div>
+      ${(()=>{
+        const W=720, H=180, P=32, PB=28;
+        const min = Math.min(...byType.flatMap(t=>t.series), ...series) - 0.1;
+        const max = Math.max(...byType.flatMap(t=>t.series), ...series) + 0.1;
+        const yScale = v => H-PB - ((v-min)/(max-min))*(H-PB-P);
+        const xs = labels.map((_,i)=> P + i*((W-2*P)/(labels.length-1)));
+        const grid = [min, (min+max)/2, max].map(v=>`<line x1="${P}" x2="${W-P}" y1="${yScale(v)}" y2="${yScale(v)}" stroke="oklch(0.92 0.004 270)" stroke-width="1"/><text x="${P-6}" y="${yScale(v)+3}" text-anchor="end" font-size="9" fill="oklch(0.55 0.012 270)" font-family="Inter">${v.toFixed(1)}</text>`).join('');
+        const xl = labels.map((l,i)=>`<text x="${xs[i]}" y="${H-8}" text-anchor="middle" font-size="10" fill="oklch(0.55 0.012 270)" font-family="Inter">${l}</text>`).join('');
+        const lines = byType.map(t=>{const d=xs.map((x,i)=>`${i===0?'M':'L'}${x.toFixed(1)},${yScale(t.series[i]).toFixed(1)}`).join(' ');return `<path d="${d}" fill="none" stroke="${t.color}" stroke-width="2" stroke-linecap="round"/>${xs.map((x,i)=>`<circle cx="${x}" cy="${yScale(t.series[i])}" r="3" fill="${t.color}"/>`).join('')}`;}).join('');
+        return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="width:100%;height:180px;display:block">${grid}${lines}${xl}</svg>`;
+      })()}
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div><div class="card-title"><i class="fa-light fa-bookmark"></i>Annotations</div><div class="card-sub">Major program changes that align with the inflection points above.</div></div></div>
+      ${annotations.map(a=>`<div style="display:flex;align-items:flex-start;gap:11px;padding:11px 0;border-bottom:1px solid var(--hairline-soft)">
+        <span class="badge badge-version" style="font-size:10px;flex-shrink:0">${a.term}</span>
+        <div style="font-size:13px;line-height:1.55;color:var(--foreground)">${escapeHtml(a.text)}</div>
+      </div>`).join('')}
+    </div>
+  `;
+}
+
+/* 6 ── Score distribution analysis ──────────────────────────────── */
+function renderDdScoreDistribution(){
+  const released = COURSES.filter(c=>c.termId===state.termId && c.surveyStatus==='results-available' && c.avg!==null && !c.minNFail);
+  if(!released.length){
+    return `${ddBackHeader('Score distribution', 'No released courses yet this term.')}<div class="empty" style="padding:48px;text-align:center">No data yet.</div>`;
+  }
+  const sorted = [...released].sort((a,b)=>a.avg-b.avg);
+  const buckets = [
+    {label:'< 3.0',  range:[0,3.0],   col:'oklch(0.45 0.16 50)'},
+    {label:'3.0-3.5',range:[3.0,3.5], col:'oklch(0.55 0.14 65)'},
+    {label:'3.5-3.7',range:[3.5,3.7], col:'oklch(0.65 0.13 75)'},
+    {label:'3.7-4.0',range:[3.7,4.0], col:'oklch(0.50 0.18 343)'},
+    {label:'4.0-4.3',range:[4.0,4.3], col:'oklch(0.48 0.16 200)'},
+    {label:'>= 4.3', range:[4.3,5.1], col:'var(--c-green-fg)'},
+  ];
+  buckets.forEach(b=>b.count = released.filter(c=>c.avg>=b.range[0]&&c.avg<b.range[1]).length);
+  const max = Math.max(1, ...buckets.map(b=>b.count));
+
+  /* Per-faculty distribution: each faculty as a row, dot at their score */
+  const faculty = [...new Map(released.map(c=>[c.instructor, c])).values()];
+
+  return `${ddBackHeader('Score distribution', `Where this term's ${released.length} released course${released.length===1?'':'s'} land on the 1-5 scale, and which faculty are responsible for the spread.`)}
+
+    <div class="kpi-grid" style="grid-template-columns:repeat(4, 1fr)">
+      <div class="kpi"><div class="kpi-label">Above 4.3</div><div class="kpi-val" style="color:var(--c-green-fg)">${released.filter(c=>c.avg>=4.3).length}</div><div class="kpi-meta">Strong courses</div></div>
+      <div class="kpi"><div class="kpi-label">3.7 – 4.3</div><div class="kpi-val">${released.filter(c=>c.avg>=3.7&&c.avg<4.3).length}</div><div class="kpi-meta">Acceptable band</div></div>
+      <div class="kpi"><div class="kpi-label">Below 3.7</div><div class="kpi-val" style="color:var(--c-amber-fg)">${released.filter(c=>c.avg<3.7).length}</div><div class="kpi-meta">Threshold breaches</div></div>
+      <div class="kpi"><div class="kpi-label">IQR</div><div class="kpi-val" style="font-size:18px">${sorted[Math.floor(sorted.length*0.25)].avg.toFixed(1)}–${sorted[Math.floor(sorted.length*0.75)].avg.toFixed(1)}</div><div class="kpi-meta">Middle 50%</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-head"><div><div class="card-title"><i class="fa-light fa-chart-scatter"></i>Dot plot</div><div class="card-sub">One dot per course; click to drill in.</div></div></div>
+      ${chartScoreHistogram(released)}
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-head"><div><div class="card-title"><i class="fa-light fa-chart-column"></i>Histogram</div><div class="card-sub">How many courses fall in each band.</div></div></div>
+      <div style="display:flex;align-items:flex-end;gap:10px;height:160px;padding:10px 0">
+        ${buckets.map(b=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%">
+          <div style="font-size:13px;font-weight:700;color:var(--foreground);font-variant-numeric:tabular-nums">${b.count||''}</div>
+          <div style="flex:1;width:100%;background:var(--muted);border-radius:var(--r-sm) var(--r-sm) 0 0;display:flex;align-items:flex-end;overflow:hidden"><div style="width:100%;height:${(b.count/max*100).toFixed(0)}%;background:${b.col};border-radius:var(--r-sm) var(--r-sm) 0 0"></div></div>
+          <div style="font-size:10px;color:var(--muted-fg);font-variant-numeric:tabular-nums">${b.label}</div>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div><div class="card-title"><i class="fa-light fa-user"></i>By faculty</div><div class="card-sub">Each faculty plotted at their course's avg.</div></div></div>
+      ${faculty.map(c=>{
+        const x = ((c.avg-1)/4)*100;
+        const col = c.avg>=4.3 ? 'oklch(0.45 0.14 155)' : c.avg>=3.7 ? 'oklch(0.50 0.18 343)' : 'oklch(0.52 0.16 55)';
+        return `<div onclick="openSurveyDetail('${c.id}','pd')" style="display:flex;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid var(--hairline-soft);cursor:pointer">
+          <div style="width:160px;font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(c.instructor)}</div>
+          <div style="flex:1;position:relative;height:14px;background:var(--muted);border-radius:var(--r-sm)">
+            <div style="position:absolute;top:50%;left:67.5%;transform:translateY(-50%);height:18px;width:1.5px;background:oklch(0.52 0.16 55);opacity:.6" title="3.7 threshold"></div>
+            <div style="position:absolute;top:50%;left:${x.toFixed(2)}%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:${col};border:2px solid white;box-shadow:0 1px 3px oklch(0 0 0 /.15)"></div>
+          </div>
+          <div style="width:56px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600">${c.avg.toFixed(2)}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+/* 7 ── Reflection deep-dive ─────────────────────────────────────── */
+function renderDdReflectionDeepDive(){
+  const released = COURSES.filter(c=>c.termId===state.termId && c.surveyStatus==='results-available' && c.avg!==null && !c.minNFail);
+  const reflectedRefs = REFLECTIONS.filter(r=>{const c=courseOf(r.courseId);return c && c.termId===state.termId;});
+  const themes = [
+    {name:'Pacing concerns',          mentions:5, courses:'PHYS 201, EMG 301'},
+    {name:'Office-hour responsiveness', mentions:4, courses:'DIDX 101, DIDX 201'},
+    {name:'Lab kit access',           mentions:3, courses:'CLIN 441'},
+  ];
+
+  return `${ddBackHeader('Reflections', `${reflectedRefs.length} of ${released.length} released-course faculty have completed their structured reflection. Read them in full and look for cross-course patterns.`)}
+
+    <div class="kpi-grid" style="grid-template-columns:repeat(3, 1fr)">
+      <div class="kpi"><div class="kpi-label">Reflections saved</div><div class="kpi-val">${reflectedRefs.length}</div><div class="kpi-meta">${released.length} released this term</div></div>
+      <div class="kpi"><div class="kpi-label">Engagement</div><div class="kpi-val">${released.length?Math.round(reflectedRefs.length/released.length*100):0}%</div><div class="kpi-meta">Faculty engagement rate</div></div>
+      <div class="kpi"><div class="kpi-label">Common themes</div><div class="kpi-val">${themes.length}</div><div class="kpi-meta">Recurring patterns</div></div>
+    </div>
+
+    <div class="dash-grid">
+      <div class="card card-flush" style="grid-column:1 / -1">
+        <div class="card-section"><div class="card-title"><i class="fa-light fa-comments"></i>Cross-course themes</div><div class="card-sub">AI-synthesized patterns that show up in more than one reflection.</div></div>
+        ${themes.map(t=>`<div style="padding:12px 16px;border-bottom:1px solid var(--hairline-soft);display:flex;align-items:center;gap:14px">
+          <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${escapeHtml(t.name)}</div><div style="font-size:11px;color:var(--muted-fg);margin-top:2px">${t.mentions} mentions across ${escapeHtml(t.courses)}</div></div>
+          <span class="badge badge-amber" style="font-size:10px">${t.mentions}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <div style="margin-top:18px">
+      ${reflectedRefs.map(r=>{
+        const c = courseOf(r.courseId);
+        if(!c) return '';
+        return `<div class="card" style="margin-bottom:14px">
+          <div class="card-head" style="margin-bottom:12px">
+            <div>
+              <div class="card-title">${c.code}: ${escapeHtml(c.name)}</div>
+              <div class="card-sub">${escapeHtml(c.instructor)} · saved ${fmtDate(r.savedAt.slice(0,10))}</div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="openSurveyDetail('${c.id}','pd')">Open survey</button>
+          </div>
+          <div style="display:grid;gap:14px;grid-template-columns:1fr">
+            <div><div class="section-label" style="margin-bottom:5px">What worked well</div><div style="font-size:12px;line-height:1.55">${escapeHtml(r.q1||'(no response)')}</div></div>
+            <div><div class="section-label" style="margin-bottom:5px">What you'll change next term</div><div style="font-size:12px;line-height:1.55">${escapeHtml(r.q2||'(no response)')}</div></div>
+            ${r.q3?`<div><div class="section-label" style="margin-bottom:5px">Note for the next cohort</div><div style="font-size:12px;line-height:1.55;font-style:italic;background:var(--brand-tint);padding:10px 12px;border-radius:var(--r-sm);border-left:3px solid var(--brand-color)">&ldquo;${escapeHtml(r.q3)}&rdquo;</div></div>`:''}
+          </div>
+        </div>`;
+      }).join('') || '<div class="empty" style="padding:48px;text-align:center;color:var(--muted-fg)">No reflections saved yet this term.</div>'}
+    </div>
+  `;
 }
 
 /* ── CQI Log (FR-14) ─────────────────────────────────────────────── */
