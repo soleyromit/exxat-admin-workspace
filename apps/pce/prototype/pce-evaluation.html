@@ -17,12 +17,13 @@
   --muted-2:oklch(0.93 0.004 270);
   --border:oklch(0.92 0.004 270);
   --border-strong:oklch(0.82 0.006 270);
-  --brand-tint:oklch(0.9676 0.016 286.1);
-  --brand-tint-2:oklch(0.935 0.024 286.1);
-  --brand-color:oklch(0.50 0.14 286.1);
-  --brand-color-dark:oklch(0.38 0.11 286.1);
-  --brand-color-deep:oklch(0.28 0.085 286.1);
-  --brand-color-light:oklch(0.78 0.09 286.1);
+  /* Exxat Prism (rose, hue 343) brand palette */
+  --brand-tint:oklch(0.97 0.018 343);
+  --brand-tint-2:oklch(0.935 0.030 343);
+  --brand-color:oklch(0.50 0.18 343);
+  --brand-color-dark:oklch(0.38 0.14 343);
+  --brand-color-deep:oklch(0.28 0.10 343);
+  --brand-color-light:oklch(0.78 0.10 343);
   --c-indigo:oklch(0.45 0.16 264);
   --c-indigo-bg:oklch(0.95 0.04 264);
   --c-teal:oklch(0.42 0.13 184);
@@ -81,9 +82,9 @@
   --hairline:oklch(0.92 0.004 270);
   --hairline-soft:oklch(0.945 0.003 270);
   --shadow-1:0 1px 2px oklch(0 0 0 / 0.04);
-  --shadow-2:0 6px 18px oklch(0.30 0.10 286.1 / 0.06), 0 2px 4px oklch(0 0 0 / 0.04);
-  --shadow-3:0 14px 38px oklch(0.30 0.10 286.1 / 0.08), 0 4px 12px oklch(0 0 0 / 0.05);
-  --shadow-4:0 24px 60px oklch(0.30 0.10 286.1 / 0.12), 0 8px 18px oklch(0 0 0 / 0.06);
+  --shadow-2:0 6px 18px oklch(0.30 0.12 343 / 0.06), 0 2px 4px oklch(0 0 0 / 0.04);
+  --shadow-3:0 14px 38px oklch(0.30 0.12 343 / 0.08), 0 4px 12px oklch(0 0 0 / 0.05);
+  --shadow-4:0 24px 60px oklch(0.30 0.12 343 / 0.12), 0 8px 18px oklch(0 0 0 / 0.06);
   --tr-fast:0.12s ease;
   --tr-base:0.18s ease;
   --tr-slow:0.28s ease;
@@ -1270,9 +1271,9 @@ const CHART = {
   faint:   'oklch(0.86 0.005 270)',
   hairline:'oklch(0.93 0.003 270)',
   bg:      'oklch(0.97 0.003 270)',
-  brand:   'oklch(0.50 0.14 286.1)',
-  brandDark:'oklch(0.38 0.11 286.1)',
-  brandSoft:'oklch(0.92 0.05 286.1)',
+  brand:   'oklch(0.50 0.18 343)',
+  brandDark:'oklch(0.38 0.14 343)',
+  brandSoft:'oklch(0.92 0.05 343)',
   pos:     'oklch(0.45 0.14 155)',
   neg:     'oklch(0.52 0.16 55)',  /* deep burnt amber instead of red — Aarti dislikes red in score viz */
   warn:    'oklch(0.62 0.16 84)',
@@ -1476,7 +1477,7 @@ function chartCompetencyHeatmap(){
     }
     /* Brand-intensity scale: 0 at score 3.0, full at 5.0. Below 3.7 add amber stripe overlay. */
     const t = Math.max(0, Math.min(1, (avg-3.0)/2.0));
-    const fill = `oklch(${(0.96 - 0.46*t).toFixed(3)} ${(0.005 + 0.135*t).toFixed(3)} 286.1)`;
+    const fill = `oklch(${(0.96 - 0.46*t).toFixed(3)} ${(0.005 + 0.175*t).toFixed(3)} 343)`;
     const ink = t > 0.5 ? 'white' : CHART.ink;
     const concernStripe = avg < 3.7 ? `<line x1="${x}" y1="${y}" x2="${x+8}" y2="${y+8}" stroke="${CHART.warn}" stroke-width="2" stroke-linecap="round"/>` : '';
     return `<g class="cell" tabindex="0" role="button" aria-label="${rt.name}, ${co.code}: average ${avg.toFixed(2)} from ${matching.length} courses. Press for detail." style="cursor:pointer;outline:none" onclick="openCompetencyDrill('${co.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openCompetencyDrill('${co.id}')}">
@@ -1578,7 +1579,7 @@ function chartScoreHistogram(courses){
     const x = xFor(c.avg);
     const dy = placed.filter(p=>Math.abs(p-x)<14).length * 11;
     placed.push(x);
-    const fill = c.avg>=4.3 ? 'oklch(0.45 0.14 155)' : c.avg>=3.7 ? 'oklch(0.50 0.14 286.1)' : 'oklch(0.52 0.16 55)';
+    const fill = c.avg>=4.3 ? 'oklch(0.45 0.14 155)' : c.avg>=3.7 ? 'oklch(0.50 0.18 343)' : 'oklch(0.52 0.16 55)';
     return `<g class="cell" tabindex="0" role="button" aria-label="${c.code}: average ${c.avg.toFixed(2)}. Press to open detail." style="cursor:pointer;outline:none" onclick="openSurveyDetail('${c.id}','pd')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSurveyDetail('${c.id}','pd')}">
       <circle cx="${x}" cy="${axisY-6-dy}" r="7" fill="${fill}" stroke="white" stroke-width="2"/>
       <title>${c.code}: ${c.avg.toFixed(2)}</title>
@@ -2667,7 +2668,7 @@ function renderCoordAutopilot(){
         const open = new Date(addDaysIso(term.endDate, -14));
         const dayOffset = Math.max(0, Math.min(14, Math.ceil((open-today)/86400000)));
         const isOpen = c.surveyStatus==='live';
-        return {courseId:c.id, code:c.code, dayOffset:isOpen?0:dayOffset, label:isOpen?`Collecting (${c.completion}%)`:'Opens', color: isOpen?'oklch(0.42 0.13 184)':'oklch(0.50 0.14 286.1)'};
+        return {courseId:c.id, code:c.code, dayOffset:isOpen?0:dayOffset, label:isOpen?`Collecting (${c.completion}%)`:'Opens', color: isOpen?'oklch(0.42 0.13 184)':'oklch(0.50 0.18 343)'};
       }).sort((a,b)=>a.dayOffset-b.dayOffset).slice(0,8);
 
       return `
@@ -3687,8 +3688,8 @@ function renderFacTrendSvg(c){
   const ys = [3,3.5,4,4.5,5];
   const grid = ys.map(y=>`<line x1="${P}" x2="${W-P}" y1="${yScale(y)}" y2="${yScale(y)}" stroke="oklch(0.93 0.003 270)" stroke-width="1"/><text x="${P-6}" y="${yScale(y)+4}" text-anchor="end" fill="oklch(0.55 0.012 270)" font-size="10">${y.toFixed(1)}</text>`).join('');
   const xl = labels.map((l,i)=>`<text x="${xs[i]}" y="${H-8}" text-anchor="middle" fill="oklch(0.55 0.012 270)" font-size="10">${l}</text>`).join('');
-  const valueLabels = series.map((v,i)=>`<text x="${xs[i]}" y="${yScale(v)-9}" text-anchor="middle" fill="oklch(0.28 0.085 286.1)" font-size="10" font-weight="600">${v.toFixed(1)}</text>`).join('');
-  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="width:100%;height:180px;display:block">${grid}${path(prog,'oklch(0.55 0.012 270)',true)}${path(series,'oklch(0.50 0.14 286.1)',false)}${xl}${valueLabels}</svg>`;
+  const valueLabels = series.map((v,i)=>`<text x="${xs[i]}" y="${yScale(v)-9}" text-anchor="middle" fill="oklch(0.28 0.10 343)" font-size="10" font-weight="600">${v.toFixed(1)}</text>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="width:100%;height:180px;display:block">${grid}${path(prog,'oklch(0.55 0.012 270)',true)}${path(series,'oklch(0.50 0.18 343)',false)}${xl}${valueLabels}</svg>`;
 }
 
 function trendArrowFac(curr, prev){
@@ -5128,7 +5129,7 @@ function renderCccCompetency(){
     <div class="card" style="margin-bottom:14px;overflow:auto">
       <div class="card-head"><div><div class="card-title"><i class="fa-light fa-grid-2"></i>Coverage heatmap</div><div class="card-sub">Course type x competency, cell color = avg effectiveness from that type's released courses. Click any cell to drill into the competency detail.</div></div></div>
       ${chartCompetencyHeatmap()}
-      <div style="display:flex;gap:14px;font-size:10px;color:var(--muted-fg);margin-top:10px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:oklch(0.45 0.14 155);border-radius:2px"></span>Strong (>=4.3)</span><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:oklch(0.50 0.14 286.1);border-radius:2px"></span>Solid (3.7-4.3)</span><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:oklch(0.62 0.16 84);border-radius:2px"></span>Concern (&lt;3.7)</span><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:oklch(0.96 0.003 270);border:1px solid var(--border);border-radius:2px"></span>No course delivers</span></div>
+      <div style="display:flex;gap:14px;font-size:10px;color:var(--muted-fg);margin-top:10px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:oklch(0.45 0.14 155);border-radius:2px"></span>Strong (>=4.3)</span><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:oklch(0.50 0.18 343);border-radius:2px"></span>Solid (3.7-4.3)</span><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:oklch(0.62 0.16 84);border-radius:2px"></span>Concern (&lt;3.7)</span><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:oklch(0.96 0.003 270);border:1px solid var(--border);border-radius:2px"></span>No course delivers</span></div>
     </div>
     <table class="mon-table">
       <thead><tr>
