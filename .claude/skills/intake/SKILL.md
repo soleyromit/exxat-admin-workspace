@@ -18,6 +18,7 @@ The user-prompt-submit hook surfaces these action IDs from `docs/triggers.md`:
 | `intake:adr-draft` | "decided", "going with", "the answer is" | Draft ADR; show preview; write only on confirmation |
 | `intake:transcript-paste` | Pasted block matching `^\d{1,2}:\d{2}\s+\w+` (Granola format) | Save raw to research/meetings/; extract decisions + persona refs + glossary candidates; confirm each before writing |
 | `intake:glossary-add` | "we call this X", "X means Y" (heuristic) | Propose glossary entry; confirm before writing |
+| `intake:override` | "ignore this rule", "make an exception", "override DS-001", "don't apply VIZ-004 here" | Capture as **override ADR** (sub-type) + append to relevant pattern's `## Exceptions` section + add row to `docs/governance/exceptions.md` ledger. Confirm each artifact. Sunset criterion mandatory. |
 
 ## Active product resolution
 
@@ -94,6 +95,47 @@ ADR is light: status (Proposed | Accepted | Superseded), context (1-2 paragraphs
 4. Show entry preview.
 5. Ask: "Add to glossary? (Y/n)"
 6. On confirmation: insert alphabetically under `## Glossary`.
+
+### `intake:override` (P5 — Designer override loop)
+
+When the user says "ignore this rule" / "make an exception" / "override DS-001" / "don't apply VIZ-004 here":
+
+1. **Identify the rule.** Extract the rule ID from the prompt (DS-NNN / A11Y-NNN / VIZ-NNN / CONTENT-NNN / INTAKE-NNN). If no ID, ask which rule. If user is overriding a *pattern* (not a rule), capture the pattern path instead.
+
+2. **Get the scope.** Where does the override apply? File path, surface, persona, time-bounded? Ask if not stated:
+   - File / directory scope (`apps/exam-management/admin/components/foo.tsx`, or `apps/<product>/admin/**`)
+   - Persona scope (admin only? all?)
+   - Time bound (Phase 1 only? until DS X ships? permanent?)
+
+3. **Get the sunset criterion.** When does this override end?
+   - "Until <DS feature> ships"
+   - "Phase 1 only, revisit at Phase 2"
+   - "Permanent — propose amendment to DESIGN.md §4"
+   - "Single-use — this PR only"
+
+4. **Get the rationale.** Why is the rule wrong here? In one sentence. This is the durable artifact.
+
+5. **Draft three artifacts:**
+   a. **Override ADR** (workspace-level by default): `docs/decisions/<NNN>-override-<rule>-<slug>.md` using `docs/decisions/_override-template.md`. Per-product overrides go to `apps/<product>/docs/decisions/`.
+   b. **Pattern exception** appended to the relevant pattern file's `## Exceptions` section (or rule's section in DESIGN.md §4 if no pattern file).
+   c. **Ledger row** in `docs/governance/exceptions.md` (table format).
+
+6. **Show preview.** All three artifacts.
+
+7. **Ask:** "Write override ADR + pattern exception + ledger row? (Y/n / edit)".
+
+8. On confirmation: write all three, surface paths, return.
+
+**If "permanent — propose DESIGN.md amendment":**
+- The override ADR notes proposed amendment text.
+- Add a follow-up task to update DESIGN.md §4 (don't auto-amend the spec — that's a load-bearing change requiring user signoff).
+
+**Override does NOT get applied retroactively** — it scopes from now forward. Existing violations become technical debt, separately tracked.
+
+**Anti-patterns:**
+- Granting an override without a sunset criterion → tracked-but-permanent → equals an unwritten DESIGN.md amendment
+- Granting an override without a rationale → can't judge if it should be lifted later
+- Granting an override that's actually a DESIGN.md gap → propose amendment instead
 
 ## Frontmatter standard
 

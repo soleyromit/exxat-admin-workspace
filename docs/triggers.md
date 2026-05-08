@@ -71,12 +71,12 @@
 | `\b(show me \d+ (ways\|versions?\|variants?\|options)\|three options\|alternative approaches\|[2-5] (versions?\|variants?\|options))\b` | same — `/design-variants` |
 | `/design-variants <N>` slash command | direct dispatch |
 
-### Override / exception (P5 — not yet wired)
+### Override / exception (P5 — wired 2026-05-08)
 
 | Match | Fires |
 |---|---|
-| `\b(ignore (the\|this) rule\|make an exception\|override\|don'?t apply)\b` | intake skill — capture as ADR + pattern exception (P5) |
-| `\b(DS-\d{3}\|A11Y-\d{3}\|VIZ-\d{3}\|CONTENT-\d{3}\|INTAKE-\d{3})\b` | surface rule from DESIGN.md §4 in response |
+| `\b(ignore (the\|this) rule\|make an exception\|override\s+(DS\|A11Y\|VIZ\|CONTENT\|INTAKE)-\d{3}\|don'?t apply\s+(DS\|A11Y\|VIZ\|CONTENT\|INTAKE)-\d{3}\|exception (here\|to))\b` | intake skill action `intake:override` — capture as override ADR (`docs/decisions/_override-template.md`) + pattern exception + ledger row in `docs/governance/exceptions.md` |
+| `\b(DS\|A11Y\|VIZ\|CONTENT\|INTAKE)-\d{3}\b` | `rule:cite-and-surface` — read rule text from DESIGN.md §4; if user proposes override, route to `intake:override` |
 
 ---
 

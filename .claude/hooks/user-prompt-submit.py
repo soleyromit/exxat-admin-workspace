@@ -49,6 +49,12 @@ TRIGGERS: list[tuple[str, str]] = [
     (r"\bshow me \d+ (ways|versions?|variants?|options)\b", "stochastic:design-variants"),
     (r"\b\d+\s+(versions?|variants?|options|alternatives)\s+of\b", "stochastic:design-variants"),
     (r"\b(three options|alternative approaches)\b", "stochastic:design-variants"),
+
+    # Designer override loop (priority 8) — capture rule overrides as ADR + ledger
+    (r"\b(ignore (the|this) rule|make an exception|override\s+(DS|A11Y|VIZ|CONTENT|INTAKE)-\d{3}|don'?t apply\s+(DS|A11Y|VIZ|CONTENT|INTAKE)-\d{3}|exception (here|to))\b", "intake:override"),
+
+    # Rule citation (priority 8) — surface DESIGN.md §4 rule text when cited
+    (r"\b(DS|A11Y|VIZ|CONTENT|INTAKE)-\d{3}\b", "rule:cite-and-surface"),
 ]
 
 ACTION_DESCRIPTIONS: dict[str, str] = {
@@ -67,6 +73,8 @@ ACTION_DESCRIPTIONS: dict[str, str] = {
     "work:debug": "Invoke superpowers:systematic-debugging skill before proposing fixes",
     "work:verify-before-complete": "Invoke superpowers:verification-before-completion before claiming complete; then superpowers:requesting-code-review",
     "stochastic:design-variants": "Invoke /design-variants slash command (.claude/commands/design-variants.md) — spawn N parallel agents in worktrees per docs/patterns/process/design-variants.md. Pre-flight: clean tree, active product, DS profile, then dispatch.",
+    "intake:override": "Invoke the intake skill with action=override — capture as override ADR (template at docs/decisions/_override-template.md) + pattern exception + ledger row in docs/governance/exceptions.md. Sunset criterion + rationale mandatory. User confirms before write.",
+    "rule:cite-and-surface": "User cited a workspace rule (DS-NNN / A11Y-NNN / VIZ-NNN / CONTENT-NNN / INTAKE-NNN). Read the rule's text from /DESIGN.md §4 and surface it in your response so the user knows you understand which rule binds. If they're proposing an override, route to intake:override.",
 }
 
 
