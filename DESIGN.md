@@ -256,7 +256,7 @@ Today ~5% of customers integrate. Aarti wants this to flip to ~95% with the new 
 | P1 — Scholastic enforcement | **complete** (2026-05-08) | Hooks (session-start, user-prompt-submit, pre-tool-use), DS snapshot (333 tokens, 142 components), viz patterns (RUBRIC + heatmap + strip + bullet), profile auto-load |
 | P2 — Living context | **complete** (2026-05-08) | intake skill, ADR scaffolding, transcript-paste detector, per-product DESIGN.md + docs/ for all 5 products. First exercise: 2026-05-08 Aarti audit produced 6 workspace ADRs + 2 product ADRs + cross-product entity universe (§11) |
 | P3 — Pattern library + L7 Storytelling | **in progress** (2026-05-08) | 8 RUBRICs (states/forms/nav/ia/onboarding/async/dashboards/admin); 10 patterns (audit-driven + standard); workspace `docs/content.md` glossary. **L7 Storytelling layer added:** `docs/storytelling-framework.md` + per-product `docs/storytelling/` (real content for Exam Mgmt + PCE from 7-meeting Aarti/Vishaka audit; scaffolds for patient-log / skills-checklist / learning-contracts) |
-| P4 — Stochastic variance | not started | `/design-variants` workflow |
+| P4 — Stochastic variance | **complete** (2026-05-08) | `/design-variants <N> <brief>` slash command + `docs/patterns/process/design-variants.md` pattern + trigger wired in user-prompt-submit hook + RUBRIC for process patterns |
 | P5 — Designer override loop | not started | Override → spec amendment |
 | P6 — Process & telemetry | not started | ADR + telemetry registry |
 | P7 — Performance & i18n | not started | Perf budgets, localization |

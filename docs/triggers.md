@@ -63,12 +63,12 @@
 | Working dir change to `apps/*/student/` | load student profile |
 | Working dir change to `apps/*/admin/` | load admin profile |
 
-### Variant generation (P4 — stochastic axis, not yet wired)
+### Variant generation (P4 — stochastic axis, wired 2026-05-08)
 
 | Match | Fires |
 |---|---|
-| `\bdesign\s+\d+\s+(versions\|variants\|options\|alternatives)\b` | superpowers:dispatching-parallel-agents → spawn N agents in worktrees |
-| `\b(show me \d+ ways\|three options\|alternative approaches)\b` | dispatching-parallel-agents |
+| `\bdesign\s+\d+\s+(versions?\|variants?\|options\|alternatives)\b` | `/design-variants <N> <brief>` — `.claude/commands/design-variants.md` (spawn N parallel agents in worktrees per `docs/patterns/process/design-variants.md`) |
+| `\b(show me \d+ (ways\|versions?\|variants?\|options)\|three options\|alternative approaches\|[2-5] (versions?\|variants?\|options))\b` | same — `/design-variants` |
 | `/design-variants <N>` slash command | direct dispatch |
 
 ### Override / exception (P5 — not yet wired)

@@ -43,6 +43,12 @@ TRIGGERS: list[tuple[str, str]] = [
     # Code work (priority 6)
     (r"\b(fix|debug|broken|why is(n'?t)?|not working|throws?|crashes?)\b", "work:debug"),
     (r"\b(ship|merge|ready|done|complete|PR|pull request)\b", "work:verify-before-complete"),
+
+    # Stochastic variance (priority 7) — design N variants in parallel
+    (r"\bdesign\s+\d+\s+(versions?|variants?|options|alternatives)\b", "stochastic:design-variants"),
+    (r"\bshow me \d+ (ways|versions?|variants?|options)\b", "stochastic:design-variants"),
+    (r"\b\d+\s+(versions?|variants?|options|alternatives)\s+of\b", "stochastic:design-variants"),
+    (r"\b(three options|alternative approaches)\b", "stochastic:design-variants"),
 ]
 
 ACTION_DESCRIPTIONS: dict[str, str] = {
@@ -60,6 +66,7 @@ ACTION_DESCRIPTIONS: dict[str, str] = {
     "lib:context7": "Run mcp__plugin_context7_context7__resolve-library-id then query-docs for current API; do not generate from memory",
     "work:debug": "Invoke superpowers:systematic-debugging skill before proposing fixes",
     "work:verify-before-complete": "Invoke superpowers:verification-before-completion before claiming complete; then superpowers:requesting-code-review",
+    "stochastic:design-variants": "Invoke /design-variants slash command (.claude/commands/design-variants.md) — spawn N parallel agents in worktrees per docs/patterns/process/design-variants.md. Pre-flight: clean tree, active product, DS profile, then dispatch.",
 }
 
 
