@@ -32,8 +32,9 @@
 | `\b(meeting\|call\|spoke\|talked\|discussed)\s+(with\|to)\s+\w+\b` | granola `query_granola_meetings` (extract person + recent date range) |
 | `\b(yesterday\|today\|this morning\|last week)('?s)?\s+(meeting\|call\|sync\|standup)\b` | granola `query_granola_meetings` |
 | `\b(Aarti\|Nipun\|Himanshu)\s+(said\|wants\|decided\|asked)\b` | granola `query_granola_meetings` (filter by person) → intake |
-| `\b(decided\|going with\|the answer is\|let'?s commit to)\b` | intake skill → ADR draft |
-| Pasted text matching Granola transcript pattern (line starts with `\d{1,2}:\d{2}\s+\w+`) | intake skill — save raw → extract decisions/personas/glossary |
+| `\b(decided\|going with\|the answer is\|let'?s commit to\|final call)\b` | intake skill → ADR draft (`intake:adr-draft`) |
+| `\b(we call (this\|it\|them)\|let'?s call (this\|it\|them)\|term for (this\|it\|them) is\|means)\b` | intake skill → glossary entry (`intake:glossary-add`) |
+| Pasted text: 3+ lines matching `^\d{1,2}:\d{2}\s+\w+` AND prompt >10 lines total | intake skill — save raw → extract decisions/personas/glossary (`intake:transcript-paste`) |
 
 ### Library / framework references
 

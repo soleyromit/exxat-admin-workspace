@@ -188,9 +188,9 @@ This file is at v0.1.0. Will move to v1.0.0 when P1 hooks are wired and tested.
 
 | Phase | Status | Notes |
 |---|---|---|
-| P0 — Keystone | **in progress** | This file + 4 memory rules saved 2026-05-08 |
-| P1 — Scholastic enforcement | not started | Hooks, DS snapshot, viz patterns starter, profile auto-load |
-| P2 — Living context | not started | intake skill, Granola auto-pull, ADR auto-creation |
+| P0 — Keystone | **complete** (v0.1.0, 2026-05-08) | This file + 4 memory rules |
+| P1 — Scholastic enforcement | **complete** (2026-05-08) | Hooks (session-start, user-prompt-submit, pre-tool-use), DS snapshot (333 tokens, 142 components), viz patterns (RUBRIC + heatmap + strip + bullet), profile auto-load |
+| P2 — Living context | **in progress** (2026-05-08) | intake skill, ADR scaffolding, transcript-paste detector, per-product DESIGN.md + docs/ for all 5 products (real content for PCE + exam-management; scaffolds for patient-log / skills-checklist / learning-contracts) |
 | P3 — Pattern library completion | not started | states/forms/nav/IA/onboarding/async + content.md |
 | P4 — Stochastic variance | not started | `/design-variants` workflow |
 | P5 — Designer override loop | not started | Override → spec amendment |

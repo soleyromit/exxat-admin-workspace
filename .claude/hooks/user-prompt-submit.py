@@ -26,7 +26,8 @@ TRIGGERS: list[tuple[str, str]] = [
     (r"\b(meeting|call|spoke|talked|discussed)\s+(with|to)\s+\w+\b", "intake:granola-query"),
     (r"\b(yesterday|today|this morning|last week)('?s)?\s+(meeting|call|sync|standup)\b", "intake:granola-query"),
     (r"\b(Aarti|Nipun|Himanshu)\s+(said|wants|decided|asked)\b", "intake:granola-query-by-person"),
-    (r"\b(decided|going with|the answer is|let'?s commit to)\b", "intake:adr-draft"),
+    (r"\b(decided|going with|the answer is|let'?s commit to|final call)\b", "intake:adr-draft"),
+    (r"\b(we call (this|it|them)|let'?s call (this|it|them)|term for (this|it|them) is|means)\b", "intake:glossary-add"),
 
     # Design references (priority 3)
     (r"figma\.com/(design|board|slides|make)/", "ref:figma-mcp"),
@@ -47,9 +48,11 @@ TRIGGERS: list[tuple[str, str]] = [
 ACTION_DESCRIPTIONS: dict[str, str] = {
     "ds-profile-switch:student": "Load docs/foundations/ds-profiles/student.md and announce the switch (imports, fonts, templates, tone, a11y emphasis update)",
     "ds-profile-switch:admin": "Load docs/foundations/ds-profiles/admin.md and announce the switch",
-    "intake:granola-query": "Run mcp__claude_ai_Granola__query_granola_meetings to retrieve relevant transcript before responding",
-    "intake:granola-query-by-person": "Run mcp__claude_ai_Granola__query_granola_meetings filtered by person name + recent date range",
-    "intake:adr-draft": "Draft an ADR in docs/decisions/ for the detected decision; ask user to confirm before writing",
+    "intake:granola-query": "Invoke the intake skill (.claude/skills/intake/SKILL.md) with action=granola-query — runs mcp__claude_ai_Granola__query_granola_meetings, lists candidates, confirms before saving",
+    "intake:granola-query-by-person": "Invoke the intake skill with action=granola-query-by-person — filters Granola query by person name + recent dates",
+    "intake:adr-draft": "Invoke the intake skill with action=adr-draft — drafts an ADR; user confirms before write",
+    "intake:glossary-add": "Invoke the intake skill with action=glossary-add — drafts a glossary entry for active product; user confirms before write",
+    "intake:transcript-paste": "Invoke the intake skill with action=transcript-paste — saves transcript, extracts decisions + glossary candidates + persona refs, confirms each before write",
     "ref:figma-mcp": "Run mcp__claude_ai_Figma__get_design_context with parsed fileKey + nodeId before generating UI",
     "ref:magicpatterns-mcp": "Run mcp__claude_ai_Magic_Patterns__read_artifact_files to load the referenced prototype",
     "intent:design": "Invoke superpowers:brainstorming first; check Mobbin search_screens; check Granola for relevant meetings; only then generate UI via frontend-design",
@@ -98,6 +101,20 @@ def get_prompt(payload: dict) -> str:
     return ""
 
 
+TRANSCRIPT_LINE = re.compile(r"^\d{1,2}:\d{2}\s+\w+", re.MULTILINE)
+
+
+def is_transcript_paste(prompt: str) -> bool:
+    """Detect a Granola-style pasted transcript.
+
+    Heuristic: 3+ lines starting with `HH:MM <Speaker>` or `MM:SS <Speaker>`,
+    and the prompt is at least ~10 lines long (avoid matching short references).
+    """
+    if prompt.count("\n") < 10:
+        return False
+    return len(TRANSCRIPT_LINE.findall(prompt)) >= 3
+
+
 def main() -> None:
     try:
         payload = json.load(sys.stdin)
@@ -111,6 +128,11 @@ def main() -> None:
 
     matches: list[str] = []
     seen: set[str] = set()
+
+    if is_transcript_paste(prompt):
+        matches.append("intake:transcript-paste")
+        seen.add("intake:transcript-paste")
+
     for pattern, action in TRIGGERS:
         if action in seen:
             continue
