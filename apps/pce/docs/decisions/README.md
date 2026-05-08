@@ -12,5 +12,10 @@ See `/Users/romitsoley/Work/docs/decisions/_template.md`.
 
 | # | Title | Status | Date |
 |---|---|---|---|
+| 001 | No question bank in PCE / CFE; templates only | Accepted | 2026-05-08 |
 
-(Empty until the first PCE-specific decision is captured.)
+Pending (from 2026-05-08 Aarti audit, Tier 2):
+- Term + cohort dashboard structure (D26)
+- Two student-rated entities — course + faculty (D27)
+- AI-extracted themes, no preset taxonomy (D28)
+- Faculty self-view structure (D33)

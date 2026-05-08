@@ -184,13 +184,76 @@ This file is at v0.1.0. Will move to v1.0.0 when P1 hooks are wired and tested.
 
 ---
 
-## 10. Rollout Status
+## 11. Cross-Product Entity Universe
+
+Source: ADR-001 (2026-05-08 Aarti). Master entities live ONCE at program level; each module subsets them.
+
+| Entity | Owner | Used by |
+|---|---|---|
+| Master courses | Admin | All 5 products |
+| Terms (master list) | Admin | All 5 products |
+| Course offerings (course × term × faculty) | Admin | All 5 products |
+| Students | Admin (via LMS sync where on) | All 5 products |
+| Faculty | Admin | All 5 products |
+| Permissions / role assignments | Admin | All 5 products |
+| Content areas | Admin | Exam Mgmt, PCE, future curriculum products |
+| Competencies | Admin | Exam Mgmt, PCE, Skills Checklist (likely) |
+| Standards (accreditation) | Admin | Exam Mgmt, PCE |
+| Accommodations (master list) | Admin | All 5 products (ADR-006) |
+| Assessment types | Admin | Exam Mgmt primarily |
+
+**Implication for module design:** every module shows its own student / faculty / course / term entity views (data shared, views per-module). Views may filter — e.g., faculty in Exam Mgmt sees only courses they're assigned to.
+
+---
+
+## 12. Module Sellability + Prism Launcher
+
+Source: ADR-003. Each of the 5 products must be standalone-sellable. Prism main dashboard is replaced by a module launcher; React modules open in **new tab** from the Angular Prism shell.
+
+**Implication for design:** every product's landing page must work without assuming the user came from Prism. No cross-product chrome. Romit owns the module launcher design (separate workstream).
+
+---
+
+## 13. Phase-1 Persona Collapse
+
+Source: ADR-004. Phase 1 collapses to **3 view tiers** for every product:
+
+- **Admin** — covers PD / committee chair / curriculum chair / dept chair / director / coordinator
+- **Faculty** — covers full + adjunct + course director / instructor variants
+- **Student** — covers all student roles
+
+Per-product DESIGN.md may document additional sub-archetypes for design context, but **Phase 1 ships 3 views**, not 8+.
+
+---
+
+## 14. AI-First Thinking Pattern
+
+Source: ADR-005. Every analytics surface splits content into two lanes:
+
+- **Pulled** — trends, averages, comparative metrics, distributions. Predictable, computed from data.
+- **AI** — themes, insights, action plans. Dynamic, extracted from user-authored content (open-text responses, etc.) without forcing a preset taxonomy.
+
+**Implication for viz patterns (P3):** patterns must visually distinguish "pulled" vs "AI" content. AI content gets a recognizable affordance (icon, badge, tone) so users know it's machine-generated.
+
+---
+
+## 15. LMS-Integration-First Default
+
+Source: ADR-002. Architecture assumes LMS integration is on. When on, the manual add controls for course / term / offering / student are **disabled**. School configuration toggle (set at admin onboarding) flips the assumption.
+
+Today ~5% of customers integrate. Aarti wants this to flip to ~95% with the new modules.
+
+**Implication for design:** every admin master-list screen has two states — "LMS-on" (read-only, sync indicator) and "manual" (CRUD). Default UI assumes LMS-on; manual is the exception.
+
+---
+
+## 16. Rollout Status
 
 | Phase | Status | Notes |
 |---|---|---|
 | P0 — Keystone | **complete** (v0.1.0, 2026-05-08) | This file + 4 memory rules |
 | P1 — Scholastic enforcement | **complete** (2026-05-08) | Hooks (session-start, user-prompt-submit, pre-tool-use), DS snapshot (333 tokens, 142 components), viz patterns (RUBRIC + heatmap + strip + bullet), profile auto-load |
-| P2 — Living context | **in progress** (2026-05-08) | intake skill, ADR scaffolding, transcript-paste detector, per-product DESIGN.md + docs/ for all 5 products (real content for PCE + exam-management; scaffolds for patient-log / skills-checklist / learning-contracts) |
+| P2 — Living context | **complete** (2026-05-08) | intake skill, ADR scaffolding, transcript-paste detector, per-product DESIGN.md + docs/ for all 5 products. First exercise: 2026-05-08 Aarti audit produced 6 workspace ADRs + 2 product ADRs + cross-product entity universe (§11) |
 | P3 — Pattern library completion | not started | states/forms/nav/IA/onboarding/async + content.md |
 | P4 — Stochastic variance | not started | `/design-variants` workflow |
 | P5 — Designer override loop | not started | Override → spec amendment |

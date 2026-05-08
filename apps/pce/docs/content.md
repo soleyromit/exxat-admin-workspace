@@ -58,7 +58,21 @@ Per CONTENT-003: explain what happened, why, what to do.
 
 **Min-N suppression** — hiding faculty self-view results when fewer than 5 students responded (FR-03). Prevents identifiability of individual students.
 
-**Standardized question bank** — the locked, university-level question set (didactic + clinical). Templates pull from banks; banks themselves are not editable in the template builder (FR-05).
+**Standardized question bank** — the locked, university-level question set (didactic + clinical). Templates pull from banks; banks themselves are not editable in the template builder (FR-05). **DEPRECATED 2026-05-08** — PCE/CFE has no question bank per PCE ADR-001. Templates only (5–6 per school, one inactive). Term retained here for historical context.
+
+**Lifetime average** — average rating across every term a course has been offered (or every term a faculty has taught). Surfaced on faculty self-view alongside current-term average and trend (ADR pending — D33).
+
+**Course rating vs faculty rating** — students rate two distinct entities: the course (content) and the faculty (teaching style). These are not combined into one number. Faculty self-view shows them side-by-side with comparative context (ADR pending — D27, D33).
+
+**Action plan** — recommended/written response steps to a negative theme in CFE. AI drafts; admin/faculty accepts/edits/clears/types-own. Tracking deferred to Phase 2/3 (D31).
+
+**Reflection** — student-authored qualitative feedback on a course/faculty. AI extracts themes from these responses dynamically (per workspace ADR-005); schools do NOT pre-tag.
+
+**Cohort** — a graduating class moving through the program together. A 3-year program × 2 terms/year = 6 terms per cohort. The cohort-grouping toggle on the admin dashboard aggregates across these 6 terms (D23).
+
+**Term-cohort grouping** — the dashboard's primary axis switch: view by term (current term's courses + faculty) or by cohort (aggregated across 6 terms for one cohort). Two valid lenses on the same data.
+
+**Course offering** — see workspace glossary. PCE inherits this concept; evaluations attach to course offerings, not master courses.
 
 ---
 

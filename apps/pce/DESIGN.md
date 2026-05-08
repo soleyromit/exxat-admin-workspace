@@ -3,9 +3,10 @@
 > Extends `/Users/romitsoley/Work/DESIGN.md` (workspace v0.1.0).
 > L2 layer: product strategy, personas, workflows, content. L0/L4 rules inherit unchanged.
 
-**Version:** 0.1.0 (2026-05-08)
+**Version:** 0.2.0 (2026-05-08 — Aarti audit applied)
 **Owner:** Romit Soley
-**Phase:** Phase 1 — program level only, no dean-level surfaces, didactic + clinical course evaluations
+**Phase:** Phase 1 — 3 view tiers (admin/faculty/student), templates only (no QB), term-driven analytics
+**Aarti's framing:** "Course Faculty Evaluation" (CFE) — simpler than the original PCE PRD. See `docs/research/meetings/2026-05-08-aarti-design-review.md` for the load-bearing changes.
 
 ---
 
@@ -26,32 +27,38 @@ PCE replaces the current SurveyMonkey + manual chase + Anthology archive workflo
 | 5 | **CQI is a loop, not a log** | Every action has an owner, a target, a reassess date — no orphan entries (FR-14) |
 | 6 | **Autopilot, with brakes** | Coordinator can pause, edit, or skip per-course; defaults are tuned, not mandated |
 
-## 3. Personas
+## 3. Personas (Phase 1 — 3 view tiers)
 
-Source: HANDOFF.md. Full detail at `apps/pce/docs/personas.md`.
+**Superseded by ADR-004 (workspace) on 2026-05-08.** Aarti collapsed the 8-persona model from HANDOFF.md into 3 view tiers for Phase 1. Sub-archetype detail in `docs/personas.md` for design context.
 
-| # | Persona | Phase 1? | Primary surface |
+| # | View tier | Covers | Primary surface |
 |---|---|---|---|
-| 1 | Dean / President | Deferred (P2) | — |
-| 2 | Associate Dean | Deferred (P2) | — |
-| 3 | Program Director (PD) | ✓ | Dashboard, Templates, CQI Log |
-| 4 | Curriculum Committee Chair (CCC) | ✓ | Multi-cohort trends, Competency matrix |
-| 5 | Department Chair | ✓ | Faculty roster + dossier |
-| 6 | DCE | ✓ | Clinical dashboard, Cohort readiness |
-| 7 | Course Director / Faculty | ✓ | My results (grade-locked), Reflection |
-| 8 | Adjunct Faculty | ✓ (email-only) | Email digest |
-| 9 | Program Coordinator | ✓ | Setup wizard, Live monitor |
-| 10 | Student | ✓ | Mobile shell, two-section form |
+| 1 | **Admin** | PD, CCC, Curriculum Chair, Dept Chair, DCE, Coordinator, Director | Term-driven program dashboard, course leaderboard, faculty leaderboard, course detail, faculty detail, action plans |
+| 2 | **Faculty** | Full faculty + adjunct + course director + instructor variants | Self-view (course rating + faculty rating + trend + lifetime + comparative), reflection, feedback to next cohort |
+| 3 | **Student** | Students taking evaluations | Mobile evaluation form (uses existing mobile architecture — Romit does NOT custom-design this) |
 
-## 4. Workflows
+The 8 personas from the original PRD live as **sub-archetypes** in `docs/personas.md`. Phase 1 ships 3 views, not 8. Sub-archetype context informs which features within a view get prioritized.
 
-Detail at `apps/pce/docs/workflows/`. The five canonical flows:
+## 4. Workflows (Phase 1 — superseded by 2026-05-08 audit)
 
-1. **One-time setup** (Coordinator) — LMS integration, course types, terms, decision admin
-2. **Per-term ops** (Coordinator) — Autopilot dashboard, Live monitor, audit trail
-3. **Authoring** (PD) — Templates, banks, longitudinal-impact warning on edits
-4. **Distribution → Response → Review** (autopilot, Student, Faculty) — full survey lifecycle
-5. **Loop closure** (PD, CCC) — CQI action, reassess, close + CAPTE export
+Aarti redirected from the original 5-flow PRD model toward a tighter Phase-1 set. Detail at `apps/pce/docs/workflows/`.
+
+**Phase 1 Aarti-aligned flows:**
+
+1. **Setup** (Admin) — LMS-integration toggle (default ON per ADR-002), templates (5–6 of them, one inactive — no question bank per PCE ADR-001)
+2. **Distribution** (autopilot) — survey lifecycle from course close
+3. **Response** (Student) — uses **existing mobile architecture**; Romit does not custom-design this surface
+4. **Admin program overview** (Admin) — term-driven dashboard with course leaderboard + faculty leaderboard + trend across 5–6 terms; cohort grouping toggle
+5. **Faculty self-view** (Faculty) — course rating + faculty rating + trend + lifetime average + comparative
+6. **Course detail / Faculty detail drilldown** (Admin) — AI-extracted themes from open-text responses (no preset taxonomy per ADR-005)
+7. **Action plan flow (lite)** (Admin/Faculty) — from negative theme → AI recommends → accept/edit/clear/type-own. Tracking deferred to Phase 2/3
+
+**Killed by Aarti on 2026-05-08:**
+- Mobile evaluation form custom design (use existing mobile arch)
+- Cohort readiness concept (students aren't being assessed in CFE)
+- Competency rating concept (competencies are outcomes, not student-rated)
+- Heavy CQI action-plan tracking (Phase 2/3 — doesn't help sell the product)
+- Question banks (templates only, per PCE ADR-001)
 
 ## 5. Content (voice + glossary)
 

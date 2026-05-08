@@ -80,3 +80,53 @@ Per CONTENT-003: explain what happened, why, what to do.
 **Three-tier competency reporting** — (a) per-assessment, (b) course-level cumulative, (c) program-level cumulative. Tiers 1–2 Phase 1; tier 3 2027.
 
 **Workflow approval** — see "Pre-publication approval". Same thing; "workflow" is the older term Vishakha uses, "pre-publication approval" is the clearer phrasing.
+
+---
+
+## Glossary additions from 2026-05-08 Aarti audit
+
+**Course offering** — a specific instance of a master course in a specific term taught by specific faculty (e.g., "Pharmacology I, Spring 2026, Faculty X"). What faculty acts on. Different from master course. Per Exam Mgmt ADR-001.
+
+**Master course** — the abstract course in the program catalog (e.g., "PHARM 101 Pharmacology I"). Owned by Admin; reused across terms as course offerings. Per Exam Mgmt ADR-001.
+
+**Term (master list)** — academic term in the program catalog (e.g., "Spring 2026"). Owned by Admin. Per Exam Mgmt ADR-001.
+
+**Course director** — default Faculty role: "whole and soul navigator" of a course offering. Full CRUD on Questions / Assessments / Students / Accommodations [read-only inherited].
+
+**Collaborator** — a faculty added to a course offering by the Course Director, with admin-granted permission. May teach a lecture, contribute to QB, share material, or second-read.
+
+**Cohort** — a graduating class moving through the program together. Used in PCE primarily; relevant in Exam Mgmt for cross-cohort assessment trend analysis (Phase 2).
+
+**Content area** — topic the course covers. Program-level master list; questions tag 1-to-many. Per workspace ADR-001.
+
+**Competency** — program-level outcome capability. Questions tag 1-to-many.
+
+**Standard** — program-level accreditation requirement. Course objectives/measures map to standards.
+
+**Objective / Measure** — course-level learning goal mapped to standards. What a course intends to teach.
+
+**Course health** — whether a course's question bank covers the course's content areas, competencies, and objectives. Surfaced at the course level (NOT competency-level) per Exam Mgmt ADR-005 (pending).
+
+**Question-bank gap** — a content area / competency / objective tagged to a course offering but with zero or few questions in the QB. Surfaced on course health view; "Generate more with AI" CTA per gap.
+
+**Flag (statuses)** — voluntary student action during exam to mark a question as questionable. Statuses: addressed / dismissed / acknowledged. Faculty does NOT respond in real-time during the exam (per Exam Mgmt ADR pending — confirm with Vishakha).
+
+**Curving** — score adjustment applied post-exam at question or assessment level. Allows excluding ANY question, not just flagged ones (Exam Mgmt ADR pending — D9).
+
+**Distractor analysis** — distribution of student answer choices across distractors. Visualized green = correct + single accent for incorrect (no rainbow palette).
+
+**Difficulty index (faculty-set)** — easy/medium/hard tier set by faculty at question creation. Distinct from calculated post-exam difficulty.
+
+**Difficulty (calculated)** — proportion of test-takers who answered correctly. Already defined above.
+
+**Assessment types** — pop quiz / timed exam / take-home / open-book / proctored. Each has distinct parameters. Phase 1 may exclude proctored (lockdown vendor TBD Q4 2026 / Jan 2027). Aarti requires per-type parameter doc before designing screens (R5).
+
+**Assessment statuses** — draft / review / pending chair / change requested / approved / **ongoing** / done / results. Aarti rejected "live" → use "ongoing" instead.
+
+**Ongoing** (status) — replaces "live". Active assessment, students currently taking it.
+
+**Accommodation** — see workspace `docs/decisions/006-accommodations-shared-module.md`. Administered globally; faculty inherits read-only filtered view.
+
+**Custom accommodation** — optional school-specific accommodation not in the master list.
+
+**Module launcher** — see workspace ADR-003. Replaces Prism main dashboard.

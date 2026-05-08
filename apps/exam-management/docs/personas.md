@@ -4,45 +4,54 @@ Source: Aarti's email (early May 2026), Aarti's 2026-05-07 meetings, `apps/exam-
 
 ---
 
-## P1 — Faculty (Edit)
+> **Restructured 2026-05-08 per Aarti (workspace ADR-004 + Exam Mgmt ADR-001).** Phase 1 collapses to 3 view tiers (admin/faculty/student). Sub-archetypes documented below for design context.
 
-**Who:** course-owning faculty with CRUD on their assigned courses.
-**Phase 1 surfaces:** My Courses landing → per-course (Questions · Assessments · Students · Accommodations).
+---
+
+## V2 — Faculty (sub-archetypes within the Faculty view)
+
+Faculty view is one nav shell. Sub-archetypes inform feature priority within it.
+
+## F1 — Course Director (default sub-archetype)
+
+**Who:** "whole and soul navigator" of a course offering. Default role for any faculty assigned to a course offering.
+**Capabilities:** full CRUD on Questions, Assessments, Students (roster), Accommodations [read-only inherited per workspace ADR-006]. Can add Collaborators **if admin granted that permission** per Exam Mgmt ADR-002.
+**Phase 1 surfaces:** My Course Offerings landing → per-course-offering (Questions · Assessments · Students · Accommodations).
+**Cannot:** add courses, add terms, create master entities (per Exam Mgmt ADR-001).
 
 **Goals**
-- See own courses first (not a global question bank)
+- Land on My Course Offerings (not the global question bank)
 - Author and recycle questions efficiently — typically 90–95% recycled per exam, ~5–10% new
-- Ship assessments without losing time to chair-approval ceremony
 - Get useful diagnostic data (point-biserial, difficulty) at decision time, not in a separate report
-
-**Frustrations (current state with ExamSoft)**
-- Question bank is monolithic; finding "my course's" questions is friction
-- Item-quality stats live in standalone reports — not surfaced where the decision happens
-- New AI-generated questions risk poor point-biserial → hurts post-course evaluation → faculty are conservative
+- Course-level question-bank gap analysis: "is my QB covering what this course teaches?" (per Exam Mgmt ADR-005, pending)
 
 **Jobs to be done**
-- Land on My Courses → click into a course → 4-section view (Questions · Assessments · Students · Accommodations)
+- Land on My Course Offerings → drill into one → 4-section view (Questions · Assessments · Students · Accommodations)
 - Build assessment from QB (primary) or ad-hoc in builder (fallback for "need 5 more")
-- See AI-suggested questions tied to lecture content (uploaded slides, LMS pull, NL prompt) — validate carefully before adding
-- Publish results: low-stakes immediately, high-stakes after 3–4 day review window
+- Tag every question to content area / competency / objective at creation time
+- See course-level QB gap signals; "Generate more with AI" CTA per gap, fed by course materials (syllabus, lecture, textbook chapter)
 
 **Two faculty entry paths (both must work)**
-1. PRISM faculty module (tile/menu item)
+1. Module launcher tile (replaces PRISM faculty module per workspace ADR-003)
 2. Direct exam-management login
 
 ---
 
-## P2 — Faculty (Read-only)
+## F2 — Instructor (sub-archetype)
 
-**Who:** faculty with view-only access on assigned courses.
-**Phase 1 surfaces:** Same as Faculty (Edit), but read-only. Also view-only access to all settings.
+**Who:** faculty assigned to a course offering with narrower capabilities than Course Director.
+**Phase 1 capabilities (TBD with Vishakha + PMs):** the 3–4 default role variants Aarti called for. Possible variants:
+- Can create assessments but not view results
+- Can create questions but not assessments
+- Can view results but not create content
 
-**Goals**
-- See course state without editing
-- Reference questions/assessments from courses they don't own (e.g., team-teaching, observation roles)
+Exact set requires R7 from 2026-05-08 audit (permissions matrix).
 
-**Phase 1 boundaries**
-- More complex roles (proxy edit, partial edit, etc.) are deferred. Two levels only in Phase 1.
+## F3 — Collaborator (new sub-archetype, 2026-05-08)
+
+**Who:** a faculty added to a course by another faculty (Course Director) with admin-granted permission.
+**Capabilities:** depends on the role granted by the Course Director (subject to admin-set ceiling). Use case: lecture co-presenter, question bank contributor, second-reader.
+**Phase 1:** designable as the role-assignment UI per Exam Mgmt ADR-002.
 
 ---
 

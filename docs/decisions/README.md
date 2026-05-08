@@ -15,5 +15,11 @@ See `_template.md`.
 | # | Title | Status | Date |
 |---|---|---|---|
 | 000 | Record architecture decisions | Accepted | 2026-05-08 |
+| 001 | Program-level entity universe shared across all 5 products | Accepted | 2026-05-08 |
+| 002 | LMS-integration-first default for all new modules | Accepted | 2026-05-08 |
+| 003 | Independent module sellability + Prism module launcher | Accepted | 2026-05-08 |
+| 004 | Phase-1 persona collapse to 3 view tiers | Accepted | 2026-05-08 |
+| 005 | AI-first thinking pattern for analytics surfaces | Accepted | 2026-05-08 |
+| 006 | Accommodations as a shared cross-product module | Accepted | 2026-05-08 |
 
 (Updated by the intake skill when new ADRs are written.)

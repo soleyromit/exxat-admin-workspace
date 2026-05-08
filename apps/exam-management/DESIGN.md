@@ -3,9 +3,10 @@
 > Extends `/Users/romitsoley/Work/DESIGN.md` (workspace v0.1.0).
 > L2 layer: product strategy, personas, workflows, content. L0/L4 rules inherit unchanged.
 
-**Version:** 0.1.0 (2026-05-08)
+**Version:** 0.2.0 (2026-05-08 — Aarti audit applied)
 **Owner:** Romit Soley
 **Phase:** Phase 1 — be better than ExamSoft on day one; build with a 2027 vision
+**Aarti's audit (2026-05-08):** see `docs/research/meetings/2026-05-08-aarti-design-review.md`. Foundational architecture decisions take precedence over screen designs until product team alignment is reached on assessment types, statuses, role permissions, accommodations.
 
 ---
 
@@ -28,18 +29,23 @@ The 2027 vision (per Aarti's email): a curricular assessment loop where standard
 | 7 | **Embedded workflow intelligence** | Aarti email (5 differentiators) | Point-biserial, difficulty, negative-performing Qs surface at decision-time, not in separate reports |
 | 8 | **Three-tier competency reporting** | Aarti email | (a) per-assessment, (b) course-level cumulative, (c) program-level cumulative — third tier 2027 |
 
-## 3. Personas
+## 3. Personas (Phase 1 — 3 view tiers per workspace ADR-004)
 
-Source: Aarti's decisions (memory: project_exam_aarti_decisions, project_exam_aarti_may7) and CLAUDE.md. Full detail at `apps/exam-management/docs/personas.md`.
+Aarti's 2026-05-08 audit collapsed roles into 3 view tiers. Sub-archetypes documented in `docs/personas.md`. Full detail there.
 
-| # | Persona | Phase 1? | Primary surface |
+| # | View tier | Sub-archetypes | Primary surface |
 |---|---|---|---|
-| 1 | Faculty (Edit) | ✓ | My Courses → Course (Questions / Assessments / Students / Accommodations) |
-| 2 | Faculty (Read-only) | ✓ | Same surface as Edit, view-only on assigned courses |
-| 3 | Admin | ✓ | Global Question Bank, Role assignment, Cross-course settings |
-| 4 | Department Chair | ✓ | Pre-publication assessment approval queue |
-| 5 | Student (Assessment Taker) | ✓ | Active assessments → exam delivery; Past assessments + analytics secondary |
-| 6 | Curriculum/Program leadership | Phase 2 (2027) | Cross-course cumulative competency reporting |
+| V1 | **Admin** | Program admin, dept admin | Master lists (courses, terms, course offerings, students, accommodations, content areas, competencies, standards, faculty, permissions, assessment types), role assignment |
+| V2 | **Faculty** | Course Director (default), Instructor, narrower role variants (3–4 total). All can be assigned collaborator capability. | My Course Offerings → Course (Questions / Assessments / Students / Accommodations [read-only inherited]) |
+| V3 | **Student (Assessment Taker)** | Standard student, non-registered makeup-taker | Active assessments first → exam delivery; past + analytics secondary |
+
+**Key role rules from 2026-05-08 audit:**
+- Faculty cannot add courses (only Admin can — per ADR-001)
+- Faculty can add collaborators **only if** Admin grants that permission per faculty
+- Role labels rename-able per school, semantics fixed (per workspace ADR-004)
+- Department Chair pre-publication approval (from Aarti's email): unchanged — still a Phase 1 secondary feature
+
+**Phase 2 (2027):** Curriculum/Program cross-course cumulative competency reporting
 
 ## 4. Workflows
 
