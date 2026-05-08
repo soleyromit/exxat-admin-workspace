@@ -31,11 +31,12 @@ When app-type changes, the matching DS profile auto-loads via SessionStart / Use
 | Layer | Responsibility | Source files | Auto-generated? |
 |---|---|---|---|
 | L0 Foundations | Tokens, components, DS surface | `exxat-ds/`, `studentUX/`, `docs/foundations/ds-snapshot.json`, `docs/foundations/ds-profiles/{admin,student}.md` | snapshot: yes; profiles: hand + auto-diff |
-| L1 Patterns | Composition recipes (viz, states, forms, nav, IA, onboarding, async) | `docs/patterns/<category>/<name>.md` | hand-written |
+| L1 Patterns | Composition recipes (viz, states, forms, nav, IA, onboarding, async, dashboards, admin, ai, experience) | `docs/patterns/<category>/<name>.md` | hand-written |
 | L2 Product UX | Strategy, personas, workflows, content per product | `apps/<product>/DESIGN.md`, `apps/<product>/docs/` | hand-written |
 | L3 Process | Research, ADRs, telemetry, decisions | `docs/research/`, `docs/decisions/`, `docs/telemetry/`, plus per-product equivalents | intake skill writes |
 | L4 Quality Gates | A11y (WCAG 2.2 AA), perf, DS conformance, visual regression | `docs/quality/{a11y,perf,visual}.md`, `scripts/`, `.claude/hooks/` | hand-written rules, automated checks |
 | L5 Governance | Versioning, deprecation, contribution, ds-changelog | `docs/governance/{deprecation,contribution,versioning,ds-changelog}.md` | changelog: auto; rest: hand |
+| L7 Storytelling | Stakeholder perspectives, product narrative, use cases (WHAT/HOW/WHY/persona/conditions/supported elements), AI layer per product, experience principles per product | `docs/storytelling-framework.md` (workspace) + `apps/<product>/docs/storytelling/` (per-product) | intake skill writes |
 
 Every layer carries (Source, Check, Gate, Loop). Missing any of the four = documentation theater.
 
@@ -254,7 +255,7 @@ Today ~5% of customers integrate. Aarti wants this to flip to ~95% with the new 
 | P0 — Keystone | **complete** (v0.1.0, 2026-05-08) | This file + 4 memory rules |
 | P1 — Scholastic enforcement | **complete** (2026-05-08) | Hooks (session-start, user-prompt-submit, pre-tool-use), DS snapshot (333 tokens, 142 components), viz patterns (RUBRIC + heatmap + strip + bullet), profile auto-load |
 | P2 — Living context | **complete** (2026-05-08) | intake skill, ADR scaffolding, transcript-paste detector, per-product DESIGN.md + docs/ for all 5 products. First exercise: 2026-05-08 Aarti audit produced 6 workspace ADRs + 2 product ADRs + cross-product entity universe (§11) |
-| P3 — Pattern library completion | not started | states/forms/nav/IA/onboarding/async + content.md |
+| P3 — Pattern library + L7 Storytelling | **in progress** (2026-05-08) | 8 RUBRICs (states/forms/nav/ia/onboarding/async/dashboards/admin); 10 patterns (audit-driven + standard); workspace `docs/content.md` glossary. **L7 Storytelling layer added:** `docs/storytelling-framework.md` + per-product `docs/storytelling/` (real content for Exam Mgmt + PCE from 7-meeting Aarti/Vishaka audit; scaffolds for patient-log / skills-checklist / learning-contracts) |
 | P4 — Stochastic variance | not started | `/design-variants` workflow |
 | P5 — Designer override loop | not started | Override → spec amendment |
 | P6 — Process & telemetry | not started | ADR + telemetry registry |
