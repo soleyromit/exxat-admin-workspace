@@ -387,6 +387,44 @@ export interface CourseOffering {
   status: 'planned' | 'active' | 'completed' | 'archived'
 }
 
+// Accommodations (entity #10) — workspace ADR-006 shared module
+//
+// Three tiers per ADR-006:
+//   1. Master catalog (program admin-defined; this list)
+//   2. Per-student assignments (admin only, with documentation)
+//   3. Course-level read-only inherited view (faculty — NOT managed here)
+//
+// Cross-product: Exam Mgmt + PCE + future products consume the SAME catalog.
+// Faculty never CRUD — admin determines per ADR-006.
+export interface MasterAccommodation {
+  id: string
+  /** Short code shown on roster badges (e.g., '+10', 'RDR'). */
+  code: string
+  /** Full name. */
+  name: string
+  description: string
+  /** Common categories for grouping. */
+  category: 'time' | 'environment' | 'assistive-tech' | 'format' | 'breaks' | 'other'
+  /** Standard (built-in) vs school-defined custom. */
+  isCustom: boolean
+  status: 'active' | 'archived'
+}
+
+export const MOCK_ACCOMMODATIONS: MasterAccommodation[] = [
+  { id: 'ac1', code: '+10', name: '+10% time',                  description: 'Extended testing time, 10% additional',          category: 'time',          isCustom: false, status: 'active' },
+  { id: 'ac2', code: '+25', name: '+25% time',                  description: 'Extended testing time, 25% additional',          category: 'time',          isCustom: false, status: 'active' },
+  { id: 'ac3', code: '+50', name: '+50% time',                  description: 'Extended testing time, 50% additional',          category: 'time',          isCustom: false, status: 'active' },
+  { id: 'ac4', code: '+2x', name: 'Double time',                description: 'Extended testing time, 100% additional',         category: 'time',          isCustom: false, status: 'active' },
+  { id: 'ac5', code: 'RDR', name: 'Reader',                      description: 'Test administered by a reader',                  category: 'assistive-tech', isCustom: false, status: 'active' },
+  { id: 'ac6', code: 'SCB', name: 'Scribe',                      description: 'Student dictates answers; scribe records',       category: 'assistive-tech', isCustom: false, status: 'active' },
+  { id: 'ac7', code: 'SEP', name: 'Separate room',               description: 'Quiet, distraction-free testing environment',    category: 'environment',   isCustom: false, status: 'active' },
+  { id: 'ac8', code: 'BRK', name: 'Frequent breaks',             description: 'Stop-the-clock breaks at student discretion',    category: 'breaks',        isCustom: false, status: 'active' },
+  { id: 'ac9', code: 'LRG', name: 'Large print',                 description: 'Test materials in larger font size',             category: 'format',        isCustom: false, status: 'active' },
+  { id: 'ac10', code: 'BRL', name: 'Braille',                     description: 'Test materials in Braille',                      category: 'format',        isCustom: false, status: 'active' },
+  { id: 'ac11', code: 'ASL', name: 'ASL interpreter',             description: 'American Sign Language interpreter present',     category: 'assistive-tech', isCustom: false, status: 'active' },
+  { id: 'ac12', code: 'CST', name: 'Custom — service animal',    description: 'Service animal accommodation per school policy', category: 'other',         isCustom: true,  status: 'active' },
+]
+
 // Students (entity #4) — typically LMS-synced; large roster
 export interface Student {
   id: string

@@ -69,8 +69,8 @@ const ENTITIES: EntityTile[] = [
 
   // Shared module (workspace ADR-006)
   { key: 'accommodations', title: 'Accommodations', icon: 'fa-universal-access',
-    description: 'Cross-product shared module (workspace ADR-006).',
-    status: 'shared' },
+    description: 'Cross-product shared module (workspace ADR-006). Master catalog consumed by Exam Mgmt + PCE.',
+    href: '/admin/accommodations', status: 'available', metric: '12 in catalog' },
 ]
 
 function EntityCard({ entity }: { entity: EntityTile }) {
