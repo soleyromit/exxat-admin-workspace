@@ -1,6 +1,6 @@
 ---
 last_full_audit: 2026-05-09
-audit_method: WebFetch (anthropic.com + code.claude.com + platform.claude.com) + claude-code-guide subagent cross-check
+audit_method: WebFetch (anthropic.com + code.claude.com + platform.claude.com + claude.com/plugins) + claude-code-guide subagent + design-specific subagent cross-check
 sources_consulted:
   - https://code.claude.com/docs/en/hooks
   - https://code.claude.com/docs/en/sub-agents
@@ -9,11 +9,20 @@ sources_consulted:
   - https://code.claude.com/docs/en/settings
   - https://code.claude.com/docs/en/memory
   - https://code.claude.com/docs/en/plugin-marketplaces
+  - https://code.claude.com/docs/en/best-practices
   - https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview
+  - https://platform.claude.com/cookbook/coding-prompting-for-frontend-aesthetics
   - https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills
   - https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents
   - https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents
   - https://www.anthropic.com/news/enabling-claude-code-to-work-more-autonomously
+  - https://www.anthropic.com/news/claude-design-anthropic-labs
+  - https://www.anthropic.com/news/claude-for-creative-work
+  - https://claude.com/blog/build-artifacts
+  - https://claude.com/plugins/design
+  - https://claude.com/plugins/frontend-design
+  - https://claude.com/plugins/figma
+  - https://github.com/anthropics/skills
   - https://platform.claude.com/docs/en/release-notes/overview
 ---
 
@@ -134,6 +143,38 @@ sources_consulted:
 |---|---|---|---|---|
 | `marketplace.json` for sharing skills/hooks/subagents | not adopted | deferred (workspace is single-team; revisit if we want to share) | 2026-05-09 | code.claude.com/docs/en/plugin-marketplaces |
 | Plugin subagents cannot use `hooks`/`mcpServers`/`permissionMode` (security) | known — not relevant since we don't ship as plugin | n/a | 2026-05-09 | (same) |
+
+## Product design with Claude
+
+| Practice | Our state | Status | Last verified | Source |
+|---|---|---|---|---|
+| **Anthropic-Verified `design` plugin** scope (design critique, UX writing, a11y audits, research synthesis) | partial — we have `intake`/`research-intake` covering research synthesis; design-critique mirrored as workspace skill (commit pending) | partial | 2026-05-09 | claude.com/plugins/design |
+| **Anthropic-Verified `frontend-design` plugin** (BOLD aesthetic, anti-generic, vary fonts) | ⚠ **anti-adopted** — directly fights our DS discipline. Hostile to enterprise token-locked DS. Documented in `.claude/skills/README.md` to prevent future installation | n/a | 2026-05-09 | claude.com/plugins/frontend-design + github.com/anthropics/skills (frontend-design SKILL.md) |
+| **Anthropic-Verified `figma` plugin** (`/implement-design`, `/create-design-system-rules`, `/code-connect-components`) | partial — Figma MCP active via plugin; slash commands available but not formally adopted into workflow | partial | 2026-05-09 | claude.com/plugins/figma |
+| `/create-design-system-rules` for DS rule generation | not adopted | deferred (we already have DESIGN.md §4 with 43 rules; revisit only if we want to diff against an auto-generated baseline) | 2026-05-09 | (same) |
+| **Claude Design** (Anthropic Labs canvas+chat product, Apr 2026) — DS ingestion, sliders, web-capture, Canva/PDF/PPTX/HTML export | not adopted | deferred (separate Anthropic product, not a Claude Code skill — worth user trial; would complement the workspace, not replace it) | 2026-05-09 | anthropic.com/news/claude-design-anthropic-labs |
+| **Claude Artifacts** (canvas in claude.ai for React/HTML/Tailwind generation) | not adopted | deferred (overlaps Claude Code's tsx generation; uses different DS than ours) | 2026-05-09 | claude.com/blog/build-artifacts |
+| **Magic Patterns MCP** workflow | adopted — MCP wired via plugin | current | 2026-05-09 | (third-party; no Anthropic-published guidance) |
+| **Mobbin MCP** workflow | adopted — MCP wired via plugin | current | 2026-05-09 | (third-party; no Anthropic-published guidance) |
+| Stochastic design (parallel agents per variant in worktrees) | ✅ `design-variants` skill — Anthropic publishes the mechanism (multi-Claude parallelism via worktrees) but no design-specific guidance; our skill is a novel application | current (novel application of published primitive) | 2026-05-09 | code.claude.com/docs/en/best-practices (multi-agent + worktrees sections) |
+| **Verify-UI-changes-visually pattern** (paste screenshot → Claude screenshot result → list diffs → fix) | not adopted as formal step in `/design-variants` | deferred (would tighten variant convergence; revisit if variants drift visually from intent) | 2026-05-09 | code.claude.com/docs/en/best-practices |
+| DS enforcement (token discipline, component-from-DS-only, no-raw-HTML rules) | ✅ workspace-novel — Anthropic doesn't ship a DS-discipline pattern; ours (DESIGN.md §4 + `ds-check` + `ds-component-check` + PreToolUse blocking) fills the gap | current (workspace-original) | 2026-05-09 | (none — workspace authored) |
+| Research-to-design intake (transcripts → ADRs → personas → glossary) | ✅ workspace-novel — Anthropic's `design` plugin lists "research synthesis" as a use case but doesn't publish patterns; ours (`intake` + `research-intake` skills) is more thorough | current (workspace-original) | 2026-05-09 | (`design` plugin scope claim only) |
+
+### Superpowers skills (locally installed, opt-in adoption)
+
+These ship with the superpowers plugin (already cached at `~/.claude/plugins/cache/claude-plugins-official/superpowers/`). Adopt opt-in only — don't auto-load.
+
+| Skill | Status | Reasoning |
+|---|---|---|
+| `brainstorming` | not adopted (recommended) | Matches Romit's "execute after clear recommendation" discipline; pairs with intake. Adopt when next ambiguous design brief lands. |
+| `verification-before-completion` | not adopted (recommended) | Cheap guardrail; complements `ds-check`. Adopt as a wrap around design-output claims. |
+| `writing-plans` + `subagent-driven-development` | not adopted (when-relevant) | Useful pair for multi-screen prototypes. Adopt at next 5+ screen build. |
+| `frontend-design` | ⚠ **anti-adopted** | Tells Claude to avoid Inter, use Playfair, vary aesthetics, use bold asymmetric layouts. Directly violates our DS rules (R1-R12). Never invoke for Exxat work. |
+| `test-driven-development` | skipped | Wrong discipline for design prototyping (TDD is for production code, not stakeholder mockups). |
+| `dispatching-parallel-agents`, `using-git-worktrees` | skipped (subsumed) | Specialized in `design-variants` already; generic versions add noise. |
+| `requesting-code-review` / `receiving-code-review` | deferred | Could be repurposed as "self-review before sending to Himanshu" pass. Low priority. |
+| `systematic-debugging`, `finishing-a-development-branch`, `writing-skills` | deferred | Tuned for engineers; not your primary mode. |
 
 ## Why this file exists
 
