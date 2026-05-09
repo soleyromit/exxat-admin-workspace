@@ -23,6 +23,8 @@ STATE_PATH = REPO_ROOT / "docs" / "telemetry" / "registry-state.json"
 # AND add the read in session-start.py / user-prompt-submit.py.
 REGISTRIES: list[str] = [
     "DESIGN.md",
+    "CLAUDE.md",
+    "docs/CLAUDE-DS-REFERENCE.md",
     "docs/PRODUCTS.md",
     "docs/ANALOGIES.md",
     "docs/RESEARCH-SIGNALS.md",

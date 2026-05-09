@@ -40,9 +40,17 @@ TRIGGERS: list[tuple[str, str]] = [
     (r"figma\.com/(design|board|slides|make)/", "ref:figma-mcp"),
     (r"magicpatterns\.com/c/", "ref:magicpatterns-mcp"),
 
-    # Design intent (priority 4)
-    (r"\b(design|build|create|add)\s+(a|an|the)?\s*(new\s+)?(screen|page|view|dashboard|component|feature|flow)\b", "intent:design"),
+    # Design intent (priority 4) — broader noun set covers real prompt shapes
+    # like "design the question navigator", not just "design a new screen"
+    (r"\b(design|build|create|add|wire(\s+up)?)\s+(a|an|the)?\s*(new\s+)?(\w+\s+)?(screen|page|view|dashboard|component|feature|flow|navigator|panel|widget|sidebar|toolbar|header|footer|modal|drawer|menu|tabs?|table|form|button|card|chart|graph|layout|UI|interface)\b", "intent:design"),
     (r"\b(redesign|refactor|rework|polish|improve|tighten)\s+(this|the|that)\b", "intent:redesign"),
+
+    # DS reference lazy-load (priority 4.5) — when prompt suggests UI/DS work,
+    # remind to read CLAUDE-DS-REFERENCE.md (which holds tokens, component
+    # APIs, theme system; ~8K tokens, lazy-loaded to keep CLAUDE.md tight).
+    (r"\b(Button|Badge|Sheet|DataTable|Sidebar|Dropdown|Dialog|Tooltip|Tabs?|Avatar|Card|Popover|InputGroup|Field|Select|Checkbox|RadioGroup|Toggle|Drawer|Banner|Calendar|Breadcrumb)\b", "lazy:ds-reference"),
+    (r"\bvar\(--[a-z][a-z0-9-]+\)|\b(tokens?|theme(-one|-prism)?|DS reference|design system|component(s)? from (the )?DS)\b", "lazy:ds-reference"),
+    (r"\b(scaffold|new product|new screen|new component|new admin|new student app)\b", "lazy:ds-reference"),
 
     # Library refs (priority 5)
     (r"\b(React|Next\.?js|Tailwind|Recharts|Radix|shadcn|TanStack|Framer|Zod|Zustand|Vercel AI SDK)\b", "lib:context7"),
@@ -84,6 +92,7 @@ ACTION_DESCRIPTIONS: dict[str, str] = {
     "ref:magicpatterns-mcp": "Run mcp__claude_ai_Magic_Patterns__read_artifact_files to load the referenced prototype",
     "intent:design": "Invoke superpowers:brainstorming first; check Mobbin search_screens; check Granola for relevant meetings; only then generate UI via frontend-design",
     "intent:redesign": "Invoke superpowers:brainstorming and frontend-design before changing visuals",
+    "lazy:ds-reference": "Read docs/CLAUDE-DS-REFERENCE.md before generating any UI code, importing DS components, or using DS tokens beyond the ~15 in CLAUDE.md §6. The full token tables, component APIs, theme system, and font setup live there (~8K tokens). Don't guess token names — verify against the reference.",
     "lib:context7": "Run mcp__plugin_context7_context7__resolve-library-id then query-docs for current API; do not generate from memory",
     "work:debug": "Invoke superpowers:systematic-debugging skill before proposing fixes",
     "work:verify-before-complete": "Invoke superpowers:verification-before-completion before claiming complete; then superpowers:requesting-code-review",
@@ -195,6 +204,12 @@ def main() -> None:
         except re.error:
             # Skip malformed patterns rather than failing the hook
             continue
+
+    # Coupled actions: design/redesign intent always benefits from the DS
+    # reference. Add ds-reference as a follow-on when either fires.
+    if ("intent:design" in seen or "intent:redesign" in seen) and "lazy:ds-reference" not in seen:
+        matches.append("lazy:ds-reference")
+        seen.add("lazy:ds-reference")
 
     freshness = _registry_freshness_block()
 
