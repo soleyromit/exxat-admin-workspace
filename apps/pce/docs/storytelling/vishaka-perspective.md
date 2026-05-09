@@ -2,6 +2,8 @@
 
 > ⚠️ **Vishaka has not yet been a meaningful voice in PCE-specific meetings.** This file scaffolds the structure; the intake skill populates as Vishaka contributes.
 
+**Update 2026-05-08 16:09:** Vishaka was named as a participant in today's curriculum-mapping + base-entities meeting but **did not speak meaningfully on PCE** in the transcript. The meeting was ~100% Aarti↔Romit dialogue. Recommend a dedicated PCE-only session with Vishaka before relying on her input for PCE design.
+
 ---
 
 ## Status

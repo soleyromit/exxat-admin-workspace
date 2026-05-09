@@ -19,17 +19,19 @@
 
 ---
 
-## UC-02 — Admin program overview (term-driven dashboard)
+## UC-02 — Admin program overview (Term + Cohort dual axes)
+
+> **REFINED 2026-05-08 16:09** (`f274ade0`). Faculty leaderboard demoted from top-level peer of course leaderboard. Now one-click-down per Aarti D5 ("Faculty is one click down, NOT a top-level axis").
 
 | Field | Detail |
 |---|---|
-| **WHAT** | Term-driven program dashboard with course leaderboard + faculty leaderboard + trend across 5–6 terms. |
-| **HOW** | Header: term selector + cohort breakdown table. Top sections: top 5 courses + top 5 faculty (and bottom 5 each). Average score (course) + average score (faculty). Trend chart: course-rating line + faculty-rating line over last 5–6 terms. Cohort grouping toggle (term ↔ cohort). |
-| **WHY** | Admin needs to see which courses + faculty trended poorly this term, with longitudinal context. |
+| **WHAT** | Two top-level dashboard axes — Term view + Cohort view — with course leaderboard prominent at top and faculty as a drill-down (one click), not peer to courses. |
+| **HOW** | Two routes / view modes: (a) **Term view** — courses-this-term leaderboard (top 5 + bottom 5), term-level averages, AI insights summary card above question detail. (b) **Cohort view** — courses-this-cohort aggregated across 5–6 terms, cohort trend per course, AI insights summary, **clinical/didactic split filter**. Faculty leaderboard removed from top level — accessed via "View faculty" drill-down or via course → faculty link. |
+| **WHY** | Aarti 2026-05-08 16:09: "Faculty is one click down." Faculty performance is a slice through course data, not a peer dimension. Two top-level axes (Term + Cohort) reflect different mental models — operational vs longitudinal. |
 | **for_persona** | Admin (covers PD, CCC, Curriculum Chair, Dept Chair, DCE, Coordinator) |
 | **under_conditions** | Phase 1; ≥1 prior term of data for trend |
-| **supported_elements** | DS: Card, Table, custom trend chart; aggregation API |
-| **source** | Aarti 2026-05-08 (`4e1c850e`) |
+| **supported_elements** | DS: Card, Table, custom trend chart; AI insights pane; clinical/didactic filter on Cohort view |
+| **source** | Aarti 2026-05-08 morning + 16:09 (`4e1c850e`, `f274ade0`); workspace ADR-005 (AI-first); 16:09 D4, D5 |
 
 ---
 
@@ -215,6 +217,76 @@
 
 ---
 
+## UC-16 — Faculty drilldown (one-click-down from term/cohort)
+
+| Field | Detail |
+|---|---|
+| **WHAT** | Faculty profile / drilldown reachable from term/cohort dashboard with one click. Shows course offerings the faculty taught + per-offering eval results. |
+| **HOW** | From `/analytics` (admin), click "View faculty" or click any faculty avatar/name in a course row → faculty page lists their course offerings as a table → click an offering → that specific instance's eval results. Faculty profile is a **shared component** with Exam Mgmt (per Aarti 2026-05-08 16:09 D12). |
+| **WHY** | Faculty performance is a slice through course data, not a top-level axis. Reduces dashboard surface; matches faculty mental model ("how am I doing across MY courses"). |
+| **for_persona** | Admin (drill-down) + Faculty (own profile) |
+| **under_conditions** | Phase 1; faculty has ≥1 course offering |
+| **supported_elements** | DS: Avatar, Table, Card; shared faculty profile React component (cross-module) |
+| **source** | Aarti 2026-05-08 16:09 (`f274ade0`) D5, D12 |
+
+---
+
+## UC-17 — Course offering atomic unit (4-tuple)
+
+| Field | Detail |
+|---|---|
+| **WHAT** | All evaluation data is keyed on `course × term × cohort × faculty`. This is the atomic unit. |
+| **HOW** | Schema: every eval response, every aggregated metric, every drill-down traces back to this 4-tuple. Aggregations roll up: course (across terms/cohorts/faculty), faculty (across courses/terms), term (across courses/cohorts), cohort (across terms/courses). |
+| **WHY** | Aarti 2026-05-08 16:09: "Whenever you are collecting information or a student is doing it, it is always on a course offering, which is for a particular cohort in a particular term." Without the 4-tuple key, longitudinal trend per offering + per-faculty-per-course analysis is impossible. |
+| **for_persona** | Schema decision affects all personas |
+| **under_conditions** | Phase 1; data model |
+| **supported_elements** | Backend schema; CFE + Exam Mgmt + future modules use same key |
+| **source** | Aarti 2026-05-08 16:09 (`f274ade0`) D3 |
+
+---
+
+## UC-18 — Comp Genie–style AI gap analysis (no customer data needed)
+
+| Field | Detail |
+|---|---|
+| **WHAT** | AI compares assessments against published board exam blueprints (NAPLEX, NCLEX, CAPTE 2C, ARC-PA, ASHA) — works WITHOUT requiring customer to upload curriculum. |
+| **HOW** | System ships pre-loaded blueprints. Admin opens a course → AI runs gap analysis: "your assessments cover X% of NCLEX blueprint section 1; weak coverage on section 3." Tier 2 (when curriculum uploaded): compare to school's mapped objectives instead. |
+| **WHY** | Aarti 2026-05-08 16:09: customer adoption of curriculum upload is low; published blueprints are zero-friction win. "Influx has been [doing] Comp Genie feature… AI has that." |
+| **for_persona** | Admin + Faculty |
+| **under_conditions** | Phase 1; assessments have content (questions tagged or NL-detectable) |
+| **supported_elements** | DS: Card, custom viz; AI inference engine; pre-loaded blueprint library |
+| **source** | Aarti 2026-05-08 16:09 (`f274ade0`) D8 |
+
+---
+
+## UC-19 — Collaborator (first-class concept)
+
+| Field | Detail |
+|---|---|
+| **WHAT** | Faculty can be a Collaborator on a course or assessment with read-only or co-edit access. First-class role separate from Course Coordinator / Instructor. |
+| **HOW** | Admin assigns OR Course Coordinator invites. Two flavors: read-only (view results, can't edit) and co-edit (full assessment edit). Tracked per resource (course, assessment). |
+| **WHY** | Aarti 2026-05-08 16:09: "Real workflow includes ad-hoc sharing without permanent role assignment." Common case: Course Coordinator pulls in another faculty for second-read on assessment. |
+| **for_persona** | Faculty (any sub-role) |
+| **under_conditions** | Phase 1 |
+| **supported_elements** | DS: DropdownMenu (assign), Badge (collaborator indicator); permission state machine |
+| **source** | Aarti 2026-05-08 16:09 (`f274ade0`) D7 |
+
+---
+
+## UC-20 — Clinical vs didactic filter on Cohort view
+
+| Field | Detail |
+|---|---|
+| **WHAT** | Cohort dashboard has a toggle/filter: All courses, Clinical only, Didactic only. |
+| **HOW** | DS ToggleGroup (or filter chip) on `/analytics` Cohort view. Filters the leaderboard + trend chart + AI summary to the selected subset. |
+| **WHY** | Aarti 2026-05-08 16:09: "For this cohort, all my clinical courses, how did they do… and how did they do online clinical?" Different cohort needs are different. |
+| **for_persona** | Admin |
+| **under_conditions** | Phase 1; courses have Course Type tag (didactic / clinical) |
+| **supported_elements** | DS: ToggleGroup; Course Type schema attribute (already in UC-14) |
+| **source** | Aarti 2026-05-08 16:09 (`f274ade0`) — design task C5 |
+
+---
+
 ## Summary table
 
 | UC | Title | Persona | Phase |
@@ -234,6 +306,11 @@
 | 13 | Anonymity (≥5 gating + hide columns) | Faculty + Admin | 1 |
 | 14 | Three schema attributes | Admin | 1 |
 | 15 | Programmatic Surveys folder | Admin | 1 |
+| 16 | Faculty drilldown (one-click-down) | Admin + Faculty | 1 |
+| 17 | Course offering atomic unit (4-tuple) | All (schema) | 1 |
+| 18 | Comp Genie–style AI gap analysis | Admin + Faculty | 1 |
+| 19 | Collaborator (first-class) | Faculty | 1 |
+| 20 | Clinical vs didactic filter | Admin | 1 |
 
 ## Source provenance
 

@@ -109,6 +109,44 @@ Three explicit AI pillars. Comment analysis + recommended action items + evaluat
 | Course offering = base course × course number × term × academic year | 2026-05-05 |
 | Anonymity must be truly anonymous (≥5 gating, hide columns, more) | 2026-05-05 + roadmap meeting |
 
+## 2026-05-08 16:09 follow-up — Aarti refines (after morning audit)
+
+Second meeting today. Net-new emphasis vs morning:
+
+| Refinement | Status |
+|---|---|
+| Course offering atomic unit is **4-tuple** (course × term × cohort × faculty), not 3-tuple | NEW |
+| CFE has **two top-level dashboard axes**: Term + Cohort. Faculty is one-click-down, NOT a peer top-level | NEW |
+| Two question-mapping pathways: via course objective AND direct-to-standards | NEW |
+| Comp Genie–style AI: gap analysis vs published board blueprints (NAPLEX/NCLEX) — works without customer data | NEW |
+| Collaborator pattern is first-class (read-only / co-edit on courses + assessments) | NEW |
+| Faculty has 2 sub-roles at course level: Course Coordinator (full) + Instructor (limited) | refines morning |
+| Curricular Assessment Loop = canonical 4-phase: must-teach → teaching → assessing → learning | crystallized |
+
+### Aarti's anti-patterns about Romit's process (2026-05-08 16:09)
+
+> "It is not [Romit's] position to start answering the question, what would a program director want to see? That's not expected."
+
+> "There is no document that lists all of these things. And then I will get on a review call, and I will see eight versions of it, and I will lose it."
+
+> "Right now, when I'm looking at the screens that he was showing me, it's like envisioning what we should do in this dashboard. Okay, fine. But you'll get so many things wrong if you start here."
+
+> "Just go fucking create these pages. Like, what are you waiting for?"
+
+**Translation:**
+- Stop wearing personas you're not. Document base-entity decisions first; Aarti owns persona-perspective.
+- Build the unglamorous setup screens (entity admin) BEFORE dashboard polish.
+- One canonical doc, not eight versions.
+- Speculative dashboard exploration is a process anti-pattern.
+
+### "Prism is dead" (workspace ADR-003 reinforced)
+
+> "My whole definition of Prism is going to have to change. Prism is no longer Prism, it's modules."
+
+This isn't new — workspace ADR-003 already shipped. But Aarti's framing today reinforces: Prism becomes the shell; modules are the surfaces. Base entities (courses, faculty, students, accommodations) are **platform-level**, not Prism-level.
+
+---
+
 ## CFE-specific use cases Aarti walked through
 
 ### Faculty self-view (UC pattern)

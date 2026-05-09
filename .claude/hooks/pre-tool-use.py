@@ -68,8 +68,11 @@ PATTERN_RULES: list[tuple[str, str, str, str, bool]] = [
     ("DS-011b", r"\bfontWeight\s*:\s*['\"]?(?:\d|bold|normal|light)",
      "Inline fontWeight literal banned (DS-011). Use Tailwind font-{normal,medium,semibold,bold} class or var(--font-weight-*) token.",
      r"/apps/", True),
-    ("DS-011c", r"\bfontFamily\s*:\s*['\"][^'\"]*serif|sans|mono|['\"][A-Z]",
-     "Inline fontFamily literal banned (DS-011). Use var(--font-sans) / var(--font-heading) tokens.",
+    # DS-011c — block raw font-family literals only; allow var(--font-*) tokens.
+    # Regex matches: fontFamily: '<anything>serif|sans|mono' or fontFamily: '<UpperCaseStart>'
+    # Does NOT match: fontFamily: 'var(--...)' (lowercase 'v', no serif/sans/mono in tokens).
+    ("DS-011c", r"\bfontFamily\s*:\s*['\"]((?:[^'\"]*?(?:serif|sans|mono))|[A-Z][^'\"]*)['\"]",
+     "Inline fontFamily literal banned (DS-011). Use var(--font-sans) / var(--font-heading) tokens or a Tailwind font-* class.",
      r"/apps/", True),
 ]
 

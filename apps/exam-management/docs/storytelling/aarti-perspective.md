@@ -146,6 +146,43 @@ License to discontinue Fast (form-builder platform) if necessary.
 
 The frustration pattern: visualization-first work that bypasses foundational architecture (assessment types, statuses, role/permission matrix, accommodations list, content/competency taxonomies).
 
+## 2026-05-08 16:09 follow-up — Aarti refines (after morning audit)
+
+Second meeting today. Net-new emphasis on Exam Mgmt + curriculum mapping:
+
+| Refinement | Status |
+|---|---|
+| **Two question-mapping pathways** — via course objective (auto-inherits content area + competency) AND direct-to-standards (independent of curriculum) | NEW |
+| **Comp Genie–style AI gap analysis** — compare assessments to published board blueprints (NAPLEX, NCLEX) WITHOUT customer curriculum data | NEW (Phase 1 differentiator) |
+| **Collaborator pattern** — first-class concept (read-only / co-edit) on courses + assessments | NEW |
+| **Faculty has 2 sub-roles at course level** — Course Coordinator (full) + Instructor (limited) | refines morning |
+| **Course landing = assessments primary** — course details are secondary tabs, not the lead | confirmed |
+| **Faculty profile shared component** between Exam Mgmt + CFE (single source of truth) | NEW |
+| **Assessment types phased** — P1 quizzes/take-home/proctored; P2 lockdown; P3 monitored | refined |
+
+### Curricular Assessment Loop — canonical 4-phase model
+
+Aarti will own the one-pager:
+
+1. **Must teach** — standards/blueprints declare what programs must teach (NAPLEX, NCLEX, etc.)
+2. **Am teaching** — courses map objectives → standards/competencies/content areas
+3. **Am assessing** — questions map to course objectives (auto-inherits chain) OR direct to standards
+4. **Are learning** — assessment scores reflect student mastery; loop closes back to curriculum tweaks (class-wide failures) or individual support (single-student failures)
+
+> "If I teach them and I don't assess them, I don't have evidence that students learn. If I don't teach them and I assess them, I'm being unfair to them." — 2026-05-08 16:09
+
+### Anti-patterns about Romit's process (2026-05-08 16:09)
+
+> "It is not [Romit's] position to start answering the question, what would a program director want to see? That's not expected."
+
+> "There is no document that lists all of these things. And then I will get on a review call, and I will see eight versions of it, and I will lose it."
+
+> "Just go fucking create these pages. Like, what are you waiting for?"
+
+**Translation:** stop wearing personas, document base entities first, ship setup screens before dashboard polish.
+
+---
+
 ## How Aarti's thinking has evolved (timeline)
 
 | Date | Topic | Evolution |
