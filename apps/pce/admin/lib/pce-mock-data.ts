@@ -29,6 +29,8 @@ export interface PceSurvey {
   cohort?: string
   /** Per UC-14 + workspace ADR-002: didactic | clinical (optional, extensible). Used for clinical/didactic split filter on Cohort view (C5). */
   courseType?: 'didactic' | 'clinical'
+  /** Prior offerings of the SAME course in earlier terms — drives the trend sparkline (C7). Oldest first; current is excluded (it's the survey itself). */
+  priorOfferings?: PriorOffering[]
   templateId: string
   status: SurveyStatus
   instructors: PceInstructor[]
@@ -39,6 +41,15 @@ export interface PceSurvey {
   createdAt: string
   releasedAt?: string
   closedAt?: string
+}
+
+export interface PriorOffering {
+  term: string
+  cohort?: string
+  /** Course content avg, 1–5 scale. */
+  courseAvg: number
+  /** Faculty performance avg, 1–5 scale. */
+  facultyAvg: number
 }
 
 export interface SectionScore {
@@ -123,6 +134,10 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     term: 'Spring 2026',
     cohort: 'Class of 2027',
     courseType: 'didactic',
+    priorOfferings: [
+      { term: 'Spring 2024', courseAvg: 4.0, facultyAvg: 4.2 },
+      { term: 'Spring 2025', courseAvg: 4.1, facultyAvg: 4.2 },
+    ],
     templateId: 't1',
     status: 'pending_review',
     instructors: [INSTRUCTORS.patel, { ...INSTRUCTORS.chen, role: 'guest' }],
@@ -139,6 +154,10 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     term: 'Spring 2026',
     cohort: 'Class of 2026',
     courseType: 'clinical',
+    priorOfferings: [
+      { term: 'Spring 2024', courseAvg: 3.6, facultyAvg: 3.8 },
+      { term: 'Spring 2025', courseAvg: 3.9, facultyAvg: 4.0 },
+    ],
     templateId: 't1',
     status: 'collecting',
     instructors: [INSTRUCTORS.williams, { ...INSTRUCTORS.chen, role: 'guest' }],
@@ -155,6 +174,11 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     term: 'Spring 2026',
     cohort: 'Class of 2026',
     courseType: 'clinical',
+    priorOfferings: [
+      { term: 'Spring 2023', courseAvg: 3.9, facultyAvg: 4.0 },
+      { term: 'Spring 2024', courseAvg: 4.1, facultyAvg: 4.4 },
+      { term: 'Spring 2025', courseAvg: 4.0, facultyAvg: 4.5 },
+    ],
     templateId: 't2',
     status: 'released',
     instructors: [INSTRUCTORS.williams],
@@ -172,6 +196,11 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     term: 'Fall 2025',
     cohort: 'Class of 2028',
     courseType: 'didactic',
+    priorOfferings: [
+      { term: 'Fall 2022', courseAvg: 4.4, facultyAvg: 4.5 },
+      { term: 'Fall 2023', courseAvg: 4.2, facultyAvg: 4.3 },
+      { term: 'Fall 2024', courseAvg: 4.0, facultyAvg: 4.0 },
+    ],
     templateId: 't2',
     status: 'closed',
     instructors: [INSTRUCTORS.kim],
@@ -190,6 +219,10 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     term: 'Spring 2026',
     cohort: 'Class of 2028',
     courseType: 'didactic',
+    priorOfferings: [
+      { term: 'Spring 2024', courseAvg: 4.0, facultyAvg: 4.1 },
+      { term: 'Spring 2025', courseAvg: 4.0, facultyAvg: 4.0 },
+    ],
     templateId: 't1',
     status: 'pending_review',
     instructors: [INSTRUCTORS.kim],
@@ -206,6 +239,9 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     term: 'Spring 2026',
     cohort: 'Class of 2028',
     courseType: 'didactic',
+    priorOfferings: [
+      { term: 'Spring 2025', courseAvg: 3.8, facultyAvg: 4.0 },
+    ],
     templateId: 't1',
     status: 'pending_review',
     instructors: [INSTRUCTORS.kim],
@@ -222,6 +258,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     term: 'Spring 2026',
     cohort: 'Class of 2027',
     courseType: 'didactic',
+    /* No prior offerings — first time this course is offered. */
     templateId: 't2',
     status: 'draft',
     instructors: [INSTRUCTORS.patel],

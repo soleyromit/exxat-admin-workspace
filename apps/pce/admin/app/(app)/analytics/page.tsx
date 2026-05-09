@@ -8,6 +8,7 @@ import {
   SidebarTrigger, Separator,
 } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
+import { TrendSparkline } from '@/components/pce/trend-sparkline'
 import { MOCK_RESPONSES, MOCK_TERMS, MOCK_COHORTS, SECTION_LABELS } from '@/lib/pce-mock-data'
 
 function ScoreBar({ score, max = 5 }: { score: number; max?: number }) {
@@ -274,6 +275,7 @@ export default function AnalyticsPage() {
                       <TableHead>CC</TableHead>
                       <TableHead>FP</TableHead>
                       <TableHead>CD</TableHead>
+                      <TableHead>Trend</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -282,6 +284,11 @@ export default function AnalyticsPage() {
                       const fp = scores.find(s => s.section === 'faculty_performance')
                       const cd = scores.find(s => s.section === 'course_director')
                       const primary = survey.instructors.find(i => i.role === 'primary')
+                      // Trend history (per audit C7) — prior course-content avgs + current.
+                      const history = (survey.priorOfferings ?? []).map(po => ({
+                        label: po.term,
+                        value: po.courseAvg,
+                      }))
                       return (
                         <TableRow key={survey.id}>
                           <TableCell>
@@ -311,6 +318,13 @@ export default function AnalyticsPage() {
                           </TableCell>
                           <TableCell>
                             {cd ? <span className="tabular-nums text-sm font-semibold">{cd.avg}</span> : <span className="text-muted-foreground">—</span>}
+                          </TableCell>
+                          <TableCell>
+                            <TrendSparkline
+                              history={history}
+                              currentValue={cc?.avg}
+                              currentLabel={survey.term}
+                            />
                           </TableCell>
                         </TableRow>
                       )
