@@ -10,3 +10,8 @@ dist/
 .vercel
 .superpowers/
 /awesome-design-md/
+
+# Python bytecode caches (e.g. from .claude/hooks/*.py)
+__pycache__/
+*.pyc
+*.pyo
