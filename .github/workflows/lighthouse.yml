@@ -1,0 +1,89 @@
+name: Lighthouse CWV gates
+
+on:
+  pull_request:
+    paths:
+      - 'apps/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/lighthouse.yml'
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app:
+          # Add per-app entries as products are scaffolded.
+          # Format: "{path}|{port}|{lcp_ms}|{cls_max}"
+          - 'apps/exam-management/admin|3001|2500|0.10'
+          # - 'apps/exam-management/student|3002|2500|0.10'
+          # - 'apps/pce/admin|3005|2500|0.10'
+          # - 'apps/pce/student|3006|2500|0.10'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Parse matrix entry
+        id: parse
+        run: |
+          IFS='|' read -r path port lcp cls <<< "${{ matrix.app }}"
+          echo "path=$path" >> $GITHUB_OUTPUT
+          echo "port=$port" >> $GITHUB_OUTPUT
+          echo "lcp=$lcp" >> $GITHUB_OUTPUT
+          echo "cls=$cls" >> $GITHUB_OUTPUT
+
+      - name: Skip if app missing
+        id: check
+        run: |
+          if [ ! -f "${{ steps.parse.outputs.path }}/package.json" ]; then
+            echo "App not yet scaffolded; skipping."
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install
+        if: steps.check.outputs.skip != 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Build app
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          cd "${{ steps.parse.outputs.path }}"
+          pnpm build
+
+      - name: Start app
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          cd "${{ steps.parse.outputs.path }}"
+          pnpm start &
+          npx wait-on "http://localhost:${{ steps.parse.outputs.port }}" -t 60000
+
+      - name: Run Lighthouse CI
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          npx -y @lhci/cli@0.13 collect \
+            --url="http://localhost:${{ steps.parse.outputs.port }}" \
+            --numberOfRuns=3
+          npx -y @lhci/cli@0.13 assert \
+            --assertions.largest-contentful-paint="[\"error\", {\"maxNumericValue\": ${{ steps.parse.outputs.lcp }}}]" \
+            --assertions.cumulative-layout-shift="[\"error\", {\"maxNumericValue\": ${{ steps.parse.outputs.cls }}}]" \
+            --assertions.interaction-to-next-paint="[\"warn\", {\"maxNumericValue\": 200}]"
+
+      - name: Upload Lighthouse reports
+        if: always() && steps.check.outputs.skip != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-${{ steps.parse.outputs.path }}-${{ github.run_id }}
+          path: .lighthouseci/

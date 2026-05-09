@@ -101,6 +101,20 @@ Every gate cites a rule ID. Hook output references the ID so violations are audi
 - **INTAKE-003** — New terminology proposed → glossary addition with confirmation before persisting. *Gate:* intake skill.
 - **INTAKE-004** — Designer overrides ("ignore the rule", "exception here") → captured as ADR + pattern exception + DESIGN.md amendment if generalizable. *Gate:* P5.
 
+### PERF — Performance Budgets (P7)
+- **PERF-001** — Core Web Vitals budgets per app type: LCP ≤ 2.5s (1.5s for assessment-taker), INP ≤ 200ms (100ms for assessment-taker), CLS ≤ 0.1 (0.05 for assessment-taker). *Gate:* Lighthouse CI per PR. See `docs/quality/perf.md`.
+- **PERF-002** — Initial bundle size budgets: admin ≤ 250KB, student ≤ 200KB, assessment-taker ≤ 150KB. Routes lazy-load beyond initial. *Gate:* CI bundle-size check.
+- **PERF-003** — Use `next/image` for layout-impacting images (admin/student). Raw `<img>` only for decorative/tiny imagery. *Gate:* code review.
+- **PERF-004** — Font loading via documented Typekit + Font Awesome references only; no new font sources without ADR. *Gate:* code review.
+- **PERF-005** — Server components by default; `'use client'` opt-in only when interactivity, browser APIs, or React hooks needed. *Gate:* code review.
+- **PERF-006** — Hot-path sub-bundles: assessment-taker exam delivery <100KB to first paint, mobile eval form <60KB, module launcher <500ms tile-status fetch. *Gate:* per-app build report.
+
+### I18N — Internationalization Readiness (P7)
+- **I18N-001** — All user-facing strings live in message catalogs (`apps/<product>/<app-type>/messages/<locale>.json`); no hardcoded strings in components. *Gate:* code review. Phase 1 = en-US only; architecture must be ready.
+- **I18N-002** — Locale resolution at school-configuration level; no per-user override Phase 1. *Gate:* architecture review.
+- **I18N-003** — CSS uses logical properties (`padding-inline-start`, `margin-inline-end`, `text-align: start`) instead of physical (`left`/`right`); Tailwind logical classes (`ps-*`, `pe-*`, `me-*`, `start-*`, `end-*`) are first-class. *Gate:* code review.
+- **I18N-004** — New locale activation requires ADR documenting locale, glossary owner, QA path. *Gate:* governance.
+
 ---
 
 ## 5. Triggers (auto-firing)
@@ -262,5 +276,5 @@ Today ~5% of customers integrate. Aarti wants this to flip to ~95% with the new 
 | P5 — Designer override loop | **complete** (2026-05-08) | `intake:override` action in intake skill + override ADR template (`docs/decisions/_override-template.md`) + exception ledger (`docs/governance/exceptions.md`) + rule-citation surfacing trigger + INTAKE-004 wired in user-prompt-submit hook |
 | P5.5 — DS conformance hardening | **complete** (2026-05-08) | DS-010 hook (per-export verification — 203 admin exports tracked); DS-011 typography rule; A11Y-009 nav substructure; PreToolUse v0.2 blocking mode for DS-001..011; submodule post-merge auto-regen of ds-snapshot.json; ds-component-check skill; CI typecheck workflow for `apps/**/*.tsx` |
 | P6 — Process & telemetry | **complete** (2026-05-08) | Telemetry write helper (`.claude/hooks/_telemetry.py`); 4 event types (`session.start`, `userpromptsubmit`, `pretooluse.pass`, `pretooluse.violation`) emitted by all 3 hooks; analyzer (`scripts/telemetry-report.py`) with weekly/quarterly/JSON modes; schema + privacy + retention docs at `docs/telemetry/README.md`; events file gitignored; quarterly governance review wired in `docs/governance/exceptions.md` |
-| P7 — Performance & i18n | not started | Perf budgets, localization |
+| P7 — Performance & i18n | **complete** (2026-05-08) | PERF-001..006 + I18N-001..004 in DESIGN.md §4; `docs/quality/perf.md` (per-app-type CWV + bundle budgets); `docs/quality/i18n.md` (catalog architecture, locale resolution, RTL prep); `.github/workflows/lighthouse.yml` (CWV CI gates with per-app matrix) |
 | P8 — Platform-agnostic packaging | not started | Track Google DESIGN.md schema |
