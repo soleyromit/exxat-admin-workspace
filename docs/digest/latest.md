@@ -42,6 +42,16 @@
 
 ## Patterns by category
 
+### a11y
+  - `data-table-semantics` — Data Table Semantics
+  - `drag-alternative` — Non-Drag Alternative for Drag Operations
+  - `focus-not-obscured` — Focus Not Obscured by Sticky Chrome
+  - `form-error-announce` — Form Error Identification + Announcement
+  - `landmarks` — Landmarks + Heading Hierarchy
+  - `live-region` — Live Region for Async Status
+  - `modal-focus-trap` — Modal Focus Trap + Restore
+  - `skip-link` — Skip to Main Content Link
+
 ### admin
   - `master-list-admin` — Master-List Admin
   - `read-only-inherited-filtered-view` — Read-Only Inherited Filtered View

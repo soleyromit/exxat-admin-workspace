@@ -182,6 +182,49 @@ Per the May 9 viz audit (Tufte / Few / Knaflic / Schwabish / FT canon). These do
 | Chart without title + takeaway sentence | VIZ-008 — annotation IS the chart | Knaflic |
 | Progress bars for anything that isn't 0→100% in-flight | VIZ-001 | Workspace memory |
 
+### Accessibility (WCAG 2.2 AA) — coverage table after 2026-05-09 audit
+
+Anthropic publishes almost nothing prescriptive on a11y; their `design` plugin's a11y scope is a single line citing WCAG 2.1 (one version behind W3C's current 2.2). Authority comes from W3C, WebAIM, Deque, A11Y Project. **Our DESIGN.md is ahead of Anthropic's published baseline.**
+
+| WCAG SC | Title | Level | Our coverage |
+|---|---|---|---|
+| 1.1.1 | Non-text Content (alt text) | A | ✅ A11Y-010 (added 2026-05-09) |
+| 1.3.1 | Info and Relationships | A | ✅ A11Y-004, A11Y-006, A11Y-019 |
+| 1.4.1 | Use of Color | A | ✅ A11Y-008 |
+| 1.4.3 | Contrast (Minimum) | AA | ✅ A11Y-003 |
+| 1.4.11 | Non-text Contrast | AA | ✅ A11Y-017 (added 2026-05-09) |
+| 2.1.1 | Keyboard | A | ✅ A11Y-006 + DS substructure |
+| 2.1.2 | No Keyboard Trap | A | ✅ A11Y-018 (added 2026-05-09) |
+| 2.4.1 | Bypass Blocks | A | ✅ A11Y-012 (added 2026-05-09) |
+| 2.4.3 | Focus Order | A | ✅ A11Y-018 |
+| 2.4.4 | Link Purpose | A | ✅ A11Y-014 (added 2026-05-09) |
+| 2.4.6 | Headings and Labels | AA | ✅ A11Y-019 (added 2026-05-09) |
+| 2.4.7 | Focus Visible | AA | ✅ A11Y-002 |
+| 2.4.11 | Focus Not Obscured (Min) | AA (**2.2**) | ✅ A11Y-016 (added 2026-05-09) |
+| 2.5.5 | Target Size (Enhanced) | AAA | ✅ A11Y-005 |
+| 2.5.7 | Dragging Movements | AA (**2.2**) | ✅ A11Y-015 (added 2026-05-09) |
+| 2.5.8 | Target Size (Min) | AA (**2.2**) | ✅ subsumed by A11Y-005 |
+| 3.3.1 | Error Identification | A | partial via CONTENT-003 + A11Y-013 |
+| 3.3.2 | Labels or Instructions | A | ✅ A11Y-011 (added 2026-05-09) |
+| 3.3.3 | Error Suggestion | AA | partial via CONTENT-003 |
+| 3.3.7 | Redundant Entry | A (**2.2**) | deferred (revisit when wizards land) |
+| 3.3.8 | Accessible Auth | AA (**2.2**) | n/a (no auth screens) |
+| 4.1.2 | Name, Role, Value | A | ✅ A11Y-001, A11Y-011, A11Y-014 |
+| 4.1.3 | Status Messages | AA | ✅ A11Y-013 (added 2026-05-09) |
+
+**Coverage: 21 of 23 admin-relevant WCAG 2.1/2.2 AA SCs explicitly covered** (was 7 of 23 before this audit).
+
+### A11Y tooling roadmap
+
+| Tool | Priority | What it gives | Cost |
+|---|---|---|---|
+| `eslint-plugin-jsx-a11y` (`plugin:jsx-a11y/recommended`) | **P0** | ~35 static-AST rules in editor + CI; catches A11Y-010/011/014 automatically | low — add to existing `next lint` |
+| `@axe-core/react` (dev mode) | **P0** | ~90 runtime checks against rendered DOM during `pnpm dev`; catches what AST cannot (computed contrast, ARIA validity) | low — 4-line bootstrap in app dev mode |
+| Lighthouse CI a11y category gate ≥90 | **P0** | Build-breaking a11y gate per route; uses axe under the hood | tiny — extend existing Lighthouse CI |
+| Token contrast audit script | P1 | Compute oklch contrast per token pair; fail at source | low — single Python script over `theme.css` |
+| `cypress-axe` / `axe-playwright` | P2 | Programmatic `cy.checkA11y()` per critical-path E2E | medium — needs E2E suite first |
+| Storybook a11y addon | defer | Per-component axe panel | only useful if Storybook adopted |
+
 ### Visualization upgrades shipped (2026-05-09 audit)
 
 5 new patterns + 6 new rules adopted from the audit:
