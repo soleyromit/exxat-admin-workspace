@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.exxat.overnight-variants</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/romitsoley/Work/scripts/overnight-variants.sh</string>
+  </array>
+
+  <!-- Fire at 23:00 every night -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>23</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <!-- Don't fire if it crashed; logs surface failures -->
+  <key>RunAtLoad</key>
+  <false/>
+
+  <!-- Pass through PATH so `claude` CLI is found -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/Users/romitsoley/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    <key>HOME</key>
+    <string>/Users/romitsoley</string>
+  </dict>
+
+  <!-- Logs (also written by script itself; this captures crashes) -->
+  <key>StandardOutPath</key>
+  <string>/Users/romitsoley/Library/Logs/exxat-overnight-variants.launchd.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/romitsoley/Library/Logs/exxat-overnight-variants.launchd.log</string>
+</dict>
+</plist>

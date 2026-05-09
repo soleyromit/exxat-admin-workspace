@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.exxat.morning-canvas</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/romitsoley/Work/scripts/morning-canvas-auto.sh</string>
+  </array>
+
+  <!-- Fire at 07:00 every morning -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>7</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/Users/romitsoley/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    <key>HOME</key>
+    <string>/Users/romitsoley</string>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>/Users/romitsoley/Library/Logs/exxat-morning-canvas.launchd.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/romitsoley/Library/Logs/exxat-morning-canvas.launchd.log</string>
+</dict>
+</plist>

@@ -78,46 +78,64 @@ Pick the direction(s) you like. Either:
 
 Lists current variant worktrees + offers to remove. Confirms before each.
 
-## Phase 2 — Scheduled (planned)
+## Phase 2 — Scheduled (BUILT — one-time install)
 
-When Phase 1 feels good, automate the bedtime trigger:
+**Zero commands during operation.** One-time install, then automatic forever.
 
-### macOS launchd job
+### One-time install
 
-```xml
-<!-- ~/Library/LaunchAgents/com.exxat.overnight-variants.plist -->
-<plist>
-  <dict>
-    <key>Label</key>
-    <string>com.exxat.overnight-variants</string>
-    <key>ProgramArguments</key>
-    <array>
-      <string>/Users/romitsoley/Work/scripts/overnight-variants.sh</string>
-    </array>
-    <key>StartCalendarInterval</key>
-    <dict>
-      <key>Hour</key>
-      <integer>23</integer>
-      <key>Minute</key>
-      <integer>0</integer>
-    </dict>
-  </dict>
-</plist>
+```bash
+bash scripts/install-overnight-launchd.sh
 ```
 
-`scripts/overnight-variants.sh` would:
-1. Find newest `.md` in `~/Inbox/briefs/`
-2. If newer than last-run timestamp, dispatch `/design-variants` via headless `claude code` invocation
-3. On finish, write a desktop notification
+This:
+1. Symlinks `scripts/launchd/com.exxat.overnight-variants.plist` → `~/Library/LaunchAgents/`
+2. Symlinks `scripts/launchd/com.exxat.morning-canvas.plist` → `~/Library/LaunchAgents/`
+3. Loads both jobs via `launchctl`
+4. Creates `~/Inbox/briefs/` if missing
 
-Build this when Phase 1 has a few good rounds under its belt.
+### How it runs
 
-### Voice → brief
+| Time | What fires | What happens |
+|---|---|---|
+| 11:00 PM | `scripts/overnight-variants.sh` | Finds newest `.md` in `~/Inbox/briefs/`. If newer than last-run mtime, invokes headless `claude --print "/design-variants 15 spec <brief>"`. macOS notification: "Overnight variants started". |
+| 7:00 AM | `scripts/morning-canvas-auto.sh` | Checks if any `variants/*` branches have commits since last canvas. If yes, invokes `claude --print "/morning-canvas --no-open"`, then `open .review/canvas.html`. macOS notification: "Variant canvas ready — N variants". |
 
-Ideas:
-- macOS Shortcuts: voice memo → Whisper → text → `~/Inbox/briefs/<timestamp>.md`
-- Granola itself can capture voice notes (we already have the Granola MCP)
-- Otto: native dictation app → text file
+### Workflow with the install active
+
+1. Before bed: dictate a brief into Notes (or any text editor) → save to `~/Inbox/briefs/<date>-<slug>.md`. Or use macOS dictation directly into a new file.
+2. Sleep.
+3. Wake up. macOS notification fires; canvas already open in browser.
+4. Pick a direction; merge or refine.
+
+You type **zero commands** during the loop. The install ran once.
+
+### Voice → brief (optional)
+
+To eliminate even typing the brief:
+
+**macOS Shortcuts (recommended):** create a Shortcut with these actions:
+1. "Record Audio" → captures voice memo
+2. "Transcribe" (uses on-device Whisper, free) → text
+3. "Save to file" → `~/Inbox/briefs/<timestamp>.md`
+
+Bind to a Hot Key or Siri ("Hey Siri, log a design brief"). Speak the brief; file appears in inbox; tonight's job picks it up.
+
+### Cost & caveats
+
+- Mac must be open (or set to "stay awake" via Caffeine app) at 11pm for launchd to dispatch the job.
+- `claude` CLI must be authenticated (one-time setup; install script warns if not in PATH).
+- ~$3-6/night for spec mode N=15. ~$15-30/week if used most nights.
+- Logs at `~/Library/Logs/exxat-overnight-variants.log` and `~/Library/Logs/exxat-morning-canvas.log` for debugging.
+- Throttle/skip is built in: same brief twice → only first run dispatches; same canvas already opened → second tick skips.
+
+### Uninstall
+
+```bash
+launchctl unload ~/Library/LaunchAgents/com.exxat.overnight-variants.plist
+launchctl unload ~/Library/LaunchAgents/com.exxat.morning-canvas.plist
+rm ~/Library/LaunchAgents/com.exxat.{overnight-variants,morning-canvas}.plist
+```
 
 ## Phase 3 — Sophisticated (later)
 
