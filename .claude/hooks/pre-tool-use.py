@@ -24,6 +24,12 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent))
+try:
+    from _telemetry import emit as _telemetry_emit
+except ImportError:
+    def _telemetry_emit(*a, **k): pass
+
 
 WORKSPACE = Path("/Users/romitsoley/Work")
 SNAPSHOT_PATH = WORKSPACE / "docs/foundations/ds-snapshot.json"
@@ -265,7 +271,25 @@ def main() -> None:
             violations.append((rule_id, message, True))  # DS-007 always blocks
 
     if not violations:
+        _telemetry_emit(
+            "pretooluse.pass",
+            tool=tool_name,
+            file_path=file_path,
+            profile=profile or "",
+            content_chars=len(content),
+        )
         sys.exit(0)
+
+    has_blocking = any(b for _, _, b in violations)
+    _telemetry_emit(
+        "pretooluse.violation",
+        tool=tool_name,
+        file_path=file_path,
+        profile=profile or "",
+        rules=[v[0] for v in violations],
+        violation_count=len(violations),
+        blocked=has_blocking,
+    )
 
     lines = [
         "[Design Intelligence Harness — PreToolUse v0.2 (blocking)]",
@@ -277,7 +301,6 @@ def main() -> None:
         marker = "BLOCK" if blocking else "WARN"
         lines.append(f"  [{marker}] {rule_id}: {message}")
 
-    has_blocking = any(b for _, _, b in violations)
     if has_blocking:
         lines.extend([
             "",

@@ -65,12 +65,28 @@ Permanent overrides without an amendment proposal are technical debt — flag th
 
 ## Quarterly governance review
 
-Every quarter (or before any major Phase shift):
+Every quarter (or before any major Phase shift), run the analyzer:
+
+```bash
+python3 scripts/telemetry-report.py --quarterly
+```
+
+The analyzer surfaces:
+- Active overrides per rule (read from this file)
+- DESIGN.md amendment candidates (rules with 3+ active overrides)
+- Top violation rules (tuning candidates)
+- False-positive estimate (heuristic — violation followed by override within 10 min)
+- ADR throughput
+
+Then walk through:
 
 1. List all `Active` overrides
 2. For each: check sunset criterion. If met → close. If not → confirm still relevant.
 3. List `Permanent-pending-amendment` and ensure each has an amendment task in flight.
-4. Identify rules with 3+ active overrides → these are candidates for amendment.
+4. Identify rules with 3+ active overrides → these are candidates for amendment (file ADR).
+5. Top violations from analyzer → tighten or loosen the rule as needed.
+
+See `docs/telemetry/README.md` for the full schema + tuning loop.
 
 ## Maintenance
 

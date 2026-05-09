@@ -10,6 +10,13 @@ with hookSpecificOutput.additionalContext.
 import json
 import os
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+try:
+    from _telemetry import emit as _telemetry_emit
+except ImportError:
+    def _telemetry_emit(*a, **k): pass
 
 
 def detect_profile(cwd: str) -> tuple[str | None, str | None]:
@@ -45,6 +52,14 @@ def main() -> None:
     profile, profile_path = detect_profile(cwd)
     product = detect_product(cwd)
 
+    _telemetry_emit(
+        "session.start",
+        cwd=cwd,
+        product=product or "",
+        profile=profile or "",
+        matcher=payload.get("hook_event_matcher", payload.get("matcher", "")),
+    )
+
     summary_lines = [
         "[Design Intelligence Harness — SessionStart]",
         "",
@@ -66,7 +81,8 @@ def main() -> None:
         "  - Progress bars are last resort",
         "  - Aarti dislikes red in score/rating viz",
         "",
-        "PreToolUse hook is in WARNING-ONLY mode (v0.1) for tuning false-positive rate.",
+        "PreToolUse hook is in BLOCKING mode (v0.2) for DS-001..011 + A11Y-004 + DS-007 + DS-010.",
+        "Telemetry: events written to docs/telemetry/events.jsonl. Run `python3 scripts/telemetry-report.py` for summary.",
     ])
 
     print(json.dumps({

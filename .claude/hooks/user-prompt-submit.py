@@ -12,6 +12,12 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent))
+try:
+    from _telemetry import emit as _telemetry_emit
+except ImportError:
+    def _telemetry_emit(*a, **k): pass
+
 
 # Subset for v0.1. Full canonical map: docs/triggers.md
 # Tuple shape: (regex_pattern, action_id)
@@ -158,6 +164,14 @@ def main() -> None:
         except re.error:
             # Skip malformed patterns rather than failing the hook
             continue
+
+    _telemetry_emit(
+        "userpromptsubmit",
+        prompt_chars=len(prompt),
+        prompt_lines=prompt.count("\n") + 1,
+        actions=matches,
+        action_count=len(matches),
+    )
 
     if not matches:
         print(json.dumps({}))
