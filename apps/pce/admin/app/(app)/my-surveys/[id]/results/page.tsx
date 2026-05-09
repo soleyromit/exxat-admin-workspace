@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation'
 import { Badge, Button, Separator, SidebarTrigger } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
+import { AiInsightCard } from '@/components/pce/ai-insight-card'
 import { MOCK_RESPONSES, FACULTY_SECTION_LABELS, SECTION_LABELS } from '@/lib/pce-mock-data'
 import type { TemplateSection, ResponseComment } from '@/lib/pce-mock-data'
 import Link from 'next/link'
@@ -74,7 +75,7 @@ function CommentGroup({
   return (
     <div style={{ border: `1px solid ${cfg.containerBorder}`, borderRadius: 8, overflow: 'hidden' }}>
       <div style={{ background: cfg.headerBg, padding: '7px 10px', display: 'flex', alignItems: 'center', gap: 7 }}>
-        <i className={cfg.icon} aria-hidden="true" style={{ fontSize: 13, color: cfg.labelColor }} />
+        <i className={`${cfg.icon} text-[13px]`} aria-hidden="true" style={{ color: cfg.labelColor }} />
         <span className="text-xs font-bold flex-1" style={{ color: cfg.labelColor }}>{cfg.label}</span>
         <span className="text-[10px] font-semibold" style={{
           padding: '1px 6px', borderRadius: 10,
@@ -87,10 +88,8 @@ function CommentGroup({
         {comments.map((comment, i) => (
           <div
             key={i}
-            className="text-foreground"
+            className="text-foreground text-[11px] italic"
             style={{
-              fontSize: 11,
-              fontStyle: 'italic',
               padding: '5px 0',
               borderBottom: i < comments.length - 1 ? `1px dashed ${cfg.quoteDivider}` : 'none',
               lineHeight: 1.5,
@@ -153,8 +152,7 @@ export default function FacultyResultsPage() {
               className="flex items-center justify-center w-16 h-16 rounded-full"
               style={{ backgroundColor: 'var(--muted)' }}
             >
-              <i className="fa-light fa-lock-keyhole text-muted-foreground" aria-hidden="true"
-                style={{ fontSize: 28 }} />
+              <i className="fa-light fa-lock-keyhole text-muted-foreground text-[28px]" aria-hidden="true" />
             </div>
             <div className="flex flex-col gap-2 max-w-sm">
               <p className="text-base font-semibold">Results aren&apos;t available yet</p>
@@ -174,6 +172,24 @@ export default function FacultyResultsPage() {
           </div>
         ) : (
           <div className="max-w-2xl flex flex-col gap-6">
+            {/* AI insights summary — surface BEFORE per-question detail per Aarti D14 + ADR-005 + audit C3 */}
+            {responses.comments.length > 0 && (() => {
+              const visibleComments = responses.comments.filter((_, i) => !hidden.includes(i))
+              const positive = visibleComments.filter(c => c.sentiment === 'positive').length
+              const concern = visibleComments.filter(c => c.sentiment === 'concern').length
+              const summary = positive > concern
+                ? `Your students consistently highlight your engagement and clarity. ${concern > 0 ? `A few comments flag pacing in the second half — worth a structured reflection on weeks 8–10.` : ''}`
+                : concern > positive
+                ? `Several students this term raised concerns about pacing and clarity. Consider redistributing content density and adding a mid-term checkpoint.`
+                : `Feedback is balanced — both positive and improvement themes appear. Drill into per-section detail below.`
+              return (
+                <AiInsightCard
+                  body={summary}
+                  source={`${visibleComments.length} of your students' open-text response${visibleComments.length === 1 ? '' : 's'}`}
+                />
+              )
+            })()}
+
             {template?.sections.map((section: TemplateSection) => {
               const sectionScore = responses.sectionScores.find(s => s.section === section)
               if (!sectionScore) return null

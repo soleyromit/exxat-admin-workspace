@@ -9,6 +9,7 @@ import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { ResponseGauge } from '@/components/pce/response-gauge'
 import { CloseSurveyDialog, AddGuestSheet, SendReminderPopover, ReleaseSheet } from '@/components/pce/pce-modals'
+import { AiInsightCard } from '@/components/pce/ai-insight-card'
 import { SECTION_LABELS, MOCK_RESPONSES } from '@/lib/pce-mock-data'
 import Link from 'next/link'
 
@@ -64,13 +65,30 @@ export default function SurveyDetailPage() {
           </div>
           <Button variant="default" size="sm" onClick={() => setReleaseOpen(true)}>
             Share with Faculty
-            <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 12 }} />
+            <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
           </Button>
         </div>
       )}
 
       <main className="flex-1 overflow-auto p-6">
         <div className="max-w-2xl flex flex-col gap-6">
+
+          {/* AI insights — surface BEFORE pulled metrics per Aarti D14 + ADR-005 + audit C3 */}
+          {responses && responses.comments.length > 0 && (() => {
+            const positive = responses.comments.filter(c => c.sentiment === 'positive').length
+            const concern = responses.comments.filter(c => c.sentiment === 'concern').length
+            const summary = positive > concern
+              ? `Students consistently appreciate the course's structure and faculty engagement. ${concern > 0 ? `Areas for consideration cluster around pacing and lab session timing.` : ''}`
+              : concern > positive
+              ? `Areas for consideration outweigh positive feedback this term. Themes cluster around pacing, organization, and clarity of materials.`
+              : `Mixed feedback this term — positive and concern themes appear in roughly equal measure. Drill into per-question detail below.`
+            return (
+              <AiInsightCard
+                body={summary}
+                source={`${responses.comments.length} open-text response${responses.comments.length === 1 ? '' : 's'}`}
+              />
+            )
+          })()}
 
           {/* Overview card */}
           <div className="border border-border rounded-lg p-5 flex flex-col gap-4">
@@ -100,7 +118,7 @@ export default function SurveyDetailPage() {
               {canClose && (
                 <SendReminderPopover survey={survey}>
                   <Button variant="outline" size="sm">
-                    <i className="fa-light fa-bell" aria-hidden="true" style={{ fontSize: 12 }} />
+                    <i className="fa-light fa-bell text-xs" aria-hidden="true" />
                     Send Reminder
                   </Button>
                 </SendReminderPopover>
@@ -153,7 +171,7 @@ export default function SurveyDetailPage() {
               <h2 className="text-sm font-semibold">Instructors</h2>
               {canClose && (
                 <Button variant="ghost" size="sm" onClick={() => setAddGuestOpen(true)}>
-                  <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
+                  <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                   Add Guest
                 </Button>
               )}

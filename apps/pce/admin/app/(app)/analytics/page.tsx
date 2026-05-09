@@ -10,6 +10,7 @@ import {
 } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
 import { TrendSparkline } from '@/components/pce/trend-sparkline'
+import { AiInsightCard } from '@/components/pce/ai-insight-card'
 import { MOCK_RESPONSES, MOCK_TEMPLATES, MOCK_TERMS, MOCK_COHORTS, SECTION_LABELS } from '@/lib/pce-mock-data'
 
 function ScoreBar({ score, max = 5 }: { score: number; max?: number }) {
@@ -220,28 +221,14 @@ export default function AnalyticsPage() {
               AI insights — pulled-vs-AI lane affordance per docs/patterns/viz/ai-vs-pulled-lane.md.
               Per Aarti 2026-05-08 16:09 D14: AI summaries surface BEFORE question-level detail.
             */}
-            <section
-              role="region"
-              aria-label="AI insight"
-              className="rounded-lg border border-border p-4 bg-background"
-            >
-              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground mb-2">
-                <i
-                  className="fa-light fa-sparkles"
-                  style={{ color: 'var(--brand-color)' }}
-                  aria-hidden="true"
-                />
-                <span>AI insight</span>
-              </div>
-              <p className="text-sm text-foreground mb-2">
-                {axis === 'term'
+            <AiInsightCard
+              body={
+                axis === 'term'
                   ? `Across ${scopedSurveys.length} courses this term, response rate is ${totalRate}%. ${releasedSurveys.length > 0 ? 'Themes from released surveys cluster on pacing and faculty availability.' : 'No surveys released yet — themes will appear once results are available.'}`
-                  : `${cohort} has ${scopedSurveys.length} courses${courseTypeFilter !== 'all' ? ` (${courseTypeFilter})` : ''} in scope. ${releasedSurveys.length > 0 ? 'AI will surface cohort-level themes once enough released-survey data is available.' : 'No released surveys yet for this cohort.'}`}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Based on {scopedResponses.length} response{scopedResponses.length === 1 ? '' : 's'} across {releasedSurveys.length} released survey{releasedSurveys.length === 1 ? '' : 's'}
-              </p>
-            </section>
+                  : `${cohort} has ${scopedSurveys.length} courses${courseTypeFilter !== 'all' ? ` (${courseTypeFilter})` : ''} in scope. ${releasedSurveys.length > 0 ? 'AI will surface cohort-level themes once enough released-survey data is available.' : 'No released surveys yet for this cohort.'}`
+              }
+              source={`${scopedResponses.length} response${scopedResponses.length === 1 ? '' : 's'} across ${releasedSurveys.length} released survey${releasedSurveys.length === 1 ? '' : 's'}`}
+            />
 
             {/* Summary cards — pulled lane (computed metrics, no AI affordance) */}
             <div className="grid grid-cols-2 gap-4">
