@@ -192,3 +192,174 @@ export const DEPARTMENTS = [
   { id: 'rehab',       label: 'Rehabilitation' },
   { id: 'med-ethics',  label: 'Med Ethics' },
 ] as const
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sprint 2 — Cohort overview data
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type CohortId = 'class-2027' | 'class-2028' | 'class-2029'
+
+export interface CohortMeta {
+  id: CohortId
+  label: string
+  enteredTerm: TermId
+  studentCount: number
+  /** Position in program: term index of 8 (a 4-year program has 8 terms) */
+  termIndex: number
+  /** Total didactic courses completed by this cohort */
+  didacticCompleted: number
+  /** Per-course: rating in cohort's most-recent two terms (for slope graph) */
+  paired: { courseId: string; courseName: string; pre: number; post: number; type: 'didactic' | 'clinical' }[]
+}
+
+export const COHORT_META: Record<CohortId, CohortMeta> = {
+  'class-2027': {
+    id: 'class-2027',
+    label: 'Class of 2027',
+    enteredTerm: '2024-fall',
+    studentCount: 78,
+    termIndex: 4,
+    didacticCompleted: 12,
+    paired: [
+      { courseId: 'c1',  courseName: 'Path Phys I',     pre: 4.5, post: 4.7, type: 'didactic' },
+      { courseId: 'c3',  courseName: 'Anatomy I',       pre: 4.3, post: 4.6, type: 'didactic' },
+      { courseId: 'c2',  courseName: 'Pharm I',         pre: 4.5, post: 4.5, type: 'didactic' },
+      { courseId: 'c5',  courseName: 'Pharm II',        pre: 4.3, post: 4.0, type: 'didactic' },
+      { courseId: 'c4',  courseName: 'Path II',         pre: 4.4, post: 4.3, type: 'didactic' },
+      { courseId: 'c8',  courseName: 'Med Ethics',      pre: 3.8, post: 3.4, type: 'didactic' },
+      { courseId: 'c10', courseName: 'Cardiology Mod',  pre: 4.4, post: 4.6, type: 'didactic' },
+      { courseId: 'c11', courseName: 'Neurology Mod',   pre: 4.5, post: 4.6, type: 'didactic' },
+      { courseId: 'c9',  courseName: 'Clinical Skills I', pre: 4.3, post: 4.5, type: 'clinical' },
+      { courseId: 'c6',  courseName: 'Pharm II Lab',    pre: 4.0, post: 3.9, type: 'clinical' },
+      { courseId: 'c7',  courseName: 'Patient Comm',    pre: 3.8, post: 3.7, type: 'clinical' },
+      { courseId: 'c17', courseName: 'Health Systems',  pre: 4.0, post: 4.0, type: 'clinical' },
+    ],
+  },
+  'class-2028': {
+    id: 'class-2028',
+    label: 'Class of 2028',
+    enteredTerm: '2025-fall',
+    studentCount: 82,
+    termIndex: 2,
+    didacticCompleted: 6,
+    paired: [
+      { courseId: 'c1',  courseName: 'Path Phys I',     pre: 4.5, post: 4.7, type: 'didactic' },
+      { courseId: 'c2',  courseName: 'Pharm I',         pre: 4.4, post: 4.5, type: 'didactic' },
+      { courseId: 'c3',  courseName: 'Anatomy II',      pre: 4.4, post: 4.4, type: 'didactic' },
+      { courseId: 'c10', courseName: 'Cardiology Mod',  pre: 4.5, post: 4.6, type: 'didactic' },
+    ],
+  },
+  'class-2029': {
+    id: 'class-2029',
+    label: 'Class of 2029',
+    enteredTerm: '2026-spring',
+    studentCount: 85,
+    termIndex: 1,
+    didacticCompleted: 0,
+    paired: [],
+  },
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sprint 3 — Drill-down data (per faculty / course / offering)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface PerCourseRating {
+  courseId: string
+  courseName: string
+  /** Faculty's per-course rating this term */
+  rating: number
+  /** Department average for this course (for bullet-vs-target reference) */
+  deptAvg: number
+  responses: number
+  sent: number
+}
+
+/** Faculty's per-course ratings — used in faculty drill-down */
+export function getFacultyCourses(facultyId: string): PerCourseRating[] {
+  return COURSES
+    .filter(c => c.facultyId === facultyId)
+    .map(c => ({
+      courseId: c.id,
+      courseName: c.name,
+      rating: c.currentRating,
+      deptAvg: DEPT_AVG,
+      responses: c.responses,
+      sent: c.sent,
+    }))
+}
+
+/** Per-question scores for an offering — used in offering drill-down */
+export interface QuestionRow {
+  id: string
+  text: string
+  avg: number
+  /** Counts at each level 1..5 for distribution sparkline */
+  distribution: [number, number, number, number, number]
+}
+
+export const SAMPLE_QUESTIONS: QuestionRow[] = [
+  { id: 'q1', text: 'Lecture clarity',                avg: 4.3, distribution: [0, 1, 4, 12, 25] },
+  { id: 'q2', text: 'Lecture pacing',                  avg: 3.6, distribution: [2, 5, 12, 14, 9] },
+  { id: 'q3', text: 'Course materials',                avg: 4.4, distribution: [0, 1, 3, 10, 28] },
+  { id: 'q4', text: 'Exam structure',                  avg: 3.8, distribution: [1, 4, 10, 16, 11] },
+  { id: 'q5', text: 'Office hours availability',       avg: 4.5, distribution: [0, 0, 3, 9, 30] },
+  { id: 'q6', text: 'Overall course rating',           avg: 4.0, distribution: [0, 2, 8, 18, 14] },
+]
+
+/** AI themes per offering — used in offering drill-down */
+export const SAMPLE_OFFERING_THEMES: AITheme[] = [
+  { id: 'th1', text: 'Pacing in chapters 7–9',                mentionsCount: 18, totalCourses: 42, sentiment: 'concern' },
+  { id: 'th2', text: 'Exam covered material not lectured',    mentionsCount: 14, totalCourses: 42, sentiment: 'concern' },
+  { id: 'th3', text: 'Lab time too short',                     mentionsCount: 9,  totalCourses: 42, sentiment: 'concern' },
+  { id: 'th4', text: 'Strong office hours',                    mentionsCount: 7,  totalCourses: 42, sentiment: 'positive' },
+]
+
+/** Sample anonymous responses — used in offering drill-down "All responses" */
+export interface OfferingResponse {
+  id: string
+  rating: number
+  submittedAt: string  // ISO
+  comment: string
+  themes: string[]
+}
+
+export const SAMPLE_RESPONSES: OfferingResponse[] = [
+  { id: 'r1', rating: 4.0, submittedAt: '2026-05-07T14:30:00Z',
+    comment: 'The professor knows the material well, but the pace in the second half made it hard to keep up. Lab sessions were rushed.',
+    themes: ['pacing', 'lab time'] },
+  { id: 'r2', rating: 3.0, submittedAt: '2026-05-05T09:15:00Z',
+    comment: 'Exam questions covered topics not addressed in class lectures.',
+    themes: ['exam structure'] },
+  { id: 'r3', rating: 4.5, submittedAt: '2026-05-04T16:45:00Z',
+    comment: 'Office hours were very helpful — Dr. Khan is available and thorough.',
+    themes: ['office hours'] },
+  { id: 'r4', rating: 3.5, submittedAt: '2026-05-03T11:00:00Z',
+    comment: 'Pacing in chapters 7-9 was fast. Could use more time on enzymology.',
+    themes: ['pacing'] },
+  { id: 'r5', rating: 4.0, submittedAt: '2026-05-02T13:20:00Z',
+    comment: 'Generally solid course. Lab time felt cramped — would suggest extending to 3 hours.',
+    themes: ['lab time'] },
+]
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sprint 4 — Faculty self-view data (the current logged-in faculty)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Current "logged-in faculty" for /me routes — Dr. Khan as the demo persona,
+ *  matches the spec's example walkthrough */
+export const CURRENT_FACULTY_ID = 'f4'
+
+export interface ActionPlanItem {
+  id: string
+  text: string
+  source: 'ai-suggested' | 'faculty-authored'
+  status: 'pending' | 'in-progress' | 'completed'
+  createdAt: string
+}
+
+export const CURRENT_FACULTY_ACTION_PLAN: ActionPlanItem[] = [
+  { id: 'ap1', text: 'Revise pacing chapters 7-9',                 source: 'ai-suggested',    status: 'pending',     createdAt: '2026-04-22' },
+  { id: 'ap2', text: 'Move to weekly office hours instead of bi-weekly', source: 'faculty-authored', status: 'completed', createdAt: '2026-04-15' },
+  { id: 'ap3', text: 'Add formative quiz at midpoint',             source: 'faculty-authored', status: 'in-progress', createdAt: '2026-03-30' },
+]
