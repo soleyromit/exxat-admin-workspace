@@ -111,6 +111,18 @@
           }
         ]
       }
+    ],
+    "FileChanged": [
+      {
+        "matcher": "DESIGN.md|CLAUDE.md|docs/CLAUDE-DS-REFERENCE.md|docs/PRODUCTS.md|docs/ANALOGIES.md|docs/RESEARCH-SIGNALS.md|docs/COMPETITOR-INTEL.md|docs/SUBAGENTS.md|docs/triggers.md|docs/governance/claude-practices.md",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/file-changed.py",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   }
 }
