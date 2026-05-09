@@ -1,0 +1,1639 @@
+{
+  "version": "0.2.0",
+  "generated_at": "2026-05-08T23:55:01.608487+00:00",
+  "workspace": "/Users/romitsoley/Work",
+  "profiles": {
+    "admin": {
+      "ds_name": "Exxat-DS",
+      "package": "@exxat-ds/ui",
+      "source": "exxat-ds/packages/ui/src/",
+      "import_path": "@exxat/ds/packages/ui/src",
+      "css_import": "exxat-ds/packages/ui/src/theme.css",
+      "components": [
+        {
+          "name": "avatar",
+          "exports": [
+            "Avatar",
+            "AvatarBadge",
+            "AvatarFallback",
+            "AvatarGroup",
+            "AvatarGroupCount",
+            "AvatarImage"
+          ]
+        },
+        {
+          "name": "badge",
+          "exports": [
+            "Badge"
+          ]
+        },
+        {
+          "name": "banner",
+          "exports": [
+            "LocalBanner",
+            "SystemBanner"
+          ]
+        },
+        {
+          "name": "breadcrumb",
+          "exports": [
+            "Breadcrumb",
+            "BreadcrumbEllipsis",
+            "BreadcrumbItem",
+            "BreadcrumbLink",
+            "BreadcrumbList",
+            "BreadcrumbPage",
+            "BreadcrumbSeparator"
+          ]
+        },
+        {
+          "name": "button",
+          "exports": [
+            "Button"
+          ]
+        },
+        {
+          "name": "calendar",
+          "exports": [
+            "Calendar",
+            "CalendarDayButton"
+          ]
+        },
+        {
+          "name": "card",
+          "exports": [
+            "Card",
+            "CardAction",
+            "CardContent",
+            "CardDescription",
+            "CardFooter",
+            "CardHeader",
+            "CardTitle"
+          ]
+        },
+        {
+          "name": "chart",
+          "exports": [
+            "ChartContainer",
+            "ChartLegend",
+            "ChartLegendContent",
+            "ChartStyle",
+            "ChartTooltip",
+            "ChartTooltipContent"
+          ]
+        },
+        {
+          "name": "checkbox",
+          "exports": [
+            "Checkbox"
+          ]
+        },
+        {
+          "name": "coach-mark",
+          "exports": [
+            "CoachMark"
+          ]
+        },
+        {
+          "name": "collapsible",
+          "exports": [
+            "Collapsible",
+            "CollapsibleContent",
+            "CollapsibleTrigger"
+          ]
+        },
+        {
+          "name": "command",
+          "exports": [
+            "Command",
+            "CommandDialog",
+            "CommandEmpty",
+            "CommandGroup",
+            "CommandInput",
+            "CommandItem",
+            "CommandList",
+            "CommandSeparator",
+            "CommandShortcut"
+          ]
+        },
+        {
+          "name": "date-picker-field",
+          "exports": [
+            "DatePickerField"
+          ]
+        },
+        {
+          "name": "dialog",
+          "exports": [
+            "Dialog",
+            "DialogClose",
+            "DialogContent",
+            "DialogDescription",
+            "DialogFooter",
+            "DialogHeader",
+            "DialogOverlay",
+            "DialogPortal",
+            "DialogTitle",
+            "DialogTrigger"
+          ]
+        },
+        {
+          "name": "drag-handle-grip",
+          "exports": [
+            "DragHandleGripIcon"
+          ]
+        },
+        {
+          "name": "drawer",
+          "exports": [
+            "Drawer",
+            "DrawerClose",
+            "DrawerContent",
+            "DrawerDescription",
+            "DrawerFooter",
+            "DrawerHeader",
+            "DrawerOverlay",
+            "DrawerPortal",
+            "DrawerTitle",
+            "DrawerTrigger"
+          ]
+        },
+        {
+          "name": "dropdown-menu",
+          "exports": [
+            "DropdownMenu",
+            "DropdownMenuCheckboxItem",
+            "DropdownMenuContent",
+            "DropdownMenuGroup",
+            "DropdownMenuItem",
+            "DropdownMenuLabel",
+            "DropdownMenuPortal",
+            "DropdownMenuRadioGroup",
+            "DropdownMenuRadioItem",
+            "DropdownMenuSeparator",
+            "DropdownMenuShortcut",
+            "DropdownMenuSub",
+            "DropdownMenuSubContent",
+            "DropdownMenuSubTrigger",
+            "DropdownMenuTrigger",
+            "Shortcut",
+            "useShortcut"
+          ]
+        },
+        {
+          "name": "field",
+          "exports": [
+            "Field",
+            "FieldContent",
+            "FieldDescription",
+            "FieldError",
+            "FieldGroup",
+            "FieldLabel",
+            "FieldLegend",
+            "FieldSeparator",
+            "FieldSet",
+            "FieldTitle"
+          ]
+        },
+        {
+          "name": "form",
+          "exports": [
+            "Form",
+            "FormControl",
+            "FormDescription",
+            "FormField",
+            "FormItem",
+            "FormLabel",
+            "FormMessage",
+            "useFormField"
+          ]
+        },
+        {
+          "name": "input",
+          "exports": [
+            "Input"
+          ]
+        },
+        {
+          "name": "input-group",
+          "exports": [
+            "InputGroup",
+            "InputGroupAddon",
+            "InputGroupButton",
+            "InputGroupInput",
+            "InputGroupText",
+            "InputGroupTextarea"
+          ]
+        },
+        {
+          "name": "kbd",
+          "exports": [
+            "Kbd",
+            "KbdGroup"
+          ]
+        },
+        {
+          "name": "label",
+          "exports": [
+            "Label"
+          ]
+        },
+        {
+          "name": "popover",
+          "exports": [
+            "Popover",
+            "PopoverAnchor",
+            "PopoverContent",
+            "PopoverTrigger"
+          ]
+        },
+        {
+          "name": "radio-group",
+          "exports": [
+            "RadioGroup",
+            "RadioGroupItem"
+          ]
+        },
+        {
+          "name": "select",
+          "exports": [
+            "Select",
+            "SelectContent",
+            "SelectGroup",
+            "SelectItem",
+            "SelectLabel",
+            "SelectScrollDownButton",
+            "SelectScrollUpButton",
+            "SelectSeparator",
+            "SelectTrigger",
+            "SelectValue"
+          ]
+        },
+        {
+          "name": "selection-tile-grid",
+          "exports": [
+            "SelectionTileGrid",
+            "selectionTileClassNames"
+          ]
+        },
+        {
+          "name": "separator",
+          "exports": [
+            "Separator"
+          ]
+        },
+        {
+          "name": "sheet",
+          "exports": [
+            "Sheet",
+            "SheetClose",
+            "SheetContent",
+            "SheetDescription",
+            "SheetFooter",
+            "SheetHeader",
+            "SheetTitle",
+            "SheetTrigger"
+          ]
+        },
+        {
+          "name": "sidebar",
+          "exports": [
+            "Sidebar",
+            "SidebarContent",
+            "SidebarFooter",
+            "SidebarGroup",
+            "SidebarGroupAction",
+            "SidebarGroupContent",
+            "SidebarGroupLabel",
+            "SidebarHeader",
+            "SidebarInput",
+            "SidebarInset",
+            "SidebarMenu",
+            "SidebarMenuAction",
+            "SidebarMenuBadge",
+            "SidebarMenuButton",
+            "SidebarMenuItem",
+            "SidebarMenuSkeleton",
+            "SidebarMenuSub",
+            "SidebarMenuSubButton",
+            "SidebarMenuSubItem",
+            "SidebarProvider",
+            "SidebarRail",
+            "SidebarSeparator",
+            "SidebarTrigger",
+            "useSidebar"
+          ]
+        },
+        {
+          "name": "skeleton",
+          "exports": [
+            "Skeleton"
+          ]
+        },
+        {
+          "name": "sonner",
+          "exports": [
+            "Toaster"
+          ]
+        },
+        {
+          "name": "status-badge",
+          "exports": [
+            "StatusBadge"
+          ]
+        },
+        {
+          "name": "table",
+          "exports": [
+            "Table",
+            "TableBody",
+            "TableCaption",
+            "TableCell",
+            "TableFooter",
+            "TableHead",
+            "TableHeader",
+            "TableRow"
+          ]
+        },
+        {
+          "name": "tabs",
+          "exports": [
+            "Tabs",
+            "TabsContent",
+            "TabsList",
+            "TabsTrigger"
+          ]
+        },
+        {
+          "name": "textarea",
+          "exports": [
+            "Textarea"
+          ]
+        },
+        {
+          "name": "tip",
+          "exports": [
+            "Tip"
+          ]
+        },
+        {
+          "name": "toggle",
+          "exports": [
+            "Toggle"
+          ]
+        },
+        {
+          "name": "toggle-group",
+          "exports": [
+            "ToggleGroup",
+            "ToggleGroupItem"
+          ]
+        },
+        {
+          "name": "toggle-switch",
+          "exports": [
+            "ToggleSwitch"
+          ]
+        },
+        {
+          "name": "tooltip",
+          "exports": [
+            "Tooltip",
+            "TooltipContent",
+            "TooltipProvider",
+            "TooltipTrigger"
+          ]
+        },
+        {
+          "name": "view-segmented-control",
+          "exports": [
+            "ViewSegmentedControl",
+            "viewSegmentedButtonClass",
+            "viewSegmentedToolbarClass"
+          ]
+        }
+      ],
+      "hooks": [
+        {
+          "name": "useAppTheme",
+          "module": "use-app-theme"
+        },
+        {
+          "name": "useCoachMark",
+          "module": "use-coach-mark"
+        },
+        {
+          "name": "useMobile",
+          "module": "use-mobile"
+        },
+        {
+          "name": "useModKeyLabel",
+          "module": "use-mod-key-label"
+        }
+      ],
+      "exports": [
+        "Avatar",
+        "AvatarBadge",
+        "AvatarFallback",
+        "AvatarGroup",
+        "AvatarGroupCount",
+        "AvatarImage",
+        "Badge",
+        "Breadcrumb",
+        "BreadcrumbEllipsis",
+        "BreadcrumbItem",
+        "BreadcrumbLink",
+        "BreadcrumbList",
+        "BreadcrumbPage",
+        "BreadcrumbSeparator",
+        "Button",
+        "Calendar",
+        "CalendarDayButton",
+        "Card",
+        "CardAction",
+        "CardContent",
+        "CardDescription",
+        "CardFooter",
+        "CardHeader",
+        "CardTitle",
+        "ChartContainer",
+        "ChartLegend",
+        "ChartLegendContent",
+        "ChartStyle",
+        "ChartTooltip",
+        "ChartTooltipContent",
+        "Checkbox",
+        "CoachMark",
+        "Collapsible",
+        "CollapsibleContent",
+        "CollapsibleTrigger",
+        "Command",
+        "CommandDialog",
+        "CommandEmpty",
+        "CommandGroup",
+        "CommandInput",
+        "CommandItem",
+        "CommandList",
+        "CommandSeparator",
+        "CommandShortcut",
+        "DatePickerField",
+        "Dialog",
+        "DialogClose",
+        "DialogContent",
+        "DialogDescription",
+        "DialogFooter",
+        "DialogHeader",
+        "DialogOverlay",
+        "DialogPortal",
+        "DialogTitle",
+        "DialogTrigger",
+        "DragHandleGripIcon",
+        "Drawer",
+        "DrawerClose",
+        "DrawerContent",
+        "DrawerDescription",
+        "DrawerFooter",
+        "DrawerHeader",
+        "DrawerOverlay",
+        "DrawerPortal",
+        "DrawerTitle",
+        "DrawerTrigger",
+        "DropdownMenu",
+        "DropdownMenuCheckboxItem",
+        "DropdownMenuContent",
+        "DropdownMenuGroup",
+        "DropdownMenuItem",
+        "DropdownMenuLabel",
+        "DropdownMenuPortal",
+        "DropdownMenuRadioGroup",
+        "DropdownMenuRadioItem",
+        "DropdownMenuSeparator",
+        "DropdownMenuShortcut",
+        "DropdownMenuSub",
+        "DropdownMenuSubContent",
+        "DropdownMenuSubTrigger",
+        "DropdownMenuTrigger",
+        "Field",
+        "FieldContent",
+        "FieldDescription",
+        "FieldError",
+        "FieldGroup",
+        "FieldLabel",
+        "FieldLegend",
+        "FieldSeparator",
+        "FieldSet",
+        "FieldTitle",
+        "Form",
+        "FormControl",
+        "FormDescription",
+        "FormField",
+        "FormItem",
+        "FormLabel",
+        "FormMessage",
+        "Input",
+        "InputGroup",
+        "InputGroupAddon",
+        "InputGroupButton",
+        "InputGroupInput",
+        "InputGroupText",
+        "InputGroupTextarea",
+        "Kbd",
+        "KbdGroup",
+        "Label",
+        "LocalBanner",
+        "Popover",
+        "PopoverAnchor",
+        "PopoverContent",
+        "PopoverTrigger",
+        "RadioGroup",
+        "RadioGroupItem",
+        "Select",
+        "SelectContent",
+        "SelectGroup",
+        "SelectItem",
+        "SelectLabel",
+        "SelectScrollDownButton",
+        "SelectScrollUpButton",
+        "SelectSeparator",
+        "SelectTrigger",
+        "SelectValue",
+        "SelectionTileGrid",
+        "Separator",
+        "Sheet",
+        "SheetClose",
+        "SheetContent",
+        "SheetDescription",
+        "SheetFooter",
+        "SheetHeader",
+        "SheetTitle",
+        "SheetTrigger",
+        "Shortcut",
+        "Sidebar",
+        "SidebarContent",
+        "SidebarFooter",
+        "SidebarGroup",
+        "SidebarGroupAction",
+        "SidebarGroupContent",
+        "SidebarGroupLabel",
+        "SidebarHeader",
+        "SidebarInput",
+        "SidebarInset",
+        "SidebarMenu",
+        "SidebarMenuAction",
+        "SidebarMenuBadge",
+        "SidebarMenuButton",
+        "SidebarMenuItem",
+        "SidebarMenuSkeleton",
+        "SidebarMenuSub",
+        "SidebarMenuSubButton",
+        "SidebarMenuSubItem",
+        "SidebarProvider",
+        "SidebarRail",
+        "SidebarSeparator",
+        "SidebarTrigger",
+        "Skeleton",
+        "StatusBadge",
+        "SystemBanner",
+        "Table",
+        "TableBody",
+        "TableCaption",
+        "TableCell",
+        "TableFooter",
+        "TableHead",
+        "TableHeader",
+        "TableRow",
+        "Tabs",
+        "TabsContent",
+        "TabsList",
+        "TabsTrigger",
+        "Textarea",
+        "Tip",
+        "Toaster",
+        "Toggle",
+        "ToggleGroup",
+        "ToggleGroupItem",
+        "ToggleSwitch",
+        "Tooltip",
+        "TooltipContent",
+        "TooltipProvider",
+        "TooltipTrigger",
+        "ViewSegmentedControl",
+        "cn",
+        "formatDateTimeUS",
+        "formatDateUS",
+        "formatYmdForDisplay",
+        "localDateToYmd",
+        "parseRowDateToYmd",
+        "selectionTileClassNames",
+        "useAppTheme",
+        "useCoachMark",
+        "useFormField",
+        "useMobile",
+        "useModKeyLabel",
+        "useShortcut",
+        "useSidebar",
+        "viewSegmentedButtonClass",
+        "viewSegmentedToolbarClass",
+        "ymdToLocalDate"
+      ],
+      "tokens": {
+        "--font-heading": "\"ivypresto-text\"",
+        "--font-sans": "\"Inter\", ui-sans-serif, system-ui, sans-serif",
+        "--text-xs": "0.6875rem",
+        "--color-background": "var(--background)",
+        "--color-foreground": "var(--foreground)",
+        "--color-card": "var(--card)",
+        "--color-card-foreground": "var(--card-foreground)",
+        "--color-popover": "var(--popover)",
+        "--color-popover-foreground": "var(--popover-foreground)",
+        "--color-primary": "var(--primary)",
+        "--color-primary-foreground": "var(--primary-foreground)",
+        "--color-secondary": "var(--secondary)",
+        "--color-secondary-foreground": "var(--secondary-foreground)",
+        "--color-muted": "var(--muted)",
+        "--color-muted-foreground": "var(--muted-foreground)",
+        "--color-accent": "var(--accent)",
+        "--color-accent-foreground": "var(--accent-foreground)",
+        "--color-destructive": "var(--destructive)",
+        "--color-destructive-foreground": "var(--destructive-foreground)",
+        "--color-border": "var(--border)",
+        "--color-border-control": "var(--border-control)",
+        "--color-input": "var(--input)",
+        "--color-input-background": "var(--input-background)",
+        "--color-ring": "var(--ring)",
+        "--color-overlay": "var(--overlay)",
+        "--color-chart-1": "var(--chart-1)",
+        "--color-chart-2": "var(--chart-2)",
+        "--color-chart-3": "var(--chart-3)",
+        "--color-chart-4": "var(--chart-4)",
+        "--color-chart-5": "var(--chart-5)",
+        "--color-chip-1": "var(--chip-1)",
+        "--color-chip-2": "var(--chip-2)",
+        "--color-chip-3": "var(--chip-3)",
+        "--color-chip-4": "var(--chip-4)",
+        "--color-chip-5": "var(--chip-5)",
+        "--color-chip-destructive": "var(--chip-destructive)",
+        "--color-brand": "var(--brand-color)",
+        "--color-brand-dark": "var(--brand-color-dark)",
+        "--color-brand-foreground": "var(--brand-foreground)",
+        "--color-brand-tint": "var(--brand-tint)",
+        "--color-brand-tint-light": "var(--brand-tint-light)",
+        "--color-brand-tint-subtle": "var(--brand-tint-subtle)",
+        "--color-brand-color-light": "var(--brand-color-light)",
+        "--color-brand-deep": "var(--brand-color-deep)",
+        "--color-banner-prism": "var(--banner-prism-bg)",
+        "--color-sidebar": "var(--sidebar)",
+        "--color-sidebar-foreground": "var(--sidebar-foreground)",
+        "--color-sidebar-primary": "var(--sidebar-primary)",
+        "--color-sidebar-primary-foreground": "var(--sidebar-primary-foreground)",
+        "--color-sidebar-accent": "var(--sidebar-accent)",
+        "--color-sidebar-accent-foreground": "var(--sidebar-accent-foreground)",
+        "--color-sidebar-border": "var(--sidebar-border)",
+        "--color-sidebar-ring": "var(--sidebar-ring)",
+        "--color-sidebar-section-label": "var(--sidebar-section-label-foreground)",
+        "--color-interactive-hover": "var(--interactive-hover)",
+        "--color-interactive-hover-foreground": "var(--interactive-hover-foreground)",
+        "--color-interactive-hover-subtle": "var(--interactive-hover-subtle)",
+        "--color-interactive-hover-soft": "var(--interactive-hover-soft)",
+        "--color-interactive-hover-medium": "var(--interactive-hover-medium)",
+        "--color-interactive-hover-strong": "var(--interactive-hover-strong)",
+        "--color-interactive-hover-row": "var(--interactive-hover-row)",
+        "--radius-sm": "4px",
+        "--radius-md": "8px",
+        "--radius-lg": "12px",
+        "--radius-xl": "16px",
+        "--radius-2xl": "20px",
+        "--radius-3xl": "24px",
+        "--brand-tint": "oklch(0.9676 0.016 286.1)",
+        "--brand-tint-light": "oklch(0.993 0.007 286.1)",
+        "--brand-tint-subtle": "oklch(0.935 0.024 286.1)",
+        "--brand-color": "oklch(0.50 0.14 286.1)",
+        "--brand-color-light": "oklch(0.78 0.09 286.1)",
+        "--brand-color-dark": "oklch(0.38 0.11 286.1)",
+        "--brand-color-deep": "oklch(0.28 0.085 286.1)",
+        "--brand-foreground": "oklch(0.985 0 0)",
+        "--brand-preview-one": "var(--brand-tint)",
+        "--brand-preview-prism": "oklch(0.57 0.24 342)",
+        "--background": "oklch(1 0 0)",
+        "--foreground": "oklch(0.145 0 0)",
+        "--card": "oklch(1 0 0)",
+        "--card-foreground": "oklch(0.145 0 0)",
+        "--popover": "oklch(1 0 0)",
+        "--popover-foreground": "oklch(0.145 0 0)",
+        "--primary": "oklch(0.3457 0.0052 286.13)",
+        "--primary-foreground": "oklch(0.985 0 0)",
+        "--secondary": "oklch(0.95 0.0058 264.53)",
+        "--secondary-foreground": "oklch(0.082 0 0)",
+        "--muted": "oklch(0.945 0.002 270)",
+        "--muted-foreground": "oklch(0.50 0.012 270)",
+        "--accent": "oklch(0.925 0.005 260)",
+        "--accent-foreground": "oklch(0.082 0 0)",
+        "--destructive": "oklch(0.55 0.22 25)",
+        "--destructive-foreground": "oklch(1 0 0)",
+        "--border": "oklch(0.92 0.002 270)",
+        "--border-control-3": "L=0.62 \u2248 #90929A \u2192 borderline",
+        "--border-control-35": "L=0.25 \u2192 \u2265 3.5:1 \u2014 recommended for inputs.   */\n  --border-control:    oklch(0.82 0.004 270)",
+        "--control-border": "var(--border-control-3)",
+        "--input": "oklch(0.6694 0.0063 264.52)",
+        "--input-background": "oklch(0.97 0.002 270)",
+        "--ring": "oklch(0.25 0 0)",
+        "--chart-1": "oklch(0.55 0.22 264.116)",
+        "--chart-2": "oklch(0.48 0.15 184.704)",
+        "--chart-3": "oklch(0.32 0.08 227.392)",
+        "--chart-4": "oklch(0.65 0.18 84.429)",
+        "--chart-5": "oklch(0.58 0.18 70.08)",
+        "--chip-1": "oklch(0.38 0.18 264)",
+        "--chip-2": "oklch(0.35 0.14 184)",
+        "--chip-3": "oklch(0.32 0.08 227)",
+        "--chip-4": "oklch(0.42 0.12 84)",
+        "--chip-5": "oklch(0.42 0.14 70)",
+        "--chip-destructive": "oklch(0.40 0.18 25)",
+        "--banner-prism-bg": "oklch(0.97 0.02 343)",
+        "--sidebar": "var(--brand-tint)",
+        "--sidebar-foreground": "oklch(0.145 0 0)",
+        "--sidebar-primary": "oklch(0.082 0 0)",
+        "--sidebar-primary-foreground": "oklch(0.985 0 0)",
+        "--sidebar-accent": "oklch(0.945 0.025 286.1)",
+        "--sidebar-accent-foreground": "oklch(0.3457 0.0052 286.13)",
+        "--sidebar-border": "oklch(0.92 0.025 286.1)",
+        "--sidebar-ring": "oklch(0.25 0 0)",
+        "--sidebar-section-label-foreground": "color-mix(in oklch, var(--sidebar-foreground) 58%, var(--sidebar))",
+        "--secondary-panel-bg": "oklch(0.99 0.008 286.1)",
+        "--theme-color-chrome": "#f3f2f8",
+        "--radius": "0.5rem",
+        "--scaling": "1",
+        "--control-height": "calc(40px * var(--scaling))",
+        "--control-height-sm": "calc(32px * var(--scaling))",
+        "--control-height-touch": "44px",
+        "--control-padding-y": "calc(8px  * var(--scaling))",
+        "--control-padding-x": "calc(12px * var(--scaling))",
+        "--table-row-height": "calc(48px * var(--scaling))",
+        "--interactive-hover": "var(--muted)",
+        "--interactive-hover-foreground": "var(--foreground)",
+        "--interactive-hover-subtle": "color-mix(in oklch, var(--muted) 50%, transparent)",
+        "--interactive-hover-soft": "color-mix(in oklch, var(--muted) 40%, transparent)",
+        "--interactive-hover-medium": "color-mix(in oklch, var(--muted) 60%, transparent)",
+        "--interactive-hover-strong": "color-mix(in oklch, var(--muted) 70%, transparent)",
+        "--interactive-hover-row": "color-mix(in oklch, var(--accent) 50%, transparent)",
+        "--transition-fast": "0.15s ease",
+        "--transition-normal": "0.25s ease-in-out",
+        "--transition-colors": "color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease",
+        "--shadow-sm": "oklch(0 0 0 / 0.08) 0px 1px 2px 0px",
+        "--shadow-md": "oklch(0 0 0 / 0.08) 0px 2px 4px -1px, oklch(0 0 0 / 0.06) 0px 1px 2px",
+        "--shadow-lg": "oklch(0 0 0 / 0.10) 0px 4px 8px -2px, oklch(0 0 0 / 0.06) 0px 2px 4px",
+        "--sticky-edge-fade": "oklch(0 0 0 / 0.08)",
+        "--overlay": "color-mix(in oklch, var(--foreground) 5%, transparent)",
+        "--avatar-initials-bg": "color-mix(in oklch, var(--brand-color) 14%, oklch(1 0 0))",
+        "--avatar-initials-fg": "var(--brand-color-dark)",
+        "--insight-severity-warning-bg": "color-mix(in oklch, var(--chart-4) 15%, transparent)",
+        "--insight-severity-warning-fg": "color-mix(in oklch, var(--chart-4) 75%, var(--foreground))",
+        "--insight-severity-info-bg": "color-mix(in oklch, var(--chart-1) 14%, transparent)",
+        "--insight-severity-info-fg": "color-mix(in oklch, var(--chart-1) 75%, var(--foreground))",
+        "--conditional-rule-green": "color-mix(in oklch, var(--chart-2) 22%, transparent)",
+        "--conditional-rule-yellow": "color-mix(in oklch, var(--chart-4) 30%, transparent)",
+        "--conditional-rule-blue": "color-mix(in oklch, var(--chart-1) 22%, transparent)",
+        "--conditional-rule-red": "color-mix(in oklch, var(--destructive) 22%, transparent)",
+        "--conditional-rule-purple": "color-mix(in oklch, var(--brand-color) 22%, transparent)",
+        "--conditional-rule-orange": "color-mix(in oklch, var(--chart-5) 25%, transparent)",
+        "--border-control": "oklch(0.72 0.012 270)",
+        "--hc-hot": "oklch(0.97 0.19 110)"
+      },
+      "token_count": 160,
+      "component_count": 42,
+      "hook_count": 4,
+      "export_count": 203
+    },
+    "student": {
+      "ds_name": "StudentUX",
+      "source": "studentUX/src/",
+      "import_path_primitives": "@exxat/student/components/ui/<name>",
+      "import_path_shared": "@exxat/student/components/shared",
+      "css_import": "studentUX/src/styles/globals.css",
+      "primitives": [
+        {
+          "name": "accordion",
+          "module": "accordion",
+          "exports": [
+            "Accordion",
+            "AccordionContent",
+            "AccordionItem",
+            "AccordionTrigger"
+          ]
+        },
+        {
+          "name": "alert-dialog",
+          "module": "alert-dialog",
+          "exports": [
+            "AlertDialog",
+            "AlertDialogAction",
+            "AlertDialogCancel",
+            "AlertDialogContent",
+            "AlertDialogDescription",
+            "AlertDialogFooter",
+            "AlertDialogHeader",
+            "AlertDialogOverlay",
+            "AlertDialogPortal",
+            "AlertDialogTitle",
+            "AlertDialogTrigger"
+          ]
+        },
+        {
+          "name": "alert",
+          "module": "alert",
+          "exports": [
+            "Alert",
+            "AlertDescription",
+            "AlertTitle"
+          ]
+        },
+        {
+          "name": "aspect-ratio",
+          "module": "aspect-ratio",
+          "exports": [
+            "AspectRatio"
+          ]
+        },
+        {
+          "name": "avatar",
+          "module": "avatar",
+          "exports": [
+            "Avatar",
+            "AvatarFallback",
+            "AvatarImage",
+            "AvatarPlaceholderIcon"
+          ]
+        },
+        {
+          "name": "badge",
+          "module": "badge",
+          "exports": [
+            "Badge",
+            "BetaBadge",
+            "CountBadge",
+            "CountText",
+            "NewBadge"
+          ]
+        },
+        {
+          "name": "breadcrumb",
+          "module": "breadcrumb",
+          "exports": [
+            "Breadcrumb",
+            "BreadcrumbEllipsis",
+            "BreadcrumbItem",
+            "BreadcrumbLink",
+            "BreadcrumbList",
+            "BreadcrumbPage",
+            "BreadcrumbSeparator"
+          ]
+        },
+        {
+          "name": "button-group",
+          "module": "button-group",
+          "exports": [
+            "ButtonGroup",
+            "ButtonGroupSeparator",
+            "ButtonGroupText"
+          ]
+        },
+        {
+          "name": "button",
+          "module": "button",
+          "exports": [
+            "Button"
+          ]
+        },
+        {
+          "name": "calendar",
+          "module": "calendar",
+          "exports": [
+            "Calendar"
+          ]
+        },
+        {
+          "name": "card",
+          "module": "card",
+          "exports": [
+            "Card",
+            "CardAction",
+            "CardContent",
+            "CardDescription",
+            "CardFooter",
+            "CardHeader",
+            "CardTitle"
+          ]
+        },
+        {
+          "name": "carousel",
+          "module": "carousel",
+          "exports": [
+            "Carousel",
+            "CarouselContent",
+            "CarouselItem",
+            "CarouselNext",
+            "CarouselPrevious"
+          ]
+        },
+        {
+          "name": "chart",
+          "module": "chart",
+          "exports": [
+            "ChartContainer",
+            "ChartLegend",
+            "ChartLegendContent",
+            "ChartStyle",
+            "ChartTooltip",
+            "ChartTooltipContent"
+          ]
+        },
+        {
+          "name": "checkbox",
+          "module": "checkbox",
+          "exports": [
+            "Checkbox"
+          ]
+        },
+        {
+          "name": "collapsible",
+          "module": "collapsible",
+          "exports": [
+            "Collapsible",
+            "CollapsibleContent",
+            "CollapsibleTrigger"
+          ]
+        },
+        {
+          "name": "command",
+          "module": "command",
+          "exports": [
+            "Command",
+            "CommandDialog",
+            "CommandEmpty",
+            "CommandGroup",
+            "CommandInput",
+            "CommandItem",
+            "CommandList",
+            "CommandSeparator",
+            "CommandShortcut"
+          ]
+        },
+        {
+          "name": "context-menu",
+          "module": "context-menu",
+          "exports": [
+            "ContextMenu",
+            "ContextMenuCheckboxItem",
+            "ContextMenuContent",
+            "ContextMenuGroup",
+            "ContextMenuItem",
+            "ContextMenuLabel",
+            "ContextMenuPortal",
+            "ContextMenuRadioGroup",
+            "ContextMenuRadioItem",
+            "ContextMenuSeparator",
+            "ContextMenuShortcut",
+            "ContextMenuSub",
+            "ContextMenuSubContent",
+            "ContextMenuSubTrigger",
+            "ContextMenuTrigger"
+          ]
+        },
+        {
+          "name": "dialog",
+          "module": "dialog",
+          "exports": [
+            "Dialog",
+            "DialogClose",
+            "DialogContent",
+            "DialogDescription",
+            "DialogFooter",
+            "DialogHeader",
+            "DialogOverlay",
+            "DialogPortal",
+            "DialogTitle",
+            "DialogTrigger"
+          ]
+        },
+        {
+          "name": "drawer",
+          "module": "drawer",
+          "exports": [
+            "Drawer",
+            "DrawerClose",
+            "DrawerContent",
+            "DrawerDescription",
+            "DrawerFooter",
+            "DrawerHeader",
+            "DrawerOverlay",
+            "DrawerPortal",
+            "DrawerTitle",
+            "DrawerTrigger"
+          ]
+        },
+        {
+          "name": "dropdown-menu",
+          "module": "dropdown-menu",
+          "exports": [
+            "DropdownMenu",
+            "DropdownMenuCheckboxItem",
+            "DropdownMenuContent",
+            "DropdownMenuGroup",
+            "DropdownMenuItem",
+            "DropdownMenuLabel",
+            "DropdownMenuPortal",
+            "DropdownMenuRadioGroup",
+            "DropdownMenuRadioItem",
+            "DropdownMenuSeparator",
+            "DropdownMenuShortcut",
+            "DropdownMenuSub",
+            "DropdownMenuSubContent",
+            "DropdownMenuSubTrigger",
+            "DropdownMenuTrigger"
+          ]
+        },
+        {
+          "name": "empty",
+          "module": "empty",
+          "exports": [
+            "Empty",
+            "EmptyContent",
+            "EmptyDescription",
+            "EmptyHeader",
+            "EmptyMedia",
+            "EmptyTitle"
+          ]
+        },
+        {
+          "name": "error-boundary",
+          "module": "error-boundary",
+          "exports": [
+            "ErrorBoundary",
+            "withErrorBoundary"
+          ]
+        },
+        {
+          "name": "field",
+          "module": "field",
+          "exports": [
+            "Field",
+            "FieldContent",
+            "FieldDescription",
+            "FieldGroup",
+            "FieldLabel",
+            "FieldLegend",
+            "FieldSet",
+            "FieldTitle"
+          ]
+        },
+        {
+          "name": "form",
+          "module": "form",
+          "exports": [
+            "Form",
+            "FormControl",
+            "FormDescription",
+            "FormField",
+            "FormItem",
+            "FormLabel",
+            "FormMessage",
+            "useFormField"
+          ]
+        },
+        {
+          "name": "hover-card",
+          "module": "hover-card",
+          "exports": [
+            "HoverCard",
+            "HoverCardContent",
+            "HoverCardTrigger"
+          ]
+        },
+        {
+          "name": "input-group",
+          "module": "input-group",
+          "exports": [
+            "InputGroup",
+            "InputGroupAddon",
+            "InputGroupInput",
+            "InputGroupText"
+          ]
+        },
+        {
+          "name": "input-otp",
+          "module": "input-otp",
+          "exports": [
+            "InputOTP",
+            "InputOTPGroup",
+            "InputOTPSeparator",
+            "InputOTPSlot"
+          ]
+        },
+        {
+          "name": "input",
+          "module": "input",
+          "exports": [
+            "Input"
+          ]
+        },
+        {
+          "name": "kbd",
+          "module": "kbd",
+          "exports": [
+            "Kbd"
+          ]
+        },
+        {
+          "name": "label",
+          "module": "label",
+          "exports": [
+            "Label"
+          ]
+        },
+        {
+          "name": "menubar",
+          "module": "menubar",
+          "exports": [
+            "Menubar",
+            "MenubarCheckboxItem",
+            "MenubarContent",
+            "MenubarGroup",
+            "MenubarItem",
+            "MenubarLabel",
+            "MenubarMenu",
+            "MenubarPortal",
+            "MenubarRadioGroup",
+            "MenubarRadioItem",
+            "MenubarSeparator",
+            "MenubarShortcut",
+            "MenubarSub",
+            "MenubarSubContent",
+            "MenubarSubTrigger",
+            "MenubarTrigger"
+          ]
+        },
+        {
+          "name": "navigation-menu",
+          "module": "navigation-menu",
+          "exports": [
+            "NavigationMenu",
+            "NavigationMenuContent",
+            "NavigationMenuIndicator",
+            "NavigationMenuItem",
+            "NavigationMenuLink",
+            "NavigationMenuList",
+            "NavigationMenuTrigger",
+            "NavigationMenuViewport",
+            "navigationMenuTriggerStyle"
+          ]
+        },
+        {
+          "name": "outline-search-input",
+          "module": "outline-search-input",
+          "exports": [
+            "OutlineSearchInput",
+            "SearchInput"
+          ]
+        },
+        {
+          "name": "pagination",
+          "module": "pagination",
+          "exports": [
+            "Pagination",
+            "PaginationContent",
+            "PaginationEllipsis",
+            "PaginationItem",
+            "PaginationLink",
+            "PaginationNext",
+            "PaginationPrevious"
+          ]
+        },
+        {
+          "name": "popover",
+          "module": "popover",
+          "exports": [
+            "Popover",
+            "PopoverAnchor",
+            "PopoverContent",
+            "PopoverTrigger"
+          ]
+        },
+        {
+          "name": "progress",
+          "module": "progress",
+          "exports": [
+            "Progress"
+          ]
+        },
+        {
+          "name": "radio-group",
+          "module": "radio-group",
+          "exports": [
+            "RadioGroup",
+            "RadioGroupItem"
+          ]
+        },
+        {
+          "name": "resizable",
+          "module": "resizable",
+          "exports": [
+            "ResizableHandle",
+            "ResizablePanel",
+            "ResizablePanelGroup"
+          ]
+        },
+        {
+          "name": "scroll-area",
+          "module": "scroll-area",
+          "exports": [
+            "ScrollArea",
+            "ScrollBar"
+          ]
+        },
+        {
+          "name": "searchable-select",
+          "module": "searchable-select",
+          "exports": [
+            "SearchableSelect"
+          ]
+        },
+        {
+          "name": "select",
+          "module": "select",
+          "exports": [
+            "Select",
+            "SelectContent",
+            "SelectGroup",
+            "SelectItem",
+            "SelectLabel",
+            "SelectScrollDownButton",
+            "SelectScrollUpButton",
+            "SelectSeparator",
+            "SelectTrigger",
+            "SelectValue"
+          ]
+        },
+        {
+          "name": "separator",
+          "module": "separator",
+          "exports": [
+            "Separator"
+          ]
+        },
+        {
+          "name": "sheet",
+          "module": "sheet",
+          "exports": [
+            "Sheet",
+            "SheetClose",
+            "SheetContent",
+            "SheetDescription",
+            "SheetFooter",
+            "SheetHeader",
+            "SheetTitle",
+            "SheetTrigger"
+          ]
+        },
+        {
+          "name": "sidebar",
+          "module": "sidebar",
+          "exports": [
+            "Sidebar",
+            "SidebarContent",
+            "SidebarFooter",
+            "SidebarGroup",
+            "SidebarGroupAction",
+            "SidebarGroupContent",
+            "SidebarGroupLabel",
+            "SidebarHeader",
+            "SidebarInput",
+            "SidebarInset",
+            "SidebarMenu",
+            "SidebarMenuAction",
+            "SidebarMenuBadge",
+            "SidebarMenuButton",
+            "SidebarMenuItem",
+            "SidebarMenuSkeleton",
+            "SidebarMenuSub",
+            "SidebarMenuSubButton",
+            "SidebarMenuSubItem",
+            "SidebarProvider",
+            "SidebarRail",
+            "SidebarSeparator",
+            "SidebarTrigger",
+            "useSidebar"
+          ]
+        },
+        {
+          "name": "skeleton",
+          "module": "skeleton",
+          "exports": [
+            "Skeleton"
+          ]
+        },
+        {
+          "name": "slider",
+          "module": "slider",
+          "exports": [
+            "Slider"
+          ]
+        },
+        {
+          "name": "sonner",
+          "module": "sonner",
+          "exports": [
+            "Toaster"
+          ]
+        },
+        {
+          "name": "switch",
+          "module": "switch",
+          "exports": [
+            "Switch"
+          ]
+        },
+        {
+          "name": "table",
+          "module": "table",
+          "exports": [
+            "Table",
+            "TableBody",
+            "TableCaption",
+            "TableCell",
+            "TableFooter",
+            "TableHead",
+            "TableHeader",
+            "TableRow"
+          ]
+        },
+        {
+          "name": "tabs",
+          "module": "tabs",
+          "exports": [
+            "Tabs",
+            "TabsContent",
+            "TabsList",
+            "TabsTrigger"
+          ]
+        },
+        {
+          "name": "textarea",
+          "module": "textarea",
+          "exports": [
+            "Textarea"
+          ]
+        },
+        {
+          "name": "toggle-group",
+          "module": "toggle-group",
+          "exports": [
+            "ToggleGroup",
+            "ToggleGroupItem"
+          ]
+        },
+        {
+          "name": "toggle",
+          "module": "toggle",
+          "exports": [
+            "Toggle"
+          ]
+        },
+        {
+          "name": "tooltip",
+          "module": "tooltip",
+          "exports": [
+            "Tooltip",
+            "TooltipContent",
+            "TooltipProvider",
+            "TooltipTrigger"
+          ]
+        }
+      ],
+      "shared": [
+        "ActionCard",
+        "AddressMap",
+        "AlertsSection",
+        "AskLeoButton",
+        "BuildProfilePageTemplate",
+        "BulkActionBar",
+        "CalendarView",
+        "ChartAreaInteractive",
+        "DataTable",
+        "FILTER_LAYOUT",
+        "FILTER_SEARCH_THRESHOLD",
+        "FilterClause",
+        "FilterClauseConnector",
+        "FilterClauseEditor",
+        "FloatingActionBar",
+        "InsightCard",
+        "InternshipCard",
+        "JobSearchBar",
+        "KeyMetricsShowcase",
+        "MapSection",
+        "MetricCard",
+        "Pagination",
+        "PartnerSitePerformanceCard",
+        "PendingApprovalChartCard",
+        "PipelineStepper",
+        "PrimaryPageTemplate",
+        "ProfileEditDialog",
+        "ReportPageTemplate",
+        "ScheduleBanners",
+        "ScrollableContainer",
+        "ScrollableOptionList",
+        "SectionCard",
+        "SectionWithHeader",
+        "SimpleMetric",
+        "TableProperties",
+        "ViewManager",
+        "WelcomePageTemplate",
+        "autoSuggestColumnPinning",
+        "createActionCardData",
+        "createInsightCardData",
+        "createMetricCardData",
+        "createSimpleMetricData",
+        "default",
+        "defaultBulkActions",
+        "getPipelineActionsForStage",
+        "slotsBulkActions"
+      ],
+      "tokens": {
+        "--font-size": "1rem",
+        "--font-size-20": "1.25rem",
+        "--font-weight-light": "300",
+        "--font-weight-normal": "400",
+        "--font-weight-medium": "500",
+        "--font-weight-semibold": "600",
+        "--font-weight-bold": "700",
+        "--font-weight-extrabold": "800",
+        "--spacing-xs": "0.25rem",
+        "--spacing-sm": "0.5rem",
+        "--spacing-md": "0.75rem",
+        "--spacing-lg": "1rem",
+        "--spacing-xl": "1.5rem",
+        "--spacing-2xl": "2rem",
+        "--spacing-3xl": "3rem",
+        "--spacing-4xl": "4rem",
+        "--radius-base": "4px",
+        "--radius": "8px",
+        "--radius-sm": "4px",
+        "--radius-md": "8px",
+        "--radius-lg": "12px",
+        "--radius-xl": "16px",
+        "--radius-2xl": "20px",
+        "--radius-3xl": "24px",
+        "--brand-color-surface": "oklch(0.9676 0.016 286.1)",
+        "--brand-color-light": "oklch(0.985 0.009 286.1)",
+        "--brand-color-soft": "oklch(0.915 0.048 286.1)",
+        "--brand-color": "oklch(0.535 0.132 286.1)",
+        "--brand-color-dark": "oklch(0.395 0.105 286.1)",
+        "--brand-color-deep": "oklch(0.28 0.078 286.1)",
+        "--brand-color-lavender": "oklch(0.535 0.132 286.1)",
+        "--exxat-one-lavender-bg": "oklch(0.9676 0.016 286.1)",
+        "--background": "oklch(1 0 0)",
+        "--foreground": "oklch(0.145 0 0)",
+        "--card": "oklch(1 0 0)",
+        "--card-foreground": "oklch(0.145 0 0)",
+        "--popover": "oklch(1 0 0)",
+        "--popover-foreground": "oklch(0.145 0 0)",
+        "--primary": "oklch(0.26 0.008 286.1)",
+        "--primary-foreground": "oklch(1 0 0)",
+        "--secondary": "oklch(0.95 0.0058 286.1)",
+        "--secondary-foreground": "oklch(0.082 0 0)",
+        "--muted": "oklch(0.945 0.004 286.1)",
+        "--muted-foreground": "oklch(0.55 0.012 286.1)",
+        "--accent": "oklch(0.925 0.012 286.1)",
+        "--accent-foreground": "oklch(0.082 0 0)",
+        "--destructive": "oklch(0.55 0.22 25)",
+        "--destructive-foreground": "oklch(1 0 0)",
+        "--border": "oklch(0.92 0.004 286.1)",
+        "--border-control": "oklch(0.82 0.006 286.1)",
+        "--control-border": "var(--border-control-3)",
+        "--border-control-35": "oklch(0.25 0.01 286.1)",
+        "--border-control-3": "oklch(0.6196 0.011 286.1)",
+        "--ring": "oklch(0.25 0 0)",
+        "--input": "oklch(0.82 0.006 286.1)",
+        "--input-background": "oklch(0.97 0.006 286.1)",
+        "--shadow-table-pin-end": "2px 0 8px -2px color-mix(in oklch, var(--foreground) 10%, transparent)",
+        "--shadow-table-pin-start": "-2px 0 8px -2px color-mix(in oklch, var(--foreground) 10%, transparent)",
+        "--shadow-sticky-bar": "0 -2px 8px color-mix(in oklch, var(--foreground) 8%, transparent)",
+        "--shadow-modal-deep": "0 -25px 50px -12px color-mix(in oklch, var(--foreground) 35%, transparent),\n    0 50px 80px -20px color-mix(in oklch, var(--foreground) 40%, transparent),\n    0 0 0 1px color-mix(in oklch, var(--foreground) 6%, transparent)",
+        "--shadow-drawer-elevated": "0 25px 80px -20px color-mix(in oklch, var(--foreground) 50%, transparent),\n    0 10px 40px -15px color-mix(in oklch, var(--foreground) 30%, transparent)",
+        "--font-size-xs": "0.75rem",
+        "--font-size-display-journey": "4rem",
+        "--spacing-career-journey-y": "12rem",
+        "--spacing-career-journey-y-compact": "3rem",
+        "--button-glow-outline": "none",
+        "--button-glow-default": "radial-gradient(at bottom, color-mix(in oklch, var(--primary-foreground) 22%, transparent), transparent)",
+        "--font-display-email-stack": "\"ivypresto-display\", \"ivypresto-headline\", Georgia, serif",
+        "--chart-1": "oklch(0.55 0.22 264.116)",
+        "--chart-2": "oklch(0.48 0.15 184.704)",
+        "--chart-3": "oklch(0.32 0.08 227.392)",
+        "--chart-4": "oklch(0.65 0.18 84.429)",
+        "--chart-5": "oklch(0.58 0.18 70.08)",
+        "--shadow-chart-accent-glow": "0 0 24px 0 color-mix(in oklch, var(--chart-2) 30%, transparent)",
+        "--chip-1": "oklch(0.38 0.18 264)",
+        "--chip-2": "oklch(0.35 0.14 184)",
+        "--chip-3": "oklch(0.32 0.08 227)",
+        "--chip-4": "oklch(0.42 0.12 84)",
+        "--chip-5": "oklch(0.42 0.14 70)",
+        "--chip-destructive": "oklch(0.40 0.18 25)",
+        "--schedule-compliant-bg": "oklch(0.93 0.055 145)",
+        "--banner-prism-bg": "oklch(0.97 0.02 343)",
+        "--sidebar": "var(--brand-color-surface)",
+        "--sidebar-foreground": "oklch(0.145 0 0)",
+        "--sidebar-primary": "oklch(0.082 0 0)",
+        "--sidebar-primary-foreground": "oklch(0.985 0 0)",
+        "--sidebar-accent": "oklch(0.93 0.042 286.1)",
+        "--sidebar-accent-foreground": "oklch(0.205 0 0)",
+        "--sidebar-border": "oklch(0.90 0.032 286.1)",
+        "--tabs-background": "oklch(0.75 0 0)",
+        "--tabs-foreground": "oklch(0.145 0 0)",
+        "--table-border": "oklch(0.32 0.006 286.1)",
+        "--table-hover": "transparent",
+        "--table-stripe": "oklch(0.18 0 0)",
+        "--scaling": "1",
+        "--density": "comfortable",
+        "--control-height": "calc(40px * var(--scaling))",
+        "--control-height-sm": "calc(32px * var(--scaling))",
+        "--control-height-touch": "44px",
+        "--control-padding-y": "calc(8px * var(--scaling))",
+        "--control-padding-x": "calc(12px * var(--scaling))",
+        "--table-row-height": "calc(48px * var(--scaling))",
+        "--table-header-height": "calc(48px * var(--scaling))",
+        "--line-height-dense": "1.5",
+        "--content-max-width-desktop": "1040px",
+        "--content-max-width-tablet": "768px",
+        "--content-max-width-mobile": "100%",
+        "--content-gutter": "calc(24px * var(--scaling))",
+        "--content-gutter-mobile": "1rem",
+        "--transition-fast": "0.2s ease",
+        "--transition-normal": "0.3s ease-in-out",
+        "--transition-colors": "color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease",
+        "--shadow-sm": "oklch(0 0 0 / 0.1) 0px 1px 2px 0px",
+        "--shadow-md": "oklch(0 0 0 / 0.1) 0px 1px 3px 0px, oklch(0 0 0 / 0.1) 0px 1px 2px -1px",
+        "--shadow-lg": "oklch(0 0 0 / 0.1) 0px 4px 6px -1px, oklch(0 0 0 / 0.1) 0px 2px 4px -2px",
+        "--spacing": "calc(0.25rem * var(--scaling))",
+        "--text-sm": "0.875rem",
+        "--text-base": "1rem",
+        "--color-background": "var(--background)",
+        "--color-foreground": "var(--foreground)",
+        "--color-card": "var(--card)",
+        "--color-card-foreground": "var(--card-foreground)",
+        "--color-popover": "var(--popover)",
+        "--color-popover-foreground": "var(--popover-foreground)",
+        "--color-primary": "var(--primary)",
+        "--color-primary-foreground": "var(--primary-foreground)",
+        "--color-secondary": "var(--secondary)",
+        "--color-secondary-foreground": "var(--secondary-foreground)",
+        "--color-muted": "var(--muted)",
+        "--color-muted-foreground": "var(--muted-foreground)",
+        "--color-accent": "var(--accent)",
+        "--color-accent-foreground": "var(--accent-foreground)",
+        "--color-destructive": "var(--destructive)",
+        "--color-destructive-foreground": "var(--destructive-foreground)",
+        "--color-border": "var(--border)",
+        "--color-border-control": "var(--border-control)",
+        "--color-input": "var(--input)",
+        "--color-input-background": "var(--input-background)",
+        "--color-ring": "var(--ring)",
+        "--color-chart-1": "var(--chart-1)",
+        "--color-chart-2": "var(--chart-2)",
+        "--color-chart-3": "var(--chart-3)",
+        "--color-chart-4": "var(--chart-4)",
+        "--color-chart-5": "var(--chart-5)",
+        "--color-chip-1": "var(--chip-1)",
+        "--color-chip-2": "var(--chip-2)",
+        "--color-chip-3": "var(--chip-3)",
+        "--color-chip-4": "var(--chip-4)",
+        "--color-chip-5": "var(--chip-5)",
+        "--color-chip-destructive": "var(--chip-destructive)",
+        "--color-sidebar": "var(--sidebar)",
+        "--color-sidebar-foreground": "var(--sidebar-foreground)",
+        "--color-sidebar-primary": "var(--sidebar-primary)",
+        "--color-sidebar-primary-foreground": "var(--sidebar-primary-foreground)",
+        "--color-sidebar-accent": "var(--sidebar-accent)",
+        "--color-sidebar-accent-foreground": "var(--sidebar-accent-foreground)",
+        "--color-sidebar-border": "var(--sidebar-border)",
+        "--color-tabs-background": "var(--tabs-background)",
+        "--color-tabs-foreground": "var(--tabs-foreground)",
+        "--color-brand": "var(--brand-color)",
+        "--color-brand-dark": "var(--brand-color-dark)",
+        "--color-brand-surface": "var(--brand-color-surface)",
+        "--color-brand-light": "var(--brand-color-light)",
+        "--color-brand-soft": "var(--brand-color-soft)",
+        "--color-brand-deep": "var(--brand-color-deep)",
+        "--color-banner-prism": "var(--banner-prism-bg)",
+        "--font-size-sm": "0.857rem",
+        "--font-size-base": "1rem",
+        "--font-size-lg": "1.143rem",
+        "--font-size-xl": "1.286rem",
+        "--font-size-2xl": "1.5rem",
+        "--font-size-3xl": "1.714rem",
+        "--font-size-4xl": "2rem"
+      },
+      "token_count": 173,
+      "primitive_count": 54,
+      "shared_count": 46
+    }
+  }
+}

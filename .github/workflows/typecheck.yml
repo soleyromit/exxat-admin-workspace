@@ -1,0 +1,68 @@
+name: Typecheck apps/**/*.tsx
+
+on:
+  pull_request:
+    paths:
+      - 'apps/**/*.ts'
+      - 'apps/**/*.tsx'
+      - 'apps/**/tsconfig.json'
+      - 'apps/**/package.json'
+      - 'pnpm-lock.yaml'
+      - 'tsconfig.base.json'
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive  # exxat-ds + studentUX must be present
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Detect changed apps
+        id: changed
+        run: |
+          changed=$(git diff --name-only origin/${{ github.base_ref }}...HEAD \
+            | grep -E '^apps/[^/]+/[^/]+/' \
+            | awk -F/ '{print $1"/"$2"/"$3}' \
+            | sort -u)
+          if [ -z "$changed" ]; then
+            echo "apps=" >> $GITHUB_OUTPUT
+          else
+            echo "apps<<EOF" >> $GITHUB_OUTPUT
+            echo "$changed" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Typecheck changed apps
+        if: steps.changed.outputs.apps != ''
+        run: |
+          set -e
+          while IFS= read -r app; do
+            if [ -f "$app/package.json" ] && [ -f "$app/tsconfig.json" ]; then
+              echo "::group::Typecheck $app"
+              (cd "$app" && pnpm typecheck) || (cd "$app" && pnpm tsc --noEmit)
+              echo "::endgroup::"
+            fi
+          done <<< "${{ steps.changed.outputs.apps }}"
+
+      - name: Verify DS snapshot is current
+        run: |
+          python3 scripts/ds-snapshot.py
+          if ! git diff --quiet docs/foundations/ds-snapshot.json; then
+            echo "::error::ds-snapshot.json is stale. Run \`python3 scripts/ds-snapshot.py\` and commit the result."
+            git diff docs/foundations/ds-snapshot.json | head -40
+            exit 1
+          fi
+          echo "DS snapshot is current."

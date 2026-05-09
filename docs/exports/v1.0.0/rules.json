@@ -1,0 +1,303 @@
+[
+  {
+    "id": "DS-001",
+    "category": "DS",
+    "category_label": "Design System Conformance",
+    "description": "No raw `<button>` in `apps/**/*.tsx`. Use DS `Button` with explicit variant + size",
+    "gate": ""
+  },
+  {
+    "id": "DS-002",
+    "category": "DS",
+    "category_label": "Design System Conformance",
+    "description": "No hex / rgb() / hsl() literals in `apps/**`. Use CSS custom properties (`var(--token)`)",
+    "gate": ""
+  },
+  {
+    "id": "DS-003",
+    "category": "DS",
+    "category_label": "Design System Conformance",
+    "description": "No inline `boxShadow:` / `box-shadow:`. Use DS shadow tokens or `shadow-{sm,md,lg}` utilities",
+    "gate": ""
+  },
+  {
+    "id": "DS-004",
+    "category": "DS",
+    "category_label": "Design System Conformance",
+    "description": "No raw `<table>` in `apps/**/*.tsx`. Use `Table` (admin) or `DataTable` (student)",
+    "gate": ""
+  },
+  {
+    "id": "DS-005",
+    "category": "DS",
+    "category_label": "Design System Conformance",
+    "description": "No `toast()` / Sonner in admin apps. Use `LocalBanner` / `SystemBanner`. (Student apps: allowed per studentUX rules.)",
+    "gate": ""
+  },
+  {
+    "id": "DS-006",
+    "category": "DS",
+    "category_label": "Design System Conformance",
+    "description": "No edits to `exxat-ds/` or `studentUX/` (read-only submodules)",
+    "gate": ""
+  },
+  {
+    "id": "DS-007",
+    "category": "DS",
+    "category_label": "Design System Conformance",
+    "description": "Component imports must match the active DS profile. Admin: `@exxat/ds/packages/ui/src`. Student: `@exxat/student/components/...`",
+    "gate": ""
+  },
+  {
+    "id": "DS-008",
+    "category": "DS",
+    "category_label": "Design System Conformance",
+    "description": "Tailwind color utilities outside the semantic allowlist (`bg-background`, `text-foreground`, `border-border`, `bg-muted`, `text-muted-foreground`, `bg-card`, `bg-popover`, etc.) are banned",
+    "gate": ""
+  },
+  {
+    "id": "DS-009",
+    "category": "DS",
+    "category_label": "Design System Conformance",
+    "description": "DS components may not have visual treatments (shadow, border, hover bg, padding, gradient) beyond what the DS source defines, unless documented as an exception",
+    "gate": ""
+  },
+  {
+    "id": "DS-010",
+    "category": "DS",
+    "category_label": "Design System Conformance",
+    "description": "Before importing any DS component, the import must resolve in `docs/foundations/ds-snapshot.json` for the active profile (203 admin exports + 54 student primitives + 46 shared as of v0.2.0). Hallucinated components are blocked",
+    "gate": ""
+  },
+  {
+    "id": "DS-011",
+    "category": "DS",
+    "category_label": "Design System Conformance",
+    "description": "No inline typography literals (`fontSize`, `fontWeight`, `fontFamily` as raw values in `style={{}}`). Use Tailwind classes (`text-xs`, `font-semibold`) or token references (`var(--text-xs)`, `var(--font-sans)`)",
+    "gate": ""
+  },
+  {
+    "id": "A11Y-001",
+    "category": "A11Y",
+    "category_label": "WCAG 2.2 AA + project rules",
+    "description": "Icon-only `<Button>` requires `aria-label`",
+    "gate": ""
+  },
+  {
+    "id": "A11Y-002",
+    "category": "A11Y",
+    "category_label": "WCAG 2.2 AA + project rules",
+    "description": "Focus rings may not be removed. `outline-none` requires `focus-visible:ring-*`",
+    "gate": ""
+  },
+  {
+    "id": "A11Y-003",
+    "category": "A11Y",
+    "category_label": "WCAG 2.2 AA + project rules",
+    "description": "Text contrast \u2265 4.5:1 (normal) / \u2265 3:1 (large). Tokens use `--foreground`/`--muted-foreground` against background",
+    "gate": ""
+  },
+  {
+    "id": "A11Y-004",
+    "category": "A11Y",
+    "category_label": "WCAG 2.2 AA + project rules",
+    "description": "Decorative Font Awesome icons require `aria-hidden=\"true\"`",
+    "gate": ""
+  },
+  {
+    "id": "A11Y-005",
+    "category": "A11Y",
+    "category_label": "WCAG 2.2 AA + project rules",
+    "description": "Min touch target 44px on mobile / student apps. Use `--control-height-touch`",
+    "gate": ""
+  },
+  {
+    "id": "A11Y-006",
+    "category": "A11Y",
+    "category_label": "WCAG 2.2 AA + project rules",
+    "description": "`DialogTitle` / `SheetTitle` required. Visually-hidden titles use `className=\"sr-only\"`",
+    "gate": ""
+  },
+  {
+    "id": "A11Y-007",
+    "category": "A11Y",
+    "category_label": "WCAG 2.2 AA + project rules",
+    "description": "Sidebar shell: `<SidebarProvider className=\"h-svh\"> + <Sidebar variant=\"inset\">` required in admin layout.tsx",
+    "gate": ""
+  },
+  {
+    "id": "A11Y-008",
+    "category": "A11Y",
+    "category_label": "WCAG 2.2 AA + project rules",
+    "description": "Color is never the only encoding. Pair color with shape, label, or icon (charts, status, alerts)",
+    "gate": ""
+  },
+  {
+    "id": "A11Y-009",
+    "category": "A11Y",
+    "category_label": "WCAG 2.2 AA + project rules",
+    "description": "Nav substructure must follow DS templates. Sidebar uses `Sidebar > SidebarContent > SidebarGroup > SidebarMenu > SidebarMenuItem > SidebarMenuButton`. Breadcrumb uses `Breadcrumb > BreadcrumbList > BreadcrumbItem > BreadcrumbLink`. Tabs uses `Tabs > TabsList > TabsTrigger` + `TabsContent`. Skipping levels or substituting custom elements breaks keyboard nav and screen-reader semantics",
+    "gate": ""
+  },
+  {
+    "id": "VIZ-001",
+    "category": "VIZ",
+    "category_label": "Visualization Discipline",
+    "description": "Progress bars are last resort. More than one `<Progress>` or `width: ${n}%` per `.tsx` requires justification comment OR pattern reference from `docs/patterns/viz/`",
+    "gate": ""
+  },
+  {
+    "id": "VIZ-002",
+    "category": "VIZ",
+    "category_label": "Visualization Discipline",
+    "description": "Viz first, text annotates. Outliers/comparisons drawn on the viz; do not enumerate in prose",
+    "gate": ""
+  },
+  {
+    "id": "VIZ-003",
+    "category": "VIZ",
+    "category_label": "Visualization Discipline",
+    "description": "Chart color must use `--chart-1` \u2026 `--chart-5`. Conditional thresholds use `--conditional-rule-{green,yellow,blue,red,purple,orange}`. No raw chart colors",
+    "gate": ""
+  },
+  {
+    "id": "VIZ-004",
+    "category": "VIZ",
+    "category_label": "Visualization Discipline",
+    "description": "No red (`--destructive`, hue ~25) in score/rating/performance viz. Use amber/orange (`--chart-4`, `--chart-5`) for \"below threshold\"",
+    "gate": ""
+  },
+  {
+    "id": "VIZ-005",
+    "category": "VIZ",
+    "category_label": "Visualization Discipline",
+    "description": "Viz selection rubric (in `docs/patterns/viz/RUBRIC.md`) must be consulted for every analytics card",
+    "gate": ""
+  },
+  {
+    "id": "CONTENT-001",
+    "category": "CONTENT",
+    "category_label": "Voice, Glossary, Errors",
+    "description": "Use the glossary in `apps/<product>/docs/content.md`. New terms added via intake before use",
+    "gate": ""
+  },
+  {
+    "id": "CONTENT-002",
+    "category": "CONTENT",
+    "category_label": "Voice, Glossary, Errors",
+    "description": "Empty states propose action; never \"No data\"",
+    "gate": ""
+  },
+  {
+    "id": "CONTENT-003",
+    "category": "CONTENT",
+    "category_label": "Voice, Glossary, Errors",
+    "description": "Error messages explain what happened, why, and what to do",
+    "gate": ""
+  },
+  {
+    "id": "CONTENT-004",
+    "category": "CONTENT",
+    "category_label": "Voice, Glossary, Errors",
+    "description": "Tone matches active DS profile: admin = clinical-formal; student = supportive-empowering",
+    "gate": ""
+  },
+  {
+    "id": "INTAKE-001",
+    "category": "INTAKE",
+    "category_label": "Living Context",
+    "description": "Granola transcripts pulled when user references a meeting \u2192 saved to `apps/<product>/docs/research/meetings/`",
+    "gate": ""
+  },
+  {
+    "id": "INTAKE-002",
+    "category": "INTAKE",
+    "category_label": "Living Context",
+    "description": "Decisions detected (\"decided\", \"going with\", \"the answer is\") \u2192 ADR at `docs/decisions/<NNN>-<title>.md`",
+    "gate": ""
+  },
+  {
+    "id": "INTAKE-003",
+    "category": "INTAKE",
+    "category_label": "Living Context",
+    "description": "New terminology proposed \u2192 glossary addition with confirmation before persisting",
+    "gate": ""
+  },
+  {
+    "id": "INTAKE-004",
+    "category": "INTAKE",
+    "category_label": "Living Context",
+    "description": "Designer overrides (\"ignore the rule\", \"exception here\") \u2192 captured as ADR + pattern exception + DESIGN.md amendment if generalizable",
+    "gate": ""
+  },
+  {
+    "id": "PERF-001",
+    "category": "PERF",
+    "category_label": "Performance Budgets (P7)",
+    "description": "Core Web Vitals budgets per app type: LCP \u2264 2.5s (1.5s for assessment-taker), INP \u2264 200ms (100ms for assessment-taker), CLS \u2264 0.1 (0.05 for assessment-taker)",
+    "gate": ""
+  },
+  {
+    "id": "PERF-002",
+    "category": "PERF",
+    "category_label": "Performance Budgets (P7)",
+    "description": "Initial bundle size budgets: admin \u2264 250KB, student \u2264 200KB, assessment-taker \u2264 150KB. Routes lazy-load beyond initial",
+    "gate": ""
+  },
+  {
+    "id": "PERF-003",
+    "category": "PERF",
+    "category_label": "Performance Budgets (P7)",
+    "description": "Use `next/image` for layout-impacting images (admin/student). Raw `<img>` only for decorative/tiny imagery",
+    "gate": ""
+  },
+  {
+    "id": "PERF-004",
+    "category": "PERF",
+    "category_label": "Performance Budgets (P7)",
+    "description": "Font loading via documented Typekit + Font Awesome references only; no new font sources without ADR",
+    "gate": ""
+  },
+  {
+    "id": "PERF-005",
+    "category": "PERF",
+    "category_label": "Performance Budgets (P7)",
+    "description": "Server components by default; `'use client'` opt-in only when interactivity, browser APIs, or React hooks needed",
+    "gate": ""
+  },
+  {
+    "id": "PERF-006",
+    "category": "PERF",
+    "category_label": "Performance Budgets (P7)",
+    "description": "Hot-path sub-bundles: assessment-taker exam delivery <100KB to first paint, mobile eval form <60KB, module launcher <500ms tile-status fetch",
+    "gate": ""
+  },
+  {
+    "id": "I18N-001",
+    "category": "I18N",
+    "category_label": "Internationalization Readiness (P7)",
+    "description": "All user-facing strings live in message catalogs (`apps/<product>/<app-type>/messages/<locale>.json`); no hardcoded strings in components",
+    "gate": ""
+  },
+  {
+    "id": "I18N-002",
+    "category": "I18N",
+    "category_label": "Internationalization Readiness (P7)",
+    "description": "Locale resolution at school-configuration level; no per-user override Phase 1",
+    "gate": ""
+  },
+  {
+    "id": "I18N-003",
+    "category": "I18N",
+    "category_label": "Internationalization Readiness (P7)",
+    "description": "CSS uses logical properties (`padding-inline-start`, `margin-inline-end`, `text-align: start`) instead of physical (`left`/`right`); Tailwind logical classes (`ps-*`, `pe-*`, `me-*`, `start-*`, `end-*`) are first-class",
+    "gate": ""
+  },
+  {
+    "id": "I18N-004",
+    "category": "I18N",
+    "category_label": "Internationalization Readiness (P7)",
+    "description": "New locale activation requires ADR documenting locale, glossary owner, QA path",
+    "gate": ""
+  }
+]

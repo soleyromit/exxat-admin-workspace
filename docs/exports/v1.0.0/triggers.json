@@ -1,0 +1,122 @@
+[
+  {
+    "section": "Design intent (highest priority)",
+    "pattern": "\\b(design\\|build\\|create\\|add)\\s+(a\\|an\\|the)?\\s*(new\\s+)?(screen\\|page\\|view\\|dashboard\\|component\\|feature\\|flow)\\b",
+    "action": "superpowers:brainstorming \u2192 mobbin search_screens \u2192 granola query (recent meetings) \u2192 frontend-design"
+  },
+  {
+    "section": "Design intent (highest priority)",
+    "pattern": "\\b(redesign\\|refactor\\|rework\\|polish\\|improve\\|tighten)\\s+(this\\|the\\|that)\\b",
+    "action": "frontend-design + superpowers:brainstorming"
+  },
+  {
+    "section": "Design intent (highest priority)",
+    "pattern": "\\b(let'?s\\s+(add\\|build\\|create\\|design))\\b",
+    "action": "superpowers:brainstorming"
+  },
+  {
+    "section": "Design references",
+    "pattern": "figma\\.com/(design\\|board\\|slides\\|make)/",
+    "action": "claude_ai_Figma `get_design_context` (parse fileKey + nodeId)"
+  },
+  {
+    "section": "Design references",
+    "pattern": "magicpatterns\\.com/c/",
+    "action": "claude_ai_Magic_Patterns `read_artifact_files`"
+  },
+  {
+    "section": "Design references",
+    "pattern": "notion\\.so/",
+    "action": "claude_ai_Notion `read_resource`"
+  },
+  {
+    "section": "Design references",
+    "pattern": "drive\\.google\\.com/",
+    "action": "claude_ai_Google_Drive `read_file_content`"
+  },
+  {
+    "section": "Living context (intake)",
+    "pattern": "\\b(meeting\\|call\\|spoke\\|talked\\|discussed)\\s+(with\\|to)\\s+\\w+\\b",
+    "action": "granola `query_granola_meetings` (extract person + recent date range)"
+  },
+  {
+    "section": "Living context (intake)",
+    "pattern": "\\b(yesterday\\|today\\|this morning\\|last week)('?s)?\\s+(meeting\\|call\\|sync\\|standup)\\b",
+    "action": "granola `query_granola_meetings`"
+  },
+  {
+    "section": "Living context (intake)",
+    "pattern": "\\b(Aarti\\|Nipun\\|Himanshu)\\s+(said\\|wants\\|decided\\|asked)\\b",
+    "action": "granola `query_granola_meetings` (filter by person) \u2192 intake"
+  },
+  {
+    "section": "Living context (intake)",
+    "pattern": "\\b(decided\\|going with\\|the answer is\\|let'?s commit to\\|final call)\\b",
+    "action": "intake skill \u2192 ADR draft (`intake:adr-draft`)"
+  },
+  {
+    "section": "Living context (intake)",
+    "pattern": "\\b(we call (this\\|it\\|them)\\|let'?s call (this\\|it\\|them)\\|term for (this\\|it\\|them) is\\|means)\\b",
+    "action": "intake skill \u2192 glossary entry (`intake:glossary-add`)"
+  },
+  {
+    "section": "Library / framework references",
+    "pattern": "\\b(React\\|Next\\.?js\\|Tailwind\\|Recharts\\|Radix\\|shadcn\\|TanStack\\|Framer\\|Zod\\|Zustand\\|Vercel AI SDK)\\b",
+    "action": "context7 `resolve-library-id` \u2192 `query-docs`"
+  },
+  {
+    "section": "Code-work patterns",
+    "pattern": "\\b(fix\\|debug\\|broken\\|why is(n'?t)?\\|not working\\|throws?\\|crashes?)\\b",
+    "action": "superpowers:systematic-debugging"
+  },
+  {
+    "section": "Code-work patterns",
+    "pattern": "\\b(ship\\|merge\\|ready\\|done\\|complete\\|PR\\|pull request)\\b",
+    "action": "superpowers:verification-before-completion \u2192 requesting-code-review"
+  },
+  {
+    "section": "DS profile switching",
+    "pattern": "\\b(switch to\\|moving to\\|now (the )?)?student( app)?\\b",
+    "action": "load `docs/foundations/ds-profiles/student.md`"
+  },
+  {
+    "section": "DS profile switching",
+    "pattern": "\\b(switch to\\|moving to\\|now (the )?)?admin( app)?\\b",
+    "action": "load `docs/foundations/ds-profiles/admin.md`"
+  },
+  {
+    "section": "DS profile switching",
+    "pattern": "\\bstudentUX\\b",
+    "action": "load student profile"
+  },
+  {
+    "section": "DS profile switching",
+    "pattern": "\\bExxat-DS\\b",
+    "action": "prism)\\b`"
+  },
+  {
+    "section": "Variant generation (P4 \u2014 stochastic axis, wired 2026-05-08)",
+    "pattern": "\\bdesign\\s+\\d+\\s+(versions?\\|variants?\\|options\\|alternatives)\\b",
+    "action": "`/design-variants <N> <brief>` \u2014 `.claude/commands/design-variants.md` (spawn N parallel agents in worktrees per `docs/patterns/process/design-variants.md`)"
+  },
+  {
+    "section": "Variant generation (P4 \u2014 stochastic axis, wired 2026-05-08)",
+    "pattern": "\\b(show me \\d+ (ways\\|versions?\\|variants?\\|options)\\|three options\\|alternative approaches\\|[2-5] (versions?\\|variants?\\|options))\\b",
+    "action": "same \u2014 `/design-variants`"
+  },
+  {
+    "section": "Variant generation (P4 \u2014 stochastic axis, wired 2026-05-08)",
+    "pattern": "/design-variants <N>",
+    "action": "direct dispatch"
+  },
+  {
+    "section": "Override / exception (P5 \u2014 wired 2026-05-08)",
+    "pattern": "\\b(ignore (the\\|this) rule\\|make an exception\\|override\\s+(DS\\|A11Y\\|VIZ\\|CONTENT\\|INTAKE)-\\d{3}\\|don'?t apply\\s+(DS\\|A11Y\\|VIZ\\|CONTENT\\|INTAKE)-\\d{3}\\|exception (here\\|to))\\b",
+    "action": "intake skill action `intake:override` \u2014 capture as override ADR (`docs/decisions/_override-template.md`) + pattern exception + ledger row in `docs/governance/exceptions.md`"
+  },
+  {
+    "section": "Override / exception (P5 \u2014 wired 2026-05-08)",
+    "pattern": "\\b(DS\\|A11Y\\|VIZ\\|CONTENT\\|INTAKE)-\\d{3}\\b",
+    "action": "`rule:cite-and-surface` \u2014 read rule text from DESIGN.md \u00a74; if user proposes override, route to `intake:override`"
+  }
+]
