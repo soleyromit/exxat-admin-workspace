@@ -125,7 +125,8 @@ def main() -> None:
     ])
 
     # On compact-recovery (compaction wiped most context), surface load-bearing
-    # registries + recent ADRs so the assistant doesn't have to re-discover them.
+    # registries + recent ADRs + the latest digest so the assistant doesn't
+    # have to re-discover them.
     if is_compact_recovery:
         # Reset registry-state so the next UserPromptSubmit doesn't claim
         # things "changed" — they're fresh from the assistant's POV.
@@ -144,6 +145,18 @@ def main() -> None:
             summary_lines.extend(adr_titles)
         else:
             summary_lines.append("  (no ADRs found)")
+
+        # Surface the latest digest if present — it's a one-line-per-artifact
+        # summary that lets the assistant know what exists across the workspace
+        # without re-reading every file. See scripts/generate-digest.py.
+        digest_path = REPO_ROOT / "docs" / "digest" / "latest.md"
+        if digest_path.exists():
+            summary_lines.extend([
+                "",
+                f"Latest workspace digest: {digest_path.relative_to(REPO_ROOT)}",
+                "  Read it for one-line summaries of every ADR / perspective / pattern.",
+                "  Regenerate with: python3 scripts/generate-digest.py",
+            ])
 
         summary_lines.extend([
             "",

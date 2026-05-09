@@ -81,11 +81,17 @@ Both are reusable units, but they're different:
 
 If you find yourself writing a long Skill with many "if user did X" branches, it might want to be a subagent. If you find yourself writing repetitive subagent prompts, the prompt template wants to be a Skill.
 
+## Workspace-defined subagents
+
+| Agent | Path | When to spawn | When NOT |
+|---|---|---|---|
+| `research-cross-corpus` | `.claude/agents/research-cross-corpus.md` | "What does the research / Aarti / Vishaka / rr-insights say about X" — synthesis across 2+ corpora (storytelling + ADRs + insights + competitor intel) | Single-corpus reads (just Read directly). Recommendation requests (this agent reports evidence, doesn't recommend). |
+
 ## Adding a new subagent type
 
-We don't currently have custom subagent types defined in this workspace. If we add them (e.g., `design-variants`, `granola-summarizer`), they'd live in `.claude/agents/<name>.md` per Claude Code convention. Update this registry with:
+If we add more (e.g., `design-variants`, `granola-summarizer`), they live in `.claude/agents/<name>.md` per Claude Code convention. Update this registry with:
 
-- New row in the registry table
+- New row in the "Workspace-defined subagents" table above
 - When-to-spawn / when-NOT examples
 - Link to the agent's prompt template
 

@@ -177,9 +177,9 @@ If your goal is "minimize hallucination across all the contexts I work in," the 
 
 ### Tier 2 — Medium leverage
 
-4. **Staleness check script** — `scripts/staleness-check.py` flags files untouched > 90 days, ADRs with superseded refs, patterns with broken DS imports.
-5. **Living digest** — `scripts/generate-digest.py` produces `docs/digest/<date>.md` with all-decisions / all-personas / all-glossary in one file. Loaded as additional SessionStart context.
-6. **Cross-corpus research subagent** — explicit subagent type with all relevant MCPs preloaded. Spawns when user asks "what does the research say about X."
+4. ✅ **Staleness check script** — `scripts/staleness-check.py` (shipped 2026-05-09). Flags stale ADRs / storytelling, superseded ADRs missing link, hub-file INDEX rows pointing to missing files, override-ledger entries past sunset.
+5. ✅ **Living digest** — `scripts/generate-digest.py` (shipped 2026-05-09). Outputs `docs/digest/<YYYY-MM-DD>.md` + `latest.md`. SessionStart hook surfaces `latest.md` on `compact` matcher. Per-day files gitignored to avoid commit churn; latest tracked.
+6. ✅ **Cross-corpus research subagent** — `.claude/agents/research-cross-corpus.md` (shipped 2026-05-09). Synthesizes answers across ADRs / storytelling / research insights / hub-files / registries / Granola. Reports evidence, doesn't recommend.
 
 ### Tier 3 — Future / scale
 

@@ -15,3 +15,9 @@ dist/
 __pycache__/
 *.pyc
 *.pyo
+
+# Digest — date-stamped files regenerate from current workspace state.
+# Track latest.md + README only.
+docs/digest/*.md
+!docs/digest/latest.md
+!docs/digest/README.md

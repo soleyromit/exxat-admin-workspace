@@ -230,6 +230,7 @@ Badge shape override: `className="rounded"` for rectangular (4px) vs DS pill def
 | `docs/triggers.md` | UserPromptSubmit hook trigger map |
 | `docs/governance/context-architecture.md` | 3-ring context model + roadmap |
 | `docs/governance/exceptions.md` | Override ledger |
+| `docs/digest/latest.md` | Auto-generated workspace snapshot (run `scripts/generate-digest.py` to refresh) |
 | `docs/patterns/<category>/*.md` | Pattern library |
 | `docs/foundations/ds-profiles/{admin,student}.md` | Per-DS profile |
 | `apps/<product>/CLAUDE.md` | Per-product extension |
