@@ -5,11 +5,12 @@ import {
   Button, Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
   ToggleGroup, ToggleGroupItem,
+  LocalBanner,
   SidebarTrigger, Separator,
 } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
 import { TrendSparkline } from '@/components/pce/trend-sparkline'
-import { MOCK_RESPONSES, MOCK_TERMS, MOCK_COHORTS, SECTION_LABELS } from '@/lib/pce-mock-data'
+import { MOCK_RESPONSES, MOCK_TEMPLATES, MOCK_TERMS, MOCK_COHORTS, SECTION_LABELS } from '@/lib/pce-mock-data'
 
 function ScoreBar({ score, max = 5 }: { score: number; max?: number }) {
   return (
@@ -100,6 +101,28 @@ export default function AnalyticsPage() {
   const hasData = scopedSurveys.length > 0
   const scopeLabel = axis === 'term' ? term : cohort
 
+  // C9 — Template-aggregation guard rail. Per Aarti audit: "Show a banner/warning
+  // when aggregating across surveys with different templates. Surface
+  // scale-consistency status (1–5 matched). Don't silently aggregate
+  // incompatible data."
+  const templatesInScope = useMemo(() => {
+    const ids = new Set(scopedSurveys.map(s => s.templateId))
+    return Array.from(ids)
+      .map(id => MOCK_TEMPLATES.find(t => t.id === id))
+      .filter((t): t is NonNullable<typeof t> => Boolean(t))
+  }, [scopedSurveys])
+
+  const hasMixedTemplates = templatesInScope.length > 1
+
+  // Identify sections that only appear in some templates (incomplete coverage)
+  const incompleteSections = useMemo(() => {
+    if (templatesInScope.length < 2) return []
+    const allSections = new Set(templatesInScope.flatMap(t => t.sections))
+    return Array.from(allSections).filter(section =>
+      !templatesInScope.every(t => t.sections.includes(section))
+    )
+  }, [templatesInScope])
+
   return (
     <>
       <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
@@ -158,6 +181,23 @@ export default function AnalyticsPage() {
           </div>
         ) : (
           <div className="flex flex-col gap-6 max-w-4xl">
+
+            {/* C9 — Template-aggregation guard rail */}
+            {hasMixedTemplates && (
+              <LocalBanner variant="warning" title="Mixed templates in scope">
+                These {scopedSurveys.length} courses use {templatesInScope.length} different templates
+                ({templatesInScope.map(t => t.name).join(', ')}).
+                {incompleteSections.length > 0 && (
+                  <>
+                    {' '}Sections{' '}
+                    <span className="font-medium">
+                      {incompleteSections.map(s => SECTION_LABELS[s as keyof typeof SECTION_LABELS] ?? s).join(', ')}
+                    </span>
+                    {' '}only appear in some templates — section averages may reflect partial coverage.
+                  </>
+                )}
+              </LocalBanner>
+            )}
 
             {/* Course-type filter — Cohort view only (per audit C5) */}
             {axis === 'cohort' && (
