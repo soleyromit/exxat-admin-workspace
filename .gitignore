@@ -21,3 +21,6 @@ __pycache__/
 docs/digest/*.md
 !docs/digest/latest.md
 !docs/digest/README.md
+
+# Local-only canvas (regenerated on demand by /morning-canvas)
+.review/

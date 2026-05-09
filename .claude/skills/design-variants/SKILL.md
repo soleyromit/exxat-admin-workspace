@@ -1,6 +1,6 @@
 ---
 name: design-variants
-description: Use when user invokes `/design-variants` or asks to generate N parallel design variants of the same brief. Spawns N general-purpose agents in isolated git worktrees, each producing a different variant (minimal, data-dense, narrative, mobile-first, accessibility-emphasis, ai-forward, pulled-data-forward). After all return, presents a side-by-side comparison so the user picks the winner. Implements the stochastic axis from DESIGN.md §3.
+description: Use when user invokes `/design-variants` or asks to generate N parallel design variants of the same brief. Spawns N agents in isolated git worktrees, each producing a different variant. Two modes — `spec` (cheap markdown ASCII mockups, N up to 20) and `render` (full TSX in worktrees, N up to 7). Use spec mode for divergent overnight exploration, render mode after direction narrows. Pairs with `/morning-canvas` to review variants the next day. Implements the stochastic axis from DESIGN.md §3.
 ---
 
 # Design Variants — Stochastic Multi-Agent Branching
@@ -9,12 +9,27 @@ Generate N design variants in parallel for a single brief.
 
 ## Usage
 
-`/design-variants <N> <brief>`
+`/design-variants <N> <mode> <brief>`
 
-- `<N>` — integer 2–5 (clamped). 3 is the default if user types just `/design-variants`.
-- `<brief>` — what to design (1 sentence to a paragraph).
+- `<N>` — integer 2–20 (clamped). 3 is the default if user types just `/design-variants`.
+- `<mode>` — one of:
+  - `spec` (recommended for overnight) — variants produce ASCII mockups + decision rationale in `.md` only. Cheap (~$3-5/night for N=15). N up to 20.
+  - `render` — variants produce actual TSX in worktrees. Expensive (~$15-25/night for N=5). N up to 7.
+  - `refine` — top picks from prior round, refined with annotations + alternatives. N up to 5.
+- `<brief>` — what to design (1 sentence to a paragraph). If reading from `~/Inbox/briefs/<date>-<slug>.md`, the brief is the file content.
 
-If `$ARGUMENTS` is empty, ask the user for both.
+If `$ARGUMENTS` is empty, ask the user for all three.
+
+## Arguments parsing
+
+```
+/design-variants 15 spec admin dashboard for course-eval term overview
+                 ^N ^mode ^brief
+```
+
+If only a number: ask for mode + brief.
+If only "spec" or "render" or "refine": ask for N + brief.
+If neither: ask for all three.
 
 ## Arguments parsing
 
@@ -159,13 +174,68 @@ python3 -c "import sys; sys.path.insert(0, '/Users/romitsoley/Work/.claude/hooks
 
 For each subagent dispatched, also emit `subagent.dispatch` with `type='general-purpose'` (or whichever subagent type was used).
 
+## Per-mode details
+
+### `spec` mode
+
+Each agent produces a markdown file in its worktree at `.variants/<slug>-<i>-<direction>.md`:
+
+```markdown
+# Variant <i> — <direction>
+
+## Brief
+<brief restated>
+
+## ASCII mockup
+<full mockup, 60-80 cols wide>
+
+## Key design decisions
+- <decision 1>
+- <decision 2>
+
+## DS components used
+- <list>
+
+## Viz patterns applied
+- <pattern file path + Pattern ID>
+
+## A11Y rules in force
+- <rule codes>
+
+## Tradeoffs
+- Pro: <where this shines>
+- Con: <where this struggles>
+```
+
+NO TSX. Each variant commits its `.md` only. Cheap, fast, divergent.
+
+### `render` mode
+
+Each agent produces actual `.tsx` in its worktree's `apps/<product>/admin/` (or `student/`). Full implementation per `design-variants.md` original spec. After spec-mode narrows direction.
+
+### `refine` mode
+
+Each agent receives a previous variant's spec + critique notes, produces a refined spec or render. Like Riddering's Round 4 in his canvas.
+
 ## Guardrails
 
-- Never auto-merge a variant. User picks.
+- Never auto-merge a variant. User picks via `/morning-canvas` review.
 - Never delete worktrees without explicit confirmation.
-- If the brief is too vague (under 10 chars), ask for elaboration before creating worktrees.
+- If the brief is too vague (under 20 chars), ask for elaboration before creating worktrees.
 - If the working directory is dirty, refuse OR offer to stash first.
-- Maximum N=5. Anything higher gets clamped with a note.
+- Maximum N=20 in spec mode, 7 in render mode, 5 in refine mode. Anything higher gets clamped with a note.
+- Each variant agent gets `isolation: worktree` per Anthropic best-practice — auto-cleaned if no changes.
+
+## Pairing with `/morning-canvas`
+
+When variants finish (often overnight), invoke `/morning-canvas` to review:
+
+```
+/morning-canvas              # generates .review/canvas.html, opens in browser
+/morning-canvas --since 1d   # only worktrees created in last 1 day
+```
+
+The canvas shows: variant name, direction, summary, files changed, "Open dir", "Diff vs main", "Pick this" buttons.
 
 ## Anti-patterns
 
