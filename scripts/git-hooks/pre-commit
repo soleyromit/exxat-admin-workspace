@@ -1,0 +1,90 @@
+#!/bin/bash
+# Workspace pre-commit hook. Tracked under scripts/git-hooks/ and
+# symlinked into .git/hooks/pre-commit by scripts/install-hooks.sh.
+#
+# Runs in ~3-5 seconds. Two hard gates + one soft warn + digest regen:
+#
+#   1. architecture-audit --strict   (BLOCK on wiring errors)
+#   2. backlink-audit --strict       (BLOCK on missing citations)
+#   3. staleness-check                (WARN only — informational)
+#   4. generate-digest                (refreshes docs/digest/latest.md
+#                                      and stages it into this commit)
+#
+# Bypass:  git commit --no-verify   (use sparingly)
+
+set -e
+
+cd "$(git rev-parse --show-toplevel)"
+
+# Skip on merge commits — they have their own dynamics
+if [ -f .git/MERGE_HEAD ]; then
+  echo "↳ pre-commit: merge commit detected, skipping audits"
+  exit 0
+fi
+
+# Skip if no scripts dir (e.g., during a bisect with old commits)
+if [ ! -d scripts ]; then
+  exit 0
+fi
+
+YELLOW='\033[33m'
+GREEN='\033[32m'
+RED='\033[31m'
+RESET='\033[0m'
+
+echo "↳ pre-commit (workspace audits + digest)"
+echo
+
+# 1. Architecture audit — wiring must be intact
+printf "  [1/4] architecture-audit ... "
+if python3 scripts/architecture-audit.py --strict > /tmp/pre-commit-arch.log 2>&1; then
+  printf "${GREEN}pass${RESET}\n"
+else
+  printf "${RED}FAIL${RESET} — blocking commit\n\n"
+  cat /tmp/pre-commit-arch.log
+  echo
+  echo "Fix wiring gaps above, or bypass with: git commit --no-verify"
+  exit 1
+fi
+
+# 2. Backlink audit — citations must be tight
+printf "  [2/4] backlink-audit     ... "
+if python3 scripts/backlink-audit.py --strict > /tmp/pre-commit-backlink.log 2>&1; then
+  printf "${GREEN}pass${RESET}\n"
+else
+  printf "${RED}FAIL${RESET} — blocking commit\n\n"
+  cat /tmp/pre-commit-backlink.log
+  echo
+  echo "Add missing citations, or bypass with: git commit --no-verify"
+  exit 1
+fi
+
+# 3. Staleness — soft warn only
+printf "  [3/4] staleness-check    ... "
+if python3 scripts/staleness-check.py > /tmp/pre-commit-stale.log 2>&1; then
+  if grep -q "^Checked.*Found" /tmp/pre-commit-stale.log; then
+    gaps=$(grep -E "^Checked.*Found ([0-9]+)" /tmp/pre-commit-stale.log | sed -E 's/.*Found ([0-9]+).*/\1/')
+    printf "${YELLOW}%s warning(s)${RESET} (not blocking)\n" "$gaps"
+  else
+    printf "${GREEN}pass${RESET}\n"
+  fi
+fi
+
+# 4. Regenerate digest and stage it if changed
+printf "  [4/4] regenerate digest  ... "
+python3 scripts/generate-digest.py > /tmp/pre-commit-digest.log 2>&1
+if [ -f docs/digest/latest.md ]; then
+  # Stage latest.md only if it actually changed (avoids no-op churn)
+  if ! git diff --quiet docs/digest/latest.md 2>/dev/null; then
+    git add docs/digest/latest.md
+    printf "${GREEN}refreshed${RESET} (staged docs/digest/latest.md)\n"
+  else
+    printf "${GREEN}up-to-date${RESET}\n"
+  fi
+else
+  printf "${YELLOW}skipped${RESET} (no digest output)\n"
+fi
+
+echo
+echo "✓ all checks pass — proceeding with commit"
+exit 0

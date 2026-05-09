@@ -60,12 +60,34 @@
 
 ## Validation
 
-Run all three audits before any major commit:
+The 3 audits run **automatically on every `git commit`** via a pre-commit
+hook. After a fresh clone, run once:
 
 ```bash
-python3 scripts/architecture-audit.py    # is everything wired?
-python3 scripts/backlink-audit.py        # are citations tight?
-python3 scripts/staleness-check.py       # is anything decaying?
+bash scripts/install-hooks.sh
+```
+
+This symlinks `.git/hooks/pre-commit` → `scripts/git-hooks/pre-commit`.
+That hook:
+
+1. `architecture-audit --strict` — BLOCKS the commit if hooks/skills/
+   agents/registries/CLAUDE.md doc-map have wiring gaps
+2. `backlink-audit --strict` — BLOCKS if ADRs/perspectives/patterns are
+   missing citations
+3. `staleness-check` — WARNS only (informational; not blocking)
+4. `generate-digest` — refreshes `docs/digest/latest.md` and stages it
+   into the commit you're making
+
+Total runtime: ~3-5 seconds. Bypass with `git commit --no-verify` if
+you genuinely need to (e.g., emergency fix; consider it a debt).
+
+You can still run the audits manually any time:
+
+```bash
+python3 scripts/architecture-audit.py
+python3 scripts/backlink-audit.py
+python3 scripts/staleness-check.py
+python3 scripts/generate-digest.py
 ```
 
 ## See also

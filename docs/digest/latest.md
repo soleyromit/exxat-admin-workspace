@@ -108,6 +108,9 @@
   - `statusline-setup`
   - `vercel:*`
 
+**Workspace-defined agents:**
+  - `research-cross-corpus` (.claude/agents/research-cross-corpus.md)
+
 ## Active overrides
 
 (no active overrides)
