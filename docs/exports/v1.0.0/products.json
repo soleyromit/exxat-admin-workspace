@@ -1,0 +1,56 @@
+[
+  {
+    "name": "exam-management",
+    "design_md": "apps/exam-management/DESIGN.md",
+    "storytelling_files": [
+      "aarti-perspective.md",
+      "ai-layer.md",
+      "experience-principles.md",
+      "use-cases.md",
+      "vishaka-perspective.md",
+      "vision.md"
+    ],
+    "decisions_count": 1
+  },
+  {
+    "name": "learning-contracts",
+    "design_md": "apps/learning-contracts/DESIGN.md",
+    "storytelling_files": [
+      "README.md"
+    ],
+    "decisions_count": 0
+  },
+  {
+    "name": "patient-log",
+    "design_md": "apps/patient-log/DESIGN.md",
+    "storytelling_files": [
+      "README.md",
+      "ai-layer.md",
+      "experience-principles.md",
+      "use-cases.md",
+      "vision.md"
+    ],
+    "decisions_count": 0
+  },
+  {
+    "name": "pce",
+    "design_md": "apps/pce/DESIGN.md",
+    "storytelling_files": [
+      "aarti-perspective.md",
+      "ai-layer.md",
+      "experience-principles.md",
+      "use-cases.md",
+      "vishaka-perspective.md",
+      "vision.md"
+    ],
+    "decisions_count": 1
+  },
+  {
+    "name": "skills-checklist",
+    "design_md": "apps/skills-checklist/DESIGN.md",
+    "storytelling_files": [
+      "README.md"
+    ],
+    "decisions_count": 0
+  }
+]

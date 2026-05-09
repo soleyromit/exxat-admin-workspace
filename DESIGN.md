@@ -4,7 +4,7 @@
 > Composes: foundations, patterns, profiles, quality gates, governance.
 > Per-product extensions live at `apps/<product>/DESIGN.md`.
 
-**Version:** 0.1.0 (2026-05-08)
+**Version:** 1.0.0 (2026-05-08)
 **Owner:** Romit Soley (Product Designer II, Exxat)
 **Workspace:** /Users/romitsoley/Work/
 **Lineage:** Inspired by Google's open-sourced DESIGN.md initiative (May 2026).
@@ -185,7 +185,7 @@ apps/<product>/
 - DS submodule changes: auto-emit diff to `docs/governance/ds-changelog.md` (post-merge hook).
 - Rule changes: require ADR in `docs/decisions/`.
 
-This file is at v0.1.0. Will move to v1.0.0 when P1 hooks are wired and tested.
+This file is at **v1.0.0** as of 2026-05-08 — all 10 phases (P0–P8 + P5.5) complete. Next bumps will be from P4+ pattern additions, rule additions, or DS submodule updates that warrant schema-level acknowledgment.
 
 ---
 
@@ -277,4 +277,4 @@ Today ~5% of customers integrate. Aarti wants this to flip to ~95% with the new 
 | P5.5 — DS conformance hardening | **complete** (2026-05-08) | DS-010 hook (per-export verification — 203 admin exports tracked); DS-011 typography rule; A11Y-009 nav substructure; PreToolUse v0.2 blocking mode for DS-001..011; submodule post-merge auto-regen of ds-snapshot.json; ds-component-check skill; CI typecheck workflow for `apps/**/*.tsx` |
 | P6 — Process & telemetry | **complete** (2026-05-08) | Telemetry write helper (`.claude/hooks/_telemetry.py`); 4 event types (`session.start`, `userpromptsubmit`, `pretooluse.pass`, `pretooluse.violation`) emitted by all 3 hooks; analyzer (`scripts/telemetry-report.py`) with weekly/quarterly/JSON modes; schema + privacy + retention docs at `docs/telemetry/README.md`; events file gitignored; quarterly governance review wired in `docs/governance/exceptions.md` |
 | P7 — Performance & i18n | **complete** (2026-05-08) | PERF-001..006 + I18N-001..004 in DESIGN.md §4; `docs/quality/perf.md` (per-app-type CWV + bundle budgets); `docs/quality/i18n.md` (catalog architecture, locale resolution, RTL prep); `.github/workflows/lighthouse.yml` (CWV CI gates with per-app matrix) |
-| P8 — Platform-agnostic packaging | not started | Track Google DESIGN.md schema |
+| P8 — Platform-agnostic packaging | **complete** (2026-05-08) | `scripts/export-design-spec.py` produces `docs/exports/v<version>/` machine-readable bundle (rules.json + triggers.json + patterns.json + products.json + ds-snapshot.json copy + meta.json + README); schema doc at `docs/governance/spec-schema.md`; consumer guide at `docs/governance/agent-portability.md`; Google DESIGN.md alignment tracker at `docs/governance/google-design-md-alignment.md`; DESIGN.md bumped to v1.0.0 |

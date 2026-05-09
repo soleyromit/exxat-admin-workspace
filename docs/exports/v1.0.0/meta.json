@@ -1,0 +1,32 @@
+{
+  "spec_name": "Exxat Design Intelligence",
+  "version": "1.0.0",
+  "generated_at": "2026-05-09T01:20:37+00:00",
+  "lineage": "Inspired by Google's open-sourced DESIGN.md (May 2026)",
+  "layers": [
+    "L0 Foundations",
+    "L1 Patterns",
+    "L2 Product UX",
+    "L3 Process",
+    "L4 Quality Gates",
+    "L5 Governance",
+    "L7 Storytelling"
+  ],
+  "axes": [
+    "Scholastic",
+    "Deterministic",
+    "Stochastic"
+  ],
+  "phases_complete": [
+    "P0 Keystone",
+    "P1 Scholastic enforcement",
+    "P2 Living context",
+    "P3 Pattern library",
+    "P4 Stochastic variance",
+    "P5 Designer override loop",
+    "P5.5 DS conformance hardening",
+    "P6 Process & telemetry",
+    "P7 Performance & i18n",
+    "P8 Platform-agnostic packaging"
+  ]
+}

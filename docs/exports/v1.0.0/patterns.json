@@ -1,0 +1,210 @@
+[
+  {
+    "category": "admin",
+    "name": "RUBRIC",
+    "title": "Admin Pattern Rubric",
+    "pattern_id": null,
+    "question_answered": null,
+    "path": "docs/patterns/admin/RUBRIC.md"
+  },
+  {
+    "category": "admin",
+    "name": "master-list-admin",
+    "title": "Master-List Admin",
+    "pattern_id": "ADMIN-001",
+    "question_answered": "What's the uniform shape of an admin screen that owns one of the 11 program-level master entities?",
+    "path": "docs/patterns/admin/master-list-admin.md"
+  },
+  {
+    "category": "admin",
+    "name": "read-only-inherited-filtered-view",
+    "title": "Read-Only Inherited Filtered View",
+    "pattern_id": "ADMIN-002",
+    "question_answered": "How does a non-admin persona (faculty / module surface) display a master entity they can't modify?",
+    "path": "docs/patterns/admin/read-only-inherited-filtered-view.md"
+  },
+  {
+    "category": "ai",
+    "name": "RUBRIC",
+    "title": "AI Pattern Rubric",
+    "pattern_id": null,
+    "question_answered": null,
+    "path": "docs/patterns/ai/RUBRIC.md"
+  },
+  {
+    "category": "async",
+    "name": "RUBRIC",
+    "title": "Async Pattern Rubric",
+    "pattern_id": null,
+    "question_answered": null,
+    "path": "docs/patterns/async/RUBRIC.md"
+  },
+  {
+    "category": "async",
+    "name": "live-monitor-polling",
+    "title": "Live Monitor \u2014 Polling",
+    "pattern_id": "ASYNC-001",
+    "question_answered": "How do we surface in-progress assessment state to faculty/admin without a real-time push channel?",
+    "path": "docs/patterns/async/live-monitor-polling.md"
+  },
+  {
+    "category": "dashboards",
+    "name": "RUBRIC",
+    "title": "Dashboard Pattern Rubric",
+    "pattern_id": null,
+    "question_answered": null,
+    "path": "docs/patterns/dashboards/RUBRIC.md"
+  },
+  {
+    "category": "dashboards",
+    "name": "two-question-dashboard",
+    "title": "Two-Question Dashboard",
+    "pattern_id": "DASHBOARDS-001",
+    "question_answered": "How do we structure a dashboard that asks both \"Am I doing X?\" and \"Is X working?\"",
+    "path": "docs/patterns/dashboards/two-question-dashboard.md"
+  },
+  {
+    "category": "experience",
+    "name": "RUBRIC",
+    "title": "Experience Pattern Rubric",
+    "pattern_id": null,
+    "question_answered": null,
+    "path": "docs/patterns/experience/RUBRIC.md"
+  },
+  {
+    "category": "forms",
+    "name": "RUBRIC",
+    "title": "Form Pattern Rubric",
+    "pattern_id": null,
+    "question_answered": null,
+    "path": "docs/patterns/forms/RUBRIC.md"
+  },
+  {
+    "category": "forms",
+    "name": "field-validation",
+    "title": "Field Validation",
+    "pattern_id": "FORMS-001",
+    "question_answered": "When and how should a form field show validation errors?",
+    "path": "docs/patterns/forms/field-validation.md"
+  },
+  {
+    "category": "ia",
+    "name": "RUBRIC",
+    "title": "Information Architecture Rubric",
+    "pattern_id": null,
+    "question_answered": null,
+    "path": "docs/patterns/ia/RUBRIC.md"
+  },
+  {
+    "category": "ia",
+    "name": "cross-product-entity-views",
+    "title": "Cross-Product Entity Views",
+    "pattern_id": "IA-001",
+    "question_answered": "How do shared program-level entities (students, faculty, courses, accommodations) appear consistently inside each module?",
+    "path": "docs/patterns/ia/cross-product-entity-views.md"
+  },
+  {
+    "category": "nav",
+    "name": "RUBRIC",
+    "title": "Nav Pattern Rubric",
+    "pattern_id": null,
+    "question_answered": null,
+    "path": "docs/patterns/nav/RUBRIC.md"
+  },
+  {
+    "category": "nav",
+    "name": "module-launcher",
+    "title": "Module Launcher",
+    "pattern_id": "NAV-001",
+    "question_answered": "Which Exxat module is the user in, and how do they switch?",
+    "path": "docs/patterns/nav/module-launcher.md"
+  },
+  {
+    "category": "onboarding",
+    "name": "RUBRIC",
+    "title": "Onboarding Pattern Rubric",
+    "pattern_id": null,
+    "question_answered": null,
+    "path": "docs/patterns/onboarding/RUBRIC.md"
+  },
+  {
+    "category": "onboarding",
+    "name": "lms-toggle-first-run",
+    "title": "LMS Toggle \u2014 First-Run",
+    "pattern_id": "ONBOARDING-001",
+    "question_answered": "How does a school admin make the load-bearing setup decision (LMS-on vs manual)?",
+    "path": "docs/patterns/onboarding/lms-toggle-first-run.md"
+  },
+  {
+    "category": "process",
+    "name": "RUBRIC",
+    "title": "Process Pattern Rubric",
+    "pattern_id": null,
+    "question_answered": null,
+    "path": "docs/patterns/process/RUBRIC.md"
+  },
+  {
+    "category": "process",
+    "name": "design-variants",
+    "title": "Design Variants \u2014 Stochastic Process Pattern",
+    "pattern_id": "PROCESS-001",
+    "question_answered": "How do we explore multiple valid design directions in parallel without losing the harness's scholastic guarantees?",
+    "path": "docs/patterns/process/design-variants.md"
+  },
+  {
+    "category": "states",
+    "name": "RUBRIC",
+    "title": "State Pattern Rubric",
+    "pattern_id": null,
+    "question_answered": null,
+    "path": "docs/patterns/states/RUBRIC.md"
+  },
+  {
+    "category": "states",
+    "name": "loading-empty-error-states",
+    "title": "Loading / Empty / Error States",
+    "pattern_id": "STATES-001",
+    "question_answered": "Why is this surface not showing populated content?",
+    "path": "docs/patterns/states/loading-empty-error-states.md"
+  },
+  {
+    "category": "viz",
+    "name": "RUBRIC",
+    "title": "Viz Selection Rubric",
+    "pattern_id": null,
+    "question_answered": null,
+    "path": "docs/patterns/viz/RUBRIC.md"
+  },
+  {
+    "category": "viz",
+    "name": "ai-vs-pulled-lane",
+    "title": "AI vs Pulled \u2014 Visual Lane",
+    "pattern_id": "VIZ-PATTERN-AI-001",
+    "question_answered": "How do users tell, at a glance, which content on a screen is computed from data vs generated by AI?",
+    "path": "docs/patterns/viz/ai-vs-pulled-lane.md"
+  },
+  {
+    "category": "viz",
+    "name": "bullet-vs-target",
+    "title": "Bullet vs Target",
+    "pattern_id": "VIZ-PATTERN-003",
+    "question_answered": "Where does X stand vs target / cohort?",
+    "path": "docs/patterns/viz/bullet-vs-target.md"
+  },
+  {
+    "category": "viz",
+    "name": "gap-heatmap",
+    "title": "Gap Heatmap",
+    "pattern_id": "VIZ-PATTERN-001",
+    "question_answered": "Where are the gaps across two dimensions (e.g., students \u00d7 competencies, sites \u00d7 KPIs, courses \u00d7 outcomes)?",
+    "path": "docs/patterns/viz/gap-heatmap.md"
+  },
+  {
+    "category": "viz",
+    "name": "outlier-strip-plot",
+    "title": "Outlier Strip Plot",
+    "pattern_id": "VIZ-PATTERN-002",
+    "question_answered": "Who is an outlier across N entities (students, sites, items, courses)?",
+    "path": "docs/patterns/viz/outlier-strip-plot.md"
+  }
+]
