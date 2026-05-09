@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Button, Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
@@ -45,6 +46,7 @@ type CourseTypeFilter = 'all' | 'didactic' | 'clinical'
 
 export default function AnalyticsPage() {
   const { surveys } = usePce()
+  const router = useRouter()
   // Per Aarti 2026-05-08 16:09 D4: two top-level axes — Term + Cohort.
   const [axis, setAxis] = useState<Axis>('term')
   const [term, setTerm] = useState('Spring 2026')
@@ -288,9 +290,15 @@ export default function AnalyticsPage() {
               </div>
             </div>
 
-            {/* By course table — faculty as a column (one click down per Aarti D5) */}
+            {/* By course table — faculty as a column (one click down per Aarti D5).
+                Per 2026-05-08 Granola: drill-down chain is AI summary →
+                question-level → individual offering. Each row navigates to the
+                offering detail at /my-surveys/[id]/results. */}
             <div className="flex flex-col gap-3">
               <h2 className="text-sm font-semibold">By Course</h2>
+              <p className="text-xs text-muted-foreground">
+                Click any row to drill into question-level detail for that offering.
+              </p>
               <div className="border border-border rounded-lg overflow-hidden">
                 <Table>
                   <TableHeader>
@@ -303,6 +311,7 @@ export default function AnalyticsPage() {
                       <TableHead>FP</TableHead>
                       <TableHead>CD</TableHead>
                       <TableHead>Trend</TableHead>
+                      <TableHead className="w-8" aria-label="Drill in" />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -316,8 +325,22 @@ export default function AnalyticsPage() {
                         label: po.term,
                         value: po.courseAvg,
                       }))
+                      const drilldownHref = `/my-surveys/${survey.id}/results`
                       return (
-                        <TableRow key={survey.id}>
+                        <TableRow
+                          key={survey.id}
+                          tabIndex={0}
+                          role="link"
+                          aria-label={`Drill into ${survey.courseCode} ${survey.courseName}`}
+                          onClick={() => router.push(drilldownHref)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              router.push(drilldownHref)
+                            }
+                          }}
+                          className="cursor-pointer hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-inset"
+                        >
                           <TableCell>
                             <div className="flex flex-col gap-0.5">
                               <span className="text-sm font-medium">{survey.courseCode}</span>
@@ -351,6 +374,13 @@ export default function AnalyticsPage() {
                               history={history}
                               currentValue={cc?.avg}
                               currentLabel={survey.term}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <i
+                              className="fa-light fa-chevron-right text-muted-foreground"
+                              aria-hidden="true"
+                              style={{ fontSize: 11 }}
                             />
                           </TableCell>
                         </TableRow>

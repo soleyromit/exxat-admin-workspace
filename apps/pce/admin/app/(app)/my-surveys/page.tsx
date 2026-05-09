@@ -34,9 +34,22 @@ function MySurveysContent() {
     s.instructors.some(i => i.id === FACULTY_ID) && s.term === term
   )
 
+  // Per 2026-05-08 Granola directive (Aarti): "active courses bubble to the
+  // top". Sort: active (collecting / open) → released → closed. Within each
+  // bucket, deadline ascending.
+  const STATUS_RANK: Record<string, number> = {
+    open: 0, collecting: 0, active: 0,
+    released: 1, closed: 2,
+  }
+  const sortedMySurveys = [...mySurveys].sort((a, b) => {
+    const rankDiff = (STATUS_RANK[a.status] ?? 9) - (STATUS_RANK[b.status] ?? 9)
+    if (rankDiff !== 0) return rankDiff
+    return (a.deadline ?? '').localeCompare(b.deadline ?? '')
+  })
+
   const displayed = filterParam === 'released'
-    ? mySurveys.filter(s => s.status === 'released' || s.status === 'closed')
-    : mySurveys
+    ? sortedMySurveys.filter(s => s.status === 'released' || s.status === 'closed')
+    : sortedMySurveys
 
   return (
     <>
