@@ -12,6 +12,13 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent))
+try:
+    from _registries import REPO_ROOT, get_changed
+except ImportError:
+    REPO_ROOT = Path("/Users/romitsoley/Work")
+    def get_changed(): return []
+
 
 # Subset for v0.1. Full canonical map: docs/triggers.md
 # Tuple shape: (regex_pattern, action_id)
@@ -140,6 +147,26 @@ def is_transcript_paste(prompt: str) -> bool:
     return len(TRANSCRIPT_LINE.findall(prompt)) >= 3
 
 
+def _registry_freshness_block() -> list[str]:
+    """If any tracked registry changed since the last prompt, surface a
+    short freshness note + the file paths so the assistant re-reads
+    them. Updates the saved state."""
+    changed = get_changed()
+    if not changed:
+        return []
+    lines = [
+        "[Registry freshness — files changed since last prompt]",
+        "",
+        "These workspace registries were edited since the previous prompt.",
+        "Re-read before relying on prior summaries — your in-context view is stale:",
+        "",
+    ]
+    for rel, _ in changed:
+        lines.append(f"  - {rel}")
+    lines.append("")
+    return lines
+
+
 def main() -> None:
     try:
         payload = json.load(sys.stdin)
@@ -169,18 +196,29 @@ def main() -> None:
             # Skip malformed patterns rather than failing the hook
             continue
 
-    if not matches:
+    freshness = _registry_freshness_block()
+
+    if not matches and not freshness:
         print(json.dumps({}))
         return
 
-    lines = ["[Design Intelligence Harness — UserPromptSubmit triggers matched]", ""]
-    for action in matches:
-        desc = ACTION_DESCRIPTIONS.get(action, action)
-        lines.append(f"  - {action}: {desc}")
-    lines.extend([
-        "",
-        "These actions are REQUIRED before generating a response. See docs/triggers.md for full map.",
-    ])
+    lines: list[str] = []
+
+    # Freshness block first — it tells the assistant what to re-read
+    # before evaluating the prompt itself.
+    if freshness:
+        lines.extend(freshness)
+
+    if matches:
+        lines.append("[Design Intelligence Harness — UserPromptSubmit triggers matched]")
+        lines.append("")
+        for action in matches:
+            desc = ACTION_DESCRIPTIONS.get(action, action)
+            lines.append(f"  - {action}: {desc}")
+        lines.extend([
+            "",
+            "These actions are REQUIRED before generating a response. See docs/triggers.md for full map.",
+        ])
 
     print(json.dumps({
         "hookSpecificOutput": {
