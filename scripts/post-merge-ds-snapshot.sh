@@ -9,8 +9,17 @@
 # Or invoke manually: bash scripts/post-merge-ds-snapshot.sh
 set -euo pipefail
 
-# Resolve to workspace root (script may be symlinked from .git/hooks)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Resolve to workspace root. Script may be symlinked from .git/hooks/post-merge,
+# in which case BASH_SOURCE[0] points at the symlink (inside .git/hooks/) — we
+# must follow it to find the real script in scripts/.
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+  SCRIPT_DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  # If the symlink target is relative, resolve it against the symlink's dir
+  [[ "$SOURCE" != /* ]] && SOURCE="$SCRIPT_DIR/$SOURCE"
+done
+SCRIPT_DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
 WORKSPACE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$WORKSPACE_ROOT"
 
