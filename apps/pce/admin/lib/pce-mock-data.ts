@@ -316,6 +316,56 @@ export const MOCK_TERMS = ['Spring 2026', 'Fall 2025', 'Spring 2025']
 /** Cohorts (graduating class) — per Aarti 2026-05-08 16:09 D3. */
 export const MOCK_COHORTS = ['Class of 2026', 'Class of 2027', 'Class of 2028']
 
+// ============================================================================
+// Program-level master entities (workspace ADR-001)
+// ============================================================================
+// Per Aarti 2026-05-08: 11 master entities live ONCE at program level. UC-19
+// admin-master-list-screens currently ships 2 of 11 — master courses + terms.
+
+export interface MasterCourse {
+  id: string
+  code: string
+  name: string
+  department: string
+  status: 'active' | 'inactive'
+  /** Last edited; YYYY-MM-DD */
+  lastEdited: string
+  /** Editor display name */
+  editedBy: string
+}
+
+export interface ProgramTerm {
+  id: string
+  name: string
+  academicYear: string
+  /** YYYY-MM-DD */
+  startDate: string
+  endDate: string
+  status: 'active' | 'archived'
+}
+
+export const MOCK_MASTER_COURSES: MasterCourse[] = [
+  { id: 'mc1', code: 'BIO 201',   name: 'Cellular Biology',         department: 'Biological Sciences', status: 'active',   lastEdited: '2026-04-12', editedBy: 'Dr. Thompson' },
+  { id: 'mc2', code: 'NURS 310',  name: 'Advanced Patient Care',    department: 'Nursing',             status: 'active',   lastEdited: '2026-03-22', editedBy: 'Dr. Thompson' },
+  { id: 'mc3', code: 'MED 410',   name: 'Clinical Pharmacology',    department: 'Medicine',            status: 'active',   lastEdited: '2026-02-08', editedBy: 'Dr. Thompson' },
+  { id: 'mc4', code: 'PHYS 101',  name: 'Medical Physics',          department: 'Foundations',         status: 'active',   lastEdited: '2025-11-30', editedBy: 'Dr. Thompson' },
+  { id: 'mc5', code: 'NURS 210',  name: 'Fundamentals of Nursing',  department: 'Nursing',             status: 'active',   lastEdited: '2026-01-15', editedBy: 'Dr. Thompson' },
+  { id: 'mc6', code: 'MED 101',   name: 'Introduction to Medicine', department: 'Medicine',            status: 'active',   lastEdited: '2026-01-15', editedBy: 'Dr. Thompson' },
+  { id: 'mc7', code: 'BIO 301',   name: 'Molecular Genetics',       department: 'Biological Sciences', status: 'active',   lastEdited: '2026-04-20', editedBy: 'Dr. Thompson' },
+  { id: 'mc8', code: 'PHARM 210', name: 'Pharmacotherapy I',        department: 'Pharmacy',            status: 'inactive', lastEdited: '2024-08-01', editedBy: 'Dr. Thompson' },
+]
+
+export const MOCK_PROGRAM_TERMS: ProgramTerm[] = [
+  { id: 'pt1', name: 'Spring 2026', academicYear: '2025–2026', startDate: '2026-01-12', endDate: '2026-05-08', status: 'active'   },
+  { id: 'pt2', name: 'Fall 2025',   academicYear: '2025–2026', startDate: '2025-08-25', endDate: '2025-12-12', status: 'archived' },
+  { id: 'pt3', name: 'Spring 2025', academicYear: '2024–2025', startDate: '2025-01-13', endDate: '2025-05-09', status: 'archived' },
+  { id: 'pt4', name: 'Fall 2024',   academicYear: '2024–2025', startDate: '2024-08-26', endDate: '2024-12-13', status: 'archived' },
+  { id: 'pt5', name: 'Fall 2026',   academicYear: '2026–2027', startDate: '2026-08-24', endDate: '2026-12-11', status: 'active'   },
+]
+
+/** LMS-on/off school config. Per workspace ADR-002, default is LMS-on; in this prototype we mock the off state so manual CRUD demos work. Toggle in future via Settings. */
+export const MOCK_LMS_ENABLED = false
+
 export const SECTION_LABELS: Record<TemplateSection, string> = {
   course_content: 'Course Content',
   faculty_performance: 'Faculty Performance',

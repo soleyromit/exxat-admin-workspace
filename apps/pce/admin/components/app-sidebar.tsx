@@ -58,7 +58,7 @@ function UserFooter() {
                 <span className="truncate font-medium">{user.name}</span>
                 <span className="truncate text-xs text-muted-foreground">{user.email}</span>
               </div>
-              <i className="fa-light fa-ellipsis-vertical ms-auto shrink-0" aria-hidden="true" style={{ fontSize: 13 }} />
+              <i className="fa-light fa-ellipsis-vertical ms-auto shrink-0 text-[13px]" aria-hidden="true" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
 
@@ -120,6 +120,8 @@ const ADMIN_NAV = [
   { key: 'surveys',     title: 'Surveys',               href: '/surveys',     icon: 'fa-paper-plane'    },
   { key: 'moderation',  title: 'Review & Moderation',   href: '/moderation',  icon: 'fa-shield-check'   },
   { key: 'analytics',   title: 'Analytics',             href: '/analytics',   icon: 'fa-chart-mixed'    },
+  // Setup section — workspace ADR-001 program-level master entities (UC-19).
+  { key: 'admin',       title: 'Setup',                href: '/admin',       icon: 'fa-gear-complex'   },
 ]
 
 const FACULTY_NAV = [
