@@ -26,6 +26,33 @@ except ImportError:
     def registries_reset() -> None: pass
 
 
+def _practices_audit_staleness() -> str | None:
+    """Return a one-line reminder if the Claude practices audit is overdue,
+    None otherwise. Reads docs/governance/claude-practices.md frontmatter."""
+    practices = REPO_ROOT / "docs" / "governance" / "claude-practices.md"
+    if not practices.exists():
+        return None
+    try:
+        import re
+        from datetime import datetime, timezone
+        text = practices.read_text(encoding="utf-8")
+        m = re.search(r"^last_full_audit\s*:\s*(\d{4}-\d{2}-\d{2})\s*$",
+                      text, re.MULTILINE)
+        if not m:
+            return None
+        last = datetime.strptime(m.group(1), "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        age = (datetime.now(timezone.utc) - last).days
+        if age >= 60:
+            return (f"⚠ Practices audit STALE ({age}d since last). "
+                    "Invoke the practices-audit skill to refresh.")
+        if age >= 30:
+            return (f"○ Practices audit reminder: {age}d since last. "
+                    "Consider invoking the practices-audit skill.")
+        return None
+    except Exception:
+        return None
+
+
 def _read_recent_adrs(product: str | None, limit: int = 5) -> list[str]:
     """Return titles of the most-recent ADRs for the active product +
     workspace. Used at compact-recovery to remind the assistant which
@@ -123,6 +150,11 @@ def main() -> None:
         "PreToolUse hook is in BLOCKING mode for DS-001..011 + A11Y-001/002/004/006.",
         "Telemetry: events written to docs/telemetry/events.jsonl. Run `python3 scripts/telemetry-report.py` for summary.",
     ])
+
+    # Surface practices-audit staleness if relevant
+    staleness = _practices_audit_staleness()
+    if staleness:
+        summary_lines.extend(["", staleness])
 
     # On compact-recovery (compaction wiped most context), surface load-bearing
     # registries + recent ADRs + the latest digest so the assistant doesn't
