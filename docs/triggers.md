@@ -36,6 +36,14 @@
 | `\b(we call (this\|it\|them)\|let'?s call (this\|it\|them)\|term for (this\|it\|them) is\|means)\b` | intake skill → glossary entry (`intake:glossary-add`) |
 | Pasted text: 3+ lines matching `^\d{1,2}:\d{2}\s+\w+` AND prompt >10 lines total | intake skill — save raw → extract decisions/personas/glossary (`intake:transcript-paste`) |
 
+### Research intake (rr-insights, sibling to Granola intake)
+
+| Match | Fires |
+|---|---|
+| `\b(from rr-insights\|rr-insights:\|research insight\|research finding\|study finding\|insight:\|theme:)` | research-intake skill — saves to `apps/<product>/docs/research/insights/`, extracts ADR + persona + glossary candidates (`intake:research-insight`) |
+| `\b(across \d+ interviews?\|N\s*=\s*\d+\|consistently mentioned\|majority of (participants\|interviewees))\b` | research-intake skill, theme tier — supporting quote count + sample quotes + implications (`intake:research-theme`) |
+| `\[(P\d+\|Faculty\s+\d+\|Participant\s+\d+)\]` (participant-attributed quote) | `intake:research-insight` |
+
 ### Library / framework references
 
 | Match (when implementing, not just naming) | Fires |

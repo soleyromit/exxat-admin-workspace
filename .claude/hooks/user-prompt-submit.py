@@ -12,12 +12,6 @@ import re
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent))
-try:
-    from _telemetry import emit as _telemetry_emit
-except ImportError:
-    def _telemetry_emit(*a, **k): pass
-
 
 # Subset for v0.1. Full canonical map: docs/triggers.md
 # Tuple shape: (regex_pattern, action_id)
@@ -61,6 +55,14 @@ TRIGGERS: list[tuple[str, str]] = [
 
     # Rule citation (priority 8) — surface DESIGN.md §4 rule text when cited
     (r"\b(DS|A11Y|VIZ|CONTENT|INTAKE)-\d{3}\b", "rule:cite-and-surface"),
+
+    # Research intake (priority 9) — rr-insights distillation, sibling to Granola intake
+    # NOTE: trailing \b dropped after ':' because ':' is non-word; \b would only match
+    # if next char is a word character. We want "insight: faculty…" to match.
+    (r"\b(from rr-insights|rr-insights:|research insight|research finding|study finding|insight:|theme:)", "intake:research-insight"),
+    (r"\b(from rr-insights|rr-insights:).+\b(theme|cluster)\b", "intake:research-theme"),
+    (r"\b(across \d+ interviews?|N\s*=\s*\d+|consistently mentioned|majority of (participants|interviewees))\b", "intake:research-theme"),
+    (r"\[(P\d+|Faculty\s+\d+|Participant\s+\d+)\]", "intake:research-insight"),
 ]
 
 ACTION_DESCRIPTIONS: dict[str, str] = {
@@ -81,6 +83,8 @@ ACTION_DESCRIPTIONS: dict[str, str] = {
     "stochastic:design-variants": "Invoke /design-variants slash command (.claude/commands/design-variants.md) — spawn N parallel agents in worktrees per docs/patterns/process/design-variants.md. Pre-flight: clean tree, active product, DS profile, then dispatch.",
     "intake:override": "Invoke the intake skill with action=override — capture as override ADR (template at docs/decisions/_override-template.md) + pattern exception + ledger row in docs/governance/exceptions.md. Sunset criterion + rationale mandatory. User confirms before write.",
     "rule:cite-and-surface": "User cited a workspace rule (DS-NNN / A11Y-NNN / VIZ-NNN / CONTENT-NNN / INTAKE-NNN). Read the rule's text from /DESIGN.md §4 and surface it in your response so the user knows you understand which rule binds. If they're proposing an override, route to intake:override.",
+    "intake:research-insight": "Invoke the research-intake skill (.claude/skills/research-intake/SKILL.md) with action=insight — saves raw insight to apps/<product>/docs/research/insights/, extracts ADR-worthy decisions + persona updates + glossary candidates. Confirm-before-write each artifact.",
+    "intake:research-theme": "Invoke the research-intake skill with action=theme — saves to research/insights/themes/, captures supporting quote count + sample quotes + implications.",
 }
 
 
@@ -164,14 +168,6 @@ def main() -> None:
         except re.error:
             # Skip malformed patterns rather than failing the hook
             continue
-
-    _telemetry_emit(
-        "userpromptsubmit",
-        prompt_chars=len(prompt),
-        prompt_lines=prompt.count("\n") + 1,
-        actions=matches,
-        action_count=len(matches),
-    )
 
     if not matches:
         print(json.dumps({}))
