@@ -41,7 +41,7 @@ const ENTITIES: EntityTile[] = [
 
   { key: 'students', title: 'Students', icon: 'fa-graduation-cap',
     description: 'Synced from LMS or imported manually.',
-    status: 'phase-2' },
+    href: '/admin/students', status: 'available', metric: '17 students · 14 enrolled' },
 
   { key: 'faculty', title: 'Faculty', icon: 'fa-users',
     description: 'Faculty profiles + role assignments. Shared between modules per Aarti D12.',
