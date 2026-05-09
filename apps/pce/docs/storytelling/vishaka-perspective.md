@@ -62,6 +62,21 @@ Then a section with:
 
 (See `apps/exam-management/docs/storytelling/vishaka-perspective.md` for the full structure when populated.)
 
+## Decisions / use-cases shaped
+
+This perspective is **scaffolded** — Vishaka's PCE-specific input is still pending (see Status section above). Inferred / weak backrefs only:
+
+**Workspace ADRs (Vishaka cited as aligned, not lead):**
+- [ADR-001 — Program-level entity universe](../../../../docs/decisions/001-program-level-entity-universe.md) (Mohan attributed program-level support to Vishaka, 2026-05-05)
+
+**Product ADRs:**
+- [PCE ADR-001 — No question bank, templates only](../decisions/001-no-question-bank-templates-only.md) (Vishaka has not weighed in directly; mark as Tentative until validated)
+
+**Use cases:**
+- [`use-cases.md`](./use-cases.md) — Vishaka's domain-SME view on assessment/curriculum coupling carries forward from Exam Mgmt; PCE-specific UCs need her review.
+
+> **Audit follow-up:** Once a PCE-only Vishaka session happens, revisit each entry above; promote inferred refs to direct refs and add new ones.
+
 ## Source provenance
 
 References extracted from:

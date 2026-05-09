@@ -203,6 +203,22 @@ Aarti will own the one-pager:
 - Whether confidence-based marking student-side lands in Phase 1 or defers (pending Vishaka feedback)
 - Pop quiz workflow integration — separate Lecture surface vs start-inline from Create Assessment
 
+## Decisions / use-cases shaped
+
+This perspective drove or directly shaped:
+
+**Workspace ADRs:**
+- [ADR-001 — Program-level entity universe](../../../../docs/decisions/001-program-level-entity-universe.md) (Aarti directed, 2026-05-05/05-08)
+- [ADR-002 — LMS-integration-first default](../../../../docs/decisions/002-lms-integration-first-default.md) (Aarti's framing)
+- [ADR-003 — Module sellability + Prism launcher](../../../../docs/decisions/003-module-sellability-and-prism-launcher.md) (Aarti's "modularity + composition" mental model)
+- [ADR-004 — Phase-1 persona collapse](../../../../docs/decisions/004-phase-1-persona-collapse.md) (Aarti directed, 2026-05-08)
+
+**Product ADRs:**
+- [Exam ADR-001 — Three-concept course architecture](../decisions/001-course-architecture-master-and-offerings.md) (drives from Aarti's "course offering" distinction, 2026-05-08)
+
+**Use cases:**
+- [`use-cases.md`](./use-cases.md) — UC-01 through UC-19 catalog largely shaped by Aarti's curricular-loop frame and parity discipline.
+
 ## Source provenance
 
 All quotes verbatim from Granola transcripts (May 5–8 2026). Speaker attribution validated by audit subagents per meeting. Granola IDs in `apps/exam-management/docs/storytelling/vision.md` § Source provenance.

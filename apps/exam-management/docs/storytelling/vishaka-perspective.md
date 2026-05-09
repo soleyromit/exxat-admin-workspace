@@ -172,6 +172,20 @@ Aarti loves this but bumped to Phase 2.
 - The exact 3–4 default role variant set within the Faculty tier
 - Her view on the pop quiz workflow (separate Lecture surface vs inline?)
 
+## Decisions / use-cases shaped
+
+Vishaka's domain-SME perspective directly shaped:
+
+**Workspace ADRs:**
+- [ADR-001 — Program-level entity universe](../../../../docs/decisions/001-program-level-entity-universe.md) (Vishaka aligned with program-level scope, 2026-05-05)
+- [ADR-002 — LMS-integration-first default](../../../../docs/decisions/002-lms-integration-first-default.md) (Vishaka's Canvas/LMS realism)
+
+**Product ADRs:**
+- [Exam ADR-001 — Three-concept course architecture](../decisions/001-course-architecture-master-and-offerings.md) (Vishaka's "assessments live in courses" recall reinforced this)
+
+**Use cases:**
+- [`use-cases.md`](./use-cases.md) — workflow-centric UCs (live monitoring, grading workflow, faculty role taxonomy) carry Vishaka's process realism.
+
 ## Source provenance
 
 Primary: 2026-05-05 3:29 PM Vishaka↔Romit dashboard review (`e82b0659-a5cf-41ce-8688-2a2b99bcf0b4`).

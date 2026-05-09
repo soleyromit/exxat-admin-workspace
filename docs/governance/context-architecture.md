@@ -171,9 +171,9 @@ If your goal is "minimize hallucination across all the contexts I work in," the 
 
 ### Tier 1 — Highest leverage (do these)
 
-1. **rr-insights intake skill** — mirror the Granola intake skill. When user references an insight or pastes one, distill into ADR / persona update / glossary / pattern reference. ~2 hrs to build.
-2. **Hub-file mirror** — copy frequently-referenced PDFs/screenshots from your Anthropic Project into `apps/<product>/docs/research/hub-files/`. Git-tracked, queryable. Manual today.
-3. **Backlink graph in storytelling files** — every ADR cites the meeting that drove it; every persona cites the source quote; every pattern cites the audit task that motivated it. Already mostly done; tighten gaps.
+1. ✅ **rr-insights intake skill** — `.claude/skills/research-intake/SKILL.md` (shipped 2026-05-09). Mirrors the Granola intake skill. Triggers on `from rr-insights:` / `insight:` / `theme:` / `[Pn]` participant tags.
+2. ✅ **Hub-file mirror** — `apps/{exam-management,pce}/docs/research/hub-files/` with `README.md` + `INDEX.md` (shipped 2026-05-09). Workflow: download from Anthropic Project → save with naming convention → add row to INDEX → commit. Reference in citing artifact as a relative path.
+3. ✅ **Backlink graph in storytelling files** — `scripts/backlink-audit.py` (shipped 2026-05-09). Run `python3 scripts/backlink-audit.py` from repo root. Checks ADRs (frontmatter `source:` + meeting/insight refs), perspective files (dated content + ADR/UC backrefs), and patterns (`Pattern ID:` + `Binds rules:`). Use `--strict` in CI for fail-on-gap; `--json` for tooling integration.
 
 ### Tier 2 — Medium leverage
 
