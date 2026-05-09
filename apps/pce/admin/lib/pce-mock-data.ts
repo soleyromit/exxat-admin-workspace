@@ -387,6 +387,63 @@ export interface CourseOffering {
   status: 'planned' | 'active' | 'completed' | 'archived'
 }
 
+// Permissions (entity #6) — role × scope grants
+//
+// Per Aarti 2026-05-08 16:09 D6 + D7:
+//   - 3 view tiers: admin / faculty / student (workspace ADR-004)
+//   - 2 faculty sub-roles at course level: Course Coordinator (full CRUD on
+//     assigned offerings) + Instructor (limited capabilities, exact set TBD
+//     per Vishaka R7)
+//   - Collaborator pattern: faculty can be granted read-only or co-edit
+//     access on specific course offerings
+//
+// Phase 1 ships: role assignments + per-faculty collaborator grants.
+// Granular per-resource permission editing is a Phase 2 follow-up.
+export type RoleKey = 'admin' | 'course-coordinator' | 'instructor' | 'collaborator-readonly' | 'collaborator-edit'
+
+export interface RoleAssignment {
+  id: string
+  facultyId: string  // FK
+  role: RoleKey
+  /** Scope: 'global' (all offerings) or specific course offering ID. */
+  scope: 'global' | string
+  grantedAt: string
+  grantedBy: string
+}
+
+export const ROLE_LABELS: Record<RoleKey, string> = {
+  'admin':                 'Admin',
+  'course-coordinator':    'Course Coordinator',
+  'instructor':            'Instructor',
+  'collaborator-readonly': 'Collaborator (read-only)',
+  'collaborator-edit':     'Collaborator (co-edit)',
+}
+
+export const ROLE_DESCRIPTIONS: Record<RoleKey, string> = {
+  'admin':                 'Full access to all program-level entities + cross-product modules.',
+  'course-coordinator':    'Whole-and-soul navigator of an assigned offering — full CRUD on Questions, Assessments, Students, Accommodations [read-only inherited].',
+  'instructor':            'Limited access on assigned offerings (exact capabilities TBD with Vishaka — see R7).',
+  'collaborator-readonly': 'View-only access on a specific offering or assessment, granted by Course Coordinator with admin permission.',
+  'collaborator-edit':     'Co-edit access on a specific offering or assessment, granted by Course Coordinator with admin permission.',
+}
+
+export const MOCK_ROLE_ASSIGNMENTS: RoleAssignment[] = [
+  // Admin (rare — usually 1-2 per program)
+  { id: 'ra1',  facultyId: 'f1', role: 'admin',                 scope: 'global', grantedAt: '2024-08-01', grantedBy: 'System' },
+  // Course Coordinators per active offerings
+  { id: 'ra2',  facultyId: 'f2', role: 'course-coordinator',    scope: 'co1',    grantedAt: '2025-08-25', grantedBy: 'Dr. Patel (Admin)' },
+  { id: 'ra3',  facultyId: 'f3', role: 'course-coordinator',    scope: 'co2',    grantedAt: '2025-08-25', grantedBy: 'Dr. Patel (Admin)' },
+  { id: 'ra4',  facultyId: 'f3', role: 'course-coordinator',    scope: 'co3',    grantedAt: '2025-08-25', grantedBy: 'Dr. Patel (Admin)' },
+  { id: 'ra5',  facultyId: 'f4', role: 'course-coordinator',    scope: 'co5',    grantedAt: '2025-08-25', grantedBy: 'Dr. Patel (Admin)' },
+  { id: 'ra6',  facultyId: 'f4', role: 'course-coordinator',    scope: 'co6',    grantedAt: '2025-08-25', grantedBy: 'Dr. Patel (Admin)' },
+  { id: 'ra7',  facultyId: 'f2', role: 'course-coordinator',    scope: 'co7',    grantedAt: '2025-08-25', grantedBy: 'Dr. Patel (Admin)' },
+  // Instructors (limited)
+  { id: 'ra8',  facultyId: 'f5', role: 'instructor',            scope: 'co1',    grantedAt: '2025-08-25', grantedBy: 'Dr. Chen (CC)' },
+  // Collaborators
+  { id: 'ra9',  facultyId: 'f1', role: 'collaborator-edit',     scope: 'co1',    grantedAt: '2026-01-15', grantedBy: 'Dr. Chen (CC)' },
+  { id: 'ra10', facultyId: 'f1', role: 'collaborator-readonly', scope: 'co2',    grantedAt: '2026-01-15', grantedBy: 'Dr. Williams (CC)' },
+]
+
 // Accommodations (entity #10) — workspace ADR-006 shared module
 //
 // Three tiers per ADR-006:

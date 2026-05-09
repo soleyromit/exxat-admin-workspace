@@ -48,8 +48,8 @@ const ENTITIES: EntityTile[] = [
     href: '/admin/faculty', status: 'available', metric: 'shared cross-product' },
 
   { key: 'permissions', title: 'Permissions', icon: 'fa-shield-check',
-    description: 'Role assignments + collaborator grants.',
-    status: 'phase-2' },
+    description: 'Role assignments + collaborator grants per Aarti D6/D7.',
+    href: '/admin/permissions', status: 'available', metric: '10 grants' },
 
   { key: 'content-areas', title: 'Content Areas', icon: 'fa-tags',
     description: 'Topic taxonomy mapped to courses + questions.',
