@@ -23,10 +23,15 @@ SCRIPT_DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
 WORKSPACE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$WORKSPACE_ROOT"
 
-# Find prev → current commit range. The post-merge hook runs after a merge,
-# so HEAD@{1} is the pre-merge state.
-PREV="${1:-HEAD@{1}}"
+# git's post-merge contract passes $1 = 1 (squash) or 0 (regular) — NOT a ref.
+# To diff the merge, use ORIG_HEAD..HEAD which git sets reliably.
+PREV="ORIG_HEAD"
 CURR="HEAD"
+
+# Verify both refs resolve before diffing (defensive — first-merge has no ORIG_HEAD)
+if ! git rev-parse --verify --quiet "$PREV" >/dev/null; then
+  exit 0
+fi
 
 # Did either DS submodule pointer change between PREV and CURR?
 DS_CHANGED=0
