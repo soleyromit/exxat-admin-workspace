@@ -33,10 +33,11 @@ const ENTITIES: EntityTile[] = [
     description: 'Academic terms (Spring 2026, Fall 2025, etc.).',
     href: '/admin/terms', status: 'available', metric: '5 terms' },
 
-  // Phase 1 — coming next
   { key: 'offerings', title: 'Course Offerings', icon: 'fa-rectangle-list',
     description: 'Course × term × cohort × faculty (atomic unit per Aarti D3).',
-    status: 'phase-2' },
+    href: '/admin/offerings', status: 'available', metric: '8 offerings' },
+
+  // Phase 1 — coming next
 
   { key: 'students', title: 'Students', icon: 'fa-graduation-cap',
     description: 'Synced from LMS or imported manually.',

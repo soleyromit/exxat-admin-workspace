@@ -366,6 +366,38 @@ export const MOCK_PROGRAM_TERMS: ProgramTerm[] = [
 /** LMS-on/off school config. Per workspace ADR-002, default is LMS-on; in this prototype we mock the off state so manual CRUD demos work. Toggle in future via Settings. */
 export const MOCK_LMS_ENABLED = false
 
+// ============================================================================
+// Course Offerings — the atomic 4-tuple unit (Aarti 2026-05-08 16:09 D3)
+// ============================================================================
+
+export interface CourseOffering {
+  id: string
+  /** FK → MasterCourse */
+  masterCourseId: string
+  /** FK → ProgramTerm */
+  termId: string
+  /** Graduating class */
+  cohort: string
+  /** Primary faculty (Course Coordinator). FK → INSTRUCTORS */
+  primaryFacultyId: string
+  /** Additional collaborators (per Aarti D7). FK → INSTRUCTORS */
+  collaboratorIds: string[]
+  /** Roster size */
+  enrolledCount: number
+  status: 'planned' | 'active' | 'completed' | 'archived'
+}
+
+export const MOCK_COURSE_OFFERINGS: CourseOffering[] = [
+  { id: 'co1', masterCourseId: 'mc1', termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f2', collaboratorIds: ['f1'], enrolledCount: 50, status: 'active' },
+  { id: 'co2', masterCourseId: 'mc2', termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f3', collaboratorIds: ['f1'], enrolledCount: 50, status: 'active' },
+  { id: 'co3', masterCourseId: 'mc3', termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 50, status: 'completed' },
+  { id: 'co4', masterCourseId: 'mc4', termId: 'pt2', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 50, status: 'archived' },
+  { id: 'co5', masterCourseId: 'mc5', termId: 'pt1', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 30, status: 'active' },
+  { id: 'co6', masterCourseId: 'mc6', termId: 'pt1', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 10, status: 'active' },
+  { id: 'co7', masterCourseId: 'mc7', termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f2', collaboratorIds: [],     enrolledCount: 35, status: 'planned' },
+  { id: 'co8', masterCourseId: 'mc1', termId: 'pt5', cohort: 'Class of 2028', primaryFacultyId: 'f2', collaboratorIds: ['f1'], enrolledCount: 50, status: 'planned' },
+]
+
 export const SECTION_LABELS: Record<TemplateSection, string> = {
   course_content: 'Course Content',
   faculty_performance: 'Faculty Performance',
