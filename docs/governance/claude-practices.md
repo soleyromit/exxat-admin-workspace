@@ -161,6 +161,43 @@ sources_consulted:
 | DS enforcement (token discipline, component-from-DS-only, no-raw-HTML rules) | ✅ workspace-novel — Anthropic doesn't ship a DS-discipline pattern; ours (DESIGN.md §4 + `ds-check` + `ds-component-check` + PreToolUse blocking) fills the gap | current (workspace-original) | 2026-05-09 | (none — workspace authored) |
 | Research-to-design intake (transcripts → ADRs → personas → glossary) | ✅ workspace-novel — Anthropic's `design` plugin lists "research synthesis" as a use case but doesn't publish patterns; ours (`intake` + `research-intake` skills) is more thorough | current (workspace-original) | 2026-05-09 | (`design` plugin scope claim only) |
 
+### Visualization anti-patterns (banned by VIZ-011)
+
+Per the May 9 viz audit (Tufte / Few / Knaflic / Schwabish / FT canon). These don't appear in our work — adding here so they DON'T silently re-introduce themselves.
+
+| Anti-pattern | Why banned | Source |
+|---|---|---|
+| Gauges / dials / speedometers | "Inefficient use of space, mimic dashboards in cars not screens" | Few, *Information Dashboard Design* |
+| Donut / pie with >5 slices | Eye can't accurately compare angles beyond a few wedges | Cleveland 1985 perception experiments |
+| Exploded pies | Adds chartjunk without information | Tufte, *VDQI* |
+| 3D anything (3D bars, 3D pies, isometric charts) | Distorts perceived magnitudes | Tufte, *VDQI* |
+| Dual y-axis line charts | Always misleading; readers infer correlation that may not exist | Schwabish, *Better Data Visualizations* |
+| Stacked bars with >4 stacks | Becomes unreadable; only the bottom stack has a true zero baseline | Schwabish |
+| Bar chart with non-zero baseline | Distorts magnitudes; only line/dot can do this honestly | Tufte, *VDQI* |
+| Legend when direct labels fit | Forced eye traversal; direct-label is faster | Knaflic, *Storytelling with Data* |
+| Rainbow / jet colormap for ordered data | Hue is categorical, not ordered — use sequential lightness | Borland 2007 |
+| Red for "low score" | VIZ-004 — Aarti's directive across all score/rating viz | Workspace memory |
+| Toast/Sonner for analytics drill-downs | DS rule — use inline expansion | DESIGN.md DS-008 |
+| Animations longer than 300ms on data updates | DS-009 — purposeful motion only | Workspace memory |
+| Chart without title + takeaway sentence | VIZ-008 — annotation IS the chart | Knaflic |
+| Progress bars for anything that isn't 0→100% in-flight | VIZ-001 | Workspace memory |
+
+### Visualization upgrades shipped (2026-05-09 audit)
+
+5 new patterns + 6 new rules adopted from the audit:
+
+| Pattern | Pattern ID | Rule | Status |
+|---|---|---|---|
+| Slope graph (paired) | VIZ-PATTERN-004 | VIZ-006 | ✅ shipped |
+| Cleveland dot plot | VIZ-PATTERN-005 | (no new rule — replaces sorted-bar default) | ✅ shipped |
+| Small multiples panel | VIZ-PATTERN-006 | VIZ-007 | ✅ shipped |
+| Calendar heatmap | VIZ-PATTERN-007 | VIZ-008 | ✅ shipped |
+| Progression Sankey | VIZ-PATTERN-008 | VIZ-009 | ✅ shipped |
+| (no new pattern — rule only) | — | VIZ-010 (single-metric cards include trajectory) | ✅ shipped |
+| (banned chart types) | — | VIZ-011 | ✅ shipped |
+
+Component upgrades (key-metrics.tsx, trend-sparkline.tsx, ai-insight-card.tsx) deferred to course-evaluation design pass — patterns get exercised naturally there.
+
 ### Superpowers skills (locally installed, opt-in adoption)
 
 These ship with the superpowers plugin (already cached at `~/.claude/plugins/cache/claude-plugins-official/superpowers/`). Adopt opt-in only — don't auto-load.

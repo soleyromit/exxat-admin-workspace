@@ -73,8 +73,13 @@
 ### viz
   - `ai-vs-pulled-lane` — AI vs Pulled — Visual Lane
   - `bullet-vs-target` — Bullet vs Target
+  - `calendar-heatmap` — Calendar Heatmap
+  - `cleveland-dot` — Cleveland Dot Plot (Ranked List)
   - `gap-heatmap` — Gap Heatmap
   - `outlier-strip-plot` — Outlier Strip Plot
+  - `progression-sankey` — Progression Sankey (Sequential-Stage Flow)
+  - `slope-paired` — Slope Graph (Paired Comparison)
+  - `small-multiples` — Small Multiples Panel
 
 ## Cross-product signals (RESEARCH-SIGNALS.md)
 

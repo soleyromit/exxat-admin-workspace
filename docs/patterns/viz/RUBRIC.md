@@ -1,8 +1,22 @@
 # Viz Selection Rubric
 
 > Required reading before designing any analytics card, dashboard, or report screen.
-> DESIGN.md rule **VIZ-005** binds here.
+> DESIGN.md rules **VIZ-001..011** all bind here.
 > Default to richer viz; **progress bars are last resort (VIZ-001)**.
+
+## Quick lookup — pattern index (8 patterns, 11 rules)
+
+| Pattern | File | Best for |
+|---|---|---|
+| Bullet vs Target | `bullet-vs-target.md` | Where does X stand vs target/cohort |
+| Outlier Strip Plot | `outlier-strip-plot.md` | Who's an outlier across many entities (N>30) |
+| Cleveland Dot Plot | `cleveland-dot.md` | Ranked single-metric list (N≤30) |
+| Slope Graph (Paired) | `slope-paired.md` | Before/after across N entities (2 timepoints) |
+| Gap Heatmap | `gap-heatmap.md` | Two-dimensional gaps (students × competencies) |
+| Small Multiples | `small-multiples.md` | Same chart shape across faceting dim (per faculty/cohort) |
+| Calendar Heatmap | `calendar-heatmap.md` | Activity over ≥30 days with day-of-week intact |
+| Progression Sankey | `progression-sankey.md` | Sequential stages with attrition |
+| AI vs Pulled Lane | `ai-vs-pulled-lane.md` | Visually distinguishing AI-generated vs computed |
 
 ---
 
@@ -17,6 +31,7 @@ Match the user's question to the right viz. If your question matches none, ask R
 | Bullet chart | Actual + target + qualitative ranges in one read | `bullet-vs-target.md` |
 | Dot-on-distribution | Where one entity sits in the cohort distribution | (P3) `strip-with-marker.md` |
 | Slope (single line) | Before/after for one entity | (P3) `slope-single.md` |
+| Slope graph (paired) | Before/after across N entities — see who moved | `slope-paired.md` |
 
 ❌ **Wrong:** Progress bar. Hides cohort, hides target, hides trajectory.
 
@@ -24,7 +39,8 @@ Match the user's question to the right viz. If your question matches none, ask R
 
 | Right viz | Why | Pattern file |
 |---|---|---|
-| Strip plot / dot plot | Every entity = a dot; outliers visually obvious | `outlier-strip-plot.md` |
+| Strip plot / dot plot | Every entity = a dot; outliers visually obvious (N>30) | `outlier-strip-plot.md` |
+| Cleveland dot plot | Ranked list with median reference line (N≤30) | `cleveland-dot.md` |
 | Scatter (2 vars) | Quadrants surface high-low / low-high outliers | (P3) `scatter-quadrants.md` |
 | Box / violin plot | Distribution + outliers above/below whiskers | (P3) `box-distribution.md` |
 
@@ -35,7 +51,8 @@ Match the user's question to the right viz. If your question matches none, ask R
 | Right viz | Why | Pattern file |
 |---|---|---|
 | Heatmap | Two-dimensional density readable at a glance | `gap-heatmap.md` |
-| Small multiples | Repeated chart per row, axes aligned | (P3) `small-multiples.md` |
+| Small multiples | Repeated chart per row/col, axes aligned | `small-multiples.md` |
+| Calendar heatmap | Time × day-of-week density (≥30 days) | `calendar-heatmap.md` |
 
 ❌ **Wrong:** Grid of progress bars. Eye cannot integrate dozens of independent bars into a pattern.
 
