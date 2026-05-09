@@ -1,6 +1,11 @@
+---
+name: ds-check
+description: Use when user invokes `/ds-check` or asks for a DS-compliance audit on a file/directory/staged set. Reports every Exxat-DS / studentUX rule violation grouped by file then by rule. Read-only — never edits. Twelve rule families covering raw HTML, inline typography, inline color, persona/avatar colors, prism tokens, missing variants/sizes, raw oklch/hex, InputGroup composition, missing aria-labels on icon buttons, non-FontAwesome icons, white-in-color-mix, missing overflow-hidden on rounded Table wrappers.
+---
+
 # DS Compliance Check
 
-Audit the specified file (or all staged files if no argument given) against Exxat-DS and studentUX rules. Report every violation grouped by rule. Fix nothing — report only, so the developer decides.
+Audit the specified file (or all staged files if no argument given) against Exxat-DS and studentUX rules. Report every violation grouped by rule. **Fix nothing — report only**, so the developer decides.
 
 ## Usage
 - `/ds-check` — audit all git-staged TSX files
@@ -78,5 +83,5 @@ R1 (raw HTML): X  R2 (inline font): Y  R3 (inline color): Z ...
 
 1. If `$ARGUMENTS` is empty, run: `git diff --name-only --cached | grep '\.tsx$'`
 2. If `$ARGUMENTS` is a directory, find all `.tsx` files in it
-3. Read each file and scan for violations of R1–R7
+3. Read each file and scan for violations of R1–R12
 4. Report — do NOT make any edits

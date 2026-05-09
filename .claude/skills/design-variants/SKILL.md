@@ -1,6 +1,9 @@
 ---
-description: Spawn N parallel design agents in isolated git worktrees, each producing a different variant of the same brief. After all return, present a comparison so the user can pick the winner. Implements the stochastic axis from DESIGN.md §3.
+name: design-variants
+description: Use when user invokes `/design-variants` or asks to generate N parallel design variants of the same brief. Spawns N general-purpose agents in isolated git worktrees, each producing a different variant (minimal, data-dense, narrative, mobile-first, accessibility-emphasis, ai-forward, pulled-data-forward). After all return, presents a side-by-side comparison so the user picks the winner. Implements the stochastic axis from DESIGN.md §3.
 ---
+
+# Design Variants — Stochastic Multi-Agent Branching
 
 Generate N design variants in parallel for a single brief.
 
