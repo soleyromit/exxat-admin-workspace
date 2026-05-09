@@ -1,0 +1,241 @@
+'use client'
+
+/**
+ * Admin · Competencies (UC-19, workspace ADR-001 entity #8).
+ *
+ * Per Aarti 2026-05-08: program-level outcome capabilities. Questions tag
+ * 1-to-many. Same Gmail-style nested-label shape as Content Areas / Standards.
+ *
+ * Per Aarti 2026-05-08 16:09: PCE/CFE does NOT student-rate competencies
+ * (competencies are outcomes, not student-rated) — they're for Exam Mgmt
+ * gap analysis only.
+ */
+
+import { useMemo, useState } from 'react'
+import Link from 'next/link'
+import {
+  Button, Input, InputGroup, InputGroupAddon,
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
+  Field, FieldLabel, FieldGroup, FieldDescription,
+  Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
+  Badge,
+  SidebarTrigger, Separator,
+} from '@exxat/ds/packages/ui/src'
+import { MOCK_COMPETENCIES, type Competency } from '@/lib/pce-mock-data'
+
+const COMPETENCY_SOURCES = ['IOM', 'NLN', 'AACN', 'CAPTE', 'NCLEX', 'ARC-PA', 'ASHA', 'Custom']
+
+export default function CompetenciesPage() {
+  const [rows, setRows] = useState<Competency[]>(MOCK_COMPETENCIES)
+  const [search, setSearch] = useState('')
+  const [addOpen, setAddOpen] = useState(false)
+  const [draft, setDraft] = useState({ name: '', description: '', source: 'IOM', parentId: 'none' })
+
+  const byId = useMemo(() => new Map(rows.map(r => [r.id, r])), [rows])
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return rows
+    return rows.filter(r =>
+      r.name.toLowerCase().includes(q) ||
+      r.description.toLowerCase().includes(q) ||
+      (r.source ?? '').toLowerCase().includes(q)
+    )
+  }, [rows, search])
+
+  const topLevel = useMemo(() => rows.filter(r => !r.parentId && r.status === 'active'), [rows])
+
+  function handleSave() {
+    if (!draft.name.trim()) return
+    const newRow: Competency = {
+      id: `cm${Date.now()}`,
+      name: draft.name.trim(),
+      description: draft.description.trim(),
+      source: draft.source,
+      parentId: draft.parentId === 'none' ? undefined : draft.parentId,
+      status: 'active',
+    }
+    setRows([newRow, ...rows])
+    setDraft({ name: '', description: '', source: 'IOM', parentId: 'none' })
+    setAddOpen(false)
+  }
+
+  function handleArchive(id: string) {
+    setRows(rows.map(r => r.id === id ? { ...r, status: r.status === 'active' ? 'archived' : 'active' } : r))
+  }
+
+  return (
+    <>
+      <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
+        <SidebarTrigger className="-ms-1" />
+        <Separator orientation="vertical" className="h-4" />
+        <Link href="/admin" className="text-sm text-muted-foreground">Admin</Link>
+        <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
+        <span className="text-sm font-semibold flex-1 truncate">Competencies</span>
+      </header>
+
+      <main className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
+        <div className="max-w-5xl flex flex-col gap-4">
+
+          <p className="text-sm text-muted-foreground max-w-2xl">
+            Program-level outcome capabilities. Sourced from accreditation bodies (IOM, NLN, AACN, CAPTE, NCLEX) or custom-defined. Questions tag 1-to-many; courses map to subsets.
+          </p>
+
+          <div className="flex items-center gap-2">
+            <InputGroup className="flex-1 max-w-sm">
+              <Input
+                placeholder="Search by name, description, or source…"
+                aria-label="Search competencies"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+              <InputGroupAddon align="inline-end">
+                <i className="fa-light fa-magnifying-glass text-muted-foreground" aria-hidden="true" />
+              </InputGroupAddon>
+            </InputGroup>
+            <Button variant="default" onClick={() => setAddOpen(true)}>
+              <i className="fa-light fa-plus" aria-hidden="true" />
+              Add competency
+            </Button>
+            <Button variant="outline">
+              <i className="fa-light fa-arrow-up-from-bracket" aria-hidden="true" />
+              Import CSV
+            </Button>
+          </div>
+
+          <div className="border border-border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Source</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Parent</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="w-12" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6}>
+                      <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
+                        <p className="text-sm font-medium">
+                          {search ? `No competencies match "${search}"` : 'No competencies yet'}
+                        </p>
+                        {!search && (
+                          <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
+                            <i className="fa-light fa-plus" aria-hidden="true" />
+                            Add your first competency
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filtered.map(row => {
+                    const parent = row.parentId ? byId.get(row.parentId) : null
+                    return (
+                      <TableRow key={row.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {parent && <i className="fa-light fa-arrow-turn-down-right text-xs text-muted-foreground" aria-hidden="true" />}
+                            <span className="text-sm font-medium">{row.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {row.source ? (
+                            <Badge variant="outline" className="font-mono text-[10px]">{row.source}</Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell><span className="text-xs text-muted-foreground truncate max-w-md block">{row.description}</span></TableCell>
+                        <TableCell>
+                          {parent ? <span className="text-xs text-muted-foreground">{parent.name}</span> : <span className="text-xs text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={row.status === 'active' ? 'secondary' : 'outline'} className="capitalize">{row.status}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${row.name}`}>
+                                <i className="fa-regular fa-ellipsis" aria-hidden="true" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuItem>
+                                <i className="fa-light fa-pen" aria-hidden="true" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <i className="fa-light fa-rectangle-list" aria-hidden="true" />
+                                View tagged questions
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem variant="destructive" onClick={() => handleArchive(row.id)}>
+                                <i className="fa-light fa-box-archive" aria-hidden="true" />
+                                {row.status === 'active' ? 'Archive' : 'Reactivate'}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+        </div>
+      </main>
+
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add competency</DialogTitle>
+            <DialogDescription>Outcome capability mapped to questions and courses.</DialogDescription>
+          </DialogHeader>
+          <FieldGroup>
+            <Field orientation="vertical">
+              <FieldLabel htmlFor="cm-name">Name *</FieldLabel>
+              <Input id="cm-name" value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} aria-required="true" />
+            </Field>
+            <Field orientation="vertical">
+              <FieldLabel htmlFor="cm-source">Source</FieldLabel>
+              <Select value={draft.source} onValueChange={v => setDraft({ ...draft, source: v })}>
+                <SelectTrigger id="cm-source" aria-label="Source"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {COMPETENCY_SOURCES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <FieldDescription>Accreditation body or "Custom" for school-defined.</FieldDescription>
+            </Field>
+            <Field orientation="vertical">
+              <FieldLabel htmlFor="cm-desc">Description</FieldLabel>
+              <Input id="cm-desc" value={draft.description} onChange={e => setDraft({ ...draft, description: e.target.value })} />
+            </Field>
+            <Field orientation="vertical">
+              <FieldLabel htmlFor="cm-parent">Parent (optional)</FieldLabel>
+              <Select value={draft.parentId} onValueChange={v => setDraft({ ...draft, parentId: v })}>
+                <SelectTrigger id="cm-parent" aria-label="Parent"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None (top-level)</SelectItem>
+                  {topLevel.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </Field>
+          </FieldGroup>
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+            <Button variant="default" onClick={handleSave} disabled={!draft.name.trim()}>Add competency</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}

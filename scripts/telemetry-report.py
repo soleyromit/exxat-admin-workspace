@@ -41,6 +41,15 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
+def is_synthetic_path(file_path: str) -> bool:
+    """Filter out smoke-test paths so they don't pollute real-edit stats."""
+    if not file_path:
+        return False
+    # Smoke-test patterns I've seen in this codebase
+    synthetic_markers = ("/foo.tsx", "/foo.ts", "/test.tsx", "/test.ts", "/__test__/", "/__tests__/")
+    return any(m in file_path for m in synthetic_markers)
+
+
 def load_events(days: int) -> list[dict]:
     if not EVENTS_PATH.exists():
         return []
@@ -54,8 +63,12 @@ def load_events(days: int) -> list[dict]:
             try:
                 rec = json.loads(line)
                 ts = datetime.fromisoformat(rec.get("ts", "").replace("Z", "+00:00"))
-                if ts >= cutoff:
-                    events.append(rec)
+                if ts < cutoff:
+                    continue
+                # Filter synthetic test paths from rule-tuning stats
+                if is_synthetic_path(rec.get("file_path", "")):
+                    continue
+                events.append(rec)
             except (json.JSONDecodeError, ValueError):
                 continue
     return events

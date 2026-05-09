@@ -57,11 +57,11 @@ const ENTITIES: EntityTile[] = [
 
   { key: 'competencies', title: 'Competencies', icon: 'fa-medal',
     description: 'Program-level outcome capabilities.',
-    status: 'phase-2' },
+    href: '/admin/competencies', status: 'available', metric: '8 competencies' },
 
   { key: 'standards', title: 'Standards', icon: 'fa-stamp',
     description: 'Accreditation requirements (CAPTE, ARC-PA, NCLEX, etc.).',
-    status: 'phase-2' },
+    href: '/admin/standards', status: 'available', metric: '8 standards' },
 
   { key: 'assessment-types', title: 'Assessment Types', icon: 'fa-clipboard-question',
     description: 'Pop quiz, timed, take-home, open-book, proctored.',
