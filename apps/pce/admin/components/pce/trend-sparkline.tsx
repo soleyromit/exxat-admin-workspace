@@ -33,6 +33,12 @@ interface Props {
   /** Y-axis range; defaults to 0–5 score scale. */
   min?: number
   max?: number
+  /** Show min/max marker dots inline. Default false. */
+  showExtremaMarkers?: boolean
+  /** Cohort/department reference band — fills horizontal --muted band */
+  band?: { low: number; high: number }
+  /** Show the value of the last point as a label adjacent to the endpoint */
+  showCurrentLabel?: boolean
 }
 
 export function TrendSparkline({
@@ -43,6 +49,9 @@ export function TrendSparkline({
   height = 20,
   min = 0,
   max = 5,
+  showExtremaMarkers = false,
+  band,
+  showCurrentLabel = false,
 }: Props) {
   const points: Point[] = currentValue !== undefined
     ? [...history, { label: currentLabel, value: currentValue }]
@@ -99,6 +108,14 @@ export function TrendSparkline({
   const directionText = isFlat ? 'flat' : isUp ? `up ${delta.toFixed(1)}` : `down ${Math.abs(delta).toFixed(1)}`
   const ariaLabel = `Trend across ${points.length} offerings — ${directionText}. ${seriesText}`
 
+  // Min/max indices (for extrema markers)
+  const minIdx = points.reduce((acc, p, i) => p.value < points[acc].value ? i : acc, 0)
+  const maxIdx = points.reduce((acc, p, i) => p.value > points[acc].value ? i : acc, 0)
+
+  // Cohort/department band (horizontal --muted band)
+  const bandTop = band ? padY + drawH - ((band.high - min) / span) * drawH : 0
+  const bandBot = band ? padY + drawH - ((band.low - min) / span) * drawH : 0
+
   return (
     <div className="flex items-center gap-1.5">
       <svg
@@ -108,6 +125,17 @@ export function TrendSparkline({
         aria-label={ariaLabel}
         style={{ display: 'block', flexShrink: 0 }}
       >
+        {/* Cohort band (rendered first so line + dots draw on top) */}
+        {band && (
+          <rect
+            x={padX}
+            y={bandTop}
+            width={drawW}
+            height={Math.max(1, bandBot - bandTop)}
+            fill="var(--muted)"
+            opacity={0.6}
+          />
+        )}
         <path
           d={d}
           fill="none"
@@ -116,8 +144,20 @@ export function TrendSparkline({
           strokeLinecap="round"
           strokeLinejoin="round"
         />
+        {/* Min/max marker dots */}
+        {showExtremaMarkers && minIdx !== maxIdx && (
+          <>
+            <circle cx={xs[maxIdx]} cy={ys[maxIdx]} r={2} fill="var(--chart-2)" />
+            <circle cx={xs[minIdx]} cy={ys[minIdx]} r={2} fill="var(--chart-4)" />
+          </>
+        )}
         <circle cx={lastX} cy={lastY} r={1.8} fill={stroke} />
       </svg>
+      {showCurrentLabel && width >= 100 && (
+        <span className="text-xs tabular-nums text-muted-foreground" aria-hidden="true">
+          {points[points.length - 1].value.toFixed(1)}
+        </span>
+      )}
       <span
         className="text-xs tabular-nums"
         style={{
