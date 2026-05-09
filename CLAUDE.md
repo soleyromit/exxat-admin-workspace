@@ -236,6 +236,8 @@ Badge shape override: `className="rounded"` for rectangular (4px) vs DS pill def
 | `apps/<product>/CLAUDE.md` | Per-product extension |
 | `apps/<product>/docs/storytelling/*.md` | Per-product perspectives |
 | `apps/<product>/docs/decisions/*.md` | Per-product ADRs |
+| `apps/pce/prototype/pce-evaluation.html` | Canonical 8-persona PCE prototype (frozen at git tag `pce-prototype-v1`). Launch via `bash scripts/serve-pce-prototype.sh` |
+| `apps/pce/docs/research/prototype-cards-catalog.md` | Card-by-card audit of the prototype against Aarti's approvals — read this before pulling any prototype card into production |
 
 ---
 
