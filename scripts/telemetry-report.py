@@ -65,6 +65,33 @@ def hook_fire_counts(events: list[dict]) -> dict[str, int]:
     return dict(Counter(e["event"] for e in events))
 
 
+def skill_invocation_counts(events: list[dict]) -> dict[str, int]:
+    """Count skill.invocation events by skill name."""
+    c: Counter = Counter()
+    for e in events:
+        if e["event"] == "skill.invocation":
+            c[e.get("skill", "unknown")] += 1
+    return dict(c)
+
+
+def command_invocation_counts(events: list[dict]) -> dict[str, int]:
+    """Count command.invocation events by command name."""
+    c: Counter = Counter()
+    for e in events:
+        if e["event"] == "command.invocation":
+            c[e.get("command", "unknown")] += 1
+    return dict(c)
+
+
+def subagent_dispatch_counts(events: list[dict]) -> dict[str, int]:
+    """Count subagent.dispatch events by type."""
+    c: Counter = Counter()
+    for e in events:
+        if e["event"] == "subagent.dispatch":
+            c[e.get("type", "unknown")] += 1
+    return dict(c)
+
+
 def top_actions(events: list[dict], top: int = 10) -> list[tuple[str, int]]:
     c: Counter = Counter()
     for e in events:
@@ -231,6 +258,31 @@ def render_text(window_days: int, events: list[dict], quarterly: bool) -> str:
             lines.append(f"    {n:>4}  {r}")
     else:
         lines.append("  No suspicions in window.")
+
+    skills = skill_invocation_counts(events)
+    commands = command_invocation_counts(events)
+    subagents = subagent_dispatch_counts(events)
+
+    lines += ["", "## Skill invocations"]
+    if skills:
+        for k, n in sorted(skills.items(), key=lambda x: -x[1]):
+            lines.append(f"  {n:>4}  {k}")
+    else:
+        lines.append("  (none — skills not yet emitting telemetry; see docs/telemetry/README.md)")
+
+    lines += ["", "## Slash command invocations"]
+    if commands:
+        for k, n in sorted(commands.items(), key=lambda x: -x[1]):
+            lines.append(f"  {n:>4}  /{k}")
+    else:
+        lines.append("  (none)")
+
+    lines += ["", "## Subagent dispatches"]
+    if subagents:
+        for k, n in sorted(subagents.items(), key=lambda x: -x[1]):
+            lines.append(f"  {n:>4}  {k}")
+    else:
+        lines.append("  (none)")
 
     lines += ["", f"## ADR throughput (created in last {window_days}d)"]
     if adrs:

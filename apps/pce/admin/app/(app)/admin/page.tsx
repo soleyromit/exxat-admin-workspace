@@ -44,8 +44,8 @@ const ENTITIES: EntityTile[] = [
     status: 'phase-2' },
 
   { key: 'faculty', title: 'Faculty', icon: 'fa-users',
-    description: 'Faculty profiles + role assignments.',
-    status: 'phase-2' },
+    description: 'Faculty profiles + role assignments. Shared between modules per Aarti D12.',
+    href: '/admin/faculty', status: 'available', metric: 'shared cross-product' },
 
   { key: 'permissions', title: 'Permissions', icon: 'fa-shield-check',
     description: 'Role assignments + collaborator grants.',
@@ -53,7 +53,7 @@ const ENTITIES: EntityTile[] = [
 
   { key: 'content-areas', title: 'Content Areas', icon: 'fa-tags',
     description: 'Topic taxonomy mapped to courses + questions.',
-    status: 'phase-2' },
+    href: '/admin/content-areas', status: 'available', metric: '8 areas' },
 
   { key: 'competencies', title: 'Competencies', icon: 'fa-medal',
     description: 'Program-level outcome capabilities.',
@@ -65,7 +65,7 @@ const ENTITIES: EntityTile[] = [
 
   { key: 'assessment-types', title: 'Assessment Types', icon: 'fa-clipboard-question',
     description: 'Pop quiz, timed, take-home, open-book, proctored.',
-    status: 'phase-2' },
+    href: '/admin/assessment-types', status: 'available', metric: '7 types (5 P1)' },
 
   // Shared module (workspace ADR-006)
   { key: 'accommodations', title: 'Accommodations', icon: 'fa-universal-access',

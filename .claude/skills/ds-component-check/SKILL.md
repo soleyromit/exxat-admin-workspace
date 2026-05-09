@@ -155,6 +155,18 @@ Never write inline `fontSize / fontFamily / fontWeight` literals. Use:
 
 After verification, generate the import + composition. The DS-010 PreToolUse hook double-checks before write succeeds.
 
+### Step 7 — Telemetry
+
+Emit a `skill.invocation` event per `docs/telemetry/README.md`:
+
+```bash
+python3 -c "import sys; sys.path.insert(0, '/Users/romitsoley/Work/.claude/hooks'); \
+  from _telemetry import emit; emit('skill.invocation', skill='ds-component-check', \
+  action='verify-import', outcome='completed')"
+```
+
+If verification fails (component not in snapshot), use `outcome='blocked'`.
+
 ## Skip the skill when
 
 - Editing existing code without adding new imports

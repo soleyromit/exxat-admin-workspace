@@ -72,12 +72,12 @@ Every gate cites a rule ID. Hook output references the ID so violations are audi
 - **DS-011** — No inline typography literals (`fontSize`, `fontWeight`, `fontFamily` as raw values in `style={{}}`). Use Tailwind classes (`text-xs`, `font-semibold`) or token references (`var(--text-xs)`, `var(--font-sans)`). *Gate:* PreToolUse (blocking, v0.2).
 
 ### A11Y — WCAG 2.2 AA + project rules
-- **A11Y-001** (WCAG 4.1.2) — Icon-only `<Button>` requires `aria-label`. *Gate:* Stop hook.
-- **A11Y-002** (WCAG 2.4.7) — Focus rings may not be removed. `outline-none` requires `focus-visible:ring-*`. *Gate:* Stop hook.
+- **A11Y-001** (WCAG 4.1.2) — Icon-only `<Button size="icon*">` requires `aria-label`. *Gate:* PreToolUse (blocking, v0.2).
+- **A11Y-002** (WCAG 2.4.7) — Focus rings may not be removed. `outline-none` requires `focus-visible:ring-*`. *Gate:* PreToolUse (blocking, v0.2).
 - **A11Y-003** (WCAG 1.4.3) — Text contrast ≥ 4.5:1 (normal) / ≥ 3:1 (large). Tokens use `--foreground`/`--muted-foreground` against background. *Gate:* contrast check on tokens; PreToolUse on inline overrides.
 - **A11Y-004** (WCAG 1.3.1) — Decorative Font Awesome icons require `aria-hidden="true"`. *Gate:* Stop hook.
 - **A11Y-005** (WCAG 2.5.5) — Min touch target 44px on mobile / student apps. Use `--control-height-touch`. *Gate:* Stop hook for student; visual review for admin.
-- **A11Y-006** (WCAG 1.3.1) — `DialogTitle` / `SheetTitle` required. Visually-hidden titles use `className="sr-only"`. *Gate:* Stop hook.
+- **A11Y-006** (WCAG 1.3.1) — `DialogTitle` / `SheetTitle` required. Visually-hidden titles use `className="sr-only"`. *Gate:* PreToolUse (warning-only — regex is heuristic, may have false positives across files).
 - **A11Y-007** — Sidebar shell: `<SidebarProvider className="h-svh"> + <Sidebar variant="inset">` required in admin layout.tsx. *Gate:* PreToolUse on layout.tsx.
 - **A11Y-008** (WCAG 1.4.1) — Color is never the only encoding. Pair color with shape, label, or icon (charts, status, alerts). *Gate:* code review.
 - **A11Y-009** — Nav substructure must follow DS templates. Sidebar uses `Sidebar > SidebarContent > SidebarGroup > SidebarMenu > SidebarMenuItem > SidebarMenuButton`. Breadcrumb uses `Breadcrumb > BreadcrumbList > BreadcrumbItem > BreadcrumbLink`. Tabs uses `Tabs > TabsList > TabsTrigger` + `TabsContent`. Skipping levels or substituting custom elements breaks keyboard nav and screen-reader semantics. *Gate:* pattern review; ds-component-check skill loads templates from profile.

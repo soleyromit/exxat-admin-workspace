@@ -144,6 +144,18 @@ To clean up: `/design-variants cleanup` (removes all variant worktrees + branche
 
 `/design-variants cleanup` — list current variant worktrees + offer to remove. Confirm before each removal.
 
+### Step 7 — Telemetry
+
+Emit a `command.invocation` event per `docs/telemetry/README.md`:
+
+```bash
+python3 -c "import sys; sys.path.insert(0, '/Users/romitsoley/Work/.claude/hooks'); \
+  from _telemetry import emit; emit('command.invocation', command='design-variants', \
+  args='<N> <brief>', outcome='completed')"
+```
+
+For each subagent dispatched, also emit `subagent.dispatch` with `type='general-purpose'` (or whichever subagent type was used).
+
 ## Guardrails
 
 - Never auto-merge a variant. User picks.

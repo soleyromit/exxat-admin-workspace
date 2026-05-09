@@ -387,6 +387,46 @@ export interface CourseOffering {
   status: 'planned' | 'active' | 'completed' | 'archived'
 }
 
+// Assessment types (entity #11) — small fixed-ish set
+export interface AssessmentType {
+  id: string
+  name: string
+  description: string
+  /** Phase this type ships in. */
+  phase: 1 | 2 | 3
+  status: 'active' | 'deferred'
+}
+
+export const MOCK_ASSESSMENT_TYPES: AssessmentType[] = [
+  { id: 'at1', name: 'Pop quiz',          description: '15-minute, can be turned on/off; in-class delivery',                     phase: 1, status: 'active' },
+  { id: 'at2', name: 'Timed exam',        description: 'Standard timed assessment with download capability',                     phase: 1, status: 'active' },
+  { id: 'at3', name: 'Take-home',         description: 'Multi-day window; honor-code based',                                      phase: 1, status: 'active' },
+  { id: 'at4', name: 'Open-book',         description: 'Reference materials permitted during the assessment',                      phase: 1, status: 'active' },
+  { id: 'at5', name: 'Standard proctored', description: 'Faculty-supervised in-person; no lockdown browser',                       phase: 1, status: 'active' },
+  { id: 'at6', name: 'Lockdown proctored', description: 'Lockdown browser blocks copy/screenshot/tab-switch (vendor TBD Q4 2026)', phase: 2, status: 'deferred' },
+  { id: 'at7', name: 'Remote-monitored',   description: 'Camera + screen capture; vendor-monitored proctoring',                    phase: 3, status: 'deferred' },
+]
+
+// Content areas (entity #7) — taxonomy
+export interface ContentArea {
+  id: string
+  name: string
+  description: string
+  parentId?: string
+  status: 'active' | 'archived'
+}
+
+export const MOCK_CONTENT_AREAS: ContentArea[] = [
+  { id: 'ca1', name: 'Patient Care',           description: 'Direct clinical care delivery',                            status: 'active' },
+  { id: 'ca2', name: 'Pharmacology',           description: 'Drug mechanisms, indications, contraindications',          status: 'active' },
+  { id: 'ca3', name: 'Anatomy & Physiology',   description: 'Body systems and function',                                 status: 'active' },
+  { id: 'ca4', name: 'Communication',          description: 'Patient interaction, charting, interprofessional comms',   status: 'active' },
+  { id: 'ca5', name: 'Professionalism',        description: 'Ethics, regulatory compliance, patient advocacy',          status: 'active' },
+  { id: 'ca6', name: 'Research Methods',       description: 'Evidence-based practice, statistics',                      status: 'active' },
+  { id: 'ca7', name: 'Cellular Biology',       description: 'Subset of Anatomy & Physiology',                           parentId: 'ca3', status: 'active' },
+  { id: 'ca8', name: 'Cardiovascular',         description: 'Heart, vasculature, related pathology',                     parentId: 'ca3', status: 'active' },
+]
+
 export const MOCK_COURSE_OFFERINGS: CourseOffering[] = [
   { id: 'co1', masterCourseId: 'mc1', termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f2', collaboratorIds: ['f1'], enrolledCount: 50, status: 'active' },
   { id: 'co2', masterCourseId: 'mc2', termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f3', collaboratorIds: ['f1'], enrolledCount: 50, status: 'active' },

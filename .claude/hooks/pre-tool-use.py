@@ -61,6 +61,24 @@ PATTERN_RULES: list[tuple[str, str, str, str, bool]] = [
     ("A11Y-004", r"<i\s+className\s*=\s*[\"']fa-[^\"']+[\"'](?![^>]*aria-hidden)",
      "FA icon missing aria-hidden=\"true\" (A11Y-004 / WCAG 1.3.1).",
      r"/apps/", True),
+    # A11Y-001 (WCAG 4.1.2) — Icon-only DS Button (size="icon*") requires aria-label
+    # Match: <Button ... size=("icon" | "icon-sm" | "icon-xs" | "icon-lg") ... > without aria-label in same tag
+    ("A11Y-001", r"<Button(?=[^>]*size\s*=\s*[\"']icon)(?![^>]*aria-label)[^>]*>",
+     "Icon-only DS Button missing aria-label (A11Y-001 / WCAG 4.1.2). Add aria-label=\"…\" describing the action.",
+     r"/apps/", True),
+    # A11Y-002 (WCAG 2.4.7) — outline-none requires focus-visible:ring-* in same className
+    ("A11Y-002", r"\boutline-none\b(?:(?![\"']).)*?(?<![-:])(?<!focus-visible:)\bring-(?:0|none)\b",
+     "outline-none used without focus-visible:ring-* (A11Y-002 / WCAG 2.4.7). Pair outline-none with focus-visible:ring-2 + focus-visible:ring-ring.",
+     r"/apps/", True),
+    # A11Y-006 (WCAG 1.3.1) — DialogContent / SheetContent must contain DialogTitle / SheetTitle
+    # Catch the obvious gap: DialogContent or SheetContent opens but no Title sibling text in same file.
+    # Note: file-scope check, not block-scope. False positives possible if DialogContent spans files.
+    ("A11Y-006-dialog", r"<DialogContent[\s>](?:(?!</DialogContent>).)*?</DialogContent>(?<!<DialogTitle[\s>])",
+     "DialogContent appears to be missing DialogTitle (A11Y-006 / WCAG 1.3.1). Add <DialogTitle> (use className=\"sr-only\" if visually hidden).",
+     r"/apps/", False),  # warning-only — regex is heuristic, false positives possible
+    ("A11Y-006-sheet", r"<SheetContent[\s>](?:(?!</SheetContent>).)*?</SheetContent>(?<!<SheetTitle[\s>])",
+     "SheetContent appears to be missing SheetTitle (A11Y-006 / WCAG 1.3.1). Add <SheetTitle> (use className=\"sr-only\" if visually hidden).",
+     r"/apps/", False),  # warning-only
     # DS-011 typography literals — block raw fontSize/Family/Weight in style props
     ("DS-011a", r"\bfontSize\s*:\s*['\"]?\d",
      "Inline fontSize literal banned (DS-011). Use Tailwind text-{xs,sm,...} class or var(--text-*) token.",

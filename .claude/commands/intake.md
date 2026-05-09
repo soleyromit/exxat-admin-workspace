@@ -24,3 +24,13 @@ If `$ARGUMENTS` is provided:
 - Confirm before every write — non-negotiable per INTAKE-002 / INTAKE-003.
 - Surface paths created/updated, ADR numbers assigned, glossary terms added.
 - After completion, return control to the prior task.
+
+## Telemetry
+
+Emit a `command.invocation` event:
+
+```bash
+python3 -c "import sys; sys.path.insert(0, '/Users/romitsoley/Work/.claude/hooks'); \
+  from _telemetry import emit; emit('command.invocation', command='intake', \
+  args='<args>', outcome='completed')"
+```

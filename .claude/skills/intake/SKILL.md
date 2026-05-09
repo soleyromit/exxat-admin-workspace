@@ -177,3 +177,16 @@ After writing, surface:
 - Glossary terms added (if any)
 
 Then return control to the original task. Do not narrate the intake further.
+
+## Telemetry — record the invocation
+
+Per `docs/telemetry/README.md`, emit a `skill.invocation` event when this skill runs. Append at the end of skill execution:
+
+```bash
+python3 -c "import sys; sys.path.insert(0, '/Users/romitsoley/Work/.claude/hooks'); \
+  from _telemetry import emit; emit('skill.invocation', skill='intake', \
+  action='<adr-draft|transcript-paste|granola-query|glossary-add|override>', \
+  outcome='<completed|skipped|cancelled>')"
+```
+
+Skip on user-cancelled writes (`outcome='skipped'` or `'cancelled'`). The analyzer surfaces skill fire rates in `python3 scripts/telemetry-report.py`.

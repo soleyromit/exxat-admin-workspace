@@ -94,6 +94,54 @@ Fires when one or more rules tripped.
 }
 ```
 
+### `skill.invocation`
+
+Manually emitted by skills (markdown procedures) when Claude invokes them.
+Skills include a final step that appends a JSONL event via Bash. Honor-system —
+no enforcement hook, but the analyzer counts these to surface skill-fire rate.
+
+```json
+{
+  "event": "skill.invocation",
+  "skill": "intake" | "ds-component-check" | "design-variants" | "...",
+  "action": "<sub-action>",  // e.g., "adr-draft", "transcript-paste", "verify-import"
+  "outcome": "completed" | "skipped" | "blocked"
+}
+```
+
+To emit from a skill, append:
+
+```bash
+python3 -c "import sys; sys.path.insert(0, '/Users/romitsoley/Work/.claude/hooks'); \
+  from _telemetry import emit; emit('skill.invocation', skill='intake', action='adr-draft', outcome='completed')"
+```
+
+### `command.invocation`
+
+Same shape as skill invocation, fired when a slash command runs.
+
+```json
+{
+  "event": "command.invocation",
+  "command": "intake" | "design-variants" | "...",
+  "args": "<raw args>",
+  "outcome": "completed" | "skipped" | "errored"
+}
+```
+
+### `subagent.dispatch`
+
+Fired when a subagent (Agent tool) is dispatched. Same honor-system as skill.
+
+```json
+{
+  "event": "subagent.dispatch",
+  "type": "general-purpose" | "Explore" | "Plan" | "...",
+  "description": "<short>",
+  "background": true | false
+}
+```
+
 ---
 
 ## Reading the data

@@ -46,9 +46,9 @@ This branch is never merged to main without Himanshu review.
 
 | Product | Admin package | Admin port | Student package | Student port | Status |
 |---|---|---|---|---|---|
-| exam-management | @exxat/exam-management-admin | 3001 | @exxat/exam-management-student | 3002 | Active build |
+| exam-management | @exxat/exam-management-admin | 3001 | @exxat/exam-management-student | 3002 | Active build (admin + assessment-taker on Vite) |
 | patient-log | @exxat/patient-log-admin | 3003 | @exxat/patient-log-student | 3004 | Not scaffolded |
-| pce | @exxat/pce-admin | 3005 | @exxat/pce-student | 3006 | Not scaffolded |
+| pce | @exxat/pce-admin | 3005 | @exxat/pce-student | 3006 | **Active build** — admin (home + analytics + surveys + templates + my-surveys + moderation + admin/{courses,terms,offerings}) + student (surveys + responses) |
 | skills-checklist | @exxat/skills-checklist-admin | 3007 | @exxat/skills-checklist-student | 3008 | Not scaffolded |
 | learning-contracts | @exxat/learning-contracts-admin | 3009 | @exxat/learning-contracts-student | 3010 | Not scaffolded |
 
