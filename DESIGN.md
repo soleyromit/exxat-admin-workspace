@@ -68,7 +68,8 @@ Every gate cites a rule ID. Hook output references the ID so violations are audi
 - **DS-007** — Component imports must match the active DS profile. Admin: `@exxat/ds/packages/ui/src`. Student: `@exxat/student/components/...`. *Gate:* PreToolUse after profile load.
 - **DS-008** — Tailwind color utilities outside the semantic allowlist (`bg-background`, `text-foreground`, `border-border`, `bg-muted`, `text-muted-foreground`, `bg-card`, `bg-popover`, etc.) are banned. *Gate:* PreToolUse.
 - **DS-009** — DS components may not have visual treatments (shadow, border, hover bg, padding, gradient) beyond what the DS source defines, unless documented as an exception. *Gate:* code review; long-term AST diff against component defaults.
-- **DS-010** — Before importing any DS component, the import must resolve in `docs/foundations/ds-snapshot.json` for the active profile. Hallucinated components are blocked. *Gate:* PreToolUse.
+- **DS-010** — Before importing any DS component, the import must resolve in `docs/foundations/ds-snapshot.json` for the active profile (203 admin exports + 54 student primitives + 46 shared as of v0.2.0). Hallucinated components are blocked. *Gate:* PreToolUse (blocking, v0.2).
+- **DS-011** — No inline typography literals (`fontSize`, `fontWeight`, `fontFamily` as raw values in `style={{}}`). Use Tailwind classes (`text-xs`, `font-semibold`) or token references (`var(--text-xs)`, `var(--font-sans)`). *Gate:* PreToolUse (blocking, v0.2).
 
 ### A11Y — WCAG 2.2 AA + project rules
 - **A11Y-001** (WCAG 4.1.2) — Icon-only `<Button>` requires `aria-label`. *Gate:* Stop hook.
@@ -79,6 +80,7 @@ Every gate cites a rule ID. Hook output references the ID so violations are audi
 - **A11Y-006** (WCAG 1.3.1) — `DialogTitle` / `SheetTitle` required. Visually-hidden titles use `className="sr-only"`. *Gate:* Stop hook.
 - **A11Y-007** — Sidebar shell: `<SidebarProvider className="h-svh"> + <Sidebar variant="inset">` required in admin layout.tsx. *Gate:* PreToolUse on layout.tsx.
 - **A11Y-008** (WCAG 1.4.1) — Color is never the only encoding. Pair color with shape, label, or icon (charts, status, alerts). *Gate:* code review.
+- **A11Y-009** — Nav substructure must follow DS templates. Sidebar uses `Sidebar > SidebarContent > SidebarGroup > SidebarMenu > SidebarMenuItem > SidebarMenuButton`. Breadcrumb uses `Breadcrumb > BreadcrumbList > BreadcrumbItem > BreadcrumbLink`. Tabs uses `Tabs > TabsList > TabsTrigger` + `TabsContent`. Skipping levels or substituting custom elements breaks keyboard nav and screen-reader semantics. *Gate:* pattern review; ds-component-check skill loads templates from profile.
 
 ### VIZ — Visualization Discipline
 - **VIZ-001** — Progress bars are last resort. More than one `<Progress>` or `width: ${n}%` per `.tsx` requires justification comment OR pattern reference from `docs/patterns/viz/`. *Gate:* PreToolUse. *(Memory-backed)*
@@ -258,6 +260,7 @@ Today ~5% of customers integrate. Aarti wants this to flip to ~95% with the new 
 | P3 — Pattern library + L7 Storytelling | **in progress** (2026-05-08) | 8 RUBRICs (states/forms/nav/ia/onboarding/async/dashboards/admin); 10 patterns (audit-driven + standard); workspace `docs/content.md` glossary. **L7 Storytelling layer added:** `docs/storytelling-framework.md` + per-product `docs/storytelling/` (real content for Exam Mgmt + PCE from 7-meeting Aarti/Vishaka audit; scaffolds for patient-log / skills-checklist / learning-contracts) |
 | P4 — Stochastic variance | **complete** (2026-05-08) | `/design-variants <N> <brief>` slash command + `docs/patterns/process/design-variants.md` pattern + trigger wired in user-prompt-submit hook + RUBRIC for process patterns |
 | P5 — Designer override loop | **complete** (2026-05-08) | `intake:override` action in intake skill + override ADR template (`docs/decisions/_override-template.md`) + exception ledger (`docs/governance/exceptions.md`) + rule-citation surfacing trigger + INTAKE-004 wired in user-prompt-submit hook |
+| P5.5 — DS conformance hardening | **complete** (2026-05-08) | DS-010 hook (per-export verification — 203 admin exports tracked); DS-011 typography rule; A11Y-009 nav substructure; PreToolUse v0.2 blocking mode for DS-001..011; submodule post-merge auto-regen of ds-snapshot.json; ds-component-check skill; CI typecheck workflow for `apps/**/*.tsx` |
 | P6 — Process & telemetry | not started | ADR + telemetry registry |
 | P7 — Performance & i18n | not started | Perf budgets, localization |
 | P8 — Platform-agnostic packaging | not started | Track Google DESIGN.md schema |

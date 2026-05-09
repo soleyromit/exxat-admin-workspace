@@ -1,6 +1,6 @@
 {
-  "version": "0.1.0",
-  "generated_at": "2026-05-08T16:12:05.205698+00:00",
+  "version": "0.2.0",
+  "generated_at": "2026-05-08T23:55:01.608487+00:00",
   "workspace": "/Users/romitsoley/Work",
   "profiles": {
     "admin": {
@@ -11,130 +11,406 @@
       "css_import": "exxat-ds/packages/ui/src/theme.css",
       "components": [
         {
-          "name": "avatar"
+          "name": "avatar",
+          "exports": [
+            "Avatar",
+            "AvatarBadge",
+            "AvatarFallback",
+            "AvatarGroup",
+            "AvatarGroupCount",
+            "AvatarImage"
+          ]
         },
         {
-          "name": "badge"
+          "name": "badge",
+          "exports": [
+            "Badge"
+          ]
         },
         {
-          "name": "banner"
+          "name": "banner",
+          "exports": [
+            "LocalBanner",
+            "SystemBanner"
+          ]
         },
         {
-          "name": "breadcrumb"
+          "name": "breadcrumb",
+          "exports": [
+            "Breadcrumb",
+            "BreadcrumbEllipsis",
+            "BreadcrumbItem",
+            "BreadcrumbLink",
+            "BreadcrumbList",
+            "BreadcrumbPage",
+            "BreadcrumbSeparator"
+          ]
         },
         {
-          "name": "button"
+          "name": "button",
+          "exports": [
+            "Button"
+          ]
         },
         {
-          "name": "calendar"
+          "name": "calendar",
+          "exports": [
+            "Calendar",
+            "CalendarDayButton"
+          ]
         },
         {
-          "name": "card"
+          "name": "card",
+          "exports": [
+            "Card",
+            "CardAction",
+            "CardContent",
+            "CardDescription",
+            "CardFooter",
+            "CardHeader",
+            "CardTitle"
+          ]
         },
         {
-          "name": "chart"
+          "name": "chart",
+          "exports": [
+            "ChartContainer",
+            "ChartLegend",
+            "ChartLegendContent",
+            "ChartStyle",
+            "ChartTooltip",
+            "ChartTooltipContent"
+          ]
         },
         {
-          "name": "checkbox"
+          "name": "checkbox",
+          "exports": [
+            "Checkbox"
+          ]
         },
         {
-          "name": "coach-mark"
+          "name": "coach-mark",
+          "exports": [
+            "CoachMark"
+          ]
         },
         {
-          "name": "collapsible"
+          "name": "collapsible",
+          "exports": [
+            "Collapsible",
+            "CollapsibleContent",
+            "CollapsibleTrigger"
+          ]
         },
         {
-          "name": "command"
+          "name": "command",
+          "exports": [
+            "Command",
+            "CommandDialog",
+            "CommandEmpty",
+            "CommandGroup",
+            "CommandInput",
+            "CommandItem",
+            "CommandList",
+            "CommandSeparator",
+            "CommandShortcut"
+          ]
         },
         {
-          "name": "date-picker-field"
+          "name": "date-picker-field",
+          "exports": [
+            "DatePickerField"
+          ]
         },
         {
-          "name": "dialog"
+          "name": "dialog",
+          "exports": [
+            "Dialog",
+            "DialogClose",
+            "DialogContent",
+            "DialogDescription",
+            "DialogFooter",
+            "DialogHeader",
+            "DialogOverlay",
+            "DialogPortal",
+            "DialogTitle",
+            "DialogTrigger"
+          ]
         },
         {
-          "name": "drag-handle-grip"
+          "name": "drag-handle-grip",
+          "exports": [
+            "DragHandleGripIcon"
+          ]
         },
         {
-          "name": "drawer"
+          "name": "drawer",
+          "exports": [
+            "Drawer",
+            "DrawerClose",
+            "DrawerContent",
+            "DrawerDescription",
+            "DrawerFooter",
+            "DrawerHeader",
+            "DrawerOverlay",
+            "DrawerPortal",
+            "DrawerTitle",
+            "DrawerTrigger"
+          ]
         },
         {
-          "name": "dropdown-menu"
+          "name": "dropdown-menu",
+          "exports": [
+            "DropdownMenu",
+            "DropdownMenuCheckboxItem",
+            "DropdownMenuContent",
+            "DropdownMenuGroup",
+            "DropdownMenuItem",
+            "DropdownMenuLabel",
+            "DropdownMenuPortal",
+            "DropdownMenuRadioGroup",
+            "DropdownMenuRadioItem",
+            "DropdownMenuSeparator",
+            "DropdownMenuShortcut",
+            "DropdownMenuSub",
+            "DropdownMenuSubContent",
+            "DropdownMenuSubTrigger",
+            "DropdownMenuTrigger",
+            "Shortcut",
+            "useShortcut"
+          ]
         },
         {
-          "name": "field"
+          "name": "field",
+          "exports": [
+            "Field",
+            "FieldContent",
+            "FieldDescription",
+            "FieldError",
+            "FieldGroup",
+            "FieldLabel",
+            "FieldLegend",
+            "FieldSeparator",
+            "FieldSet",
+            "FieldTitle"
+          ]
         },
         {
-          "name": "form"
+          "name": "form",
+          "exports": [
+            "Form",
+            "FormControl",
+            "FormDescription",
+            "FormField",
+            "FormItem",
+            "FormLabel",
+            "FormMessage",
+            "useFormField"
+          ]
         },
         {
-          "name": "input"
+          "name": "input",
+          "exports": [
+            "Input"
+          ]
         },
         {
-          "name": "input-group"
+          "name": "input-group",
+          "exports": [
+            "InputGroup",
+            "InputGroupAddon",
+            "InputGroupButton",
+            "InputGroupInput",
+            "InputGroupText",
+            "InputGroupTextarea"
+          ]
         },
         {
-          "name": "kbd"
+          "name": "kbd",
+          "exports": [
+            "Kbd",
+            "KbdGroup"
+          ]
         },
         {
-          "name": "label"
+          "name": "label",
+          "exports": [
+            "Label"
+          ]
         },
         {
-          "name": "popover"
+          "name": "popover",
+          "exports": [
+            "Popover",
+            "PopoverAnchor",
+            "PopoverContent",
+            "PopoverTrigger"
+          ]
         },
         {
-          "name": "radio-group"
+          "name": "radio-group",
+          "exports": [
+            "RadioGroup",
+            "RadioGroupItem"
+          ]
         },
         {
-          "name": "select"
+          "name": "select",
+          "exports": [
+            "Select",
+            "SelectContent",
+            "SelectGroup",
+            "SelectItem",
+            "SelectLabel",
+            "SelectScrollDownButton",
+            "SelectScrollUpButton",
+            "SelectSeparator",
+            "SelectTrigger",
+            "SelectValue"
+          ]
         },
         {
-          "name": "selection-tile-grid"
+          "name": "selection-tile-grid",
+          "exports": [
+            "SelectionTileGrid",
+            "selectionTileClassNames"
+          ]
         },
         {
-          "name": "separator"
+          "name": "separator",
+          "exports": [
+            "Separator"
+          ]
         },
         {
-          "name": "sheet"
+          "name": "sheet",
+          "exports": [
+            "Sheet",
+            "SheetClose",
+            "SheetContent",
+            "SheetDescription",
+            "SheetFooter",
+            "SheetHeader",
+            "SheetTitle",
+            "SheetTrigger"
+          ]
         },
         {
-          "name": "sidebar"
+          "name": "sidebar",
+          "exports": [
+            "Sidebar",
+            "SidebarContent",
+            "SidebarFooter",
+            "SidebarGroup",
+            "SidebarGroupAction",
+            "SidebarGroupContent",
+            "SidebarGroupLabel",
+            "SidebarHeader",
+            "SidebarInput",
+            "SidebarInset",
+            "SidebarMenu",
+            "SidebarMenuAction",
+            "SidebarMenuBadge",
+            "SidebarMenuButton",
+            "SidebarMenuItem",
+            "SidebarMenuSkeleton",
+            "SidebarMenuSub",
+            "SidebarMenuSubButton",
+            "SidebarMenuSubItem",
+            "SidebarProvider",
+            "SidebarRail",
+            "SidebarSeparator",
+            "SidebarTrigger",
+            "useSidebar"
+          ]
         },
         {
-          "name": "skeleton"
+          "name": "skeleton",
+          "exports": [
+            "Skeleton"
+          ]
         },
         {
-          "name": "sonner"
+          "name": "sonner",
+          "exports": [
+            "Toaster"
+          ]
         },
         {
-          "name": "status-badge"
+          "name": "status-badge",
+          "exports": [
+            "StatusBadge"
+          ]
         },
         {
-          "name": "table"
+          "name": "table",
+          "exports": [
+            "Table",
+            "TableBody",
+            "TableCaption",
+            "TableCell",
+            "TableFooter",
+            "TableHead",
+            "TableHeader",
+            "TableRow"
+          ]
         },
         {
-          "name": "tabs"
+          "name": "tabs",
+          "exports": [
+            "Tabs",
+            "TabsContent",
+            "TabsList",
+            "TabsTrigger"
+          ]
         },
         {
-          "name": "textarea"
+          "name": "textarea",
+          "exports": [
+            "Textarea"
+          ]
         },
         {
-          "name": "tip"
+          "name": "tip",
+          "exports": [
+            "Tip"
+          ]
         },
         {
-          "name": "toggle"
+          "name": "toggle",
+          "exports": [
+            "Toggle"
+          ]
         },
         {
-          "name": "toggle-group"
+          "name": "toggle-group",
+          "exports": [
+            "ToggleGroup",
+            "ToggleGroupItem"
+          ]
         },
         {
-          "name": "toggle-switch"
+          "name": "toggle-switch",
+          "exports": [
+            "ToggleSwitch"
+          ]
         },
         {
-          "name": "tooltip"
+          "name": "tooltip",
+          "exports": [
+            "Tooltip",
+            "TooltipContent",
+            "TooltipProvider",
+            "TooltipTrigger"
+          ]
         },
         {
-          "name": "view-segmented-control"
+          "name": "view-segmented-control",
+          "exports": [
+            "ViewSegmentedControl",
+            "viewSegmentedButtonClass",
+            "viewSegmentedToolbarClass"
+          ]
         }
       ],
       "hooks": [
@@ -154,6 +430,211 @@
           "name": "useModKeyLabel",
           "module": "use-mod-key-label"
         }
+      ],
+      "exports": [
+        "Avatar",
+        "AvatarBadge",
+        "AvatarFallback",
+        "AvatarGroup",
+        "AvatarGroupCount",
+        "AvatarImage",
+        "Badge",
+        "Breadcrumb",
+        "BreadcrumbEllipsis",
+        "BreadcrumbItem",
+        "BreadcrumbLink",
+        "BreadcrumbList",
+        "BreadcrumbPage",
+        "BreadcrumbSeparator",
+        "Button",
+        "Calendar",
+        "CalendarDayButton",
+        "Card",
+        "CardAction",
+        "CardContent",
+        "CardDescription",
+        "CardFooter",
+        "CardHeader",
+        "CardTitle",
+        "ChartContainer",
+        "ChartLegend",
+        "ChartLegendContent",
+        "ChartStyle",
+        "ChartTooltip",
+        "ChartTooltipContent",
+        "Checkbox",
+        "CoachMark",
+        "Collapsible",
+        "CollapsibleContent",
+        "CollapsibleTrigger",
+        "Command",
+        "CommandDialog",
+        "CommandEmpty",
+        "CommandGroup",
+        "CommandInput",
+        "CommandItem",
+        "CommandList",
+        "CommandSeparator",
+        "CommandShortcut",
+        "DatePickerField",
+        "Dialog",
+        "DialogClose",
+        "DialogContent",
+        "DialogDescription",
+        "DialogFooter",
+        "DialogHeader",
+        "DialogOverlay",
+        "DialogPortal",
+        "DialogTitle",
+        "DialogTrigger",
+        "DragHandleGripIcon",
+        "Drawer",
+        "DrawerClose",
+        "DrawerContent",
+        "DrawerDescription",
+        "DrawerFooter",
+        "DrawerHeader",
+        "DrawerOverlay",
+        "DrawerPortal",
+        "DrawerTitle",
+        "DrawerTrigger",
+        "DropdownMenu",
+        "DropdownMenuCheckboxItem",
+        "DropdownMenuContent",
+        "DropdownMenuGroup",
+        "DropdownMenuItem",
+        "DropdownMenuLabel",
+        "DropdownMenuPortal",
+        "DropdownMenuRadioGroup",
+        "DropdownMenuRadioItem",
+        "DropdownMenuSeparator",
+        "DropdownMenuShortcut",
+        "DropdownMenuSub",
+        "DropdownMenuSubContent",
+        "DropdownMenuSubTrigger",
+        "DropdownMenuTrigger",
+        "Field",
+        "FieldContent",
+        "FieldDescription",
+        "FieldError",
+        "FieldGroup",
+        "FieldLabel",
+        "FieldLegend",
+        "FieldSeparator",
+        "FieldSet",
+        "FieldTitle",
+        "Form",
+        "FormControl",
+        "FormDescription",
+        "FormField",
+        "FormItem",
+        "FormLabel",
+        "FormMessage",
+        "Input",
+        "InputGroup",
+        "InputGroupAddon",
+        "InputGroupButton",
+        "InputGroupInput",
+        "InputGroupText",
+        "InputGroupTextarea",
+        "Kbd",
+        "KbdGroup",
+        "Label",
+        "LocalBanner",
+        "Popover",
+        "PopoverAnchor",
+        "PopoverContent",
+        "PopoverTrigger",
+        "RadioGroup",
+        "RadioGroupItem",
+        "Select",
+        "SelectContent",
+        "SelectGroup",
+        "SelectItem",
+        "SelectLabel",
+        "SelectScrollDownButton",
+        "SelectScrollUpButton",
+        "SelectSeparator",
+        "SelectTrigger",
+        "SelectValue",
+        "SelectionTileGrid",
+        "Separator",
+        "Sheet",
+        "SheetClose",
+        "SheetContent",
+        "SheetDescription",
+        "SheetFooter",
+        "SheetHeader",
+        "SheetTitle",
+        "SheetTrigger",
+        "Shortcut",
+        "Sidebar",
+        "SidebarContent",
+        "SidebarFooter",
+        "SidebarGroup",
+        "SidebarGroupAction",
+        "SidebarGroupContent",
+        "SidebarGroupLabel",
+        "SidebarHeader",
+        "SidebarInput",
+        "SidebarInset",
+        "SidebarMenu",
+        "SidebarMenuAction",
+        "SidebarMenuBadge",
+        "SidebarMenuButton",
+        "SidebarMenuItem",
+        "SidebarMenuSkeleton",
+        "SidebarMenuSub",
+        "SidebarMenuSubButton",
+        "SidebarMenuSubItem",
+        "SidebarProvider",
+        "SidebarRail",
+        "SidebarSeparator",
+        "SidebarTrigger",
+        "Skeleton",
+        "StatusBadge",
+        "SystemBanner",
+        "Table",
+        "TableBody",
+        "TableCaption",
+        "TableCell",
+        "TableFooter",
+        "TableHead",
+        "TableHeader",
+        "TableRow",
+        "Tabs",
+        "TabsContent",
+        "TabsList",
+        "TabsTrigger",
+        "Textarea",
+        "Tip",
+        "Toaster",
+        "Toggle",
+        "ToggleGroup",
+        "ToggleGroupItem",
+        "ToggleSwitch",
+        "Tooltip",
+        "TooltipContent",
+        "TooltipProvider",
+        "TooltipTrigger",
+        "ViewSegmentedControl",
+        "cn",
+        "formatDateTimeUS",
+        "formatDateUS",
+        "formatYmdForDisplay",
+        "localDateToYmd",
+        "parseRowDateToYmd",
+        "selectionTileClassNames",
+        "useAppTheme",
+        "useCoachMark",
+        "useFormField",
+        "useMobile",
+        "useModKeyLabel",
+        "useShortcut",
+        "useSidebar",
+        "viewSegmentedButtonClass",
+        "viewSegmentedToolbarClass",
+        "ymdToLocalDate"
       ],
       "tokens": {
         "--font-heading": "\"ivypresto-text\"",
@@ -319,7 +800,8 @@
       },
       "token_count": 160,
       "component_count": 42,
-      "hook_count": 4
+      "hook_count": 4,
+      "export_count": 203
     },
     "student": {
       "ds_name": "StudentUX",
@@ -330,219 +812,600 @@
       "primitives": [
         {
           "name": "accordion",
-          "module": "accordion"
+          "module": "accordion",
+          "exports": [
+            "Accordion",
+            "AccordionContent",
+            "AccordionItem",
+            "AccordionTrigger"
+          ]
         },
         {
           "name": "alert-dialog",
-          "module": "alert-dialog"
+          "module": "alert-dialog",
+          "exports": [
+            "AlertDialog",
+            "AlertDialogAction",
+            "AlertDialogCancel",
+            "AlertDialogContent",
+            "AlertDialogDescription",
+            "AlertDialogFooter",
+            "AlertDialogHeader",
+            "AlertDialogOverlay",
+            "AlertDialogPortal",
+            "AlertDialogTitle",
+            "AlertDialogTrigger"
+          ]
         },
         {
           "name": "alert",
-          "module": "alert"
+          "module": "alert",
+          "exports": [
+            "Alert",
+            "AlertDescription",
+            "AlertTitle"
+          ]
         },
         {
           "name": "aspect-ratio",
-          "module": "aspect-ratio"
+          "module": "aspect-ratio",
+          "exports": [
+            "AspectRatio"
+          ]
         },
         {
           "name": "avatar",
-          "module": "avatar"
+          "module": "avatar",
+          "exports": [
+            "Avatar",
+            "AvatarFallback",
+            "AvatarImage",
+            "AvatarPlaceholderIcon"
+          ]
         },
         {
           "name": "badge",
-          "module": "badge"
+          "module": "badge",
+          "exports": [
+            "Badge",
+            "BetaBadge",
+            "CountBadge",
+            "CountText",
+            "NewBadge"
+          ]
         },
         {
           "name": "breadcrumb",
-          "module": "breadcrumb"
+          "module": "breadcrumb",
+          "exports": [
+            "Breadcrumb",
+            "BreadcrumbEllipsis",
+            "BreadcrumbItem",
+            "BreadcrumbLink",
+            "BreadcrumbList",
+            "BreadcrumbPage",
+            "BreadcrumbSeparator"
+          ]
         },
         {
           "name": "button-group",
-          "module": "button-group"
+          "module": "button-group",
+          "exports": [
+            "ButtonGroup",
+            "ButtonGroupSeparator",
+            "ButtonGroupText"
+          ]
         },
         {
           "name": "button",
-          "module": "button"
+          "module": "button",
+          "exports": [
+            "Button"
+          ]
         },
         {
           "name": "calendar",
-          "module": "calendar"
+          "module": "calendar",
+          "exports": [
+            "Calendar"
+          ]
         },
         {
           "name": "card",
-          "module": "card"
+          "module": "card",
+          "exports": [
+            "Card",
+            "CardAction",
+            "CardContent",
+            "CardDescription",
+            "CardFooter",
+            "CardHeader",
+            "CardTitle"
+          ]
         },
         {
           "name": "carousel",
-          "module": "carousel"
+          "module": "carousel",
+          "exports": [
+            "Carousel",
+            "CarouselContent",
+            "CarouselItem",
+            "CarouselNext",
+            "CarouselPrevious"
+          ]
         },
         {
           "name": "chart",
-          "module": "chart"
+          "module": "chart",
+          "exports": [
+            "ChartContainer",
+            "ChartLegend",
+            "ChartLegendContent",
+            "ChartStyle",
+            "ChartTooltip",
+            "ChartTooltipContent"
+          ]
         },
         {
           "name": "checkbox",
-          "module": "checkbox"
+          "module": "checkbox",
+          "exports": [
+            "Checkbox"
+          ]
         },
         {
           "name": "collapsible",
-          "module": "collapsible"
+          "module": "collapsible",
+          "exports": [
+            "Collapsible",
+            "CollapsibleContent",
+            "CollapsibleTrigger"
+          ]
         },
         {
           "name": "command",
-          "module": "command"
+          "module": "command",
+          "exports": [
+            "Command",
+            "CommandDialog",
+            "CommandEmpty",
+            "CommandGroup",
+            "CommandInput",
+            "CommandItem",
+            "CommandList",
+            "CommandSeparator",
+            "CommandShortcut"
+          ]
         },
         {
           "name": "context-menu",
-          "module": "context-menu"
+          "module": "context-menu",
+          "exports": [
+            "ContextMenu",
+            "ContextMenuCheckboxItem",
+            "ContextMenuContent",
+            "ContextMenuGroup",
+            "ContextMenuItem",
+            "ContextMenuLabel",
+            "ContextMenuPortal",
+            "ContextMenuRadioGroup",
+            "ContextMenuRadioItem",
+            "ContextMenuSeparator",
+            "ContextMenuShortcut",
+            "ContextMenuSub",
+            "ContextMenuSubContent",
+            "ContextMenuSubTrigger",
+            "ContextMenuTrigger"
+          ]
         },
         {
           "name": "dialog",
-          "module": "dialog"
+          "module": "dialog",
+          "exports": [
+            "Dialog",
+            "DialogClose",
+            "DialogContent",
+            "DialogDescription",
+            "DialogFooter",
+            "DialogHeader",
+            "DialogOverlay",
+            "DialogPortal",
+            "DialogTitle",
+            "DialogTrigger"
+          ]
         },
         {
           "name": "drawer",
-          "module": "drawer"
+          "module": "drawer",
+          "exports": [
+            "Drawer",
+            "DrawerClose",
+            "DrawerContent",
+            "DrawerDescription",
+            "DrawerFooter",
+            "DrawerHeader",
+            "DrawerOverlay",
+            "DrawerPortal",
+            "DrawerTitle",
+            "DrawerTrigger"
+          ]
         },
         {
           "name": "dropdown-menu",
-          "module": "dropdown-menu"
+          "module": "dropdown-menu",
+          "exports": [
+            "DropdownMenu",
+            "DropdownMenuCheckboxItem",
+            "DropdownMenuContent",
+            "DropdownMenuGroup",
+            "DropdownMenuItem",
+            "DropdownMenuLabel",
+            "DropdownMenuPortal",
+            "DropdownMenuRadioGroup",
+            "DropdownMenuRadioItem",
+            "DropdownMenuSeparator",
+            "DropdownMenuShortcut",
+            "DropdownMenuSub",
+            "DropdownMenuSubContent",
+            "DropdownMenuSubTrigger",
+            "DropdownMenuTrigger"
+          ]
         },
         {
           "name": "empty",
-          "module": "empty"
+          "module": "empty",
+          "exports": [
+            "Empty",
+            "EmptyContent",
+            "EmptyDescription",
+            "EmptyHeader",
+            "EmptyMedia",
+            "EmptyTitle"
+          ]
         },
         {
           "name": "error-boundary",
-          "module": "error-boundary"
+          "module": "error-boundary",
+          "exports": [
+            "ErrorBoundary",
+            "withErrorBoundary"
+          ]
         },
         {
           "name": "field",
-          "module": "field"
+          "module": "field",
+          "exports": [
+            "Field",
+            "FieldContent",
+            "FieldDescription",
+            "FieldGroup",
+            "FieldLabel",
+            "FieldLegend",
+            "FieldSet",
+            "FieldTitle"
+          ]
         },
         {
           "name": "form",
-          "module": "form"
+          "module": "form",
+          "exports": [
+            "Form",
+            "FormControl",
+            "FormDescription",
+            "FormField",
+            "FormItem",
+            "FormLabel",
+            "FormMessage",
+            "useFormField"
+          ]
         },
         {
           "name": "hover-card",
-          "module": "hover-card"
+          "module": "hover-card",
+          "exports": [
+            "HoverCard",
+            "HoverCardContent",
+            "HoverCardTrigger"
+          ]
         },
         {
           "name": "input-group",
-          "module": "input-group"
+          "module": "input-group",
+          "exports": [
+            "InputGroup",
+            "InputGroupAddon",
+            "InputGroupInput",
+            "InputGroupText"
+          ]
         },
         {
           "name": "input-otp",
-          "module": "input-otp"
+          "module": "input-otp",
+          "exports": [
+            "InputOTP",
+            "InputOTPGroup",
+            "InputOTPSeparator",
+            "InputOTPSlot"
+          ]
         },
         {
           "name": "input",
-          "module": "input"
+          "module": "input",
+          "exports": [
+            "Input"
+          ]
         },
         {
           "name": "kbd",
-          "module": "kbd"
+          "module": "kbd",
+          "exports": [
+            "Kbd"
+          ]
         },
         {
           "name": "label",
-          "module": "label"
+          "module": "label",
+          "exports": [
+            "Label"
+          ]
         },
         {
           "name": "menubar",
-          "module": "menubar"
+          "module": "menubar",
+          "exports": [
+            "Menubar",
+            "MenubarCheckboxItem",
+            "MenubarContent",
+            "MenubarGroup",
+            "MenubarItem",
+            "MenubarLabel",
+            "MenubarMenu",
+            "MenubarPortal",
+            "MenubarRadioGroup",
+            "MenubarRadioItem",
+            "MenubarSeparator",
+            "MenubarShortcut",
+            "MenubarSub",
+            "MenubarSubContent",
+            "MenubarSubTrigger",
+            "MenubarTrigger"
+          ]
         },
         {
           "name": "navigation-menu",
-          "module": "navigation-menu"
+          "module": "navigation-menu",
+          "exports": [
+            "NavigationMenu",
+            "NavigationMenuContent",
+            "NavigationMenuIndicator",
+            "NavigationMenuItem",
+            "NavigationMenuLink",
+            "NavigationMenuList",
+            "NavigationMenuTrigger",
+            "NavigationMenuViewport",
+            "navigationMenuTriggerStyle"
+          ]
         },
         {
           "name": "outline-search-input",
-          "module": "outline-search-input"
+          "module": "outline-search-input",
+          "exports": [
+            "OutlineSearchInput",
+            "SearchInput"
+          ]
         },
         {
           "name": "pagination",
-          "module": "pagination"
+          "module": "pagination",
+          "exports": [
+            "Pagination",
+            "PaginationContent",
+            "PaginationEllipsis",
+            "PaginationItem",
+            "PaginationLink",
+            "PaginationNext",
+            "PaginationPrevious"
+          ]
         },
         {
           "name": "popover",
-          "module": "popover"
+          "module": "popover",
+          "exports": [
+            "Popover",
+            "PopoverAnchor",
+            "PopoverContent",
+            "PopoverTrigger"
+          ]
         },
         {
           "name": "progress",
-          "module": "progress"
+          "module": "progress",
+          "exports": [
+            "Progress"
+          ]
         },
         {
           "name": "radio-group",
-          "module": "radio-group"
+          "module": "radio-group",
+          "exports": [
+            "RadioGroup",
+            "RadioGroupItem"
+          ]
         },
         {
           "name": "resizable",
-          "module": "resizable"
+          "module": "resizable",
+          "exports": [
+            "ResizableHandle",
+            "ResizablePanel",
+            "ResizablePanelGroup"
+          ]
         },
         {
           "name": "scroll-area",
-          "module": "scroll-area"
+          "module": "scroll-area",
+          "exports": [
+            "ScrollArea",
+            "ScrollBar"
+          ]
         },
         {
           "name": "searchable-select",
-          "module": "searchable-select"
+          "module": "searchable-select",
+          "exports": [
+            "SearchableSelect"
+          ]
         },
         {
           "name": "select",
-          "module": "select"
+          "module": "select",
+          "exports": [
+            "Select",
+            "SelectContent",
+            "SelectGroup",
+            "SelectItem",
+            "SelectLabel",
+            "SelectScrollDownButton",
+            "SelectScrollUpButton",
+            "SelectSeparator",
+            "SelectTrigger",
+            "SelectValue"
+          ]
         },
         {
           "name": "separator",
-          "module": "separator"
+          "module": "separator",
+          "exports": [
+            "Separator"
+          ]
         },
         {
           "name": "sheet",
-          "module": "sheet"
+          "module": "sheet",
+          "exports": [
+            "Sheet",
+            "SheetClose",
+            "SheetContent",
+            "SheetDescription",
+            "SheetFooter",
+            "SheetHeader",
+            "SheetTitle",
+            "SheetTrigger"
+          ]
         },
         {
           "name": "sidebar",
-          "module": "sidebar"
+          "module": "sidebar",
+          "exports": [
+            "Sidebar",
+            "SidebarContent",
+            "SidebarFooter",
+            "SidebarGroup",
+            "SidebarGroupAction",
+            "SidebarGroupContent",
+            "SidebarGroupLabel",
+            "SidebarHeader",
+            "SidebarInput",
+            "SidebarInset",
+            "SidebarMenu",
+            "SidebarMenuAction",
+            "SidebarMenuBadge",
+            "SidebarMenuButton",
+            "SidebarMenuItem",
+            "SidebarMenuSkeleton",
+            "SidebarMenuSub",
+            "SidebarMenuSubButton",
+            "SidebarMenuSubItem",
+            "SidebarProvider",
+            "SidebarRail",
+            "SidebarSeparator",
+            "SidebarTrigger",
+            "useSidebar"
+          ]
         },
         {
           "name": "skeleton",
-          "module": "skeleton"
+          "module": "skeleton",
+          "exports": [
+            "Skeleton"
+          ]
         },
         {
           "name": "slider",
-          "module": "slider"
+          "module": "slider",
+          "exports": [
+            "Slider"
+          ]
         },
         {
           "name": "sonner",
-          "module": "sonner"
+          "module": "sonner",
+          "exports": [
+            "Toaster"
+          ]
         },
         {
           "name": "switch",
-          "module": "switch"
+          "module": "switch",
+          "exports": [
+            "Switch"
+          ]
         },
         {
           "name": "table",
-          "module": "table"
+          "module": "table",
+          "exports": [
+            "Table",
+            "TableBody",
+            "TableCaption",
+            "TableCell",
+            "TableFooter",
+            "TableHead",
+            "TableHeader",
+            "TableRow"
+          ]
         },
         {
           "name": "tabs",
-          "module": "tabs"
+          "module": "tabs",
+          "exports": [
+            "Tabs",
+            "TabsContent",
+            "TabsList",
+            "TabsTrigger"
+          ]
         },
         {
           "name": "textarea",
-          "module": "textarea"
+          "module": "textarea",
+          "exports": [
+            "Textarea"
+          ]
         },
         {
           "name": "toggle-group",
-          "module": "toggle-group"
+          "module": "toggle-group",
+          "exports": [
+            "ToggleGroup",
+            "ToggleGroupItem"
+          ]
         },
         {
           "name": "toggle",
-          "module": "toggle"
+          "module": "toggle",
+          "exports": [
+            "Toggle"
+          ]
         },
         {
           "name": "tooltip",
-          "module": "tooltip"
+          "module": "tooltip",
+          "exports": [
+            "Tooltip",
+            "TooltipContent",
+            "TooltipProvider",
+            "TooltipTrigger"
+          ]
         }
       ],
       "shared": [
