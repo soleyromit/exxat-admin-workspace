@@ -10,6 +10,7 @@ import {
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { ResponseGauge } from '@/components/pce/response-gauge'
+import { DesignToggle, DESIGN_PAIRS } from '@/components/pce/design-toggle'
 import { MOCK_TERMS } from '@/lib/pce-mock-data'
 import { useState } from 'react'
 import Link from 'next/link'
@@ -46,6 +47,11 @@ function MySurveysContent() {
         <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>
           {filterParam === 'released' ? 'Results' : 'My Surveys'}
         </h1>
+        <DesignToggle
+          active="legacy"
+          legacyHref={DESIGN_PAIRS.myView.legacy}
+          newHref={DESIGN_PAIRS.myView.new}
+        />
         <Select value={term} onValueChange={setTerm}>
           <SelectTrigger className="h-8 w-36 text-sm">
             <SelectValue />

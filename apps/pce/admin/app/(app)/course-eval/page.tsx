@@ -35,6 +35,7 @@ import {
   Tooltip, TooltipTrigger, TooltipContent,
 } from '@exxat/ds/packages/ui/src'
 import { AiInsightCard, type AIConfidence } from '@/components/pce/ai-insight-card'
+import { DesignToggle, DESIGN_PAIRS } from '@/components/pce/design-toggle'
 import { SmallMultiples, type Multiple } from '@/components/pce/small-multiples'
 import { ClevelandDot } from '@/components/pce/cleveland-dot'
 import { CalendarHeatmap } from '@/components/pce/calendar-heatmap'
@@ -97,18 +98,24 @@ export default function CourseEvalTermOverview() {
 
   return (
     <>
-      {/* A11Y-019: exactly one h1 per route. Sidebar nav not counted. */}
+      {/* A11Y-019: exactly one h1 per route. Sidebar nav not counted.
+          Header pattern matches /analytics convention (Aarti-approved May 8 2026).
+          h1 uses var(--font-heading) per DS convention from existing pages. */}
       <header
         className="flex items-center gap-2 border-b border-border shrink-0"
         style={{ padding: '18px 28px 14px' }}
       >
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
-        <Link href="/" className="text-sm text-muted-foreground hover:underline">
-          Admin
-        </Link>
-        <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
-        <h1 className="text-sm font-semibold flex-1 truncate">Course Evaluation</h1>
+        <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>
+          Course Evaluation
+        </h1>
+
+        <DesignToggle
+          active="new"
+          legacyHref={DESIGN_PAIRS.termOverview.legacy}
+          newHref={DESIGN_PAIRS.termOverview.new}
+        />
 
         <Tooltip>
           <TooltipTrigger asChild>

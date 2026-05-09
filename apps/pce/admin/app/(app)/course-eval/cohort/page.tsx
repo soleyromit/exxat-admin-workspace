@@ -26,6 +26,7 @@ import {
 import { SlopeGraph } from '@/components/pce/slope-graph'
 import { SmallMultiples, type Multiple } from '@/components/pce/small-multiples'
 import { ClevelandDot } from '@/components/pce/cleveland-dot'
+import { DesignToggle, DESIGN_PAIRS } from '@/components/pce/design-toggle'
 import {
   COHORT_META, type CohortId,
   TERMS,
@@ -78,15 +79,19 @@ export default function CohortOverview() {
       >
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
-        <Link href="/" className="text-sm text-muted-foreground hover:underline">
-          Admin
-        </Link>
-        <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
         <Link href="/course-eval" className="text-sm text-muted-foreground hover:underline">
           Course Evaluation
         </Link>
         <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
-        <h1 className="text-sm font-semibold flex-1 truncate">Cohort Overview</h1>
+        <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>
+          Cohort
+        </h1>
+
+        <DesignToggle
+          active="new"
+          legacyHref={DESIGN_PAIRS.cohortOverview.legacy}
+          newHref={DESIGN_PAIRS.cohortOverview.new}
+        />
       </header>
 
       <main

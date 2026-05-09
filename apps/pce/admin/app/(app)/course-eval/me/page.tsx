@@ -38,6 +38,7 @@ import {
 } from '@exxat/ds/packages/ui/src'
 import { TrendSparkline } from '@/components/pce/trend-sparkline'
 import { AiInsightCard } from '@/components/pce/ai-insight-card'
+import { DesignToggle, DESIGN_PAIRS } from '@/components/pce/design-toggle'
 import {
   FACULTY, getFacultyCourses, DEPT_AVG, SAMPLE_OFFERING_THEMES,
   CURRENT_FACULTY_ID, CURRENT_FACULTY_ACTION_PLAN,
@@ -70,7 +71,15 @@ export default function FacultySelfView() {
       >
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
-        <h1 className="text-sm font-semibold flex-1 truncate">My Course Evaluations</h1>
+        <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>
+          My Course Evaluations
+        </h1>
+
+        <DesignToggle
+          active="new"
+          legacyHref={DESIGN_PAIRS.myView.legacy}
+          newHref={DESIGN_PAIRS.myView.new}
+        />
       </header>
 
       <main

@@ -11,6 +11,7 @@ import {
 import { usePce } from '@/components/pce/pce-state'
 import { TrendSparkline } from '@/components/pce/trend-sparkline'
 import { AiInsightCard } from '@/components/pce/ai-insight-card'
+import { DesignToggle, DESIGN_PAIRS } from '@/components/pce/design-toggle'
 import { MOCK_RESPONSES, MOCK_TEMPLATES, MOCK_TERMS, MOCK_COHORTS, SECTION_LABELS } from '@/lib/pce-mock-data'
 
 function ScoreBar({ score, max = 5 }: { score: number; max?: number }) {
@@ -130,6 +131,12 @@ export default function AnalyticsPage() {
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
         <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Analytics</h1>
+
+        <DesignToggle
+          active="legacy"
+          legacyHref={DESIGN_PAIRS.termOverview.legacy}
+          newHref={axis === 'cohort' ? DESIGN_PAIRS.cohortOverview.new : DESIGN_PAIRS.termOverview.new}
+        />
 
         {/* View axis toggle (D4): Term ↔ Cohort. Faculty is one click down (D5) */}
         <ToggleGroup
