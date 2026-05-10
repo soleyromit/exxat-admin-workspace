@@ -92,6 +92,43 @@ PATTERN_RULES: list[tuple[str, str, str, str, bool]] = [
     ("DS-011c", r"\bfontFamily\s*:\s*['\"]((?:[^'\"]*?(?:serif|sans|mono))|[A-Z][^'\"]*)['\"]",
      "Inline fontFamily literal banned (DS-011). Use var(--font-sans) / var(--font-heading) tokens or a Tailwind font-* class.",
      r"/apps/", True),
+
+    # ─── Added 2026-05-10 audit: close gaps between ds-check (R1-R12) and PreToolUse ───
+
+    # DS-013 (was ds-check R7) — raw oklch() literal in style prop banned.
+    # DS-002 already catches hex/rgb/hsl. This adds oklch.
+    ("DS-013", r"\bstyle\s*=\s*\{\s*\{[^}]*\boklch\s*\(",
+     "Raw oklch() in style prop banned (DS-013). Define a CSS variable in globals.css and reference it as var(--token).",
+     r"/apps/", True),
+
+    # DS-014 (was ds-check R11) — `white` keyword inside color-mix banned.
+    # CSS's bare `white` short-circuits theme. Use var(--background) instead so dark mode works.
+    # Note: `[^)]*` doesn't work because nested var(--token) has a `)` that closes the class
+    # too early. Lazy `.*?` spans nested parens within a line.
+    ("DS-014", r"color-mix\s*\(.*?\bwhite\b",
+     "`white` inside color-mix banned (DS-014). Use var(--background) so dark mode honors the theme.",
+     r"/apps/", True),
+
+    # DS-015 (was ds-check R6) — DS Button without explicit variant prop.
+    # Regex: <Button followed by attributes that DON'T include variant=, terminating in >.
+    # Best-effort; may false-positive if variant is on a wrapping props spread. Warning-only.
+    ("DS-015", r"<Button(?![^>]*\bvariant\s*=)[^>]*>",
+     "DS Button missing explicit variant prop (DS-015). Add variant=\"default|outline|secondary|ghost|destructive|link\" — never rely on the implicit default.",
+     r"/apps/", False),
+
+    # DS-016 (was ds-check R12) — rounded wrapper around <Table> needs overflow-hidden.
+    # Catches the most-common pattern: <div className="...rounded-{lg|xl|2xl}..."> with <Table inside.
+    # Heuristic; warning-only.
+    ("DS-016", r"<div[^>]*\bclassName\s*=\s*[\"'][^\"']*\brounded-(?:lg|xl|2xl)\b(?:(?![\"'][^>]*overflow-hidden)[^>])*?>\s*(?:<[^>]*>\s*)*<Table[\s>]",
+     "<Table> inside rounded-{lg|xl|2xl} wrapper without overflow-hidden (DS-016). Rounded corners won't clip the scroll container.",
+     r"/apps/", False),
+
+    # DS-017 (was ds-check R3) — DS-token color in style prop should be Tailwind class.
+    # Catches: style={{ color: 'var(--foreground)' }} when className="text-foreground" exists.
+    # Warning-only — false positives when color is conditional / dynamic.
+    ("DS-017", r"\bstyle\s*=\s*\{\s*\{[^}]*\bcolor\s*:\s*['\"]\s*var\s*\(\s*--(?:foreground|muted-foreground|destructive|primary-foreground|brand-color|brand-color-dark)\s*\)['\"]",
+     "DS-token color in inline style (DS-017). Prefer Tailwind class — `text-foreground`, `text-muted-foreground`, `text-destructive`, etc.",
+     r"/apps/", False),
 ]
 
 

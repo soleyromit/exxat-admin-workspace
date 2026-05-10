@@ -36,7 +36,7 @@ echo "↳ pre-commit (workspace audits + digest)"
 echo
 
 # 1. Architecture audit — wiring must be intact
-printf "  [1/5] architecture-audit ... "
+printf "  [1/6] architecture-audit ... "
 if python3 scripts/architecture-audit.py --strict > /tmp/pre-commit-arch.log 2>&1; then
   printf "${GREEN}pass${RESET}\n"
 else
@@ -48,7 +48,7 @@ else
 fi
 
 # 2. Backlink audit — citations must be tight
-printf "  [2/5] backlink-audit     ... "
+printf "  [2/6] backlink-audit     ... "
 if python3 scripts/backlink-audit.py --strict > /tmp/pre-commit-backlink.log 2>&1; then
   printf "${GREEN}pass${RESET}\n"
 else
@@ -60,7 +60,7 @@ else
 fi
 
 # 3. Staleness — soft warn only
-printf "  [3/5] staleness-check    ... "
+printf "  [3/6] staleness-check    ... "
 if python3 scripts/staleness-check.py > /tmp/pre-commit-stale.log 2>&1; then
   if grep -q "^Checked.*Found" /tmp/pre-commit-stale.log; then
     gaps=$(grep -E "^Checked.*Found ([0-9]+)" /tmp/pre-commit-stale.log | sed -E 's/.*Found ([0-9]+).*/\1/')
@@ -70,8 +70,22 @@ if python3 scripts/staleness-check.py > /tmp/pre-commit-stale.log 2>&1; then
   fi
 fi
 
-# 4. Practices-audit staleness — soft warn at 60d, never block
-printf "  [4/5] practices-staleness ... "
+# 4. DS-012 globals conformance — BLOCKING (every admin app must have DS overrides)
+printf "  [4/6] ds-globals-audit    ... "
+if python3 scripts/ds-globals-audit.py --strict > /tmp/pre-commit-ds-globals.log 2>&1; then
+  printf "${GREEN}pass${RESET}\n"
+else
+  printf "${RED}FAIL${RESET} — blocking commit\n\n"
+  cat /tmp/pre-commit-ds-globals.log
+  echo
+  echo "Fix:  python3 scripts/ds-globals-audit.py --fix"
+  echo "Or:   copy missing blocks from docs/foundations/admin-globals-template.css"
+  echo "Bypass: git commit --no-verify"
+  exit 1
+fi
+
+# 5. Practices-audit staleness — soft warn at 60d, never block
+printf "  [5/6] practices-staleness ... "
 if python3 scripts/practices-audit-staleness.py > /tmp/pre-commit-practices.log 2>&1; then
   msg=$(cat /tmp/pre-commit-practices.log)
   if [[ "$msg" == *"reminder"* ]]; then
@@ -84,8 +98,8 @@ else
   cat /tmp/pre-commit-practices.log | sed 's/^/      /'
 fi
 
-# 5. Regenerate digest and stage it if changed
-printf "  [5/5] regenerate digest  ... "
+# 6. Regenerate digest and stage it if changed
+printf "  [6/6] regenerate digest  ... "
 python3 scripts/generate-digest.py > /tmp/pre-commit-digest.log 2>&1
 if [ -f docs/digest/latest.md ]; then
   # Stage latest.md only if it actually changed (avoids no-op churn)
