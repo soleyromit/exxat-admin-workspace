@@ -16,6 +16,7 @@
 | `workspace` | `004-phase-1-persona-collapse` | ADR-004 — Phase-1 persona collapse to 3 view tiers | Accepted | 2026-05-08 |
 | `workspace` | `005-ai-first-thinking-pattern` | ADR-005 — AI-first thinking pattern for analytics surfaces | Accepted | 2026-05-08 |
 | `workspace` | `006-accommodations-shared-module` | ADR-006 — Accommodations as a shared cross-product module | Accepted | 2026-05-08 |
+| `workspace` | `007-brand-assignment-per-admin-app` | Workspace ADR-007 — Brand assignment per admin app | Accepted | 2026-05-10 |
 | `apps/exam-management` | `001-course-architecture-master-and-offerings` | Exam Management ADR-001 — Three-concept course architecture | Accepted | 2026-05-08 |
 | `apps/pce` | `001-no-question-bank-templates-only` | PCE ADR-001 — No question bank in PCE / CFE; templates only | Accepted | 2026-05-08 |
 

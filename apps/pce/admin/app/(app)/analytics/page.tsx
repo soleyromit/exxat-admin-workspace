@@ -297,7 +297,7 @@ export default function AnalyticsPage() {
             <div className="flex flex-col gap-3">
               <h2 className="text-sm font-semibold">By Course</h2>
               <p className="text-xs text-muted-foreground">
-                Click any row to drill into question-level detail for that offering.
+                Click any released row to drill into question-level detail. Rows showing a lock icon are still collecting and aren't viewable yet.
               </p>
               <div className="border border-border rounded-lg overflow-hidden">
                 <Table>
@@ -325,21 +325,37 @@ export default function AnalyticsPage() {
                         label: po.term,
                         value: po.courseAvg,
                       }))
-                      const drilldownHref = `/my-surveys/${survey.id}/results`
+                      // Drill-down gate (DS-019 / blind-spot #1, fixed 2026-05-10):
+                      // /my-surveys/[id]/results renders a locked empty state when survey
+                      // is not released. Only enable click-through when results are
+                      // actually viewable. Mirror the gate /my-surveys/page.tsx uses.
+                      const isReleased = survey.status === 'released' || survey.status === 'closed'
+                      const drilldownHref = isReleased
+                        ? `/my-surveys/${survey.id}/results`
+                        : null
                       return (
                         <TableRow
                           key={survey.id}
-                          tabIndex={0}
-                          role="link"
-                          aria-label={`Drill into ${survey.courseCode} ${survey.courseName}`}
-                          onClick={() => router.push(drilldownHref)}
-                          onKeyDown={(e) => {
+                          tabIndex={drilldownHref ? 0 : -1}
+                          role={drilldownHref ? 'link' : undefined}
+                          aria-label={
+                            drilldownHref
+                              ? `Drill into ${survey.courseCode} ${survey.courseName}`
+                              : `${survey.courseCode} ${survey.courseName} — results not yet released`
+                          }
+                          aria-disabled={!drilldownHref || undefined}
+                          onClick={drilldownHref ? () => router.push(drilldownHref) : undefined}
+                          onKeyDown={drilldownHref ? (e) => {
                             if (e.key === 'Enter' || e.key === ' ') {
                               e.preventDefault()
                               router.push(drilldownHref)
                             }
-                          }}
-                          className="cursor-pointer hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-inset"
+                          } : undefined}
+                          className={
+                            drilldownHref
+                              ? 'cursor-pointer hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-inset'
+                              : 'opacity-60'
+                          }
                         >
                           <TableCell>
                             <div className="flex flex-col gap-0.5">
@@ -377,11 +393,20 @@ export default function AnalyticsPage() {
                             />
                           </TableCell>
                           <TableCell>
-                            <i
-                              className="fa-light fa-chevron-right text-muted-foreground"
-                              aria-hidden="true"
-                              style={{ fontSize: 11 }}
-                            />
+                            {drilldownHref ? (
+                              <i
+                                className="fa-light fa-chevron-right text-muted-foreground"
+                                aria-hidden="true"
+                                style={{ fontSize: 11 }}
+                              />
+                            ) : (
+                              <i
+                                className="fa-light fa-lock-keyhole text-muted-foreground"
+                                aria-hidden="true"
+                                style={{ fontSize: 11 }}
+                                aria-label="Results pending"
+                              />
+                            )}
                           </TableCell>
                         </TableRow>
                       )

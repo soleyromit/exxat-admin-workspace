@@ -147,15 +147,27 @@ export default function FacultyResultsPage() {
 
       <main className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
         {!isReleased ? (
+          // DS-018 brand presence (fixed 2026-05-10): empty state was using
+          // --muted background + --muted-foreground icon — DS-correct but
+          // brandless. Now uses --brand-tint background + --brand-color-dark
+          // icon so the empty state still communicates Exxat brand identity.
           <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
             <div
               className="flex items-center justify-center w-16 h-16 rounded-full"
-              style={{ backgroundColor: 'var(--muted)' }}
+              style={{ backgroundColor: 'var(--brand-tint)' }}
             >
-              <i className="fa-light fa-lock-keyhole text-muted-foreground text-[28px]" aria-hidden="true" />
+              <i
+                className="fa-light fa-lock-keyhole text-[28px]"
+                style={{ color: 'var(--brand-color-dark)' }}
+                aria-hidden="true"
+              />
             </div>
             <div className="flex flex-col gap-2 max-w-sm">
               <p className="text-base font-semibold">Results aren&apos;t available yet</p>
+              <p className="text-sm text-muted-foreground">
+                Currently <span className="font-medium text-foreground">{survey.responseRate}%</span> response rate
+                ({survey.responseCount} of {survey.enrollmentCount}). Deadline: {survey.deadline}.
+              </p>
               <p className="text-sm text-muted-foreground">
                 The program administrator reviews all responses before sharing them with instructors.
                 You&apos;ll be notified when your results are ready.
