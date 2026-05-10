@@ -118,6 +118,8 @@ Every gate cites a rule ID. Hook output references the ID so violations are audi
 - **INTAKE-002** — Decisions detected ("decided", "going with", "the answer is") → ADR at `docs/decisions/<NNN>-<title>.md`. *Gate:* UserPromptSubmit fires intake skill.
 - **INTAKE-003** — New terminology proposed → glossary addition with confirmation before persisting. *Gate:* intake skill.
 - **INTAKE-004** — Designer overrides ("ignore the rule", "exception here") → captured as ADR + pattern exception + DESIGN.md amendment if generalizable. *Gate:* P5.
+- **INTAKE-005** — Raw transcripts MUST be read line by line, not summarised or skimmed. Before making any screen change from a transcript, extract ALL directives using the five-category checklist: (1) headline decisions, (2) role-specific visibility changes, (3) layout/proportion directives, (4) scope expansions ("not just X — any Y"), (5) missing data fields Aarti expected to see. Skipping any category is a process violation. *Gate:* manual review; enforced in `.claude/routines/design-sync-instructions.md`.
+- **INTAKE-006** — After extracting all directives from a transcript, cross-check each against the current screen implementation before marking it done. "Done" means the screen was read AND the directive was verified present in the code — not just that it was documented. *Gate:* manual verification step before each PR.
 
 ### PERF — Performance Budgets (P7)
 - **PERF-001** — Core Web Vitals budgets per app type: LCP ≤ 2.5s (1.5s for assessment-taker), INP ≤ 200ms (100ms for assessment-taker), CLS ≤ 0.1 (0.05 for assessment-taker). *Gate:* Lighthouse CI per PR. See `docs/quality/perf.md`.

@@ -53,19 +53,88 @@ Relevant meetings are those that touch: product design, UX decisions, feature sc
 
 ---
 
-## Step 2 — Read raw transcripts (MANDATORY — do not skip)
+## Step 2 — Read raw transcripts LINE BY LINE (MANDATORY — do not skip, do not skim)
 
 For EVERY relevant meeting, call `get_meeting_transcript` with the meeting ID.
 
-Read the full verbatim transcript carefully. Granola summaries miss nuance, implicit decisions, and exact phrasing. The raw transcript is the source of truth.
+**Read the ENTIRE transcript word by word. Do not summarise while reading. Do not stop at the first decision. Every sentence is a potential directive.**
 
-Look for:
-- Explicit decisions: "we decided", "going with", "the answer is", "drop this", "not phase 1", "kill it"
-- Aarti/Vishaka directives — even casual statements carry authority
-- Things killed or deferred: "we'll do this later", "not now", "that's phase 2"
-- Specific UI feedback: "put it at the top", "remove this", "combine these", "I don't want..."
-- Label/copy changes: "don't call it X, call it Y"
-- Structural changes: "that shouldn't be the primary thing", "this is secondary"
+The raw transcript is the source of truth. Granola summaries, query results, and prior meeting notes are NOT substitutes — they miss nuance, implicit decisions, layout proportions, and role-specific rules.
+
+### What to extract — go through this checklist for every transcript:
+
+**Headline decisions** (most obvious — you will catch these)
+- "we decided", "going with", "the answer is", "drop this", "not phase 1", "kill it"
+- Label/vocabulary changes: "don't call it X, call it Y"
+
+**Role-specific visibility** (easy to miss — check every screen mentioned)
+- Does the directive apply to admin only? Faculty only? Both?
+- "faculty shouldn't see", "only admin can", "as a faculty, I don't need to see"
+- Nav items, buttons, and sections may need to be hidden per role
+
+**Layout and proportion** (easy to miss — listen for numbers and spatial language)
+- "three fourth of the screen", "put it on the right", "small card", "bigger card"
+- "put it at the top", "move it below", "this is primary", "this is secondary"
+
+**Scope of existing features** (easy to miss — directives that EXPAND what's already built)
+- "not just flagged items — any question", "not just active courses — all courses"
+- "one search across both", "the whole thing, not just part of it"
+- Watch for: "any", "all", "not just", "everything" as scope expansion signals
+
+**Missing data fields** (easy to miss — Aarti mentions data she expects to see)
+- "I would also want to know...", "is that not a useful number?", "you should also show..."
+- "the frequency AND the average", "the count AND the correctness"
+
+**Corrections to existing designs** (easy to miss — feedback on Romit's screens)
+- Romit demos something → Aarti says "that's not right", "that's wrong", "change this"
+- These are direct screen corrections, not just abstract decisions
+
+**Things explicitly killed** (must track — not just deferred)
+- "I don't want that", "remove this", "that's not the primary thing"
+- "Why do you care? It's not relevant to you" → that feature/nav item needs to be removed for that role
+
+### Five mandatory reading passes — do ALL of them, in order:
+
+**Pass 1 — Physical layout**
+Anything describing how the UI looks or where an element sits:
+- Proportions: "three fourth of the screen", "small card", "put it on the right"
+- Position: "put it at the top", "not on the left menu", "move it below"
+- Interactions: "on hover", "click somewhere to see it", "in a popup"
+
+**Pass 2 — Scope changes**
+Directives that expand or contract the scope of an existing feature:
+- Expansions: "not just flagged items — any question", "not just active — all courses"
+- Contractions: "faculty shouldn't see the global list", "admin only", "read-only for faculty"
+- LMS gating: "if LMS is on, disable these controls"
+- Audience: "course coordinator only", "this is not for the instructor"
+
+**Pass 3 — Missing data fields**
+Data Aarti expects to see that isn't in the current design. Listen for:
+- "is that not a useful number?" → it should be shown
+- "I would also want to know", "you should also show"
+- "the count AND the average", "the frequency AND the correctness"
+- "how many skipped, how many answered" → multiple fields per row expected
+
+**Pass 4 — Killed / deferred**
+Features, sections, or nav items that should be removed. These are said conversationally:
+- "why do you care?" → that item should not exist for that person
+- "that's phase 2", "not phase 1", "backlog"
+- "kill it", "scrap it", "I don't want 18 variations of this"
+- "remove this", "I don't want that there"
+
+**Pass 5 — Cross-reference against existing code**
+After extracting all directives, READ the actual screen file and verify each one:
+- Does the feature Aarti killed still exist in the code?
+- Does the role restriction actually gate the UI element?
+- Does the data field actually render in the component?
+- Is the layout proportion reflected in the grid/flex template?
+
+This pass prevents the most common failure: documenting a directive without verifying the code reflects it.
+
+### After all five passes:
+1. List every directive found — even small ones
+2. For each: which screen? Which role? What specifically changes in the code?
+3. Only then move to Step 3
 
 ---
 
