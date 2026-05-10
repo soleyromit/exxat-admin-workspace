@@ -1,18 +1,137 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Button, Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
   ToggleGroup, ToggleGroupItem,
-  LocalBanner,
+  LocalBanner, Card, Badge,
   SidebarTrigger, Separator,
 } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
 import { TrendSparkline } from '@/components/pce/trend-sparkline'
 import { AiInsightCard } from '@/components/pce/ai-insight-card'
 import { MOCK_RESPONSES, MOCK_TEMPLATES, MOCK_TERMS, MOCK_COHORTS, SECTION_LABELS } from '@/lib/pce-mock-data'
+
+/* ScoreLandscape — horizontal bar chart, sorted by score, brand-color bars +
+   tier dots (green ≥4.3, brand 3.7-4.3, amber <3.7). Pattern from
+   apps/pce/prototype/pce-evaluation.html chartScoreLandscape (~line 1317).
+   Rows are keyboard-navigable and drill into offering detail.
+   Brand presence per DS-018: bars use --brand-color. */
+interface ScoreLandscapeProps {
+  courses: { survey: { id: string; courseCode: string; courseName: string }; avg: number; isReleased: boolean }[]
+  onDrill: (surveyId: string, isReleased: boolean) => void
+}
+function ScoreLandscape({ courses, onDrill }: ScoreLandscapeProps) {
+  const rowH = 32
+  const padTop = 6
+  const trackW = 280  // bar track width in arbitrary SVG units
+  const labelW = 132
+  const valW = 36
+  const totalW = labelW + trackW + valW + 14
+  const totalH = padTop + courses.length * rowH + 4
+  const tierColor = (a: number) =>
+    a >= 4.3 ? 'var(--chart-2)' :
+    a >= 3.7 ? 'var(--brand-color)' :
+                'var(--chart-4)'
+  return (
+    <figure role="figure" aria-label={`Score landscape: ${courses.length} courses sorted by average`}>
+      <svg
+        viewBox={`0 0 ${totalW} ${totalH}`}
+        preserveAspectRatio="xMidYMid meet"
+        style={{ width: '100%', height: 'auto', display: 'block' }}
+      >
+        {courses.map((c, i) => {
+          const y = padTop + i * rowH
+          const barW = (c.avg / 5) * trackW
+          return (
+            <g
+              key={c.survey.id}
+              tabIndex={0}
+              role="button"
+              aria-label={`${c.survey.courseCode}, ${c.survey.courseName}, ${c.avg.toFixed(2)} of 5. Press Enter to drill in.`}
+              style={{ cursor: 'pointer', outline: 'none' }}
+              onClick={() => onDrill(c.survey.id, c.isReleased)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  onDrill(c.survey.id, c.isReleased)
+                }
+              }}
+            >
+              <rect x={0} y={y - 2} width={totalW} height={rowH - 2} fill="transparent" />
+              <circle cx={9} cy={y + rowH / 2 - 2} r={3} fill={tierColor(c.avg)} />
+              <text x={20} y={y + rowH / 2 + 2} fontSize={12} fontWeight={600} fill="var(--foreground)" fontFamily="Inter">
+                {c.survey.courseCode}
+              </text>
+              <text x={20} y={y + rowH / 2 + 14} fontSize={10} fill="var(--muted-foreground)" fontFamily="Inter">
+                {c.survey.courseName.length > 22 ? `${c.survey.courseName.slice(0, 22)}…` : c.survey.courseName}
+              </text>
+              <rect x={labelW} y={y + rowH / 2 - 4} width={trackW} height={8} fill="var(--muted)" rx={4} />
+              <rect x={labelW} y={y + rowH / 2 - 4} width={barW} height={8} fill="var(--brand-color)" rx={4} />
+              <text
+                x={labelW + trackW + 6}
+                y={y + rowH / 2 + 4}
+                fontSize={13}
+                fontWeight={700}
+                fill="var(--foreground)"
+                fontFamily="Inter"
+                style={{ fontVariantNumeric: 'tabular-nums' }}
+              >
+                {c.avg.toFixed(2)}
+              </text>
+            </g>
+          )
+        })}
+      </svg>
+    </figure>
+  )
+}
+
+/* KpiButton — clickable headline card in the dashboard grid. Mirrors
+   prototype's KPI tiles (apps/pce/prototype/pce-evaluation.html ~line 2495).
+   Brand presence per DS-018: chevron uses --brand-color; hover uses --brand-tint. */
+interface KpiButtonProps {
+  label: string
+  value: string | number
+  meta: string
+  icon?: string
+  iconColor?: string
+  href?: string
+}
+function KpiButton({ label, value, meta, icon, iconColor, href }: KpiButtonProps) {
+  const Inner = (
+    <div className="flex flex-col gap-1.5 p-4 border border-border rounded-lg bg-background hover:bg-[color-mix(in_oklch,var(--brand-tint)_30%,var(--background))] transition-colors h-full">
+      <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {icon && <i className={`fa-light ${icon}`} aria-hidden="true" style={iconColor ? { color: iconColor } : undefined} />}
+        <span>{label}</span>
+      </div>
+      <div className="text-2xl font-semibold tabular-nums leading-none">{value}</div>
+      <div className="flex items-center justify-between gap-2 mt-auto">
+        <span className="text-xs text-muted-foreground truncate">{meta}</span>
+        {href && (
+          <i
+            className="fa-light fa-arrow-right text-xs shrink-0"
+            style={{ color: 'var(--brand-color)' }}
+            aria-hidden="true"
+          />
+        )}
+      </div>
+    </div>
+  )
+  if (!href) return Inner
+  return (
+    <Link
+      href={href}
+      className="block focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 rounded-lg"
+      aria-label={`${label}: ${value} — ${meta}`}
+    >
+      {Inner}
+    </Link>
+  )
+}
 
 function ScoreBar({ score, max = 5 }: { score: number; max?: number }) {
   return (
@@ -91,6 +210,47 @@ export default function AnalyticsPage() {
     section,
     avg: Math.round((avgs.reduce((a, b) => a + b, 0) / avgs.length) * 10) / 10,
   }))
+
+  /* Released-course scores for landscape + at-risk computations.
+     courseAvg = mean of all section averages for that survey. */
+  const releasedScoreList = useMemo(() => {
+    return releasedSurveys
+      .map(survey => {
+        const resp = MOCK_RESPONSES.find(r => r.surveyId === survey.id)
+        const avgs = resp?.sectionScores.map(s => s.avg) ?? []
+        const courseAvg = avgs.length > 0
+          ? avgs.reduce((a, b) => a + b, 0) / avgs.length
+          : 0
+        return { survey, avg: courseAvg, isReleased: true }
+      })
+      .filter(c => c.avg > 0)
+      .sort((a, b) => b.avg - a.avg)
+  }, [releasedSurveys])
+
+  /* Program-level rollup */
+  const programAvg = releasedScoreList.length > 0
+    ? releasedScoreList.reduce((sum, c) => sum + c.avg, 0) / releasedScoreList.length
+    : null
+
+  /* At-risk: released courses below 3.7 (prototype threshold) */
+  const atRiskCourses = releasedScoreList.filter(c => c.avg < 3.7)
+
+  /* Pending review: surveys in pending_review or closed (awaiting release) */
+  const pendingReviewCount = scopedSurveys.filter(s => s.status === 'pending_review' || s.status === 'closed').length
+
+  /* Reflection rate — stub: assume 1/3 of released faculty have submitted reflection */
+  const reflectedCount = Math.round(releasedSurveys.length * 0.6)
+  const reflectionRate = releasedSurveys.length > 0
+    ? Math.round((reflectedCount / releasedSurveys.length) * 100)
+    : 0
+
+  /* Program trend — last 4 terms hardcoded as historical baseline; current is programAvg */
+  const programTrendHistory: { label: string; value: number }[] = [
+    { label: 'Sp 24', value: 3.95 },
+    { label: 'Fa 24', value: 4.00 },
+    { label: 'Sp 25', value: 4.02 },
+    { label: 'Fa 25', value: 4.05 },
+  ]
 
   // Per-course breakdown
   const courseBreakdown = scopedSurveys.map(survey => {
@@ -232,63 +392,160 @@ export default function AnalyticsPage() {
               source={`${scopedResponses.length} response${scopedResponses.length === 1 ? '' : 's'} across ${releasedSurveys.length} released survey${releasedSurveys.length === 1 ? '' : 's'}`}
             />
 
-            {/* Summary cards — pulled lane (computed metrics, no AI affordance) */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* Response rates card */}
-              <div className="border border-border rounded-lg p-5 flex flex-col gap-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Response Rates
-                </p>
-                <div className="flex flex-col gap-1">
-                  <p className="text-2xl font-bold tabular-nums">{totalRate}%</p>
-                  <p className="text-sm text-muted-foreground">
-                    overall average
-                  </p>
-                </div>
-                <div
-                  style={{
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: 'var(--muted)',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div
-                    style={{
-                      height: '100%',
-                      width: `${totalRate}%`,
-                      borderRadius: 4,
-                      backgroundColor: 'var(--brand-color)',
-                    }}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {completedCount} of {scopedSurveys.length} surveys complete
-                </p>
-              </div>
+            {/*
+              KPI grid — 4 headline tiles, each clickable to drill in. Pattern lifted from
+              apps/pce/prototype/pce-evaluation.html PD dashboard (~line 2495). Per Aarti's
+              drone-view-then-click-down directive (2026-05-08 Granola): each tile answers a
+              specific dashboard question and routes to a deeper surface.
 
-              {/* Avg scores card */}
-              <div className="border border-border rounded-lg p-5 flex flex-col gap-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Avg Scores by Section
-                </p>
-                {sectionSummary.length > 0 ? (
-                  <div className="flex flex-col gap-3">
-                    {sectionSummary.map(({ section, avg }) => (
-                      <div key={section} className="flex items-center justify-between gap-3">
-                        <span className="text-sm flex-1 text-muted-foreground">
-                          {SECTION_LABELS[section as keyof typeof SECTION_LABELS] ?? section}
-                        </span>
-                        <ScoreBar score={avg} />
-                        <span className="text-xs w-6 text-right text-muted-foreground">/5</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No released data yet.</p>
-                )}
-              </div>
+              Brand presence per DS-018: hover bg uses --brand-tint, chevron uses --brand-color.
+            */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <KpiButton
+                label="Program avg"
+                value={programAvg ? `${programAvg.toFixed(2)}/5` : '—'}
+                meta={`${releasedSurveys.length} of ${scopedSurveys.length} courses released`}
+                href="#score-landscape"
+              />
+              <KpiButton
+                label="At-risk courses"
+                value={atRiskCourses.length}
+                meta="Released, below 3.7 avg"
+                icon="fa-triangle-exclamation"
+                iconColor={atRiskCourses.length > 0 ? 'var(--chart-4)' : 'var(--muted-foreground)'}
+                href="#at-risk"
+              />
+              <KpiButton
+                label="Pending review"
+                value={pendingReviewCount}
+                meta="Surveys awaiting moderation"
+                icon="fa-shield-halved"
+                iconColor="var(--brand-color)"
+                href="/surveys"
+              />
+              <KpiButton
+                label="Reflection rate"
+                value={`${reflectionRate}%`}
+                meta={`${reflectedCount} of ${releasedSurveys.length} faculty`}
+                icon="fa-comment-dots"
+                iconColor="var(--brand-color)"
+              />
             </div>
+
+            {/*
+              Score Landscape + Program Trend — paired analytics cards per prototype PD dashboard.
+              Score Landscape: sorted bar chart with tier dots (≥4.3 strong, 3.7-4.3 solid, <3.7 concern).
+              Program Trend: 5-term sparkline using TrendSparkline component (DS-016).
+            */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" id="score-landscape">
+              <Card className="p-4">
+                <div className="flex items-baseline justify-between mb-3 gap-3">
+                  <div>
+                    <div className="text-sm font-semibold">Score landscape</div>
+                    <div className="text-xs text-muted-foreground">
+                      Released courses, sorted by avg. Click any bar to drill in.
+                    </div>
+                  </div>
+                  <div className="hidden md:flex items-center gap-2.5 text-[10px] text-muted-foreground shrink-0">
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full" style={{ background: 'var(--chart-2)' }} aria-hidden="true" />
+                      ≥4.3
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full" style={{ background: 'var(--brand-color)' }} aria-hidden="true" />
+                      3.7–4.3
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full" style={{ background: 'var(--chart-4)' }} aria-hidden="true" />
+                      &lt;3.7
+                    </span>
+                  </div>
+                </div>
+                {releasedSurveys.length > 0 ? (
+                  <ScoreLandscape courses={releasedScoreList} onDrill={(id, released) => {
+                    if (released) router.push(`/my-surveys/${id}/results`)
+                  }} />
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    No released courses yet for {scopeLabel}.
+                  </p>
+                )}
+              </Card>
+
+              <Card className="p-4">
+                <div className="mb-3">
+                  <div className="text-sm font-semibold">Program trend</div>
+                  <div className="text-xs text-muted-foreground">Last 5 terms, current highlighted.</div>
+                </div>
+                <div className="flex items-end justify-between gap-4">
+                  <div className="flex flex-col gap-1 flex-1">
+                    <TrendSparkline
+                      history={programTrendHistory}
+                      currentValue={programAvg ?? undefined}
+                      currentLabel={term}
+                      width={300}
+                      height={80}
+                      min={3.0}
+                      max={5.0}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {programTrendHistory.length + (programAvg ? 1 : 0)} terms tracked.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/*
+              At-risk panel — conditional. Released courses with avg <3.7 surface here per
+              prototype. Empty state morphs into "Course health" affirmation when no risk.
+              Brand presence: --brand-tint background on count chip; --brand-color-dark border.
+            */}
+            <Card className="overflow-hidden" id="at-risk">
+              <div className="p-4 border-b border-border">
+                <div className="text-sm font-semibold flex items-center gap-2">
+                  <i
+                    className={atRiskCourses.length > 0 ? 'fa-light fa-triangle-exclamation' : 'fa-light fa-heart-pulse'}
+                    style={{ color: atRiskCourses.length > 0 ? 'var(--chart-4)' : 'var(--chart-2)' }}
+                    aria-hidden="true"
+                  />
+                  {atRiskCourses.length > 0 ? 'At-risk courses' : 'Course health'}
+                  {atRiskCourses.length > 0 && (
+                    <Badge
+                      variant="secondary"
+                      className="rounded-full text-[10px] ms-1"
+                      style={{ backgroundColor: 'var(--brand-tint)', color: 'var(--brand-color-dark)' }}
+                    >
+                      {atRiskCourses.length}
+                    </Badge>
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {atRiskCourses.length > 0
+                    ? 'Released courses below 3.7. Click any row to drill in.'
+                    : 'All released courses currently at or above 3.7. No CQI actions required this term.'}
+                </div>
+              </div>
+              {atRiskCourses.length > 0 && (
+                <ul className="divide-y divide-border">
+                  {atRiskCourses.map(({ survey, avg }) => (
+                    <li key={survey.id}>
+                      <Link
+                        href={`/my-surveys/${survey.id}/results`}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-inset"
+                      >
+                        <span className="text-sm font-medium">{survey.courseCode}</span>
+                        <span className="text-xs text-muted-foreground truncate flex-1">{survey.courseName}</span>
+                        <span className="text-sm tabular-nums font-semibold" style={{ color: 'var(--chart-4)' }}>
+                          {avg.toFixed(2)}
+                        </span>
+                        <i className="fa-light fa-arrow-right text-xs text-muted-foreground" aria-hidden="true" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
 
             {/* By course table — faculty as a column (one click down per Aarti D5).
                 Per 2026-05-08 Granola: drill-down chain is AI summary →
