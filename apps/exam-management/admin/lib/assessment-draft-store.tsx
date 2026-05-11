@@ -112,8 +112,15 @@ export function AssessmentDraftProvider({ children }: { children: ReactNode }) {
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
 
+const EMPTY_STORE: DraftStore = {
+  drafts: [],
+  hydrated: false,
+  draftsForCourse: () => [],
+  addDraft: () => { throw new Error('No provider') },
+  removeDraft: () => {},
+}
+
 export function useAssessmentDrafts(): DraftStore {
   const v = useContext(Ctx)
-  if (!v) throw new Error('useAssessmentDrafts must be used within AssessmentDraftProvider')
-  return v
+  return v ?? EMPTY_STORE
 }

@@ -77,8 +77,15 @@ export function AssessmentReviewProvider({ children }: { children: ReactNode }) 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
 
+const EMPTY_STORE: ReviewStore = {
+  reviews: [],
+  reviewByAssessment: new Map(),
+  getReview: () => null,
+  updateReview: () => {},
+  transition: () => {},
+}
+
 export function useAssessmentReviews(): ReviewStore {
   const v = useContext(Ctx)
-  if (!v) throw new Error('useAssessmentReviews must be used within AssessmentReviewProvider')
-  return v
+  return v ?? EMPTY_STORE
 }

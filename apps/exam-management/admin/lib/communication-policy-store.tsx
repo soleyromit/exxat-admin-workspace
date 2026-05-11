@@ -109,8 +109,15 @@ export function CommunicationPolicyProvider({ children }: { children: ReactNode 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
 
+const EMPTY_STORE: CommsPolicyStore = {
+  ...DEFAULT_STATE,
+  setInstitutionAllowChat: () => {},
+  setInstitutionDefault: () => {},
+  setCourseChatOverride: () => {},
+  isChatEnabledForCourse: () => false,
+}
+
 export function useCommunicationPolicy(): CommsPolicyStore {
   const v = useContext(Ctx)
-  if (!v) throw new Error('useCommunicationPolicy must be used inside CommunicationPolicyProvider')
-  return v
+  return v ?? EMPTY_STORE
 }

@@ -113,8 +113,15 @@ export function StudentAccommodationProvider({ children }: { children: ReactNode
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
 
+const EMPTY_STORE: AccommodationStore = {
+  localAccommodations: [],
+  hydrated: false,
+  addAccommodation: () => { throw new Error('No provider') },
+  addAccommodations: () => { throw new Error('No provider') },
+  removeAccommodation: () => {},
+}
+
 export function useStudentAccommodations(): AccommodationStore {
   const v = useContext(Ctx)
-  if (!v) throw new Error('useStudentAccommodations must be used within StudentAccommodationProvider')
-  return v
+  return v ?? EMPTY_STORE
 }

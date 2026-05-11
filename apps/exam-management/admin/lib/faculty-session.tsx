@@ -129,6 +129,19 @@ export function FacultySessionProvider({ children }: { children: ReactNode }) {
 
 export function useFacultySession(): FacultySession {
   const v = useContext(Ctx)
-  if (!v) throw new Error('useFacultySession must be used within FacultySessionProvider')
-  return v
+  if (v) return v
+  // SSR prerender fallback — providers are client-only; pages hydrate before any interaction.
+  return {
+    currentPersona: DEFAULT_PERSONA,
+    setCurrentPersona: () => {},
+    personas: PERSONAS,
+    role: DEFAULT_PERSONA.role,
+    faculty: null,
+    facultyCourseIds: [],
+    accessFor: () => null,
+    canEdit: () => false,
+    entry: 'prism',
+    setEntry: () => {},
+    hydrated: false,
+  }
 }
