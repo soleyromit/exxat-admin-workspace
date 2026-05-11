@@ -60,8 +60,8 @@ The `ds-adoption-reviewer` subagent automates steps 1-5. It MUST be invoked befo
 
 | Component | Library route | Status in submodule | Adoption strategy | Notes |
 |---|---|---|---|---|
-| **DataTable** | `/library/data-list-table` | Source: `exxat-ds/apps/web/components/data-table/` (5 files, ~2150 lines). **NOT** published to `packages/ui/src/`. | **VENDOR** into product `components/data-table/`. PCE vendored 2026-05-11 with three small extensions (`defaultGroupBy`, `groupLabels`, `groupOrder`). Other products should vendor the same way until upstream publishes. | Features: sort, resize, reorder, pin, wrap, per-column quick search, row selection + bulk-actions bar, group rows, hidden columns, filter pills, conditional rules. Use it whenever a list page renders >1 record. **Raw `<Table>` in product code is banned** outside `components/data-table/` itself. |
-| **Key Metrics** | `/library/key-metrics` | Source: `exxat-ds/apps/web/components/key-metrics.tsx` (~860 lines). NOT in `packages/ui/src/`. | **VENDORED into PCE 2026-05-11** at `apps/pce/admin/components/key-metrics/index.tsx`; first consumer is `app/(app)/analytics/page.tsx` (replaced the 4× `KpiButton` hand-roll). `useAskLeo` / `AskLeoShortcutKbds` stubbed locally until PCE adopts an Ask Leo provider. exam-mgmt's parallel hand-rolls (`key-metrics.tsx`, `KpiTile`, `KpiCard`) deferred to a separate session per audit. | Variants: card, flat, compact. Optional insight rail + period selector. WCAG 2.1 AA KPI strip — use for every dashboard / analytics KPI row. |
+| **DataTable** | `/library/data-list-table` | Source: `exxat-ds/apps/web/components/data-table/` (5 files, ~2150 lines). **NOT** published to `packages/ui/src/`. | **VENDOR** into product `components/data-table/`. PCE vendored 2026-05-11 with three small extensions (`defaultGroupBy`, `groupLabels`, `groupOrder`). **exam-management vendored 2026-05-11** at `apps/exam-management/admin/components/data-table/` (5 canonical files + `row-actions.tsx` + supporting `components/table-properties/types.ts` and `lib/{editable-target,row-height}.ts`); mirrors PCE's 3 extensions exactly. The 31-LoC hand-rolled `data-table.tsx` wrapper was deleted; 2 consumer pages (`app/(app)/access/page.tsx`, `app/(app)/private/page.tsx`) migrated to canonical with `ColumnDef`/`RowActions`. Grandfathering removed. Other products should vendor the same way until upstream publishes. | Features: sort, resize, reorder, pin, wrap, per-column quick search, row selection + bulk-actions bar, group rows, hidden columns, filter pills, conditional rules. Use it whenever a list page renders >1 record. **Raw `<Table>` in product code is banned** outside `components/data-table/` itself. |
+| **Key Metrics** | `/library/key-metrics` | Source: `exxat-ds/apps/web/components/key-metrics.tsx` (~860 lines). NOT in `packages/ui/src/`. | **VENDORED into PCE 2026-05-11** at `apps/pce/admin/components/key-metrics/index.tsx`; first consumer is `app/(app)/analytics/page.tsx` (replaced the 4× `KpiButton` hand-roll). **exam-management vendored 2026-05-11** at `apps/exam-management/admin/components/key-metrics/index.tsx`; consumers are `competency-client.tsx` and `live-monitor-client.tsx`. The hand-rolled `key-metrics.tsx` (54 lines, `text-primary` bug, no a11y trend label) was deleted. `KpiTile` in `faculty-ui-kit.tsx` retained as a documented hand-roll — product-specific `tone`/`pulseIcon`/`active` props don't map onto canonical (see Documented hand-rolls section). `useAskLeo` / `AskLeoShortcutKbds` stubbed locally in both vendors until a real Ask Leo provider lands. | Variants: card, flat, compact. Optional insight rail + period selector. WCAG 2.1 AA KPI strip — use for every dashboard / analytics KPI row. |
 | Section Cards | `/library/section-cards` | Source: `exxat-ds/apps/web/components/section-cards.tsx` (~110 lines). | **VENDOR** when needed. 0 adoption workspace-wide. | Gradient KPI card grid; alternative to KeyMetrics when card-grid layout is preferred. |
 | Export Drawer | `/library/export-drawer` | Source: `exxat-ds/apps/web/components/export-drawer.tsx` (~320 lines). | **VENDOR** when export feature is added to any product. 0 adoption. | Format + date range + column scope. Built on Sheet with floating-panel pattern. |
 | Table Properties Drawer | `/library/table-properties-drawer` | Source: `exxat-ds/apps/web/components/table-properties/drawer.tsx` (~1041 lines). | **VENDOR alongside DataTable**. exam-mgmt has 1 file using it; PCE 0. | Column visibility, density, sort rules, filter rules. Wire into DataTable's `toolbarSlot`. |
@@ -95,6 +95,8 @@ When a product genuinely needs a custom component that overlaps a DS organism, a
 |---|---|---|---|
 | `apps/exam-management/admin/components/curricular-loop-diagram.tsx` (`PerformanceHeatmap` at l.267) | ~50 | Chart heatmap | No Recharts heatmap primitive exists. Custom SVG heatmap with brand-color gradient. Per Chart depth audit 2026-05-11. |
 | `apps/exam-management/admin/components/curricular-loop-diagram.tsx` (`TrendRow` at l.797) | ~30 | Chart sparkline (in matrix) | 20 ResponsiveContainers per matrix row would be a perf regression. HTML dot overlay can't survive Recharts. Per Chart depth audit 2026-05-11. Candidate for extraction into a shared `<MicroTrend>` primitive with PCE's TrendSparkline (~2-3h). |
+| `apps/exam-management/admin/components/faculty-ui-kit.tsx` (`KpiTile` at l.46-86) | ~45 | KeyMetrics MetricCell | Domain wrapper retained 2026-05-11 alongside the canonical KeyMetrics vendor (`components/key-metrics/`). KpiTile carries product-specific affordances that canonical doesn't model: `tone` (6 named tones mapped to chart tokens via TONE_TILE palette), `pulseIcon` (live-state indicator), `active` (selectable tile group state, e.g. roster filter chips). Used 6× in `analytics-client.tsx` + `overview-tab.tsx`. Canonical's `trend`/`metricVariant="hero"`/`onClick` cover the common case but not the tone-coded swatch + live-pulse + ARIA-pressed group affordance. Migration would require either extending the canonical (upstream change) or flattening tones into trend semantics (loses information). Kept as a documented hand-roll; the hand-rolled `key-metrics.tsx` (no such product affordances) was deleted in the same session. |
+| `apps/exam-management/admin/app/(app)/assessment-builder/assessment-builder-client.tsx` (question picker grid at l.695) | ~70 | DataTable | Picker grid tightly coupled to the builder shell: full-row click toggles selection, custom selected-row background tint, embedded between smart-view chips and a footer diff chart. The canonical DataTable's selection model is checkbox-driven and doesn't expose row-click-toggle or per-row background overrides without losing other affordances. Documented as a hand-roll in the DataTable adoption pass 2026-05-11; consider revisiting if the canonical DataTable grows a `pickerMode` variant upstream. |
 
 ### Named Card-substitutes — NOT yet documented hand-rolls, TRACKED FOR MIGRATION
 
@@ -108,14 +110,17 @@ These are domain wrappers that internally build Card-shaped chrome from raw divs
 | `apps/exam-management/admin/components/faculty-ui-kit.tsx:195` | ~30 | `KpiCard` | Already imports Card but uses `px-0 py-0` overrides that violate the spacing contract in `card.tsx:9-15`. Refactor to use Card's default spacing. Same pattern hand-rolled in PCE's KpiButton. |
 
 ### exam-management imposter categories (Card audit 2026-05-11)
-- **8 empty-state panels** — repeated 4× in `qb-table.tsx` alone. Recommended: build a shared `EmptyState` molecule rather than per-page Card migration.
-- **5 modal info-strips** with colored tinted backgrounds — these are **Banner** candidates (wrong primitive), not Card.
-- **9 status/preview tiles** — mixed; per-file judgment. Sidebar chips and tooltips are NOT Cards.
+- **8 empty-state panels** — repeated 4× in `qb-table.tsx` alone. ✅ RESOLVED 2026-05-11: shared `EmptyState` molecule shipped at `apps/exam-management/admin/components/empty-state.tsx` and used in `qb-table.tsx` (3 sites) + `add-accommodation-modal.tsx` (1 site). Other empty-state-like panels (`live-monitor-client.tsx`, `assessment-landing-client.tsx` QuickLink, `assessment-builder-client.tsx` AiGeneratePanel) migrated directly to Card slots or `LocalBanner variant="promo"` where the chrome fit better.
+- **5 modal info-strips** with colored tinted backgrounds — these are **Banner** candidates (wrong primitive), not Card. ✅ RESOLVED 2026-05-11: migrated to `LocalBanner` (`create-assessment-modal.tsx` ×2, `assign-practice-dialog.tsx`, `assessment-landing-client.tsx` Previous reviewer note, `analytics-client.tsx` Curve applied, `competency-client.tsx` Weakest area).
+- **9 status/preview tiles** — mixed; per-file judgment. ✅ RESOLVED 2026-05-11: chart card (`question-scatter-plot.tsx`) and TypeTile (`accommodations-tab.tsx`) migrated to Card slots. Notes blockquote (`assessment-review-client.tsx`) refactored to a `<blockquote>` sub-element with a left-accent (not Card chrome). Sidebar Faculty Mode chip (`app-sidebar.tsx`) and scatter-plot hover tooltip allowlisted as legitimate non-Card divs.
 
 ### Legitimate non-Card divs (known audit false positives)
+The audit script's `LEGITIMATE_NON_CARD_DIVS` set skips card-imposter scanning for these files.
+
 | File | Why it's not a Card |
 |---|---|
 | `apps/pce/admin/components/pce/pce-modals.tsx:71` | Wrapper for grouped Checkbox inputs (sections selector inside CreateTemplateSheet). It's a form control group, not a content panel. Card would over-engineer. |
+| `apps/exam-management/admin/components/app-sidebar.tsx:121` | FacultyModeChip — sidebar status indicator. Lives inside the Sidebar, not in main content. Card would visually compete with the sidebar's own chrome. |
 
 ### exam-management
 | File | Lines | Mirrors DS organism | Justification |
@@ -136,14 +141,15 @@ Each entry is a real bug to fix. The audit downgrades them to `warn` (rule `orga
 
 | File | Mirrors DS organism | Migration plan | Estimated effort |
 |---|---|---|---|
-| `apps/exam-management/admin/components/data-table.tsx` | DataTable | Vendor canonical from `exxat-ds/apps/web/components/data-table/` into `apps/exam-management/admin/components/data-table/`, rewrite all import sites in exam-mgmt to use new path. Same pattern as PCE 2026-05-11. | 8-12h |
-| `apps/exam-management/admin/components/key-metrics.tsx` | KeyMetrics | Vendor canonical from `exxat-ds/apps/web/components/key-metrics.tsx` (~850 lines) + supporting components. Used in 4 exam-mgmt pages. | 4-6h |
+| _(none — all previously grandfathered files migrated 2026-05-11)_ | | | |
+
+**Migrated 2026-05-11:**
+- `apps/exam-management/admin/components/data-table.tsx` → vendored canonical at `components/data-table/` (mirrors PCE recipe).
+- `apps/exam-management/admin/components/key-metrics.tsx` → vendored canonical at `components/key-metrics/index.tsx` (mirrors PCE recipe; consumers: `competency-client.tsx`, `live-monitor-client.tsx`). `KpiTile` in `faculty-ui-kit.tsx` retained as a documented hand-roll (product-specific `tone`/`pulseIcon`/`active` props don't map onto canonical).
 
 Workspace-wide gaps not on this list (because they're not organism-name-collisions, but ARE raw-table or hand-roll patterns the audit warns on):
 
-- `apps/exam-management/admin/app/(app)/assessment-builder/assessment-builder-client.tsx:695` — raw `<Table>` in a non-list context. Verify whether this is a data table (migrate to DataTable) or a layout grid (rename to avoid Table primitives).
-- `apps/exam-management/admin/components/curricular-loop-diagram.tsx:305` — raw `<Table>` inside a diagram component. Likely a visual layout, not data. Verify intent.
-- `apps/exam-management/admin/components/data-table.tsx:31` — same as the grandfathered file above; the raw-table inside is part of the hand-roll being migrated.
+- _(none — `assessment-builder-client.tsx:695` and `curricular-loop-diagram.tsx:305` both documented as intentional hand-rolls in the table above as of 2026-05-11)_
 
 ---
 

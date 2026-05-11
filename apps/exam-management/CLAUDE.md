@@ -329,6 +329,7 @@ Most-used tokens with `.theme-one` (Lavender) active:
 ```
 components/app-sidebar.tsx       — Main sidebar: nav items, user footer, collapse/expand
 components/data-table.tsx        — DataTable wrapper (confirm which DS table it uses)
+components/empty-state.tsx       — Shared zero-data panel (Card size="sm" + icon + title + steps). Used in qb-table, add-accommodation-modal. Per card.md depth audit 2026-05-11.
 components/key-metrics.tsx       — KPI metrics strip
 components/page-header.tsx       — Page header with title and actions
 components/role-toggle.tsx       — Admin/Faculty role toggle

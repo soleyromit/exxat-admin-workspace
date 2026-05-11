@@ -1,5 +1,12 @@
 # Card — Depth audit (2026-05-11)
 
+> **2026-05-11 update — exam-management sweep complete.** All 21 imposters resolved:
+> shared `EmptyState` molecule shipped at `apps/exam-management/admin/components/empty-state.tsx`;
+> Card-slot migrations completed in 6 files; LocalBanner migrations completed in 7 sites;
+> `app-sidebar.tsx` allowlisted via `LEGITIMATE_NON_CARD_DIVS` in `scripts/ds-adoption-audit.py`.
+> Audit count: 21 → 0 for exam-management admin.
+
+
 ## Library reality
 - Slots: `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardAction`, `CardContent`, `CardFooter`
 - Variants: default size, `size="sm"` (gap-3 / py-3 / px-3)

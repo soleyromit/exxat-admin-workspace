@@ -87,6 +87,13 @@ DOCUMENTED_HAND_ROLLS = {
     # remain here for documentation parity with the registry.
     "app/(app)/analytics/page.tsx",  # ScoreLandscape l.29
     "components/curricular-loop-diagram.tsx",  # PerformanceHeatmap l.267, TrendRow l.797
+    # exam-management: assessment-builder question picker — tightly coupled
+    # picker grid (full-row click toggles selection, custom selected-row tint,
+    # embedded sub-widget of a larger builder shell with smart-view chips +
+    # footer chart). Migrating to canonical DataTable would lose key affordances.
+    # Documented as a legitimate hand-roll in docs/governance/ds-adoption.md →
+    # DataTable row.
+    "app/(app)/assessment-builder/assessment-builder-client.tsx",
 }
 
 # Pre-existing organism-name-collision files we're grandfathering as of
@@ -96,16 +103,37 @@ DOCUMENTED_HAND_ROLLS = {
 # canonical (vendor / import / rename + add to DOCUMENTED_HAND_ROLLS).
 #
 # Tracked: docs/governance/ds-adoption.md → "Grandfathered hand-rolls".
-GRANDFATHERED_ORGANISM_COLLISIONS = {
-    # exam-management: hand-rolled DataTable used across the admin tree.
-    # Migration plan: vendor canonical into apps/exam-management/admin/components/data-table/
-    # then update all import sites. ~8-12h.
-    "components/data-table.tsx",
-    # exam-management: hand-rolled KeyMetrics used in 4 pages.
-    # Migration plan: vendor canonical key-metrics.tsx + supporting components.
-    # ~4-6h.
-    "components/key-metrics.tsx",
+# Files where the card-imposter regex hits on legitimate non-Card divs —
+# sidebar status pills, floating tooltips, fieldset wrappers, etc. Each entry
+# must be justified in docs/governance/ds-adoption.md → "Legitimate non-Card
+# divs" with the exact rationale. The audit will skip card-imposter scanning
+# for these files.
+#
+# IMPORTANT: this is a WHOLE-FILE skip. If the same file later grows a real
+# imposter div, remove it from this set and convert the legitimate site to a
+# className that doesn't match the regex (e.g. swap `p-3` → `pl-3 pr-3 py-2.5`
+# or change `<div>` to `<aside role="status">`).
+LEGITIMATE_NON_CARD_DIVS = {
+    # exam-management: sidebar FacultyModeChip — status indicator inside
+    # the Sidebar (not a content panel). Per card.md depth audit 2026-05-11.
+    "components/app-sidebar.tsx",
 }
+
+GRANDFATHERED_ORGANISM_COLLISIONS: set[str] = set()
+# (empty as of 2026-05-11)
+# Previously listed:
+#   "components/key-metrics.tsx" — MIGRATED 2026-05-11. File deleted;
+#     vendored canonical lives at components/key-metrics/index.tsx. The two
+#     consumer pages (competency, live-monitor) now import canonical.
+#     KpiTile in faculty-ui-kit.tsx retained as documented hand-roll —
+#     see docs/governance/ds-adoption.md.
+#   "components/data-table.tsx" — MIGRATED 2026-05-11. File deleted;
+#     vendored canonical lives at components/data-table/{index,types,
+#     use-table-state,filter-date-calendar,pagination,row-actions}.tsx
+#     mirroring PCE's vendor (incl. defaultGroupBy/groupLabels/groupOrder
+#     extensions). The two consumer pages (access, private) now import
+#     canonical. assessment-builder picker grid retained as documented
+#     hand-roll — see docs/governance/ds-adoption.md.
 
 # ── Regex patterns ──────────────────────────────────────────────────────────
 TABLE_IMPORT_RE = re.compile(
@@ -173,6 +201,8 @@ def scan_file_for_raw_table(rel: str, text: str) -> list[Gap]:
         return []
     if rel in ALLOWED_ORGANISM_PATHS:
         return []
+    if rel in DOCUMENTED_HAND_ROLLS:
+        return []
     if not TABLE_IMPORT_RE.search(text):
         return []
     if not TABLE_JSX_RE.search(text):
@@ -208,6 +238,8 @@ def scan_file_for_card_imposter_div(rel: str, text: str) -> list[Gap]:
     if "components/table-properties/" in rel:
         return []
     if rel in DOCUMENTED_HAND_ROLLS:
+        return []
+    if rel in LEGITIMATE_NON_CARD_DIVS:
         return []
     gaps: list[Gap] = []
     for m in CARD_IMPOSTER_DIV_RE.finditer(text):
