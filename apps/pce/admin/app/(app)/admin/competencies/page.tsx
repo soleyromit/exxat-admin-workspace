@@ -293,7 +293,8 @@ export default function CompetenciesPage() {
 
 function RowActions({ row, onArchive }: { row: Competency; onArchive: () => void }) {
   return (
-    <DropdownMenu>
+    // modal={false} — axe aria-hidden-focus fix (2026-05-11)
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"

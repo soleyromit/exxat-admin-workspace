@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useQB } from './qb-state'
 import { StatusBadge, DiffBadge, PBisCell, BloomsBadge } from '@/components/qb/badges'
 import {
-  Button, Badge, Checkbox, Input, ToggleSwitch,
+  Button, Badge, Checkbox, Input,
   Avatar, AvatarFallback,
   Sheet, SheetContent, SheetTitle,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -20,6 +20,25 @@ import { MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
 import { RequestEditAccessModal } from './qb-modals'
 import { QBTitle } from './qb-title'
 import { EmptyState } from '@/components/empty-state'
+
+/**
+ * `DropdownMenuContent` re-typed with `onOpenAutoFocus`. Radix's
+ * `react-menu@2.1.16` intentionally OMITs this prop from its public types
+ * (it lives in `MenuContentImplPrivateProps`, which `MenuRootContentTypeProps`
+ * Omits), but the prop is still wired through at runtime — `MenuContentImpl`
+ * accepts it via spread. The DS wrapper spreads all `...props` to
+ * `DropdownMenuPrimitive.Content`, so the callback reaches the FocusScope
+ * intact. We need this to keep focus on the inline column-search input when
+ * a column-header menu opens (without it, Radix grabs focus and the
+ * `autoFocus` race steals back inconsistently). Caught 2026-05-11 by typecheck.
+ */
+type DropdownMenuContentWithOpenFocusProps =
+  React.ComponentProps<typeof DropdownMenuContent> & {
+    onOpenAutoFocus?: (event: Event) => void
+  }
+const DropdownMenuContentEx = DropdownMenuContent as unknown as React.FC<
+  DropdownMenuContentWithOpenFocusProps
+>
 
 // ── Folder Tree Picker (shared by single + bulk move dialogs) ─────────────────
 function courseFolderShortLabel(name: string): string {
@@ -407,6 +426,50 @@ function DeleteQuestionDialog({ question, open, onClose }: { question: { id: str
 // ── TD default = px-3 py-2.5 | compact = py-1 | comfortable = py-4
 const TH = 'h-9 px-3 text-start align-middle text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg border-b border-border select-none whitespace-nowrap'
 const TD = 'px-3 py-2.5 align-middle border-b border-border group-last/row:border-b-0 whitespace-nowrap'
+
+// Clean toggle — uses brand-color for ON state, neutral for OFF
+function QBToggle({ checked, onChange, id }: { checked: boolean; onChange: (v: boolean) => void; id?: string }) {
+  return (
+    <button
+      id={id}
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        width: 36,
+        height: 20,
+        borderRadius: 99,
+        border: 'none',
+        cursor: 'pointer',
+        flexShrink: 0,
+        padding: 2,
+        backgroundColor: checked
+          ? 'var(--brand-color)'
+          : 'oklch(0.78 0 0)',
+        transition: 'background-color 150ms ease',
+        outline: 'none',
+        boxSizing: 'border-box',
+      }}
+      onFocus={e => (e.currentTarget.style.boxShadow = '0 0 0 3px color-mix(in oklch, var(--brand-color) 25%, transparent)')}
+      onBlur={e => (e.currentTarget.style.boxShadow = 'none')}
+    >
+      <span style={{
+        display: 'block',
+        width: 16,
+        height: 16,
+        borderRadius: '50%',
+        backgroundColor: 'oklch(1 0 0)',
+        boxShadow: '0 1px 2px oklch(0 0 0 / 0.2)',
+        transform: checked ? 'translateX(16px)' : 'translateX(0)',
+        transition: 'transform 150ms ease',
+        flexShrink: 0,
+      }} />
+    </button>
+  )
+}
 
 // ── Column definitions ────────────────────────────────────────────────────────
 const QB_COLS = [
@@ -1010,7 +1073,7 @@ function FilterPropertiesSheet({
                         <i className={`fa-light ${row.icon} text-muted-foreground w-4 text-center`} aria-hidden="true" />
                         <label htmlFor={`toggle-${row.id}`} className="cursor-pointer select-none">{row.label}</label>
                       </div>
-                      <ToggleSwitch id={`toggle-${row.id}`} checked={row.checked} onChange={row.onChange} />
+                      <QBToggle id={`toggle-${row.id}`} checked={row.checked} onChange={row.onChange} />
                     </div>
                   ))}
                 </div>
@@ -1062,7 +1125,7 @@ function FilterPropertiesSheet({
                         <p className="text-xs text-muted-foreground mt-0.5">{row.desc}</p>
                       </div>
                     </div>
-                    <ToggleSwitch id={`toggle-display-${row.id}`} checked={row.checked} onChange={row.onChange} />
+                    <QBToggle id={`toggle-display-${row.id}`} checked={row.checked} onChange={row.onChange} />
                   </div>
                 ))}
               </div>
@@ -1207,7 +1270,7 @@ function FilterPropertiesSheet({
                     <p className="text-sm font-medium text-foreground">Enable filter bar</p>
                     <p className="text-xs text-muted-foreground mt-0.5">Show filters above the table.</p>
                   </div>
-                  <ToggleSwitch id="toggle-filter-bar" checked={filterBarVisible} onChange={onFilterBarVisibleChange} />
+                  <QBToggle id="toggle-filter-bar" checked={filterBarVisible} onChange={onFilterBarVisibleChange} />
                 </div>
               </div>
             </div>
@@ -1367,7 +1430,7 @@ function FilterPropertiesSheet({
                   >
                     <i className="fa-light fa-grip-dots-vertical text-muted-foreground/50 shrink-0" aria-hidden="true" style={{ fontSize: 13, cursor: 'grab' }} />
                     <span className={`flex-1 text-sm ${visible ? 'text-foreground' : 'text-muted-foreground'}`}>{col.label}</span>
-                    <ToggleSwitch
+                    <QBToggle
                       id={`col-toggle-${col.key}`}
                       checked={visible}
                       onChange={() => setHiddenCols(prev => {
@@ -2045,7 +2108,7 @@ function ColHeader({
           </DropdownMenuTrigger>
         </div>
 
-        <DropdownMenuContent
+        <DropdownMenuContentEx
           align="start"
           className="w-52"
           onCloseAutoFocus={e => e.preventDefault()}
@@ -2179,7 +2242,7 @@ function ColHeader({
             <i className="fa-light fa-eye-slash" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
             Hide column
           </DropdownMenuItem>
-        </DropdownMenuContent>
+        </DropdownMenuContentEx>
       </DropdownMenu>
     </TableHead>
   )
@@ -2204,10 +2267,28 @@ export function QBTable() {
     folders,
     setCollaboratorsModalFolderId,
     selectedFolderId,
+    selectedFolder,
+    navView,
     setNavView,
     personas,
     accessibleFolderIds,
   } = useQB()
+
+  const compactTitle = navView === 'folder' && selectedFolder
+    ? (selectedFolder.isCourse ? courseFolderShortLabel(selectedFolder.name) : selectedFolder.name)
+    : navView === 'my' ? 'My Questions' : 'All Questions'
+
+  // Collaborator ids inherited up the folder ancestry (same logic as QBTitle)
+  const compactCollaboratorIds = (() => {
+    if (!selectedFolder) return []
+    const ids = new Set<string>()
+    let node: typeof selectedFolder | undefined = selectedFolder
+    while (node) {
+      for (const id of node.collaborators ?? []) ids.add(id)
+      node = node.parentId ? folders.find(f => f.id === node!.parentId) : undefined
+    }
+    return Array.from(ids)
+  })()
 
   const isExamAdmin = currentPersona.role === 'exam_admin'
   const isCourseDirector = currentPersona.role === 'course_director'
@@ -2510,30 +2591,97 @@ export function QBTable() {
       {/* ── Toolbar: pinned outside scroll — filter chips left, icon controls right ── */}
       {!isTrulyEmpty && (
       <div className="qb-toolbar" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, padding: '6px 16px', flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
-        {/* Left: active filter chips (gated by filterBarVisible) */}
-        {filterBarVisible ? (
-          <FilterChips
-            activeFilters={activeFilters}
-            bookmarkChips={bookmarkOnly ? [{ key: 'bookmark', icon: 'fa-star', label: 'Bookmarked', onRemove: () => setBookmarkOnly(false) }] : []}
-            lastAddedId={lastAddedFilterId}
-            onAddFilter={addFilter}
-            onUpdateFilter={updateFilter}
-            onRemoveFilter={removeFilter}
-            onClearAll={clearAllFilters}
-            filterFields={qbFilterFields}
-          />
-        ) : <div style={{ flex: 1 }} />}
+        {/* Left: active filter chips (gated by filterBarVisible) — hidden at ≤768px */}
+        <div className="qb-toolbar-chips" style={{ display: 'contents' }}>
+          {filterBarVisible ? (
+            <FilterChips
+              activeFilters={activeFilters}
+              bookmarkChips={bookmarkOnly ? [{ key: 'bookmark', icon: 'fa-star', label: 'Bookmarked', onRemove: () => setBookmarkOnly(false) }] : []}
+              lastAddedId={lastAddedFilterId}
+              onAddFilter={addFilter}
+              onUpdateFilter={updateFilter}
+              onRemoveFilter={removeFilter}
+              onClearAll={clearAllFilters}
+              filterFields={qbFilterFields}
+            />
+          ) : <div style={{ flex: 1 }} />}
+        </div>
 
-        {/* Compact Add Question — only visible at ≤768px (200% zoom), hidden at normal zoom via CSS */}
-        <Button
-          variant="default" size="sm"
-          className="qb-toolbar-add-btn"
-          style={{ display: 'none', gap: 5, flexShrink: 0 }}
-          onClick={() => router.push(selectedFolderId ? `/questions/new?folder=${selectedFolderId}` : '/questions/new')}
-        >
-          <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 11 }} />
-          Add Question
-        </Button>
+        {/* Compact title + collaborators + Add Question — only visible at ≤768px via CSS */}
+        <div className="qb-toolbar-add-btn" style={{ display: 'none', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+
+          {/* Left group: title + avatars + icon sit together, title shrinks when long */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flex: 1, overflow: 'hidden' }}>
+            <span
+              title={compactTitle}
+              style={{
+                fontFamily: 'var(--font-heading)',
+                fontWeight: 700,
+                fontSize: '1rem',
+                letterSpacing: '-0.02em',
+                color: 'var(--foreground)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                minWidth: 0,
+                flexShrink: 1,  // shrinks when long — avatars follow immediately after
+              }}
+            >
+              {compactTitle}
+            </span>
+
+            {/* Collaborator avatar stack — max 3, overflow as +N */}
+            {compactCollaboratorIds.length > 0 && (() => {
+              const MAX = 3
+              const personas = MOCK_QB_PERSONAS.filter(p => compactCollaboratorIds.includes(p.id))
+              const shown = personas.slice(0, MAX)
+              const extra = personas.length - MAX
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                  {shown.map((p, i) => (
+                    <Tip key={p.id} label={p.name}>
+                      <Avatar style={{ width: 22, height: 22, marginLeft: i === 0 ? 0 : -6, border: '2px solid var(--background)', borderRadius: '50%', zIndex: shown.length - i, position: 'relative', flexShrink: 0 }}>
+                        <AvatarFallback className="text-[8px] font-bold" style={{ backgroundColor: 'color-mix(in oklch, var(--foreground) 8%, var(--background))', color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))' }}>
+                          {p.initials}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Tip>
+                  ))}
+                  {extra > 0 && (
+                    <span className="text-[10px] font-semibold text-muted-foreground" style={{ marginLeft: 4, flexShrink: 0 }}>
+                      +{extra}
+                    </span>
+                  )}
+                </div>
+              )
+            })()}
+
+            {/* Manage access icon */}
+            {isExamAdmin && selectedFolder && (
+              <Tip label="Manage access">
+                <Button
+                  variant="ghost" size="icon-xs"
+                  aria-label="Manage access"
+                  className="text-muted-foreground"
+                  style={{ width: 26, height: 26, flexShrink: 0 }}
+                  onClick={() => setCollaboratorsModalFolderId(selectedFolderId)}
+                >
+                  <i className="fa-light fa-user-plus" aria-hidden="true" style={{ fontSize: 12 }} />
+                </Button>
+              </Tip>
+            )}
+          </div>
+
+          {/* Add Question — right edge */}
+          <Button
+            variant="default" size="sm"
+            style={{ gap: 5, flexShrink: 0 }}
+            onClick={() => router.push(selectedFolderId ? `/questions/new?folder=${selectedFolderId}` : '/questions/new')}
+          >
+            <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 11 }} />
+            Add Question
+          </Button>
+        </div>
 
         {/* Right: icon controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
@@ -2795,10 +2943,10 @@ export function QBTable() {
         )
       ) : (
         <>
-          {/* Padding wrapper — flex column so footer attaches flush to table */}
-          <div className="qb-table-padding-wrapper" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 0 }}>
-          {/* Table: outer clips corners, inner scrolls — overflow-hidden required for border-radius to clip table content */}
-          <div className="border border-border overflow-hidden rounded-lg" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          {/* Padding wrapper — aligns table to top; table sizes to content, caps at full height for scrolling */}
+          <div className="qb-table-padding-wrapper" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: 0 }}>
+          {/* Border: content-height by default, maxHeight caps it so inner can scroll when rows overflow */}
+          <div className="border border-border overflow-hidden rounded-lg" style={{ maxHeight: '100%', display: 'flex', flexDirection: 'column' }}>
           <div className="qb-table-scroll" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
             <table className="text-sm border-separate border-spacing-0 table-fixed" style={{ minWidth: '100%' }}>
               {showColumnLabels && <TableHeader style={{ position: 'sticky', top: 0, zIndex: 4 }}>

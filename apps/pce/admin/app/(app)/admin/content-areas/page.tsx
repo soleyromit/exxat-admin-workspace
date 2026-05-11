@@ -262,7 +262,8 @@ export default function ContentAreasPage() {
 
 function RowActions({ row, onArchive }: { row: ContentArea; onArchive: () => void }) {
   return (
-    <DropdownMenu>
+    // modal={false} — axe aria-hidden-focus fix (2026-05-11)
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"

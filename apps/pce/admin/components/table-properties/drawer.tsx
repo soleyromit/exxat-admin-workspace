@@ -477,7 +477,8 @@ function FilterPanel({
       )}
 
       <div className="flex items-center gap-2 pt-2">
-        <DropdownMenu>
+        {/* modal={false} — axe aria-hidden-focus fix (2026-05-11) */}
+        <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             <Button type="button" variant="outline" className="flex-1 gap-1.5 h-8 border-dashed text-muted-foreground">
               <i className="fa-light fa-plus text-xs" aria-hidden="true" />
@@ -792,7 +793,8 @@ function SortPanel({
       )}
 
       <div className="flex items-center gap-2 pt-2">
-        <DropdownMenu>
+        {/* modal={false} — axe aria-hidden-focus fix (2026-05-11) */}
+        <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             <Button type="button" variant="outline" className="flex-1 gap-1.5 h-8 border-dashed text-muted-foreground">
               <i className="fa-light fa-plus text-xs" aria-hidden="true" />

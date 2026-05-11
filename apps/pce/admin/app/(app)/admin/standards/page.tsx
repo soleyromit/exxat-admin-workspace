@@ -282,7 +282,10 @@ export default function StandardsPage() {
 function RowActions({ name, status, onArchive }: { name: string; status: Standard['status']; onArchive: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false)
   return (
-    <DropdownMenu onOpenChange={setMenuOpen} open={menuOpen}>
+    // modal={false} — see components/data-table/row-actions.tsx: prevents
+    // Radix hideOthers from setting aria-hidden on sidebar-wrapper while
+    // row menu is open (axe aria-hidden-focus). Fixed 2026-05-11.
+    <DropdownMenu modal={false} onOpenChange={setMenuOpen} open={menuOpen}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"

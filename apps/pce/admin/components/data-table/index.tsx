@@ -474,7 +474,10 @@ export function DataTableToolbar<TData extends Record<string, unknown>>({
             </React.Fragment>
           ))}
 
-          <DropdownMenu>
+          {/* modal={false} — axe aria-hidden-focus: Radix hideOthers would
+              set aria-hidden on sidebar-wrapper while menu is open. Non-modal
+              dropdowns skip hideOthers. Fixed 2026-05-11. */}
+          <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
               <button type="button"
                 className="inline-flex items-center gap-1 h-6 px-2 rounded text-xs text-muted-foreground hover:text-interactive-hover-foreground border border-dashed border-input/70 hover:border-input hover:bg-interactive-hover-subtle transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -588,7 +591,8 @@ export function DataTableToolbar<TData extends Record<string, unknown>>({
                       <span className="text-xs font-semibold tabular-nums">{activeFilters.length}</span>
                     </button>
                   ) : (
-                    <DropdownMenu>
+                    // modal={false} — axe aria-hidden-focus fix (2026-05-11)
+                    <DropdownMenu modal={false}>
                       <DropdownMenuTrigger asChild>
                         <button type="button" aria-label="Add filter"
                           onClick={() => setFilterBarVisible(true)}
@@ -878,7 +882,8 @@ function DataTableInner<TData extends Record<string, unknown>>({
 
                       {/* Column context menu — not on checkbox or locked-right columns */}
                       {col.key !== "select" && !lockedPins[col.key]?.includes("right") && col.key !== (columns.find(c => c.lockPin && c.defaultPin === "right")?.key) && (
-                        <DropdownMenu>
+                        // modal={false} — axe aria-hidden-focus fix (2026-05-11)
+                        <DropdownMenu modal={false}>
                           <Tip label="Column options" side="top">
                             <DropdownMenuTrigger asChild>
                               <button

@@ -1,7 +1,7 @@
 'use client'
 import { useQB } from './qb-state'
 import {
-  Button, Badge, useSidebar,
+  Button, useSidebar,
   DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuItem, DropdownMenuSeparator,
   Popover, PopoverTrigger, PopoverContent,
   Tip,
@@ -72,9 +72,11 @@ function QBBreadcrumb() {
   const leafSpan = (node: FolderNode) => {
     const label = node.isCourse ? courseFolderLabel(node.name) : node.name
     return (
-      <span className="text-sm font-medium text-foreground" title={label} style={{ whiteSpace: 'nowrap', overflow: 'visible', textOverflow: 'ellipsis', maxWidth: 200 }}>
-        {label}
-      </span>
+      <Tip label={label}>
+        <span className="text-sm font-medium text-foreground" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200, display: 'inline-block' }}>
+          {label}
+        </span>
+      </Tip>
     )
   }
 
@@ -108,7 +110,7 @@ function QBBreadcrumb() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0 }}>
       <span className="qb-crumb-root-seg">{rootBtn}<SEP /></span>
-      <DropdownMenu>
+      <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost" size="xs"
@@ -154,7 +156,6 @@ export function QBHeader() {
       height: 44,
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       padding: '0 12px',
-      borderBottom: '1px solid var(--border)',
       backgroundColor: 'var(--background)',
       flexShrink: 0,
       gap: 8,
@@ -197,22 +198,14 @@ export function QBHeader() {
 
       {/* Right: persona switcher + Ask Leo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-        <DropdownMenu>
+        <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="gap-2 h-7 px-2" aria-label="Switch persona">
-              <Avatar style={{ width: 24, height: 24 }}>
-                <AvatarFallback className="text-[9px] font-bold" style={{ backgroundColor: 'color-mix(in oklch, var(--foreground) 8%, var(--background))', color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))' }}>
+            <Button variant="ghost" size="sm" className="gap-1.5 h-7 px-2" aria-label="Switch persona">
+              <Avatar style={{ width: 26, height: 26 }}>
+                <AvatarFallback className="text-[10px] font-bold" style={{ backgroundColor: 'color-mix(in oklch, var(--foreground) 8%, var(--background))', color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))' }}>
                   {currentPersona.initials}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-xs font-medium">{currentPersona.name}</span>
-              <Badge
-                variant="secondary"
-                className="rounded text-[10px]"
-                style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}
-              >
-                {getRoleLabel(currentPersona.role)}
-              </Badge>
               <i className="fa-light fa-chevron-down text-muted-foreground" aria-hidden="true" style={{ fontSize: 10 }} />
             </Button>
           </DropdownMenuTrigger>
@@ -254,7 +247,7 @@ export function QBHeader() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button variant="outline" size="xs" className="gap-1.5 font-medium" aria-label="Ask Leo AI">
+        <Button variant="outline" size="sm" className="gap-1.5" aria-label="Ask Leo AI">
           <i className="fa-duotone fa-solid fa-star-christmas" style={{ fontSize: 11, color: 'var(--brand-color)' }} aria-hidden="true" />
           Ask Leo
         </Button>

@@ -27,6 +27,7 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import {
+  Command,
   CommandDialog,
   CommandInput,
   CommandList,
@@ -127,7 +128,14 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   )
 
   return (
+    // <Command> wrapper is REQUIRED — DS `CommandDialog` only renders
+    // `DialogPrimitive` and does NOT include cmdk's Command-root context
+    // provider. Without it, `CommandInput`/`CommandList`/`CommandItem` crash
+    // with "Cannot read properties of undefined (reading 'subscribe')"
+    // (cmdk's store context is undefined). Caught 2026-05-11 when the
+    // interaction runner's mobile-viewport step surfaced the runtime error.
     <CommandDialog open={open} onOpenChange={onOpenChange} title="Search PCE" description="Search surveys, templates, admin entities, and pages.">
+      <Command>
       <div className="flex items-center gap-2 border-b border-border px-3">
         <CommandInput variant="palette" placeholder="Search surveys, templates, setup, pages… (try a course code like 'BIO 201')" />
         <KbdGroup className="ms-auto shrink-0">
@@ -217,6 +225,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           <KbdGroup><Kbd>esc</Kbd></KbdGroup> to close
         </span>
       </div>
+      </Command>
     </CommandDialog>
   )
 }

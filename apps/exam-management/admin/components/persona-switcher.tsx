@@ -68,7 +68,7 @@ export function PersonaSwitcher() {
   }
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="gap-2 h-8 px-2" aria-label="Switch persona">
           <Avatar style={{ width: 24, height: 24 }}>

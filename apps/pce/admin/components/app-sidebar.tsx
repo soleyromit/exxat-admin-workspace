@@ -43,7 +43,12 @@ function UserFooter() {
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <DropdownMenu>
+        {/* modal={false} — axe aria-hidden-focus fix (2026-05-11):
+            Radix's modal MenuRootContent calls hideOthers() which sets
+            aria-hidden on every sibling of the portaled menu. The
+            sidebar-wrapper containing this trigger is one such sibling,
+            and its focusable contents fail the rule. */}
+        <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"

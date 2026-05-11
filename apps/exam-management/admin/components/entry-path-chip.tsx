@@ -50,7 +50,7 @@ export function EntryPathChip() {
 
   // Standalone mode
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"

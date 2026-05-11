@@ -72,7 +72,7 @@ export function PaginationBar({
       {/* Rows per page */}
       <div className="flex items-center gap-2 text-muted-foreground">
         <span>Rows per page</span>
-        <DropdownMenu>
+        <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             <button
               type="button"

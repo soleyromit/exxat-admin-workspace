@@ -63,7 +63,12 @@ export function RowActions<TData>({
   if (visible.length === 0) return null
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    // modal={false}: axe `aria-hidden-focus` regression — Radix's modal
+    // MenuRootContent calls hideOthers(content) which sets aria-hidden="true"
+    // on every sibling of the portaled menu, including [data-slot="sidebar-wrapper"].
+    // The kebab trigger lives inside that wrapper and stays focusable, so
+    // axe flags it. Non-modal mode skips hideOthers entirely — fixed 2026-05-11.
+    <DropdownMenu modal={false} open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"

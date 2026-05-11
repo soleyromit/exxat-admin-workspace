@@ -308,7 +308,7 @@ function FolderContextMenu({
   const { setCollaboratorsModalFolderId } = useQB()
 
   return (
-    <DropdownMenu onOpenChange={onOpenChange}>
+    <DropdownMenu modal={false} onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
@@ -845,7 +845,7 @@ function FolderTree({
 
 export function QBSidebar() {
   const {
-    sidebarOpen,
+    sidebarOpen, setSidebarOpen,
     folders,
     selectedFolderId, setSelectedFolderId,
     navView, setNavView,
@@ -859,6 +859,16 @@ export function QBSidebar() {
 
   const [inlineCreateParent, setInlineCreateParent] = useState<string | 'root' | null>(null)
   const [searchExpanded, setSearchExpanded] = useState(false)
+  const [isNarrow, setIsNarrow] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mq = window.matchMedia('(max-width: 1280px)')
+    const update = () => setIsNarrow(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
 
   useEffect(() => {
     if (!sidebarOpen) {
@@ -942,6 +952,18 @@ export function QBSidebar() {
   )
 
   return (
+    <>
+      {/* Backdrop — only visible when sidebar is open and overlaying the table */}
+      {isNarrow && sidebarOpen && (
+        <div
+          aria-hidden="true"
+          onClick={() => setSidebarOpen(false)}
+          style={{
+            position: 'absolute', inset: 0, zIndex: 40,
+            backgroundColor: 'oklch(0 0 0 / 0.25)',
+          }}
+        />
+      )}
     <aside
       aria-label="Question Bank Library"
       style={{
@@ -954,6 +976,12 @@ export function QBSidebar() {
         overflow: 'hidden',
         transition: 'width 200ms ease, min-width 200ms ease',
         flexShrink: 0,
+        ...(isNarrow ? {
+          position: 'absolute',
+          top: 0, left: 0, bottom: 0,
+          zIndex: 50,
+          boxShadow: sidebarOpen ? '4px 0 16px oklch(0 0 0 / 0.12)' : 'none',
+        } : {}),
       }}
     >
       {/* Library header strip */}
@@ -1064,5 +1092,6 @@ export function QBSidebar() {
         )}
       </div>
     </aside>
+    </>
   )
 }

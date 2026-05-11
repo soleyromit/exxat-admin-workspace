@@ -294,7 +294,8 @@ export default function MasterCoursesPage() {
 
 function RowActions({ row, onArchive }: { row: MasterCourse; onArchive: () => void }) {
   return (
-    <DropdownMenu>
+    // modal={false} — axe aria-hidden-focus fix (2026-05-11)
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"

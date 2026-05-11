@@ -226,7 +226,10 @@ export default function SurveysPage() {
 function RowActions({ survey, onClose }: { survey: PceSurvey; onClose: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false)
   return (
-    <DropdownMenu onOpenChange={setMenuOpen} open={menuOpen}>
+    // modal={false} — see components/data-table/row-actions.tsx note: prevents
+    // Radix hideOthers from setting aria-hidden on the sidebar-wrapper while
+    // the row-action menu is open (axe aria-hidden-focus). Fixed 2026-05-11.
+    <DropdownMenu modal={false} onOpenChange={setMenuOpen} open={menuOpen}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
