@@ -7,7 +7,8 @@ import {
   Button, Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
   ToggleGroup, ToggleGroupItem,
-  LocalBanner, Card, Badge,
+  LocalBanner, Card, CardHeader, CardTitle, CardDescription, CardContent,
+  Badge,
   SidebarTrigger, Separator,
 } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
@@ -102,14 +103,30 @@ interface KpiButtonProps {
   href?: string
 }
 function KpiButton({ label, value, meta, icon, iconColor, href }: KpiButtonProps) {
+  /* Composes DS Card slots (Header / Title / Description / Content) instead of
+     reinventing card chrome. Hover effect on the Card itself (not a wrapping
+     div) for cleaner focus / hover semantics. */
   const Inner = (
-    <div className="flex flex-col gap-1.5 p-4 border border-border rounded-lg bg-background hover:bg-[color-mix(in_oklch,var(--brand-tint)_30%,var(--background))] transition-colors h-full">
-      <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        {icon && <i className={`fa-light ${icon}`} aria-hidden="true" style={iconColor ? { color: iconColor } : undefined} />}
-        <span>{label}</span>
-      </div>
-      <div className="text-2xl font-semibold tabular-nums leading-none">{value}</div>
-      <div className="flex items-center justify-between gap-2 mt-auto">
+    <Card
+      size="sm"
+      className="h-full transition-colors hover:bg-[color-mix(in_oklch,var(--brand-tint)_30%,var(--background))]"
+    >
+      <CardHeader>
+        <CardDescription className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide">
+          {icon && (
+            <i
+              className={`fa-light ${icon}`}
+              aria-hidden="true"
+              style={iconColor ? { color: iconColor } : undefined}
+            />
+          )}
+          {label}
+        </CardDescription>
+        <CardTitle className="text-2xl font-semibold tabular-nums leading-none">
+          {value}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex items-center justify-between gap-2 mt-auto">
         <span className="text-xs text-muted-foreground truncate">{meta}</span>
         {href && (
           <i
@@ -118,14 +135,14 @@ function KpiButton({ label, value, meta, icon, iconColor, href }: KpiButtonProps
             aria-hidden="true"
           />
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
   if (!href) return Inner
   return (
     <Link
       href={href}
-      className="block focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 rounded-lg"
+      className="block rounded-xl focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
       aria-label={`${label}: ${value} — ${meta}`}
     >
       {Inner}
@@ -438,61 +455,63 @@ export default function AnalyticsPage() {
               Program Trend: 5-term sparkline using TrendSparkline component (DS-016).
             */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" id="score-landscape">
-              <Card className="p-4">
-                <div className="flex items-baseline justify-between mb-3 gap-3">
-                  <div>
-                    <div className="text-sm font-semibold">Score landscape</div>
-                    <div className="text-xs text-muted-foreground">
-                      Released courses, sorted by avg. Click any bar to drill in.
+              <Card>
+                <CardHeader>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <div className="min-w-0">
+                      <CardTitle className="text-sm">Score landscape</CardTitle>
+                      <CardDescription>
+                        Released courses, sorted by avg. Click any bar to drill in.
+                      </CardDescription>
+                    </div>
+                    <div className="hidden md:flex items-center gap-2.5 text-[10px] text-muted-foreground shrink-0">
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full" style={{ background: 'var(--chart-2)' }} aria-hidden="true" />
+                        ≥4.3
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full" style={{ background: 'var(--brand-color)' }} aria-hidden="true" />
+                        3.7–4.3
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full" style={{ background: 'var(--chart-4)' }} aria-hidden="true" />
+                        &lt;3.7
+                      </span>
                     </div>
                   </div>
-                  <div className="hidden md:flex items-center gap-2.5 text-[10px] text-muted-foreground shrink-0">
-                    <span className="flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full" style={{ background: 'var(--chart-2)' }} aria-hidden="true" />
-                      ≥4.3
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full" style={{ background: 'var(--brand-color)' }} aria-hidden="true" />
-                      3.7–4.3
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full" style={{ background: 'var(--chart-4)' }} aria-hidden="true" />
-                      &lt;3.7
-                    </span>
-                  </div>
-                </div>
-                {releasedSurveys.length > 0 ? (
-                  <ScoreLandscape courses={releasedScoreList} onDrill={(id, released) => {
-                    if (released) router.push(`/my-surveys/${id}/results`)
-                  }} />
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    No released courses yet for {scopeLabel}.
-                  </p>
-                )}
+                </CardHeader>
+                <CardContent>
+                  {releasedSurveys.length > 0 ? (
+                    <ScoreLandscape courses={releasedScoreList} onDrill={(id, released) => {
+                      if (released) router.push(`/my-surveys/${id}/results`)
+                    }} />
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      No released courses yet for {scopeLabel}.
+                    </p>
+                  )}
+                </CardContent>
               </Card>
 
-              <Card className="p-4">
-                <div className="mb-3">
-                  <div className="text-sm font-semibold">Program trend</div>
-                  <div className="text-xs text-muted-foreground">Last 5 terms, current highlighted.</div>
-                </div>
-                <div className="flex items-end justify-between gap-4">
-                  <div className="flex flex-col gap-1 flex-1">
-                    <TrendSparkline
-                      history={programTrendHistory}
-                      currentValue={programAvg ?? undefined}
-                      currentLabel={term}
-                      width={300}
-                      height={80}
-                      min={3.0}
-                      max={5.0}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {programTrendHistory.length + (programAvg ? 1 : 0)} terms tracked.
-                    </p>
-                  </div>
-                </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Program trend</CardTitle>
+                  <CardDescription>Last 5 terms, current highlighted.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <TrendSparkline
+                    history={programTrendHistory}
+                    currentValue={programAvg ?? undefined}
+                    currentLabel={term}
+                    width={300}
+                    height={80}
+                    min={3.0}
+                    max={5.0}
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {programTrendHistory.length + (programAvg ? 1 : 0)} terms tracked.
+                  </p>
+                </CardContent>
               </Card>
             </div>
 
@@ -501,9 +520,9 @@ export default function AnalyticsPage() {
               prototype. Empty state morphs into "Course health" affirmation when no risk.
               Brand presence: --brand-tint background on count chip; --brand-color-dark border.
             */}
-            <Card className="overflow-hidden" id="at-risk">
-              <div className="p-4 border-b border-border">
-                <div className="text-sm font-semibold flex items-center gap-2">
+            <Card id="at-risk">
+              <CardHeader className="border-b border-border">
+                <CardTitle className="text-sm flex items-center gap-2">
                   <i
                     className={atRiskCourses.length > 0 ? 'fa-light fa-triangle-exclamation' : 'fa-light fa-heart-pulse'}
                     style={{ color: atRiskCourses.length > 0 ? 'var(--chart-4)' : 'var(--chart-2)' }}
@@ -519,31 +538,33 @@ export default function AnalyticsPage() {
                       {atRiskCourses.length}
                     </Badge>
                   )}
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
+                </CardTitle>
+                <CardDescription>
                   {atRiskCourses.length > 0
                     ? 'Released courses below 3.7. Click any row to drill in.'
                     : 'All released courses currently at or above 3.7. No CQI actions required this term.'}
-                </div>
-              </div>
+                </CardDescription>
+              </CardHeader>
               {atRiskCourses.length > 0 && (
-                <ul className="divide-y divide-border">
-                  {atRiskCourses.map(({ survey, avg }) => (
-                    <li key={survey.id}>
-                      <Link
-                        href={`/my-surveys/${survey.id}/results`}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-inset"
-                      >
-                        <span className="text-sm font-medium">{survey.courseCode}</span>
-                        <span className="text-xs text-muted-foreground truncate flex-1">{survey.courseName}</span>
-                        <span className="text-sm tabular-nums font-semibold" style={{ color: 'var(--chart-4)' }}>
-                          {avg.toFixed(2)}
-                        </span>
-                        <i className="fa-light fa-arrow-right text-xs text-muted-foreground" aria-hidden="true" />
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+                <CardContent className="p-0">
+                  <ul className="divide-y divide-border">
+                    {atRiskCourses.map(({ survey, avg }) => (
+                      <li key={survey.id}>
+                        <Link
+                          href={`/my-surveys/${survey.id}/results`}
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-inset"
+                        >
+                          <span className="text-sm font-medium">{survey.courseCode}</span>
+                          <span className="text-xs text-muted-foreground truncate flex-1">{survey.courseName}</span>
+                          <span className="text-sm tabular-nums font-semibold" style={{ color: 'var(--chart-4)' }}>
+                            {avg.toFixed(2)}
+                          </span>
+                          <i className="fa-light fa-arrow-right text-xs text-muted-foreground" aria-hidden="true" />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
               )}
             </Card>
 
