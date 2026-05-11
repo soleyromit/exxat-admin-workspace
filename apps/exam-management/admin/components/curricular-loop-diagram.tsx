@@ -21,11 +21,14 @@
 
 import { useMemo } from 'react'
 import {
+  Button,
   Tabs, TabsList, TabsTrigger, TabsContent,
+  Table, TableHeader, TableBody, TableFooter, TableRow, TableHead, TableCell,
 } from '@exxat/ds/packages/ui/src'
 import * as HoverCardPrimitive from '@radix-ui/react-hover-card'
 import type { CourseObjective, Student, AssessmentReview } from '@/lib/faculty-mock-data'
 import type { Assessment, QDiff } from '@/lib/qb-types'
+import { MicroTrend, type MicroTrendPoint } from './micro-trend'
 
 // ─── HoverCard wrapper — DS-styled rich tooltip (purpose-built for hover) ───
 // Uses Radix HoverCard primitives directly so we get reliable hover behavior
@@ -154,9 +157,9 @@ function perfTone(perf: number): ToneStyle {
     label: 'Underperforming',
   }
   return {
-    bg:    'bg-destructive/35',
-    bar:   'bg-destructive',
-    text:  'text-destructive',
+    bg:    'bg-chart-5/35',
+    bar:   'bg-chart-5',
+    text:  'text-chart-5',
     label: 'Critical',
   }
 }
@@ -240,14 +243,14 @@ export function CurricularLoopDiagram({
             {untested.map(o => (
               <li key={o.id} className="flex items-center gap-2 text-xs text-foreground">
                 <span className="size-1.5 rounded-full bg-chart-4 shrink-0" aria-hidden="true" />
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
                   onClick={onObjectiveClick ? () => onObjectiveClick(o.id) : undefined}
-                  className="line-clamp-1 flex-1 text-start hover:text-brand transition-colors"
+                  className="line-clamp-1 flex-1 justify-start text-start hover:text-brand h-auto p-0 whitespace-normal font-normal"
                   title={o.title}
                 >
                   {o.title}
-                </button>
+                </Button>
                 <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
                   {o.questionCount} {o.questionCount === 1 ? 'question' : 'questions'} tagged
                 </span>
@@ -299,17 +302,17 @@ function PerformanceHeatmap({
         </span>
       </div>
 
-      <div className="rounded-lg border border-border bg-card overflow-x-auto">
-        <table className="w-full" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
-          <thead>
-            <tr>
-              <th className="sticky left-0 z-10 bg-card text-start px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground border-b border-border" style={{ minWidth: 220 }}>
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
+        <Table style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="sticky left-0 z-10 bg-card text-start px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground border-b border-border" style={{ minWidth: 220 }}>
                 Objective
-              </th>
+              </TableHead>
               {assessments.map(a => (
-                <th
+                <TableHead
                   key={a.id}
-                  className="px-2 py-2 text-[10px] font-medium border-b border-border align-bottom whitespace-nowrap"
+                  className="px-2 py-2 text-[10px] font-medium border-b border-border align-bottom"
                   style={{ minWidth: 92 }}
                 >
                   <div className="flex flex-col items-center gap-0.5" title={a.title}>
@@ -320,28 +323,28 @@ function PerformanceHeatmap({
                       {a.questionCount} Qs
                     </span>
                   </div>
-                </th>
+                </TableHead>
               ))}
-              <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground border-b border-border text-end" style={{ minWidth: 80 }}>
+              <TableHead className="px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground border-b border-border text-end" style={{ minWidth: 80 }}>
                 Avg
-              </th>
-            </tr>
-          </thead>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
 
-          <tbody>
+          <TableBody>
             {grid.map(({ obj, cells }) => {
               const summary = rowSummary(cells)
               const summaryTone = perfTone(summary.perf || 0)
               return (
-                <tr key={obj.id} className="hover:bg-muted/20 transition-colors">
-                  <th
+                <TableRow key={obj.id} className="hover:bg-muted/20">
+                  <TableHead
                     scope="row"
                     className="sticky left-0 z-10 bg-card text-start px-3 py-2 border-b border-border align-middle"
                   >
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
                       onClick={onObjectiveClick ? () => onObjectiveClick(obj.id) : undefined}
-                      className="text-start group flex flex-col gap-0.5 max-w-[220px]"
+                      className="text-start group flex flex-col items-start justify-start gap-0.5 h-auto p-0 max-w-[220px] whitespace-normal font-normal hover:bg-transparent"
                     >
                       <span
                         className="text-xs font-medium text-foreground line-clamp-2 leading-snug group-hover:text-brand transition-colors"
@@ -352,11 +355,11 @@ function PerformanceHeatmap({
                       <span className="text-[10px] text-muted-foreground">
                         {obj.bloomsLevel} · {obj.questionCount} Qs
                       </span>
-                    </button>
-                  </th>
+                    </Button>
+                  </TableHead>
 
                   {cells.map(({ asmt, data }) => (
-                    <td
+                    <TableCell
                       key={asmt.id}
                       className="px-1.5 py-1.5 border-b border-border align-middle text-center"
                     >
@@ -373,10 +376,10 @@ function PerformanceHeatmap({
                       ) : (
                         <EmptyCellWithPopover objTitle={obj.title} asmtTitle={asmt.title} />
                       )}
-                    </td>
+                    </TableCell>
                   ))}
 
-                  <td className="px-3 py-1.5 border-b border-border align-middle text-end">
+                  <TableCell className="px-3 py-1.5 border-b border-border align-middle text-end">
                     <div className="flex flex-col items-end gap-0.5">
                       <span className={`text-sm font-bold tabular-nums ${summaryTone.text}`}>
                         {summary.perf > 0 ? `${summary.perf}%` : '—'}
@@ -385,22 +388,22 @@ function PerformanceHeatmap({
                         {summary.n} {summary.n === 1 ? 'asmt' : 'asmts'}
                       </span>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )
             })}
-          </tbody>
+          </TableBody>
 
-          <tfoot>
-            <tr>
-              <th className="sticky left-0 z-10 bg-muted/60 text-start px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground" style={{ borderTop: '2px solid var(--border)' }}>
+          <TableFooter>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="sticky left-0 z-10 bg-muted/60 text-start px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground" style={{ borderTop: '2px solid var(--border)' }}>
                 Cohort avg
-              </th>
+              </TableHead>
               {assessments.map((a, i) => {
                 const s = colSummary(i)
                 const tone = s.perf > 0 ? perfTone(s.perf) : null
                 return (
-                  <td
+                  <TableCell
                     key={a.id}
                     className="bg-muted/60 px-2 py-2.5 text-center"
                     style={{ borderTop: '2px solid var(--border)' }}
@@ -412,13 +415,13 @@ function PerformanceHeatmap({
                     ) : (
                       <span className="text-[10px] text-muted-foreground">—</span>
                     )}
-                  </td>
+                  </TableCell>
                 )
               })}
-              <td className="bg-muted/60 px-3 py-2.5" style={{ borderTop: '2px solid var(--border)' }} />
-            </tr>
-          </tfoot>
-        </table>
+              <TableCell className="bg-muted/60 px-3 py-2.5" style={{ borderTop: '2px solid var(--border)' }} />
+            </TableRow>
+          </TableFooter>
+        </Table>
       </div>
     </div>
   )
@@ -442,21 +445,19 @@ function CellWithPopover({
   return (
     <MatrixHoverCard
       trigger={
-        <button
-          type="button"
+        <Button
+          variant="ghost"
           onClick={onClick}
           className={[
             'w-full h-9 rounded-md flex items-center justify-center font-mono text-sm font-bold tabular-nums',
-            'text-foreground transition-all',
+            'text-foreground',
             tone.bg,
             'hover:ring-2 hover:ring-offset-1 hover:ring-foreground/20',
-            onClick ? 'cursor-pointer' : '',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
           ].join(' ')}
           aria-label={`${objTitle} on ${asmtTitle}: ${perf}%`}
         >
           {perf}
-        </button>
+        </Button>
       }
     >
         <div className="flex flex-col gap-2.5">
@@ -507,9 +508,9 @@ function EmptyCellWithPopover({ objTitle, asmtTitle }: { objTitle: string; asmtT
     <MatrixHoverCard
       className="w-64"
       trigger={
-        <button
-          type="button"
-          className="w-full h-9 rounded-md flex items-center justify-center cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        <Button
+          variant="ghost"
+          className="w-full h-9 rounded-md flex items-center justify-center cursor-help"
           style={{
             backgroundColor: 'var(--muted)',
             backgroundImage: 'repeating-linear-gradient(135deg, transparent 0, transparent 4px, color-mix(in oklch, var(--muted-foreground) 18%, transparent) 4px, color-mix(in oklch, var(--muted-foreground) 18%, transparent) 5px)',
@@ -517,7 +518,7 @@ function EmptyCellWithPopover({ objTitle, asmtTitle }: { objTitle: string; asmtT
           aria-label={`${objTitle} not tested in ${asmtTitle}`}
         >
           <i className="fa-light fa-slash text-muted-foreground/60 text-[11px]" aria-hidden="true" />
-        </button>
+        </Button>
       }
     >
       <div className="flex flex-col gap-1.5">
@@ -631,10 +632,10 @@ function CoverageRow({
 
   return (
     <li className="px-4 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors">
-      <button
-        type="button"
+      <Button
+        variant="ghost"
         onClick={onClick}
-        className="flex flex-col gap-0.5 w-[220px] shrink-0 text-start group"
+        className="flex flex-col items-start justify-start gap-0.5 w-[220px] shrink-0 h-auto p-0 text-start whitespace-normal font-normal group hover:bg-transparent"
       >
         <span
           className="text-xs font-medium text-foreground line-clamp-2 leading-snug group-hover:text-brand transition-colors"
@@ -645,18 +646,18 @@ function CoverageRow({
         <span className="text-[10px] text-muted-foreground">
           {obj.bloomsLevel}
         </span>
-      </button>
+      </Button>
 
       <MatrixHoverCard
         trigger={
-          <button
-            type="button"
+          <Button
+            variant="ghost"
             onClick={onClick}
-            className="flex-1 min-w-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded-full"
+            className="flex-1 min-w-0 h-auto p-0 rounded-full hover:bg-transparent"
             aria-label={`${obj.title} difficulty mix · ${total} questions`}
           >
             <StackedDiffBar mix={mix} max={max} />
-          </button>
+          </Button>
         }
       >
         <div className="flex flex-col gap-2.5">
@@ -804,8 +805,9 @@ function TrendRow({
   labelOverride?: { title: string; sub: string }
 }) {
   // viewBox aspect intentionally matches rendered height so the line shape
-  // is honest. preserveAspectRatio="none" lets the chart stretch horizontally
-  // to fill whatever width the column allows.
+  // is honest. MicroTrend with sizing="fluid" stretches across the column.
+  // We keep xs/ys locally for the HTML dot overlay (dots must stay circular
+  // regardless of column width, so they can't live inside the stretching SVG).
   const W = 100
   const H = 32
   const PAD_X = 2
@@ -819,35 +821,22 @@ function TrendRow({
   const ys = points.map(p =>
     p.data ? H - PAD_Y - (p.data.perf / 100) * (H - PAD_Y * 2) : null
   )
-  const linePoints = points
-    .map((p, i) => p.data ? `${xs[i]},${ys[i]}` : null)
-    .filter(Boolean) as string[]
 
   const first   = filled[0]?.data?.perf ?? 0
   const last    = filled[filled.length - 1]?.data?.perf ?? 0
   const delta   = last - first
   const lastTone = perfTone(last)
 
-  // Find indices of the first and last filled points to anchor the area shape.
-  const firstIdx = points.findIndex(p => p.data !== null)
+  // Find the last filled point index — drives the dot ring overlay.
   const lastIdx  = (() => { for (let i = points.length - 1; i >= 0; i--) if (points[i].data) return i; return -1 })()
-
-  // Build a polygon path that traces the line and closes to the baseline,
-  // so we can fill underneath with a soft brand-tone gradient.
-  const baselineY = H - PAD_Y
-  const areaPath = (() => {
-    if (firstIdx < 0 || lastIdx < 0 || filled.length < 1) return ''
-    const segs = [`M ${xs[firstIdx]} ${baselineY}`]
-    points.forEach((p, i) => {
-      if (p.data && ys[i] !== null) segs.push(`L ${xs[i]} ${ys[i]}`)
-    })
-    segs.push(`L ${xs[lastIdx]} ${baselineY}`)
-    segs.push('Z')
-    return segs.join(' ')
-  })()
 
   const title = labelOverride?.title ?? obj.title
   const sub = labelOverride?.sub ?? `${filled.length} of ${points.length} assessments · started ${first}%`
+
+  // Map points → MicroTrendPoint | null (gaps preserve column spacing).
+  const trendPoints: ReadonlyArray<MicroTrendPoint | null> = points.map(p =>
+    p.data ? { value: p.data.perf, label: p.asmt.title } : null
+  )
 
   return (
     <li className={`px-4 py-3 flex items-center gap-3 transition-colors ${isOverall ? 'bg-muted/30' : 'hover:bg-muted/30'}`}>
@@ -859,10 +848,10 @@ function TrendRow({
           <span className="text-[10px] text-muted-foreground">{sub}</span>
         </div>
       ) : (
-        <button
-          type="button"
+        <Button
+          variant="ghost"
           onClick={onClick}
-          className="flex flex-col gap-0.5 w-[220px] shrink-0 text-start group"
+          className="flex flex-col items-start justify-start gap-0.5 w-[220px] shrink-0 h-auto p-0 text-start whitespace-normal font-normal group hover:bg-transparent"
         >
           <span
             className="text-xs font-medium text-foreground line-clamp-2 leading-snug group-hover:text-brand transition-colors"
@@ -871,49 +860,27 @@ function TrendRow({
             {title}
           </span>
           <span className="text-[10px] text-muted-foreground">{sub}</span>
-        </button>
+        </Button>
       )}
 
       <div className="flex-1 min-w-0 flex items-center gap-3">
-        <div className="relative h-14 w-full" role="img" aria-label={`${title} performance trend`}>
-          <svg
-            viewBox={`0 0 ${W} ${H}`}
-            preserveAspectRatio="none"
+        <div className={`relative h-14 w-full ${lastTone.text}`} role="img" aria-label={`${title} performance trend`}>
+          {/* MicroTrend = shared inline-sparkline primitive (line + area + reference line).
+              Color is inherited via currentColor from the parent tone class — that way the
+              line + area tracks `perfTone(last)` without lifting tone palette into the primitive.
+              HTML dot overlays are rendered below the SVG so they stay perfectly circular. */}
+          <MicroTrend
+            points={trendPoints}
+            sizing="fluid"
+            width={W}
+            height={H}
+            stroke="currentColor"
+            areaFill="currentColor"
+            referenceLine={70}
+            strokeWidth={1.8}
+            ariaLabel={null}
             className="absolute inset-0 h-full w-full"
-            aria-hidden="true"
-          >
-            {/* Tier band: 70% threshold reference line — subtle */}
-            <line
-              x1={0} x2={W}
-              y1={H - PAD_Y - (70 / 100) * (H - PAD_Y * 2)}
-              y2={H - PAD_Y - (70 / 100) * (H - PAD_Y * 2)}
-              className="stroke-border"
-              strokeWidth="0.5"
-              strokeDasharray="0.8 1.2"
-              vectorEffect="non-scaling-stroke"
-            />
-            {/* Filled area under the trend line — soft tone-tinted gradient */}
-            {areaPath && (
-              <path
-                d={areaPath}
-                className={`${lastTone.text} fill-current`}
-                fillOpacity="0.12"
-                stroke="none"
-              />
-            )}
-            {/* Trend polyline — thicker and tone-colored */}
-            {linePoints.length >= 2 && (
-              <polyline
-                points={linePoints.join(' ')}
-                fill="none"
-                className={`${lastTone.text} stroke-current`}
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                vectorEffect="non-scaling-stroke"
-              />
-            )}
-          </svg>
+          />
           {/* Dots — HTML overlay so they stay perfectly circular regardless of width.
               Latest dot gets a brand-emphasis ring so the eye lands on "now". */}
           {points.map((p, i) => {
@@ -926,10 +893,11 @@ function TrendRow({
                 key={p.asmt.id}
                 className="w-64"
                 trigger={
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
                     className={[
-                      'absolute rounded-full bg-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand transition-all',
+                      'absolute rounded-full bg-current p-0',
                       dotTone.text,
                       isLatest
                         ? 'size-3.5 ring-[3px] ring-card hover:scale-110 shadow-sm'
@@ -970,7 +938,7 @@ function TrendRow({
             {last > 0 ? `${last}%` : '—'}
           </span>
           {filled.length >= 2 && (
-            <span className={`text-[10px] font-mono tabular-nums ${delta >= 0 ? 'text-chart-2' : 'text-destructive'}`}>
+            <span className={`text-[10px] font-mono tabular-nums ${delta >= 0 ? 'text-chart-2' : 'text-chart-5'}`}>
               <i className={`fa-light ${delta >= 0 ? 'fa-arrow-up' : 'fa-arrow-down'} me-0.5`} aria-hidden="true" style={{ fontSize: 9 }} />
               {delta >= 0 ? '+' : ''}{delta} pts
             </span>
@@ -1008,7 +976,7 @@ function LegendDot({
     tone === 'success'      ? 'bg-chart-2/40 border border-chart-2/60' :
     tone === 'info'         ? 'bg-chart-1/30 border border-chart-1/50' :
     tone === 'warning'      ? 'bg-chart-4/45 border border-chart-4/60' :
-                              'bg-destructive/35 border border-destructive/55'
+                              'bg-chart-5/35 border border-chart-5/55'
   return (
     <span className="inline-flex items-center gap-1.5">
       <span className={`size-3 rounded-sm ${cls}`} aria-hidden="true" />
@@ -1022,7 +990,7 @@ function LegendDot({
 const DIFF_BG: Record<'easy' | 'medium' | 'hard', string> = {
   easy:   'bg-chart-2/70',          // green-tinted (chart-2 = teal-green family)
   medium: 'bg-chart-4/80',          // amber
-  hard:   'bg-destructive/70',      // red
+  hard:   'bg-chart-5/70',          // orange (Aarti's no-red rule)
 }
 
 function LegendSwatch({

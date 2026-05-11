@@ -11,7 +11,13 @@
  * for negative slope — NEVER red per Aarti's no-red-in-score-viz rule).
  *
  * Pairs with delta text so color isn't the only encoding (A11Y-008).
+ *
+ * 2026-05-11: refactored to a thin wrapper over the shared `<MicroTrend>` primitive
+ * (extracted from this file + exam-management's TrendRow per chart depth audit).
+ * The empty/single-point placeholders and delta-text affordance remain product-specific.
  */
+
+import { MicroTrend } from './micro-trend'
 
 interface Point {
   /** x-axis label (e.g., 'Spring 2024'). Not rendered; for aria-text only. */
@@ -67,32 +73,17 @@ export function TrendSparkline({
     )
   }
 
-  // Compute SVG path
-  const span = max - min || 1
-  const padX = 2
-  const padY = 2
-  const drawW = width - padX * 2
-  const drawH = height - padY * 2
-
-  const xs = points.map((_, i) => padX + (i / (points.length - 1)) * drawW)
-  const ys = points.map(p => padY + drawH - ((p.value - min) / span) * drawH)
-
-  const d = points.map((_, i) => `${i === 0 ? 'M' : 'L'} ${xs[i].toFixed(1)} ${ys[i].toFixed(1)}`).join(' ')
-
   // Slope direction — first vs last
   const first = points[0].value
   const last = points[points.length - 1].value
   const delta = Math.round((last - first) * 10) / 10
   const isUp = delta > 0
   const isFlat = delta === 0
-  const stroke = isFlat
+  const toneVar = isFlat
     ? 'var(--muted-foreground)'
     : isUp
       ? 'var(--chart-2)'
       : 'var(--chart-4)' // amber for declining — NOT red (VIZ-004 / Aarti)
-
-  const lastX = xs[xs.length - 1]
-  const lastY = ys[ys.length - 1]
 
   // Build aria description
   const seriesText = points.map(p => `${p.label}: ${p.value}`).join('; ')
@@ -101,27 +92,21 @@ export function TrendSparkline({
 
   return (
     <div className="flex items-center gap-1.5">
-      <svg
+      <MicroTrend
+        points={points.map(p => ({ value: p.value, label: p.label }))}
+        stroke={toneVar}
+        lastPointFill={toneVar}
+        min={min}
+        max={max}
+        sizing="fixed"
         width={width}
         height={height}
-        role="img"
-        aria-label={ariaLabel}
-        style={{ display: 'block', flexShrink: 0 }}
-      >
-        <path
-          d={d}
-          fill="none"
-          stroke={stroke}
-          strokeWidth={1.5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <circle cx={lastX} cy={lastY} r={1.8} fill={stroke} />
-      </svg>
+        ariaLabel={ariaLabel}
+      />
       <span
         className="text-xs tabular-nums"
         style={{
-          color: isFlat ? 'var(--muted-foreground)' : isUp ? 'var(--chart-2)' : 'var(--chart-4)',
+          color: toneVar,
           minWidth: 28,
         }}
         aria-hidden="true"

@@ -8,6 +8,8 @@ import {
   Popover, PopoverTrigger, PopoverContent, Separator, Avatar, AvatarFallback,
   Card, CardHeader, CardTitle, CardDescription, CardContent,
   LocalBanner,
+  DatePickerField,
+  formatDateUS,
 } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
@@ -180,7 +182,7 @@ export function CreateSurveySheet({ open, onOpenChange }: CreateSurveySheetProps
   const [templateId, setTemplateId] = useState('')
   const [courseCode, setCourseCode] = useState('')
   const [term, setTerm] = useState('Spring 2026')
-  const [deadline, setDeadline] = useState('')
+  const [deadline, setDeadline] = useState<Date | undefined>(undefined)
   const [primaryInstructorId, setPrimaryInstructorId] = useState('')
 
   const activeTemplates = templates.filter(t => t.status === 'active')
@@ -199,10 +201,10 @@ export function CreateSurveySheet({ open, onOpenChange }: CreateSurveySheetProps
         ? [{ ...selectedInstructor, role: 'primary' }]
         : [],
       enrollmentCount: 30,
-      deadline: deadline || 'TBD',
+      deadline: deadline ? formatDateUS(deadline.toISOString()) : 'TBD',
     })
     onOpenChange(false)
-    setTemplateId(''); setCourseCode(''); setDeadline(''); setPrimaryInstructorId('')
+    setTemplateId(''); setCourseCode(''); setDeadline(undefined); setPrimaryInstructorId('')
   }
 
   return (
@@ -255,12 +257,10 @@ export function CreateSurveySheet({ open, onOpenChange }: CreateSurveySheetProps
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="cs-deadline">Response deadline</Label>
-            <Input
+            <DatePickerField
               id="cs-deadline"
-              type="text"
-              placeholder="e.g. May 30, 2026"
               value={deadline}
-              onChange={e => setDeadline(e.target.value)}
+              onChange={setDeadline}
             />
           </div>
 

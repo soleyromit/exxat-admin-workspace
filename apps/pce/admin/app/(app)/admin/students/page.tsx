@@ -33,6 +33,8 @@ import {
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 import { RowActions } from '@/components/data-table/row-actions'
+import { TablePropertiesDrawer } from '@/components/table-properties/drawer'
+import type { FilterFieldDef } from '@/components/table-properties/types'
 
 const STATUSES = ['enrolled', 'graduated', 'withdrawn', 'on-leave'] as const
 
@@ -187,6 +189,12 @@ export default function StudentsPage() {
       sortable: true,
       width: 160,
       cell: (row) => <span className="text-sm text-muted-foreground">{row.cohort}</span>,
+      filter: {
+        type: 'select',
+        icon: 'fa-users',
+        operators: ['is', 'is_not'],
+        options: MOCK_COHORTS.map(c => ({ value: c, label: c })),
+      },
     },
     {
       key: 'enrollmentStatus',
@@ -198,6 +206,12 @@ export default function StudentsPage() {
           {row.enrollmentStatus.replace('-', ' ')}
         </Badge>
       ),
+      filter: {
+        type: 'select',
+        icon: 'fa-circle-dot',
+        operators: ['is', 'is_not'],
+        options: STATUSES.map(s => ({ value: s, label: s.replace('-', ' ') })),
+      },
     },
     {
       key: 'hasAccommodations',
@@ -339,6 +353,67 @@ export default function StudentsPage() {
             selectable
             searchable
             defaultGroupBy="cohort"
+            toolbarSlot={(state) => {
+              // Build the filter-field list from the column filter configs so the
+              // drawer's "Add filter" menu mirrors the toolbar.
+              const filterFields: FilterFieldDef[] = columns
+                .filter(c => c.filter)
+                .map(c => ({
+                  key: c.key,
+                  label: c.label,
+                  icon: c.filter!.icon ?? 'fa-filter',
+                  type: c.filter!.type,
+                  operators: c.filter!.operators ?? (c.filter!.type === 'text' ? ['contains', 'not_contains'] : ['is', 'is_not']),
+                  options: c.filter!.options,
+                }))
+              const orderableKeys = columns
+                .filter(c => c.key !== 'select' && c.key !== 'actions')
+                .map(c => c.key)
+              return (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Table properties"
+                        aria-expanded={state.sheetOpen}
+                        onClick={() => state.setSheetOpen(o => !o)}
+                      >
+                        <i className="fa-light fa-sliders text-[13px]" aria-hidden="true" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">Table properties</TooltipContent>
+                  </Tooltip>
+                  <TablePropertiesDrawer
+                    open={state.sheetOpen}
+                    onOpenChange={state.setSheetOpen}
+                    activeFilters={state.activeFilters}
+                    onAddFilter={state.addFilter}
+                    onUpdateFilter={state.updateFilter}
+                    onRemoveFilter={state.removeFilter}
+                    getFilterConnector={state.getConnector}
+                    onToggleFilterConnector={state.toggleConnector}
+                    filterFields={filterFields}
+                    totalRows={tableRows.length}
+                    filteredRows={state.rows.length}
+                    sortRules={state.sortRules}
+                    onSortRulesChange={state.setSortRules}
+                    onAddSortRule={state.addSortRule}
+                    onRemoveSortRule={state.removeSortRule}
+                    onToggleSortDir={state.toggleSortDir}
+                    colOrder={state.colOrder}
+                    onColOrderChange={state.setColOrder}
+                    hiddenCols={state.hiddenCols}
+                    onToggleColVisibility={state.toggleColVisibility}
+                    onMoveCol={state.moveCol}
+                    resolveColumnLabel={(key) => columns.find(c => c.key === key)?.label ?? key}
+                    orderableKeys={orderableKeys}
+                  />
+                </>
+              )
+            }}
           />
 
           {MOCK_LMS_ENABLED ? (

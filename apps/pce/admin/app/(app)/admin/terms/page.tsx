@@ -20,7 +20,25 @@ import {
   Field, FieldLabel, FieldGroup, FieldDescription, FieldError,
   LocalBanner,
   SidebarTrigger, Separator,
+  DatePickerField,
 } from '@exxat/ds/packages/ui/src'
+
+/** YYYY-MM-DD string ↔ Date helpers. Keeps mock data shape stable while DatePickerField
+ *  works with native Date. Strings preserve lexicographic == chronological order for sort. */
+function ymdToDate(ymd: string): Date | undefined {
+  if (!ymd) return undefined
+  // Parse as local date (avoid TZ shifting an interactive picker selection).
+  const [y, m, d] = ymd.split('-').map(Number)
+  if (!y || !m || !d) return undefined
+  return new Date(y, m - 1, d)
+}
+function dateToYmd(d: Date | undefined): string {
+  if (!d) return ''
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
 import {
   MOCK_PROGRAM_TERMS, MOCK_LMS_ENABLED,
   type ProgramTerm,
@@ -283,27 +301,19 @@ export default function TermsPage() {
             <div className="grid grid-cols-2 gap-3">
               <Field orientation="vertical">
                 <FieldLabel htmlFor="term-start">Start date *</FieldLabel>
-                <Input
+                <DatePickerField
                   id="term-start"
-                  type="date"
-                  value={draft.startDate}
-                  onChange={e => setDraft({ ...draft, startDate: e.target.value })}
-                  aria-required="true"
-                  aria-invalid={!!errors.startDate}
-                  aria-describedby={errors.startDate ? 'term-start-error' : undefined}
+                  value={ymdToDate(draft.startDate)}
+                  onChange={d => setDraft({ ...draft, startDate: dateToYmd(d) })}
                 />
                 {errors.startDate && <FieldError id="term-start-error">{errors.startDate}</FieldError>}
               </Field>
               <Field orientation="vertical">
                 <FieldLabel htmlFor="term-end">End date *</FieldLabel>
-                <Input
+                <DatePickerField
                   id="term-end"
-                  type="date"
-                  value={draft.endDate}
-                  onChange={e => setDraft({ ...draft, endDate: e.target.value })}
-                  aria-required="true"
-                  aria-invalid={!!errors.endDate}
-                  aria-describedby={errors.endDate ? 'term-end-error' : undefined}
+                  value={ymdToDate(draft.endDate)}
+                  onChange={d => setDraft({ ...draft, endDate: dateToYmd(d) })}
                 />
                 {errors.endDate && <FieldError id="term-end-error">{errors.endDate}</FieldError>}
               </Field>
