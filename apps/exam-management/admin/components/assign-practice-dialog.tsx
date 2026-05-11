@@ -26,6 +26,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
   Checkbox,
   Input,
+  Field, FieldGroup, FieldLabel, FieldDescription, FieldError,
   Label,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   Textarea,
@@ -65,6 +66,7 @@ export function AssignPracticeDialog({
   const [count, setCount] = useState(15)
   const [message, setMessage] = useState('')
   const [dueDate, setDueDate] = useState('')
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   const toggle = (id: string) =>
     setSelected(prev => {
@@ -76,10 +78,23 @@ export function AssignPracticeDialog({
   const clearAll   = () => setSelected(new Set())
 
   const selectedCount = selected.size
-  const canSubmit = selectedCount > 0 && contentAreaId && count > 0
+
+  const validate = (): Record<string, string> => {
+    const next: Record<string, string> = {}
+    if (selectedCount === 0) next.students = 'Pick at least one student.'
+    if (!contentAreaId) next.contentAreaId = 'Pick a content area.'
+    if (count < 1) next.count = 'At least one question.'
+    if (count > 50) next.count = 'Cap at 50 questions per pack.'
+    if (dueDate && new Date(dueDate) < new Date(new Date().toISOString().slice(0, 10))) {
+      next.dueDate = 'Due date must be today or later.'
+    }
+    return next
+  }
 
   const submit = () => {
-    if (!canSubmit) return
+    const v = validate()
+    setErrors(v)
+    if (Object.keys(v).length > 0) return
     onAssign?.({
       studentIds: Array.from(selected),
       contentAreaId,
@@ -129,7 +144,11 @@ export function AssignPracticeDialog({
               </div>
             </div>
 
-            <div className="flex flex-col gap-1 rounded-lg border border-border p-1 max-h-56 overflow-y-auto">
+            <div
+              className="flex flex-col gap-1 rounded-lg border border-border p-1 max-h-56 overflow-y-auto"
+              aria-invalid={!!errors.students}
+              aria-describedby={errors.students ? 'ap-students-error' : undefined}
+            >
               {defaultStudents.map(s => {
                 const isSelected = selected.has(s.id)
                 const tone =
@@ -164,14 +183,24 @@ export function AssignPracticeDialog({
                 )
               })}
             </div>
+            {errors.students && (
+              <p id="ap-students-error" className="text-xs text-destructive" role="alert">{errors.students}</p>
+            )}
           </section>
 
           {/* ─── Pack config ─────────────────────────────────────────── */}
-          <section className="grid gap-4 grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="ap-area" className="text-sm font-medium">Content area</Label>
-              <Select value={contentAreaId} onValueChange={setContentAreaId}>
-                <SelectTrigger id="ap-area">
+          <FieldGroup className="grid gap-4 grid-cols-2">
+            <Field orientation="vertical">
+              <FieldLabel htmlFor="ap-area">Content area *</FieldLabel>
+              <Select
+                value={contentAreaId}
+                onValueChange={(v) => { setContentAreaId(v); if (errors.contentAreaId) setErrors({ ...errors, contentAreaId: '' }) }}
+              >
+                <SelectTrigger
+                  id="ap-area"
+                  aria-invalid={!!errors.contentAreaId}
+                  aria-describedby={errors.contentAreaId ? 'ap-area-error' : undefined}
+                >
                   <SelectValue placeholder="Pick a content area…" />
                 </SelectTrigger>
                 <SelectContent>
@@ -180,38 +209,51 @@ export function AssignPracticeDialog({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+              {errors.contentAreaId && <FieldError id="ap-area-error">{errors.contentAreaId}</FieldError>}
+            </Field>
 
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="ap-count" className="text-sm font-medium">Number of questions</Label>
+            <Field orientation="vertical">
+              <FieldLabel htmlFor="ap-count">Number of questions *</FieldLabel>
               <Input
                 id="ap-count"
                 type="number"
                 min={1}
                 max={50}
                 value={count}
-                onChange={(e) => setCount(Math.max(1, Math.min(50, Number(e.target.value) || 1)))}
+                onChange={(e) => {
+                  setCount(Math.max(1, Math.min(50, Number(e.target.value) || 1)))
+                  if (errors.count) setErrors({ ...errors, count: '' })
+                }}
+                aria-required="true"
+                aria-invalid={!!errors.count}
+                aria-describedby={errors.count ? 'ap-count-error' : undefined}
               />
-            </div>
+              {errors.count && <FieldError id="ap-count-error">{errors.count}</FieldError>}
+            </Field>
 
-            <div className="flex flex-col gap-1.5 col-span-2">
-              <Label htmlFor="ap-due" className="text-sm font-medium">
-                Due date <span className="text-muted-foreground font-normal">(optional)</span>
-              </Label>
+            <Field orientation="vertical" className="col-span-2">
+              <FieldLabel htmlFor="ap-due">Due date</FieldLabel>
               <Input
                 id="ap-due"
                 type="date"
                 value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
+                onChange={(e) => {
+                  setDueDate(e.target.value)
+                  if (errors.dueDate) setErrors({ ...errors, dueDate: '' })
+                }}
+                aria-invalid={!!errors.dueDate}
+                aria-describedby={errors.dueDate ? 'ap-due-error' : 'ap-due-desc'}
               />
-            </div>
-          </section>
+              {errors.dueDate
+                ? <FieldError id="ap-due-error">{errors.dueDate}</FieldError>
+                : <FieldDescription id="ap-due-desc">Optional · leave blank for no deadline.</FieldDescription>
+              }
+            </Field>
+          </FieldGroup>
 
           {/* ─── Message ─────────────────────────────────────────────── */}
-          <section className="flex flex-col gap-1.5">
-            <Label htmlFor="ap-msg" className="text-sm font-medium">
-              Message to student <span className="text-muted-foreground font-normal">(optional)</span>
-            </Label>
+          <Field orientation="vertical">
+            <FieldLabel htmlFor="ap-msg">Message to student</FieldLabel>
             <Textarea
               id="ap-msg"
               value={message}
@@ -219,9 +261,13 @@ export function AssignPracticeDialog({
               rows={3}
               placeholder={`E.g. "Based on your ${assessmentTitle} performance, focus on these ${chosenArea ? chosenArea.toLowerCase() : 'topics'} questions before the next exam."`}
               className="resize-none"
+              aria-describedby="ap-msg-desc"
             />
-            <span className="text-[10px] text-muted-foreground self-end tabular-nums">{message.length}/500</span>
-          </section>
+            <div className="flex items-center justify-between">
+              <FieldDescription id="ap-msg-desc">Optional · 500 character limit.</FieldDescription>
+              <span className="text-[10px] text-muted-foreground tabular-nums">{message.length}/500</span>
+            </div>
+          </Field>
 
           {/* ─── Preview strip ───────────────────────────────────────── */}
           <LocalBanner
@@ -241,7 +287,7 @@ export function AssignPracticeDialog({
           <DialogClose asChild>
             <Button variant="outline">Cancel</Button>
           </DialogClose>
-          <Button onClick={submit} disabled={!canSubmit} className="gap-2">
+          <Button onClick={submit} className="gap-2">
             <i className="fa-light fa-paper-plane" aria-hidden="true" />
             Assign to {selectedCount} {selectedCount === 1 ? 'student' : 'students'}
           </Button>

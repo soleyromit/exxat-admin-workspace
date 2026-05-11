@@ -18,7 +18,7 @@ import Link from 'next/link'
 import {
   Button, Badge, InputGroup, InputGroupAddon, InputGroupInput,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
-  Tooltip, TooltipTrigger, TooltipContent,
+  Tip,
 } from '@exxat/ds/packages/ui/src'
 import { mockCourses, MOCK_QB_QUESTIONS } from '@/lib/qb-mock-data'
 import { questionPsychometrics } from '@/lib/faculty-mock-data'
@@ -193,25 +193,20 @@ function QuestionRow({ q, isViewer }: { q: Question; isViewer: boolean }) {
           <span className="text-[11px] text-muted-foreground">·</span>
           <span className="text-[11px] text-muted-foreground">{q.usage} {q.usage === 1 ? 'use' : 'uses'}</span>
           {psy?.negativeDiscriminator && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Badge
-                  variant="secondary"
-                  className="rounded text-[10px] uppercase tracking-wider font-bold gap-1 cursor-help"
-                  style={{
-                    background: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))',
-                    color: 'var(--chart-4)',
-                    border: '1px solid color-mix(in oklch, var(--chart-4) 26%, transparent)',
-                  }}
-                >
-                  <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 9 }} />
-                  Negative discriminator
-                </Badge>
-              </TooltipTrigger>
-              <TooltipContent>
-                Top performers picked the keyed answer at a lower rate than weaker performers — likely flawed item.
-              </TooltipContent>
-            </Tooltip>
+            <Tip label="Top performers picked the keyed answer at a lower rate than weaker performers — likely flawed item.">
+              <Badge
+                variant="secondary"
+                className="rounded text-[10px] uppercase tracking-wider font-bold gap-1 cursor-help"
+                style={{
+                  background: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))',
+                  color: 'var(--chart-4)',
+                  border: '1px solid color-mix(in oklch, var(--chart-4) 26%, transparent)',
+                }}
+              >
+                <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 9 }} />
+                Negative discriminator
+              </Badge>
+            </Tip>
           )}
         </div>
         <p className="text-sm text-foreground leading-snug line-clamp-2 mb-2">{q.title}</p>
@@ -241,49 +236,37 @@ function QuestionRow({ q, isViewer }: { q: Question; isViewer: boolean }) {
 
       {/* Right: actions */}
       <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button asChild variant="ghost" size="icon-sm" aria-label="View question details">
-              <Link href={`/questions/${q.id}`}>
-                <i className="fa-light fa-eye" aria-hidden="true" />
-              </Link>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>View details</TooltipContent>
-        </Tooltip>
+        <Tip label="View details">
+          <Button asChild variant="ghost" size="icon-sm" aria-label="View question details">
+            <Link href={`/questions/${q.id}`}>
+              <i className="fa-light fa-eye" aria-hidden="true" />
+            </Link>
+          </Button>
+        </Tip>
         {!isViewer && (
           <>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button asChild variant="ghost" size="icon-sm" aria-label="Add to assessment">
-                  <Link href={`/assessment-builder?question=${q.id}`}>
-                    <i className="fa-light fa-plus" aria-hidden="true" />
-                  </Link>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Add to assessment</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button asChild variant="ghost" size="icon-sm" aria-label="Edit question">
-                  <Link href={`/questions/${q.id}`}>
-                    <i className="fa-light fa-pen" aria-hidden="true" />
-                  </Link>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Open in Question Bank</TooltipContent>
-            </Tooltip>
+            <Tip label="Add to assessment">
+              <Button asChild variant="ghost" size="icon-sm" aria-label="Add to assessment">
+                <Link href={`/assessment-builder?question=${q.id}`}>
+                  <i className="fa-light fa-plus" aria-hidden="true" />
+                </Link>
+              </Button>
+            </Tip>
+            <Tip label="Open in Question Bank">
+              <Button asChild variant="ghost" size="icon-sm" aria-label="Edit question">
+                <Link href={`/questions/${q.id}`}>
+                  <i className="fa-light fa-pen" aria-hidden="true" />
+                </Link>
+              </Button>
+            </Tip>
           </>
         )}
         {isViewer && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon-sm" disabled aria-label="Editing disabled">
-                <i className="fa-light fa-lock" aria-hidden="true" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>View-only access — editing disabled</TooltipContent>
-          </Tooltip>
+          <Tip label="View-only access — editing disabled">
+            <Button variant="ghost" size="icon-sm" disabled aria-label="Editing disabled">
+              <i className="fa-light fa-lock" aria-hidden="true" />
+            </Button>
+          </Tip>
         )}
       </div>
     </div>
@@ -314,38 +297,33 @@ function PsychoMetric({
   const idealEnd = Math.max(0, Math.min(100, ((ideal[1] - min) / (max - min)) * 100))
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="flex items-center gap-2 cursor-help">
-          <div className="flex flex-col gap-0.5 min-w-[60px]">
-            <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
-            <span className="text-[11px] font-bold" style={{ color: palette.fg }}>{format(value)}</span>
-          </div>
-          <div
-            className="relative h-1 w-20 rounded-full"
-            style={{ background: 'var(--muted)' }}
-          >
-            {/* Ideal range underlay */}
-            <div
-              className="absolute h-full rounded-full"
-              style={{
-                left: `${idealStart}%`,
-                width: `${idealEnd - idealStart}%`,
-                background: 'color-mix(in oklch, var(--chart-2) 18%, transparent)',
-              }}
-            />
-            {/* Value marker */}
-            <div
-              className="absolute top-1/2 -translate-y-1/2 h-2.5 w-1 rounded-full"
-              style={{ left: `calc(${pct}% - 2px)`, background: palette.fg }}
-            />
-          </div>
+    <Tip label={`${label} ${format(value)} — ${hint}. Ideal range: ${format(ideal[0])}–${format(ideal[1])}.`}>
+      <div className="flex items-center gap-2 cursor-help">
+        <div className="flex flex-col gap-0.5 min-w-[60px]">
+          <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
+          <span className="text-[11px] font-bold" style={{ color: palette.fg }}>{format(value)}</span>
         </div>
-      </TooltipTrigger>
-      <TooltipContent>
-        {label} {format(value)} — {hint}. Ideal range: {format(ideal[0])}–{format(ideal[1])}.
-      </TooltipContent>
-    </Tooltip>
+        <div
+          className="relative h-1 w-20 rounded-full"
+          style={{ background: 'var(--muted)' }}
+        >
+          {/* Ideal range underlay */}
+          <div
+            className="absolute h-full rounded-full"
+            style={{
+              left: `${idealStart}%`,
+              width: `${idealEnd - idealStart}%`,
+              background: 'color-mix(in oklch, var(--chart-2) 18%, transparent)',
+            }}
+          />
+          {/* Value marker */}
+          <div
+            className="absolute top-1/2 -translate-y-1/2 h-2.5 w-1 rounded-full"
+            style={{ left: `calc(${pct}% - 2px)`, background: palette.fg }}
+          />
+        </div>
+      </div>
+    </Tip>
   )
 }
 
@@ -355,33 +333,28 @@ function DistractorPicker({ rates }: { rates: number[] }) {
   const max = Math.max(...rates)
   const labels = ['A', 'B', 'C', 'D', 'E', 'F']
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="flex items-end gap-0.5 cursor-help">
-          {rates.map((r, i) => {
-            const isKey = r === max
-            const h = Math.max(2, Math.round(r * 22))
-            return (
-              <div key={i} className="flex flex-col items-center gap-0.5">
-                <div
-                  style={{
-                    width: 8, height: h,
-                    background: isKey
-                      ? 'var(--chart-2)'
-                      : r > 0.2 ? 'var(--chart-4)' : 'var(--muted-foreground)',
-                    borderRadius: 1,
-                  }}
-                />
-                <span className="text-[8px] font-mono text-muted-foreground">{labels[i]}</span>
-              </div>
-            )
-          })}
-        </div>
-      </TooltipTrigger>
-      <TooltipContent>
-        Distractor pick-rate · Green = keyed · Amber = strong distractor (&gt;20%)
-      </TooltipContent>
-    </Tooltip>
+    <Tip label="Distractor pick-rate · Green = keyed · Amber = strong distractor (>20%)">
+      <div className="flex items-end gap-0.5 cursor-help">
+        {rates.map((r, i) => {
+          const isKey = r === max
+          const h = Math.max(2, Math.round(r * 22))
+          return (
+            <div key={i} className="flex flex-col items-center gap-0.5">
+              <div
+                style={{
+                  width: 8, height: h,
+                  background: isKey
+                    ? 'var(--chart-2)'
+                    : r > 0.2 ? 'var(--chart-4)' : 'var(--muted-foreground)',
+                  borderRadius: 1,
+                }}
+              />
+              <span className="text-[8px] font-mono text-muted-foreground">{labels[i]}</span>
+            </div>
+          )
+        })}
+      </div>
+    </Tip>
   )
 }
 

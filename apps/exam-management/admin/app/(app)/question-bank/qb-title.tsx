@@ -4,7 +4,6 @@ import { useQB } from './qb-state'
 import {
   Button, Badge, Avatar, AvatarFallback,
   Popover, PopoverTrigger, PopoverContent,
-  DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem,
 } from '@exxat/ds/packages/ui/src'
 import { MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
 
@@ -43,14 +42,14 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
           style={{ display: 'inline-flex', alignItems: 'center' }}
         >
           {shown.map((p, i) => (
-            <Avatar key={p.id} style={{ width: 22, height: 22, marginLeft: i === 0 ? 0 : -7, border: '2px solid var(--background)', borderRadius: '50%', zIndex: shown.length - i, position: 'relative' }}>
-              <AvatarFallback className="text-[8px] font-bold" style={{ backgroundColor: 'color-mix(in oklch, var(--foreground) 8%, var(--background))', color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))' }}>
+            <Avatar key={p.id} style={{ width: 28, height: 28, marginLeft: i === 0 ? 0 : -6, border: '2px solid var(--background)', borderRadius: '50%', zIndex: shown.length - i, position: 'relative' }}>
+              <AvatarFallback className="text-[10px] font-bold" style={{ backgroundColor: 'color-mix(in oklch, var(--foreground) 8%, var(--background))', color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))' }}>
                 {p.initials}
               </AvatarFallback>
             </Avatar>
           ))}
           {overflow > 0 && (
-            <Badge variant="secondary" className="rounded-full text-[9px]" style={{ height: 22, minWidth: 22, marginLeft: -7, border: '2px solid var(--background)', position: 'relative', padding: '0 4px' }}>
+            <Badge variant="secondary" className="rounded-full text-[10px]" style={{ height: 28, minWidth: 28, marginLeft: -6, border: '2px solid var(--background)', position: 'relative', padding: '0 5px' }}>
               +{overflow}
             </Badge>
           )}
@@ -133,7 +132,7 @@ export function QBTitle() {
   })()
 
   return (
-    <div style={{ padding: '8px 16px 6px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+    <div style={{ padding: '6px 16px 4px', flexShrink: 0 }}>
       {/* Title row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, overflow: 'hidden' }}>
@@ -149,24 +148,39 @@ export function QBTitle() {
             {titleLabel}
           </h1>
 
-          {/* Sibling switcher — only in folder view */}
+          {/* Sibling switcher — tree-style rows */}
           {navView === 'folder' && siblings.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+            <Popover>
+              <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon-xs" aria-label="Switch to sibling folder" className="text-muted-foreground" style={{ width: 18, height: 18, flexShrink: 0 }}>
                   <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 9 }} />
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
+              </PopoverTrigger>
+              <PopoverContent align="start" className="p-1" style={{ width: 240 }}>
                 {siblings.map(s => (
-                  <DropdownMenuItem key={s.id} onClick={() => navigateToFolder(s.id)}>
-                    <i className="fa-light fa-folder" aria-hidden="true" />
-                    <span className="flex-1" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
-                    <span className="text-xs text-muted-foreground" style={{ flexShrink: 0 }}>{folderCount(s.id)}</span>
-                  </DropdownMenuItem>
+                  <Button
+                    key={s.id}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigateToFolder(s.id)}
+                    className="w-full justify-start text-foreground"
+                    style={{ height: 32, padding: '0 8px', borderRadius: 6, gap: 4 }}
+                  >
+                    {/* Chevron placeholder to align with sidebar tree rows */}
+                    <span style={{ width: 16, flexShrink: 0 }} />
+                    <i
+                      className={`fa-regular ${s.isCourse ? 'fa-graduation-cap' : 'fa-folder'} text-muted-foreground`}
+                      aria-hidden="true"
+                      style={{ fontSize: 13, width: 16, textAlign: 'center', flexShrink: 0 }}
+                    />
+                    <span className="flex-1 text-sm text-left truncate">
+                      {s.isCourse ? courseFolderLabel(s.name) : s.name}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground shrink-0">{folderCount(s.id)}</span>
+                  </Button>
                 ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </PopoverContent>
+            </Popover>
           )}
         </div>
 
@@ -177,25 +191,28 @@ export function QBTitle() {
       </div>
 
       {/* Subtitle: count + collaborators */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 1 }}>
         <span className="text-sm text-muted-foreground">
           {count} question{count !== 1 ? 's' : ''} · Last updated now
         </span>
-        {collaboratorIds.length > 0 && (
-          <>
+        {(collaboratorIds.length > 0 || (isAdmin && selectedFolder)) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ width: 1, height: 12, backgroundColor: 'var(--border)', display: 'inline-block' }} />
-            <CollaboratorAvatars collaboratorIds={collaboratorIds} />
-          </>
-        )}
-        {isAdmin && selectedFolder && (
-          <Button
-            variant="ghost" size="icon-xs"
-            aria-label="Manage access"
-            className="text-muted-foreground"
-            onClick={() => setCollaboratorsModalFolderId(selectedFolderId)}
-          >
-            <i className="fa-light fa-user-plus" aria-hidden="true" style={{ fontSize: 11 }} />
-          </Button>
+            {collaboratorIds.length > 0 && (
+              <CollaboratorAvatars collaboratorIds={collaboratorIds} />
+            )}
+            {isAdmin && selectedFolder && (
+              <Button
+                variant="ghost" size="icon-xs"
+                aria-label="Manage access"
+                className="text-muted-foreground"
+                style={{ width: 28, height: 28 }}
+                onClick={() => setCollaboratorsModalFolderId(selectedFolderId)}
+              >
+                <i className="fa-light fa-user-plus" aria-hidden="true" style={{ fontSize: 14 }} />
+              </Button>
+            )}
+          </div>
         )}
       </div>
     </div>

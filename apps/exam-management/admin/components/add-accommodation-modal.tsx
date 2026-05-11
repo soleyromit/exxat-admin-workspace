@@ -18,6 +18,7 @@ import {
   Button,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
   Input, InputGroup, InputGroupAddon, InputGroupInput,
+  Field, FieldGroup, FieldLabel, FieldDescription, FieldError,
   Label,
   Textarea,
   RadioGroup, RadioGroupItem,
@@ -73,6 +74,8 @@ export function AddAccommodationModal({
   const [expiryEnabled, setExpiryEnabled] = useState(false)
   const [expiryDate, setExpiryDate] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  // Validation surfacing (mirrors PCE students/page.tsx pattern).
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   const reset = () => {
     setStep(1)
@@ -86,6 +89,7 @@ export function AddAccommodationModal({
     setExpiryEnabled(false)
     setExpiryDate('')
     setSubmitting(false)
+    setErrors({})
   }
 
   const handleClose = (next: boolean) => {
@@ -111,7 +115,10 @@ export function AddAccommodationModal({
 
   // ─── Submit ────────────────────────────────────────────────────────────
   const handleSubmit = () => {
-    if (!selectedStudent || !detail.trim()) return
+    const stepErrors = { ...validateStep2(), ...validateStep3() }
+    setErrors(stepErrors)
+    if (Object.keys(stepErrors).length > 0) return
+    if (!selectedStudent) return
     setSubmitting(true)
 
     const approvedDate = new Date().toISOString()
@@ -152,11 +159,30 @@ export function AddAccommodationModal({
 
   // ─── Validation per step ───────────────────────────────────────────────
   const canAdvanceStep1 = !!studentId
-  const canAdvanceStep2 = !!type && detail.trim().length > 0
-  const canSubmit =
-    canAdvanceStep1
-    && canAdvanceStep2
-    && (scope === 'all-enrolled' || (scope === 'specific-course' && specificCourseId !== ''))
+  const validateStep2 = (): Record<string, string> => {
+    const next: Record<string, string> = {}
+    if (!detail.trim()) next.detail = 'Detail is required.'
+    return next
+  }
+  const validateStep3 = (): Record<string, string> => {
+    const next: Record<string, string> = {}
+    if (scope === 'specific-course' && !specificCourseId) {
+      next.scope = 'Pick a course.'
+    }
+    if (expiryEnabled && !expiryDate) {
+      next.expiryDate = 'Set an expiry date or choose Never expires.'
+    }
+    return next
+  }
+
+  const handleNext = () => {
+    if (step === 2) {
+      const stepErrors = validateStep2()
+      setErrors(stepErrors)
+      if (Object.keys(stepErrors).length > 0) return
+    }
+    setStep((step + 1) as 1 | 2 | 3)
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -298,29 +324,40 @@ export function AddAccommodationModal({
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="accomm-detail">Detail *</Label>
-                <Input
-                  id="accomm-detail"
-                  value={detail}
-                  onChange={(e) => setDetail(e.target.value)}
-                  placeholder="e.g. 1.5x time multiplier"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Examples: &ldquo;1.5x&rdquo;, &ldquo;double time&rdquo;, &ldquo;+30 min&rdquo;
-                </p>
-              </div>
+              <FieldGroup>
+                <Field orientation="vertical">
+                  <FieldLabel htmlFor="accomm-detail">Detail *</FieldLabel>
+                  <Input
+                    id="accomm-detail"
+                    value={detail}
+                    onChange={(e) => {
+                      setDetail(e.target.value)
+                      if (errors.detail) setErrors({ ...errors, detail: '' })
+                    }}
+                    placeholder="e.g. 1.5x time multiplier"
+                    aria-required="true"
+                    aria-invalid={!!errors.detail}
+                    aria-describedby={errors.detail ? 'accomm-detail-error' : 'accomm-detail-desc'}
+                  />
+                  {errors.detail
+                    ? <FieldError id="accomm-detail-error">{errors.detail}</FieldError>
+                    : <FieldDescription id="accomm-detail-desc">Examples: &ldquo;1.5x&rdquo;, &ldquo;double time&rdquo;, &ldquo;+30 min&rdquo;</FieldDescription>
+                  }
+                </Field>
 
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="accomm-notes">Notes (optional, for proctor briefing)</Label>
-                <Textarea
-                  id="accomm-notes"
-                  rows={3}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Any context the proctor team should know…"
-                />
-              </div>
+                <Field orientation="vertical">
+                  <FieldLabel htmlFor="accomm-notes">Notes</FieldLabel>
+                  <Textarea
+                    id="accomm-notes"
+                    rows={3}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Any context the proctor team should know…"
+                    aria-describedby="accomm-notes-desc"
+                  />
+                  <FieldDescription id="accomm-notes-desc">Optional · shown to the proctor on briefing.</FieldDescription>
+                </Field>
+              </FieldGroup>
             </>
           )}
 
@@ -361,26 +398,33 @@ export function AddAccommodationModal({
                     <div className="flex-1">
                       <p className="text-sm font-medium text-foreground">Specific course only</p>
                       {scope === 'specific-course' && (
-                        <Select value={specificCourseId} onValueChange={setSpecificCourseId}>
-                          <SelectTrigger className="mt-1.5 w-full">
-                            <SelectValue placeholder="Select a course…" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {selectedStudent.enrolledCourseIds.map(cid => {
-                              const c = mockCourses.find(c => c.id === cid)
-                              if (!c) return null
-                              return <SelectItem key={cid} value={cid}>{c.code} · {c.name}</SelectItem>
-                            })}
-                          </SelectContent>
-                        </Select>
+                        <>
+                          <Select value={specificCourseId} onValueChange={(v) => { setSpecificCourseId(v); if (errors.scope) setErrors({ ...errors, scope: '' }) }}>
+                            <SelectTrigger
+                              className="mt-1.5 w-full"
+                              aria-invalid={!!errors.scope}
+                              aria-describedby={errors.scope ? 'accomm-scope-error' : undefined}
+                            >
+                              <SelectValue placeholder="Select a course…" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {selectedStudent.enrolledCourseIds.map(cid => {
+                                const c = mockCourses.find(c => c.id === cid)
+                                if (!c) return null
+                                return <SelectItem key={cid} value={cid}>{c.code} · {c.name}</SelectItem>
+                              })}
+                            </SelectContent>
+                          </Select>
+                          {errors.scope && <FieldError id="accomm-scope-error">{errors.scope}</FieldError>}
+                        </>
                       )}
                     </div>
                   </label>
                 </RadioGroup>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <Label>Expiry</Label>
+              <Field orientation="vertical">
+                <FieldLabel>Expiry</FieldLabel>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -393,10 +437,17 @@ export function AddAccommodationModal({
                   <Input
                     type="date"
                     value={expiryDate}
-                    onChange={(e) => setExpiryDate(e.target.value)}
+                    onChange={(e) => {
+                      setExpiryDate(e.target.value)
+                      if (errors.expiryDate) setErrors({ ...errors, expiryDate: '' })
+                    }}
+                    aria-label="Expiry date"
+                    aria-invalid={!!errors.expiryDate}
+                    aria-describedby={errors.expiryDate ? 'accomm-expiry-error' : undefined}
                   />
                 )}
-              </div>
+                {errors.expiryDate && <FieldError id="accomm-expiry-error">{errors.expiryDate}</FieldError>}
+              </Field>
 
               <p className="text-xs text-muted-foreground">
                 Approver: <span className="text-foreground font-medium">{approverName}</span> · auto-stamped at submit
@@ -420,8 +471,8 @@ export function AddAccommodationModal({
               <Button
                 variant="default"
                 size="sm"
-                disabled={(step === 1 && !canAdvanceStep1) || (step === 2 && !canAdvanceStep2)}
-                onClick={() => setStep((step + 1) as 1 | 2 | 3)}
+                disabled={step === 1 && !canAdvanceStep1}
+                onClick={handleNext}
               >
                 Next →
               </Button>
@@ -429,7 +480,7 @@ export function AddAccommodationModal({
               <Button
                 variant="default"
                 size="sm"
-                disabled={!canSubmit || submitting}
+                disabled={submitting}
                 onClick={handleSubmit}
               >
                 {submitting ? 'Adding…' : 'Add'}

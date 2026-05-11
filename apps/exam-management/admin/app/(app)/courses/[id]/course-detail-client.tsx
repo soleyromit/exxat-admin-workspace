@@ -20,7 +20,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Button, Tabs, TabsList, TabsTrigger, TabsContent,
-  Tooltip, TooltipTrigger, TooltipContent,
+  Tip,
 } from '@exxat/ds/packages/ui/src'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
@@ -141,24 +141,21 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
     <div className="flex items-center gap-2">
       {accessLevel && <AccessLevelChip level={accessLevel} />}
       {liveCount > 0 && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              onClick={() => {
-                const id = courseAssessments.find(a => reviewByAssessment.get(a.id)?.state === 'in-progress')?.id
-                if (id) router.push(`/assessments/${id}/monitor`)
-              }}
-            >
-              <span className="inline-block size-1.5 rounded-full bg-chart-1 [animation:pulse-soft_1.6s_ease-in-out_infinite]" aria-hidden="true" />
-              <span>Live monitor</span>
-              <StatusPill tone="info" label={String(liveCount)} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{liveCount} {liveCount === 1 ? 'assessment' : 'assessments'} in progress now</TooltipContent>
-        </Tooltip>
+        <Tip label={`${liveCount} ${liveCount === 1 ? 'assessment' : 'assessments'} in progress now`}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => {
+              const id = courseAssessments.find(a => reviewByAssessment.get(a.id)?.state === 'in-progress')?.id
+              if (id) router.push(`/assessments/${id}/monitor`)
+            }}
+          >
+            <span className="inline-block size-1.5 rounded-full bg-chart-1 [animation:pulse-soft_1.6s_ease-in-out_infinite]" aria-hidden="true" />
+            <span>Live monitor</span>
+            <StatusPill tone="info" label={String(liveCount)} />
+          </Button>
+        </Tip>
       )}
       <PrimaryAction isViewer={isViewer} courseId={courseId} />
     </div>
@@ -255,15 +252,12 @@ function PrimaryAction({ isViewer, courseId }: { isViewer: boolean; courseId: st
   const [modalOpen, setModalOpen] = useState(false)
   if (isViewer) {
     return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="outline" size="sm" disabled className="gap-2">
-            <i className="fa-light fa-lock" aria-hidden="true" />
-            View-only
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Read-only access — you can&apos;t create assessments in this course.</TooltipContent>
-      </Tooltip>
+      <Tip label="Read-only access — you can't create assessments in this course.">
+        <Button variant="outline" size="sm" disabled className="gap-2">
+          <i className="fa-light fa-lock" aria-hidden="true" />
+          View-only
+        </Button>
+      </Tip>
     )
   }
   return (

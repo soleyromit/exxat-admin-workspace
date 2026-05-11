@@ -22,7 +22,8 @@ import {
   Badge, Button,
   Card, CardContent,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
-  Input, Label, Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+  Input, Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+  Field, FieldGroup, FieldLabel, FieldDescription, FieldError,
   Tooltip, TooltipTrigger, TooltipContent,
 } from '@exxat/ds/packages/ui/src'
 
@@ -256,11 +257,24 @@ function InviteDialog({
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<Role>('Faculty (Editor)')
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const reset = () => { setName(''); setEmail(''); setRole('Faculty (Editor)') }
+  const reset = () => { setName(''); setEmail(''); setRole('Faculty (Editor)'); setErrors({}) }
+
+  const validate = (): Record<string, string> => {
+    const next: Record<string, string> = {}
+    if (!name.trim()) next.name = 'Name is required.'
+    if (!email.trim()) next.email = 'Email is required.'
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      next.email = 'Enter a valid email address (e.g., name@university.edu).'
+    }
+    return next
+  }
 
   const submit = () => {
-    if (!name.trim() || !email.trim()) return
+    const v = validate()
+    setErrors(v)
+    if (Object.keys(v).length > 0) return
     onAdd(name.trim(), email.trim(), role)
     reset()
     onOpenChange(false)
@@ -276,29 +290,37 @@ function InviteDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="invite-name">Name</Label>
+        <FieldGroup>
+          <Field orientation="vertical">
+            <FieldLabel htmlFor="invite-name">Name *</FieldLabel>
             <Input
               id="invite-name"
               placeholder="Dr. Jane Doe"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => { setName(e.target.value); if (errors.name) setErrors({ ...errors, name: '' }) }}
               autoFocus
+              aria-required="true"
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? 'invite-name-error' : undefined}
             />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="invite-email">Email</Label>
+            {errors.name && <FieldError id="invite-name-error">{errors.name}</FieldError>}
+          </Field>
+          <Field orientation="vertical">
+            <FieldLabel htmlFor="invite-email">Email *</FieldLabel>
             <Input
               id="invite-email"
               type="email"
               placeholder="jane.doe@university.edu"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors({ ...errors, email: '' }) }}
+              aria-required="true"
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? 'invite-email-error' : undefined}
             />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="invite-role">Role</Label>
+            {errors.email && <FieldError id="invite-email-error">{errors.email}</FieldError>}
+          </Field>
+          <Field orientation="vertical">
+            <FieldLabel htmlFor="invite-role">Role</FieldLabel>
             <Select value={role} onValueChange={(v) => setRole(v as Role)}>
               <SelectTrigger id="invite-role" className="w-full">
                 <SelectValue />
@@ -317,14 +339,15 @@ function InviteDialog({
                 ))}
               </SelectContent>
             </Select>
-          </div>
-        </div>
+            <FieldDescription>You can change this later from this page.</FieldDescription>
+          </Field>
+        </FieldGroup>
 
         <DialogFooter>
           <DialogClose asChild>
             <Button variant="outline">Cancel</Button>
           </DialogClose>
-          <Button onClick={submit} disabled={!name.trim() || !email.trim()}>
+          <Button onClick={submit}>
             Send invite
           </Button>
         </DialogFooter>

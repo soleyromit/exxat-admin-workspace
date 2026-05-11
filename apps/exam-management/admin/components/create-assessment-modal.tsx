@@ -19,7 +19,8 @@ import { useRouter } from 'next/navigation'
 import {
   Button,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-  Input,
+  Input, InputGroup, InputGroupInput, InputGroupAddon, InputGroupText,
+  Field, FieldGroup, FieldLabel, FieldDescription, FieldError,
   Label,
   Textarea,
   RadioGroup, RadioGroupItem,
@@ -67,6 +68,9 @@ export function CreateAssessmentModal({
   const [endDate, setEndDate] = useState('')
   const [endTime, setEndTime] = useState('11:00')
   const [submitting, setSubmitting] = useState(false)
+  // Validation surfacing — empty until user attempts Next/Create. Mirrors PCE
+  // master-list dialogs (e.g. apps/pce/admin/app/(app)/admin/students/page.tsx).
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   const reset = () => {
     setStep(1)
@@ -82,6 +86,7 @@ export function CreateAssessmentModal({
     setStartDate('')
     setEndDate('')
     setSubmitting(false)
+    setErrors({})
   }
 
   const handleClose = (next: boolean) => {
@@ -91,8 +96,43 @@ export function CreateAssessmentModal({
 
   const courseAssessments = mockAssessments.filter(a => a.courseId === courseId)
 
+  // Per-step validators — only validate the fields the user has touched
+  // by reaching that step (mirrors students/page.tsx onSave pattern).
+  const validateStep1 = (): Record<string, string> => {
+    const next: Record<string, string> = {}
+    if (!title.trim()) next.title = 'Title is required.'
+    return next
+  }
+  const validateStep2 = (): Record<string, string> => {
+    const next: Record<string, string> = {}
+    if (duration < 5) next.duration = 'Minimum 5 minutes.'
+    if (questionTarget < 1) next.questionTarget = 'At least one question.'
+    return next
+  }
+  const validateStep3 = (): Record<string, string> => {
+    const next: Record<string, string> = {}
+    if (scheduleNow) {
+      if (!startDate) next.startDate = 'Start date is required when scheduling.'
+      if (!endDate) next.endDate = 'End date is required when scheduling.'
+      if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+        next.endDate = 'End date must be on or after start date.'
+      }
+    }
+    return next
+  }
+
+  const handleNext = () => {
+    const stepErrors = step === 1 ? validateStep1() : step === 2 ? validateStep2() : {}
+    setErrors(stepErrors)
+    if (Object.keys(stepErrors).length > 0) return
+    setStep((step + 1) as 1 | 2 | 3)
+  }
+
   const handleSubmit = () => {
-    if (!title.trim() || !course || !resolvedOfferingId) return
+    const allErrors = { ...validateStep1(), ...validateStep2(), ...validateStep3() }
+    setErrors(allErrors)
+    if (Object.keys(allErrors).length > 0) return
+    if (!course || !resolvedOfferingId) return
     setSubmitting(true)
 
     // Seed difficulty distribution from quickStart copy (if any)
@@ -115,12 +155,6 @@ export function CreateAssessmentModal({
     onOpenChange(false)
     router.push(`/assessment-builder?draftId=${draft.id}&courseId=${courseId}`)
   }
-
-  const canAdvanceStep1 = title.trim().length > 0
-  const canAdvanceStep2 = duration >= 5 && questionTarget >= 1
-  const canSubmit =
-    canAdvanceStep1 && canAdvanceStep2 &&
-    (!scheduleNow || (startDate !== '' && endDate !== ''))
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -147,27 +181,38 @@ export function CreateAssessmentModal({
                 <span className="ms-1">· locked</span>
               </LocalBanner>
 
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="asmt-title">Title *</Label>
-                <Input
-                  id="asmt-title"
-                  autoFocus
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. IM Midterm 2026"
-                />
-              </div>
+              <FieldGroup>
+                <Field orientation="vertical">
+                  <FieldLabel htmlFor="asmt-title">Title *</FieldLabel>
+                  <Input
+                    id="asmt-title"
+                    autoFocus
+                    value={title}
+                    onChange={(e) => {
+                      setTitle(e.target.value)
+                      if (errors.title) setErrors({ ...errors, title: '' })
+                    }}
+                    placeholder="e.g. IM Midterm 2026"
+                    aria-required="true"
+                    aria-invalid={!!errors.title}
+                    aria-describedby={errors.title ? 'asmt-title-error' : undefined}
+                  />
+                  {errors.title && <FieldError id="asmt-title-error">{errors.title}</FieldError>}
+                </Field>
 
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="asmt-desc">Description (optional · what students will see)</Label>
-                <Textarea
-                  id="asmt-desc"
-                  rows={3}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Cumulative midterm covering modules 1–6."
-                />
-              </div>
+                <Field orientation="vertical">
+                  <FieldLabel htmlFor="asmt-desc">Description</FieldLabel>
+                  <Textarea
+                    id="asmt-desc"
+                    rows={3}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Cumulative midterm covering modules 1–6."
+                    aria-describedby="asmt-desc-desc"
+                  />
+                  <FieldDescription id="asmt-desc-desc">Optional · students will see this on the landing screen.</FieldDescription>
+                </Field>
+              </FieldGroup>
 
               <div className="flex flex-col gap-2">
                 <Label>Quick start (optional)</Label>
@@ -241,39 +286,55 @@ export function CreateAssessmentModal({
                 </div>
               </div>
 
-              <div className="flex gap-3">
-                <div className="flex flex-col gap-1.5 flex-1">
-                  <Label htmlFor="asmt-duration">Allotted time</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="asmt-duration"
-                      type="number"
-                      min={5}
-                      step={5}
-                      value={duration}
-                      onChange={(e) => setDuration(Math.max(5, parseInt(e.target.value) || 0))}
-                      className="w-20"
-                    />
-                    <span className="text-sm text-muted-foreground">minutes</span>
-                  </div>
-                </div>
+              <FieldGroup>
+                <div className="flex gap-3">
+                  <Field orientation="vertical" className="flex-1">
+                    <FieldLabel htmlFor="asmt-duration">Allotted time</FieldLabel>
+                    <InputGroup>
+                      <InputGroupInput
+                        id="asmt-duration"
+                        type="number"
+                        min={5}
+                        step={5}
+                        value={duration}
+                        onChange={(e) => {
+                          setDuration(Math.max(5, parseInt(e.target.value) || 0))
+                          if (errors.duration) setErrors({ ...errors, duration: '' })
+                        }}
+                        aria-invalid={!!errors.duration}
+                        aria-describedby={errors.duration ? 'asmt-duration-error' : undefined}
+                      />
+                      <InputGroupAddon align="inline-end">
+                        <InputGroupText>minutes</InputGroupText>
+                      </InputGroupAddon>
+                    </InputGroup>
+                    {errors.duration && <FieldError id="asmt-duration-error">{errors.duration}</FieldError>}
+                  </Field>
 
-                <div className="flex flex-col gap-1.5 flex-1">
-                  <Label htmlFor="asmt-target">Question count target</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="asmt-target"
-                      type="number"
-                      min={1}
-                      step={5}
-                      value={questionTarget}
-                      onChange={(e) => setQuestionTarget(Math.max(1, parseInt(e.target.value) || 0))}
-                      className="w-20"
-                    />
-                    <span className="text-sm text-muted-foreground">questions</span>
-                  </div>
+                  <Field orientation="vertical" className="flex-1">
+                    <FieldLabel htmlFor="asmt-target">Question count target</FieldLabel>
+                    <InputGroup>
+                      <InputGroupInput
+                        id="asmt-target"
+                        type="number"
+                        min={1}
+                        step={5}
+                        value={questionTarget}
+                        onChange={(e) => {
+                          setQuestionTarget(Math.max(1, parseInt(e.target.value) || 0))
+                          if (errors.questionTarget) setErrors({ ...errors, questionTarget: '' })
+                        }}
+                        aria-invalid={!!errors.questionTarget}
+                        aria-describedby={errors.questionTarget ? 'asmt-target-error' : undefined}
+                      />
+                      <InputGroupAddon align="inline-end">
+                        <InputGroupText>questions</InputGroupText>
+                      </InputGroupAddon>
+                    </InputGroup>
+                    {errors.questionTarget && <FieldError id="asmt-target-error">{errors.questionTarget}</FieldError>}
+                  </Field>
                 </div>
-              </div>
+              </FieldGroup>
 
               <p className="text-xs text-muted-foreground">
                 Used for time-math in the builder. Adjust as you go.
@@ -326,44 +387,62 @@ export function CreateAssessmentModal({
               </label>
 
               {scheduleNow && (
-                <>
-                  <div className="flex flex-col gap-2 pt-1">
-                    <Label>Open window</Label>
+                <FieldGroup>
+                  <Field orientation="vertical">
+                    <FieldLabel htmlFor="asmt-start-date">Starts</FieldLabel>
                     <div className="flex gap-2 items-center">
-                      <span className="text-xs text-muted-foreground w-12">Starts</span>
                       <Input
+                        id="asmt-start-date"
                         type="date"
                         value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
+                        onChange={(e) => {
+                          setStartDate(e.target.value)
+                          if (errors.startDate) setErrors({ ...errors, startDate: '' })
+                        }}
                         className="flex-1"
+                        aria-invalid={!!errors.startDate}
+                        aria-describedby={errors.startDate ? 'asmt-start-error' : undefined}
                       />
                       <Input
                         type="time"
                         value={startTime}
                         onChange={(e) => setStartTime(e.target.value)}
                         className="w-28"
+                        aria-label="Start time"
                       />
                     </div>
+                    {errors.startDate && <FieldError id="asmt-start-error">{errors.startDate}</FieldError>}
+                  </Field>
+
+                  <Field orientation="vertical">
+                    <FieldLabel htmlFor="asmt-end-date">Ends</FieldLabel>
                     <div className="flex gap-2 items-center">
-                      <span className="text-xs text-muted-foreground w-12">Ends</span>
                       <Input
+                        id="asmt-end-date"
                         type="date"
                         value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
+                        onChange={(e) => {
+                          setEndDate(e.target.value)
+                          if (errors.endDate) setErrors({ ...errors, endDate: '' })
+                        }}
                         className="flex-1"
+                        aria-invalid={!!errors.endDate}
+                        aria-describedby={errors.endDate ? 'asmt-end-error' : 'asmt-window-desc'}
                       />
                       <Input
                         type="time"
                         value={endTime}
                         onChange={(e) => setEndTime(e.target.value)}
                         className="w-28"
+                        aria-label="End time"
                       />
                     </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      Time zone follows your account · you can change later.
-                    </p>
-                  </div>
-                </>
+                    {errors.endDate
+                      ? <FieldError id="asmt-end-error">{errors.endDate}</FieldError>
+                      : <FieldDescription id="asmt-window-desc">Time zone follows your account · you can change later.</FieldDescription>
+                    }
+                  </Field>
+                </FieldGroup>
               )}
 
               <LocalBanner
@@ -399,8 +478,7 @@ export function CreateAssessmentModal({
               <Button
                 variant="default"
                 size="sm"
-                disabled={(step === 1 && !canAdvanceStep1) || (step === 2 && !canAdvanceStep2)}
-                onClick={() => setStep((step + 1) as 1 | 2 | 3)}
+                onClick={handleNext}
               >
                 Next →
               </Button>
@@ -408,7 +486,7 @@ export function CreateAssessmentModal({
               <Button
                 variant="default"
                 size="sm"
-                disabled={!canSubmit || submitting}
+                disabled={submitting}
                 onClick={handleSubmit}
               >
                 {submitting ? 'Creating…' : 'Create'}

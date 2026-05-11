@@ -14,7 +14,7 @@
  */
 
 import {
-  Button, Tooltip, TooltipTrigger, TooltipContent,
+  Button, Tip,
 } from '@exxat/ds/packages/ui/src'
 import { type ComponentProps, type ReactNode } from 'react'
 
@@ -29,22 +29,19 @@ export function StubButton({
   children, tooltip = 'Coming soon — post-demo', className, ...props
 }: StubButtonProps) {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span tabIndex={0} className="inline-flex">
-          <Button
-            {...props}
-            aria-disabled="true"
-            className={[
-              className ?? '',
-              'opacity-60 pointer-events-none',
-            ].join(' ')}
-          >
-            {children}
-          </Button>
-        </span>
-      </TooltipTrigger>
-      <TooltipContent>{tooltip}</TooltipContent>
-    </Tooltip>
+    <Tip label={tooltip}>
+      <span tabIndex={0} className="inline-flex">
+        <Button
+          {...props}
+          aria-disabled="true"
+          className={[
+            className ?? '',
+            'opacity-60 pointer-events-none',
+          ].join(' ')}
+        >
+          {children}
+        </Button>
+      </span>
+    </Tip>
   )
 }

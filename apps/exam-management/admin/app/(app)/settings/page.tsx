@@ -23,7 +23,7 @@ import {
   Separator,
   Tabs, TabsList, TabsTrigger, TabsContent,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
-  Tooltip, TooltipTrigger, TooltipContent,
+  Tip,
 } from '@exxat/ds/packages/ui/src'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
@@ -339,22 +339,19 @@ function SettingGroup({
             </p>
           </div>
           {differentiator && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Badge
-                  variant="secondary"
-                  className="rounded-full gap-1.5 cursor-help"
-                  style={{
-                    backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
-                    color: 'var(--brand-color-dark)',
-                  }}
-                >
-                  <i className="fa-duotone fa-solid fa-sparkles" aria-hidden="true" style={{ fontSize: 10 }} />
-                  Differentiator
-                </Badge>
-              </TooltipTrigger>
-              <TooltipContent>{differentiator}</TooltipContent>
-            </Tooltip>
+            <Tip label={differentiator}>
+              <Badge
+                variant="secondary"
+                className="rounded-full gap-1.5 cursor-help"
+                style={{
+                  backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+                  color: 'var(--brand-color-dark)',
+                }}
+              >
+                <i className="fa-duotone fa-solid fa-sparkles" aria-hidden="true" style={{ fontSize: 10 }} />
+                Differentiator
+              </Badge>
+            </Tip>
           )}
         </div>
       </CardHeader>

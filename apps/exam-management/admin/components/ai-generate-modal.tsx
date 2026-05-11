@@ -21,7 +21,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
   Button, Badge, Checkbox,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  Tooltip, TooltipTrigger, TooltipContent,
+  Tip,
   LocalBanner,
 } from '@exxat/ds/packages/ui/src'
 import { StatusPill, BloomChip, DifficultyChip, type Tone } from '@/components/faculty-ui-kit'
@@ -421,15 +421,12 @@ function DraftQuestionCard({
             <p className="text-xs text-foreground leading-snug">{draft.rationale}</p>
           </div>
           <div className="flex items-center gap-1.5 mt-2.5">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="sm" onClick={onRefine} disabled={draft.status === 'refining'} className="text-xs gap-1.5">
-                  <i className="fa-light fa-arrows-rotate" aria-hidden="true" />
-                  Refine
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Ask AI to tighten wording or change difficulty</TooltipContent>
-            </Tooltip>
+            <Tip label="Ask AI to tighten wording or change difficulty">
+              <Button variant="ghost" size="sm" onClick={onRefine} disabled={draft.status === 'refining'} className="text-xs gap-1.5">
+                <i className="fa-light fa-arrows-rotate" aria-hidden="true" />
+                Refine
+              </Button>
+            </Tip>
             <Button variant="ghost" size="sm" onClick={onReject} className="text-xs gap-1.5 text-muted-foreground">
               <i className="fa-light fa-xmark" aria-hidden="true" />
               Reject

@@ -4,7 +4,7 @@ import {
   Button, Badge, useSidebar,
   DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuItem, DropdownMenuSeparator,
   Popover, PopoverTrigger, PopoverContent,
-  Tooltip, TooltipContent, TooltipTrigger,
+  Tip,
   Avatar, AvatarFallback,
 } from '@exxat/ds/packages/ui/src'
 import type { FolderNode, Persona } from '@/lib/qb-types'
@@ -161,40 +161,34 @@ export function QBHeader() {
     }}>
       {/* Left: sidebar toggle + breadcrumb */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1, overflow: 'hidden' }}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={toggleSidebar}
-              aria-label={sidebarState === 'collapsed' ? 'Expand navigation' : 'Collapse navigation'}
-              className={sidebarState !== 'collapsed' ? 'text-foreground' : 'text-muted-foreground'}
-              style={{ flexShrink: 0 }}
-            >
-              <i className="fa-light fa-sidebar" aria-hidden="true" style={{ fontSize: 16 }} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{sidebarState === 'collapsed' ? 'Expand navigation' : 'Collapse navigation'}</TooltipContent>
-        </Tooltip>
+        <Tip label={sidebarState === 'collapsed' ? 'Expand navigation' : 'Collapse navigation'}>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={toggleSidebar}
+            aria-label={sidebarState === 'collapsed' ? 'Expand navigation' : 'Collapse navigation'}
+            className={sidebarState !== 'collapsed' ? 'text-foreground' : 'text-muted-foreground'}
+            style={{ flexShrink: 0 }}
+          >
+            <i className="fa-light fa-sidebar" aria-hidden="true" style={{ fontSize: 16 }} />
+          </Button>
+        </Tip>
 
         <div style={{ width: 1, height: 16, background: 'var(--border)', flexShrink: 0 }} />
 
         {/* QB folder tree toggle — separate from the DS main nav toggle above */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              aria-label={sidebarOpen ? 'Close folder tree' : 'Open folder tree'}
-              className={sidebarOpen ? 'text-foreground' : 'text-muted-foreground'}
-              style={{ flexShrink: 0 }}
-            >
-              <i className="fa-light fa-folder-tree" aria-hidden="true" style={{ fontSize: 14 }} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{sidebarOpen ? 'Close folder tree' : 'Open folder tree'}</TooltipContent>
-        </Tooltip>
+        <Tip label={sidebarOpen ? 'Close folder tree' : 'Open folder tree'}>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-label={sidebarOpen ? 'Close folder tree' : 'Open folder tree'}
+            className={sidebarOpen ? 'text-foreground' : 'text-muted-foreground'}
+            style={{ flexShrink: 0 }}
+          >
+            <i className="fa-light fa-folder-tree" aria-hidden="true" style={{ fontSize: 14 }} />
+          </Button>
+        </Tip>
 
         <div style={{ width: 1, height: 16, background: 'var(--border)', flexShrink: 0 }} />
 
@@ -205,7 +199,7 @@ export function QBHeader() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="gap-2 h-8 px-2" aria-label="Switch persona">
+            <Button variant="ghost" size="sm" className="gap-2 h-7 px-2" aria-label="Switch persona">
               <Avatar style={{ width: 24, height: 24 }}>
                 <AvatarFallback className="text-[9px] font-bold" style={{ backgroundColor: 'color-mix(in oklch, var(--foreground) 8%, var(--background))', color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))' }}>
                   {currentPersona.initials}
@@ -260,8 +254,8 @@ export function QBHeader() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button variant="outline" size="sm" className="gap-1.5 text-xs font-medium" aria-label="Ask Leo AI">
-          <i className="fa-duotone fa-solid fa-star-christmas text-xs" style={{ color: 'var(--brand-color)' }} aria-hidden="true" />
+        <Button variant="outline" size="xs" className="gap-1.5 font-medium" aria-label="Ask Leo AI">
+          <i className="fa-duotone fa-solid fa-star-christmas" style={{ fontSize: 11, color: 'var(--brand-color)' }} aria-hidden="true" />
           Ask Leo
         </Button>
       </div>

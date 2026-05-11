@@ -177,7 +177,7 @@ export function QuestionEditor({
       <div className={`flex-1 ${compact ? '' : 'overflow-auto'}`}>
         <div className={`mx-auto ${compact ? 'max-w-none' : 'max-w-6xl'} grid gap-5 p-${compact ? '4' : '6'}`} style={{ gridTemplateColumns: compact ? '1fr 280px' : '1fr 320px' }}>
           {/* ─── Main column ─────────────────────────────────── */}
-          <main className="flex flex-col gap-5">
+          <div className="flex flex-col gap-5">
             {/* Type picker */}
             <section className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center justify-between mb-3">
@@ -286,7 +286,7 @@ export function QuestionEditor({
             {(errors.length > 0 || warnings.length > 0) && (
               <ValidationPanel errors={errors} warnings={warnings} />
             )}
-          </main>
+          </div>
 
           {/* ─── Right rail ─────────────────────────────────── */}
           <aside className="flex flex-col gap-4">

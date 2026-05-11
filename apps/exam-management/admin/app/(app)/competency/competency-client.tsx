@@ -14,7 +14,7 @@
 import { useMemo, useState } from 'react'
 import {
   Button, Badge,
-  Tooltip, TooltipTrigger, TooltipContent,
+  Tip,
   Collapsible, CollapsibleTrigger, CollapsibleContent,
   LocalBanner,
 } from '@exxat/ds/packages/ui/src'
@@ -215,16 +215,11 @@ function CourseCompetencyCard({
                           </span>
                         </>
                       ) : (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span>
-                              <StatusPill tone="warning" icon="fa-circle-dashed" label="Untested" />
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            No assessment has tested this objective yet
-                          </TooltipContent>
-                        </Tooltip>
+                        <Tip label="No assessment has tested this objective yet">
+                          <span>
+                            <StatusPill tone="warning" icon="fa-circle-dashed" label="Untested" />
+                          </span>
+                        </Tip>
                       )}
                     </div>
                   </div>

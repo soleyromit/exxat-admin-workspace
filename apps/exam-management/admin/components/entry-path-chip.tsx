@@ -14,7 +14,7 @@
 
 import { useFacultySession } from '@/lib/faculty-session'
 import {
-  Button, Tooltip, TooltipTrigger, TooltipContent,
+  Button, Tip,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 } from '@exxat/ds/packages/ui/src'
 
@@ -27,29 +27,24 @@ export function EntryPathChip() {
 
   if (entry === 'prism') {
     return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-2 h-7 rounded-full px-2.5 font-medium text-xs"
-            style={{
-              backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
-              color: 'var(--brand-color-dark)',
-            }}
-            aria-label="Back to Prism dashboard"
-            onClick={() => setEntry('standalone')}
-          >
-            <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 11 }} />
-            <span className="font-semibold tracking-wide">Prism</span>
-            <span className="text-muted-foreground" aria-hidden="true">·</span>
-            <span className="font-normal">Exam Management</span>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          You came in via the Prism faculty module · click to switch to standalone
-        </TooltipContent>
-      </Tooltip>
+      <Tip label="You came in via the Prism faculty module · click to switch to standalone">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="gap-2 h-7 rounded-full px-2.5 font-medium text-xs"
+          style={{
+            backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+            color: 'var(--brand-color-dark)',
+          }}
+          aria-label="Back to Prism dashboard"
+          onClick={() => setEntry('standalone')}
+        >
+          <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 11 }} />
+          <span className="font-semibold tracking-wide">Prism</span>
+          <span className="text-muted-foreground" aria-hidden="true">·</span>
+          <span className="font-normal">Exam Management</span>
+        </Button>
+      </Tip>
     )
   }
 

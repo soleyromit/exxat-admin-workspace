@@ -26,7 +26,7 @@ import { useRouter } from 'next/navigation'
 import {
   Button, Badge,
   Card, CardHeader, CardTitle, CardDescription, CardContent,
-  Tooltip, TooltipTrigger, TooltipContent,
+  Tip,
   Tabs, TabsList, TabsTrigger, TabsContent,
   LocalBanner,
 } from '@exxat/ds/packages/ui/src'
@@ -487,20 +487,17 @@ function Histogram({ dist }: { dist: ScoreDist }) {
         return (
           <div key={b.bucket} className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
             <span className="text-[11px] font-bold text-foreground tabular-nums">{b.count}</span>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div
-                  className="w-full rounded-t transition-all hover:opacity-80 cursor-help"
-                  style={{
-                    height: `${heightPct}%`,
-                    minHeight: 6,
-                    background: isFailing ? 'var(--chart-4)' : 'var(--chart-2)',
-                    opacity: 0.85,
-                  }}
-                />
-              </TooltipTrigger>
-              <TooltipContent>{b.count} {b.count === 1 ? 'student' : 'students'} scored {b.bucket}%</TooltipContent>
-            </Tooltip>
+            <Tip label={`${b.count} ${b.count === 1 ? 'student' : 'students'} scored ${b.bucket}%`}>
+              <div
+                className="w-full rounded-t transition-all hover:opacity-80 cursor-help"
+                style={{
+                  height: `${heightPct}%`,
+                  minHeight: 6,
+                  background: isFailing ? 'var(--chart-4)' : 'var(--chart-2)',
+                  opacity: 0.85,
+                }}
+              />
+            </Tip>
             <span className="text-[10px] text-muted-foreground font-mono">{b.bucket}</span>
           </div>
         )
@@ -614,12 +611,9 @@ function ItemRow({ item }: { item: Item }) {
           )}
         </div>
         {item.objectiveTitle && item.objectiveTitle !== '—' ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <p className="text-sm text-foreground line-clamp-3 leading-snug cursor-help">{item.title}</p>
-            </TooltipTrigger>
-            <TooltipContent>{item.objectiveTitle}</TooltipContent>
-          </Tooltip>
+          <Tip label={item.objectiveTitle}>
+            <p className="text-sm text-foreground line-clamp-3 leading-snug cursor-help">{item.title}</p>
+          </Tip>
         ) : (
           <p className="text-sm text-foreground line-clamp-3 leading-snug">{item.title}</p>
         )}
@@ -639,16 +633,13 @@ function ItemRow({ item }: { item: Item }) {
       <DiffMini difficulty={item.difficulty} />
       <DistractorMini rates={item.distractorRates} />
       <div className="text-end">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button asChild variant="ghost" size="icon-sm" aria-label="Open question detail">
-              <Link href={`/questions/${item.questionId}`}>
-                <i className="fa-light fa-magnifying-glass" aria-hidden="true" />
-              </Link>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>View question + distractor analysis</TooltipContent>
-        </Tooltip>
+        <Tip label="View question + distractor analysis">
+          <Button asChild variant="ghost" size="icon-sm" aria-label="Open question detail">
+            <Link href={`/questions/${item.questionId}`}>
+              <i className="fa-light fa-magnifying-glass" aria-hidden="true" />
+            </Link>
+          </Button>
+        </Tip>
       </div>
     </div>
   )
@@ -675,28 +666,25 @@ function DiffMini({ difficulty }: { difficulty: 'Easy' | 'Medium' | 'Hard' }) {
 function DistractorMini({ rates }: { rates: number[] }) {
   const labels = ['A', 'B', 'C', 'D', 'E']
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="flex items-end gap-0.5 cursor-help">
-          {rates.slice(0, 5).map((r, i) => {
-            const isKey = i === 0
-            return (
-              <div key={i} className="flex flex-col items-center gap-0.5">
-                <div
-                  style={{
-                    width: 8, height: Math.max(2, Math.round(r * 24)),
-                    background: isKey ? 'var(--chart-2)' : 'var(--muted-foreground)',
-                    borderRadius: 1,
-                  }}
-                />
-                <span className="text-[8px] font-mono text-muted-foreground">{labels[i]}</span>
-              </div>
-            )
-          })}
-        </div>
-      </TooltipTrigger>
-      <TooltipContent>Pick rates · green bar = correct answer</TooltipContent>
-    </Tooltip>
+    <Tip label="Pick rates · green bar = correct answer">
+      <div className="flex items-end gap-0.5 cursor-help">
+        {rates.slice(0, 5).map((r, i) => {
+          const isKey = i === 0
+          return (
+            <div key={i} className="flex flex-col items-center gap-0.5">
+              <div
+                style={{
+                  width: 8, height: Math.max(2, Math.round(r * 24)),
+                  background: isKey ? 'var(--chart-2)' : 'var(--muted-foreground)',
+                  borderRadius: 1,
+                }}
+              />
+              <span className="text-[8px] font-mono text-muted-foreground">{labels[i]}</span>
+            </div>
+          )
+        })}
+      </div>
+    </Tip>
   )
 }
 
