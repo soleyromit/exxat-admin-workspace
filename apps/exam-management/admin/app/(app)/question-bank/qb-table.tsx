@@ -19,6 +19,7 @@ import type { Question, QStatus, ColumnId } from '@/lib/qb-types'
 import { MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
 import { RequestEditAccessModal } from './qb-modals'
 import { QBTitle } from './qb-title'
+import { EmptyState } from '@/components/empty-state'
 
 // ── Folder Tree Picker (shared by single + bulk move dialogs) ─────────────────
 function courseFolderShortLabel(name: string): string {
@@ -444,7 +445,7 @@ function LocationCell({ question }: { question: Question }) {
       style={{ color: 'var(--brand-color)', textDecoration: 'underline', textUnderlineOffset: 2 }}
       aria-label={`Navigate to ${displayName}`}
     >
-      <span style={{ display: 'block', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <span title={displayName} style={{ display: 'block', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {displayName}
       </span>
     </Button>
@@ -516,8 +517,9 @@ function FilterPill({ filter, onUpdate, onRemove, autoOpen = false, fieldDefs = 
           size="sm"
           className={`text-xs gap-1 h-7 shrink-0${!hasValues ? ' text-foreground' : ''}`}
           style={{
+            height: 28,
             padding: '0 4px 0 8px',
-            borderRadius: 6,
+            borderRadius: 4,
             border: hasValues ? '1px solid var(--brand-color)' : '1.5px dashed var(--border)',
             backgroundColor: hasValues ? 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' : 'var(--background)',
             color: hasValues ? 'var(--brand-color)' : undefined,
@@ -579,7 +581,7 @@ function FilterPill({ filter, onUpdate, onRemove, autoOpen = false, fieldDefs = 
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--interactive-hover)')}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
                 >
-                  <Checkbox checked={checked} onCheckedChange={() => toggleValue(opt)} onClick={e => e.stopPropagation()} />
+                  <Checkbox checked={checked} onCheckedChange={() => toggleValue(opt)} onClick={e => e.stopPropagation()} style={{ width: 16, height: 16, minWidth: 16, minHeight: 16, flexShrink: 0 }} />
                   <span>{opt}</span>
                 </div>
               )
@@ -871,6 +873,19 @@ function FilterPropertiesSheet({
   const sheetDragColRef = useRef<string | null>(null)
   const [dragOverColSheet, setDragOverColSheet] = useState<string | null>(null)
 
+  // WCAG 1.4.10 (Reflow): at narrow viewports the floating-panel pattern
+  // overlaps the table. Switch to a default tray (with overlay, full-edge)
+  // so content stays reachable at 200% zoom.
+  const [isNarrow, setIsNarrow] = useState(false)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mq = window.matchMedia('(max-width: 1024px)')
+    const apply = () => setIsNarrow(mq.matches)
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
+
   useEffect(() => {
     if (!open) { setPanel('main'); return }
     if (initialPanel) setPanel(initialPanel)
@@ -925,9 +940,17 @@ function FilterPropertiesSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" showCloseButton={false} showOverlay={false}
-        className="w-80 sm:max-w-80 p-0 gap-0 flex flex-col border border-border shadow-xl rounded-xl overflow-hidden"
-        style={{ top: '0.5rem', bottom: '0.5rem', right: '0.5rem', height: 'calc(100vh - 1rem)' }}>
+      <SheetContent
+        side="right"
+        showCloseButton={false}
+        showOverlay={isNarrow}
+        className={isNarrow
+          ? 'w-80 sm:max-w-80 p-0 gap-0 flex flex-col'
+          : 'w-80 sm:max-w-80 p-0 gap-0 flex flex-col border border-border shadow-xl rounded-xl overflow-hidden'}
+        style={isNarrow
+          ? undefined
+          : { top: '0.5rem', bottom: '0.5rem', right: '0.5rem', height: 'calc(100vh - 1rem)' }}
+      >
 
         {/* ── Main panel ── */}
         {panel === 'main' && (
@@ -1048,27 +1071,22 @@ function FilterPropertiesSheet({
             />
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2 pb-4">
               {activeFilters.length === 0 && !bookmarkOnly ? (
-                <div className="rounded-xl border border-border bg-muted/40 p-4 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <span className="inline-flex items-center justify-center shrink-0"
-                      style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--background)', border: '1px solid var(--border)' }}>
-                      <i className="fa-light fa-filter text-muted-foreground" aria-hidden="true" style={{ fontSize: 14 }} />
-                    </span>
-                    <p className="text-sm font-semibold text-foreground">No filters yet</p>
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Use filters to show only the questions you need. With multiple filters, use <strong className="text-foreground">and</strong> or <strong className="text-foreground">or</strong> between them to control how they combine.
-                  </p>
-                  <div className="space-y-1.5">
-                    {['Click “Add filter” below', 'Choose a field to filter by', 'Pick a condition and value'].map((step, i) => (
-                      <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span className="inline-flex items-center justify-center shrink-0 rounded-full border border-border font-semibold text-[9px]"
-                          style={{ width: 16, height: 16, lineHeight: 1 }}>{i + 1}</span>
-                        {step}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <EmptyState
+                  icon="fa-filter"
+                  title="No filters yet"
+                  description={
+                    <>
+                      Use filters to show only the questions you need. With multiple filters, use{' '}
+                      <strong className="text-foreground">and</strong> or{' '}
+                      <strong className="text-foreground">or</strong> between them to control how they combine.
+                    </>
+                  }
+                  steps={[
+                    'Click “Add filter” below',
+                    'Choose a field to filter by',
+                    'Pick a condition and value',
+                  ]}
+                />
               ) : (
                 <>
                   {activeFilters.map((f, idx) => {
@@ -1203,15 +1221,11 @@ function FilterPropertiesSheet({
                   </div>
                 </div>
               ) : (
-                <div className="rounded-xl border border-border bg-muted/40 p-4 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center justify-center" style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--background)', border: '1px solid var(--border)' }}>
-                      <i className="fa-light fa-arrow-up-arrow-down text-muted-foreground text-xs" aria-hidden="true" />
-                    </span>
-                    <p className="text-sm font-medium text-foreground">No sort applied</p>
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">Add a sort rule below to order questions by a column.</p>
-                </div>
+                <EmptyState
+                  icon="fa-arrow-up-arrow-down"
+                  title="No sort applied"
+                  description="Add a sort rule below to order questions by a column."
+                />
               )}
 
               {/* Add sort + Remove all — inline */}
@@ -1359,17 +1373,11 @@ function FilterPropertiesSheet({
             <BackClose onBack={() => setPanel('main')} />
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2 pb-4">
               {conditionalRules.length === 0 ? (
-                <div className="rounded-xl border border-border bg-muted/40 p-4 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center justify-center" style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--background)', border: '1px solid var(--border)' }}>
-                      <i className="fa-light fa-palette text-muted-foreground text-xs" aria-hidden="true" />
-                    </span>
-                    <p className="text-sm font-medium text-foreground">No rules yet</p>
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Highlight rows automatically based on status, difficulty, or Bloom's level.
-                  </p>
-                </div>
+                <EmptyState
+                  icon="fa-palette"
+                  title="No rules yet"
+                  description="Highlight rows automatically based on status, difficulty, or Bloom's level."
+                />
               ) : (
                 conditionalRules.map(rule => {
                   const fieldDef = filterFields.find(fd => fd.key === rule.fieldKey)
@@ -2170,7 +2178,9 @@ export function QBTable() {
   // Shadow TH so header cells get matching vertical gridlines
   const TH_CLS = `h-9 px-3 text-start align-middle text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg border-b border-border select-none whitespace-nowrap${showGridlines ? ' border-r border-border last:border-r-0' : ''}`
   const [paginationEnabled, setPaginationEnabled] = useState(true)
-  const [showTableTitle, setShowTableTitle] = useState(true)
+  const [showTableTitle, setShowTableTitle] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth > 1280 : true
+  )
   const [showColumnLabels, setShowColumnLabels] = useState(true)
   const [showSearch, setShowSearch] = useState(true)
 
@@ -2407,7 +2417,7 @@ export function QBTable() {
 
       {/* ── Toolbar: pinned outside scroll — filter chips left, icon controls right ── */}
       {!isTrulyEmpty && (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', minHeight: 48, flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
+      <div className="qb-toolbar" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, padding: '0 16px', flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
         {/* Left: active filter chips (gated by filterBarVisible) */}
         {filterBarVisible ? (
           <FilterChips
@@ -2695,7 +2705,7 @@ export function QBTable() {
       ) : (
         <>
           {/* Padding wrapper — flex column so footer attaches flush to table */}
-          <div style={{ flex: 1, minHeight: 0, padding: '16px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+          <div className="qb-table-padding-wrapper" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 0 }}>
           {/* Table: outer clips corners, inner scrolls — overflow-hidden required for border-radius to clip table content */}
           <div className="border border-border overflow-hidden rounded-lg" style={{ maxHeight: '100%', display: 'flex', flexDirection: 'column' }}>
           <div className="qb-table-scroll" style={{ overflow: 'auto' }}>
@@ -2703,13 +2713,14 @@ export function QBTable() {
               {showColumnLabels && <TableHeader style={{ position: 'sticky', top: 0, zIndex: 4 }}>
                 <TableRow>
                   {/* Select all */}
-                  <TableHead className={TH_CLS} style={{ width: 40, minWidth: 40, maxWidth: 40, paddingInline: 0 }}>
-                    <div className="flex items-center justify-center h-full">
+                  <TableHead className={TH_CLS} style={{ width: 40, minWidth: 40, maxWidth: 40, paddingInline: 0, position: 'sticky', left: 0, zIndex: 3, backgroundColor: 'var(--dt-header-bg)', boxShadow: '2px 0 4px var(--sticky-edge-fade)' }}>
+                    <div className="flex items-center justify-center">
                       <span className="sr-only">Select all</span>
                       <Checkbox
                         checked={allSelected ? true : someSelected ? 'indeterminate' : false}
                         onCheckedChange={handleSelectAll}
                         aria-label="Select all rows"
+                        style={{ width: 16, height: 16, minWidth: 16, minHeight: 16, flexShrink: 0 }}
                       />
                     </div>
                   </TableHead>
@@ -2856,9 +2867,9 @@ export function QBTable() {
                         switch (col.key) {
                           case 'select':
                             return (
-                              <TableCell key="select" className={TD} style={{ width: 40, minWidth: 40, maxWidth: 40, paddingInline: 0 }}>
+                              <TableCell key="select" className={TD} style={{ width: 40, minWidth: 40, maxWidth: 40, paddingInline: 0, position: 'sticky', left: 0, zIndex: 1, backgroundColor: 'var(--dt-row-bg)' }}>
                                 <div
-                                  className={`flex items-center justify-center transition-opacity ${
+                                  className={`qb-row-checkbox flex items-center justify-center transition-opacity ${
                                     anySelected ? 'opacity-100' : 'opacity-0 group-hover/row:opacity-100'
                                   }`}
                                   onClick={(e) => { e.stopPropagation(); toggleQuestionSelection(q.id) }}
@@ -2868,6 +2879,7 @@ export function QBTable() {
                                     onCheckedChange={() => toggleQuestionSelection(q.id)}
                                     aria-label={`Select ${q.title}`}
                                     onClick={(e) => e.stopPropagation()}
+                                    style={{ width: 16, height: 16, minWidth: 16, minHeight: 16, flexShrink: 0 }}
                                   />
                                 </div>
                               </TableCell>

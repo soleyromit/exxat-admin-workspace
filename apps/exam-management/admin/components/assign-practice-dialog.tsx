@@ -29,6 +29,7 @@ import {
   Label,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   Textarea,
+  LocalBanner,
 } from '@exxat/ds/packages/ui/src'
 
 interface PracticeStudent {
@@ -97,7 +98,7 @@ export function AssignPracticeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <i className="fa-duotone fa-solid fa-bullseye-arrow text-brand" aria-hidden="true" />
@@ -136,13 +137,12 @@ export function AssignPracticeDialog({
                   s.scoreOnAssessment < 70 ? 'var(--state-warning-dark)'      :
                                               'var(--state-info-blue-dark)'
                 return (
-                  <button
+                  <Button
                     key={s.id}
-                    type="button"
+                    variant="ghost"
                     onClick={() => toggle(s.id)}
-                    className={`flex items-center gap-3 rounded-md px-2 py-2 text-start transition-colors ${
-                      isSelected ? '' : 'hover:bg-muted/30'
-                    }`}
+                    aria-pressed={isSelected}
+                    className="flex items-center justify-start gap-3 h-auto rounded-md px-2 py-2 text-start whitespace-normal w-full"
                     style={isSelected ? { backgroundColor: 'color-mix(in oklch, var(--brand-color) 6%, var(--background))' } : {}}
                   >
                     <Checkbox checked={isSelected} aria-hidden="true" tabIndex={-1} className="pointer-events-none" />
@@ -160,7 +160,7 @@ export function AssignPracticeDialog({
                     <span className="text-sm font-bold tabular-nums" style={{ color: tone }}>
                       {s.scoreOnAssessment}%
                     </span>
-                  </button>
+                  </Button>
                 )
               })}
             </div>
@@ -224,28 +224,17 @@ export function AssignPracticeDialog({
           </section>
 
           {/* ─── Preview strip ───────────────────────────────────────── */}
-          <div
-            className="rounded-lg p-3 border-l-2"
-            style={{
-              background: 'color-mix(in oklch, var(--brand-color) 5%, var(--card))',
-              borderLeftColor: 'var(--brand-color)',
-              border: '1px solid var(--border)',
-            }}
+          <LocalBanner
+            variant="promo"
+            icon="fa-eye"
+            title={chosenArea ? `${chosenArea} — Catch-up Pack` : 'Catch-up Pack'}
           >
-            <div className="flex items-center gap-2 mb-1">
-              <i className="fa-light fa-eye text-brand" aria-hidden="true" style={{ fontSize: 12 }} />
-              <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">
-                Student preview
-              </span>
-            </div>
-            <p className="text-sm font-semibold text-foreground">
-              {chosenArea ? `${chosenArea} — Catch-up Pack` : 'Catch-up Pack'}
-            </p>
-            <p className="text-[11px] text-muted-foreground">
-              {count} {count === 1 ? 'question' : 'questions'} · assigned to {selectedCount} {selectedCount === 1 ? 'student' : 'students'}
-              {dueDate && ` · due ${new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
-            </p>
-          </div>
+            <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground block mb-0.5">
+              Student preview
+            </span>
+            {count} {count === 1 ? 'question' : 'questions'} · assigned to {selectedCount} {selectedCount === 1 ? 'student' : 'students'}
+            {dueDate && ` · due ${new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+          </LocalBanner>
         </div>
 
         <DialogFooter>

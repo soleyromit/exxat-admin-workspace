@@ -22,15 +22,15 @@ import { useRouter } from 'next/navigation'
 import {
   Avatar, AvatarFallback,
   Button, Badge,
+  Card, CardHeader, CardTitle, CardDescription, CardContent,
   Tooltip, TooltipTrigger, TooltipContent,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
   Textarea,
 } from '@exxat/ds/packages/ui/src'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
-import { KeyMetrics, type Metric } from '@/components/key-metrics'
+import { KeyMetrics, type MetricItem } from '@/components/key-metrics'
 import { StatusPill } from '@/components/faculty-ui-kit'
-import { StubButton } from '@/components/stub-button'
 import { mockAssessments, mockCourses } from '@/lib/qb-mock-data'
 import { facultyExtraAssessments, facultyStudents, type LiveMonitorStudent } from '@/lib/faculty-mock-data'
 import { useFacultySession } from '@/lib/faculty-session'
@@ -56,6 +56,9 @@ export default function LiveMonitorClient({ assessmentId }: { assessmentId: stri
     if (!assessment) return []
     return facultyStudents.filter(s => s.enrolledCourseIds.includes(assessment.courseId))
   }, [assessment])
+
+  // Flag triage state — key is `${studentId}-${questionOrder}`
+  const [flagStatuses, setFlagStatuses] = useState<Record<string, 'acknowledged' | 'dismissed'>>({})
 
   // Snapshot state — ticks every 4s to simulate live feed
   const [tick, setTick] = useState(0)
@@ -93,34 +96,34 @@ export default function LiveMonitorClient({ assessmentId }: { assessmentId: stri
       <>
         <SiteHeader title="Live monitor" />
         <main className="flex flex-1 items-center justify-center p-8">
-          <div
-            className="rounded-xl border border-border p-6 max-w-md text-center flex flex-col items-center gap-3"
-            style={{ background: 'var(--card)' }}
-          >
-            <span
-              className="flex size-12 items-center justify-center rounded-full"
-              style={{
-                background: 'color-mix(in oklch, var(--chart-4) 12%, var(--background))',
-                color: 'var(--chart-4)',
-              }}
-            >
-              <i className="fa-light fa-shield-keyhole" aria-hidden="true" style={{ fontSize: 22 }} />
-            </span>
-            <div>
-              <p className="text-base font-semibold text-foreground font-heading">
+          <Card className="max-w-md w-full">
+            <CardHeader className="items-center text-center">
+              <span
+                className="flex size-12 items-center justify-center rounded-full mx-auto"
+                style={{
+                  background: 'color-mix(in oklch, var(--chart-4) 12%, var(--background))',
+                  color: 'var(--chart-4)',
+                }}
+                aria-hidden="true"
+              >
+                <i className="fa-light fa-shield-keyhole" style={{ fontSize: 22 }} />
+              </span>
+              <CardTitle className="font-heading text-base font-semibold text-foreground">
                 Course Coordinators only
-              </p>
-              <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
+              </CardTitle>
+              <CardDescription className="text-sm leading-relaxed">
                 Live exam monitoring is restricted to the Course Coordinator for{' '}
                 <strong className="text-foreground">{course.name}</strong>. As a Course Instructor,
                 you have read-only access to the course but can&apos;t monitor a live exam.
-              </p>
-            </div>
-            <Button variant="outline" size="sm" className="mt-2 gap-2" onClick={() => router.push(`/courses/${course.id}`)}>
-              <i className="fa-light fa-arrow-left" aria-hidden="true" />
-              Back to {course.name}
-            </Button>
-          </div>
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center">
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => router.push(`/courses/${course.id}`)}>
+                <i className="fa-light fa-arrow-left" aria-hidden="true" />
+                Back to {course.name}
+              </Button>
+            </CardContent>
+          </Card>
         </main>
       </>
     )
@@ -129,7 +132,6 @@ export default function LiveMonitorClient({ assessmentId }: { assessmentId: stri
   const inProgress = snapshot.students.filter(s => s.status === 'in-progress').length
   const submitted = snapshot.students.filter(s => s.status === 'submitted').length
   const notStarted = snapshot.students.filter(s => s.status === 'not-started').length
-  const completionPct = Math.round((submitted / snapshot.students.length) * 100)
   const flaggedCount = snapshot.flaggedComments.length
 
   const breadcrumbs = [
@@ -152,7 +154,7 @@ export default function LiveMonitorClient({ assessmentId }: { assessmentId: stri
         tone={paused ? 'warning' : 'info'}
         icon={paused ? 'fa-pause' : 'fa-circle'}
         pulse={!paused}
-        label={paused ? 'Paused' : 'Live now'}
+        label={paused ? 'Paused' : 'Ongoing'}
         uppercase
       />
       <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setAlertOpen(true)}>
@@ -171,12 +173,14 @@ export default function LiveMonitorClient({ assessmentId }: { assessmentId: stri
     </div>
   )
 
-  const heroMetrics: Metric[] = [
-    { id: 'in-progress', label: 'In progress',       value: inProgress },
-    { id: 'submitted',   label: 'Submitted',         value: submitted },
-    { id: 'completion',  label: 'Completion',        value: `${completionPct}%` },
-    { id: 'not-started', label: 'Not started',       value: notStarted },
-    { id: 'flagged',     label: 'Flagged questions', value: flaggedCount },
+  // KPI order: Not Started → In Progress → Submitted (scan-band per Aarti May 8).
+  // Completion % removed — redundant once donut is gone.
+  const totalStudents = snapshot.students.length
+  const heroMetrics: MetricItem[] = [
+    { id: 'not-started', label: 'Not started',       value: notStarted,   delta: totalStudents > 0 ? `of ${totalStudents}` : '—',         trend: 'neutral' },
+    { id: 'in-progress', label: 'In progress',       value: inProgress,   delta: totalStudents > 0 ? `of ${totalStudents}` : '—',         trend: 'neutral' },
+    { id: 'submitted',   label: 'Submitted',         value: submitted,    delta: totalStudents > 0 ? `of ${totalStudents}` : '—',         trend: 'neutral' },
+    { id: 'flagged',     label: 'Flagged questions', value: flaggedCount, delta: flaggedCount > 0 ? 'Needs review' : 'None flagged',      trend: flaggedCount > 0 ? 'down' : 'neutral' },
   ]
 
   return (
@@ -191,26 +195,28 @@ export default function LiveMonitorClient({ assessmentId }: { assessmentId: stri
 
         <div className="flex-1 overflow-auto p-6">
           <div className="flex flex-col gap-5">
-            <KeyMetrics metrics={heroMetrics} />
+            {/* KPIs: Not Started → In Progress → Submitted → Flagged (scan-band).
+                No completion donut — Aarti: "you need the chart OR the numbers, not both."
+                Canonical KeyMetrics organism (vendored 2026-05-11). */}
+            <KeyMetrics variant="card" showHeader={false} metricsSingleRow metrics={heroMetrics} />
 
-            {/* Completion donut — visual emphasis on the headline KPI */}
-            <div className="rounded-xl border border-border bg-card p-5">
-              <CompletionDonut completionPct={completionPct} submitted={submitted} total={snapshot.students.length} />
-            </div>
-
-            {/* Two-column: students + per-question */}
-            <div className="grid gap-5 grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-              <StudentBoard students={snapshot.students} />
-              <QuestionDistribution
-                snapshot={snapshot}
-                totalQuestions={assessment.questionCount}
-              />
-            </div>
-
-            {/* Flagged comments queue */}
+            {/* Flagged comments at top — Aarti: "put it at the top."
+                Visible during the exam so coordinator can acknowledge post-exam. */}
             {flaggedCount > 0 && (
-              <FlaggedCommentsQueue snapshot={snapshot} students={courseStudents} />
+              <FlaggedCommentsQueue
+                snapshot={snapshot}
+                students={courseStudents}
+                flagStatuses={flagStatuses}
+                onStatusChange={(key, status) =>
+                  setFlagStatuses(prev => ({ ...prev, [key]: status }))
+                }
+              />
             )}
+
+            {/* Student board — full width during the exam.
+                Per-question analysis is post-exam only (Aarti: "while the exam is on,
+                who cares about question 9?"). */}
+            <StudentBoard students={snapshot.students} />
           </div>
         </div>
       </main>
@@ -379,58 +385,6 @@ function buildSnapshot(students: { id: string; initials: string; studentId: stri
   }
 }
 
-// ─── Completion donut ────────────────────────────────────────────────────────
-function CompletionDonut({
-  completionPct, submitted, total,
-}: {
-  completionPct: number; submitted: number; total: number
-}) {
-  const radius = 32
-  const circ = 2 * Math.PI * radius
-  return (
-    <div
-      className="rounded-xl border bg-card px-4 py-3.5 flex items-center gap-3"
-      style={{ borderColor: 'var(--border)' }}
-    >
-      <div className="relative shrink-0" style={{ width: 78, height: 78 }}>
-        <svg width={78} height={78} viewBox="0 0 78 78" aria-hidden="true">
-          <circle cx={39} cy={39} r={radius} fill="none" stroke="var(--muted)" strokeWidth={6} />
-          <circle
-            cx={39} cy={39} r={radius} fill="none"
-            stroke="var(--brand-color)"
-            strokeWidth={6}
-            strokeDasharray={circ}
-            strokeDashoffset={circ * (1 - completionPct / 100)}
-            strokeLinecap="round"
-            transform="rotate(-90 39 39)"
-            style={{ transition: 'stroke-dashoffset 0.7s ease' }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
-          <span className="text-base font-bold text-foreground">{completionPct}%</span>
-          <span className="text-[8px] uppercase tracking-wider text-muted-foreground mt-0.5">Done</span>
-        </div>
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Completion</p>
-        <p className="text-sm text-foreground font-semibold mt-0.5">
-          <span className="text-base font-bold">{submitted}</span> of {total} submitted
-        </p>
-        <p className="text-[11px] text-muted-foreground mt-0.5">Updates every 4s</p>
-      </div>
-    </div>
-  )
-}
-
-// KPI strip uses the shared kit; the question-distribution heatmap still needs a tone→color lookup.
-const TONE: Record<'brand' | 'info' | 'warning' | 'success' | 'neutral', { bg: string; fg: string }> = {
-  brand:   { bg: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))', fg: 'var(--brand-color-dark)' },
-  info:    { bg: 'color-mix(in oklch, var(--chart-1) 12%, var(--background))',     fg: 'var(--chart-1)' },
-  warning: { bg: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))',     fg: 'var(--chart-4)' },
-  success: { bg: 'color-mix(in oklch, var(--chart-2) 12%, var(--background))',     fg: 'var(--chart-2)' },
-  neutral: { bg: 'var(--muted)',                                                    fg: 'var(--muted-foreground)' },
-}
-
 // ─── Student board ───────────────────────────────────────────────────────────
 function StudentBoard({ students }: { students: LiveMonitorStudent[] }) {
   // Sort: in-progress first, then not-started, then submitted; within in-progress, by time-remaining ascending
@@ -442,7 +396,7 @@ function StudentBoard({ students }: { students: LiveMonitorStudent[] }) {
   })
 
   return (
-    <section className="rounded-xl border bg-card overflow-hidden" style={{ borderColor: 'var(--border)' }}>
+    <Card className="gap-0 py-0">
       <header
         className="flex items-center justify-between px-4 py-2.5 border-b"
         style={{ borderColor: 'var(--border)' }}
@@ -454,10 +408,10 @@ function StudentBoard({ students }: { students: LiveMonitorStudent[] }) {
           {students.length} total
         </span>
       </header>
-      <div className="max-h-[420px] overflow-auto">
+      <div className="max-h-[min(420px,60vh)] overflow-auto">
         {sorted.map(s => <StudentRow key={s.studentId} s={s} />)}
       </div>
-    </section>
+    </Card>
   )
 }
 
@@ -576,97 +530,22 @@ function StatusDot({ status }: { status: LiveMonitorStudent['status'] }) {
   )
 }
 
-// ─── Question distribution ──────────────────────────────────────────────────
-function QuestionDistribution({
-  snapshot, totalQuestions,
-}: {
-  snapshot: ReturnType<typeof buildSnapshot> & object; totalQuestions: number
-}) {
-  return (
-    <section className="rounded-xl border bg-card overflow-hidden" style={{ borderColor: 'var(--border)' }}>
-      <header
-        className="flex items-center justify-between px-4 py-2.5 border-b"
-        style={{ borderColor: 'var(--border)' }}
-      >
-        <h2 className="font-semibold text-foreground" style={{ fontSize: 14 }}>
-          Per-question response live
-        </h2>
-        <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">
-          {totalQuestions} questions
-        </span>
-      </header>
-      <div className="max-h-[420px] overflow-auto p-3">
-        <div className="grid gap-1.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(48px, 1fr))' }}>
-          {snapshot.responseDistribution.map((q, idx) => {
-            const correctRate = q.answered > 0 ? q.correct / q.answered : 0
-            const tone = correctRate >= 0.7 ? 'success' : correctRate >= 0.5 ? 'info' : correctRate > 0 ? 'warning' : 'neutral'
-            const palette = TONE[tone]
-            return (
-              <Tooltip key={q.questionId}>
-                <TooltipTrigger asChild>
-                  <div
-                    className="flex flex-col items-center gap-0.5 rounded-md px-1.5 py-1 cursor-help transition-transform hover:scale-105"
-                    style={{ background: palette.bg }}
-                  >
-                    <span className="text-[8px] font-mono font-bold" style={{ color: palette.fg }}>
-                      Q{idx + 1}
-                    </span>
-                    <div className="flex items-end gap-0.5 h-6">
-                      {q.chosenOption.slice(0, 4).map((rate, oi) => {
-                        const isKey = oi === 0
-                        return (
-                          <div
-                            key={oi}
-                            style={{
-                              width: 4, height: Math.max(2, Math.round(rate * 24)),
-                              background: isKey ? palette.fg : 'color-mix(in oklch, var(--muted-foreground) 50%, transparent)',
-                              borderRadius: 1,
-                            }}
-                          />
-                        )
-                      })}
-                    </div>
-                    <span className="text-[8px] text-muted-foreground">
-                      {q.answered}
-                    </span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  Q{idx + 1} · {q.answered} answered · {Math.round(correctRate * 100)}% correct so far
-                </TooltipContent>
-              </Tooltip>
-            )
-          })}
-        </div>
-        <div className="flex items-center gap-3 mt-3 pt-2.5 border-t text-[10px] text-muted-foreground" style={{ borderColor: 'var(--border)' }}>
-          <span className="flex items-center gap-1">
-            <span className="h-2 w-2 rounded" style={{ background: 'var(--chart-2)' }} />
-            ≥70% correct
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="h-2 w-2 rounded" style={{ background: 'var(--chart-1)' }} />
-            50–69%
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="h-2 w-2 rounded" style={{ background: 'var(--chart-4)' }} />
-            &lt;50% — review post-exam
-          </span>
-        </div>
-      </div>
-    </section>
-  )
-}
-
 // ─── Flagged comments queue ──────────────────────────────────────────────────
 function FlaggedCommentsQueue({
-  snapshot, students,
+  snapshot, students, flagStatuses, onStatusChange,
 }: {
   snapshot: ReturnType<typeof buildSnapshot> & object
   students: { id: string; initials: string; firstName: string; lastName: string }[]
+  flagStatuses: Record<string, 'acknowledged' | 'dismissed'>
+  onStatusChange: (key: string, status: 'acknowledged' | 'dismissed') => void
 }) {
   const sMap = new Map(students.map(s => [s.id, s]))
+  const total = snapshot.flaggedComments.length
+  const actionedCount = Object.keys(flagStatuses).length
+  const unactionedCount = total - actionedCount
+
   return (
-    <section className="rounded-xl border bg-card overflow-hidden" style={{ borderColor: 'var(--border)' }}>
+    <Card className="gap-0 py-0">
       <header
         className="flex items-center justify-between px-4 py-2.5 border-b"
         style={{ borderColor: 'var(--border)' }}
@@ -676,20 +555,33 @@ function FlaggedCommentsQueue({
           <h2 className="font-semibold text-foreground" style={{ fontSize: 14 }}>
             Flagged questions
           </h2>
-          <Badge variant="secondary" className="rounded text-[10px]" style={{ background: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', color: 'var(--chart-4)' }}>
-            {snapshot.flaggedComments.length}
-          </Badge>
+          {unactionedCount > 0 ? (
+            <Badge variant="secondary" className="rounded text-[10px]" style={{ background: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', color: 'var(--chart-4)' }}>
+              {unactionedCount}
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="rounded text-[10px]">
+              {total}
+            </Badge>
+          )}
+          {actionedCount > 0 && (
+            <span className="text-[11px] text-muted-foreground">
+              {actionedCount} of {total} reviewed
+            </span>
+          )}
         </div>
-        <span className="text-[11px] text-muted-foreground italic">Review after exam window closes</span>
+        <span className="text-[11px] text-muted-foreground italic">Read-only during exam</span>
       </header>
       <div>
         {snapshot.flaggedComments.map((c, idx) => {
           const s = sMap.get(c.studentId)
+          const key = `${c.studentId}-${c.questionOrder}`
+          const status = flagStatuses[key]
           return (
             <div
               key={idx}
-              className="flex items-start gap-3 px-4 py-3 border-b last:border-b-0"
-              style={{ borderColor: 'var(--border)' }}
+              className="flex items-start gap-3 px-4 py-3 border-b last:border-b-0 transition-opacity"
+              style={{ borderColor: 'var(--border)', opacity: status ? 0.6 : 1 }}
             >
               <Avatar className="h-7 w-7 rounded-full shrink-0">
                 <AvatarFallback
@@ -711,15 +603,47 @@ function FlaggedCommentsQueue({
                 </div>
                 <p className="text-sm text-foreground italic">&ldquo;{c.text}&rdquo;</p>
               </div>
-              <StubButton variant="ghost" size="sm" className="shrink-0 gap-1.5">
-                <i className="fa-light fa-eye" aria-hidden="true" />
-                View question
-              </StubButton>
+              <div className="shrink-0 flex items-center gap-1">
+                {status ? (
+                  <Badge
+                    variant="secondary"
+                    className="rounded"
+                    style={
+                      status === 'acknowledged'
+                        ? { backgroundColor: 'color-mix(in oklch, var(--chart-1) 14%, var(--background))', color: 'var(--chart-1)' }
+                        : { backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }
+                    }
+                  >
+                    {status === 'acknowledged' ? 'Acknowledged' : 'Dismissed'}
+                  </Badge>
+                ) : (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1.5 text-xs"
+                      onClick={() => onStatusChange(key, 'acknowledged')}
+                    >
+                      <i className="fa-light fa-check" aria-hidden="true" />
+                      Acknowledge
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1.5 text-xs"
+                      onClick={() => onStatusChange(key, 'dismissed')}
+                    >
+                      <i className="fa-light fa-xmark" aria-hidden="true" />
+                      Dismiss
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
           )
         })}
       </div>
-    </section>
+    </Card>
   )
 }
 

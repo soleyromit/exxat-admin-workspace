@@ -80,10 +80,10 @@ function InstitutionCard() {
             </AvatarFallback>
           </Avatar>
           <div className="grid flex-1 text-start leading-tight min-w-0">
-            <span className="truncate text-sm font-semibold text-sidebar-foreground">
+            <span className="truncate text-sm font-semibold text-sidebar-foreground" title="State University">
               State University
             </span>
-            <span className="truncate text-xs text-muted-foreground">
+            <span className="truncate text-xs text-muted-foreground" title="Health Sciences">
               Health Sciences
             </span>
           </div>
@@ -191,8 +191,8 @@ function UserFooter() {
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-start text-sm leading-tight min-w-0">
-                <span className="truncate font-medium">{user.name}</span>
-                <span className="truncate text-xs text-muted-foreground">{user.title}</span>
+                <span className="truncate font-medium" title={user.name}>{user.name}</span>
+                <span className="truncate text-xs text-muted-foreground" title={user.title}>{user.title}</span>
               </div>
               <i
                 className="fa-light fa-ellipsis-vertical ms-auto shrink-0"
@@ -286,6 +286,10 @@ const NAV_ITEMS_BASE = [
     title: 'Student Accommodations',
     href: '/accommodations',
     icon: 'fa-universal-access',
+    // Faculty see accommodations only within a specific course, not as a global
+    // nav item. Aarti: "You logged in as a faculty. You shouldn't see that left
+    // hand side menu [for accommodations]."
+    adminOnly: true,
   },
   {
     key: 'competency',
@@ -307,7 +311,7 @@ export function AppSidebar() {
   const pathname = usePathname()
   const { role, hydrated } = useFacultySession()
 
-  const NAV_ITEMS = NAV_ITEMS_BASE
+  const NAV_ITEMS = NAV_ITEMS_BASE.filter(item => !item.adminOnly || role === 'admin' || !hydrated)
   const FOOTER_NAV = FOOTER_NAV_BASE.filter(item => !item.adminOnly || role === 'admin' || !hydrated)
 
   return (

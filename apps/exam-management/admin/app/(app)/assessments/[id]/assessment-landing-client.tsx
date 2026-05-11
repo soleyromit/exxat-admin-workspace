@@ -20,11 +20,13 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   Button, Badge,
+  Card, CardHeader, CardTitle, CardDescription, CardContent,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
   Avatar, AvatarFallback,
   Textarea,
   Checkbox,
   Label,
+  LocalBanner,
 } from '@exxat/ds/packages/ui/src'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
@@ -78,9 +80,9 @@ const STATE_META: Record<
     primary: { label: 'Manage window', intent: 'wait' },
   },
   'in-progress': {
-    tone: 'info', icon: 'fa-circle', label: 'Live now',
-    copy: 'Students are taking this exam right now — open the live monitor.',
-    primary: { label: 'Open live monitor', intent: 'wait' },
+    tone: 'info', icon: 'fa-circle', label: 'Ongoing',
+    copy: 'Students are taking this exam now — open the monitor to track progress.',
+    primary: { label: 'Open monitor', intent: 'wait' },
   },
   'submitted': {
     tone: 'success', icon: 'fa-check-double', label: 'Awaiting results',
@@ -181,107 +183,109 @@ export default function AssessmentLandingClient({ assessmentId }: { assessmentId
 
         <div className="p-6 flex flex-col gap-5">
           {/* ─── Workflow step indicator ───────────────────────────────── */}
-          <section className="rounded-xl border border-border bg-card p-5">
-            <header className="flex items-center justify-between gap-4 mb-4">
-              <div>
-                <h2 className="font-heading text-base font-semibold text-foreground">
-                  Lifecycle
-                </h2>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Where this assessment is in the pre-publication chair approval workflow.
-                </p>
-              </div>
-            </header>
-            <WorkflowStepIndicator state={state} />
-          </section>
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-heading text-base font-semibold">Lifecycle</CardTitle>
+              <CardDescription className="text-xs">
+                Where this assessment is in the pre-publication chair approval workflow.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <WorkflowStepIndicator state={state} />
+            </CardContent>
+          </Card>
 
           {/* ─── State callout ──────────────────────────────────────────── */}
-          <section
-            className={`rounded-xl border bg-card p-5 border-l-3 ${
+          <Card
+            className={`border-l-3 ${
               meta.tone === 'warning' ? 'border-l-chart-4' :
               meta.tone === 'success' ? 'border-l-chart-2' :
               meta.tone === 'info'    ? 'border-l-chart-1' :
                                         'border-l-border'
             }`}
           >
-            <div className="flex items-start gap-3">
-              <i className={`fa-light ${meta.icon} text-base mt-0.5 shrink-0 ${
-                meta.tone === 'warning' ? 'text-chart-4' :
-                meta.tone === 'success' ? 'text-chart-2' :
-                meta.tone === 'info'    ? 'text-chart-1' :
-                                          'text-muted-foreground'
-              }`} aria-hidden="true" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground">
-                  {meta.label}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {meta.copy}
-                </p>
+            <CardContent>
+              <div className="flex items-start gap-3">
+                <i className={`fa-light ${meta.icon} text-base mt-0.5 shrink-0 ${
+                  meta.tone === 'warning' ? 'text-chart-4' :
+                  meta.tone === 'success' ? 'text-chart-2' :
+                  meta.tone === 'info'    ? 'text-chart-1' :
+                                            'text-muted-foreground'
+                }`} aria-hidden="true" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">
+                    {meta.label}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {meta.copy}
+                  </p>
+                </div>
+                {primaryHref && (
+                  <Button asChild variant="outline" size="sm" className="gap-1.5 shrink-0">
+                    <Link href={primaryHref}>
+                      {meta.primary.label}
+                      <i className="fa-light fa-arrow-right" aria-hidden="true" />
+                    </Link>
+                  </Button>
+                )}
               </div>
-              {primaryHref && (
-                <Button asChild variant="outline" size="sm" className="gap-1.5 shrink-0">
-                  <Link href={primaryHref}>
-                    {meta.primary.label}
-                    <i className="fa-light fa-arrow-right" aria-hidden="true" />
-                  </Link>
-                </Button>
-              )}
-            </div>
-          </section>
+            </CardContent>
+          </Card>
 
           {/* ─── Metadata grid ───────────────────────────────────────────── */}
-          <section className="rounded-xl border border-border bg-card p-5">
-            <h2 className="font-heading text-base font-semibold text-foreground mb-3">
-              Details
-            </h2>
-            <dl
-              className="grid gap-x-6 gap-y-3"
-              style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}
-            >
-              <MetaCell label="Questions" value={`${assessment.questionCount}`} />
-              <MetaCell label="Duration"  value={`${assessment.durationMinutes} min`} />
-              <MetaCell label="Course"    value={course.name} />
-              <MetaCell label="Reviewer"  value={review?.reviewerName ?? 'Not yet submitted'} />
-              <MetaCell
-                label="Submitted"
-                value={review?.submittedAt ? formatDateShort(review.submittedAt) : '—'}
-              />
-              <MetaCell
-                label="Reviewed"
-                value={review?.reviewedAt ? formatDateShort(review.reviewedAt) : '—'}
-              />
-              <MetaCell
-                label="Published"
-                value={review?.publishedAt ? formatDateShort(review.publishedAt) : '—'}
-              />
-              {(review?.enrolledCount ?? 0) > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-heading text-base font-semibold">Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl
+                className="grid gap-x-6 gap-y-3"
+                style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))' }}
+              >
+                <MetaCell label="Questions" value={`${assessment.questionCount}`} />
+                <MetaCell label="Duration"  value={`${assessment.durationMinutes} min`} />
+                <MetaCell label="Course"    value={course.name} />
+                <MetaCell label="Reviewer"  value={review?.reviewerName ?? 'Not yet submitted'} />
                 <MetaCell
-                  label="Enrolled"
-                  value={`${review!.enrolledCount}`}
+                  label="Submitted"
+                  value={review?.submittedAt ? formatDateShort(review.submittedAt) : '—'}
                 />
-              )}
-            </dl>
-          </section>
+                <MetaCell
+                  label="Reviewed"
+                  value={review?.reviewedAt ? formatDateShort(review.reviewedAt) : '—'}
+                />
+                <MetaCell
+                  label="Published"
+                  value={review?.publishedAt ? formatDateShort(review.publishedAt) : '—'}
+                />
+                {(review?.enrolledCount ?? 0) > 0 && (
+                  <MetaCell
+                    label="Enrolled"
+                    value={`${review!.enrolledCount}`}
+                  />
+                )}
+              </dl>
+            </CardContent>
+          </Card>
 
           {/* ─── Reviewer notes ──────────────────────────────────────────── */}
           {review?.reviewNotes && (
-            <section className="rounded-xl border border-border bg-card p-5">
-              <header className="flex items-center justify-between mb-3 gap-4">
-                <div className="flex items-center gap-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-heading text-base font-semibold flex items-center gap-2">
                   <i className="fa-light fa-comment-lines text-muted-foreground" aria-hidden="true" />
-                  <h2 className="font-heading text-base font-semibold text-foreground">
-                    Reviewer notes
-                  </h2>
-                </div>
-                <Badge variant="secondary" className="rounded text-[10px]">
+                  Reviewer notes
+                </CardTitle>
+                <Badge variant="secondary" className="rounded text-[10px] justify-self-end col-start-2 row-start-1">
                   {review.reviewerName}
                 </Badge>
-              </header>
-              <p className="text-sm text-foreground leading-relaxed">
-                {review.reviewNotes}
-              </p>
-            </section>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-foreground leading-relaxed">
+                  {review.reviewNotes}
+                </p>
+              </CardContent>
+            </Card>
           )}
 
           {/* ─── Quick links ─────────────────────────────────────────────── */}
@@ -372,16 +376,9 @@ function SendToChairDialog({
         </DialogHeader>
 
         {isResubmit && previousNote && (
-          <div
-            className="rounded-md px-3 py-2 text-xs leading-relaxed border-l-2"
-            style={{
-              background: 'color-mix(in oklch, var(--chart-4) 6%, var(--card))',
-              borderLeftColor: 'var(--chart-4)',
-            }}
-          >
-            <p className="font-semibold text-foreground mb-1">Previous reviewer note</p>
-            <p className="text-muted-foreground italic">&ldquo;{previousNote}&rdquo;</p>
-          </div>
+          <LocalBanner variant="warning" title="Previous reviewer note">
+            <span className="italic">&ldquo;{previousNote}&rdquo;</span>
+          </LocalBanner>
         )}
 
         <div className="flex flex-col gap-3">
@@ -396,22 +393,26 @@ function SendToChairDialog({
             {REVIEWER_ROSTER.map(r => {
               const isSelected = selected.has(r.id)
               return (
-                <button
+                <Button
                   key={r.id}
-                  type="button"
+                  variant="ghost"
                   onClick={() => toggle(r.id)}
-                  className={`flex items-center gap-3 rounded-md px-2 py-2 text-start transition-colors ${
-                    isSelected
-                      ? 'bg-brand/10'
-                      : 'hover:bg-muted/40'
-                  }`}
+                  aria-pressed={isSelected}
+                  className="flex items-center justify-start gap-3 h-auto w-full rounded-md px-2 py-2 text-start whitespace-normal"
                   style={isSelected ? { backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' } : {}}
                 >
                   <Checkbox checked={isSelected} aria-hidden="true" tabIndex={-1} className="pointer-events-none" />
                   <Avatar className="size-8 shrink-0">
+                    {/* List avatars use a pure-neutral grey color-mix.
+                        Both `--foreground` and `--background` are zero-chroma,
+                        so the mix can't pick up brand hue under any theme.
+                        Same construction the DS uses for `--overlay`. */}
                     <AvatarFallback
                       className="text-[10px] font-bold"
-                      style={{ background: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}
+                      style={{
+                        background: 'color-mix(in oklch, var(--foreground) 8%, var(--background))',
+                        color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))',
+                      }}
                     >
                       {r.initials}
                     </AvatarFallback>
@@ -434,7 +435,7 @@ function SendToChairDialog({
                     </div>
                     <p className="text-[11px] text-muted-foreground">{r.title}</p>
                   </div>
-                </button>
+                </Button>
               )
             })}
           </div>
@@ -489,35 +490,46 @@ function QuickLink({
 }: {
   icon: string; label: string; sub: string; href: string; disabled?: boolean
 }) {
+  // Card slot composition replaces hand-rolled rounded/border/p-4 chrome.
+  // Per card.md depth audit: QuickLink is a Card-shaped tile; the enabled
+  // branch wraps the Card in <Link> so hover/focus remain on the link (DS
+  // EntityCard pattern from apps/pce/admin/app/(app)/admin/page.tsx).
   if (disabled) {
     return (
-      <div
-        className="rounded-xl border border-border bg-card/60 p-4 flex items-start gap-3 opacity-60 cursor-not-allowed"
-        aria-disabled="true"
-      >
-        <i className={`fa-light ${icon} text-muted-foreground text-base mt-0.5`} aria-hidden="true" />
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground">{label}</p>
-          <p className="text-xs text-muted-foreground">Available after publish</p>
-        </div>
-      </div>
+      <Card size="sm" className="opacity-60 cursor-not-allowed" aria-disabled="true">
+        <CardHeader>
+          <div className="flex items-start gap-3">
+            <i className={`fa-light ${icon} text-muted-foreground text-base mt-0.5`} aria-hidden="true" />
+            <div className="min-w-0">
+              <CardTitle className="text-sm font-medium text-foreground">{label}</CardTitle>
+              <CardDescription className="text-xs">Available after publish</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
     )
   }
   return (
     <Link
       href={href}
-      className="rounded-xl border border-border bg-card p-4 flex items-start gap-3 transition-all hover:bg-muted/30 hover:-translate-y-0.5 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2"
+      className="block transition-all hover:-translate-y-0.5 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2 rounded-xl"
     >
-      <i className={`fa-light ${icon} text-foreground text-base mt-0.5 group-hover:text-brand transition-colors`} aria-hidden="true" />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-foreground">{label}</p>
-        <p className="text-xs text-muted-foreground">{sub}</p>
-      </div>
-      <i
-        className="fa-light fa-arrow-right text-muted-foreground/60 group-hover:text-brand transition-colors mt-1"
-        aria-hidden="true"
-        style={{ fontSize: 11 }}
-      />
+      <Card size="sm" className="transition-colors group-hover:bg-muted/30">
+        <CardHeader>
+          <div className="flex items-start gap-3">
+            <i className={`fa-light ${icon} text-foreground text-base mt-0.5 group-hover:text-brand transition-colors`} aria-hidden="true" />
+            <div className="min-w-0 flex-1">
+              <CardTitle className="text-sm font-medium text-foreground">{label}</CardTitle>
+              <CardDescription className="text-xs">{sub}</CardDescription>
+            </div>
+            <i
+              className="fa-light fa-arrow-right text-muted-foreground/60 group-hover:text-brand transition-colors mt-1"
+              aria-hidden="true"
+              style={{ fontSize: 11 }}
+            />
+          </div>
+        </CardHeader>
+      </Card>
     </Link>
   )
 }

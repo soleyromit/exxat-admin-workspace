@@ -12,25 +12,22 @@
  */
 
 import { useMemo, useState } from 'react'
-import Link from 'next/link'
 import {
   Button, Badge,
   Tooltip, TooltipTrigger, TooltipContent,
   Collapsible, CollapsibleTrigger, CollapsibleContent,
+  LocalBanner,
 } from '@exxat/ds/packages/ui/src'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
-import { KeyMetrics, type Metric } from '@/components/key-metrics'
+import { KeyMetrics, type MetricItem } from '@/components/key-metrics'
 import { mockCourses } from '@/lib/qb-mock-data'
 import { courseObjectives, facultyStudents } from '@/lib/faculty-mock-data'
 import { useFacultySession } from '@/lib/faculty-session'
-import { MetricBar, ToneCallout, StatusPill } from '@/components/faculty-ui-kit'
-import { AiGenerateModal } from '@/components/ai-generate-modal'
+import { MetricBar, StatusPill } from '@/components/faculty-ui-kit'
 
 export default function CompetencyClient() {
   const { role, faculty, hydrated } = useFacultySession()
-  const [aiOpen, setAiOpen] = useState(false)
-
   const visibleCourses = useMemo(() => {
     if (!hydrated) return []
     if (role === 'faculty' && faculty) {
@@ -60,11 +57,35 @@ export default function CompetencyClient() {
     ? Math.round(tested.reduce((sum, o) => sum + o.avgPerformance, 0) / tested.length)
     : 0
 
-  const metrics: Metric[] = [
-    { id: 'avg',      label: 'Cohort average',      value: overallAvg > 0 ? `${overallAvg}%` : '—' },
-    { id: 'at-risk',  label: 'At-risk students',    value: atRiskCount },
-    { id: 'untested', label: 'Untested objectives', value: untestedObjectives.length },
-    { id: 'courses',  label: 'Active courses',      value: visibleCourses.length },
+  const metrics: MetricItem[] = [
+    {
+      id: 'avg',
+      label: 'Cohort average',
+      value: overallAvg > 0 ? `${overallAvg}%` : '—',
+      delta: tested.length > 0 ? `${tested.length} of ${allObjectives.length} tested` : 'No data yet',
+      trend: 'neutral',
+    },
+    {
+      id: 'at-risk',
+      label: 'At-risk students',
+      value: atRiskCount,
+      delta: totalStudents > 0 ? `of ${totalStudents}` : 'No students',
+      trend: 'neutral',
+    },
+    {
+      id: 'untested',
+      label: 'Untested objectives',
+      value: untestedObjectives.length,
+      delta: allObjectives.length > 0 ? `of ${allObjectives.length}` : 'No objectives',
+      trend: 'neutral',
+    },
+    {
+      id: 'courses',
+      label: 'Active courses',
+      value: visibleCourses.length,
+      delta: role === 'faculty' ? 'Your courses' : 'All programs',
+      trend: 'neutral',
+    },
   ]
 
   return (
@@ -77,49 +98,8 @@ export default function CompetencyClient() {
         />
 
         <div className="flex flex-1 flex-col gap-5 p-6 overflow-auto">
-          <KeyMetrics metrics={metrics} />
+          <KeyMetrics variant="card" showHeader={false} metricsSingleRow metrics={metrics} />
 
-          {untestedObjectives.length > 0 && (
-            <ToneCallout
-              tone="brand"
-              icon="fa-duotone fa-solid fa-star-christmas"
-              title={`AI can help close ${untestedObjectives.length} curriculum ${untestedObjectives.length === 1 ? 'gap' : 'gaps'}`}
-              description={
-                <>
-                  Generate {untestedObjectives.length === 1 ? 'a draft question' : 'draft questions'} from {untestedObjectives.length === 1 ? 'this' : 'these'} untested {untestedObjectives.length === 1 ? 'objective' : 'objectives'}, then review &amp; refine before adding to your bank.
-                  <span className="flex flex-col gap-1.5 mt-3">
-                    {untestedObjectives.slice(0, 4).map(o => (
-                      <span
-                        key={o.id}
-                        className="inline-flex items-center gap-2 rounded-md bg-background border border-brand/22 px-2.5 py-1.5 text-xs font-medium text-foreground"
-                      >
-                        <i className="fa-light fa-circle-dashed text-chart-4 shrink-0" aria-hidden="true" style={{ fontSize: 10 }} />
-                        <span className="line-clamp-1">{o.title}</span>
-                      </span>
-                    ))}
-                    {untestedObjectives.length > 4 && (
-                      <span className="inline-flex items-center text-xs text-muted-foreground">
-                        +{untestedObjectives.length - 4} more
-                      </span>
-                    )}
-                  </span>
-                </>
-              }
-              actions={
-                <Button size="sm" className="gap-2" onClick={() => setAiOpen(true)}>
-                  <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" />
-                  Generate questions
-                </Button>
-              }
-            />
-          )}
-
-          {/* AI generation modal — controlled by aiOpen, rendered always */}
-          <AiGenerateModal
-            open={aiOpen}
-            onOpenChange={setAiOpen}
-            objectives={untestedObjectives}
-          />
 
           <section className="flex flex-col gap-3">
             <h2 className="font-heading text-lg font-semibold text-foreground">
@@ -166,7 +146,7 @@ function CourseCompetencyCard({
     <Collapsible open={open} onOpenChange={setOpen}>
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <CollapsibleTrigger asChild>
-          <button className="flex items-center gap-4 px-5 py-4 w-full text-start hover:bg-muted/30 transition-colors">
+          <Button variant="ghost" className="flex items-center justify-start gap-4 px-5 py-4 w-full h-auto text-start whitespace-normal rounded-none">
             <div className="flex-1 min-w-0">
               <p className="font-heading text-base font-semibold text-foreground">
                 {course.name}
@@ -192,26 +172,20 @@ function CourseCompetencyCard({
                 aria-hidden="true"
               />
             </div>
-          </button>
+          </Button>
         </CollapsibleTrigger>
 
         <CollapsibleContent>
           <div className="border-t border-border px-5 py-4 flex flex-col gap-4">
             {weakest && weakest.avgPerformance < 70 && (
-              <div className="rounded-lg border border-chart-4/22 bg-chart-4/7 p-3 flex items-start gap-3">
-                <i className="fa-light fa-arrow-trend-down text-chart-4 text-sm mt-0.5" aria-hidden="true" />
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-foreground">
-                    Weakest area
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">{weakest.title}</span> — students averaging {weakest.avgPerformance}%. Consider remediation or reviewing question wording.
-                  </p>
-                </div>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/courses/${course.id}`}>Review course</Link>
-                </Button>
-              </div>
+              <LocalBanner
+                variant="warning"
+                icon="fa-arrow-trend-down"
+                title="Weakest area"
+                action={{ label: 'Review course', href: `/courses/${course.id}` }}
+              >
+                <span className="font-medium text-foreground">{weakest.title}</span> — students averaging {weakest.avgPerformance}%. Consider remediation or reviewing question wording.
+              </LocalBanner>
             )}
 
             <div className="flex flex-col gap-2">

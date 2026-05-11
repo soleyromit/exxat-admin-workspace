@@ -10,7 +10,10 @@
  */
 
 import { useMemo } from 'react'
-import { Avatar, AvatarFallback, Button, LocalBanner } from '@exxat/ds/packages/ui/src'
+import {
+  Avatar, AvatarFallback, Button, LocalBanner,
+  Card, CardHeader, CardTitle, CardDescription,
+} from '@exxat/ds/packages/ui/src'
 import { StubButton } from '@/components/stub-button'
 import type { Student, Accommodation, AccommodationType } from '@/lib/faculty-mock-data'
 
@@ -137,21 +140,27 @@ const TYPE_META: Record<AccommodationType, {
 }
 
 // ─── Type rollup tile ───────────────────────────────────────────────────────
+// DS Card slot composition (size="sm" matches PCE EntityCard pattern in
+// apps/pce/admin/app/(app)/admin/page.tsx — small KPI tile in a grid).
 function TypeTile({ type, count }: { type: AccommodationType; count: number }) {
   const meta = TYPE_META[type]
   return (
-    <div className="rounded-xl border border-border bg-card px-4 py-3 flex items-center gap-3">
-      <div className={`flex size-9 items-center justify-center rounded-lg shrink-0 ${meta.bgClass}`}>
-        <i className={`fa-light ${meta.icon} ${meta.fgClass} text-sm`} aria-hidden="true" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{meta.label}</p>
-        <div className="flex items-baseline gap-1.5">
-          <span className={`text-lg font-bold ${meta.fgClass}`}>{count}</span>
-          <span className="text-xs text-muted-foreground">{count === 1 ? 'student' : 'students'}</span>
+    <Card size="sm">
+      <CardHeader>
+        <div className="flex items-center gap-3">
+          <div className={`flex size-9 items-center justify-center rounded-lg shrink-0 ${meta.bgClass}`} aria-hidden="true">
+            <i className={`fa-light ${meta.icon} ${meta.fgClass} text-sm`} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <CardDescription className="text-[10px] font-bold uppercase tracking-wider">{meta.label}</CardDescription>
+            <CardTitle className="flex items-baseline gap-1.5">
+              <span className={`text-lg font-bold ${meta.fgClass}`}>{count}</span>
+              <span className="text-xs font-normal text-muted-foreground">{count === 1 ? 'student' : 'students'}</span>
+            </CardTitle>
+          </div>
         </div>
-      </div>
-    </div>
+      </CardHeader>
+    </Card>
   )
 }
 

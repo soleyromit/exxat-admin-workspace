@@ -18,6 +18,9 @@
  */
 
 import { useMemo, useState } from 'react'
+import {
+  Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent,
+} from '@exxat/ds/packages/ui/src'
 
 export interface QuestionItem {
   order: number
@@ -79,25 +82,24 @@ export function QuestionScatterPlot({ items, onSelect }: QuestionScatterPlotProp
   }, [items])
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <header className="flex items-center justify-between flex-wrap gap-3 mb-2">
-        <div>
-          <h3 className="font-heading text-base font-semibold text-foreground">
-            Item map · Difficulty × Point-biserial
-          </h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Each dot is a question. Hover for details. Items in the green band are well-calibrated.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap text-[10px] font-bold uppercase tracking-wider">
-          <Stat tone="success" count={stats.ideal} label="Ideal" />
-          <Stat tone="neutral" count={stats.tooEasy} label="Too easy" />
-          <Stat tone="warning" count={stats.tooHard} label="Too hard" />
-          <Stat tone="destructive" count={stats.flagged} label="Flagged" />
-        </div>
-      </header>
-
-      <div className="relative">
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-heading text-base font-semibold">
+          Item map · Difficulty × Point-biserial
+        </CardTitle>
+        <CardDescription className="text-xs">
+          Each dot is a question. Hover for details. Items in the green band are well-calibrated.
+        </CardDescription>
+        <CardAction>
+          <div className="flex items-center gap-2 flex-wrap text-[10px] font-bold uppercase tracking-wider">
+            <Stat tone="success" count={stats.ideal} label="Ideal" />
+            <Stat tone="neutral" count={stats.tooEasy} label="Too easy" />
+            <Stat tone="warning" count={stats.tooHard} label="Too hard" />
+            <Stat tone="destructive" count={stats.flagged} label="Flagged" />
+          </div>
+        </CardAction>
+      </CardHeader>
+      <CardContent className="relative">
         <svg
           viewBox={`0 0 ${W} ${H}`}
           className="w-full h-auto select-none"
@@ -236,10 +238,13 @@ export function QuestionScatterPlot({ items, onSelect }: QuestionScatterPlotProp
           </g>
         </svg>
 
-        {/* Hover tooltip */}
+        {/* Hover tooltip — floating positioned element, NOT a Card.
+            Tracked in audit as a legitimate non-Card div (docs/governance/
+            ds-adoption.md → Legitimate non-Card divs). */}
         {hovered && (
           <div
-            className="absolute pointer-events-none rounded-lg border border-border bg-card shadow-lg px-3 py-2 max-w-xs"
+            role="tooltip"
+            className="absolute pointer-events-none rounded-lg border border-border bg-card shadow-lg px-2.5 py-2 max-w-xs"
             style={{
               left: `${(xScale(hovered.difficultyIndex) / W) * 100}%`,
               top: `${(yScale(hovered.pointBiserial) / H) * 100}%`,
@@ -255,12 +260,12 @@ export function QuestionScatterPlot({ items, onSelect }: QuestionScatterPlotProp
             <p className="text-xs text-foreground line-clamp-2 leading-snug mb-1">{hovered.title}</p>
             <div className="flex items-center gap-3 text-[10px]">
               <span><span className="text-muted-foreground">D:</span> <strong className="text-foreground">{Math.round(hovered.difficultyIndex * 100)}%</strong></span>
-              <span><span className="text-muted-foreground">pbis:</span> <strong className={hovered.pointBiserial < 0 ? 'text-destructive' : hovered.pointBiserial < 0.2 ? 'text-chart-4' : 'text-chart-2'}>{hovered.pointBiserial.toFixed(2)}</strong></span>
+              <span><span className="text-muted-foreground">pbis:</span> <strong className={hovered.pointBiserial < 0 ? 'text-chart-5' : hovered.pointBiserial < 0.2 ? 'text-chart-4' : 'text-chart-2'}>{hovered.pointBiserial.toFixed(2)}</strong></span>
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -268,7 +273,7 @@ function Stat({ tone, count, label }: { tone: 'success' | 'neutral' | 'warning' 
   const fg =
     tone === 'success' ? 'text-chart-2' :
     tone === 'warning' ? 'text-chart-4' :
-    tone === 'destructive' ? 'text-destructive' :
+    tone === 'destructive' ? 'text-chart-5' :
     'text-muted-foreground'
   return (
     <span className="inline-flex items-center gap-1.5 px-1">

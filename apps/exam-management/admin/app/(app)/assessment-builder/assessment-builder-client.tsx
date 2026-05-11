@@ -1,5 +1,6 @@
 'use client'
-import React, { useState, useMemo, useCallback } from 'react'
+import React, { useEffect, useState, useMemo, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   Button, Badge,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
@@ -7,12 +8,14 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
   Checkbox,
+  LocalBanner,
 } from '@exxat/ds/packages/ui/src'
 import { mockCourses, mockCourseOfferings, mockAssessments, MOCK_QB_QUESTIONS } from '@/lib/qb-mock-data'
 import type { AssessmentDraft, Question, SmartView, QType, QDiff } from '@/lib/qb-types'
 import { SYSTEM_SMART_VIEWS } from '@/lib/qb-types'
 import { courseObjectives } from '@/lib/faculty-mock-data'
 import { useFacultySession } from '@/lib/faculty-session'
+import { useAssessmentDrafts } from '@/lib/assessment-draft-store'
 import { AiGenerateModal } from '@/components/ai-generate-modal'
 import { QuestionEditor } from '@/components/question-editor/question-editor'
 import {
@@ -46,11 +49,41 @@ function formatMin(min: number): string {
 
 export default function AssessmentBuilderClient() {
   const { currentPersona } = useFacultySession()
-  const [courseId, setCourseId] = useState(mockCourses[0]?.id ?? '')
+  const searchParams = useSearchParams()
+  const { drafts: localDrafts, hydrated: draftsHydrated } = useAssessmentDrafts()
+
+  // URL hand-off from CreateAssessmentModal: ?draftId=X&courseId=Y
+  // The modal saves a draft via the store, then routes here. We pre-select
+  // the right course + offering and load the draft as activeAsmt so the
+  // builder lands ready instead of empty.
+  const urlCourseId = searchParams?.get('courseId') ?? null
+  const urlDraftId = searchParams?.get('draftId') ?? null
+
+  const initialCourseId = urlCourseId ?? mockCourses[0]?.id ?? ''
+  const [courseId, setCourseId] = useState(initialCourseId)
   const [offeringId, setOfferingId] = useState(
-    mockCourseOfferings.find(o => o.courseId === mockCourses[0]?.id)?.id ?? ''
+    mockCourseOfferings.find(o => o.courseId === initialCourseId)?.id ?? ''
   )
   const [activeAsmt, setActiveAsmt] = useState<AssessmentDraft | null>(null)
+
+  // When the draft store hydrates and we have a draftId in the URL, load
+  // the matching draft as activeAsmt. Once-only (idempotent on draftId).
+  useEffect(() => {
+    if (!urlDraftId || !draftsHydrated) return
+    const draft = localDrafts.find(d => d.id === urlDraftId)
+    if (!draft) return
+    if (activeAsmt?.id === draft.id) return
+    setActiveAsmt({
+      id: draft.id,
+      title: draft.title,
+      courseId: draft.courseId,
+      offeringId: draft.offeringId,
+      questions: [],
+      durationMinutes: draft.durationMinutes,
+    })
+    setCourseId(draft.courseId)
+    setOfferingId(draft.offeringId)
+  }, [urlDraftId, draftsHydrated, localDrafts, activeAsmt?.id])
   const [smartViewId, setSmartViewId] = useState<string>('all')
   const [savedViews, setSavedViews] = useState<SmartView[]>(() => {
     try {
@@ -537,11 +570,11 @@ function ABQuestionPicker({
         {sourceTabs.map(t => {
           const isActive = source === t.id
           return (
-            <button
+            <Button
               key={t.id}
-              type="button"
+              variant="ghost"
               onClick={() => setSource(t.id)}
-              className="flex flex-col items-start gap-0.5 px-4 py-2.5 transition-colors text-start shrink-0 focus-visible:outline-none focus-visible:bg-muted/40"
+              className="flex flex-col items-start justify-center gap-0.5 h-auto px-4 py-2.5 text-start whitespace-normal shrink-0 rounded-none"
               style={{
                 borderBottom: isActive ? '2px solid var(--brand-color)' : '2px solid transparent',
                 background: isActive ? 'color-mix(in oklch, var(--brand-color) 6%, var(--background))' : 'transparent',
@@ -554,7 +587,7 @@ function ABQuestionPicker({
                 {t.label}
               </span>
               <span className="text-[10px] text-muted-foreground">{t.sub}</span>
-            </button>
+            </Button>
           )
         })}
       </div>
@@ -801,7 +834,7 @@ function ABDiffChart({ distribution, timeMetrics, overtimeMetrics, durationMinut
 
   const overtime = overtimeMetrics ? (() => {
     const { delta } = overtimeMetrics
-    if (delta > 0)  return { icon: 'fa-triangle-exclamation', label: `+${Math.round(delta)} min over`, color: 'var(--destructive)',         cls: 'text-destructive'         }
+    if (delta > 0)  return { icon: 'fa-triangle-exclamation', label: `+${Math.round(delta)} min over`, color: 'var(--chart-5)',             cls: 'text-chart-5'             }
     if (delta > -5) return { icon: 'fa-clock',                label: 'Tight',                          color: 'var(--chart-4)',             cls: 'text-[color:var(--chart-4)]' }
     return               { icon: 'fa-circle-check',           label: 'On time',                        color: 'var(--qb-trust-senior-color)', cls: 'text-[color:var(--qb-trust-senior-color)]' }
   })() : null
@@ -973,18 +1006,8 @@ function NewQuestionEditorPanel({
   return (
     <div style={{ flex: 1, overflow: 'auto', background: 'var(--background)' }}>
       {confirmation && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="mx-auto max-w-3xl mt-4 rounded-md px-3 py-2 text-xs flex items-center gap-2"
-          style={{
-            backgroundColor: 'color-mix(in oklch, var(--chart-2) 12%, var(--background))',
-            color: 'var(--chart-2)',
-            border: '1px solid color-mix(in oklch, var(--chart-2) 30%, transparent)',
-          }}
-        >
-          <i className="fa-light fa-circle-check" aria-hidden="true" />
-          {confirmation}
+        <div className="mx-auto max-w-3xl mt-4">
+          <LocalBanner variant="success">{confirmation}</LocalBanner>
         </div>
       )}
       <QuestionEditor
@@ -1041,25 +1064,18 @@ function NewQuestionEditorPanel({
 function AiGeneratePanel({ courseLabel, onOpen }: { courseLabel: string; onOpen: () => void }) {
   return (
     <div style={{ flex: 1, overflow: 'auto', padding: 24, background: 'var(--background)' }}>
-      <div
-        className="rounded-xl border border-border p-5 max-w-2xl flex flex-col gap-4"
-        style={{
-          background: 'color-mix(in oklch, var(--brand-color) 5%, var(--card))',
-          borderLeft: '4px solid var(--brand-color)',
-        }}
+      <LocalBanner
+        variant="promo"
+        icon="fa-sparkles"
+        title="AI-generated questions from course objectives"
+        className="max-w-2xl"
       >
-        <div className="flex items-center gap-2">
-          <i className="fa-duotone fa-solid fa-sparkles" style={{ color: 'var(--brand-color)', fontSize: 18 }} aria-hidden="true" />
-          <h3 className="text-base font-semibold text-foreground font-heading">
-            AI-generated questions from course objectives
-          </h3>
-        </div>
-        <p className="text-sm text-muted-foreground leading-relaxed">
+        <p className="leading-relaxed">
           For <strong className="text-foreground">{courseLabel}</strong>, the AI scans untested or under-tested
           course objectives, generates candidate questions matched to your difficulty + Bloom mix, and lets
           you review/edit each one before adding to the assessment.
         </p>
-        <ul className="flex flex-col gap-1.5 text-xs text-muted-foreground">
+        <ul className="flex flex-col gap-1.5 text-xs mt-3">
           <li className="flex items-start gap-2">
             <i className="fa-light fa-circle-check text-brand mt-0.5" aria-hidden="true" />
             Targets gaps in your curriculum mapping (objectives never assessed)
@@ -1073,14 +1089,14 @@ function AiGeneratePanel({ courseLabel, onOpen }: { courseLabel: string; onOpen:
             Every generated question is editable before it&apos;s added — and optionally written back to the question bank
           </li>
         </ul>
-        <div className="flex items-center gap-2 pt-1">
+        <div className="flex items-center gap-2 mt-3">
           <Button variant="default" size="sm" className="gap-2" onClick={onOpen}>
             <i className="fa-duotone fa-solid fa-sparkles" aria-hidden="true" />
             Open generator
           </Button>
           <span className="text-[11px] text-muted-foreground">Wizard launches in a side panel</span>
         </div>
-      </div>
+      </LocalBanner>
     </div>
   )
 }

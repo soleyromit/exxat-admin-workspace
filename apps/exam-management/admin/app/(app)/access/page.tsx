@@ -9,23 +9,26 @@
  *   - Faculty (Viewer)    → read-only on associated courses
  *
  * Inline role select per row, remove action, and Invite dialog with form.
+ *
+ * Migrated to canonical DataTable 2026-05-11 (was hand-rolled DataTable wrapper).
  */
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
-import { DataTable, type Column } from '@/components/data-table'
+import { DataTable } from '@/components/data-table'
+import type { ColumnDef } from '@/components/data-table/types'
 import {
   Badge, Button,
+  Card, CardContent,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
   Input, Label, Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   Tooltip, TooltipTrigger, TooltipContent,
 } from '@exxat/ds/packages/ui/src'
 
 type Role = 'Admin' | 'Faculty (Editor)' | 'Faculty (Viewer)'
 
-interface AccessEntry {
+interface AccessEntry extends Record<string, unknown> {
   id: string
   name: string
   email: string
@@ -72,21 +75,32 @@ export default function AccessPage() {
     ])
   }
 
-  const columns: Column<AccessEntry>[] = [
+  const columns: ColumnDef<AccessEntry>[] = useMemo(() => [
     {
       key: 'name',
-      header: 'Name',
-      render: (row) => <span className="font-medium text-foreground">{row.name}</span>,
+      label: 'Name',
+      sortable: true,
+      width: 240,
+      cell: (row) => <span className="font-medium text-foreground">{row.name}</span>,
     },
     {
       key: 'email',
-      header: 'Email',
-      render: (row) => <span className="text-muted-foreground text-sm">{row.email}</span>,
+      label: 'Email',
+      sortable: true,
+      width: 280,
+      cell: (row) => <span className="text-muted-foreground text-sm">{row.email}</span>,
     },
     {
       key: 'role',
-      header: 'Role',
-      render: (row) => (
+      label: 'Role',
+      sortable: true,
+      width: 240,
+      filter: {
+        type: 'select',
+        icon: 'fa-shield-keyhole',
+        options: (Object.keys(ROLE_TONE) as Role[]).map(r => ({ value: r, label: r })),
+      },
+      cell: (row) => (
         <Select value={row.role} onValueChange={(v) => updateRole(row.id, v as Role)}>
           <SelectTrigger
             size="sm"
@@ -119,29 +133,27 @@ export default function AccessPage() {
     },
     {
       key: 'addedDate',
-      header: 'Added',
-      render: (row) => <span className="text-muted-foreground text-sm">{row.addedDate}</span>,
+      label: 'Added',
+      sortable: true,
+      width: 140,
+      cell: (row) => <span className="text-muted-foreground text-sm">{row.addedDate}</span>,
     },
     {
       key: 'actions',
-      header: '',
-      render: (row) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${row.name}`}>
-              <i className="fa-regular fa-ellipsis" aria-hidden="true" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuItem variant="destructive" onClick={() => setRemoveTarget(row)}>
-              <i className="fa-light fa-user-xmark" aria-hidden="true" />
-              Remove access
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      label: '',
+      width: 44,
+      cell: (row) => (
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`Remove access for ${row.name}`}
+          onClick={() => setRemoveTarget(row)}
+        >
+          <i className="fa-regular fa-user-xmark" aria-hidden="true" />
+        </Button>
       ),
     },
-  ]
+  ], [])
 
   return (
     <>
@@ -160,10 +172,18 @@ export default function AccessPage() {
 
         <div className="flex flex-1 flex-col gap-4 p-6 overflow-auto">
           <RoleLegend />
-          <DataTable
-            columns={columns}
+          <DataTable<AccessEntry>
             data={users}
-            emptyMessage="No users have been granted access."
+            columns={columns}
+            getRowId={(row) => row.id}
+            getRowSelectionLabel={(row) => row.name}
+            selectable
+            searchable
+            emptyState={
+              <div className="text-sm text-muted-foreground py-8 text-center">
+                No users have been granted access.
+              </div>
+            }
           />
         </div>
       </main>
@@ -201,26 +221,28 @@ export default function AccessPage() {
 
 function RoleLegend() {
   return (
-    <div className="rounded-lg border border-border bg-card p-3 flex flex-wrap items-center gap-x-5 gap-y-2">
-      {(Object.keys(ROLE_TONE) as Role[]).map(r => (
-        <Tooltip key={r}>
-          <TooltipTrigger asChild>
-            <div className="flex items-center gap-2 cursor-help">
-              <Badge
-                variant="secondary"
-                className="rounded-full font-medium gap-1.5"
-                style={{ backgroundColor: ROLE_TONE[r].bg, color: ROLE_TONE[r].fg }}
-              >
-                <i className={`fa-light ${ROLE_TONE[r].icon}`} aria-hidden="true" style={{ fontSize: 10 }} />
-                {r}
-              </Badge>
-              <span className="text-[11px] text-muted-foreground">{ROLE_DESCRIPTION[r]}</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>{ROLE_DESCRIPTION[r]}</TooltipContent>
-        </Tooltip>
-      ))}
-    </div>
+    <Card size="sm">
+      <CardContent className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        {(Object.keys(ROLE_TONE) as Role[]).map(r => (
+          <Tooltip key={r}>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-2 cursor-help">
+                <Badge
+                  variant="secondary"
+                  className="rounded-full font-medium gap-1.5"
+                  style={{ backgroundColor: ROLE_TONE[r].bg, color: ROLE_TONE[r].fg }}
+                >
+                  <i className={`fa-light ${ROLE_TONE[r].icon}`} aria-hidden="true" style={{ fontSize: 10 }} />
+                  {r}
+                </Badge>
+                <span className="text-[11px] text-muted-foreground">{ROLE_DESCRIPTION[r]}</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>{ROLE_DESCRIPTION[r]}</TooltipContent>
+          </Tooltip>
+        ))}
+      </CardContent>
+    </Card>
   )
 }
 

@@ -23,6 +23,7 @@ import Link from 'next/link'
 import {
   Avatar, AvatarFallback,
   Button, Badge,
+  Card, CardHeader, CardTitle, CardDescription, CardContent,
   Textarea,
 } from '@exxat/ds/packages/ui/src'
 import { SiteHeader } from '@/components/site-header'
@@ -55,7 +56,7 @@ const STATE_LABEL: Record<AssessmentReviewState | 'draft', string> = {
   'changes-requested':  'Changes requested',
   'approved':           'Approved',
   'published':          'Published',
-  'in-progress':        'Live now',
+  'in-progress':        'Ongoing',
   'submitted':          'Submitted',
   'results-published':  'Results published',
 }
@@ -148,71 +149,78 @@ export default function AssessmentReviewClient({ assessmentId }: { assessmentId:
 
         <div className="p-6 flex flex-col gap-5">
           {/* ─── Workflow ─────────────────────────────────────────────── */}
-          <section className="rounded-xl border border-border bg-card p-5">
-            <WorkflowStepIndicator state={effectiveState} />
-          </section>
+          <Card>
+            <CardContent>
+              <WorkflowStepIndicator state={effectiveState} />
+            </CardContent>
+          </Card>
 
           {/* ─── Submission summary ──────────────────────────────────── */}
-          <section className="rounded-xl border border-border bg-card p-5">
-            <h2 className="font-heading text-base font-semibold text-foreground mb-3">
-              Submission
-            </h2>
-            <dl
-              className="grid gap-x-6 gap-y-3"
-              style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}
-            >
-              <MetaCell label="Submitted by"  value={review?.reviewerName ? 'Faculty author' : 'Not yet submitted'} />
-              <MetaCell label="Reviewer"      value={review?.reviewerName ?? '—'} />
-              <MetaCell label="Submitted"     value={review?.submittedAt ? formatDateShort(review.submittedAt) : '—'} />
-              <MetaCell label="Last reviewed" value={review?.reviewedAt  ? formatDateShort(review.reviewedAt)  : 'Not yet reviewed'} />
-            </dl>
-          </section>
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-heading text-base font-semibold">Submission</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl
+                className="grid gap-x-6 gap-y-3"
+                style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}
+              >
+                <MetaCell label="Submitted by"  value={review?.reviewerName ? 'Faculty author' : 'Not yet submitted'} />
+                <MetaCell label="Reviewer"      value={review?.reviewerName ?? '—'} />
+                <MetaCell label="Submitted"     value={review?.submittedAt ? formatDateShort(review.submittedAt) : '—'} />
+                <MetaCell label="Last reviewed" value={review?.reviewedAt  ? formatDateShort(review.reviewedAt)  : 'Not yet reviewed'} />
+              </dl>
+            </CardContent>
+          </Card>
 
           {/* ─── Two-column: questions preview + notes ─────────────────── */}
           <div className="grid gap-5 grid-cols-1 lg:grid-cols-[minmax(0,1.6fr)_minmax(280px,1fr)]">
             {/* Questions preview */}
-            <section className="rounded-xl border border-border bg-card p-5">
-              <header className="flex items-center justify-between mb-3 gap-4">
-                <div>
-                  <h2 className="font-heading text-base font-semibold text-foreground">
-                    Questions ({assessment.questionCount})
-                  </h2>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Read-only preview — open the builder to edit.
-                  </p>
-                </div>
-                <Button asChild variant="outline" size="sm" className="gap-1.5">
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-heading text-base font-semibold">
+                  Questions ({assessment.questionCount})
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Read-only preview — open the builder to edit.
+                </CardDescription>
+                <Button asChild variant="outline" size="sm" className="gap-1.5 col-start-2 row-start-1 self-start justify-self-end">
                   <Link href="/assessment-builder">
                     <i className="fa-light fa-arrow-up-right-from-square" aria-hidden="true" />
                     Open in builder
                   </Link>
                 </Button>
-              </header>
-
-              <ol className="flex flex-col gap-2">
-                {questions.map((q, idx) => (
-                  <QuestionRow key={q.id} index={idx + 1} question={q} />
-                ))}
-                {assessment.questionCount > questions.length && (
-                  <li className="text-xs text-muted-foreground text-center mt-2">
-                    +{assessment.questionCount - questions.length} more questions in the builder
-                  </li>
-                )}
-              </ol>
-            </section>
+              </CardHeader>
+              <CardContent>
+                <ol className="flex flex-col gap-2">
+                  {questions.map((q, idx) => (
+                    <QuestionRow key={q.id} index={idx + 1} question={q} />
+                  ))}
+                  {assessment.questionCount > questions.length && (
+                    <li className="text-xs text-muted-foreground text-center mt-2">
+                      +{assessment.questionCount - questions.length} more questions in the builder
+                    </li>
+                  )}
+                </ol>
+              </CardContent>
+            </Card>
 
             {/* Notes panel */}
-            <aside className="rounded-xl border border-border bg-card p-5 flex flex-col gap-3 self-start">
-              <div className="flex items-center gap-2">
-                <i className="fa-light fa-comment-lines text-muted-foreground" aria-hidden="true" />
-                <h2 className="font-heading text-base font-semibold text-foreground">
+            <Card className="self-start">
+              <CardHeader>
+                <CardTitle className="font-heading text-base font-semibold flex items-center gap-2">
+                  <i className="fa-light fa-comment-lines text-muted-foreground" aria-hidden="true" />
                   {isReviewer ? 'Your notes' : 'Chair feedback'}
-                </h2>
-              </div>
-
-              {/* Existing chair notes (if any) */}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+              {/* Existing chair notes (if any) — styled as a quoted attribution block
+                  inside the Notes Card. Legitimate non-Card div: this is a content
+                  sub-element (avatar + name + body) of the parent Card, not its own
+                  card-shaped panel. Uses bg-muted + left-accent (no border-border)
+                  so visual chrome stays subordinate to the parent Card. */}
               {review?.reviewNotes && (
-                <div className="rounded-lg border border-border bg-muted/30 p-3 flex flex-col gap-2">
+                <blockquote className="rounded-md bg-muted/40 px-3 pt-2 pb-2.5 flex flex-col gap-2 border-l-2 border-l-brand/40">
                   <div className="flex items-center gap-2">
                     <Avatar style={{ width: 22, height: 22 }}>
                       <AvatarFallback
@@ -234,7 +242,7 @@ export default function AssessmentReviewClient({ assessmentId }: { assessmentId:
                   <p className="text-sm text-foreground leading-relaxed">
                     {review.reviewNotes}
                   </p>
-                </div>
+                </blockquote>
               )}
 
               {/* Reviewer note input + actions —
@@ -308,7 +316,7 @@ export default function AssessmentReviewClient({ assessmentId }: { assessmentId:
                   Awaiting chair review. The chair typically responds within 3–4 business days.
                 </p>
               )}
-            </aside>
+            </CardContent></Card>
           </div>
         </div>
       </main>

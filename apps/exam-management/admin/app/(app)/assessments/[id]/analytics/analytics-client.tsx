@@ -25,15 +25,15 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Button, Badge,
+  Card, CardHeader, CardTitle, CardDescription, CardContent,
   Tooltip, TooltipTrigger, TooltipContent,
   Tabs, TabsList, TabsTrigger, TabsContent,
+  LocalBanner,
 } from '@exxat/ds/packages/ui/src'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
 import { StatusPill, KpiTile } from '@/components/faculty-ui-kit'
 import { StubButton } from '@/components/stub-button'
-import { AssignPracticeDialog } from '@/components/assign-practice-dialog'
-import { QuestionScatterPlot } from '@/components/question-scatter-plot'
 import { mockAssessments, mockCourses, MOCK_QB_QUESTIONS } from '@/lib/qb-mock-data'
 import { facultyExtraAssessments, questionPsychometrics, courseObjectives } from '@/lib/faculty-mock-data'
 import { useAssessmentReviews } from '@/lib/assessment-review-store'
@@ -52,7 +52,6 @@ export default function AnalyticsClient({ assessmentId }: { assessmentId: string
 
   const [activeView, setActiveView] = useState<'overview' | 'items' | 'content-areas' | 'curve'>('overview')
   const [curveApplied, setCurveApplied] = useState(false)
-  const [assignPracticeOpen, setAssignPracticeOpen] = useState(false)
 
   // Build data — psychometrics for first N questions in this assessment
   const items = useMemo(() => {
@@ -108,7 +107,6 @@ export default function AnalyticsClient({ assessmentId }: { assessmentId: string
   const passingPct = scoreDist.passingPct
 
   const negativeDiscCount = items.filter(i => i.negativeDiscriminator).length
-  const lowPbisCount = items.filter(i => i.pointBiserial < 0.15 && !i.negativeDiscriminator).length
 
   const breadcrumbs = [
     { label: 'Courses', href: '/courses' },
@@ -131,10 +129,6 @@ export default function AnalyticsClient({ assessmentId }: { assessmentId: string
         label={isPublished ? 'Results published' : 'Submitted · awaiting publish'}
         uppercase
       />
-      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setAssignPracticeOpen(true)}>
-        <i className="fa-duotone fa-solid fa-bullseye-arrow text-brand" aria-hidden="true" />
-        Assign practice
-      </Button>
       <StubButton variant="outline" size="sm" className="gap-1.5">
         <i className="fa-light fa-arrow-down-to-line" aria-hidden="true" />
         Export
@@ -173,19 +167,19 @@ export default function AnalyticsClient({ assessmentId }: { assessmentId: string
               <TabsTrigger value="items" className="gap-2">
                 <i className="fa-light fa-list-tree text-xs" aria-hidden="true" />
                 Per-question analysis
-                {(negativeDiscCount + lowPbisCount) > 0 && (
+                {negativeDiscCount > 0 && (
                   <span className="inline-flex items-center justify-center rounded-full text-[9px] font-bold min-w-4 h-4 px-1 bg-chart-4 text-primary-foreground">
-                    {negativeDiscCount + lowPbisCount}
+                    {negativeDiscCount}
                   </span>
                 )}
-              </TabsTrigger>
-              <TabsTrigger value="content-areas" className="gap-2">
-                <i className="fa-light fa-bullseye-pointer text-xs" aria-hidden="true" />
-                Content areas
               </TabsTrigger>
               <TabsTrigger value="curve" className="gap-2">
                 <i className="fa-light fa-sliders text-xs" aria-hidden="true" />
                 Curving & adjustments
+              </TabsTrigger>
+              <TabsTrigger value="content-areas" className="gap-2">
+                <i className="fa-light fa-bullseye-pointer text-xs" aria-hidden="true" />
+                Content areas
               </TabsTrigger>
             </TabsList>
           </div>
@@ -198,7 +192,7 @@ export default function AnalyticsClient({ assessmentId }: { assessmentId: string
             passingPct={passingPct}
             scoreDist={scoreDist}
             negativeDiscCount={negativeDiscCount}
-            lowPbisCount={lowPbisCount}
+            items={items}
             onJumpToItems={() => setActiveView('items')}
             onJumpToCurve={() => setActiveView('curve')}
           />
@@ -206,31 +200,16 @@ export default function AnalyticsClient({ assessmentId }: { assessmentId: string
         <TabsContent value="items" className="m-0">
           <ItemsView items={items} />
         </TabsContent>
-        <TabsContent value="content-areas" className="m-0">
-          <ContentAreasView courseId={course.id} />
-        </TabsContent>
             <TabsContent value="curve" className="m-0">
               <CurveView scoreDist={scoreDist} items={items} />
             </TabsContent>
+        <TabsContent value="content-areas" className="m-0">
+          <ContentAreasView courseId={course.id} />
+        </TabsContent>
           </div>
         </Tabs>
       </main>
 
-      <AssignPracticeDialog
-        open={assignPracticeOpen}
-        onOpenChange={setAssignPracticeOpen}
-        assessmentTitle={assessment.title}
-        defaultStudents={[
-          { id: 's1', name: 'Joel Rondo',     initials: 'JR', scoreOnAssessment: 58, weakArea: items[0]?.objectiveTitle ?? 'Pharmacokinetics' },
-          { id: 's2', name: 'Maya Patel',     initials: 'MP', scoreOnAssessment: 62, weakArea: items[0]?.objectiveTitle ?? 'Pharmacokinetics' },
-          { id: 's3', name: 'Diego Alvarez',  initials: 'DA', scoreOnAssessment: 64, weakArea: items[1]?.objectiveTitle ?? 'Drug interactions' },
-          { id: 's4', name: 'Hannah Chen',    initials: 'HC', scoreOnAssessment: 66, weakArea: items[1]?.objectiveTitle ?? 'Drug interactions' },
-          { id: 's5', name: 'Tyler Brooks',   initials: 'TB', scoreOnAssessment: 68, weakArea: items[2]?.objectiveTitle ?? 'Adverse events' },
-        ]}
-        contentAreas={Array.from(
-          new Map(items.filter(it => it.objectiveTitle).map(it => [it.objectiveTitle, { id: it.objectiveTitle, name: it.objectiveTitle }])).values()
-        ).slice(0, 6)}
-      />
     </>
   )
 }
@@ -272,15 +251,78 @@ function generateScoreDistribution(n: number, mean: number, sd: number): ScoreDi
 }
 
 // ─── Overview view ───────────────────────────────────────────────────────────
+const BLOOMS_ORDER = ['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create']
+const BLOOMS_CHART_VARS = ['--chart-1', '--chart-2', '--chart-3', '--chart-4', '--chart-5', '--chart-1']
+
 function OverviewView({
-  cohortAvg, cohortMedian, passingPct, scoreDist, negativeDiscCount, lowPbisCount,
+  cohortAvg, cohortMedian, passingPct, scoreDist, negativeDiscCount, items,
   onJumpToItems, onJumpToCurve,
 }: {
   cohortAvg: number; cohortMedian: number; passingPct: number; scoreDist: ScoreDist
-  negativeDiscCount: number; lowPbisCount: number
+  negativeDiscCount: number
+  items: Item[]
   onJumpToItems: () => void; onJumpToCurve: () => void
 }) {
+  const total = items.length
   const meanTone: 'success' | 'info' | 'warning' = cohortAvg >= 80 ? 'success' : cohortAvg >= 70 ? 'info' : 'warning'
+
+  // Content area frequency — group by objectiveTitle, sort by count desc
+  const contentAreaCounts = useMemo(() => {
+    const map = new Map<string, { count: number; correctnessSum: number }>()
+    for (const item of items) {
+      const existing = map.get(item.objectiveTitle) ?? { count: 0, correctnessSum: 0 }
+      map.set(item.objectiveTitle, {
+        count: existing.count + 1,
+        correctnessSum: existing.correctnessSum + (item.distractorRates[0] ?? 0),
+      })
+    }
+    return Array.from(map.entries())
+      .map(([title, { count, correctnessSum }]) => ({
+        title,
+        count,
+        avgCorrectness: Math.round((correctnessSum / count) * 100),
+      }))
+      .sort((a, b) => b.count - a.count)
+  }, [items])
+
+  // Bloom's frequency — group by blooms in canonical order
+  const bloomsCounts = useMemo(() => {
+    const map = new Map<string, { count: number; correctnessSum: number }>()
+    for (const item of items) {
+      if (item.blooms) {
+        const existing = map.get(item.blooms) ?? { count: 0, correctnessSum: 0 }
+        map.set(item.blooms, {
+          count: existing.count + 1,
+          correctnessSum: existing.correctnessSum + (item.distractorRates[0] ?? 0),
+        })
+      }
+    }
+    const ordered: { level: string; count: number; avgCorrectness: number; chartVar: string }[] = []
+    BLOOMS_ORDER.forEach((level, i) => {
+      if (map.has(level)) {
+        const { count, correctnessSum } = map.get(level)!
+        ordered.push({
+          level,
+          count,
+          avgCorrectness: Math.round((correctnessSum / count) * 100),
+          chartVar: BLOOMS_CHART_VARS[i % BLOOMS_CHART_VARS.length],
+        })
+      }
+    })
+    // Append any levels not in the canonical order
+    for (const [level, { count, correctnessSum }] of map.entries()) {
+      if (!BLOOMS_ORDER.includes(level)) {
+        ordered.push({
+          level,
+          count,
+          avgCorrectness: Math.round((correctnessSum / count) * 100),
+          chartVar: BLOOMS_CHART_VARS[ordered.length % BLOOMS_CHART_VARS.length],
+        })
+      }
+    }
+    return ordered
+  }, [items])
+
   return (
     <div className="flex flex-col gap-5">
       {/* Hero KPIs + alert callouts */}
@@ -288,20 +330,20 @@ function OverviewView({
         <Kpi icon="fa-chart-line" label="Cohort average" value={`${cohortAvg}%`} tone={meanTone} sub={`Median ${cohortMedian}%`} />
         <Kpi icon="fa-check-double" label="Pass rate" value={`${passingPct}%`} tone={passingPct >= 80 ? 'success' : passingPct >= 65 ? 'info' : 'warning'} sub={`${scoreDist.passing} of ${scoreDist.n} ≥ 70%`} />
         <Kpi icon="fa-square-root-variable" label="Std deviation" value="11.2" tone="neutral" sub="Spread of scores" />
-        {(negativeDiscCount > 0 || lowPbisCount > 0) && (
+        {negativeDiscCount > 0 && (
           <Kpi
             icon="fa-triangle-exclamation"
             label="Items to review"
-            value={negativeDiscCount + lowPbisCount}
+            value={negativeDiscCount}
             tone="warning"
-            sub={`${negativeDiscCount} negative · ${lowPbisCount} low pbis`}
+            sub={`${negativeDiscCount} negative discriminator${negativeDiscCount === 1 ? '' : 's'}`}
             onClick={onJumpToItems}
           />
         )}
       </section>
 
       {/* Quality alert callout */}
-      {(negativeDiscCount > 0 || lowPbisCount > 0) && (
+      {negativeDiscCount > 0 && (
         <section
           className="rounded-xl border p-5"
           style={{
@@ -317,9 +359,7 @@ function OverviewView({
             />
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-foreground" style={{ fontSize: 14 }}>
-                {negativeDiscCount > 0 && <><b>{negativeDiscCount}</b> negative-discriminator {negativeDiscCount === 1 ? 'item' : 'items'}</>}
-                {negativeDiscCount > 0 && lowPbisCount > 0 && ' · '}
-                {lowPbisCount > 0 && <><b>{lowPbisCount}</b> {lowPbisCount === 1 ? 'item' : 'items'} with point-biserial &lt; 0.15</>}
+                <><b>{negativeDiscCount}</b> negative-discriminator {negativeDiscCount === 1 ? 'item' : 'items'}</>
               </p>
               <p className="text-sm text-muted-foreground mt-0.5">
                 These items hurt the cohort. Removing them or excluding from scoring is recommended before publishing.
@@ -340,21 +380,87 @@ function OverviewView({
       )}
 
       {/* Score distribution chart */}
-      <section className="rounded-xl border bg-card p-5" style={{ borderColor: 'var(--border)' }}>
-        <header className="flex items-center justify-between mb-4 flex-wrap gap-3">
-          <div>
-            <h2 className="font-semibold text-foreground" style={{ fontFamily: 'var(--font-heading)', fontSize: 16 }}>
-              Score distribution
-            </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">10-point buckets · vertical line marks 70% passing threshold</p>
-          </div>
-          <div className="flex items-center gap-3 text-[11px]">
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-heading text-base font-semibold">Score distribution</CardTitle>
+          <CardDescription className="text-xs">10-point buckets · vertical line marks 70% passing threshold</CardDescription>
+          <div className="flex items-center gap-3 text-[11px] justify-self-end col-start-2 row-start-1">
             <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded" style={{ background: 'var(--chart-2)' }} />Passing</span>
             <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded" style={{ background: 'var(--chart-4)' }} />Below passing</span>
           </div>
-        </header>
-        <Histogram dist={scoreDist} />
-      </section>
+        </CardHeader>
+        <CardContent>
+          <Histogram dist={scoreDist} />
+        </CardContent>
+      </Card>
+
+      {/* Content area coverage */}
+      {contentAreaCounts.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-heading text-base font-semibold">Content area coverage</CardTitle>
+            <CardDescription className="text-xs">Question count per content area · sorted by frequency</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-1.5">
+              {contentAreaCounts.map(({ title, count, avgCorrectness }) => (
+                <div key={title} className="flex items-center justify-between gap-3 py-1">
+                  <span className="text-sm text-foreground flex-1 truncate" title={title}>{title}</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Badge
+                      variant="secondary"
+                      className="rounded font-mono"
+                      style={{ fontSize: 11, padding: '1px 7px' }}
+                    >
+                      {count} of {total}
+                    </Badge>
+                    <span className="text-[11px] text-muted-foreground">· {avgCorrectness}% correct</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Bloom's taxonomy distribution */}
+      {bloomsCounts.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-heading text-base font-semibold">Bloom&apos;s taxonomy</CardTitle>
+            <CardDescription className="text-xs">Question count by cognitive level</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {bloomsCounts.map(({ level, count, avgCorrectness, chartVar }) => (
+                <div
+                  key={level}
+                  className="flex items-center gap-1.5 rounded-full px-3 py-1"
+                  style={{
+                    background: `color-mix(in oklch, var(${chartVar}) 12%, var(--background))`,
+                    border: `1px solid color-mix(in oklch, var(${chartVar}) 28%, transparent)`,
+                  }}
+                >
+                  <span className="text-xs font-medium" style={{ color: `var(${chartVar})` }}>{level}</span>
+                  <Badge
+                    variant="secondary"
+                    className="rounded font-mono"
+                    style={{
+                      fontSize: 10,
+                      padding: '0px 5px',
+                      background: `color-mix(in oklch, var(${chartVar}) 18%, var(--background))`,
+                      color: `var(${chartVar})`,
+                    }}
+                  >
+                    {count} of {total}
+                  </Badge>
+                  <span className="text-[11px] text-muted-foreground">· {avgCorrectness}% correct</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
@@ -374,7 +480,7 @@ const TONE: Record<'brand' | 'info' | 'warning' | 'success' | 'neutral', { bg: s
 function Histogram({ dist }: { dist: ScoreDist }) {
   const max = Math.max(...dist.histogram.map(b => b.count))
   return (
-    <div className="flex items-end justify-between gap-2" style={{ height: 180 }}>
+    <div className="flex items-end justify-between gap-2" style={{ minHeight: 180 }}>
       {dist.histogram.map(b => {
         const isFailing = parseInt(b.bucket.split('-')[0], 10) < 70
         const heightPct = (b.count / max) * 100
@@ -419,12 +525,11 @@ type Item = {
 }
 
 function ItemsView({ items }: { items: Item[] }) {
-  const [sortBy, setSortBy] = useState<'severity' | 'order' | 'difficulty' | 'pbis'>('severity')
-  const [filter, setFilter] = useState<'all' | 'flagged' | 'easy' | 'hard'>('all')
+  const [sortBy, setSortBy] = useState<'severity' | 'order' | 'difficulty'>('severity')
+  const [filter, setFilter] = useState<'all' | 'easy' | 'hard'>('all')
 
   const sorted = useMemo(() => {
     let list = [...items]
-    if (filter === 'flagged') list = list.filter(i => i.negativeDiscriminator || i.pointBiserial < 0.15)
     if (filter === 'easy') list = list.filter(i => i.difficultyIndex >= 0.85)
     if (filter === 'hard') list = list.filter(i => i.difficultyIndex < 0.4)
     if (sortBy === 'severity') {
@@ -434,38 +539,30 @@ function ItemsView({ items }: { items: Item[] }) {
         return sb - sa
       })
     } else if (sortBy === 'difficulty') list.sort((a, b) => a.difficultyIndex - b.difficultyIndex)
-    else if (sortBy === 'pbis') list.sort((a, b) => a.pointBiserial - b.pointBiserial)
     else list.sort((a, b) => a.order - b.order)
     return list
   }, [items, sortBy, filter])
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Bird's-eye scatter — shows item-quality landscape at a glance */}
-      <QuestionScatterPlot items={items} />
-
       <div className="flex items-center gap-2 flex-wrap">
         <FilterChip label="All" active={filter === 'all'} onClick={() => setFilter('all')} />
-        <FilterChip label="Flagged" active={filter === 'flagged'} onClick={() => setFilter('flagged')} tone="warning" />
         <FilterChip label="Too easy (≥85%)" active={filter === 'easy'} onClick={() => setFilter('easy')} />
         <FilterChip label="Too hard (<40%)" active={filter === 'hard'} onClick={() => setFilter('hard')} />
         <span className="ms-auto text-xs text-muted-foreground">Sort by:</span>
         <FilterChip label="Severity" active={sortBy === 'severity'} onClick={() => setSortBy('severity')} small />
         <FilterChip label="Order" active={sortBy === 'order'} onClick={() => setSortBy('order')} small />
         <FilterChip label="Difficulty" active={sortBy === 'difficulty'} onClick={() => setSortBy('difficulty')} small />
-        <FilterChip label="Point-biserial" active={sortBy === 'pbis'} onClick={() => setSortBy('pbis')} small />
       </div>
       <div className="rounded-xl border bg-card overflow-hidden" style={{ borderColor: 'var(--border)' }}>
         <div
           className="grid items-center gap-3 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b"
-          style={{ gridTemplateColumns: '40px minmax(0, 2fr) 100px 110px 130px 80px 80px', borderColor: 'var(--border)' }}
+          style={{ gridTemplateColumns: '40px minmax(0, 2fr) 100px 130px 80px', borderColor: 'var(--border)' }}
         >
           <div>#</div>
           <div>Question</div>
           <div>Difficulty</div>
-          <div>Pt-biserial</div>
           <div>Distractor mix</div>
-          <div>Objective</div>
           <div></div>
         </div>
         {sorted.map(item => <ItemRow key={item.questionId + item.order} item={item} />)}
@@ -477,19 +574,18 @@ function ItemsView({ items }: { items: Item[] }) {
 function severityScore(i: Item): number {
   let s = 0
   if (i.negativeDiscriminator) s += 100
-  if (i.pointBiserial < 0.15) s += 30
   if (i.difficultyIndex < 0.3) s += 20
   if (i.difficultyIndex > 0.95) s += 10
   return s
 }
 
 function ItemRow({ item }: { item: Item }) {
-  const flagged = item.negativeDiscriminator || item.pointBiserial < 0.15
+  const flagged = item.negativeDiscriminator
   return (
     <div
       className={`grid items-start gap-3 px-4 py-3 border-b last:border-b-0 text-sm transition-colors ${flagged ? '' : 'hover:bg-muted/30'}`}
       style={{
-        gridTemplateColumns: '40px minmax(0, 2fr) 100px 110px 130px 80px 80px',
+        gridTemplateColumns: '40px minmax(0, 2fr) 100px 130px 80px',
         borderColor: 'var(--border)',
         background: item.negativeDiscriminator
           ? 'color-mix(in oklch, var(--chart-4) 5%, var(--background))'
@@ -516,22 +612,32 @@ function ItemRow({ item }: { item: Item }) {
               Negative
             </Badge>
           )}
-          {!item.negativeDiscriminator && item.pointBiserial < 0.15 && (
-            <Badge
-              variant="secondary"
-              className="rounded text-[10px] uppercase tracking-wider font-bold"
-              style={{ background: 'var(--muted)', color: 'var(--muted-foreground)' }}
-            >
-              Low pbis
-            </Badge>
-          )}
         </div>
-        <p className="text-sm text-foreground line-clamp-2 leading-snug">{item.title}</p>
+        {item.objectiveTitle && item.objectiveTitle !== '—' ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <p className="text-sm text-foreground line-clamp-3 leading-snug cursor-help">{item.title}</p>
+            </TooltipTrigger>
+            <TooltipContent>{item.objectiveTitle}</TooltipContent>
+          </Tooltip>
+        ) : (
+          <p className="text-sm text-foreground line-clamp-3 leading-snug">{item.title}</p>
+        )}
+        {(() => {
+          const TOTAL = 28
+          const correct = Math.round(item.distractorRates[0] * TOTAL)
+          const wrongRate = item.distractorRates.slice(1).reduce((a, b) => a + b, 0)
+          const wrong = Math.round(wrongRate * TOTAL)
+          const skipped = Math.max(0, TOTAL - correct - wrong)
+          return (
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              {TOTAL} students · {correct} correct · {wrong} wrong · {skipped} skipped
+            </p>
+          )
+        })()}
       </div>
-      <DiffMini value={item.difficultyIndex} />
-      <PbisMini value={item.pointBiserial} />
+      <DiffMini difficulty={item.difficulty} />
       <DistractorMini rates={item.distractorRates} />
-      <span className="text-[11px] text-muted-foreground line-clamp-1" title={item.objectiveTitle}>{item.objectiveTitle}</span>
       <div className="text-end">
         <Tooltip>
           <TooltipTrigger asChild>
@@ -548,55 +654,38 @@ function ItemRow({ item }: { item: Item }) {
   )
 }
 
-function DiffMini({ value }: { value: number }) {
-  const tone = value < 0.4 ? 'warning' : value > 0.95 ? 'warning' : value < 0.85 ? 'success' : 'info'
-  const palette = TONE[tone]
+function DiffMini({ difficulty }: { difficulty: 'Easy' | 'Medium' | 'Hard' }) {
+  const palette: Record<'Easy' | 'Medium' | 'Hard', { bg: string; fg: string }> = {
+    Easy:   { bg: 'color-mix(in oklch, var(--chart-2) 12%, var(--background))', fg: 'var(--chart-2)' },
+    Medium: { bg: 'color-mix(in oklch, var(--chart-1) 12%, var(--background))', fg: 'var(--chart-1)' },
+    Hard:   { bg: 'color-mix(in oklch, var(--chart-4) 12%, var(--background))', fg: 'var(--chart-4)' },
+  }
+  const p = palette[difficulty]
   return (
-    <div className="flex items-center gap-1.5">
-      <div className="h-1.5 w-12 rounded-full overflow-hidden" style={{ background: 'var(--muted)' }}>
-        <div className="h-full rounded-full" style={{ width: `${value * 100}%`, background: palette.fg }} />
-      </div>
-      <span className="text-[10px] font-bold tabular-nums" style={{ color: palette.fg }}>{Math.round(value * 100)}%</span>
-    </div>
-  )
-}
-
-function PbisMini({ value }: { value: number }) {
-  const tone = value < 0 ? 'warning' : value < 0.15 ? 'warning' : value < 0.25 ? 'info' : 'success'
-  const palette = TONE[tone]
-  return (
-    <div className="flex items-center gap-1.5">
-      <div className="relative h-1.5 w-14 rounded-full overflow-hidden" style={{ background: 'var(--muted)' }}>
-        {/* Center line */}
-        <div aria-hidden="true" className="absolute top-0 bottom-0" style={{ left: '20%', width: 1, background: 'var(--border)' }} />
-        <div
-          className="absolute top-1/2 -translate-y-1/2 h-2 w-1 rounded-full"
-          style={{
-            left: `calc(${Math.max(0, (value + 0.2) / 1.2 * 100)}% - 2px)`,
-            background: palette.fg,
-          }}
-        />
-      </div>
-      <span className="text-[10px] font-bold tabular-nums" style={{ color: palette.fg }}>{value.toFixed(2)}</span>
-    </div>
+    <Badge
+      variant="secondary"
+      className="rounded-full text-[10px] font-semibold"
+      style={{ backgroundColor: p.bg, color: p.fg }}
+    >
+      {difficulty}
+    </Badge>
   )
 }
 
 function DistractorMini({ rates }: { rates: number[] }) {
-  const max = Math.max(...rates)
   const labels = ['A', 'B', 'C', 'D', 'E']
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <div className="flex items-end gap-0.5 cursor-help">
           {rates.slice(0, 5).map((r, i) => {
-            const isKey = r === max
+            const isKey = i === 0
             return (
               <div key={i} className="flex flex-col items-center gap-0.5">
                 <div
                   style={{
                     width: 8, height: Math.max(2, Math.round(r * 24)),
-                    background: isKey ? 'var(--chart-2)' : r > 0.2 ? 'var(--chart-4)' : 'var(--muted-foreground)',
+                    background: isKey ? 'var(--chart-2)' : 'var(--muted-foreground)',
                     borderRadius: 1,
                   }}
                 />
@@ -606,7 +695,7 @@ function DistractorMini({ rates }: { rates: number[] }) {
           })}
         </div>
       </TooltipTrigger>
-      <TooltipContent>Pick rates · green = keyed · amber = strong distractor &gt;20%</TooltipContent>
+      <TooltipContent>Pick rates · green bar = correct answer</TooltipContent>
     </Tooltip>
   )
 }
@@ -618,9 +707,11 @@ function FilterChip({
 }) {
   const tonePalette = tone ? TONE[tone] : null
   return (
-    <button
+    <Button
       onClick={onClick}
-      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-all ${small ? 'px-2.5 py-0.5' : ''}`}
+      variant="ghost"
+      size="sm"
+      className={`rounded-full text-xs font-medium h-auto ${small ? 'px-2.5 py-0.5' : 'px-3 py-1'}`}
       style={{
         background: active
           ? tonePalette?.bg ?? 'color-mix(in oklch, var(--brand-color) 12%, var(--background))'
@@ -633,7 +724,7 @@ function FilterChip({
       aria-pressed={active}
     >
       {label}
-    </button>
+    </Button>
   )
 }
 
@@ -641,16 +732,16 @@ function FilterChip({
 function ContentAreasView({ courseId }: { courseId: string }) {
   const objectives = courseObjectives.filter(o => o.courseId === courseId)
   return (
-    <div className="rounded-xl border bg-card p-5" style={{ borderColor: 'var(--border)' }}>
-      <header className="mb-4">
-        <h2 className="font-semibold text-foreground" style={{ fontFamily: 'var(--font-heading)', fontSize: 16 }}>
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-heading text-base font-semibold">
           Performance by content area / objective
-        </h2>
-        <p className="text-xs text-muted-foreground mt-0.5">
+        </CardTitle>
+        <CardDescription className="text-xs">
           Aggregated student performance per objective on this assessment.
-        </p>
-      </header>
-      <div className="flex flex-col gap-2.5">
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-2.5">
         {objectives.map(o => {
           const tone = o.avgPerformance >= 80 ? 'success' : o.avgPerformance >= 70 ? 'info' : o.avgPerformance > 0 ? 'warning' : 'neutral'
           const palette = TONE[tone]
@@ -668,8 +759,8 @@ function ContentAreasView({ courseId }: { courseId: string }) {
             </div>
           )
         })}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -678,8 +769,6 @@ function CurveView({ scoreDist, items }: { scoreDist: ScoreDist; items: Item[] }
   const [bonus, setBonus] = useState(0)
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set())
   const [applied, setApplied] = useState(false)
-
-  const flaggedItems = items.filter(i => i.negativeDiscriminator || i.pointBiserial < 0.15)
 
   const adjusted = useMemo(() => {
     const totalQs = items.length
@@ -707,40 +796,40 @@ function CurveView({ scoreDist, items }: { scoreDist: ScoreDist; items: Item[] }
     <div className="grid gap-5" style={{ gridTemplateColumns: 'minmax(0, 1fr) 280px' }}>
       {/* Adjustment controls */}
       <section className="flex flex-col gap-4">
-        <div className="rounded-xl border bg-card p-5" style={{ borderColor: 'var(--border)' }}>
-          <h3 className="font-semibold text-foreground mb-3" style={{ fontSize: 14 }}>
-            Bonus points (cohort-wide)
-          </h3>
-          <div className="flex items-center gap-3">
-            <input
-              type="range"
-              min={0} max={10} step={1}
-              value={bonus}
-              onChange={(e) => setBonus(parseInt(e.target.value, 10))}
-              className="flex-1 accent-[color:var(--brand-color)]"
-              aria-label="Bonus points"
-            />
-            <span className="text-sm font-bold tabular-nums w-12 text-end" style={{ color: 'var(--brand-color-dark)' }}>
-              +{bonus}
-            </span>
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-1.5">
-            Adds {bonus} {bonus === 1 ? 'point' : 'points'} to every student's score (capped at 100%).
-          </p>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold">Bonus points (cohort-wide)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-3">
+              <input
+                type="range"
+                min={0} max={10} step={1}
+                value={bonus}
+                onChange={(e) => setBonus(parseInt(e.target.value, 10))}
+                className="flex-1 accent-[color:var(--brand-color)]"
+                aria-label="Bonus points"
+              />
+              <span className="text-sm font-bold tabular-nums w-12 text-end" style={{ color: 'var(--brand-color-dark)' }}>
+                +{bonus}
+              </span>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1.5">
+              Adds {bonus} {bonus === 1 ? 'point' : 'points'} to every student&apos;s score (capped at 100%).
+            </p>
+          </CardContent>
+        </Card>
 
-        <div className="rounded-xl border bg-card p-5" style={{ borderColor: 'var(--border)' }}>
-          <h3 className="font-semibold text-foreground mb-1" style={{ fontSize: 14 }}>
-            Exclude flagged items from scoring
-          </h3>
-          <p className="text-xs text-muted-foreground mb-3">
-            Removed items don't count against students. Recommended for negative discriminators.
-          </p>
-          {flaggedItems.length === 0 ? (
-            <p className="text-sm text-muted-foreground italic">No flagged items in this assessment.</p>
-          ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold">Exclude questions from scoring</CardTitle>
+            <CardDescription className="text-xs">
+              Removed questions don&apos;t count against students. You can exclude any question — not just flagged ones.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <div className="flex flex-col gap-1.5">
-              {flaggedItems.map(item => (
+              {items.map(item => (
                 <label
                   key={item.questionId + item.order}
                   className="flex items-start gap-3 rounded-lg border p-2.5 cursor-pointer hover:bg-muted/30 transition-colors"
@@ -762,20 +851,21 @@ function CurveView({ scoreDist, items }: { scoreDist: ScoreDist; items: Item[] }
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm text-foreground line-clamp-1 mt-0.5">{item.title}</p>
+                    <p className="text-sm text-foreground line-clamp-2 mt-0.5">{item.title}</p>
                   </div>
                 </label>
               ))}
             </div>
-          )}
-        </div>
+          </CardContent>
+        </Card>
       </section>
 
       {/* Live preview */}
-      <aside className="rounded-xl border bg-card p-5 self-start sticky top-2" style={{ borderColor: 'var(--border)' }}>
-        <h3 className="font-semibold text-foreground mb-3" style={{ fontSize: 14 }}>
-          Live preview
-        </h3>
+      <Card className="self-start sticky top-2">
+        <CardHeader>
+          <CardTitle className="text-sm font-semibold">Live preview</CardTitle>
+        </CardHeader>
+        <CardContent>
         <div className="flex flex-col gap-3">
           <PreviewMetric
             label="Cohort average"
@@ -797,16 +887,10 @@ function CurveView({ scoreDist, items }: { scoreDist: ScoreDist; items: Item[] }
           />
         </div>
         {applied ? (
-          <div className="mt-4 rounded-md border border-chart-2/30 bg-chart-2/10 p-3">
-            <div className="flex items-center gap-2">
-              <i className="fa-solid fa-circle-check text-chart-2 text-base" aria-hidden="true" />
-              <p className="text-sm font-semibold text-foreground">Curve applied</p>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {bonus > 0 ? `+${bonus} pt bonus · ` : ''}
-              {excludedIds.size > 0 ? `${excludedIds.size} item${excludedIds.size === 1 ? '' : 's'} excluded` : 'no items excluded'}
-            </p>
-          </div>
+          <LocalBanner variant="success" title="Curve applied" className="mt-4">
+            {bonus > 0 ? `+${bonus} pt bonus · ` : ''}
+            {excludedIds.size > 0 ? `${excludedIds.size} item${excludedIds.size === 1 ? '' : 's'} excluded` : 'no items excluded'}
+          </LocalBanner>
         ) : (
           <Button
             size="default"
@@ -826,7 +910,8 @@ function CurveView({ scoreDist, items }: { scoreDist: ScoreDist; items: Item[] }
         >
           Reset
         </Button>
-      </aside>
+        </CardContent>
+      </Card>
     </div>
   )
 }

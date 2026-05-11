@@ -21,6 +21,7 @@
 import { useMemo, useState } from 'react'
 import {
   Button, Badge, Input, Textarea, Label,
+  Card, CardHeader, CardDescription, CardContent,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   RadioGroup, RadioGroupItem, Checkbox,
   ToggleSwitch,
@@ -793,23 +794,32 @@ function FillBlankPreview({ template }: { template: string }) {
   })
   if (lastIdx < template.length) parts.push({ type: 'text', value: template.slice(lastIdx) })
   return (
-    <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Student-facing preview</p>
-      <p className="text-sm text-foreground leading-relaxed">
-        {parts.map((p, i) => p.type === 'text'
-          ? <span key={i}>{p.value}</span>
-          : (
-            <span
-              key={i}
-              className="inline-block min-w-12 px-2 mx-0.5 rounded bg-background border-b-2 border-brand text-center text-xs font-mono text-muted-foreground align-baseline"
-              style={{ paddingTop: 1, paddingBottom: 1 }}
-            >
-              #{p.idx + 1}
-            </span>
-          )
-        )}
-      </p>
-    </div>
+    <Card
+      size="sm"
+      className="ring-0 border border-dashed border-border bg-muted/20"
+    >
+      <CardHeader>
+        <CardDescription className="text-[10px] font-bold uppercase tracking-wider">
+          Student-facing preview
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-foreground leading-relaxed">
+          {parts.map((p, i) => p.type === 'text'
+            ? <span key={i}>{p.value}</span>
+            : (
+              <span
+                key={i}
+                className="inline-block min-w-12 px-2 mx-0.5 rounded bg-background border-b-2 border-brand text-center text-xs font-mono text-muted-foreground align-baseline"
+                style={{ paddingTop: 1, paddingBottom: 1 }}
+              >
+                #{p.idx + 1}
+              </span>
+            )
+          )}
+        </p>
+      </CardContent>
+    </Card>
   )
 }
 
