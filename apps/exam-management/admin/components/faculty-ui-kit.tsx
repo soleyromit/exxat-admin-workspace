@@ -26,7 +26,7 @@ const TONE_TILE: Record<Tone, { wrap: string; iconBg: string; iconFg: string; va
   warning:     { wrap: 'border-border', iconBg: 'bg-muted',     iconFg: 'text-chart-4',      valueFg: 'text-foreground', accent: 'before:bg-chart-4' },
   success:     { wrap: 'border-border', iconBg: 'bg-muted',     iconFg: 'text-chart-2',      valueFg: 'text-foreground', accent: 'before:bg-chart-2' },
   neutral:     { wrap: 'border-border', iconBg: 'bg-muted',     iconFg: 'text-muted-foreground', valueFg: 'text-foreground', accent: 'before:bg-border' },
-  destructive: { wrap: 'border-border', iconBg: 'bg-muted',     iconFg: 'text-destructive',  valueFg: 'text-foreground', accent: 'before:bg-destructive' },
+  destructive: { wrap: 'border-border', iconBg: 'bg-muted',     iconFg: 'text-chart-5',      valueFg: 'text-foreground', accent: 'before:bg-chart-5' },
 }
 
 // Pill palette — minimal fill; colored text on neutral surface. Border is
@@ -38,7 +38,7 @@ const TONE_PILL: Record<Tone, { bg: string; fg: string; border: string }> = {
   warning:     { bg: 'bg-chart-4/8',      fg: 'text-chart-4',          border: 'border-transparent' },
   success:     { bg: 'bg-transparent',    fg: 'text-chart-2',          border: 'border-transparent' },
   neutral:     { bg: 'bg-transparent',    fg: 'text-muted-foreground', border: 'border-transparent' },
-  destructive: { bg: 'bg-destructive/8',  fg: 'text-destructive',      border: 'border-transparent' },
+  destructive: { bg: 'bg-chart-5/10',     fg: 'text-chart-5',          border: 'border-transparent' },
 }
 
 // ─── KpiTile ────────────────────────────────────────────────────────────────
@@ -121,7 +121,7 @@ const BLOOM_TONE: Record<BloomLevel, Tone> = {
   Understand: 'success',
   Apply:      'brand',
   Analyze:    'warning',
-  Evaluate:   'destructive',
+  Evaluate:   'warning',
   Create:     'brand',
 }
 
@@ -167,7 +167,7 @@ export interface MetricBarProps {
 export function MetricBar({ value, tone = 'info', width = 'w-full', height = 'sm' }: MetricBarProps) {
   const fillFg: Record<Tone, string> = {
     brand: 'bg-brand', info: 'bg-chart-1', warning: 'bg-chart-4',
-    success: 'bg-chart-2', neutral: 'bg-foreground', destructive: 'bg-destructive',
+    success: 'bg-chart-2', neutral: 'bg-foreground', destructive: 'bg-chart-5',
   }
   const h = height === 'sm' ? 'h-1.5' : 'h-2.5'
   const clamped = Math.max(0, Math.min(100, value))
@@ -189,18 +189,9 @@ export function PerfBadge({ score, passing = 70 }: { score: number; passing?: nu
   return <span className={`text-xs font-bold tabular-nums ${palette.valueFg}`}>{score}%</span>
 }
 
-// ─── KpiCard wrapper — uses DS Card ────────────────────────────────────────
-//    Use when you want the DS Card semantics; KpiTile is a lighter variant.
-
-export function KpiCard(props: KpiTileProps) {
-  return (
-    <Card className="px-0 py-0 border-border">
-      <CardContent className="px-4 py-3.5">
-        <KpiTileInner {...props} />
-      </CardContent>
-    </Card>
-  )
-}
+// (KpiCard removed 2026-05-11 — confirmed 0 usages via grep + KeyMetrics
+//  depth audit. The `px-0 py-0` overrides on Card violated the spacing
+//  contract; KpiTile is the lighter variant teams actually use.)
 
 function KpiTileInner({ icon, label, value, tone = 'neutral', sub }: KpiTileProps) {
   const t = TONE_TILE[tone]
@@ -235,11 +226,11 @@ export function ToneCallout({
 }) {
   const accent: Record<Tone, string> = {
     brand: 'border-l-brand', info: 'border-l-chart-1', warning: 'border-l-chart-4',
-    success: 'border-l-chart-2', neutral: 'border-l-border', destructive: 'border-l-destructive',
+    success: 'border-l-chart-2', neutral: 'border-l-border', destructive: 'border-l-chart-5',
   }
   const iconColor: Record<Tone, string> = {
     brand: 'text-brand-dark', info: 'text-chart-1', warning: 'text-chart-4',
-    success: 'text-chart-2', neutral: 'text-muted-foreground', destructive: 'text-destructive',
+    success: 'text-chart-2', neutral: 'text-muted-foreground', destructive: 'text-chart-5',
   }
   return (
     <div className={`rounded-lg border border-border bg-card border-l-3 ${accent[tone]} p-4`}>

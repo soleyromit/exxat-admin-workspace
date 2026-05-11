@@ -2,12 +2,17 @@
 import { useQB } from './qb-state'
 import {
   Button, Badge, useSidebar,
-  DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuItem,
+  DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuItem, DropdownMenuSeparator,
   Popover, PopoverTrigger, PopoverContent,
   Tooltip, TooltipContent, TooltipTrigger,
   Avatar, AvatarFallback,
 } from '@exxat/ds/packages/ui/src'
 import type { FolderNode, Persona } from '@/lib/qb-types'
+import { PERSONAS as GLOBAL_PERSONAS } from '@/lib/personas'
+
+function institutionalRoleOf(qbPersonaId: string): 'admin' | 'faculty' {
+  return GLOBAL_PERSONAS.find(g => g.id === qbPersonaId)?.role ?? 'faculty'
+}
 
 function getRoleLabel(role: Persona['role']): string {
   if (role === 'exam_admin') return 'Exam Management Admin'
@@ -64,11 +69,14 @@ function QBBreadcrumb() {
 
   const rootBtn = crumbBtn('Question Bank', () => setNavView('my'), folderPath.length > 0)
 
-  const leafSpan = (node: FolderNode) => (
-    <span className="text-sm font-medium text-foreground" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>
-      {node.isCourse ? courseFolderLabel(node.name) : node.name}
-    </span>
-  )
+  const leafSpan = (node: FolderNode) => {
+    const label = node.isCourse ? courseFolderLabel(node.name) : node.name
+    return (
+      <span className="text-sm font-medium text-foreground" title={label} style={{ whiteSpace: 'nowrap', overflow: 'visible', textOverflow: 'ellipsis', maxWidth: 200 }}>
+        {label}
+      </span>
+    )
+  }
 
   if (folderPath.length === 0) {
     return <span className="text-sm font-medium text-foreground">Question Bank</span>
@@ -78,7 +86,8 @@ function QBBreadcrumb() {
     // Question Bank > Root (root IS the leaf)
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        {rootBtn}<SEP />{leafSpan(last!)}
+        <span className="qb-crumb-root-seg">{rootBtn}<SEP /></span>
+        {leafSpan(last!)}
       </div>
     )
   }
@@ -87,8 +96,7 @@ function QBBreadcrumb() {
     // Question Bank > Parent > Leaf — show both, no ellipsis needed
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0 }}>
-        {rootBtn}
-        <SEP />
+        <span className="qb-crumb-root-seg">{rootBtn}<SEP /></span>
         {crumbBtn(parent!.isCourse ? courseFolderLabel(parent!.name) : parent!.name, () => navigateToFolder(parent!.id), true)}
         <SEP />
         {leafSpan(last!)}
@@ -99,10 +107,9 @@ function QBBreadcrumb() {
   // 3+ levels: Question Bank > … > Parent > Leaf
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0 }}>
-      {rootBtn}
-      <SEP />
-      <Popover>
-        <PopoverTrigger asChild>
+      <span className="qb-crumb-root-seg">{rootBtn}<SEP /></span>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
           <Button
             variant="ghost" size="xs"
             aria-label="Show parent folders"
@@ -111,27 +118,25 @@ function QBBreadcrumb() {
           >
             …
           </Button>
-        </PopoverTrigger>
-        <PopoverContent align="start" className="w-56 p-2">
-          <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider" style={{ padding: '4px 8px 6px' }}>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-56">
+          <DropdownMenuLabel className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
             Parent folders
-          </div>
+          </DropdownMenuLabel>
           {collapsedNodes.map(node => (
-            <Button
+            <DropdownMenuItem
               key={node.id}
-              variant="ghost"
-              size="sm"
-              onClick={() => navigateToFolder(node.id)}
-              className="w-full justify-start gap-2 text-sm text-foreground font-normal h-auto py-1.5 px-2"
+              onSelect={() => navigateToFolder(node.id)}
+              className="gap-2"
             >
               <i className={`fa-light ${node.isCourse ? 'fa-graduation-cap' : 'fa-folder'}`} aria-hidden="true" style={{ fontSize: 12, width: 14, flexShrink: 0 }} />
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {node.isCourse ? courseFolderLabel(node.name) : node.name}
               </span>
-            </Button>
+            </DropdownMenuItem>
           ))}
-        </PopoverContent>
-      </Popover>
+        </DropdownMenuContent>
+      </DropdownMenu>
       <SEP />
       {crumbBtn(parent!.isCourse ? courseFolderLabel(parent!.name) : parent!.name, () => navigateToFolder(parent!.id), true)}
       <SEP />
@@ -141,7 +146,7 @@ function QBBreadcrumb() {
 }
 
 export function QBHeader() {
-  const { currentPersona, setCurrentPersona, personas } = useQB()
+  const { currentPersona, setCurrentPersona, personas, sidebarOpen, setSidebarOpen } = useQB()
   const { toggleSidebar, state: sidebarState } = useSidebar()
 
   return (
@@ -174,6 +179,25 @@ export function QBHeader() {
 
         <div style={{ width: 1, height: 16, background: 'var(--border)', flexShrink: 0 }} />
 
+        {/* QB folder tree toggle — separate from the DS main nav toggle above */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label={sidebarOpen ? 'Close folder tree' : 'Open folder tree'}
+              className={sidebarOpen ? 'text-foreground' : 'text-muted-foreground'}
+              style={{ flexShrink: 0 }}
+            >
+              <i className="fa-light fa-folder-tree" aria-hidden="true" style={{ fontSize: 14 }} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{sidebarOpen ? 'Close folder tree' : 'Open folder tree'}</TooltipContent>
+        </Tooltip>
+
+        <div style={{ width: 1, height: 16, background: 'var(--border)', flexShrink: 0 }} />
+
         <QBBreadcrumb />
       </div>
 
@@ -183,33 +207,51 @@ export function QBHeader() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="gap-2 h-8 px-2" aria-label="Switch persona">
               <Avatar style={{ width: 24, height: 24 }}>
-                <AvatarFallback className="text-[9px] font-bold" style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>
+                <AvatarFallback className="text-[9px] font-bold" style={{ backgroundColor: 'color-mix(in oklch, var(--foreground) 8%, var(--background))', color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))' }}>
                   {currentPersona.initials}
                 </AvatarFallback>
               </Avatar>
               <span className="text-xs font-medium">{currentPersona.name}</span>
-              <Badge variant="secondary" className="rounded text-[10px]">{getRoleLabel(currentPersona.role)}</Badge>
+              <Badge
+                variant="secondary"
+                className="rounded text-[10px]"
+                style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}
+              >
+                {getRoleLabel(currentPersona.role)}
+              </Badge>
               <i className="fa-light fa-chevron-down text-muted-foreground" aria-hidden="true" style={{ fontSize: 10 }} />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-56">
             <DropdownMenuLabel>Switch Persona</DropdownMenuLabel>
-            {personas.map((p: Persona) => (
-              <DropdownMenuItem key={p.id} onClick={() => setCurrentPersona(p)}>
-                <Avatar style={{ width: 24, height: 24 }}>
-                  <AvatarFallback className="text-[9px] font-bold" style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>
-                    {p.initials}
-                  </AvatarFallback>
-                </Avatar>
-                <div style={{ flex: 1 }}>
-                  <div className="text-sm font-semibold">{p.name}</div>
-                  <div className="text-xs text-muted-foreground">{getRoleLabel(p.role)}</div>
+            {(['admin', 'faculty'] as const).map((groupRole, gi) => {
+              const groupPersonas = personas.filter(p => institutionalRoleOf(p.id) === groupRole)
+              if (groupPersonas.length === 0) return null
+              return (
+                <div key={groupRole}>
+                  {gi > 0 && <DropdownMenuSeparator />}
+                  <DropdownMenuLabel className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground py-1">
+                    {groupRole === 'admin' ? 'Administrator' : 'Faculty'}
+                  </DropdownMenuLabel>
+                  {groupPersonas.map((p: Persona) => (
+                    <DropdownMenuItem key={p.id} onClick={() => setCurrentPersona(p)}>
+                      <Avatar style={{ width: 24, height: 24 }}>
+                        <AvatarFallback className="text-[9px] font-bold" style={{ backgroundColor: 'color-mix(in oklch, var(--foreground) 8%, var(--background))', color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))' }}>
+                          {p.initials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div style={{ flex: 1 }}>
+                        <div className="text-sm font-semibold">{p.name}</div>
+                        <div className="text-xs text-muted-foreground">{getRoleLabel(p.role)}</div>
+                      </div>
+                      {p.id === currentPersona.id && (
+                        <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 11, color: 'var(--brand-color)' }} />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
                 </div>
-                {p.id === currentPersona.id && (
-                  <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 11, color: 'var(--brand-color)' }} />
-                )}
-              </DropdownMenuItem>
-            ))}
+              )
+            })}
             <div style={{ margin: '4px 12px 4px', padding: '8px 0 0', borderTop: '1px solid var(--border)' }}>
               <p className="text-xs text-muted-foreground">
                 Trust level determines auto-approval behavior for new questions.

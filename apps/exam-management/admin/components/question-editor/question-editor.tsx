@@ -25,6 +25,7 @@ import {
   RadioGroup, RadioGroupItem, Checkbox,
   ToggleSwitch,
   Tooltip, TooltipTrigger, TooltipContent,
+  LocalBanner,
 } from '@exxat/ds/packages/ui/src'
 import {
   type EditorQType, type QuestionDraft, type QuestionPayload,
@@ -329,12 +330,12 @@ function TypePickerGrid({ value, onChange }: { value: EditorQType; onChange: (t:
       {QUESTION_TYPES.map(t => {
         const active = t.id === value
         return (
-          <button
+          <Button
             key={t.id}
-            type="button"
+            variant="ghost"
             onClick={() => onChange(t.id)}
             aria-pressed={active}
-            className={`text-left rounded-lg border px-3 py-2.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${
+            className={`flex-col items-start justify-start text-left h-auto rounded-lg border px-3 py-2.5 whitespace-normal ${
               active
                 ? 'border-brand/60 bg-brand/8 ring-1 ring-brand/30'
                 : 'border-border bg-card hover:border-brand/40 hover:bg-muted/30'
@@ -347,7 +348,7 @@ function TypePickerGrid({ value, onChange }: { value: EditorQType; onChange: (t:
               </span>
             </div>
             <p className="text-[10px] text-muted-foreground leading-snug line-clamp-2">{t.shortDescription}</p>
-          </button>
+          </Button>
         )
       })}
     </div>
@@ -997,14 +998,15 @@ function HotspotControls({
             <span className="absolute -top-5 left-0 text-[9px] font-mono bg-brand text-brand-foreground px-1 rounded">
               {h.label}
             </span>
-            <button
-              type="button"
+            <Button
+              variant="destructive"
+              size="icon-xs"
               onClick={(e) => { e.stopPropagation(); removeHotspot(h.id) }}
-              className="absolute -top-1.5 -right-1.5 size-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
+              className="absolute -top-1.5 -right-1.5 size-4 rounded-full"
               aria-label={`Remove ${h.label}`}
             >
               <i className="fa-solid fa-xmark text-[8px]" aria-hidden="true" />
-            </button>
+            </Button>
           </div>
         ))}
       </div>
@@ -1127,9 +1129,15 @@ function MetadataPanel({
             {draft.tags.map(t => (
               <Badge key={t} variant="secondary" className="rounded text-[9px] gap-1">
                 {t}
-                <button onClick={() => onUpdate('tags', draft.tags.filter(x => x !== t))} aria-label={`Remove ${t}`}>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => onUpdate('tags', draft.tags.filter(x => x !== t))}
+                  aria-label={`Remove ${t}`}
+                  className="size-3 p-0 hover:bg-transparent"
+                >
                   <i className="fa-solid fa-xmark text-[8px]" aria-hidden="true" />
-                </button>
+                </Button>
               </Badge>
             ))}
           </div>
@@ -1161,11 +1169,12 @@ function WorkflowPanel({
             const active = draft.confidence === level
             const label = level === null ? 'Clear' : level === 'high' ? 'High' : 'Low'
             return (
-              <button
+              <Button
                 key={String(level)}
-                type="button"
+                variant="ghost"
                 onClick={() => onUpdate('confidence', level)}
-                className={`flex-1 text-xs font-medium rounded-md px-2 py-1.5 border transition-colors ${
+                aria-pressed={active}
+                className={`flex-1 text-xs font-medium h-auto rounded-md px-2 py-1.5 border ${
                   active
                     ? level === 'high'
                       ? 'bg-chart-2/15 border-chart-2/40 text-chart-2'
@@ -1176,7 +1185,7 @@ function WorkflowPanel({
                 }`}
               >
                 {label}
-              </button>
+              </Button>
             )
           })}
         </div>
@@ -1199,25 +1208,25 @@ function WorkflowPanel({
 function ValidationPanel({ errors, warnings }: { errors: DraftValidationIssue[]; warnings: DraftValidationIssue[] }) {
   if (errors.length === 0 && warnings.length === 0) return null
   return (
-    <section className="rounded-xl border border-border bg-card p-4 flex flex-col gap-2">
-      <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
-        {errors.length > 0 ? 'Fix before saving' : 'Suggestions'}
-      </h2>
-      <ul className="flex flex-col gap-1.5">
-        {errors.map((e, i) => (
-          <li key={`e-${i}`} className="flex items-start gap-2 text-xs">
-            <i className="fa-light fa-circle-exclamation text-destructive mt-0.5" aria-hidden="true" />
-            <span className="text-foreground">{e.message}</span>
-          </li>
-        ))}
-        {warnings.map((w, i) => (
-          <li key={`w-${i}`} className="flex items-start gap-2 text-xs">
-            <i className="fa-light fa-circle-info text-chart-4 mt-0.5" aria-hidden="true" />
-            <span className="text-muted-foreground">{w.message}</span>
-          </li>
-        ))}
-      </ul>
-    </section>
+    <div className="flex flex-col gap-2">
+      {/* DS LocalBanner pair (was hand-rolled section with error+info icons,
+          per dialog-banner-badge audit). Two banners so error vs warning gets
+          distinct semantic + assistive-tech treatment. */}
+      {errors.length > 0 && (
+        <LocalBanner variant="error" title="Fix before saving">
+          <ul className="flex flex-col gap-1 mt-1">
+            {errors.map((e, i) => <li key={`e-${i}`}>{e.message}</li>)}
+          </ul>
+        </LocalBanner>
+      )}
+      {warnings.length > 0 && (
+        <LocalBanner variant="info" title="Suggestions">
+          <ul className="flex flex-col gap-1 mt-1">
+            {warnings.map((w, i) => <li key={`w-${i}`}>{w.message}</li>)}
+          </ul>
+        </LocalBanner>
+      )}
+    </div>
   )
 }
 

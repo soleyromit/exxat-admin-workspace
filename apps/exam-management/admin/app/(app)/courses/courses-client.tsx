@@ -21,6 +21,7 @@ import {
   Button, Badge, InputGroup, InputGroupAddon, InputGroupInput,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   Tooltip, TooltipTrigger, TooltipContent,
+  ViewSegmentedControl,
 } from '@exxat/ds/packages/ui/src'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
@@ -159,7 +160,7 @@ export default function CoursesClient() {
             role === 'admin' ? (
               <StubButton variant="default" size="sm">
                 <i className="fa-light fa-plus" aria-hidden="true" />
-                New course
+                Add course offering
               </StubButton>
             ) : undefined
           }
@@ -186,56 +187,45 @@ export default function CoursesClient() {
                 aria-label="Search courses"
               />
             </InputGroup>
-            <Select value={termFilter} onValueChange={(v) => setTermFilter(v as typeof termFilter)}>
-              <SelectTrigger className="w-[180px]">
-                <i className="fa-light fa-calendar-days me-2" aria-hidden="true" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active term (2026)</SelectItem>
-                <SelectItem value="past">Past terms</SelectItem>
-                <SelectItem value="all">All terms</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Term filter is admin-only — faculty view uses the two-section split (T1) */}
+            {role === 'admin' && (
+              <Select value={termFilter} onValueChange={(v) => setTermFilter(v as typeof termFilter)}>
+                <SelectTrigger className="w-[180px]">
+                  <i className="fa-light fa-calendar-days me-2" aria-hidden="true" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active term (2026)</SelectItem>
+                  <SelectItem value="past">Past terms</SelectItem>
+                  <SelectItem value="all">All terms</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
 
-            {/* View mode toggle — Vishaka: "if list goes 5 or 6 then I'll
-                make it like a list view" */}
-            <div className="ms-auto flex items-center rounded-md border border-border p-0.5" role="group" aria-label="View mode">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => setViewMode('cards')}
-                    aria-label="Card view"
-                    aria-pressed={viewMode === 'cards'}
-                    style={viewMode === 'cards' ? { backgroundColor: 'var(--muted)', color: 'var(--foreground)' } : undefined}
-                  >
-                    <i className="fa-light fa-grid-2" aria-hidden="true" style={{ fontSize: 13 }} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Cards</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => setViewMode('list')}
-                    aria-label="List view"
-                    aria-pressed={viewMode === 'list'}
-                    style={viewMode === 'list' ? { backgroundColor: 'var(--muted)', color: 'var(--foreground)' } : undefined}
-                  >
-                    <i className="fa-light fa-list" aria-hidden="true" style={{ fontSize: 13 }} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>List</TooltipContent>
-              </Tooltip>
-            </div>
+            {/* View mode toggle — DS ViewSegmentedControl (was a 34-LoC
+                hand-roll per display-navigation-atoms.md depth audit).
+                Vishaka: "if list goes 5 or 6 then I'll make it like a list view" */}
+            <ViewSegmentedControl
+              className="ms-auto"
+              value={viewMode}
+              onValueChange={(v) => setViewMode(v as 'cards' | 'list')}
+              options={[
+                { value: 'cards', label: 'Cards', icon: 'fa-light fa-grid-2' },
+                { value: 'list',  label: 'List',  icon: 'fa-light fa-list' },
+              ]}
+              aria-label="View mode"
+            />
           </div>
 
           {/* Course grid */}
-          {filtered.length === 0 ? (
+          {role === 'faculty' ? (
+            <FacultyCourseSections
+              courses={visibleCourses.filter(c => matchesQuery(c))}
+              viewMode={viewMode}
+              hasQuery={Boolean(query)}
+              query={query}
+            />
+          ) : filtered.length === 0 ? (
             <EmptyState
               role={role}
               hasQuery={Boolean(query)}
@@ -262,72 +252,145 @@ function formatCourseCode(code: string): string {
   return m ? `${m[1]} ${m[2]}` : code
 }
 
-// ─── Course card ─────────────────────────────────────────────────────────────
+// ─── Faculty course sections — "Active this term" on top, all others below ──
+//
+// Per Aarti's May 8 directive (T1): split faculty home into two groups based on
+// whether the course's activeSemester matches the current term. Both groups are
+// searched together by the same query filter; no term-filter toggle needed.
+function FacultyCourseSections({
+  courses,
+  viewMode,
+  hasQuery,
+  query,
+}: {
+  courses: CourseSummary[]
+  viewMode: 'cards' | 'list'
+  hasQuery: boolean
+  query: string
+}) {
+  const active = courses.filter(c => c.activeSemester.includes('2026'))
+  const others = courses.filter(c => !c.activeSemester.includes('2026'))
+
+  if (courses.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="flex size-14 items-center justify-center rounded-full mb-3 bg-muted">
+          <i className="fa-light fa-magnifying-glass text-muted-foreground text-xl" aria-hidden="true" />
+        </div>
+        {hasQuery ? (
+          <>
+            <p className="font-semibold text-foreground">No courses match your search</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              &ldquo;{query}&rdquo; didn&apos;t match any of your courses.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="font-semibold text-foreground">No courses assigned yet</p>
+            <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+              You haven&apos;t been assigned to any course offerings. Contact your program administrator to request access.
+            </p>
+          </>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-8">
+      {active.length > 0 && (
+        <section aria-labelledby="active-courses-heading">
+          <h2
+            id="active-courses-heading"
+            className="text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-3"
+          >
+            Active this term
+          </h2>
+          {viewMode === 'cards' ? (
+            <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(360px,1fr))]">
+              {active.map(c => <CourseCard key={c.id} course={c} />)}
+            </div>
+          ) : (
+            <CourseListView courses={active} />
+          )}
+        </section>
+      )}
+
+      {others.length > 0 && (
+        <section aria-labelledby="all-courses-heading">
+          <h2
+            id="all-courses-heading"
+            className="text-[11px] uppercase tracking-[0.18em] font-bold text-muted-foreground mb-3"
+          >
+            All my courses
+          </h2>
+          {viewMode === 'cards' ? (
+            <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(360px,1fr))]">
+              {others.map(c => <CourseCard key={c.id} course={c} />)}
+            </div>
+          ) : (
+            <CourseListView courses={others} />
+          )}
+        </section>
+      )}
+    </div>
+  )
+}
+
+// ─── Course card — clean, minimal, single accent ────────────────────────────
 function CourseCard({ course }: { course: CourseSummary }) {
-  const isActive = course.activeSemester.includes('2026')
+  // One plain-text status line instead of 5 colored pills.
+  const statusBits: string[] = []
+  if (course.pendingReviewCount > 0) statusBits.push(`${course.pendingReviewCount} pending review`)
+  if (course.inProgressCount > 0)    statusBits.push(`${course.inProgressCount} live`)
+  if (course.draftCount > 0)         statusBits.push(`${course.draftCount} draft${course.draftCount === 1 ? '' : 's'}`)
+  if (course.untestedObjectivesCount > 0) {
+    statusBits.push(
+      `${course.untestedObjectivesCount} untested assessment objective${course.untestedObjectivesCount === 1 ? '' : 's'}`
+    )
+  }
+
   return (
     <Link
       href={`/courses/${course.id}`}
-      className="group rounded-xl border border-border bg-card px-5 py-4 flex flex-col gap-3 transition-all hover:shadow-md hover:-translate-y-0.5 no-underline"
+      className="group rounded-xl border border-border bg-card px-5 py-5 flex flex-col gap-3 transition-colors hover:bg-muted/30 no-underline"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="font-mono text-xs font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">
-              {formatCourseCode(course.code)}
-            </span>
-            <p className="font-heading text-[15px] font-medium text-foreground leading-snug truncate group-hover:text-brand transition-colors">
-              {course.name}
-            </p>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">{course.activeSemester}</p>
-        </div>
-        {course.accessLevel && <AccessLevelChip level={course.accessLevel} />}
+      <div className="min-w-0">
+        <p className="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          {formatCourseCode(course.code)}
+        </p>
+        <p className="font-heading text-base font-semibold text-foreground leading-snug truncate mt-0.5 group-hover:underline underline-offset-2">
+          {course.name}
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">{course.activeSemester}</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 pt-2.5 border-t border-border">
-        <CardMetric icon="fa-users" value={course.studentCount} label="Students" />
-        <CardMetric icon="fa-clipboard-list" value={course.assessmentCount} label="Assessments" />
-        <CardMetric icon="fa-universal-access" value={course.accommodationsCount} label="Accommodations" />
+      <div className="flex items-baseline gap-4 text-xs text-muted-foreground">
+        <span><span className="text-foreground font-semibold tabular-nums">{course.studentCount}</span> students</span>
+        <span><span className="text-foreground font-semibold tabular-nums">{course.assessmentCount}</span> assessments</span>
+        <span><span className="text-foreground font-semibold tabular-nums">{course.accommodationsCount}</span> accommodations</span>
       </div>
 
-      <div className="flex flex-wrap gap-1.5 min-h-6">
-        {course.pendingReviewCount > 0 && (
-          <StatusPill
-            tone="warning"
-            icon="fa-hourglass-half"
-            label={`${course.pendingReviewCount} ${course.pendingReviewCount === 1 ? 'assessment' : 'assessments'} pending review`}
-          />
-        )}
-        {course.inProgressCount > 0 && (
-          <StatusPill tone="info" icon="fa-play" label={`${course.inProgressCount} live now`} pulse />
-        )}
-        {course.draftCount > 0 && (
-          <StatusPill tone="neutral" icon="fa-file-pen" label={`${course.draftCount} draft`} />
-        )}
-        {course.untestedObjectivesCount > 0 && (
-          <StatusPill tone="warning" icon="fa-bullseye-pointer" label={`${course.untestedObjectivesCount} untested ${course.untestedObjectivesCount === 1 ? 'objective' : 'objectives'}`} />
-        )}
-        {course.pendingReviewCount === 0 && course.inProgressCount === 0 && course.draftCount === 0 && course.untestedObjectivesCount === 0 && (
-          <StatusPill tone="success" icon="fa-circle-check" label="All caught up" />
-        )}
-      </div>
-
-      <div className="flex items-center justify-between pt-1">
-        <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-          <span className={`inline-block size-1.5 rounded-full ${isActive ? 'bg-chart-2' : 'bg-muted-foreground'}`} />
-          {isActive ? 'Active' : 'Past'}
-        </span>
-        <span className="text-xs text-muted-foreground flex items-center gap-1 transition-transform group-hover:translate-x-0.5">
-          Open course
-          <i className="fa-light fa-arrow-right text-[10px]" aria-hidden="true" />
-        </span>
-      </div>
+      {statusBits.length > 0 && (
+        <p className="text-xs text-muted-foreground">
+          {statusBits.join(' · ')}
+        </p>
+      )}
     </Link>
   )
 }
 
-function CardMetric({ icon, value, label }: { icon: string; value: number | string; label: string }) {
+function CardMetric({ value, label }: { value: number | string; label: string }) {
+  return (
+    <span className="inline-flex items-baseline gap-1.5 min-w-0">
+      <span className="text-base font-semibold text-foreground tabular-nums">{value}</span>
+      <span className="text-xs text-muted-foreground">{label}</span>
+    </span>
+  )
+}
+
+// Old icon-based metric — kept for the table-view rendering below.
+function CardMetricLegacy({ icon, value, label }: { icon: string; value: number | string; label: string }) {
   return (
     <div className="flex flex-col items-start gap-0.5 min-w-0">
       <div className="flex items-baseline gap-1.5">

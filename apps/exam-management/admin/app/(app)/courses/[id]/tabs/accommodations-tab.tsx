@@ -10,7 +10,7 @@
  */
 
 import { useMemo } from 'react'
-import { Avatar, AvatarFallback, Button } from '@exxat/ds/packages/ui/src'
+import { Avatar, AvatarFallback, Button, LocalBanner } from '@exxat/ds/packages/ui/src'
 import { StubButton } from '@/components/stub-button'
 import type { Student, Accommodation, AccommodationType } from '@/lib/faculty-mock-data'
 
@@ -66,21 +66,18 @@ export function AccommodationsTab({ accommodations, students }: AccommodationsTa
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Notice banner — faculty cannot modify */}
-      <section className="rounded-xl border border-chart-1/22 bg-chart-1/5 p-3 flex items-start gap-3">
-        <i className="fa-light fa-circle-info text-chart-1 text-base mt-0.5" aria-hidden="true" />
-        <div className="flex-1 text-xs">
-          <p className="font-semibold text-foreground">Accommodations are managed by Student Services</p>
-          <p className="text-muted-foreground mt-0.5">
-            You cannot modify these from this surface. Accommodations apply automatically to all
-            assessments in this course. To request a change, contact the approver listed on each entry.
-          </p>
-        </div>
-        <StubButton variant="ghost" size="sm" className="gap-1.5 shrink-0">
-          <i className="fa-light fa-envelope" aria-hidden="true" />
-          Email Student Services
-        </StubButton>
-      </section>
+      {/* DS LocalBanner (was hand-rolled info strip per dialog-banner-badge audit) */}
+      <LocalBanner
+        variant="info"
+        title="Managed by Student Services"
+        action={{
+          label: 'Email Student Services',
+          onClick: () => { /* StubButton hook — wired when Student Services contact lands */ },
+        }}
+      >
+        You cannot modify accommodations from this surface. They apply automatically to all
+        assessments in this course. To request a change, contact the approver listed on each entry.
+      </LocalBanner>
 
       {/* Type rollup */}
       <section className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(160px,1fr))]">

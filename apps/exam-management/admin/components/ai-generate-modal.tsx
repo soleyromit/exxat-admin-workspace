@@ -19,9 +19,10 @@
 import { useEffect, useState, useMemo } from 'react'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-  Button, Badge,
+  Button, Badge, Checkbox,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Tooltip, TooltipTrigger, TooltipContent,
+  LocalBanner,
 } from '@exxat/ds/packages/ui/src'
 import { StatusPill, BloomChip, DifficultyChip, type Tone } from '@/components/faculty-ui-kit'
 import type { CourseObjective } from '@/lib/faculty-mock-data'
@@ -119,7 +120,7 @@ export function AiGenerateModal({ open, onOpenChange, objectives, onAccept, acce
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-hidden flex flex-col p-0">
+      <DialogContent className="sm:max-w-xl max-h-[85vh] overflow-hidden flex flex-col p-0">
         <DialogHeader className="px-6 pt-5 pb-3 border-b border-border shrink-0">
           <div className="flex items-start gap-3">
             <i className="fa-duotone fa-solid fa-star-christmas text-brand text-base mt-1 shrink-0" aria-hidden="true" />
@@ -286,12 +287,10 @@ function SetupView({
         </div>
       </section>
 
-      <section className="rounded-lg border border-chart-1/22 bg-chart-1/5 p-3 flex items-start gap-3">
-        <i className="fa-light fa-circle-info text-chart-1 text-sm mt-0.5" aria-hidden="true" />
-        <p className="text-xs text-foreground">
-          AI drafts are starting points. Review every question for clinical accuracy, distractor quality, and alignment with your course before adding to the bank.
-        </p>
-      </section>
+      {/* DS LocalBanner (was hand-rolled info strip per dialog-banner-badge audit) */}
+      <LocalBanner variant="info" title="AI drafts are starting points">
+        Review every question for clinical accuracy, distractor quality, and alignment with your course before adding to the bank.
+      </LocalBanner>
     </div>
   )
 }
@@ -376,14 +375,12 @@ function DraftQuestionCard({
       className={`rounded-xl border bg-card p-4 transition-all ${draft.selected ? 'border-brand/40 ring-2 ring-brand/15' : 'border-border'}`}
     >
       <div className="flex items-start gap-3">
-        <button
-          onClick={onToggleSelect}
-          className={`mt-0.5 size-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${draft.selected ? 'bg-brand border-brand' : 'border-border hover:border-brand/60'}`}
-          aria-pressed={draft.selected}
+        <Checkbox
+          checked={draft.selected}
+          onCheckedChange={() => onToggleSelect()}
           aria-label={`${draft.selected ? 'Deselect' : 'Select'} draft ${index}`}
-        >
-          {draft.selected && <i className="fa-solid fa-check text-brand-foreground text-[10px]" aria-hidden="true" />}
-        </button>
+          className="mt-0.5 shrink-0"
+        />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-2">
             <Badge variant="secondary" className="rounded font-mono text-[10px] bg-muted text-foreground">
