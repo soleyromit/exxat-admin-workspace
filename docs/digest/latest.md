@@ -129,6 +129,7 @@
   - `vercel:*`
 
 **Workspace-defined agents:**
+  - `architect` (.claude/agents/architect.md)
   - `ds-adoption-reviewer` (.claude/agents/ds-adoption-reviewer.md)
   - `research-cross-corpus` (.claude/agents/research-cross-corpus.md)
   - `state-review` (.claude/agents/state-review.md)

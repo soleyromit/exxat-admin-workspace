@@ -1,0 +1,17 @@
+# subagent invocations — append-only telemetry log
+#
+# Format: TAB-separated. One row per invocation.
+#   <ISO-8601 timestamp>\t<subagent-name>\t<spawning-context>
+#
+# spawning-context examples:
+#   "parent: post-claim verification on /surveys"
+#   "manual: Romit invoked for architecture audit"
+#   "pre-commit hook: discipline-log growth trigger"
+#
+# Lines beginning with '#' are comments and ignored by the architect parser.
+#
+# WIRING STATUS: 2026-05-11 — file created. The parent agent appends rows
+# manually when invoking subagents. Full automation would require an
+# `Agent` tool wrapper that logs every spawn before delegation. Tracked as
+# proposed item #7 in the architect scaffold.
+

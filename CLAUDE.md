@@ -218,6 +218,10 @@ The registry's "Banned hand-roll patterns" section lists the exact regexes the a
 
 **The discipline log lives in `verification-discipline.md`.** When Romit catches a violation, log it there. The log shrinking over time = the discipline working.
 
+### Architecture self-improvement — the `architect` subagent
+
+At session-end (or when the discipline log gains ≥2 entries in one session), spawn `.claude/agents/architect.md`. It reads `python3 scripts/architect-input.py` (commits + discipline log + blind-spots + audit hits + subagent telemetry + past architect runs) and writes a proposal to `docs/governance/architect-runs/YYYY-MM-DD-<slug>.md`. Proposals must cite ≥2 occurrences of evidence; max 3 new rules per run; every new proposal comes with a retire/consolidate candidate. The architect never commits — Romit reviews + applies. Rejected proposals self-retire after 3 rejections. This is how the harness *learns* rather than just enforces.
+
 ### Always / never list
 
 - NEVER edit files in `exxat-ds/` or `studentUX/` — read-only submodules
