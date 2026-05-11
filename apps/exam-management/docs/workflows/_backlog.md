@@ -22,6 +22,12 @@ Source: 2026-05-08 Aarti audit (`docs/research/meetings/2026-05-08-aarti-design-
 | T14 | Course-level mapping screens | Faculty / Admin | Course detail | P1 | Map course offering to subset of program content areas / competencies / objectives / standards |
 | T15 | Two-question dashboards | Admin | Program reports | P1 | "Am I teaching everything?" + "Am I testing what I'm teaching?" Includes orphan detection ("2 standards not covered by any objectives") |
 | T28 | Frequency-of-use column on QB rows | Faculty | Question bank | ✅ done | Already added (Romit confirmed in meeting) |
+| T29 | Three-level analytics architecture | Admin / Faculty | Analytics | P1 | Level 1: course/program dashboard overview. Level 2: on-screen embedded analytics (current). Level 3: self-service / canned reports section. Source: 2026-05-08 Granola 4e1c850e |
+| T30 | AI (Leo) summary panel — right-rail on dashboards | Admin / Faculty | Course + analytics dashboards | P2 | Stub right-rail panel with Ask Leo button on course overview and analytics overview tabs. Content TBD. Source: 2026-05-08 Granola 4e1c850e |
+| T31 | "Ongoing" label applied | Admin / Faculty | All assessment screens | ✅ done | assessment-landing, review, live-monitor updated 2026-05-11 |
+| T32 | Flagged comments to top of live monitor | Admin / Faculty | Live monitor | ✅ done | FlaggedCommentsQueue moved above KPIs 2026-05-11 |
+| T33 | Exclude any question (not just flagged) from grading | Admin / Faculty | Curving & adjustments | ✅ done | CurveView now shows all items 2026-05-11 |
+| T34 | Content-area question count shown alongside avg correctness | Admin / Faculty | Analytics content-areas tab | ✅ done | "N Qs" label added to ContentAreasView 2026-05-11 |
 
 ## Research / blockers (R1–R10 from audit)
 

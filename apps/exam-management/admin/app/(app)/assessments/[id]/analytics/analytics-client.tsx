@@ -657,13 +657,16 @@ function ContentAreasView({ courseId }: { courseId: string }) {
           return (
             <div key={o.id} className="flex items-center gap-3">
               <span className="text-sm text-foreground flex-1 truncate" title={o.title}>{o.title}</span>
-              <div className="flex items-center gap-2">
-                <div className="h-1.5 w-32 rounded-full overflow-hidden" style={{ background: 'var(--muted)' }}>
-                  <div className="h-full rounded-full" style={{ width: `${o.avgPerformance}%`, background: palette.fg }} />
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">{o.questionCount} Qs</span>
+                <div className="flex items-center gap-2">
+                  <div className="h-1.5 w-32 rounded-full overflow-hidden" style={{ background: 'var(--muted)' }}>
+                    <div className="h-full rounded-full" style={{ width: `${o.avgPerformance}%`, background: palette.fg }} />
+                  </div>
+                  <span className="text-xs font-bold w-10 text-end" style={{ color: palette.fg }}>
+                    {o.avgPerformance > 0 ? `${o.avgPerformance}%` : '—'}
+                  </span>
                 </div>
-                <span className="text-xs font-bold w-10 text-end" style={{ color: palette.fg }}>
-                  {o.avgPerformance > 0 ? `${o.avgPerformance}%` : '—'}
-                </span>
               </div>
             </div>
           )
@@ -678,8 +681,6 @@ function CurveView({ scoreDist, items }: { scoreDist: ScoreDist; items: Item[] }
   const [bonus, setBonus] = useState(0)
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set())
   const [applied, setApplied] = useState(false)
-
-  const flaggedItems = items.filter(i => i.negativeDiscriminator || i.pointBiserial < 0.15)
 
   const adjusted = useMemo(() => {
     const totalQs = items.length
@@ -730,44 +731,45 @@ function CurveView({ scoreDist, items }: { scoreDist: ScoreDist; items: Item[] }
         </div>
 
         <div className="rounded-xl border bg-card p-5" style={{ borderColor: 'var(--border)' }}>
-          <h3 className="font-semibold text-foreground mb-1" style={{ fontSize: 14 }}>
-            Exclude flagged items from scoring
+          <h3 className="text-sm font-semibold text-foreground mb-1">
+            Exclude items from scoring
           </h3>
           <p className="text-xs text-muted-foreground mb-3">
-            Removed items don't count against students. Recommended for negative discriminators.
+            Removed items don't count against students. Select any item to exclude it from grading.
           </p>
-          {flaggedItems.length === 0 ? (
-            <p className="text-sm text-muted-foreground italic">No flagged items in this assessment.</p>
-          ) : (
-            <div className="flex flex-col gap-1.5">
-              {flaggedItems.map(item => (
-                <label
-                  key={item.questionId + item.order}
-                  className="flex items-start gap-3 rounded-lg border p-2.5 cursor-pointer hover:bg-muted/30 transition-colors"
-                  style={{ borderColor: 'var(--border)' }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={excludedIds.has(item.questionId + item.order)}
-                    onChange={() => toggleExclude(item.questionId + item.order)}
-                    className="mt-0.5 accent-[color:var(--brand-color)]"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-muted-foreground">Q{item.order}</span>
-                      {item.negativeDiscriminator && (
-                        <Badge variant="secondary" className="rounded text-[10px] uppercase font-bold gap-1" style={{ background: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', color: 'var(--chart-4)' }}>
-                          <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 9 }} />
-                          Negative
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-foreground line-clamp-1 mt-0.5">{item.title}</p>
+          <div className="flex flex-col gap-1.5 max-h-64 overflow-y-auto">
+            {items.map(item => (
+              <label
+                key={item.questionId + item.order}
+                className="flex items-start gap-3 rounded-lg border p-2.5 cursor-pointer hover:bg-muted/30 transition-colors"
+                style={{ borderColor: 'var(--border)' }}
+              >
+                <input
+                  type="checkbox"
+                  checked={excludedIds.has(item.questionId + item.order)}
+                  onChange={() => toggleExclude(item.questionId + item.order)}
+                  className="mt-0.5 accent-[color:var(--brand-color)]"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-bold text-muted-foreground">Q{item.order}</span>
+                    {item.negativeDiscriminator && (
+                      <Badge variant="secondary" className="rounded text-[10px] uppercase font-bold gap-1" style={{ background: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', color: 'var(--chart-4)' }}>
+                        <i className="fa-solid fa-triangle-exclamation text-[9px]" aria-hidden="true" />
+                        Negative
+                      </Badge>
+                    )}
+                    {!item.negativeDiscriminator && item.pointBiserial < 0.15 && (
+                      <Badge variant="secondary" className="rounded text-[10px] uppercase font-bold" style={{ background: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', color: 'var(--chart-4)' }}>
+                        Low pbis
+                      </Badge>
+                    )}
                   </div>
-                </label>
-              ))}
-            </div>
-          )}
+                  <p className="text-sm text-foreground line-clamp-1 mt-0.5">{item.title}</p>
+                </div>
+              </label>
+            ))}
+          </div>
         </div>
       </section>
 

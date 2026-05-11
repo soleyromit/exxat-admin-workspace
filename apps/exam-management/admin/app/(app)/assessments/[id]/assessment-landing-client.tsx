@@ -78,12 +78,12 @@ const STATE_META: Record<
     primary: { label: 'Manage window', intent: 'wait' },
   },
   'in-progress': {
-    tone: 'info', icon: 'fa-circle', label: 'Live now',
+    tone: 'info', icon: 'fa-circle', label: 'Ongoing',
     copy: 'Students are taking this exam right now — open the live monitor.',
     primary: { label: 'Open live monitor', intent: 'wait' },
   },
   'submitted': {
-    tone: 'success', icon: 'fa-check-double', label: 'Awaiting results',
+    tone: 'success', icon: 'fa-check-double', label: 'Submitted',
     copy: 'All students have submitted. Run psychometrics and curve before publishing.',
     primary: { label: 'Review & curve', intent: 'wait' },
   },

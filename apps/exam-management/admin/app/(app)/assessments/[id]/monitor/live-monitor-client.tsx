@@ -152,7 +152,7 @@ export default function LiveMonitorClient({ assessmentId }: { assessmentId: stri
         tone={paused ? 'warning' : 'info'}
         icon={paused ? 'fa-pause' : 'fa-circle'}
         pulse={!paused}
-        label={paused ? 'Paused' : 'Live now'}
+        label={paused ? 'Paused' : 'Ongoing'}
         uppercase
       />
       <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setAlertOpen(true)}>
@@ -181,7 +181,7 @@ export default function LiveMonitorClient({ assessmentId }: { assessmentId: stri
 
   return (
     <>
-      <SiteHeader title={`${assessment.title} — Live`} breadcrumbs={breadcrumbs} />
+      <SiteHeader title={`${assessment.title} — Ongoing`} breadcrumbs={breadcrumbs} />
       <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none overflow-hidden">
         <PageHeader
           title={assessment.title}
@@ -191,6 +191,11 @@ export default function LiveMonitorClient({ assessmentId }: { assessmentId: stri
 
         <div className="flex-1 overflow-auto p-6">
           <div className="flex flex-col gap-5">
+            {/* Flagged comments queue — surfaces first so urgent items are immediately visible */}
+            {flaggedCount > 0 && (
+              <FlaggedCommentsQueue snapshot={snapshot} students={courseStudents} />
+            )}
+
             <KeyMetrics metrics={heroMetrics} />
 
             {/* Completion donut — visual emphasis on the headline KPI */}
@@ -206,11 +211,6 @@ export default function LiveMonitorClient({ assessmentId }: { assessmentId: stri
                 totalQuestions={assessment.questionCount}
               />
             </div>
-
-            {/* Flagged comments queue */}
-            {flaggedCount > 0 && (
-              <FlaggedCommentsQueue snapshot={snapshot} students={courseStudents} />
-            )}
           </div>
         </div>
       </main>

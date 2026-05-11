@@ -55,7 +55,7 @@ const STATE_LABEL: Record<AssessmentReviewState | 'draft', string> = {
   'changes-requested':  'Changes requested',
   'approved':           'Approved',
   'published':          'Published',
-  'in-progress':        'Live now',
+  'in-progress':        'Ongoing',
   'submitted':          'Submitted',
   'results-published':  'Results published',
 }
