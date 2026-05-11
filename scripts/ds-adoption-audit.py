@@ -27,6 +27,29 @@ What this audit looks for in product code (apps/<product>/<role>/):
      audit + DS-014; we re-check here as a safety net so DS adoption shows
      a single "DS hygiene" panel.
 
+  6. State-coverage gaps. Catches default-only rendering — when a file
+     touches async data, form input, or list rendering but skips loading /
+     empty / error / validation / disabled affordances. All warn (phase-0).
+
+     Rules:
+       - datatable-no-empty-state   : <DataTable> invocation without an
+                                       emptyState prop AND without a
+                                       data.length===0 guard near the call.
+       - dialog-no-error-feedback    : <DialogContent>...<form>... renders
+                                       <Input> with no aria-invalid AND no
+                                       FieldError AND no LocalBanner error.
+       - opacity-60-on-text-parent   : opacity-60 on an element whose
+                                       descendants render text-muted-foreground
+                                       (drops contrast below WCAG 4.5:1).
+       - clickable-without-focus-ring: onClick + cursor-pointer on a non-DS
+                                       element that lacks focus-visible:ring.
+       - async-fetch-no-skeleton     : file with useEffect+fetch / useSWR /
+                                       useQuery / isLoading that does NOT
+                                       import or render Skeleton.
+
+     See docs/governance/component-state-catalog.md for the canonical state
+     matrix and docs/patterns/admin/state-coverage.md for prescriptions.
+
 Run from repo root:
 
     python3 scripts/ds-adoption-audit.py
@@ -168,6 +191,61 @@ EYEBROW_PARAGRAPH_RE = re.compile(
 RAW_BUTTON_RE = re.compile(r"<\s*button\b[^>]*>")
 HEX_COLOR_RE = re.compile(r"['\"]\#[0-9a-fA-F]{3,8}\b['\"]?")
 RGB_COLOR_RE = re.compile(r"\brgb\s*\(")
+
+# ── State-coverage regexes (added 2026-05-11; phase-0 warn) ────────────────
+# DataTable JSX open (multi-line). Just locates the start position; we
+# extract the props block via custom bracket-balancing in the scanner.
+DATATABLE_OPEN_RE = re.compile(r"<\s*DataTable\b")
+EMPTY_STATE_PROP_RE = re.compile(r"\bemptyState\s*[=:]")
+# Common in-file guards: `data.length === 0`, `rows.length === 0`,
+# `items.length === 0`, generic `Array.isArray(x) && x.length === 0`.
+EMPTY_GUARD_RE = re.compile(
+    r"\b(?:data|rows|items|results|records|list|entries)\.length\s*===?\s*0"
+    r"|\.length\s*===?\s*0\s*\?"
+    r"|\bisEmpty\b"
+)
+
+# DialogContent containing a <form> + Input → must show some validation
+# affordance (aria-invalid, FieldError, or LocalBanner variant="error").
+DIALOG_FORM_RE = re.compile(
+    r"<\s*DialogContent\b[^>]*>(?:.|\n)*?<\s*form\b(?:.|\n)*?</\s*DialogContent\s*>",
+    re.MULTILINE,
+)
+INPUT_TAG_RE = re.compile(r"<\s*Input\b")
+ARIA_INVALID_RE = re.compile(r"\baria-invalid\b")
+FIELD_ERROR_RE = re.compile(r"<\s*FieldError\b")
+LOCAL_BANNER_ERROR_RE = re.compile(
+    r"<\s*LocalBanner\b[^>]*\bvariant\s*=\s*[\"']error[\"']"
+)
+
+# opacity-60 anywhere in a className that ALSO contains anything implying
+# a descendant text element. We deliberately use a two-stage scan:
+#   1. find className strings containing "opacity-60"
+#   2. for each hit, scan the next ~600 chars of the file for
+#      "text-muted-foreground" — if present, flag.
+OPACITY_60_CLASS_RE = re.compile(r'className=["\'`][^"\'`]*\bopacity-60\b[^"\'`]*["\'`]')
+TEXT_MUTED_FG_RE = re.compile(r"\btext-muted-foreground\b")
+
+# onClick + cursor-pointer on an element that is not <Button (uppercase = DS),
+# missing focus-visible:ring. We scan element opening tags that have
+# className containing "cursor-pointer" and at least one onClick={...}
+# in the same element block. False positives possible on divs that delegate
+# focus to a child; warn-only.
+CLICKABLE_DIV_RE = re.compile(
+    r"<\s*(?P<tag>div|span|li|article|section|tr|td|a)\b"
+    r"(?P<attrs>[^>]*?\bonClick\s*=\s*\{[^>]*?)>",
+    re.DOTALL,
+)
+CURSOR_POINTER_RE = re.compile(r"\bcursor-pointer\b")
+FOCUS_RING_RE = re.compile(r"\bfocus(?:-visible)?:ring\b|\bfocus-visible:outline\b")
+ROLE_BUTTON_RE = re.compile(r'\brole\s*=\s*["\']button["\']')
+
+# Async-fetch signals — any of: useEffect with fetch( inside, useSWR(,
+# useQuery(, an explicit `isLoading` state variable.
+ASYNC_FETCH_RE = re.compile(
+    r"useEffect\s*\([^)]*\bfetch\s*\(|\buseSWR\s*\(|\buseQuery\s*\(|\bisLoading\b"
+)
+SKELETON_RE = re.compile(r"\bSkeleton\b")
 
 # ── Models ──────────────────────────────────────────────────────────────────
 @dataclass
@@ -359,6 +437,258 @@ def scan_file_for_color_literals(rel: str, text: str) -> list[Gap]:
             break
     return gaps
 
+# ── State-coverage scanners ────────────────────────────────────────────────
+# All phase-0 WARN. Bind: docs/governance/component-state-catalog.md,
+# docs/patterns/admin/state-coverage.md.
+
+def _extract_jsx_props_block(text: str, start: int) -> str:
+    """Given the offset of `<DataTable` (or any JSX tag) start, walk forward
+    until the matching `>` that closes the open tag — respecting `{...}`
+    expression braces and string literals. Returns the substring including
+    the opening `<` and the closing `>` / `/>` of the open tag (props only,
+    not children)."""
+    n = len(text)
+    i = start
+    # Find the first `<` then walk char by char.
+    depth_curly = 0           # { } JSX expression
+    depth_paren = 0           # ( ) — rare in tag attrs but possible
+    depth_angle = 0           # nested < > inside type generics (only valid before any prop)
+    in_str: str | None = None  # active quote char if inside a string
+    saw_first_lt = False
+    while i < n:
+        ch = text[i]
+        if in_str is not None:
+            if ch == in_str and text[i - 1] != "\\":
+                in_str = None
+            i += 1
+            continue
+        if ch in ("'", '"', "`"):
+            in_str = ch
+            i += 1
+            continue
+        if ch == "{":
+            depth_curly += 1
+            i += 1
+            continue
+        if ch == "}":
+            depth_curly = max(0, depth_curly - 1)
+            i += 1
+            continue
+        if ch == "(":
+            depth_paren += 1
+            i += 1
+            continue
+        if ch == ")":
+            depth_paren = max(0, depth_paren - 1)
+            i += 1
+            continue
+        if ch == "<":
+            if not saw_first_lt:
+                saw_first_lt = True
+            else:
+                # Only treat `<` as a nested tag/generic when not inside braces.
+                if depth_curly == 0:
+                    depth_angle += 1
+            i += 1
+            continue
+        if ch == ">":
+            if depth_curly == 0 and depth_paren == 0:
+                if depth_angle > 0:
+                    depth_angle -= 1
+                    i += 1
+                    continue
+                # Found the closing `>` of the open tag.
+                return text[start: i + 1]
+            i += 1
+            continue
+        i += 1
+    return text[start: min(start + 2000, n)]
+
+
+def scan_file_for_datatable_no_empty_state(rel: str, text: str) -> list[Gap]:
+    """A <DataTable> invocation that supplies neither `emptyState` prop nor
+    a `data.length === 0` guard rendering a fallback in the same file."""
+    if "components/data-table/" in rel:
+        return []
+    if rel in DOCUMENTED_HAND_ROLLS:
+        return []
+    gaps: list[Gap] = []
+    for m in DATATABLE_OPEN_RE.finditer(text):
+        block = _extract_jsx_props_block(text, m.start())
+        if EMPTY_STATE_PROP_RE.search(block):
+            continue
+        # Allow a same-file empty-guard render-fork as an alternative.
+        if EMPTY_GUARD_RE.search(text):
+            continue
+        line_no = text[: m.start()].count("\n") + 1
+        gaps.append(Gap(
+            severity="warn",
+            rule="datatable-no-empty-state",
+            file=rel,
+            line=line_no,
+            message=(
+                "<DataTable> rendered without `emptyState` prop and no "
+                "`data.length === 0` guard in the file. Empty render falls "
+                "back to DataTable's default 'No results match your filters' "
+                "string, which is wrong when the source has 0 rows (vs. a "
+                "filter that returned 0). Supply `emptyState={...}` with "
+                "icon + heading + 1-line explanation + optional CTA. See "
+                "docs/patterns/admin/state-coverage.md → empty-state."
+            ),
+        ))
+        if len(gaps) >= 5:
+            break
+    return gaps
+
+def scan_file_for_dialog_no_error_feedback(rel: str, text: str) -> list[Gap]:
+    """A DialogContent containing a <form> with <Input>, no aria-invalid,
+    no FieldError, and no LocalBanner variant=\"error\"."""
+    if "components/data-table/" in rel:
+        return []
+    if rel in DOCUMENTED_HAND_ROLLS:
+        return []
+    gaps: list[Gap] = []
+    for m in DIALOG_FORM_RE.finditer(text):
+        block = m.group(0)
+        if not INPUT_TAG_RE.search(block):
+            continue
+        if ARIA_INVALID_RE.search(block):
+            continue
+        if FIELD_ERROR_RE.search(block):
+            continue
+        # LocalBanner error can live anywhere in the file (top-level state).
+        if LOCAL_BANNER_ERROR_RE.search(text):
+            continue
+        line_no = text[: m.start()].count("\n") + 1
+        gaps.append(Gap(
+            severity="warn",
+            rule="dialog-no-error-feedback",
+            file=rel,
+            line=line_no,
+            message=(
+                "<DialogContent> contains a <form> with <Input> but no "
+                "aria-invalid, no <FieldError>, and no <LocalBanner "
+                "variant=\"error\">. Validation gaps silently swallow user "
+                "input. Add aria-invalid + FieldError per field, plus a "
+                "multi-error LocalBanner summary at the top of the form. "
+                "Canonical example: apps/exam-management/admin/app/(app)/"
+                "access/page.tsx:293-321. See docs/patterns/admin/"
+                "state-coverage.md → validation."
+            ),
+        ))
+        if len(gaps) >= 5:
+            break
+    return gaps
+
+def scan_file_for_opacity_60_on_text_parent(rel: str, text: str) -> list[Gap]:
+    """An element with className containing opacity-60 whose descendants
+    render text-muted-foreground. Drops contrast below WCAG 4.5:1."""
+    if "components/data-table/" in rel:
+        return []
+    if rel in DOCUMENTED_HAND_ROLLS:
+        return []
+    gaps: list[Gap] = []
+    for m in OPACITY_60_CLASS_RE.finditer(text):
+        # Look ahead ~600 chars for a text-muted-foreground descendant.
+        # If the parent element closes before that, we'd still flag — heuristic.
+        tail = text[m.end(): m.end() + 600]
+        if not TEXT_MUTED_FG_RE.search(tail):
+            continue
+        line_no = text[: m.start()].count("\n") + 1
+        gaps.append(Gap(
+            severity="warn",
+            rule="opacity-60-on-text-parent",
+            file=rel,
+            line=line_no,
+            message=(
+                "`opacity-60` applied to an element whose descendants render "
+                "`text-muted-foreground`. Compounding opacity drops contrast "
+                "below WCAG 4.5:1. Use the DS disabled state (aria-disabled "
+                "+ pointer-events-none + the component's own disabled prop) "
+                "instead of dimming the whole subtree. See "
+                "docs/patterns/admin/state-coverage.md → disabled."
+            ),
+        ))
+        if len(gaps) >= 5:
+            break
+    return gaps
+
+def scan_file_for_clickable_without_focus_ring(rel: str, text: str) -> list[Gap]:
+    """An element with onClick + cursor-pointer that lacks focus-visible:ring
+    and isn't a DS Button (PascalCase tags scanned)."""
+    if "components/data-table/" in rel:
+        return []
+    if rel in DOCUMENTED_HAND_ROLLS:
+        return []
+    gaps: list[Gap] = []
+    for m in CLICKABLE_DIV_RE.finditer(text):
+        attrs = m.group("attrs")
+        if not CURSOR_POINTER_RE.search(attrs):
+            continue
+        if FOCUS_RING_RE.search(attrs):
+            continue
+        # If author opted in to role="button" semantics WITHOUT focus ring,
+        # that's the worst case — flag harder. We still warn.
+        line_no = text[: m.start()].count("\n") + 1
+        is_button_role = bool(ROLE_BUTTON_RE.search(attrs))
+        suffix = (
+            " AND `role=\"button\"` — keyboard users get no focus indicator."
+            if is_button_role else ""
+        )
+        msg = (
+            f"<{m.group('tag')}> with `onClick` + `cursor-pointer` lacks "
+            f"`focus-visible:ring`{suffix} Either use DS `<Button>` "
+            "(which ships focus ring + keyboard semantics) or add "
+            "`focus-visible:ring-2 focus-visible:ring-ring focus-visible:"
+            "ring-offset-2` + `tabIndex={0}` + `onKeyDown` (Enter/Space) "
+            "+ `role=\"button\"`. See docs/patterns/admin/"
+            "state-coverage.md → focus."
+        )
+        # When suffix is empty, no terminal punctuation follows — patch it.
+        if not suffix:
+            msg = msg.replace("`focus-visible:ring` Either", "`focus-visible:ring`. Either")
+        gaps.append(Gap(
+            severity="warn",
+            rule="clickable-without-focus-ring",
+            file=rel,
+            line=line_no,
+            message=msg,
+        ))
+        if len(gaps) >= 5:
+            break
+    return gaps
+
+def scan_file_for_async_fetch_no_skeleton(rel: str, text: str) -> list[Gap]:
+    """A file with async-fetch signals that does NOT import or render Skeleton.
+    Heuristic — some files compose loading state into a child component;
+    warn-only."""
+    if "components/data-table/" in rel:
+        return []
+    if rel in DOCUMENTED_HAND_ROLLS:
+        return []
+    if not ASYNC_FETCH_RE.search(text):
+        return []
+    if SKELETON_RE.search(text):
+        return []
+    # Locate the first signal for the citation.
+    m = ASYNC_FETCH_RE.search(text)
+    line_no = text[: m.start()].count("\n") + 1 if m else 1
+    return [Gap(
+        severity="warn",
+        rule="async-fetch-no-skeleton",
+        file=rel,
+        line=line_no,
+        message=(
+            "File has async-fetch signals (useEffect+fetch / useSWR / "
+            "useQuery / isLoading) but does not import or render `Skeleton`. "
+            "Without a Skeleton placement, users see a blank flash or layout "
+            "shift while data loads. Add `<Skeleton className=\"...\" />` "
+            "matching the post-load shape, gated on the loading flag. "
+            "Canonical: apps/pce/admin/app/(app)/my-surveys/page.tsx:187-198. "
+            "See docs/patterns/admin/state-coverage.md → loading."
+        ),
+    )]
+
 def scan_filename_for_ds_organism(rel: str) -> list[Gap]:
     """Flag a custom file whose stem matches a DS organism in the registry."""
     if rel in ALLOWED_ORGANISM_PATHS:
@@ -451,6 +781,12 @@ def audit_product(product: str, role: str, root: Path) -> ProductReport:
             scan_file_for_card_imposter_div,
             scan_file_for_eyebrow_paragraph,
             scan_file_for_raw_button,
+            # State-coverage scanners (phase-0 warn) — added 2026-05-11.
+            scan_file_for_datatable_no_empty_state,
+            scan_file_for_dialog_no_error_feedback,
+            scan_file_for_opacity_60_on_text_parent,
+            scan_file_for_clickable_without_focus_ring,
+            scan_file_for_async_fetch_no_skeleton,
         ):
             for g in fn(short_rel, text):
                 g.file = rel
@@ -502,7 +838,15 @@ def main():
     ap.add_argument("--strict", action="store_true", help="Exit 1 if any blocking gap.")
     ap.add_argument(
         "--strict-rules",
-        help="Comma-separated rule slugs to block on (others stay warn). Default: all blocking rules.",
+        help=(
+            "Comma-separated rule slugs to block on (others stay warn). "
+            "Default: all blocking rules. "
+            "State-coverage rules (phase-0 warn, candidate promotion to block): "
+            "datatable-no-empty-state, dialog-no-error-feedback, "
+            "opacity-60-on-text-parent, clickable-without-focus-ring, "
+            "async-fetch-no-skeleton. Promote each to block once the audit "
+            "shows 0 hits across all products."
+        ),
     )
     ap.add_argument("--product", help="Scope to one product (e.g., pce, exam-management).")
     ap.add_argument("--json", action="store_true", help="Machine-readable JSON output.")

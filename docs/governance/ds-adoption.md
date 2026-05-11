@@ -174,6 +174,24 @@ These patterns are common AI/Claude failure modes. The audit script regexes for 
 
 ---
 
+## State-coverage requirements (phase-0 WARN, promotion path to block)
+
+Beyond "is the right component imported," the audit checks "are all states handled." Bound by `docs/patterns/admin/state-coverage.md` (Pattern ID `ADMIN-004`). Each rule below is currently WARN; each promotes to block once the workspace hits 0 hits across all products.
+
+| Rule slug | Pattern | Severity | Promotion gate |
+|---|---|---|---|
+| `datatable-no-empty-state` | `<DataTable` without `emptyState` prop AND without `data.length === 0` guard | warn | Block when 0 hits workspace-wide |
+| `dialog-no-error-feedback` | `<DialogContent>...<form>...<Input.../>` with no `aria-invalid` AND no `<FieldError>` AND no `<LocalBanner variant="error">` | warn | Block when 0 hits workspace-wide |
+| `opacity-60-on-text-parent` | `opacity-60` className on a parent whose descendants render `text-muted-foreground` (drops contrast below WCAG 4.5:1) | warn | Block when 0 hits workspace-wide |
+| `clickable-without-focus-ring` | Non-DS-Button element with `onClick` + `cursor-pointer` that lacks `focus-visible:ring` | warn | Block when 0 hits workspace-wide |
+| `async-fetch-no-skeleton` | File with `useEffect+fetch` / `useSWR` / `useQuery` / `isLoading` that does NOT import or render `Skeleton` | warn | Block when 0 hits workspace-wide; heuristic (may false-positive when loading state lives in a child) |
+
+Promote via `--strict-rules` filter (e.g., `--strict-rules datatable-no-empty-state`) in the pre-commit hook once a sweep clears the rule. After all 5 promote, fold into `--strict` (no filter).
+
+State-coverage maps onto the canonical state matrix at `docs/governance/component-state-catalog.md`. When the catalog adds a new required state, add a row above.
+
+---
+
 ## Updating this registry
 
 When a new DS organism ships upstream:

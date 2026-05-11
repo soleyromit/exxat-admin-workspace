@@ -204,6 +204,15 @@ The registry's "Banned hand-roll patterns" section lists the exact regexes the a
 - **Pattern C** — Scope enumeration. For multi-target work, enumerate the FULL set explicitly before starting. State the count. Never silently truncate.
 - **Pattern D** — Canonical comparison. For DS-touching changes, don't trust "X is imported" as evidence. Compare against the canonical's slot composition and variants.
 - **Pattern E** — Adversarial self-review. After a non-trivial change, spawn `verification-reviewer` subagent (`.claude/agents/verification-reviewer.md`) or re-read with adversarial eye. Don't trust "typecheck passes" as evidence of correctness.
+- **State coverage** — for any page that fetches async data, accepts form input, or renders a list/grid:
+  - Loading state: `Skeleton` placement matching post-load shape
+  - Empty state: icon + heading + 1-line explanation + optional CTA (DataTable: via `emptyState` prop)
+  - Error state: `LocalBanner variant="error"` with retry affordance
+  - Validation: `aria-invalid` + `<FieldError>` per field + multi-error `<LocalBanner>` summary
+  - Submission feedback: `LocalBanner variant="success"` after save (NEVER toast — banned)
+  - Disabled state: component's own `disabled` prop (NEVER `opacity-60` on a parent containing `text-muted-foreground` — drops contrast below WCAG 4.5:1)
+  - Focus: DS `<Button>` OR `focus-visible:ring` on custom clickable + `tabIndex={0}` + `onKeyDown`
+  Spawn `state-review` subagent (`.claude/agents/state-review.md`) after touching such pages. Audit catches the regex-able slice (`datatable-no-empty-state`, `dialog-no-error-feedback`, `opacity-60-on-text-parent`, `clickable-without-focus-ring`, `async-fetch-no-skeleton`). See `docs/patterns/admin/state-coverage.md` for prescriptions per state.
 
 **For UI-touching changes, ALSO spawn `visual-review` subagent** (`.claude/agents/visual-review.md`). It runs `tools/visual-check/run.mjs` (Playwright + axe-core), reads screenshots back, and catches what static audits cannot — visual rendering, semantic conflicts (the NURS 210 "73% / No responses yet" bug class), runtime a11y violations. The dev server must be running. First-run setup: `cd tools/visual-check && pnpm install && pnpm install:chromium`.
 

@@ -59,6 +59,7 @@
   - `master-list-admin` — Master-List Admin
   - `read-only-inherited-filtered-view` — Read-Only Inherited Filtered View
   - `row-actions` — Row Actions (Admin)
+  - `state-coverage` — State Coverage (Admin)
 
 ### async
   - `live-monitor-polling` — Live Monitor — Polling
@@ -130,6 +131,7 @@
 **Workspace-defined agents:**
   - `ds-adoption-reviewer` (.claude/agents/ds-adoption-reviewer.md)
   - `research-cross-corpus` (.claude/agents/research-cross-corpus.md)
+  - `state-review` (.claude/agents/state-review.md)
   - `verification-reviewer` (.claude/agents/verification-reviewer.md)
   - `visual-review` (.claude/agents/visual-review.md)
 

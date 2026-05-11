@@ -90,6 +90,25 @@
 2. Specifically check: does the change match how exam-mgmt (sister product) handles the same shape? Does it match the DS library demo?
 3. When you (Romit) catch a bug in my recent change, treat it as evidence the verification step was skipped — add it to the discipline log.
 
+### Pattern F — State coverage (added 2026-05-11)
+
+**What I do wrong:** Verify the default render and claim "done" without checking empty / loading / error / disabled / focus states.
+
+**Real example (2026-05-11):** Across this session I shipped multiple admin list pages where DataTable's default render looked great with seeded mock data, but visiting the same route with `data={[]}` showed the wrong message ("No results match your filters" instead of a first-run empty state with icon + heading + CTA). The static audit's first version had no rule for it — `<DataTable>` was technically "correctly imported" so adoption looked clean. Same pattern for opacity-60-on-text-parent (WCAG fix applied in one place after Romit pointed it out — the audit then found four more siblings), clickable divs without focus rings (qb-table.tsx hot spots), and Dialog forms missing `aria-invalid` despite having validation logic.
+
+**The fix — when adding a page that renders data, form, or list:**
+
+1. Enumerate the seven required states (loading / empty / error / validation / submission / disabled / focus) BEFORE claiming done. Use the table in `docs/patterns/admin/state-coverage.md` §"The seven required states."
+2. For each DS component on the page, look up its required-state row in `docs/governance/component-state-catalog.md` and verify the file handles each REQUIRED state.
+3. Run the audit and filter for state-coverage rules:
+   ```bash
+   python3 scripts/ds-adoption-audit.py 2>&1 | grep -E "datatable-no-empty-state|dialog-no-error-feedback|opacity-60-on-text-parent|clickable-without-focus-ring|async-fetch-no-skeleton"
+   ```
+4. Spawn the `state-review` subagent (`.claude/agents/state-review.md`) for the touched files. It applies the catalog's per-component required-state matrix and returns GREENLIGHT or NEEDS-MORE per file.
+5. When you (Romit) catch a state-coverage miss in my recent change, treat it as evidence Pattern F was skipped — add it to the discipline log.
+
+Static enforcement: five audit rules surface the regex-able slice (see `docs/governance/ds-adoption.md` → "State-coverage requirements"). The subagent goes deeper for non-regex-able cases.
+
 ---
 
 ## When to apply
@@ -102,6 +121,7 @@
 | I touched a DS component | D, B (other places with same component) |
 | I'm about to claim a non-trivial change is done | E, A |
 | Romit asks "did you also …" | C, B (I should have anticipated) |
+| I added a page that fetches async, accepts form input, or renders a list | F |
 
 ---
 
@@ -116,6 +136,10 @@ Track each time I get caught skipping a check. Pattern frequency reveals which o
 | 2026-05-11 | Romit | C | Audited 6 components, said "covered"; actual set is 30 |
 | 2026-05-11 | Dialog+Banner+Badge agent | E | My recent LocalBanner in responses/page.tsx had title doing double duty |
 | 2026-05-11 | CoachMark+Command agent | D | I'd have recommended CoachMark for onboarding without checking that products' principles docs explicitly forbid welcome-tour overlays |
+| 2026-05-11 | state-coverage audit | F | Shipped admin list pages with DataTable + no `emptyState` prop — the 0-row render fell back to "No results match your filters" instead of a first-run empty state. Caught by `datatable-no-empty-state` audit rule across exam-management `/access`, `/private`, etc. |
+| 2026-05-11 | state-coverage audit | F | Shipped Cards with `opacity-60` containing `text-muted-foreground` children — drops contrast below WCAG 4.5:1. Caught by `opacity-60-on-text-parent` audit rule (2 hits in exam-management as of audit landing). |
+| 2026-05-11 | state-coverage audit | F | Shipped clickable `<div>`s with `onClick` + `cursor-pointer` but no `focus-visible:ring` — keyboard users have no focus indicator. Caught by `clickable-without-focus-ring` audit rule (3 hits in exam-management qb-table + assessments-tab). |
+| 2026-05-11 | Romit | A | Claimed agents "checked every page from localhost:4000 + every state + every interaction" when they had only HTTP-fetched static HTML + read demo source + run axe on default-state screenshots. Interaction states (hover, focus, open-dialog, validation-error, submission feedback, theme switch, responsive) were never exercised. The catalog agent itself flagged Calendar `mode="single"` only, 20 components missing from library-catalog.ts, and 6 placeholder-only previews — implicit evidence the interactive layer wasn't walked — but my reply elided that. Closing the gap requires Playwright interaction tests (tracked: `tools/visual-check/interactions.mjs`, separate session). Closed 2026-05-11: `tools/visual-check/interactions.mjs` drives 12 interaction states per route (default, focus walks on button/input/select/dropdown, open-dialog, dialog-validation, open-sheet, open-dropdown, command-palette, mobile-viewport, theme-toggle); `visual-review` subagent consumes the captures and renders a consolidated GREENLIGHT/NEEDS-MORE verdict that considers default + interaction states together. First run against PCE admin `/surveys` + `/admin/students` + `/admin/terms` + `/analytics` surfaced 7 nodes of `aria-hidden-focus` (open-dropdown) + 3 routes × `document-title` + 3 routes × `html-has-lang` (mobile-viewport) — none caught by the default-state runner. |
 
 When you (Romit) catch me again, append a row. The goal is the table shrinking over time.
 
@@ -130,8 +154,11 @@ When you (Romit) catch me again, append a row. The goal is the table shrinking o
 
 ## Where this gets enforced
 
-- **Workspace CLAUDE.md §8** references this file and lists the 5 patterns as absolute rules.
+- **Workspace CLAUDE.md §8** references this file and lists the 6 patterns (A-F) as absolute rules.
 - **`verification-reviewer` subagent** is the post-claim audit. Spawn it when I'm about to declare a non-trivial change done.
-- **Pre-commit hook** runs `ds-adoption-audit.py` — catches one slice of Pattern D (Card-imposter, raw-table, organism-collision).
+- **`state-review` subagent** is the state-coverage gate (Pattern F). Spawn it after touching any page that fetches async data, accepts form input, or renders a list/grid.
+- **Pre-commit hook** runs `ds-adoption-audit.py` — catches one slice of Pattern D (Card-imposter, raw-table, organism-collision) AND the regex-able slice of Pattern F (datatable-no-empty-state, dialog-no-error-feedback, opacity-60-on-text-parent, clickable-without-focus-ring, async-fetch-no-skeleton).
 - **Component depth audits** (`docs/governance/component-depth-audits/`) are the durable record of Pattern C + D applied per component.
-- **`docs/governance/blind-spots.md`** row #13 tracks this verification-discipline gap as a meta-bug class.
+- **Component state catalog** (`docs/governance/component-state-catalog.md`) is the durable record of Pattern F — required-state matrix per DS component.
+- **`docs/patterns/admin/state-coverage.md`** (ADMIN-004) is the prescriptive doc for Pattern F — what each state should look like with canonical file:line citations.
+- **`docs/governance/blind-spots.md`** row #13 tracks the verification-discipline meta-bug; row #14 tracks the state-coverage class specifically.
