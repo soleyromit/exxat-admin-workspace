@@ -16,7 +16,7 @@ import {
   Avatar, AvatarFallback,
   Button, InputGroup, InputGroupAddon, InputGroupInput,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
-  Tooltip, TooltipTrigger, TooltipContent,
+  Tip,
 } from '@exxat/ds/packages/ui/src'
 import { StatusPill, MetricBar } from '@/components/faculty-ui-kit'
 import { InterventionDialog } from '@/components/intervention-dialog'
@@ -170,10 +170,11 @@ function RosterTile({
 }) {
   const t = TILE_TONE[tone]
   return (
-    <button
+    <Button
+      variant="ghost"
       onClick={onClick}
-      className={`text-start rounded-xl border bg-card px-4 py-3 flex items-center gap-3 transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer ${active ? `${t.activeBg} ${t.activeBorder}` : 'border-border'}`}
       aria-pressed={active}
+      className={`text-start rounded-xl border bg-card px-4 py-3 flex items-center justify-start gap-3 h-auto whitespace-normal hover:shadow-md hover:-translate-y-0.5 ${active ? `${t.activeBg} ${t.activeBorder}` : 'border-border'}`}
     >
       <div className={`flex size-9 items-center justify-center rounded-lg shrink-0 ${t.iconBg}`}>
         <i className={`fa-light ${icon} ${t.iconFg} text-sm`} aria-hidden="true" />
@@ -185,7 +186,7 @@ function RosterTile({
           {sub && <span className="text-[10px] text-muted-foreground truncate">{sub}</span>}
         </div>
       </div>
-    </button>
+    </Button>
   )
 }
 
@@ -218,29 +219,21 @@ function StudentRow({
             {student.firstName} {student.lastName}
           </p>
           {student.status === 'at-risk' && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="cursor-help">
-                  <StatusPill tone="warning" icon="fa-triangle-exclamation" label="At-risk" uppercase />
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>Bottom 20% by course average · consider intervention</TooltipContent>
-            </Tooltip>
+            <Tip label="Bottom 20% by course average · consider intervention">
+              <span className="cursor-help">
+                <StatusPill tone="warning" icon="fa-triangle-exclamation" label="At-risk" uppercase />
+              </span>
+            </Tip>
           )}
           {student.status === 'top-performer' && (
             <StatusPill tone="success" icon="fa-trophy" label="Top" uppercase />
           )}
           {hasAcc && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="cursor-help">
-                  <StatusPill tone="info" icon="fa-universal-access" label="Accommodation" uppercase />
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                {accommodations.map(a => a.detail).join(' · ')}
-              </TooltipContent>
-            </Tooltip>
+            <Tip label={accommodations.map(a => a.detail).join(' · ')}>
+              <span className="cursor-help">
+                <StatusPill tone="info" icon="fa-universal-access" label="Accommodation" uppercase />
+              </span>
+            </Tip>
           )}
         </div>
         <p className="text-xs text-muted-foreground mt-0.5 truncate">
@@ -263,35 +256,29 @@ function StudentRow({
 
       <div className="text-end flex items-center justify-end gap-1">
         {student.status === 'at-risk' && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => { e.stopPropagation(); onIntervene() }}
-                className="gap-1.5 text-[11px] h-7 px-2 border-chart-4/40 text-chart-4 hover:bg-chart-4/10"
-              >
-                <i className="fa-light fa-life-ring" aria-hidden="true" />
-                Intervene
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Assign practice questions + notify advisor</TooltipContent>
-          </Tooltip>
-        )}
-        <Tooltip>
-          <TooltipTrigger asChild>
+          <Tip label="Assign practice questions + notify advisor">
             <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-disabled="true"
-              className="opacity-60 pointer-events-none"
-              aria-label="View student detail (coming soon)"
+              variant="outline"
+              size="sm"
+              onClick={(e) => { e.stopPropagation(); onIntervene() }}
+              className="gap-1.5 text-[11px] h-7 px-2 border-chart-4/40 text-chart-4 hover:bg-chart-4/10"
             >
-              <i className="fa-light fa-arrow-right text-muted-foreground" aria-hidden="true" />
+              <i className="fa-light fa-life-ring" aria-hidden="true" />
+              Intervene
             </Button>
-          </TooltipTrigger>
-          <TooltipContent>Per-student detail · coming soon</TooltipContent>
-        </Tooltip>
+          </Tip>
+        )}
+        <Tip label="Per-student detail · coming soon">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-disabled="true"
+            className="opacity-60 pointer-events-none"
+            aria-label="View student detail (coming soon)"
+          >
+            <i className="fa-light fa-arrow-right text-muted-foreground" aria-hidden="true" />
+          </Button>
+        </Tip>
       </div>
     </div>
   )

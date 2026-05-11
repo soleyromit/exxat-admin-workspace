@@ -21,11 +21,12 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import {
-  Button, Tooltip, TooltipTrigger, TooltipContent,
+  Button, Tip,
   Collapsible, CollapsibleTrigger, CollapsibleContent,
 } from '@exxat/ds/packages/ui/src'
 import { StatusPill, type Tone } from '@/components/faculty-ui-kit'
 import { WorkflowStepIndicator } from '@/components/workflow-step-indicator'
+import { CreateAssessmentModal } from '@/components/create-assessment-modal'
 import type { Assessment, QDiff } from '@/lib/qb-types'
 import type { AssessmentReview, AssessmentReviewState } from '@/lib/faculty-mock-data'
 
@@ -36,35 +37,79 @@ interface AssessmentsTabProps {
   courseId: string
 }
 
-// Group order for sections.
-// Per Vishaka: order = live → drafts → completed. "Awaiting results" copy
-// removed — confusing about who's awaiting (students vs faculty).
-const GROUP_ORDER: { key: AssessmentReviewState | 'draft'; title: string; sub: string; icon: string }[] = [
-  // ── LIVE — running or open
-  { key: 'in-progress',         title: 'Live now',                sub: 'Students are currently taking these', icon: 'fa-play' },
-  { key: 'published',           title: 'Open window',             sub: 'Window is open — students can start', icon: 'fa-bullhorn' },
-  // ── IN PROGRESS — drafts + chair-review states
-  { key: 'draft',               title: 'Drafts',                  sub: 'Not yet sent for review', icon: 'fa-file-pen' },
-  { key: 'changes-requested',   title: 'Changes requested',       sub: 'Chair sent back with notes', icon: 'fa-arrows-rotate' },
-  { key: 'pending-chair',       title: 'Pending chair review',    sub: 'Awaiting approval before publishing', icon: 'fa-hourglass-half' },
-  { key: 'approved',            title: 'Approved · ready to publish', sub: 'Chair-approved, awaiting your publish action', icon: 'fa-check-circle' },
-  // ── COMPLETED — submitted or fully published
-  { key: 'submitted',           title: 'Submitted · pending publication', sub: 'All students submitted — review before publishing results', icon: 'fa-check-double' },
-  { key: 'results-published',   title: 'Completed',               sub: 'Results visible to students', icon: 'fa-chart-line' },
+// Group by COMPLETION status, not workflow. Per Aarti's May 7 directive:
+// "I don't want assessment workflow to be the primary concern... completion
+// is a bigger category. So or primary concern. So five have been completed.
+// Two are still to be scheduled."
+//
+// Workflow approval still surfaces — but per-card, not as the org axis.
+type CompletionBucket = 'ongoing' | 'scheduled' | 'not-yet-scheduled' | 'completed'
+
+const COMPLETION_BUCKETS: {
+  key: CompletionBucket
+  title: string
+  sub: string
+  states: (AssessmentReviewState | 'draft')[]
+  defaultOpen: boolean
+}[] = [
+  {
+    key: 'ongoing',
+    title: 'Ongoing',
+    sub: 'Students are taking these now',
+    states: ['in-progress'],
+    defaultOpen: true,
+  },
+  {
+    key: 'scheduled',
+    title: 'Scheduled',
+    sub: 'Window is open or about to open',
+    states: ['published'],
+    defaultOpen: true,
+  },
+  {
+    key: 'not-yet-scheduled',
+    title: 'Not yet scheduled',
+    sub: 'Drafts and approvals — not assigned to students yet',
+    states: ['draft', 'pending-chair', 'changes-requested', 'approved'],
+    defaultOpen: true,
+  },
+  {
+    key: 'completed',
+    title: 'Completed',
+    sub: 'Closed assessments — secondary concern',
+    states: ['submitted', 'results-published'],
+    defaultOpen: false,
+  },
 ]
 
 export function AssessmentsTab({ assessments, reviewByAssessment, isViewer, courseId }: AssessmentsTabProps) {
-  // Group assessments by state
-  const grouped = new Map<AssessmentReviewState | 'draft', AssessmentsTabProps['assessments']>()
+  const [modalOpen, setModalOpen] = useState(false)
+  const [completedOpen, setCompletedOpen] = useState(false)
+  const [filterBucket, setFilterBucket] = useState<CompletionBucket | null>(null)
+
+  // Group by completion bucket (each bucket consolidates 1+ workflow states).
+  const grouped = new Map<CompletionBucket, AssessmentsTabProps['assessments']>()
   for (const a of assessments) {
     const state = reviewByAssessment.get(a.id)?.state ?? 'draft'
-    const arr = grouped.get(state) ?? []
+    const bucket = COMPLETION_BUCKETS.find(b => b.states.includes(state))
+    if (!bucket) continue
+    const arr = grouped.get(bucket.key) ?? []
     arr.push(a)
-    grouped.set(state, arr)
+    grouped.set(bucket.key, arr)
   }
 
-  // Hide groups that are empty
-  const visibleGroups = GROUP_ORDER.filter(g => (grouped.get(g.key) ?? []).length > 0)
+  // Workflow approval rollup — secondary widget per Aarti (not the org axis).
+  const workflowCounts = {
+    pendingReview: assessments.filter(a => reviewByAssessment.get(a.id)?.state === 'pending-chair').length,
+    changesRequested: assessments.filter(a => reviewByAssessment.get(a.id)?.state === 'changes-requested').length,
+    approved: assessments.filter(a => reviewByAssessment.get(a.id)?.state === 'approved').length,
+  }
+  const totalWorkflowSignals = workflowCounts.pendingReview + workflowCounts.changesRequested + workflowCounts.approved
+
+  // Buckets visible: respect filter when set, else show all non-empty.
+  const visibleGroups = COMPLETION_BUCKETS
+    .filter(g => (grouped.get(g.key) ?? []).length > 0)
+    .filter(g => !filterBucket || g.key === filterBucket)
 
   if (assessments.length === 0) {
     return (
@@ -81,12 +126,21 @@ export function AssessmentsTab({ assessments, reviewByAssessment, isViewer, cour
             : 'Build your first assessment from existing questions in the Question Bank.'}
         </p>
         {!isViewer && (
-          <Button size="default" asChild className="mt-4 gap-2">
-            <Link href={`/assessment-builder?courseId=${courseId}`}>
+          <>
+            <Button
+              size="default"
+              className="mt-4 gap-2"
+              onClick={() => setModalOpen(true)}
+            >
               <i className="fa-light fa-plus" aria-hidden="true" />
               Create assessment
-            </Link>
-          </Button>
+            </Button>
+            <CreateAssessmentModal
+              open={modalOpen}
+              onOpenChange={setModalOpen}
+              courseId={courseId}
+            />
+          </>
         )}
       </div>
     )
@@ -94,50 +148,127 @@ export function AssessmentsTab({ assessments, reviewByAssessment, isViewer, cour
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Persistent Create CTA — Vishaka: assessment creation is the meat of
-          why faculty come into a course. Don't bury behind empty state. */}
-      {!isViewer && (
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-4">
-          <div>
-            <p className="text-sm font-semibold text-foreground">
-              {assessments.length} {assessments.length === 1 ? 'assessment' : 'assessments'} in this course
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Build a new exam from this course&apos;s question bank
-            </p>
+      {/* Stats bar — completion rollup with filterable counts (primary) +
+          approval workflow widget (secondary). Per Aarti's May 7 directive:
+          "seven assessments, five completed, two scheduled."  Click a count
+          to filter the list to that bucket. */}
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
+          <div className="flex items-baseline gap-4 flex-wrap">
+            <span className="text-sm font-semibold text-foreground">
+              <span className="tabular-nums">{assessments.length}</span>{' '}
+              {assessments.length === 1 ? 'assessment' : 'assessments'}
+            </span>
+            <div className="flex items-center gap-1 flex-wrap">
+              {COMPLETION_BUCKETS.map((b, i) => {
+                const count = grouped.get(b.key)?.length ?? 0
+                if (count === 0) return null
+                const isActive = filterBucket === b.key
+                return (
+                  <span key={b.key} className="inline-flex items-center gap-1">
+                    {i > 0 && <span className="text-muted-foreground/60 text-xs">·</span>}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setFilterBucket(isActive ? null : b.key)}
+                      aria-pressed={isActive}
+                      className={`h-6 px-2 text-xs gap-1.5 font-normal hover:bg-muted ${
+                        isActive ? 'bg-muted text-foreground font-semibold' : 'text-muted-foreground'
+                      }`}
+                    >
+                      <span className="tabular-nums font-semibold">{count}</span>
+                      {b.title.toLowerCase()}
+                    </Button>
+                  </span>
+                )
+              })}
+              {filterBucket && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setFilterBucket(null)}
+                  className="h-6 px-2 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+                  aria-label="Clear filter"
+                >
+                  <i className="fa-light fa-xmark" aria-hidden="true" />
+                  clear
+                </Button>
+              )}
+            </div>
           </div>
-          <Button asChild className="gap-2">
-            <Link href={`/assessment-builder?courseId=${courseId}`}>
+          {!isViewer && (
+            <Button size="sm" className="gap-2 shrink-0" onClick={() => setModalOpen(true)}>
               <i className="fa-light fa-plus" aria-hidden="true" />
               Create assessment
-            </Link>
-          </Button>
+            </Button>
+          )}
         </div>
-      )}
 
-      {visibleGroups.map(g => (
+        {/* Approval workflow widget — secondary per Aarti.
+            "It needs to be a lower priority thing... a workflow widget that
+            will say five pending review, two reviewed, whatever." */}
+        {totalWorkflowSignals > 0 && (
+          <div className="px-4 py-2 border-t border-border bg-muted/30 flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">
+              Approval workflow
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {[
+                workflowCounts.pendingReview > 0 && `${workflowCounts.pendingReview} pending review`,
+                workflowCounts.changesRequested > 0 && `${workflowCounts.changesRequested} changes requested`,
+                workflowCounts.approved > 0 && `${workflowCounts.approved} approved · ready to schedule`,
+              ].filter(Boolean).join(' · ')}
+            </span>
+          </div>
+        )}
+      </div>
+
+      <CreateAssessmentModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        courseId={courseId}
+      />
+
+      {visibleGroups.map(g => {
+        const items = grouped.get(g.key)!
+        // Completed bucket is collapsible — Aarti: "complete is your secondary concern."
+        const isCollapsible = g.key === 'completed'
+        const isOpen = isCollapsible ? completedOpen : true
+        return (
         <section key={g.key}>
-          <div className="flex items-baseline gap-2 mb-3">
+          <div
+            className={`flex items-baseline gap-2 mb-3 ${isCollapsible ? 'cursor-pointer select-none' : ''}`}
+            onClick={isCollapsible ? () => setCompletedOpen(o => !o) : undefined}
+          >
+            {isCollapsible && (
+              <i
+                className={`fa-light ${isOpen ? 'fa-chevron-down' : 'fa-chevron-right'} text-xs text-muted-foreground`}
+                aria-hidden="true"
+              />
+            )}
             <h2 className="font-heading text-base font-semibold text-foreground">
               {g.title}
             </h2>
             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              · {grouped.get(g.key)!.length}
+              · {items.length}
             </span>
             <p className="text-sm text-muted-foreground">{g.sub}</p>
           </div>
-          <div className="flex flex-col gap-2">
-            {grouped.get(g.key)!.map(a => (
-              <AssessmentCard
-                key={a.id}
-                assessment={a}
-                review={reviewByAssessment.get(a.id) ?? null}
-                isViewer={isViewer}
-              />
-            ))}
-          </div>
+          {isOpen && (
+            <div className="flex flex-col gap-2">
+              {items.map(a => (
+                <AssessmentCard
+                  key={a.id}
+                  assessment={a}
+                  review={reviewByAssessment.get(a.id) ?? null}
+                  isViewer={isViewer}
+                />
+              ))}
+            </div>
+          )}
         </section>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -199,7 +330,10 @@ function AssessmentCard({
                 </span>
               )}
               {review?.submittedAt && state === 'pending-chair' && (
-                <span className="flex items-center gap-1 text-chart-4">
+                <span
+                  className="flex items-center gap-1"
+                  style={{ color: 'color-mix(in oklch, var(--chart-4) 55%, var(--foreground))' }}
+                >
                   <i className="fa-light fa-paper-plane text-[10px]" aria-hidden="true" />
                   Sent for review {relativeTime(review.submittedAt)}
                 </span>
@@ -210,6 +344,11 @@ function AssessmentCard({
             <div className="mt-3 max-w-md">
               <WorkflowStepIndicator state={state} compact />
             </div>
+
+            {/* Latest timeline event — Aarti: "every expansion, you will see the
+                latest time, like the timeline, and what's the note, the last note
+                given for that assessment." Shown inline without expanding. */}
+            <LatestTimelineEvent review={review} state={state} />
 
             {/* Inline difficulty distribution — embedded intelligence */}
             {diffDist && (
@@ -282,6 +421,51 @@ function AssessmentCard({
   )
 }
 
+// ─── Latest timeline event — inline, no expand required ─────────────────────
+//
+// Priority order per Aarti's directive:
+//  1. changes-requested + reviewNotes → "Changes requested"
+//  2. approved + reviewedAt           → "Approved"
+//  3. submittedAt                     → "Sent for review"
+//  4. Otherwise nothing
+function LatestTimelineEvent({
+  review,
+  state,
+}: {
+  review: AssessmentReview | null
+  state: AssessmentReviewState | 'draft'
+}) {
+  if (!review) return null
+
+  let icon: string
+  let label: string
+  let when: string | undefined
+
+  if (state === 'changes-requested' && review.reviewNotes) {
+    icon = 'fa-arrows-rotate'
+    label = 'Changes requested'
+    when = review.reviewedAt ?? undefined
+  } else if (state === 'approved' && review.reviewedAt) {
+    icon = 'fa-circle-check'
+    label = 'Approved'
+    when = review.reviewedAt
+  } else if (review.submittedAt) {
+    icon = 'fa-paper-plane'
+    label = 'Sent for review'
+    when = review.submittedAt
+  } else {
+    return null
+  }
+
+  return (
+    <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 mt-1.5">
+      <i className={`fa-light ${icon}`} aria-hidden="true" style={{ fontSize: 10 }} />
+      <span>{label}</span>
+      {when && <span>· {relativeTime(when)}</span>}
+    </div>
+  )
+}
+
 // ─── State → Tone mapping (single source of truth) ───────────────────────────
 const STATE_TONE: Record<AssessmentReviewState | 'draft', Tone> = {
   'draft':              'neutral',
@@ -300,7 +484,7 @@ const STATE_LABEL: Record<AssessmentReviewState | 'draft', string> = {
   'changes-requested':  'Changes requested',
   'approved':           'Approved',
   'published':          'Published',
-  'in-progress':        'Live',
+  'in-progress':        'Ongoing',
   'submitted':          'Submitted',
   'results-published':  'Results published',
 }
@@ -331,7 +515,7 @@ const TONE_OPEN_BORDER: Record<Tone, string> = {
   warning:     'border-chart-4/40',
   success:     'border-chart-2/40',
   neutral:     'border-border',
-  destructive: 'border-destructive/40',
+  destructive: 'border-chart-5/40',
 }
 
 // ─── State pill — uses kit StatusPill ────────────────────────────────────────
@@ -449,27 +633,22 @@ function DifficultyMiniBar({ dist }: { dist: Record<QDiff, number> }) {
     <div style={{ flex: n }} className={`h-1.5 ${bgClass}`} aria-hidden="true" />
   )
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="flex items-center gap-1.5 cursor-help">
-          <div className="w-32 flex rounded-full overflow-hidden">
-            {seg(dist.Easy ?? 0,   'bg-chart-2')}
-            {seg(dist.Medium ?? 0, 'bg-chart-1')}
-            {seg(dist.Hard ?? 0,   'bg-chart-4')}
-          </div>
-          <span className="text-xs text-muted-foreground">
-            <span className="text-chart-2">{dist.Easy ?? 0}E</span>
-            {' · '}
-            <span className="text-chart-1">{dist.Medium ?? 0}M</span>
-            {' · '}
-            <span className="text-chart-4">{dist.Hard ?? 0}H</span>
-          </span>
+    <Tip label={`Easy ${dist.Easy ?? 0} · Medium ${dist.Medium ?? 0} · Hard ${dist.Hard ?? 0}`}>
+      <div className="flex items-center gap-1.5 cursor-help">
+        <div className="w-32 flex rounded-full overflow-hidden">
+          {seg(dist.Easy ?? 0,   'bg-chart-2')}
+          {seg(dist.Medium ?? 0, 'bg-chart-1')}
+          {seg(dist.Hard ?? 0,   'bg-chart-4')}
         </div>
-      </TooltipTrigger>
-      <TooltipContent>
-        Easy {dist.Easy ?? 0} · Medium {dist.Medium ?? 0} · Hard {dist.Hard ?? 0}
-      </TooltipContent>
-    </Tooltip>
+        <span className="text-xs text-muted-foreground">
+          <span style={{ color: 'color-mix(in oklch, var(--chart-2) 50%, var(--foreground))' }}>{dist.Easy ?? 0}E</span>
+          {' · '}
+          <span style={{ color: 'color-mix(in oklch, var(--chart-1) 50%, var(--foreground))' }}>{dist.Medium ?? 0}M</span>
+          {' · '}
+          <span style={{ color: 'color-mix(in oklch, var(--chart-4) 55%, var(--foreground))' }}>{dist.Hard ?? 0}H</span>
+        </span>
+      </div>
+    </Tip>
   )
 }
 

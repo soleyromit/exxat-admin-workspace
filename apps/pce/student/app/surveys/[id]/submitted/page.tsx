@@ -3,6 +3,12 @@
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { buttonVariants } from '@exxat/student/components/ui/button'
+import {
+  Card,
+  CardHeader,
+  CardDescription,
+  CardContent,
+} from '@exxat/student/components/ui/card'
 import { MOCK_STUDENT_SURVEYS } from '@/lib/mock-surveys'
 
 export default function SubmittedPage() {
@@ -65,14 +71,13 @@ export default function SubmittedPage() {
           </div>
 
           {/* What happens next */}
-          <div
-            className="w-full rounded-xl border px-5 py-4 text-left flex flex-col gap-3"
-            style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}
-          >
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              What happens next
-            </p>
-            <div className="flex flex-col gap-3">
+          <Card className="w-full text-left gap-3 py-4">
+            <CardHeader className="px-5 pt-0">
+              <CardDescription className="text-xs font-semibold uppercase tracking-wide">
+                What happens next
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3 px-5 pb-0">
               {[
                 {
                   icon: 'fa-lock-keyhole',
@@ -111,8 +116,8 @@ export default function SubmittedPage() {
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* CTA */}
           <Link

@@ -23,7 +23,7 @@ import {
   Avatar, AvatarFallback,
   Button, Badge,
   Card, CardHeader, CardTitle, CardDescription, CardContent,
-  Tooltip, TooltipTrigger, TooltipContent,
+  Tip,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
   Textarea,
 } from '@exxat/ds/packages/ui/src'
@@ -408,7 +408,12 @@ function StudentBoard({ students }: { students: LiveMonitorStudent[] }) {
           {students.length} total
         </span>
       </header>
-      <div className="max-h-[min(420px,60vh)] overflow-auto">
+      <div
+        className="max-h-[min(420px,60vh)] overflow-auto"
+        tabIndex={0}
+        role="region"
+        aria-label="Student status list"
+      >
         {sorted.map(s => <StudentRow key={s.studentId} s={s} />)}
       </div>
     </Card>
@@ -441,26 +446,20 @@ function StudentRow({ s }: { s: LiveMonitorStudent }) {
           <span className="font-medium text-foreground truncate">{s.initials} · {s.studentId}</span>
           <StatusDot status={s.status} />
           {isStalled && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <i className="fa-solid fa-circle-exclamation cursor-help" aria-hidden="true" style={{ fontSize: 11, color: 'var(--chart-4)' }} />
-              </TooltipTrigger>
-              <TooltipContent>No activity in last 4 minutes</TooltipContent>
-            </Tooltip>
+            <Tip label="No activity in last 4 minutes">
+              <i className="fa-solid fa-circle-exclamation cursor-help" aria-hidden="true" style={{ fontSize: 11, color: 'var(--chart-4)' }} />
+            </Tip>
           )}
           {s.flaggedCount > 0 && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span
-                  className="inline-flex items-center gap-1 cursor-help"
-                  style={{ color: 'var(--chart-4)', fontSize: 11 }}
-                >
-                  <i className="fa-solid fa-flag" aria-hidden="true" style={{ fontSize: 9 }} />
-                  {s.flaggedCount}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>{s.flaggedCount} flagged comment{s.flaggedCount === 1 ? '' : 's'}</TooltipContent>
-            </Tooltip>
+            <Tip label={`${s.flaggedCount} flagged comment${s.flaggedCount === 1 ? '' : 's'}`}>
+              <span
+                className="inline-flex items-center gap-1 cursor-help"
+                style={{ color: 'var(--chart-4)', fontSize: 11 }}
+              >
+                <i className="fa-solid fa-flag" aria-hidden="true" style={{ fontSize: 9 }} />
+                {s.flaggedCount}
+              </span>
+            </Tip>
           )}
         </div>
         {s.status === 'in-progress' && (
@@ -502,11 +501,15 @@ function StudentRow({ s }: { s: LiveMonitorStudent }) {
   )
 }
 
+// Foreground tokens deepened via color-mix into --foreground so AA contrast holds
+// against the 14% color-mix backgrounds. Raw --chart-1/2/4 are tuned for chart
+// bodies and fail color-contrast at small text sizes — see visual-check axe
+// output on /assessments/<id>/monitor.
 const STATUS_PALETTE: Record<LiveMonitorStudent['status'], { bg: string; fg: string }> = {
-  'in-progress': { bg: 'color-mix(in oklch, var(--chart-1) 14%, var(--background))', fg: 'var(--chart-1)' },
-  'submitted':   { bg: 'color-mix(in oklch, var(--chart-2) 14%, var(--background))', fg: 'var(--chart-2)' },
-  'not-started': { bg: 'var(--muted)', fg: 'var(--muted-foreground)' },
-  'paused':      { bg: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', fg: 'var(--chart-4)' },
+  'in-progress': { bg: 'color-mix(in oklch, var(--chart-1) 14%, var(--background))', fg: 'color-mix(in oklch, var(--chart-1) 50%, var(--foreground))' },
+  'submitted':   { bg: 'color-mix(in oklch, var(--chart-2) 14%, var(--background))', fg: 'color-mix(in oklch, var(--chart-2) 50%, var(--foreground))' },
+  'not-started': { bg: 'var(--muted)', fg: 'var(--foreground)' },
+  'paused':      { bg: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', fg: 'color-mix(in oklch, var(--chart-4) 55%, var(--foreground))' },
 }
 
 function StatusDot({ status }: { status: LiveMonitorStudent['status'] }) {
@@ -586,7 +589,10 @@ function FlaggedCommentsQueue({
               <Avatar className="h-7 w-7 rounded-full shrink-0">
                 <AvatarFallback
                   className="rounded-full text-[10px] font-bold"
-                  style={{ background: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', color: 'var(--chart-4)' }}
+                  style={{
+                    background: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))',
+                    color: 'color-mix(in oklch, var(--chart-4) 55%, var(--foreground))',
+                  }}
                 >
                   {s?.initials ?? '??'}
                 </AvatarFallback>

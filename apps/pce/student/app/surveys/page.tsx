@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { badgeVariants } from '@exxat/student/components/ui/badge'
 import { buttonVariants } from '@exxat/student/components/ui/button'
+import { Card, CardContent } from '@exxat/student/components/ui/card'
 import { MOCK_STUDENT_SURVEYS, STUDENT_METRICS } from '@/lib/mock-surveys'
 import type { StudentSurvey } from '@/lib/mock-surveys'
 
@@ -124,67 +125,69 @@ function SurveyCard({ survey }: { survey: StudentSurvey }) {
   const isOpen = survey.status === 'open'
 
   return (
-    <div
-      className="flex items-center justify-between rounded-xl border px-5 py-4 gap-4 transition-shadow hover:shadow-sm"
+    <Card
+      className="transition-shadow hover:shadow-sm gap-0"
       style={{
         borderColor: isOpen ? 'var(--brand-color-soft)' : 'var(--border)',
         backgroundColor: isOpen ? 'var(--brand-color-light)' : 'var(--card)',
       }}
     >
-      <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold truncate text-foreground">
-            {survey.courseCode}
+      <CardContent className="flex items-center justify-between gap-4 px-5 py-4">
+        <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold truncate text-foreground">
+              {survey.courseCode}
+            </span>
+            <div className={badgeVariants({ variant: cfg.variant })}>{cfg.label}</div>
+          </div>
+          <span className="text-sm truncate text-muted-foreground">
+            {survey.courseName}
           </span>
-          <div className={badgeVariants({ variant: cfg.variant })}>{cfg.label}</div>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span>
+              <i className="fa-light fa-users me-1" aria-hidden="true" />
+              {survey.instructors.map(i => i.name).join(', ')}
+            </span>
+            {isOpen && (
+              <>
+                <span>·</span>
+                <span>
+                  <i className="fa-light fa-circle-question me-1" aria-hidden="true" />
+                  {totalQuestions} questions
+                </span>
+                <span>·</span>
+                <span>
+                  <i className="fa-light fa-calendar-days me-1" aria-hidden="true" />
+                  Due {survey.deadline}
+                </span>
+              </>
+            )}
+            {survey.submittedAt && (
+              <>
+                <span>·</span>
+                <span>Submitted {survey.submittedAt}</span>
+              </>
+            )}
+          </div>
         </div>
-        <span className="text-sm truncate text-muted-foreground">
-          {survey.courseName}
-        </span>
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span>
-            <i className="fa-light fa-users me-1" aria-hidden="true" />
-            {survey.instructors.map(i => i.name).join(', ')}
-          </span>
-          {isOpen && (
-            <>
-              <span>·</span>
-              <span>
-                <i className="fa-light fa-circle-question me-1" aria-hidden="true" />
-                {totalQuestions} questions
-              </span>
-              <span>·</span>
-              <span>
-                <i className="fa-light fa-calendar-days me-1" aria-hidden="true" />
-                Due {survey.deadline}
-              </span>
-            </>
-          )}
-          {survey.submittedAt && (
-            <>
-              <span>·</span>
-              <span>Submitted {survey.submittedAt}</span>
-            </>
-          )}
-        </div>
-      </div>
 
-      <div className="shrink-0">
-        {isOpen && (
-          <Link href={`/surveys/${survey.id}`} className={buttonVariants({ variant: 'default', size: 'sm' })}>
-            Start
-            <i className="fa-light fa-arrow-right ms-1" aria-hidden="true" style={{ fontSize: 11 }} />
-          </Link>
-        )}
-        {survey.status === 'submitted' && (
-          <Link href={`/surveys/${survey.id}/submitted`} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-            View
-          </Link>
-        )}
-        {survey.status === 'closed' && (
-          <span className="text-xs text-muted-foreground">Closed</span>
-        )}
-      </div>
-    </div>
+        <div className="shrink-0">
+          {isOpen && (
+            <Link href={`/surveys/${survey.id}`} className={buttonVariants({ variant: 'default', size: 'sm' })}>
+              Start
+              <i className="fa-light fa-arrow-right ms-1" aria-hidden="true" style={{ fontSize: 11 }} />
+            </Link>
+          )}
+          {survey.status === 'submitted' && (
+            <Link href={`/surveys/${survey.id}/submitted`} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+              View
+            </Link>
+          )}
+          {survey.status === 'closed' && (
+            <span className="text-xs text-muted-foreground">Closed</span>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   )
 }

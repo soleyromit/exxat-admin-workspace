@@ -43,10 +43,24 @@ interface NavShellProps {
 export function NavShell({ children, title }: NavShellProps) {
   const [paletteOpen, setPaletteOpen] = useState(false)
 
-  // ⌘K / Ctrl+K opens the command palette globally
+  // ⌘K / Ctrl+K opens the command palette globally.
+  // Suppress while focus is in an editable field so ⌘K can still type a literal
+  // character if the surrounding app needs it (admin parity — see
+  // apps/exam-management/admin/lib/editable-target.ts).
   useEffect(() => {
+    const isEditableTarget = (target: EventTarget | null) => {
+      const el = target as HTMLElement | null
+      if (!el) return false
+      if (
+        el instanceof HTMLInputElement ||
+        el instanceof HTMLTextAreaElement ||
+        el instanceof HTMLSelectElement
+      ) return true
+      return el.getAttribute?.('contenteditable') === 'true'
+    }
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        if (isEditableTarget(e.target)) return
         e.preventDefault()
         setPaletteOpen(o => !o)
       }
