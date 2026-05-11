@@ -152,7 +152,7 @@ export function QBHeader() {
   const { toggleSidebar, state: sidebarState } = useSidebar()
 
   return (
-    <header style={{
+    <header className="qb-header-bar" style={{
       height: 44,
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       padding: '0 12px',
@@ -247,7 +247,7 @@ export function QBHeader() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button variant="outline" size="xs" className="gap-1.5" aria-label="Ask Leo AI" style={{ height: 28 }}>
+        <Button variant="outline" size="sm" className="qb-ask-leo-btn gap-1.5" aria-label="Ask Leo AI">
           <i className="fa-duotone fa-solid fa-star-christmas" style={{ fontSize: 11, color: 'var(--brand-color)' }} aria-hidden="true" />
           <span className="qb-ask-leo-label">Ask Leo</span>
         </Button>

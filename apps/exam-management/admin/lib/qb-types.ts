@@ -21,6 +21,7 @@ export interface Question {
   blooms: QBlooms
   folder: string
   folderPath: string        // e.g. "PHAR101 QB / Antibiotics & Antimicrobials"
+  extraFolders?: { folder: string; folderPath: string }[]  // additional locations
   tags: string[]
   usage: number
   pbis: number | null

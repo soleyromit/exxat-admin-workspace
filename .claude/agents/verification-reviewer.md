@@ -94,6 +94,11 @@ Read the parent's recent file changes (use `git diff HEAD~1 HEAD` if a commit ju
 - Does it match the product's experience-principles doc? (read `apps/<product>/docs/storytelling/experience-principles.md` if relevant)
 - Is there empty whitespace / sparse content that suggests incomplete UX?
 - Are footer / header / action conventions consistent with DS demos?
+- **Hydration hazard**: grep for `useState(() => typeof window !== 'undefined' ? window.innerWidth` or `useState(() => window.` — these cause SSR/client mismatch errors. Flag any hit.
+- **Flex scroll chain integrity**: for any new scrollable area, confirm EVERY ancestor in the flex column has `minHeight: 0`. A missing `minHeight:0` at any level means overflow:auto never activates.
+- **Table container stretch**: if a table or card container uses `flex: 1` as the outermost sizing, flag it — this stretches the container to fill the viewport even with 1 row. The correct pattern is `maxHeight: '100%'` + `justifyContent: 'flex-start'` on the wrapper.
+- **DS variant override**: grep for `.css { border: none !important }` or `background: transparent !important` applied to a button with a DS variant (e.g. variant="outline"). This breaks the DS contract. Only `height`, `padding-inline`, and `font-size` are safe to override via CSS class on a DS button.
+- **Active state color**: grep for `var(--brand-color)` in filter chip, toolbar badge, or icon button active state styles. Active states in the QB toolbar should use `var(--muted)` + `var(--border-control-3)` + `var(--foreground)`, not brand-color.
 
 ### 3. Render the verdict
 

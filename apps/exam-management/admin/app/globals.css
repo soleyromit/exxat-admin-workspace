@@ -207,3 +207,48 @@
   --courses-row-open-bg: color-mix(in oklch, var(--brand-tint) 50%, var(--background));
   --courses-offering-row-bg: color-mix(in oklch, var(--brand-tint) 22%, var(--background));
 }
+
+/* QB responsive layout — compact at ≤768px (covers 200% zoom on ≤1536px displays; leaves normal laptop viewports untouched) */
+.qb-table-padding-wrapper { padding: 16px; }
+.qb-toolbar             { min-height: 48px; }
+
+:root {
+  --qb-chip-height: 28px;
+}
+
+/* DS Checkbox: suppress the touch-target ::after extension in compact UI contexts.
+   The ::after pseudo (after:-inset-x-3 after:-inset-y-2) extends 8px above/below
+   the 16px button — correct in open forms, but inflates height in table cells and
+   list items where the parent element already provides the touch target. */
+td [data-slot="checkbox"]::after,
+th [data-slot="checkbox"]::after,
+[role="option"] [data-slot="checkbox"]::after,
+[role="listbox"] [data-slot="checkbox"]::after { display: none; }
+
+@media (max-width: 768px) {
+  :root {
+    --qb-chip-height: 22px;
+  }
+  .qb-table-padding-wrapper { padding: 4px 8px 6px; }
+  .qb-toolbar             { min-height: 32px; padding-top: 4px !important; padding-bottom: 4px !important; }
+  /* Breadcrumb: hide "Question Bank >" root segment at compact widths so the
+     "…" intermediate trigger is always the leftmost (accessible) item */
+  .qb-crumb-root-seg      { display: none; }
+  /* Checkboxes: always visible at narrow viewports — hover-only is
+     inaccessible at 200% zoom where you can't hover multiple rows */
+  .qb-row-checkbox        { opacity: 1 !important; }
+  /* Hide entire title bar at 200% zoom — button moves to toolbar instead */
+  .qb-title-bar           { display: none !important; }
+  /* Show the compact title + Add Question wrapper in the toolbar */
+  .qb-toolbar-add-btn     { display: flex !important; }
+  /* Hide the filter chips area at 200% zoom — title takes that space */
+  .qb-toolbar-chips       { display: none !important; }
+  /* Hide Add filter at 200% zoom — space is too tight */
+  .qb-add-filter-btn      { display: none !important; }
+  /* Hide Ask Leo label text — icon only at compact zoom */
+  .qb-ask-leo-label       { display: none; }
+  /* Reduce header height at 200% zoom */
+  .qb-header-bar          { height: 36px !important; }
+  /* Ask Leo: xs height, centred within the row — DS outline border preserved */
+  .qb-ask-leo-btn         { height: 24px !important; padding-inline: 8px !important; font-size: 11px !important; align-self: center !important; }
+}

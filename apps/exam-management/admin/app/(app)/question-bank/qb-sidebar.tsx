@@ -931,14 +931,10 @@ export function QBSidebar() {
 
   const courseFolders = folders.filter(f => f.isCourse && f.parentId === null)
 
-  // Instructors and course directors only see accessible folders; exam admins see all
-  const visibleFolders = isAdmin
-    ? folders
-    : folders.filter(f => accessibleFolderIds.has(f.id))
-
-  const visibleCourseFolders = isAdmin
-    ? courseFolders
-    : courseFolders.filter(f => accessibleFolderIds.has(f.id))
+  // All personas (including admins) respect accessibleFolderIds — private folders
+  // are excluded from accessibleFolderIds for personas not in their collaborators list
+  const visibleFolders = folders.filter(f => accessibleFolderIds.has(f.id))
+  const visibleCourseFolders = courseFolders.filter(f => accessibleFolderIds.has(f.id))
 
   const accessibleQuestions = isAdmin
     ? questions

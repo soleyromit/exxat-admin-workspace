@@ -33,9 +33,9 @@ const TYPE_ICONS: Record<QType, string> = {
 
 export function TypeBadge({ type }: { type: QType }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-sm text-foreground whitespace-nowrap">
-      <i className={`fa-light ${TYPE_ICONS[type]}`} aria-hidden="true" style={{ fontSize: 11 }} />
-      {type}
+    <span className="flex items-center gap-1.5 text-sm text-foreground" title={type} style={{ overflow: 'hidden', minWidth: 0 }}>
+      <i className={`fa-light ${TYPE_ICONS[type]} shrink-0`} aria-hidden="true" style={{ fontSize: 11 }} />
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{type}</span>
     </span>
   )
 }
@@ -43,7 +43,7 @@ export function TypeBadge({ type }: { type: QType }) {
 // ── Difficulty — plain cell text ─────────────────────────────────────────────
 export function DiffBadge({ diff }: { diff: QDiff }) {
   return (
-    <span className="text-sm text-foreground">
+    <span className="text-sm text-foreground" title={diff} style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
       {diff}
     </span>
   )
@@ -52,78 +52,23 @@ export function DiffBadge({ diff }: { diff: QDiff }) {
 // ── Blooms Badge ──────────────────────────────────────────────────────────────
 export function BloomsBadge({ blooms }: { blooms: QBlooms }) {
   return (
-    <span className="text-sm text-foreground">
+    <span className="text-sm text-foreground" title={blooms} style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
       {blooms}
     </span>
   )
 }
 
 // ── pBIS Cell ─────────────────────────────────────────────────────────────────
-//
-// Embedded workflow intelligence (Aarti differentiator): point-biserial is the
-// most decision-relevant psychometric for question quality, so we render it
-// as a colored bar — not a plain number. Red = negative (broken question),
-// yellow = weak, green = healthy. Surfaces problems at decision time.
 export function PBisCell({ pbis }: { pbis: number | null }) {
   if (pbis === null) {
     return <span className="text-xs text-muted-foreground italic">—</span>
   }
 
-  const tone =
-    pbis < 0     ? { fg: 'var(--destructive)',  label: 'negative · review' } :
-    pbis < 0.15  ? { fg: 'var(--chart-4)',      label: 'weak' } :
-    pbis < 0.30  ? { fg: 'var(--chart-1)',      label: 'fair' } :
-                   { fg: 'var(--chart-2)',      label: 'healthy' }
-
-  // Bar width: |pbis| scaled to 0..40px. Negative values share the same length
-  // logic but the bar starts from the right of the centerline.
-  const magnitude = Math.min(Math.abs(pbis), 0.5) / 0.5  // 0..1
-  const barWidth = 4 + Math.round(magnitude * 36)        // 4..40 px
-
-  const isNegative = pbis < 0
-
+  const sign = pbis >= 0 ? '+' : ''
   return (
-    <div className="flex items-center gap-2 min-w-0" title={`Point-biserial ${pbis.toFixed(2)} · ${tone.label}`}>
-      <div className="flex items-center gap-0.5" style={{ width: 44 }}>
-        {/* Negative side (4px reserved) */}
-        <div className="flex justify-end" style={{ width: 4 }}>
-          {isNegative && (
-            <span
-              className="block rounded-sm"
-              style={{
-                width: barWidth,
-                height: 8,
-                backgroundColor: tone.fg,
-                marginRight: -barWidth + 4,
-              }}
-            />
-          )}
-        </div>
-        {/* Centerline */}
-        <span
-          aria-hidden="true"
-          style={{ width: 1, height: 12, backgroundColor: 'var(--border)' }}
-        />
-        {/* Positive side */}
-        <div style={{ width: 40 }}>
-          {!isNegative && (
-            <span
-              className="block rounded-sm"
-              style={{
-                width: barWidth,
-                height: 8,
-                backgroundColor: tone.fg,
-              }}
-            />
-          )}
-        </div>
-      </div>
-      <span
-        className="text-xs font-mono font-semibold tabular-nums"
-        style={{ color: tone.fg }}
-      >
-        {pbis > 0 ? '+' : ''}{pbis.toFixed(2)}
-      </span>
-    </div>
+    <span className="text-sm text-foreground font-mono" title={`Point-biserial ${sign}${pbis.toFixed(2)}`}>
+      {sign}{pbis.toFixed(2)}
+    </span>
   )
+
 }

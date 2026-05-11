@@ -45,6 +45,7 @@ interface QBState {
   deleteFolder: (id: string) => void
   moveFolder: (id: string, newParentId: string) => void
   setFolderIcon: (id: string, icon: string) => void
+  setFolderPrivacy: (id: string, isPrivate: boolean) => void
   addFolderCollaborator: (folderId: string, personaId: string) => void
   removeFolderCollaborator: (folderId: string, personaId: string) => void
 
@@ -134,6 +135,20 @@ export function QBProvider({ children }: { children: ReactNode }) {
   const currentPersona = useMemo(() => toQBPersona(globalPersona), [globalPersona])
   const [navView, setNavViewState] = useState<'all' | 'my' | 'folder'>('my')
   const [sidebarOpen, setSidebarOpen] = useState(true)
+
+  // WCAG 1.4.10 (Reflow): auto-collapse the QB folder tree at narrow
+  // viewports. With both the main DS sidebar (256px) and the QB tree
+  // (248px) open, ~720px effective viewport (200% zoom on a 1440 display)
+  // leaves only ~216px for the table. Collapse below 1024px and let the
+  // user re-open via the qb-header toggle if they need it.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mq = window.matchMedia('(max-width: 1280px)')
+    const apply = () => { if (mq.matches) setSidebarOpen(false) }
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
   const [selectedFolderId, setSelectedFolderIdState] = useState<string | null>(null)
   const [expandedFolderIds, setExpandedFolderIds] = useState<Set<string>>(
     new Set(['phar101', 'biol201', 'skel101'])
@@ -160,9 +175,16 @@ export function QBProvider({ children }: { children: ReactNode }) {
   const isExamAdmin = currentPersona.role === 'exam_admin'
 
   const accessibleFolderIds = useMemo<Set<string>>(() => {
-    if (isExamAdmin) return new Set(folders.map(f => f.id))
+    if (isExamAdmin) {
+      // Admins see all PUBLIC folders + private folders where they're a collaborator
+      return new Set(
+        folders
+          .filter(f => !f.isPrivateSpace || (f.collaborators ?? []).includes(currentPersona.id))
+          .map(f => f.id)
+      )
+    }
     const accessible = new Set<string>()
-    // Any folder where this persona is a direct collaborator grants access to that folder + all descendants
+    // Non-admins: folders where they're a collaborator (private or public — being a collaborator grants access)
     folders
       .filter(f => (f.collaborators ?? []).includes(currentPersona.id))
       .forEach(folder => {
@@ -291,6 +313,17 @@ export function QBProvider({ children }: { children: ReactNode }) {
     setFolders(prev => prev.map(f => f.id === id ? { ...f, icon } : f))
   }, [])
 
+  const setFolderPrivacy = useCallback((id: string, isPrivate: boolean) => {
+    setFolders(prev => prev.map(f => {
+      if (f.id !== id) return f
+      // Auto-add the persona making it private so they don't lock themselves out
+      const collaborators = isPrivate
+        ? [...new Set([...(f.collaborators ?? []), currentPersona.id])]
+        : f.collaborators
+      return { ...f, isPrivateSpace: isPrivate, collaborators }
+    }))
+  }, [currentPersona.id])
+
   const addFolderCollaborator = useCallback((folderId: string, personaId: string) => {
     setFolders(prev => prev.map(f => {
       if (f.id !== folderId) return f
@@ -412,7 +445,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
     sidebarOpen, setSidebarOpen,
     selectedFolderId, setSelectedFolderId,
     expandedFolderIds, toggleFolder,
-    folders, createFolder, renameFolder, deleteFolder, moveFolder, setFolderIcon, addFolderCollaborator, removeFolderCollaborator,
+    folders, createFolder, renameFolder, deleteFolder, moveFolder, setFolderIcon, setFolderPrivacy, addFolderCollaborator, removeFolderCollaborator,
     sidebarSearch, setSidebarSearch,
     highlightedFolderId, setHighlightedFolderId, navigateToFolder,
     myQuestionsOnly, setMyQuestionsOnly,

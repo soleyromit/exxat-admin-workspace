@@ -4,6 +4,7 @@ import { useQB } from './qb-state'
 import {
   Button, Badge, Avatar, AvatarFallback,
   Popover, PopoverTrigger, PopoverContent,
+  Tooltip, TooltipTrigger, TooltipContent,
 } from '@exxat/ds/packages/ui/src'
 import { MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
 
@@ -42,11 +43,18 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
           style={{ display: 'inline-flex', alignItems: 'center' }}
         >
           {shown.map((p, i) => (
-            <Avatar key={p.id} style={{ width: 28, height: 28, marginLeft: i === 0 ? 0 : -6, border: '2px solid var(--background)', borderRadius: '50%', zIndex: shown.length - i, position: 'relative' }}>
-              <AvatarFallback className="text-[10px] font-bold" style={{ backgroundColor: 'color-mix(in oklch, var(--foreground) 8%, var(--background))', color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))' }}>
-                {p.initials}
-              </AvatarFallback>
-            </Avatar>
+            <Tooltip key={p.id}>
+              <TooltipTrigger asChild>
+                <Avatar style={{ width: 28, height: 28, marginLeft: i === 0 ? 0 : -6, border: '2px solid var(--background)', borderRadius: '50%', zIndex: shown.length - i, position: 'relative', cursor: 'pointer' }}>
+                  <AvatarFallback className="text-[10px] font-bold" style={{ backgroundColor: 'color-mix(in oklch, var(--foreground) 8%, var(--background))', color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))' }}>
+                    {p.initials}
+                  </AvatarFallback>
+                </Avatar>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p className="text-xs font-medium">{p.name}</p>
+              </TooltipContent>
+            </Tooltip>
           ))}
           {overflow > 0 && (
             <Badge variant="secondary" className="rounded-full text-[10px]" style={{ height: 28, minWidth: 28, marginLeft: -6, border: '2px solid var(--background)', position: 'relative', padding: '0 5px' }}>
@@ -132,11 +140,10 @@ export function QBTitle() {
   })()
 
   return (
-    <div style={{ padding: '6px 16px 4px', flexShrink: 0 }}>
-      {/* Title row */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, overflow: 'hidden' }}>
-          {/* Heading: current node name. h1 per WCAG page-has-heading-one. */}
+    <div className="qb-title-bar" style={{ padding: '6px 16px 4px', flexShrink: 0 }}>
+      {/* Title row: h1 + chevron + avatars + user-plus (left, flex:1) | Add Question (right) */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div className="qb-title-text" style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, flex: 1 }}>
           <h1 className="text-xl font-bold text-foreground" style={{
             fontFamily: 'var(--font-heading)',
             letterSpacing: '-0.02em',
@@ -144,11 +151,12 @@ export function QBTitle() {
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
             margin: 0,
+            minWidth: 0,
           }}>
             {titleLabel}
           </h1>
 
-          {/* Sibling switcher — tree-style rows */}
+          {/* Sibling switcher */}
           {navView === 'folder' && siblings.length > 0 && (
             <Popover>
               <PopoverTrigger asChild>
@@ -158,24 +166,10 @@ export function QBTitle() {
               </PopoverTrigger>
               <PopoverContent align="start" className="p-1" style={{ width: 240 }}>
                 {siblings.map(s => (
-                  <Button
-                    key={s.id}
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigateToFolder(s.id)}
-                    className="w-full justify-start text-foreground"
-                    style={{ height: 32, padding: '0 8px', borderRadius: 6, gap: 4 }}
-                  >
-                    {/* Chevron placeholder to align with sidebar tree rows */}
+                  <Button key={s.id} variant="ghost" size="sm" onClick={() => navigateToFolder(s.id)} className="w-full justify-start text-foreground" style={{ height: 32, padding: '0 8px', borderRadius: 6, gap: 4 }}>
                     <span style={{ width: 16, flexShrink: 0 }} />
-                    <i
-                      className={`fa-regular ${s.isCourse ? 'fa-graduation-cap' : 'fa-folder'} text-muted-foreground`}
-                      aria-hidden="true"
-                      style={{ fontSize: 13, width: 16, textAlign: 'center', flexShrink: 0 }}
-                    />
-                    <span className="flex-1 text-sm text-left truncate">
-                      {s.isCourse ? courseFolderLabel(s.name) : s.name}
-                    </span>
+                    <i className={`fa-regular ${s.isCourse ? 'fa-graduation-cap' : 'fa-folder'} text-muted-foreground`} aria-hidden="true" style={{ fontSize: 13, width: 16, textAlign: 'center', flexShrink: 0 }} />
+                    <span className="flex-1 text-sm text-left truncate">{s.isCourse ? courseFolderLabel(s.name) : s.name}</span>
                     <span className="text-[10px] text-muted-foreground shrink-0">{folderCount(s.id)}</span>
                   </Button>
                 ))}
@@ -190,8 +184,8 @@ export function QBTitle() {
         </Button>
       </div>
 
-      {/* Subtitle: count + collaborators */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 1 }}>
+      {/* Subtitle: count + collaborators + manage access */}
+      <div className="qb-title-text" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 1 }}>
         <span className="text-sm text-muted-foreground">
           {count} question{count !== 1 ? 's' : ''} · Last updated now
         </span>

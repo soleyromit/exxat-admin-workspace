@@ -93,6 +93,10 @@ You can see images. Verify:
 - For sheets/dialogs that opened: are footer buttons appropriately weighted (ghost Cancel + primary action right, not two equal-width buttons)?
 - For Cards: does each Card use its slots (header above content above footer) or look like a styled div?
 - For status indicators: do badge colors/dots match the surrounding semantic?
+- **200% zoom compliance**: if the route has a data table, is the table body scrollable (no rows hidden behind pagination)? Is the primary CTA (e.g. Add Question) visible without scrolling at 640px viewport width?
+- **Active state color neutrality**: do filter chips, toolbar badges, and icon button active states use neutral muted tones (gray background, dark border, foreground text) rather than brand-color/pink? Brand-color on filter chips = visual noise, not a state signal.
+- **Table empty space**: if the table has fewer than 5 rows, is there a large white gap between the last row and pagination? This indicates `flex:1` on the table border container (wrong) rather than `maxHeight:100%` (correct).
+- **Toggle component**: do any toggle switches look like a dark rounded blob with a gray ring around it? That indicates the DS ToggleSwitch's `border-input` style conflict. The product should use a custom QBToggle component.
 
 #### Read the interaction screenshots
 ```

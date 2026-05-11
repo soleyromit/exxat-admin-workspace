@@ -150,6 +150,8 @@ Return ONE of these structured responses:
 - **Don't accept the parent's framing.** If they say "I'm about to write a custom KPI strip", you check if `KeyMetrics` exists — that's exactly what they should use. The parent often has tunnel vision.
 - **Surface sister-product divergence.** If exam-mgmt has its own hand-rolled `data-table.tsx` AND PCE is about to do the same, name it. Two parallel hand-rolls is a workspace bug, not a product bug.
 - **Don't recommend reading the DS source again** — read it yourself, cite line numbers, condense. The parent is consulting you specifically so they don't have to.
+- **Don't override DS variant appearance via CSS.** If a DS Button with `variant="outline"` needs to be smaller at compact zoom, override ONLY `height`, `padding-inline`, `font-size`. Never add `border: none`, `background: transparent`, or `box-shadow: none` — these break the variant contract. Verdict for any component that does this: HAND-ROLL a wrapper that uses the ghost variant instead.
+- **QB ToggleSwitch exception.** The DS `ToggleSwitch` component renders a `border-2 border-input` ring that looks like a large gray halo on the dark `bg-primary` track. The correct adoption for any QB-internal toggle is `HAND-ROLL` a `QBToggle` product component using DS tokens (`--brand-color` for ON track, `--background` thumb, `--ring` focus ring) rather than importing `ToggleSwitch`. Document this in the "Documented hand-rolls" registry row for exam-management.
 
 ## When the parent ignores your verdict
 
