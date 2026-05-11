@@ -91,7 +91,7 @@ export default function CompetencyClient() {
   return (
     <>
       <SiteHeader title="Competency" />
-      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
+      <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
         <PageHeader
           title="Competency"
           subtitle={`${role === 'faculty' ? 'Across your courses' : 'Across all programs'} · ${visibleCourses.length} ${visibleCourses.length === 1 ? 'course' : 'courses'} · ${totalStudents} students · ${allObjectives.length} objectives mapped`}
@@ -114,7 +114,7 @@ export default function CompetencyClient() {
             ))}
           </section>
         </div>
-      </main>
+      </div>
     </>
   )
 }
@@ -135,8 +135,11 @@ function CourseCompetencyCard({
     avg >= 80 ? 'success' : avg >= 70 ? 'info' : avg > 0 ? 'warning' : 'neutral'
   const valueColor =
     tone === 'success' ? 'text-chart-2' :
-    tone === 'info' ? 'text-chart-1' :
-    tone === 'warning' ? 'text-chart-4' : 'text-muted-foreground'
+    /* WCAG fix 2026-05-11: text-chart-1 / text-chart-4 were 4.2:1 on
+       theme-prism background (chart palette tuned for fills, not text).
+       Compose darker text via mix-toward-foreground. */
+    tone === 'info' ? 'text-[color:color-mix(in_oklch,var(--chart-1)_60%,var(--foreground))]' :
+    tone === 'warning' ? 'text-[color:color-mix(in_oklch,var(--chart-4)_60%,var(--foreground))]' : 'text-muted-foreground'
 
   const weakest = tested.length > 0
     ? tested.reduce((min, o) => o.avgPerformance < min.avgPerformance ? o : min, tested[0])
@@ -194,8 +197,8 @@ function CourseCompetencyCard({
                   o.avgPerformance >= 80 ? 'success' : o.avgPerformance >= 70 ? 'info' : o.avgPerformance > 0 ? 'warning' : 'neutral'
                 const c =
                   t === 'success' ? 'text-chart-2' :
-                  t === 'info' ? 'text-chart-1' :
-                  t === 'warning' ? 'text-chart-4' : 'text-muted-foreground'
+                  t === 'info' ? 'text-[color:color-mix(in_oklch,var(--chart-1)_60%,var(--foreground))]' :
+                  t === 'warning' ? 'text-[color:color-mix(in_oklch,var(--chart-4)_60%,var(--foreground))]' : 'text-muted-foreground'
                 const isTested = !!o.lastAssessed
                 return (
                   <div key={o.id} className="flex items-center gap-3 text-sm">

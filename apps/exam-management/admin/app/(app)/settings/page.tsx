@@ -13,6 +13,7 @@
  * surfaced here so faculty can read what's been set.
  */
 
+import * as React from 'react'
 import { useState } from 'react'
 import {
   Badge, Button,
@@ -56,9 +57,9 @@ export default function SettingsPage() {
     return (
       <>
         <SiteHeader title="Settings" />
-        <main className="flex flex-1 items-center justify-center">
+        <div className="flex flex-1 items-center justify-center">
           <p className="text-sm text-muted-foreground">Loading…</p>
-        </main>
+        </div>
       </>
     )
   }
@@ -66,7 +67,7 @@ export default function SettingsPage() {
   return (
     <>
       <SiteHeader title="Settings" />
-      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
+      <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
         <PageHeader
           title="Institution Settings"
           subtitle={
@@ -123,6 +124,7 @@ export default function SettingsPage() {
                 >
                   <DisabledIf disabled={isReadOnly}>
                     <ToggleSwitch
+                      aria-label="Allow post-results chat at this institution"
                       checked={chatInstitutionEnabled}
                       onChange={setChatInstitutionEnabled}
                     />
@@ -140,7 +142,7 @@ export default function SettingsPage() {
                     onValueChange={(v) => setChatDefault(v as 'on' | 'off')}
                     disabled={isReadOnly || !chatInstitutionEnabled}
                   >
-                    <SelectTrigger className="w-[160px]" size="sm">
+                    <SelectTrigger className="w-[160px]" size="sm" aria-label="Chat default state">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -162,6 +164,7 @@ export default function SettingsPage() {
                 >
                   <DisabledIf disabled={isReadOnly}>
                     <ToggleSwitch
+                      aria-label="Allow comment box during exams (default)"
                       checked={allowComments}
                       onChange={setAllowComments}
                     />
@@ -186,7 +189,7 @@ export default function SettingsPage() {
                     onValueChange={(v) => setDefaultPublication(v as typeof defaultPublication)}
                     disabled={isReadOnly}
                   >
-                    <SelectTrigger className="w-[220px]" size="sm">
+                    <SelectTrigger className="w-[220px]" size="sm" aria-label="Default publication mode">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -206,7 +209,7 @@ export default function SettingsPage() {
                     onValueChange={setDefaultReviewWindow}
                     disabled={isReadOnly}
                   >
-                    <SelectTrigger className="w-[140px]" size="sm">
+                    <SelectTrigger className="w-[140px]" size="sm" aria-label="Default chair-review window">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -230,6 +233,7 @@ export default function SettingsPage() {
                 >
                   <DisabledIf disabled={isReadOnly}>
                     <ToggleSwitch
+                      aria-label="Require chair approval before publishing assessments"
                       checked={requireChairApproval}
                       onChange={setRequireChairApproval}
                     />
@@ -248,6 +252,7 @@ export default function SettingsPage() {
                 >
                   <DisabledIf disabled={isReadOnly}>
                     <ToggleSwitch
+                      aria-label="Lock down review sessions by default"
                       checked={reviewSessionLockdown}
                       onChange={setReviewSessionLockdown}
                     />
@@ -268,6 +273,7 @@ export default function SettingsPage() {
                 >
                   <DisabledIf disabled={isReadOnly}>
                     <ToggleSwitch
+                      aria-label="Allow faculty to create subfolders within their courses"
                       checked={allowFacultyFolders}
                       onChange={setAllowFacultyFolders}
                     />
@@ -307,7 +313,7 @@ export default function SettingsPage() {
             </TabsContent>
           </Tabs>
         </div>
-      </main>
+      </div>
     </>
   )
 }
@@ -383,13 +389,29 @@ function SettingRow({
   readOnly?: boolean
   disabled?: boolean
 }) {
+  /* WCAG fix 2026-05-11: ToggleSwitch from DS doesn't forward aria-label
+     (DS gap). Inject Label htmlFor → child id. Handles DisabledIf wrapper
+     by recursing through one level. */
+  const controlId = React.useId()
+  function injectId(node: React.ReactNode): React.ReactNode {
+    if (!React.isValidElement<{ id?: string; children?: React.ReactNode }>(node)) return node
+    if (node.props.id) return node
+    // If this element is a wrapper that passes children through (DisabledIf),
+    // recurse into its children.
+    const isWrapper = typeof node.type === 'function' && (node.type as { name?: string }).name === 'DisabledIf'
+    if (isWrapper && node.props.children) {
+      return React.cloneElement(node, { children: injectId(node.props.children) } as never)
+    }
+    return React.cloneElement(node, { id: controlId })
+  }
+  const labelledChild = injectId(children)
   return (
     <div
       className="flex items-center justify-between gap-4 py-3 border-b border-border last:border-b-0"
       style={{ opacity: disabled ? 0.55 : 1 }}
     >
       <div className="flex-1 min-w-0">
-        <Label className="text-sm font-medium text-foreground leading-tight">{label}</Label>
+        <Label htmlFor={controlId} className="text-sm font-medium text-foreground leading-tight">{label}</Label>
         {hint && (
           <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
             {hint}
@@ -399,7 +421,7 @@ function SettingRow({
           </p>
         )}
       </div>
-      <div className="shrink-0">{children}</div>
+      <div className="shrink-0">{labelledChild}</div>
     </div>
   )
 }

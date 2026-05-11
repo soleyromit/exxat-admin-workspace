@@ -44,7 +44,7 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
         >
           {shown.map((p, i) => (
             <Avatar key={p.id} style={{ width: 22, height: 22, marginLeft: i === 0 ? 0 : -7, border: '2px solid var(--background)', borderRadius: '50%', zIndex: shown.length - i, position: 'relative' }}>
-              <AvatarFallback className="text-[8px] font-bold" style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>
+              <AvatarFallback className="text-[8px] font-bold" style={{ backgroundColor: 'color-mix(in oklch, var(--foreground) 8%, var(--background))', color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))' }}>
                 {p.initials}
               </AvatarFallback>
             </Avatar>
@@ -64,7 +64,7 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
           {personas.map((p, i) => (
             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Avatar style={{ width: 28, height: 28, flexShrink: 0 }}>
-                <AvatarFallback className="text-[10px] font-bold" style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>
+                <AvatarFallback className="text-[10px] font-bold" style={{ backgroundColor: 'color-mix(in oklch, var(--foreground) 8%, var(--background))', color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))' }}>
                   {p.initials}
                 </AvatarFallback>
               </Avatar>
@@ -133,20 +133,21 @@ export function QBTitle() {
   })()
 
   return (
-    <div style={{ padding: '10px 16px 8px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+    <div style={{ padding: '8px 16px 6px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
       {/* Title row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, overflow: 'hidden' }}>
-          {/* Heading: current node name */}
-          <span className="text-xl font-bold text-foreground" style={{
+          {/* Heading: current node name. h1 per WCAG page-has-heading-one. */}
+          <h1 className="text-xl font-bold text-foreground" style={{
             fontFamily: 'var(--font-heading)',
             letterSpacing: '-0.02em',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
+            margin: 0,
           }}>
             {titleLabel}
-          </span>
+          </h1>
 
           {/* Sibling switcher — only in folder view */}
           {navView === 'folder' && siblings.length > 0 && (

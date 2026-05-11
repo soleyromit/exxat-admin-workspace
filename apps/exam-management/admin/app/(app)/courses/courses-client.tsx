@@ -5,11 +5,11 @@
  *
  * Follows the canonical admin page shell:
  *   <SiteHeader title="..." />
- *   <main>
+ *   <div>
  *     <PageHeader title="..." subtitle="..." actions={...} />
  *     <KeyMetrics metrics={...} />
  *     <content />
- *   </main>
+ *   </div>
  *
  * Admin: sees all institutional courses
  * Faculty: sees only courses they're associated with, with access-level chip per course
@@ -152,7 +152,7 @@ export default function CoursesClient() {
   return (
     <>
       <SiteHeader title={role === 'faculty' ? 'My Courses' : 'Courses'} />
-      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
+      <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
         <PageHeader
           title={pageTitle}
           subtitle={pageSubtitle}
@@ -190,7 +190,7 @@ export default function CoursesClient() {
             {/* Term filter is admin-only — faculty view uses the two-section split (T1) */}
             {role === 'admin' && (
               <Select value={termFilter} onValueChange={(v) => setTermFilter(v as typeof termFilter)}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[180px]" aria-label="Filter courses by term">
                   <i className="fa-light fa-calendar-days me-2" aria-hidden="true" />
                   <SelectValue />
                 </SelectTrigger>
@@ -241,7 +241,7 @@ export default function CoursesClient() {
             <CourseListView courses={filtered} />
           )}
         </div>
-      </main>
+      </div>
     </>
   )
 }

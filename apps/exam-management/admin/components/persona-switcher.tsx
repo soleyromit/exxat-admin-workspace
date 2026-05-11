@@ -17,7 +17,7 @@ import {
   Avatar, AvatarFallback,
   Badge, Button,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
-  DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
 } from '@exxat/ds/packages/ui/src'
 import { useFacultySession } from '@/lib/faculty-session'
 import { type Persona } from '@/lib/personas'
@@ -30,12 +30,18 @@ import { type Persona } from '@/lib/personas'
 // A faculty persona may be coordinator on one course and instructor on
 // another; in that case we lead with Coordinator since it's the higher role.
 function institutionalRole(p: Persona): { label: string; tone: 'brand' | 'info' | 'neutral' } {
-  if (p.role === 'admin') return { label: 'Administrator', tone: 'brand' }
+  // Administrator demoted from `brand` to `info` — under theme-prism, brand
+  // tone resolves to rose and floods the persona switcher with pink. The role
+  // pill is categorical, not a brand identity moment.
+  if (p.role === 'admin') return { label: 'Administrator', tone: 'info' }
   const hasEditorAccess = p.courses.some(c => c.level === 'editor')
   if (hasEditorAccess) return { label: 'Course Coordinator', tone: 'info' }
   return { label: 'Course Instructor', tone: 'neutral' }
 }
 
+/* WCAG fix 2026-05-11: info tone was 4.32 contrast (chart-1 on pink tint
+   under theme-prism). Darken the text via mix-toward-foreground so all 3
+   tones hit 4.5:1+ on every theme. */
 function roleBadgeStyle(tone: 'brand' | 'info' | 'neutral') {
   if (tone === 'brand') return {
     backgroundColor: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))',
@@ -43,7 +49,7 @@ function roleBadgeStyle(tone: 'brand' | 'info' | 'neutral') {
   }
   if (tone === 'info') return {
     backgroundColor: 'color-mix(in oklch, var(--chart-1) 12%, var(--background))',
-    color: 'var(--chart-1)',
+    color: 'color-mix(in oklch, var(--chart-1) 60%, var(--foreground))',
   }
   return {
     backgroundColor: 'var(--muted)',
@@ -93,16 +99,35 @@ export function PersonaSwitcher() {
 
       <DropdownMenuContent align="end" className="w-72">
         <DropdownMenuLabel>Switch Persona</DropdownMenuLabel>
-        {personas.map((p: Persona) => (
-          <DropdownMenuItem
+        {(['admin', 'faculty'] as const).map((groupRole, gi) => {
+          const groupPersonas = personas.filter(p => p.role === groupRole)
+          if (groupPersonas.length === 0) return null
+          return (
+            <div key={groupRole}>
+              {gi > 0 && <DropdownMenuSeparator />}
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground py-1">
+                {groupRole === 'admin' ? 'Administrator' : 'Faculty'}
+              </DropdownMenuLabel>
+              {groupPersonas.map((p: Persona) => (
+        <DropdownMenuItem
             key={p.id}
             onClick={() => setCurrentPersona(p)}
             className="gap-2"
           >
             <Avatar style={{ width: 28, height: 28 }}>
+              {/* List-item avatars use a pure-neutral grey color-mix.
+                  Both `--foreground` (oklch 0.145 0 0) and `--background`
+                  (oklch 1 0 0) are zero-chroma, so the mix is guaranteed
+                  hue-neutral under any theme. The DS uses the same
+                  construction for `--overlay` (globals.css line 299). Only
+                  the trigger avatar (current user, line 71) keeps the
+                  brand-tinted `--avatar-initials-bg`. */}
               <AvatarFallback
                 className="text-[10px] font-bold"
-                style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}
+                style={{
+                  backgroundColor: 'color-mix(in oklch, var(--foreground) 8%, var(--background))',
+                  color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))',
+                }}
               >
                 {p.initials}
               </AvatarFallback>
@@ -160,7 +185,10 @@ export function PersonaSwitcher() {
               />
             )}
           </DropdownMenuItem>
-        ))}
+              ))}
+            </div>
+          )
+        })}
         <div
           style={{ margin: '4px 12px 4px', padding: '8px 0 0', borderTop: '1px solid var(--border)' }}
         >

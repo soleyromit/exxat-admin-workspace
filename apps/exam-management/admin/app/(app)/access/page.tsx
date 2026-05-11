@@ -46,7 +46,7 @@ const SEED: AccessEntry[] = [
 
 const ROLE_TONE: Record<Role, { bg: string; fg: string; icon: string }> = {
   'Admin':              { bg: 'color-mix(in oklch, var(--brand-color) 14%, var(--background))', fg: 'var(--brand-color-dark)', icon: 'fa-shield-keyhole' },
-  'Faculty (Editor)':   { bg: 'color-mix(in oklch, var(--chart-1) 14%, var(--background))',     fg: 'var(--chart-1)',          icon: 'fa-pen' },
+  'Faculty (Editor)':   { bg: 'color-mix(in oklch, var(--chart-1) 14%, var(--background))',     fg: 'color-mix(in oklch, var(--chart-1) 60%, var(--foreground))', icon: 'fa-pen' },
   'Faculty (Viewer)':   { bg: 'var(--muted)',                                                    fg: 'var(--muted-foreground)', icon: 'fa-eye' },
 }
 
@@ -158,7 +158,7 @@ export default function AccessPage() {
   return (
     <>
       <SiteHeader title="Roles & Access" />
-      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
+      <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
         <PageHeader
           title="Roles & Access"
           subtitle={`${users.length} ${users.length === 1 ? 'person has' : 'people have'} access · admins can assign roles`}
@@ -186,7 +186,7 @@ export default function AccessPage() {
             }
           />
         </div>
-      </main>
+      </div>
 
       <InviteDialog open={inviteOpen} onOpenChange={setInviteOpen} onAdd={addUser} />
 

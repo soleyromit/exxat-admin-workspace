@@ -32,13 +32,17 @@ const TONE_TILE: Record<Tone, { wrap: string; iconBg: string; iconFg: string; va
 // Pill palette — minimal fill; colored text on neutral surface. Border is
 // only present in the rare destructive/warning case where attention is the
 // point. Default keeps the pill quiet so it can be scanned, not screamed at.
+/* WCAG fix 2026-05-11: chart palette is tuned for fills, not text. On tinted
+   backgrounds (warning bg-chart-4/8 + destructive bg-chart-5/10) the direct
+   text-chart-N dropped contrast to 2.99:1. Compose darker text via mix-toward-
+   foreground; 60% chart + 40% foreground lands all tones at 4.5:1+. */
 const TONE_PILL: Record<Tone, { bg: string; fg: string; border: string }> = {
   brand:       { bg: 'bg-transparent',    fg: 'text-brand-dark',       border: 'border-transparent' },
-  info:        { bg: 'bg-transparent',    fg: 'text-chart-1',          border: 'border-transparent' },
-  warning:     { bg: 'bg-chart-4/8',      fg: 'text-chart-4',          border: 'border-transparent' },
+  info:        { bg: 'bg-transparent',    fg: 'text-[color:color-mix(in_oklch,var(--chart-1)_60%,var(--foreground))]', border: 'border-transparent' },
+  warning:     { bg: 'bg-chart-4/8',      fg: 'text-[color:color-mix(in_oklch,var(--chart-4)_60%,var(--foreground))]', border: 'border-transparent' },
   success:     { bg: 'bg-transparent',    fg: 'text-chart-2',          border: 'border-transparent' },
   neutral:     { bg: 'bg-transparent',    fg: 'text-muted-foreground', border: 'border-transparent' },
-  destructive: { bg: 'bg-chart-5/10',     fg: 'text-chart-5',          border: 'border-transparent' },
+  destructive: { bg: 'bg-chart-5/10',     fg: 'text-[color:color-mix(in_oklch,var(--chart-5)_60%,var(--foreground))]', border: 'border-transparent' },
 }
 
 // ─── KpiTile ────────────────────────────────────────────────────────────────

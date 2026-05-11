@@ -216,6 +216,9 @@ export default function AssessmentBuilderClient() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      {/* WCAG page-has-heading-one — sr-only h1; visible heading is the
+         Course selector + active assessment badge below. */}
+      <h1 className="sr-only">Assessment Builder</h1>
       {/* Course + Offering selector bar */}
       <div style={{
         padding: '10px 20px',
@@ -233,7 +236,7 @@ export default function AssessmentBuilderClient() {
           if (first) setOfferingId(first.id)
           setActiveAsmt(null)
         }}>
-          <SelectTrigger className="text-sm" style={{ width: 180, height: 32 }}>
+          <SelectTrigger className="text-sm" style={{ width: 180, height: 32 }} aria-label="Filter by question type">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -244,7 +247,7 @@ export default function AssessmentBuilderClient() {
         </Select>
         <span className="text-xs font-semibold text-muted-foreground">Offering</span>
         <Select value={offeringId} onValueChange={(val) => { setOfferingId(val); setActiveAsmt(null) }}>
-          <SelectTrigger className="text-sm" style={{ width: 148, height: 32 }}>
+          <SelectTrigger className="text-sm" style={{ width: 148, height: 32 }} aria-label="Filter by difficulty">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -605,7 +608,7 @@ function ABQuestionPicker({
         }}>
           <span className="text-xs font-semibold text-muted-foreground">Pick a course:</span>
           <Select value={otherCourseId} onValueChange={setOtherCourseId}>
-            <SelectTrigger className="text-sm" style={{ width: 240, height: 28 }}>
+            <SelectTrigger className="text-sm" style={{ width: 240, height: 28 }} aria-label="Select course question bank">
               <SelectValue placeholder="Select a course's question bank…" />
             </SelectTrigger>
             <SelectContent>
@@ -906,7 +909,7 @@ function ABDiffChart({ distribution, timeMetrics, overtimeMetrics, durationMinut
                 value={DURATION_OPTIONS.some(o => o.value === durationMinutes) ? String(durationMinutes) : ''}
                 onValueChange={v => { onDurationChange(Number(v)); setInputMin(v) }}
               >
-                <SelectTrigger className="text-xs" style={{ width: 76, height: 26 }}>
+                <SelectTrigger className="text-xs" style={{ width: 76, height: 26 }} aria-label="Select preset">
                   <SelectValue placeholder="preset" />
                 </SelectTrigger>
                 <SelectContent>

@@ -15,18 +15,21 @@
  *   - No emailing / approval workflow yet — that's phase 2.
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Avatar, AvatarFallback,
   Badge, Button,
   InputGroup, InputGroupAddon, InputGroupInput,
+  LocalBanner,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@exxat/ds/packages/ui/src'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
+import { AddAccommodationModal } from '@/components/add-accommodation-modal'
 import { facultyAccommodations, facultyStudents, type Accommodation, type AccommodationType } from '@/lib/faculty-mock-data'
 import { mockCourses } from '@/lib/qb-mock-data'
 import { useFacultySession } from '@/lib/faculty-session'
+import { useStudentAccommodations } from '@/lib/student-accommodation-store'
 
 const TYPE_LABEL: Record<AccommodationType, string> = {
   'extended-time':    'Extended time',
@@ -54,17 +57,34 @@ interface RosterEntry {
 }
 
 export default function AccommodationsPage() {
-  const { role, hydrated } = useFacultySession()
+  const { role, hydrated, currentPersona } = useFacultySession()
   const isAdmin = role === 'admin'
+  const { localAccommodations, removeAccommodation } = useStudentAccommodations()
   const [query, setQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | AccommodationType>('all')
+  const [modalOpen, setModalOpen] = useState(false)
+  const [banner, setBanner] = useState<{
+    studentName: string
+    typeLabel: string
+    undoIds: string[]
+    pulseStudentId?: string
+  } | null>(null)
+
+  // 5-sec undo window — banner auto-dismisses if not used.
+  useEffect(() => {
+    if (!banner) return
+    const t = setTimeout(() => setBanner(null), 5000)
+    return () => clearTimeout(t)
+  }, [banner])
 
   // Group accommodations by student — same student may appear under
-  // multiple courses, but we want one roster entry per student.
+  // multiple courses, but we want one roster entry per student. Merges
+  // seed data with locally-created accommodations from the store.
   const roster = useMemo<RosterEntry[]>(() => {
     if (!hydrated) return []
+    const all: Accommodation[] = [...facultyAccommodations, ...localAccommodations]
     const byStudent = new Map<string, Accommodation[]>()
-    for (const a of facultyAccommodations) {
+    for (const a of all) {
       const list = byStudent.get(a.studentId) ?? []
       list.push(a)
       byStudent.set(a.studentId, list)
@@ -86,7 +106,7 @@ export default function AccommodationsPage() {
       })
     })
     return entries.sort((a, b) => a.studentName.localeCompare(b.studentName))
-  }, [hydrated])
+  }, [hydrated, localAccommodations])
 
   const filtered = useMemo(() => {
     return roster.filter(r => {
@@ -100,19 +120,24 @@ export default function AccommodationsPage() {
     })
   }, [roster, query, typeFilter])
 
-  const totalAccommodations = facultyAccommodations.length
+  const totalAccommodations = facultyAccommodations.length + localAccommodations.length
   const uniqueStudents = roster.length
 
   return (
     <>
       <SiteHeader title="Student Accommodations" />
-      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
+      <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
         <PageHeader
           title="Student Accommodations"
           subtitle={`${uniqueStudents} ${uniqueStudents === 1 ? 'student' : 'students'} · ${totalAccommodations} approved accommodations · follows to every registered course`}
           actions={
             isAdmin ? (
-              <Button variant="default" size="sm" className="gap-2">
+              <Button
+                variant="default"
+                size="sm"
+                className="gap-2"
+                onClick={() => setModalOpen(true)}
+              >
                 <i className="fa-light fa-plus" aria-hidden="true" />
                 Add accommodation
               </Button>
@@ -131,6 +156,24 @@ export default function AccommodationsPage() {
 
         <div className="flex flex-1 flex-col gap-4 p-6 overflow-auto">
 
+          {banner && (
+            <LocalBanner
+              variant="success"
+              title="Accommodation added"
+              dismissible
+              onDismiss={() => setBanner(null)}
+              action={{
+                label: 'Undo',
+                onClick: () => {
+                  banner.undoIds.forEach(id => removeAccommodation(id))
+                  setBanner(null)
+                },
+              }}
+            >
+              {banner.studentName} · {banner.typeLabel}
+            </LocalBanner>
+          )}
+
           <div className="flex items-center gap-3 flex-wrap">
             <InputGroup className="w-full max-w-sm">
               <InputGroupAddon align="inline-start">
@@ -145,7 +188,7 @@ export default function AccommodationsPage() {
               />
             </InputGroup>
             <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as 'all' | AccommodationType)}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-[200px]" aria-label="Filter accommodations">
                 <i className="fa-light fa-filter me-2" aria-hidden="true" />
                 <SelectValue />
               </SelectTrigger>
@@ -174,7 +217,16 @@ export default function AccommodationsPage() {
             )}
           </div>
         </div>
-      </main>
+      </div>
+
+      <AddAccommodationModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        approverName={currentPersona ? `${currentPersona.title} ${currentPersona.name}` : 'Administrator'}
+        onCreated={({ undoIds, studentName, typeLabel }) => {
+          setBanner({ undoIds, studentName, typeLabel })
+        }}
+      />
     </>
   )
 }
@@ -183,9 +235,19 @@ function RosterRow({ entry }: { entry: RosterEntry }) {
   return (
     <li className="px-5 py-4 flex items-start gap-4 hover:bg-muted/30 transition-colors">
       <Avatar className="size-10 shrink-0">
+        {/* Roster avatars use a pure-neutral grey color-mix. Both
+            `--foreground` (oklch 0.145 0 0) and `--background` (oklch 1 0 0)
+            are zero-chroma, so the mix is guaranteed hue-neutral — even
+            under theme-prism (rose). The DS uses the same construction for
+            `--overlay` (globals.css line 299). The brand-tinted DS token
+            `--avatar-initials-bg` is meant for a single user-identity
+            moment (the trigger avatar in the header), not 11+ rows. */}
         <AvatarFallback
           className="text-xs font-bold"
-          style={{ background: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}
+          style={{
+            background: 'color-mix(in oklch, var(--foreground) 8%, var(--background))',
+            color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))',
+          }}
         >
           {entry.initials}
         </AvatarFallback>
