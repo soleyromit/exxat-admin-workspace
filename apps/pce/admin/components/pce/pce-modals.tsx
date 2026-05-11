@@ -7,6 +7,7 @@ import {
   Button, Input, Label, Checkbox, Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Popover, PopoverTrigger, PopoverContent, Separator, Avatar, AvatarFallback,
   Card, CardHeader, CardTitle, CardDescription, CardContent,
+  Field, FieldError,
   LocalBanner,
   DatePickerField,
   formatDateUS,
@@ -28,7 +29,7 @@ interface CreateTemplateSheetProps {
 }
 
 export function CreateTemplateSheet({ open, onOpenChange, template }: CreateTemplateSheetProps) {
-  const { createTemplate, updateTemplate } = usePce()
+  const { templates, createTemplate, updateTemplate } = usePce()
   const [name, setName] = useState(template?.name ?? '')
   const [hasFacultyPerf, setHasFacultyPerf] = useState(
     template ? template.sections.includes('faculty_performance') : true
@@ -37,8 +38,29 @@ export function CreateTemplateSheet({ open, onOpenChange, template }: CreateTemp
     template ? template.sections.includes('course_director') : false
   )
   const [status, setStatus] = useState<'active' | 'draft'>(template?.status ?? 'active')
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  // Validation pattern: accommodations/page.tsx:96-126.
+  // Errors render inline (FieldError + aria-invalid). Save blocks on failure.
+  function validate(): Record<string, string> {
+    const next: Record<string, string> = {}
+    const trimmed = name.trim()
+    if (!trimmed) {
+      next.name = 'Template name is required.'
+    } else {
+      const conflict = templates.some(t =>
+        t.name.trim().toLowerCase() === trimmed.toLowerCase() && t.id !== template?.id
+      )
+      if (conflict) next.name = 'A template with this name already exists.'
+    }
+    return next
+  }
 
   const handleSave = () => {
+    const next = validate()
+    setErrors(next)
+    if (Object.keys(next).length > 0) return
+
     const sections: TemplateSection[] = ['course_content']
     if (hasFacultyPerf) sections.push('faculty_performance')
     if (hasCourseDir) sections.push('course_director')
@@ -48,33 +70,43 @@ export function CreateTemplateSheet({ open, onOpenChange, template }: CreateTemp
     } else {
       createTemplate({ name, sections, status, questionCount: 0, createdBy: 'Dr. Thompson' })
     }
+    setErrors({})
     onOpenChange(false)
   }
 
+  function handleOpenChange(v: boolean) {
+    onOpenChange(v)
+    if (!v) setErrors({})
+  }
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent side="right" className="w-96 sm:max-w-96 flex flex-col gap-0 p-0">
         <SheetHeader className="px-6 py-5 border-b border-border">
           <SheetTitle>{template ? 'Edit Template' : 'New Template'}</SheetTitle>
         </SheetHeader>
 
         <div className="flex flex-col gap-5 px-6 py-5 flex-1 overflow-y-auto">
-          <div className="flex flex-col gap-1.5">
+          <Field orientation="vertical">
             <Label htmlFor="tmpl-name">Template name</Label>
             <Input
               id="tmpl-name"
               placeholder="e.g. Standard PCE"
               value={name}
               onChange={e => setName(e.target.value)}
+              aria-required="true"
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? 'tmpl-name-error' : undefined}
             />
-          </div>
+            {errors.name && <FieldError id="tmpl-name-error">{errors.name}</FieldError>}
+          </Field>
 
           <div className="flex flex-col gap-3">
             <Label>Sections</Label>
             <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Checkbox checked disabled />
+                  <Checkbox checked disabled aria-label="Course Content (required section, cannot be unchecked)" />
                   <span className="text-sm font-medium">Course Content</span>
                 </div>
                 <span className="text-xs text-muted-foreground">required</span>
@@ -113,9 +145,9 @@ export function CreateTemplateSheet({ open, onOpenChange, template }: CreateTemp
           </div>
         </div>
 
-        <SheetFooter className="px-6 py-4 border-t border-border flex gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">Cancel</Button>
-          <Button variant="default" onClick={handleSave} disabled={!name.trim()} className="flex-1">
+        <SheetFooter className="px-6 py-4 border-t border-border flex flex-row justify-end gap-2">
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="default" onClick={handleSave} disabled={!name.trim()}>
             {template ? 'Save Changes' : 'Create Template'}
           </Button>
         </SheetFooter>
@@ -184,13 +216,25 @@ export function CreateSurveySheet({ open, onOpenChange }: CreateSurveySheetProps
   const [term, setTerm] = useState('Spring 2026')
   const [deadline, setDeadline] = useState<Date | undefined>(undefined)
   const [primaryInstructorId, setPrimaryInstructorId] = useState('')
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   const activeTemplates = templates.filter(t => t.status === 'active')
   const selectedCourse = MOCK_COURSES.find(c => c.code === courseCode)
   const selectedInstructor = MOCK_FACULTY.find(f => f.id === primaryInstructorId)
 
+  // Validation pattern: accommodations/page.tsx:96-126.
+  function validate(): Record<string, string> {
+    const next: Record<string, string> = {}
+    if (!templateId) next.templateId = 'Pick a template.'
+    if (!courseCode) next.courseCode = 'Pick a course.'
+    if (!primaryInstructorId) next.primaryInstructorId = 'Pick a primary instructor.'
+    return next
+  }
+
   const handleCreate = () => {
-    if (!templateId || !courseCode || !primaryInstructorId) return
+    const next = validate()
+    setErrors(next)
+    if (Object.keys(next).length > 0) return
     createSurvey({
       courseCode,
       courseName: selectedCourse?.name ?? courseCode,
@@ -203,22 +247,39 @@ export function CreateSurveySheet({ open, onOpenChange }: CreateSurveySheetProps
       enrollmentCount: 30,
       deadline: deadline ? formatDateUS(deadline.toISOString()) : 'TBD',
     })
+    setErrors({})
     onOpenChange(false)
     setTemplateId(''); setCourseCode(''); setDeadline(undefined); setPrimaryInstructorId('')
   }
 
+  function handleOpenChange(v: boolean) {
+    onOpenChange(v)
+    if (!v) setErrors({})
+  }
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent side="right" className="w-96 sm:max-w-96 flex flex-col gap-0 p-0">
         <SheetHeader className="px-6 py-5 border-b border-border">
           <SheetTitle>Create Survey</SheetTitle>
         </SheetHeader>
 
         <div className="flex flex-col gap-5 px-6 py-5 flex-1 overflow-y-auto">
-          <div className="flex flex-col gap-1.5">
+          {Object.keys(errors).length >= 2 && (
+            <LocalBanner variant="error" title="Fix the following before saving">
+              {Object.keys(errors).length} fields need attention.
+            </LocalBanner>
+          )}
+
+          <Field orientation="vertical">
             <Label htmlFor="cs-template">Template</Label>
             <Select value={templateId} onValueChange={setTemplateId}>
-              <SelectTrigger id="cs-template" className="w-full">
+              <SelectTrigger
+                id="cs-template"
+                className="w-full"
+                aria-invalid={!!errors.templateId}
+                aria-describedby={errors.templateId ? 'cs-template-error' : undefined}
+              >
                 <SelectValue placeholder="Select a template…" />
               </SelectTrigger>
               <SelectContent>
@@ -227,12 +288,18 @@ export function CreateSurveySheet({ open, onOpenChange }: CreateSurveySheetProps
                 ))}
               </SelectContent>
             </Select>
-          </div>
+            {errors.templateId && <FieldError id="cs-template-error">{errors.templateId}</FieldError>}
+          </Field>
 
-          <div className="flex flex-col gap-1.5">
+          <Field orientation="vertical">
             <Label htmlFor="cs-course">Course</Label>
             <Select value={courseCode} onValueChange={setCourseCode}>
-              <SelectTrigger id="cs-course" className="w-full">
+              <SelectTrigger
+                id="cs-course"
+                className="w-full"
+                aria-invalid={!!errors.courseCode}
+                aria-describedby={errors.courseCode ? 'cs-course-error' : undefined}
+              >
                 <SelectValue placeholder="Select a course…" />
               </SelectTrigger>
               <SelectContent>
@@ -241,7 +308,8 @@ export function CreateSurveySheet({ open, onOpenChange }: CreateSurveySheetProps
                 ))}
               </SelectContent>
             </Select>
-          </div>
+            {errors.courseCode && <FieldError id="cs-course-error">{errors.courseCode}</FieldError>}
+          </Field>
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="cs-term">Term</Label>
@@ -264,10 +332,15 @@ export function CreateSurveySheet({ open, onOpenChange }: CreateSurveySheetProps
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          <Field orientation="vertical">
             <Label htmlFor="cs-instructor">Primary instructor</Label>
             <Select value={primaryInstructorId} onValueChange={setPrimaryInstructorId}>
-              <SelectTrigger id="cs-instructor" className="w-full">
+              <SelectTrigger
+                id="cs-instructor"
+                className="w-full"
+                aria-invalid={!!errors.primaryInstructorId}
+                aria-describedby={errors.primaryInstructorId ? 'cs-instructor-error' : undefined}
+              >
                 <SelectValue placeholder="Select instructor…" />
               </SelectTrigger>
               <SelectContent>
@@ -276,17 +349,15 @@ export function CreateSurveySheet({ open, onOpenChange }: CreateSurveySheetProps
                 ))}
               </SelectContent>
             </Select>
-          </div>
+            {errors.primaryInstructorId && (
+              <FieldError id="cs-instructor-error">{errors.primaryInstructorId}</FieldError>
+            )}
+          </Field>
         </div>
 
-        <SheetFooter className="px-6 py-4 border-t border-border flex gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">Cancel</Button>
-          <Button
-            variant="default"
-            onClick={handleCreate}
-            disabled={!templateId || !courseCode || !primaryInstructorId}
-            className="flex-1"
-          >
+        <SheetFooter className="px-6 py-4 border-t border-border flex flex-row justify-end gap-2">
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="default" onClick={handleCreate}>
             Create Survey
           </Button>
         </SheetFooter>
@@ -306,27 +377,46 @@ interface AddGuestSheetProps {
 export function AddGuestSheet({ open, onOpenChange, surveyId }: AddGuestSheetProps) {
   const { addGuestInstructor } = usePce()
   const [selectedId, setSelectedId] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
   const handleAdd = () => {
+    if (!selectedId) {
+      setError('Pick an instructor.')
+      return
+    }
     const f = MOCK_FACULTY.find(f => f.id === selectedId)
-    if (!f) return
+    if (!f) {
+      setError('Pick an instructor.')
+      return
+    }
     addGuestInstructor(surveyId, { id: f.id, name: f.name, initials: f.initials })
+    setError(null)
     onOpenChange(false)
     setSelectedId('')
   }
 
+  function handleOpenChange(v: boolean) {
+    onOpenChange(v)
+    if (!v) setError(null)
+  }
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent side="right" className="w-80 sm:max-w-80 flex flex-col gap-0 p-0">
         <SheetHeader className="px-6 py-5 border-b border-border">
           <SheetTitle>Add Guest Lecturer</SheetTitle>
         </SheetHeader>
 
         <div className="flex flex-col gap-4 px-6 py-5 flex-1">
-          <div className="flex flex-col gap-1.5">
+          <Field orientation="vertical">
             <Label htmlFor="guest-select">Instructor</Label>
-            <Select value={selectedId} onValueChange={setSelectedId}>
-              <SelectTrigger id="guest-select" className="w-full">
+            <Select value={selectedId} onValueChange={(v) => { setSelectedId(v); setError(null) }}>
+              <SelectTrigger
+                id="guest-select"
+                className="w-full"
+                aria-invalid={!!error}
+                aria-describedby={error ? 'guest-select-error' : undefined}
+              >
                 <SelectValue placeholder="Search faculty…" />
               </SelectTrigger>
               <SelectContent>
@@ -335,12 +425,13 @@ export function AddGuestSheet({ open, onOpenChange, surveyId }: AddGuestSheetPro
                 ))}
               </SelectContent>
             </Select>
-          </div>
+            {error && <FieldError id="guest-select-error">{error}</FieldError>}
+          </Field>
         </div>
 
-        <SheetFooter className="px-6 py-4 border-t border-border flex gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">Cancel</Button>
-          <Button variant="default" onClick={handleAdd} disabled={!selectedId} className="flex-1">Add Guest</Button>
+        <SheetFooter className="px-6 py-4 border-t border-border flex flex-row justify-end gap-2">
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="default" onClick={handleAdd}>Add Guest</Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>
@@ -409,9 +500,9 @@ export function SendReminderPopover({ survey, children }: SendReminderPopoverPro
               Send an email reminder to{' '}
               <strong>{remaining} student{remaining !== 1 ? 's' : ''}</strong> who haven&apos;t responded yet.
             </p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="flex-1">Cancel</Button>
-              <Button variant="default" size="sm" className="flex-1" onClick={() => setSent(true)}>Send</Button>
+            <div className="flex flex-row justify-end gap-2">
+              <Button variant="ghost" size="sm">Cancel</Button>
+              <Button variant="default" size="sm" onClick={() => setSent(true)}>Send</Button>
             </div>
           </div>
         )}

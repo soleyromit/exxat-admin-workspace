@@ -52,5 +52,9 @@ Faculty / module surfaces never CREATE master entities; they consume them, filte
 P3 (this round):
 - `master-list-admin.md` — uniform shape for the 11 entities (ADR-001)
 - `read-only-inherited-filtered-view.md` — faculty consumption of admin entities (ADR-006)
+- `row-actions.md` (ADMIN-001) — canonical per-row kebab menu
+- `list-page-view-toggle.md` (ADMIN-002) — view-mode segmented control
+- `entity-detail-shell.md` (ADMIN-003) — Tabs shell for `[id]` detail routes
+- `state-coverage.md` (ADMIN-004) — required states per DS component (loading / empty / error / validation / submission / disabled / focus)
 
 P4+ (later): `role-permission-matrix.md`, `bulk-import-upload.md`, `audit-trail-export.md`

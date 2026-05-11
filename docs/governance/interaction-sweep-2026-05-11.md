@@ -121,3 +121,50 @@ Ranked by leverage (single fix × routes affected):
 ## Per-route deep evidence
 
 All screenshots and axe JSON at `/tmp/visual-check/interactions/<slug>.<interaction>.{png,axe.json}` — preserved for the visual-review subagent to read on demand.
+
+---
+
+## Addendum: assessment-taker sweep (2026-05-11)
+
+The Vite-based `apps/exam-management/assessment-taker/` (default port 5173) was added to the sweep coverage in a second pass. Three NavShell-wrapped routes were exercised: `/`, `/competency`, `/history`. The exam engine itself (`/exam/:id/take`) was deliberately excluded — it's a full-screen lockdown surface that intentionally suppresses chrome.
+
+### Coverage
+
+| Route | Captured states | Critical | Serious | Total nodes (crit+serious) |
+|---|---:|---:|---:|---:|
+| `/` (AssessmentDashboard) | 11 | 1 | 7 | 8 |
+| `/competency` (CompetencyDashboard) | 11 | 1 | 5 | 6 |
+| `/history` (PastAssessments) | 11 | 9 | 21 | 30 |
+| **Total** | **33** | **11** | **33** | **44** |
+
+### Findings by rule
+
+| Rule | Impact | Nodes | State-instances | Notes |
+|---|---|---:|---:|---|
+| `color-contrast` | serious | 30 | 13 | Affects every route; appears on default + every focus state |
+| `button-name` | critical | 8 | 4 | `/history` only — likely an unlabelled icon button in the table |
+| `aria-required-children` | critical | 3 | 3 | Triggers on `open-dropdown` across all 3 routes. Caused by `CommandDialog`/cmdk internals (see escalation S1 in `ds-escalations-2026-05-11.md`) |
+| `aria-hidden-focus` | serious | 3 | 3 | Triggers on `open-dropdown` across all 3 routes. Same root cause as the Next.js admin app DropdownMenu issue (modal={false}). Vite app doesn't have the same fix yet. |
+
+### Console errors
+
+All three routes log the same runtime error 6-7 times:
+```
+TypeError: Cannot read properties of undefined (reading 'subscribe')
+  at P (cmdk.js?v=fc018e14:484:35)
+```
+
+The error is thrown when `CommandDialog` mounts. Symptom: CommandPalette (Meta+K) does not work in the assessment-taker. Hypothesis: cmdk version mismatch between Vite's dep-bundled cmdk and the version shipped by DS, or a Radix portal mismatch under React Router v6. Worth confirming whether this is fixable by pinning cmdk in the assessment-taker's `package.json`.
+
+Also one console warning on `/`: `Font Awesome Kit: TypeError: Failed to fetch` — kit ID `d9bd5774e0` may need to be re-confirmed for the assessment-taker domain (or the script is racing).
+
+### Fix priority (assessment-taker-specific)
+
+1. **`button-name` on `/history`** — 8 nodes, single-route fix. Likely an icon-only Button in the past-assessments table row missing `aria-label`. Inspect `apps/exam-management/assessment-taker/src/pages/PastAssessments.tsx`.
+2. **`color-contrast` on every route** — 30 nodes. Cross-cutting; almost certainly the assessment-taker's Prism theme (the dev server reports `class="theme-prism"`) hits a different contrast surface than the admin's Lavender theme. Should be triaged against the actual offending nodes (see screenshots at `/tmp/visual-check/interactions/`).
+3. **`aria-hidden-focus` on DropdownMenu** — same as the admin sweep's #1 finding. Add `modal={false}` to whichever DropdownMenu the assessment-taker uses (likely in `NavShell.tsx`).
+4. **`aria-required-children` + cmdk console errors** — escalate as DS gap S1 (see `ds-escalations-2026-05-11.md`). Not a product-code fix.
+
+### Coverage gap
+
+Exam engine route (`/exam/:id/take`) was not swept. The route deliberately omits NavShell and renders a full-screen lockdown experience; it would benefit from a dedicated keyboard-only test rather than the standard interaction set. Defer to a follow-up.

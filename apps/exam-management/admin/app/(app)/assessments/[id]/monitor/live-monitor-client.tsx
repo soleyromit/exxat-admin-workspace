@@ -26,6 +26,7 @@ import {
   Tip,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
   Textarea,
+  FieldError,
 } from '@exxat/ds/packages/ui/src'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
@@ -64,6 +65,9 @@ export default function LiveMonitorClient({ assessmentId }: { assessmentId: stri
   const [tick, setTick] = useState(0)
   const [alertOpen, setAlertOpen] = useState(false)
   const [alertText, setAlertText] = useState('')
+  // Validation surface (modal-deep-study §2). Fires on submit attempt
+  // with no message; clears on text input.
+  const [alertError, setAlertError] = useState<string | null>(null)
   const [alertSent, setAlertSent] = useState<string | null>(null)
   const [pauseOpen, setPauseOpen] = useState(false)
   const [paused, setPaused] = useState(false)
@@ -141,11 +145,20 @@ export default function LiveMonitorClient({ assessmentId }: { assessmentId: stri
   ]
 
   const sendAlert = () => {
-    if (!alertText.trim()) return
+    if (!alertText.trim()) {
+      setAlertError('Type a message before sending the alert.')
+      return
+    }
     setAlertSent(alertText.trim())
     setAlertText('')
+    setAlertError(null)
     setAlertOpen(false)
     window.setTimeout(() => setAlertSent(null), 4000)
+  }
+
+  function handleAlertOpenChange(v: boolean) {
+    setAlertOpen(v)
+    if (!v) setAlertError(null)
   }
 
   const headerActions = (
@@ -222,7 +235,7 @@ export default function LiveMonitorClient({ assessmentId }: { assessmentId: stri
       </div>
 
       {/* Alert all dialog */}
-      <Dialog open={alertOpen} onOpenChange={setAlertOpen}>
+      <Dialog open={alertOpen} onOpenChange={handleAlertOpenChange}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Alert all students</DialogTitle>
@@ -234,18 +247,24 @@ export default function LiveMonitorClient({ assessmentId }: { assessmentId: stri
             <Textarea
               placeholder="e.g. Question 7 has a typo — please skip and we'll exclude it from grading."
               value={alertText}
-              onChange={e => setAlertText(e.target.value)}
+              onChange={e => { setAlertText(e.target.value); if (e.target.value.trim()) setAlertError(null) }}
               className="min-h-24"
+              aria-invalid={!!alertError}
+              aria-describedby={alertError ? 'alert-text-error' : 'alert-text-help'}
             />
-            <p className="text-[11px] text-muted-foreground">
-              Sending to {snapshot.students.length} students · message logged in the audit trail.
-            </p>
+            {alertError ? (
+              <FieldError id="alert-text-error">{alertError}</FieldError>
+            ) : (
+              <p id="alert-text-help" className="text-[11px] text-muted-foreground">
+                Sending to {snapshot.students.length} students · message logged in the audit trail.
+              </p>
+            )}
           </div>
           <DialogFooter>
             <DialogClose asChild>
               <Button variant="outline" size="sm">Cancel</Button>
             </DialogClose>
-            <Button size="sm" disabled={!alertText.trim()} onClick={sendAlert} className="gap-1.5">
+            <Button size="sm" onClick={sendAlert} className="gap-1.5">
               <i className="fa-light fa-paper-plane" aria-hidden="true" />
               Send alert
             </Button>

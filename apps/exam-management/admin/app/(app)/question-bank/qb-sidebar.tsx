@@ -8,6 +8,7 @@ import {
   InputGroup, InputGroupAddon, InputGroupInput, Input,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Separator,
   Popover, PopoverTrigger, PopoverContent,
+  FieldError,
 } from '@exxat/ds/packages/ui/src'
 
 
@@ -115,6 +116,10 @@ function MoveFolderDialog({ node, open, onClose }: { node: FolderNode; open: boo
   const [isCreating, setIsCreating] = useState(false)
   const [newName, setNewName] = useState('')
   const newInputRef = useRef<HTMLInputElement>(null)
+  // Validation surface (modal-deep-study §2). Fires on submit attempt
+  // when destination isn't a valid move target; clears as soon as navigation
+  // moves into a valid destination.
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const excludedIds = useMemo(() => getDescendantIds(node.id, folders), [node.id, folders])
 
@@ -138,13 +143,14 @@ function MoveFolderDialog({ node, open, onClose }: { node: FolderNode; open: boo
 
   // Reset when dialog reopens
   useEffect(() => {
-    if (open) { setCurrentId(null); setIsCreating(false); setNewName('') }
+    if (open) { setCurrentId(null); setIsCreating(false); setNewName(''); setSubmitError(null) }
   }, [open])
 
   function navigate(id: string | null) {
     setCurrentId(id)
     setIsCreating(false)
     setNewName('')
+    setSubmitError(null)
   }
 
   function handleCreateFolder() {
@@ -158,7 +164,16 @@ function MoveFolderDialog({ node, open, onClose }: { node: FolderNode; open: boo
   const canMoveHere = currentId !== null && currentId !== node.parentId && !excludedIds.has(currentId)
 
   function handleMoveHere() {
-    if (!canMoveHere || !currentId) return
+    if (!canMoveHere || !currentId) {
+      if (currentId === null) {
+        setSubmitError('Pick a destination folder before moving.')
+      } else if (currentId === node.parentId) {
+        setSubmitError('This is already the current parent folder. Navigate elsewhere.')
+      } else {
+        setSubmitError('Pick a valid destination folder before moving.')
+      }
+      return
+    }
     const nodeId = node.id
     moveFolder(nodeId, currentId)
     setTimeout(() => navigateToFolder(nodeId), 50)
@@ -266,6 +281,13 @@ function MoveFolderDialog({ node, open, onClose }: { node: FolderNode; open: boo
 
         <Separator className="shrink-0" />
 
+        {/* Inline error surface — under list, above footer. */}
+        {submitError && (
+          <div style={{ padding: '4px 16px 8px', flexShrink: 0 }}>
+            <FieldError id="move-folder-sb-error">{submitError}</FieldError>
+          </div>
+        )}
+
         {/* ── Footer ── */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', flexShrink: 0 }}>
           <Button
@@ -280,7 +302,15 @@ function MoveFolderDialog({ node, open, onClose }: { node: FolderNode; open: boo
           </Button>
           <div style={{ display: 'flex', gap: 8 }}>
             <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-            <Button variant="default" size="sm" onClick={handleMoveHere} disabled={!canMoveHere}>Move here</Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleMoveHere}
+              aria-invalid={!!submitError}
+              aria-describedby={submitError ? 'move-folder-sb-error' : undefined}
+            >
+              Move here
+            </Button>
           </div>
         </div>
       </DialogContent>
@@ -305,7 +335,8 @@ function FolderContextMenu({
   onDelete: () => void
   onOpenChange?: (open: boolean) => void
 }) {
-  const { setCollaboratorsModalFolderId } = useQB()
+  const { setCollaboratorsModalFolderId, setFolderPrivacy } = useQB()
+  const isPrivate = !!node.isPrivateSpace
 
   return (
     <DropdownMenu modal={false} onOpenChange={onOpenChange}>
@@ -320,17 +351,29 @@ function FolderContextMenu({
           <i className="fa-regular fa-ellipsis" aria-hidden="true" style={{ fontSize: 12 }} />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
+      <DropdownMenuContent align="end" className="w-52">
         <DropdownMenuItem onClick={() => onAddSubfolder()}>
           <i className="fa-light fa-folder-plus" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
           New Subfolder
         </DropdownMenuItem>
         {isAdmin && (
-          <DropdownMenuItem onClick={() => setCollaboratorsModalFolderId(node.id)}>
-            <i className="fa-light fa-users" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-            Manage Access
-          </DropdownMenuItem>
+          <>
+            <DropdownMenuItem onClick={() => setCollaboratorsModalFolderId(node.id)}>
+              <i className="fa-light fa-users" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+              Manage Access
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setFolderPrivacy(node.id, !isPrivate)}>
+              <i
+                className={`fa-light ${isPrivate ? 'fa-lock-open' : 'fa-lock'}`}
+                aria-hidden="true"
+                style={{ fontSize: 12, width: 14 }}
+              />
+              {isPrivate ? 'Make public' : 'Make private'}
+            </DropdownMenuItem>
+          </>
         )}
+        <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => onRename()}>
           <i className="fa-light fa-pen" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
           Rename
@@ -745,10 +788,17 @@ function FolderRow({
             style={{ flex: 1, color: 'var(--brand-color)' }}
           />
         ) : (
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
             <span className={`block text-sm truncate text-foreground ${isSelected ? 'font-medium' : 'font-normal'}`}>
               {node.isCourse ? courseFolderLabel(node.name) : node.name}
             </span>
+            {node.isPrivateSpace && (
+              <i
+                className="fa-light fa-lock text-muted-foreground shrink-0"
+                aria-label="Private folder"
+                style={{ fontSize: 10 }}
+              />
+            )}
           </div>
         )}
 

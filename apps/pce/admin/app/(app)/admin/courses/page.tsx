@@ -18,8 +18,9 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
   Tooltip, TooltipContent, TooltipTrigger,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
-  Field, FieldLabel, FieldGroup,
+  Field, FieldLabel, FieldGroup, FieldError,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
+  LocalBanner,
   SidebarTrigger, Separator,
 } from '@exxat/ds/packages/ui/src'
 import {
@@ -48,6 +49,7 @@ export default function MasterCoursesPage() {
   const [departmentFilter, setDepartmentFilter] = useState('all')
   const [addOpen, setAddOpen] = useState(false)
   const [draft, setDraft] = useState({ code: '', name: '', department: DEPARTMENTS[0] })
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   const filteredRaw = rows.filter(r => {
     if (departmentFilter !== 'all' && r.department !== departmentFilter) return false
@@ -65,8 +67,23 @@ export default function MasterCoursesPage() {
     raw: r,
   }))
 
+  // Validation pattern: accommodations/page.tsx:96-126.
+  function validate(): Record<string, string> {
+    const next: Record<string, string> = {}
+    const trimmedCode = draft.code.trim()
+    const trimmedName = draft.name.trim()
+    if (!trimmedCode) next.code = 'Course code is required.'
+    else if (rows.some(r => r.code.trim().toLowerCase() === trimmedCode.toLowerCase())) {
+      next.code = 'A course with this code already exists.'
+    }
+    if (!trimmedName) next.name = 'Course name is required.'
+    return next
+  }
+
   function handleSave() {
-    if (!draft.code.trim() || !draft.name.trim()) return
+    const next = validate()
+    setErrors(next)
+    if (Object.keys(next).length > 0) return
     const today = new Date().toISOString().slice(0, 10)
     const newRow: MasterCourse = {
       id: `mc${Date.now()}`,
@@ -79,7 +96,13 @@ export default function MasterCoursesPage() {
     }
     setRows([newRow, ...rows])
     setDraft({ code: '', name: '', department: DEPARTMENTS[0] })
+    setErrors({})
     setAddOpen(false)
+  }
+
+  function handleAddOpenChange(open: boolean) {
+    setAddOpen(open)
+    if (!open) setErrors({})
   }
 
   function handleArchive(id: string) {
@@ -231,7 +254,7 @@ export default function MasterCoursesPage() {
       </div>
 
       {/* Add course dialog */}
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+      <Dialog open={addOpen} onOpenChange={handleAddOpenChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add master course</DialogTitle>
@@ -239,6 +262,12 @@ export default function MasterCoursesPage() {
               Master courses live at program level and are reused across terms via course offerings.
             </DialogDescription>
           </DialogHeader>
+
+          {Object.keys(errors).length >= 2 && (
+            <LocalBanner variant="error" title="Fix the following before saving">
+              {Object.keys(errors).length} fields need attention.
+            </LocalBanner>
+          )}
 
           <FieldGroup>
             <Field orientation="vertical">
@@ -249,7 +278,10 @@ export default function MasterCoursesPage() {
                 value={draft.code}
                 onChange={e => setDraft({ ...draft, code: e.target.value })}
                 aria-required="true"
+                aria-invalid={!!errors.code}
+                aria-describedby={errors.code ? 'course-code-error' : undefined}
               />
+              {errors.code && <FieldError id="course-code-error">{errors.code}</FieldError>}
             </Field>
             <Field orientation="vertical">
               <FieldLabel htmlFor="course-name">Course name *</FieldLabel>
@@ -259,7 +291,10 @@ export default function MasterCoursesPage() {
                 value={draft.name}
                 onChange={e => setDraft({ ...draft, name: e.target.value })}
                 aria-required="true"
+                aria-invalid={!!errors.name}
+                aria-describedby={errors.name ? 'course-name-error' : undefined}
               />
+              {errors.name && <FieldError id="course-name-error">{errors.name}</FieldError>}
             </Field>
             <Field orientation="vertical">
               <FieldLabel htmlFor="course-dept">Department</FieldLabel>
@@ -281,7 +316,6 @@ export default function MasterCoursesPage() {
             <Button
               variant="default"
               onClick={handleSave}
-              disabled={!draft.code.trim() || !draft.name.trim()}
             >
               Add course
             </Button>

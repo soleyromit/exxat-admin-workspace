@@ -247,9 +247,9 @@ export function QBHeader() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button variant="outline" size="sm" className="gap-1.5" aria-label="Ask Leo AI">
+        <Button variant="outline" size="xs" className="gap-1.5" aria-label="Ask Leo AI" style={{ height: 28 }}>
           <i className="fa-duotone fa-solid fa-star-christmas" style={{ fontSize: 11, color: 'var(--brand-color)' }} aria-hidden="true" />
-          Ask Leo
+          <span className="qb-ask-leo-label">Ask Leo</span>
         </Button>
       </div>
     </header>

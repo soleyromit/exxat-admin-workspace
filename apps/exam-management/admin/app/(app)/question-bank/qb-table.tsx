@@ -14,6 +14,7 @@ import {
   InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput,
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
   TableHeader, TableBody, TableRow, TableHead, TableCell,
+  FieldError,
 } from '@exxat/ds/packages/ui/src'
 import type { Question, QStatus, ColumnId } from '@/lib/qb-types'
 import { MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
@@ -314,10 +315,21 @@ function MoveFolderDialog({
 }) {
   const [targetId, setTargetId] = useState<string | null>(null)
   const [inlineCreateInFolderId, setInlineCreateInFolderId] = useState<string | null>(null)
+  // Validation surface (modal-deep-study §2). Fires on submit attempt
+  // without selection; clears as soon as a folder is picked.
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (open) { setTargetId(null); setInlineCreateInFolderId(null) }
+    if (open) { setTargetId(null); setInlineCreateInFolderId(null); setSubmitError(null) }
   }, [open])
+
+  function handleConfirm() {
+    if (!targetId) {
+      setSubmitError('Pick a destination folder before moving.')
+      return
+    }
+    onConfirm(targetId)
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -334,10 +346,17 @@ function MoveFolderDialog({
         <FolderTreePicker
           currentFolderId={currentFolderId}
           value={targetId}
-          onChange={setTargetId}
+          onChange={(v) => { setTargetId(v); if (v) setSubmitError(null) }}
           inlineCreateInFolderId={inlineCreateInFolderId}
           onInlineCreateDone={() => setInlineCreateInFolderId(null)}
         />
+
+        {/* Inline error surface — under tree picker, above footer. */}
+        {submitError && (
+          <div style={{ padding: '4px 16px 8px' }}>
+            <FieldError id="move-folder-error">{submitError}</FieldError>
+          </div>
+        )}
 
         {/* Footer */}
         <div style={{ borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', padding: '12px 16px', gap: 8 }}>
@@ -360,7 +379,13 @@ function MoveFolderDialog({
           </Tooltip>
           <div style={{ flex: 1 }} />
           <Button variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
-          <Button variant="default" size="sm" onClick={() => targetId && onConfirm(targetId)} disabled={!targetId}>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleConfirm}
+            aria-invalid={!!submitError}
+            aria-describedby={submitError ? 'move-folder-error' : undefined}
+          >
             Move here
           </Button>
         </div>
@@ -493,25 +518,77 @@ type ColKey = (typeof QB_COLS)[number]['key']
 // ── Location path cell ───────────────────────────────────────────────────────
 function LocationCell({ question }: { question: Question }) {
   const { folders, navigateToFolder } = useQB()
-  if (!question.folderPath) return <span className="text-sm text-muted-foreground">—</span>
-  const parts = question.folderPath.split(' / ')
-  // Show the deepest folder (last segment)
-  const displayName = parts[parts.length - 1]
-  // Find the folder by matching the name
-  const targetFolder = folders.find(f => f.name === displayName || question.folderPath?.endsWith(f.name))
+
+  // Collect all locations: primary + extras
+  const allLocations = [
+    { folder: question.folder, folderPath: question.folderPath },
+    ...(question.extraFolders ?? []),
+  ].filter(l => l.folderPath)
+
+  if (allLocations.length === 0) return <span className="text-sm text-muted-foreground">—</span>
+
+  const LocationLink = ({ loc }: { loc: { folder: string; folderPath: string } }) => {
+    const displayName = loc.folderPath.split(' / ').pop() ?? loc.folderPath
+    const targetFolder = folders.find(f => f.id === loc.folder)
+    return (
+      <Button
+        variant="ghost" size="sm"
+        onClick={(e) => { e.stopPropagation(); if (targetFolder) navigateToFolder(targetFolder.id) }}
+        className="h-auto p-0 font-normal text-left text-sm"
+        style={{ color: 'var(--brand-color)', textDecoration: 'underline', textUnderlineOffset: 2 }}
+        aria-label={`Navigate to ${displayName}`}
+        title={loc.folderPath}
+      >
+        <span style={{ display: 'block', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {displayName}
+        </span>
+      </Button>
+    )
+  }
+
+  if (allLocations.length === 1) return <LocationLink loc={allLocations[0]} />
+
+  // Multiple locations: show first + "+N more" popover
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={(e) => { e.stopPropagation(); if (targetFolder) navigateToFolder(targetFolder.id) }}
-      className="h-auto p-0 font-normal text-left text-sm"
-      style={{ color: 'var(--brand-color)', textDecoration: 'underline', textUnderlineOffset: 2 }}
-      aria-label={`Navigate to ${displayName}`}
-    >
-      <span title={displayName} style={{ display: 'block', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-        {displayName}
-      </span>
-    </Button>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0 }}>
+      <LocationLink loc={allLocations[0]} />
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost" size="xs"
+            onClick={e => e.stopPropagation()}
+            className="text-[10px] text-muted-foreground font-medium shrink-0"
+            style={{ height: 18, padding: '0 5px', borderRadius: 99, backgroundColor: 'var(--muted)' }}
+          >
+            +{allLocations.length - 1}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="p-2" style={{ width: 260 }} onClick={e => e.stopPropagation()}>
+          <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground mb-1.5">
+            {allLocations.length} locations
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {allLocations.map((loc, i) => {
+              const name = loc.folderPath.split(' / ').pop() ?? loc.folderPath
+              const target = folders.find(f => f.id === loc.folder)
+              return (
+                <button
+                  key={i}
+                  onClick={e => { e.stopPropagation(); if (target) navigateToFolder(target.id) }}
+                  className="flex items-center gap-2 text-left w-full rounded px-2 py-1.5 hover:bg-accent transition-colors"
+                >
+                  <i className="fa-light fa-folder text-muted-foreground shrink-0" aria-hidden="true" style={{ fontSize: 12 }} />
+                  <div style={{ minWidth: 0 }}>
+                    <p className="text-sm font-medium text-foreground truncate">{name}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{loc.folderPath}</p>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
   )
 }
 
@@ -572,15 +649,15 @@ function FilterPill({ filter, onUpdate, onRemove, autoOpen = false, fieldDefs = 
     onUpdate(filter.id, { values: newValues })
   }
 
-  const chipColor = hasValues ? 'var(--brand-color)' : undefined
+  const chipColor = hasValues ? 'var(--foreground)' : 'var(--muted-foreground)'
 
   return (
     // Wrapper div owns the chip border/bg — trigger and close are siblings, never nested buttons
     <div style={{
       display: 'inline-flex',
       borderRadius: 4,
-      border: hasValues ? '1px solid var(--brand-color)' : '1.5px dashed var(--border)',
-      backgroundColor: hasValues ? 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' : 'var(--background)',
+      border: hasValues ? '1px solid var(--border-control-3)' : '1.5px dashed var(--border)',
+      backgroundColor: hasValues ? 'var(--muted)' : 'var(--background)',
       flexShrink: 0, userSelect: 'none', overflow: 'hidden',
     }}>
     <Popover open={open} onOpenChange={setOpen}>
@@ -588,7 +665,7 @@ function FilterPill({ filter, onUpdate, onRemove, autoOpen = false, fieldDefs = 
         <Button
           variant="ghost"
           size="xs"
-          className={`text-xs gap-1 shrink-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0${!hasValues ? ' text-foreground' : ''}`}
+          className="text-xs gap-1 shrink-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
           style={{
             height: 'var(--qb-chip-height)', padding: '0 2px 0 8px',
             borderRadius: 0,
@@ -2165,9 +2242,11 @@ function ColHeader({
                         </span>
                       ))}
                       {filteredColOptions.length > 3 && (
-                        <span className="text-[11px] text-muted-foreground shrink-0">
-                          +{filteredColOptions.length - 3} more
-                        </span>
+                        <Tip label={filteredColOptions.slice(3).join(', ')}>
+                          <span className="text-[11px] text-muted-foreground shrink-0 cursor-default">
+                            +{filteredColOptions.length - 3} more
+                          </span>
+                        </Tip>
                       )}
                     </div>
                   )}
@@ -2780,18 +2859,20 @@ export function QBTable() {
                 size="icon-sm"
                 onClick={() => setPropertiesOpen(true)}
                 aria-label="Table properties"
-                style={activeFilterCount > 0 || hiddenCols.size > 0 ? { borderColor: 'var(--brand-color)', color: 'var(--brand-color)', backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' } : {}}
+                style={activeFilterCount > 0 || hiddenCols.size > 0 ? { borderColor: 'var(--border-control-3)', color: 'var(--foreground)', backgroundColor: 'var(--muted)' } : {}}
               >
                 <i className="fa-light fa-sliders" aria-hidden="true" style={{ fontSize: 13 }} />
               </Button>
             </Tip>
             {activeFilterCount > 0 && (
-              <span className="text-[8px] font-bold text-primary-foreground" style={{
-                position: 'absolute', top: -5, right: -5,
-                width: 15, height: 15, borderRadius: '50%',
-                backgroundColor: 'var(--brand-color)',
+              <span className="text-[8px] font-bold" style={{
+                position: 'absolute', top: -4, right: -4,
+                width: 14, height: 14, borderRadius: '50%',
+                backgroundColor: 'var(--foreground)',
+                color: 'var(--background)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 pointerEvents: 'none',
+                boxShadow: '0 0 0 2px var(--background)',
               }}>
                 {activeFilterCount}
               </span>
