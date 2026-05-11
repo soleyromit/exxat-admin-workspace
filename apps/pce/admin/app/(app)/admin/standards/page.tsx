@@ -194,6 +194,23 @@ export default function StandardsPage() {
             getRowId={(row) => row.id}
             selectable
             searchable
+            emptyState={
+              <div className="flex flex-col items-center gap-2 py-6">
+                <i className="fa-light fa-stamp text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
+                <p className="text-sm font-medium">
+                  {rows.length === 0
+                    ? 'No standards yet'
+                    : sourceFilter !== 'all'
+                      ? `No standards from ${sourceFilter}`
+                      : 'No standards match your search'}
+                </p>
+                <p className="text-xs text-muted-foreground" style={{ maxWidth: 320 }}>
+                  {rows.length === 0
+                    ? 'Import an accreditation blueprint or add a standard to get started.'
+                    : 'Try a different source or clear the search.'}
+                </p>
+              </div>
+            }
           />
 
         </div>

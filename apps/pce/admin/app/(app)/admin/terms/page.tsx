@@ -240,6 +240,19 @@ export default function TermsPage() {
             defaultGroupBy="academicYear"
             groupLabels={groupLabels}
             groupOrder={groupOrder}
+            emptyState={
+              <div className="flex flex-col items-center gap-2 py-6">
+                <i className="fa-light fa-calendar-days text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
+                <p className="text-sm font-medium">
+                  {rows.length === 0 ? 'No terms yet' : 'No terms match your search'}
+                </p>
+                <p className="text-xs text-muted-foreground" style={{ maxWidth: 320 }}>
+                  {rows.length === 0
+                    ? (MOCK_LMS_ENABLED ? 'Terms sync from your LMS — none have synced yet.' : 'Add a term to anchor course offerings to an academic calendar.')
+                    : 'Try a different name or clear the search.'}
+                </p>
+              </div>
+            }
           />
 
           {!MOCK_LMS_ENABLED && (

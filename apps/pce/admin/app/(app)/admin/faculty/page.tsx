@@ -164,6 +164,19 @@ export default function FacultyPage() {
             getRowId={(row) => row.id}
             selectable
             searchable
+            emptyState={
+              <div className="flex flex-col items-center gap-2 py-6">
+                <i className="fa-light fa-users text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
+                <p className="text-sm font-medium">
+                  {rows.length === 0 ? 'No faculty yet' : 'No faculty match your search'}
+                </p>
+                <p className="text-xs text-muted-foreground" style={{ maxWidth: 320 }}>
+                  {rows.length === 0
+                    ? (MOCK_LMS_ENABLED ? 'Faculty sync from your LMS — none have synced yet.' : 'Import a CSV or wait for the Add faculty UI in Phase 2.')
+                    : 'Try a different name or clear the search.'}
+                </p>
+              </div>
+            }
           />
 
           {!MOCK_LMS_ENABLED && (

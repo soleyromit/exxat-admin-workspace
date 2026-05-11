@@ -353,6 +353,23 @@ export default function StudentsPage() {
             selectable
             searchable
             defaultGroupBy="cohort"
+            emptyState={
+              <div className="flex flex-col items-center gap-2 py-6">
+                <i className="fa-light fa-graduation-cap text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
+                <p className="text-sm font-medium">
+                  {rows.length === 0
+                    ? 'No students yet'
+                    : cohortFilter !== 'all' || statusFilter !== 'all'
+                      ? 'No students match these filters'
+                      : 'No students match your search'}
+                </p>
+                <p className="text-xs text-muted-foreground" style={{ maxWidth: 320 }}>
+                  {rows.length === 0
+                    ? (MOCK_LMS_ENABLED ? 'Students sync from your LMS — none have synced yet.' : 'Add a student manually or import a CSV roster.')
+                    : 'Try adjusting your filters or clearing the search.'}
+                </p>
+              </div>
+            }
             toolbarSlot={(state) => {
               // Build the filter-field list from the column filter configs so the
               // drawer's "Add filter" menu mirrors the toolbar.

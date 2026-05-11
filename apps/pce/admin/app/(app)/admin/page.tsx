@@ -82,14 +82,19 @@ const ENTITIES: EntityTile[] = [
 function EntityCard({ entity }: { entity: EntityTile }) {
   const isClickable = entity.status === 'available' && Boolean(entity.href)
 
+  /* WCAG fix 2026-05-11 (parity with FolderCard at app/(app)/page.tsx):
+     opacity-60 on the Card root drops muted-foreground descendants to ~2.57:1.
+     Disabled state uses aria-disabled + bg-muted/30 + cursor-not-allowed so
+     all text remains 4.5:1+. The "Soon" / "Shared" labels convey state. */
   const inner = (
     <Card
       size="sm"
+      aria-disabled={!isClickable || undefined}
       className={
         'group relative h-full transition-colors ' +
         (isClickable
           ? 'hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
-          : 'opacity-60')
+          : 'cursor-not-allowed bg-muted/30')
       }
     >
       <CardHeader>

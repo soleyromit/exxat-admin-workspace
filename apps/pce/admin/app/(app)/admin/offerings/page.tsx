@@ -315,6 +315,23 @@ export default function CourseOfferingsPage() {
             selectable
             searchable
             defaultGroupBy="termName"
+            emptyState={
+              <div className="flex flex-col items-center gap-2 py-6">
+                <i className="fa-light fa-rectangle-list text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
+                <p className="text-sm font-medium">
+                  {rows.length === 0
+                    ? 'No course offerings yet'
+                    : termFilter !== 'all' || statusFilter !== 'all'
+                      ? 'No offerings match these filters'
+                      : 'No offerings match your search'}
+                </p>
+                <p className="text-xs text-muted-foreground" style={{ maxWidth: 320 }}>
+                  {rows.length === 0
+                    ? 'Create an offering by combining a master course with a term, cohort, and faculty.'
+                    : 'Try adjusting your filters or clearing the search.'}
+                </p>
+              </div>
+            }
           />
 
           {!MOCK_LMS_ENABLED && (

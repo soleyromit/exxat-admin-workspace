@@ -98,6 +98,13 @@ export default function AssessmentTypesPage() {
             columns={columns}
             getRowId={(row) => row.id}
             searchable
+            emptyState={
+              <div className="flex flex-col items-center gap-2 py-6">
+                <i className="fa-light fa-clipboard-question text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
+                <p className="text-sm font-medium">No assessment types match your search</p>
+                <p className="text-xs text-muted-foreground">Clear the search to see the full inventory.</p>
+              </div>
+            }
           />
 
           <p className="text-xs text-muted-foreground">
