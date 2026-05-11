@@ -29,23 +29,34 @@ What this audit looks for in product code (apps/<product>/<role>/):
 
   6. State-coverage gaps. Catches default-only rendering — when a file
      touches async data, form input, or list rendering but skips loading /
-     empty / error / validation / disabled affordances. All warn (phase-0).
+     empty / error / validation / disabled affordances.
 
-     Rules:
+     Rules (severity reflects 2026-05-11 promotion per architect-runs/
+     2026-05-11-baseline.md):
        - datatable-no-empty-state   : <DataTable> invocation without an
                                        emptyState prop AND without a
                                        data.length===0 guard near the call.
+                                       [BLOCK]
        - dialog-no-error-feedback    : <DialogContent>...<form>... renders
                                        <Input> with no aria-invalid AND no
                                        FieldError AND no LocalBanner error.
+                                       [BLOCK]
        - opacity-60-on-text-parent   : opacity-60 on an element whose
                                        descendants render text-muted-foreground
                                        (drops contrast below WCAG 4.5:1).
+                                       [BLOCK]
        - clickable-without-focus-ring: onClick + cursor-pointer on a non-DS
                                        element that lacks focus-visible:ring.
+                                       [WARN — promotion deferred]
        - async-fetch-no-skeleton     : file with useEffect+fetch / useSWR /
                                        useQuery / isLoading that does NOT
                                        import or render Skeleton.
+                                       [WARN — false-positive-prone]
+
+  7. Card-shape masquerade (consolidated 2026-05-11). Single rule with two
+     facets — replaces former card-imposter-div + eyebrow-paragraph-outside-
+     card. Both emit rule="card-shape-masquerade" with a facet-specific
+     message.
 
      See docs/governance/component-state-catalog.md for the canonical state
      matrix and docs/patterns/admin/state-coverage.md for prescriptions.
@@ -140,6 +151,11 @@ LEGITIMATE_NON_CARD_DIVS = {
     # exam-management: sidebar FacultyModeChip — status indicator inside
     # the Sidebar (not a content panel). Per card.md depth audit 2026-05-11.
     "components/app-sidebar.tsx",
+    # pce: Checkbox-group wrapper inside CreateSurveySheet body. Fieldset-style
+    # container around a list of <Checkbox> rows — not Card chrome. DS gap S4
+    # (no FieldGroup primitive) tracked in ds-escalations-2026-05-11.md:160;
+    # allowlist accepted by architect-runs/2026-05-11-baseline.md open-Q #2.
+    "components/pce/pce-modals.tsx",
 }
 
 GRANDFATHERED_ORGANISM_COLLISIONS: set[str] = set()
@@ -324,14 +340,14 @@ def scan_file_for_card_imposter_div(rel: str, text: str) -> list[Gap]:
         line_no = text[: m.start()].count("\n") + 1
         gaps.append(Gap(
             severity="warn",
-            rule="card-imposter-div",
+            rule="card-shape-masquerade",
             file=rel,
             line=line_no,
             message=(
-                "<div> with rounded + border + padding looks like Card chrome. "
-                "Use DS Card (or Card size=\"sm\") with CardHeader / CardTitle / "
-                "CardDescription / CardContent slots — see "
-                "docs/governance/ds-adoption.md → Card row."
+                "Card-shape masquerade (div facet): <div> with rounded + border + "
+                "padding looks like Card chrome. Use DS Card (or Card size=\"sm\") "
+                "with CardHeader / CardTitle / CardDescription / CardContent slots "
+                "— see docs/governance/ds-adoption.md → Card row."
             ),
         ))
         if len(gaps) >= 5:  # cap noise per file
@@ -351,14 +367,14 @@ def scan_file_for_eyebrow_paragraph(rel: str, text: str) -> list[Gap]:
         line_no = text[: m.start()].count("\n") + 1
         gaps.append(Gap(
             severity="warn",
-            rule="eyebrow-paragraph-outside-card",
+            rule="card-shape-masquerade",
             file=rel,
             line=line_no,
             message=(
-                "`<p>` with `uppercase tracking-wide` is the DS CardDescription "
-                "eyebrow pattern. If this is a section header, use CardDescription "
-                "inside a Card; otherwise consider Badge. Bare `<p>` will drift "
-                "from DS treatments over time."
+                "Card-shape masquerade (eyebrow facet): `<p>` with `uppercase "
+                "tracking-wide` is the DS CardDescription eyebrow pattern. If this "
+                "is a section header, use CardDescription inside a Card; otherwise "
+                "consider Badge. Bare `<p>` will drift from DS treatments over time."
             ),
         ))
         if len(gaps) >= 5:
@@ -522,7 +538,7 @@ def scan_file_for_datatable_no_empty_state(rel: str, text: str) -> list[Gap]:
             continue
         line_no = text[: m.start()].count("\n") + 1
         gaps.append(Gap(
-            severity="warn",
+            severity="block",
             rule="datatable-no-empty-state",
             file=rel,
             line=line_no,
@@ -561,7 +577,7 @@ def scan_file_for_dialog_no_error_feedback(rel: str, text: str) -> list[Gap]:
             continue
         line_no = text[: m.start()].count("\n") + 1
         gaps.append(Gap(
-            severity="warn",
+            severity="block",
             rule="dialog-no-error-feedback",
             file=rel,
             line=line_no,
@@ -596,7 +612,7 @@ def scan_file_for_opacity_60_on_text_parent(rel: str, text: str) -> list[Gap]:
             continue
         line_no = text[: m.start()].count("\n") + 1
         gaps.append(Gap(
-            severity="warn",
+            severity="block",
             rule="opacity-60-on-text-parent",
             file=rel,
             line=line_no,

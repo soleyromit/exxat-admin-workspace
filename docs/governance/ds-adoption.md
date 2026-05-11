@@ -107,7 +107,7 @@ When a product genuinely needs a custom component that overlaps a DS organism, a
 
 ### Named Card-substitutes — NOT yet documented hand-rolls, TRACKED FOR MIGRATION
 
-These are domain wrappers that internally build Card-shaped chrome from raw divs without importing DS `Card`. The regex `card-imposter-div` rule can't catch them (the divs are wrapped in a named component). Documented here per Card depth audit 2026-05-11 (`docs/governance/component-depth-audits/card.md`).
+These are domain wrappers that internally build Card-shaped chrome from raw divs without importing DS `Card`. The regex `card-shape-masquerade` rule can't catch them (the divs are wrapped in a named component). Documented here per Card depth audit 2026-05-11 (`docs/governance/component-depth-audits/card.md`).
 
 | File | Lines | Component | Recommended migration |
 |---|---|---|---|
@@ -122,7 +122,7 @@ These are domain wrappers that internally build Card-shaped chrome from raw divs
 - **9 status/preview tiles** — mixed; per-file judgment. ✅ RESOLVED 2026-05-11: chart card (`question-scatter-plot.tsx`) and TypeTile (`accommodations-tab.tsx`) migrated to Card slots. Notes blockquote (`assessment-review-client.tsx`) refactored to a `<blockquote>` sub-element with a left-accent (not Card chrome). Sidebar Faculty Mode chip (`app-sidebar.tsx`) and scatter-plot hover tooltip allowlisted as legitimate non-Card divs.
 
 ### Legitimate non-Card divs (known audit false positives)
-The audit script's `LEGITIMATE_NON_CARD_DIVS` set skips card-imposter scanning for these files.
+The audit script's `LEGITIMATE_NON_CARD_DIVS` set skips card-shape-masquerade scanning for these files.
 
 | File | Why it's not a Card |
 |---|---|
@@ -174,19 +174,17 @@ These patterns are common AI/Claude failure modes. The audit script regexes for 
 
 ---
 
-## State-coverage requirements (phase-0 WARN, promotion path to block)
+## State-coverage requirements (mixed severity — see column)
 
-Beyond "is the right component imported," the audit checks "are all states handled." Bound by `docs/patterns/admin/state-coverage.md` (Pattern ID `ADMIN-004`). Each rule below is currently WARN; each promotes to block once the workspace hits 0 hits across all products.
+Beyond "is the right component imported," the audit checks "are all states handled." Bound by `docs/patterns/admin/state-coverage.md` (Pattern ID `ADMIN-004`). Severity column reflects 2026-05-11 promotion decision per `docs/governance/architect-runs/2026-05-11-baseline.md`.
 
 | Rule slug | Pattern | Severity | Promotion gate |
 |---|---|---|---|
-| `datatable-no-empty-state` | `<DataTable` without `emptyState` prop AND without `data.length === 0` guard | warn | Block when 0 hits workspace-wide |
-| `dialog-no-error-feedback` | `<DialogContent>...<form>...<Input.../>` with no `aria-invalid` AND no `<FieldError>` AND no `<LocalBanner variant="error">` | warn | Block when 0 hits workspace-wide |
-| `opacity-60-on-text-parent` | `opacity-60` className on a parent whose descendants render `text-muted-foreground` (drops contrast below WCAG 4.5:1) | warn | Block when 0 hits workspace-wide |
-| `clickable-without-focus-ring` | Non-DS-Button element with `onClick` + `cursor-pointer` that lacks `focus-visible:ring` | warn | Block when 0 hits workspace-wide |
-| `async-fetch-no-skeleton` | File with `useEffect+fetch` / `useSWR` / `useQuery` / `isLoading` that does NOT import or render `Skeleton` | warn | Block when 0 hits workspace-wide; heuristic (may false-positive when loading state lives in a child) |
-
-Promote via `--strict-rules` filter (e.g., `--strict-rules datatable-no-empty-state`) in the pre-commit hook once a sweep clears the rule. After all 5 promote, fold into `--strict` (no filter).
+| `datatable-no-empty-state` | `<DataTable` without `emptyState` prop AND without `data.length === 0` guard | **block** | Promoted 2026-05-11 (0 hits workspace-wide) |
+| `dialog-no-error-feedback` | `<DialogContent>...<form>...<Input.../>` with no `aria-invalid` AND no `<FieldError>` AND no `<LocalBanner variant="error">` | **block** | Promoted 2026-05-11 (0 hits workspace-wide) |
+| `opacity-60-on-text-parent` | `opacity-60` className on a parent whose descendants render `text-muted-foreground` (drops contrast below WCAG 4.5:1) | **block** | Promoted 2026-05-11 (0 hits workspace-wide) |
+| `clickable-without-focus-ring` | Non-DS-Button element with `onClick` + `cursor-pointer` that lacks `focus-visible:ring` | warn | Deferred 2026-05-11 — hit count contested between audit JSON (0) and parent claim (1); re-verify next run |
+| `async-fetch-no-skeleton` | File with `useEffect+fetch` / `useSWR` / `useQuery` / `isLoading` that does NOT import or render `Skeleton` | warn | Deferred 2026-05-11 — most false-positive-prone of the five (loading state may live in a child); promote after one more session at 0 |
 
 State-coverage maps onto the canonical state matrix at `docs/governance/component-state-catalog.md`. When the catalog adds a new required state, add a row above.
 

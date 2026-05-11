@@ -95,14 +95,10 @@ if python3 scripts/brand-presence-audit.py > /tmp/pre-commit-brand.log 2>&1; the
   fi
 fi
 
-# 4c. Dead-link audit — WARN ONLY (heuristic; false-positives expected)
-printf "       dead-link         ... "
-if python3 scripts/dead-link-audit.py > /tmp/pre-commit-deadlink.log 2>&1; then
-  printf "${GREEN}clean${RESET}\n"
-else
-  gaps=$(grep -oE "Found [0-9]+ potential" /tmp/pre-commit-deadlink.log | head -1 | grep -oE "[0-9]+" || echo "?")
-  printf "${YELLOW}%s gaps${RESET} (warn — heuristic; verify)\n" "$gaps"
-fi
+# 4c. Dead-link audit — DEMOTED 2026-05-11 (architect-runs/2026-05-11-baseline.md
+#     PROPOSED-RETIRE-1). Caught 0 real bugs this session; known false-positive
+#     bias (doesn't trace variable assignments — blind-spots row #11). Script
+#     remains runnable as a manual probe: `python3 scripts/dead-link-audit.py`.
 
 # 4d. DS-adoption audit — PHASE 2 (block on every blocking rule)
 #

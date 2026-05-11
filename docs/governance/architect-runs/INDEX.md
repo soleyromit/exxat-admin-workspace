@@ -17,7 +17,7 @@
 
 | Date | Slug | Status | Summary |
 |---|---|---|---|
-| _(none yet — first run is pending)_ |
+| 2026-05-11 | baseline | PARTIAL | Promoted 3 rules to block (datatable-no-empty-state, dialog-no-error-feedback, opacity-60-on-text-parent); consolidated Card-masquerade rules; demoted dead-link-audit from pre-commit. Deferred: async-fetch-no-skeleton + clickable-without-focus-ring promotion, subagent-telemetry wrapper. Open: Pattern A pre-tool-use hook (out of architect scope). |
 
 ## How to invoke
 
