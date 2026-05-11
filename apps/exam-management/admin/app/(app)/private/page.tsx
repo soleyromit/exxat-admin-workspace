@@ -98,7 +98,7 @@ export default function PrivatePage() {
   return (
     <>
       <SiteHeader title="Private Space" />
-      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
+      <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
         <PageHeader
           title="Private Space"
           subtitle="Questions visible only to you"
@@ -119,7 +119,7 @@ export default function PrivatePage() {
             }
           />
         </div>
-      </main>
+      </div>
     </>
   )
 }

@@ -48,7 +48,7 @@ function QBInner() {
   return (
     <QBLayoutInner>
       <QBHeader />
-      <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
         <QBSidebar />
         <QBContent />
       </div>

@@ -22,9 +22,9 @@ export default async function EditQuestionPage({ params }: PageProps) {
           { label: 'Edit' },
         ]}
       />
-      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
+      <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
         <EditQuestionClient questionId={question.id} />
-      </main>
+      </div>
     </>
   )
 }

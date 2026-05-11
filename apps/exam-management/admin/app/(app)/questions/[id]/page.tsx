@@ -36,7 +36,7 @@ export default async function QuestionDetailPage({ params }: PageProps) {
         ]}
       />
 
-      <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto p-6 outline-none">
+      <div id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto p-6 outline-none">
         <div
           className="mx-auto max-w-3xl rounded-xl p-8"
           style={{
@@ -104,7 +104,7 @@ export default async function QuestionDetailPage({ params }: PageProps) {
             )}
           </dl>
         </div>
-      </main>
+      </div>
     </>
   )
 }

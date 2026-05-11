@@ -120,7 +120,7 @@ export default function AssessmentReviewClient({ assessmentId }: { assessmentId:
   return (
     <>
       <SiteHeader title={`${assessment.title} — Chair review`} breadcrumbs={breadcrumbs} />
-      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none overflow-auto">
+      <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none overflow-auto">
         <PageHeader
           title="Chair review"
           subtitle={`${assessment.title} · ${course.name} · ${assessment.questionCount} questions · ${assessment.durationMinutes}-min window`}
@@ -319,7 +319,7 @@ export default function AssessmentReviewClient({ assessmentId }: { assessmentId:
             </CardContent></Card>
           </div>
         </div>
-      </main>
+      </div>
     </>
   )
 }

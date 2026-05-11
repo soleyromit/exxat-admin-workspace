@@ -95,7 +95,7 @@ export default function LiveMonitorClient({ assessmentId }: { assessmentId: stri
     return (
       <>
         <SiteHeader title="Live monitor" />
-        <main className="flex flex-1 items-center justify-center p-8">
+        <div className="flex flex-1 items-center justify-center p-8">
           <Card className="max-w-md w-full">
             <CardHeader className="items-center text-center">
               <span
@@ -124,7 +124,7 @@ export default function LiveMonitorClient({ assessmentId }: { assessmentId: stri
               </Button>
             </CardContent>
           </Card>
-        </main>
+        </div>
       </>
     )
   }
@@ -186,7 +186,7 @@ export default function LiveMonitorClient({ assessmentId }: { assessmentId: stri
   return (
     <>
       <SiteHeader title={`${assessment.title} — Live`} breadcrumbs={breadcrumbs} />
-      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none overflow-hidden">
+      <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none overflow-hidden">
         <PageHeader
           title={assessment.title}
           subtitle={`${course.name} · monitoring ${snapshot.students.length} students`}
@@ -219,7 +219,7 @@ export default function LiveMonitorClient({ assessmentId }: { assessmentId: stri
             <StudentBoard students={snapshot.students} />
           </div>
         </div>
-      </main>
+      </div>
 
       {/* Alert all dialog */}
       <Dialog open={alertOpen} onOpenChange={setAlertOpen}>

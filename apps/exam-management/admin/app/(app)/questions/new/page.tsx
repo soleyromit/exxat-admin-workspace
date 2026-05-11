@@ -11,9 +11,9 @@ export default function AddQuestionPage() {
           { label: 'Add Question' },
         ]}
       />
-      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
+      <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
         <AddQuestionClient />
-      </main>
+      </div>
     </>
   )
 }

@@ -37,6 +37,7 @@ import { OverviewTab } from './tabs/overview-tab'
 import { AssessmentsTab } from './tabs/assessments-tab'
 import { StudentsTab } from './tabs/students-tab'
 import { AccommodationsTab } from './tabs/accommodations-tab'
+import { CreateAssessmentModal } from '@/components/create-assessment-modal'
 
 const ALL_ASSESSMENTS = [...mockAssessments, ...facultyExtraAssessments]
 
@@ -44,7 +45,9 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
   const router = useRouter()
   const { role, faculty, accessFor, hydrated } = useFacultySession()
   const { reviewByAssessment } = useAssessmentReviews()
-  const [activeTab, setActiveTab] = useState('overview')
+  // Default landing = the assessment list, per Aarti's May 7 directive.
+  // Curricular matrix moves to the secondary "Mapping" tab.
+  const [activeTab, setActiveTab] = useState('assessments')
 
   const course = useMemo(() => mockCourses.find(c => c.id === courseId), [courseId])
   const offerings = useMemo(
@@ -78,7 +81,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
     return (
       <>
         <SiteHeader title="Courses" />
-        <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col items-center justify-center text-center px-6 outline-none">
+        <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col items-center justify-center text-center px-6 outline-none">
           <i className="fa-light fa-circle-exclamation text-muted-foreground text-4xl mb-4" aria-hidden="true" />
           <h2 className="font-heading text-xl font-semibold text-foreground">Course not found</h2>
           <p className="text-sm text-muted-foreground mt-1">The course you&apos;re trying to open doesn&apos;t exist or you don&apos;t have access.</p>
@@ -86,7 +89,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
             <i className="fa-light fa-arrow-left" aria-hidden="true" />
             Back to courses
           </Button>
-        </main>
+        </div>
       </>
     )
   }
@@ -96,9 +99,9 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
     return (
       <>
         <SiteHeader title="Courses" breadcrumbs={[{ label: 'My courses', href: '/courses' }, { label: course.name }]} />
-        <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col items-center justify-center text-center px-6 outline-none">
-          <div className="flex size-14 items-center justify-center rounded-full mb-3 bg-destructive/12">
-            <i className="fa-light fa-lock text-destructive text-xl" aria-hidden="true" />
+        <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col items-center justify-center text-center px-6 outline-none">
+          <div className="flex size-14 items-center justify-center rounded-full mb-3 bg-muted">
+            <i className="fa-light fa-lock text-muted-foreground text-xl" aria-hidden="true" />
           </div>
           <h2 className="font-heading text-xl font-semibold text-foreground">
             You don&apos;t have access to this course
@@ -110,7 +113,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
             <i className="fa-light fa-arrow-left" aria-hidden="true" />
             Back to my courses
           </Button>
-        </main>
+        </div>
       </>
     )
   }
@@ -164,7 +167,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
   return (
     <>
       <SiteHeader title={course.name} breadcrumbs={breadcrumbs} />
-      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none overflow-hidden">
+      <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none overflow-hidden">
         <PageHeader
           title={course.name}
           subtitle={subtitle}
@@ -174,20 +177,15 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-1 flex-col overflow-hidden">
           <div className="px-6 border-b border-border shrink-0">
             <TabsList variant="line" className="gap-0">
-              <TabsTrigger value="overview" className="gap-2">
-                <i className="fa-light fa-grid-2 text-xs" aria-hidden="true" />
-                Overview
-              </TabsTrigger>
-              {/* Questions tab removed — per Vishaka: questions live in
-                  Question Bank only. Course detail = 4 sections (Overview,
-                  Assessments, Students, Accommodations). Two places to
-                  create questions = cognitive confusion. */}
+              {/* Assessments is the primary landing per Aarti (May 7).
+                  Faculty come to a course to manage their assessments;
+                  curriculum mapping is a secondary diagnostic. */}
               <TabsTrigger value="assessments" className="gap-2">
                 <i className="fa-light fa-clipboard-list text-xs" aria-hidden="true" />
                 Assessments
                 {(pendingReview > 0 || liveCount > 0) && (
-                  <span className={`inline-flex items-center justify-center rounded-full text-[9px] font-bold min-w-4 h-4 px-1 text-primary-foreground ${pendingReview > 0 ? 'bg-chart-4' : 'bg-chart-1'}`}>
-                    {pendingReview + liveCount}
+                  <span className="text-muted-foreground text-xs font-normal">
+                    {courseAssessments.length}
                   </span>
                 )}
               </TabsTrigger>
@@ -203,20 +201,18 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                   <span className="text-muted-foreground text-xs font-normal">{courseAccommodations.length}</span>
                 )}
               </TabsTrigger>
+              {/* Mapping with outcomes — secondary diagnostic surface.
+                  Houses the curricular matrix (objectives × assessments).
+                  Aarti: "Mapping with outcomes is good. But it is a
+                  secondary point of view." */}
+              <TabsTrigger value="mapping" className="gap-2">
+                <i className="fa-light fa-grid-2 text-xs" aria-hidden="true" />
+                Mapping
+              </TabsTrigger>
             </TabsList>
           </div>
 
           <div className="flex-1 overflow-auto p-6">
-            <TabsContent value="overview" className="m-0">
-              <OverviewTab
-                course={course}
-                students={courseStudents}
-                assessments={courseAssessments}
-                objectives={courseObjectivesList}
-                reviewByAssessment={reviewByAssessment}
-                onJumpToTab={setActiveTab}
-              />
-            </TabsContent>
             <TabsContent value="assessments" className="m-0">
               <AssessmentsTab
                 assessments={courseAssessments}
@@ -238,14 +234,25 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                 students={courseStudents}
               />
             </TabsContent>
+            <TabsContent value="mapping" className="m-0">
+              <OverviewTab
+                course={course}
+                students={courseStudents}
+                assessments={courseAssessments}
+                objectives={courseObjectivesList}
+                reviewByAssessment={reviewByAssessment}
+                onJumpToTab={setActiveTab}
+              />
+            </TabsContent>
           </div>
         </Tabs>
-      </main>
+      </div>
     </>
   )
 }
 
 function PrimaryAction({ isViewer, courseId }: { isViewer: boolean; courseId: string }) {
+  const [modalOpen, setModalOpen] = useState(false)
   if (isViewer) {
     return (
       <Tooltip>
@@ -260,11 +267,16 @@ function PrimaryAction({ isViewer, courseId }: { isViewer: boolean; courseId: st
     )
   }
   return (
-    <Button asChild size="sm" className="gap-2">
-      <Link href={`/assessment-builder?courseId=${courseId}`}>
+    <>
+      <Button size="sm" className="gap-2" onClick={() => setModalOpen(true)}>
         <i className="fa-light fa-plus" aria-hidden="true" />
         New assessment
-      </Link>
-    </Button>
+      </Button>
+      <CreateAssessmentModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        courseId={courseId}
+      />
+    </>
   )
 }

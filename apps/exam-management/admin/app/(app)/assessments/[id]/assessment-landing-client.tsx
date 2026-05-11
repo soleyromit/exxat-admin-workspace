@@ -174,7 +174,7 @@ export default function AssessmentLandingClient({ assessmentId }: { assessmentId
   return (
     <>
       <SiteHeader title={assessment.title} breadcrumbs={breadcrumbs} />
-      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none overflow-auto">
+      <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none overflow-auto">
         <PageHeader
           title={assessment.title}
           subtitle={`${course.name} · ${assessment.questionCount} questions · ${assessment.durationMinutes}-min window`}
@@ -312,7 +312,7 @@ export default function AssessmentLandingClient({ assessmentId }: { assessmentId
             />
           </section>
         </div>
-      </main>
+      </div>
 
       <SendToChairDialog
         open={sendOpen}

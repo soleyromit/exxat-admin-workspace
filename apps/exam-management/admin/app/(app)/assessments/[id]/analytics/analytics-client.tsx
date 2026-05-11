@@ -150,7 +150,7 @@ export default function AnalyticsClient({ assessmentId }: { assessmentId: string
   return (
     <>
       <SiteHeader title={`${assessment.title} — Analytics`} breadcrumbs={breadcrumbs} />
-      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none overflow-hidden">
+      <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none overflow-hidden">
         <PageHeader
           title={assessment.title}
           subtitle={`${course.name} · ${assessment.questionCount} questions · ${scoreDist.n} students submitted`}
@@ -208,7 +208,7 @@ export default function AnalyticsClient({ assessmentId }: { assessmentId: string
         </TabsContent>
           </div>
         </Tabs>
-      </main>
+      </div>
 
     </>
   )
