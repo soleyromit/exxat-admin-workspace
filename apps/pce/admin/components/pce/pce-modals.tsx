@@ -6,6 +6,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
   Button, Input, Label, Checkbox, Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Popover, PopoverTrigger, PopoverContent, Separator, Avatar, AvatarFallback,
+  Card, CardHeader, CardTitle, CardDescription, CardContent,
+  LocalBanner,
 } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
@@ -148,15 +150,9 @@ export function DeleteTemplateDialog({ open, onOpenChange, template }: DeleteTem
           </DialogDescription>
         </DialogHeader>
         {hasActiveSurveys && (
-          <div
-            className="rounded-lg px-4 py-3 text-sm flex items-start gap-2"
-            style={{ backgroundColor: 'var(--pce-impact-bg)', border: '1px solid var(--pce-impact-border)' }}
-          >
-            <i className="fa-light fa-triangle-exclamation mt-0.5 shrink-0 text-destructive" aria-hidden="true" />
-            <span className="text-foreground">
-              {template.usedBySurveyCount} {template.usedBySurveyCount === 1 ? 'survey uses' : 'surveys use'} this template.
-            </span>
-          </div>
+          <LocalBanner variant="warning" title="In use">
+            {template.usedBySurveyCount} {template.usedBySurveyCount === 1 ? 'survey uses' : 'surveys use'} this template.
+          </LocalBanner>
         )}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -437,6 +433,12 @@ export function ReleaseSheet({ open, onOpenChange, survey }: ReleaseSheetProps) 
   if (!survey) return null
 
   const response = MOCK_RESPONSES.find(r => r.surveyId === survey.id)
+  /* `response` represents a MOCK_RESPONSES entry with per-section averages.
+     Its presence !== survey has responses. survey.responseCount is the truth
+     on whether responses exist; section avgs only render if the mock supplies
+     them. */
+  const hasResponses = survey.responseCount > 0
+  const hasSectionAvgs = Boolean(response?.sectionScores?.length)
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -448,33 +450,51 @@ export function ReleaseSheet({ open, onOpenChange, survey }: ReleaseSheetProps) 
           </p>
         </SheetHeader>
 
-        <div className="flex flex-col gap-5 px-6 py-5 flex-1">
-          {/* Summary preview */}
-          <div className="rounded-lg border border-border p-4 flex flex-col gap-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Summary Preview
-            </p>
-            {response ? (
-              response.sectionScores.map(s => (
-                <div key={s.section} className="flex items-center justify-between">
-                  <span className="text-sm text-foreground">
-                    {s.section === 'course_content' ? 'Course Content' :
-                     s.section === 'faculty_performance' ? 'Faculty Performance' : 'Course Director'}
-                  </span>
-                  <span className="text-sm font-semibold tabular-nums">avg {s.avg}/5</span>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">No responses yet.</p>
-            )}
-            <Separator />
-            <ResponseGauge
-              rate={survey.responseRate}
-              responseCount={survey.responseCount}
-              enrollmentCount={survey.enrollmentCount}
-              showBar={false}
-            />
-          </div>
+        <div className="flex flex-col gap-5 px-6 py-5 flex-1 overflow-y-auto">
+          {/* Summary preview — Card slot composition (DS-adoption registry §Card) */}
+          <Card size="sm">
+            <CardHeader>
+              <CardDescription className="uppercase tracking-wide text-[11px]">
+                Summary Preview
+              </CardDescription>
+              <CardTitle className="text-base font-semibold">
+                {hasResponses
+                  ? `${survey.responseCount} of ${survey.enrollmentCount} responded (${survey.responseRate}%)`
+                  : 'No responses yet'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              {hasResponses && (
+                <ResponseGauge
+                  rate={survey.responseRate}
+                  responseCount={survey.responseCount}
+                  enrollmentCount={survey.enrollmentCount}
+                  showBar
+                />
+              )}
+              {hasSectionAvgs && (
+                <>
+                  <Separator />
+                  <div className="flex flex-col gap-1.5">
+                    {response!.sectionScores.map(s => (
+                      <div key={s.section} className="flex items-center justify-between">
+                        <span className="text-sm text-foreground">
+                          {s.section === 'course_content' ? 'Course Content' :
+                           s.section === 'faculty_performance' ? 'Faculty Performance' : 'Course Director'}
+                        </span>
+                        <span className="text-sm font-semibold tabular-nums">avg {s.avg}/5</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+              {hasResponses && !hasSectionAvgs && (
+                <p className="text-xs text-muted-foreground">
+                  Section-level averages render after the response window closes.
+                </p>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Instructor notice */}
           <div className="flex flex-col gap-2">
@@ -497,12 +517,15 @@ export function ReleaseSheet({ open, onOpenChange, survey }: ReleaseSheetProps) 
           </div>
         </div>
 
-        <SheetFooter className="px-6 py-4 border-t border-border flex gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">Cancel</Button>
+        {/* DS Sheet footer convention: ghost Cancel left, primary action right.
+            Not flex-1 on both — primary gets visual weight via solid variant. */}
+        <SheetFooter className="px-6 py-4 border-t border-border flex flex-row justify-end gap-2">
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
           <Button
             variant="default"
             onClick={() => { releaseSurvey(survey.id); onOpenChange(false) }}
-            className="flex-1"
           >
             Share with Faculty
           </Button>

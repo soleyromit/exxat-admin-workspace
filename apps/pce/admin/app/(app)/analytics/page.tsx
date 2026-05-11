@@ -5,12 +5,15 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Button, Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
   ToggleGroup, ToggleGroupItem,
   LocalBanner, Card, CardHeader, CardTitle, CardDescription, CardContent,
   Badge,
   SidebarTrigger, Separator,
 } from '@exxat/ds/packages/ui/src'
+import { DataTable } from '@/components/data-table'
+import type { ColumnDef } from '@/components/data-table/types'
+import { KeyMetrics } from '@/components/key-metrics'
+import type { MetricItem } from '@/components/key-metrics'
 import { usePce } from '@/components/pce/pce-state'
 import { TrendSparkline } from '@/components/pce/trend-sparkline'
 import { AiInsightCard } from '@/components/pce/ai-insight-card'
@@ -88,65 +91,6 @@ function ScoreLandscape({ courses, onDrill }: ScoreLandscapeProps) {
         })}
       </svg>
     </figure>
-  )
-}
-
-/* KpiButton — clickable headline card in the dashboard grid. Mirrors
-   prototype's KPI tiles (apps/pce/prototype/pce-evaluation.html ~line 2495).
-   Brand presence per DS-018: chevron uses --brand-color; hover uses --brand-tint. */
-interface KpiButtonProps {
-  label: string
-  value: string | number
-  meta: string
-  icon?: string
-  iconColor?: string
-  href?: string
-}
-function KpiButton({ label, value, meta, icon, iconColor, href }: KpiButtonProps) {
-  /* Composes DS Card slots (Header / Title / Description / Content) instead of
-     reinventing card chrome. Hover effect on the Card itself (not a wrapping
-     div) for cleaner focus / hover semantics. */
-  const Inner = (
-    <Card
-      size="sm"
-      className="h-full transition-colors hover:bg-[color-mix(in_oklch,var(--brand-tint)_30%,var(--background))]"
-    >
-      <CardHeader>
-        <CardDescription className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide">
-          {icon && (
-            <i
-              className={`fa-light ${icon}`}
-              aria-hidden="true"
-              style={iconColor ? { color: iconColor } : undefined}
-            />
-          )}
-          {label}
-        </CardDescription>
-        <CardTitle className="text-2xl font-semibold tabular-nums leading-none">
-          {value}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex items-center justify-between gap-2 mt-auto">
-        <span className="text-xs text-muted-foreground truncate">{meta}</span>
-        {href && (
-          <i
-            className="fa-light fa-arrow-right text-xs shrink-0"
-            style={{ color: 'var(--brand-color)' }}
-            aria-hidden="true"
-          />
-        )}
-      </CardContent>
-    </Card>
-  )
-  if (!href) return Inner
-  return (
-    <Link
-      href={href}
-      className="block rounded-xl focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
-      aria-label={`${label}: ${value} — ${meta}`}
-    >
-      {Inner}
-    </Link>
   )
 }
 
@@ -261,6 +205,56 @@ export default function AnalyticsPage() {
     ? Math.round((reflectedCount / releasedSurveys.length) * 100)
     : 0
 
+  /*
+    KPI strip — fed to canonical KeyMetrics (vendored 2026-05-11 from
+    exxat-ds/apps/web/components/key-metrics.tsx per audit at
+    docs/governance/component-depth-audits/key-metrics.md).
+
+    Trend semantics: all four KPIs render as `neutral` because they describe
+    *state*, not period-over-period change (no historical anchor for "vs last
+    week"). Neutral renders a muted minus chip; the descriptive context lives
+    in `delta`. Per memory feedback_aarti_no_red.md, we avoid `trend: "down"`
+    here (would render --destructive red) even on at-risk count > 0 — the
+    at-risk panel below already carries the colour signal.
+
+    The `delta` string carries the descriptor that was previously the
+    KpiButton `meta` prop. Each KPI deep-links via `href` to the relevant
+    drill surface (same routes as before).
+  */
+  const kpiMetrics: MetricItem[] = [
+    {
+      id: 'program-avg',
+      label: 'Program avg',
+      value: programAvg ? `${programAvg.toFixed(2)}/5` : '—',
+      delta: `${releasedSurveys.length} of ${scopedSurveys.length} released`,
+      trend: 'neutral',
+      href: '#score-landscape',
+    },
+    {
+      id: 'at-risk',
+      label: 'At-risk courses',
+      value: atRiskCourses.length,
+      delta: 'Released, below 3.7',
+      trend: 'neutral',
+      href: '#at-risk',
+    },
+    {
+      id: 'pending-review',
+      label: 'Pending review',
+      value: pendingReviewCount,
+      delta: 'Awaiting moderation',
+      trend: 'neutral',
+      href: '/surveys',
+    },
+    {
+      id: 'reflection-rate',
+      label: 'Reflection rate',
+      value: `${reflectionRate}%`,
+      delta: `${reflectedCount} of ${releasedSurveys.length} faculty`,
+      trend: 'neutral',
+    },
+  ]
+
   /* Program trend — last 4 terms hardcoded as historical baseline; current is programAvg */
   const programTrendHistory: { label: string; value: number }[] = [
     { label: 'Sp 24', value: 3.95 },
@@ -269,14 +263,135 @@ export default function AnalyticsPage() {
     { label: 'Fa 25', value: 4.05 },
   ]
 
-  // Per-course breakdown
+  /* Per-course breakdown — flattened so canonical DataTable's sortKey can index
+     real properties on the row. Section averages, instructor name, etc. are
+     precomputed here so `sortable: true` works without custom accessors. */
   const courseBreakdown = scopedSurveys.map(survey => {
     const resp = MOCK_RESPONSES.find(r => r.surveyId === survey.id)
+    const scores = resp?.sectionScores ?? []
     return {
+      id: survey.id,
       survey,
-      scores: resp?.sectionScores ?? [],
+      scores,
+      courseCode: survey.courseCode,
+      instructorName: survey.instructors.find(i => i.role === 'primary')?.name ?? '',
+      courseType: survey.courseType ?? '',
+      rate: survey.responseRate,
+      ccAvg: scores.find(s => s.section === 'course_content')?.avg ?? null,
+      fpAvg: scores.find(s => s.section === 'faculty_performance')?.avg ?? null,
+      cdAvg: scores.find(s => s.section === 'course_director')?.avg ?? null,
+      isReleased: survey.status === 'released' || survey.status === 'closed',
     }
   })
+
+  type CourseRow = typeof courseBreakdown[number]
+
+  /* Canonical DataTable ColumnDef — sort uses sortKey to index TData; cell
+     handles alignment via className since canonical doesn't expose `align`. */
+  const courseColumns: ColumnDef<CourseRow>[] = [
+    {
+      key: 'courseCode',
+      label: 'Course',
+      sortable: true,
+      cell: (row) => (
+        <div className="flex flex-col gap-0.5">
+          <span className="text-sm font-medium">{row.survey.courseCode}</span>
+          <span className="text-xs truncate max-w-32 text-muted-foreground">
+            {row.survey.courseName}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'instructorName',
+      label: 'Instructor',
+      sortable: true,
+      cell: (row) => (
+        <span className="text-sm font-medium">{row.instructorName || '—'}</span>
+      ),
+    },
+    {
+      key: 'courseType',
+      label: 'Type',
+      sortable: true,
+      cell: (row) => row.courseType ? (
+        <span className="text-xs capitalize text-muted-foreground">{row.courseType}</span>
+      ) : (
+        <span className="text-muted-foreground">—</span>
+      ),
+    },
+    {
+      key: 'rate',
+      label: 'Rate',
+      sortable: true,
+      header: () => <span className="block text-right">Rate</span>,
+      cell: (row) => (
+        <div className="text-right tabular-nums text-sm font-semibold">{row.rate}%</div>
+      ),
+    },
+    {
+      key: 'ccAvg',
+      label: 'CC',
+      sortable: true,
+      header: () => <span className="block text-right">CC</span>,
+      cell: (row) => row.ccAvg != null
+        ? <div className="text-right tabular-nums text-sm font-semibold">{row.ccAvg}</div>
+        : <div className="text-right text-muted-foreground">—</div>,
+    },
+    {
+      key: 'fpAvg',
+      label: 'FP',
+      sortable: true,
+      header: () => <span className="block text-right">FP</span>,
+      cell: (row) => row.fpAvg != null
+        ? <div className="text-right tabular-nums text-sm font-semibold">{row.fpAvg}</div>
+        : <div className="text-right text-muted-foreground">—</div>,
+    },
+    {
+      key: 'cdAvg',
+      label: 'CD',
+      sortable: true,
+      header: () => <span className="block text-right">CD</span>,
+      cell: (row) => row.cdAvg != null
+        ? <div className="text-right tabular-nums text-sm font-semibold">{row.cdAvg}</div>
+        : <div className="text-right text-muted-foreground">—</div>,
+    },
+    {
+      key: 'trend',
+      label: 'Trend',
+      cell: (row) => {
+        const history = (row.survey.priorOfferings ?? []).map(po => ({
+          label: po.term,
+          value: po.courseAvg,
+        }))
+        return (
+          <TrendSparkline
+            history={history}
+            currentValue={row.ccAvg ?? undefined}
+            currentLabel={row.survey.term}
+          />
+        )
+      },
+    },
+    {
+      key: 'drill',
+      label: '',
+      width: 32,
+      cell: (row) => row.isReleased ? (
+        <div className="text-center">
+          <i className="fa-light fa-chevron-right text-muted-foreground text-xs" aria-hidden="true" />
+        </div>
+      ) : (
+        /* WCAG fix 2026-05-11: aria-label on bare <i> is aria-prohibited-attr.
+           Wrap in role="img" span; mark icon aria-hidden. (visual-review caught.) */
+        <div className="text-center">
+          <span role="img" aria-label="Results pending" className="inline-block">
+            <i className="fa-light fa-lock-keyhole text-muted-foreground text-xs" aria-hidden="true" />
+          </span>
+        </div>
+      ),
+    },
+  ]
 
   const hasData = scopedSurveys.length > 0
   const scopeLabel = axis === 'term' ? term : cohort
@@ -348,7 +463,7 @@ export default function AnalyticsPage() {
         </Button>
       </header>
 
-      <main className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
+      <div className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
         {!hasData ? (
           <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
             <i className="fa-light fa-chart-mixed text-muted-foreground text-4xl" aria-hidden="true" />
@@ -410,44 +525,20 @@ export default function AnalyticsPage() {
             />
 
             {/*
-              KPI grid — 4 headline tiles, each clickable to drill in. Pattern lifted from
-              apps/pce/prototype/pce-evaluation.html PD dashboard (~line 2495). Per Aarti's
-              drone-view-then-click-down directive (2026-05-08 Granola): each tile answers a
-              specific dashboard question and routes to a deeper surface.
-
-              Brand presence per DS-018: hover bg uses --brand-tint, chevron uses --brand-color.
+              KPI strip — canonical KeyMetrics organism (vendored from Admin DS,
+              2026-05-11). Replaces 4× hand-rolled KpiButton tiles per audit at
+              docs/governance/component-depth-audits/key-metrics.md.
+              Each metric drills via its `href` — same routes as before.
+              `metricsSingleRow` + `showHeader={false}` for an integrated 4-up
+              strip; canonical handles a11y (trend `aria-label`, focus rings,
+              ≥4.5:1 contrast).
             */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <KpiButton
-                label="Program avg"
-                value={programAvg ? `${programAvg.toFixed(2)}/5` : '—'}
-                meta={`${releasedSurveys.length} of ${scopedSurveys.length} courses released`}
-                href="#score-landscape"
-              />
-              <KpiButton
-                label="At-risk courses"
-                value={atRiskCourses.length}
-                meta="Released, below 3.7 avg"
-                icon="fa-triangle-exclamation"
-                iconColor={atRiskCourses.length > 0 ? 'var(--chart-4)' : 'var(--muted-foreground)'}
-                href="#at-risk"
-              />
-              <KpiButton
-                label="Pending review"
-                value={pendingReviewCount}
-                meta="Surveys awaiting moderation"
-                icon="fa-shield-halved"
-                iconColor="var(--brand-color)"
-                href="/surveys"
-              />
-              <KpiButton
-                label="Reflection rate"
-                value={`${reflectionRate}%`}
-                meta={`${reflectedCount} of ${releasedSurveys.length} faculty`}
-                icon="fa-comment-dots"
-                iconColor="var(--brand-color)"
-              />
-            </div>
+            <KeyMetrics
+              variant="card"
+              showHeader={false}
+              metricsSingleRow
+              metrics={kpiMetrics}
+            />
 
             {/*
               Score Landscape + Program Trend — paired analytics cards per prototype PD dashboard.
@@ -568,135 +659,37 @@ export default function AnalyticsPage() {
               )}
             </Card>
 
-            {/* By course table — faculty as a column (one click down per Aarti D5).
-                Per 2026-05-08 Granola: drill-down chain is AI summary →
-                question-level → individual offering. Each row navigates to the
-                offering detail at /my-surveys/[id]/results. */}
+            {/*
+              By Course — sortable DataTable composite (apps/pce/admin/components/data-table/).
+              Subset of the reference at exxat-ds/apps/web/components/data-table/index.tsx —
+              covers column-def-driven rendering + sortable headers + row drill-down +
+              disabled-row state. Per Aarti D5: each row drills to /my-surveys/[id]/results.
+              Disabled when survey not released (mirrors /my-surveys/page.tsx gate).
+            */}
             <div className="flex flex-col gap-3">
               <h2 className="text-sm font-semibold">By Course</h2>
               <p className="text-xs text-muted-foreground">
-                Click any released row to drill into question-level detail. Rows showing a lock icon are still collecting and aren't viewable yet.
+                Click any column header to sort. Click any released row to drill into question-level detail. Rows showing a lock icon are still collecting.
               </p>
               <div className="border border-border rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Course</TableHead>
-                      <TableHead>Instructor</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Rate</TableHead>
-                      <TableHead>CC</TableHead>
-                      <TableHead>FP</TableHead>
-                      <TableHead>CD</TableHead>
-                      <TableHead>Trend</TableHead>
-                      <TableHead className="w-8" aria-label="Drill in" />
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {courseBreakdown.map(({ survey, scores }) => {
-                      const cc = scores.find(s => s.section === 'course_content')
-                      const fp = scores.find(s => s.section === 'faculty_performance')
-                      const cd = scores.find(s => s.section === 'course_director')
-                      const primary = survey.instructors.find(i => i.role === 'primary')
-                      // Trend history (per audit C7) — prior course-content avgs + current.
-                      const history = (survey.priorOfferings ?? []).map(po => ({
-                        label: po.term,
-                        value: po.courseAvg,
-                      }))
-                      // Drill-down gate (DS-019 / blind-spot #1, fixed 2026-05-10):
-                      // /my-surveys/[id]/results renders a locked empty state when survey
-                      // is not released. Only enable click-through when results are
-                      // actually viewable. Mirror the gate /my-surveys/page.tsx uses.
-                      const isReleased = survey.status === 'released' || survey.status === 'closed'
-                      const drilldownHref = isReleased
-                        ? `/my-surveys/${survey.id}/results`
-                        : null
-                      return (
-                        <TableRow
-                          key={survey.id}
-                          tabIndex={drilldownHref ? 0 : -1}
-                          role={drilldownHref ? 'link' : undefined}
-                          aria-label={
-                            drilldownHref
-                              ? `Drill into ${survey.courseCode} ${survey.courseName}`
-                              : `${survey.courseCode} ${survey.courseName} — results not yet released`
-                          }
-                          aria-disabled={!drilldownHref || undefined}
-                          onClick={drilldownHref ? () => router.push(drilldownHref) : undefined}
-                          onKeyDown={drilldownHref ? (e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault()
-                              router.push(drilldownHref)
-                            }
-                          } : undefined}
-                          className={
-                            drilldownHref
-                              ? 'cursor-pointer hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-inset'
-                              : 'opacity-60'
-                          }
-                        >
-                          <TableCell>
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-sm font-medium">{survey.courseCode}</span>
-                              <span className="text-xs truncate max-w-32 text-muted-foreground">
-                                {survey.courseName}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell><span className="text-sm font-medium">{primary?.name ?? '—'}</span></TableCell>
-                          <TableCell>
-                            {survey.courseType ? (
-                              <span className="text-xs capitalize text-muted-foreground">{survey.courseType}</span>
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <span className="tabular-nums text-sm font-semibold">{survey.responseRate}%</span>
-                          </TableCell>
-                          <TableCell>
-                            {cc ? <span className="tabular-nums text-sm font-semibold">{cc.avg}</span> : <span className="text-muted-foreground">—</span>}
-                          </TableCell>
-                          <TableCell>
-                            {fp ? <span className="tabular-nums text-sm font-semibold">{fp.avg}</span> : <span className="text-muted-foreground">—</span>}
-                          </TableCell>
-                          <TableCell>
-                            {cd ? <span className="tabular-nums text-sm font-semibold">{cd.avg}</span> : <span className="text-muted-foreground">—</span>}
-                          </TableCell>
-                          <TableCell>
-                            <TrendSparkline
-                              history={history}
-                              currentValue={cc?.avg}
-                              currentLabel={survey.term}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            {drilldownHref ? (
-                              <i
-                                className="fa-light fa-chevron-right text-muted-foreground"
-                                aria-hidden="true"
-                                style={{ fontSize: 11 }}
-                              />
-                            ) : (
-                              <i
-                                className="fa-light fa-lock-keyhole text-muted-foreground"
-                                aria-hidden="true"
-                                style={{ fontSize: 11 }}
-                                aria-label="Results pending"
-                              />
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
+                <DataTable<CourseRow>
+                  data={courseBreakdown}
+                  columns={courseColumns}
+                  getRowId={(row) => row.id}
+                  selectable={false}
+                  searchable={false}
+                  onRowClick={(row) => {
+                    if (row.isReleased) {
+                      router.push(`/my-surveys/${row.survey.id}/results`)
+                    }
+                  }}
+                />
               </div>
             </div>
 
           </div>
         )}
-      </main>
+      </div>
     </>
   )
 }

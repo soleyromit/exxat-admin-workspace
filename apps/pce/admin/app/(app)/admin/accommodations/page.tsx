@@ -20,19 +20,20 @@
  * Student Services documentation, not LMS data.
  */
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import {
-  Button, Input, InputGroup, InputGroupAddon,
-  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+  Button, Input,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
-  Field, FieldLabel, FieldGroup, FieldDescription,
+  Field, FieldLabel, FieldGroup, FieldDescription, FieldError,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  Badge,
+  Badge, LocalBanner,
   SidebarTrigger, Separator,
 } from '@exxat/ds/packages/ui/src'
 import { MOCK_ACCOMMODATIONS, type MasterAccommodation } from '@/lib/pce-mock-data'
+import { DataTable } from '@/components/data-table'
+import type { ColumnDef } from '@/components/data-table/types'
+import { RowActions } from '@/components/data-table/row-actions'
 
 const CATEGORIES: Array<MasterAccommodation['category']> = ['time', 'environment', 'assistive-tech', 'format', 'breaks', 'other']
 const CATEGORY_LABELS: Record<MasterAccommodation['category'], string> = {
@@ -44,35 +45,71 @@ const CATEGORY_LABELS: Record<MasterAccommodation['category'], string> = {
   other:            'Other',
 }
 
+/* Flat row — sortable scalars hoisted onto row so DataTable sortKey works. */
+interface AccommodationRow extends Record<string, unknown> {
+  id: string
+  code: string
+  name: string
+  category: MasterAccommodation['category']
+  categoryLabel: string
+  description: string
+  isCustom: boolean
+  typeLabel: string
+  status: MasterAccommodation['status']
+  raw: MasterAccommodation
+}
+
 export default function AccommodationsPage() {
   const [rows, setRows] = useState<MasterAccommodation[]>(MOCK_ACCOMMODATIONS)
-  const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [showCustomOnly, setShowCustomOnly] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const [draft, setDraft] = useState<{ code: string; name: string; description: string; category: MasterAccommodation['category'] }>({
     code: '', name: '', description: '', category: 'time',
   })
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const filtered = useMemo(() => {
-    return rows.filter(r => {
-      if (categoryFilter !== 'all' && r.category !== categoryFilter) return false
-      if (showCustomOnly && !r.isCustom) return false
-      const q = search.trim().toLowerCase()
-      if (!q) return true
-      return (
-        r.code.toLowerCase().includes(q) ||
-        r.name.toLowerCase().includes(q) ||
-        r.description.toLowerCase().includes(q)
-      )
-    })
-  }, [rows, search, categoryFilter, showCustomOnly])
+  // External hard-filters (category, custom-only). Built-in DataTable search
+  // handles free-text. We pre-filter rows before passing to DataTable.
+  const filteredRows = rows.filter(r => {
+    if (categoryFilter !== 'all' && r.category !== categoryFilter) return false
+    if (showCustomOnly && !r.isCustom) return false
+    return true
+  })
 
   const standardCount = rows.filter(r => !r.isCustom && r.status === 'active').length
   const customCount = rows.filter(r => r.isCustom && r.status === 'active').length
 
+  const tableRows: AccommodationRow[] = filteredRows.map(r => ({
+    id: r.id,
+    code: r.code,
+    name: r.name,
+    category: r.category,
+    categoryLabel: CATEGORY_LABELS[r.category],
+    description: r.description,
+    isCustom: r.isCustom,
+    typeLabel: r.isCustom ? 'Custom' : 'Standard',
+    status: r.status,
+    raw: r,
+  }))
+
+  function validate(): Record<string, string> {
+    const next: Record<string, string> = {}
+    const trimmedCode = draft.code.trim().toUpperCase()
+    if (!trimmedCode) next.code = 'Code is required.'
+    else if (!/^[A-Z0-9]{2,6}$/.test(trimmedCode)) {
+      next.code = 'Use 2-6 letters or numbers (e.g., CST or A11Y).'
+    } else if (rows.some(r => r.code.toUpperCase() === trimmedCode)) {
+      next.code = 'An accommodation with this code already exists.'
+    }
+    if (!draft.name.trim()) next.name = 'Name is required.'
+    return next
+  }
+
   function handleSave() {
-    if (!draft.code.trim() || !draft.name.trim()) return
+    const next = validate()
+    setErrors(next)
+    if (Object.keys(next).length > 0) return
     const newRow: MasterAccommodation = {
       id: `ac${Date.now()}`,
       code: draft.code.trim().toUpperCase(),
@@ -84,12 +121,94 @@ export default function AccommodationsPage() {
     }
     setRows([newRow, ...rows])
     setDraft({ code: '', name: '', description: '', category: 'time' })
+    setErrors({})
     setAddOpen(false)
+  }
+
+  function handleAddOpenChange(open: boolean) {
+    setAddOpen(open)
+    if (!open) setErrors({})
   }
 
   function handleArchive(id: string) {
     setRows(rows.map(r => r.id === id ? { ...r, status: r.status === 'active' ? 'archived' : 'active' } : r))
   }
+
+  const columns: ColumnDef<AccommodationRow>[] = [
+    {
+      key: 'code',
+      label: 'Code',
+      sortable: true,
+      width: 100,
+      cell: (row) => <span className="font-mono text-xs font-semibold">{row.code}</span>,
+    },
+    {
+      key: 'name',
+      label: 'Name',
+      sortable: true,
+      width: 220,
+      cell: (row) => <span className="text-sm font-medium">{row.name}</span>,
+    },
+    {
+      key: 'categoryLabel',
+      label: 'Category',
+      sortable: true,
+      width: 160,
+      cell: (row) => <span className="text-xs text-muted-foreground capitalize">{row.categoryLabel}</span>,
+    },
+    {
+      key: 'description',
+      label: 'Description',
+      sortable: true,
+      cell: (row) => <span className="text-xs text-muted-foreground truncate max-w-md block">{row.description}</span>,
+    },
+    {
+      key: 'typeLabel',
+      label: 'Type',
+      sortable: true,
+      width: 110,
+      cell: (row) => (
+        <Badge variant={row.isCustom ? 'secondary' : 'outline'} className="text-[10px]">
+          {row.typeLabel}
+        </Badge>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      sortable: true,
+      width: 110,
+      cell: (row) => (
+        <Badge variant={row.status === 'active' ? 'secondary' : 'outline'} className="capitalize">
+          {row.status}
+        </Badge>
+      ),
+    },
+    {
+      key: 'actions',
+      label: '',
+      width: 44,
+      cell: (row) => (
+        <RowActions
+          row={row.raw}
+          label={row.raw.name}
+          actions={[
+            { label: 'Edit',                   icon: 'fa-pen',           disabled: !row.raw.isCustom },
+            { label: 'View students assigned', icon: 'fa-users'         },
+            {
+              label: row.raw.status === 'active' ? 'Archive' : 'Reactivate',
+              icon: 'fa-box-archive',
+              variant: 'destructive',
+              divider: true,
+              onClick: () => handleArchive(row.raw.id),
+            },
+          ]}
+        />
+      ),
+    },
+  ]
+
+  const hasFilters = categoryFilter !== 'all' || showCustomOnly
 
   return (
     <>
@@ -98,11 +217,11 @@ export default function AccommodationsPage() {
         <Separator orientation="vertical" className="h-4" />
         <Link href="/admin" className="text-sm text-muted-foreground">Admin</Link>
         <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
-        <span className="text-sm font-semibold flex-1 truncate">Accommodations</span>
+        <h1 className="text-sm font-semibold flex-1 truncate">Accommodations</h1>
         <Badge variant="outline" className="text-[10px]">Cross-product · ADR-006</Badge>
       </header>
 
-      <main className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
+      <div className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
         <div className="max-w-5xl flex flex-col gap-4">
 
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
@@ -114,20 +233,9 @@ export default function AccommodationsPage() {
             </Link>
           </div>
 
-          {/* Toolbar */}
+          {/* External hard-filters live outside the table; DataTable's
+              built-in search/properties toolbar renders below. */}
           <div className="flex items-center gap-2 flex-wrap">
-            <InputGroup className="flex-1 max-w-sm min-w-[180px]">
-              <Input
-                placeholder="Search by code, name, or description…"
-                aria-label="Search accommodations"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-              <InputGroupAddon align="inline-end">
-                <i className="fa-light fa-magnifying-glass text-muted-foreground" aria-hidden="true" />
-              </InputGroupAddon>
-            </InputGroup>
-
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className="h-8 w-44 text-sm" aria-label="Filter by category">
                 <SelectValue />
@@ -148,92 +256,35 @@ export default function AccommodationsPage() {
               Custom only
             </Button>
 
+            <div className="flex-1" />
+
             <Button variant="default" onClick={() => setAddOpen(true)}>
               <i className="fa-light fa-plus" aria-hidden="true" />
               Add custom
             </Button>
           </div>
 
-          {/* Table */}
-          <div className="border border-border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7}>
-                      <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
-                        <p className="text-sm font-medium">
-                          {search || categoryFilter !== 'all' || showCustomOnly
-                            ? 'No accommodations match these filters'
-                            : 'No accommodations yet'}
-                        </p>
-                        {!search && categoryFilter === 'all' && !showCustomOnly && (
-                          <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
-                            <i className="fa-light fa-plus" aria-hidden="true" />
-                            Add your first custom accommodation
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filtered.map(row => (
-                    <TableRow key={row.id}>
-                      <TableCell><span className="font-mono text-xs font-semibold">{row.code}</span></TableCell>
-                      <TableCell><span className="text-sm font-medium">{row.name}</span></TableCell>
-                      <TableCell><span className="text-xs text-muted-foreground capitalize">{CATEGORY_LABELS[row.category]}</span></TableCell>
-                      <TableCell><span className="text-xs text-muted-foreground truncate max-w-md block">{row.description}</span></TableCell>
-                      <TableCell>
-                        <Badge variant={row.isCustom ? 'secondary' : 'outline'} className="text-[10px]">
-                          {row.isCustom ? 'Custom' : 'Standard'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={row.status === 'active' ? 'secondary' : 'outline'} className="capitalize">
-                          {row.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${row.name}`}>
-                              <i className="fa-regular fa-ellipsis" aria-hidden="true" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-44">
-                            <DropdownMenuItem disabled={!row.isCustom}>
-                              <i className="fa-light fa-pen" aria-hidden="true" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <i className="fa-light fa-users" aria-hidden="true" />
-                              View students assigned
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem variant="destructive" onClick={() => handleArchive(row.id)}>
-                              <i className="fa-light fa-box-archive" aria-hidden="true" />
-                              {row.status === 'active' ? 'Archive' : 'Reactivate'}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          {tableRows.length === 0 ? (
+            <div className="border border-border rounded-lg flex flex-col items-center justify-center gap-2 py-10 text-center">
+              <p className="text-sm font-medium">
+                {hasFilters ? 'No accommodations match these filters' : 'No accommodations yet'}
+              </p>
+              {!hasFilters && (
+                <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
+                  <i className="fa-light fa-plus" aria-hidden="true" />
+                  Add your first custom accommodation
+                </Button>
+              )}
+            </div>
+          ) : (
+            <DataTable<AccommodationRow>
+              data={tableRows}
+              columns={columns}
+              getRowId={(row) => row.id}
+              selectable
+              searchable
+            />
+          )}
 
           <p className="text-xs text-muted-foreground">
             <i className="fa-light fa-circle-info text-xs me-1" aria-hidden="true" />
@@ -241,17 +292,23 @@ export default function AccommodationsPage() {
           </p>
 
         </div>
-      </main>
+      </div>
 
       {/* Add custom accommodation dialog */}
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+      <Dialog open={addOpen} onOpenChange={handleAddOpenChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add custom accommodation</DialogTitle>
             <DialogDescription>
-              Custom accommodations are school-defined and only available to your program. Standards (e.g., +10% time, Reader) ship with the catalog and can't be edited.
+              Custom accommodations are school-defined and only available to your program. Standards (e.g., +10% time, Reader) ship with the catalog and can&apos;t be edited.
             </DialogDescription>
           </DialogHeader>
+
+          {Object.keys(errors).length > 1 && (
+            <LocalBanner variant="error" title="Fix the following before saving">
+              {Object.keys(errors).length} fields need attention.
+            </LocalBanner>
+          )}
 
           <FieldGroup>
             <div className="grid grid-cols-3 gap-3">
@@ -264,8 +321,14 @@ export default function AccommodationsPage() {
                   onChange={e => setDraft({ ...draft, code: e.target.value })}
                   aria-required="true"
                   maxLength={6}
+                  aria-invalid={!!errors.code}
+                  aria-describedby={errors.code ? 'ac-code-error' : 'ac-code-desc'}
                 />
-                <FieldDescription>2-6 chars; shown as a badge on rosters.</FieldDescription>
+                {errors.code ? (
+                  <FieldError id="ac-code-error">{errors.code}</FieldError>
+                ) : (
+                  <FieldDescription id="ac-code-desc">2-6 chars; shown as a badge on rosters. Must be unique.</FieldDescription>
+                )}
               </Field>
               <Field orientation="vertical" className="col-span-2">
                 <FieldLabel htmlFor="ac-name">Name *</FieldLabel>
@@ -275,7 +338,10 @@ export default function AccommodationsPage() {
                   value={draft.name}
                   onChange={e => setDraft({ ...draft, name: e.target.value })}
                   aria-required="true"
+                  aria-invalid={!!errors.name}
+                  aria-describedby={errors.name ? 'ac-name-error' : undefined}
                 />
+                {errors.name && <FieldError id="ac-name-error">{errors.name}</FieldError>}
               </Field>
             </div>
 
@@ -310,11 +376,7 @@ export default function AccommodationsPage() {
             <DialogClose asChild>
               <Button variant="outline">Cancel</Button>
             </DialogClose>
-            <Button
-              variant="default"
-              onClick={handleSave}
-              disabled={!draft.code.trim() || !draft.name.trim()}
-            >
+            <Button variant="default" onClick={handleSave}>
               Add custom accommodation
             </Button>
           </DialogFooter>
@@ -323,3 +385,4 @@ export default function AccommodationsPage() {
     </>
   )
 }
+

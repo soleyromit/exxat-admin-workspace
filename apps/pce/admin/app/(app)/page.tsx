@@ -21,6 +21,7 @@
 import Link from 'next/link'
 import {
   SidebarTrigger, Separator,
+  Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent,
 } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
 
@@ -33,21 +34,40 @@ interface FolderCardProps {
   status?: 'available' | 'coming-soon'
 }
 
+/* DS Card slot composition (replaces hand-rolled <article> + raw divs).
+ * Per card.md depth audit: this was one of 3 named Card-substitutes the
+ * audit regex couldn't catch. Migration to slots aligns visual treatment
+ * with the rest of the workspace. */
 function FolderCard({ href, icon, title, description, metric, status = 'available' }: FolderCardProps) {
   const isComingSoon = status === 'coming-soon'
 
-  const inner = (
-    <article
+  /* WCAG fix 2026-05-11: opacity-60 on the whole Card dropped muted-foreground
+     descendants to 2.57:1 (visual-review caught). Disabled state now uses
+     aria-disabled + bg-muted/30 + cursor-not-allowed without descendant opacity
+     so all text remains 4.5:1+. The "Coming soon" label conveys disabled state. */
+  const cardInner = (
+    <Card
+      aria-disabled={isComingSoon || undefined}
       className={
-        'group relative flex flex-col gap-3 rounded-lg border border-border bg-background p-5 transition-colors ' +
+        'group relative h-full transition-colors ' +
         (isComingSoon
-          ? 'cursor-not-allowed opacity-60'
-          : 'hover:bg-muted hover:border-border-control-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring')
+          ? 'cursor-not-allowed bg-muted/30'
+          : 'hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring')
       }
     >
-      <div className="flex items-start justify-between gap-3">
+      <CardHeader>
+        <CardAction>
+          {isComingSoon ? (
+            <span className="text-xs text-muted-foreground">Coming soon</span>
+          ) : (
+            <i
+              className="fa-light fa-arrow-right text-xs text-muted-foreground transition-opacity opacity-0 group-hover:opacity-100"
+              aria-hidden="true"
+            />
+          )}
+        </CardAction>
         <div
-          className="flex items-center justify-center w-10 h-10 rounded-md"
+          className="flex items-center justify-center w-10 h-10 rounded-md mb-2"
           style={{
             backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
           }}
@@ -58,34 +78,24 @@ function FolderCard({ href, icon, title, description, metric, status = 'availabl
             aria-hidden="true"
           />
         </div>
-        {isComingSoon ? (
-          <span className="text-xs text-muted-foreground">Coming soon</span>
-        ) : (
-          <i
-            className="fa-light fa-arrow-right text-xs text-muted-foreground transition-opacity opacity-0 group-hover:opacity-100"
-            aria-hidden="true"
-          />
-        )}
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <h2 className="text-base font-semibold">{title}</h2>
-        <p className="text-sm text-muted-foreground">{description}</p>
-      </div>
-
+        <CardTitle className="text-base font-semibold">{title}</CardTitle>
+        <CardDescription className="text-sm">{description}</CardDescription>
+      </CardHeader>
       {metric && (
-        <p className="text-xs text-muted-foreground tabular-nums mt-auto">
-          {metric.count} {metric.label}{metric.count === 1 ? '' : 's'}
-        </p>
+        <CardContent>
+          <p className="text-xs text-muted-foreground tabular-nums">
+            {metric.count} {metric.label}{metric.count === 1 ? '' : 's'}
+          </p>
+        </CardContent>
       )}
-    </article>
+    </Card>
   )
 
-  if (isComingSoon) return inner
+  if (isComingSoon) return cardInner
 
   return (
-    <Link href={href} className="block" aria-label={`${title}: ${description}`}>
-      {inner}
+    <Link href={href} className="block h-full" aria-label={`${title}: ${description}`}>
+      {cardInner}
     </Link>
   )
 }
@@ -108,7 +118,7 @@ export default function ModuleHomePage() {
         </h1>
       </header>
 
-      <main className="flex-1 overflow-auto" style={{ padding: '28px 28px 28px' }}>
+      <div className="flex-1 overflow-auto" style={{ padding: '28px 28px 28px' }}>
         <div className="max-w-3xl flex flex-col gap-6">
           <p className="text-sm text-muted-foreground">
             Choose a folder to author, distribute, and analyze evaluations.
@@ -137,7 +147,7 @@ export default function ModuleHomePage() {
             />
           </div>
         </div>
-      </main>
+      </div>
     </>
   )
 }

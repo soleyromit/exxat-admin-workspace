@@ -1,9 +1,9 @@
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
-  Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+  Button,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   SidebarTrigger, Separator, Skeleton,
 } from '@exxat/ds/packages/ui/src'
@@ -11,10 +11,34 @@ import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { ResponseGauge } from '@/components/pce/response-gauge'
 import { MOCK_TERMS } from '@/lib/pce-mock-data'
-import { useState } from 'react'
+import type { PceSurvey, SurveyStatus } from '@/lib/pce-mock-data'
+import { DataTable } from '@/components/data-table'
+import type { ColumnDef } from '@/components/data-table/types'
 import Link from 'next/link'
 
 const FACULTY_ID = 'f1'
+
+/* Group buckets for faculty's own surveys. Aarti's 2026-05-08 directive: active
+   bubbles up, results next, past surveys at the bottom. We collapse open/active
+   into 'collecting' for grouping purposes. */
+const GROUP_ORDER: SurveyStatus[] = ['collecting', 'active', 'released', 'closed', 'pending_review', 'draft']
+const GROUP_LABELS: Record<SurveyStatus, string> = {
+  pending_review: 'Pending review',
+  collecting:     'Collecting',
+  active:         'Active',
+  draft:          'Draft',
+  released:       'Results',
+  closed:         'Past surveys',
+}
+
+interface MySurveyRow extends Record<string, unknown> {
+  id: string
+  survey: PceSurvey
+  courseCode: string
+  status: SurveyStatus
+  responseRate: number
+  deadline: string
+}
 
 export default function MySurveysPage() {
   return (
@@ -34,22 +58,88 @@ function MySurveysContent() {
     s.instructors.some(i => i.id === FACULTY_ID) && s.term === term
   )
 
-  // Per 2026-05-08 Granola directive (Aarti): "active courses bubble to the
-  // top". Sort: active (collecting / open) → released → closed. Within each
-  // bucket, deadline ascending.
-  const STATUS_RANK: Record<string, number> = {
-    open: 0, collecting: 0, active: 0,
-    released: 1, closed: 2,
-  }
-  const sortedMySurveys = [...mySurveys].sort((a, b) => {
-    const rankDiff = (STATUS_RANK[a.status] ?? 9) - (STATUS_RANK[b.status] ?? 9)
-    if (rankDiff !== 0) return rankDiff
-    return (a.deadline ?? '').localeCompare(b.deadline ?? '')
-  })
-
+  // ?filter=released narrows to released/closed; otherwise show all assigned.
   const displayed = filterParam === 'released'
-    ? sortedMySurveys.filter(s => s.status === 'released' || s.status === 'closed')
-    : sortedMySurveys
+    ? mySurveys.filter(s => s.status === 'released' || s.status === 'closed')
+    : mySurveys
+
+  const rows: MySurveyRow[] = displayed.map(s => ({
+    id: s.id,
+    survey: s,
+    courseCode: s.courseCode,
+    status: s.status,
+    responseRate: s.responseRate,
+    deadline: s.deadline ?? '',
+  }))
+
+  const columns: ColumnDef<MySurveyRow>[] = [
+    {
+      key: 'courseCode',
+      label: 'Course',
+      sortable: true,
+      width: 240,
+      cell: (row) => (
+        <div className="flex flex-col gap-0.5">
+          <span className="text-sm font-medium">{row.survey.courseCode}</span>
+          <span className="text-xs text-muted-foreground">{row.survey.courseName}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      sortable: true,
+      width: 160,
+      cell: (row) => <SurveyStatusBadge status={row.survey.status} />,
+    },
+    {
+      key: 'responseRate',
+      label: 'Response rate',
+      sortable: true,
+      width: 200,
+      cell: (row) => (
+        <ResponseGauge
+          rate={row.survey.responseRate}
+          responseCount={row.survey.responseCount}
+          enrollmentCount={row.survey.enrollmentCount}
+          showBar={row.survey.responseRate > 0}
+        />
+      ),
+    },
+    {
+      key: 'deadline',
+      label: 'Deadline',
+      sortable: true,
+      width: 140,
+      cell: (row) => (
+        <span className="text-sm font-medium text-muted-foreground">{row.survey.deadline || '—'}</span>
+      ),
+    },
+    {
+      key: 'results',
+      label: 'Results',
+      width: 160,
+      cell: (row) => {
+        const isReleased = row.survey.status === 'released' || row.survey.status === 'closed'
+        return isReleased ? (
+          <Button variant="outline" size="sm" asChild>
+            <Link
+              href={`/my-surveys/${row.survey.id}/results`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              View Results
+              <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 11 }} />
+            </Link>
+          </Button>
+        ) : (
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <i className="fa-light fa-lock-keyhole" aria-hidden="true" style={{ fontSize: 12 }} />
+            Pending review
+          </div>
+        )
+      },
+    },
+  ]
 
   return (
     <>
@@ -60,7 +150,7 @@ function MySurveysContent() {
           {filterParam === 'released' ? 'Results' : 'My Surveys'}
         </h1>
         <Select value={term} onValueChange={setTerm}>
-          <SelectTrigger className="h-8 w-36 text-sm">
+          <SelectTrigger className="h-8 w-36 text-sm" aria-label="Filter by term">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -69,67 +159,27 @@ function MySurveysContent() {
         </Select>
       </header>
 
-      <main className="flex-1 overflow-auto" style={{ padding: '0 28px 28px' }}>
-        {displayed.length === 0 ? (
+      <div className="flex-1 overflow-auto" style={{ paddingBlock: 16, paddingInline: 0 }}>
+        {rows.length === 0 ? (
           <EmptyFaculty filterParam={filterParam} term={term} />
         ) : (
-          <div className="border border-border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Course</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Response rate</TableHead>
-                  <TableHead>Deadline</TableHead>
-                  <TableHead>Results</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {displayed.map(survey => {
-                  const isReleased = survey.status === 'released' || survey.status === 'closed'
-                  return (
-                    <TableRow key={survey.id}>
-                      <TableCell>
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-sm font-medium">{survey.courseCode}</span>
-                          <span className="text-xs text-muted-foreground">{survey.courseName}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell><SurveyStatusBadge status={survey.status} /></TableCell>
-                      <TableCell>
-                        <ResponseGauge
-                          rate={survey.responseRate}
-                          responseCount={survey.responseCount}
-                          enrollmentCount={survey.enrollmentCount}
-                          showBar={survey.responseRate > 0}
-                        />
-                      </TableCell>
-                      <TableCell className="text-sm font-medium text-muted-foreground">
-                        {survey.deadline}
-                      </TableCell>
-                      <TableCell>
-                        {isReleased ? (
-                          <Button variant="outline" size="sm" asChild>
-                            <Link href={`/my-surveys/${survey.id}/results`}>
-                              View Results
-                              <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 11 }} />
-                            </Link>
-                          </Button>
-                        ) : (
-                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                            <i className="fa-light fa-lock-keyhole" aria-hidden="true" style={{ fontSize: 12 }} />
-                            Pending review
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </div>
+          <DataTable<MySurveyRow>
+            data={rows}
+            columns={columns}
+            getRowId={(row) => row.id}
+            searchable
+            defaultGroupBy="status"
+            groupLabels={GROUP_LABELS}
+            groupOrder={GROUP_ORDER}
+            onRowClick={(row) => {
+              const isReleased = row.survey.status === 'released' || row.survey.status === 'closed'
+              if (isReleased) {
+                window.location.href = `/my-surveys/${row.survey.id}/results`
+              }
+            }}
+          />
         )}
-      </main>
+      </div>
     </>
   )
 }
@@ -141,11 +191,11 @@ function MySurveysSkeleton() {
         <Skeleton className="h-7 w-7" />
         <Skeleton className="h-4 w-24" />
       </header>
-      <main className="flex-1 overflow-auto p-4">
+      <div className="flex-1 overflow-auto p-4">
         <div className="flex flex-col gap-2">
           {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}
         </div>
-      </main>
+      </div>
     </>
   )
 }

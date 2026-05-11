@@ -8,9 +8,11 @@ import {
   SidebarSeparator, Avatar, AvatarFallback, Badge,
   DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+  Kbd, KbdGroup,
   useSidebar,
 } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
+import { useCommandPalette } from '@/components/command-palette'
 
 function AppHeader() {
   const { state } = useSidebar()
@@ -137,6 +139,7 @@ const FOOTER_NAV = [
 export function AppSidebar() {
   const pathname = usePathname()
   const { user, surveys } = usePce()
+  const { setOpen: setPaletteOpen } = useCommandPalette()
   const navItems = user.role === 'admin' ? ADMIN_NAV : FACULTY_NAV
   const pendingCount = surveys.filter(s => s.status === 'pending_review').length
 
@@ -151,6 +154,26 @@ export function AppSidebar() {
         <SidebarSeparator />
 
         <SidebarContent className="gap-0">
+          <SidebarGroup className="py-2" role="group" aria-label="Search">
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip="Search · ⌘K"
+                    onClick={() => setPaletteOpen(true)}
+                  >
+                    <i className="fa-light fa-magnifying-glass text-sm" aria-hidden="true" />
+                    <span className="flex-1">Search</span>
+                    <KbdGroup className="ms-auto group-data-collapsible-icon:hidden">
+                      <Kbd>⌘</Kbd>
+                      <Kbd>K</Kbd>
+                    </KbdGroup>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
           <SidebarGroup className="py-2" role="group" aria-label="Primary navigation">
             <SidebarGroupContent>
               <SidebarMenu>

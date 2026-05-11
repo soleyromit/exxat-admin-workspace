@@ -135,9 +135,9 @@ export default function FacultyResultsPage() {
         <Separator orientation="vertical" className="h-4" />
         <Link href="/my-surveys" className="text-sm text-muted-foreground">My Surveys</Link>
         <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
-        <span className="text-sm font-semibold flex-1 truncate">
+        <h1 className="text-sm font-semibold flex-1 truncate">
           {survey.courseCode} — {survey.courseName}
-        </span>
+        </h1>
         {sharedDate ? (
           <Badge variant="secondary" className="rounded-full font-medium">{sharedDate}</Badge>
         ) : (
@@ -145,7 +145,7 @@ export default function FacultyResultsPage() {
         )}
       </header>
 
-      <main className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
+      <div className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
         {!isReleased ? (
           // DS-018 brand presence (fixed 2026-05-10): empty state was using
           // --muted background + --muted-foreground icon — DS-correct but
@@ -268,7 +268,7 @@ export default function FacultyResultsPage() {
             })}
           </div>
         )}
-      </main>
+      </div>
     </>
   )
 }

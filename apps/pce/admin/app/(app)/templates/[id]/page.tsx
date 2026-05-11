@@ -63,14 +63,14 @@ export default function TemplateDetailPage() {
           Templates
         </Link>
         <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
-        <span className="text-sm font-semibold flex-1 truncate">{template.name}</span>
+        <h1 className="text-sm font-semibold flex-1 truncate">{template.name}</h1>
         <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
           <i className="fa-light fa-pen" aria-hidden="true" style={{ fontSize: 12 }} />
           Edit
         </Button>
       </header>
 
-      <main className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
+      <div className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
         <div className="max-w-2xl flex flex-col gap-6">
 
           {/* Meta */}
@@ -144,7 +144,7 @@ export default function TemplateDetailPage() {
             </div>
           ))}
         </div>
-      </main>
+      </div>
 
       <CreateTemplateSheet
         open={editOpen}

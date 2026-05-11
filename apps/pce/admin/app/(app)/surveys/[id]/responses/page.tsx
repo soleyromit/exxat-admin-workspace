@@ -1,7 +1,10 @@
 'use client'
 
 import { useParams } from 'next/navigation'
-import { Badge, Button, Separator, SidebarTrigger, Tooltip, TooltipTrigger, TooltipContent } from '@exxat/ds/packages/ui/src'
+import {
+  Badge, Button, Separator, SidebarTrigger, Tooltip, TooltipTrigger, TooltipContent,
+  Card, CardHeader, CardTitle, CardContent, LocalBanner,
+} from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { ResponseGauge } from '@/components/pce/response-gauge'
@@ -67,7 +70,7 @@ export default function SurveyResponsesPage() {
         <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
         <Link href={`/surveys/${id}`} className="text-sm text-muted-foreground">{survey.courseCode}</Link>
         <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
-        <span className="text-sm font-semibold flex-1">Responses</span>
+        <h1 className="text-sm font-semibold flex-1">Responses</h1>
         {hiddenCount > 0 && (
           <Badge variant="secondary">
             {hiddenCount} hidden from faculty
@@ -76,21 +79,21 @@ export default function SurveyResponsesPage() {
         <SurveyStatusBadge status={survey.status} />
       </header>
 
-      <main className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
+      <div className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
         <div className="max-w-2xl flex flex-col gap-6">
 
-          {/* Overall summary */}
-          <div className="border border-border rounded-lg p-5 flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Overall</h2>
+          {/* Overall summary — DS Card slot composition */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-semibold">Overall</CardTitle>
               <ResponseGauge
                 rate={survey.responseRate}
                 responseCount={survey.responseCount}
                 enrollmentCount={survey.enrollmentCount}
                 showBar={false}
               />
-            </div>
-            <div className="flex gap-6">
+            </CardHeader>
+            <CardContent className="flex gap-6">
               {responses.sectionScores.map(s => (
                 <div key={s.section} className="flex flex-col gap-0.5">
                   <p className="text-xs text-muted-foreground">
@@ -99,19 +102,16 @@ export default function SurveyResponsesPage() {
                   <p className="text-lg font-semibold tabular-nums">{s.avg}<span className="text-sm font-normal text-muted-foreground">/5</span></p>
                 </div>
               ))}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          {/* Moderation note */}
-          <div
-            className="flex items-start gap-3 rounded-lg border px-4 py-3 text-sm"
-            style={{ borderColor: 'var(--border)', backgroundColor: 'var(--muted)' }}
-          >
-            <i className="fa-light fa-circle-info mt-0.5 shrink-0 text-muted-foreground" aria-hidden="true" style={{ fontSize: 13 }} />
-            <p className="text-muted-foreground">
-              Hide individual comments to remove them from the faculty view before releasing results. Hidden comments remain in the system and are never deleted.
-            </p>
-          </div>
+          {/* Moderation note — DS LocalBanner. Title is the short label; body
+              explains. (Was previously a full sentence as title — broke DS
+              hierarchy intent per dialog-banner-badge depth audit.) */}
+          <LocalBanner variant="info" title="Moderation">
+            Hide individual comments to remove them from the faculty view before releasing results.
+            Hidden comments remain in the system and are never deleted.
+          </LocalBanner>
 
           {/* Per-section scores */}
           {responses.sectionScores.map(sectionScore => {
@@ -206,7 +206,7 @@ export default function SurveyResponsesPage() {
             )
           })}
         </div>
-      </main>
+      </div>
     </>
   )
 }

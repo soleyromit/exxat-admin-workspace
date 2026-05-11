@@ -15,37 +15,76 @@ import Link from 'next/link'
 import {
   Button,
   Input,
-  InputGroup,
-  InputGroupAddon,
-  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
   Tooltip, TooltipContent, TooltipTrigger,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
-  Field, FieldLabel, FieldGroup,
+  Field, FieldLabel, FieldGroup, FieldDescription, FieldError,
+  LocalBanner,
   SidebarTrigger, Separator,
 } from '@exxat/ds/packages/ui/src'
 import {
   MOCK_PROGRAM_TERMS, MOCK_LMS_ENABLED,
   type ProgramTerm,
 } from '@/lib/pce-mock-data'
+import { DataTable } from '@/components/data-table'
+import type { ColumnDef } from '@/components/data-table/types'
+import { RowActions } from '@/components/data-table/row-actions'
+
+interface TermRow extends Record<string, unknown> {
+  id: string
+  name: string
+  academicYear: string
+  startDate: string
+  endDate: string
+  status: ProgramTerm['status']
+}
 
 export default function TermsPage() {
   const [rows, setRows] = useState<ProgramTerm[]>(MOCK_PROGRAM_TERMS)
-  const [search, setSearch] = useState('')
   const [addOpen, setAddOpen] = useState(false)
   const [draft, setDraft] = useState({ name: '', academicYear: '', startDate: '', endDate: '' })
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return rows
-    return rows.filter(r =>
-      r.name.toLowerCase().includes(q) ||
-      r.academicYear.toLowerCase().includes(q)
-    )
-  }, [rows, search])
+  const tableRows: TermRow[] = useMemo(
+    () => rows.map(r => ({
+      id: r.id,
+      name: r.name,
+      academicYear: r.academicYear,
+      startDate: r.startDate,
+      endDate: r.endDate,
+      status: r.status,
+    })),
+    [rows]
+  )
+
+  // Group by academic year — most-recent first.
+  const groupOrder = useMemo(
+    () => Array.from(new Set(rows.map(r => r.academicYear))).sort().reverse(),
+    [rows]
+  )
+  const groupLabels = useMemo(
+    () => Object.fromEntries(groupOrder.map(y => [y, y])),
+    [groupOrder]
+  )
+
+  function validate(): Record<string, string> {
+    const next: Record<string, string> = {}
+    if (!draft.name.trim()) next.name = 'Term name is required.'
+    if (!draft.academicYear.trim()) next.academicYear = 'Academic year is required.'
+    else if (!/^\d{4}\s*[–-]\s*\d{4}$/.test(draft.academicYear.trim())) {
+      next.academicYear = 'Use the format YYYY–YYYY (e.g., 2026–2027).'
+    }
+    if (!draft.startDate) next.startDate = 'Start date is required.'
+    if (!draft.endDate) next.endDate = 'End date is required.'
+    if (draft.startDate && draft.endDate && draft.startDate >= draft.endDate) {
+      next.endDate = 'End date must come after start date.'
+    }
+    return next
+  }
 
   function handleSave() {
-    if (!draft.name.trim() || !draft.academicYear.trim() || !draft.startDate || !draft.endDate) return
+    const next = validate()
+    setErrors(next)
+    if (Object.keys(next).length > 0) return
     const newRow: ProgramTerm = {
       id: `pt${Date.now()}`,
       name: draft.name.trim(),
@@ -56,12 +95,85 @@ export default function TermsPage() {
     }
     setRows([newRow, ...rows])
     setDraft({ name: '', academicYear: '', startDate: '', endDate: '' })
+    setErrors({})
     setAddOpen(false)
+  }
+
+  function handleAddOpenChange(open: boolean) {
+    setAddOpen(open)
+    if (!open) setErrors({})
   }
 
   function handleArchive(id: string) {
     setRows(rows.map(r => r.id === id ? { ...r, status: r.status === 'active' ? 'archived' : 'active' } : r))
   }
+
+  const columns: ColumnDef<TermRow>[] = [
+    {
+      key: 'name',
+      label: 'Term',
+      sortable: true,
+      width: 200,
+      cell: (row) => <span className="text-sm font-medium">{row.name}</span>,
+    },
+    {
+      key: 'academicYear',
+      label: 'Academic year',
+      sortable: true,
+      width: 160,
+      cell: (row) => <span className="text-sm text-muted-foreground">{row.academicYear}</span>,
+    },
+    {
+      key: 'startDate',
+      label: 'Start',
+      sortable: true,
+      width: 140,
+      cell: (row) => <span className="text-xs tabular-nums text-muted-foreground">{row.startDate}</span>,
+    },
+    {
+      key: 'endDate',
+      label: 'End',
+      sortable: true,
+      width: 140,
+      cell: (row) => <span className="text-xs tabular-nums text-muted-foreground">{row.endDate}</span>,
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      sortable: true,
+      width: 120,
+      cell: (row) => (
+        <span className={
+          'text-xs capitalize ' +
+          (row.status === 'active' ? 'text-foreground' : 'text-muted-foreground')
+        }>
+          {row.status}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      label: '',
+      width: 44,
+      cell: (row) => (
+        <RowActions
+          row={row}
+          label={row.name}
+          actions={[
+            { label: 'Edit',         icon: 'fa-pen',               disabled: MOCK_LMS_ENABLED },
+            { label: 'View history', icon: 'fa-clock-rotate-left' },
+            {
+              label: row.status === 'active' ? 'Archive' : 'Reactivate',
+              icon: 'fa-box-archive',
+              variant: 'destructive',
+              divider: true,
+              onClick: () => handleArchive(row.id),
+            },
+          ]}
+        />
+      ),
+    },
+  ]
 
   return (
     <>
@@ -70,25 +182,14 @@ export default function TermsPage() {
         <Separator orientation="vertical" className="h-4" />
         <Link href="/admin" className="text-sm text-muted-foreground">Admin</Link>
         <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
-        <span className="text-sm font-semibold flex-1 truncate">Terms</span>
+        <h1 className="text-sm font-semibold flex-1 truncate">Terms</h1>
       </header>
 
-      <main className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
+      <div className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
         <div className="max-w-5xl flex flex-col gap-4">
 
-          <div className="flex items-center gap-2">
-            <InputGroup className="flex-1 max-w-sm">
-              <Input
-                placeholder="Search by name or academic year…"
-                aria-label="Search terms"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-              <InputGroupAddon align="inline-end">
-                <i className="fa-light fa-magnifying-glass text-muted-foreground" aria-hidden="true" />
-              </InputGroupAddon>
-            </InputGroup>
-
+          {/* Toolbar: Add + Import. Search is provided by DataTable. */}
+          <div className="flex items-center gap-2 justify-end">
             {MOCK_LMS_ENABLED ? (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -112,83 +213,16 @@ export default function TermsPage() {
             </Button>
           </div>
 
-          <div className="border border-border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Term</TableHead>
-                  <TableHead>Academic year</TableHead>
-                  <TableHead>Start</TableHead>
-                  <TableHead>End</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6}>
-                      <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
-                        <p className="text-sm font-medium">
-                          {search ? `No terms match "${search}"` : 'No terms yet'}
-                        </p>
-                        {!search && !MOCK_LMS_ENABLED && (
-                          <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
-                            <i className="fa-light fa-plus" aria-hidden="true" />
-                            Add your first term
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filtered.map(row => (
-                    <TableRow key={row.id}>
-                      <TableCell><span className="text-sm font-medium">{row.name}</span></TableCell>
-                      <TableCell><span className="text-sm text-muted-foreground">{row.academicYear}</span></TableCell>
-                      <TableCell><span className="text-xs tabular-nums text-muted-foreground">{row.startDate}</span></TableCell>
-                      <TableCell><span className="text-xs tabular-nums text-muted-foreground">{row.endDate}</span></TableCell>
-                      <TableCell>
-                        <span className={
-                          'text-xs capitalize ' +
-                          (row.status === 'active' ? 'text-foreground' : 'text-muted-foreground')
-                        }>
-                          {row.status}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${row.name}`}>
-                              <i className="fa-regular fa-ellipsis" aria-hidden="true" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-44">
-                            <DropdownMenuItem disabled={MOCK_LMS_ENABLED}>
-                              <i className="fa-light fa-pen" aria-hidden="true" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <i className="fa-light fa-clock-rotate-left" aria-hidden="true" />
-                              View history
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onClick={() => handleArchive(row.id)}
-                            >
-                              <i className="fa-light fa-box-archive" aria-hidden="true" />
-                              {row.status === 'active' ? 'Archive' : 'Reactivate'}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <DataTable<TermRow>
+            data={tableRows}
+            columns={columns}
+            getRowId={(row) => row.id}
+            selectable
+            searchable
+            defaultGroupBy="academicYear"
+            groupLabels={groupLabels}
+            groupOrder={groupOrder}
+          />
 
           {!MOCK_LMS_ENABLED && (
             <p className="text-xs text-muted-foreground">
@@ -198,9 +232,9 @@ export default function TermsPage() {
           )}
 
         </div>
-      </main>
+      </div>
 
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+      <Dialog open={addOpen} onOpenChange={handleAddOpenChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add term</DialogTitle>
@@ -208,6 +242,12 @@ export default function TermsPage() {
               Per Aarti 2026-05-05: term + academic year are separate fields. A course offering combines a master course with a term to produce a specific instance.
             </DialogDescription>
           </DialogHeader>
+
+          {Object.keys(errors).length > 1 && (
+            <LocalBanner variant="error" title="Fix the following before saving">
+              {Object.keys(errors).length} fields need attention.
+            </LocalBanner>
+          )}
 
           <FieldGroup>
             <Field orientation="vertical">
@@ -218,7 +258,10 @@ export default function TermsPage() {
                 value={draft.name}
                 onChange={e => setDraft({ ...draft, name: e.target.value })}
                 aria-required="true"
+                aria-invalid={!!errors.name}
+                aria-describedby={errors.name ? 'term-name-error' : undefined}
               />
+              {errors.name && <FieldError id="term-name-error">{errors.name}</FieldError>}
             </Field>
             <Field orientation="vertical">
               <FieldLabel htmlFor="term-year">Academic year *</FieldLabel>
@@ -228,7 +271,14 @@ export default function TermsPage() {
                 value={draft.academicYear}
                 onChange={e => setDraft({ ...draft, academicYear: e.target.value })}
                 aria-required="true"
+                aria-invalid={!!errors.academicYear}
+                aria-describedby={errors.academicYear ? 'term-year-error' : 'term-year-desc'}
               />
+              {errors.academicYear ? (
+                <FieldError id="term-year-error">{errors.academicYear}</FieldError>
+              ) : (
+                <FieldDescription id="term-year-desc">Format: YYYY–YYYY (e.g., 2026–2027).</FieldDescription>
+              )}
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field orientation="vertical">
@@ -239,7 +289,10 @@ export default function TermsPage() {
                   value={draft.startDate}
                   onChange={e => setDraft({ ...draft, startDate: e.target.value })}
                   aria-required="true"
+                  aria-invalid={!!errors.startDate}
+                  aria-describedby={errors.startDate ? 'term-start-error' : undefined}
                 />
+                {errors.startDate && <FieldError id="term-start-error">{errors.startDate}</FieldError>}
               </Field>
               <Field orientation="vertical">
                 <FieldLabel htmlFor="term-end">End date *</FieldLabel>
@@ -249,7 +302,10 @@ export default function TermsPage() {
                   value={draft.endDate}
                   onChange={e => setDraft({ ...draft, endDate: e.target.value })}
                   aria-required="true"
+                  aria-invalid={!!errors.endDate}
+                  aria-describedby={errors.endDate ? 'term-end-error' : undefined}
                 />
+                {errors.endDate && <FieldError id="term-end-error">{errors.endDate}</FieldError>}
               </Field>
             </div>
           </FieldGroup>
@@ -258,11 +314,7 @@ export default function TermsPage() {
             <DialogClose asChild>
               <Button variant="outline">Cancel</Button>
             </DialogClose>
-            <Button
-              variant="default"
-              onClick={handleSave}
-              disabled={!draft.name.trim() || !draft.academicYear.trim() || !draft.startDate || !draft.endDate}
-            >
+            <Button variant="default" onClick={handleSave}>
               Add term
             </Button>
           </DialogFooter>
@@ -271,3 +323,4 @@ export default function TermsPage() {
     </>
   )
 }
+

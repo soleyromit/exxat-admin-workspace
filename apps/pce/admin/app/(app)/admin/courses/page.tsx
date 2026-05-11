@@ -10,14 +10,11 @@
  * Mock data uses MOCK_LMS_ENABLED = false so manual CRUD is exercisable.
  */
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import {
   Button,
   Input,
-  InputGroup,
-  InputGroupAddon,
-  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
   Tooltip, TooltipContent, TooltipTrigger,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
@@ -29,25 +26,44 @@ import {
   MOCK_MASTER_COURSES, MOCK_LMS_ENABLED,
   type MasterCourse,
 } from '@/lib/pce-mock-data'
+import { DataTable } from '@/components/data-table'
+import type { ColumnDef } from '@/components/data-table/types'
 
 const DEPARTMENTS = ['Biological Sciences', 'Nursing', 'Medicine', 'Foundations', 'Pharmacy']
+
+interface MasterCourseRow extends Record<string, unknown> {
+  id: string
+  code: string
+  name: string
+  department: string
+  status: MasterCourse['status']
+  lastEdited: string
+  editedBy: string
+  raw: MasterCourse
+}
 
 export default function MasterCoursesPage() {
   // Local-state CRUD; no backend persistence — fine for prototype/Phase 1.
   const [rows, setRows] = useState<MasterCourse[]>(MOCK_MASTER_COURSES)
-  const [search, setSearch] = useState('')
+  const [departmentFilter, setDepartmentFilter] = useState('all')
   const [addOpen, setAddOpen] = useState(false)
   const [draft, setDraft] = useState({ code: '', name: '', department: DEPARTMENTS[0] })
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return rows
-    return rows.filter(r =>
-      r.code.toLowerCase().includes(q) ||
-      r.name.toLowerCase().includes(q) ||
-      r.department.toLowerCase().includes(q)
-    )
-  }, [rows, search])
+  const filteredRaw = rows.filter(r => {
+    if (departmentFilter !== 'all' && r.department !== departmentFilter) return false
+    return true
+  })
+
+  const tableRows: MasterCourseRow[] = filteredRaw.map(r => ({
+    id: r.id,
+    code: r.code,
+    name: r.name,
+    department: r.department,
+    status: r.status,
+    lastEdited: r.lastEdited,
+    editedBy: r.editedBy,
+    raw: r,
+  }))
 
   function handleSave() {
     if (!draft.code.trim() || !draft.name.trim()) return
@@ -70,6 +86,61 @@ export default function MasterCoursesPage() {
     setRows(rows.map(r => r.id === id ? { ...r, status: r.status === 'active' ? 'inactive' : 'active' } : r))
   }
 
+  const columns: ColumnDef<MasterCourseRow>[] = [
+    {
+      key: 'code',
+      label: 'Code',
+      sortable: true,
+      width: 120,
+      cell: (row) => <span className="font-mono text-xs">{row.code}</span>,
+    },
+    {
+      key: 'name',
+      label: 'Name',
+      sortable: true,
+      width: 260,
+      cell: (row) => <span className="text-sm font-medium">{row.name}</span>,
+    },
+    {
+      key: 'department',
+      label: 'Department',
+      sortable: true,
+      width: 200,
+      cell: (row) => <span className="text-sm text-muted-foreground">{row.department}</span>,
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      sortable: true,
+      width: 110,
+      cell: (row) => (
+        <span className={
+          'text-xs capitalize ' +
+          (row.status === 'active' ? 'text-foreground' : 'text-muted-foreground')
+        }>
+          {row.status}
+        </span>
+      ),
+    },
+    {
+      key: 'lastEdited',
+      label: 'Last edited',
+      sortable: true,
+      width: 220,
+      cell: (row) => (
+        <span className="text-xs text-muted-foreground tabular-nums">
+          {row.lastEdited} · {row.editedBy}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      label: '',
+      width: 44,
+      cell: (row) => <RowActions row={row.raw} onArchive={() => handleArchive(row.raw.id)} />,
+    },
+  ]
+
   return (
     <>
       <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
@@ -77,25 +148,26 @@ export default function MasterCoursesPage() {
         <Separator orientation="vertical" className="h-4" />
         <Link href="/admin" className="text-sm text-muted-foreground">Admin</Link>
         <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
-        <span className="text-sm font-semibold flex-1 truncate">Master Courses</span>
+        <h1 className="text-sm font-semibold flex-1 truncate">Master Courses</h1>
       </header>
 
-      <main className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
+      <div className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
         <div className="max-w-5xl flex flex-col gap-4">
 
-          {/* Toolbar — search + Add + Import */}
-          <div className="flex items-center gap-2">
-            <InputGroup className="flex-1 max-w-sm">
-              <Input
-                placeholder="Search by code, name, or department…"
-                aria-label="Search master courses"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-              <InputGroupAddon align="inline-end">
-                <i className="fa-light fa-magnifying-glass text-muted-foreground" aria-hidden="true" />
-              </InputGroupAddon>
-            </InputGroup>
+          {/* External hard-filter (department) + Add/Import actions.
+              DataTable provides built-in search/properties below. */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <SelectTrigger className="h-8 w-52 text-sm" aria-label="Filter by department">
+                <SelectValue placeholder="All departments" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All departments</SelectItem>
+                {DEPARTMENTS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            <div className="flex-1" />
 
             {MOCK_LMS_ENABLED ? (
               <Tooltip>
@@ -120,88 +192,27 @@ export default function MasterCoursesPage() {
             </Button>
           </div>
 
-          {/* Table */}
-          <div className="border border-border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Last edited</TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6}>
-                      <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
-                        <p className="text-sm font-medium">
-                          {search ? `No courses match "${search}"` : 'No master courses yet'}
-                        </p>
-                        {!search && !MOCK_LMS_ENABLED && (
-                          <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
-                            <i className="fa-light fa-plus" aria-hidden="true" />
-                            Add your first course
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filtered.map(row => (
-                    <TableRow key={row.id}>
-                      <TableCell className="font-mono text-xs">{row.code}</TableCell>
-                      <TableCell><span className="text-sm font-medium">{row.name}</span></TableCell>
-                      <TableCell><span className="text-sm text-muted-foreground">{row.department}</span></TableCell>
-                      <TableCell>
-                        <span className={
-                          'text-xs capitalize ' +
-                          (row.status === 'active' ? 'text-foreground' : 'text-muted-foreground')
-                        }>
-                          {row.status}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-xs text-muted-foreground tabular-nums">
-                          {row.lastEdited} · {row.editedBy}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${row.name}`}>
-                              <i className="fa-regular fa-ellipsis" aria-hidden="true" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-44">
-                            <DropdownMenuItem disabled={MOCK_LMS_ENABLED}>
-                              <i className="fa-light fa-pen" aria-hidden="true" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <i className="fa-light fa-clock-rotate-left" aria-hidden="true" />
-                              View history
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onClick={() => handleArchive(row.id)}
-                            >
-                              <i className="fa-light fa-box-archive" aria-hidden="true" />
-                              {row.status === 'active' ? 'Archive' : 'Reactivate'}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          {tableRows.length === 0 ? (
+            <div className="border border-border rounded-lg flex flex-col items-center justify-center gap-2 py-10 text-center">
+              <p className="text-sm font-medium">
+                {departmentFilter !== 'all' ? 'No courses match this filter' : 'No master courses yet'}
+              </p>
+              {departmentFilter === 'all' && !MOCK_LMS_ENABLED && (
+                <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
+                  <i className="fa-light fa-plus" aria-hidden="true" />
+                  Add your first course
+                </Button>
+              )}
+            </div>
+          ) : (
+            <DataTable<MasterCourseRow>
+              data={tableRows}
+              columns={columns}
+              getRowId={(row) => row.id}
+              selectable
+              searchable
+            />
+          )}
 
           {/* LMS sync indicator (footer) */}
           {MOCK_LMS_ENABLED && (
@@ -217,7 +228,7 @@ export default function MasterCoursesPage() {
           )}
 
         </div>
-      </main>
+      </div>
 
       {/* Add course dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
@@ -278,5 +289,40 @@ export default function MasterCoursesPage() {
         </DialogContent>
       </Dialog>
     </>
+  )
+}
+
+function RowActions({ row, onArchive }: { row: MasterCourse; onArchive: () => void }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`Actions for ${row.name}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <i className="fa-regular fa-ellipsis" aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-44" onClick={(e) => e.stopPropagation()}>
+        <DropdownMenuItem disabled={MOCK_LMS_ENABLED}>
+          <i className="fa-light fa-pen" aria-hidden="true" />
+          Edit
+        </DropdownMenuItem>
+        <DropdownMenuItem>
+          <i className="fa-light fa-clock-rotate-left" aria-hidden="true" />
+          View history
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          variant="destructive"
+          onClick={onArchive}
+        >
+          <i className="fa-light fa-box-archive" aria-hidden="true" />
+          {row.status === 'active' ? 'Archive' : 'Reactivate'}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

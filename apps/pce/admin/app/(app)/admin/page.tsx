@@ -9,7 +9,10 @@
  */
 
 import Link from 'next/link'
-import { SidebarTrigger, Separator } from '@exxat/ds/packages/ui/src'
+import {
+  SidebarTrigger, Separator,
+  Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent,
+} from '@exxat/ds/packages/ui/src'
 
 interface EntityTile {
   key: string
@@ -73,21 +76,39 @@ const ENTITIES: EntityTile[] = [
     href: '/admin/accommodations', status: 'available', metric: '12 in catalog' },
 ]
 
+/* DS Card slot composition (replaces hand-rolled <article> + raw divs).
+ * Per card.md depth audit: one of 3 named Card-substitutes the audit regex
+ * couldn't catch. Migration to slots aligns visual treatment with workspace. */
 function EntityCard({ entity }: { entity: EntityTile }) {
   const isClickable = entity.status === 'available' && Boolean(entity.href)
 
   const inner = (
-    <article
+    <Card
+      size="sm"
       className={
-        'group relative flex flex-col gap-3 rounded-lg border border-border bg-background p-4 transition-colors ' +
+        'group relative h-full transition-colors ' +
         (isClickable
-          ? 'hover:bg-muted hover:border-border-control-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+          ? 'hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
           : 'opacity-60')
       }
     >
-      <div className="flex items-start justify-between gap-2">
+      <CardHeader>
+        <CardAction>
+          {entity.status === 'phase-2' && (
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Soon</span>
+          )}
+          {entity.status === 'shared' && (
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Shared</span>
+          )}
+          {isClickable && (
+            <i
+              className="fa-light fa-arrow-right text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+              aria-hidden="true"
+            />
+          )}
+        </CardAction>
         <div
-          className="flex items-center justify-center w-9 h-9 rounded-md"
+          className="flex items-center justify-center w-9 h-9 rounded-md mb-2"
           style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))' }}
         >
           <i
@@ -96,33 +117,19 @@ function EntityCard({ entity }: { entity: EntityTile }) {
             aria-hidden="true"
           />
         </div>
-        {entity.status === 'phase-2' && (
-          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Soon</span>
-        )}
-        {entity.status === 'shared' && (
-          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Shared</span>
-        )}
-        {isClickable && (
-          <i
-            className="fa-light fa-arrow-right text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-            aria-hidden="true"
-          />
-        )}
-      </div>
-
-      <div className="flex flex-col gap-0.5">
-        <h2 className="text-sm font-semibold">{entity.title}</h2>
-        <p className="text-xs text-muted-foreground">{entity.description}</p>
-      </div>
-
+        <CardTitle className="text-sm font-semibold">{entity.title}</CardTitle>
+        <CardDescription className="text-xs">{entity.description}</CardDescription>
+      </CardHeader>
       {entity.metric && (
-        <p className="text-xs text-muted-foreground tabular-nums mt-auto">{entity.metric}</p>
+        <CardContent>
+          <p className="text-xs text-muted-foreground tabular-nums">{entity.metric}</p>
+        </CardContent>
       )}
-    </article>
+    </Card>
   )
 
   if (isClickable && entity.href) {
-    return <Link href={entity.href} aria-label={`${entity.title}: ${entity.description}`}>{inner}</Link>
+    return <Link href={entity.href} className="block h-full" aria-label={`${entity.title}: ${entity.description}`}>{inner}</Link>
   }
   return inner
 }
@@ -138,7 +145,7 @@ export default function AdminLandingPage() {
         </h1>
       </header>
 
-      <main className="flex-1 overflow-auto" style={{ padding: '28px 28px 28px' }}>
+      <div className="flex-1 overflow-auto" style={{ padding: '28px 28px 28px' }}>
         <div className="max-w-5xl flex flex-col gap-5">
           <p className="text-sm text-muted-foreground max-w-2xl">
             Program-level master lists. Per workspace ADR-001, these 11 entities live once at program scope and are subset by every module. Phase 1 ships Master Courses + Terms — the rest follow.
@@ -148,7 +155,7 @@ export default function AdminLandingPage() {
             {ENTITIES.map(e => <EntityCard key={e.key} entity={e} />)}
           </div>
         </div>
-      </main>
+      </div>
     </>
   )
 }

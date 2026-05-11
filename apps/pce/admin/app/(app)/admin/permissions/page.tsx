@@ -26,14 +26,14 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
   Field, FieldLabel, FieldGroup, FieldDescription,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
   SidebarTrigger, Separator,
 } from '@exxat/ds/packages/ui/src'
 import {
   MOCK_ROLE_ASSIGNMENTS, MOCK_FACULTY, MOCK_COURSE_OFFERINGS, MOCK_MASTER_COURSES, MOCK_PROGRAM_TERMS,
   ROLE_LABELS, ROLE_DESCRIPTIONS,
-  type RoleAssignment, type RoleKey,
+  type RoleAssignment, type RoleKey, type PceInstructor,
 } from '@/lib/pce-mock-data'
+import { RowActions } from '@/components/data-table/row-actions'
 
 const ROLE_BADGE_VARIANT: Record<RoleKey, 'default' | 'secondary' | 'outline'> = {
   'admin':                 'default',
@@ -126,10 +126,10 @@ export default function PermissionsPage() {
         <Separator orientation="vertical" className="h-4" />
         <Link href="/admin" className="text-sm text-muted-foreground">Admin</Link>
         <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
-        <span className="text-sm font-semibold flex-1 truncate">Permissions</span>
+        <h1 className="text-sm font-semibold flex-1 truncate">Permissions</h1>
       </header>
 
-      <main className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
+      <div className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
         <div className="max-w-5xl flex flex-col gap-4">
 
           <p className="text-sm text-muted-foreground max-w-2xl">
@@ -199,23 +199,19 @@ export default function PermissionsPage() {
                           {assignments.length} grant{assignments.length === 1 ? '' : 's'}
                         </p>
                       </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${faculty.name}`}>
-                            <i className="fa-regular fa-ellipsis" aria-hidden="true" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-52">
-                          <DropdownMenuItem onClick={() => { setDraft({ ...draft, facultyId: faculty.id }); setGrantOpen(true) }}>
-                            <i className="fa-light fa-plus" aria-hidden="true" />
-                            Grant new role
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <i className="fa-light fa-clock-rotate-left" aria-hidden="true" />
-                            View grant history
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <RowActions<PceInstructor>
+                        row={faculty}
+                        label={faculty.name}
+                        contentClassName="w-52"
+                        actions={[
+                          {
+                            label:   'Grant new role',
+                            icon:    'fa-plus',
+                            onClick: (f) => { setDraft({ ...draft, facultyId: f.id }); setGrantOpen(true) },
+                          },
+                          { label: 'View grant history', icon: 'fa-clock-rotate-left' },
+                        ]}
+                      />
                     </div>
 
                     {assignments.length === 0 ? (
@@ -266,7 +262,7 @@ export default function PermissionsPage() {
           </p>
 
         </div>
-      </main>
+      </div>
 
       {/* Grant role dialog */}
       <Dialog open={grantOpen} onOpenChange={setGrantOpen}>

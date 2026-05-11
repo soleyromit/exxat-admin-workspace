@@ -20,10 +20,10 @@ export default function ProgrammaticSurveysPage() {
         <Separator orientation="vertical" className="h-4" />
         <Link href="/" className="text-sm text-muted-foreground">Course Evaluation and Surveys</Link>
         <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
-        <span className="text-sm font-semibold flex-1 truncate">Programmatic Surveys</span>
+        <h1 className="text-sm font-semibold flex-1 truncate">Programmatic Surveys</h1>
       </header>
 
-      <main className="flex-1 overflow-auto" style={{ padding: '28px 28px 28px' }}>
+      <div className="flex-1 overflow-auto" style={{ padding: '28px 28px 28px' }}>
         <div className="flex flex-col items-center justify-center gap-4 py-20 text-center max-w-md mx-auto">
           <div
             className="flex items-center justify-center w-14 h-14 rounded-full"
@@ -45,7 +45,7 @@ export default function ProgrammaticSurveysPage() {
             </Link>
           </Button>
         </div>
-      </main>
+      </div>
     </>
   )
 }

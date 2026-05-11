@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import {
   Button, Separator, SidebarTrigger, Avatar, AvatarFallback, Badge,
+  Card, CardHeader, CardTitle, CardContent, CardFooter,
 } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
@@ -47,9 +48,9 @@ export default function SurveyDetailPage() {
         <Separator orientation="vertical" className="h-4" />
         <Link href="/surveys" className="text-sm text-muted-foreground">Surveys</Link>
         <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
-        <span className="text-sm font-semibold flex-1 truncate">
+        <h1 className="text-sm font-semibold flex-1 truncate">
           {survey.courseCode} — {survey.courseName}
-        </span>
+        </h1>
         <SurveyStatusBadge status={survey.status} />
       </header>
 
@@ -70,7 +71,7 @@ export default function SurveyDetailPage() {
         </div>
       )}
 
-      <main className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-6">
         <div className="max-w-2xl flex flex-col gap-6">
 
           {/* AI insights — surface BEFORE pulled metrics per Aarti D14 + ADR-005 + audit C3 */}
@@ -90,31 +91,34 @@ export default function SurveyDetailPage() {
             )
           })()}
 
-          {/* Overview card */}
-          <div className="border border-border rounded-lg p-5 flex flex-col gap-4">
-            <h2 className="text-sm font-semibold">Overview</h2>
-            <div className="grid grid-cols-3 gap-6">
-              <div className="flex flex-col gap-2">
-                <p className="text-xs text-muted-foreground">Response Rate</p>
-                <ResponseGauge
-                  rate={survey.responseRate}
-                  responseCount={survey.responseCount}
-                  enrollmentCount={survey.enrollmentCount}
-                  showBar
-                  size="md"
-                />
+          {/* Overview card — DS Card slot composition */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-semibold">Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-6">
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs text-muted-foreground">Response Rate</p>
+                  <ResponseGauge
+                    rate={survey.responseRate}
+                    responseCount={survey.responseCount}
+                    enrollmentCount={survey.enrollmentCount}
+                    showBar
+                    size="md"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <p className="text-xs text-muted-foreground">Deadline</p>
+                  <p className="text-sm font-medium">{survey.deadline}</p>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <p className="text-xs text-muted-foreground">Template</p>
+                  <p className="text-sm font-medium">{template?.name ?? '—'}</p>
+                </div>
               </div>
-              <div className="flex flex-col gap-1">
-                <p className="text-xs text-muted-foreground">Deadline</p>
-                <p className="text-sm font-medium">{survey.deadline}</p>
-              </div>
-              <div className="flex flex-col gap-1">
-                <p className="text-xs text-muted-foreground">Template</p>
-                <p className="text-sm font-medium">{template?.name ?? '—'}</p>
-              </div>
-            </div>
-            <Separator />
-            <div className="flex items-center justify-end gap-2">
+            </CardContent>
+            <CardFooter className="justify-end gap-2">
               {canClose && (
                 <SendReminderPopover survey={survey}>
                   <Button variant="outline" size="sm">
@@ -133,8 +137,8 @@ export default function SurveyDetailPage() {
                   Share with Faculty
                 </Button>
               )}
-            </div>
-          </div>
+            </CardFooter>
+          </Card>
 
           {/* Sections */}
           <div className="border border-border rounded-lg overflow-hidden">
@@ -215,7 +219,7 @@ export default function SurveyDetailPage() {
           </div>
 
         </div>
-      </main>
+      </div>
 
       <CloseSurveyDialog open={closeOpen} onOpenChange={setCloseOpen} survey={survey} />
       <AddGuestSheet open={addGuestOpen} onOpenChange={setAddGuestOpen} surveyId={survey.id} />

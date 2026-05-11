@@ -2,13 +2,11 @@
 
 import { useState } from 'react'
 import {
-  Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
-  Collapsible, CollapsibleTrigger, CollapsibleContent,
+  Button,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Tooltip, TooltipTrigger, TooltipContent,
-  SidebarTrigger, Separator, Avatar, AvatarFallback, Badge,
-  InputGroup, InputGroupAddon, InputGroupInput,
+  SidebarTrigger, Separator, Avatar, AvatarFallback,
 } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
@@ -16,35 +14,155 @@ import { ResponseGauge } from '@/components/pce/response-gauge'
 import { CreateSurveySheet, CloseSurveyDialog } from '@/components/pce/pce-modals'
 import { MOCK_TERMS } from '@/lib/pce-mock-data'
 import type { PceSurvey, SurveyStatus } from '@/lib/pce-mock-data'
+import { DataTable } from '@/components/data-table'
+import type { ColumnDef } from '@/components/data-table/types'
 import Link from 'next/link'
 
-type GroupConfig = { status: SurveyStatus; label: string; defaultOpen: boolean }
+/* Group order + display labels for the status column. Drives DataTable's
+   group-row dividers when defaultGroupBy="status". Aarti's directive: active
+   buckets first, closed at the bottom. */
+const GROUP_ORDER: SurveyStatus[] = ['pending_review', 'collecting', 'active', 'draft', 'released', 'closed']
+const GROUP_LABELS: Record<SurveyStatus, string> = {
+  pending_review: 'Needs Action',
+  collecting:     'Collecting',
+  active:         'Active',
+  draft:          'Draft',
+  released:       'Shared with Faculty',
+  closed:         'Closed',
+}
 
-const GROUP_CONFIG: GroupConfig[] = [
-  { status: 'pending_review', label: 'Needs Action',        defaultOpen: true  },
-  { status: 'collecting',     label: 'Collecting',          defaultOpen: true  },
-  { status: 'draft',          label: 'Draft',               defaultOpen: true  },
-  { status: 'released',       label: 'Shared with Faculty', defaultOpen: false },
-  { status: 'closed',         label: 'Closed',              defaultOpen: false },
-]
+/* Row type flattened with sortable scalar fields. Canonical DataTable's
+   sortKey indexes TData directly, so any column we want sortable needs a
+   real property here. */
+interface SurveyRow extends Record<string, unknown> {
+  id: string
+  survey: PceSurvey
+  courseCode: string
+  status: SurveyStatus
+  primaryInstructorName: string
+  primaryInstructorInitials: string
+  extraInstructorCount: number
+  responseRate: number
+  deadline: string
+}
 
 export default function SurveysPage() {
   const { surveys } = usePce()
   const [createOpen, setCreateOpen] = useState(false)
   const [closeSurvey, setCloseSurvey] = useState<PceSurvey | null>(null)
   const [termFilter, setTermFilter] = useState('all')
-  const [search, setSearch] = useState('')
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(
-    () => Object.fromEntries(GROUP_CONFIG.map(g => [g.status, g.defaultOpen]))
-  )
 
   const filtered = surveys.filter(s => {
     if (termFilter !== 'all' && s.term !== termFilter) return false
-    if (search && !`${s.courseCode} ${s.courseName}`.toLowerCase().includes(search.toLowerCase())) return false
     return true
   })
 
-  const hasResults = filtered.length > 0
+  const rows: SurveyRow[] = filtered.map(survey => {
+    const primary = survey.instructors.find(i => i.role === 'primary')
+    return {
+      id: survey.id,
+      survey,
+      courseCode: survey.courseCode,
+      status: survey.status,
+      primaryInstructorName: primary?.name ?? '',
+      primaryInstructorInitials: primary?.initials ?? '',
+      extraInstructorCount: Math.max(0, survey.instructors.length - 1),
+      responseRate: survey.responseRate,
+      deadline: survey.deadline ?? '',
+    }
+  })
+
+  const columns: ColumnDef<SurveyRow>[] = [
+    {
+      key: 'courseCode',
+      label: 'Course',
+      sortable: true,
+      width: 200,
+      cell: (row) => (
+        <Link
+          href={`/surveys/${row.survey.id}`}
+          className="flex flex-col gap-0.5 hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span className="text-sm font-semibold">{row.survey.courseCode}</span>
+          <span className="text-xs text-muted-foreground">{row.survey.courseName}</span>
+        </Link>
+      ),
+    },
+    {
+      key: 'primaryInstructorName',
+      label: 'Instructor(s)',
+      sortable: true,
+      width: 200,
+      cell: (row) => row.primaryInstructorName ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center gap-1.5 w-fit">
+              <Avatar className="h-6 w-6">
+                <AvatarFallback
+                  className="text-xs"
+                  style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}
+                >
+                  {row.primaryInstructorInitials}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-sm font-medium truncate max-w-32">{row.primaryInstructorName}</span>
+              {row.extraInstructorCount > 0 && (
+                <span className="text-xs text-muted-foreground">+{row.extraInstructorCount}</span>
+              )}
+            </div>
+          </TooltipTrigger>
+          {row.extraInstructorCount > 0 && (
+            <TooltipContent>
+              <div className="flex flex-col gap-0.5">
+                {row.survey.instructors.map(i => (
+                  <span key={i.id} className="text-xs">{i.name} ({i.role})</span>
+                ))}
+              </div>
+            </TooltipContent>
+          )}
+        </Tooltip>
+      ) : (
+        <span className="text-sm text-muted-foreground">—</span>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      sortable: true,
+      width: 160,
+      cell: (row) => <SurveyStatusBadge status={row.status} />,
+    },
+    {
+      key: 'responseRate',
+      label: 'Response rate',
+      sortable: true,
+      width: 200,
+      cell: (row) => (
+        <ResponseGauge
+          rate={row.survey.responseRate}
+          responseCount={row.survey.responseCount}
+          enrollmentCount={row.survey.enrollmentCount}
+          showBar={row.survey.responseRate > 0}
+        />
+      ),
+    },
+    {
+      key: 'deadline',
+      label: 'Deadline',
+      sortable: true,
+      width: 140,
+      cell: (row) => (
+        <span className="text-sm font-medium text-muted-foreground">{row.deadline || '—'}</span>
+      ),
+    },
+    {
+      key: 'actions',
+      label: '',
+      width: 44,
+      cell: (row) => <RowActions survey={row.survey} onClose={() => setCloseSurvey(row.survey)} />,
+    },
+  ]
 
   return (
     <>
@@ -58,21 +176,11 @@ export default function SurveysPage() {
         </Button>
       </header>
 
+      {/* Term filter sits outside the table because it isn't a column. The
+          DataTable toolbar (search + filter pills + properties) renders below. */}
       <div className="flex items-center gap-2 py-2 border-b border-border shrink-0 flex-wrap" style={{ paddingInline: 28 }}>
-        <InputGroup className="w-56">
-          <InputGroupAddon align="inline-start">
-            <i className="fa-light fa-magnifying-glass text-muted-foreground" aria-hidden="true" style={{ fontSize: 12 }} />
-          </InputGroupAddon>
-          <InputGroupInput
-            placeholder="Search…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="h-8 text-sm"
-          />
-        </InputGroup>
-
         <Select value={termFilter} onValueChange={setTermFilter}>
-          <SelectTrigger className="h-8 w-36 text-sm">
+          <SelectTrigger className="h-8 w-36 text-sm" aria-label="Filter by term">
             <SelectValue placeholder="All terms" />
           </SelectTrigger>
           <SelectContent>
@@ -82,73 +190,28 @@ export default function SurveysPage() {
         </Select>
       </div>
 
-      <main className="flex-1 overflow-auto" style={{ padding: '0 28px 28px' }}>
-        {!hasResults ? (
+      <div className="flex-1 overflow-auto" style={{ paddingBlock: 16, paddingInline: 0 }}>
+        {rows.length === 0 ? (
           <EmptySurveys
             onCreate={() => setCreateOpen(true)}
-            hasFilters={termFilter !== 'all' || search.length > 0}
+            hasFilters={termFilter !== 'all'}
           />
         ) : (
-          <div className="flex flex-col">
-            {GROUP_CONFIG.map(group => {
-              const groupSurveys = filtered.filter(s => s.status === group.status)
-              if (groupSurveys.length === 0) return null
-              const isOpen = openGroups[group.status]
-
-              return (
-                <Collapsible
-                  key={group.status}
-                  open={isOpen}
-                  onOpenChange={v => setOpenGroups(prev => ({ ...prev, [group.status]: v }))}
-                >
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="flex items-center gap-2 py-2.5 px-1 w-full h-auto justify-start rounded-none"
-                      style={{ borderTop: '1px solid var(--border)' }}
-                      aria-label={isOpen ? `Collapse ${group.label}` : `Expand ${group.label}`}
-                    >
-                      <span
-                        className="text-xs font-semibold uppercase tracking-wide flex-1 text-left text-muted-foreground"
-                      >
-                        {group.label}
-                      </span>
-                      <Badge variant="secondary">{groupSurveys.length}</Badge>
-                      <i
-                        className="fa-light fa-chevron-down"
-                        aria-hidden="true"
-                        style={{ fontSize: 10, transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s ease' }}
-                      />
-                    </Button>
-                  </CollapsibleTrigger>
-
-                  <CollapsibleContent>
-                    <div className="border border-border rounded-lg overflow-hidden mb-4">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Course</TableHead>
-                            <TableHead>Instructor(s)</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Response rate</TableHead>
-                            <TableHead>Deadline</TableHead>
-                            <TableHead className="w-10" />
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {groupSurveys.map(s => (
-                            <SurveyRow key={s.id} survey={s} onClose={() => setCloseSurvey(s)} />
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              )
-            })}
-          </div>
+          <DataTable<SurveyRow>
+            data={rows}
+            columns={columns}
+            getRowId={(row) => row.id}
+            selectable
+            searchable
+            defaultGroupBy="status"
+            groupLabels={GROUP_LABELS}
+            groupOrder={GROUP_ORDER}
+            onRowClick={(row) => {
+              window.location.href = `/surveys/${row.survey.id}`
+            }}
+          />
         )}
-      </main>
+      </div>
 
       <CreateSurveySheet open={createOpen} onOpenChange={setCreateOpen} />
       <CloseSurveyDialog
@@ -160,103 +223,44 @@ export default function SurveysPage() {
   )
 }
 
-function SurveyRow({ survey, onClose }: { survey: PceSurvey; onClose: () => void }) {
+function RowActions({ survey, onClose }: { survey: PceSurvey; onClose: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false)
-  const [hovered, setHovered] = useState(false)
-
-  const primary = survey.instructors.find(i => i.role === 'primary')
-  const extraCount = survey.instructors.length - 1
-
   return (
-    <TableRow
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{ cursor: 'pointer' }}
-    >
-      <TableCell>
-        <Link href={`/surveys/${survey.id}`} className="flex flex-col gap-0.5 hover:underline">
-          <span className="text-sm font-semibold">{survey.courseCode}</span>
-          <span className="text-xs text-muted-foreground">{survey.courseName}</span>
-        </Link>
-      </TableCell>
-      <TableCell>
-        {primary && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center gap-1.5 w-fit">
-                <Avatar className="h-6 w-6">
-                  <AvatarFallback
-                    className="text-xs"
-                    style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}
-                  >
-                    {primary.initials}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-sm font-medium truncate max-w-32">{primary.name}</span>
-                {extraCount > 0 && (
-                  <span className="text-xs text-muted-foreground">
-                    +{extraCount}
-                  </span>
-                )}
-              </div>
-            </TooltipTrigger>
-            {extraCount > 0 && (
-              <TooltipContent>
-                <div className="flex flex-col gap-0.5">
-                  {survey.instructors.map(i => (
-                    <span key={i.id} className="text-xs">{i.name} ({i.role})</span>
-                  ))}
-                </div>
-              </TooltipContent>
-            )}
-          </Tooltip>
+    <DropdownMenu onOpenChange={setMenuOpen} open={menuOpen}>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Survey actions"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <i className="fa-regular fa-ellipsis" aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-44" onClick={(e) => e.stopPropagation()}>
+        <DropdownMenuItem asChild>
+          <Link href={`/surveys/${survey.id}`}>
+            <i className="fa-light fa-eye" aria-hidden="true" />
+            View
+          </Link>
+        </DropdownMenuItem>
+        {survey.status === 'collecting' && (
+          <DropdownMenuItem>
+            <i className="fa-light fa-bell" aria-hidden="true" />
+            Send Reminder
+          </DropdownMenuItem>
         )}
-      </TableCell>
-      <TableCell><SurveyStatusBadge status={survey.status} /></TableCell>
-      <TableCell>
-        <ResponseGauge
-          rate={survey.responseRate}
-          responseCount={survey.responseCount}
-          enrollmentCount={survey.enrollmentCount}
-          showBar={survey.responseRate > 0}
-        />
-      </TableCell>
-      <TableCell className="text-sm font-medium text-muted-foreground">
-        {survey.deadline}
-      </TableCell>
-      <TableCell>
-        <div style={{ opacity: hovered || menuOpen ? 1 : 0, transition: 'opacity 100ms' }}>
-          <DropdownMenu onOpenChange={setMenuOpen}>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" aria-label="Survey actions">
-                <i className="fa-regular fa-ellipsis" aria-hidden="true" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem asChild>
-                <Link href={`/surveys/${survey.id}`}>
-                  <i className="fa-light fa-eye" aria-hidden="true" />
-                  View
-                </Link>
-              </DropdownMenuItem>
-              {survey.status === 'collecting' && (
-                <DropdownMenuItem>
-                  <i className="fa-light fa-bell" aria-hidden="true" />
-                  Send Reminder
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              {survey.status === 'collecting' && (
-                <DropdownMenuItem variant="destructive" onClick={onClose}>
-                  <i className="fa-light fa-xmark" aria-hidden="true" />
-                  Close Survey
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </TableCell>
-    </TableRow>
+        {survey.status === 'collecting' && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onClick={onClose}>
+              <i className="fa-light fa-xmark" aria-hidden="true" />
+              Close Survey
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
