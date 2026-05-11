@@ -8,6 +8,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
   Checkbox,
+  Field, FieldLabel, FieldError,
   LocalBanner,
 } from '@exxat/ds/packages/ui/src'
 import { mockCourses, mockCourseOfferings, mockAssessments, MOCK_QB_QUESTIONS } from '@/lib/qb-mock-data'
@@ -446,6 +447,7 @@ function ABQuestionPicker({
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   const [saveConfirmed, setSaveConfirmed] = useState(false)
   const [newViewName, setNewViewName] = useState('')
+  const [newViewNameError, setNewViewNameError] = useState<string | null>(null)
   const [source, setSource] = useState<PickerSource>('this-course')
   const [otherCourseId, setOtherCourseId] = useState<string>('')
 
@@ -525,10 +527,21 @@ function ABQuestionPicker({
   }, [timeMetrics.totalMin, activeAsmt.durationMinutes])
 
   function handleSaveView() {
-    if (!newViewName.trim()) return
+    const trimmed = newViewName.trim()
+    if (!trimmed) {
+      setNewViewNameError('Give the smart view a name.')
+      return
+    }
+    // Reject duplicate name vs system or saved views (case-insensitive).
+    const dup = smartViews.find(v => v.label.toLowerCase() === trimmed.toLowerCase())
+    if (dup) {
+      setNewViewNameError(`A view called "${dup.label}" already exists.`)
+      return
+    }
+    setNewViewNameError(null)
     onSaveView({
       id: `user-${Date.now()}`,
-      label: newViewName.trim(),
+      label: trimmed,
       isSystem: false,
       filters: activeView?.filters ?? {},
     })
@@ -778,8 +791,16 @@ function ABQuestionPicker({
         onCancel={() => {}}
       />
 
-      {/* Save smart view dialog */}
-      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+      {/* Save smart view dialog — Field + FieldError surfaces both
+          "required" and "duplicate name" failures (was silent disable
+          on submit button). */}
+      <Dialog
+        open={saveDialogOpen}
+        onOpenChange={(o) => {
+          if (!o) { setNewViewName(''); setNewViewNameError(null) }
+          setSaveDialogOpen(o)
+        }}
+      >
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Save smart view</DialogTitle>
@@ -787,16 +808,29 @@ function ABQuestionPicker({
           <p className="text-sm text-muted-foreground" style={{ marginBottom: 8 }}>
             Saves the current filter configuration as &ldquo;{activeView?.label}&rdquo; with a custom name.
           </p>
-          <Input
-            autoFocus
-            value={newViewName}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewViewName(e.target.value)}
-            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleSaveView()}
-            placeholder="View name…"
-          />
+          <Field orientation="vertical">
+            <FieldLabel htmlFor="save-view-name">View name *</FieldLabel>
+            <Input
+              id="save-view-name"
+              autoFocus
+              value={newViewName}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                setNewViewName(e.target.value)
+                if (newViewNameError) setNewViewNameError(null)
+              }}
+              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleSaveView()}
+              placeholder="View name…"
+              aria-required="true"
+              aria-invalid={!!newViewNameError}
+              aria-describedby={newViewNameError ? 'save-view-name-error' : undefined}
+            />
+            {newViewNameError && (
+              <FieldError id="save-view-name-error">{newViewNameError}</FieldError>
+            )}
+          </Field>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setSaveDialogOpen(false)}>Cancel</Button>
-            <Button variant="default" size="sm" onClick={handleSaveView} disabled={!newViewName.trim()}>Save</Button>
+            <Button variant="default" size="sm" onClick={handleSaveView}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

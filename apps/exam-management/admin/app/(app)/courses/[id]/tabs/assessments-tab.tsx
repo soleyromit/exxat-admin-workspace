@@ -236,9 +236,25 @@ export function AssessmentsTab({ assessments, reviewByAssessment, isViewer, cour
         const isOpen = isCollapsible ? completedOpen : true
         return (
         <section key={g.key}>
+          {/* Group header — collapsible variant uses role/tabIndex/keyboard
+              + focus-visible so the clickable region is screen-reader and
+              keyboard accessible (was a raw <div onClick> with no a11y). */}
           <div
-            className={`flex items-baseline gap-2 mb-3 ${isCollapsible ? 'cursor-pointer select-none' : ''}`}
+            className={`flex items-baseline gap-2 mb-3 rounded ${
+              isCollapsible
+                ? 'cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 -mx-1 px-1'
+                : ''
+            }`}
             onClick={isCollapsible ? () => setCompletedOpen(o => !o) : undefined}
+            role={isCollapsible ? 'button' : undefined}
+            tabIndex={isCollapsible ? 0 : undefined}
+            aria-expanded={isCollapsible ? isOpen : undefined}
+            onKeyDown={isCollapsible ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                setCompletedOpen(o => !o)
+              }
+            } : undefined}
           >
             {isCollapsible && (
               <i

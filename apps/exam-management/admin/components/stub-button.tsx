@@ -11,6 +11,13 @@
  * Pattern note: native `disabled` blocks pointer events, which prevents
  * the Tooltip from firing. The inner Button gets `aria-disabled` + visual
  * disable styles, while a wrapping <span> captures hover for the tooltip.
+ *
+ * Contrast note: button labels are informative content (they describe the
+ * future feature), so we use the DS Button's native `disabled:opacity-50`
+ * scale via aria-disabled styling, plus text-muted-foreground for tone,
+ * rather than stacking `opacity-60` on already-muted text (which dropped
+ * the muted-foreground stub label below 3:1 — NURS-bug-class flagged at
+ * components/data-table/index.tsx:1041).
  */
 
 import {
@@ -36,7 +43,10 @@ export function StubButton({
           aria-disabled="true"
           className={[
             className ?? '',
-            'opacity-60 pointer-events-none',
+            // pointer-events-none keeps Tip clickable via the wrapping span.
+            // text-muted-foreground @ full opacity ≈ 4.5:1 on background;
+            // safer than opacity-60 (~2.57:1 with the same fg).
+            'pointer-events-none text-muted-foreground',
           ].join(' ')}
         >
           {children}

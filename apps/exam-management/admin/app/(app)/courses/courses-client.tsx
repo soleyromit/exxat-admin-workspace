@@ -353,7 +353,7 @@ function CourseCard({ course }: { course: CourseSummary }) {
   return (
     <Link
       href={`/courses/${course.id}`}
-      className="group rounded-xl border border-border bg-card px-5 py-5 flex flex-col gap-3 transition-colors hover:bg-muted/30 no-underline"
+      className="group rounded-xl border border-border bg-card px-5 py-5 flex flex-col gap-3 transition-colors hover:bg-muted/30 no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
       <div className="min-w-0">
         <p className="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -630,7 +630,7 @@ function CourseListView({ courses }: { courses: CourseSummary[] }) {
             <li key={c.id}>
               <Link
                 href={`/courses/${c.id}`}
-                className="flex items-center gap-4 px-5 py-3.5 hover:bg-muted/30 transition-colors no-underline"
+                className="flex items-center gap-4 px-5 py-3.5 hover:bg-muted/30 transition-colors no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
               >
                 <span className="font-mono text-xs font-bold uppercase tracking-wider px-2 py-1 rounded bg-muted text-muted-foreground shrink-0 min-w-[80px] text-center">
                   {formatCourseCode(c.code)}

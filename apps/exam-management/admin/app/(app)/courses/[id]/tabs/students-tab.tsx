@@ -268,15 +268,21 @@ function StudentRow({
             </Button>
           </Tip>
         )}
+        {/* "Coming soon" affordance — uses muted-foreground at full opacity
+            (≥ 4.5:1) rather than opacity-60 on muted-foreground (~2.57:1,
+            NURS-bug-class per docs/governance/component-depth-audits notes
+            in data-table/index.tsx:1041). pointer-events-none keeps the
+            Button non-interactive while still surfacing the Tip on hover
+            (Tip wraps the focusable button). */}
         <Tip label="Per-student detail · coming soon">
           <Button
             variant="ghost"
             size="icon-sm"
             aria-disabled="true"
-            className="opacity-60 pointer-events-none"
+            className="pointer-events-none text-muted-foreground"
             aria-label="View student detail (coming soon)"
           >
-            <i className="fa-light fa-arrow-right text-muted-foreground" aria-hidden="true" />
+            <i className="fa-light fa-arrow-right" aria-hidden="true" />
           </Button>
         </Tip>
       </div>

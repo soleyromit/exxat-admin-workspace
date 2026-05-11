@@ -10,7 +10,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuLabel,
   Popover, PopoverTrigger, PopoverContent,
-  Tooltip, TooltipTrigger, TooltipContent,
+  Tooltip, TooltipTrigger, TooltipContent, Tip,
   InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput,
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
   TableHeader, TableBody, TableRow, TableHead, TableCell,
@@ -475,7 +475,7 @@ type ChipDef = { key: string; icon: string; label: string; onRemove: () => void 
 // Simple chip — bookmark, no popover
 function SimpleChip({ chip }: { chip: ChipDef }) {
   return (
-    <div className="text-xs text-foreground" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, height: 28, padding: '0 4px 0 8px', borderRadius: 6, border: '1px solid var(--border)', backgroundColor: 'var(--background)', flexShrink: 0 }}>
+    <div className="text-xs text-foreground" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, height: 'var(--qb-chip-height)', padding: '0 4px 0 8px', borderRadius: 4, border: '1px solid var(--border)', backgroundColor: 'var(--background)', flexShrink: 0 }}>
       <i className={`fa-light ${chip.icon}`} aria-hidden="true" style={{ fontSize: 10, color: 'var(--muted-foreground)' }} />
       <span className="font-medium">{chip.label}</span>
       <Button variant="ghost" size="icon-xs" aria-label={`Remove ${chip.label}`} onClick={chip.onRemove} className="text-muted-foreground" style={{ width: 16, height: 16, padding: 0, marginLeft: 2 }}>
@@ -509,33 +509,31 @@ function FilterPill({ filter, onUpdate, onRemove, autoOpen = false, fieldDefs = 
     onUpdate(filter.id, { values: newValues })
   }
 
+  const chipColor = hasValues ? 'var(--brand-color)' : undefined
+
   return (
+    // Wrapper div owns the chip border/bg — trigger and close are siblings, never nested buttons
+    <div style={{
+      display: 'inline-flex',
+      borderRadius: 4,
+      border: hasValues ? '1px solid var(--brand-color)' : '1.5px dashed var(--border)',
+      backgroundColor: hasValues ? 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' : 'var(--background)',
+      flexShrink: 0, userSelect: 'none', overflow: 'hidden',
+    }}>
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
-          size="sm"
-          className={`text-xs gap-1 h-7 shrink-0${!hasValues ? ' text-foreground' : ''}`}
+          size="xs"
+          className={`text-xs gap-1 shrink-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0${!hasValues ? ' text-foreground' : ''}`}
           style={{
-            height: 28,
-            padding: '0 4px 0 8px',
-            borderRadius: 4,
-            border: hasValues ? '1px solid var(--brand-color)' : '1.5px dashed var(--border)',
-            backgroundColor: hasValues ? 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' : 'var(--background)',
-            color: hasValues ? 'var(--brand-color)' : undefined,
-            userSelect: 'none',
+            height: 'var(--qb-chip-height)', padding: '0 2px 0 8px',
+            borderRadius: 0,
+            color: chipColor,
           }}
         >
           <i className={`fa-light ${fieldDef.icon}`} aria-hidden="true" style={{ fontSize: 10 }} />
           <span className="font-medium">{pillLabel}</span>
-          <Button
-            variant="ghost" size="icon-xs"
-            aria-label={`Remove ${fieldDef.label} filter`}
-            onClick={e => { e.stopPropagation(); onRemove(filter.id) }}
-            style={{ width: 16, height: 16, padding: 0, marginLeft: 2, color: 'inherit' }}
-          >
-            <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 9 }} />
-          </Button>
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" style={{ width: 260, padding: 0, overflow: 'hidden' }}>
@@ -589,6 +587,17 @@ function FilterPill({ filter, onUpdate, onRemove, autoOpen = false, fieldDefs = 
         </div>
       </PopoverContent>
     </Popover>
+    {/* Close button — sibling of Popover, NOT inside the trigger button */}
+    <Button
+      variant="ghost" size="icon-xs"
+      aria-label={`Remove ${fieldDef.label} filter`}
+      onClick={e => { e.stopPropagation(); onRemove(filter.id) }}
+      className="hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 hover:opacity-60"
+      style={{ width: 20, height: 'var(--qb-chip-height)', padding: 0, borderRadius: 0, color: chipColor }}
+    >
+      <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 9 }} />
+    </Button>
+    </div>
   )
 }
 
@@ -602,8 +611,8 @@ function AddFilterDropdown({ onAdd, fieldDefs = QB_FILTER_FIELDS }: {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost" size="xs"
-          className="text-xs text-muted-foreground"
-          style={{ height: 28, padding: '0 10px', borderRadius: 6, border: '1.5px dashed var(--border)', gap: 4, flexShrink: 0 }}
+          className="qb-add-filter-btn text-xs text-muted-foreground"
+          style={{ height: 'var(--qb-chip-height)', padding: '0 10px', borderRadius: 4, border: '1.5px dashed var(--border)', gap: 4, flexShrink: 0 }}
         >
           <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 9 }} />
           Add filter
@@ -652,7 +661,7 @@ function FilterChips({
       {bookmarkChips.map(chip => <SimpleChip key={chip.key} chip={chip} />)}
       <AddFilterDropdown onAdd={onAddFilter} fieldDefs={filterFields} />
       {hasActive && (
-        <Button variant="ghost" size="xs" onClick={onClearAll} className="text-xs text-muted-foreground" style={{ height: 28, padding: '0 6px', flexShrink: 0 }}>
+        <Button variant="ghost" size="xs" onClick={onClearAll} className="text-xs text-muted-foreground" style={{ height: 'var(--qb-chip-height)', padding: '0 6px', flexShrink: 0 }}>
           Clear all
         </Button>
       )}
@@ -1125,11 +1134,23 @@ function FilterPropertiesSheet({
                     )
                   })}
 
-                  {/* Bookmarked toggle as a special filter */}
+                  {/* Bookmarked toggle as a special filter — role/tabIndex/
+                      onKeyDown + focus-visible so the clickable wrapper is
+                      keyboard- and screen-reader accessible (was raw <div
+                      onClick> with no a11y semantics). */}
                   {bookmarkOnly && (
                     <div
-                      className="rounded-lg border border-border overflow-hidden cursor-pointer select-none"
+                      className="rounded-lg border border-border overflow-hidden cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                       onClick={() => setBookmarkOnly(v => !v)}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={true}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          setBookmarkOnly(v => !v)
+                        }
+                      }}
                       style={{ background: 'color-mix(in oklch, var(--brand-color) 6%, var(--background))' }}
                     >
                       <div className="flex items-center gap-2.5 px-3 py-2.5">
@@ -1868,6 +1889,7 @@ function ColHeader({
   filterOptions,
   filterSet,
   onFilterToggle,
+  onSetFilter,
   draggable, onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd, dragOverStyle,
   thClass,
 }: {
@@ -1890,6 +1912,7 @@ function ColHeader({
   filterOptions?: string[]
   filterSet?: Set<string>
   onFilterToggle?: (v: string) => void
+  onSetFilter?: (values: string[]) => void
   draggable?: boolean
   onDragStart?: () => void
   onDragOver?: (e: React.DragEvent) => void
@@ -1915,7 +1938,7 @@ function ColHeader({
   const hasInlineFilter = !!filterOptions && filterOptions.length > 0
   const filteredColOptions = colSearch
     ? (filterOptions ?? []).filter(o => o.toLowerCase().includes(colSearch.toLowerCase()))
-    : (filterOptions ?? [])
+    : [] // list is hidden until user types — search-first UX
 
   useEffect(() => {
     return () => {
@@ -1936,9 +1959,31 @@ function ColHeader({
       onDragEnd={onDragEnd}
     >
       <DropdownMenu onOpenChange={open => { if (!open) setColSearch('') }}>
+        {/* Sortable column header — role/tabIndex/onKeyDown + focus-visible
+            ring so keyboard users can trigger sort (was raw <div onClick>
+            with no a11y). The inner Popover trigger keeps its own focus. */}
         <div
-          className="flex items-center gap-1 group/col-hdr cursor-pointer select-none w-full"
+          className="flex items-center gap-1 group/col-hdr cursor-pointer select-none w-full rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
           onClick={() => col.sortKey && onSort(col.key, isActive && sortDir === 'asc' ? 'desc' : 'asc')}
+          role={col.sortKey ? 'button' : undefined}
+          tabIndex={col.sortKey ? 0 : undefined}
+          aria-label={
+            col.sortKey
+              ? `Sort by ${col.label}, ${
+                  isActive
+                    ? sortDir === 'asc'
+                      ? 'currently ascending'
+                      : 'currently descending'
+                    : 'not sorted'
+                }`
+              : undefined
+          }
+          onKeyDown={e => {
+            if (col.sortKey && (e.key === 'Enter' || e.key === ' ')) {
+              e.preventDefault()
+              onSort(col.key, isActive && sortDir === 'asc' ? 'desc' : 'asc')
+            }
+          }}
         >
           {col.key === 'difficulty' ? (
             <Popover open={diffHoverOpen} onOpenChange={setDiffHoverOpen}>
@@ -2000,45 +2045,71 @@ function ColHeader({
           </DropdownMenuTrigger>
         </div>
 
-        <DropdownMenuContent align="start" className="w-52" onCloseAutoFocus={e => e.preventDefault()}>
-          {/* Inline column value search — filterable columns only */}
+        <DropdownMenuContent
+          align="start"
+          className="w-52"
+          onCloseAutoFocus={e => e.preventDefault()}
+          onOpenAutoFocus={e => { if (hasInlineFilter) e.preventDefault() }}
+        >
+          {/* Inline column search — typing immediately filters table rows */}
           {hasInlineFilter && (
             <>
-              <div className="px-2 pt-2 pb-1" onKeyDown={e => e.stopPropagation()}>
-                <Input
-                  placeholder="Search values…"
-                  value={colSearch}
-                  onChange={e => setColSearch(e.target.value)}
-                  className="h-7 text-xs"
-                />
+              <div className="px-2 pt-2 pb-1" onKeyDownCapture={e => e.stopPropagation()}>
+                <InputGroup style={{ height: 28 }}>
+                  <InputGroupAddon align="inline-start">
+                    <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 11, color: 'var(--muted-foreground)', padding: '0 4px' }} />
+                  </InputGroupAddon>
+                  <InputGroupInput
+                    autoFocus
+                    placeholder={`Search ${col.label.toLowerCase()}…`}
+                    value={colSearch}
+                    onChange={e => {
+                      const value = e.target.value
+                      setColSearch(value)
+                      if (onSetFilter && filterOptions) {
+                        if (!value.trim()) {
+                          onSetFilter([])
+                        } else {
+                          const matching = filterOptions.filter(o =>
+                            o.toLowerCase().includes(value.toLowerCase())
+                          )
+                          onSetFilter(matching)
+                        }
+                      }
+                    }}
+                    onKeyDown={e => e.stopPropagation()}
+                    onKeyDownCapture={e => e.stopPropagation()}
+                    className="text-xs"
+                    style={{ height: 28 }}
+                  />
+                </InputGroup>
               </div>
-              <div className="max-h-40 overflow-y-auto py-0.5">
-                {filteredColOptions.length === 0 ? (
-                  <p className="px-3 py-2 text-xs text-muted-foreground">No matches</p>
-                ) : filteredColOptions.map(opt => {
-                  const checked = filterSet?.has(opt) ?? false
-                  return (
-                    <DropdownMenuItem
-                      key={opt}
-                      onSelect={e => { e.preventDefault(); onFilterToggle?.(opt) }}
-                      className="gap-2 text-xs"
-                    >
-                      <span
-                        aria-hidden="true"
-                        className="inline-flex items-center justify-center shrink-0 rounded-[3px] border transition-colors"
-                        style={{
-                          width: 13, height: 13,
-                          background: checked ? 'var(--primary)' : 'var(--background)',
-                          borderColor: checked ? 'var(--primary)' : 'var(--border-control-3)',
-                        }}
-                      >
-                        {checked && <i className="fa-solid fa-check text-primary-foreground" aria-hidden="true" style={{ fontSize: 7 }} />}
-                      </span>
-                      {opt}
-                    </DropdownMenuItem>
-                  )
-                })}
-              </div>
+              {/* Match feedback — max 3 pills + overflow count */}
+              {colSearch && (
+                <div className="px-3 pb-2">
+                  {filteredColOptions.length === 0 ? (
+                    <p className="text-[11px] text-muted-foreground">No matches</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1 pt-0.5 items-center">
+                      {filteredColOptions.slice(0, 3).map(opt => (
+                        <span
+                          key={opt}
+                          className="inline-flex items-center gap-1 text-[11px] text-foreground shrink-0"
+                          style={{ padding: '2px 7px', borderRadius: 99, backgroundColor: 'var(--muted)', border: '1px solid var(--border)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                        >
+                          <i className="fa-solid fa-check shrink-0" aria-hidden="true" style={{ fontSize: 7, color: 'var(--brand-color)' }} />
+                          {opt}
+                        </span>
+                      ))}
+                      {filteredColOptions.length > 3 && (
+                        <span className="text-[11px] text-muted-foreground shrink-0">
+                          +{filteredColOptions.length - 3} more
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
               <DropdownMenuSeparator />
             </>
           )}
@@ -2178,11 +2249,18 @@ export function QBTable() {
   // Shadow TH so header cells get matching vertical gridlines
   const TH_CLS = `h-9 px-3 text-start align-middle text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg border-b border-border select-none whitespace-nowrap${showGridlines ? ' border-r border-border last:border-r-0' : ''}`
   const [paginationEnabled, setPaginationEnabled] = useState(true)
-  const [showTableTitle, setShowTableTitle] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth > 1280 : true
-  )
+  const [showTableTitle, setShowTableTitle] = useState(true)
   const [showColumnLabels, setShowColumnLabels] = useState(true)
   const [showSearch, setShowSearch] = useState(true)
+
+  // Set correct initial value + keep in sync when user zooms in/out
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)')
+    const update = () => setShowTableTitle(!mq.matches)
+    update() // apply immediately on mount
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
 
   const [conditionalRules, setConditionalRules] = useState<QBConditionalRule[]>([])
   const searchRef = useRef<HTMLInputElement>(null)
@@ -2287,6 +2365,20 @@ export function QBTable() {
         }
         const id = `${fieldKey}-${Date.now()}`
         return [...prev, { id, fieldKey, operator: 'is', values: [v] }]
+      })
+    }
+  }
+
+  function getColFilterSetter(colKey: ColKey): ((values: string[]) => void) | undefined {
+    const fieldKey = colKey as QBFilterKey
+    if (!QB_FILTER_FIELDS.some(f => f.key === fieldKey)) return undefined
+    return values => {
+      setActiveFilters(prev => {
+        if (values.length === 0) return prev.filter(f => f.fieldKey !== fieldKey)
+        const existing = prev.find(f => f.fieldKey === fieldKey)
+        if (existing) return prev.map(f => f.fieldKey === fieldKey ? { ...f, values } : f)
+        const id = `${fieldKey}-${Date.now()}`
+        return [...prev, { id, fieldKey, operator: 'is', values }]
       })
     }
   }
@@ -2413,11 +2505,11 @@ export function QBTable() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-      {showTableTitle && <QBTitle />}
+      <QBTitle />
 
       {/* ── Toolbar: pinned outside scroll — filter chips left, icon controls right ── */}
       {!isTrulyEmpty && (
-      <div className="qb-toolbar" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, padding: '0 16px', flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
+      <div className="qb-toolbar" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, padding: '6px 16px', flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
         {/* Left: active filter chips (gated by filterBarVisible) */}
         {filterBarVisible ? (
           <FilterChips
@@ -2431,6 +2523,17 @@ export function QBTable() {
             filterFields={qbFilterFields}
           />
         ) : <div style={{ flex: 1 }} />}
+
+        {/* Compact Add Question — only visible at ≤768px (200% zoom), hidden at normal zoom via CSS */}
+        <Button
+          variant="default" size="sm"
+          className="qb-toolbar-add-btn"
+          style={{ display: 'none', gap: 5, flexShrink: 0 }}
+          onClick={() => router.push(selectedFolderId ? `/questions/new?folder=${selectedFolderId}` : '/questions/new')}
+        >
+          <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 11 }} />
+          Add Question
+        </Button>
 
         {/* Right: icon controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
@@ -2472,80 +2575,68 @@ export function QBTable() {
                 </InputGroupAddon>
               </InputGroup>
             ) : (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => setSearchOpen(true)}
-                    aria-label="Search questions"
-                    style={search ? { color: 'var(--brand-color)' } : {}}
-                  >
-                    <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 13 }} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Search</TooltipContent>
-              </Tooltip>
+              <Tip label="Search">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => setSearchOpen(true)}
+                  aria-label="Search questions"
+                  style={search ? { color: 'var(--brand-color)' } : {}}
+                >
+                  <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 13 }} />
+                </Button>
+              </Tip>
             )}
           </div>}
 
           {/* Bookmark toggle */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => setBookmarkOnly(v => !v)}
-                aria-pressed={bookmarkOnly}
-                aria-label={bookmarkOnly ? 'Show all questions' : 'Show bookmarked only'}
-                style={bookmarkOnly ? {
-                  borderColor: 'var(--chart-4)',
-                  color: 'var(--chart-4)',
-                  backgroundColor: 'color-mix(in oklch, var(--chart-4) 10%, var(--background))',
-                } : {}}
-              >
-                <i
-                  className={bookmarkOnly ? 'fa-solid fa-star' : 'fa-light fa-star'}
-                  aria-hidden="true"
-                  style={{ fontSize: 13 }}
-                />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{bookmarkOnly ? 'Show all questions' : 'Bookmarked only'}</TooltipContent>
-          </Tooltip>
+          <Tip label={bookmarkOnly ? 'Show all questions' : 'Bookmarked only'}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setBookmarkOnly(v => !v)}
+              aria-pressed={bookmarkOnly}
+              aria-label={bookmarkOnly ? 'Show all questions' : 'Show bookmarked only'}
+              style={bookmarkOnly ? {
+                borderColor: 'var(--chart-4)',
+                color: 'var(--chart-4)',
+                backgroundColor: 'color-mix(in oklch, var(--chart-4) 10%, var(--background))',
+              } : {}}
+            >
+              <i
+                className={bookmarkOnly ? 'fa-solid fa-star' : 'fa-light fa-star'}
+                aria-hidden="true"
+                style={{ fontSize: 13 }}
+              />
+            </Button>
+          </Tip>
 
           {/* My Questions toggle */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost" size="icon-sm"
-                aria-label="My questions"
-                aria-pressed={myQuestionsOnly}
-                onClick={() => setMyQuestionsOnly(!myQuestionsOnly)}
-                style={myQuestionsOnly ? { borderColor: 'var(--brand-color)', color: 'var(--brand-color)', backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' } : {}}
-              >
-                <i className="fa-light fa-user" aria-hidden="true" style={{ fontSize: 13 }} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>My questions only</TooltipContent>
-          </Tooltip>
+          <Tip label="My questions only">
+            <Button
+              variant="ghost" size="icon-sm"
+              aria-label="My questions"
+              aria-pressed={myQuestionsOnly}
+              onClick={() => setMyQuestionsOnly(!myQuestionsOnly)}
+              style={myQuestionsOnly ? { borderColor: 'var(--brand-color)', color: 'var(--brand-color)', backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' } : {}}
+            >
+              <i className="fa-light fa-user" aria-hidden="true" style={{ fontSize: 13 }} />
+            </Button>
+          </Tip>
 
           {/* Properties / filter sheet trigger */}
           <div style={{ position: 'relative' }}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => setPropertiesOpen(true)}
-                  aria-label="Table properties"
-                  style={activeFilterCount > 0 || hiddenCols.size > 0 ? { borderColor: 'var(--brand-color)', color: 'var(--brand-color)', backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' } : {}}
-                >
-                  <i className="fa-light fa-sliders" aria-hidden="true" style={{ fontSize: 13 }} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Filters &amp; properties</TooltipContent>
-            </Tooltip>
+            <Tip label="Filters & properties">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setPropertiesOpen(true)}
+                aria-label="Table properties"
+                style={activeFilterCount > 0 || hiddenCols.size > 0 ? { borderColor: 'var(--brand-color)', color: 'var(--brand-color)', backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' } : {}}
+              >
+                <i className="fa-light fa-sliders" aria-hidden="true" style={{ fontSize: 13 }} />
+              </Button>
+            </Tip>
             {activeFilterCount > 0 && (
               <span className="text-[8px] font-bold text-primary-foreground" style={{
                 position: 'absolute', top: -5, right: -5,
@@ -2707,8 +2798,8 @@ export function QBTable() {
           {/* Padding wrapper — flex column so footer attaches flush to table */}
           <div className="qb-table-padding-wrapper" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 0 }}>
           {/* Table: outer clips corners, inner scrolls — overflow-hidden required for border-radius to clip table content */}
-          <div className="border border-border overflow-hidden rounded-lg" style={{ maxHeight: '100%', display: 'flex', flexDirection: 'column' }}>
-          <div className="qb-table-scroll" style={{ overflow: 'auto' }}>
+          <div className="border border-border overflow-hidden rounded-lg" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          <div className="qb-table-scroll" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
             <table className="text-sm border-separate border-spacing-0 table-fixed" style={{ minWidth: '100%' }}>
               {showColumnLabels && <TableHeader style={{ position: 'sticky', top: 0, zIndex: 4 }}>
                 <TableRow>
@@ -2757,6 +2848,7 @@ export function QBTable() {
                         filterOptions={qbFilterFields.find(f => f.key === col.key)?.options}
                         filterSet={getColFilterSet(col.key)}
                         onFilterToggle={getColFilterToggler(col.key)}
+                        onSetFilter={getColFilterSetter(col.key)}
                         className={
                           col.key === 'status'       ? 'w-28' :
                           col.key === 'type'         ? 'w-24' :
@@ -3065,20 +3157,17 @@ export function QBTable() {
                       >
                         <div className="flex items-center justify-center">
                         <DropdownMenu open={openMenuQuestionId === q.id} onOpenChange={open => setOpenMenuQuestionId(open ? q.id : null)}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost" size="icon-xs"
-                                  aria-label={`More options for ${q.title}`}
-                                  onClick={e => e.stopPropagation()}
-                                >
-                                  <i className={`fa-${openMenuQuestionId === q.id ? 'solid' : 'regular'} fa-ellipsis`} aria-hidden="true" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                            </TooltipTrigger>
-                            <TooltipContent>More options</TooltipContent>
-                          </Tooltip>
+                          <Tip label="More options">
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost" size="icon-xs"
+                                aria-label={`More options for ${q.title}`}
+                                onClick={e => e.stopPropagation()}
+                              >
+                                <i className={`fa-${openMenuQuestionId === q.id ? 'solid' : 'regular'} fa-ellipsis`} aria-hidden="true" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                          </Tip>
                           <DropdownMenuContent align="end" className="w-56">
                             <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); duplicateQuestion(q.id) }}>
                               <i className="fa-light fa-copy" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
@@ -3156,39 +3245,27 @@ export function QBTable() {
                   {(page - 1) * perPage + 1}–{Math.min(page * perPage, sortedQuestions.length)} of {sortedQuestions.length}
                 </span>
                 <div className="flex items-center gap-1">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon-xs" disabled={page === 1} onClick={() => setPage(1)} aria-label="First page">
-                        <i className="fa-light fa-chevrons-left text-xs" aria-hidden="true" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">First page</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon-xs" disabled={page === 1} onClick={() => setPage(p => p - 1)} aria-label="Previous page">
-                        <i className="fa-light fa-chevron-left text-xs" aria-hidden="true" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">Previous page</TooltipContent>
-                  </Tooltip>
+                  <Tip label="First page">
+                    <Button variant="ghost" size="icon-xs" disabled={page === 1} onClick={() => setPage(1)} aria-label="First page">
+                      <i className="fa-light fa-chevrons-left text-xs" aria-hidden="true" />
+                    </Button>
+                  </Tip>
+                  <Tip label="Previous page">
+                    <Button variant="ghost" size="icon-xs" disabled={page === 1} onClick={() => setPage(p => p - 1)} aria-label="Previous page">
+                      <i className="fa-light fa-chevron-left text-xs" aria-hidden="true" />
+                    </Button>
+                  </Tip>
                   <span className="px-2 text-muted-foreground tabular-nums">{page} / {totalPages}</span>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon-xs" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} aria-label="Next page">
-                        <i className="fa-light fa-chevron-right text-xs" aria-hidden="true" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">Next page</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon-xs" disabled={page >= totalPages} onClick={() => setPage(totalPages)} aria-label="Last page">
-                        <i className="fa-light fa-chevrons-right text-xs" aria-hidden="true" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">Last page</TooltipContent>
-                  </Tooltip>
+                  <Tip label="Next page">
+                    <Button variant="ghost" size="icon-xs" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} aria-label="Next page">
+                      <i className="fa-light fa-chevron-right text-xs" aria-hidden="true" />
+                    </Button>
+                  </Tip>
+                  <Tip label="Last page">
+                    <Button variant="ghost" size="icon-xs" disabled={page >= totalPages} onClick={() => setPage(totalPages)} aria-label="Last page">
+                      <i className="fa-light fa-chevrons-right text-xs" aria-hidden="true" />
+                    </Button>
+                  </Tip>
                 </div>
               </div>
             </div>
@@ -3297,14 +3374,11 @@ export function QBTable() {
             <div className="h-4 w-px bg-border mx-0.5" aria-hidden="true" />
 
             {/* Clear — icon only */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon-sm" aria-label="Clear selection" onClick={clearSelection}>
-                  <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 13 }} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Clear selection</TooltipContent>
-            </Tooltip>
+            <Tip label="Clear selection">
+              <Button variant="ghost" size="icon-sm" aria-label="Clear selection" onClick={clearSelection}>
+                <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 13 }} />
+              </Button>
+            </Tip>
           </div>
         )
       })()}

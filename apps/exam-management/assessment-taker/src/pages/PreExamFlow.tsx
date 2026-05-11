@@ -289,6 +289,8 @@ function Instructions({ exam, onNext }: { exam: Assessment; onNext: () => void }
           type="checkbox"
           checked={agreed}
           onChange={e => setAgreed(e.target.checked)}
+          required
+          aria-required="true"
           style={{ width: 18, height: 18, marginTop: 1, accentColor: t.brand, flexShrink: 0 }}
           aria-label="I have read and agree to the academic integrity policy"
         />
@@ -298,10 +300,11 @@ function Instructions({ exam, onNext }: { exam: Assessment; onNext: () => void }
         </span>
       </label>
 
-      {/* E-signature */}
+      {/* E-signature — required field. aria-required surfaces the
+          requirement to assistive tech (was silent-disable only). */}
       <div style={{ marginBottom: 24 }}>
         <label htmlFor="esig" style={{ fontSize: 13, fontWeight: 600, color: t.fg, display: 'block', marginBottom: 6 }}>
-          Type your full name as an electronic signature
+          Type your full name as an electronic signature *
         </label>
         <input
           id="esig"
@@ -309,6 +312,9 @@ function Instructions({ exam, onNext }: { exam: Assessment; onNext: () => void }
           placeholder="e.g. Ramona Sanchez"
           value={signature}
           onChange={e => setSignature(e.target.value)}
+          required
+          aria-required="true"
+          autoComplete="off"
           style={{
             width: '100%', padding: '10px 14px', borderRadius: 8,
             border: `1.5px solid ${signature ? t.brand : t.borderControl}`,

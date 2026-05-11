@@ -26,6 +26,7 @@ import {
   Textarea,
   Checkbox,
   Label,
+  FieldError,
   LocalBanner,
 } from '@exxat/ds/packages/ui/src'
 import { SiteHeader } from '@/components/site-header'
@@ -346,12 +347,17 @@ function SendToChairDialog({
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set([REVIEWER_ROSTER[0].id]))
   const [note, setNote] = useState('')
+  const [reviewerError, setReviewerError] = useState<string | null>(null)
 
   const toggle = (id: string) => {
     setSelected(prev => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
       else next.add(id)
+      // Clear the "pick at least one" error as soon as the user makes a
+      // selection (matches the on-change clearing pattern used by the
+      // exam-mgmt dialogs migrated in a4fc60a).
+      if (next.size > 0 && reviewerError) setReviewerError(null)
       return next
     })
   }
@@ -360,7 +366,14 @@ function SendToChairDialog({
     .filter(r => selected.has(r.id))
     .map(r => r.name)
 
-  const canSubmit = reviewerNames.length > 0
+  const handleSubmit = () => {
+    if (reviewerNames.length === 0) {
+      setReviewerError('Pick at least one reviewer.')
+      return
+    }
+    setReviewerError(null)
+    onSubmit(reviewerNames, note)
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -383,13 +396,24 @@ function SendToChairDialog({
 
         <div className="flex flex-col gap-3">
           <div>
-            <Label className="text-sm font-medium">Reviewers</Label>
+            <Label className="text-sm font-medium" id="reviewers-label">Reviewers *</Label>
             <p className="text-[11px] text-muted-foreground mt-0.5">
               Select one or more — chair approval is required, but you can include a co-reviewer.
             </p>
           </div>
 
-          <div className="flex flex-col gap-1.5 rounded-lg border border-border p-1">
+          {/* role=group makes the reviewer list one accessible widget; the
+              FieldError below is announced via aria-errormessage. Per the
+              forms-input.md depth audit, every required validation must
+              expose aria-invalid + a visible error surface. */}
+          <div
+            className="flex flex-col gap-1.5 rounded-lg border border-border p-1"
+            role="group"
+            aria-labelledby="reviewers-label"
+            aria-invalid={!!reviewerError}
+            aria-errormessage={reviewerError ? 'reviewers-error' : undefined}
+            style={reviewerError ? { borderColor: 'var(--destructive)' } : undefined}
+          >
             {REVIEWER_ROSTER.map(r => {
               const isSelected = selected.has(r.id)
               return (
@@ -439,6 +463,9 @@ function SendToChairDialog({
               )
             })}
           </div>
+          {reviewerError && (
+            <FieldError id="reviewers-error">{reviewerError}</FieldError>
+          )}
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="chair-note" className="text-sm font-medium">
@@ -462,9 +489,14 @@ function SendToChairDialog({
           <DialogClose asChild>
             <Button variant="outline">Cancel</Button>
           </DialogClose>
-          <Button onClick={() => onSubmit(reviewerNames, note)} disabled={!canSubmit} className="gap-2">
+          {/* Submit no longer silently-disabled when zero reviewers —
+              clicking surfaces FieldError + aria-invalid on the group
+              (was: button greyed out with no SR feedback). */}
+          <Button onClick={handleSubmit} className="gap-2">
             <i className="fa-light fa-paper-plane" aria-hidden="true" />
-            {isResubmit ? 'Resubmit' : 'Send'} to {reviewerNames.length === 1 ? reviewerNames[0].split(' ').slice(-1)[0] : `${reviewerNames.length} reviewers`}
+            {reviewerNames.length === 0
+              ? (isResubmit ? 'Resubmit' : 'Send to chair')
+              : `${isResubmit ? 'Resubmit' : 'Send'} to ${reviewerNames.length === 1 ? reviewerNames[0].split(' ').slice(-1)[0] : `${reviewerNames.length} reviewers`}`}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -495,13 +527,19 @@ function QuickLink({
   // branch wraps the Card in <Link> so hover/focus remain on the link (DS
   // EntityCard pattern from apps/pce/admin/app/(app)/admin/page.tsx).
   if (disabled) {
+    // Disabled QuickLink uses bg-muted (background dim) instead of
+    // opacity-60 on the whole Card — opacity-60 over text-muted-foreground
+    // drops CardDescription contrast to ~2.3:1 (WCAG 1.4.3 fail). The
+    // body text "Available after publish" is informative content, not
+    // incidental — must stay legible. Same NURS-bug-class avoidance the
+    // vendored data-table flagged at data-table/index.tsx:1041.
     return (
-      <Card size="sm" className="opacity-60 cursor-not-allowed" aria-disabled="true">
+      <Card size="sm" className="bg-muted/40 cursor-not-allowed" aria-disabled="true">
         <CardHeader>
           <div className="flex items-start gap-3">
             <i className={`fa-light ${icon} text-muted-foreground text-base mt-0.5`} aria-hidden="true" />
             <div className="min-w-0">
-              <CardTitle className="text-sm font-medium text-foreground">{label}</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
               <CardDescription className="text-xs">Available after publish</CardDescription>
             </div>
           </div>
