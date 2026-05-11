@@ -193,6 +193,8 @@ Full icon-name map and font-size conventions: `docs/CLAUDE-DS-REFERENCE.md` §14
 
 The registry's "Banned hand-roll patterns" section lists the exact regexes the audit checks. Don't try to slip past — it's catching real bug classes, not theatre.
 
+**Before designing any admin entity detail page, list page with a view-mode toggle, or list page with row actions, read the matching `docs/patterns/admin/*.md` doc and reference the canonical example.** The three prescriptive docs are `row-actions.md`, `list-page-view-toggle.md`, and `entity-detail-shell.md` — each cites the file:line of the canonical implementation. Patterns are how 11 admin entities stay aligned.
+
 ### Verification discipline — before declaring "done / clean / complete"
 
 **The 5 patterns Romit has had to point out repeatedly. Read `docs/governance/verification-discipline.md` first. Apply them before any "I'm done" claim:**

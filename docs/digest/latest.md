@@ -54,8 +54,11 @@
   - `skip-link` — Skip to Main Content Link
 
 ### admin
+  - `entity-detail-shell` — Entity-Detail Shell (Admin)
+  - `list-page-view-toggle` — List-Page View Toggle (Admin)
   - `master-list-admin` — Master-List Admin
   - `read-only-inherited-filtered-view` — Read-Only Inherited Filtered View
+  - `row-actions` — Row Actions (Admin)
 
 ### async
   - `live-monitor-polling` — Live Monitor — Polling

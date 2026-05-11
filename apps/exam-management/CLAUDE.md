@@ -328,9 +328,20 @@ Most-used tokens with `.theme-one` (Lavender) active:
 
 ```
 components/app-sidebar.tsx       — Main sidebar: nav items, user footer, collapse/expand
-components/data-table.tsx        — DataTable wrapper (confirm which DS table it uses)
+components/data-table/           — Vendored from canonical exxat-ds DataTable (2026-05-11).
+                                   index.tsx + pagination.tsx + filter-date-calendar.tsx +
+                                   types.ts + use-table-state.ts + row-actions.tsx.
+                                   Replaces the prior hand-rolled components/data-table.tsx
+                                   (removed in same commit). Mirror of apps/pce/admin/components/data-table/.
+components/data-table/row-actions.tsx — Generic <RowActions<TData>> + RowAction<TData> type.
+                                   Codifies the 11/11 PCE row-action shape (ghost icon-sm trigger,
+                                   align="end", stopPropagation on trigger AND content).
+                                   See docs/patterns/admin/row-actions.md.
 components/empty-state.tsx       — Shared zero-data panel (Card size="sm" + icon + title + steps). Used in qb-table, add-accommodation-modal. Per card.md depth audit 2026-05-11.
-components/key-metrics.tsx       — KPI metrics strip
+components/key-metrics/          — Vendored from exxat-ds/apps/web/components/key-metrics.tsx (2026-05-11)
+                                   per docs/governance/component-depth-audits/key-metrics.md.
+                                   Replaces the prior hand-rolled components/key-metrics.tsx
+                                   (removed in same commit).
 components/page-header.tsx       — Page header with title and actions
 components/role-toggle.tsx       — Admin/Faculty role toggle
 components/site-header.tsx       — Top application header
