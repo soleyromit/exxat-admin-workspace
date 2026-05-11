@@ -1,6 +1,7 @@
 import { SiteHeader } from '@/components/site-header'
 import { AddQuestionClient } from './add-question-client'
 
+export const dynamic = 'force-dynamic'
 export default function AddQuestionPage() {
   return (
     <>
