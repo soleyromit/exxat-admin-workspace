@@ -125,7 +125,10 @@
   - `vercel:*`
 
 **Workspace-defined agents:**
+  - `ds-adoption-reviewer` (.claude/agents/ds-adoption-reviewer.md)
   - `research-cross-corpus` (.claude/agents/research-cross-corpus.md)
+  - `verification-reviewer` (.claude/agents/verification-reviewer.md)
+  - `visual-review` (.claude/agents/visual-review.md)
 
 ## Active overrides
 

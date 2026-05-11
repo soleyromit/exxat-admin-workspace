@@ -181,11 +181,41 @@ Full icon-name map and font-size conventions: `docs/CLAUDE-DS-REFERENCE.md` §14
 
 ## 8. Absolute Rules — Apply to ALL Products
 
+### DS adoption — the one rule that prevents the most repeat bugs
+
+**Before creating any new file under `apps/*/admin/components/` or `apps/*/student/components/`**:
+
+1. Read `docs/governance/ds-adoption.md` — the canonical registry of DS organisms.
+2. Spawn the `ds-adoption-reviewer` subagent with what you're about to build, the target product, and any design reference. It returns one of three verdicts: IMPORT / VENDOR / HAND-ROLL.
+3. Follow the verdict exactly. The verdict's "verification" block is the audit trail.
+
+**If you skip the subagent and write a hand-roll that mirrors a DS organism, the pre-commit hook `scripts/ds-adoption-audit.py --strict` will block the commit.** This is intentional — Claude has historically built 168-line subset DataTables instead of vendoring the canonical 1251-line one, hand-rolled `KpiButton` instead of importing `KeyMetrics`, etc. The subagent + audit close this loop.
+
+The registry's "Banned hand-roll patterns" section lists the exact regexes the audit checks. Don't try to slip past — it's catching real bug classes, not theatre.
+
+### Verification discipline — before declaring "done / clean / complete"
+
+**The 5 patterns Romit has had to point out repeatedly. Read `docs/governance/verification-discipline.md` first. Apply them before any "I'm done" claim:**
+
+- **Pattern A** — "Clean" ≠ "fine". When you ran narrow checks, list what wasn't checked. Never just say "clean" without scope.
+- **Pattern B** — Sibling coverage. If a bug was fixed, grep for the bug *class* and fix all siblings, not just the reported instance.
+- **Pattern C** — Scope enumeration. For multi-target work, enumerate the FULL set explicitly before starting. State the count. Never silently truncate.
+- **Pattern D** — Canonical comparison. For DS-touching changes, don't trust "X is imported" as evidence. Compare against the canonical's slot composition and variants.
+- **Pattern E** — Adversarial self-review. After a non-trivial change, spawn `verification-reviewer` subagent (`.claude/agents/verification-reviewer.md`) or re-read with adversarial eye. Don't trust "typecheck passes" as evidence of correctness.
+
+**For UI-touching changes, ALSO spawn `visual-review` subagent** (`.claude/agents/visual-review.md`). It runs `tools/visual-check/run.mjs` (Playwright + axe-core), reads screenshots back, and catches what static audits cannot — visual rendering, semantic conflicts (the NURS 210 "73% / No responses yet" bug class), runtime a11y violations. The dev server must be running. First-run setup: `cd tools/visual-check && pnpm install && pnpm install:chromium`.
+
+**The discipline log lives in `verification-discipline.md`.** When Romit catches a violation, log it there. The log shrinking over time = the discipline working.
+
+### Always / never list
+
 - NEVER edit files in `exxat-ds/` or `studentUX/` — read-only submodules
 - NEVER commit to main — all work stays on feature branches
 - NEVER hardcode hex/rgb colors — use CSS custom properties (`var(--token)`)
-- NEVER recreate Button, Badge, Input, Avatar, Dialog, Sheet, Sidebar, Dropdown, Tooltip, DataTable — import from DS
+- NEVER recreate Button, Badge, Input, Avatar, Dialog, Sheet, Sidebar, Dropdown, Tooltip, DataTable — import from DS or VENDOR per registry
 - NEVER use a raw `<button>` — every button must be DS `Button` with explicit `variant` and `size`
+- NEVER build a "data-table.tsx", "key-metrics.tsx", "section-cards.tsx", "export-drawer.tsx", "coach-mark.tsx", "command-menu.tsx" file in a product `components/` dir without consulting the registry first
+- NEVER use `<Card>` as a bare container with raw `<div>` children — use Card slots (CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter)
 - NEVER use `white` in `color-mix()` — always use `var(--background)`
 - NEVER use toast (`toast()` / Sonner) for product feedback — use banners or inline status
 - NEVER build list pages with raw `<table>` or third-party grids — use DS `DataTable` (admin) or shared `DataTable` (student)

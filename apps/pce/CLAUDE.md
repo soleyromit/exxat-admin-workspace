@@ -19,12 +19,20 @@
 ## Before Writing Any Component
 
 ```
-Step 1: Check Section 3 — does this component exist in @exxat-ds/ui?
-Step 2: Check Section 4 — does this component exist in studentUX?
-Step 3: If yes to either → IMPORT. Do not rebuild.
-Step 4: If no to both → build as a product feature component.
-Step 5: When you build it → add it to Section 6 "Already built".
+Step 1: Read docs/governance/ds-adoption.md — the canonical registry.
+Step 2: Spawn ds-adoption-reviewer subagent with what you're about to build.
+Step 3: Follow the verdict — IMPORT / VENDOR / HAND-ROLL.
+Step 4: If HAND-ROLL, add file to "Documented hand-rolls" in the registry.
+Step 5: Run python3 scripts/ds-adoption-audit.py before committing.
 ```
+
+The Step 1-3 process applies to every new file under `components/`. Sections 3-4 below list what's adopted **in this product** — do not assume "not listed = not available", always check the registry first.
+
+**Already vendored in this product:**
+- `components/data-table/` — canonical Exxat-DS DataTable (5 files, ~2150 lines + 3 PCE extensions: `defaultGroupBy`, `groupLabels`, `groupOrder`). Vendored 2026-05-11. Use it for every list page; raw `<Table>` is banned in product code.
+- `components/key-metrics/` — canonical Exxat-DS KeyMetrics (~860 lines). Vendored 2026-05-11 per audit at `docs/governance/component-depth-audits/key-metrics.md`. Import: `import { KeyMetrics, type MetricItem } from '@/components/key-metrics'`. First consumer: `app/(app)/analytics/page.tsx` (replaced the 4× `KpiButton` hand-roll). `useAskLeo` / `AskLeoShortcutKbds` are stubbed locally until PCE adopts an Ask Leo provider — swap stubs for real imports from `@/components/ask-leo-sidebar` when it lands. Use this for every dashboard / analytics KPI strip; raw KPI tile hand-rolls are banned.
+- `components/table-properties/types.ts` — types required by DataTable (ActiveFilter, FilterOperator, etc.)
+- `lib/editable-target.ts`, `lib/row-height.ts` — DataTable lib dependencies
 
 ---
 
@@ -210,13 +218,26 @@ With `.theme-one` (Lavender):
 ## 6. Product Feature Components
 
 ### Already Built
-(none — app not yet scaffolded)
+- **CommandPalette + CommandPaletteProvider** (`apps/pce/admin/components/command-palette.tsx`) — ⌘K / Ctrl+K global navigator. Mounted once at `app/(app)/layout.tsx` via `<CommandPaletteProvider>`. Built on DS `CommandDialog` + `CommandInput` + `CommandList` + `CommandGroup` + `CommandItem` + `CommandEmpty` + `CommandSeparator` + `Kbd`/`KbdGroup`. Four groups:
+  - **Surveys** (`MOCK_SURVEYS` → `/surveys/:id`)
+  - **Templates** (`MOCK_TEMPLATES` → `/templates/:id`)
+  - **Admin** (11 entities — hard-coded array, mirrors `app/(app)/admin/page.tsx` `ENTITIES` — keep in sync when slugs change)
+  - **Pages** (`/`, `/surveys`, `/templates`, `/analytics`, `/moderation`, `/my-surveys`, `/admin`)
+
+  Sidebar "Search · ⌘K" affordance lives at the top of the primary menu in `components/app-sidebar.tsx` and calls `useCommandPalette().setOpen(true)`.
+
+  Hotkey: `⌘K` (Mac) / `Ctrl+K` (Win/Linux) toggles open via a `window.keydown` listener; suppressed when focus is in an `Input`/`Textarea`/`contenteditable` (uses `lib/editable-target.ts` `isEditableTarget`).
+
+  **WHEN ADDING A NEW NAVIGABLE SURFACE** (new admin entity, new top-level route, new mock entity list), register it in `command-palette.tsx` so ⌘K can find it.
 
 ### To Build Next
 (Romit will direct)
 
 ### Component → DS Mapping
-(fill in as components are built)
+| Feature component | DS imports |
+|---|---|
+| `CommandPalette` | `CommandDialog`, `CommandInput`, `CommandList`, `CommandEmpty`, `CommandGroup`, `CommandItem`, `CommandSeparator`, `Kbd`, `KbdGroup` |
+| `AppSidebar` Search row | `SidebarMenuButton`, `Kbd`, `KbdGroup` |
 
 ---
 

@@ -104,6 +104,40 @@ else
   printf "${YELLOW}%s gaps${RESET} (warn — heuristic; verify)\n" "$gaps"
 fi
 
+# 4d. DS-adoption audit — PHASE 1 (block on new organism-name-collision)
+#
+# Three-phase rollout (2026-05-11):
+#   Phase 0 (shipped, then promoted): WARN only.
+#   Phase 1 (current, promoted 2026-05-11 after PCE bulk migration landed):
+#     BLOCK on NEW organism-name-collision (file under apps/*/<role>/components/
+#     named like a DS organism). Pre-existing exam-mgmt violations are
+#     grandfathered in GRANDFATHERED_ORGANISM_COLLISIONS inside the audit
+#     script — they become warns, not blocks. raw-table-in-product-code stays
+#     warn until exam-mgmt's 3 sites are migrated.
+#   Phase 2 (after exam-mgmt raw-table sweep): drop --strict-rules; block on
+#     everything blocking.
+#
+# Promote / demote by editing the --strict-rules list below.
+printf "       ds-adoption       ... "
+if python3 scripts/ds-adoption-audit.py --strict --strict-rules organism-name-collision > /tmp/pre-commit-ds-adoption.log 2>&1; then
+  blocks=$(grep -oE "[0-9]+ blocking" /tmp/pre-commit-ds-adoption.log | head -1 | grep -oE "[0-9]+" || echo "0")
+  warns=$(grep -oE "[0-9]+ warning" /tmp/pre-commit-ds-adoption.log | head -1 | grep -oE "[0-9]+" || echo "0")
+  if [ "$blocks" = "0" ] && [ "$warns" = "0" ]; then
+    printf "${GREEN}clean${RESET}\n"
+  else
+    printf "${GREEN}pass${RESET} (%s warn + %s tracked block — phase-1, non-strict rules deferred)\n" "$warns" "$blocks"
+  fi
+else
+  printf "${RED}FAIL${RESET} — new file matches DS organism name\n\n"
+  cat /tmp/pre-commit-ds-adoption.log
+  echo
+  echo "Fix:    consult docs/governance/ds-adoption.md, then either"
+  echo "        - import / vendor the DS organism, or"
+  echo "        - rename + add to 'Documented hand-rolls' in the registry"
+  echo "Bypass: git commit --no-verify"
+  exit 1
+fi
+
 # 5. Practices-audit staleness — soft warn at 60d, never block
 printf "  [5/6] practices-staleness ... "
 if python3 scripts/practices-audit-staleness.py > /tmp/pre-commit-practices.log 2>&1; then

@@ -5,3 +5,4 @@ packages:
   - 'apps/pce/*'
   - 'apps/skills-checklist/*'
   - 'apps/learning-contracts/*'
+  - 'tools/*'
