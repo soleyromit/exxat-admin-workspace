@@ -960,7 +960,7 @@ function FilterPropertiesSheet({
   bookmarkOnly, setBookmarkOnly,
   hiddenCols, setHiddenCols,
   filteredCount, totalCount,
-  sortCol, sortDir, onSort,
+  sortCol, sortDir, sortRules, onSort, onToggleSortDir, onRemoveSortRule, onClearAllSorts,
   groupBy, onGroupByChange,
   showGridlines, onShowGridlinesChange,
   paginationEnabled, onPaginationEnabledChange,
@@ -993,7 +993,11 @@ function FilterPropertiesSheet({
   totalCount: number
   sortCol: string | null
   sortDir: 'asc' | 'desc'
+  sortRules: { col: string; dir: 'asc' | 'desc' }[]
   onSort: (key: string, dir: 'asc' | 'desc') => void
+  onToggleSortDir: (col: string) => void
+  onRemoveSortRule: (col: string) => void
+  onClearAllSorts: () => void
   groupBy: string | null
   onGroupByChange: (key: string | null) => void
   showGridlines: boolean
@@ -1042,7 +1046,9 @@ function FilterPropertiesSheet({
 
   const activeFilterCount = activeFilters.filter(f => f.values.length > 0).length + (bookmarkOnly ? 1 : 0)
   const hiddenColCount = hiddenCols.size
-  const activeSortLabel = sortCol ? QB_COLS.find(c => c.key === sortCol)?.label ?? sortCol : null
+  const activeSortLabel = sortRules.length > 0
+    ? sortRules.map(r => QB_COLS.find(c => c.key === r.col)?.label ?? r.col).join(', ')
+    : null
   const groupByLabel = groupBy ? QB_COLS.find(c => c.key === groupBy)?.label ?? groupBy : null
 
   const PANEL_LABELS: Record<SheetPanel, string> = {
@@ -1081,7 +1087,7 @@ function FilterPropertiesSheet({
   const MAIN_ITEMS: { id: SheetPanel; icon: string; label: string; desc: string }[] = [
     { id: 'table-display', icon: 'fa-table',             label: 'Table',             desc: [showGridlines ? 'Gridlines' : null, rowHeight !== 'default' ? rowHeight : null].filter(Boolean).join(' · ') || 'Default appearance.' },
     { id: 'filter',        icon: 'fa-filter',            label: 'Filter',            desc: activeFilterCount === 0 ? `Showing all ${totalCount} questions.` : `${activeFilterCount} filter${activeFilterCount !== 1 ? 's' : ''} · ${filteredCount} shown.` },
-    { id: 'sort',          icon: 'fa-arrow-up-arrow-down', label: 'Sort',            desc: activeSortLabel ? `Sorted by ${activeSortLabel}, ${sortDir === 'asc' ? 'ascending' : 'descending'}.` : 'No sort applied.' },
+    { id: 'sort',          icon: 'fa-arrow-up-arrow-down', label: 'Sort',            desc: sortRules.length > 0 ? `${sortRules.length} sort rule${sortRules.length > 1 ? 's' : ''}: ${activeSortLabel}.` : 'No sort applied.' },
     { id: 'group',         icon: 'fa-layer-group',       label: 'Group',             desc: groupByLabel ? `Grouped by ${groupByLabel}.` : 'No grouping.' },
     { id: 'columns',       icon: 'fa-table-columns',     label: 'Columns',           desc: hiddenColCount === 0 ? 'All columns visible.' : `${hiddenColCount} column${hiddenColCount !== 1 ? 's' : ''} hidden.` },
     { id: 'conditional',   icon: 'fa-palette',           label: 'Conditional rules', desc: conditionalRules.length === 0 ? 'No rules active.' : `${conditionalRules.length} rule${conditionalRules.length !== 1 ? 's' : ''} active.` },
@@ -1354,64 +1360,76 @@ function FilterPropertiesSheet({
           </>
         )}
 
-        {/* ── Sort sub-panel ── */}
+        {/* ── Sort sub-panel — multi-column ── */}
         {panel === 'sort' && (
           <>
             <BackClose onBack={() => setPanel('main')} />
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 pb-4">
-              {/* Active sort card */}
-              {sortCol ? (
-                <div className="rounded-lg border border-border overflow-hidden">
-                  <div className="flex items-center gap-2 px-3 py-2.5">
-                    <i className="fa-light fa-grip-dots-vertical text-muted-foreground/40 shrink-0" aria-hidden="true" style={{ fontSize: 13 }} />
-                    <Badge variant="secondary" className="rounded text-[10px] px-1.5 py-0.5 shrink-0" style={{ backgroundColor: 'var(--sidebar-accent)', color: 'var(--sidebar-accent-foreground)' }}>
-                      PRIMARY
-                    </Badge>
-                    <span className="text-sm font-medium text-foreground flex-1 min-w-0 truncate">{activeSortLabel}</span>
-                    <Button
-                      variant="ghost" size="xs"
-                      onClick={() => onSort(sortCol, sortDir === 'asc' ? 'desc' : 'asc')}
-                      className="gap-1 text-xs text-muted-foreground shrink-0"
-                    >
-                      {sortDir === 'asc' ? 'Ascending' : 'Descending'}
-                      <i className="fa-light fa-chevron-down text-[10px]" aria-hidden="true" />
-                    </Button>
-                    <Button variant="ghost" size="icon-xs" onClick={() => onSort('', 'asc')} aria-label="Remove sort" className="text-muted-foreground hover:text-destructive shrink-0">
-                      <i className="fa-light fa-trash text-xs" aria-hidden="true" />
-                    </Button>
-                  </div>
+              {/* Active sort rules */}
+              {sortRules.length > 0 ? (
+                <div className="rounded-lg border border-border overflow-hidden divide-y divide-border">
+                  {sortRules.map((rule, idx) => {
+                    const col = QB_COLS.find(c => c.key === rule.col)
+                    const rankLabel = idx === 0 ? 'PRIMARY' : idx === 1 ? 'THEN BY' : `THEN BY ${idx + 1}`
+                    return (
+                      <div key={rule.col} className="flex items-center gap-2 px-3 py-2.5">
+                        <i className="fa-light fa-grip-dots-vertical text-muted-foreground/40 shrink-0" aria-hidden="true" style={{ fontSize: 13 }} />
+                        <Badge variant="secondary" className="rounded text-[10px] px-1.5 py-0.5 shrink-0"
+                          style={{ backgroundColor: idx === 0 ? 'var(--sidebar-accent)' : 'var(--muted)', color: idx === 0 ? 'var(--sidebar-accent-foreground)' : 'var(--muted-foreground)' }}>
+                          {rankLabel}
+                        </Badge>
+                        <span className="text-sm font-medium text-foreground flex-1 min-w-0 truncate">{col?.label ?? rule.col}</span>
+                        <Button variant="ghost" size="xs"
+                          onClick={() => onToggleSortDir(rule.col)}
+                          className="gap-1 text-xs text-muted-foreground shrink-0">
+                          {rule.dir === 'asc' ? 'Ascending' : 'Descending'}
+                          <i className="fa-light fa-chevron-down text-[10px]" aria-hidden="true" />
+                        </Button>
+                        <Button variant="ghost" size="icon-xs" onClick={() => onRemoveSortRule(rule.col)}
+                          aria-label={`Remove ${col?.label ?? rule.col} sort`}
+                          className="text-muted-foreground hover:text-destructive shrink-0">
+                          <i className="fa-light fa-trash text-xs" aria-hidden="true" />
+                        </Button>
+                      </div>
+                    )
+                  })}
                 </div>
               ) : (
                 <EmptyState
                   icon="fa-arrow-up-arrow-down"
                   title="No sort applied"
-                  description="Add a sort rule below to order questions by a column."
+                  description="Add sort rules below. Multiple rules apply in order — primary, then secondary."
                 />
               )}
 
-              {/* Add sort + Remove all — inline */}
+              {/* Add sort + Remove all */}
               <div className="flex items-center gap-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex-1 gap-1.5 border-dashed text-muted-foreground">
                       <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                      Add sort
+                      {sortRules.length === 0 ? 'Add sort' : 'Add another sort'}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-52">
-                    {QB_COLS.filter(c => c.sortKey).map(col => (
-                      <DropdownMenuItem key={col.key} onClick={() => onSort(col.key, 'asc')}
-                        style={{ color: sortCol === col.key ? 'var(--brand-color)' : undefined }}>
-                        <i className={`fa-light ${sortCol === col.key ? 'fa-check' : 'fa-minus'} text-xs ${sortCol === col.key ? '' : 'text-muted-foreground'}`} aria-hidden="true"
-                          style={{ width: 14, color: sortCol === col.key ? 'var(--brand-color)' : undefined }} />
-                        {col.label}
-                      </DropdownMenuItem>
-                    ))}
+                    {QB_COLS.filter(c => c.sortKey).map(col => {
+                      const inRules = sortRules.some(r => r.col === col.key)
+                      return (
+                        <DropdownMenuItem key={col.key}
+                          disabled={inRules}
+                          onClick={() => !inRules && onSort(col.key, 'asc')}
+                          style={{ color: inRules ? 'var(--muted-foreground)' : undefined }}>
+                          <i className={`fa-light ${inRules ? 'fa-check' : 'fa-minus'} text-xs`} aria-hidden="true"
+                            style={{ width: 14, color: inRules ? 'var(--brand-color)' : undefined }} />
+                          {col.label}
+                        </DropdownMenuItem>
+                      )
+                    })}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                {sortCol && (
+                {sortRules.length > 0 && (
                   <Button variant="ghost" size="sm" className="shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => onSort('', 'asc')}>
+                    onClick={onClearAllSorts}>
                     Remove all
                   </Button>
                 )}
@@ -2018,7 +2036,7 @@ function DiffDistributionPopover({ questions }: { questions: Question[] }) {
 
 // ── Column header with sort indicator + contextual menu ───────────────────────
 function ColHeader({
-  col, sortCol, sortDir, onSort, onHide,
+  col, sortCol, sortDir, sortRules, onSort, onHide,
   onPinLeft, onPinRight, onUnpin,
   pinnedLeft, pinnedRight,
   wrapText, onToggleWrapText,
@@ -2037,6 +2055,7 @@ function ColHeader({
   col: typeof QB_COLS[number]
   sortCol: string | null
   sortDir: 'asc' | 'desc'
+  sortRules?: { col: string; dir: 'asc' | 'desc' }[]
   onSort: (key: string, dir: 'asc' | 'desc') => void
   onHide: (key: ColKey) => void
   onPinLeft: (key: string) => void
@@ -2066,6 +2085,8 @@ function ColHeader({
   thClass?: string
 }) {
   const isActive = sortCol === col.key
+  const sortRuleIndex = sortRules?.findIndex(r => r.col === col.key) ?? -1
+  const sortRank = sortRuleIndex >= 0 ? sortRuleIndex + 1 : null
   const stickyStyle: React.CSSProperties = pinnedLeft
     ? { position: 'sticky', left: 0, zIndex: 2, background: 'var(--dt-header-bg)', boxShadow: '2px 0 4px var(--sticky-edge-fade)' }
     : pinnedRight
@@ -2171,11 +2192,18 @@ function ColHeader({
           ) : (
             <span className={`flex-1 truncate${isActive ? ' text-foreground' : ''}`}>{col.label}</span>
           )}
-          {isActive && (
-            <i
-              className={`fa-solid ${sortDir === 'asc' ? 'fa-arrow-up' : 'fa-arrow-down'} ml-1 text-xs`}
-              aria-hidden="true"
-            />
+          {sortRank !== null && (
+            <span className="flex items-center gap-0.5 ml-1 shrink-0">
+              <i
+                className={`fa-solid ${(sortRules?.find(r => r.col === col.key)?.dir ?? 'asc') === 'asc' ? 'fa-arrow-up' : 'fa-arrow-down'} text-xs`}
+                aria-hidden="true"
+              />
+              {(sortRules?.length ?? 0) > 1 && (
+                <span className="text-[9px] font-bold leading-none" style={{ color: 'var(--brand-color)' }}>
+                  {sortRank}
+                </span>
+              )}
+            </span>
           )}
           <DropdownMenuTrigger
             className="opacity-0 group-hover/col-hdr:opacity-100 transition-opacity flex items-center justify-center"
@@ -2446,8 +2474,11 @@ export function QBTable() {
   const [lastAddedFilterId, setLastAddedFilterId] = useState<string | null>(null)
   const [expandedFilterIds, setExpandedFilterIds] = useState<Set<string>>(new Set())
   const [bookmarkOnly, setBookmarkOnly] = useState(false)
-  const [sortCol, setSortCol] = useState<string | null>(null)
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  // Multi-column sort: ordered array of rules (primary first).
+  const [sortRules, setSortRules] = useState<{ col: string; dir: 'asc' | 'desc' }[]>([])
+  // Derived shims so call-sites that read sortCol/sortDir still work.
+  const sortCol = sortRules[0]?.col ?? null
+  const sortDir = sortRules[0]?.dir ?? 'asc'
   const [hiddenCols, setHiddenCols] = useState<Set<ColKey>>(new Set())
   const [pinnedCols, setPinnedCols] = useState<Set<string>>(new Set())
   const [pinnedRightCols, setPinnedRightCols] = useState<Set<string>>(new Set())
@@ -2501,9 +2532,24 @@ export function QBTable() {
   }, [columnOrder, hiddenCols])
 
   function handleSort(key: string, dir: 'asc' | 'desc') {
-    setSortCol(key)
-    setSortDir(dir)
+    if (!key) { setSortRules([]); return }
+    setSortRules(prev => {
+      const existing = prev.find(r => r.col === key)
+      if (existing) {
+        // Toggle direction if already in rules
+        return prev.map(r => r.col === key ? { ...r, dir } : r)
+      }
+      // Add as new rule (primary if list empty, secondary/tertiary otherwise)
+      return [...prev, { col: key, dir }]
+    })
   }
+  function removeSortRule(col: string) {
+    setSortRules(prev => prev.filter(r => r.col !== col))
+  }
+  function toggleSortDir(col: string) {
+    setSortRules(prev => prev.map(r => r.col === col ? { ...r, dir: r.dir === 'asc' ? 'desc' : 'asc' } : r))
+  }
+  function clearAllSorts() { setSortRules([]) }
 
   function addFilter(fieldKey: QBFilterKey) {
     const id = `${fieldKey}-${Date.now()}`
@@ -2656,22 +2702,31 @@ export function QBTable() {
     return true
   })
 
-  // ── Sort ─────────────────────────────────────────────────────────────────
+  // ── Sort — multi-column, rules applied in order ───────────────────────────
   const DIFF_ORDER: Record<string, number> = { Easy: 0, Medium: 1, Hard: 2 }
+  function sortValue(q: Question, col: string): string | number {
+    if (col === 'title')      return q.title ?? ''
+    if (col === 'status')     return q.status ?? ''
+    if (col === 'type')       return q.type ?? ''
+    if (col === 'difficulty') return DIFF_ORDER[q.difficulty] ?? 0
+    if (col === 'blooms')     return q.blooms ?? ''
+    if (col === 'creator')    return q.creator ?? ''
+    if (col === 'usage')      return q.usage ?? 0
+    if (col === 'pbis')       return q.pbis ?? 0
+    return ''
+  }
   const sortedQuestions = (() => {
-    if (!sortCol) return filteredQuestions
+    if (sortRules.length === 0) return filteredQuestions
     return [...filteredQuestions].sort((a, b) => {
-      let va: string | number = '', vb: string | number = ''
-      if (sortCol === 'title')       { va = a.title ?? '';         vb = b.title ?? ''         }
-      else if (sortCol === 'status')     { va = a.status ?? '';        vb = b.status ?? ''        }
-      else if (sortCol === 'type')       { va = a.type ?? '';          vb = b.type ?? ''          }
-      else if (sortCol === 'difficulty') { va = DIFF_ORDER[a.difficulty] ?? 0; vb = DIFF_ORDER[b.difficulty] ?? 0 }
-      else if (sortCol === 'blooms')     { va = a.blooms ?? '';        vb = b.blooms ?? ''        }
-      else if (sortCol === 'creator')    { va = a.creator ?? '';       vb = b.creator ?? ''       }
-      else if (sortCol === 'usage')      { va = a.usage ?? 0;          vb = b.usage ?? 0          }
-      else if (sortCol === 'pbis')       { va = a.pbis ?? 0;           vb = b.pbis ?? 0           }
-      const cmp = typeof va === 'number' && typeof vb === 'number' ? va - vb : String(va).localeCompare(String(vb))
-      return sortDir === 'asc' ? cmp : -cmp
+      for (const rule of sortRules) {
+        const va = sortValue(a, rule.col)
+        const vb = sortValue(b, rule.col)
+        const cmp = typeof va === 'number' && typeof vb === 'number'
+          ? va - vb
+          : String(va).localeCompare(String(vb))
+        if (cmp !== 0) return rule.dir === 'asc' ? cmp : -cmp
+      }
+      return 0
     })
   })()
 
@@ -2696,7 +2751,7 @@ export function QBTable() {
     : sortedQuestions
 
   // Reset to page 1 when filters/sort/pagination/perPage change
-  useEffect(() => { setPage(1) }, [search, activeFilters, bookmarkOnly, sortCol, sortDir, paginationEnabled, perPage, visibleQuestions])
+  useEffect(() => { setPage(1) }, [search, activeFilters, bookmarkOnly, sortRules, paginationEnabled, perPage, visibleQuestions])
 
   // ── Grouped table rows ────────────────────────────────────────────────────
   type TableRowItem =
@@ -3129,6 +3184,7 @@ export function QBTable() {
                         col={col}
                         sortCol={sortCol}
                         sortDir={sortDir}
+                        sortRules={sortRules}
                         onSort={handleSort}
                         onHide={key => setHiddenCols(prev => new Set([...prev, key as ColKey]))}
                         onPinLeft={key => setPinnedCols(prev => { const next = new Set(prev); next.add(key); return next })}
@@ -3841,7 +3897,11 @@ export function QBTable() {
         totalCount={visibleQuestions.length}
         sortCol={sortCol}
         sortDir={sortDir}
+        sortRules={sortRules}
         onSort={handleSort}
+        onToggleSortDir={toggleSortDir}
+        onRemoveSortRule={removeSortRule}
+        onClearAllSorts={clearAllSorts}
         groupBy={groupBy}
         onGroupByChange={setGroupBy}
         showGridlines={showGridlines}
