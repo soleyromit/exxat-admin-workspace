@@ -342,6 +342,122 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     tags: ['lithium-toxicity', 'tremor', 'management'], usage: 7, pbis: 0.31, pbisDir: 'up',
     creator: 'persona-chen', lastEditedBy: 'persona-thompson', usedInSections: ['Final 2023'],
   },
+
+  // ── Deep subfolder questions — depth 2: Gram-Positive Organisms ──
+  {
+    id: 'q-gpos-001', code: 'PH-GPO-001', version: 2, age: '6 months',
+    title: 'Which cell wall component distinguishes Gram-positive organisms from Gram-negative bacteria on Gram staining?',
+    type: 'MCQ', status: 'Saved', difficulty: 'Easy', blooms: 'Remember',
+    folder: 'phar101-abx-gram-pos', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms',
+    tags: ['gram-stain', 'cell-wall', 'peptidoglycan'], usage: 18, pbis: 0.44, pbisDir: 'flat',
+    creator: 'persona-thompson', lastEditedBy: 'persona-thompson', usedInSections: ['Midterm 2024'],
+  },
+  {
+    id: 'q-gpos-002', code: 'PH-GPO-002', version: 1, age: '4 months',
+    title: 'A culture returns Gram-positive cocci in clusters. Rank the following empirical antibiotics by spectrum against this organism: vancomycin, nafcillin, clindamycin.',
+    type: 'Ordering', status: 'Saved', difficulty: 'Medium', blooms: 'Analyze',
+    folder: 'phar101-abx-gram-pos', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms',
+    tags: ['spectrum', 'gram-positive', 'cocci'], usage: 11, pbis: 0.38, pbisDir: 'up',
+    creator: 'persona-chen', lastEditedBy: 'persona-chen', usedInSections: ['Final 2024'],
+  },
+  {
+    id: 'q-gpos-003', code: 'PH-GPO-003', version: 3, age: '1 year',
+    title: 'Teichoic acids in Gram-positive cell walls serve which primary immunological function?',
+    type: 'MCQ', status: 'Saved', difficulty: 'Hard', blooms: 'Understand',
+    folder: 'phar101-abx-gram-pos', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms',
+    tags: ['teichoic-acid', 'immunology', 'virulence'], usage: 5, pbis: 0.27, pbisDir: 'down',
+    creator: 'persona-patel', lastEditedBy: 'persona-thompson', usedInSections: [],
+  },
+
+  // ── depth 3: Staphylococcus Coverage ──
+  {
+    id: 'q-staph-001', code: 'PH-STA-001', version: 2, age: '8 months',
+    title: 'A patient with a deep skin abscess has MSSA on culture. Which antibiotic provides the most appropriate definitive oral step-down therapy?',
+    type: 'MCQ', status: 'Saved', difficulty: 'Medium', blooms: 'Apply',
+    folder: 'phar101-abx-gpos-staph', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms / Staphylococcus Coverage',
+    tags: ['MSSA', 'step-down', 'oral-therapy'], usage: 14, pbis: 0.42, pbisDir: 'up',
+    creator: 'persona-thompson', lastEditedBy: 'persona-patel', usedInSections: ['Midterm 2024', 'Final 2023'],
+  },
+  {
+    id: 'q-staph-002', code: 'PH-STA-002', version: 1, age: '3 months',
+    title: 'Compare the mechanisms of action of cefazolin vs. vancomycin against Staphylococcus aureus. Under what clinical scenario would you prefer one over the other?',
+    type: 'MCQ', status: 'Saved', difficulty: 'Hard', blooms: 'Evaluate',
+    folder: 'phar101-abx-gpos-staph', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms / Staphylococcus Coverage',
+    tags: ['cefazolin', 'vancomycin', 'mechanism'], usage: 6, pbis: 0.33, pbisDir: 'flat',
+    creator: 'persona-chen', lastEditedBy: 'persona-chen', usedInSections: [],
+  },
+
+  // ── depth 3: Streptococcus Coverage ──
+  {
+    id: 'q-strep-001', code: 'PH-STR-001', version: 2, age: '5 months',
+    title: 'Which penicillin derivative provides the best coverage for Group A Streptococcus pharyngitis, and what is the recommended duration?',
+    type: 'MCQ', status: 'Saved', difficulty: 'Easy', blooms: 'Remember',
+    folder: 'phar101-abx-gpos-strep', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms / Streptococcus Coverage',
+    tags: ['GAS', 'pharyngitis', 'penicillin'], usage: 20, pbis: 0.51, pbisDir: 'up',
+    creator: 'persona-thompson', lastEditedBy: 'persona-thompson', usedInSections: ['Midterm 2024'],
+  },
+  {
+    id: 'q-strep-002', code: 'PH-STR-002', version: 1, age: '7 months',
+    title: 'A patient with penicillin allergy (anaphylaxis) requires treatment for streptococcal endocarditis. Select the most appropriate alternative regimen.',
+    type: 'MCQ', status: 'Saved', difficulty: 'Hard', blooms: 'Apply',
+    folder: 'phar101-abx-gpos-strep', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms / Streptococcus Coverage',
+    tags: ['endocarditis', 'penicillin-allergy', 'alternative'], usage: 8, pbis: 0.35, pbisDir: 'down',
+    creator: 'persona-patel', lastEditedBy: 'persona-chen', usedInSections: ['Final 2024'],
+  },
+
+  // ── depth 4: MRSA Protocols ──
+  {
+    id: 'q-mrsa-001', code: 'PH-MRS-001', version: 3, age: '10 months',
+    title: 'A patient with hospital-acquired pneumonia has MRSA confirmed on BAL culture. Trough vancomycin is 12 mg/L. What is the next best step in optimizing therapy?',
+    type: 'MCQ', status: 'Saved', difficulty: 'Hard', blooms: 'Evaluate',
+    folder: 'phar101-abx-mrsa', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms / Staphylococcus Coverage / MRSA Protocols',
+    tags: ['vancomycin', 'TDM', 'AUC-guided'], usage: 9, pbis: 0.29, pbisDir: 'up',
+    creator: 'persona-chen', lastEditedBy: 'persona-patel', usedInSections: ['Final 2024'],
+  },
+  {
+    id: 'q-mrsa-002', code: 'PH-MRS-002', version: 2, age: '4 months',
+    title: 'Daptomycin is considered for MRSA bacteremia. Identify the condition in which daptomycin is contraindicated despite MRSA sensitivity.',
+    type: 'MCQ', status: 'Saved', difficulty: 'Medium', blooms: 'Apply',
+    folder: 'phar101-abx-mrsa', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms / Staphylococcus Coverage / MRSA Protocols',
+    tags: ['daptomycin', 'contraindication', 'pneumonia'], usage: 12, pbis: 0.45, pbisDir: 'flat',
+    creator: 'persona-thompson', lastEditedBy: 'persona-thompson', usedInSections: ['Midterm 2024'],
+  },
+
+  // ── depth 4: MSSA Protocols ──
+  {
+    id: 'q-mssa-001', code: 'PH-MSA-001', version: 1, age: '6 months',
+    title: 'For MSSA bacteremia, nafcillin is preferred over vancomycin. Explain the pharmacodynamic rationale for this preference.',
+    type: 'MCQ', status: 'Saved', difficulty: 'Medium', blooms: 'Understand',
+    folder: 'phar101-abx-mssa', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms / Staphylococcus Coverage / MSSA Protocols',
+    tags: ['nafcillin', 'bactericidal', 'beta-lactam-preference'], usage: 7, pbis: 0.38, pbisDir: 'up',
+    creator: 'persona-patel', lastEditedBy: 'persona-patel', usedInSections: [],
+  },
+  {
+    id: 'q-mssa-002', code: 'PH-MSA-002', version: 2, age: '9 months',
+    title: 'A patient on nafcillin for MSSA endocarditis develops new-onset eosinophilia and rising creatinine on day 10. What is the most likely cause and how should therapy change?',
+    type: 'MCQ', status: 'Saved', difficulty: 'Hard', blooms: 'Analyze',
+    folder: 'phar101-abx-mssa', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms / Staphylococcus Coverage / MSSA Protocols',
+    tags: ['nafcillin', 'nephrotoxicity', 'interstitial-nephritis'], usage: 4, pbis: 0.22, pbisDir: 'down',
+    creator: 'persona-chen', lastEditedBy: 'persona-chen', usedInSections: ['Final 2023'],
+  },
+
+  // ── depth 5: Combination Therapy (deepest level — demonstrates the UX issue) ──
+  {
+    id: 'q-combo-001', code: 'PH-CMB-001', version: 1, age: '2 months',
+    title: 'A patient with persistent MRSA bacteremia on vancomycin monotherapy has rising MIC at 1.5 mg/L. Which combination regimen has evidence for use in refractory MRSA bacteremia?',
+    type: 'MCQ', status: 'Saved', difficulty: 'Hard', blooms: 'Evaluate',
+    folder: 'phar101-abx-mrsa-combo', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms / Staphylococcus Coverage / MRSA Protocols / Combination Therapy',
+    tags: ['refractory-MRSA', 'combination', 'vancomycin-MIC'], usage: 3, pbis: 0.19, pbisDir: 'down',
+    creator: 'persona-thompson', lastEditedBy: 'persona-patel', usedInSections: ['Final 2024'],
+  },
+  {
+    id: 'q-combo-002', code: 'PH-CMB-002', version: 1, age: '1 month',
+    title: 'Outline the synergistic mechanism when rifampin is added to vancomycin for prosthetic valve MRSA endocarditis, and identify the major risk of this combination.',
+    type: 'MCQ', status: 'Draft', difficulty: 'Hard', blooms: 'Analyze',
+    folder: 'phar101-abx-mrsa-combo', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms / Staphylococcus Coverage / MRSA Protocols / Combination Therapy',
+    tags: ['rifampin', 'synergy', 'biofilm', 'drug-interaction'], usage: 0, pbis: null, pbisDir: null,
+    creator: 'persona-chen', lastEditedBy: 'persona-chen', usedInSections: [],
+  },
 ]
 
 // ─── Personas ────────────────────────────────────────────────────────────────
