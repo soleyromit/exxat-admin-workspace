@@ -3,7 +3,7 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { useQB } from './qb-state'
 import type { FolderNode } from '@/lib/qb-types'
 import {
-  Button,
+  Button, Tip,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
   InputGroup, InputGroupAddon, InputGroupInput, Input,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Separator,
@@ -639,7 +639,20 @@ function FolderRow({
   const hasChildren = folders.some(f => f.parentId === node.id)
   const icon = getFolderIcon(node, isExpanded, isSelected)
 
-  const indentPx = 8 + depth * 16
+  const clampedDepth = Math.min(depth, 3)
+  const indentPx = 8 + clampedDepth * 16
+
+  // Build full ancestor path for folders at depth >= 3
+  const fullFolderPath = useMemo(() => {
+    if (depth < 3) return null
+    const path: string[] = []
+    let current: FolderNode | undefined = node
+    while (current) {
+      path.unshift(current.name)
+      current = current.parentId ? folders.find(f => f.id === current!.parentId) : undefined
+    }
+    return path.join(' / ')
+  }, [depth, node, folders])
 
   return (
     <div style={{ position: 'relative' }} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
@@ -789,9 +802,17 @@ function FolderRow({
           />
         ) : (
           <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span className={`block text-sm truncate text-foreground ${isSelected ? 'font-medium' : 'font-normal'}`}>
-              {node.isCourse ? courseFolderLabel(node.name) : node.name}
-            </span>
+            {fullFolderPath ? (
+              <Tip label={fullFolderPath}>
+                <span className={`block text-sm truncate text-foreground ${isSelected ? 'font-medium' : 'font-normal'}`}>
+                  {node.isCourse ? courseFolderLabel(node.name) : node.name}
+                </span>
+              </Tip>
+            ) : (
+              <span className={`block text-sm truncate text-foreground ${isSelected ? 'font-medium' : 'font-normal'}`}>
+                {node.isCourse ? courseFolderLabel(node.name) : node.name}
+              </span>
+            )}
             {node.isPrivateSpace && (
               <i
                 className="fa-light fa-lock text-muted-foreground shrink-0"
@@ -1101,14 +1122,69 @@ export function QBSidebar() {
 
         {/* Course → Folders tree */}
         <div role="tree" aria-label="Course tree">
-          {filteredRoots.map(course => (
-            <div key={course.id}>
-              <FolderRow node={course} depth={0} isAdmin={isAdmin} />
-              {expandedFolderIds.has(course.id) && (
-                <FolderTree nodes={visibleFolders} parentId={course.id} depth={1} isAdmin={isAdmin} />
-              )}
-            </div>
-          ))}
+          {filteredRoots.map(course => {
+            const isCourseSelected = selectedFolderId === course.id
+            const isExpanded = expandedFolderIds.has(course.id)
+
+            // Count accessible questions in this course (all subfolders)
+            const courseDescendantIds = (() => {
+              const result = new Set<string>([course.id])
+              const stack = [course.id]
+              while (stack.length > 0) {
+                const id = stack.pop()!
+                for (const f of visibleFolders) {
+                  if (f.parentId === id && !result.has(f.id)) {
+                    result.add(f.id)
+                    stack.push(f.id)
+                  }
+                }
+              }
+              return result
+            })()
+            const courseQuestionCount = countableQuestions.filter(q =>
+              courseDescendantIds.has(q.folder) ||
+              (q.extraFolders ?? []).some(ef => courseDescendantIds.has(ef.folder))
+            ).length
+
+            return (
+              <div key={course.id}>
+                <FolderRow node={course} depth={0} isAdmin={isAdmin} />
+                {isExpanded && (
+                  <>
+                    {/* Virtual "All Questions" node — always first child of an expanded course */}
+                    <div style={{ margin: '1px 4px' }}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedFolderId(course.id)}
+                        className="w-full justify-start text-foreground"
+                        style={{
+                          paddingLeft: 8 + 1 * 16, // depth=1 indent
+                          paddingRight: 8,
+                          height: 32,
+                          backgroundColor: isCourseSelected ? 'var(--sidebar-accent)' : 'transparent',
+                          borderRadius: 6,
+                        }}
+                      >
+                        <i
+                          className={`${isCourseSelected ? 'fa-solid' : 'fa-light'} fa-layer-group ${isCourseSelected ? 'text-foreground' : 'text-muted-foreground'}`}
+                          aria-hidden="true"
+                          style={{ fontSize: 13, width: 16, textAlign: 'center', flexShrink: 0 }}
+                        />
+                        <span className={`flex-1 text-sm text-left text-foreground ${isCourseSelected ? 'font-medium' : 'font-normal'}`}>
+                          All Questions
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {courseQuestionCount}
+                        </span>
+                      </Button>
+                    </div>
+                    <FolderTree nodes={visibleFolders} parentId={course.id} depth={1} isAdmin={isAdmin} />
+                  </>
+                )}
+              </div>
+            )
+          })}
           {!isAdmin && accessibleFolderIds.size === 0 && (
             <div style={{ padding: '20px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
               {/* Illustration */}

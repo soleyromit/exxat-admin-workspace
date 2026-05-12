@@ -517,7 +517,7 @@ type ColKey = (typeof QB_COLS)[number]['key']
 
 // ── Location path cell ───────────────────────────────────────────────────────
 function LocationCell({ question }: { question: Question }) {
-  const { folders, navigateToFolder } = useQB()
+  const { folders, navigateToFolder, accessibleFolderIds } = useQB()
 
   // Collect all locations: primary + extras
   const allLocations = [
@@ -530,6 +530,28 @@ function LocationCell({ question }: { question: Question }) {
   const LocationLink = ({ loc }: { loc: { folder: string; folderPath: string } }) => {
     const displayName = loc.folderPath.split(' / ').pop() ?? loc.folderPath
     const targetFolder = folders.find(f => f.id === loc.folder)
+    const canAccess = accessibleFolderIds.has(loc.folder)
+
+    if (!canAccess) {
+      return (
+        <Tip label="You don't have access to this folder">
+          <span
+            className="text-sm"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              color: 'var(--muted-foreground)', fontSize: '0.875rem',
+              maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}
+          >
+            <i className="fa-light fa-lock" aria-hidden="true" style={{ fontSize: 10, flexShrink: 0 }} />
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {displayName}
+            </span>
+          </span>
+        </Tip>
+      )
+    }
+
     return (
       <Button
         variant="ghost" size="sm"
@@ -571,6 +593,24 @@ function LocationCell({ question }: { question: Question }) {
             {allLocations.map((loc, i) => {
               const name = loc.folderPath.split(' / ').pop() ?? loc.folderPath
               const target = folders.find(f => f.id === loc.folder)
+              const canAccess = accessibleFolderIds.has(loc.folder)
+
+              if (!canAccess) {
+                return (
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 w-full rounded px-2 py-1.5"
+                    style={{ cursor: 'default' }}
+                  >
+                    <i className="fa-light fa-lock text-muted-foreground shrink-0" aria-hidden="true" style={{ fontSize: 12 }} />
+                    <div style={{ minWidth: 0 }}>
+                      <p className="text-sm font-medium truncate" style={{ color: 'var(--muted-foreground)' }}>{name}</p>
+                      <p className="text-[10px] truncate" style={{ color: 'var(--muted-foreground)' }}>{loc.folderPath}</p>
+                    </div>
+                  </div>
+                )
+              }
+
               return (
                 <button
                   key={i}
@@ -638,7 +678,9 @@ function FilterPill({ filter, onUpdate, onRemove, autoOpen = false, fieldDefs = 
   const fieldDef = fieldDefs.find(f => f.key === filter.fieldKey)!
   const hasValues = filter.values.length > 0
   const pillLabel = hasValues
-    ? filter.values.length === 1 ? `${fieldDef.label} ${filter.values[0]}` : `${fieldDef.label} ${filter.values.length} selected`
+    ? filter.values.length === 1
+      ? `${fieldDef.label} ${filter.values[0]}`
+      : `${fieldDef.label} ${filter.values[0]} +${filter.values.length - 1}`
     : fieldDef.label
   const filteredOpts = optSearch
     ? fieldDef.options.filter(o => o.toLowerCase().includes(optSearch.toLowerCase()))
@@ -2030,6 +2072,7 @@ function ColHeader({
   filterSet,
   onFilterToggle,
   onSetFilter,
+  filterOptionCounts,
   draggable, onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd, dragOverStyle,
   thClass,
 }: {
@@ -2053,6 +2096,8 @@ function ColHeader({
   filterSet?: Set<string>
   onFilterToggle?: (v: string) => void
   onSetFilter?: (values: string[]) => void
+  /** Per-option question counts — when provided with filterOptions, switches to toggleable name list UX */
+  filterOptionCounts?: Map<string, number>
   draggable?: boolean
   onDragStart?: () => void
   onDragOver?: (e: React.DragEvent) => void
@@ -2076,8 +2121,12 @@ function ColHeader({
 
   const [colSearch, setColSearch] = useState('')
   const hasInlineFilter = !!filterOptions && filterOptions.length > 0
+  // When filterOptionCounts is provided → toggleable name list UX; otherwise → search-first UX
+  const isToggleListMode = hasInlineFilter && !!filterOptionCounts
   const filteredColOptions = colSearch
     ? (filterOptions ?? []).filter(o => o.toLowerCase().includes(colSearch.toLowerCase()))
+    : isToggleListMode
+    ? (filterOptions ?? []) // show all in toggle mode even without search
     : [] // list is hidden until user types — search-first UX
 
   useEffect(() => {
@@ -2206,7 +2255,8 @@ function ColHeader({
                     onChange={e => {
                       const value = e.target.value
                       setColSearch(value)
-                      if (onSetFilter && filterOptions) {
+                      // In toggle-list mode, search only narrows the visible list — no auto-filter
+                      if (!isToggleListMode && onSetFilter && filterOptions) {
                         if (!value.trim()) {
                           onSetFilter([])
                         } else {
@@ -2224,33 +2274,80 @@ function ColHeader({
                   />
                 </InputGroup>
               </div>
-              {/* Match feedback — max 3 pills + overflow count */}
-              {colSearch && (
-                <div className="px-3 pb-2">
+
+              {isToggleListMode ? (
+                /* Toggle-list UX — persona name list with per-name counts */
+                <div role="listbox" aria-multiselectable="true" aria-label={`Filter by ${col.label}`}
+                  style={{ maxHeight: 200, overflowY: 'auto', padding: '2px 0 6px' }}>
                   {filteredColOptions.length === 0 ? (
-                    <p className="text-[11px] text-muted-foreground">No matches</p>
-                  ) : (
-                    <div className="flex flex-wrap gap-1 pt-0.5 items-center">
-                      {filteredColOptions.slice(0, 3).map(opt => (
-                        <span
-                          key={opt}
-                          className="inline-flex items-center gap-1 text-[11px] text-foreground shrink-0"
-                          style={{ padding: '2px 7px', borderRadius: 99, backgroundColor: 'var(--muted)', border: '1px solid var(--border)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                        >
-                          <i className="fa-solid fa-check shrink-0" aria-hidden="true" style={{ fontSize: 7, color: 'var(--brand-color)' }} />
-                          {opt}
-                        </span>
-                      ))}
-                      {filteredColOptions.length > 3 && (
-                        <Tip label={filteredColOptions.slice(3).join(', ')}>
-                          <span className="text-[11px] text-muted-foreground shrink-0 cursor-default">
-                            +{filteredColOptions.length - 3} more
-                          </span>
-                        </Tip>
-                      )}
-                    </div>
-                  )}
+                    <p className="text-[11px] text-muted-foreground" style={{ padding: '6px 12px' }}>No matches</p>
+                  ) : filteredColOptions.map(opt => {
+                    const checked = filterSet?.has(opt) ?? false
+                    const count = filterOptionCounts?.get(opt) ?? 0
+                    return (
+                      <div
+                        key={opt}
+                        role="option"
+                        aria-selected={checked}
+                        tabIndex={0}
+                        onClick={() => {
+                          if (onFilterToggle) onFilterToggle(opt)
+                        }}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            if (onFilterToggle) onFilterToggle(opt)
+                          }
+                        }}
+                        className="text-sm text-foreground"
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 8,
+                          padding: '5px 12px', cursor: 'pointer', userSelect: 'none',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--interactive-hover)')}
+                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={() => { if (onFilterToggle) onFilterToggle(opt) }}
+                          onClick={e => e.stopPropagation()}
+                          style={{ width: 14, height: 14, minWidth: 14, minHeight: 14, flexShrink: 0 }}
+                        />
+                        <span className="flex-1 truncate text-xs">{opt}</span>
+                        <span className="text-[10px] text-muted-foreground shrink-0">{count}</span>
+                      </div>
+                    )
+                  })}
                 </div>
+              ) : (
+                /* Search-first UX — match feedback pills (original behavior) */
+                colSearch && (
+                  <div className="px-3 pb-2">
+                    {filteredColOptions.length === 0 ? (
+                      <p className="text-[11px] text-muted-foreground">No matches</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-1 pt-0.5 items-center">
+                        {filteredColOptions.slice(0, 3).map(opt => (
+                          <span
+                            key={opt}
+                            className="inline-flex items-center gap-1 text-[11px] text-foreground shrink-0"
+                            style={{ padding: '2px 7px', borderRadius: 99, backgroundColor: 'var(--muted)', border: '1px solid var(--border)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                          >
+                            <i className="fa-solid fa-check shrink-0" aria-hidden="true" style={{ fontSize: 7, color: 'var(--brand-color)' }} />
+                            {opt}
+                          </span>
+                        ))}
+                        {filteredColOptions.length > 3 && (
+                          <Tip label={filteredColOptions.slice(3).join(', ')}>
+                            <span className="text-[11px] text-muted-foreground shrink-0 cursor-default">
+                              +{filteredColOptions.length - 3} more
+                            </span>
+                          </Tip>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
               )}
               <DropdownMenuSeparator />
             </>
@@ -2504,6 +2601,19 @@ export function QBTable() {
     const options = ids.map(id => personas.find(p => p.id === id)?.name ?? id).sort()
     return { ...f, options }
   })
+
+  /** Returns per-option question counts for creator/lastEditedBy column headers (toggle-list mode) */
+  function getColFilterOptionCounts(colKey: ColKey): Map<string, number> | undefined {
+    if (colKey !== 'creator' && colKey !== 'lastEditedBy') return undefined
+    const counts = new Map<string, number>()
+    for (const q of visibleQuestions) {
+      const personaId = colKey === 'creator' ? q.creator : q.lastEditedBy
+      if (!personaId) continue
+      const name = personas.find(p => p.id === personaId)?.name ?? personaId
+      counts.set(name, (counts.get(name) ?? 0) + 1)
+    }
+    return counts
+  }
 
   function getColFilterSet(colKey: ColKey): Set<string> | undefined {
     const fieldKey = colKey as QBFilterKey
@@ -3080,6 +3190,7 @@ export function QBTable() {
                         filterSet={getColFilterSet(col.key)}
                         onFilterToggle={getColFilterToggler(col.key)}
                         onSetFilter={getColFilterSetter(col.key)}
+                        filterOptionCounts={getColFilterOptionCounts(col.key)}
                         className={
                           col.key === 'status'       ? 'w-28' :
                           col.key === 'type'         ? 'w-24' :
