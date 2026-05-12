@@ -26,6 +26,40 @@ except ImportError:
     def registries_reset() -> None: pass
 
 
+def _ds_updates_pending() -> str | None:
+    """Return an AUTO-INVOKE instruction if the ds-updates watcher has
+    flagged unreviewed Admin/Student DS submodule deltas. Same auto-invoke
+    pattern as claude-updates — assistant spawns the subagent before
+    responding to the user's first prompt."""
+    pending = REPO_ROOT / "docs" / "governance" / "ds-updates" / "pending-review.md"
+    if not pending.exists():
+        return None
+    try:
+        body = pending.read_text(encoding="utf-8")
+        if "no DS deltas detected" in body or "(empty — no DS deltas detected yet)" in body:
+            return None
+        # Count section headers as a delta signal.
+        section_count = body.count("\n### ")
+        if section_count == 0:
+            return None
+        return (
+            f"🎨 DS-UPDATE AUTO-INVOKE: ds-updates watcher has {section_count} "
+            f"section(s) of unreviewed Admin/Student DS submodule deltas. Before "
+            f"responding to the user's first prompt, execute the workflow in "
+            f"`.claude/commands/check-ds-updates.md` (spawn the watcher subagent, "
+            f"write the proposal MD, then mark the batch reviewed by overwriting "
+            f"`docs/governance/ds-updates/pending-review.md` with the empty-state "
+            f"header). After the proposal MD is written, summarize verdicts for the "
+            f"user in ≤200 words and continue with whatever they asked. If the "
+            f"user's first prompt is unrelated to DS / components / themes, run the "
+            f"watcher in the BACKGROUND (Agent with run_in_background=true) so it "
+            f"doesn't block their request — surface the proposal path when it "
+            f"completes."
+        )
+    except OSError:
+        return None
+
+
 def _claude_updates_pending() -> str | None:
     """Return an AUTO-INVOKE instruction if the claude-updates watcher has
     flagged new upstream changelog content. Romit asked for the watcher to
@@ -194,6 +228,11 @@ def main() -> None:
     updates_nag = _claude_updates_pending()
     if updates_nag:
         summary_lines.extend(["", updates_nag])
+
+    # Surface pending DS-updates review if the DS submodules changed
+    ds_nag = _ds_updates_pending()
+    if ds_nag:
+        summary_lines.extend(["", ds_nag])
 
     # On compact-recovery (compaction wiped most context), surface load-bearing
     # registries + recent ADRs + the latest digest so the assistant doesn't

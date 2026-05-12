@@ -132,6 +132,7 @@
   - `architect` (.claude/agents/architect.md)
   - `claude-updates-watcher` (.claude/agents/claude-updates-watcher.md)
   - `ds-adoption-reviewer` (.claude/agents/ds-adoption-reviewer.md)
+  - `ds-updates-watcher` (.claude/agents/ds-updates-watcher.md)
   - `research-cross-corpus` (.claude/agents/research-cross-corpus.md)
   - `state-review` (.claude/agents/state-review.md)
   - `verification-reviewer` (.claude/agents/verification-reviewer.md)
