@@ -10,6 +10,290 @@ import {
   Popover, PopoverTrigger, PopoverContent,
   FieldError,
 } from '@exxat/ds/packages/ui/src'
+import { mockCourses, mockCourseOfferings } from '@/lib/qb-mock-data'
+
+const ACTIVE_SEMESTER = 'Spring 2026'
+
+// Determine active/inactive status for a course folder via offerings data
+function isCourseActive(folderId: string): boolean {
+  const course = mockCourses.find(c => c.questionBankFolderId === folderId)
+  if (!course) return false
+  return mockCourseOfferings.some(o => o.courseId === course.id && o.semester === ACTIVE_SEMESTER)
+}
+
+function courseLabel(folder: FolderNode): string {
+  const course = mockCourses.find(c => c.questionBankFolderId === folder.id)
+  return course ? `${course.code} · ${course.name}` : folder.name
+}
+
+// ── Folder Browser flyout ────────────────────────────────────────────────────
+function QBFolderBrowser({
+  open,
+  onClose,
+}: {
+  open: boolean
+  onClose: () => void
+}) {
+  const {
+    folders, questions, selectedFolderId,
+    navigateToFolder, accessibleFolderIds,
+    expandedFolderIds,
+  } = useQB()
+
+  const countableQuestions = questions.filter(q =>
+    q.status === 'Saved' || (q.status === 'Draft')
+  )
+
+  const [search, setSearch] = useState('')
+  const [hoveredCourseId, setHoveredCourseId] = useState<string | null>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  // Close on Escape
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [open, onClose])
+
+  // Reset search when closed
+  useEffect(() => { if (!open) setSearch('') }, [open])
+
+  const visibleCourseFolders = folders.filter(f => f.isCourse && f.parentId === null && accessibleFolderIds.has(f.id))
+
+  const activeCourses   = visibleCourseFolders.filter(f => isCourseActive(f.id))
+  const inactiveCourses = visibleCourseFolders.filter(f => !isCourseActive(f.id))
+
+  const filtered = (list: FolderNode[]) =>
+    search.trim()
+      ? list.filter(f => {
+          const q = search.toLowerCase()
+          const label = courseLabel(f).toLowerCase()
+          const hasMatchingChild = folders.some(
+            child => child.parentId === f.id && child.name.toLowerCase().includes(q)
+          )
+          return label.includes(q) || hasMatchingChild
+        })
+      : list
+
+  const activeCourse = hoveredCourseId
+    ? visibleCourseFolders.find(f => f.id === hoveredCourseId)
+    : null
+
+  const subfolders = activeCourse
+    ? folders.filter(f => f.parentId === activeCourse.id && accessibleFolderIds.has(f.id))
+    : []
+
+  function countFor(folderId: string) {
+    const desc = new Set<string>([folderId])
+    const stack = [folderId]
+    while (stack.length) {
+      const id = stack.pop()!
+      folders.forEach(f => { if (f.parentId === id && !desc.has(f.id)) { desc.add(f.id); stack.push(f.id) } })
+    }
+    return countableQuestions.filter(q =>
+      desc.has(q.folder) || (q.extraFolders ?? []).some(ef => desc.has(ef.folder))
+    ).length
+  }
+
+  function selectFolder(folderId: string) {
+    navigateToFolder(folderId)
+    onClose()
+  }
+
+  const CourseRow = ({ folder, active }: { folder: FolderNode; active: boolean }) => {
+    const isSelected = selectedFolderId === folder.id
+    const isHovered  = hoveredCourseId === folder.id
+    const count      = countFor(folder.id)
+    const hasChildren = folders.some(f => f.parentId === folder.id && accessibleFolderIds.has(f.id))
+
+    return (
+      <button
+        type="button"
+        onMouseEnter={() => setHoveredCourseId(folder.id)}
+        onClick={() => selectFolder(folder.id)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+          padding: '6px 10px', borderRadius: 6, textAlign: 'left', cursor: 'pointer',
+          background: isHovered || isSelected ? 'var(--sidebar-accent)' : 'transparent',
+          border: 'none', transition: 'background 100ms',
+        }}
+      >
+        <i
+          className={`${active ? 'fa-solid fa-graduation-cap' : 'fa-light fa-graduation-cap'} ${active ? 'text-foreground' : 'text-muted-foreground'}`}
+          aria-hidden="true"
+          style={{ fontSize: 13, width: 16, textAlign: 'center', flexShrink: 0 }}
+        />
+        <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: isSelected ? 600 : 400, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {courseLabel(folder)}
+        </span>
+        <span style={{ fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0 }}>{count}</span>
+        {hasChildren && (
+          <i className="fa-light fa-chevron-right text-muted-foreground" aria-hidden="true" style={{ fontSize: 10, flexShrink: 0 }} />
+        )}
+      </button>
+    )
+  }
+
+  const SubfolderRow = ({ folder }: { folder: FolderNode }) => {
+    const isSelected = selectedFolderId === folder.id
+    const count      = countFor(folder.id)
+    return (
+      <button
+        type="button"
+        onClick={() => selectFolder(folder.id)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+          padding: '6px 10px', borderRadius: 6, textAlign: 'left', cursor: 'pointer',
+          background: isSelected ? 'var(--sidebar-accent)' : 'transparent',
+          border: 'none', transition: 'background 100ms',
+        }}
+        className="hover:bg-accent"
+      >
+        <i
+          className={isSelected ? 'fa-solid fa-folder' : 'fa-regular fa-folder'}
+          aria-hidden="true"
+          style={{ fontSize: 13, width: 16, textAlign: 'center', flexShrink: 0, color: isSelected ? 'var(--foreground)' : 'var(--muted-foreground)' }}
+        />
+        <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: isSelected ? 600 : 400, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {folder.name}
+        </span>
+        <span style={{ fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0 }}>{count}</span>
+      </button>
+    )
+  }
+
+  function Section({ title, courses, isActive }: { title: string; courses: FolderNode[]; isActive: boolean }) {
+    const list = filtered(courses)
+    if (list.length === 0) return null
+    return (
+      <div style={{ marginBottom: 4 }}>
+        <div style={{ padding: '4px 10px 2px', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--muted-foreground)' }}>
+            {title}
+          </span>
+          <span style={{
+            fontSize: 10, fontWeight: 600, color: isActive ? 'var(--chart-2)' : 'var(--muted-foreground)',
+            background: isActive ? 'color-mix(in oklch, var(--chart-2) 12%, var(--background))' : 'var(--muted)',
+            borderRadius: 99, padding: '1px 6px',
+          }}>
+            {list.length}
+          </span>
+        </div>
+        <div style={{ padding: '2px 4px' }}>
+          {list.map(f => <CourseRow key={f.id} folder={f} active={isActive} />)}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      {/* Backdrop — catches outside clicks */}
+      {open && (
+        <div
+          aria-hidden="true"
+          onClick={onClose}
+          style={{
+            position: 'absolute', inset: 0, zIndex: 19,
+            background: 'oklch(0 0 0 / 0.06)',
+            backdropFilter: 'none',
+          }}
+        />
+      )}
+
+      {/* Flyout panel — overlaps the table, slides from sidebar edge */}
+      <div
+        ref={panelRef}
+        aria-label="Browse folders"
+        role="dialog"
+        style={{
+          position: 'absolute',
+          top: 0, bottom: 0,
+          left: 248, // sidebar width
+          zIndex: 20,
+          display: 'flex',
+          pointerEvents: open ? 'auto' : 'none',
+          transform: open ? 'translateX(0)' : 'translateX(-16px)',
+          opacity: open ? 1 : 0,
+          transition: 'transform 180ms cubic-bezier(0.16,1,0.3,1), opacity 140ms ease',
+        }}
+      >
+        {/* Course column */}
+        <div style={{
+          width: 240,
+          display: 'flex', flexDirection: 'column',
+          background: 'var(--background)',
+          borderRight: '1px solid var(--border)',
+          borderLeft: '1px solid var(--border)',
+          boxShadow: '4px 0 20px oklch(0 0 0 / 0.08)',
+          borderRadius: '0 0 0 0',
+          overflow: 'hidden',
+        }}>
+          {/* Search */}
+          <div style={{ padding: '10px 8px 6px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+            <InputGroup>
+              <InputGroupAddon align="inline-start">
+                <i className="fa-light fa-magnifying-glass text-muted-foreground" aria-hidden="true" style={{ fontSize: 11, padding: '0 6px' }} />
+              </InputGroupAddon>
+              <InputGroupInput
+                autoFocus
+                placeholder="Search courses…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Escape') onClose() }}
+                className="text-xs"
+                style={{ height: 28 }}
+              />
+            </InputGroup>
+          </div>
+
+          {/* Course list */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '6px 0', scrollbarGutter: 'stable' }}>
+            <Section title="Active" courses={activeCourses} isActive />
+            <Section title="Inactive" courses={inactiveCourses} isActive={false} />
+            {filtered(activeCourses).length === 0 && filtered(inactiveCourses).length === 0 && (
+              <p style={{ fontSize: 12, color: 'var(--muted-foreground)', padding: '12px 14px' }}>No courses match "{search}"</p>
+            )}
+          </div>
+        </div>
+
+        {/* Subfolder column — slides in when a course is hovered */}
+        <div style={{
+          width: subfolders.length > 0 ? 220 : 0,
+          overflow: 'hidden',
+          transition: 'width 150ms cubic-bezier(0.16,1,0.3,1)',
+          flexShrink: 0,
+        }}>
+          <div style={{
+            width: 220,
+            height: '100%',
+            display: 'flex', flexDirection: 'column',
+            background: 'color-mix(in oklch, var(--muted) 40%, var(--background))',
+            borderRight: '1px solid var(--border)',
+          }}>
+            {activeCourse && (
+              <>
+                <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--muted-foreground)', marginBottom: 2 }}>
+                    {courseLabel(activeCourse)}
+                  </p>
+                </div>
+                <div style={{ flex: 1, overflowY: 'auto', padding: '6px 4px', scrollbarGutter: 'stable' }}>
+                  {subfolders.length === 0 ? (
+                    <p style={{ fontSize: 12, color: 'var(--muted-foreground)', padding: '8px 10px' }}>No subfolders</p>
+                  ) : (
+                    subfolders.map(f => <SubfolderRow key={f.id} folder={f} />)
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
 
 
 function courseFolderLabel(name: string): string {
@@ -931,6 +1215,7 @@ export function QBSidebar() {
   const [inlineCreateParent, setInlineCreateParent] = useState<string | 'root' | null>(null)
   const [searchExpanded, setSearchExpanded] = useState(false)
   const [isNarrow, setIsNarrow] = useState(false)
+  const [browserOpen, setBrowserOpen] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -1020,6 +1305,8 @@ export function QBSidebar() {
 
   return (
     <>
+      <QBFolderBrowser open={browserOpen} onClose={() => setBrowserOpen(false)} />
+
       {/* Backdrop — only visible when sidebar is open and overlaying the table */}
       {isNarrow && sidebarOpen && (
         <div
@@ -1104,11 +1391,21 @@ export function QBSidebar() {
               </Button>
             </>
           ) : (
-            /* Collapsed: label + search icon button */
+            /* Collapsed: label + browse + search icon buttons */
             <>
               <span className="flex-1 text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
                 {'Question Bank'}
               </span>
+              <Tip label="Browse all folders">
+                <Button
+                  variant="ghost" size="icon-xs"
+                  aria-label="Browse all folders"
+                  onClick={() => setBrowserOpen(v => !v)}
+                  style={browserOpen ? { color: 'var(--brand-color)', backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))' } : {}}
+                >
+                  <i className="fa-light fa-table-columns" aria-hidden="true" style={{ fontSize: 12 }} />
+                </Button>
+              </Tip>
               <Button
                 variant="ghost" size="icon-xs"
                 aria-label="Search folders"
