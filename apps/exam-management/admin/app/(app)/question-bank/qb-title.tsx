@@ -33,19 +33,20 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
   const shown = personas.slice(0, MAX_SHOWN)
   const overflow = personas.length - MAX_SHOWN
 
+  const overflowPersonas = personas.slice(MAX_SHOWN)
+
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button
-          variant="ghost" size="sm"
-          className="p-0 h-auto gap-0"
+        <button
+          type="button"
           aria-label={`${personas.length} collaborators`}
-          style={{ display: 'inline-flex', alignItems: 'center' }}
+          style={{ display: 'inline-flex', alignItems: 'center', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
         >
           {shown.map((p, i) => (
             <Tooltip key={p.id}>
               <TooltipTrigger asChild>
-                <Avatar style={{ width: 28, height: 28, marginLeft: i === 0 ? 0 : -6, border: '2px solid var(--background)', borderRadius: '50%', zIndex: shown.length - i, position: 'relative', cursor: 'pointer' }}>
+                <Avatar style={{ width: 28, height: 28, marginLeft: i === 0 ? 0 : -6, border: '2px solid var(--background)', borderRadius: '50%', zIndex: shown.length - i, position: 'relative' }}>
                   <AvatarFallback className="text-[10px] font-bold" style={{ backgroundColor: 'color-mix(in oklch, var(--foreground) 8%, var(--background))', color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))' }}>
                     {p.initials}
                   </AvatarFallback>
@@ -57,11 +58,20 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
             </Tooltip>
           ))}
           {overflow > 0 && (
-            <Badge variant="secondary" className="rounded-full text-[10px]" style={{ height: 28, minWidth: 28, marginLeft: -6, border: '2px solid var(--background)', position: 'relative', padding: '0 5px' }}>
-              +{overflow}
-            </Badge>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="secondary" className="rounded-full text-[10px]" style={{ height: 28, minWidth: 28, marginLeft: -6, border: '2px solid var(--background)', position: 'relative', padding: '0 5px', cursor: 'pointer' }}>
+                  +{overflow}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {overflowPersonas.map(p => (
+                  <p key={p.id} className="text-xs font-medium">{p.name}</p>
+                ))}
+              </TooltipContent>
+            </Tooltip>
           )}
-        </Button>
+        </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-60 p-3">
         <div className="text-xs font-bold uppercase tracking-[0.07em] text-muted-foreground" style={{ marginBottom: 8 }}>

@@ -2727,9 +2727,11 @@ export function QBTable() {
                     </Tip>
                   ))}
                   {extra > 0 && (
-                    <span className="text-[10px] font-semibold text-muted-foreground" style={{ marginLeft: 4, flexShrink: 0 }}>
-                      +{extra}
-                    </span>
+                    <Tip label={personas.slice(MAX).map(p => p.name).join(', ')}>
+                      <span className="text-[10px] font-semibold text-muted-foreground" style={{ marginLeft: 4, flexShrink: 0, cursor: 'default' }}>
+                        +{extra}
+                      </span>
+                    </Tip>
                   )}
                 </div>
               )
