@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -8,11 +9,13 @@ import {
   SidebarSeparator, Avatar, AvatarFallback, Badge,
   DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
   Kbd, KbdGroup,
   useSidebar,
 } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
 import { useCommandPalette } from '@/components/command-palette'
+import { SettingsAppearanceCard } from '@/components/settings-appearance-card'
 
 function AppHeader() {
   const { state } = useSidebar()
@@ -39,6 +42,7 @@ function AppHeader() {
 function UserFooter() {
   const { isMobile } = useSidebar()
   const { user, toggleRole } = usePce()
+  const [appearanceOpen, setAppearanceOpen] = useState(false)
 
   return (
     <SidebarMenu>
@@ -100,6 +104,10 @@ function UserFooter() {
                 <i className="fa-light fa-bell" aria-hidden="true" />
                 Notifications
               </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setAppearanceOpen(true)}>
+                <i className="fa-light fa-paintbrush" aria-hidden="true" />
+                Appearance
+              </DropdownMenuItem>
             </DropdownMenuGroup>
 
             <DropdownMenuSeparator />
@@ -118,6 +126,18 @@ function UserFooter() {
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
+
+      <Sheet open={appearanceOpen} onOpenChange={setAppearanceOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Appearance</SheetTitle>
+            <SheetDescription>Theme, contrast, text size, and brand. Saved in this browser.</SheetDescription>
+          </SheetHeader>
+          <div className="px-6 pb-6">
+            <SettingsAppearanceCard />
+          </div>
+        </SheetContent>
+      </Sheet>
     </SidebarMenu>
   )
 }

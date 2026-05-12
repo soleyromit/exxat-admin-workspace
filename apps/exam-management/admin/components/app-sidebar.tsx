@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -22,10 +23,16 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
   Badge,
   useSidebar,
 } from '@exxat/ds/packages/ui/src'
 import { useFacultySession } from '@/lib/faculty-session'
+import { SettingsAppearanceCard } from '@/components/settings-appearance-card'
 
 // ── Brand header ──────────────────────────────────────────────────────────────
 function AppHeader() {
@@ -147,6 +154,7 @@ const ADMIN_USER = {
 function UserFooter() {
   const { isMobile } = useSidebar()
   const { role, faculty, hydrated } = useFacultySession()
+  const [appearanceOpen, setAppearanceOpen] = useState(false)
 
   if (!hydrated) {
     return (
@@ -244,6 +252,10 @@ function UserFooter() {
                 <i className="fa-light fa-bell" aria-hidden="true" />
                 Notifications
               </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setAppearanceOpen(true)}>
+                <i className="fa-light fa-paintbrush" aria-hidden="true" />
+                Appearance
+              </DropdownMenuItem>
             </DropdownMenuGroup>
 
             <DropdownMenuSeparator />
@@ -255,6 +267,18 @@ function UserFooter() {
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
+
+      <Sheet open={appearanceOpen} onOpenChange={setAppearanceOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Appearance</SheetTitle>
+            <SheetDescription>Theme, contrast, text size, and brand. Saved in this browser.</SheetDescription>
+          </SheetHeader>
+          <div className="px-6 pb-6">
+            <SettingsAppearanceCard />
+          </div>
+        </SheetContent>
+      </Sheet>
     </SidebarMenu>
   )
 }
