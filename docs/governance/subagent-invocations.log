@@ -1,7 +1,9 @@
 # subagent invocations — append-only telemetry log
 #
 # Format: TAB-separated. One row per invocation.
-#   <ISO-8601 timestamp>\t<subagent-name>\t<spawning-context>
+#   <ISO-8601 timestamp>\t<subagent-name>\t<spawning-context>\t<agent_id>\t<parent_id>\t<duration_ms>\t<outcome>\t<tool_calls>
+#
+# Older rows may have fewer columns — the architect parser reads what's there.
 #
 # spawning-context examples:
 #   "parent: post-claim verification on /surveys"
@@ -10,8 +12,9 @@
 #
 # Lines beginning with '#' are comments and ignored by the architect parser.
 #
-# WIRING STATUS: 2026-05-11 — file created. The parent agent appends rows
-# manually when invoking subagents. Full automation would require an
-# `Agent` tool wrapper that logs every spawn before delegation. Tracked as
-# proposed item #7 in the architect scaffold.
+# WIRING STATUS: 2026-05-12 — automated via .claude/hooks/subagent-stop.py.
+# Every SubagentStop event appends a row. Per architect-runs/2026-05-11-baseline.md
+# open Q #3 + claude-updates/2026-05-12-baseline.md ADOPT-1. agent_id /
+# parent_id columns populate when Claude Code's 2.1.139 OTEL plumbing
+# exposes them in hook payloads (verify on first SubagentStop fire).
 

@@ -32,7 +32,7 @@
 
 | Date | Slug | Status | Summary |
 |---|---|---|---|
-| 2026-05-12 | baseline | PROPOSED | 3 ADOPT (OTEL agent_id spans, hook `args:` exec form, PostToolUse + `continueOnBlock`); OTEL closes architect open Q #3 (subagent telemetry wrapper goes upstream) |
+| 2026-05-12 | baseline | PARTIAL | ADOPT-1 applied in reduced scope (SubagentStop → subagent-invocations.log wiring; OTEL env block deferred); ADOPT-2 NOT-APPLICABLE (local CLI schema rejects `args:`); ADOPT-3 DEFERRED (PostToolUse soft-rules risk dead-link-audit anti-pattern). Architect open Q #3 closes via the hook wiring. |
 
 ## How to enable the weekly auto-run
 
