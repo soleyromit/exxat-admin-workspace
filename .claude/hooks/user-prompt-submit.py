@@ -156,6 +156,128 @@ def is_transcript_paste(prompt: str) -> bool:
     return len(TRANSCRIPT_LINE.findall(prompt)) >= 3
 
 
+# Cascade check (Pattern B closure): when the user says "fix the X" /
+# "X is broken" / "redesign X" / "X looks wrong" — enumerate ALL files
+# that reference <X> before any edit, so the assistant doesn't silently
+# fix one site and leave siblings. Class-level failure pattern confirmed
+# 2026-05-12 across Toggle, Button, DataTable, "almost all components".
+#
+# Trigger shape is NARROW per Romit's call: explicit fix/broken verbs +
+# a noun. Wider shapes (e.g. "update X") will get added if the narrow
+# trigger misses things.
+CASCADE_VERB_NOUN_RE = re.compile(
+    r"\b(?:fix|redesign|rework|polish|tighten|improve)\b\s+(?:the\s+|this\s+|that\s+)?"
+    r"(?P<noun>[A-Za-z][A-Za-z-]{2,30})",
+    re.IGNORECASE,
+)
+CASCADE_NOUN_PREDICATE_RE = re.compile(
+    r"\b(?P<noun>[A-Za-z][A-Za-z-]{2,30})\s+"
+    r"(?:is\s+(?:broken|wrong|off|misaligned)|looks?\s+(?:wrong|off|broken|bad))",
+    re.IGNORECASE,
+)
+
+# Words that aren't components — filter out common false positives.
+CASCADE_STOPWORDS: set[str] = {
+    "the", "this", "that", "it", "one", "two", "all", "some",
+    "filter", "filters", "issue", "issues", "bug", "bugs", "problem", "problems",
+    "page", "screen", "view", "thing", "stuff", "code", "test", "tests",
+    "build", "deploy", "run", "now", "later", "today", "yesterday",
+    "design", "spec", "rule", "rules", "audit", "hook", "hooks",
+}
+
+
+def _to_pascal_candidates(noun: str) -> list[str]:
+    """Convert a noun to JSX-tag candidates. 'toggle' → ['Toggle'],
+    'datatable' → ['DataTable', 'Datatable'], 'data-table' → ['DataTable'].
+    Returns the prefix(es) to grep for (matches <Prefix and <PrefixSomething)."""
+    raw = noun.replace("_", "-").strip("-").strip()
+    if not raw or raw.lower() in CASCADE_STOPWORDS:
+        return []
+    parts = [p for p in raw.split("-") if p]
+    pascal = "".join(p[0].upper() + p[1:].lower() for p in parts)
+    candidates = {pascal}
+    # 'datatable' → 'Datatable'; also yield 'DataTable' if it looks fused
+    if len(parts) == 1 and len(raw) >= 6:
+        # Heuristic: split into 2 words at common boundaries
+        for boundary in ("table", "switch", "group", "menu", "bar", "panel",
+                          "dialog", "drawer", "sheet", "card", "row", "list"):
+            if raw.lower().endswith(boundary) and len(raw) > len(boundary) + 2:
+                head = raw[: -len(boundary)]
+                fused = head[0].upper() + head[1:].lower() + boundary[0].upper() + boundary[1:].lower()
+                candidates.add(fused)
+    return sorted(candidates, key=len, reverse=True)
+
+
+def _cascade_check(prompt: str) -> list[str]:
+    """Enumerate workspace files referencing a component the user said
+    they want fixed. Returns [] if no fix-shape detected or no hits found.
+
+    The block format is short and action-oriented — its job is to make
+    the assistant count siblings BEFORE editing, not to do the analysis."""
+    if not prompt:
+        return []
+
+    candidates: set[str] = set()
+    for m in CASCADE_VERB_NOUN_RE.finditer(prompt):
+        candidates.update(_to_pascal_candidates(m.group("noun")))
+    for m in CASCADE_NOUN_PREDICATE_RE.finditer(prompt):
+        candidates.update(_to_pascal_candidates(m.group("noun")))
+
+    if not candidates:
+        return []
+
+    import subprocess
+
+    # Cap candidates so a wild prompt doesn't run grep 20 times.
+    candidates = sorted(candidates, key=len, reverse=True)[:3]
+    blocks: list[str] = []
+    for cand in candidates:
+        # Grep JSX usages across apps/ (consumer code). Stay out of
+        # node_modules, .next, dist, etc. via the apps/-rooted scope.
+        try:
+            out = subprocess.run(
+                ["grep", "-rln", f"<{cand}", str(REPO_ROOT / "apps"),
+                 "--include=*.tsx", "--include=*.ts"],
+                capture_output=True, text=True, timeout=2,
+            )
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            continue
+
+        if out.returncode != 0 or not out.stdout.strip():
+            continue
+
+        files = [
+            line.replace(str(REPO_ROOT) + "/", "")
+            for line in out.stdout.strip().splitlines()
+            if line.strip()
+        ]
+        # Dedupe (same file matching multiple candidates).
+        files = sorted(set(files))
+        if not files:
+            continue
+
+        count = len(files)
+        # Cap listing to keep additionalContext from exploding.
+        listing = files[:15]
+        more = count - len(listing)
+
+        block: list[str] = [
+            f"[Cascade check (Pattern B) — `<{cand}>` is referenced in {count} file(s).]",
+            "",
+            "  Before editing, enumerate the full set and decide cascade scope.",
+            "  See `docs/governance/verification-discipline.md` § Pattern B.",
+            "",
+        ]
+        for path in listing:
+            block.append(f"  - {path}")
+        if more > 0:
+            block.append(f"  - … and {more} more.")
+        block.append("")
+        blocks.extend(block)
+
+    return blocks
+
+
 def _registry_freshness_block() -> list[str]:
     """If any tracked registry changed since the last prompt, surface a
     short freshness note + the file paths so the assistant re-reads
@@ -212,14 +334,20 @@ def main() -> None:
         seen.add("lazy:ds-reference")
 
     freshness = _registry_freshness_block()
+    cascade = _cascade_check(prompt)
 
-    if not matches and not freshness:
+    if not matches and not freshness and not cascade:
         print(json.dumps({}))
         return
 
     lines: list[str] = []
 
-    # Freshness block first — it tells the assistant what to re-read
+    # Cascade check first — it's the highest-leverage Pattern B closure.
+    # The assistant must see the sibling list BEFORE picking up the edit.
+    if cascade:
+        lines.extend(cascade)
+
+    # Freshness block second — it tells the assistant what to re-read
     # before evaluating the prompt itself.
     if freshness:
         lines.extend(freshness)
