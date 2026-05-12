@@ -26,29 +26,16 @@ const t = {
   borderControl: 'var(--border)',
 };
 
-function ProgressBar({ value, max = 100, color }: { value: number; max?: number; color: string }) {
+function ProgressBar({ value, max = 100, color = t.fg }: { value: number; max?: number; color?: string }) {
   return (
-    <div style={{ height: 8, background: t.muted, borderRadius: 99, overflow: 'hidden' }}>
+    <div style={{ height: 6, background: t.muted, borderRadius: 99, overflow: 'hidden' }}>
       <div style={{
         height: '100%', width: `${Math.min(100, (value / max) * 100)}%`,
-        background: color, borderRadius: 99,
+        background: color, borderRadius: 99, opacity: 0.85,
         transition: 'width 0.6s ease',
       }} />
     </div>
   );
-}
-
-function ScoreColor(score: number): string {
-  if (score >= 85) return 'var(--state-success-dark)';
-  if (score >= 75) return 'var(--state-warning-dark)';
-  if (score >= 60) return 'var(--state-error-accent)';
-  return 'var(--state-error-text-dark)';
-}
-
-function BarColor(score: number): string {
-  if (score >= 85) return 'var(--state-success-accent)';
-  if (score >= 75) return 'var(--state-warning-accent)';
-  return 'var(--state-bar-fail)';
 }
 
 function CourseCard({ course }: { course: CourseCompetency }) {
@@ -73,7 +60,7 @@ function CourseCard({ course }: { course: CourseCompetency }) {
           </div>
           {haData ? (
             <div style={{ textAlign: 'right' }}>
-              <p style={{ fontSize: 26, fontWeight: 800, color: ScoreColor(avg), lineHeight: 1 }}>{avg}%</p>
+              <p style={{ fontSize: 26, fontWeight: 700, color: t.fg, lineHeight: 1 }}>{avg}%</p>
               <p style={{ fontSize: 11, color: t.fgMuted }}>avg score</p>
             </div>
           ) : (
@@ -95,7 +82,6 @@ function CourseCard({ course }: { course: CourseCompetency }) {
         <ProgressBar
           value={course.assessmentsCompleted}
           max={course.assessmentsTotal}
-          color={t.brand}
         />
 
         {/* Expand toggle */}
@@ -106,7 +92,7 @@ function CourseCard({ course }: { course: CourseCompetency }) {
             onClick={() => setExpanded(e => !e)}
             aria-expanded={expanded}
             className="mt-3.5 px-0 h-auto"
-            style={{ color: t.brand }}
+            style={{ color: t.fgMuted }}
           >
             <i className={`fa-light ${expanded ? 'fa-chevron-up' : 'fa-chevron-down'}`} aria-hidden="true" />
             {expanded ? 'Hide' : 'Show'} content area breakdown
@@ -125,11 +111,11 @@ function CourseCard({ course }: { course: CourseCompetency }) {
             <div key={ca.name} style={{ marginBottom: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
                 <span style={{ fontSize: 13, color: t.fg }}>{ca.name}</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: ScoreColor(ca.score) }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: t.fg }}>
                   {ca.score}%
                 </span>
               </div>
-              <ProgressBar value={ca.score} color={BarColor(ca.score)} />
+              <ProgressBar value={ca.score} />
             </div>
           ))}
         </div>
@@ -165,26 +151,21 @@ export function CompetencyDashboard() {
               icon: 'fa-chart-line',
               label: 'Overall Average',
               value: overallAvg > 0 ? `${overallAvg}%` : '—',
-              color: overallAvg > 0 ? ScoreColor(overallAvg) : t.fgMuted,
-              bg: overallAvg >= 75 ? 'var(--state-success-bg-soft)' : overallAvg > 0 ? 'var(--state-warning-bg-soft)' : t.muted,
             },
             {
               icon: 'fa-clipboard-check',
               label: 'Assessments Taken',
               value: `${published.length}`,
-              color: t.brand, bg: t.brandSurface,
             },
             {
               icon: 'fa-graduation-cap',
               label: 'Courses Active',
               value: `${MOCK_COURSE_COMPETENCIES.length}`,
-              color: 'var(--state-info-blue-dark)', bg: 'var(--state-info-blue-bg)',
             },
             {
               icon: 'fa-bullseye-arrow',
               label: 'Content Areas Tracked',
               value: `${MOCK_COURSE_COMPETENCIES.reduce((n, c) => n + c.contentAreas.length, 0)}`,
-              color: 'var(--state-purple-dark)', bg: 'var(--state-purple-bg)',
             },
           ].map(item => (
             <div key={item.label} style={{
@@ -193,12 +174,12 @@ export function CompetencyDashboard() {
             }}>
               <div style={{
                 width: 36, height: 36, borderRadius: 10,
-                background: item.bg, margin: '0 auto 8px',
+                background: t.muted, margin: '0 auto 8px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <i className={`fa-light ${item.icon}`} aria-hidden="true" style={{ color: item.color, fontSize: 16 }} />
+                <i className={`fa-light ${item.icon}`} aria-hidden="true" style={{ color: t.fgMuted, fontSize: 16 }} />
               </div>
-              <p style={{ fontSize: 22, fontWeight: 800, color: item.color }}>{item.value}</p>
+              <p style={{ fontSize: 22, fontWeight: 700, color: t.fg }}>{item.value}</p>
               <p style={{ fontSize: 11, color: t.fgMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.3 }}>{item.label}</p>
             </div>
           ))}
@@ -220,13 +201,13 @@ export function CompetencyDashboard() {
         {/* Program tier placeholder */}
         <div style={{
           marginTop: 32, padding: '20px 24px',
-          background: 'var(--state-warning-bg)', border: '1px dashed var(--state-warning-border)', borderRadius: 14,
+          background: t.muted, border: `1px solid ${t.border}`, borderRadius: 14,
           display: 'flex', alignItems: 'center', gap: 16,
         }}>
-          <i className="fa-light fa-map-location-dot" aria-hidden="true" style={{ color: 'var(--state-warning-dark)', fontSize: 28, flexShrink: 0 }} />
+          <i className="fa-light fa-map-location-dot" aria-hidden="true" style={{ color: t.fgMuted, fontSize: 24, flexShrink: 0 }} />
           <div>
-            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--state-warning-darkest)', marginBottom: 4 }}>Program-Level View — Coming 2027</p>
-            <p style={{ fontSize: 13, color: 'var(--state-warning-dark)', lineHeight: 1.5 }}>
+            <p style={{ fontSize: 14, fontWeight: 600, color: t.fg, marginBottom: 4 }}>Program-Level View — Coming 2027</p>
+            <p style={{ fontSize: 13, color: t.fgMuted, lineHeight: 1.5 }}>
               Cross-course competency aggregation across your full program (PT, OT, PA, Nursing, Social Work) is in development. This view will map your cumulative performance against CAPTE, ACOTE, CCNE, and CAAHEP accreditation standards.
             </p>
           </div>

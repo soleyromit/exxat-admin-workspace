@@ -9,6 +9,7 @@
  *      knows they're in the limited-capability session.
  */
 
+import { SystemBanner } from '@exxat/ds/packages/ui/src'
 import { useFacultySession } from '@/lib/faculty-session'
 
 export function StandaloneLoginBanner() {
@@ -18,20 +19,19 @@ export function StandaloneLoginBanner() {
   if (entry !== 'standalone') return null
 
   return (
-    <div
-      role="status"
+    <SystemBanner
+      variant="promo"
+      icon="fa-key"
+      title="Standalone session"
+      dismissible={false}
       aria-label="Standalone exam-management session"
-      className="flex items-center gap-3 px-4 py-2 border-b text-xs text-brand-dark bg-brand-tint border-brand-tint-subtle"
     >
-      <i className="fa-light fa-key text-brand text-sm" aria-hidden="true" />
-      <span className="font-semibold">Standalone session</span>
-      <span className="opacity-80">
-        Signed in via direct exam-management login. Settings access is read-only;
-        contact your institution administrator for changes outside this product.
+      Signed in via direct exam-management login. Settings access is read-only;
+      contact your institution administrator for changes outside this product.
+      {' · '}
+      <span className="font-semibold uppercase tracking-wider text-[10px]">
+        {role === 'faculty' ? 'Faculty' : 'Admin'} — Limited
       </span>
-      <span className="ms-auto opacity-70 text-[10px] uppercase tracking-wider font-bold">
-        {role === 'faculty' ? 'Faculty' : 'Admin'} · Limited
-      </span>
-    </div>
+    </SystemBanner>
   )
 }

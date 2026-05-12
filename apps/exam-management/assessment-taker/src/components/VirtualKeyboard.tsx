@@ -186,7 +186,7 @@ export function VirtualKeyboard({
             <div
               className="w-2 h-2 rounded-full animate-pulse"
               style={{
-                backgroundColor: '#22C55E'
+                backgroundColor: 'var(--state-success-text)'
               }} />
             
             {isMac ? 'macOS' : 'Windows'} Keyboard

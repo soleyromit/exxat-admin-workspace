@@ -1,6 +1,7 @@
 # Entity-Detail Shell (Admin)
 
-**Pattern ID:** `ADMIN-ENTITY-DETAIL`
+**Pattern ID:** `ADMIN-003`
+**Binds rules:** A11Y-001, DS-006, DS-008
 **Question answered:** What's the canonical layout for an admin `/<entity>/[id]/` detail page?
 
 **Reference:** diagnostic findings in [`docs/governance/component-depth-audits/tabs.md`](../../governance/component-depth-audits/tabs.md) §"exam-mgmt: reference patterns" #2 and §"Recommended next 2 fixes" #2.

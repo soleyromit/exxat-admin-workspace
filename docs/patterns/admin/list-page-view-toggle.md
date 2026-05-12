@@ -1,6 +1,7 @@
 # List-Page View Toggle (Admin)
 
-**Pattern ID:** `ADMIN-VIEW-TOGGLE`
+**Pattern ID:** `ADMIN-002`
+**Binds rules:** DS-004, DS-008
 **Question answered:** Which DS control belongs in the top-right of an admin list page — and which controls belong elsewhere?
 
 **Reference:** diagnostic findings in [`docs/governance/component-depth-audits/display-navigation-atoms.md`](../../governance/component-depth-audits/display-navigation-atoms.md) §ViewSegmentedControl and [`docs/governance/component-depth-audits/tabs.md`](../../governance/component-depth-audits/tabs.md) §"where ToggleGroup is the RIGHT choice".

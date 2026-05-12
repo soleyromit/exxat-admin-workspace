@@ -58,12 +58,12 @@ export function WorkflowStepIndicator({ state, compact = false }: WorkflowStepIn
 
         const dotClass =
           isPast    ? 'bg-chart-2 border-chart-2 text-primary-foreground' :
-          isCurrent && currentTone === 'destructive' ? 'bg-destructive border-destructive text-destructive-foreground [animation:pulse-soft_1.8s_ease-in-out_infinite]' :
+          isCurrent && currentTone === 'destructive' ? 'bg-chart-5 border-chart-5 text-primary-foreground [animation:pulse-soft_1.8s_ease-in-out_infinite]' :
           isCurrent ? 'bg-brand border-brand text-brand-foreground [animation:pulse-soft_1.8s_ease-in-out_infinite]' :
                       'bg-card border-border text-muted-foreground'
         const labelClass =
           isPast    ? 'text-chart-2' :
-          isCurrent && currentTone === 'destructive' ? 'text-destructive font-semibold' :
+          isCurrent && currentTone === 'destructive' ? 'text-chart-5 font-semibold' :
           isCurrent ? 'text-brand-dark font-semibold' :
                       'text-muted-foreground'
         const lineClass =

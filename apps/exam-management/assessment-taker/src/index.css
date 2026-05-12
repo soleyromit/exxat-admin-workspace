@@ -31,59 +31,74 @@
   --avatar-initials-bg: color-mix(in oklch, var(--brand-color) 14%, var(--background));
   --avatar-initials-fg: var(--brand-color-dark);
 
-  /* Exam state tokens — answered / flagged / current */
-  --state-answered-bg:     #DCFCE7;
-  --state-answered-border: #4ADE80;
-  --state-answered-text:   #15803D;
-  --state-flagged-bg:      #FEF9C3;
-  --state-flagged-border:  #FACC15;
-  --state-flagged-text:    #92400E;
+  /* ─── Exam state tokens · derived from DS chart palette ────────────────────
+     All exam-specific tokens now resolve through DS chart-* tokens. This
+     gives us:
+       · WCAG-verified contrast (DS pre-tunes chart colors for AA)
+       · Theme cohesion (matches admin app · same hue families)
+       · Aarti's no-red rule (errors use chart-5 orange, not destructive)
+       · Auto-adapting under .dark (color-mix re-resolves against new --background)
+     Mapping:  answered/success → chart-2 (teal/green) · flagged/warning →
+     chart-4 (amber) · info → chart-1 (indigo) · error → chart-5 (orange).
+     ────────────────────────────────────────────────────────────────────── */
 
-  /* Exam blue accent — distinct from brand to keep correct/info chrome neutral */
-  --exam-accent:        #2563EB;
-  --exam-accent-hover:  #1D4ED8;
-  --exam-accent-light:  #EFF6FF;
-  --exam-accent-border: #BFDBFE;
-  --exam-accent-mid:    #3B82F6;
+  /* Exam state — answered / flagged / current */
+  --state-answered-bg:     color-mix(in oklch, var(--chart-2) 14%, var(--background));
+  --state-answered-border: color-mix(in oklch, var(--chart-2) 50%, var(--background));
+  --state-answered-text:   color-mix(in oklch, var(--chart-2) 80%, var(--foreground));
+  --state-flagged-bg:      color-mix(in oklch, var(--chart-4) 18%, var(--background));
+  --state-flagged-border:  color-mix(in oklch, var(--chart-4) 60%, var(--background));
+  --state-flagged-text:    color-mix(in oklch, var(--chart-4) 80%, var(--foreground));
+
+  /* Exam-accent · maps to DS chart-1 (indigo) — kept distinct from brand
+     so the question chrome stays neutral while brand stays for primary CTAs. */
+  --exam-accent:        var(--chart-1);
+  --exam-accent-hover:  color-mix(in oklch, var(--chart-1) 90%, var(--foreground));
+  --exam-accent-light:  color-mix(in oklch, var(--chart-1) 8%, var(--background));
+  --exam-accent-border: color-mix(in oklch, var(--chart-1) 35%, var(--background));
+  --exam-accent-mid:    color-mix(in oklch, var(--chart-1) 75%, var(--background));
 
   /* Status / banner palettes */
-  --state-success-text:     #22C55E;
-  --state-success-bg:       #F0FDF4;
-  --state-success-accent:   #4ADE80;
-  --state-success-bg-soft:  #DCFCE7;
-  --state-success-dark:     #15803D;
-  --state-warning-text:     #F59E0B;
-  --state-warning-bg:       #FFFBEB;
-  --state-warning-accent:   #FACC15;
-  --state-warning-bg-soft:  #FEF3C7;
-  --state-warning-border:   #FDE68A;
-  --state-warning-dark:     #D97706;
-  --state-warning-darkest:  #92400E;
-  --state-info-blue-dark:   #2563EB;
-  --state-info-blue-bg:     #EFF6FF;
-  --state-info-blue-border: #BFDBFE;
-  --state-info-blue-mid:    #3B82F6;
-  --state-error-accent:     #EF4444;
-  --state-error-text-dark:  #B91C1C;
-  --state-error-bg-soft:    #FEF2F2;
-  --state-error-border-soft:#FECACA;
-  --state-bar-fail:         #F87171;
+  --state-success-text:     var(--chart-2);
+  --state-success-bg:       color-mix(in oklch, var(--chart-2) 8%, var(--background));
+  --state-success-accent:   color-mix(in oklch, var(--chart-2) 50%, var(--background));
+  --state-success-bg-soft:  color-mix(in oklch, var(--chart-2) 14%, var(--background));
+  --state-success-dark:     color-mix(in oklch, var(--chart-2) 80%, var(--foreground));
+  --state-warning-text:     var(--chart-4);
+  --state-warning-bg:       color-mix(in oklch, var(--chart-4) 8%, var(--background));
+  --state-warning-accent:   color-mix(in oklch, var(--chart-4) 50%, var(--background));
+  --state-warning-bg-soft:  color-mix(in oklch, var(--chart-4) 18%, var(--background));
+  --state-warning-border:   color-mix(in oklch, var(--chart-4) 30%, var(--background));
+  --state-warning-dark:     color-mix(in oklch, var(--chart-4) 90%, var(--foreground));
+  --state-warning-darkest:  color-mix(in oklch, var(--chart-4) 80%, var(--foreground));
+  --state-info-blue-dark:   var(--chart-1);
+  --state-info-blue-bg:     color-mix(in oklch, var(--chart-1) 8%, var(--background));
+  --state-info-blue-border: color-mix(in oklch, var(--chart-1) 35%, var(--background));
+  --state-info-blue-mid:    color-mix(in oklch, var(--chart-1) 75%, var(--background));
+  /* Error → chart-5 (orange) per Aarti's no-red rule (memory:
+     project_exam_aarti_decisions). Reserve --destructive for true
+     destructive confirmations only. */
+  --state-error-accent:     var(--chart-5);
+  --state-error-text-dark:  color-mix(in oklch, var(--chart-5) 90%, var(--foreground));
+  --state-error-bg-soft:    color-mix(in oklch, var(--chart-5) 8%, var(--background));
+  --state-error-border-soft:color-mix(in oklch, var(--chart-5) 30%, var(--background));
+  --state-bar-fail:         color-mix(in oklch, var(--chart-5) 60%, var(--background));
 
-  /* Required-field pill */
-  --required-text:   #92400E;
-  --required-bg:     #FFFBEB;
-  --required-border: #FDE68A;
+  /* Required-field pill — same family as flagged/warning */
+  --required-text:   color-mix(in oklch, var(--chart-4) 80%, var(--foreground));
+  --required-bg:     color-mix(in oklch, var(--chart-4) 8%, var(--background));
+  --required-border: color-mix(in oklch, var(--chart-4) 30%, var(--background));
 
   /* Highlight / cross-out (exam annotation tools) */
-  --highlight-bg:     #FEF08A;
-  --highlight-bg-end: #FDE047;
-  --highlight-text:   #422006;
-  --highlight-shadow: rgba(250, 204, 21, 0.4);
-  --crossout-text:    #94A3B8;
+  --highlight-bg:     color-mix(in oklch, var(--chart-4) 30%, var(--background));
+  --highlight-bg-end: color-mix(in oklch, var(--chart-4) 50%, var(--background));
+  --highlight-text:   color-mix(in oklch, var(--chart-4) 95%, var(--foreground));
+  --highlight-shadow: color-mix(in oklch, var(--chart-4) 40%, transparent);
+  --crossout-text:    var(--muted-foreground);
   --crossout-opacity: 0.45;
 
-  /* Calculator display */
-  --calc-display-bg: #1E293B;
+  /* Calculator display — neutral charcoal · zero-chroma color-mix */
+  --calc-display-bg: color-mix(in oklch, var(--foreground) 92%, var(--background));
 }
 
 /* Sidebar token — admin DS provides .theme-prism / .theme-rose definitions

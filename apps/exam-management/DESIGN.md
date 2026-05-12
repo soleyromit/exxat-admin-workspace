@@ -3,7 +3,7 @@
 > Extends `/Users/romitsoley/Work/DESIGN.md` (workspace v0.1.0).
 > L2 layer: product strategy, personas, workflows, content. L0/L4 rules inherit unchanged.
 
-**Version:** 0.2.0 (2026-05-08 — Aarti audit applied)
+**Version:** 0.3.0 (2026-05-09 — May 7 + May 8 transcripts applied; open questions resolved)
 **Owner:** Romit Soley
 **Phase:** Phase 1 — be better than ExamSoft on day one; build with a 2027 vision
 **Aarti's audit (2026-05-08):** see `docs/research/meetings/2026-05-08-aarti-design-review.md`. Foundational architecture decisions take precedence over screen designs until product team alignment is reached on assessment types, statuses, role permissions, accommodations.
@@ -28,6 +28,8 @@ The 2027 vision (per Aarti's email): a curricular assessment loop where standard
 | 6 | **Tagging is one-way only** | Aarti 2026-05-07 | Avoid the Prism mistake (attributes vs curriculum mapping = two ways = confusion). Use Gmail-style nested labels |
 | 7 | **Embedded workflow intelligence** | Aarti email (5 differentiators) | Point-biserial, difficulty, negative-performing Qs surface at decision-time, not in separate reports |
 | 8 | **Three-tier competency reporting** | Aarti email | (a) per-assessment, (b) course-level cumulative, (c) program-level cumulative — third tier 2027 |
+| 9 | **Course landing = assessments first** | Aarti 2026-05-07 + 2026-05-08 16:09 | In Exam Management, clicking a course lands on the Assessments tab. Objectives / syllabus / mapping are secondary tabs, never more than one click away |
+| 10 | **Frequency counts, never coverage percentages** | Aarti 2026-05-08 | Content area / competency / objective coverage = "8 of 20 questions" — not a percentage. Percentages imply correctness, which adds confusion |
 
 ## 3. Personas (Phase 1 — 3 view tiers per workspace ADR-004)
 
@@ -92,26 +94,39 @@ These are the bets. Track each as a workstream.
 
 ## 8. Open product questions
 
-- **Pop quiz workflow** — separate "Lecture" surface vs. start-inline from create-assessment? (decision pending)
-- **Course content / lectures** — Canvas has it, we don't; do we need a lectures surface?
 - **Standalone assessments** — preserve technical flexibility, discourage in UI; surveying academic contacts for real-world need
 
-## 9. Curricular Assessment Loop (Aarti's mind map)
+**Resolved (no longer open):**
+- ~~Pop quiz workflow~~ → **decided 2026-05-07**: Start/End inline on any existing assessment. No separate "Lectures" nav item. See `docs/research/meetings/2026-05-07-aarti-assessment-overview.md`
+- ~~Course content / lectures surface~~ → **decided 2026-05-08 16:09**: Course content (syllabus, reading material, events, lectures, objectives) lives in secondary tabs on the course detail page. Course page is primarily the assessment list. No separate Lectures module.
+- ~~"Live" as assessment status~~ → **decided 2026-05-07**: use "ongoing"
 
-The 2027 north star. 5 columns:
+## 9. Curricular Assessment Loop (Aarti's canonical model)
+
+The product's north star and primary differentiator. Aarti framed it as four questions every faculty and program director needs answered:
 
 ```
-A — Why is content taught   →  Standards / competencies
-B — How is content taught   →  Course objectives
-C — Test understanding       →  Exam questions
-D — Did they learn?          →  Assessment scores
-E — Loop D back to B         →  Tweak curriculum or support individual students
+1. What must I teach?     →  Standards / competencies / board blueprints (NAPLEX, NCLEX, CAPTE)
+2. What am I teaching?    →  Course objectives mapped to standards
+3. How am I assessing?    →  Exam questions tagged to content area / competency / objective
+4. What are students learning?  →  Assessment scores ← loop back to curriculum
 ```
+
+No competitor owns the full loop today:
+- ExamSoft: questions ↔ standards only (3→1)
+- AS Map / Carrot: curriculum mapping only (1↔2)
+- Exxat target: full loop, owned end-to-end
+
+**Two question-mapping pathways (either/or, both valid):**
+1. Question → course objective → inherits standard (indirect, curriculum-aware)
+2. Question → standard directly (independent of curriculum mapping; required for standalone sellability)
 
 **Three insights to surface (the differentiator):**
 - **Taught but not assessed** — objective covered, no questions test it
 - **Assessed but not taught** — questions exist, no objective covers them (unfair to students)
 - **Neither taught nor assessed** — undercovered standard (most critical)
+
+**Comp Genie–style AI (added 2026-05-08):** Gap analysis vs. published board blueprints works WITHOUT customer curriculum data. Two tiers: (1) no customer data → compare to published NAPLEX/NCLEX/etc.; (2) with curriculum → compare to mapped course objectives.
 
 Phase 1 priority: question→standard mapping (parity with ExamSoft).
 Phase 1 differentiator: question→course-objective mapping (closes the loop).

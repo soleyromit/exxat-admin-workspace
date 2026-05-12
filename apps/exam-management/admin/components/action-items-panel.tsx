@@ -248,7 +248,7 @@ function ToneIcon({ tone, icon }: { tone: 'brand' | 'info' | 'warning' | 'succes
     info: 'text-chart-1',
     warning: 'text-chart-4',
     success: 'text-chart-2',
-    destructive: 'text-destructive',
+    destructive: 'text-chart-5',
   } as any
   const isPulse = tone === 'info' && icon === 'fa-circle'
   return (

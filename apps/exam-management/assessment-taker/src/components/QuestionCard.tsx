@@ -357,7 +357,7 @@ export function QuestionCard({
                     className="absolute top-3 right-3 shadow-md"
                     style={
                       isSpeechListening
-                        ? { backgroundColor: '#ef4444', color: 'white', borderColor: '#ef4444' }
+                        ? { backgroundColor: 'var(--state-error-accent)', color: 'var(--background)', borderColor: 'var(--state-error-accent)' }
                         : undefined
                     }
                   >

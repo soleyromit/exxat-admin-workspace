@@ -16,9 +16,15 @@
  */
 
 import { useState } from 'react'
-import { Button, Badge, ToggleSwitch, Tooltip, TooltipTrigger, TooltipContent } from '@exxat/ds/packages/ui/src'
+import { useRouter } from 'next/navigation'
+import {
+  Button, Badge, ToggleSwitch,
+  Card, CardHeader, CardTitle, CardDescription, CardContent,
+  Tooltip, TooltipTrigger, TooltipContent,
+} from '@exxat/ds/packages/ui/src'
 import { AiGenerateModal } from '@/components/ai-generate-modal'
 import { CurricularLoopDiagram } from '@/components/curricular-loop-diagram'
+import { ObjectiveDeepDiveSheet } from '@/components/objective-deep-dive-sheet'
 import { KpiTile, type Tone } from '@/components/faculty-ui-kit'
 import { StubButton } from '@/components/stub-button'
 import { useCommunicationPolicy } from '@/lib/communication-policy-store'
@@ -39,7 +45,12 @@ interface OverviewTabProps {
 export function OverviewTab({
   course, students, assessments, objectives, reviewByAssessment, onJumpToTab,
 }: OverviewTabProps) {
+  const router = useRouter()
   const [aiOpen, setAiOpen] = useState(false)
+  const [selectedObjectiveId, setSelectedObjectiveId] = useState<string | null>(null)
+  const selectedObjective = selectedObjectiveId
+    ? objectives.find(o => o.id === selectedObjectiveId) ?? null
+    : null
   // Cohort average performance
   const courseAvg = students.length > 0
     ? Math.round(students.reduce((sum, s) => sum + (s.avgScore[course.id] ?? 0), 0) / students.length)
@@ -77,8 +88,8 @@ export function OverviewTab({
 
       {/* ─── Untested objectives gap-fill callout ───────────────────────── */}
       {untested.length > 0 && (
-        <section className="rounded-lg border border-border bg-card border-l-3 border-l-chart-4 p-4">
-          <div className="flex items-start gap-3">
+        <Card className="border-l-3 border-l-chart-4">
+          <CardContent className="flex items-start gap-3">
             <i
               className="fa-light fa-bullseye-pointer text-chart-4 text-sm mt-0.5 shrink-0"
               aria-hidden="true"
@@ -135,49 +146,54 @@ export function OverviewTab({
                 <i className="fa-light fa-arrow-right" aria-hidden="true" />
               </Button>
             </div>
-          </div>
-        </section>
+          </CardContent>
+        </Card>
       )}
 
       {/* ─── Curricular Loop card — Aarti's central differentiator ──────── */}
-      <section className="rounded-xl border border-border bg-card p-5">
-        <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <i
-                className="fa-duotone fa-solid fa-grid-2 text-brand text-sm"
-                aria-hidden="true"
-              />
-              <h2 className="font-heading text-base font-semibold text-foreground">
-                Curricular assessment matrix
-              </h2>
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                Differentiator
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground max-w-2xl">
-              Each objective plotted by how often it&apos;s assessed and how students perform on it.
-              The four quadrants tell you where to invest next.
-            </p>
-          </div>
-        </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-heading text-base font-semibold flex items-center gap-2">
+            <i
+              className="fa-duotone fa-solid fa-grid-2 text-brand text-sm"
+              aria-hidden="true"
+            />
+            Curricular assessment matrix
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium ms-1">
+              Differentiator
+            </span>
+          </CardTitle>
+          <CardDescription className="text-xs max-w-2xl">
+            Each objective plotted by how often it&apos;s assessed and how students perform on it.
+            The four quadrants tell you where to invest next.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CurricularLoopDiagram
+            objectives={objectives}
+            students={students}
+            assessments={assessments}
+            cohortAvg={courseAvg}
+            reviewByAssessment={reviewByAssessment}
+            onObjectiveClick={(objectiveId) => setSelectedObjectiveId(objectiveId)}
+          />
+        </CardContent>
+      </Card>
 
-        {/* Curricular matrix — no extra wrapper, parent <section> already provides the card */}
-        <CurricularLoopDiagram
-          objectives={objectives}
-          students={students}
-          assessments={assessments}
-          cohortAvg={courseAvg}
-          reviewByAssessment={reviewByAssessment}
-          onObjectiveClick={(objectiveId) => {
-            const obj = objectives.find(o => o.id === objectiveId)
-            if (!obj) return
-            if (!obj.lastAssessed)         setAiOpen(true)         // gap → AI generate
-            else if (obj.avgPerformance < 70) onJumpToTab('students')  // instructional issue → review students
-            else                            onJumpToTab('questions') // healthy/blind-spot → review questions
-          }}
-        />
-      </section>
+      {/* Objective deep-dive — opened from any matrix cell or row.
+          Replaces the previous "jump to sibling tab" routing which silently
+          went to a non-existent Questions tab (Vishaka removed it; see
+          comment in course-detail-client.tsx). "Open in Question Bank"
+          routes to the global QB hub instead. */}
+      <ObjectiveDeepDiveSheet
+        objective={selectedObjective}
+        students={students}
+        assessments={assessments}
+        onClose={() => setSelectedObjectiveId(null)}
+        onOpenInQB={() => { setSelectedObjectiveId(null); router.push('/question-bank') }}
+        onReviewStudents={() => { setSelectedObjectiveId(null); onJumpToTab('students') }}
+        onGenerateMore={() => { setSelectedObjectiveId(null); setAiOpen(true) }}
+      />
 
       {/* ─── Course communication preferences ─────────────────────────────
            Per Aarti+Vishaka: post-results chat is configurable at institution
@@ -186,18 +202,18 @@ export function OverviewTab({
       <CourseChatToggleSection courseId={course.id} />
 
       {/* ─── Recent activity ─────────────────────────────────────────────── */}
-      <section className="rounded-xl border bg-card p-5" style={{ borderColor: 'var(--border)' }}>
-        <div className="flex items-center justify-between gap-4 mb-3 flex-wrap">
-          <h2 className="font-semibold text-foreground" style={{ fontFamily: 'var(--font-heading)', fontSize: 16 }}>
-            Recent activity
-          </h2>
-          <StubButton variant="ghost" size="sm">
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-heading text-base font-semibold">Recent activity</CardTitle>
+          <StubButton variant="ghost" size="sm" className="col-start-2 row-start-1 self-start justify-self-end">
             View all
             <i className="fa-light fa-arrow-right ms-1" aria-hidden="true" style={{ fontSize: 10 }} />
           </StubButton>
-        </div>
-        <ActivityTimeline reviewByAssessment={reviewByAssessment} assessments={assessments} />
-      </section>
+        </CardHeader>
+        <CardContent>
+          <ActivityTimeline reviewByAssessment={reviewByAssessment} assessments={assessments} />
+        </CardContent>
+      </Card>
 
       {/* AI generation modal — controlled by aiOpen */}
       <AiGenerateModal
@@ -335,8 +351,8 @@ function CourseChatToggleSection({ courseId }: { courseId: string }) {
 
   if (!institutionAllowChat) {
     return (
-      <section className="rounded-xl border border-border bg-card p-4">
-        <div className="flex items-start gap-3">
+      <Card>
+        <CardContent className="flex items-start gap-3">
           <i className="fa-light fa-comment-slash text-muted-foreground text-sm mt-0.5 shrink-0" aria-hidden="true" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground">
@@ -346,14 +362,14 @@ function CourseChatToggleSection({ courseId }: { courseId: string }) {
               Cannot be enabled per course while the institution master switch is off. Contact your administrator.
             </p>
           </div>
-        </div>
-      </section>
+        </CardContent>
+      </Card>
     )
   }
 
   return (
-    <section className="rounded-xl border border-border bg-card p-4">
-      <div className="flex items-center gap-3">
+    <Card>
+      <CardContent className="flex items-center gap-3">
         <i
           className="fa-duotone fa-solid fa-comments text-sm shrink-0"
           style={{ color: effective ? 'var(--brand-color)' : 'var(--muted-foreground)' }}
@@ -405,7 +421,7 @@ function CourseChatToggleSection({ courseId }: { courseId: string }) {
             />
           )}
         </div>
-      </div>
-    </section>
+      </CardContent>
+    </Card>
   )
 }

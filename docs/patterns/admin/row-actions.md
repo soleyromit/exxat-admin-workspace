@@ -1,6 +1,7 @@
 # Row Actions (Admin)
 
-**Pattern ID:** `ADMIN-ROW-ACTIONS`
+**Pattern ID:** `ADMIN-001`
+**Binds rules:** A11Y-002, DS-002, DS-007
 **Question answered:** What's the canonical shape of a per-row kebab-menu in an admin list page?
 
 **Reference:** diagnostic findings in [`docs/governance/component-depth-audits/actions-overlays.md`](../../governance/component-depth-audits/actions-overlays.md) — this doc is the prescriptive companion.

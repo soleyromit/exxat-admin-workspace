@@ -278,6 +278,28 @@ Faculty cannot CRUD accommodations. Non-registered students may take a single as
 
 > "A faculty cannot decide whether this student gets this accommodation or not. At the higher level, that decision is made." — Aarti, 2026-05-08
 
+### 5.18 Course detail landing page (Aarti 2026-05-08 16:09)
+
+When a faculty or admin navigates into a course, the **primary landing tab is Assessments** — not objectives, not syllabus, not course metadata. Course details (objectives, syllabus, reading material, content, events) are secondary tabs, never more than one click away.
+
+> "If you're in the assessment section, we can make them land first on the assessments… Overview should be the list of my assessments." — Aarti, 2026-05-07 + 2026-05-08 16:09
+
+Everything about the course must be accessible but secondary to the assessment workflow when inside Exam Management. This is not a limitation — it's focus. A course page inside CFE would land differently (on evaluation data).
+
+### 5.19 Things Aarti killed for Exam Management
+
+| Killed | Why | Source |
+|---|---|---|
+| Practice questions in Phase 1 | No PM/product alignment; not a must-have for launch. Future consideration only | 2026-05-08 |
+| Point-biserial in current design sprint | Romit doesn't yet understand the calculation well enough to design with it responsibly | 2026-05-08 |
+| 8-persona variations | Bandwidth; collapse to 3 views (admin / faculty / student) | 2026-05-08 |
+| "Live" as a status label | Ambiguous — use "ongoing" instead | 2026-05-07 + 2026-05-08 |
+| Chart + number redundancy on live monitor | If you have the chart, you don't need the number and vice versa | 2026-05-08 |
+| Content-area coverage as percentages | Frequency counts only ("8 of 20 questions") — percentages imply correctness which adds confusion | 2026-05-08 |
+| 2D scatter plot for difficulty × point-biserial | Use 3-bucket x-axis (easy/medium/hard) instead; scatter misleads until Romit understands point-biserial | 2026-05-08 |
+| Objective as prominent per-question field | Objective is metadata ("FYI") — content area is the relevant forward field. Show objective on hover/click only | 2026-05-08 |
+| Flagged-only exclusion for curving | Must be able to exclude ANY question, not just flagged | 2026-05-08 |
+
 ---
 
 ## 6. Course Faculty Evaluation (CFE / PCE) — feature decisions
@@ -434,7 +456,7 @@ Admin ≠ PCE viewer. Faculty-as-admin must NOT leak peer evaluations.
 | 2026-05-06 09:00 | PCE persona mapping | `1b317110` | Vishal (Aarti absent) |
 | 2026-05-06 10:55 | AI exam + confidence-based | `d6a35ea2` | Aarti |
 | 2026-05-07 10:33 | AI question creation + Curricular Loop | `fb9e76c2` | Aarti |
-| 2026-05-07 16:45 | Assessment overview design | `b68ede99` | Aarti |
+| 2026-05-07 16:45 | Assessment overview design | `b68ede99` | Aarti | `docs/research/meetings/2026-05-07-aarti-assessment-overview.md` |
 | 2026-05-08 12:44 | Live monitoring + accommodations + cross-product | `4e1c850e` | Aarti |
 | 2026-05-08 16:09 | Curriculum mapping + base entities + product alignment | `f274ade0` | Aarti |
 

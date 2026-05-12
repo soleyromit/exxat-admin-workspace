@@ -70,79 +70,85 @@ export const tokens = {
     focus: 'var(--ring, #A78BFA)'                     // exxat-ds --ring (lavender)
   },
 
-  // ─── Exam states — studentUX-specific (no exxat-ds equivalent) ─────────────
+  // ─── Exam states — now resolve through DS chart palette via index.css
+  // tokens (see --state-answered-* etc.). All chart-* tokens are pre-tuned
+  // for AA contrast + auto-adapt under .dark.
   state: {
-    // Answered question — green indicator
-    answeredBg: '#DCFCE7',
-    answeredBorder: '#4ADE80',
-    answeredText: '#15803D',
+    // Answered question — chart-2 (teal/green) family
+    answeredBg:     'var(--state-answered-bg)',
+    answeredBorder: 'var(--state-answered-border)',
+    answeredText:   'var(--state-answered-text)',
 
-    // Flagged question — amber indicator
-    flaggedBg: '#FEF9C3',
-    flaggedBorder: '#FACC15',
-    flaggedText: '#92400E',
+    // Flagged question — chart-4 (amber) family
+    flaggedBg:     'var(--state-flagged-bg)',
+    flaggedBorder: 'var(--state-flagged-border)',
+    flaggedText:   'var(--state-flagged-text)',
 
-    // Required / unanswered warning (not destructive — informational)
-    requiredBg: '#FFFFFF',
-    requiredBorder: '#F87171',
-    requiredShadow: 'rgba(254,226,226,1)',
+    // Required / unanswered warning (informational, not destructive)
+    requiredBg:     'var(--required-bg)',
+    requiredBorder: 'var(--required-border)',
+    requiredShadow: 'var(--required-bg)',
 
     // Current active question in navigator — uses brand
-    currentBg: 'var(--brand-color, #7C3AED)',
-    currentText: 'var(--brand-foreground, #FFFFFF)'
+    currentBg:   'var(--brand-color)',
+    currentText: 'var(--brand-foreground)'
   },
 
-  // ─── Semantic — delegates to exxat-ds for error ─────────────────────────────
+  // ─── Semantic — Aarti's no-red rule applied: errors map to chart-5 orange.
+  // Reserve --destructive only for true delete/destructive confirmations.
   semantic: {
-    errorText: 'var(--destructive, #DC2626)',
-    errorBg: '#FEF2F2',
-    errorBorder: '#FECACA',
-    errorDot: 'var(--destructive, #EF4444)',
+    errorText:   'var(--state-error-text-dark)',
+    errorBg:     'var(--state-error-bg-soft)',
+    errorBorder: 'var(--state-error-border-soft)',
+    errorDot:    'var(--state-error-accent)',
 
-    warningText: '#D97706',
+    warningText: 'var(--state-warning-dark)',
 
-    infoBg: '#EFF6FF', // blue-50
-    infoIcon: '#3B82F6', // blue-500
+    infoBg:   'var(--state-info-blue-bg)',
+    infoIcon: 'var(--state-info-blue-mid)',
 
-    successBg: '#F0FDF4', // green-50
-    successIcon: '#22C55E', // green-500
+    successBg:   'var(--state-success-bg)',
+    successIcon: 'var(--state-success-text)',
 
-    amberBg: '#FFFBEB', // amber-50
-    amberIcon: '#F59E0B', // amber-500
+    amberBg:   'var(--state-warning-bg)',
+    amberIcon: 'var(--state-warning-text)',
 
-    purpleBg: '#FAF5FF', // purple-50
-    purpleIcon: '#A855F7' // purple-500
+    // Purple (low-priority info badge) — maps to brand for theme cohesion
+    purpleBg:   'color-mix(in oklch, var(--brand-color) 8%, var(--background))',
+    purpleIcon: 'var(--brand-color)'
   },
 
   // ─── Sidebar active strip ───────────────────────────────────────────────────
   sidebar: {
-    activeBg: 'var(--brand-color-dark, #5B21B6)'     // exxat-ds brand dark
+    activeBg: 'var(--brand-color-dark)'              // exxat-ds brand dark
   },
 
-  // ─── Exam accent (blue) ─────────────────────────────────────────────────────
+  // ─── Exam accent — maps to DS chart-1 (indigo)
   exam: {
-    accent: '#2563EB', // blue-600 — current-question highlight, active icons
-    accentHover: '#1D4ED8', // blue-700 — hover on accent elements
-    accentLight: '#EFF6FF', // blue-50  — active tool background, tinted panels
-    accentBorder: '#BFDBFE', // blue-200 — border on accent-tinted surfaces
-    accentMid: '#3B82F6' // blue-500 — secondary accent uses
+    accent:       'var(--exam-accent)',
+    accentHover:  'var(--exam-accent-hover)',
+    accentLight:  'var(--exam-accent-light)',
+    accentBorder: 'var(--exam-accent-border)',
+    accentMid:    'var(--exam-accent-mid)'
   },
 
-  // ─── Calculator ─────────────────────────────────────────────────────────────
+  // ─── Calculator — neutral grey via zero-chroma color-mix
+  // (--foreground and --background both have chroma 0, so the mix is
+  // guaranteed hue-neutral under any theme).
   calc: {
-    displayBg: '#111827', // gray-900
-    numBtn: '#FFFFFF',
-    numBorder: '#E5E7EB',
-    numText: '#1F2937',
-    opBtn: '#F3F4F6',
-    opBorder: '#E5E7EB',
-    opText: '#374151',
-    sciBtn: '#EFF6FF',
-    sciBorder: '#BFDBFE',
-    sciText: '#1D4ED8',
-    equalBtn: 'var(--brand-color, #7C3AED)',
-    equalHover: 'var(--brand-color-dark, #5B21B6)',
-    headerBg: '#F9FAFB'
+    displayBg: 'var(--calc-display-bg)',
+    numBtn:    'var(--background)',
+    numBorder: 'var(--border)',
+    numText:   'var(--foreground)',
+    opBtn:     'color-mix(in oklch, var(--foreground) 4%, var(--background))',
+    opBorder:  'var(--border)',
+    opText:    'color-mix(in oklch, var(--foreground) 75%, var(--background))',
+    sciBtn:    'var(--exam-accent-light)',
+    sciBorder: 'var(--exam-accent-border)',
+    sciText:   'var(--exam-accent-hover)',
+    equalBtn:  'var(--brand-color)',
+    equalHover:'var(--brand-color-dark)',
+    headerBg:  'color-mix(in oklch, var(--foreground) 3%, var(--background))'
   }
 } as const;
 
