@@ -1162,14 +1162,14 @@ export function QBSidebar() {
       </div>
 
       {/* ── Quick Nav: All Questions + My Questions ── */}
-      <div style={{ padding: '1px 0 2px', flexShrink: 0 }}>
+      <div style={{ padding: '1px 0 8px', flexShrink: 0 }}>
         {navItem(isAllSelected, 'fa-book-open', 'All Questions', allQCount, () => setNavView('all'))}
         {navItem(isMySelected, 'fa-user', 'My Questions', myQCount, () => setNavView('my'))}
       </div>
 
       {/* ── Question Bank label + search — fixed, never scrolls ── */}
       {SEARCH_VARIANT === 'input' ? (
-        <div style={{ flexShrink: 0, padding: '2px 8px 4px' }}>
+        <div style={{ flexShrink: 0, padding: '4px 8px 4px' }}>
           <div style={{ padding: '0 4px 3px' }}>
             <span className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
               Question Bank
