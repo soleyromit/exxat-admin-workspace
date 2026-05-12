@@ -14,6 +14,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="theme-prism" suppressHydrationWarning>
       <head>
+        {/* Seed brand default to "prism" before useAppTheme hydrates from localStorage.
+            The DS hook falls back to "one" when no entry exists — this prevents that. */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){var k='exxat-brand';if(!localStorage.getItem(k)){localStorage.setItem(k,'prism');}})();` }} />
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="stylesheet" href="https://use.typekit.net/wuk5wqn.css" />
         <script
