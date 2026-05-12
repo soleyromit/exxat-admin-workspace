@@ -27,8 +27,11 @@ except ImportError:
 
 
 def _claude_updates_pending() -> str | None:
-    """Return a one-line nag if the claude-updates watcher has flagged
-    new upstream changelog content that hasn't been reviewed yet."""
+    """Return an AUTO-INVOKE instruction if the claude-updates watcher has
+    flagged new upstream changelog content. Romit asked for the watcher to
+    run automatically (no manual slash command) — the SessionStart hook
+    detects pending content and asks the assistant to spawn the subagent
+    on its own before responding to the user's first prompt."""
     pending = REPO_ROOT / "docs" / "governance" / "claude-updates" / "pending-review.md"
     if not pending.exists():
         return None
@@ -41,8 +44,18 @@ def _claude_updates_pending() -> str | None:
         change_count = body.count("**URL**:")
         if change_count == 0:
             return None
-        return (f"📦 Claude updates: {change_count} upstream source(s) changed. "
-                "Run `/check-claude-updates` to review.")
+        return (
+            f"📦 AUTO-INVOKE: claude-updates watcher has {change_count} upstream "
+            f"source(s) pending review. Before responding to the user's first "
+            f"prompt, execute the workflow in `.claude/commands/check-claude-updates.md` "
+            f"(spawn the watcher subagent, write the proposal MD, then mark the batch "
+            f"as reviewed by overwriting `docs/governance/claude-updates/pending-review.md` "
+            f"with the empty-state header). After the proposal MD is written, summarize "
+            f"verdicts for the user in ≤200 words and continue with whatever they asked. "
+            f"If the user's first prompt is unrelated to Claude updates, run the watcher "
+            f"in the BACKGROUND (Agent with run_in_background=true) so it doesn't block "
+            f"their request — surface the proposal path when it completes."
+        )
     except OSError:
         return None
 
