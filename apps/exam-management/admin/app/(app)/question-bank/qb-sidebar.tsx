@@ -9,6 +9,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Separator,
   Popover, PopoverTrigger, PopoverContent,
   FieldError,
+  Command, CommandInput, CommandList, CommandGroup, CommandItem, CommandEmpty,
 } from '@exxat/ds/packages/ui/src'
 import { mockCourses, mockCourseOfferings } from '@/lib/qb-mock-data'
 
@@ -54,7 +55,7 @@ function getFolderIcon(node: FolderNode, expanded: boolean, selected: boolean) {
   }
 }
 
-function DeleteFolderDialog({
+export function DeleteFolderDialog({
   node,
   open,
   onClose,
@@ -123,7 +124,7 @@ function DeleteFolderDialog({
   )
 }
 
-function MoveFolderDialog({ node, open, onClose }: { node: FolderNode; open: boolean; onClose: () => void }) {
+export function MoveFolderDialog({ node, open, onClose }: { node: FolderNode; open: boolean; onClose: () => void }) {
   const { folders, moveFolder, createFolder, navigateToFolder } = useQB()
 
   // currentId = null means root (all course folders)
@@ -333,7 +334,7 @@ function MoveFolderDialog({ node, open, onClose }: { node: FolderNode; open: boo
   )
 }
 
-function FolderContextMenu({
+export function FolderContextMenu({
   node,
   isAdmin,
   onRename,
@@ -341,6 +342,7 @@ function FolderContextMenu({
   onMove,
   onDelete,
   onOpenChange,
+  alwaysVisible = false,
 }: {
   node: FolderNode
   isAdmin: boolean
@@ -349,6 +351,7 @@ function FolderContextMenu({
   onMove: () => void
   onDelete: () => void
   onOpenChange?: (open: boolean) => void
+  alwaysVisible?: boolean
 }) {
   const { setCollaboratorsModalFolderId, setFolderPrivacy } = useQB()
   const isPrivate = !!node.isPrivateSpace
@@ -360,13 +363,13 @@ function FolderContextMenu({
           variant="ghost"
           size="icon-xs"
           aria-label="Folder options"
-          className="qb-folder-menu-btn shrink-0"
+          className={alwaysVisible ? 'shrink-0' : 'qb-folder-menu-btn shrink-0'}
           onClick={(e) => e.stopPropagation()}
         >
-          <i className="fa-regular fa-ellipsis" aria-hidden="true" style={{ fontSize: 12 }} />
+          <i className="fa-regular fa-ellipsis-vertical" aria-hidden="true" style={{ fontSize: 12 }} />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-52">
+      <DropdownMenuContent align="end" className="w-52" onCloseAutoFocus={e => e.preventDefault()}>
         <DropdownMenuItem onClick={() => onAddSubfolder()}>
           <i className="fa-light fa-folder-plus" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
           New Subfolder
@@ -577,10 +580,14 @@ function FolderRow({
   node,
   depth,
   isAdmin,
+  subtitle,
+  fullSubtitle,
 }: {
   node: FolderNode
   depth: number
   isAdmin: boolean
+  subtitle?: string
+  fullSubtitle?: string
 }) {
   const {
     selectedFolderId, setSelectedFolderId,
@@ -610,6 +617,8 @@ function FolderRow({
   const [moveFolderDialogOpen, setMoveFolderDialogOpen] = useState(false)
   const [deleteFolderDialogOpen, setDeleteFolderDialogOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [showFullPath, setShowFullPath] = useState(false)
+  const [isFocused, setIsFocused] = useState(false)
   const renameRef = useRef<HTMLInputElement>(null)
   const [hoverOpen, setHoverOpen] = useState(false)
   const [isRowHovered, setIsRowHovered] = useState(false)
@@ -621,7 +630,7 @@ function FolderRow({
     hoverTimerRef.current = setTimeout(() => setHoverOpen(true), 600)
   }
   function handleMouseLeave() {
-    if (dialogActive) return
+    if (dialogActive || menuOpen) return
     setIsRowHovered(false)
     if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
     setHoverOpen(false)
@@ -657,7 +666,13 @@ function FolderRow({
   const indentPx = 8 + clampedDepth * 16
 
   return (
-    <div style={{ position: 'relative' }} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+    <div
+      style={{ position: 'relative' }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onFocus={() => setIsFocused(true)}
+      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsFocused(false) }}
+    >
       <Popover open={hoverOpen} onOpenChange={setHoverOpen}>
         <PopoverTrigger asChild>
           <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} aria-hidden="true" />
@@ -719,13 +734,13 @@ function FolderRow({
         style={{
           position: 'relative',
           display: 'flex', alignItems: 'center', gap: 4,
-          minHeight: 32,
-          paddingBlock: 5,
+          minHeight: 28,
+          paddingBlock: 2,
           paddingLeft: indentPx,
           paddingRight: 8,
           cursor: 'pointer',
           borderRadius: 6,
-          margin: '1px 4px',
+          margin: '0 4px',
           backgroundColor: isSelected
             ? 'var(--qb-folder-selected-bg)'
             : isDragOver
@@ -738,9 +753,16 @@ function FolderRow({
           userSelect: 'none',
         }}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') setSelectedFolderId(node.id)
-          if (e.key === 'ArrowRight' && hasChildren && !isExpanded) toggleFolder(node.id)
-          if (e.key === 'ArrowLeft' && isExpanded) toggleFolder(node.id)
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedFolderId(node.id) }
+          if (e.key === 'ArrowRight' && hasChildren && !isExpanded) { e.preventDefault(); toggleFolder(node.id) }
+          if (e.key === 'ArrowLeft' && isExpanded) { e.preventDefault(); toggleFolder(node.id) }
+          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault()
+            const items = Array.from(document.querySelectorAll<HTMLElement>('[role="treeitem"]'))
+            const idx = items.indexOf(e.currentTarget as HTMLElement)
+            const next = e.key === 'ArrowDown' ? items[idx + 1] : items[idx - 1]
+            next?.focus()
+          }
         }}
       >
         {/* Chevron */}
@@ -803,34 +825,50 @@ function FolderRow({
             style={{ flex: 1, color: 'var(--brand-color)' }}
           />
         ) : (
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span className={`block text-sm truncate text-foreground ${isSelected ? 'font-medium' : 'font-normal'}`}>
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <span className={`text-sm text-foreground ${isSelected ? 'font-medium' : 'font-normal'}`}
+              style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {node.isCourse ? courseFolderLabel(node.name) : node.name}
             </span>
-            {node.isPrivateSpace && (
-              <i
-                className="fa-light fa-lock text-muted-foreground shrink-0"
-                aria-label="Private folder"
-                style={{ fontSize: 10 }}
-              />
-            )}
+            {subtitle && (() => {
+              const canExpand = !!(fullSubtitle && fullSubtitle !== subtitle)
+              const displayed = (showFullPath && fullSubtitle) ? fullSubtitle : subtitle
+              const toggle = (e: React.SyntheticEvent) => { e.stopPropagation(); if (canExpand) setShowFullPath(v => !v) }
+              return (
+                <span
+                  className="text-xs text-muted-foreground"
+                  role={canExpand ? 'button' : undefined}
+                  tabIndex={canExpand ? 0 : undefined}
+                  aria-label={canExpand ? (showFullPath ? 'Collapse path' : 'Expand full path') : undefined}
+                  aria-expanded={canExpand ? showFullPath : undefined}
+                  style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: canExpand ? 'pointer' : 'default' }}
+                  onClick={toggle}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(e) } }}
+                >
+                  {displayed}{!showFullPath && canExpand && ' ···'}
+                </span>
+              )
+            })()}
           </div>
         )}
 
-        {/* Count */}
-        <span className="text-[10px] text-muted-foreground shrink-0" style={{ marginLeft: 6 }}>
-          {folderQuestionCount}
-        </span>
+        {/* Count + lock icon */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
+          {node.isPrivateSpace && (
+            <i className="fa-light fa-lock text-muted-foreground shrink-0" aria-label="Private folder" style={{ fontSize: 10 }} />
+          )}
+          <span className="text-[10px] text-muted-foreground shrink-0">{folderQuestionCount}</span>
+        </div>
 
-        {/* ⋯ context menu — overlays row on hover, takes no layout space */}
+        {/* ⋯ context menu — absolute overlay on the right, appears on hover */}
         {(isAdmin || accessibleFolderIds.has(node.id)) && (
           <div style={{
             position: 'absolute',
             right: 4,
             top: '50%',
             transform: 'translateY(-50%)',
-            opacity: (isRowHovered || menuOpen) ? 1 : 0,
-            pointerEvents: (isRowHovered || menuOpen) ? 'auto' : 'none',
+            opacity: (isRowHovered || isFocused || menuOpen) ? 1 : 0,
+            pointerEvents: (isRowHovered || isFocused || menuOpen) ? 'auto' : 'none',
             transition: 'opacity 100ms',
             zIndex: 1,
             backgroundColor: isSelected ? 'var(--qb-folder-selected-bg)' : isRowHovered ? 'var(--interactive-hover)' : 'transparent',
@@ -843,7 +881,7 @@ function FolderRow({
               onRename={() => {
                 setIsRenaming(true)
                 setRenameName(node.name)
-                setTimeout(() => renameRef.current?.focus(), 50)
+                setTimeout(() => { renameRef.current?.focus(); renameRef.current?.select() }, 80)
               }}
               onAddSubfolder={() => setShowingInlineCreate(true)}
               onMove={() => setMoveFolderDialogOpen(true)}
@@ -921,10 +959,15 @@ export function QBSidebar() {
     sidebarSearch, setSidebarSearch,
     accessibleFolderIds,
     createFolder,
+    navigateToFolder,
   } = useQB()
 
+  // Switch between search UIs: 'input' = always-visible InputGroup (Option A),
+  // 'command' = DS Command component (Option B). Change to switch.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+  const SEARCH_VARIANT = ('input' as 'input' | 'command')
+
   const [inlineCreateParent, setInlineCreateParent] = useState<string | 'root' | null>(null)
-  const [searchExpanded, setSearchExpanded] = useState(false)
   const [isNarrow, setIsNarrow] = useState(false)
   // Inactive section collapsed by default — toggle to expand.
   // To revert to flat list: remove this state + the grouping render below.
@@ -941,7 +984,6 @@ export function QBSidebar() {
 
   useEffect(() => {
     if (!sidebarOpen) {
-      setSearchExpanded(false)
       setSidebarSearch('')
     }
   }, [sidebarOpen, setSidebarSearch])
@@ -968,7 +1010,7 @@ export function QBSidebar() {
   const isAllSelected = navView === 'all'
   const isMySelected = navView === 'my'
 
-  // Filter root course folders by search
+  // Filter root course folders by search (used for normal grouped tree when not deep-searching)
   const filteredRoots = sidebarSearch.trim()
     ? visibleCourseFolders.filter(f => {
         const matchesSelf = f.name.toLowerCase().includes(sidebarSearch.toLowerCase())
@@ -979,6 +1021,58 @@ export function QBSidebar() {
       })
     : visibleCourseFolders
 
+  // Full ancestor path — used for tooltip / detail
+  function getFolderParentPath(folderId: string): string {
+    const parts: string[] = []
+    let current = visibleFolders.find(f => f.id === folderId)
+    let parentId = current?.parentId ?? null
+    while (parentId) {
+      const parent = visibleFolders.find(f => f.id === parentId)
+      if (!parent) break
+      parts.unshift(parent.isCourse ? courseFolderLabel(parent.name) : parent.name)
+      parentId = parent.parentId
+    }
+    return parts.join(' / ')
+  }
+
+  // Last 2 ancestor segments for the short subtitle
+  function getFolderShortPath(folderId: string): string | null {
+    const parts: string[] = []
+    let current = visibleFolders.find(f => f.id === folderId)
+    let parentId = current?.parentId ?? null
+    while (parentId) {
+      const parent = visibleFolders.find(f => f.id === parentId)
+      if (!parent) break
+      parts.unshift(parent.isCourse ? courseFolderLabel(parent.name) : parent.name)
+      parentId = parent.parentId
+    }
+    if (!parts.length) return null
+    return parts.slice(-2).join(' / ')
+  }
+
+  // Full path with … midway if more than 3 segments
+  function getFolderFullPath(folderId: string): string | null {
+    const parts: string[] = []
+    let current = visibleFolders.find(f => f.id === folderId)
+    let parentId = current?.parentId ?? null
+    while (parentId) {
+      const parent = visibleFolders.find(f => f.id === parentId)
+      if (!parent) break
+      parts.unshift(parent.isCourse ? courseFolderLabel(parent.name) : parent.name)
+      parentId = parent.parentId
+    }
+    if (!parts.length) return null
+    if (parts.length <= 3) return parts.join(' / ')
+    return `${parts[0]} / … / ${parts[parts.length - 2]} / ${parts[parts.length - 1]}`
+  }
+
+  const flatSearchResults = sidebarSearch.trim()
+    ? visibleFolders.filter(f =>
+        f.name.toLowerCase().includes(sidebarSearch.toLowerCase()) ||
+        courseFolderLabel(f.name).toLowerCase().includes(sidebarSearch.toLowerCase())
+      )
+    : []
+
   // Nav item — consistent layout, active state is visual-only (no size change)
   const navItem = (
     active: boolean,
@@ -987,7 +1081,7 @@ export function QBSidebar() {
     count: number,
     onClick: () => void,
   ) => (
-    <div style={{ margin: '1px 4px' }}>
+    <div style={{ margin: '0 4px' }}>
     <Button
       variant="ghost"
       size="sm"
@@ -996,7 +1090,7 @@ export function QBSidebar() {
       style={{
         paddingLeft: 8,
         paddingRight: 8,
-        height: 32,
+        height: 28,
         backgroundColor: active ? 'var(--sidebar-accent)' : 'transparent',
         borderRadius: 6,
       }}
@@ -1059,8 +1153,8 @@ export function QBSidebar() {
     >
       {/* Library header strip */}
       <div style={{
-        height: 40, display: 'flex', alignItems: 'center',
-        padding: '0 12px', borderBottom: '1px solid var(--border)', flexShrink: 0,
+        height: 28, display: 'flex', alignItems: 'center',
+        padding: '0 12px', flexShrink: 0,
       }}>
         <span className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
           Library
@@ -1068,140 +1162,152 @@ export function QBSidebar() {
       </div>
 
       {/* ── Quick Nav: All Questions + My Questions ── */}
-      <div style={{ borderBottom: '1px solid var(--border)', padding: '2px 0', flexShrink: 0 }}>
+      <div style={{ padding: '1px 0 2px', flexShrink: 0 }}>
         {navItem(isAllSelected, 'fa-book-open', 'All Questions', allQCount, () => setNavView('all'))}
         {navItem(isMySelected, 'fa-user', 'My Questions', myQCount, () => setNavView('my'))}
       </div>
 
-      {/* Scrollable tree area */}
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '8px 0', scrollbarGutter: 'stable' }}>
-
-        {/* ── Question Bank section header with icon-only search ── */}
-        <div style={{
-          display: 'flex', alignItems: 'center',
-          padding: '4px 8px 4px 12px',
-          gap: 4,
-          minHeight: 30,
-        }}>
-          {searchExpanded ? (
-            /* Expanded: full search input inline */
-            <>
-              <InputGroup style={{ flex: 1, borderColor: 'var(--brand-color)', boxShadow: '0 0 0 3px color-mix(in oklch, var(--brand-color) 18%, transparent)' }}>
-                <InputGroupAddon align="inline-start">
-                  <i className="fa-light fa-magnifying-glass" aria-hidden="true"
-                    style={{ fontSize: 11, color: 'var(--brand-color)', padding: '0 6px' }} />
-                </InputGroupAddon>
-                <InputGroupInput
-                  autoFocus
-                  placeholder="Search folders…"
-                  value={sidebarSearch}
-                  onChange={e => setSidebarSearch(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Escape') { setSidebarSearch(''); setSearchExpanded(false) } }}
-                  className="text-xs"
-                  style={{ height: 26 }}
-                />
-              </InputGroup>
+      {/* ── Question Bank label + search — fixed, never scrolls ── */}
+      {SEARCH_VARIANT === 'input' ? (
+        <div style={{ flexShrink: 0, padding: '2px 8px 4px' }}>
+          <div style={{ padding: '0 4px 3px' }}>
+            <span className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
+              Question Bank
+            </span>
+          </div>
+          {/* Subtle sidebar search — same scale as nav items */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <i
+              className="fa-light fa-magnifying-glass text-muted-foreground"
+              aria-hidden="true"
+              style={{ position: 'absolute', left: 8, fontSize: 11, pointerEvents: 'none', zIndex: 1 }}
+            />
+            <Input
+              placeholder="Search folders…"
+              value={sidebarSearch}
+              onChange={e => setSidebarSearch(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Escape') setSidebarSearch('') }}
+              aria-label="Search folders"
+              style={{
+                height: 28,
+                paddingLeft: 26,
+                paddingRight: sidebarSearch ? 28 : 8,
+                fontSize: 12,
+                backgroundColor: 'var(--muted)',
+                border: '1px solid transparent',
+                borderRadius: 5,
+              }}
+            />
+            {sidebarSearch && (
               <Button
-                variant="ghost" size="icon-xs"
-                aria-label="Close search"
-                onClick={() => { setSidebarSearch(''); setSearchExpanded(false) }}
+                variant="ghost"
+                size="icon-xs"
+                aria-label="Clear search"
+                onClick={() => setSidebarSearch('')}
+                style={{ position: 'absolute', right: 2, width: 22, height: 22 }}
               >
-                <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 12 }} />
+                <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 10 }} />
               </Button>
-            </>
-          ) : (
-            <>
-              <span className="flex-1 text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
-                {'Question Bank'}
+            )}
+          </div>
+          {isSearching && (
+            <div style={{ padding: '3px 4px 0' }}>
+              <span className="text-[10px] text-muted-foreground">
+                {flatSearchResults.length} result{flatSearchResults.length !== 1 ? 's' : ''}
               </span>
-              <Button
-                variant="ghost" size="icon-xs"
-                aria-label="Search folders"
-                onClick={() => setSearchExpanded(true)}
-              >
-                <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 12 }} />
-              </Button>
-            </>
+            </div>
           )}
         </div>
+      ) : (
+        /* Option B: DS Command search */
+        <div style={{ flexShrink: 0 }}>
+          <Command className="rounded-none border-0 shadow-none bg-transparent">
+            <CommandInput
+              placeholder="Search folders…"
+              value={sidebarSearch}
+              onValueChange={setSidebarSearch}
+              className="text-xs h-8"
+            />
+          </Command>
+        </div>
+      )}
 
-        {/* Course → Folders tree — grouped by Active / Inactive.
-            To revert to flat list: replace with filteredRoots.map(...) */}
+      {/* Tree — vertical scroll only; names truncate with ellipsis */}
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: 2, paddingBottom: 8 }}>
+
+        {/* Command variant search results */}
+        {SEARCH_VARIANT === 'command' && isSearching ? (
+          <Command className="rounded-none border-0 shadow-none bg-transparent">
+            <CommandList>
+              <CommandEmpty>No folders match</CommandEmpty>
+              <CommandGroup heading="Active">
+                {flatSearchResults.filter(f => f.isCourse && isCourseActive(f.id)).map(f => {
+                  const parentPath = getFolderParentPath(f.id)
+                  return (
+                    <CommandItem
+                      key={f.id}
+                      onSelect={() => { navigateToFolder(f.id); setSidebarSearch('') }}
+                      className="flex flex-col items-start gap-0.5 py-2"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <i className="fa-light fa-graduation-cap" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)' }} />
+                        <span className="text-sm text-foreground">{f.isCourse ? courseFolderLabel(f.name) : f.name}</span>
+                      </div>
+                      {parentPath && <span className="text-xs text-muted-foreground pl-5">{parentPath}</span>}
+                    </CommandItem>
+                  )
+                })}
+              </CommandGroup>
+              <CommandGroup heading="Folders">
+                {flatSearchResults.filter(f => !f.isCourse).map(f => {
+                  const parentPath = getFolderParentPath(f.id)
+                  return (
+                    <CommandItem
+                      key={f.id}
+                      onSelect={() => { navigateToFolder(f.id); setSidebarSearch('') }}
+                      className="flex flex-col items-start gap-0.5 py-2"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <i className="fa-light fa-folder" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)' }} />
+                        <span className="text-sm text-foreground">{f.name}</span>
+                      </div>
+                      {parentPath && <span className="text-xs text-muted-foreground pl-5">{parentPath}</span>}
+                    </CommandItem>
+                  )
+                })}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        ) : null}
+
+        {/* Input variant search results (flat deep-search list) */}
+        {SEARCH_VARIANT === 'input' && isSearching && (
+          flatSearchResults.length === 0 ? (
+            <div className="text-xs text-muted-foreground" style={{ padding: '8px 12px' }}>
+              No folders match
+            </div>
+          ) : (
+            flatSearchResults.map(f => (
+              <div key={f.id}>
+                <FolderRow
+                  node={f}
+                  depth={0}
+                  isAdmin={isAdmin}
+                  subtitle={getFolderShortPath(f.id) || undefined}
+                  fullSubtitle={getFolderFullPath(f.id) || undefined}
+                />
+                {expandedFolderIds.has(f.id) && (
+                  <FolderTree nodes={visibleFolders} parentId={f.id} depth={1} isAdmin={isAdmin} />
+                )}
+              </div>
+            ))
+          )
+        )}
+
         <div role="tree" aria-label="Course tree">
 
-          {/* ── Active courses ── always visible */}
-          {activeCourses.length > 0 && (
-            <>
-              {/* Section label only shown when there are also inactive courses */}
-              {inactiveCourses.length > 0 && !isSearching && (
-                <div style={{ padding: '4px 12px 2px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--muted-foreground)' }}>
-                    Active
-                  </span>
-                  <span style={{
-                    fontSize: 10, fontWeight: 600,
-                    color: 'var(--chart-2)',
-                    background: 'color-mix(in oklch, var(--chart-2) 12%, var(--background))',
-                    borderRadius: 99, padding: '1px 6px',
-                  }}>
-                    {activeCourses.length}
-                  </span>
-                </div>
-              )}
-              {activeCourses.map(course => (
-                <div key={course.id}>
-                  <FolderRow node={course} depth={0} isAdmin={isAdmin} />
-                  {expandedFolderIds.has(course.id) && (
-                    <FolderTree nodes={visibleFolders} parentId={course.id} depth={1} isAdmin={isAdmin} />
-                  )}
-                </div>
-              ))}
-            </>
-          )}
-
-          {/* ── Inactive courses ── collapsed by default */}
-          {inactiveCourses.length > 0 && !isSearching && (
-            <>
-              <button
-                type="button"
-                onClick={() => setInactiveExpanded(v => !v)}
-                style={{
-                  width: '100%', display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '4px 8px 2px 12px', background: 'none', border: 'none',
-                  cursor: 'pointer', marginTop: activeCourses.length > 0 ? 4 : 0,
-                }}
-                aria-expanded={inactiveExpanded}
-              >
-                <i
-                  className={`fa-light fa-chevron-right text-muted-foreground`}
-                  aria-hidden="true"
-                  style={{ fontSize: 9, transition: 'transform 150ms ease', transform: inactiveExpanded ? 'rotate(90deg)' : 'rotate(0deg)', flexShrink: 0 }}
-                />
-                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--muted-foreground)' }}>
-                  Inactive
-                </span>
-                <span style={{
-                  fontSize: 10, fontWeight: 600,
-                  color: 'var(--muted-foreground)',
-                  background: 'var(--muted)',
-                  borderRadius: 99, padding: '1px 6px',
-                }}>
-                  {inactiveCourses.length}
-                </span>
-              </button>
-              {inactiveExpanded && inactiveCourses.map(course => (
-                <div key={course.id}>
-                  <FolderRow node={course} depth={0} isAdmin={isAdmin} />
-                  {expandedFolderIds.has(course.id) && (
-                    <FolderTree nodes={visibleFolders} parentId={course.id} depth={1} isAdmin={isAdmin} />
-                  )}
-                </div>
-              ))}
-            </>
-          )}
-
-          {/* When searching, show all matches flat (grouping doesn't help here) */}
-          {isSearching && filteredRoots.map(course => (
+          {/* All courses — active first, inactive after, no section labels */}
+          {!(SEARCH_VARIANT === 'input' && isSearching) && filteredRoots.map(course => (
             <div key={course.id}>
               <FolderRow node={course} depth={0} isAdmin={isAdmin} />
               {expandedFolderIds.has(course.id) && (
@@ -1209,6 +1315,7 @@ export function QBSidebar() {
               )}
             </div>
           ))}
+
           {!isAdmin && accessibleFolderIds.size === 0 && (
             <div style={{ padding: '20px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
               {/* Illustration */}
@@ -1236,7 +1343,7 @@ export function QBSidebar() {
             onCancel={() => setInlineCreateParent(null)}
           />
         )}
-      </div>
+      </div>{/* end tree scroll div */}
     </aside>
     </>
   )

@@ -136,8 +136,16 @@
   transition: opacity 100ms;
 }
 [role="treeitem"]:hover .qb-folder-menu-btn,
-[role="treeitem"][aria-selected="true"] .qb-folder-menu-btn {
+[role="treeitem"][aria-selected="true"] .qb-folder-menu-btn,
+[role="treeitem"]:focus-within .qb-folder-menu-btn {
   opacity: 1;
+}
+
+/* Focus ring for keyboard navigation */
+[role="treeitem"]:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+  border-radius: 6px;
 }
 .qb-menu-btn:hover {
   background-color: var(--accent);

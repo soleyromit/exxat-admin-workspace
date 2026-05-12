@@ -2984,12 +2984,12 @@ export function QBTable() {
                 size="icon-sm"
                 onClick={() => setPropertiesOpen(true)}
                 aria-label="Table properties"
-                style={activeFilterCount > 0 || hiddenCols.size > 0 ? { borderColor: 'var(--border-control-3)', color: 'var(--foreground)', backgroundColor: 'var(--muted)' } : {}}
+                style={activeFilterCount > 0 || hiddenCols.size > 0 || sortRules.length > 0 ? { borderColor: 'var(--border-control-3)', color: 'var(--foreground)', backgroundColor: 'var(--muted)' } : {}}
               >
                 <i className="fa-light fa-sliders" aria-hidden="true" style={{ fontSize: 13 }} />
               </Button>
             </Tip>
-            {activeFilterCount > 0 && (
+            {(activeFilterCount + sortRules.length) > 0 && (
               <span className="text-[8px] font-bold" style={{
                 position: 'absolute', top: -4, right: -4,
                 width: 14, height: 14, borderRadius: '50%',
@@ -2999,7 +2999,7 @@ export function QBTable() {
                 pointerEvents: 'none',
                 boxShadow: '0 0 0 2px var(--background)',
               }}>
-                {activeFilterCount}
+                {activeFilterCount + sortRules.length}
               </span>
             )}
           </div>

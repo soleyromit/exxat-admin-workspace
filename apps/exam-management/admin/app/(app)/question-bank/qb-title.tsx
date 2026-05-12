@@ -1,12 +1,14 @@
 'use client'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQB } from './qb-state'
 import {
-  Button, Badge, Avatar, AvatarFallback,
+  Button, Badge, Avatar, AvatarFallback, Input,
   Popover, PopoverTrigger, PopoverContent,
   Tooltip, TooltipTrigger, TooltipContent,
 } from '@exxat/ds/packages/ui/src'
 import { MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
+import { FolderContextMenu, MoveFolderDialog, DeleteFolderDialog } from './qb-sidebar'
 
 import type { FolderNode } from '@/lib/qb-types'
 
@@ -111,14 +113,19 @@ export function QBTitle() {
   const router = useRouter()
   const {
     selectedFolder, visibleQuestions, navView,
-    folders, questions, navigateToFolder,
+    folders, questions, renameFolder,
     currentPersona, selectedFolderId,
     setCollaboratorsModalFolderId,
   } = useQB()
   const isAdmin = currentPersona.role === 'exam_admin'
   const count = visibleQuestions.length
 
-  // Compute live question count for any folder (same logic as sidebar)
+  const [isRenaming, setIsRenaming] = useState(false)
+  const [renameName, setRenameName] = useState('')
+  const [moveFolderDialogOpen, setMoveFolderDialogOpen] = useState(false)
+  const [deleteFolderDialogOpen, setDeleteFolderDialogOpen] = useState(false)
+  const renameRef = useRef<HTMLInputElement>(null)
+
   function folderCount(folderId: string): number {
     const ids = getDescendantIds(folderId, folders)
     return questions.filter(q =>
@@ -127,17 +134,10 @@ export function QBTitle() {
     ).length
   }
 
-  // Siblings of the current node for the switcher dropdown
-  const siblings = selectedFolder
-    ? folders.filter(f => f.parentId === selectedFolder.parentId && f.id !== selectedFolder.id)
-    : []
-
-  // Title label for the current view
   const titleLabel = navView === 'folder' && selectedFolder
     ? (selectedFolder.isCourse ? courseFolderLabel(selectedFolder.name) : selectedFolder.name)
     : navView === 'my' ? 'My Questions' : 'All Questions'
 
-  // Collaborators: from selected folder + inherited from ancestors
   const collaboratorIds = (() => {
     if (!selectedFolder) return []
     const ids = new Set<string>()
@@ -151,40 +151,53 @@ export function QBTitle() {
 
   return (
     <div className="qb-title-bar" style={{ padding: '6px 16px 4px', flexShrink: 0 }}>
-      {/* Title row: h1 + chevron + avatars + user-plus (left, flex:1) | Add Question (right) */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <div className="qb-title-text" style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, flex: 1 }}>
-          <h1 className="text-xl font-bold text-foreground" style={{
-            fontFamily: 'var(--font-heading)',
-            letterSpacing: '-0.02em',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            margin: 0,
-            minWidth: 0,
-          }}>
-            {titleLabel}
-          </h1>
+          {isRenaming && selectedFolder ? (
+            <Input
+              ref={renameRef}
+              value={renameName}
+              onChange={e => setRenameName(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') { e.preventDefault(); renameRef.current?.blur() }
+                if (e.key === 'Escape') { setIsRenaming(false) }
+              }}
+              onBlur={() => {
+                if (renameName.trim()) renameFolder(selectedFolder.id, renameName.trim())
+                setIsRenaming(false)
+              }}
+              className="text-xl font-bold"
+              style={{ fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em', flex: 1, minWidth: 0 }}
+            />
+          ) : (
+            <h1 className="text-xl font-bold text-foreground" style={{
+              fontFamily: 'var(--font-heading)',
+              letterSpacing: '-0.02em',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              margin: 0,
+              minWidth: 0,
+            }}>
+              {titleLabel}
+            </h1>
+          )}
 
-          {/* Sibling switcher */}
-          {navView === 'folder' && siblings.length > 0 && (
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon-xs" aria-label="Switch to sibling folder" className="text-muted-foreground" style={{ width: 18, height: 18, flexShrink: 0 }}>
-                  <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 9 }} />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="start" className="p-1" style={{ width: 240 }}>
-                {siblings.map(s => (
-                  <Button key={s.id} variant="ghost" size="sm" onClick={() => navigateToFolder(s.id)} className="w-full justify-start text-foreground" style={{ height: 32, padding: '0 8px', borderRadius: 6, gap: 4 }}>
-                    <span style={{ width: 16, flexShrink: 0 }} />
-                    <i className={`fa-regular ${s.isCourse ? 'fa-graduation-cap' : 'fa-folder'} text-muted-foreground`} aria-hidden="true" style={{ fontSize: 13, width: 16, textAlign: 'center', flexShrink: 0 }} />
-                    <span className="flex-1 text-sm text-left truncate">{s.isCourse ? courseFolderLabel(s.name) : s.name}</span>
-                    <span className="text-[10px] text-muted-foreground shrink-0">{folderCount(s.id)}</span>
-                  </Button>
-                ))}
-              </PopoverContent>
-            </Popover>
+          {/* Context menu — same as tree, shown when a folder is selected */}
+          {navView === 'folder' && selectedFolder && (
+            <FolderContextMenu
+              node={selectedFolder}
+              isAdmin={isAdmin}
+              alwaysVisible
+              onRename={() => {
+                setRenameName(selectedFolder.isCourse ? courseFolderLabel(selectedFolder.name) : selectedFolder.name)
+                setIsRenaming(true)
+                setTimeout(() => { renameRef.current?.focus(); renameRef.current?.select() }, 80)
+              }}
+              onAddSubfolder={() => {/* no-op: use sidebar to add subfolders */}}
+              onMove={() => setMoveFolderDialogOpen(true)}
+              onDelete={() => setDeleteFolderDialogOpen(true)}
+            />
           )}
         </div>
 
@@ -219,6 +232,22 @@ export function QBTitle() {
           </div>
         )}
       </div>
+
+      {/* Dialogs */}
+      {selectedFolder && (
+        <>
+          <MoveFolderDialog
+            node={selectedFolder}
+            open={moveFolderDialogOpen}
+            onClose={() => setMoveFolderDialogOpen(false)}
+          />
+          <DeleteFolderDialog
+            node={selectedFolder}
+            open={deleteFolderDialogOpen}
+            onClose={() => setDeleteFolderDialogOpen(false)}
+          />
+        </>
+      )}
     </div>
   )
 }

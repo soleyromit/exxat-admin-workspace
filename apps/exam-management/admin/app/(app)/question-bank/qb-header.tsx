@@ -157,6 +157,7 @@ export function QBHeader() {
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       padding: '0 12px',
       backgroundColor: 'var(--background)',
+      borderBottom: '1px solid var(--border)',
       flexShrink: 0,
       gap: 8,
     }}>
@@ -175,7 +176,7 @@ export function QBHeader() {
           </Button>
         </Tip>
 
-        <div style={{ width: 1, height: 16, background: 'var(--border)', flexShrink: 0 }} />
+        <div style={{ width: 1, alignSelf: 'stretch', margin: '10px 0', background: 'var(--border)', flexShrink: 0 }} />
 
         {/* QB folder tree toggle — separate from the DS main nav toggle above */}
         <Tip label={sidebarOpen ? 'Close folder tree' : 'Open folder tree'}>
@@ -191,7 +192,7 @@ export function QBHeader() {
           </Button>
         </Tip>
 
-        <div style={{ width: 1, height: 16, background: 'var(--border)', flexShrink: 0 }} />
+        <div style={{ width: 1, alignSelf: 'stretch', margin: '10px 0', background: 'var(--border)', flexShrink: 0 }} />
 
         <QBBreadcrumb />
       </div>
