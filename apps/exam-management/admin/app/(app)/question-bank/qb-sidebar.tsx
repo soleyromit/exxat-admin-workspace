@@ -657,18 +657,6 @@ function FolderRow({
   const clampedDepth = Math.min(depth, 3)
   const indentPx = 8 + clampedDepth * 16
 
-  // Build full ancestor path for folders at depth >= 3
-  const fullFolderPath = useMemo(() => {
-    if (depth < 3) return null
-    const path: string[] = []
-    let current: FolderNode | undefined = node
-    while (current) {
-      path.unshift(current.name)
-      current = current.parentId ? folders.find(f => f.id === current!.parentId) : undefined
-    }
-    return path.join(' / ')
-  }, [depth, node, folders])
-
   return (
     <div style={{ position: 'relative' }} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       <Popover open={hoverOpen} onOpenChange={setHoverOpen}>
@@ -817,17 +805,9 @@ function FolderRow({
           />
         ) : (
           <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
-            {fullFolderPath ? (
-              <Tip label={fullFolderPath}>
-                <span className={`block text-sm truncate text-foreground ${isSelected ? 'font-medium' : 'font-normal'}`}>
-                  {node.isCourse ? courseFolderLabel(node.name) : node.name}
-                </span>
-              </Tip>
-            ) : (
-              <span className={`block text-sm truncate text-foreground ${isSelected ? 'font-medium' : 'font-normal'}`}>
-                {node.isCourse ? courseFolderLabel(node.name) : node.name}
-              </span>
-            )}
+            <span className={`block text-sm truncate text-foreground ${isSelected ? 'font-medium' : 'font-normal'}`}>
+              {node.isCourse ? courseFolderLabel(node.name) : node.name}
+            </span>
             {node.isPrivateSpace && (
               <i
                 className="fa-light fa-lock text-muted-foreground shrink-0"
