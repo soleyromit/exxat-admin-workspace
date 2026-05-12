@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  macOS launchd plist — runs the Claude updates watcher weekly.
+
+  Install (one-time):
+    cp scripts/launchd/com.exxat.claude-updates.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.exxat.claude-updates.plist
+
+  Verify:
+    launchctl list | grep com.exxat.claude-updates
+
+  Unload (to stop):
+    launchctl unload ~/Library/LaunchAgents/com.exxat.claude-updates.plist
+
+  Logs:
+    tail -f /tmp/claude-updates-watch.log
+
+  Cadence: every Monday at 8:17am local time. Off-the-hour minute by design
+  (see ScheduleWakeup guidance on the :00/:30 problem). If the machine is
+  asleep at the scheduled time, launchd runs the job on next wake.
+
+  The job is FULLY OFFLINE relative to Claude — it only fetches public
+  changelogs and updates files on disk. No Claude API calls, no costs.
+  The intelligence layer (mapping features to architecture) runs in-session
+  when Romit invokes /check-claude-updates.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.exxat.claude-updates</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/env</string>
+        <string>python3</string>
+        <string>/Users/romitsoley/Work/scripts/claude-updates-watch.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/romitsoley/Work</string>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Weekday</key>
+        <integer>1</integer>
+        <key>Hour</key>
+        <integer>8</integer>
+        <key>Minute</key>
+        <integer>17</integer>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/claude-updates-watch.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/claude-updates-watch.err</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+    </dict>
+</dict>
+</plist>

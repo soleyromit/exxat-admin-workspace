@@ -26,6 +26,27 @@ except ImportError:
     def registries_reset() -> None: pass
 
 
+def _claude_updates_pending() -> str | None:
+    """Return a one-line nag if the claude-updates watcher has flagged
+    new upstream changelog content that hasn't been reviewed yet."""
+    pending = REPO_ROOT / "docs" / "governance" / "claude-updates" / "pending-review.md"
+    if not pending.exists():
+        return None
+    try:
+        body = pending.read_text(encoding="utf-8")
+        # Empty state — watcher ran and found nothing OR no run yet
+        if "no changes detected" in body or "(empty — no changes detected yet)" in body:
+            return None
+        # Watcher populated changes. Count "**URL**:" — one per source.
+        change_count = body.count("**URL**:")
+        if change_count == 0:
+            return None
+        return (f"📦 Claude updates: {change_count} upstream source(s) changed. "
+                "Run `/check-claude-updates` to review.")
+    except OSError:
+        return None
+
+
 def _practices_audit_staleness() -> str | None:
     """Return a one-line reminder if the Claude practices audit is overdue,
     None otherwise. Reads docs/governance/claude-practices.md frontmatter."""
@@ -155,6 +176,11 @@ def main() -> None:
     staleness = _practices_audit_staleness()
     if staleness:
         summary_lines.extend(["", staleness])
+
+    # Surface pending claude-updates review if the watcher caught upstream changes
+    updates_nag = _claude_updates_pending()
+    if updates_nag:
+        summary_lines.extend(["", updates_nag])
 
     # On compact-recovery (compaction wiped most context), surface load-bearing
     # registries + recent ADRs + the latest digest so the assistant doesn't
