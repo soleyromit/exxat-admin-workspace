@@ -128,7 +128,7 @@ function UserFooter() {
       </SidebarMenuItem>
 
       <Sheet open={appearanceOpen} onOpenChange={setAppearanceOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+        <SheetContent side="right" className="w-full data-[side=right]:sm:max-w-2xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Appearance</SheetTitle>
             <SheetDescription>Theme, contrast, text size, and brand. Saved in this browser.</SheetDescription>
