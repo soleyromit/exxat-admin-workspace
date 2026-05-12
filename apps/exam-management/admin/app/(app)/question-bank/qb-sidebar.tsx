@@ -490,18 +490,6 @@ function FolderDiffPopover({ folderId }: { folderId: string }) {
   const folder = folders.find(f => f.id === folderId)
   const folderLabel = folder ? (folder.isCourse ? courseFolderLabel(folder.name) : folder.name) : ''
 
-  // Build ancestor breadcrumb path (excluding this folder itself)
-  const ancestorPath = useMemo(() => {
-    if (!folder?.parentId) return null
-    const path: string[] = []
-    let current = folders.find(f => f.id === folder.parentId)
-    while (current) {
-      path.unshift(current.isCourse ? courseFolderLabel(current.name) : current.name)
-      current = current.parentId ? folders.find(f => f.id === current!.parentId) : undefined
-    }
-    return path.join(' › ')
-  }, [folder, folders])
-
   const folderIds = getDescendantIds(folderId, folders)
   const folderQuestions = questions.filter(q => folderIds.has(q.folder))
 
@@ -517,16 +505,8 @@ function FolderDiffPopover({ folderId }: { folderId: string }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      {/* Ancestor path + folder name */}
-      <div style={{ paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>
-        {ancestorPath && (
-          <p className="text-[10px] text-muted-foreground" style={{ marginBottom: 3, lineHeight: 1.4, wordBreak: 'break-word' }}>
-            {ancestorPath}
-          </p>
-        )}
-        <p className="text-sm font-semibold text-foreground" style={{ lineHeight: 1.35, wordBreak: 'break-word' }}>
-          {folderLabel}
-        </p>
+      <div className="text-sm font-semibold text-foreground" style={{ lineHeight: 1.35, wordBreak: 'break-word', paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>
+        {folderLabel}
       </div>
 
       {total === 0 ? (

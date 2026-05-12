@@ -24,10 +24,10 @@ import {
   Card, CardHeader, CardDescription, CardContent,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   RadioGroup, RadioGroupItem, Checkbox,
-  ToggleSwitch,
   Tooltip, TooltipTrigger, TooltipContent,
   LocalBanner,
 } from '@exxat/ds/packages/ui/src'
+import { QBToggle } from '@/components/qb/toggle'
 import {
   type EditorQType, type QuestionDraft, type QuestionPayload,
   type DraftValidationIssue,
@@ -1288,11 +1288,7 @@ function ToggleSwitchRow({
 }: { id: string; label: string; checked: boolean; onChange: (c: boolean) => void }) {
   return (
     <div className="flex items-center gap-2">
-      <ToggleSwitch
-        id={id}
-        checked={checked}
-        onChange={onChange}
-      />
+      <QBToggle id={id} checked={checked} onChange={onChange} />
       <Label htmlFor={id} className="text-xs text-foreground cursor-pointer">{label}</Label>
     </div>
   )

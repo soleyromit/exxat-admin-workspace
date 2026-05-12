@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQB } from './qb-state'
 import { StatusBadge, DiffBadge, PBisCell, BloomsBadge } from '@/components/qb/badges'
+import { QBToggle } from '@/components/qb/toggle'
 import {
   Button, Badge, Checkbox, Input,
   Avatar, AvatarFallback,
@@ -453,49 +454,6 @@ const TH = 'h-9 px-3 text-start align-middle text-xs font-medium text-muted-fore
 const TD = 'px-3 py-2.5 align-middle border-b border-border group-last/row:border-b-0 whitespace-nowrap'
 
 // Clean toggle — uses brand-color for ON state, neutral for OFF
-function QBToggle({ checked, onChange, id }: { checked: boolean; onChange: (v: boolean) => void; id?: string }) {
-  return (
-    <button
-      id={id}
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        width: 36,
-        height: 20,
-        borderRadius: 99,
-        border: 'none',
-        cursor: 'pointer',
-        flexShrink: 0,
-        padding: 2,
-        backgroundColor: checked
-          ? 'var(--brand-color)'
-          : 'oklch(0.78 0 0)',
-        transition: 'background-color 150ms ease',
-        outline: 'none',
-        boxSizing: 'border-box',
-      }}
-      onFocus={e => (e.currentTarget.style.boxShadow = '0 0 0 3px color-mix(in oklch, var(--brand-color) 25%, transparent)')}
-      onBlur={e => (e.currentTarget.style.boxShadow = 'none')}
-    >
-      <span style={{
-        display: 'block',
-        width: 16,
-        height: 16,
-        borderRadius: '50%',
-        backgroundColor: 'oklch(1 0 0)',
-        boxShadow: '0 1px 2px oklch(0 0 0 / 0.2)',
-        transform: checked ? 'translateX(16px)' : 'translateX(0)',
-        transition: 'transform 150ms ease',
-        flexShrink: 0,
-      }} />
-    </button>
-  )
-}
-
 // ── Column definitions ────────────────────────────────────────────────────────
 const QB_COLS = [
   { key: 'select',       label: '',               sortKey: null,          hideable: false, sortable: false },

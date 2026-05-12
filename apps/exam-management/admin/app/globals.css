@@ -143,6 +143,15 @@
   background-color: var(--accent);
 }
 
+/* ── Sidebar border color fix ────────────────────────────────────────────── */
+/* DS sidebar.tsx applies Tailwind `border-e` (inline-end width only) with no
+   color class, so the border falls back to currentColor → near-black. Set the
+   explicit color here so it uses the sidebar-border token instead. */
+[data-slot="sidebar-container"] {
+  border-inline-end-color: var(--sidebar-border);
+  border-inline-start-color: var(--sidebar-border);
+}
+
 /* ── App sidebar — flat nav style (Image #26 reference) ─────────────────── */
 /* Strip all card chrome from every sidebar menu button */
 [data-sidebar="menu-button"] {

@@ -18,10 +18,11 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Button, Badge, ToggleSwitch,
+  Button, Badge,
   Card, CardHeader, CardTitle, CardDescription, CardContent,
   Tooltip, TooltipTrigger, TooltipContent,
 } from '@exxat/ds/packages/ui/src'
+import { QBToggle } from '@/components/qb/toggle'
 import { AiGenerateModal } from '@/components/ai-generate-modal'
 import { CurricularLoopDiagram } from '@/components/curricular-loop-diagram'
 import { ObjectiveDeepDiveSheet } from '@/components/objective-deep-dive-sheet'
@@ -415,10 +416,7 @@ function CourseChatToggleSection({ courseId }: { courseId: string }) {
               View only
             </Badge>
           ) : (
-            <ToggleSwitch
-              checked={effective}
-              onChange={handleToggle}
-            />
+            <QBToggle checked={effective} onChange={handleToggle} />
           )}
         </div>
       </CardContent>

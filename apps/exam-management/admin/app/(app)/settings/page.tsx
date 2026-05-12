@@ -18,13 +18,13 @@ import { useState } from 'react'
 import {
   Badge, Button,
   Card, CardHeader, CardContent,
-  ToggleSwitch,
   Label,
   Separator,
   Tabs, TabsList, TabsTrigger, TabsContent,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   Tip,
 } from '@exxat/ds/packages/ui/src'
+import { QBToggle } from '@/components/qb/toggle'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
 import { useFacultySession } from '@/lib/faculty-session'
@@ -123,7 +123,7 @@ export default function SettingsPage() {
                   readOnly={isReadOnly}
                 >
                   <DisabledIf disabled={isReadOnly}>
-                    <ToggleSwitch
+                    <QBToggle
                       aria-label="Allow post-results chat at this institution"
                       checked={chatInstitutionEnabled}
                       onChange={setChatInstitutionEnabled}
@@ -163,7 +163,7 @@ export default function SettingsPage() {
                   readOnly={isReadOnly}
                 >
                   <DisabledIf disabled={isReadOnly}>
-                    <ToggleSwitch
+                    <QBToggle
                       aria-label="Allow comment box during exams (default)"
                       checked={allowComments}
                       onChange={setAllowComments}
@@ -232,7 +232,7 @@ export default function SettingsPage() {
                   readOnly={isReadOnly}
                 >
                   <DisabledIf disabled={isReadOnly}>
-                    <ToggleSwitch
+                    <QBToggle
                       aria-label="Require chair approval before publishing assessments"
                       checked={requireChairApproval}
                       onChange={setRequireChairApproval}
@@ -251,7 +251,7 @@ export default function SettingsPage() {
                   readOnly={isReadOnly}
                 >
                   <DisabledIf disabled={isReadOnly}>
-                    <ToggleSwitch
+                    <QBToggle
                       aria-label="Lock down review sessions by default"
                       checked={reviewSessionLockdown}
                       onChange={setReviewSessionLockdown}
@@ -272,7 +272,7 @@ export default function SettingsPage() {
                   readOnly={isReadOnly}
                 >
                   <DisabledIf disabled={isReadOnly}>
-                    <ToggleSwitch
+                    <QBToggle
                       aria-label="Allow faculty to create subfolders within their courses"
                       checked={allowFacultyFolders}
                       onChange={setAllowFacultyFolders}
