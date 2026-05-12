@@ -286,6 +286,15 @@ When a faculty or admin navigates into a course, the **primary landing tab is As
 
 Everything about the course must be accessible but secondary to the assessment workflow when inside Exam Management. This is not a limitation — it's focus. A course page inside CFE would land differently (on evaluation data).
 
+### 5.20 Question bank — open design challenges (added 2026-05-11, from Nipun/Darshan feedback via Vishal)
+
+| Challenge | Design direction | Source |
+|---|---|---|
+| **400% zoom** | Design challenge — take assumptions on primary/secondary information. Primary: question list + folder tree. Secondary: author/tag metadata can truncate or collapse. Go with best guess; don't wait for further input. | 2026-05-11 |
+| **Folder overflow** | Max 15–20 folders per QB course is the real-world ceiling. Hard cap possible at 30–40 if needed for design. Scrollable folder tree covers most cases; add search affordance only if approaching cap. | 2026-05-11 |
+| **Author search** | 4–5 faculty max per team-taught course; each has up to 4 sub-folders. If a filter list has 20+ authors, show first N with search affordance. | 2026-05-11 |
+| **Public/private folder** | Needs to be designed. Was marked "completed" in PRD but quietly removed — Romit discovered the gap late. Must add creation flow, access indicator, and icon differentiation. | 2026-05-11 |
+
 ### 5.19 Things Aarti killed for Exam Management
 
 | Killed | Why | Source |
@@ -446,6 +455,37 @@ Admin ≠ PCE viewer. Faculty-as-admin must NOT leak peer evaluations.
 
 ---
 
+## 10. Process & operating model (added 2026-05-11)
+
+### 10.1 Aarti design sessions — 6-session model
+
+Aarti has 6 in-person design sessions scheduled with Romit and Vishaka (afternoons, 1–5 PM):
+- This week: Wed / Thu / Fri
+- Next week: 2 days
+- Following week: 2 days
+
+Sessions are **recorded**. Vishal and Nipun listen at 1.5× speed and translate discussions into PRDs. Romit is the conduit between Aarti's design decisions and the product team.
+
+### 10.2 Sync cadence
+
+| Sync | Participants | When |
+|---|---|---|
+| Daily (Mon–Thu, short-term) | Romit + Vishal + Nipun | Morning (Romit's time) |
+| Twice-weekly (Mon + Wed, ongoing) | Romit + Vishal + Monil | 7:00–7:30 PM IST |
+| Before above (same days) | Romit + Nipun | 6:30–7:00 PM IST |
+
+### 10.3 PRD model
+
+- Each PRD epic = one document (Monil breaking existing large PRD into 3 sub-documents)
+- Design open items tracked in a section at the bottom of each PRD, tagged to Romit
+- Romit adds questions as PRD comments; product team answers before the next sync
+
+### 10.4 Module-based activation (confirmed 2026-05-11)
+
+Student and admin experience are within the **same module** — not separate navigations. "Within that module itself, we can expect that student side and everything is going to be there." This extends workspace ADR-003 (independent module sellability): the module contains all roles, not separate apps per role.
+
+---
+
 ## Appendix — source meetings
 
 | Date | Title | Granola ID | Drove |
@@ -459,6 +499,8 @@ Admin ≠ PCE viewer. Faculty-as-admin must NOT leak peer evaluations.
 | 2026-05-07 16:45 | Assessment overview design | `b68ede99` | Aarti | `docs/research/meetings/2026-05-07-aarti-assessment-overview.md` |
 | 2026-05-08 12:44 | Live monitoring + accommodations + cross-product | `4e1c850e` | Aarti |
 | 2026-05-08 16:09 | Curriculum mapping + base entities + product alignment | `f274ade0` | Aarti |
+| 2026-05-11 09:59 | Exam management + CFE — alignment with Vishal and product team | `841aa054` | Senior leader (Nipun / CTO) |
+| 2026-05-11 09:02 | Exam management design and PRD alignment | `f8252e3e` | Vishal (with Vishaka, Monil) |
 
 Per-meeting raw notes at `apps/exam-management/docs/research/meetings/` and `apps/pce/docs/research/meetings/`.
 

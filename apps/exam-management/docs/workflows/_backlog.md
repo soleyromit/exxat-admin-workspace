@@ -23,6 +23,13 @@ Source: 2026-05-08 Aarti audit (`docs/research/meetings/2026-05-08-aarti-design-
 | T15 | Two-question dashboards | Admin | Program reports | P1 | "Am I teaching everything?" + "Am I testing what I'm teaching?" Includes orphan detection ("2 standards not covered by any objectives") |
 | T28 | Frequency-of-use column on QB rows | Faculty | Question bank | ✅ done | Already added (Romit confirmed in meeting) |
 
+| T29 | QB: 400% zoom layout | Faculty / Admin | Question bank | P1 | Design challenge — take assumptions on primary (question list, folder tree) / secondary (metadata). Source: `2026-05-11-design-prd-alignment.md` D-0511-7 |
+| T30 | QB: Folder overflow + scroll pattern | Faculty / Admin | QB sidebar | P1 | Real-world max ~15–20; hard cap at 30–40 possible. Scrollable tree; add search affordance at cap. Source: D-0511-8 |
+| T31 | QB: Author search affordance in filter sheet | Faculty / Admin | QB filter sheet | P1 | 20+ authors scenario. Show first N, search for remainder. Source: D-0511-8 |
+| T32 | QB: Public/private folder design | Faculty / Admin | QB sidebar + create-folder flow | P0 | Being brought back; was marked complete but removed from PRD without Romit knowing. Needs icon, creation flow, access indicator. Source: D-0511-9 |
+| T33 | QB: Apply Nipun/Darshan question bank feedback | Faculty / Admin | QB table | P1 | Compile from PRD bottom section (tagged items). Source: D-0511-6 |
+| T34 | Assessments: Apply Nipun/Darshan assessment screen feedback | Faculty / Admin | Assessment screens | P1 | Compile from PRD bottom section. Source: D-0511-10 |
+
 ## Research / blockers (R1–R10 from audit)
 
 | # | Item | Owner | Deadline |

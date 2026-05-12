@@ -342,7 +342,7 @@ function CourseCard({ course }: { course: CourseSummary }) {
   // One plain-text status line instead of 5 colored pills.
   const statusBits: string[] = []
   if (course.pendingReviewCount > 0) statusBits.push(`${course.pendingReviewCount} pending review`)
-  if (course.inProgressCount > 0)    statusBits.push(`${course.inProgressCount} live`)
+  if (course.inProgressCount > 0)    statusBits.push(`${course.inProgressCount} ongoing`)
   if (course.draftCount > 0)         statusBits.push(`${course.draftCount} draft${course.draftCount === 1 ? '' : 's'}`)
   if (course.untestedObjectivesCount > 0) {
     statusBits.push(
