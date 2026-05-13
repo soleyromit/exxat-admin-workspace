@@ -45,6 +45,10 @@ function getDescendantIds(id: string, folders: FolderNode[]): Set<string> {
 
 function getFolderIcon(node: FolderNode, expanded: boolean, selected: boolean) {
   const colorCls = selected ? 'text-foreground' : 'text-muted-foreground'
+  // Private folders: lock icon replaces the folder/graduation icon
+  if (node.isPrivateSpace) {
+    return { cls: selected ? 'fa-solid fa-lock' : 'fa-light fa-lock', colorCls }
+  }
   if (node.icon) {
     return { cls: `${selected ? 'fa-solid' : 'fa-light'} ${node.icon}`, colorCls }
   }
@@ -800,13 +804,11 @@ function FolderRow({
         </Button>
 
         {/* Fixed status slot — always 12px wide so folder name never shifts.
-            Shows pin > lock in priority order; invisible when neither applies. */}
+            Pin only; lock is handled by the folder icon slot below. */}
         <span style={{ width: 12, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {pinnedFolderIds.has(node.id) ? (
+          {pinnedFolderIds.has(node.id) && (
             <i className="fa-solid fa-thumbtack" aria-label="Pinned to top" style={{ fontSize: 8, color: 'var(--brand-color)', opacity: 0.75 }} />
-          ) : node.isPrivateSpace ? (
-            <i className="fa-light fa-lock" aria-label="Private folder" style={{ fontSize: 9, color: 'var(--muted-foreground)' }} />
-          ) : null}
+          )}
         </span>
 
         {/* Icon */}
