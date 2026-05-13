@@ -799,6 +799,11 @@ function FolderRow({
           />
         </Button>
 
+        {/* Pin indicator — left of folder icon, only when pinned */}
+        {pinnedFolderIds.has(node.id) && (
+          <i className="fa-solid fa-thumbtack" aria-label="Pinned to top" style={{ fontSize: 8, color: 'var(--brand-color)', opacity: 0.75, flexShrink: 0, marginRight: -2 }} />
+        )}
+
         {/* Icon */}
         <i className={`${icon.cls} ${icon.colorCls}`} aria-hidden="true"
           style={{ fontSize: 13, width: 16, textAlign: 'center', flexShrink: 0 }} />
@@ -835,13 +840,8 @@ function FolderRow({
         ) : (
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
             <span className={`text-sm text-foreground ${isSelected ? 'font-medium' : 'font-normal'}`}
-              style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                {node.isCourse ? courseFolderLabel(node.name) : node.name}
-              </span>
-              {pinnedFolderIds.has(node.id) && (
-                <i className="fa-solid fa-thumbtack" aria-label="Pinned" style={{ fontSize: 8, color: 'var(--brand-color)', opacity: 0.7, flexShrink: 0 }} />
-              )}
+              style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {node.isCourse ? courseFolderLabel(node.name) : node.name}
             </span>
             {subtitle && (() => {
               const canExpand = !!(fullSubtitle && fullSubtitle !== subtitle)
