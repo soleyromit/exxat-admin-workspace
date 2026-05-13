@@ -7,7 +7,8 @@ export function QBLayoutInner({ children }: { children: React.ReactNode }) {
 
   return (
     <div
-      style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}
+      className="qb-content-wrapper"
+      style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflowX: 'hidden', overflowY: 'auto', position: 'relative' }}
       onClick={closeAllOverlays}
     >
       {children}

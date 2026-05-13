@@ -28,12 +28,15 @@ function ThemeProvider({
 
 function isTypingTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false
-  return (
+  if (
     target.isContentEditable ||
     target.tagName === "INPUT" ||
     target.tagName === "TEXTAREA" ||
     target.tagName === "SELECT"
-  )
+  ) return true
+  // Also suppress when focus is inside an open menu, dialog, or listbox overlay
+  if (target.closest('[role="menu"],[role="dialog"],[role="listbox"],[role="combobox"]')) return true
+  return false
 }
 
 function ThemeHotkey() {

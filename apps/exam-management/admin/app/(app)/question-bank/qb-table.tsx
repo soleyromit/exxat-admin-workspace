@@ -810,7 +810,7 @@ function FilterChips({
 }
 
 // ── QB filter types ───────────────────────────────────────────────────────────
-type QBFilterKey = 'status' | 'type' | 'difficulty' | 'blooms' | 'creator' | 'lastEditedBy'
+type QBFilterKey = 'status' | 'type' | 'difficulty' | 'blooms' | 'creator' | 'lastEditedBy' | 'location'
 type QBFilterOp  = 'is' | 'is_not'
 type QBFilter    = { id: string; fieldKey: QBFilterKey; operator: QBFilterOp; values: string[] }
 
@@ -821,6 +821,7 @@ const QB_FILTER_FIELDS: { key: QBFilterKey; label: string; icon: string; options
   { key: 'blooms',       label: "Bloom's",          icon: 'fa-brain',           options: ['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'] },
   { key: 'creator',      label: 'Creator',          icon: 'fa-user',            options: [] },
   { key: 'lastEditedBy', label: 'Last Edited By',   icon: 'fa-pen-to-square',   options: [] },
+  { key: 'location',     label: 'Location',         icon: 'fa-folder',          options: [] },
 ]
 
 // ── QB filter card (DS DrawerFilterCard pattern) ──────────────────────────────
@@ -2051,6 +2052,7 @@ function ColHeader({
   filterOptionCounts,
   draggable, onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd, dragOverStyle,
   thClass,
+  onRemoveSort,
 }: {
   col: typeof QB_COLS[number]
   sortCol: string | null
@@ -2083,10 +2085,14 @@ function ColHeader({
   onDragEnd?: () => void
   dragOverStyle?: React.CSSProperties
   thClass?: string
+  onRemoveSort?: (key: string) => void
 }) {
   const isActive = sortCol === col.key
   const sortRuleIndex = sortRules?.findIndex(r => r.col === col.key) ?? -1
   const sortRank = sortRuleIndex >= 0 ? sortRuleIndex + 1 : null
+  // Column-specific sort rule — may differ from the primary sort shims (sortCol/sortDir)
+  const thisColRule = sortRules?.find(r => r.col === col.key)
+  const thisColSortDir = thisColRule?.dir
   const stickyStyle: React.CSSProperties = pinnedLeft
     ? { position: 'sticky', left: 0, zIndex: 2, background: 'var(--dt-header-bg)', boxShadow: '2px 0 4px var(--sticky-edge-fade)' }
     : pinnedRight
@@ -2100,13 +2106,16 @@ function ColHeader({
 
   const [colSearch, setColSearch] = useState('')
   const hasInlineFilter = !!filterOptions && filterOptions.length > 0
-  // When filterOptionCounts is provided → toggleable name list UX; otherwise → search-first UX
-  const isToggleListMode = hasInlineFilter && !!filterOptionCounts
-  const filteredColOptions = colSearch
-    ? (filterOptions ?? []).filter(o => o.toLowerCase().includes(colSearch.toLowerCase()))
-    : isToggleListMode
-    ? (filterOptions ?? []) // show all in toggle mode even without search
-    : [] // list is hidden until user types — search-first UX
+  // Unselected options matching the current search — drives the dropdown list
+  const filteredUnselectedOptions = (filterOptions ?? []).filter(o =>
+    !(filterSet?.has(o)) && (!colSearch || o.toLowerCase().includes(colSearch.toLowerCase()))
+  )
+  const [dropdownFocusIdx, setDropdownFocusIdx] = useState(-1)
+  // Ref so the Enter handler always reads the current index (avoids stale closure)
+  const dropdownFocusIdxRef = useRef(-1)
+  const setFocusIdx = (n: number) => { dropdownFocusIdxRef.current = n; setDropdownFocusIdx(n) }
+  // Reset when search changes
+  useEffect(() => { setFocusIdx(-1) }, [colSearch])
 
   useEffect(() => {
     return () => {
@@ -2226,10 +2235,31 @@ function ColHeader({
           onCloseAutoFocus={e => e.preventDefault()}
           onOpenAutoFocus={e => { if (hasInlineFilter) e.preventDefault() }}
         >
-          {/* Inline column search — typing immediately filters table rows */}
+          {/* Column filter — tag search */}
           {hasInlineFilter && (
             <>
-              <div className="px-2 pt-2 pb-1" onKeyDownCapture={e => e.stopPropagation()}>
+              {/* Search input wrapper — key handler in bubble phase fires before Radix's DropdownMenuContent handler */}
+              <div
+                className="px-2 pt-2 pb-1"
+                style={{ position: 'relative' }}
+                onKeyDown={e => {
+                  // stopPropagation here (bubble) prevents Radix's onKeyDown on DropdownMenuContent from firing
+                  e.stopPropagation()
+                  const opts = filteredUnselectedOptions
+                  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault()
+                    setFocusIdx(e.key === 'ArrowDown'
+                      ? Math.min(dropdownFocusIdxRef.current + 1, opts.length - 1)
+                      : Math.max(dropdownFocusIdxRef.current - 1, 0))
+                  } else if (e.key === 'Enter' && opts.length > 0) {
+                    const idx = dropdownFocusIdxRef.current
+                    const pick = idx >= 0 ? opts[idx] : opts[0]
+                    if (pick) { onFilterToggle?.(pick); setColSearch(''); setFocusIdx(-1) }
+                  } else if (e.key === 'Backspace' && !colSearch && filterSet && filterSet.size > 0) {
+                    onFilterToggle?.([...filterSet].at(-1)!)
+                  }
+                }}
+              >
                 <InputGroup style={{ height: 28 }}>
                   <InputGroupAddon align="inline-start">
                     <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 11, color: 'var(--muted-foreground)', padding: '0 4px' }} />
@@ -2238,102 +2268,79 @@ function ColHeader({
                     autoFocus
                     placeholder={`Search ${col.label.toLowerCase()}…`}
                     value={colSearch}
-                    onChange={e => {
-                      const value = e.target.value
-                      setColSearch(value)
-                      // In toggle-list mode, search only narrows the visible list — no auto-filter
-                      if (!isToggleListMode && onSetFilter && filterOptions) {
-                        if (!value.trim()) {
-                          onSetFilter([])
-                        } else {
-                          const matching = filterOptions.filter(o =>
-                            o.toLowerCase().includes(value.toLowerCase())
-                          )
-                          onSetFilter(matching)
-                        }
-                      }
-                    }}
-                    onKeyDown={e => e.stopPropagation()}
-                    onKeyDownCapture={e => e.stopPropagation()}
+                    onChange={e => setColSearch(e.target.value)}
                     className="text-xs"
                     style={{ height: 28 }}
                   />
                 </InputGroup>
-              </div>
 
-              {isToggleListMode ? (
-                /* Toggle-list UX — persona name list with per-name counts */
-                <div role="listbox" aria-multiselectable="true" aria-label={`Filter by ${col.label}`}
-                  style={{ maxHeight: 200, overflowY: 'auto', padding: '2px 0 6px' }}>
-                  {filteredColOptions.length === 0 ? (
-                    <p className="text-[11px] text-muted-foreground" style={{ padding: '6px 12px' }}>No matches</p>
-                  ) : filteredColOptions.map(opt => {
-                    const checked = filterSet?.has(opt) ?? false
-                    const count = filterOptionCounts?.get(opt) ?? 0
-                    return (
+                {/* Floating dropdown — z-index overlay, no effect on menu height */}
+                {colSearch && filteredUnselectedOptions.length > 0 && (
+                  <div
+                    role="listbox"
+                    aria-multiselectable="true"
+                    aria-label={`Filter by ${col.label}`}
+                    style={{
+                      position: 'absolute', top: 'calc(100% - 4px)', left: 8, right: 8,
+                      zIndex: 9999,
+                      backgroundColor: 'var(--popover)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 6,
+                      boxShadow: '0 4px 12px oklch(0 0 0 / 0.12)',
+                      maxHeight: 160, overflowY: 'auto',
+                    }}
+                  >
+                    {filteredUnselectedOptions.map((opt, idx) => (
                       <div
                         key={opt}
                         role="option"
-                        aria-selected={checked}
-                        tabIndex={0}
-                        onClick={() => {
-                          if (onFilterToggle) onFilterToggle(opt)
-                        }}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault()
-                            if (onFilterToggle) onFilterToggle(opt)
-                          }
-                        }}
-                        className="text-sm text-foreground"
+                        aria-selected={false}
+                        tabIndex={-1}
+                        onMouseDown={e => e.preventDefault()}
+                        onMouseEnter={() => setFocusIdx(idx)}
+                        onMouseLeave={() => setFocusIdx(-1)}
+                        onClick={() => { onFilterToggle?.(opt); setColSearch(''); setFocusIdx(-1) }}
+                        className="text-xs text-foreground truncate"
                         style={{
-                          display: 'flex', alignItems: 'center', gap: 8,
-                          padding: '5px 12px', cursor: 'pointer', userSelect: 'none',
+                          padding: '6px 12px', cursor: 'pointer', userSelect: 'none',
+                          backgroundColor: idx === dropdownFocusIdx ? 'var(--interactive-hover)' : undefined,
                         }}
-                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--interactive-hover)')}
-                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
                       >
-                        <Checkbox
-                          checked={checked}
-                          onCheckedChange={() => { if (onFilterToggle) onFilterToggle(opt) }}
-                          onClick={e => e.stopPropagation()}
-                          style={{ width: 14, height: 14, minWidth: 14, minHeight: 14, flexShrink: 0 }}
-                        />
-                        <span className="flex-1 truncate text-xs">{opt}</span>
-                        <span className="text-[10px] text-muted-foreground shrink-0">{count}</span>
+                        {opt}
                       </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                /* Search-first UX — match feedback pills (original behavior) */
-                colSearch && (
-                  <div className="px-3 pb-2">
-                    {filteredColOptions.length === 0 ? (
-                      <p className="text-[11px] text-muted-foreground">No matches</p>
-                    ) : (
-                      <div className="flex flex-wrap gap-1 pt-0.5 items-center">
-                        {filteredColOptions.slice(0, 3).map(opt => (
-                          <span
-                            key={opt}
-                            className="inline-flex items-center gap-1 text-[11px] text-foreground shrink-0"
-                            style={{ padding: '2px 7px', borderRadius: 99, backgroundColor: 'var(--muted)', border: '1px solid var(--border)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                          >
-                            <i className="fa-solid fa-check shrink-0" aria-hidden="true" style={{ fontSize: 7, color: 'var(--brand-color)' }} />
-                            {opt}
-                          </span>
-                        ))}
-                        {filteredColOptions.length > 3 && (
-                          <Tip label={filteredColOptions.slice(3).join(', ')}>
-                            <span className="text-[11px] text-muted-foreground shrink-0 cursor-default">
-                              +{filteredColOptions.length - 3} more
-                            </span>
-                          </Tip>
-                        )}
-                      </div>
-                    )}
+                    ))}
                   </div>
-                )
+                )}
+                {colSearch && filteredUnselectedOptions.length === 0 && (
+                  <p className="text-[11px] text-muted-foreground" style={{ position: 'absolute', top: 'calc(100% - 4px)', left: 8, padding: '4px 4px 6px' }}>No matches</p>
+                )}
+              </div>
+              {/* Selected tags — below search, always visible when something is selected */}
+              {filterSet && filterSet.size > 0 && (
+                <div className="px-2 pt-0.5 pb-2 flex flex-wrap gap-1" onKeyDownCapture={e => e.stopPropagation()}>
+                  {[...filterSet].map(opt => (
+                    <span
+                      key={opt}
+                      className="inline-flex items-center gap-0.5 text-[11px] shrink-0 select-none"
+                      style={{
+                        padding: '2px 4px 2px 8px', borderRadius: 4,
+                        backgroundColor: 'var(--muted)', border: '1px solid var(--border)',
+                        color: 'var(--foreground)',
+                      }}
+                    >
+                      <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{opt}</span>
+                      <span
+                        role="button"
+                        aria-label={`Remove ${opt}`}
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={e => { e.stopPropagation(); onFilterToggle?.(opt) }}
+                        style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', padding: '0 2px', color: 'var(--muted-foreground)' }}
+                      >
+                        <i className="fa-solid fa-xmark" aria-hidden="true" style={{ fontSize: 7 }} />
+                      </span>
+                    </span>
+                  ))}
+                </div>
               )}
               <DropdownMenuSeparator />
             </>
@@ -2341,18 +2348,18 @@ function ColHeader({
           {/* Pin actions */}
           {pinnedLeft || pinnedRight ? (
             <DropdownMenuItem onClick={() => onUnpin(col.key)}>
-              <i className="fa-light fa-thumbtack" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
+              <i className="fa-light fa-arrows-left-right" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
               Unpin column
             </DropdownMenuItem>
           ) : (
             <>
               <DropdownMenuItem onClick={() => onPinLeft(col.key)}>
-                <i className="fa-light fa-thumbtack" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
-                Pin left
+                <i className="fa-light fa-arrow-left-to-line" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
+                Pin Left
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onPinRight(col.key)}>
-                <i className="fa-light fa-thumbtack fa-flip-horizontal" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
-                Pin right
+                <i className="fa-light fa-arrow-right-to-line" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
+                Pin Right
               </DropdownMenuItem>
             </>
           )}
@@ -2361,13 +2368,21 @@ function ColHeader({
           {/* Sort */}
           {col.sortKey && (
             <>
-              <DropdownMenuItem onClick={() => onSort(col.key, 'asc')}>
-                Sort ascending
-                {isActive && sortDir === 'asc' && <i className="fa-solid fa-check text-xs ml-auto" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />}
+              <DropdownMenuItem onClick={() => {
+                if (thisColRule && thisColSortDir === 'asc') { onRemoveSort?.(col.key) }
+                else { onSort(col.key, 'asc') }
+              }}>
+                <i className="fa-light fa-arrow-up-a-z" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
+                Sort Ascending
+                {thisColSortDir === 'asc' && <i className="fa-solid fa-check text-xs ml-auto" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onSort(col.key, 'desc')}>
-                Sort descending
-                {isActive && sortDir === 'desc' && <i className="fa-solid fa-check text-xs ml-auto" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />}
+              <DropdownMenuItem onClick={() => {
+                if (thisColRule && thisColSortDir === 'desc') { onRemoveSort?.(col.key) }
+                else { onSort(col.key, 'desc') }
+              }}>
+                <i className="fa-light fa-arrow-down-z-a" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
+                Sort Descending
+                {thisColSortDir === 'desc' && <i className="fa-solid fa-check text-xs ml-auto" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
             </>
@@ -2375,8 +2390,8 @@ function ColHeader({
 
           {/* Wrap text */}
           <DropdownMenuItem onClick={onToggleWrapText}>
-            <i className="fa-light fa-text-size" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
-            Wrap text
+            <i className="fa-light fa-text-width" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
+            Wrap Text
             {wrapText && <i className="fa-solid fa-check text-xs ml-auto" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
@@ -2388,11 +2403,11 @@ function ColHeader({
           </DropdownMenuItem>
           <DropdownMenuItem>
             <i className="fa-light fa-layer-group" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
-            Group by this column
+            Group by this Column
           </DropdownMenuItem>
           <DropdownMenuItem>
             <i className="fa-light fa-palette" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
-            Add conditional rule
+            Add Conditional Rule
           </DropdownMenuItem>
           <DropdownMenuSeparator />
 
@@ -2498,12 +2513,26 @@ export function QBTable() {
   const [showTableTitle, setShowTableTitle] = useState(true)
   const [showColumnLabels, setShowColumnLabels] = useState(true)
   const [showSearch, setShowSearch] = useState(true)
+  // Zoom ≥ ~350% regardless of monitor size: screen.width / innerWidth detects zoom
+  // independently of whether the display is 1080p, 4K, or Retina.
+  const [isHighZoom, setIsHighZoom] = useState(false)
 
-  // Set correct initial value + keep in sync when user zooms in/out
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 768px)')
+    const check = () => {
+      const ratio = window.screen.width / window.innerWidth
+      const high = ratio >= 3.5
+      setIsHighZoom(high)
+      if (high) setSearchOpen(true)
+    }
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 960px)')
     const update = () => setShowTableTitle(!mq.matches)
-    update() // apply immediately on mount
+    update()
     mq.addEventListener('change', update)
     return () => mq.removeEventListener('change', update)
   }, [])
@@ -2598,12 +2627,18 @@ export function QBTable() {
   }
 
   const qbFilterFields = QB_FILTER_FIELDS.map(f => {
-    if (f.key !== 'creator' && f.key !== 'lastEditedBy') return f
-    const ids = [...new Set(
-      visibleQuestions.map(q => f.key === 'creator' ? q.creator : q.lastEditedBy).filter((id): id is string => !!id)
-    )]
-    const options = ids.map(id => personas.find(p => p.id === id)?.name ?? id).sort()
-    return { ...f, options }
+    if (f.key === 'creator' || f.key === 'lastEditedBy') {
+      const ids = [...new Set(
+        visibleQuestions.map(q => f.key === 'creator' ? q.creator : q.lastEditedBy).filter((id): id is string => !!id)
+      )]
+      const options = ids.map(id => personas.find(p => p.id === id)?.name ?? id).sort()
+      return { ...f, options }
+    }
+    if (f.key === 'location') {
+      const paths = [...new Set(visibleQuestions.map(q => q.folderPath).filter(Boolean))].sort() as string[]
+      return { ...f, options: paths }
+    }
+    return f
   })
 
   /** Returns per-option question counts for creator/lastEditedBy column headers (toggle-list mode) */
@@ -2695,6 +2730,7 @@ export function QBTable() {
       if (f.fieldKey === 'blooms')        val = q.blooms
       if (f.fieldKey === 'creator')       val = personas.find(p => p.id === q.creator)?.name ?? ''
       if (f.fieldKey === 'lastEditedBy')  val = personas.find(p => p.id === q.lastEditedBy)?.name ?? ''
+      if (f.fieldKey === 'location')      val = q.folderPath ?? ''
       const matches = f.values.includes(val)
       if (f.operator === 'is'     && !matches) return false
       if (f.operator === 'is_not' &&  matches) return false
@@ -2787,50 +2823,37 @@ export function QBTable() {
   const isTrulyEmpty = visibleQuestions.length === 0 && activeFilters.length === 0 && !search && !bookmarkOnly
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+    <div className="qb-table-outer" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
       <QBTitle />
 
-      {/* ── Toolbar: pinned outside scroll — filter chips left, icon controls right ── */}
+      {/* ── Toolbar: pinned outside scroll — title left, filter chips centre, icon controls right ── */}
       {!isTrulyEmpty && (
       <div className="qb-toolbar" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, padding: '6px 16px', flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
-        {/* Left: active filter chips (gated by filterBarVisible) — hidden at ≤768px */}
-        <div className="qb-toolbar-chips" style={{ display: 'contents' }}>
-          {filterBarVisible ? (
-            <FilterChips
-              activeFilters={activeFilters}
-              bookmarkChips={bookmarkOnly ? [{ key: 'bookmark', icon: 'fa-star', label: 'Bookmarked', onRemove: () => setBookmarkOnly(false) }] : []}
-              lastAddedId={lastAddedFilterId}
-              onAddFilter={addFilter}
-              onUpdateFilter={updateFilter}
-              onRemoveFilter={removeFilter}
-              onClearAll={clearAllFilters}
-              filterFields={qbFilterFields}
-            />
-          ) : <div style={{ flex: 1 }} />}
-        </div>
 
-        {/* Compact title + collaborators + Add Question — only visible at ≤768px via CSS */}
-        <div className="qb-toolbar-add-btn" style={{ display: 'none', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+        {/* Compact title + collaborators + Add Question — always shown at left */}
+        <div className="qb-toolbar-add-btn" style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, minWidth: 0, maxWidth: 320 }}>
 
           {/* Left group: title + avatars + icon sit together, title shrinks when long */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flex: 1, overflow: 'hidden' }}>
-            <span
-              title={compactTitle}
-              style={{
-                fontFamily: 'var(--font-heading)',
-                fontWeight: 700,
-                fontSize: '1rem',
-                letterSpacing: '-0.02em',
-                color: 'var(--foreground)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                minWidth: 0,
-                flexShrink: 1,  // shrinks when long — avatars follow immediately after
-              }}
-            >
-              {compactTitle}
-            </span>
+            <Tip label={compactTitle}>
+              <span
+                style={{
+                  fontFamily: 'var(--font-heading)',
+                  fontWeight: 700,
+                  fontSize: '1rem',
+                  letterSpacing: '-0.02em',
+                  color: 'var(--foreground)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  minWidth: 0,
+                  flexShrink: 1,
+                  cursor: 'default',
+                }}
+              >
+                {compactTitle}
+              </span>
+            </Tip>
 
             {/* Collaborator avatar stack — max 3, overflow as +N */}
             {compactCollaboratorIds.length > 0 && (() => {
@@ -2876,30 +2899,60 @@ export function QBTable() {
             )}
           </div>
 
-          {/* Add Question — right edge */}
-          <Button
-            variant="default" size="sm"
-            style={{ gap: 5, flexShrink: 0 }}
-            onClick={() => router.push(selectedFolderId ? `/questions/new?folder=${selectedFolderId}` : '/questions/new')}
-          >
-            <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 11 }} />
-            Add Question
-          </Button>
+          {/* Add Question — icon-only at high zoom to save space, labelled at normal zoom */}
+          {isHighZoom ? (
+            <Tip label="Add Question">
+              <Button
+                variant="default" size="icon-sm"
+                aria-label="Add Question"
+                style={{ flexShrink: 0 }}
+                onClick={() => router.push(selectedFolderId ? `/questions/new?folder=${selectedFolderId}` : '/questions/new')}
+              >
+                <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 13 }} />
+              </Button>
+            </Tip>
+          ) : (
+            <Button
+              variant="default" size="sm"
+              style={{ gap: 5, flexShrink: 0 }}
+              onClick={() => router.push(selectedFolderId ? `/questions/new?folder=${selectedFolderId}` : '/questions/new')}
+            >
+              <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 11 }} />
+              Add Question
+            </Button>
+          )}
         </div>
 
-        {/* Right: icon controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+        {/* Filter chips — shown at wide viewport when filters active; hidden at ≤960px via CSS */}
+        <div className="qb-toolbar-chips" style={{ display: 'contents' }}>
+          {filterBarVisible ? (
+            <FilterChips
+              activeFilters={activeFilters}
+              bookmarkChips={bookmarkOnly ? [{ key: 'bookmark', icon: 'fa-star', label: 'Bookmarked', onRemove: () => setBookmarkOnly(false) }] : []}
+              lastAddedId={lastAddedFilterId}
+              onAddFilter={addFilter}
+              onUpdateFilter={updateFilter}
+              onRemoveFilter={removeFilter}
+              onClearAll={clearAllFilters}
+              filterFields={qbFilterFields}
+            />
+          ) : null}
+        </div>
 
-          {/* Search — smooth width-transition expand */}
+        {/* Right: icon controls — marginLeft:auto keeps them right-aligned regardless of chips */}
+        <div className="qb-toolbar-right" style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, marginLeft: 'auto' }}>
+
+          {/* Search — at high zoom: always open, full-width; otherwise: expand on click */}
           {showSearch && <div style={{
             display: 'flex', alignItems: 'center',
-            width: searchOpen ? 204 : 32,
+            width: isHighZoom ? '100%' : searchOpen ? 204 : 32,
+            flex: isHighZoom ? 1 : undefined,
             overflow: 'hidden',
             transition: 'width 200ms ease',
-            flexShrink: 0,
+            flexShrink: isHighZoom ? 1 : 0,
           }}>
             {searchOpen ? (
-              <InputGroup style={{ width: 200, flexShrink: 0, borderColor: 'var(--brand-color)', boxShadow: '0 0 0 3px color-mix(in oklch, var(--brand-color) 18%, transparent)' }}>
+              <InputGroup style={{ width: isHighZoom ? '100%' : 200, flexShrink: isHighZoom ? 1 : 0, borderColor: 'var(--brand-color)', boxShadow: '0 0 0 3px color-mix(in oklch, var(--brand-color) 18%, transparent)' }}>
                 <InputGroupAddon align="inline-start">
                   <i
                     className="fa-light fa-magnifying-glass"
@@ -2911,20 +2964,33 @@ export function QBTable() {
                   ref={searchRef}
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Escape') { setSearch(''); setSearchOpen(false) } }}
+                  onKeyDown={e => { if (e.key === 'Escape' && !isHighZoom) { setSearch(''); setSearchOpen(false) } }}
                   placeholder="Search questions…"
                   aria-label="Search questions"
-                  autoFocus
+                  autoFocus={!isHighZoom}
                 />
-                <InputGroupAddon align="inline-end">
-                  <InputGroupButton
-                    size="icon-xs"
-                    onClick={() => { if (search) { setSearch(''); searchRef.current?.focus() } else { setSearchOpen(false) } }}
-                    aria-label={search ? 'Clear search' : 'Close search'}
-                  >
-                    <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 11 }} />
-                  </InputGroupButton>
-                </InputGroupAddon>
+                {!isHighZoom && (
+                  <InputGroupAddon align="inline-end">
+                    <InputGroupButton
+                      size="icon-xs"
+                      onClick={() => { if (search) { setSearch(''); searchRef.current?.focus() } else { setSearchOpen(false) } }}
+                      aria-label={search ? 'Clear search' : 'Close search'}
+                    >
+                      <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 11 }} />
+                    </InputGroupButton>
+                  </InputGroupAddon>
+                )}
+                {isHighZoom && search && (
+                  <InputGroupAddon align="inline-end">
+                    <InputGroupButton
+                      size="icon-xs"
+                      onClick={() => { setSearch(''); searchRef.current?.focus() }}
+                      aria-label="Clear search"
+                    >
+                      <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 11 }} />
+                    </InputGroupButton>
+                  </InputGroupAddon>
+                )}
               </InputGroup>
             ) : (
               <Tip label="Search">
@@ -3149,11 +3215,12 @@ export function QBTable() {
         )
       ) : (
         <>
-          {/* Padding wrapper — aligns table to top; table sizes to content, caps at full height for scrolling */}
-          <div className="qb-table-padding-wrapper" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: 0 }}>
-          {/* Border: content-height by default, maxHeight caps it so inner can scroll when rows overflow */}
-          <div className="border border-border overflow-hidden rounded-lg" style={{ maxHeight: '100%', display: 'flex', flexDirection: 'column' }}>
-          <div className="qb-table-scroll" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+          {/* Padding wrapper — at high zoom: flex-none so rows flow into page scroll; normal: flex-1 with internal scroll */}
+          <div className="qb-table-padding-wrapper" style={{ flex: isHighZoom ? 'none' : 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: 0 }}>
+          {/* Border: at high zoom maxHeight is unconstrained; normal: capped at 100% so inner can scroll */}
+          <div className="border border-border overflow-hidden rounded-lg" style={{ maxHeight: isHighZoom ? 'none' : '100%', display: 'flex', flexDirection: 'column' }}>
+          {/* Table scroll: at high zoom vertical overflow visible (page scrolls); normal: auto (internal scroll) */}
+          <div className="qb-table-scroll" style={{ flex: isHighZoom ? 'none' : 1, minHeight: 0, overflowX: 'auto', overflowY: isHighZoom ? 'visible' : 'auto' }}>
             <table className="text-sm border-separate border-spacing-0 table-fixed" style={{ minWidth: '100%' }}>
               {showColumnLabels && <TableHeader style={{ position: 'sticky', top: 0, zIndex: 4 }}>
                 <TableRow>
@@ -3205,6 +3272,7 @@ export function QBTable() {
                         onFilterToggle={getColFilterToggler(col.key)}
                         onSetFilter={getColFilterSetter(col.key)}
                         filterOptionCounts={getColFilterOptionCounts(col.key)}
+                        onRemoveSort={removeSortRule}
                         className={
                           col.key === 'status'       ? 'w-28' :
                           col.key === 'type'         ? 'w-24' :
@@ -3578,7 +3646,7 @@ export function QBTable() {
           </div>{/* inner scroll */}
           {/* ── Pagination footer — inside clip, border-t separates from table rows */}
           {paginationEnabled && sortedQuestions.length > 0 && (
-            <div className="border-t border-border flex items-center justify-between px-4 py-2.5 bg-background select-none text-sm" style={{ flexShrink: 0 }}>
+            <div className="border-t border-border flex items-center justify-between flex-wrap gap-y-1 px-4 py-2 bg-background select-none text-sm" style={{ flexShrink: 0 }}>
               {/* Left: Rows per page */}
               <div className="flex items-center gap-2 text-muted-foreground">
                 <span className="whitespace-nowrap">Rows per page</span>
@@ -3611,7 +3679,7 @@ export function QBTable() {
                       <i className="fa-light fa-chevron-left text-xs" aria-hidden="true" />
                     </Button>
                   </Tip>
-                  <span className="px-2 text-muted-foreground tabular-nums">{page} / {totalPages}</span>
+                  <span className="px-2 text-muted-foreground tabular-nums whitespace-nowrap">{page} / {totalPages}</span>
                   <Tip label="Next page">
                     <Button variant="ghost" size="icon-xs" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} aria-label="Next page">
                       <i className="fa-light fa-chevron-right text-xs" aria-hidden="true" />

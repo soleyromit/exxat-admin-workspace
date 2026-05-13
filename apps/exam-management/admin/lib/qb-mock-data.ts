@@ -40,6 +40,51 @@ export const MOCK_QB_FOLDERS: FolderNode[] = [
 
   // ── PHAR101 depth-5 subfolder ──
   { id: 'phar101-abx-mrsa-combo', name: 'Combination Therapy',         parentId: 'phar101-abx-mrsa', count: 1 },
+
+  // ── Additional course QBs ──────────────────────────────────────────────────
+
+  // ANAT301 — Human Anatomy
+  { id: 'anat301', name: 'ANAT301 Question Bank (QB)', parentId: null, count: 62, isCourse: true, collaborators: ['persona-thompson', 'persona-kim'] },
+  { id: 'anat301-musculo',    name: 'Musculoskeletal System',   parentId: 'anat301', count: 18 },
+  { id: 'anat301-neuro',      name: 'Neuroanatomy',             parentId: 'anat301', count: 14 },
+  { id: 'anat301-cardio',     name: 'Cardiovascular Anatomy',   parentId: 'anat301', count: 12 },
+  { id: 'anat301-gi',         name: 'GI & Abdominal Anatomy',   parentId: 'anat301', count: 10 },
+  { id: 'anat301-head-neck',  name: 'Head & Neck',              parentId: 'anat301', count: 8 },
+  { id: 'anat301-musculo-upper', name: 'Upper Limb',            parentId: 'anat301-musculo', count: 9 },
+  { id: 'anat301-musculo-lower', name: 'Lower Limb',            parentId: 'anat301-musculo', count: 9 },
+
+  // PHYS202 — Human Physiology
+  { id: 'phys202', name: 'PHYS202 Question Bank (QB)', parentId: null, count: 55, isCourse: true, collaborators: ['persona-chen', 'persona-patel'] },
+  { id: 'phys202-cardiac',    name: 'Cardiac Physiology',       parentId: 'phys202', count: 15 },
+  { id: 'phys202-renal',      name: 'Renal Physiology',         parentId: 'phys202', count: 13 },
+  { id: 'phys202-resp',       name: 'Respiratory Physiology',   parentId: 'phys202', count: 12 },
+  { id: 'phys202-endo',       name: 'Endocrine Physiology',     parentId: 'phys202', count: 15 },
+  { id: 'phys202-cardiac-ep', name: 'Electrophysiology',        parentId: 'phys202-cardiac', count: 7 },
+  { id: 'phys202-cardiac-co', name: 'Cardiac Output & Preload', parentId: 'phys202-cardiac', count: 8 },
+
+  // MICR301 — Microbiology & Immunology
+  { id: 'micr301', name: 'MICR301 Question Bank (QB)', parentId: null, count: 48, isCourse: true, collaborators: ['persona-thompson', 'persona-chen'] },
+  { id: 'micr301-bacteria',   name: 'Bacteriology',             parentId: 'micr301', count: 16 },
+  { id: 'micr301-virology',   name: 'Virology',                 parentId: 'micr301', count: 14 },
+  { id: 'micr301-immuno',     name: 'Immunology',               parentId: 'micr301', count: 12 },
+  { id: 'micr301-mycology',   name: 'Mycology & Parasitology',  parentId: 'micr301', count: 6 },
+  { id: 'micr301-bacteria-gpos', name: 'Gram-Positive Bacteria', parentId: 'micr301-bacteria', count: 8 },
+  { id: 'micr301-bacteria-gneg', name: 'Gram-Negative Bacteria', parentId: 'micr301-bacteria', count: 8 },
+
+  // CLIN401 — Clinical Assessment Skills
+  { id: 'clin401', name: 'CLIN401 Question Bank (QB)', parentId: null, count: 39, isCourse: true, collaborators: ['persona-patel', 'persona-kim'] },
+  { id: 'clin401-hx',         name: 'History Taking',           parentId: 'clin401', count: 10 },
+  { id: 'clin401-exam',       name: 'Physical Examination',     parentId: 'clin401', count: 14 },
+  { id: 'clin401-dx',         name: 'Diagnostic Reasoning',     parentId: 'clin401', count: 15 },
+  { id: 'clin401-exam-cardio',name: 'Cardiovascular Exam',      parentId: 'clin401-exam', count: 6 },
+  { id: 'clin401-exam-resp',  name: 'Respiratory Exam',         parentId: 'clin401-exam', count: 8 },
+
+  // NURS210 — Nursing Assessment
+  { id: 'nurs210', name: 'NURS210 Question Bank (QB)', parentId: null, count: 34, isCourse: true, collaborators: ['persona-thompson'] },
+  { id: 'nurs210-assessment', name: 'Patient Assessment',       parentId: 'nurs210', count: 12 },
+  { id: 'nurs210-pharm',      name: 'Pharmacology for Nurses',  parentId: 'nurs210', count: 10 },
+  { id: 'nurs210-ethics',     name: 'Ethics & Legal',           parentId: 'nurs210', count: 7 },
+  { id: 'nurs210-safety',     name: 'Patient Safety',           parentId: 'nurs210', count: 5 },
 ]
 
 // ─── Questions ───────────────────────────────────────────────────────────────

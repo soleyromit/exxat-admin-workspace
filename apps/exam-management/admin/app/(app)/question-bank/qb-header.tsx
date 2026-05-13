@@ -153,9 +153,10 @@ export function QBHeader() {
 
   return (
     <header className="qb-header-bar" style={{
-      height: 44,
+      minHeight: 44,
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '0 12px',
+      flexWrap: 'wrap',
+      padding: '6px 12px',
       backgroundColor: 'var(--background)',
       borderBottom: '1px solid var(--border)',
       flexShrink: 0,

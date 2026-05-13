@@ -38,7 +38,7 @@ function QBContent() {
   }
 
   return (
-    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div className="qb-table-wrapper" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflowX: 'hidden', overflowY: 'visible' }}>
       <QBTable />
     </div>
   )
@@ -48,7 +48,7 @@ function QBInner() {
   return (
     <QBLayoutInner>
       <QBHeader />
-      <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
+      <div className="qb-content-inner" style={{ display: 'flex', flex: 1, minHeight: 0, overflowX: 'hidden', overflowY: 'visible', position: 'relative' }}>
         <QBSidebar />
         <QBContent />
       </div>

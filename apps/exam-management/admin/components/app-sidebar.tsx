@@ -340,20 +340,27 @@ export function AppSidebar() {
 
   return (
     <Sidebar variant="inset" collapsible="icon">
-      <nav aria-label="Application" className="flex min-h-0 flex-1 flex-col">
-
+      {/* overflow-y-auto: entire nav scrolls as one unit at high zoom.
+          flex-1 spacer between nav and footer keeps footer pinned at bottom at normal zoom;
+          at high zoom the spacer collapses and user scrolls through nav→footer together.
+          WCAG 1.4.10: vertical scroll is allowed; this eliminates 2D scroll. */}
+      <nav
+        aria-label="Application"
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto"
+        style={{ scrollbarWidth: 'thin', scrollbarColor: 'var(--border) transparent' }}
+      >
         {/* Header: brand + institution */}
-        <SidebarHeader className="pb-1">
+        <SidebarHeader className="pb-1 shrink-0">
           <AppHeader />
           <InstitutionCard />
         </SidebarHeader>
 
         <FacultyModeBadge />
 
-        <SidebarSeparator />
+        <SidebarSeparator className="shrink-0" />
 
-        {/* Primary navigation */}
-        <SidebarContent className="gap-0">
+        {/* Primary navigation — flex-none so it takes content height, not flex-1 */}
+        <SidebarContent className="gap-0 overflow-visible flex-none">
           <SidebarGroup className="py-2" role="group" aria-label="Primary navigation">
             <SidebarGroupContent>
               <SidebarMenu>
@@ -391,10 +398,13 @@ export function AppSidebar() {
           </SidebarGroup>
         </SidebarContent>
 
-        <SidebarSeparator />
+        {/* Spacer: pushes footer to bottom at normal zoom; collapses at high zoom */}
+        <div className="flex-1 min-h-0" aria-hidden="true" />
+
+        <SidebarSeparator className="shrink-0" />
 
         {/* Footer: settings/help + user */}
-        <SidebarFooter className="pt-1">
+        <SidebarFooter className="pt-1 shrink-0">
           <SidebarMenu>
             {FOOTER_NAV.map(item => (
               <SidebarMenuItem key={item.key}>

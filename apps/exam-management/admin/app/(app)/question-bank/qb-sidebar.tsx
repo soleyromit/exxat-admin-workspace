@@ -969,6 +969,8 @@ export function QBSidebar() {
 
   const [inlineCreateParent, setInlineCreateParent] = useState<string | 'root' | null>(null)
   const [isNarrow, setIsNarrow] = useState(false)
+  // Zoom ≥ ~350% regardless of monitor size — sidebar tree switches to page scroll.
+  const [isHighZoom, setIsHighZoom] = useState(false)
   // Inactive section collapsed by default — toggle to expand.
   // To revert to flat list: remove this state + the grouping render below.
   const [inactiveExpanded, setInactiveExpanded] = useState(false)
@@ -980,6 +982,17 @@ export function QBSidebar() {
     update()
     mq.addEventListener('change', update)
     return () => mq.removeEventListener('change', update)
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const check = () => {
+      const ratio = window.screen.width / window.innerWidth
+      setIsHighZoom(ratio >= 3.5)
+    }
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
   }, [])
 
   useEffect(() => {
@@ -1140,7 +1153,10 @@ export function QBSidebar() {
         flexDirection: 'column',
         borderRight: sidebarOpen ? '1px solid var(--border)' : 'none',
         backgroundColor: 'var(--background)',
-        overflow: 'hidden',
+        overflowX: 'hidden',
+        overflowY: 'auto',
+        scrollbarWidth: 'thin' as const,
+        scrollbarColor: 'var(--border) transparent',
         transition: 'width 200ms ease, min-width 200ms ease',
         flexShrink: 0,
         ...(isNarrow ? {
@@ -1232,8 +1248,11 @@ export function QBSidebar() {
         </div>
       )}
 
-      {/* Tree — vertical scroll only; names truncate with ellipsis */}
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: 2, paddingBottom: 8 }}>
+      {/* Tree — at normal zoom: own scroll container (flex:1); at 400% zoom: flows into aside scroll */}
+      <div style={isHighZoom
+        ? { flexShrink: 0, overflowX: 'hidden', paddingTop: 2, paddingBottom: 8 }
+        : { flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: 2, paddingBottom: 8 }
+      }>
 
         {/* Command variant search results */}
         {SEARCH_VARIANT === 'command' && isSearching ? (

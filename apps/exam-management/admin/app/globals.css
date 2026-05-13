@@ -121,6 +121,9 @@
   --ab-active-border:      color-mix(in oklch, var(--brand-color) 20%, transparent);
 }
 
+/* Standalone title bar is always hidden — title lives in the toolbar row */
+.qb-title-bar { display: none !important; }
+
 /* Hide scrollbar on QB folder name scroll area */
 .qb-name-scroll::-webkit-scrollbar { display: none; }
 
@@ -242,7 +245,41 @@ th [data-slot="checkbox"]::after,
 [role="option"] [data-slot="checkbox"]::after,
 [role="listbox"] [data-slot="checkbox"]::after { display: none; }
 
-@media (max-width: 768px) {
+/* ── ≥400% zoom compact layout ───────────────────────────────────────────────
+   640px covers 400% on displays up to 2560px logical CSS width.
+   960px covers 400% on 4K displays (3840px ÷ 4 = 960px CSS).
+   JS isHighZoom uses window.screen.width / window.innerWidth ≥ 3.5 for robust
+   detection regardless of monitor size. ─────────────────────────────────────── */
+
+/* High-zoom overflow release (≤640px CSS = 400% on ≤2560px displays) */
+@media (max-width: 640px) {
+  /* Force Add Question row to full-width so search lands on its own row below */
+  .qb-toolbar-add-btn   { width: 100% !important; }
+  /* Right icon group becomes full-width so search expands correctly */
+  .qb-toolbar-right     { flex: 1 !important; min-width: 0 !important; }
+  /* Reduce padding at very narrow viewport */
+  .qb-table-padding-wrapper { padding: 2px 4px 4px !important; }
+  /* Release ALL overflow constraints so:
+       - SidebarInset (overflow-x:hidden) handles page-level H-scroll prevention
+       - qb-table-scroll (overflow-x:auto) handles table H-scroll
+       - Page scrolls vertically via body */
+  .qb-content-wrapper   { flex: none !important; min-height: 0 !important; overflow: visible !important; }
+  .qb-content-inner     { flex: none !important; min-height: 0 !important; overflow: visible !important; }
+  .qb-table-wrapper     { flex: none !important; overflow: visible !important; }
+  /* overflow:hidden on qb-table-outer breaks position:sticky (Chrome degrades it to
+     position:relative+top offset). Release it so sticky works against the window. */
+  .qb-table-outer       { overflow: visible !important; }
+  /* Sticky header + toolbar. Header minHeight is 44px (WCAG touch target);
+     toolbar sticks immediately below at top:44px. */
+  .qb-header-bar        { position: sticky !important; top: 0 !important; z-index: 20 !important;
+                          background: var(--background) !important; }
+  .qb-toolbar           { position: sticky !important; top: 44px !important; z-index: 19 !important;
+                          background: var(--background) !important;
+                          box-shadow: 0 2px 6px oklch(0 0 0 / 0.08) !important; }
+}
+
+/* Compact layout (≤960px CSS = 200%+ zoom on standard displays, 400% on 4K) */
+@media (max-width: 960px) {
   :root {
     --qb-chip-height: 22px;
   }
@@ -252,20 +289,14 @@ th [data-slot="checkbox"]::after,
      "…" intermediate trigger is always the leftmost (accessible) item */
   .qb-crumb-root-seg      { display: none; }
   /* Checkboxes: always visible at narrow viewports — hover-only is
-     inaccessible at 200% zoom where you can't hover multiple rows */
+     inaccessible at 200%+ zoom where you can't hover multiple rows */
   .qb-row-checkbox        { opacity: 1 !important; }
-  /* Hide entire title bar at 200% zoom — button moves to toolbar instead */
-  .qb-title-bar           { display: none !important; }
-  /* Show the compact title + Add Question wrapper in the toolbar */
-  .qb-toolbar-add-btn     { display: flex !important; }
-  /* Hide the filter chips area at 200% zoom — title takes that space */
+  /* Hide the filter chips area at compact widths — title is already in the toolbar */
   .qb-toolbar-chips       { display: none !important; }
-  /* Hide Add filter at 200% zoom — space is too tight */
+  /* Hide Add filter — space is too tight */
   .qb-add-filter-btn      { display: none !important; }
   /* Hide Ask Leo label text — icon only at compact zoom */
   .qb-ask-leo-label       { display: none; }
-  /* Reduce header height at 200% zoom */
-  .qb-header-bar          { height: 36px !important; }
   /* Ask Leo: xs height, centred within the row — DS outline border preserved */
   .qb-ask-leo-btn         { height: 24px !important; padding-inline: 8px !important; font-size: 11px !important; align-self: center !important; }
 }
