@@ -461,7 +461,8 @@ export function QBProvider({ children }: { children: ReactNode }) {
       : navView === 'my'
       ? q.creator === currentPersona.id
       : selectedFolderId
-        ? isInSubtree(q.folder, selectedFolderId, folders)
+        ? isInSubtree(q.folder, selectedFolderId, folders) ||
+          (q.extraFolders ?? []).some(e => isInSubtree(e.folder, selectedFolderId, folders))
         : true
 
     const myFilter = myQuestionsOnly ? q.creator === currentPersona.id : true

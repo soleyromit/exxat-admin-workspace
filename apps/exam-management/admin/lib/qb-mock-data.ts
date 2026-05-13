@@ -387,6 +387,14 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     tags: ['lithium-toxicity', 'tremor', 'management'], usage: 7, pbis: 0.31, pbisDir: 'up',
     creator: 'persona-chen', lastEditedBy: 'persona-thompson', usedInSections: ['Final 2023'],
   },
+  {
+    id: 'q-cns-archived-001', code: 'PH-CNS-004', version: 2, age: '5 months',
+    title: 'Compare the pharmacokinetic profiles of haloperidol versus risperidone in elderly patients with dementia-related psychosis.',
+    type: 'MCQ', status: 'Archived', difficulty: 'Hard', blooms: 'Analyze',
+    folder: 'phar101-cns', folderPath: 'PHAR101 QB / CNS & Psychotropics',
+    tags: ['haloperidol', 'risperidone', 'elderly', 'pharmacokinetics'], usage: 3, pbis: 0.22, pbisDir: 'down',
+    creator: 'persona-admin', lastEditedBy: 'persona-admin', usedInSections: ['Midterm 2024'],
+  },
 
   // ── Deep subfolder questions — depth 2: Gram-Positive Organisms ──
   {
