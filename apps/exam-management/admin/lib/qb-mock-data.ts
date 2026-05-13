@@ -503,6 +503,15 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     tags: ['rifampin', 'synergy', 'biofilm', 'drug-interaction'], usage: 0, pbis: null, pbisDir: null,
     creator: 'persona-chen', lastEditedBy: 'persona-chen', usedInSections: [],
   },
+  // Untagged question — demonstrates ADR-003 "All Questions" location anchor
+  {
+    id: 'q-untagged-001', code: 'UNTAGGED-001', version: 1, age: '2 days',
+    title: 'Draft: Compare the adverse effect profiles of first-generation vs atypical antipsychotics with respect to metabolic syndrome risk.',
+    type: 'MCQ', status: 'Draft', difficulty: 'Hard', blooms: 'Analyze',
+    folder: '', folderPath: '',
+    tags: ['antipsychotics', 'metabolic', 'adverse-effects'], usage: 0, pbis: null, pbisDir: null,
+    creator: 'persona-admin', lastEditedBy: 'persona-admin', usedInSections: [],
+  },
 ]
 
 // ─── Personas ────────────────────────────────────────────────────────────────

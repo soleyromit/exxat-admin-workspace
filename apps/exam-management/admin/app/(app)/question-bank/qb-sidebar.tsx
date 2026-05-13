@@ -799,10 +799,15 @@ function FolderRow({
           />
         </Button>
 
-        {/* Pin indicator — left of folder icon, only when pinned */}
-        {pinnedFolderIds.has(node.id) && (
-          <i className="fa-solid fa-thumbtack" aria-label="Pinned to top" style={{ fontSize: 8, color: 'var(--brand-color)', opacity: 0.75, flexShrink: 0, marginRight: -2 }} />
-        )}
+        {/* Fixed status slot — always 12px wide so folder name never shifts.
+            Shows pin > lock in priority order; invisible when neither applies. */}
+        <span style={{ width: 12, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {pinnedFolderIds.has(node.id) ? (
+            <i className="fa-solid fa-thumbtack" aria-label="Pinned to top" style={{ fontSize: 8, color: 'var(--brand-color)', opacity: 0.75 }} />
+          ) : node.isPrivateSpace ? (
+            <i className="fa-light fa-lock" aria-label="Private folder" style={{ fontSize: 9, color: 'var(--muted-foreground)' }} />
+          ) : null}
+        </span>
 
         {/* Icon */}
         <i className={`${icon.cls} ${icon.colorCls}`} aria-hidden="true"
@@ -865,13 +870,8 @@ function FolderRow({
           </div>
         )}
 
-        {/* Count + lock icon */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
-          {node.isPrivateSpace && (
-            <i className="fa-light fa-lock text-muted-foreground shrink-0" aria-label="Private folder" style={{ fontSize: 10 }} />
-          )}
-          <span className="text-[10px] text-muted-foreground shrink-0">{folderQuestionCount}</span>
-        </div>
+        {/* Count */}
+        <span className="text-[10px] text-muted-foreground shrink-0">{folderQuestionCount}</span>
 
         {/* ⋯ context menu — absolute overlay on the right, appears on hover */}
         {(isAdmin || accessibleFolderIds.has(node.id)) && (
