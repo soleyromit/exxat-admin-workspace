@@ -3917,16 +3917,18 @@ export function QBTable() {
               {allFavorited ? 'Unfavorite' : 'Favorite'}
             </Button>
 
-            {/* Move to folder */}
+            <div className="h-4 w-px bg-border mx-0.5" aria-hidden="true" />
+
+            {/* Duplicate — mirrors row menu */}
             <Button
               variant="ghost" size="sm"
-              aria-label="Move to folder"
-              onClick={() => setBulkMoveOpen(true)}
+              aria-label="Duplicate to Draft"
+              onClick={() => { selectedQs.forEach(q => duplicateQuestion(q.id)); clearSelection() }}
               className="text-xs gap-1.5"
               style={{ height: 32 }}
             >
-              <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 12 }} />
-              Move to folder
+              <i className="fa-light fa-copy" aria-hidden="true" style={{ fontSize: 12 }} />
+              Duplicate
             </Button>
 
             {/* Copy to folder */}
@@ -3940,6 +3942,32 @@ export function QBTable() {
               <i className="fa-light fa-folder-arrow-up" aria-hidden="true" style={{ fontSize: 12 }} />
               Copy to folder
             </Button>
+
+            {/* Move to folder */}
+            <Button
+              variant="ghost" size="sm"
+              aria-label="Move to folder"
+              onClick={() => setBulkMoveOpen(true)}
+              className="text-xs gap-1.5"
+              style={{ height: 32 }}
+            >
+              <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 12 }} />
+              Move to folder
+            </Button>
+
+            {/* Remove from folder — only in folder view, mirrors row menu */}
+            {navView === 'folder' && selectedFolderId && (
+              <Button
+                variant="ghost" size="sm"
+                aria-label="Remove from folder"
+                onClick={() => { selectedQs.forEach(q => removeQuestionFromFolder(q.id, selectedFolderId)); clearSelection() }}
+                className="text-xs gap-1.5"
+                style={{ height: 32 }}
+              >
+                <i className="fa-light fa-folder-minus" aria-hidden="true" style={{ fontSize: 12 }} />
+                Remove from folder
+              </Button>
+            )}
 
             {/* Status change dropdown */}
             {(() => {
