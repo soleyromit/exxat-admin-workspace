@@ -121,8 +121,10 @@
   --ab-active-border:      color-mix(in oklch, var(--brand-color) 20%, transparent);
 }
 
-/* Standalone title bar is always hidden — title lives in the toolbar row */
-.qb-title-bar { display: none !important; }
+/* Large-monitor 400% zoom: JS adds qb-high-zoom class when screen.width/innerWidth≥3.5
+   This handles 4K+ monitors where viewport stays >960px even at 400% zoom. */
+.qb-high-zoom .qb-title-bar     { display: none !important; }
+.qb-high-zoom .qb-toolbar-add-btn { display: flex !important; }
 
 /* Hide scrollbar on QB folder name scroll area */
 .qb-name-scroll::-webkit-scrollbar { display: none; }
@@ -291,6 +293,10 @@ th [data-slot="checkbox"]::after,
   /* Checkboxes: always visible at narrow viewports — hover-only is
      inaccessible at 200%+ zoom where you can't hover multiple rows */
   .qb-row-checkbox        { opacity: 1 !important; }
+  /* Hide standalone title bar — compact title lives in the toolbar row instead */
+  .qb-title-bar           { display: none !important; }
+  /* Show the compact title + Add Question wrapper in the toolbar */
+  .qb-toolbar-add-btn     { display: flex !important; }
   /* Hide the filter chips area at compact widths — title is already in the toolbar */
   .qb-toolbar-chips       { display: none !important; }
   /* Hide Add filter — space is too tight */

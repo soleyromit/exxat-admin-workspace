@@ -2823,15 +2823,16 @@ export function QBTable() {
   const isTrulyEmpty = visibleQuestions.length === 0 && activeFilters.length === 0 && !search && !bookmarkOnly
 
   return (
-    <div className="qb-table-outer" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+    <div className={`qb-table-outer${isHighZoom ? ' qb-high-zoom' : ''}`} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
       <QBTitle />
 
-      {/* ── Toolbar: pinned outside scroll — title left, filter chips centre, icon controls right ── */}
+      {/* ── Toolbar: pinned outside scroll — filter chips left, icon controls right ── */}
       {!isTrulyEmpty && (
       <div className="qb-toolbar" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, padding: '6px 16px', flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
 
-        {/* Compact title + collaborators + Add Question — always shown at left */}
-        <div className="qb-toolbar-add-btn" style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, minWidth: 0, maxWidth: 320 }}>
+        {/* Compact title + collaborators + Add Question — hidden at normal zoom,
+            shown at ≤960px (CSS) or when JS detects zoom ≥350% (qb-high-zoom class) */}
+        <div className="qb-toolbar-add-btn" style={{ display: 'none', alignItems: 'center', gap: 8, flexShrink: 0, minWidth: 0, maxWidth: 320 }}>
 
           {/* Left group: title + avatars + icon sit together, title shrinks when long */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flex: 1, overflow: 'hidden' }}>
@@ -2923,7 +2924,7 @@ export function QBTable() {
           )}
         </div>
 
-        {/* Filter chips — shown at wide viewport when filters active; hidden at ≤960px via CSS */}
+        {/* Filter chips — shown at normal zoom; hidden at ≤960px via CSS */}
         <div className="qb-toolbar-chips" style={{ display: 'contents' }}>
           {filterBarVisible ? (
             <FilterChips
@@ -2936,11 +2937,11 @@ export function QBTable() {
               onClearAll={clearAllFilters}
               filterFields={qbFilterFields}
             />
-          ) : null}
+          ) : <div style={{ flex: 1 }} />}
         </div>
 
-        {/* Right: icon controls — marginLeft:auto keeps them right-aligned regardless of chips */}
-        <div className="qb-toolbar-right" style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, marginLeft: 'auto' }}>
+        {/* Right: icon controls */}
+        <div className="qb-toolbar-right" style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
 
           {/* Search — at high zoom: always open, full-width; otherwise: expand on click */}
           {showSearch && <div style={{
