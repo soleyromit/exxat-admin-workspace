@@ -18,6 +18,10 @@
 | `workspace` | `006-accommodations-shared-module` | ADR-006 — Accommodations as a shared cross-product module | Accepted | 2026-05-08 |
 | `workspace` | `007-brand-assignment-per-admin-app` | Workspace ADR-007 — Brand assignment per admin app | Accepted | 2026-05-10 |
 | `apps/exam-management` | `001-course-architecture-master-and-offerings` | Exam Management ADR-001 — Three-concept course architecture | Accepted | 2026-05-08 |
+| `apps/exam-management` | `002-archived-question-display-and-status` | ADR-002 — Archived questions appear at end of folder list with mutable, filterab | Accepted | 2026-05-13 |
+| `apps/exam-management` | `003-all-questions-as-location-anchor` | ADR-003 — All Questions is the canonical location for archived and untagged ques | Accepted | 2026-05-13 |
+| `apps/exam-management` | `004-copy-to-folder-vs-duplicate-semantics` | ADR-004 — Copy to Folder creates a linked reference; Duplicate creates an indepe | Accepted | 2026-05-13 |
+| `apps/exam-management` | `005-multi-location-assignment-in-question-creation` | ADR-005 — Question creation supports multi-location assignment; Copy to Folder s | Accepted | 2026-05-13 |
 | `apps/pce` | `001-no-question-bank-templates-only` | PCE ADR-001 — No question bank in PCE / CFE; templates only | Accepted | 2026-05-08 |
 
 ## Storytelling perspectives

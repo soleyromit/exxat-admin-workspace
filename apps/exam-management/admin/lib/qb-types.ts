@@ -3,7 +3,7 @@ export type ColumnId =
   | 'blooms' | 'location' | 'creator' | 'lastEditedBy'
   | 'usage' | 'pbis' | 'version' | 'favorited' | 'actions'
 
-export type QStatus = 'Saved' | 'Draft'
+export type QStatus = 'Saved' | 'Draft' | 'Archived' | 'In Review'
 export type QType   = 'MCQ' | 'Fill blank' | 'Hotspot' | 'Ordering' | 'Matching'
 export type QDiff   = 'Easy' | 'Medium' | 'Hard'
 export type QBlooms = 'Remember' | 'Understand' | 'Apply' | 'Analyze' | 'Evaluate' | 'Create'

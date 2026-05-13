@@ -83,6 +83,13 @@
   --qb-status-draft-fg:     oklch(0.42 0.12 68);     /* dark amber text     */
   --qb-status-draft-border: oklch(0.82 0.08 72);     /* amber border        */
 
+  /* Archived status */
+  --qb-status-archived-bg: oklch(0.94 0.005 270);
+  --qb-status-archived-fg: oklch(0.42 0.01 270);
+  /* In Review status */
+  --qb-status-review-bg: oklch(0.94 0.03 240);
+  --qb-status-review-fg: oklch(0.38 0.08 240);
+
   /* QB difficulty bar — neutral shades, lightest → darkest (Easy → Hard) */
   --qb-diff-easy-color:      oklch(0.78 0.004 270);      /* light neutral — Easy            */
   --qb-diff-medium-color:    oklch(0.58 0.006 270);      /* mid neutral — Medium            */
@@ -306,4 +313,14 @@ th [data-slot="checkbox"]::after,
   .qb-ask-leo-label       { display: none; }
   /* Ask Leo: xs height, centred within the row — DS outline border preserved */
   .qb-ask-leo-btn         { height: 24px !important; padding-inline: 8px !important; font-size: 11px !important; align-self: center !important; }
+}
+
+/* QB row anchor highlight — fires when navigating to a specific question row */
+@keyframes qb-row-anchor-pulse {
+  0%   { background-color: color-mix(in oklch, var(--brand-color) 18%, var(--background)); }
+  60%  { background-color: color-mix(in oklch, var(--brand-color) 18%, var(--background)); }
+  100% { background-color: transparent; }
+}
+.qb-row-anchored {
+  animation: qb-row-anchor-pulse 2s ease-out forwards;
 }

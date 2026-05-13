@@ -54,12 +54,18 @@ function FolderTreePicker({
   onChange,
   inlineCreateInFolderId,
   onInlineCreateDone,
+  multiSelect = false,
+  selectedIds = [],
+  onToggle,
 }: {
   currentFolderId: string | null
   value: string | null
   onChange: (id: string) => void
   inlineCreateInFolderId: string | null
   onInlineCreateDone: () => void
+  multiSelect?: boolean
+  selectedIds?: string[]
+  onToggle?: (id: string) => void
 }) {
   const { folders, accessibleFolderIds, currentPersona, createFolder } = useQB()
   const isExamAdmin = currentPersona.role === 'exam_admin'
@@ -121,7 +127,7 @@ function FolderTreePicker({
     const hasChildren = children.length > 0 || showingInline
     const isExpanded = expanded.has(node.id)
     const isCurrent = node.id === currentFolderId
-    const isSelected = value === node.id
+    const isSelected = multiSelect ? selectedIds.includes(node.id) : value === node.id
     const isEligible = !isCurrent && (isExamAdmin || accessibleFolderIds.has(node.id))
     const indentPx = 8 + depth * 20
     const childIndentPx = 8 + (depth + 1) * 20
@@ -129,7 +135,7 @@ function FolderTreePicker({
     return (
       <React.Fragment key={node.id}>
         <div
-          onClick={() => { if (isEligible) { onChange(node.id); if (hasChildren) setExpanded(prev => { const n = new Set(prev); n.add(node.id); return n }) } }}
+          onClick={() => { if (isEligible) { multiSelect ? onToggle?.(node.id) : onChange(node.id); if (!multiSelect && hasChildren) setExpanded(prev => { const n = new Set(prev); n.add(node.id); return n }) } }}
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
             paddingLeft: indentPx, paddingRight: 8, height: 36,
@@ -253,11 +259,11 @@ function FolderTreePicker({
       <div style={{ height: 256, overflowY: 'auto', padding: '0 8px 8px' }}>
         {searchResults ? (
           searchResults.length > 0 ? searchResults.map(f => {
-            const isSelected = value === f.id
+            const isSelected = multiSelect ? selectedIds.includes(f.id) : value === f.id
             const ancestorPath = getAncestorPath(f)
             return (
               <div key={f.id}
-                onClick={() => onChange(f.id)}
+                onClick={() => multiSelect ? onToggle?.(f.id) : onChange(f.id)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   padding: '6px 8px', borderRadius: 6, margin: '1px 0', cursor: 'pointer',
@@ -422,6 +428,84 @@ function BulkMoveDialog({ count, onConfirm, onClose }: { count: number; onConfir
       open
       onOpenChange={v => { if (!v) onClose() }}
     />
+  )
+}
+
+// ── Copy to Folder Dialog ─────────────────────────────────────────────────────
+function CopyToFolderDialog({ question, open, onClose }: { question: { id: string; title: string } | null; open: boolean; onClose: () => void }) {
+  const { copyQuestionToFolder } = useQB()
+  const [pickedIds, setPickedIds] = useState<string[]>([])
+  const [submitError, setSubmitError] = useState<string | null>(null)
+
+  useEffect(() => { if (open) { setPickedIds([]); setSubmitError(null) } }, [open])
+
+  function handleToggle(id: string) {
+    setPickedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+    setSubmitError(null)
+  }
+
+  function handleConfirm() {
+    if (pickedIds.length === 0) { setSubmitError('Select at least one folder.'); return }
+    if (question) copyQuestionToFolder(question.id, pickedIds)
+    onClose()
+  }
+
+  if (!question) return null
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
+      <DialogContent className="sm:max-w-md p-0 gap-0" style={{ overflow: 'hidden' }}>
+        <DialogHeader className="px-5 pt-5 pb-3 border-b border-border shrink-0">
+          <DialogTitle>Copy to folder</DialogTitle>
+          <p className="text-xs text-muted-foreground truncate" style={{ marginTop: 2 }}>
+            {question.title.length > 72 ? question.title.slice(0, 72) + '…' : question.title}
+          </p>
+        </DialogHeader>
+        <FolderTreePicker
+          currentFolderId={null}
+          value={null}
+          onChange={() => {}}
+          inlineCreateInFolderId={null}
+          onInlineCreateDone={() => {}}
+          multiSelect
+          selectedIds={pickedIds}
+          onToggle={handleToggle}
+        />
+        {submitError && (
+          <div style={{ padding: '4px 16px 8px' }}>
+            <FieldError id="copy-folder-error">{submitError}</FieldError>
+          </div>
+        )}
+        <div style={{ borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', padding: '12px 16px', gap: 8 }}>
+          <div style={{ flex: 1 }} />
+          <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+          <Button variant="default" size="sm" onClick={handleConfirm}>
+            Copy to {pickedIds.length > 1 ? `${pickedIds.length} folders` : 'folder'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── Archive Question Dialog ───────────────────────────────────────────────────
+function ArchiveQuestionDialog({ question, open, onClose }: { question: { id: string; title: string } | null; open: boolean; onClose: () => void }) {
+  const { archiveQuestion } = useQB()
+  if (!question) return null
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Archive question?</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">
+          &ldquo;{question.title.slice(0, 80)}{question.title.length > 80 ? '…' : ''}&rdquo; will be marked as Archived and moved to the end of this folder&rsquo;s list. You can restore it at any time.
+        </p>
+        <DialogFooter>
+          <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+          <Button variant="default" size="sm" onClick={() => { archiveQuestion(question.id); onClose() }}>Archive</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -2441,6 +2525,10 @@ export function QBTable() {
     updateQuestion, deleteQuestion,
     duplicateQuestion,
     moveQuestionToFolder,
+    archiveQuestion,
+    removeQuestionFromFolder,
+    copyQuestionToFolder,
+    anchorQuestionId, setAnchorQuestionId,
     folders,
     setCollaboratorsModalFolderId,
     selectedFolderId,
@@ -2472,6 +2560,8 @@ export function QBTable() {
 
   const [reqAccessQuestion, setReqAccessQuestion] = useState<{ id: string; title: string } | null>(null)
   const [moveTarget, setMoveTarget] = useState<{ id: string; title: string; folder: string } | null>(null)
+  const [copyTarget, setCopyTarget] = useState<{ id: string; title: string } | null>(null)
+  const [archiveTarget, setArchiveTarget] = useState<{ id: string; title: string } | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null)
   const [detailQuestionId, setDetailQuestionId] = useState<string | null>(null)
   const detailQuestion = detailQuestionId ? (visibleQuestions.find(q => q.id === detailQuestionId) ?? null) : null
@@ -2752,16 +2842,24 @@ export function QBTable() {
     return ''
   }
   const sortedQuestions = (() => {
-    if (sortRules.length === 0) return filteredQuestions
-    return [...filteredQuestions].sort((a, b) => {
-      for (const rule of sortRules) {
-        const va = sortValue(a, rule.col)
-        const vb = sortValue(b, rule.col)
-        const cmp = typeof va === 'number' && typeof vb === 'number'
-          ? va - vb
-          : String(va).localeCompare(String(vb))
-        if (cmp !== 0) return rule.dir === 'asc' ? cmp : -cmp
-      }
+    const base = sortRules.length === 0
+      ? filteredQuestions
+      : [...filteredQuestions].sort((a, b) => {
+          for (const rule of sortRules) {
+            const va = sortValue(a, rule.col)
+            const vb = sortValue(b, rule.col)
+            const cmp = typeof va === 'number' && typeof vb === 'number'
+              ? va - vb
+              : String(va).localeCompare(String(vb))
+            if (cmp !== 0) return rule.dir === 'asc' ? cmp : -cmp
+          }
+          return 0
+        })
+    // Archived always sinks to end regardless of sort rules (ADR-002)
+    if (!base.some(q => q.status === 'Archived')) return base
+    return [...base].sort((a, b) => {
+      if (a.status === 'Archived' && b.status !== 'Archived') return 1
+      if (b.status === 'Archived' && a.status !== 'Archived') return -1
       return 0
     })
   })()
@@ -2788,6 +2886,13 @@ export function QBTable() {
 
   // Reset to page 1 when filters/sort/pagination/perPage change
   useEffect(() => { setPage(1) }, [search, activeFilters, bookmarkOnly, sortRules, paginationEnabled, perPage, visibleQuestions])
+
+  // Clear row anchor after animation completes (2s, matches CSS)
+  useEffect(() => {
+    if (!anchorQuestionId) return
+    const t = setTimeout(() => setAnchorQuestionId(null), 2000)
+    return () => clearTimeout(t)
+  }, [anchorQuestionId, setAnchorQuestionId])
 
   // ── Grouped table rows ────────────────────────────────────────────────────
   type TableRowItem =
@@ -3370,7 +3475,7 @@ export function QBTable() {
                       draggable={isExamAdmin}
                       onDragStart={() => setDraggedQuestionId(q.id)}
                       onDragEnd={() => setDraggedQuestionId(null)}
-                      className="group/row transition-colors hover:!bg-interactive-hover-subtle"
+                      className={`group/row transition-colors hover:!bg-interactive-hover-subtle${anchorQuestionId === q.id ? ' qb-row-anchored' : ''}`}
                       style={{
                         backgroundColor: rowBg,
                         opacity: (!isExamAdmin && !isCourseDirector && !isOwner) ? 0.72 : 1,
@@ -3594,17 +3699,37 @@ export function QBTable() {
                             </DropdownMenuTrigger>
                           </Tip>
                           <DropdownMenuContent align="end" className="w-56">
+                            {/* Edit */}
+                            <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); router.push(`/questions/${q.id}/edit`) }}>
+                              <i className="fa-light fa-pen" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                              Edit question
+                            </DropdownMenuItem>
+                            {/* Duplicate */}
                             <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); duplicateQuestion(q.id) }}>
                               <i className="fa-light fa-copy" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                               Duplicate to Draft
                             </DropdownMenuItem>
+                            {/* Copy to folder */}
+                            <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); setCopyTarget({ id: q.id, title: q.title }) }}>
+                              <i className="fa-light fa-folder-arrow-up" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                              Copy to folder
+                            </DropdownMenuItem>
+                            {/* Move to folder */}
                             {canEditRow && (
                               <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); setMoveTarget({ id: q.id, title: q.title, folder: q.folder }) }}>
                                 <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                                 Move to folder
                               </DropdownMenuItem>
                             )}
-                            {canEditRow && (
+                            {/* Remove from folder — only when viewing a specific folder */}
+                            {navView === 'folder' && selectedFolderId && canEditRow && (
+                              <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); removeQuestionFromFolder(q.id, selectedFolderId) }}>
+                                <i className="fa-light fa-folder-minus" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                                Remove from folder
+                              </DropdownMenuItem>
+                            )}
+                            {/* Status changes — only when not archived */}
+                            {canEditRow && q.status !== 'Archived' && (
                               <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Saved' }) }} disabled={q.status === 'Saved'}>
@@ -3617,6 +3742,31 @@ export function QBTable() {
                                 </DropdownMenuItem>
                               </>
                             )}
+                            {/* Archive (for active questions) */}
+                            {canEditRow && q.status !== 'Archived' && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); setArchiveTarget({ id: q.id, title: q.title }) }}>
+                                  <i className="fa-light fa-box-archive" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                                  Archive
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            {/* Restore (for archived questions) */}
+                            {q.status === 'Archived' && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Saved' }) }}>
+                                  <i className="fa-light fa-box-open" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                                  Restore as Saved
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Draft' }) }}>
+                                  <i className="fa-light fa-box-open" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                                  Restore as Draft
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            {/* Admin: manage folder access */}
                             {isExamAdmin && (
                               <>
                                 <DropdownMenuSeparator />
@@ -3626,7 +3776,8 @@ export function QBTable() {
                                 </DropdownMenuItem>
                               </>
                             )}
-                            {canDeleteRow && (
+                            {/* Delete — Draft questions only */}
+                            {canDeleteRow && q.status === 'Draft' && (
                               <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem variant="destructive" onClick={() => { setOpenMenuQuestionId(null); setDeleteTarget({ id: q.id, title: q.title }) }}>
@@ -4020,6 +4171,20 @@ export function QBTable() {
           onClose={() => setMoveTarget(null)}
         />
       )}
+
+      {/* ── Copy to Folder Dialog ── */}
+      <CopyToFolderDialog
+        question={copyTarget}
+        open={!!copyTarget}
+        onClose={() => setCopyTarget(null)}
+      />
+
+      {/* ── Archive Confirmation Dialog ── */}
+      <ArchiveQuestionDialog
+        question={archiveTarget}
+        open={!!archiveTarget}
+        onClose={() => setArchiveTarget(null)}
+      />
 
       {/* ── Delete Confirmation Dialog ── */}
       {deleteTarget && (

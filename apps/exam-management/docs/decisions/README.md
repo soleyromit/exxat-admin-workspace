@@ -7,6 +7,10 @@ Per-product ADRs (Exam Management-specific). Workspace-level ADRs live at `docs/
 | # | Title | Status | Date |
 |---|---|---|---|
 | 001 | Three-concept course architecture (master courses + terms + course offerings) | Accepted | 2026-05-08 |
+| 002 | Archived questions appear at end of folder list with mutable, filterable status | Accepted | 2026-05-13 |
+| 003 | All Questions is the canonical location anchor for archived and untagged questions | Accepted | 2026-05-13 |
+| 004 | Copy to Folder creates a linked reference; Duplicate creates an independent copy | Accepted | 2026-05-13 |
+| 005 | Question creation supports multi-location assignment; Copy to Folder serves post-creation expansion | Accepted | 2026-05-13 |
 
 Pending (from 2026-05-08 Aarti audit, Tier 2):
 - Faculty role hierarchy + collaborator permission (D4, D5)

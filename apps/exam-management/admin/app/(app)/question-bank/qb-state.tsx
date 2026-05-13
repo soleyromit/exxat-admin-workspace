@@ -71,6 +71,11 @@ interface QBState {
   deleteQuestion: (id: string) => void
   duplicateQuestion: (id: string) => void
   moveQuestionToFolder: (id: string, folderId: string) => void
+  archiveQuestion: (id: string) => void
+  removeQuestionFromFolder: (id: string, folderId: string) => void
+  copyQuestionToFolder: (id: string, folderIds: string[]) => void
+  anchorQuestionId: string | null
+  setAnchorQuestionId: (id: string | null) => void
   selectedQuestionIds: Set<string>
   toggleQuestionSelection: (id: string) => void
   selectAllQuestions: () => void
@@ -162,6 +167,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
   )
   const [questionsState, setQuestionsState] = useState<Question[]>(MOCK_QB_QUESTIONS)
   const [columnOrder, setColumnOrder] = useState<ColumnId[]>(DEFAULT_COLUMN_ORDER)
+  const [anchorQuestionId, setAnchorQuestionId] = useState<string | null>(null)
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<Set<string>>(new Set())
   const [rowHoverId, setRowHoverId] = useState<string | null>(null)
   const [draggedQuestionId, setDraggedQuestionId] = useState<string | null>(null)
@@ -386,6 +392,43 @@ export function QBProvider({ children }: { children: ReactNode }) {
     }))
   }, [])
 
+  const archiveQuestion = useCallback((id: string) => {
+    setQuestionsState(prev => prev.map(q => q.id === id ? { ...q, status: 'Archived' as const } : q))
+  }, [])
+
+  const removeQuestionFromFolder = useCallback((id: string, folderId: string) => {
+    setQuestionsState(prev => prev.map(q => {
+      if (q.id !== id) return q
+      if (q.folder === folderId) {
+        const [first, ...rest] = q.extraFolders ?? []
+        if (first) return { ...q, folder: first.folder, folderPath: first.folderPath, extraFolders: rest.length ? rest : undefined }
+        return { ...q, folder: '', folderPath: '' }
+      }
+      const extra = (q.extraFolders ?? []).filter(e => e.folder !== folderId)
+      return { ...q, extraFolders: extra.length ? extra : undefined }
+    }))
+  }, [])
+
+  const copyQuestionToFolder = useCallback((id: string, folderIds: string[]) => {
+    setQuestionsState(prev => prev.map(q => {
+      if (q.id !== id) return q
+      const newExtras = folderIds
+        .filter(fid => fid !== q.folder && !(q.extraFolders ?? []).some(e => e.folder === fid))
+        .map(fid => {
+          const folder = MOCK_QB_FOLDERS.find(f => f.id === fid)
+          const parts: string[] = []
+          let node = folder
+          while (node) {
+            parts.unshift(node.name)
+            node = node.parentId ? MOCK_QB_FOLDERS.find(f => f.id === node!.parentId) : undefined
+          }
+          return { folder: fid, folderPath: parts.join(' / ') }
+        })
+      const combined = [...(q.extraFolders ?? []), ...newExtras]
+      return { ...q, extraFolders: combined.length ? combined : undefined }
+    }))
+  }, [])
+
   const toggleQuestionFavorited = useCallback((id: string) => {
     setFavoritedIds(prev => {
       const next = new Set(prev)
@@ -454,6 +497,8 @@ export function QBProvider({ children }: { children: ReactNode }) {
     columnOrder, setColumnOrder,
     questions: questionsState,
     updateQuestion, deleteQuestion, duplicateQuestion, moveQuestionToFolder,
+    archiveQuestion, removeQuestionFromFolder, copyQuestionToFolder,
+    anchorQuestionId, setAnchorQuestionId,
     selectedQuestionIds, toggleQuestionSelection, selectAllQuestions, clearSelection,
     rowHoverId, setRowHoverId,
     draggedQuestionId, setDraggedQuestionId,
