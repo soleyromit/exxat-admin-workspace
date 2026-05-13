@@ -432,7 +432,12 @@ function BulkMoveDialog({ count, onConfirm, onClose }: { count: number; onConfir
 }
 
 // ── Copy to Folder Dialog ─────────────────────────────────────────────────────
-function CopyToFolderDialog({ question, open, onClose }: { question: { id: string; title: string } | null; open: boolean; onClose: () => void }) {
+function CopyToFolderDialog({ question, open, onClose, onConfirmOverride }: {
+  question: { id: string; title: string } | null
+  open: boolean
+  onClose: () => void
+  onConfirmOverride?: (folderIds: string[]) => void
+}) {
   const { copyQuestionToFolder } = useQB()
   const [pickedIds, setPickedIds] = useState<string[]>([])
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -446,7 +451,8 @@ function CopyToFolderDialog({ question, open, onClose }: { question: { id: strin
 
   function handleConfirm() {
     if (pickedIds.length === 0) { setSubmitError('Select at least one folder.'); return }
-    if (question) copyQuestionToFolder(question.id, pickedIds)
+    if (onConfirmOverride) { onConfirmOverride(pickedIds) }
+    else if (question) copyQuestionToFolder(question.id, pickedIds)
     onClose()
   }
 
@@ -559,7 +565,7 @@ type ColKey = (typeof QB_COLS)[number]['key']
 
 // ── Location path cell ───────────────────────────────────────────────────────
 function LocationCell({ question }: { question: Question }) {
-  const { folders, navigateToFolder, accessibleFolderIds } = useQB()
+  const { folders, navigateToFolder, accessibleFolderIds, setNavView, setAnchorQuestionId } = useQB()
 
   // Collect all locations: primary + extras
   const allLocations = [
@@ -567,7 +573,24 @@ function LocationCell({ question }: { question: Question }) {
     ...(question.extraFolders ?? []),
   ].filter(l => l.folderPath)
 
-  if (allLocations.length === 0) return <span className="text-sm text-muted-foreground">—</span>
+  // Untagged (no folder assignments) — link to All Questions with row anchor (ADR-003)
+  if (allLocations.length === 0) {
+    return (
+      <Button
+        variant="ghost" size="sm"
+        className="h-auto p-0 font-normal text-left text-sm"
+        style={{ color: 'var(--brand-color)', textDecoration: 'underline', textUnderlineOffset: 2 }}
+        onClick={e => {
+          e.stopPropagation()
+          setNavView('all')
+          setAnchorQuestionId(question.id)
+        }}
+        aria-label="View in All Questions"
+      >
+        All Questions
+      </Button>
+    )
+  }
 
   const LocationLink = ({ loc }: { loc: { folder: string; folderPath: string } }) => {
     const displayName = loc.folderPath.split(' / ').pop() ?? loc.folderPath
@@ -898,8 +921,8 @@ type QBFilterKey = 'status' | 'type' | 'difficulty' | 'blooms' | 'creator' | 'la
 type QBFilterOp  = 'is' | 'is_not'
 type QBFilter    = { id: string; fieldKey: QBFilterKey; operator: QBFilterOp; values: string[] }
 
-const QB_FILTER_FIELDS: { key: QBFilterKey; label: string; icon: string; options: string[] }[] = [
-  { key: 'status',       label: 'Status',          icon: 'fa-circle-dot',      options: ['Saved', 'Draft'] },
+const QB_FILTER_FIELDS: { key: QBFilterKey; label: string; icon: string; options: string[]; counts?: Map<string, number> }[] = [
+  { key: 'status',       label: 'Status',          icon: 'fa-circle-dot',      options: ['Saved', 'Draft', 'In Review', 'Archived'] },
   { key: 'type',         label: 'Type',             icon: 'fa-rectangle-list',  options: ['MCQ', 'Fill blank', 'Hotspot', 'Ordering', 'Matching'] },
   { key: 'difficulty',   label: 'Difficulty',       icon: 'fa-signal',          options: ['Easy', 'Medium', 'Hard'] },
   { key: 'blooms',       label: "Bloom's",          icon: 'fa-brain',           options: ['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'] },
@@ -1011,7 +1034,10 @@ function QBFilterCard({
                   >
                     {checked && <i className="fa-solid fa-check text-primary-foreground" aria-hidden="true" style={{ fontSize: 7 }} />}
                   </span>
-                  <span>{opt}</span>
+                  <span className="flex-1">{opt}</span>
+                  {fieldDef.counts?.has(opt) && (
+                    <span className="text-xs text-muted-foreground tabular-nums">{fieldDef.counts.get(opt)}</span>
+                  )}
                 </div>
               )
             })}
@@ -2569,6 +2595,7 @@ export function QBTable() {
   // ── Bulk action state ─────────────────────────────────────────────────────
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
   const [bulkMoveOpen, setBulkMoveOpen] = useState(false)
+  const [bulkCopyOpen, setBulkCopyOpen] = useState(false)
   const [bulkStatusTarget, setBulkStatusTarget] = useState<QStatus | null>(null)
 
   // ── Toolbar state ─────────────────────────────────────────────────────────
@@ -2717,6 +2744,11 @@ export function QBTable() {
   }
 
   const qbFilterFields = QB_FILTER_FIELDS.map(f => {
+    if (f.key === 'status') {
+      const counts = new Map<string, number>()
+      for (const q of visibleQuestions) counts.set(q.status, (counts.get(q.status) ?? 0) + 1)
+      return { ...f, counts }
+    }
     if (f.key === 'creator' || f.key === 'lastEditedBy') {
       const ids = [...new Set(
         visibleQuestions.map(q => f.key === 'creator' ? q.creator : q.lastEditedBy).filter((id): id is string => !!id)
@@ -3897,41 +3929,63 @@ export function QBTable() {
               Move to folder
             </Button>
 
+            {/* Copy to folder */}
+            <Button
+              variant="ghost" size="sm"
+              aria-label="Copy to folder"
+              onClick={() => setBulkCopyOpen(true)}
+              className="text-xs gap-1.5"
+              style={{ height: 32 }}
+            >
+              <i className="fa-light fa-folder-arrow-up" aria-hidden="true" style={{ fontSize: 12 }} />
+              Copy to folder
+            </Button>
+
             {/* Status change dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-xs gap-1.5" style={{ height: 32 }}>
-                  <i className="fa-light fa-circle-half-stroke" aria-hidden="true" style={{ fontSize: 12 }} />
-                  Status
-                  <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 9 }} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="center" className="w-52">
-                <DropdownMenuLabel className="text-[10px] text-muted-foreground font-semibold uppercase tracking-[0.06em]">
-                  Change status to
-                </DropdownMenuLabel>
-                <DropdownMenuItem
-                  onClick={() => draftCount > 0 && setBulkStatusTarget('Saved')}
-                  disabled={draftCount === 0}
-                >
-                  <i className="fa-light fa-circle-check" aria-hidden="true" style={{ fontSize: 12, width: 14, color: 'var(--qb-status-saved-fg)' }} />
-                  <span style={{ flex: 1 }}>Mark as Saved</span>
-                  {draftCount > 0 && (
-                    <span className="text-xs text-muted-foreground" style={{ marginLeft: 8 }}>{draftCount}</span>
-                  )}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => savedCount > 0 && setBulkStatusTarget('Draft')}
-                  disabled={savedCount === 0}
-                >
-                  <i className="fa-light fa-hourglass" aria-hidden="true" style={{ fontSize: 12, width: 14, color: 'var(--qb-status-draft-fg)' }} />
-                  <span style={{ flex: 1 }}>Revert to Draft</span>
-                  {savedCount > 0 && (
-                    <span className="text-xs text-muted-foreground" style={{ marginLeft: 8 }}>{savedCount}</span>
-                  )}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {(() => {
+              const activeCount = selectedQs.filter(q => q.status !== 'Archived').length
+              return (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-xs gap-1.5" style={{ height: 32 }}>
+                    <i className="fa-light fa-circle-half-stroke" aria-hidden="true" style={{ fontSize: 12 }} />
+                    Status
+                    <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 9 }} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" className="w-52">
+                  <DropdownMenuLabel className="text-[10px] text-muted-foreground font-semibold uppercase tracking-[0.06em]">
+                    Change status to
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem
+                    onClick={() => draftCount > 0 && setBulkStatusTarget('Saved')}
+                    disabled={draftCount === 0}
+                  >
+                    <i className="fa-light fa-circle-check" aria-hidden="true" style={{ fontSize: 12, width: 14, color: 'var(--qb-status-saved-fg)' }} />
+                    <span style={{ flex: 1 }}>Mark as Saved</span>
+                    {draftCount > 0 && <span className="text-xs text-muted-foreground" style={{ marginLeft: 8 }}>{draftCount}</span>}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => savedCount > 0 && setBulkStatusTarget('Draft')}
+                    disabled={savedCount === 0}
+                  >
+                    <i className="fa-light fa-hourglass" aria-hidden="true" style={{ fontSize: 12, width: 14, color: 'var(--qb-status-draft-fg)' }} />
+                    <span style={{ flex: 1 }}>Revert to Draft</span>
+                    {savedCount > 0 && <span className="text-xs text-muted-foreground" style={{ marginLeft: 8 }}>{savedCount}</span>}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => { if (activeCount > 0) { selectedQs.filter(q => q.status !== 'Archived').forEach(q => archiveQuestion(q.id)); clearSelection() } }}
+                    disabled={activeCount === 0}
+                  >
+                    <i className="fa-light fa-box-archive" aria-hidden="true" style={{ fontSize: 12, width: 14, color: 'var(--qb-status-archived-fg)' }} />
+                    <span style={{ flex: 1 }}>Archive</span>
+                    {activeCount > 0 && <span className="text-xs text-muted-foreground" style={{ marginLeft: 8 }}>{activeCount}</span>}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              )
+            })()}
 
             <div className="h-4 w-px bg-border mx-0.5" aria-hidden="true" />
 
@@ -4091,6 +4145,23 @@ export function QBTable() {
               setBulkMoveOpen(false)
             }}
             onClose={() => setBulkMoveOpen(false)}
+          />
+        )
+      })()}
+
+      {/* ── Bulk copy to folder ── */}
+      {bulkCopyOpen && (() => {
+        const selectedQs = visibleQuestions.filter(q => selectedQuestionIds.has(q.id))
+        return (
+          <CopyToFolderDialog
+            question={{ id: '__bulk__', title: `${selectedQs.length} question${selectedQs.length !== 1 ? 's' : ''}` }}
+            open
+            onClose={() => setBulkCopyOpen(false)}
+            onConfirmOverride={(folderIds) => {
+              selectedQs.forEach(q => copyQuestionToFolder(q.id, folderIds))
+              clearSelection()
+              setBulkCopyOpen(false)
+            }}
           />
         )
       })()}

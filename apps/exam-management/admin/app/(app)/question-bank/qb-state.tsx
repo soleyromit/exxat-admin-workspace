@@ -76,6 +76,8 @@ interface QBState {
   copyQuestionToFolder: (id: string, folderIds: string[]) => void
   anchorQuestionId: string | null
   setAnchorQuestionId: (id: string | null) => void
+  pinnedFolderIds: Set<string>
+  toggleFolderPin: (id: string) => void
   selectedQuestionIds: Set<string>
   toggleQuestionSelection: (id: string) => void
   selectAllQuestions: () => void
@@ -168,6 +170,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
   const [questionsState, setQuestionsState] = useState<Question[]>(MOCK_QB_QUESTIONS)
   const [columnOrder, setColumnOrder] = useState<ColumnId[]>(DEFAULT_COLUMN_ORDER)
   const [anchorQuestionId, setAnchorQuestionId] = useState<string | null>(null)
+  const [pinnedFolderIds, setPinnedFolderIds] = useState<Set<string>>(new Set())
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<Set<string>>(new Set())
   const [rowHoverId, setRowHoverId] = useState<string | null>(null)
   const [draggedQuestionId, setDraggedQuestionId] = useState<string | null>(null)
@@ -429,6 +432,14 @@ export function QBProvider({ children }: { children: ReactNode }) {
     }))
   }, [])
 
+  const toggleFolderPin = useCallback((id: string) => {
+    setPinnedFolderIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }, [])
+
   const toggleQuestionFavorited = useCallback((id: string) => {
     setFavoritedIds(prev => {
       const next = new Set(prev)
@@ -499,6 +510,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
     updateQuestion, deleteQuestion, duplicateQuestion, moveQuestionToFolder,
     archiveQuestion, removeQuestionFromFolder, copyQuestionToFolder,
     anchorQuestionId, setAnchorQuestionId,
+    pinnedFolderIds, toggleFolderPin,
     selectedQuestionIds, toggleQuestionSelection, selectAllQuestions, clearSelection,
     rowHoverId, setRowHoverId,
     draggedQuestionId, setDraggedQuestionId,

@@ -353,8 +353,9 @@ export function FolderContextMenu({
   onOpenChange?: (open: boolean) => void
   alwaysVisible?: boolean
 }) {
-  const { setCollaboratorsModalFolderId, setFolderPrivacy } = useQB()
+  const { setCollaboratorsModalFolderId, setFolderPrivacy, pinnedFolderIds, toggleFolderPin } = useQB()
   const isPrivate = !!node.isPrivateSpace
+  const isPinned = pinnedFolderIds.has(node.id)
 
   return (
     <DropdownMenu modal={false} onOpenChange={onOpenChange}>
@@ -370,6 +371,12 @@ export function FolderContextMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52" onCloseAutoFocus={e => e.preventDefault()}>
+        {/* Pin / Unpin — available on course shells and subfolders */}
+        <DropdownMenuItem onClick={() => toggleFolderPin(node.id)}>
+          <i className={`fa-light ${isPinned ? 'fa-thumbtack-slash' : 'fa-thumbtack'}`} aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+          {isPinned ? 'Unpin' : 'Pin to top'}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => onAddSubfolder()}>
           <i className="fa-light fa-folder-plus" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
           New Subfolder
@@ -603,6 +610,7 @@ function FolderRow({
     setFolderIcon,
     dialogActive, setDialogActive,
     accessibleFolderIds,
+    pinnedFolderIds,
   } = useQB()
 
   const subtreeIds = getDescendantIds(node.id, folders)
@@ -827,8 +835,13 @@ function FolderRow({
         ) : (
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
             <span className={`text-sm text-foreground ${isSelected ? 'font-medium' : 'font-normal'}`}
-              style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {node.isCourse ? courseFolderLabel(node.name) : node.name}
+              style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                {node.isCourse ? courseFolderLabel(node.name) : node.name}
+              </span>
+              {pinnedFolderIds.has(node.id) && (
+                <i className="fa-solid fa-thumbtack" aria-label="Pinned" style={{ fontSize: 8, color: 'var(--brand-color)', opacity: 0.7, flexShrink: 0 }} />
+              )}
             </span>
             {subtitle && (() => {
               const canExpand = !!(fullSubtitle && fullSubtitle !== subtitle)
@@ -960,6 +973,7 @@ export function QBSidebar() {
     accessibleFolderIds,
     createFolder,
     navigateToFolder,
+    pinnedFolderIds,
   } = useQB()
 
   // Switch between search UIs: 'input' = always-visible InputGroup (Option A),
@@ -1124,10 +1138,14 @@ export function QBSidebar() {
   )
 
   // ── Active / Inactive grouping ──────────────────────────────────────────
-  // Split filteredRoots by semester. To revert to a flat list, replace the
-  // grouped render below with: filteredRoots.map(course => ...)
-  const activeCourses   = filteredRoots.filter(f => isCourseActive(f.id))
-  const inactiveCourses = filteredRoots.filter(f => !isCourseActive(f.id))
+  // Split filteredRoots by semester. Pinned courses always sort first within each group.
+  const sortByPin = (a: typeof filteredRoots[0], b: typeof filteredRoots[0]) => {
+    const aPin = pinnedFolderIds.has(a.id) ? 0 : 1
+    const bPin = pinnedFolderIds.has(b.id) ? 0 : 1
+    return aPin - bPin
+  }
+  const activeCourses   = filteredRoots.filter(f => isCourseActive(f.id)).sort(sortByPin)
+  const inactiveCourses = filteredRoots.filter(f => !isCourseActive(f.id)).sort(sortByPin)
   const isSearching     = sidebarSearch.trim().length > 0
 
   return (
@@ -1325,8 +1343,8 @@ export function QBSidebar() {
 
         <div role="tree" aria-label="Course tree">
 
-          {/* All courses — active first, inactive after, no section labels */}
-          {!(SEARCH_VARIANT === 'input' && isSearching) && filteredRoots.map(course => (
+          {/* All courses — pinned first, then active, then inactive */}
+          {!(SEARCH_VARIANT === 'input' && isSearching) && [...filteredRoots].sort(sortByPin).map(course => (
             <div key={course.id}>
               <FolderRow node={course} depth={0} isAdmin={isAdmin} />
               {expandedFolderIds.has(course.id) && (
