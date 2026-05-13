@@ -453,8 +453,12 @@ export function QBProvider({ children }: { children: ReactNode }) {
     // Non-admin: folder must be accessible
     if (!isExamAdmin && !accessibleFolderIds.has(q.folder)) return false
 
-    // Draft questions are only visible to their creator, regardless of role
-    const roleVisible = q.status === 'Saved' || (q.status === 'Draft' && q.creator === currentPersona.id)
+    // Visibility by status: Saved/In Review = anyone; Draft = creator only; Archived = exam admin or creator
+    const roleVisible =
+      q.status === 'Saved' ||
+      q.status === 'In Review' ||
+      (q.status === 'Draft' && q.creator === currentPersona.id) ||
+      (q.status === 'Archived' && (isExamAdmin || q.creator === currentPersona.id))
 
     const navVisible = navView === 'all'
       ? true
