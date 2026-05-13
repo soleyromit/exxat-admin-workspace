@@ -97,7 +97,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     folder: 'phar101-antibiotics', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials',
     extraFolders: [{ folder: 'biol201-membrane', folderPath: 'BIOL201 QB / Membrane Transport' }],
     tags: ['beta-lactam', 'allergy', 'streptococcus'], usage: 14, pbis: 0.41, pbisDir: 'up',
-    creator: 'persona-thompson', lastEditedBy: 'persona-chen',
+    creator: 'persona-admin', lastEditedBy: 'persona-chen',
     usedInSections: ['Midterm 2024', 'Final 2023'], pinned: true,
   },
   {
@@ -114,7 +114,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'Ordering', status: 'Saved', difficulty: 'Hard', blooms: 'Evaluate',
     folder: 'phar101-antibiotics', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials',
     tags: ['spectrum', 'ordering', 'gram-coverage'], usage: 9, pbis: 0.29, pbisDir: 'down',
-    creator: 'persona-thompson', lastEditedBy: 'persona-thompson',
+    creator: 'persona-admin', lastEditedBy: 'persona-admin',
     usedInSections: ['Final 2023'], favorited: true,
   },
   {
@@ -132,7 +132,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'Matching', status: 'Draft', difficulty: 'Medium', blooms: 'Remember',
     folder: 'phar101-analgesics', folderPath: 'PHAR101 QB / Analgesics & Pain Management',
     tags: ['opioids', 'receptor', 'matching'], usage: 0, pbis: null, pbisDir: null,
-    creator: 'persona-patel', lastEditedBy: 'persona-patel', usedInSections: [],
+    creator: 'persona-admin', lastEditedBy: 'persona-admin', usedInSections: [],
   },
   {
     id: 'q-006', code: 'PH-CV-001', version: 2, age: '6 months',
@@ -144,7 +144,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
       { folder: 'skel101-shoulder',    folderPath: 'SKEL101 QB / Shoulder Complex' },
     ],
     tags: ['hypertension', 'ACE-inhibitor', 'contraindication'], usage: 11, pbis: 0.37, pbisDir: 'up',
-    creator: 'persona-thompson', lastEditedBy: 'persona-thompson',
+    creator: 'persona-admin', lastEditedBy: 'persona-admin',
     usedInSections: ['Midterm 2024'],
   },
   {
@@ -194,7 +194,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     folder: 'biol201-membrane', folderPath: 'BIOL201 QB / Membrane Transport',
     extraFolders: [{ folder: 'phar101-cardio', folderPath: 'PHAR101 QB / Cardiovascular Drugs' }],
     tags: ['active-transport', 'ATP', 'gradient'], usage: 31, pbis: 0.52, pbisDir: 'flat',
-    creator: 'persona-thompson', lastEditedBy: 'persona-chen',
+    creator: 'persona-admin', lastEditedBy: 'persona-chen',
     usedInSections: ['Midterm 2024', 'Final 2023', 'Quiz 1'],
   },
   {
@@ -207,7 +207,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
       { folder: 'biol201-mendelian', folderPath: 'BIOL201 QB / Mendelian Genetics' },
     ],
     tags: ['meiosis', 'crossing-over', 'genetics'], usage: 7, pbis: 0.33, pbisDir: 'up',
-    creator: 'persona-thompson', lastEditedBy: 'persona-thompson', usedInSections: ['Quiz 2'],
+    creator: 'persona-admin', lastEditedBy: 'persona-admin', usedInSections: ['Quiz 2'],
   },
   {
     id: 'q-010', code: 'SK-SH-001', version: 3, age: '1 year',
@@ -216,7 +216,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     folder: 'skel101-shoulder', folderPath: 'SKEL101 QB / Shoulder Complex',
     extraFolders: [{ folder: 'skel101-cervical', folderPath: 'SKEL101 QB / Cervical Spine' }],
     tags: ['glenohumeral', 'rotator-cuff', 'stabilization'], usage: 19, pbis: 0.44, pbisDir: 'flat',
-    creator: 'persona-thompson', lastEditedBy: 'persona-thompson',
+    creator: 'persona-admin', lastEditedBy: 'persona-admin',
     usedInSections: ['Midterm 2024', 'Final 2023'], favorited: true,
   },
   // ── BIOL201 – Membrane Transport ──────────────────────────────────────────
@@ -293,7 +293,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Easy', blooms: 'Remember',
     folder: 'biol201-molecular', folderPath: 'BIOL201 QB / Molecular Biology',
     tags: ['replication', 'helicase', 'DNA'], usage: 29, pbis: 0.58, pbisDir: 'flat',
-    creator: 'persona-thompson', lastEditedBy: 'persona-thompson', usedInSections: ['Quiz 4', 'Final 2023'],
+    creator: 'persona-admin', lastEditedBy: 'persona-admin', usedInSections: ['Quiz 4', 'Final 2023'],
   },
   {
     id: 'q-026', code: 'BI-MOL-002', version: 2, age: '8 months',
@@ -327,7 +327,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Medium', blooms: 'Apply',
     folder: 'skel101-cervical', folderPath: 'SKEL101 QB / Cervical Spine',
     tags: ['dermatome', 'nerve-root', 'cervical'], usage: 21, pbis: 0.47, pbisDir: 'up',
-    creator: 'persona-thompson', lastEditedBy: 'persona-kim', usedInSections: ['Final 2023', 'Midterm 2024'],
+    creator: 'persona-admin', lastEditedBy: 'persona-kim', usedInSections: ['Final 2023', 'Midterm 2024'],
   },
   {
     id: 'q-030', code: 'SK-CV-002', version: 1, age: '5 months',
@@ -352,7 +352,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Easy', blooms: 'Remember',
     folder: 'skel101-lumbar', folderPath: 'SKEL101 QB / Lumbar Spine',
     tags: ['transverse-abdominis', 'lumbar-stability', 'activation'], usage: 18, pbis: 0.49, pbisDir: 'flat',
-    creator: 'persona-thompson', lastEditedBy: 'persona-kim', usedInSections: ['Quiz 3', 'Final 2023'],
+    creator: 'persona-admin', lastEditedBy: 'persona-kim', usedInSections: ['Quiz 3', 'Final 2023'],
   },
   {
     id: 'q-033', code: 'SK-LM-002', version: 2, age: '7 months',
