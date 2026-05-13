@@ -295,8 +295,9 @@ th [data-slot="checkbox"]::after,
   .qb-row-checkbox        { opacity: 1 !important; }
   /* Hide standalone title bar — compact title lives in the toolbar row instead */
   .qb-title-bar           { display: none !important; }
-  /* Show the compact title + Add Question wrapper in the toolbar */
-  .qb-toolbar-add-btn     { display: flex !important; }
+  /* Show the compact title + Add Question wrapper in the toolbar;
+     stretch it to fill the left side so icons are pushed to the far right */
+  .qb-toolbar-add-btn     { display: flex !important; flex: 1 1 auto !important; max-width: none !important; }
   /* Hide the filter chips area at compact widths — title is already in the toolbar */
   .qb-toolbar-chips       { display: none !important; }
   /* Hide Add filter — space is too tight */
