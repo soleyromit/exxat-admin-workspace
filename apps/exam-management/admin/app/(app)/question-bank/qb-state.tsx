@@ -185,12 +185,8 @@ export function QBProvider({ children }: { children: ReactNode }) {
 
   const accessibleFolderIds = useMemo<Set<string>>(() => {
     if (isExamAdmin) {
-      // Admins see all PUBLIC folders + private folders where they're a collaborator
-      return new Set(
-        folders
-          .filter(f => !f.isPrivateSpace || (f.collaborators ?? []).includes(currentPersona.id))
-          .map(f => f.id)
-      )
+      // Exam admins have institution-wide access — all folders including private ones
+      return new Set(folders.map(f => f.id))
     }
     const accessible = new Set<string>()
     // Non-admins: folders where they're a collaborator (private or public — being a collaborator grants access)
