@@ -3919,54 +3919,54 @@ export function QBTable() {
 
             <div className="h-4 w-px bg-border mx-0.5" aria-hidden="true" />
 
-            {/* Duplicate — mirrors row menu */}
-            <Button
-              variant="ghost" size="sm"
-              aria-label="Duplicate to Draft"
-              onClick={() => { selectedQs.forEach(q => duplicateQuestion(q.id)); clearSelection() }}
-              className="text-xs gap-1.5"
-              style={{ height: 32 }}
-            >
-              <i className="fa-light fa-copy" aria-hidden="true" style={{ fontSize: 12 }} />
-              Duplicate
-            </Button>
-
-            {/* Copy to folder */}
-            <Button
-              variant="ghost" size="sm"
-              aria-label="Copy to folder"
-              onClick={() => setBulkCopyOpen(true)}
-              className="text-xs gap-1.5"
-              style={{ height: 32 }}
-            >
-              <i className="fa-light fa-folder-arrow-up" aria-hidden="true" style={{ fontSize: 12 }} />
-              Copy to folder
-            </Button>
-
-            {/* Move to folder */}
-            <Button
-              variant="ghost" size="sm"
-              aria-label="Move to folder"
-              onClick={() => setBulkMoveOpen(true)}
-              className="text-xs gap-1.5"
-              style={{ height: 32 }}
-            >
-              <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 12 }} />
-              Move to folder
-            </Button>
-
-            {/* Remove from folder — only in folder view, mirrors row menu */}
-            {navView === 'folder' && selectedFolderId && (
+            {/* Duplicate — icon only with tooltip */}
+            <Tip label="Duplicate to Draft">
               <Button
-                variant="ghost" size="sm"
-                aria-label="Remove from folder"
-                onClick={() => { selectedQs.forEach(q => removeQuestionFromFolder(q.id, selectedFolderId)); clearSelection() }}
-                className="text-xs gap-1.5"
-                style={{ height: 32 }}
+                variant="ghost" size="icon-sm"
+                aria-label="Duplicate to Draft"
+                onClick={() => { selectedQs.forEach(q => duplicateQuestion(q.id)); clearSelection() }}
+                style={{ height: 32, width: 32 }}
               >
-                <i className="fa-light fa-folder-minus" aria-hidden="true" style={{ fontSize: 12 }} />
-                Remove from folder
+                <i className="fa-light fa-copy" aria-hidden="true" style={{ fontSize: 13 }} />
               </Button>
+            </Tip>
+
+            {/* Copy to folder — icon only */}
+            <Tip label="Copy to folder">
+              <Button
+                variant="ghost" size="icon-sm"
+                aria-label="Copy to folder"
+                onClick={() => setBulkCopyOpen(true)}
+                style={{ height: 32, width: 32 }}
+              >
+                <i className="fa-light fa-folder-arrow-up" aria-hidden="true" style={{ fontSize: 13 }} />
+              </Button>
+            </Tip>
+
+            {/* Move to folder — icon only */}
+            <Tip label="Move to folder">
+              <Button
+                variant="ghost" size="icon-sm"
+                aria-label="Move to folder"
+                onClick={() => setBulkMoveOpen(true)}
+                style={{ height: 32, width: 32 }}
+              >
+                <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 13 }} />
+              </Button>
+            </Tip>
+
+            {/* Remove from folder — icon only, folder view only */}
+            {navView === 'folder' && selectedFolderId && (
+              <Tip label="Remove from folder">
+                <Button
+                  variant="ghost" size="icon-sm"
+                  aria-label="Remove from folder"
+                  onClick={() => { selectedQs.forEach(q => removeQuestionFromFolder(q.id, selectedFolderId)); clearSelection() }}
+                  style={{ height: 32, width: 32 }}
+                >
+                  <i className="fa-light fa-folder-minus" aria-hidden="true" style={{ fontSize: 13 }} />
+                </Button>
+              </Tip>
             )}
 
             {/* Status change dropdown */}
