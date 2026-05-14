@@ -14,7 +14,7 @@ export default function WorkspacePage() {
         <SidebarInset>
           <SiteHeader />
           <main className="flex-1 overflow-auto p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl">
               {PRODUCTS.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}

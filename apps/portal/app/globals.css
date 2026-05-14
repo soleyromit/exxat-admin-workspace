@@ -5,6 +5,41 @@
 @source '../lib/**/*.{ts,tsx}';
 @source '../../../exxat-ds/packages/ui/src/**/*.{ts,tsx}';
 
+/* ── Portal product palette ─────────────────────────────────────────────────
+   Each product gets a gradient header: -from (lighter), -to (deeper), -icon.
+   All values in oklch. Referenced via var(--product-{key}-{prop}) in TSX.    */
+:root {
+  /* Exam Management — lavender (matches Exxat One brand) */
+  --product-em-from: oklch(0.88 0.07 280);
+  --product-em-to:   oklch(0.76 0.13 277);
+  --product-em-icon: oklch(0.42 0.16 277);
+
+  /* PCE — teal */
+  --product-pce-from: oklch(0.88 0.06 185);
+  --product-pce-to:   oklch(0.75 0.11 182);
+  --product-pce-icon: oklch(0.38 0.12 182);
+
+  /* Patient Log — amber */
+  --product-pl-from: oklch(0.92 0.06 72);
+  --product-pl-to:   oklch(0.82 0.12 68);
+  --product-pl-icon: oklch(0.48 0.15 66);
+
+  /* Skills Checklist — sage */
+  --product-sc-from: oklch(0.88 0.06 145);
+  --product-sc-to:   oklch(0.75 0.11 143);
+  --product-sc-icon: oklch(0.38 0.13 143);
+
+  /* Learning Contracts — rose */
+  --product-lc-from: oklch(0.90 0.05 345);
+  --product-lc-to:   oklch(0.79 0.10 342);
+  --product-lc-icon: oklch(0.44 0.14 342);
+
+  /* FaaS — slate (muted, coming soon) */
+  --product-faas-from: oklch(0.93 0.008 270);
+  --product-faas-to:   oklch(0.86 0.012 268);
+  --product-faas-icon: oklch(0.54 0.009 268);
+}
+
 /* Sidebar background token */
 :root {
   --sidebar: var(--brand-tint);
