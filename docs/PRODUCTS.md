@@ -31,7 +31,7 @@
 | `patient-log` | Patient Log | scoped | `@exxat/patient-log-admin` | 3003 | `@exxat/patient-log-student` | 3004 | both | TBC | TBC | medium | Clinical |
 | `skills-checklist` | Skills Checklist | scoped | `@exxat/skills-checklist-admin` | 3007 | `@exxat/skills-checklist-student` | 3008 | both | TBC | TBC | med-high | Clinical → Culminating |
 | `learning-contracts` | Learning Contracts | scoped | `@exxat/learning-contracts-admin` | 3009 | `@exxat/learning-contracts-student` | 3010 | both | TBC | TBC | medium | Clinical |
-| `portal` | Workspace Portal | active | `@exxat/portal` | 4000 | — | — | admin DS only | Romit | Romit | high | Cross-stage |
+| `portal` | Workspace Portal | active | `@exxat/portal` | 3100 | — | — | admin DS only | Romit | Romit | high | Cross-stage |
 
 ## Aliases
 

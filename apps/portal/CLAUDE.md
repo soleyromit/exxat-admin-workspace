@@ -10,7 +10,7 @@ Romit Soley (Product Designer II, Exxat) owns this product.
 
 - **Status:** active
 - **Admin package:** `@exxat/portal`
-- **Port:** 4000
+- **Port:** 3100
 - **DS:** Admin DS only (`@exxat/ds`)
 - **Owner (PM):** Romit
 - **Owner (Dev):** Romit
@@ -23,7 +23,7 @@ Romit Soley (Product Designer II, Exxat) owns this product.
 cd /Users/romitsoley/Work/apps/portal && pnpm dev
 ```
 
-Dev server runs on port 4000.
+Dev server runs on port 3100.
 
 ---
 
