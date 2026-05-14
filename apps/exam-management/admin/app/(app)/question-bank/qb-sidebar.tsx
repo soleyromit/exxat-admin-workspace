@@ -821,13 +821,9 @@ function FolderRow({
           />
         </Button>
 
-        {/* Fixed status slot — always 12px wide so folder name never shifts.
-            Pin only; lock is handled by the folder icon slot below. */}
-        <span style={{ width: 12, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {pinnedFolderIds.has(node.id) && (
-            <i className="fa-solid fa-thumbtack" aria-label="Pinned to top" style={{ fontSize: 11, color: 'var(--brand-color)' }} />
-          )}
-        </span>
+        {pinnedFolderIds.has(node.id) && (
+          <i className="fa-solid fa-thumbtack" aria-label="Pinned to top" style={{ fontSize: 11, color: 'var(--brand-color)', flexShrink: 0 }} />
+        )}
 
         {/* Icon */}
         <i className={`${icon.cls} ${icon.colorCls}`} aria-hidden="true"
