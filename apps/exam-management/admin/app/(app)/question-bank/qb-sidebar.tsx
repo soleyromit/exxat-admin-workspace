@@ -822,13 +822,8 @@ function FolderRow({
         </Button>
 
         {/* Icon — pin badge overlays top-right so layout is never affected */}
-        <span style={{ position: 'relative', flexShrink: 0, width: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <i className={`${icon.cls} ${icon.colorCls}`} aria-hidden="true" style={{ fontSize: 13 }} />
-          {pinnedFolderIds.has(node.id) && (
-            <i className="fa-solid fa-thumbtack" aria-label="Pinned to top"
-              style={{ position: 'absolute', top: -5, right: -5, fontSize: 8, color: 'var(--brand-color)' }} />
-          )}
-        </span>
+        <i className={`${icon.cls} ${icon.colorCls}`} aria-hidden="true"
+          style={{ fontSize: 13, width: 16, textAlign: 'center', flexShrink: 0 }} />
 
         {/* Name */}
         {isRenaming ? (
@@ -979,6 +974,45 @@ function FolderTree({
 }
 
 
+// ── Pinned section row ────────────────────────────────────────────────────────
+function PinnedRow({ name, iconCls, isActive, onNavigate, onUnpin }: {
+  name: string; iconCls: string; isActive: boolean
+  onNavigate: () => void; onUnpin: () => void
+}) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <div style={{ margin: '0 4px', position: 'relative' }}
+      onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+      <Button
+        variant="ghost" size="sm"
+        onClick={onNavigate}
+        className="w-full justify-start text-foreground"
+        style={{
+          paddingLeft: 8, paddingRight: hovered ? 30 : 8,
+          height: 28, borderRadius: 6,
+          backgroundColor: isActive ? 'var(--sidebar-accent)' : 'transparent',
+        }}
+      >
+        <i className={`${iconCls} ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}
+          aria-hidden="true" style={{ fontSize: 13, width: 16, textAlign: 'center', flexShrink: 0 }} />
+        <span className={`flex-1 text-sm text-left truncate ${isActive ? 'font-medium' : 'font-normal'}`}
+          style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {name}
+        </span>
+      </Button>
+      {hovered && (
+        <Tip label="Unpin">
+          <Button variant="ghost" size="icon-xs" onClick={e => { e.stopPropagation(); onUnpin() }}
+            aria-label="Unpin"
+            style={{ position: 'absolute', right: 2, top: '50%', transform: 'translateY(-50%)', width: 22, height: 22, color: 'var(--muted-foreground)' }}>
+            <i className="fa-light fa-thumbtack-slash" aria-hidden="true" style={{ fontSize: 11 }} />
+          </Button>
+        </Tip>
+      )}
+    </div>
+  )
+}
+
 export function QBSidebar() {
   const {
     sidebarOpen, setSidebarOpen,
@@ -993,6 +1027,7 @@ export function QBSidebar() {
     createFolder,
     navigateToFolder,
     pinnedFolderIds,
+    toggleFolderPin,
   } = useQB()
 
   // Switch between search UIs: 'input' = always-visible InputGroup (Option A),
@@ -1157,14 +1192,11 @@ export function QBSidebar() {
   )
 
   // ── Active / Inactive grouping ──────────────────────────────────────────
-  // Split filteredRoots by semester. Pinned courses always sort first within each group.
-  const sortByPin = (a: typeof filteredRoots[0], b: typeof filteredRoots[0]) => {
-    const aPin = pinnedFolderIds.has(a.id) ? 0 : 1
-    const bPin = pinnedFolderIds.has(b.id) ? 0 : 1
-    return aPin - bPin
-  }
-  const activeCourses   = filteredRoots.filter(f => isCourseActive(f.id)).sort(sortByPin)
-  const inactiveCourses = filteredRoots.filter(f => !isCourseActive(f.id)).sort(sortByPin)
+  const activeCourses   = filteredRoots.filter(f => isCourseActive(f.id))
+  const inactiveCourses = filteredRoots.filter(f => !isCourseActive(f.id))
+
+  // ── Pinned section ──────────────────────────────────────────────────────
+  const pinnedFolders = visibleFolders.filter(f => pinnedFolderIds.has(f.id))
   const isSearching     = sidebarSearch.trim().length > 0
 
   return (
@@ -1285,6 +1317,36 @@ export function QBSidebar() {
         </div>
       )}
 
+      {/* ── Pinned section — shown below search, only when pinned items exist and not searching ── */}
+      {pinnedFolders.length > 0 && !isSearching && (
+        <div style={{ flexShrink: 0, padding: '4px 0 2px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', padding: '0 12px 3px' }}>
+            <span className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
+              Pinned
+            </span>
+          </div>
+          {pinnedFolders.map(f => {
+            const isPrivate = f.isPrivateSpace
+            const iconCls = isPrivate ? 'fa-solid fa-lock'
+              : f.isCourse ? (selectedFolderId === f.id ? 'fa-solid fa-graduation-cap' : 'fa-light fa-graduation-cap')
+              : (selectedFolderId === f.id ? 'fa-solid fa-folder' : 'fa-regular fa-folder')
+            const name = f.isCourse ? courseFolderLabel(f.name) : f.name
+            const isActive = selectedFolderId === f.id
+            return (
+              <PinnedRow
+                key={f.id}
+                name={name}
+                iconCls={iconCls}
+                isActive={isActive}
+                onNavigate={() => navigateToFolder(f.id)}
+                onUnpin={() => { toggleFolderPin(f.id); showSidebarToast(`"${name}" unpinned`, () => toggleFolderPin(f.id)) }}
+              />
+            )
+          })}
+          <div style={{ height: 1, backgroundColor: 'var(--border)', margin: '4px 8px 0' }} />
+        </div>
+      )}
+
       {/* Tree — at normal zoom: own scroll container (flex:1); at 400% zoom: flows into aside scroll */}
       <div style={isHighZoom
         ? { flexShrink: 0, overflowX: 'hidden', paddingTop: 2, paddingBottom: 8 }
@@ -1362,8 +1424,8 @@ export function QBSidebar() {
 
         <div role="tree" aria-label="Course tree">
 
-          {/* All courses — pinned first, then active, then inactive */}
-          {!(SEARCH_VARIANT === 'input' && isSearching) && [...filteredRoots].sort(sortByPin).map(course => (
+          {/* All courses — active, then inactive */}
+          {!(SEARCH_VARIANT === 'input' && isSearching) && filteredRoots.map(course => (
             <div key={course.id}>
               <FolderRow node={course} depth={0} isAdmin={isAdmin} />
               {expandedFolderIds.has(course.id) && (
