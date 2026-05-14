@@ -26,7 +26,7 @@ export default function AppLayout({
                     {children}
                   </SidebarInset>
                 </SidebarProvider>
-                <Toaster position="bottom-right" richColors />
+                <Toaster position="bottom-center" />
               </TooltipProvider>
             </CommunicationPolicyProvider>
           </StudentAccommodationProvider>
