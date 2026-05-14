@@ -10,6 +10,7 @@ import {
   Popover, PopoverTrigger, PopoverContent,
   FieldError,
   Command, CommandInput, CommandList, CommandGroup, CommandItem, CommandEmpty,
+  useSidebar,
 } from '@exxat/ds/packages/ui/src'
 import { mockCourses, mockCourseOfferings } from '@/lib/qb-mock-data'
 import { toast } from 'sonner'
@@ -1163,6 +1164,9 @@ export function QBSidebar() {
   const activeCourses   = filteredRoots.filter(f => isCourseActive(f.id))
   const inactiveCourses = filteredRoots.filter(f => !isCourseActive(f.id))
   const isSearching     = sidebarSearch.trim().length > 0
+  const { state: navSidebarState } = useSidebar()
+  // When the main nav sidebar collapses it frees ~220px — give that space to the QB tree
+  const treeWidth = sidebarOpen ? (navSidebarState === 'collapsed' ? 320 : 248) : 0
 
   return (
     <>
@@ -1181,8 +1185,8 @@ export function QBSidebar() {
     <aside
       aria-label="Question Bank Library"
       style={{
-        width: sidebarOpen ? 248 : 0,
-        minWidth: sidebarOpen ? 248 : 0,
+        width: treeWidth,
+        minWidth: treeWidth,
         display: 'flex',
         flexDirection: 'column',
         borderRight: sidebarOpen ? '1px solid var(--border)' : 'none',

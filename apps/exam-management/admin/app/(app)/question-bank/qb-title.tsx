@@ -183,22 +183,27 @@ export function QBTitle() {
             </h1>
           )}
 
-          {/* Context menu — same as tree, shown when a folder is selected */}
-          {navView === 'folder' && selectedFolder && (
-            <FolderContextMenu
-              node={selectedFolder}
-              isAdmin={isAdmin}
-              alwaysVisible
-              onRename={() => {
-                setRenameName(selectedFolder.isCourse ? courseFolderLabel(selectedFolder.name) : selectedFolder.name)
-                setIsRenaming(true)
-                setTimeout(() => { renameRef.current?.focus(); renameRef.current?.select() }, 80)
-              }}
-              onAddSubfolder={() => {/* no-op: use sidebar to add subfolders */}}
-              onMove={() => setMoveFolderDialogOpen(true)}
-              onDelete={() => setDeleteFolderDialogOpen(true)}
-            />
-          )}
+          {/* Context menu — always reserves its slot so h1 width never shifts */}
+          <span style={{ visibility: (navView === 'folder' && selectedFolder) ? 'visible' : 'hidden', flexShrink: 0 }}>
+            {navView === 'folder' && selectedFolder ? (
+              <FolderContextMenu
+                node={selectedFolder}
+                isAdmin={isAdmin}
+                alwaysVisible
+                onRename={() => {
+                  setRenameName(selectedFolder.isCourse ? courseFolderLabel(selectedFolder.name) : selectedFolder.name)
+                  setIsRenaming(true)
+                  setTimeout(() => { renameRef.current?.focus(); renameRef.current?.select() }, 80)
+                }}
+                onAddSubfolder={() => {/* no-op: use sidebar to add subfolders */}}
+                onMove={() => setMoveFolderDialogOpen(true)}
+                onDelete={() => setDeleteFolderDialogOpen(true)}
+              />
+            ) : (
+              /* Placeholder keeps the slot width identical — icon-xs button is 24px */
+              <span style={{ display: 'inline-flex', width: 24, height: 24 }} aria-hidden="true" />
+            )}
+          </span>
         </div>
 
         <Button variant="default" size="default" onClick={() => router.push(selectedFolderId ? `/questions/new?folder=${selectedFolderId}` : '/questions/new')} style={{ flexShrink: 0 }}>
@@ -207,30 +212,31 @@ export function QBTitle() {
         </Button>
       </div>
 
-      {/* Subtitle: count + collaborators + manage access */}
-      <div className="qb-title-text" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 1 }}>
+      {/* Subtitle: count + collaborators + manage access — fixed 28px height so layout never shifts */}
+      <div className="qb-title-text" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 1, minHeight: 28 }}>
         <span className="text-sm text-muted-foreground">
           {count} question{count !== 1 ? 's' : ''} · Last updated now
         </span>
-        {(collaboratorIds.length > 0 || (isAdmin && selectedFolder)) && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ width: 1, height: 12, backgroundColor: 'var(--border)', display: 'inline-block' }} />
-            {collaboratorIds.length > 0 && (
-              <CollaboratorAvatars collaboratorIds={collaboratorIds} />
-            )}
-            {isAdmin && selectedFolder && (
-              <Button
-                variant="ghost" size="icon-xs"
-                aria-label="Manage access"
-                className="text-muted-foreground"
-                style={{ width: 28, height: 28 }}
-                onClick={() => setCollaboratorsModalFolderId(selectedFolderId)}
-              >
-                <i className="fa-light fa-user-plus" aria-hidden="true" style={{ fontSize: 14 }} />
-              </Button>
-            )}
-          </div>
-        )}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          visibility: (collaboratorIds.length > 0 || (isAdmin && selectedFolder)) ? 'visible' : 'hidden',
+        }}>
+          <span style={{ width: 1, height: 12, backgroundColor: 'var(--border)', display: 'inline-block' }} />
+          {collaboratorIds.length > 0 && (
+            <CollaboratorAvatars collaboratorIds={collaboratorIds} />
+          )}
+          {isAdmin && selectedFolder && (
+            <Button
+              variant="ghost" size="icon-xs"
+              aria-label="Manage access"
+              className="text-muted-foreground"
+              style={{ width: 28, height: 28 }}
+              onClick={() => setCollaboratorsModalFolderId(selectedFolderId)}
+            >
+              <i className="fa-light fa-user-plus" aria-hidden="true" style={{ fontSize: 14 }} />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Dialogs */}
