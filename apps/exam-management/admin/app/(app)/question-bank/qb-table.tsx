@@ -3919,8 +3919,8 @@ export function QBTable() {
 
             <div className="h-4 w-px bg-border mx-0.5" aria-hidden="true" />
 
-            {/* Folder actions dropdown */}
-            <DropdownMenu>
+            {/* Folder actions dropdown — modal={false} avoids Radix nested-modal conflict */}
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="text-xs gap-1.5" style={{ height: 32 }}>
                   <i className="fa-light fa-folder" aria-hidden="true" style={{ fontSize: 12 }} />
@@ -3934,11 +3934,12 @@ export function QBTable() {
                   Duplicate to Draft
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setBulkCopyOpen(true)}>
+                {/* setTimeout lets dropdown fully close before dialog mounts (Radix nested-modal fix) */}
+                <DropdownMenuItem onClick={() => setTimeout(() => setBulkCopyOpen(true), 0)}>
                   <i className="fa-light fa-folder-arrow-up" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                   Copy to folder
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setBulkMoveOpen(true)}>
+                <DropdownMenuItem onClick={() => setTimeout(() => setBulkMoveOpen(true), 0)}>
                   <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                   Move to folder
                 </DropdownMenuItem>
