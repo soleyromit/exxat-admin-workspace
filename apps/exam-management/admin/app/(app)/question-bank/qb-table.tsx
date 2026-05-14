@@ -2880,7 +2880,18 @@ export function QBTable() {
 
   // ── Derived filtered list ─────────────────────────────────────────────────
   const filteredQuestions = visibleQuestions.filter(q => {
-    if (search && !q.title.toLowerCase().includes(search.toLowerCase()) && !q.code.toLowerCase().includes(search.toLowerCase())) return false
+    if (search) {
+      const s = search.toLowerCase()
+      const creatorName = personas.find(p => p.id === q.creator)?.name ?? ''
+      const editorName  = personas.find(p => p.id === q.lastEditedBy)?.name ?? ''
+      const allLocations = [q.folderPath, ...(q.extraFolders ?? []).map(e => e.folderPath)].join(' ')
+      const searchable = [
+        q.title, q.code, q.type, q.status, q.difficulty, q.blooms,
+        creatorName, editorName, allLocations, ...(q.tags ?? []),
+        ...(q.usedInSections ?? []),
+      ].join(' ').toLowerCase()
+      if (!searchable.includes(s)) return false
+    }
     if (bookmarkOnly && !favoritedIds.has(q.id)) return false
     for (const f of activeNonEmptyFilters) {
       let val = ''
