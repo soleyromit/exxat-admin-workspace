@@ -3919,55 +3919,37 @@ export function QBTable() {
 
             <div className="h-4 w-px bg-border mx-0.5" aria-hidden="true" />
 
-            {/* Duplicate — icon only with tooltip */}
-            <Tip label="Duplicate to Draft">
-              <Button
-                variant="ghost" size="icon-sm"
-                aria-label="Duplicate to Draft"
-                onClick={() => { selectedQs.forEach(q => duplicateQuestion(q.id)); clearSelection() }}
-                style={{ height: 32, width: 32 }}
-              >
-                <i className="fa-light fa-copy" aria-hidden="true" style={{ fontSize: 13 }} />
-              </Button>
-            </Tip>
-
-            {/* Copy to folder — icon only */}
-            <Tip label="Copy to folder">
-              <Button
-                variant="ghost" size="icon-sm"
-                aria-label="Copy to folder"
-                onClick={() => setBulkCopyOpen(true)}
-                style={{ height: 32, width: 32 }}
-              >
-                <i className="fa-light fa-folder-arrow-up" aria-hidden="true" style={{ fontSize: 13 }} />
-              </Button>
-            </Tip>
-
-            {/* Move to folder — icon only */}
-            <Tip label="Move to folder">
-              <Button
-                variant="ghost" size="icon-sm"
-                aria-label="Move to folder"
-                onClick={() => setBulkMoveOpen(true)}
-                style={{ height: 32, width: 32 }}
-              >
-                <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 13 }} />
-              </Button>
-            </Tip>
-
-            {/* Remove from folder — icon only, folder view only */}
-            {navView === 'folder' && selectedFolderId && (
-              <Tip label="Remove from folder">
-                <Button
-                  variant="ghost" size="icon-sm"
-                  aria-label="Remove from folder"
-                  onClick={() => { selectedQs.forEach(q => removeQuestionFromFolder(q.id, selectedFolderId)); clearSelection() }}
-                  style={{ height: 32, width: 32 }}
-                >
-                  <i className="fa-light fa-folder-minus" aria-hidden="true" style={{ fontSize: 13 }} />
+            {/* Folder actions dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-xs gap-1.5" style={{ height: 32 }}>
+                  <i className="fa-light fa-folder" aria-hidden="true" style={{ fontSize: 12 }} />
+                  Folder
+                  <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 9 }} />
                 </Button>
-              </Tip>
-            )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="w-48">
+                <DropdownMenuItem onClick={() => { selectedQs.forEach(q => duplicateQuestion(q.id)); clearSelection() }}>
+                  <i className="fa-light fa-copy" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                  Duplicate to Draft
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setBulkCopyOpen(true)}>
+                  <i className="fa-light fa-folder-arrow-up" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                  Copy to folder
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setBulkMoveOpen(true)}>
+                  <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                  Move to folder
+                </DropdownMenuItem>
+                {navView === 'folder' && selectedFolderId && (
+                  <DropdownMenuItem onClick={() => { selectedQs.forEach(q => removeQuestionFromFolder(q.id, selectedFolderId)); clearSelection() }}>
+                    <i className="fa-light fa-folder-minus" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                    Remove from folder
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Status change dropdown */}
             {(() => {
