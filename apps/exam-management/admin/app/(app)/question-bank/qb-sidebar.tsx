@@ -14,6 +14,22 @@ import {
 import { mockCourses, mockCourseOfferings } from '@/lib/qb-mock-data'
 import { toast } from 'sonner'
 
+const QB_TOAST_DURATION = 5000
+const QB_TOAST_STYLE = {
+  background: 'var(--qb-toast-bg)',
+  color: 'var(--qb-toast-fg)',
+  borderColor: 'var(--qb-toast-border)',
+} as React.CSSProperties
+
+function showSidebarToast(title: string, undoFn?: () => void) {
+  toast(title, {
+    duration: QB_TOAST_DURATION,
+    className: 'qb-action-toast',
+    style: QB_TOAST_STYLE,
+    action: undoFn ? { label: 'Undo', onClick: undoFn } : undefined,
+  })
+}
+
 const ACTIVE_SEMESTER = 'Spring 2026'
 
 // Determine active/inactive status for a course folder via offerings data
@@ -77,7 +93,7 @@ export function DeleteFolderDialog({
 
   function handleDelete() {
     deleteFolder(node.id)
-    toast.success(`"${node.name}" deleted`, { description: affectedQuestions.length > 0 ? `${affectedQuestions.length} question${affectedQuestions.length !== 1 ? 's' : ''} removed` : undefined })
+    showSidebarToast(`"${node.name}" deleted`)
     onClose()
   }
 
@@ -378,7 +394,7 @@ export function FolderContextMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52" onCloseAutoFocus={e => e.preventDefault()}>
         {/* Pin / Unpin — available on course shells and subfolders */}
-        <DropdownMenuItem onClick={() => { toggleFolderPin(node.id); toast.success(isPinned ? `"${node.name}" unpinned` : `"${node.name}" pinned to top`) }}>
+        <DropdownMenuItem onClick={() => { toggleFolderPin(node.id); showSidebarToast(isPinned ? `"${node.name}" unpinned` : `"${node.name}" pinned to top`, () => toggleFolderPin(node.id)) }}>
           <i className={`fa-light ${isPinned ? 'fa-thumbtack-slash' : 'fa-thumbtack'}`} aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
           {isPinned ? 'Unpin' : 'Pin to top'}
         </DropdownMenuItem>
@@ -394,7 +410,7 @@ export function FolderContextMenu({
               Manage Access
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => { setFolderPrivacy(node.id, !isPrivate); toast.success(isPrivate ? `"${node.name}" is now public` : `"${node.name}" is now private`) }}>
+            <DropdownMenuItem onClick={() => { setFolderPrivacy(node.id, !isPrivate); showSidebarToast(isPrivate ? `"${node.name}" is now public` : `"${node.name}" is now private`, () => setFolderPrivacy(node.id, isPrivate)) }}>
               <i
                 className={`fa-light ${isPrivate ? 'fa-lock-open' : 'fa-lock'}`}
                 aria-hidden="true"
@@ -837,7 +853,7 @@ function FolderRow({
               if (renameName.trim()) {
                 renameFolder(node.id, renameName.trim())
                 setRenameName(renameName.trim())
-                if (renameName.trim() !== node.name) toast.success(`Renamed to "${renameName.trim()}"`)
+                if (renameName.trim() !== node.name) { const prev = node.name; showSidebarToast(`Renamed to "${renameName.trim()}"`, () => { renameFolder(node.id, prev) }) }
               } else {
                 setRenameName(node.name)
               }
@@ -914,7 +930,7 @@ function FolderRow({
           onConfirm={(name) => {
             createFolder(name, node.id)
             setShowingInlineCreate(false)
-            toast.success(`"${name}" created`, { description: `Subfolder of ${node.name}` })
+            showSidebarToast(`"${name}" created`)
           }}
           onCancel={() => setShowingInlineCreate(false)}
         />

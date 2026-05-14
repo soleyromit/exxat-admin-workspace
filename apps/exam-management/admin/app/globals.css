@@ -324,3 +324,37 @@ th [data-slot="checkbox"]::after,
 .qb-row-anchored {
   animation: qb-row-anchor-pulse 2s ease-out forwards;
 }
+
+/* ── QB action toast — dark, bottom-center, with progress bar + undo ──────── */
+:root {
+  --qb-toast-bg:       oklch(0.16 0.008 286.1);
+  --qb-toast-fg:       oklch(0.93 0.004 286.1);
+  --qb-toast-border:   oklch(0.26 0.010 286.1);
+  --qb-toast-muted:    oklch(0.62 0.004 286.1);
+  --qb-toast-link:     oklch(0.76 0.10  286.1);
+  --qb-toast-progress: oklch(0.52 0.10  286.1);
+  --qb-toast-btn-bg:   oklch(0.24 0.010 286.1);
+  --qb-toast-btn-border: oklch(0.36 0.012 286.1);
+}
+.qb-action-toast {
+  overflow: hidden !important;
+}
+.qb-action-toast::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--qb-toast-progress);
+  animation: qb-toast-progress-bar 5s linear forwards;
+  transform-origin: left;
+}
+@keyframes qb-toast-progress-bar {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+.qb-action-toast [data-title]              { font-size: 12px !important; font-weight: 500 !important; }
+.qb-action-toast [data-description]        { font-size: 11px !important; color: var(--qb-toast-muted) !important; margin-top: 2px !important; }
+.qb-action-toast [data-action-button]      { background: var(--qb-toast-btn-bg) !important; border: 1px solid var(--qb-toast-btn-border) !important; color: var(--qb-toast-fg) !important; font-size: 11px !important; height: 22px !important; padding: 0 8px !important; }
+.qb-action-toast [data-action-button]:hover { background: var(--qb-toast-border) !important; }

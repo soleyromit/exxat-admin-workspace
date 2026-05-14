@@ -43,6 +43,49 @@ const DropdownMenuContentEx = DropdownMenuContent as unknown as React.FC<
   DropdownMenuContentWithOpenFocusProps
 >
 
+// ── QB action toast — dark, bottom-center, progress bar, undo + folder link ──
+const QB_TOAST_DURATION = 5000
+
+function showQBToast({
+  title,
+  folderName,
+  folderId,
+  questionId,
+  undoFn,
+  onLinkClick,
+}: {
+  title: string
+  folderName?: string
+  folderId?: string
+  questionId?: string
+  undoFn?: () => void
+  onLinkClick?: () => void
+}) {
+  let toastId: string | number | undefined
+  toastId = toast(title, {
+    duration: QB_TOAST_DURATION,
+    className: 'qb-action-toast',
+    style: {
+      background: 'var(--qb-toast-bg)',
+      color: 'var(--qb-toast-fg)',
+      borderColor: 'var(--qb-toast-border)',
+    } as React.CSSProperties,
+    description: folderName && onLinkClick ? (
+      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <i className="fa-solid fa-folder" aria-hidden="true" style={{ fontSize: 9, color: 'var(--qb-toast-muted)' }} />
+        <button
+          onClick={e => { e.stopPropagation(); onLinkClick(); toast.dismiss(toastId) }}
+          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--qb-toast-link)', textDecoration: 'underline', textUnderlineOffset: 2, fontSize: 'inherit', fontFamily: 'inherit' }}
+        >
+          {folderName}
+        </button>
+      </span>
+    ) : undefined,
+    action: undoFn ? { label: 'Undo', onClick: undoFn } : undefined,
+  })
+  return toastId
+}
+
 // ── Folder Tree Picker (shared by single + bulk move dialogs) ─────────────────
 function courseFolderShortLabel(name: string): string {
   const match = name.match(/^([A-Z0-9]+)\s/)
@@ -404,7 +447,7 @@ function MoveFolderDialog({
 
 // ── Move Question Dialog ───────────────────────────────────────────────────────
 function MoveQuestionDialog({ question, open, onClose }: { question: { id: string; title: string; folder: string }; open: boolean; onClose: () => void }) {
-  const { moveQuestionToFolder, folders } = useQB()
+  const { moveQuestionToFolder, folders, navigateToFolder, setAnchorQuestionId } = useQB()
   return (
     <MoveFolderDialog
       title="Move to folder"
@@ -412,9 +455,17 @@ function MoveQuestionDialog({ question, open, onClose }: { question: { id: strin
       currentFolderId={question.folder}
       onCancel={onClose}
       onConfirm={targetId => {
+        const prevFolder = question.folder
         moveQuestionToFolder(question.id, targetId)
-        const name = folders.find(f => f.id === targetId)?.name ?? 'folder'
-        toast.success(`Moved to "${name}"`, { description: question.title.slice(0, 72) })
+        const targetFolder = folders.find(f => f.id === targetId)
+        showQBToast({
+          title: `Moved to "${targetFolder?.name ?? 'folder'}"`,
+          folderName: targetFolder?.name,
+          folderId: targetId,
+          questionId: question.id,
+          undoFn: () => moveQuestionToFolder(question.id, prevFolder),
+          onLinkClick: targetFolder ? () => { navigateToFolder(targetId); setAnchorQuestionId(question.id) } : undefined,
+        })
         onClose()
       }}
       open={open}
@@ -444,7 +495,7 @@ function CopyToFolderDialog({ question, open, onClose, onConfirmOverride }: {
   onClose: () => void
   onConfirmOverride?: (folderIds: string[]) => void
 }) {
-  const { copyQuestionToFolder, setAnchorQuestionId } = useQB()
+  const { copyQuestionToFolder, removeQuestionFromFolder, setAnchorQuestionId, folders, navigateToFolder } = useQB()
   const [pickedIds, setPickedIds] = useState<string[]>([])
   const [submitError, setSubmitError] = useState<string | null>(null)
 
@@ -462,8 +513,16 @@ function CopyToFolderDialog({ question, open, onClose, onConfirmOverride }: {
     } else if (question) {
       copyQuestionToFolder(question.id, pickedIds)
       setAnchorQuestionId(question.id)
-      const label = pickedIds.length > 1 ? `${pickedIds.length} folders` : '1 folder'
-      toast.success(`Copied to ${label}`, { description: question.title.slice(0, 72) })
+      const firstFolder = folders.find(f => f.id === pickedIds[0])
+      const label = pickedIds.length > 1 ? `Copied to ${pickedIds.length} folders` : `Copied to "${firstFolder?.name ?? 'folder'}"`
+      showQBToast({
+        title: label,
+        folderName: firstFolder?.name,
+        folderId: pickedIds[0],
+        questionId: question.id,
+        undoFn: () => { pickedIds.forEach(fid => removeQuestionFromFolder(question.id, fid)) },
+        onLinkClick: () => { navigateToFolder(pickedIds[0]); setAnchorQuestionId(question.id) },
+      })
     }
     onClose()
   }
@@ -507,12 +566,12 @@ function CopyToFolderDialog({ question, open, onClose, onConfirmOverride }: {
 
 // ── Archive Question Dialog ───────────────────────────────────────────────────
 function ArchiveQuestionDialog({ question, open, onClose, currentFolderId }: {
-  question: { id: string; title: string } | null
+  question: { id: string; title: string; prevStatus: import('@/lib/qb-types').QStatus; folder: string } | null
   open: boolean
   onClose: () => void
   currentFolderId?: string | null
 }) {
-  const { archiveQuestion, removeQuestionFromFolder } = useQB()
+  const { archiveQuestion, removeQuestionFromFolder, updateQuestion, copyQuestionToFolder, folders, navigateToFolder, setAnchorQuestionId } = useQB()
   const [removeFromFolder, setRemoveFromFolder] = useState(false)
 
   useEffect(() => { if (open) setRemoveFromFolder(false) }, [open])
@@ -521,9 +580,21 @@ function ArchiveQuestionDialog({ question, open, onClose, currentFolderId }: {
 
   function handleArchive() {
     if (!question) return
+    const didRemove = removeFromFolder && !!currentFolderId
     archiveQuestion(question.id)
-    if (removeFromFolder && currentFolderId) removeQuestionFromFolder(question.id, currentFolderId)
-    toast.success('Question archived', { description: question.title.slice(0, 72) })
+    if (didRemove && currentFolderId) removeQuestionFromFolder(question.id, currentFolderId)
+    const folderNode = currentFolderId ? folders.find(f => f.id === currentFolderId) : folders.find(f => f.id === question.folder)
+    showQBToast({
+      title: 'Question archived',
+      folderName: folderNode?.name,
+      folderId: folderNode?.id,
+      questionId: question.id,
+      undoFn: () => {
+        updateQuestion(question.id, { status: question.prevStatus })
+        if (didRemove && currentFolderId) copyQuestionToFolder(question.id, [currentFolderId])
+      },
+      onLinkClick: folderNode ? () => { navigateToFolder(folderNode.id); setAnchorQuestionId(question.id) } : undefined,
+    })
     onClose()
   }
 
@@ -558,7 +629,7 @@ function ArchiveQuestionDialog({ question, open, onClose, currentFolderId }: {
 // ── Delete Question Dialog ────────────────────────────────────────────────────
 function DeleteQuestionDialog({ question, open, onClose }: { question: { id: string; title: string }; open: boolean; onClose: () => void }) {
   const { deleteQuestion } = useQB()
-  function handleDelete() { deleteQuestion(question.id); toast.success('Question deleted', { description: question.title.slice(0, 72) }); onClose() }
+  function handleDelete() { deleteQuestion(question.id); showQBToast({ title: 'Question deleted' }); onClose() }
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
       <DialogContent className="sm:max-w-sm">
@@ -2596,6 +2667,7 @@ export function QBTable() {
     copyQuestionToFolder,
     anchorQuestionId, setAnchorQuestionId,
     folders,
+    navigateToFolder,
     setCollaboratorsModalFolderId,
     selectedFolderId,
     selectedFolder,
@@ -2627,7 +2699,7 @@ export function QBTable() {
   const [reqAccessQuestion, setReqAccessQuestion] = useState<{ id: string; title: string } | null>(null)
   const [moveTarget, setMoveTarget] = useState<{ id: string; title: string; folder: string } | null>(null)
   const [copyTarget, setCopyTarget] = useState<{ id: string; title: string } | null>(null)
-  const [archiveTarget, setArchiveTarget] = useState<{ id: string; title: string } | null>(null)
+  const [archiveTarget, setArchiveTarget] = useState<{ id: string; title: string; prevStatus: import('@/lib/qb-types').QStatus; folder: string } | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null)
   const [detailQuestionId, setDetailQuestionId] = useState<string | null>(null)
   const detailQuestion = detailQuestionId ? (visibleQuestions.find(q => q.id === detailQuestionId) ?? null) : null
@@ -3790,7 +3862,7 @@ export function QBTable() {
                               Edit question
                             </DropdownMenuItem>
                             {/* Duplicate */}
-                            <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); duplicateQuestion(q.id); toast.success('Used as template', { description: q.title.slice(0, 72) }) }}>
+                            <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); duplicateQuestion(q.id); showQBToast({ title: 'Used as template' }) }}>
                               <i className="fa-light fa-copy" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                               Use as template
                             </DropdownMenuItem>
@@ -3808,7 +3880,7 @@ export function QBTable() {
                             )}
                             {/* Remove from folder — only when viewing a specific folder */}
                             {navView === 'folder' && selectedFolderId && canEditRow && (
-                              <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); removeQuestionFromFolder(q.id, selectedFolderId); toast.success('Removed from folder', { description: q.title.slice(0, 72) }) }}>
+                              <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); removeQuestionFromFolder(q.id, selectedFolderId); const fn = folders.find(f => f.id === selectedFolderId)?.name; showQBToast({ title: 'Removed from folder', folderName: fn, folderId: selectedFolderId ?? undefined, questionId: q.id, undoFn: () => copyQuestionToFolder(q.id, [selectedFolderId!]), onLinkClick: selectedFolderId ? () => { navigateToFolder(selectedFolderId); setAnchorQuestionId(q.id) } : undefined }) }}>
                                 <i className="fa-light fa-folder-minus" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                                 Remove from folder
                               </DropdownMenuItem>
@@ -3817,11 +3889,11 @@ export function QBTable() {
                             {canEditRow && q.status !== 'Archived' && (
                               <>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Saved' }); toast.success('Marked as Saved', { description: q.title.slice(0, 72) }) }} disabled={q.status === 'Saved'}>
+                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); const prev = q.status; updateQuestion(q.id, { status: 'Saved' }); const fn = folders.find(f => f.id === q.folder)?.name; showQBToast({ title: 'Marked as Saved', folderName: fn, folderId: q.folder, questionId: q.id, undoFn: () => updateQuestion(q.id, { status: prev }), onLinkClick: () => { navigateToFolder(q.folder); setAnchorQuestionId(q.id) } }) }} disabled={q.status === 'Saved'}>
                                   <i className="fa-light fa-circle-check" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                                   Mark as Saved
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Draft' }); toast('Reverted to Draft', { description: q.title.slice(0, 72) }) }} disabled={q.status === 'Draft'}>
+                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); const prev = q.status; updateQuestion(q.id, { status: 'Draft' }); const fn = folders.find(f => f.id === q.folder)?.name; showQBToast({ title: 'Reverted to Draft', folderName: fn, folderId: q.folder, questionId: q.id, undoFn: () => updateQuestion(q.id, { status: prev }), onLinkClick: () => { navigateToFolder(q.folder); setAnchorQuestionId(q.id) } }) }} disabled={q.status === 'Draft'}>
                                   <i className="fa-light fa-rotate-left" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                                   Revert to Draft
                                 </DropdownMenuItem>
@@ -3831,7 +3903,7 @@ export function QBTable() {
                             {canEditRow && q.status !== 'Archived' && (
                               <>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); setArchiveTarget({ id: q.id, title: q.title }) }}>
+                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); setArchiveTarget({ id: q.id, title: q.title, prevStatus: q.status, folder: q.folder }) }}>
                                   <i className="fa-light fa-box-archive" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                                   Archive
                                 </DropdownMenuItem>
@@ -3841,11 +3913,11 @@ export function QBTable() {
                             {q.status === 'Archived' && (
                               <>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Saved' }); toast.success('Restored as Saved', { description: q.title.slice(0, 72) }) }}>
+                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Saved' }); const fn = folders.find(f => f.id === q.folder)?.name; showQBToast({ title: 'Restored as Saved', folderName: fn, folderId: q.folder, questionId: q.id, undoFn: () => updateQuestion(q.id, { status: 'Archived' }), onLinkClick: () => { navigateToFolder(q.folder); setAnchorQuestionId(q.id) } }) }}>
                                   <i className="fa-light fa-box-open" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                                   Restore as Saved
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Draft' }); toast('Restored as Draft', { description: q.title.slice(0, 72) }) }}>
+                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Draft' }); const fn = folders.find(f => f.id === q.folder)?.name; showQBToast({ title: 'Restored as Draft', folderName: fn, folderId: q.folder, questionId: q.id, undoFn: () => updateQuestion(q.id, { status: 'Archived' }), onLinkClick: () => { navigateToFolder(q.folder); setAnchorQuestionId(q.id) } }) }}>
                                   <i className="fa-light fa-box-open" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                                   Restore as Draft
                                 </DropdownMenuItem>
@@ -3982,7 +4054,7 @@ export function QBTable() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="w-48">
-                <DropdownMenuItem onClick={() => { selectedQs.forEach(q => duplicateQuestion(q.id)); toast.success(`${selectedQs.length} question${selectedQs.length > 1 ? 's' : ''} duplicated`); clearSelection() }}>
+                <DropdownMenuItem onClick={() => { selectedQs.forEach(q => duplicateQuestion(q.id)); showQBToast({ title: `${selectedQs.length} question${selectedQs.length > 1 ? 's' : ''} duplicated` }); clearSelection() }}>
                   <i className="fa-light fa-copy" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                   Use as template
                 </DropdownMenuItem>
@@ -3997,7 +4069,7 @@ export function QBTable() {
                   Move to folder
                 </DropdownMenuItem>
                 {navView === 'folder' && selectedFolderId && (
-                  <DropdownMenuItem onClick={() => { selectedQs.forEach(q => removeQuestionFromFolder(q.id, selectedFolderId)); toast.success(`${selectedQs.length} question${selectedQs.length > 1 ? 's' : ''} removed from folder`); clearSelection() }}>
+                  <DropdownMenuItem onClick={() => { selectedQs.forEach(q => removeQuestionFromFolder(q.id, selectedFolderId)); showQBToast({ title: `${selectedQs.length} question${selectedQs.length > 1 ? 's' : ''} removed from folder` }); clearSelection() }}>
                     <i className="fa-light fa-folder-minus" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                     Remove from folder
                   </DropdownMenuItem>
@@ -4039,7 +4111,7 @@ export function QBTable() {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onClick={() => { if (activeCount > 0) { selectedQs.filter(q => q.status !== 'Archived').forEach(q => archiveQuestion(q.id)); toast.success(`${activeCount} question${activeCount > 1 ? 's' : ''} archived`); clearSelection() } }}
+                    onClick={() => { if (activeCount > 0) { selectedQs.filter(q => q.status !== 'Archived').forEach(q => archiveQuestion(q.id)); showQBToast({ title: `${activeCount} question${activeCount > 1 ? 's' : ''} archived` }); clearSelection() } }}
                     disabled={activeCount === 0}
                   >
                     <i className="fa-light fa-box-archive" aria-hidden="true" style={{ fontSize: 12, width: 14, color: 'var(--qb-status-archived-fg)' }} />
@@ -4110,7 +4182,7 @@ export function QBTable() {
                 <Button variant="outline" size="sm" onClick={() => setBulkStatusTarget(null)}>Cancel</Button>
                 <Button variant="default" size="sm" onClick={() => {
                   affected.forEach(q => updateQuestion(q.id, { status: bulkStatusTarget }))
-                  toast.success(`${affected.length} question${affected.length > 1 ? 's' : ''} marked as ${statusLabel}`)
+                  showQBToast({ title: `${affected.length} question${affected.length > 1 ? 's' : ''} marked as ${statusLabel}` })
                   setBulkStatusTarget(null)
                 }}>
                   <i className={`fa-light ${statusIcon}`} aria-hidden="true" />
@@ -4186,7 +4258,7 @@ export function QBTable() {
                 <Button variant="outline" size="sm" onClick={() => setBulkDeleteOpen(false)}>Cancel</Button>
                 <Button variant="destructive" size="sm" onClick={() => {
                   selectedQs.forEach(q => deleteQuestion(q.id))
-                  toast.success(`${selectedQs.length} question${selectedQs.length > 1 ? 's' : ''} deleted`)
+                  showQBToast({ title: `${selectedQs.length} question${selectedQs.length > 1 ? 's' : ''} deleted` })
                   clearSelection()
                   setBulkDeleteOpen(false)
                 }}>
@@ -4207,7 +4279,7 @@ export function QBTable() {
             count={selectedQs.length}
             onConfirm={targetId => {
               selectedQs.forEach(q => moveQuestionToFolder(q.id, targetId))
-              toast.success(`${selectedQs.length} question${selectedQs.length > 1 ? 's' : ''} moved`)
+              showQBToast({ title: `${selectedQs.length} question${selectedQs.length > 1 ? 's' : ''} moved` })
               clearSelection()
               setBulkMoveOpen(false)
             }}
@@ -4226,7 +4298,7 @@ export function QBTable() {
             onClose={() => setBulkCopyOpen(false)}
             onConfirmOverride={(folderIds) => {
               selectedQs.forEach(q => copyQuestionToFolder(q.id, folderIds))
-              toast.success(`${selectedQs.length} question${selectedQs.length > 1 ? 's' : ''} copied to ${folderIds.length} folder${folderIds.length > 1 ? 's' : ''}`)
+              showQBToast({ title: `${selectedQs.length} question${selectedQs.length > 1 ? 's' : ''} copied to ${folderIds.length} folder${folderIds.length > 1 ? 's' : ''}` })
               clearSelection()
               setBulkCopyOpen(false)
             }}
