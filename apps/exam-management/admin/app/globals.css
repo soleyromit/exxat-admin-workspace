@@ -24,6 +24,14 @@
   opacity: 1;
 }
 
+/* ── DS sidebar list reset — SidebarMenu renders as <ul> without list-none ── */
+[data-sidebar="menu"],
+[data-sidebar="menu-sub"] {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
 /* ── Sidebar token — defined in globals.css, not theme.css ─────────────────── */
 :root {
   --sidebar: var(--brand-tint);
