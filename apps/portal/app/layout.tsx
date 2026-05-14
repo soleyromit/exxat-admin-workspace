@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="theme-one" suppressHydrationWarning>
+    <html lang="en" className="theme-prism" suppressHydrationWarning>
       <head>
         <link rel="stylesheet" href="https://use.typekit.net/wuk5wqn.css" />
         <script

@@ -37,7 +37,7 @@ function AppHeader() {
               className="shrink-0"
             />
           ) : (
-            <img src="/exxat-one.svg" alt="Exxat One" className="h-6 w-auto" />
+            <img src="/exxat-prism.svg" alt="Exxat Prism" className="h-6 w-auto" />
           )}
         </SidebarMenuButton>
       </SidebarMenuItem>
