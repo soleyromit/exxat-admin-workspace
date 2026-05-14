@@ -821,13 +821,14 @@ function FolderRow({
           />
         </Button>
 
-        {pinnedFolderIds.has(node.id) && (
-          <i className="fa-solid fa-thumbtack" aria-label="Pinned to top" style={{ fontSize: 11, color: 'var(--brand-color)', flexShrink: 0 }} />
-        )}
-
-        {/* Icon */}
-        <i className={`${icon.cls} ${icon.colorCls}`} aria-hidden="true"
-          style={{ fontSize: 13, width: 16, textAlign: 'center', flexShrink: 0 }} />
+        {/* Icon — pin badge overlays top-right so layout is never affected */}
+        <span style={{ position: 'relative', flexShrink: 0, width: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <i className={`${icon.cls} ${icon.colorCls}`} aria-hidden="true" style={{ fontSize: 13 }} />
+          {pinnedFolderIds.has(node.id) && (
+            <i className="fa-solid fa-thumbtack" aria-label="Pinned to top"
+              style={{ position: 'absolute', top: -5, right: -5, fontSize: 8, color: 'var(--brand-color)' }} />
+          )}
+        </span>
 
         {/* Name */}
         {isRenaming ? (
