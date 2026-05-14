@@ -17,7 +17,7 @@ A standalone Next.js app (`apps/portal/`) that serves as a central launcher for 
 |---|---|
 | Path | `apps/portal/` |
 | Package | `@exxat/portal` |
-| Port | `3000` |
+| Port | `4000` |
 | DS | Admin DS (`@exxat/ds`) |
 | Theme | `theme-one` (Exxat One Lavender) |
 | Stack | Next.js 16 + Tailwind v4 + Exxat-DS |
@@ -63,68 +63,80 @@ Aarti sees only the "Open Admin" button. The `⋯` is a standard DS ghost icon b
 
 ---
 
-## Product Data
+## URL Strategy — Env-var with localhost fallback
 
-Static config object in `lib/products.ts`:
+The portal works in two environments:
+- **Local dev** — no `.env` file needed; all URLs fall back to `http://localhost:{port}`
+- **Vercel** — set `NEXT_PUBLIC_*` env vars in the portal project pointing to each product's deployed URL
+
+All `NEXT_PUBLIC_*` vars are optional. Missing = localhost fallback.
+
+### Env var map
+
+| Env var | Local fallback | Existing Vercel deployment |
+|---|---|---|
+| `NEXT_PUBLIC_EXAM_MANAGEMENT_ADMIN_URL` | `http://localhost:3001` | `exxat-exam-admin-*.vercel.app` (set to latest) |
+| `NEXT_PUBLIC_EXAM_MANAGEMENT_STUDENT_URL` | `http://localhost:3002` | — |
+| `NEXT_PUBLIC_EXAM_MANAGEMENT_TAKER_URL` | `http://localhost:5174` | — |
+| `NEXT_PUBLIC_PCE_ADMIN_URL` | `http://localhost:3005` | `exxat-pce-admin-*.vercel.app` (set to latest) |
+| `NEXT_PUBLIC_PCE_STUDENT_URL` | `http://localhost:3006` | `exxat-pce-student.vercel.app` (stable alias exists) |
+| `NEXT_PUBLIC_PATIENT_LOG_ADMIN_URL` | `http://localhost:3003` | — |
+| `NEXT_PUBLIC_PATIENT_LOG_STUDENT_URL` | `http://localhost:3004` | — |
+| `NEXT_PUBLIC_SKILLS_CHECKLIST_ADMIN_URL` | `http://localhost:3007` | — |
+| `NEXT_PUBLIC_SKILLS_CHECKLIST_STUDENT_URL` | `http://localhost:3008` | — |
+| `NEXT_PUBLIC_LEARNING_CONTRACTS_ADMIN_URL` | `http://localhost:3009` | — |
+| `NEXT_PUBLIC_LEARNING_CONTRACTS_STUDENT_URL` | `http://localhost:3010` | — |
+
+### Product Data (`lib/products.ts`)
 
 ```ts
 export const PRODUCTS = [
   {
     id: 'exam-management',
     name: 'Exam Management',
-    adminPort: 3001,
-    studentPort: 3002,
-    extra: { label: 'Assessment Taker', port: 5174 },
+    adminUrl: process.env.NEXT_PUBLIC_EXAM_MANAGEMENT_ADMIN_URL ?? 'http://localhost:3001',
+    studentUrl: process.env.NEXT_PUBLIC_EXAM_MANAGEMENT_STUDENT_URL ?? 'http://localhost:3002',
+    extra: {
+      label: 'Assessment Taker',
+      url: process.env.NEXT_PUBLIC_EXAM_MANAGEMENT_TAKER_URL ?? 'http://localhost:5174',
+    },
   },
   {
     id: 'pce',
     name: 'PCE',
-    adminPort: 3005,
-    studentPort: 3006,
+    adminUrl: process.env.NEXT_PUBLIC_PCE_ADMIN_URL ?? 'http://localhost:3005',
+    studentUrl: process.env.NEXT_PUBLIC_PCE_STUDENT_URL ?? 'http://localhost:3006',
   },
   {
     id: 'patient-log',
     name: 'Patient Log',
-    adminPort: 3003,
-    studentPort: 3004,
+    adminUrl: process.env.NEXT_PUBLIC_PATIENT_LOG_ADMIN_URL ?? 'http://localhost:3003',
+    studentUrl: process.env.NEXT_PUBLIC_PATIENT_LOG_STUDENT_URL ?? 'http://localhost:3004',
   },
   {
     id: 'skills-checklist',
     name: 'Skills Checklist',
-    adminPort: 3007,
-    studentPort: 3008,
+    adminUrl: process.env.NEXT_PUBLIC_SKILLS_CHECKLIST_ADMIN_URL ?? 'http://localhost:3007',
+    studentUrl: process.env.NEXT_PUBLIC_SKILLS_CHECKLIST_STUDENT_URL ?? 'http://localhost:3008',
   },
   {
     id: 'learning-contracts',
     name: 'Learning Contracts',
-    adminPort: 3009,
-    studentPort: 3010,
+    adminUrl: process.env.NEXT_PUBLIC_LEARNING_CONTRACTS_ADMIN_URL ?? 'http://localhost:3009',
+    studentUrl: process.env.NEXT_PUBLIC_LEARNING_CONTRACTS_STUDENT_URL ?? 'http://localhost:3010',
   },
   {
     id: 'faas',
     name: 'FaaS 2.0',
     comingSoon: true,
   },
-]
+] as const
 ```
+
+> **Note:** `NEXT_PUBLIC_*` vars are read at **build time** by Next.js. On Vercel, update the env var and redeploy the portal whenever a product's stable URL changes. Once a product gets a stable production alias (like PCE Student's `exxat-pce-student.vercel.app`), that URL never needs to change.
 
 ### FaaS Card
 No buttons. Shows product name + DS `Badge variant="secondary"` with label "Coming Soon". Badge uses `rounded` (rectangular shape) as per workspace convention.
-
----
-
-## Localhost Links
-
-All URLs are `http://localhost:{port}` opened via `window.open(url, '_blank')` or `<a href target="_blank" rel="noreferrer">` inside DS `Button asChild`.
-
-| Product | Admin | Student | Extra |
-|---|---|---|---|
-| Exam Management | `http://localhost:3001` | `http://localhost:3002` | `http://localhost:5174` |
-| PCE | `http://localhost:3005` | `http://localhost:3006` | — |
-| Patient Log | `http://localhost:3003` | `http://localhost:3004` | — |
-| Skills Checklist | `http://localhost:3007` | `http://localhost:3008` | — |
-| Learning Contracts | `http://localhost:3009` | `http://localhost:3010` | — |
-| FaaS 2.0 | — | — | — |
 
 ---
 
@@ -143,7 +155,7 @@ DS `Button` with `asChild` renders as an anchor — no wrapping div, correct sem
 
 ```tsx
 <Button asChild variant="default" className="w-full">
-  <a href={`http://localhost:${adminPort}`} target="_blank" rel="noreferrer">
+  <a href={product.adminUrl} target="_blank" rel="noreferrer">
     Open Admin
     <i className="fa-light fa-arrow-up-right" aria-hidden="true" />
   </a>
@@ -190,7 +202,7 @@ apps/portal/
 ## Workspace Integration
 
 - Add `apps/portal` to `pnpm-workspace.yaml`
-- Add row to `docs/PRODUCTS.md` with `id: portal`, `status: active`, `admin_port: 3000`
+- Add row to `docs/PRODUCTS.md` with `id: portal`, `status: active`, `admin_port: 4000`
 - No student app for the portal
 
 ---
