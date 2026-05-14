@@ -821,7 +821,14 @@ function FolderRow({
           />
         </Button>
 
-        {/* Icon — pin badge overlays top-right so layout is never affected */}
+        {/* Fixed 10px slot between caret and folder icon — always present, no layout shift */}
+        <span style={{ width: 10, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {pinnedFolderIds.has(node.id) && (
+            <i className="fa-solid fa-thumbtack" aria-label="Pinned" style={{ fontSize: 8, color: 'var(--brand-color)' }} />
+          )}
+        </span>
+
+        {/* Folder icon */}
         <i className={`${icon.cls} ${icon.colorCls}`} aria-hidden="true"
           style={{ fontSize: 13, width: 16, textAlign: 'center', flexShrink: 0 }} />
 
@@ -973,45 +980,6 @@ function FolderTree({
   )
 }
 
-
-// ── Pinned section row ────────────────────────────────────────────────────────
-function PinnedRow({ name, iconCls, isActive, onNavigate, onUnpin }: {
-  name: string; iconCls: string; isActive: boolean
-  onNavigate: () => void; onUnpin: () => void
-}) {
-  const [hovered, setHovered] = useState(false)
-  return (
-    <div style={{ margin: '0 4px', position: 'relative' }}
-      onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
-      <Button
-        variant="ghost" size="sm"
-        onClick={onNavigate}
-        className="w-full justify-start text-foreground"
-        style={{
-          paddingLeft: 8, paddingRight: hovered ? 30 : 8,
-          height: 28, borderRadius: 6,
-          backgroundColor: isActive ? 'var(--sidebar-accent)' : 'transparent',
-        }}
-      >
-        <i className={`${iconCls} ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}
-          aria-hidden="true" style={{ fontSize: 13, width: 16, textAlign: 'center', flexShrink: 0 }} />
-        <span className={`flex-1 text-sm text-left truncate ${isActive ? 'font-medium' : 'font-normal'}`}
-          style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {name}
-        </span>
-      </Button>
-      {hovered && (
-        <Tip label="Unpin">
-          <Button variant="ghost" size="icon-xs" onClick={e => { e.stopPropagation(); onUnpin() }}
-            aria-label="Unpin"
-            style={{ position: 'absolute', right: 2, top: '50%', transform: 'translateY(-50%)', width: 22, height: 22, color: 'var(--muted-foreground)' }}>
-            <i className="fa-light fa-thumbtack-slash" aria-hidden="true" style={{ fontSize: 11 }} />
-          </Button>
-        </Tip>
-      )}
-    </div>
-  )
-}
 
 export function QBSidebar() {
   const {
@@ -1194,9 +1162,6 @@ export function QBSidebar() {
   // ── Active / Inactive grouping ──────────────────────────────────────────
   const activeCourses   = filteredRoots.filter(f => isCourseActive(f.id))
   const inactiveCourses = filteredRoots.filter(f => !isCourseActive(f.id))
-
-  // ── Pinned section ──────────────────────────────────────────────────────
-  const pinnedFolders = visibleFolders.filter(f => pinnedFolderIds.has(f.id))
   const isSearching     = sidebarSearch.trim().length > 0
 
   return (
@@ -1314,36 +1279,6 @@ export function QBSidebar() {
               className="text-xs h-8"
             />
           </Command>
-        </div>
-      )}
-
-      {/* ── Pinned section — shown below search, only when pinned items exist and not searching ── */}
-      {pinnedFolders.length > 0 && !isSearching && (
-        <div style={{ flexShrink: 0, padding: '4px 0 2px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', padding: '0 12px 3px' }}>
-            <span className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
-              Pinned
-            </span>
-          </div>
-          {pinnedFolders.map(f => {
-            const isPrivate = f.isPrivateSpace
-            const iconCls = isPrivate ? 'fa-solid fa-lock'
-              : f.isCourse ? (selectedFolderId === f.id ? 'fa-solid fa-graduation-cap' : 'fa-light fa-graduation-cap')
-              : (selectedFolderId === f.id ? 'fa-solid fa-folder' : 'fa-regular fa-folder')
-            const name = f.isCourse ? courseFolderLabel(f.name) : f.name
-            const isActive = selectedFolderId === f.id
-            return (
-              <PinnedRow
-                key={f.id}
-                name={name}
-                iconCls={iconCls}
-                isActive={isActive}
-                onNavigate={() => navigateToFolder(f.id)}
-                onUnpin={() => { toggleFolderPin(f.id); showSidebarToast(`"${name}" unpinned`, () => toggleFolderPin(f.id)) }}
-              />
-            )
-          })}
-          <div style={{ height: 1, backgroundColor: 'var(--border)', margin: '4px 8px 0' }} />
         </div>
       )}
 
