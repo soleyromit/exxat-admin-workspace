@@ -1,4 +1,4 @@
-import { SidebarProvider, SidebarInset, TooltipProvider } from '@exxat/ds/packages/ui/src'
+import { SidebarProvider, SidebarInset, TooltipProvider, Toaster } from '@exxat/ds/packages/ui/src'
 import { AppSidebar } from '@/components/app-sidebar'
 import { FacultySessionProvider } from '@/lib/faculty-session'
 import { AssessmentReviewProvider } from '@/lib/assessment-review-store'
@@ -26,6 +26,7 @@ export default function AppLayout({
                     {children}
                   </SidebarInset>
                 </SidebarProvider>
+                <Toaster position="bottom-right" richColors />
               </TooltipProvider>
             </CommunicationPolicyProvider>
           </StudentAccommodationProvider>
