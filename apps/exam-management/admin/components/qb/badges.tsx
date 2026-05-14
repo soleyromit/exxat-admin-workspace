@@ -68,7 +68,7 @@ export function PBisCell({ pbis }: { pbis: number | null }) {
 
   const sign = pbis >= 0 ? '+' : ''
   return (
-    <span className="text-sm text-foreground font-mono" title={`Point-biserial ${sign}${pbis.toFixed(2)}`}>
+    <span className="text-sm text-foreground" title={`Point-biserial ${sign}${pbis.toFixed(2)}`}>
       {sign}{pbis.toFixed(2)}
     </span>
   )

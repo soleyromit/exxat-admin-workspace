@@ -86,15 +86,16 @@ export function DeleteFolderDialog({
   open: boolean
   onClose: () => void
 }) {
-  const { folders, questions, deleteFolder } = useQB()
+  const { folders, questions, deleteFolder, restoreFolders } = useQB()
 
   const affectedFolderIds = getDescendantIds(node.id, folders)
   const affectedQuestions = questions.filter(q => affectedFolderIds.has(q.folder))
   const usedQuestions = affectedQuestions.filter(q => (q.usedInSections?.length ?? 0) > 0)
 
   function handleDelete() {
+    const subtree = folders.filter(f => affectedFolderIds.has(f.id))
     deleteFolder(node.id)
-    showSidebarToast(`"${node.name}" deleted`)
+    showSidebarToast(`"${node.name}" deleted`, () => restoreFolders(subtree))
     onClose()
   }
 
@@ -630,6 +631,7 @@ function FolderRow({
     highlightedFolderId,
     renameFolder,
     createFolder,
+    deleteFolder,
     setFolderIcon,
     dialogActive, setDialogActive,
     accessibleFolderIds,
@@ -648,17 +650,37 @@ function FolderRow({
   const [moveFolderDialogOpen, setMoveFolderDialogOpen] = useState(false)
   const [deleteFolderDialogOpen, setDeleteFolderDialogOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [showFullPath, setShowFullPath] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
+
   const renameRef = useRef<HTMLInputElement>(null)
   const [hoverOpen, setHoverOpen] = useState(false)
   const [isRowHovered, setIsRowHovered] = useState(false)
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const subtitleContainerRef = useRef<HTMLSpanElement>(null)
+  const subtitleInnerRef = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    if (!subtitle) return
+    const container = subtitleContainerRef.current
+    const inner = subtitleInnerRef.current
+    if (!container || !inner) return
+    if (isRowHovered) {
+      const overflow = inner.scrollWidth - container.clientWidth
+      if (overflow > 4) {
+        const duration = Math.max(1.5, overflow / 40)
+        inner.style.transition = `transform ${duration}s linear 0.5s`
+        inner.style.transform = `translateX(-${overflow}px)`
+      }
+    } else {
+      inner.style.transition = 'transform 0.25s ease-out'
+      inner.style.transform = 'translateX(0)'
+    }
+  }, [isRowHovered, subtitle])
 
   function handleMouseEnter() {
-    if (dialogActive) return
+    if (dialogActive || menuOpen) return
     setIsRowHovered(true)
-    hoverTimerRef.current = setTimeout(() => setHoverOpen(true), 600)
+    hoverTimerRef.current = setTimeout(() => { if (!menuOpen) setHoverOpen(true) }, 600)
   }
   function handleMouseLeave() {
     if (dialogActive || menuOpen) return
@@ -796,14 +818,16 @@ function FolderRow({
           }
         }}
       >
-        {/* Fixed 10px pin slot — before caret so caret stays adjacent to folder icon */}
-        <span style={{ width: 10, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {pinnedFolderIds.has(node.id) && (
-            <i className="fa-solid fa-thumbtack" aria-label="Pinned" style={{ fontSize: 8, color: 'var(--brand-color)' }} />
-          )}
-        </span>
+        {/* Pin slot — hidden in search results to avoid dead whitespace */}
+        {!subtitle && (
+          <span style={{ width: 10, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {pinnedFolderIds.has(node.id) && (
+              <i className="fa-solid fa-thumbtack" aria-label="Pinned" style={{ fontSize: 8, color: 'var(--brand-color)' }} />
+            )}
+          </span>
+        )}
 
-        {/* Chevron */}
+        {/* Chevron — hidden (not just transparent) when no children in search mode */}
         <Button
           variant="ghost"
           size="icon-xs"
@@ -814,6 +838,7 @@ function FolderRow({
           aria-label={isExpanded ? 'Collapse' : 'Expand'}
           style={{
             opacity: hasChildren ? 1 : 0,
+            visibility: hasChildren ? 'visible' : 'hidden',
             cursor: hasChildren ? 'pointer' : 'default',
             width: 16,
             height: 16,
@@ -869,68 +894,73 @@ function FolderRow({
               style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {node.isCourse ? courseFolderLabel(node.name) : node.name}
             </span>
-            {subtitle && (() => {
-              const canExpand = !!(fullSubtitle && fullSubtitle !== subtitle)
-              const displayed = (showFullPath && fullSubtitle) ? fullSubtitle : subtitle
-              const toggle = (e: React.SyntheticEvent) => { e.stopPropagation(); if (canExpand) setShowFullPath(v => !v) }
-              return (
+            {subtitle && (
+              <span
+                ref={subtitleContainerRef}
+                className="text-xs text-muted-foreground"
+                style={{ overflow: 'hidden', whiteSpace: 'nowrap', display: 'block' }}
+              >
                 <span
-                  className="text-xs text-muted-foreground"
-                  role={canExpand ? 'button' : undefined}
-                  tabIndex={canExpand ? 0 : undefined}
-                  aria-label={canExpand ? (showFullPath ? 'Collapse path' : 'Expand full path') : undefined}
-                  aria-expanded={canExpand ? showFullPath : undefined}
-                  style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: canExpand ? 'pointer' : 'default' }}
-                  onClick={toggle}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(e) } }}
+                  ref={subtitleInnerRef}
+                  style={{ display: 'inline-block', whiteSpace: 'nowrap' }}
                 >
-                  {displayed}{!showFullPath && canExpand && ' ···'}
+                  {fullSubtitle || subtitle}
                 </span>
-              )
-            })()}
+              </span>
+            )}
           </div>
         )}
 
-        {/* Count */}
-        <span className="text-[10px] text-muted-foreground shrink-0">{folderQuestionCount}</span>
-
-        {/* ⋯ context menu — absolute overlay on the right, appears on hover */}
-        {(isAdmin || accessibleFolderIds.has(node.id)) && (
-          <div style={{
-            position: 'absolute',
-            right: 4,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            opacity: (isRowHovered || isFocused || menuOpen) ? 1 : 0,
-            pointerEvents: (isRowHovered || isFocused || menuOpen) ? 'auto' : 'none',
-            transition: 'opacity 100ms',
-            zIndex: 1,
-            backgroundColor: isSelected ? 'var(--qb-folder-selected-bg)' : isRowHovered ? 'var(--interactive-hover)' : 'transparent',
-            borderRadius: 4,
-          }}>
-            <FolderContextMenu
-              node={node}
-              isAdmin={isAdmin}
-              onOpenChange={setMenuOpen}
-              onRename={() => {
-                setIsRenaming(true)
-                setRenameName(node.name)
-                setTimeout(() => { renameRef.current?.focus(); renameRef.current?.select() }, 80)
-              }}
-              onAddSubfolder={() => setShowingInlineCreate(true)}
-              onMove={() => setMoveFolderDialogOpen(true)}
-              onDelete={() => setDeleteFolderDialogOpen(true)}
-            />
-          </div>
-        )}
+        {/* Right slot: count fades out, ⋯ button fades in — contained within this flex item so text is never overlapped */}
+        <div style={{ flexShrink: 0, position: 'relative', width: 24, alignSelf: 'stretch', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+          <span
+            className="text-[10px] text-muted-foreground"
+            style={{ transition: 'opacity 100ms', opacity: (isRowHovered || isFocused || menuOpen) ? 0 : 1 }}
+          >
+            {folderQuestionCount}
+          </span>
+          {(isAdmin || accessibleFolderIds.has(node.id)) && (
+            <div style={{
+              position: 'absolute',
+              right: 0,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              opacity: (isRowHovered || isFocused || menuOpen) ? 1 : 0,
+              pointerEvents: (isRowHovered || isFocused || menuOpen) ? 'auto' : 'none',
+              transition: 'opacity 100ms',
+              backgroundColor: isSelected ? 'var(--qb-folder-selected-bg)' : isRowHovered ? 'var(--interactive-hover)' : 'transparent',
+              borderRadius: 4,
+            }}>
+              <FolderContextMenu
+                node={node}
+                isAdmin={isAdmin}
+                onOpenChange={(v) => {
+                  setMenuOpen(v)
+                  if (v) {
+                    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
+                    setHoverOpen(false)
+                  }
+                }}
+                onRename={() => {
+                  setIsRenaming(true)
+                  setRenameName(node.name)
+                  setTimeout(() => { renameRef.current?.focus(); renameRef.current?.select() }, 80)
+                }}
+                onAddSubfolder={() => setShowingInlineCreate(true)}
+                onMove={() => setMoveFolderDialogOpen(true)}
+                onDelete={() => setDeleteFolderDialogOpen(true)}
+              />
+            </div>
+          )}
+        </div>
       </div>
       {showingInlineCreate && (
         <InlineFolderInput
           depth={depth + 1}
           onConfirm={(name) => {
-            createFolder(name, node.id)
+            const newId = createFolder(name, node.id)
             setShowingInlineCreate(false)
-            showSidebarToast(`"${name}" created`)
+            showSidebarToast(`"${name}" created`, () => deleteFolder(newId))
           }}
           onCancel={() => setShowingInlineCreate(false)}
         />

@@ -40,9 +40,10 @@ interface QBState {
   expandedFolderIds: Set<string>
   toggleFolder: (id: string) => void
   folders: FolderNode[]
-  createFolder: (name: string, parentId: string | null) => void
+  createFolder: (name: string, parentId: string | null) => string
   renameFolder: (id: string, name: string) => void
   deleteFolder: (id: string) => void
+  restoreFolders: (nodes: FolderNode[]) => void
   moveFolder: (id: string, newParentId: string) => void
   setFolderIcon: (id: string, icon: string) => void
   setFolderPrivacy: (id: string, isPrivate: boolean) => void
@@ -69,7 +70,9 @@ interface QBState {
   questions: Question[]
   updateQuestion: (id: string, updates: Partial<Question>) => void
   deleteQuestion: (id: string) => void
-  duplicateQuestion: (id: string) => void
+  duplicateQuestion: (id: string) => string
+  restoreQuestion: (q: Question) => void
+  restoreQuestions: (qs: Question[]) => void
   moveQuestionToFolder: (id: string, folderId: string) => void
   archiveQuestion: (id: string) => void
   removeQuestionFromFolder: (id: string, folderId: string) => void
@@ -283,12 +286,13 @@ export function QBProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  const createFolder = useCallback((name: string, parentId: string | null) => {
+  const createFolder = useCallback((name: string, parentId: string | null): string => {
     const newId = `folder-${Date.now()}`
     const isCourse = parentId === null
     setFolders(prev => [...prev, { id: newId, name, parentId, count: 0, isCourse }])
     if (parentId) setExpandedFolderIds(prev => new Set([...prev, parentId]))
     setTimeout(() => setSelectedFolderIdState(newId), 50)
+    return newId
   }, [])
 
   const renameFolder = useCallback((id: string, name: string) => {
@@ -354,13 +358,14 @@ export function QBProvider({ children }: { children: ReactNode }) {
     setSelectedQuestionIds(prev => { const next = new Set(prev); next.delete(id); return next })
   }, [])
 
-  const duplicateQuestion = useCallback((id: string) => {
+  const duplicateQuestion = useCallback((id: string): string => {
+    const copyId = `q-${Date.now()}`
     setQuestionsState(prev => {
       const original = prev.find(q => q.id === id)
       if (!original) return prev
       const copy: Question = {
         ...original,
-        id: `q-${Date.now()}`,
+        id: copyId,
         title: `Copy of ${original.title}`,
         status: 'Draft',
         version: 1,
@@ -375,6 +380,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
       next.splice(idx + 1, 0, copy)
       return next
     })
+    return copyId
   }, [])
 
   const moveQuestionToFolder = useCallback((id: string, folderId: string) => {
@@ -426,6 +432,18 @@ export function QBProvider({ children }: { children: ReactNode }) {
       const combined = [...(q.extraFolders ?? []), ...newExtras]
       return { ...q, extraFolders: combined.length ? combined : undefined }
     }))
+  }, [])
+
+  const restoreFolders = useCallback((nodes: FolderNode[]) => {
+    setFolders(prev => [...prev, ...nodes])
+  }, [])
+
+  const restoreQuestion = useCallback((q: Question) => {
+    setQuestionsState(prev => [...prev, q])
+  }, [])
+
+  const restoreQuestions = useCallback((qs: Question[]) => {
+    setQuestionsState(prev => [...prev, ...qs])
   }, [])
 
   const toggleFolderPin = useCallback((id: string) => {
@@ -500,7 +518,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
     sidebarOpen, setSidebarOpen,
     selectedFolderId, setSelectedFolderId,
     expandedFolderIds, toggleFolder,
-    folders, createFolder, renameFolder, deleteFolder, moveFolder, setFolderIcon, setFolderPrivacy, addFolderCollaborator, removeFolderCollaborator,
+    folders, createFolder, renameFolder, deleteFolder, restoreFolders, moveFolder, setFolderIcon, setFolderPrivacy, addFolderCollaborator, removeFolderCollaborator,
     sidebarSearch, setSidebarSearch,
     highlightedFolderId, setHighlightedFolderId, navigateToFolder,
     myQuestionsOnly, setMyQuestionsOnly,
@@ -508,8 +526,8 @@ export function QBProvider({ children }: { children: ReactNode }) {
     favoritedIds, toggleQuestionFavorited,
     columnOrder, setColumnOrder,
     questions: questionsState,
-    updateQuestion, deleteQuestion, duplicateQuestion, moveQuestionToFolder,
-    archiveQuestion, removeQuestionFromFolder, copyQuestionToFolder,
+    updateQuestion, deleteQuestion, duplicateQuestion, restoreQuestion, restoreQuestions,
+    moveQuestionToFolder, archiveQuestion, removeQuestionFromFolder, copyQuestionToFolder,
     anchorQuestionId, setAnchorQuestionId,
     pinnedFolderIds, toggleFolderPin,
     selectedQuestionIds, toggleQuestionSelection, selectAllQuestions, clearSelection,

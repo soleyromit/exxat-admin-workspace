@@ -628,8 +628,13 @@ function ArchiveQuestionDialog({ question, open, onClose, currentFolderId }: {
 
 // ── Delete Question Dialog ────────────────────────────────────────────────────
 function DeleteQuestionDialog({ question, open, onClose }: { question: { id: string; title: string }; open: boolean; onClose: () => void }) {
-  const { deleteQuestion } = useQB()
-  function handleDelete() { deleteQuestion(question.id); showQBToast({ title: 'Question deleted' }); onClose() }
+  const { deleteQuestion, questions, restoreQuestion } = useQB()
+  function handleDelete() {
+    const snapshot = questions.find(q => q.id === question.id)
+    deleteQuestion(question.id)
+    showQBToast({ title: 'Question deleted', undoFn: snapshot ? () => restoreQuestion(snapshot) : undefined })
+    onClose()
+  }
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
       <DialogContent className="sm:max-w-sm">
@@ -732,12 +737,16 @@ function LocationCell({ question }: { question: Question }) {
       <Button
         variant="ghost" size="sm"
         onClick={(e) => { e.stopPropagation(); if (targetFolder) navigateToFolder(targetFolder.id) }}
-        className="h-auto p-0 font-normal text-left text-sm"
-        style={{ color: 'var(--brand-color)', textDecoration: 'underline', textUnderlineOffset: 2 }}
+        className="h-auto p-0 font-normal text-left text-sm gap-1"
+        style={{ color: 'var(--brand-color)' }}
         aria-label={`Navigate to ${displayName}`}
         title={loc.folderPath}
       >
-        <span style={{ display: 'block', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {targetFolder?.isPrivateSpace
+          ? <i className="fa-solid fa-lock" aria-hidden="true" style={{ fontSize: 10, flexShrink: 0, color: 'var(--muted-foreground)' }} />
+          : <span aria-hidden="true" style={{ width: 10, flexShrink: 0 }} />
+        }
+        <span style={{ display: 'block', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'underline', textUnderlineOffset: 2 }}>
           {displayName}
         </span>
       </Button>
@@ -793,7 +802,7 @@ function LocationCell({ question }: { question: Question }) {
                   onClick={e => { e.stopPropagation(); if (target) navigateToFolder(target.id) }}
                   className="flex items-center gap-2 text-left w-full rounded px-2 py-1.5 hover:bg-accent transition-colors"
                 >
-                  <i className="fa-light fa-folder text-muted-foreground shrink-0" aria-hidden="true" style={{ fontSize: 12 }} />
+                  <i className={`fa-${target?.isPrivateSpace ? 'solid fa-lock' : 'light fa-folder'} text-muted-foreground shrink-0`} aria-hidden="true" style={{ fontSize: 12 }} />
                   <div style={{ minWidth: 0 }}>
                     <p className="text-sm font-medium text-foreground truncate">{name}</p>
                     <p className="text-[10px] text-muted-foreground truncate">{loc.folderPath}</p>
@@ -2659,8 +2668,10 @@ export function QBTable() {
     myQuestionsOnly, setMyQuestionsOnly,
     favoritedIds, toggleQuestionFavorited,
     columnOrder, setColumnOrder,
+    questions,
     updateQuestion, deleteQuestion,
     duplicateQuestion,
+    restoreQuestions,
     moveQuestionToFolder,
     archiveQuestion,
     removeQuestionFromFolder,
@@ -3228,8 +3239,8 @@ export function QBTable() {
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Escape' && !isHighZoom) { setSearch(''); setSearchOpen(false) } }}
-                  placeholder="Search questions…"
-                  aria-label="Search questions"
+                  placeholder="Search…"
+                  aria-label="Search"
                   autoFocus={!isHighZoom}
                 />
                 {!isHighZoom && (
@@ -3261,7 +3272,7 @@ export function QBTable() {
                   variant="ghost"
                   size="icon-sm"
                   onClick={() => setSearchOpen(true)}
-                  aria-label="Search questions"
+                  aria-label="Search"
                   style={search ? { color: 'var(--brand-color)' } : {}}
                 >
                   <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 13 }} />
@@ -3576,10 +3587,7 @@ export function QBTable() {
                       />
                     )
                   })}
-                  <TableHead
-                    className={TH_CLS}
-                    style={{ width: 40, minWidth: 40, maxWidth: 40, paddingInline: 0, position: 'sticky', right: 0, zIndex: 2, background: 'var(--dt-header-bg)', boxShadow: '-2px 0 4px var(--sticky-edge-fade)' }}
-                  />
+                  <TableHead className={TH_CLS} style={{ width: 0, minWidth: 0, padding: 0, border: 'none', position: 'sticky', right: 0, zIndex: 2, background: 'var(--dt-header-bg)' }} />
                 </TableRow>
               </TableHeader>}
               <TableBody className="[&_tr:last-child]:border-b-0">
@@ -3772,7 +3780,7 @@ export function QBTable() {
                               <TableCell key="usage" className={`${TD} w-16`} style={pinnedStyle('usage', pinnedCols, pinnedRightCols)}>
                                 {(q.usage ?? 0) === 0
                                   ? <span className="text-sm text-muted-foreground">—</span>
-                                  : <span className="text-sm font-medium text-foreground">×{q.usage}</span>}
+                                  : <span className="text-sm font-medium text-foreground">{q.usage}×</span>}
                               </TableCell>
                             )
                           case 'pbis':
@@ -3831,121 +3839,147 @@ export function QBTable() {
                         }
                       })}
 
-                      {/* Actions ⋯ — sticky right, always visible, narrower column */}
+                      {/* Actions — zero-width sticky anchor; pill floats left on hover, stays at right edge on scroll */}
                       <TableCell
-                        className={TD}
                         onClick={e => e.stopPropagation()}
                         style={{
-                          width: 40, minWidth: 40, maxWidth: 40, paddingInline: 0,
-                          position: 'sticky', right: 0,
-                          background: isSelected ? 'var(--dt-row-selected)' : isHovered ? 'var(--dt-row-hover)' : 'var(--dt-row-bg)',
-                          boxShadow: '-2px 0 4px var(--sticky-edge-fade)',
+                          width: 0, minWidth: 0, padding: 0, border: 'none',
+                          overflow: 'visible',
+                          position: 'sticky', right: 0, zIndex: 3,
+                          background: 'transparent',
                         }}
                       >
-                        <div className="flex items-center justify-center">
+                        {/* Pill — positioned absolute inside sticky cell, extends leftward over row */}
                         <DropdownMenu open={openMenuQuestionId === q.id} onOpenChange={open => setOpenMenuQuestionId(open ? q.id : null)}>
-                          <Tip label="More options">
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost" size="icon-xs"
-                                aria-label={`More options for ${q.title}`}
-                                onClick={e => e.stopPropagation()}
-                              >
-                                <i className={`fa-${openMenuQuestionId === q.id ? 'solid' : 'regular'} fa-ellipsis`} aria-hidden="true" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                          </Tip>
-                          <DropdownMenuContent align="end" className="w-56">
+                          <div
+                            className={`inline-flex items-center transition-opacity duration-150 ${(isHovered || openMenuQuestionId === q.id) ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                            style={{
+                              position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                              zIndex: 3,
+                              borderRadius: 6,
+                              border: '1px solid var(--border)',
+                              background: 'var(--background)',
+                              boxShadow: '0 1px 4px oklch(0 0 0 / 0.12)',
+                            }}
+                          >
                             {/* Edit */}
+                            <Tip label="Edit">
+                              <Button variant="ghost" size="icon-sm" className="rounded-[4px]"
+                                aria-label={`Edit ${q.title}`}
+                                onClick={e => { e.stopPropagation(); router.push(`/questions/${q.id}/edit`) }}>
+                                <i className="fa-light fa-pen" aria-hidden="true" style={{ fontSize: 13 }} />
+                              </Button>
+                            </Tip>
+                            {/* Duplicate */}
+                            <Tip label="Duplicate">
+                              <Button variant="ghost" size="icon-sm" className="rounded-[4px]"
+                                aria-label={`Duplicate ${q.title}`}
+                                onClick={e => { e.stopPropagation(); const copyId = duplicateQuestion(q.id); setAnchorQuestionId(copyId); showQBToast({ title: 'Duplicated', undoFn: () => deleteQuestion(copyId) }) }}>
+                                <i className="fa-light fa-copy" aria-hidden="true" style={{ fontSize: 13 }} />
+                              </Button>
+                            </Tip>
+                            {/* Move */}
+                            {canEditRow && (
+                              <Tip label="Move to folder">
+                                <Button variant="ghost" size="icon-sm" className="rounded-[4px]"
+                                  aria-label={`Move ${q.title} to folder`}
+                                  onClick={e => { e.stopPropagation(); setMoveTarget({ id: q.id, title: q.title, folder: q.folder }) }}>
+                                  <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 13 }} />
+                                </Button>
+                              </Tip>
+                            )}
+                            {/* Divider */}
+                            <span aria-hidden="true" style={{ width: 1, height: 18, background: 'var(--border)', flexShrink: 0 }} />
+                            {/* ⋯ More — rounded right end */}
+                            <Tip label="More">
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon-sm" className="rounded-[4px]"
+                                  aria-label={`More options for ${q.title}`}
+                                  onClick={e => e.stopPropagation()}>
+                                  <i className={`fa-${openMenuQuestionId === q.id ? 'solid' : 'light'} fa-ellipsis`} aria-hidden="true" style={{ fontSize: 13 }} />
+                                </Button>
+                              </DropdownMenuTrigger>
+                            </Tip>
+                          </div>
+                          <DropdownMenuContent align="end" className="w-56">
+                            {/* Group 1 — Content actions */}
                             <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); router.push(`/questions/${q.id}/edit`) }}>
                               <i className="fa-light fa-pen" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                               Edit question
                             </DropdownMenuItem>
-                            {/* Duplicate */}
-                            <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); duplicateQuestion(q.id); showQBToast({ title: 'Used as template' }) }}>
+                            <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); const copyId = duplicateQuestion(q.id); setAnchorQuestionId(copyId); showQBToast({ title: 'Duplicated', undoFn: () => deleteQuestion(copyId) }) }}>
                               <i className="fa-light fa-copy" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                              Use as template
+                              Duplicate
                             </DropdownMenuItem>
-                            {/* Copy to folder */}
+                            {/* Group 2 — Location operations */}
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); setCopyTarget({ id: q.id, title: q.title }) }}>
                               <i className="fa-light fa-folder-arrow-up" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                               Copy to folder
                             </DropdownMenuItem>
-                            {/* Move to folder */}
                             {canEditRow && (
                               <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); setMoveTarget({ id: q.id, title: q.title, folder: q.folder }) }}>
                                 <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                                 Move to folder
                               </DropdownMenuItem>
                             )}
-                            {/* Remove from folder — only when viewing a specific folder */}
                             {navView === 'folder' && selectedFolderId && canEditRow && (
                               <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); removeQuestionFromFolder(q.id, selectedFolderId); const fn = folders.find(f => f.id === selectedFolderId)?.name; showQBToast({ title: 'Removed from folder', folderName: fn, folderId: selectedFolderId ?? undefined, questionId: q.id, undoFn: () => copyQuestionToFolder(q.id, [selectedFolderId!]), onLinkClick: selectedFolderId ? () => { navigateToFolder(selectedFolderId); setAnchorQuestionId(q.id) } : undefined }) }}>
                                 <i className="fa-light fa-folder-minus" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                                 Remove from folder
                               </DropdownMenuItem>
                             )}
-                            {/* Status changes — only when not archived */}
-                            {canEditRow && q.status !== 'Archived' && (
+                            {/* Group 3 — Status (Saved/Draft/Archive together; Restore for archived) */}
+                            {canEditRow && (
                               <>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); const prev = q.status; updateQuestion(q.id, { status: 'Saved' }); const fn = folders.find(f => f.id === q.folder)?.name; showQBToast({ title: 'Marked as Saved', folderName: fn, folderId: q.folder, questionId: q.id, undoFn: () => updateQuestion(q.id, { status: prev }), onLinkClick: () => { navigateToFolder(q.folder); setAnchorQuestionId(q.id) } }) }} disabled={q.status === 'Saved'}>
-                                  <i className="fa-light fa-circle-check" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                                  Mark as Saved
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); const prev = q.status; updateQuestion(q.id, { status: 'Draft' }); const fn = folders.find(f => f.id === q.folder)?.name; showQBToast({ title: 'Reverted to Draft', folderName: fn, folderId: q.folder, questionId: q.id, undoFn: () => updateQuestion(q.id, { status: prev }), onLinkClick: () => { navigateToFolder(q.folder); setAnchorQuestionId(q.id) } }) }} disabled={q.status === 'Draft'}>
-                                  <i className="fa-light fa-rotate-left" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                                  Revert to Draft
-                                </DropdownMenuItem>
+                                {q.status !== 'Archived' ? (
+                                  <>
+                                    <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); const prev = q.status; updateQuestion(q.id, { status: 'Saved' }); const fn = folders.find(f => f.id === q.folder)?.name; showQBToast({ title: 'Marked as Saved', folderName: fn, folderId: q.folder, questionId: q.id, undoFn: () => updateQuestion(q.id, { status: prev }), onLinkClick: () => { navigateToFolder(q.folder); setAnchorQuestionId(q.id) } }) }} disabled={q.status === 'Saved'}>
+                                      <i className="fa-light fa-circle-check" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                                      Mark as Saved
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); const prev = q.status; updateQuestion(q.id, { status: 'Draft' }); const fn = folders.find(f => f.id === q.folder)?.name; showQBToast({ title: 'Reverted to Draft', folderName: fn, folderId: q.folder, questionId: q.id, undoFn: () => updateQuestion(q.id, { status: prev }), onLinkClick: () => { navigateToFolder(q.folder); setAnchorQuestionId(q.id) } }) }} disabled={q.status === 'Draft'}>
+                                      <i className="fa-light fa-rotate-left" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                                      Revert to Draft
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); setArchiveTarget({ id: q.id, title: q.title, prevStatus: q.status, folder: q.folder }) }}>
+                                      <i className="fa-light fa-box-archive" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                                      Archive
+                                    </DropdownMenuItem>
+                                  </>
+                                ) : (
+                                  <>
+                                    <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Saved' }); const fn = folders.find(f => f.id === q.folder)?.name; showQBToast({ title: 'Restored as Saved', folderName: fn, folderId: q.folder, questionId: q.id, undoFn: () => updateQuestion(q.id, { status: 'Archived' }), onLinkClick: () => { navigateToFolder(q.folder); setAnchorQuestionId(q.id) } }) }}>
+                                      <i className="fa-light fa-box-open" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                                      Restore as Saved
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Draft' }); const fn = folders.find(f => f.id === q.folder)?.name; showQBToast({ title: 'Restored as Draft', folderName: fn, folderId: q.folder, questionId: q.id, undoFn: () => updateQuestion(q.id, { status: 'Archived' }), onLinkClick: () => { navigateToFolder(q.folder); setAnchorQuestionId(q.id) } }) }}>
+                                      <i className="fa-light fa-box-open" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                                      Restore as Draft
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
                               </>
                             )}
-                            {/* Archive (for active questions) */}
-                            {canEditRow && q.status !== 'Archived' && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); setArchiveTarget({ id: q.id, title: q.title, prevStatus: q.status, folder: q.folder }) }}>
-                                  <i className="fa-light fa-box-archive" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                                  Archive
-                                </DropdownMenuItem>
-                              </>
+                            {/* Group 4 — Admin / destructive */}
+                            {(isExamAdmin || (canDeleteRow && q.status === 'Draft' && (q.usedInSections?.length ?? 0) === 0)) && (
+                              <DropdownMenuSeparator />
                             )}
-                            {/* Restore (for archived questions) */}
-                            {q.status === 'Archived' && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Saved' }); const fn = folders.find(f => f.id === q.folder)?.name; showQBToast({ title: 'Restored as Saved', folderName: fn, folderId: q.folder, questionId: q.id, undoFn: () => updateQuestion(q.id, { status: 'Archived' }), onLinkClick: () => { navigateToFolder(q.folder); setAnchorQuestionId(q.id) } }) }}>
-                                  <i className="fa-light fa-box-open" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                                  Restore as Saved
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Draft' }); const fn = folders.find(f => f.id === q.folder)?.name; showQBToast({ title: 'Restored as Draft', folderName: fn, folderId: q.folder, questionId: q.id, undoFn: () => updateQuestion(q.id, { status: 'Archived' }), onLinkClick: () => { navigateToFolder(q.folder); setAnchorQuestionId(q.id) } }) }}>
-                                  <i className="fa-light fa-box-open" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                                  Restore as Draft
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                            {/* Admin: manage folder access */}
                             {isExamAdmin && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); setCollaboratorsModalFolderId(q.folder) }}>
-                                  <i className="fa-light fa-users" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                                  Manage folder access
-                                </DropdownMenuItem>
-                              </>
+                              <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); setCollaboratorsModalFolderId(q.folder) }}>
+                                <i className="fa-light fa-users" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                                Manage folder access
+                              </DropdownMenuItem>
                             )}
-                            {/* Delete — Draft + never used in assessment only (PRD §4.6) */}
                             {canDeleteRow && q.status === 'Draft' && (q.usedInSections?.length ?? 0) === 0 && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem variant="destructive" onClick={() => { setOpenMenuQuestionId(null); setDeleteTarget({ id: q.id, title: q.title }) }}>
-                                  <i className="fa-light fa-trash-can" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                                  Delete question
-                                </DropdownMenuItem>
-                              </>
+                              <DropdownMenuItem variant="destructive" onClick={() => { setOpenMenuQuestionId(null); setDeleteTarget({ id: q.id, title: q.title }) }}>
+                                <i className="fa-light fa-trash-can" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                                Delete question
+                              </DropdownMenuItem>
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
-                        </div>
                       </TableCell>
                     </TableRow>
                   )
@@ -4048,15 +4082,15 @@ export function QBTable() {
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="text-xs gap-1.5" style={{ height: 32 }}>
-                  <i className="fa-light fa-folder" aria-hidden="true" style={{ fontSize: 12 }} />
-                  Folder
+                  <i className="fa-light fa-folder-gear" aria-hidden="true" style={{ fontSize: 12 }} />
+                  Organize
                   <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 9 }} />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="w-48">
-                <DropdownMenuItem onClick={() => { selectedQs.forEach(q => duplicateQuestion(q.id)); showQBToast({ title: `${selectedQs.length} question${selectedQs.length > 1 ? 's' : ''} duplicated` }); clearSelection() }}>
+                <DropdownMenuItem onClick={() => { const copyIds = selectedQs.map(q => duplicateQuestion(q.id)); showQBToast({ title: `${selectedQs.length} question${selectedQs.length > 1 ? 's' : ''} duplicated`, undoFn: () => copyIds.forEach(id => deleteQuestion(id)) }); clearSelection() }}>
                   <i className="fa-light fa-copy" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                  Use as template
+                  Duplicate
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {/* setTimeout lets dropdown fully close before dialog mounts (Radix nested-modal fix) */}
@@ -4069,7 +4103,7 @@ export function QBTable() {
                   Move to folder
                 </DropdownMenuItem>
                 {navView === 'folder' && selectedFolderId && (
-                  <DropdownMenuItem onClick={() => { selectedQs.forEach(q => removeQuestionFromFolder(q.id, selectedFolderId)); showQBToast({ title: `${selectedQs.length} question${selectedQs.length > 1 ? 's' : ''} removed from folder` }); clearSelection() }}>
+                  <DropdownMenuItem onClick={() => { const snap = selectedQs.map(q => ({ id: q.id })); selectedQs.forEach(q => removeQuestionFromFolder(q.id, selectedFolderId)); showQBToast({ title: `${selectedQs.length} question${selectedQs.length > 1 ? 's' : ''} removed from folder`, undoFn: () => snap.forEach(({ id }) => copyQuestionToFolder(id, [selectedFolderId!])) }); clearSelection() }}>
                     <i className="fa-light fa-folder-minus" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                     Remove from folder
                   </DropdownMenuItem>
@@ -4111,7 +4145,7 @@ export function QBTable() {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onClick={() => { if (activeCount > 0) { selectedQs.filter(q => q.status !== 'Archived').forEach(q => archiveQuestion(q.id)); showQBToast({ title: `${activeCount} question${activeCount > 1 ? 's' : ''} archived` }); clearSelection() } }}
+                    onClick={() => { if (activeCount > 0) { const toArchive = selectedQs.filter(q => q.status !== 'Archived'); const prevStatuses = toArchive.map(q => ({ id: q.id, status: q.status })); toArchive.forEach(q => archiveQuestion(q.id)); showQBToast({ title: `${activeCount} question${activeCount > 1 ? 's' : ''} archived`, undoFn: () => prevStatuses.forEach(({ id, status }) => updateQuestion(id, { status })) }); clearSelection() } }}
                     disabled={activeCount === 0}
                   >
                     <i className="fa-light fa-box-archive" aria-hidden="true" style={{ fontSize: 12, width: 14, color: 'var(--qb-status-archived-fg)' }} />
@@ -4181,8 +4215,9 @@ export function QBTable() {
               <DialogFooter>
                 <Button variant="outline" size="sm" onClick={() => setBulkStatusTarget(null)}>Cancel</Button>
                 <Button variant="default" size="sm" onClick={() => {
+                  const prevStatuses = affected.map(q => ({ id: q.id, status: q.status }))
                   affected.forEach(q => updateQuestion(q.id, { status: bulkStatusTarget }))
-                  showQBToast({ title: `${affected.length} question${affected.length > 1 ? 's' : ''} marked as ${statusLabel}` })
+                  showQBToast({ title: `${affected.length} question${affected.length > 1 ? 's' : ''} marked as ${statusLabel}`, undoFn: () => prevStatuses.forEach(({ id, status }) => updateQuestion(id, { status })) })
                   setBulkStatusTarget(null)
                 }}>
                   <i className={`fa-light ${statusIcon}`} aria-hidden="true" />
@@ -4253,12 +4288,12 @@ export function QBTable() {
                   </p>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground" style={{ margin: 0 }}>This action cannot be undone.</p>
               <DialogFooter>
                 <Button variant="outline" size="sm" onClick={() => setBulkDeleteOpen(false)}>Cancel</Button>
                 <Button variant="destructive" size="sm" onClick={() => {
+                  const snapshots = selectedQs.map(q => ({ ...q }))
                   selectedQs.forEach(q => deleteQuestion(q.id))
-                  showQBToast({ title: `${selectedQs.length} question${selectedQs.length > 1 ? 's' : ''} deleted` })
+                  showQBToast({ title: `${selectedQs.length} question${selectedQs.length > 1 ? 's' : ''} deleted`, undoFn: () => restoreQuestions(snapshots) })
                   clearSelection()
                   setBulkDeleteOpen(false)
                 }}>
@@ -4278,8 +4313,9 @@ export function QBTable() {
           <BulkMoveDialog
             count={selectedQs.length}
             onConfirm={targetId => {
+              const prevFolders = selectedQs.map(q => ({ id: q.id, folder: q.folder }))
               selectedQs.forEach(q => moveQuestionToFolder(q.id, targetId))
-              showQBToast({ title: `${selectedQs.length} question${selectedQs.length > 1 ? 's' : ''} moved` })
+              showQBToast({ title: `${selectedQs.length} question${selectedQs.length > 1 ? 's' : ''} moved`, undoFn: () => prevFolders.forEach(({ id, folder }) => moveQuestionToFolder(id, folder)) })
               clearSelection()
               setBulkMoveOpen(false)
             }}
@@ -4298,7 +4334,7 @@ export function QBTable() {
             onClose={() => setBulkCopyOpen(false)}
             onConfirmOverride={(folderIds) => {
               selectedQs.forEach(q => copyQuestionToFolder(q.id, folderIds))
-              showQBToast({ title: `${selectedQs.length} question${selectedQs.length > 1 ? 's' : ''} copied to ${folderIds.length} folder${folderIds.length > 1 ? 's' : ''}` })
+              showQBToast({ title: `${selectedQs.length} question${selectedQs.length > 1 ? 's' : ''} copied to ${folderIds.length} folder${folderIds.length > 1 ? 's' : ''}`, undoFn: () => selectedQs.forEach(q => folderIds.forEach(fid => removeQuestionFromFolder(q.id, fid))) })
               clearSelection()
               setBulkCopyOpen(false)
             }}
