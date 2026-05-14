@@ -796,6 +796,13 @@ function FolderRow({
           }
         }}
       >
+        {/* Fixed 10px pin slot — before caret so caret stays adjacent to folder icon */}
+        <span style={{ width: 10, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {pinnedFolderIds.has(node.id) && (
+            <i className="fa-solid fa-thumbtack" aria-label="Pinned" style={{ fontSize: 8, color: 'var(--brand-color)' }} />
+          )}
+        </span>
+
         {/* Chevron */}
         <Button
           variant="ghost"
@@ -821,13 +828,6 @@ function FolderRow({
             style={{ fontSize: 9 }}
           />
         </Button>
-
-        {/* Fixed 10px slot between caret and folder icon — always present, no layout shift */}
-        <span style={{ width: 10, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {pinnedFolderIds.has(node.id) && (
-            <i className="fa-solid fa-thumbtack" aria-label="Pinned" style={{ fontSize: 8, color: 'var(--brand-color)' }} />
-          )}
-        </span>
 
         {/* Folder icon */}
         <i className={`${icon.cls} ${icon.colorCls}`} aria-hidden="true"
