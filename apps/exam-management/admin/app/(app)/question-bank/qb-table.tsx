@@ -2878,21 +2878,33 @@ export function QBTable() {
     ...(bookmarkOnly ? [{ key: 'bookmark', icon: 'fa-star', label: 'Bookmarked', onRemove: () => setBookmarkOnly(false) }] : []),
   ]
 
-  // ── Derived filtered list ─────────────────────────────────────────────────
-  const filteredQuestions = visibleQuestions.filter(q => {
-    if (search) {
-      const s = search.toLowerCase()
+  // ── Search index — precomputed per visible question ──────────────────────
+  const searchIndex = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const q of visibleQuestions) {
       const creatorName = personas.find(p => p.id === q.creator)?.name ?? ''
       const editorName  = personas.find(p => p.id === q.lastEditedBy)?.name ?? ''
-      const allLocations = [q.folderPath, ...(q.extraFolders ?? []).map(e => e.folderPath)].join(' ')
-      const searchable = [
+      const parts = [
         q.title, q.code, q.type, q.status, q.difficulty, q.blooms,
-        creatorName, editorName, allLocations, ...(q.tags ?? []),
+        creatorName, editorName,
+        q.folderPath,
+        ...(q.extraFolders ?? []).map(e => e.folderPath),
+        ...(q.tags ?? []),
         ...(q.usedInSections ?? []),
-      ].join(' ').toLowerCase()
-      if (!searchable.includes(s)) return false
+      ].filter(Boolean)
+      map.set(q.id, parts.join(' ').toLowerCase())
+    }
+    return map
+  }, [visibleQuestions, personas])
+
+  // ── Derived filtered list ─────────────────────────────────────────────────
+  const filteredQuestions = useMemo(() => visibleQuestions.filter(q => {
+    if (search) {
+      const s = search.toLowerCase()
+      if (!(searchIndex.get(q.id) ?? '').includes(s)) return false
     }
     if (bookmarkOnly && !favoritedIds.has(q.id)) return false
+    const activeNonEmptyFilters = activeFilters.filter(f => f.values.length > 0)
     for (const f of activeNonEmptyFilters) {
       let val = ''
       if (f.fieldKey === 'status')        val = q.status
@@ -2907,7 +2919,7 @@ export function QBTable() {
       if (f.operator === 'is_not' &&  matches) return false
     }
     return true
-  })
+  }), [visibleQuestions, search, searchIndex, bookmarkOnly, favoritedIds, activeFilters, personas])
 
   // ── Sort — multi-column, rules applied in order ───────────────────────────
   const DIFF_ORDER: Record<string, number> = { Easy: 0, Medium: 1, Hard: 2 }
