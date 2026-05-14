@@ -1,0 +1,42 @@
+@import '../../../exxat-ds/packages/ui/src/theme.css';
+@import "tailwindcss";
+@source '../../../exxat-ds/packages/ui/src/**/*.{ts,tsx}';
+
+/* Sidebar background token */
+:root {
+  --sidebar: var(--brand-tint);
+}
+.dark {
+  --sidebar: oklch(0.245 0.015 270);
+}
+
+/* DS sidebar border fix — without this the border falls back to currentColor */
+[data-slot="sidebar-container"] {
+  border-inline-end-color: var(--sidebar-border);
+  border-inline-start-color: var(--sidebar-border);
+}
+
+/* Flat nav style — strip card chrome from sidebar menu buttons */
+[data-sidebar="menu-button"] {
+  background-color: transparent;
+  box-shadow: none;
+  font-weight: 400;
+}
+[data-sidebar="menu-button"]:hover {
+  background-color: var(--sidebar-accent);
+  color: var(--sidebar-accent-foreground);
+  box-shadow: none;
+}
+[data-sidebar="menu-button"][data-active="true"] {
+  background-color: var(--sidebar-accent);
+  color: var(--sidebar-accent-foreground);
+  font-weight: 400;
+  box-shadow: none;
+}
+/* Brand header — non-interactive, no hover */
+[data-sidebar="menu-button"].sidebar-brand-btn,
+[data-sidebar="menu-button"].sidebar-brand-btn:hover {
+  background-color: transparent;
+  box-shadow: none;
+  cursor: default;
+}
