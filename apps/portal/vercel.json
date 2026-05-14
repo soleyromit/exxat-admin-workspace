@@ -1,6 +1,6 @@
 {
-  "framework": "nextjs",
-  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm build",
-  "outputDirectory": ".next"
+  "installCommand": "cd ../.. && pnpm install",
+  "buildCommand": "cd ../.. && pnpm --filter @exxat/portal exec next build",
+  "outputDirectory": ".next",
+  "framework": null
 }
