@@ -414,7 +414,7 @@ function MoveQuestionDialog({ question, open, onClose }: { question: { id: strin
       onConfirm={targetId => {
         moveQuestionToFolder(question.id, targetId)
         const name = folders.find(f => f.id === targetId)?.name ?? 'folder'
-        toast.success(`Moved to ${name}`)
+        toast.success(`Moved to "${name}"`, { description: question.title.slice(0, 72) })
         onClose()
       }}
       open={open}
@@ -444,7 +444,7 @@ function CopyToFolderDialog({ question, open, onClose, onConfirmOverride }: {
   onClose: () => void
   onConfirmOverride?: (folderIds: string[]) => void
 }) {
-  const { copyQuestionToFolder } = useQB()
+  const { copyQuestionToFolder, setAnchorQuestionId } = useQB()
   const [pickedIds, setPickedIds] = useState<string[]>([])
   const [submitError, setSubmitError] = useState<string | null>(null)
 
@@ -461,7 +461,9 @@ function CopyToFolderDialog({ question, open, onClose, onConfirmOverride }: {
       onConfirmOverride(pickedIds)
     } else if (question) {
       copyQuestionToFolder(question.id, pickedIds)
-      toast.success(`Copied to ${pickedIds.length} folder${pickedIds.length > 1 ? 's' : ''}`)
+      setAnchorQuestionId(question.id)
+      const label = pickedIds.length > 1 ? `${pickedIds.length} folders` : '1 folder'
+      toast.success(`Copied to ${label}`, { description: question.title.slice(0, 72) })
     }
     onClose()
   }
@@ -521,7 +523,7 @@ function ArchiveQuestionDialog({ question, open, onClose, currentFolderId }: {
     if (!question) return
     archiveQuestion(question.id)
     if (removeFromFolder && currentFolderId) removeQuestionFromFolder(question.id, currentFolderId)
-    toast.success('Question archived')
+    toast.success('Question archived', { description: question.title.slice(0, 72) })
     onClose()
   }
 
@@ -556,7 +558,7 @@ function ArchiveQuestionDialog({ question, open, onClose, currentFolderId }: {
 // ── Delete Question Dialog ────────────────────────────────────────────────────
 function DeleteQuestionDialog({ question, open, onClose }: { question: { id: string; title: string }; open: boolean; onClose: () => void }) {
   const { deleteQuestion } = useQB()
-  function handleDelete() { deleteQuestion(question.id); toast.success('Question deleted'); onClose() }
+  function handleDelete() { deleteQuestion(question.id); toast.success('Question deleted', { description: question.title.slice(0, 72) }); onClose() }
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
       <DialogContent className="sm:max-w-sm">
@@ -3788,7 +3790,7 @@ export function QBTable() {
                               Edit question
                             </DropdownMenuItem>
                             {/* Duplicate */}
-                            <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); duplicateQuestion(q.id); toast.success('Duplicated as Draft') }}>
+                            <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); duplicateQuestion(q.id); toast.success('Used as template', { description: q.title.slice(0, 72) }) }}>
                               <i className="fa-light fa-copy" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                               Use as template
                             </DropdownMenuItem>
@@ -3806,7 +3808,7 @@ export function QBTable() {
                             )}
                             {/* Remove from folder — only when viewing a specific folder */}
                             {navView === 'folder' && selectedFolderId && canEditRow && (
-                              <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); removeQuestionFromFolder(q.id, selectedFolderId); toast.success('Removed from folder') }}>
+                              <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); removeQuestionFromFolder(q.id, selectedFolderId); toast.success('Removed from folder', { description: q.title.slice(0, 72) }) }}>
                                 <i className="fa-light fa-folder-minus" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                                 Remove from folder
                               </DropdownMenuItem>
@@ -3815,11 +3817,11 @@ export function QBTable() {
                             {canEditRow && q.status !== 'Archived' && (
                               <>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Saved' }); toast.success('Marked as Saved') }} disabled={q.status === 'Saved'}>
+                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Saved' }); toast.success('Marked as Saved', { description: q.title.slice(0, 72) }) }} disabled={q.status === 'Saved'}>
                                   <i className="fa-light fa-circle-check" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                                   Mark as Saved
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Draft' }); toast('Reverted to Draft') }} disabled={q.status === 'Draft'}>
+                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Draft' }); toast('Reverted to Draft', { description: q.title.slice(0, 72) }) }} disabled={q.status === 'Draft'}>
                                   <i className="fa-light fa-rotate-left" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                                   Revert to Draft
                                 </DropdownMenuItem>
@@ -3839,11 +3841,11 @@ export function QBTable() {
                             {q.status === 'Archived' && (
                               <>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Saved' }); toast.success('Restored as Saved') }}>
+                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Saved' }); toast.success('Restored as Saved', { description: q.title.slice(0, 72) }) }}>
                                   <i className="fa-light fa-box-open" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                                   Restore as Saved
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Draft' }); toast('Restored as Draft') }}>
+                                <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); updateQuestion(q.id, { status: 'Draft' }); toast('Restored as Draft', { description: q.title.slice(0, 72) }) }}>
                                   <i className="fa-light fa-box-open" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                                   Restore as Draft
                                 </DropdownMenuItem>

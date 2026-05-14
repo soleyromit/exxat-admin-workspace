@@ -12,6 +12,7 @@ import {
   Command, CommandInput, CommandList, CommandGroup, CommandItem, CommandEmpty,
 } from '@exxat/ds/packages/ui/src'
 import { mockCourses, mockCourseOfferings } from '@/lib/qb-mock-data'
+import { toast } from 'sonner'
 
 const ACTIVE_SEMESTER = 'Spring 2026'
 
@@ -47,7 +48,7 @@ function getFolderIcon(node: FolderNode, expanded: boolean, selected: boolean) {
   const colorCls = selected ? 'text-foreground' : 'text-muted-foreground'
   // Private folders: lock icon replaces the folder/graduation icon
   if (node.isPrivateSpace) {
-    return { cls: selected ? 'fa-solid fa-lock' : 'fa-light fa-lock', colorCls }
+    return { cls: 'fa-solid fa-lock', colorCls }
   }
   if (node.icon) {
     return { cls: `${selected ? 'fa-solid' : 'fa-light'} ${node.icon}`, colorCls }
@@ -76,6 +77,7 @@ export function DeleteFolderDialog({
 
   function handleDelete() {
     deleteFolder(node.id)
+    toast.success(`"${node.name}" deleted`, { description: affectedQuestions.length > 0 ? `${affectedQuestions.length} question${affectedQuestions.length !== 1 ? 's' : ''} removed` : undefined })
     onClose()
   }
 
@@ -376,7 +378,7 @@ export function FolderContextMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52" onCloseAutoFocus={e => e.preventDefault()}>
         {/* Pin / Unpin — available on course shells and subfolders */}
-        <DropdownMenuItem onClick={() => toggleFolderPin(node.id)}>
+        <DropdownMenuItem onClick={() => { toggleFolderPin(node.id); toast.success(isPinned ? `"${node.name}" unpinned` : `"${node.name}" pinned to top`) }}>
           <i className={`fa-light ${isPinned ? 'fa-thumbtack-slash' : 'fa-thumbtack'}`} aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
           {isPinned ? 'Unpin' : 'Pin to top'}
         </DropdownMenuItem>
@@ -392,7 +394,7 @@ export function FolderContextMenu({
               Manage Access
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setFolderPrivacy(node.id, !isPrivate)}>
+            <DropdownMenuItem onClick={() => { setFolderPrivacy(node.id, !isPrivate); toast.success(isPrivate ? `"${node.name}" is now public` : `"${node.name}" is now private`) }}>
               <i
                 className={`fa-light ${isPrivate ? 'fa-lock-open' : 'fa-lock'}`}
                 aria-hidden="true"
@@ -807,7 +809,7 @@ function FolderRow({
             Pin only; lock is handled by the folder icon slot below. */}
         <span style={{ width: 12, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {pinnedFolderIds.has(node.id) && (
-            <i className="fa-solid fa-thumbtack" aria-label="Pinned to top" style={{ fontSize: 8, color: 'var(--brand-color)', opacity: 0.75 }} />
+            <i className="fa-solid fa-thumbtack" aria-label="Pinned to top" style={{ fontSize: 11, color: 'var(--brand-color)' }} />
           )}
         </span>
 
@@ -835,6 +837,7 @@ function FolderRow({
               if (renameName.trim()) {
                 renameFolder(node.id, renameName.trim())
                 setRenameName(renameName.trim())
+                if (renameName.trim() !== node.name) toast.success(`Renamed to "${renameName.trim()}"`)
               } else {
                 setRenameName(node.name)
               }
@@ -911,6 +914,7 @@ function FolderRow({
           onConfirm={(name) => {
             createFolder(name, node.id)
             setShowingInlineCreate(false)
+            toast.success(`"${name}" created`, { description: `Subfolder of ${node.name}` })
           }}
           onCancel={() => setShowingInlineCreate(false)}
         />
