@@ -15,18 +15,16 @@ import type { Product } from '@/lib/products'
 export function ProductCardRow({ product }: { product: Product }) {
   if (product.comingSoon) {
     return (
-      <Card className="overflow-hidden">
-        <div
-          className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
-          style={{ backgroundColor: `var(--product-${product.colorKey}-to)`, opacity: 0.4 }}
-        />
-        <CardContent className="flex items-center gap-4 py-4 pl-6 pr-4">
+      <Card>
+        <CardContent className="flex items-center gap-4 py-3 px-4">
           <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg opacity-40"
-            style={{ backgroundColor: `var(--product-${product.colorKey}-from)` }}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg opacity-40"
+            style={{
+              background: `linear-gradient(135deg, var(--product-${product.colorKey}-from), var(--product-${product.colorKey}-to))`,
+            }}
           >
             <i
-              className={`fa-light ${product.icon} text-base`}
+              className={`fa-light ${product.icon} text-sm`}
               aria-hidden="true"
               style={{ color: `var(--product-${product.colorKey}-icon)` }}
             />
@@ -39,28 +37,23 @@ export function ProductCardRow({ product }: { product: Product }) {
   }
 
   return (
-    <Card className="overflow-hidden relative">
-      <div
-        className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
-        style={{ backgroundColor: `var(--product-${product.colorKey}-to)` }}
-      />
-      <CardContent className="flex items-center gap-4 py-3 pl-6 pr-3">
-        {/* Icon */}
+    <Card>
+      <CardContent className="flex items-center gap-4 py-3 px-4">
         <div
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
-          style={{ backgroundColor: `var(--product-${product.colorKey}-from)` }}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+          style={{
+            background: `linear-gradient(135deg, var(--product-${product.colorKey}-from), var(--product-${product.colorKey}-to))`,
+          }}
         >
           <i
-            className={`fa-light ${product.icon} text-base`}
+            className={`fa-light ${product.icon} text-sm`}
             aria-hidden="true"
             style={{ color: `var(--product-${product.colorKey}-icon)` }}
           />
         </div>
 
-        {/* Name */}
         <span className="flex-1 text-sm font-semibold">{product.name}</span>
 
-        {/* Actions */}
         <div className="flex items-center gap-1 shrink-0">
           <Button asChild variant="outline" size="sm">
             <a href={product.adminUrl} target="_blank" rel="noreferrer">

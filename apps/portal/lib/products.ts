@@ -2,6 +2,7 @@ export type Product =
   | {
       id: string
       name: string
+      description: string
       icon: string
       colorKey: string
       adminUrl: string
@@ -12,6 +13,7 @@ export type Product =
   | {
       id: string
       name: string
+      description: string
       icon: string
       colorKey: string
       comingSoon: true
@@ -24,6 +26,7 @@ export const PRODUCTS: Product[] = [
   {
     id: 'exam-management',
     name: 'Exam Management',
+    description: 'Build question banks, configure assessments, and review student performance.',
     icon: 'fa-pen-to-square',
     colorKey: 'em',
     adminUrl: process.env.NEXT_PUBLIC_EXAM_MANAGEMENT_ADMIN_URL ?? 'http://localhost:3001',
@@ -36,6 +39,7 @@ export const PRODUCTS: Product[] = [
   {
     id: 'pce',
     name: 'PCE',
+    description: 'Manage practice and clinical experience placements, evaluations, and hours.',
     icon: 'fa-stethoscope',
     colorKey: 'pce',
     adminUrl: process.env.NEXT_PUBLIC_PCE_ADMIN_URL ?? 'http://localhost:3005',
@@ -44,6 +48,7 @@ export const PRODUCTS: Product[] = [
   {
     id: 'patient-log',
     name: 'Patient Log',
+    description: 'Track and validate student patient encounters across clinical rotations.',
     icon: 'fa-clipboard-list',
     colorKey: 'pl',
     adminUrl: process.env.NEXT_PUBLIC_PATIENT_LOG_ADMIN_URL ?? 'http://localhost:3003',
@@ -52,6 +57,7 @@ export const PRODUCTS: Product[] = [
   {
     id: 'skills-checklist',
     name: 'Skills Checklist',
+    description: 'Define, assign, and sign off on clinical skills competency requirements.',
     icon: 'fa-list-check',
     colorKey: 'sc',
     adminUrl: process.env.NEXT_PUBLIC_SKILLS_CHECKLIST_ADMIN_URL ?? 'http://localhost:3007',
@@ -60,6 +66,7 @@ export const PRODUCTS: Product[] = [
   {
     id: 'learning-contracts',
     name: 'Learning Contracts',
+    description: 'Create and track individualized student learning agreements and goals.',
     icon: 'fa-handshake',
     colorKey: 'lc',
     adminUrl: process.env.NEXT_PUBLIC_LEARNING_CONTRACTS_ADMIN_URL ?? 'http://localhost:3009',
@@ -68,6 +75,7 @@ export const PRODUCTS: Product[] = [
   {
     id: 'faas',
     name: 'FaaS 2.0',
+    description: 'Build and deploy custom form workflows across any program surface.',
     icon: 'fa-puzzle-piece',
     colorKey: 'faas',
     comingSoon: true,
