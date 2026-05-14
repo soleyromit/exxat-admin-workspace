@@ -1,16 +1,25 @@
-export type Review = {
-  author: string
-  role: string
-  institution: string
-  date: string
-  rating: number
-  text: string
+export type Resource = {
+  title: string
+  kind: 'webinar' | 'video' | 'documentation' | 'support'
+  date?: string
+  duration?: string
+  host?: string
+  description: string
+  url: string
+  status: 'upcoming' | 'available'
 }
 
 export type ReleaseNote = {
   version: string
   date: string
   notes: string[]
+}
+
+export type RoadmapItem = {
+  title: string
+  quarter: string
+  description?: string
+  status: 'planned' | 'in-progress'
 }
 
 export type Product =
@@ -24,8 +33,9 @@ export type Product =
       category: string
       features: string[]
       universities: string[]
-      reviews: Review[]
+      resources: Resource[]
       releaseNotes: ReleaseNote[]
+      roadmap: RoadmapItem[]
       adminUrl: string
       studentUrl: string
       extra?: { label: string; url: string }
@@ -41,8 +51,9 @@ export type Product =
       category: string
       features: string[]
       universities: string[]
-      reviews: Review[]
+      resources: Resource[]
       releaseNotes: ReleaseNote[]
+      roadmap: RoadmapItem[]
       comingSoon: true
       adminUrl?: never
       studentUrl?: never
@@ -74,30 +85,33 @@ export const PRODUCTS: Product[] = [
       'UCSF School of Nursing',
       'Vanderbilt University School of Nursing',
     ],
-    reviews: [
+    resources: [
       {
-        author: 'Dr. Sarah Chen',
-        role: 'Course Director',
-        institution: 'UChicago Nursing',
-        date: 'May 2026',
-        rating: 5,
-        text: 'Excellent for high-stakes exam management. The question bank organization and Bloom\'s tagging make curriculum alignment straightforward.',
+        title: 'Building Effective Question Banks with Bloom\'s Taxonomy',
+        kind: 'webinar' as const,
+        date: 'June 10, 2026',
+        duration: '45 min',
+        host: 'Exxat Product Team',
+        description: 'Learn how to structure question banks for maximum curriculum alignment using Bloom\'s taxonomy tagging and cognitive level analysis.',
+        url: '#',
+        status: 'upcoming' as const,
       },
       {
-        author: 'Prof. Mark Rivera',
-        role: 'Assessment Lead',
-        institution: 'Johns Hopkins',
-        date: 'April 2026',
-        rating: 4,
-        text: 'Solid platform overall. The analytics dashboard helps identify learning gaps early in the semester.',
+        title: 'AI Gap Analysis: Turning Assessment Data into Curriculum Insights',
+        kind: 'video' as const,
+        date: 'May 15, 2026',
+        duration: '60 min',
+        host: 'Exxat Product Team',
+        description: 'A deep-dive into the AI-powered gap analysis feature — how it works, what it surfaces, and how programs are using it in their review cycles.',
+        url: '#',
+        status: 'available' as const,
       },
       {
-        author: 'Dr. Priya Nair',
-        role: 'Faculty Developer',
-        institution: 'UCSF School of Nursing',
-        date: 'March 2026',
-        rating: 5,
-        text: 'The AI gap analysis is a game changer for our program review cycle.',
+        title: 'Exam Management Help Center',
+        kind: 'support' as const,
+        description: 'Browse articles, FAQs, and step-by-step guides for question bank management, assessment setup, and analytics.',
+        url: '#',
+        status: 'available' as const,
       },
     ],
     releaseNotes: [
@@ -115,7 +129,7 @@ export const PRODUCTS: Product[] = [
         version: '2.3',
         date: 'April 15, 2026',
         notes: [
-          'Confidence-based marking (Aarti-championed)',
+          'Confidence-based marking',
           'Question set improvements',
           'Filter sheet enhancements',
           'Performance and stability fixes',
@@ -129,6 +143,32 @@ export const PRODUCTS: Product[] = [
           'Lockdown review session',
           'Question bank folder tree improvements',
         ],
+      },
+    ],
+    roadmap: [
+      {
+        title: 'NCLEX-style question types',
+        quarter: 'Q3 2026',
+        description: 'SBA, bow-tie, drag-and-drop, and hot-spot formats for NCLEX-RN alignment.',
+        status: 'in-progress' as const,
+      },
+      {
+        title: 'AI-generated question drafts',
+        quarter: 'Q3 2026',
+        description: 'Generate first-draft questions from learning objectives using AI.',
+        status: 'planned' as const,
+      },
+      {
+        title: 'Cross-program question bank sharing',
+        quarter: 'Q4 2026',
+        description: 'Share curated question sets between programs within an institution.',
+        status: 'planned' as const,
+      },
+      {
+        title: 'Student performance prediction',
+        quarter: 'Q1 2027',
+        description: 'Flag students at risk before high-stakes assessments occur.',
+        status: 'planned' as const,
       },
     ],
     adminUrl: process.env.NEXT_PUBLIC_EXAM_MANAGEMENT_ADMIN_URL ?? 'http://localhost:3001',
@@ -161,22 +201,16 @@ export const PRODUCTS: Product[] = [
       'University of Pennsylvania Medicine',
       'Duke University Health System',
     ],
-    reviews: [
+    resources: [
       {
-        author: 'Dr. James Park',
-        role: 'Clinical Education Director',
-        institution: 'Stanford Medicine',
-        date: 'April 2026',
-        rating: 5,
-        text: 'PCE has transformed our placement coordination. What used to take our team weeks now takes days.',
-      },
-      {
-        author: 'Dr. Amara Osei',
-        role: 'Program Director',
-        institution: 'Emory PA Program',
-        date: 'March 2026',
-        rating: 4,
-        text: 'The preceptor evaluation system is robust. Would love more reporting customization options.',
+        title: 'Reducing Placement Coordination Time with PCE',
+        kind: 'webinar' as const,
+        date: 'April 22, 2026',
+        duration: '40 min',
+        host: 'Exxat Product Team',
+        description: 'See how programs have cut placement coordination from weeks to days using automated matching, bulk evaluations, and the site coordinator portal.',
+        url: '#',
+        status: 'available' as const,
       },
     ],
     releaseNotes: [
@@ -197,6 +231,20 @@ export const PRODUCTS: Product[] = [
           'New competency milestone tracking',
           'Automated hours attestation workflows',
         ],
+      },
+    ],
+    roadmap: [
+      {
+        title: 'Automated preceptor matching by specialty',
+        quarter: 'Q3 2026',
+        description: 'Match students to preceptors based on specialty, availability, and prior rotations.',
+        status: 'in-progress' as const,
+      },
+      {
+        title: 'Real-time site capacity dashboard',
+        quarter: 'Q4 2026',
+        description: 'Live view of placement capacity across all clinical sites for a given term.',
+        status: 'planned' as const,
       },
     ],
     adminUrl: process.env.NEXT_PUBLIC_PCE_ADMIN_URL ?? 'http://localhost:3005',
@@ -222,16 +270,8 @@ export const PRODUCTS: Product[] = [
       'Mayo Clinic College of Medicine',
       'Cleveland Clinic Lerner College',
     ],
-    reviews: [
-      {
-        author: 'Dr. Lisa Thompson',
-        role: 'Clerkship Coordinator',
-        institution: 'Michigan Medicine',
-        date: 'April 2026',
-        rating: 4,
-        text: 'The ICD-10 search makes encounter logging fast. Students complete logs in under 2 minutes.',
-      },
-    ],
+    resources: [],
+    roadmap: [],
     releaseNotes: [
       {
         version: '1.0',
@@ -267,16 +307,8 @@ export const PRODUCTS: Product[] = [
       'Vanderbilt University School of Nursing',
       'The Ohio State University BSN Program',
     ],
-    reviews: [
-      {
-        author: 'Prof. Elena Santos',
-        role: 'Clinical Skills Lab Director',
-        institution: 'Duke Nursing',
-        date: 'March 2026',
-        rating: 5,
-        text: 'Finally a skills tracking solution that integrates with our existing Exxat workflows. The sign-off process is seamless.',
-      },
-    ],
+    resources: [],
+    roadmap: [],
     releaseNotes: [
       {
         version: '1.0',
@@ -312,16 +344,8 @@ export const PRODUCTS: Product[] = [
       'UNC Gillings School of Global Public Health',
       'Georgetown School of Medicine',
     ],
-    reviews: [
-      {
-        author: 'Dr. Kevin Walsh',
-        role: 'Academic Advisor',
-        institution: 'Columbia Nursing',
-        date: 'February 2026',
-        rating: 4,
-        text: 'Great for personalizing remediation plans. The collaborative editing feature saves back-and-forth emails.',
-      },
-    ],
+    resources: [],
+    roadmap: [],
     releaseNotes: [
       {
         version: '1.0',
@@ -353,7 +377,8 @@ export const PRODUCTS: Product[] = [
       'Custom branding per institution',
     ],
     universities: [],
-    reviews: [],
+    resources: [],
+    roadmap: [],
     releaseNotes: [],
     comingSoon: true,
   },

@@ -5,6 +5,60 @@
 @source '../lib/**/*.{ts,tsx}';
 @source '../../../exxat-ds/packages/ui/src/**/*.{ts,tsx}';
 
+/*
+  shadcn/tailwind.css custom variants — inlined because shadcn is not hoisted
+  in pnpm's virtual store so @import "shadcn/tailwind.css" can't resolve.
+  These are required for DS Tailwind classes (data-active:, data-horizontal:,
+  etc.) to fire correctly. Source: shadcn@4.2.0/dist/tailwind.css
+*/
+@custom-variant data-open {
+  &:where([data-state="open"]) {
+    @slot;
+  }
+}
+@custom-variant data-closed {
+  &:where([data-state="closed"]) {
+    @slot;
+  }
+}
+@custom-variant data-checked {
+  &:where([data-state="checked"]) {
+    @slot;
+  }
+}
+@custom-variant data-unchecked {
+  &:where([data-state="unchecked"]) {
+    @slot;
+  }
+}
+@custom-variant data-selected {
+  &:where([data-state="selected"]),
+  &:where([data-selected]:not([data-selected="false"])) {
+    @slot;
+  }
+}
+@custom-variant data-disabled {
+  &:where([data-disabled]:not([data-disabled="false"])) {
+    @slot;
+  }
+}
+@custom-variant data-active {
+  &:where([data-state="active"]),
+  &:where([data-active]:not([data-active="false"])) {
+    @slot;
+  }
+}
+@custom-variant data-horizontal {
+  &:where([data-orientation="horizontal"]) {
+    @slot;
+  }
+}
+@custom-variant data-vertical {
+  &:where([data-orientation="vertical"]) {
+    @slot;
+  }
+}
+
 /* ── Portal product palette ─────────────────────────────────────────────────
    Each product gets a gradient header: -from (lighter), -to (deeper), -icon.
    All values in oklch. Referenced via var(--product-{key}-{prop}) in TSX.    */
@@ -48,7 +102,7 @@
   --sidebar: oklch(0.245 0.015 270);
 }
 
-/* DS sidebar border fix — without this the border falls back to currentColor */
+/* DS sidebar border fix */
 [data-slot="sidebar-container"] {
   border-inline-end-color: var(--sidebar-border);
   border-inline-start-color: var(--sidebar-border);
