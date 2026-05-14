@@ -10,12 +10,14 @@ import { ProductCardRow } from '@/components/product-card-row'
 import { ProductCardAdobe } from '@/components/product-card-adobe'
 import { ProductCardEditorial } from '@/components/product-card-editorial'
 import { ProductCardIllustrated } from '@/components/product-card-illustrated'
+import { ProductConnectorRow } from '@/components/product-card-connector'
 import { PRODUCTS } from '@/lib/products'
+import { Card } from '@exxat/ds/packages/ui/src'
 
-type Layout = 'illustrated' | 'bento' | 'adobe' | 'editorial' | 'rows' | 'gradient' | 'dark'
+type Layout = 'connector' | 'illustrated' | 'bento' | 'adobe' | 'editorial' | 'rows' | 'gradient' | 'dark'
 
 export default function WorkspacePage() {
-  const [layout, setLayout] = useState<Layout>('illustrated')
+  const [layout, setLayout] = useState<Layout>('connector')
 
   return (
     <TooltipProvider>
@@ -32,6 +34,7 @@ export default function WorkspacePage() {
                 onValueChange={(v) => setLayout(v as Layout)}
                 aria-label="Card layout"
                 options={[
+                  { value: 'connector',   label: 'Connector',   icon: 'fa-light fa-plug' },
                   { value: 'illustrated', label: 'Illustrated', icon: 'fa-light fa-image' },
                   { value: 'bento',       label: 'Bento',       icon: 'fa-light fa-table-cells-large' },
                   { value: 'adobe',       label: 'Adobe',       icon: 'fa-light fa-grid-2' },
@@ -42,6 +45,15 @@ export default function WorkspacePage() {
                 ] as const}
               />
             </div>
+
+            {/* Connector list */}
+            {layout === 'connector' && (
+              <Card className="max-w-3xl overflow-hidden divide-y divide-border">
+                {PRODUCTS.map((product) => (
+                  <ProductConnectorRow key={product.id} product={product} />
+                ))}
+              </Card>
+            )}
 
             {/* Illustrated — uniform 3-col grid */}
             {layout === 'illustrated' && (
