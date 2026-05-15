@@ -446,6 +446,121 @@ Admin ≠ PCE viewer. Faculty-as-admin must NOT leak peer evaluations.
 
 ---
 
+## 5.20 Student experience — combined login and dashboard (2026-05-14)
+
+Source: `docs/research/meetings/2026-05-14-student-login-experience.md` (Granola `81c06a04`) + `docs/research/meetings/2026-05-14-implementation-walkthrough.md` (Granola `d5aa2783`)
+
+**One combined login.** No separate ExamSoft-style exam app. One student app, one login.
+
+**Student dashboard Phase 1 must-haves (Vishaka 2026-05-14):**
+1. My Courses
+2. My Accommodations
+3. Open Action Items — all actionable/downloadable assessments, surfaced without navigating into a course
+4. Recently Published Results — completed+published assessments with scores
+
+**Student dashboard deferred (post-January):** Overarching competency/strength/weakness insights. Review calendar. Faculty↔student communication.
+
+**Download section required fields:** course name · assessment name · instructions · download window start/end · exam date/time · download button.
+
+> "ExamSoft doesn't show course name in the download section. It's a big gap." — Vishaka
+
+### 5.21 Exam-taking UI directives (2026-05-14)
+
+These are direct screen corrections from Vishaka + Aarti:
+
+| Element | Directive | Status |
+|---|---|---|
+| Exam header | BOTH course name AND assessment name mandatory — sacred space | 🔴 Not yet in header |
+| Submit button | TOP panel ONLY — not in the bottom footer | 🔴 FLAG — structural change |
+| Next + Flag | Bottom panel — improve prominence, not remove | ✅ Correct placement |
+| Answer checkbox | LEFT of option text (before A/B/C/D) | 🔴 Currently sandwiched |
+| Jump-to-question dropdown | KILL — use Flagged/Skipped filter instead | QuestionJumpPopover (group-based) = correct; QuestionNavigatorPopover (number grid) = needs review |
+| Pre-submission | Show "Skipped + Flagged" summary popup | 🔴 Not yet built |
+| Skipped definition | Any unanswered Q before the student's furthest-reached question | — |
+| Section title in exam | Appears above section's questions — NOT in the top header | — |
+| Progress counter | Show "X of Y answered" during exam | — |
+
+> "The top panel has to be, like, sacred space." — Vishaka
+
+> "Submit should not be at the bottom. Submit should only be at the top." — Aarti + Vishaka (confirmed in both meetings)
+
+### 5.22 Exam submission — async sync model (2026-05-14)
+
+When student clicks Submit: (1) exam locks immediately, (2) background async upload, (3) system notifies "uploaded successfully" when synced. Even with intermittent WiFi, the submitted exam must never be lost.
+
+Notification audit: all system-sent emails/notifications to students must be logged and viewable by both student and admin.
+
+Auto-notification: send email to students when download window is ending and they haven't downloaded yet.
+
+### 5.23 Student, faculty, course profile — trim for exam management (2026-05-14)
+
+**Student profile** in exam management: Courses + Accommodations ONLY. All other Prism profile tabs are NOT needed here.
+
+**Faculty profile** in exam management: Course associations (coordinator vs. instructor role) ONLY. NOT teaching/scholarship/service, placements, compliance, advisees.
+
+**Course profile**: student registration + announcements/email + course measures + resources (syllabi). NOT placements, NOT learning activities.
+
+**Killed for exam management profiles:** compliance (student + faculty), intervention/communication tab, academic standing, competency dashboard (Prism handles this), learning activities.
+
+> "When they are in exam module, it's just exams." — Vishaka
+
+### 5.24 Phase 1 accommodations — explicit scope (2026-05-14)
+
+Phase 1 accommodations = **extra time + font size increase ONLY**. Separate room = not product-controllable. Speech-to-text, hardware connections, custom keyboards = deferred.
+
+Default: accommodations apply to all courses the student is registered in. Faculty can override per assessment (view-only).
+
+### 5.25 Entity directory pages — UX philosophy (2026-05-14)
+
+Global search (Google-style, one input box) — NOT field-by-field search boxes. Recently-used widget on entity search pages. Romit working on 8 entity screens: student search/landing, faculty search/landing, course search/landing, master course list, master term list, etc.
+
+FERPA rule (Vishaka 2026-05-14): 4 legitimate access paths for student performance data — (1) direct instructor, (2) course director, (3) official adviser, (4) senior admin. Build only these; don't design complex role-check workarounds for secondary data fields.
+
+### 5.26 Question bank landing page and QB philosophy (2026-05-14)
+
+QB landing page is NOT "all questions". Needs a higher-level folder dashboard showing: total folders, total questions, approval status summary, tagging coverage.
+
+"My questions" = default QB view for faculty. Admin sees folder permissions/access management first.
+
+> "All questions is not something that should be default." — Aarti
+
+Analytics/reporting = first-class design from day one, not bolted on later. Current-term active courses = primary anchor for the product landing page.
+
+### 5.27 Assessment builder — section creation and collaboration (2026-05-14)
+
+Section creation + free text title = MUST-HAVE Phase 1. Pre-exam instruction page (free text, configurable timer, optional attestation) = Phase 1.
+
+Collaborative assessment: each faculty adds to their section. Faculty can SEE each other's sections but CANNOT edit others' questions.
+
+Section-level review NOT required — assessment-level review is the unit.
+
+Performance statistics (historical usage + difficulty tags) visible while building AND reviewing an assessment.
+
+Three alignment docs needed (PM/Vishal to produce): types of questions supported, configuration at assessment vs. question level, attributes of a question.
+
+---
+
+## 6.11 PCE — Phase 1 survey scope (2026-05-14)
+
+Source: `apps/pce/docs/research/meetings/2026-05-14-course-eval-base-entities.md` (Granola `6a648f67`)
+
+**Answer types Phase 1:** Likert scale + free text ONLY.
+
+**NOT Phase 1:** question bank import for surveys, AI-native survey flow (traditional/manual flow comes first), analytics (PRD not yet approved).
+
+**Import method:** PDF document only — no Canvas/LMS integration.
+
+**Likert configurability:** program director sets default pointer at settings level (options: 3, 4, 5, 7, 10). Changing settings does NOT retroactively affect live surveys.
+
+**PRD status:**
+- Create template + push survey = ✅ Approved. Start design here.
+- Student responses = Adi drafting.
+- Analytics = ⏳ In review — wait before designing.
+
+**Base entity design deadline:** Tuesday May 19 (terms, course offerings, faculty landing pages).
+
+---
+
 ## Appendix — source meetings
 
 | Date | Title | Granola ID | Drove |
@@ -459,6 +574,10 @@ Admin ≠ PCE viewer. Faculty-as-admin must NOT leak peer evaluations.
 | 2026-05-07 16:45 | Assessment overview design | `b68ede99` | Aarti | `docs/research/meetings/2026-05-07-aarti-assessment-overview.md` |
 | 2026-05-08 12:44 | Live monitoring + accommodations + cross-product | `4e1c850e` | Aarti |
 | 2026-05-08 16:09 | Curriculum mapping + base entities + product alignment | `f274ade0` | Aarti |
+| 2026-05-14 08:14 | Exam management — implementation walkthrough, question bank, AI features | `d5aa2783` | Aarti + Vishal + Darshan |
+| 2026-05-14 09:31 | Course evaluation survey design — base entities and product structure | `6a648f67` | Romit + Adi |
+| 2026-05-14 10:30 | Assessment builder — base entities, student experience, PRD workflow | `af529725` | Vishaka + Nipun + Romit |
+| 2026-05-14 14:02 | Exam Management — Student login experience | `81c06a04` | Vishaka + Romit |
 
 Per-meeting raw notes at `apps/exam-management/docs/research/meetings/` and `apps/pce/docs/research/meetings/`.
 

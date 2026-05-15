@@ -26,8 +26,8 @@ const STEPS: { key: AssessmentReviewState | 'draft'; label: string; short: strin
   { key: 'draft',             label: 'Draft',     short: 'Draft',  icon: 'fa-file-pen' },
   { key: 'pending-chair',     label: 'Pending',   short: 'Review', icon: 'fa-hourglass-half' },
   { key: 'approved',          label: 'Approved',  short: 'Ok',     icon: 'fa-check-circle' },
-  { key: 'published',         label: 'Published', short: 'Live',   icon: 'fa-bullhorn' },
-  { key: 'in-progress',       label: 'In progress', short: 'Going', icon: 'fa-play' },
+  { key: 'published',         label: 'Published', short: 'Pub',    icon: 'fa-bullhorn' },
+  { key: 'in-progress',       label: 'Ongoing',   short: 'Going',  icon: 'fa-play' },
   { key: 'submitted',         label: 'Submitted', short: 'Done',   icon: 'fa-check-double' },
   { key: 'results-published', label: 'Results',   short: 'Results', icon: 'fa-eye' },
 ]

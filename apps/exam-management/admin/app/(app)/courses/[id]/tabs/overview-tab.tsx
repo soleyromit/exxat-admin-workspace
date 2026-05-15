@@ -301,7 +301,7 @@ function ActivityTimeline({
 
 function describeEvent(r: AssessmentReview) {
   if (r.state === 'results-published') return { label: 'Results published', icon: 'fa-eye', bg: 'color-mix(in oklch, var(--chart-2) 14%, var(--background))', fg: 'var(--chart-2)' }
-  if (r.state === 'in-progress') return { label: 'Live now', icon: 'fa-play', bg: 'color-mix(in oklch, var(--chart-1) 14%, var(--background))', fg: 'var(--chart-1)' }
+  if (r.state === 'in-progress') return { label: 'Ongoing', icon: 'fa-play', bg: 'color-mix(in oklch, var(--chart-1) 14%, var(--background))', fg: 'var(--chart-1)' }
   if (r.state === 'submitted') return { label: 'All students submitted', icon: 'fa-check-double', bg: 'color-mix(in oklch, var(--chart-2) 14%, var(--background))', fg: 'var(--chart-2)' }
   if (r.state === 'published') return { label: 'Published', icon: 'fa-bullhorn', bg: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))', fg: 'var(--brand-color)' }
   if (r.state === 'approved') return { label: 'Approved by chair', icon: 'fa-check-circle', bg: 'color-mix(in oklch, var(--chart-2) 14%, var(--background))', fg: 'var(--chart-2)' }

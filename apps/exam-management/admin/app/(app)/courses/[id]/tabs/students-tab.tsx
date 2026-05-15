@@ -19,9 +19,7 @@ import {
   Tip,
 } from '@exxat/ds/packages/ui/src'
 import { StatusPill, MetricBar } from '@/components/faculty-ui-kit'
-import { InterventionDialog } from '@/components/intervention-dialog'
 import { StubButton } from '@/components/stub-button'
-import { courseObjectives } from '@/lib/faculty-mock-data'
 import type { Student, Accommodation } from '@/lib/faculty-mock-data'
 
 interface StudentsTabProps {
@@ -35,12 +33,6 @@ type FilterState = 'all' | 'at-risk' | 'top-performer' | 'with-accommodation'
 export function StudentsTab({ students, courseId, accommodations }: StudentsTabProps) {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<FilterState>('all')
-  const [interveneStudent, setInterveneStudent] = useState<Student | null>(null)
-  const courseObjs = useMemo(
-    () => courseObjectives.filter(o => o.courseId === courseId),
-    [courseId]
-  )
-
   const accByStudent = useMemo(() => {
     const m = new Map<string, Accommodation[]>()
     for (const a of accommodations) {
@@ -133,21 +125,11 @@ export function StudentsTab({ students, courseId, accommodations }: StudentsTabP
               student={s}
               accommodations={accByStudent.get(s.id) ?? []}
               courseId={courseId}
-              onIntervene={() => setInterveneStudent(s)}
             />
           ))
         )}
       </div>
 
-      {/* Intervention dialog — Aarti's bottom-20% workflow */}
-      <InterventionDialog
-        open={!!interveneStudent}
-        onOpenChange={(open) => !open && setInterveneStudent(null)}
-        student={interveneStudent}
-        courseId={courseId}
-        objectives={courseObjs}
-        accommodations={accommodations}
-      />
     </div>
   )
 }
@@ -192,10 +174,9 @@ function RosterTile({
 
 // ─── Student row ────────────────────────────────────────────────────────────
 function StudentRow({
-  student, accommodations, courseId, onIntervene,
+  student, accommodations, courseId,
 }: {
   student: Student; accommodations: Accommodation[]; courseId: string
-  onIntervene: () => void
 }) {
   const score = student.avgScore[courseId] ?? 0
   const scoreTone: 'success' | 'info' | 'warning' | 'neutral' = score >= 85 ? 'success' : score >= 70 ? 'info' : score > 0 ? 'warning' : 'neutral'
@@ -255,19 +236,6 @@ function StudentRow({
       </div>
 
       <div className="text-end flex items-center justify-end gap-1">
-        {student.status === 'at-risk' && (
-          <Tip label="Assign practice questions + notify advisor">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={(e) => { e.stopPropagation(); onIntervene() }}
-              className="gap-1.5 text-[11px] h-7 px-2 border-chart-4/40 text-chart-4 hover:bg-chart-4/10"
-            >
-              <i className="fa-light fa-life-ring" aria-hidden="true" />
-              Intervene
-            </Button>
-          </Tip>
-        )}
         {/* "Coming soon" affordance — uses muted-foreground at full opacity
             (≥ 4.5:1) rather than opacity-60 on muted-foreground (~2.57:1,
             NURS-bug-class per docs/governance/component-depth-audits notes

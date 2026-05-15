@@ -22,6 +22,28 @@ Source: 2026-05-08 Aarti audit (`docs/research/meetings/2026-05-08-aarti-design-
 | T14 | Course-level mapping screens | Faculty / Admin | Course detail | P1 | Map course offering to subset of program content areas / competencies / objectives / standards |
 | T15 | Two-question dashboards | Admin | Program reports | P1 | "Am I teaching everything?" + "Am I testing what I'm teaching?" Includes orphan detection ("2 standards not covered by any objectives") |
 | T28 | Frequency-of-use column on QB rows | Faculty | Question bank | ✅ done | Already added (Romit confirmed in meeting) |
+| T29 | Student dashboard — 4-section layout | Student | Student home | P1 | My Courses, My Accommodations, Open Action Items, Recently Published Results. New screen needed. |
+| T30 | Download section UI | Student | Pre-exam | P1 | Fields: course name, assessment name, instructions, download window, exam date/time, download button. ExamSoft gap to fix. |
+| T31 | Exam header — add course name + assessment name | Student | Assessment taker | P1 | Both mandatory in header sacred space. DESIGN-REVIEW: requires new props. |
+| T32 | Submit button relocation | Student | Assessment taker | P1 | Move to TOP panel. DESIGN-REVIEW: structural change to exam engine — flag for dedicated pass. |
+| T33 | Bottom panel prominence | Student | Assessment taker | P1 | Increase visual weight of Next/Flag buttons. Not a removal — improve prominence. |
+| T34 | Answer checkbox position | Student | Assessment taker | P1 | Move selection control to LEFT of option text. Currently sandwiched. Flag for exam engine DS pass. |
+| T35 | QuestionNavigatorPopover — remove number grid | Student | Assessment taker | DESIGN-REVIEW | Grid of question numbers (1, 2, 3…) not aligned with Vishaka directive. QuestionJumpPopover (group-based) is the right approach. Arch decision on which to keep. |
+| T36 | Pre-submission summary | Student | Assessment taker | P1 | Skipped + Flagged popup before final submit. Skipped = unanswered before furthest progress position. |
+| T37 | Async submission + success state | Student | Assessment taker | P1 | Background sync; "uploaded successfully" notification; exam never lost post-submit. |
+| T38 | Student notification audit log | Student/Admin | Student profile | P2 | All system-sent emails/notifications logged and viewable by student and admin. |
+| T39 | Auto-download-window notification | Student | Notifications | P1 | Email to students when download window ending and they haven't downloaded. Config option in assessment setup. |
+| T40 | Entity directory pages — 8 screens | Admin | Admin module | P1 | Student search/landing, faculty search/landing, course search/landing, master course list, master term list, plus competencies/standards/content areas. Global-search UX (one box). Romit working on these. |
+| T41 | Faculty profile — trim for exam management | Admin | Directory | P1 | Course associations (coordinator vs instructor role) only. Remove teaching/scholarship/service, placements, compliance, advisees tabs. |
+| T42 | Student profile — trim for exam management | Admin | Directory | P1 | Courses + Accommodations only. Remove compliance, learning activities, competency dashboard, intervention tabs. |
+| T43 | QB landing page — folder dashboard | Admin/Faculty | Question bank | P0 | Higher-level view: folder count, questions count, approval status, tags coverage. NOT "all questions" as default. |
+| T44 | Product landing page — current-term courses | Admin/Faculty | Landing | P1 | Active/current-term course offerings as primary anchor. Not a flat list of all courses ever. |
+| T45 | Assessment builder — section creation UI | Faculty | Assessment builder | P1 | Free text title per section, assign instructor per section, add/remove sections. Must-have Phase 1. |
+| T46 | Pre-exam instruction page | Faculty | Assessment builder | P1 | Faculty uploads free text instructions; configurable timer (eats into / doesn't eat into total time); optional student attestation. NEW screen — FLAG. |
+| T47 | Assessment review workflow | Faculty/Admin | Assessment builder | P1 | Send to 1+ reviewers; track status (pending/approved/changes-requested). Assessment-level only (not section-level). DESIGN-REVIEW — needs new data model. |
+| T48 | Reference material in exam | Student | Assessment taker | P1 | Globally accessible (button, like calculator). Question-specific reference = tabs. Formula sheets AI-converted to text area. |
+| T49 | Faculty app — point-of-view doc | Faculty | Design brief | P1 | Romit drafts: persona, landing page, core workflows for faculty login. |
+| T50 | Three alignment docs | PM/Design | Process | P0 | (1) Types of questions supported, (2) config at assessment vs. question level, (3) attributes of a question. PM team to produce. |
 
 ## Research / blockers (R1–R10 from audit)
 
