@@ -5,6 +5,17 @@
 
 ---
 
+## Session Start — Required Reads
+
+Before any work in this product, read these two files:
+
+1. `apps/exam-management/docs/patterns/ui-patterns.md` — UI patterns, DS component map, accessibility checklist, FERPA rules.
+2. `docs/watch/digest-latest.md` — Morning digest: PRD changes applied overnight, compliance violations flagged.
+
+Also run `compliance-reviewer` alongside `verification-reviewer` after any UI-touching change.
+
+---
+
 ## This Product's Identity
 
 | App | Package | Port | Path | Stack |
@@ -351,6 +362,14 @@ components/qb/tooltip.tsx        — QB-specific tooltip wrapper
 lib/qb-types.ts                  — Question Bank TypeScript types
 lib/qb-mock-data.ts              — QB mock data for development
 lib/mock-questions.ts            — Mock question dataset
+lib/student-mock-data.ts         — Extended student entity: standing, interventions, documents,
+                                   course enrollments, competency performance
+app/(app)/students/page.tsx              — Student list (base entity, Exam Management scoped)
+app/(app)/students/students-client.tsx   — Google-style single search, no filter controls (Aarti May 13)
+                                           Columns: name, email, cohort, # courses, adviser, GPA, tags
+app/(app)/students/[id]/page.tsx                — Student detail (async params, Next.js 15)
+app/(app)/students/[id]/student-detail-client.tsx — Tabs: Overview | Courses | Assessments | Accommodations
+                                                    Tab variation table + DS Table contract: docs/BASE-ENTITIES.md
 
 public/exxat-logo.svg            — Exxat circular logomark (Prism variant, viewBox-cropped from Exxat_Prism.svg)
 public/exxat-prism.svg           — Full Exxat Prism wordmark (source: Admin/apps/web/Logo/Exxat_Prism.svg)

@@ -5,6 +5,17 @@
 
 ---
 
+## Session Start — Required Reads
+
+Before any work in this product, read these two files:
+
+1. `apps/pce/docs/patterns/pce-ui-patterns.md` — UI patterns, DS component map, accessibility checklist, FERPA, HIPAA rules. Every pattern has a consequence for violation.
+2. `docs/watch/digest-latest.md` — Morning digest: PRD changes applied overnight, compliance violations flagged, FERPA/HIPAA alerts. Surface any P1 violations or FERPA/HIPAA alerts before starting work.
+
+Also run `compliance-reviewer` alongside `verification-reviewer` after any UI-touching change.
+
+---
+
 ## This Product's Identity
 
 | App | Package | Port | Path |
