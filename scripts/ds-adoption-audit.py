@@ -263,6 +263,14 @@ ASYNC_FETCH_RE = re.compile(
 )
 SKELETON_RE = re.compile(r"\bSkeleton\b")
 
+# ── FERPA data-flow regexes (added 2026-05-17) ───────────────────────────────
+# Flag files that handle BOTH a student identifier AND response/answer text
+# in the same component, risking linkage of student identity to survey response
+# in violation of FERPA §99.31. The fix is server-side: strip the student ID
+# before the component receives data — this cannot be solved in the UI layer.
+FERPA_STUDENT_ID_RE = re.compile(r"\bstudentId\b|\bstudentName\b|\bstudentEmail\b")
+FERPA_RESPONSE_TEXT_RE = re.compile(r"\bresponseText\b|\bresponseBody\b|\banswerText\b")
+
 # ── Models ──────────────────────────────────────────────────────────────────
 @dataclass
 class Gap:
@@ -705,6 +713,43 @@ def scan_file_for_async_fetch_no_skeleton(rel: str, text: str) -> list[Gap]:
         ),
     )]
 
+def scan_file_for_ferpa_data_coexistence(rel: str, text: str) -> list[Gap]:
+    """FERPA §99.31 data-flow check.
+
+    A component that receives BOTH a student identifier (studentId,
+    studentName, studentEmail) AND response/answer text (responseText,
+    responseBody, answerText) in the same file risks linking a student's
+    identity to their survey or exam response.
+
+    This is a manual-review flag — the correct fix is server-side data
+    separation (strip the student ID before this component receives data),
+    not a UI-only change.
+    """
+    if rel in DOCUMENTED_HAND_ROLLS:
+        return []
+    has_student_id = bool(FERPA_STUDENT_ID_RE.search(text))
+    has_response = bool(FERPA_RESPONSE_TEXT_RE.search(text))
+    if not (has_student_id and has_response):
+        return []
+    # Cite the first student-ID hit for a concrete line number.
+    m = FERPA_STUDENT_ID_RE.search(text)
+    line_no = text[: m.start()].count("\n") + 1 if m else None
+    return [Gap(
+        severity="block",
+        rule="ferpa-student-id-with-response",
+        file=rel,
+        line=line_no,
+        message=(
+            "FERPA DATA-FLOW: component renders both a student identifier "
+            "(studentId / studentName / studentEmail) and response text "
+            "(responseText / responseBody / answerText). This risks linking "
+            "a student's identity to their survey or exam response — "
+            "FERPA §99.31 violation. Fix: strip the student identifier "
+            "server-side before this component receives data. "
+            "Flag requires manual review — the UI layer cannot fix this alone."
+        ),
+    )]
+
 def scan_filename_for_ds_organism(rel: str) -> list[Gap]:
     """Flag a custom file whose stem matches a DS organism in the registry."""
     if rel in ALLOWED_ORGANISM_PATHS:
@@ -803,6 +848,8 @@ def audit_product(product: str, role: str, root: Path) -> ProductReport:
             scan_file_for_opacity_60_on_text_parent,
             scan_file_for_clickable_without_focus_ring,
             scan_file_for_async_fetch_no_skeleton,
+            # FERPA data-flow check — added 2026-05-17.
+            scan_file_for_ferpa_data_coexistence,
         ):
             for g in fn(short_rel, text):
                 g.file = rel
