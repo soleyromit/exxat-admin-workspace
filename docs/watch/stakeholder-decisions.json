@@ -1,0 +1,65 @@
+{
+  "lastUpdated": "2026-05-17",
+  "decisions": [
+    {
+      "id": "pce-decision-001",
+      "product": "pce",
+      "text": "Scope is at the program level; not at tenant-level.",
+      "stakeholder": "Monil Pokar",
+      "source": "PCE PRD §2 Key Product Decisions #1",
+      "sourceType": "prd",
+      "date": "2026-05-17",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-002",
+      "product": "pce",
+      "text": "For Clinical Course, preceptor and site evaluations stay within learning activities — CE for clinical courses focuses only on course content/structure, the course coordinator (DCE), and Course Instructor.",
+      "stakeholder": "Monil Pokar",
+      "source": "PCE PRD §2 Key Product Decisions #3",
+      "sourceType": "prd",
+      "date": "2026-05-17",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-003",
+      "product": "pce",
+      "text": "Survey responses are anonymous: no student identifier is attached to the submitted response.",
+      "stakeholder": "Monil Pokar",
+      "source": "PCE PRD §4.3 Step 3 — Response Collection",
+      "sourceType": "prd",
+      "date": "2026-05-17",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-004",
+      "product": "pce",
+      "text": "Minimum response threshold is 5 — results for any course suppressed until minimum 5 responses received.",
+      "stakeholder": "Monil Pokar",
+      "source": "PCE PRD §9 Non-Functional Requirements",
+      "sourceType": "prd",
+      "date": "2026-05-17",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-005",
+      "product": "pce",
+      "text": "1–5 Likert scale enforced as standard across all evaluations. Not a configurable option at faculty or program level.",
+      "stakeholder": "Monil Pokar",
+      "source": "PCE PRD §9 Non-Functional Requirements",
+      "sourceType": "prd",
+      "date": "2026-05-17",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-006",
+      "product": "pce",
+      "text": "Evaluation data retained for minimum 7 years to support longitudinal accreditation evidence.",
+      "stakeholder": "Monil Pokar",
+      "source": "PCE PRD §9 Non-Functional Requirements",
+      "sourceType": "prd",
+      "date": "2026-05-17",
+      "status": "confirmed"
+    }
+  ]
+}

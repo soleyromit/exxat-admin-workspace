@@ -83,3 +83,24 @@ export interface StorageFile<T> {
   data: T
   sha: string
 }
+
+// Stakeholder decision cache types
+export type DecisionStatus = 'confirmed' | 'superseded' | 'under-review'
+export type DecisionSourceType = 'prd' | 'transcript' | 'meeting-notes'
+
+export interface DecisionEntry {
+  id: string              // "{product}-decision-{seq}" e.g. "pce-decision-001"
+  product: string
+  text: string            // The exact decision statement
+  stakeholder: string     // Who confirmed it: "Aarti", "Vishaka", "Monil", etc.
+  source: string          // Human-readable source: "PCE PRD §2 Key Product Decisions"
+  sourceType: DecisionSourceType
+  date: string            // ISO date when extracted / confirmed
+  status: DecisionStatus
+  supersededBy?: string   // ID of the decision that replaces this one
+}
+
+export interface DecisionCache {
+  lastUpdated: string
+  decisions: DecisionEntry[]
+}
