@@ -411,16 +411,63 @@ function AssessmentsTab({ student }: { student: ExtendedStudent }) {
 // Vishaka: "Having an accommodation view in our assessment tool is a plus —
 // I don't know if ExamSoft even caters to that."
 
+const ACC_TYPE_LABEL: Record<string, string> = {
+  'extended-time': 'Extended Time', 'separate-room': 'Separate Room',
+  'extended-breaks': 'Extended Breaks', 'screen-reader': 'Screen Reader', 'quiet-room': 'Quiet Room',
+}
+
+interface AccommodationRow extends Record<string, unknown> {
+  id: string
+  type: string
+  detail: string
+  courseCode: string
+  approvedBy: string
+  approvedDate: string
+}
+
+const ACC_COLUMNS: ColumnDef<AccommodationRow>[] = [
+  {
+    key: 'type', label: 'Type', sortable: true, width: 160,
+    cell: (row) => <Badge variant="secondary" className="rounded text-[11px]">{ACC_TYPE_LABEL[row.type] ?? row.type}</Badge>,
+  },
+  {
+    key: 'detail', label: 'Detail', sortable: false, width: 200,
+    cell: (row) => <span className="text-sm text-foreground">{row.detail}</span>,
+  },
+  {
+    key: 'courseCode', label: 'Course', sortable: true, width: 120,
+    cell: (row) => <span className="text-sm text-muted-foreground font-mono">{row.courseCode}</span>,
+  },
+  {
+    key: 'approvedBy', label: 'Approved by', sortable: true, width: 180,
+    cell: (row) => <span className="text-sm text-muted-foreground">{row.approvedBy}</span>,
+  },
+  {
+    key: 'approvedDate', label: 'Date', sortable: true, width: 140,
+    cell: (row) => <span className="text-sm text-muted-foreground whitespace-nowrap">{row.approvedDate}</span>,
+  },
+]
+
 function AccommodationsTab({ student }: { student: ExtendedStudent }) {
-  const accs = facultyAccommodations.filter(a => a.studentId === student.id)
-  const typeLabel: Record<string, string> = {
-    'extended-time': 'Extended Time', 'separate-room': 'Separate Room',
-    'extended-breaks': 'Extended Breaks', 'screen-reader': 'Screen Reader', 'quiet-room': 'Quiet Room',
-  }
+  const rows: AccommodationRow[] = facultyAccommodations
+    .filter(a => a.studentId === student.id)
+    .map(a => ({
+      id: a.id,
+      type: a.type,
+      detail: a.detail,
+      courseCode: a.courseId.replace('course-', '').toUpperCase(),
+      approvedBy: a.approvedBy,
+      approvedDate: new Date(a.approvedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    }))
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
-      {accs.length === 0 ? (
+    <DataTable<AccommodationRow>
+      data={rows}
+      columns={ACC_COLUMNS}
+      getRowId={(row) => row.id}
+      selectable={false}
+      searchable={false}
+      emptyState={
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <i className="fa-light fa-universal-access text-muted-foreground text-3xl mb-3" aria-hidden="true" />
           <p className="font-semibold text-foreground">No accommodations on file</p>
@@ -428,37 +475,8 @@ function AccommodationsTab({ student }: { student: ExtendedStudent }) {
             Accommodations are approved by Student Services and appear here once active.
           </p>
         </div>
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/30 hover:bg-muted/30">
-              <TableHead scope="col" className="pl-4 pr-3 text-[11px] font-semibold uppercase tracking-[0.08em]">Type</TableHead>
-              <TableHead scope="col" className="px-3 text-[11px] font-semibold uppercase tracking-[0.08em]">Detail</TableHead>
-              <TableHead scope="col" className="px-3 text-[11px] font-semibold uppercase tracking-[0.08em]">Course</TableHead>
-              <TableHead scope="col" className="px-3 text-[11px] font-semibold uppercase tracking-[0.08em]">Approved by</TableHead>
-              <TableHead scope="col" className="px-3 pr-4 text-[11px] font-semibold uppercase tracking-[0.08em]">Date</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {accs.map(a => (
-              <TableRow key={a.id} className="">
-                <TableCell className="py-3 pl-4 pr-3">
-                  <Badge variant="secondary" className="rounded text-[11px]">{typeLabel[a.type] ?? a.type}</Badge>
-                </TableCell>
-                <TableCell className="py-3 px-3 text-sm text-foreground">{a.detail}</TableCell>
-                <TableCell className="py-3 px-3 text-sm text-muted-foreground font-mono">
-                  {a.courseId.replace('course-', '').toUpperCase()}
-                </TableCell>
-                <TableCell className="py-3 px-3 text-sm text-muted-foreground">{a.approvedBy}</TableCell>
-                <TableCell className="py-3 px-3 pr-4 text-sm text-muted-foreground whitespace-nowrap">
-                  {new Date(a.approvedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
-    </div>
+      }
+    />
   )
 }
 
