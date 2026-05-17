@@ -1,0 +1,287 @@
+{
+  "generated": "2026-05-17",
+  "dsSubmodulePath": "exxat-ds/packages/ui/src",
+  "componentCount": 44,
+  "components": {
+    "Avatar": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "Badge": {
+      "importPath": "@exxat/ds/packages/ui/src",
+      "variants": [
+        "default",
+        "secondary",
+        "destructive",
+        "outline",
+        "ghost",
+        "link"
+      ]
+    },
+    "Banner": {
+      "importPath": "@exxat/ds/packages/ui/src",
+      "variants": [
+        "info",
+        "warning",
+        "error",
+        "success",
+        "promo"
+      ]
+    },
+    "Breadcrumb": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "Button": {
+      "importPath": "@exxat/ds/packages/ui/src",
+      "variants": [
+        "default",
+        "outline",
+        "secondary",
+        "ghost",
+        "destructive",
+        "link"
+      ],
+      "sizes": [
+        "default",
+        "xs",
+        "sm",
+        "lg",
+        "icon",
+        "icon-xs",
+        "icon-sm",
+        "icon-lg"
+      ]
+    },
+    "Calendar": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "Card": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "Chart": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "Checkbox": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "CoachMark": {
+      "importPath": "@exxat/ds/packages/ui/src",
+      "sizes": [
+        "default",
+        "sm",
+        "lg"
+      ],
+      "keyProps": [
+        "state",
+        "side",
+        "align",
+        "sideOffset",
+        "nextLabel",
+        "skipLabel"
+      ]
+    },
+    "Collapsible": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "Command": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "DatePickerField": {
+      "importPath": "@exxat/ds/packages/ui/src",
+      "keyProps": [
+        "value",
+        "onChange",
+        "disabled",
+        "triggerClassName",
+        "fromYear",
+        "toYear"
+      ]
+    },
+    "Dialog": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "DragHandleGrip": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "Drawer": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "DropdownMenu": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "Field": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "Form": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "InputGroup": {
+      "importPath": "@exxat/ds/packages/ui/src",
+      "sizes": [
+        "xs",
+        "sm",
+        "icon-xs",
+        "icon-sm"
+      ]
+    },
+    "Input": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "Kbd": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "Label": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "Popover": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "RadioGroup": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "Select": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "SelectionTileGrid": {
+      "importPath": "@exxat/ds/packages/ui/src",
+      "keyProps": [
+        "sectionLabel",
+        "options",
+        "columns",
+        "value",
+        "onValueChange",
+        "interaction"
+      ]
+    },
+    "Separator": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "Sheet": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "Sidebar": {
+      "importPath": "@exxat/ds/packages/ui/src",
+      "variants": [
+        "default",
+        "outline"
+      ],
+      "sizes": [
+        "default",
+        "sm",
+        "lg"
+      ]
+    },
+    "Skeleton": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "Sonner": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "StatusBadge": {
+      "importPath": "@exxat/ds/packages/ui/src",
+      "variants": [
+        "pill",
+        "dot"
+      ],
+      "sizes": [
+        "xs",
+        "sm",
+        "md"
+      ],
+      "keyProps": [
+        "label"
+      ]
+    },
+    "Table": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "Tabs": {
+      "importPath": "@exxat/ds/packages/ui/src",
+      "variants": [
+        "default",
+        "line"
+      ]
+    },
+    "Textarea": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "Tip": {
+      "importPath": "@exxat/ds/packages/ui/src",
+      "keyProps": [
+        "label",
+        "side"
+      ]
+    },
+    "ToggleGroup": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "ToggleSwitch": {
+      "importPath": "@exxat/ds/packages/ui/src",
+      "keyProps": [
+        "checked",
+        "onChange"
+      ]
+    },
+    "Toggle": {
+      "importPath": "@exxat/ds/packages/ui/src",
+      "variants": [
+        "default",
+        "outline"
+      ],
+      "sizes": [
+        "default",
+        "sm",
+        "lg"
+      ]
+    },
+    "Tooltip": {
+      "importPath": "@exxat/ds/packages/ui/src"
+    },
+    "ViewSegmentedControl": {
+      "importPath": "@exxat/ds/packages/ui/src",
+      "keyProps": [
+        "value",
+        "onValueChange",
+        "options",
+        "iconOnly",
+        "showTooltips",
+        "tooltipSide"
+      ]
+    },
+    "DataTable": {
+      "importPath": "@/components/data-table",
+      "note": "vendored from exxat-ds/apps/web/components/data-table/",
+      "variants": [],
+      "sizes": [],
+      "keyProps": [
+        "data",
+        "columns",
+        "getRowId",
+        "selectable",
+        "searchable",
+        "defaultGroupBy",
+        "groupLabels",
+        "groupOrder",
+        "emptyState",
+        "onRowClick",
+        "toolbarSlot",
+        "bulkActionsSlot"
+      ]
+    },
+    "KeyMetrics": {
+      "importPath": "@/components/key-metrics",
+      "note": "vendored from exxat-ds/apps/web/components/key-metrics.tsx",
+      "variants": [
+        "card",
+        "flat",
+        "compact"
+      ],
+      "sizes": [],
+      "keyProps": [
+        "metrics",
+        "variant",
+        "periodSelector",
+        "insightRail"
+      ]
+    }
+  }
+}
