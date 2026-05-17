@@ -173,3 +173,32 @@ When you (Romit) catch me again, append a row. The goal is the table shrinking o
 - **`docs/patterns/admin/state-coverage.md`** (ADMIN-004) is the prescriptive doc for Pattern F — what each state should look like with canonical file:line citations.
 - **`docs/governance/blind-spots.md`** row #13 tracks the verification-discipline meta-bug; row #14 tracks the state-coverage class specifically.
 - **`architect` subagent** (`.claude/agents/architect.md`) reads the discipline log + audit hit counts + commit history at session-end and proposes structural responses (new audit rules, promotions, retirements, consolidations) in `docs/governance/architect-runs/YYYY-MM-DD-<slug>.md`. Closes the loop where new patterns surface via discipline-log entries but the rule SET stays static. Romit reviews + applies; the architect never commits.
+
+---
+
+## Correction Logging Protocol
+
+When Romit points out a mistake in any session, do all three:
+
+1. **Fix the mistake** (as always)
+2. **Save a `feedback` memory entry** (as always)
+3. **Append a `claude-correction` entry to `docs/watch/updates-log.json`:**
+
+```json
+{
+  "id": "YYYY-MM-DD-{product}-corr-{seq}",
+  "date": "YYYY-MM-DD",
+  "product": "{affected product}",
+  "type": "claude-correction",
+  "title": "Wrong: {one-line description of what was wrong}",
+  "what": "{what was wrong} → {what was fixed}",
+  "why": "{root cause — e.g. 'did not read Table source before writing JSX'}",
+  "source": "Romit (session correction)",
+  "severity": null,
+  "files": ["{affected files}"]
+}
+```
+
+This makes every correction visible at:
+- `__updates('corrections')` in browser DevTools console
+- `localhost:3002/updates` filtered to `claude-correction` type

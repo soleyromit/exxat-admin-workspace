@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
+import { DevInit } from './dev-init'
 
 export const metadata: Metadata = {
   title: 'PCE — Admin',
@@ -23,6 +24,7 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased" suppressHydrationWarning>
+        {process.env.NODE_ENV === 'development' && <DevInit />}
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
