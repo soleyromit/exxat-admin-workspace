@@ -1,0 +1,37 @@
+{
+  "entries": [
+    {
+      "id": "pce-prd-monil",
+      "product": "pce",
+      "label": "PCE PRD — Monil Pokar",
+      "type": "direct",
+      "uri": "file:///b!6y2xwNLVd0aUyo9sxCyb6XmDI-2SiVVBlBxcEI6ONSKXRD9miglXSK85dbahfq2-/01GF5FXBAL7WM2D6SQWFDLODM52CGDI7OL",
+      "snapshot": "docs/watch/snapshots/pce-prd-monil.txt",
+      "flags": "docs/watch/flags/pce.md",
+      "lastSynced": null,
+      "active": true
+    },
+    {
+      "id": "exam-roadmap-nipun",
+      "product": "exam-management",
+      "label": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
+      "type": "excel-manifest",
+      "uri": "file:///b!_2xYksJpY02i2c_IMdywfj_GsYw4nixMmuYHQiw9DyEF5rFuOn4TQp2p2E75ioRS/01TEBFVP5ENZ6VUDVB2VEZ3HKAATCI4SBQ",
+      "snapshot": "docs/watch/snapshots/exam-roadmap-nipun.txt",
+      "flags": "docs/watch/flags/exam-management.md",
+      "lastSynced": null,
+      "active": true
+    },
+    {
+      "id": "exam-prd-nipun",
+      "product": "exam-management",
+      "label": "Assessment Builder PRD — Nipun",
+      "type": "direct",
+      "uri": "file:///b!_2xYksJpY02i2c_IMdywfj_GsYw4nixMmuYHQiw9DyEF5rFuOn4TQp2p2E75ioRS/01TEBFVPY3QVDJN2NMZNDINUOQKMMIWG6R",
+      "snapshot": "docs/watch/snapshots/exam-prd-nipun.txt",
+      "flags": "docs/watch/flags/exam-management.md",
+      "lastSynced": null,
+      "active": true
+    }
+  ]
+}
