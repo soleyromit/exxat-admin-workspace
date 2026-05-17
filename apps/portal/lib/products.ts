@@ -40,6 +40,8 @@ export type Product =
       studentUrl: string
       extra?: { label: string; url: string }
       comingSoon?: never
+      subscriptionStatus: 'active' | 'trial' | 'not-subscribed'
+      accountManager: { name: string; email: string }
     }
   | {
       id: string
@@ -58,6 +60,8 @@ export type Product =
       adminUrl?: never
       studentUrl?: never
       extra?: never
+      subscriptionStatus: 'active' | 'trial' | 'not-subscribed'
+      accountManager: { name: string; email: string }
     }
 
 export const PRODUCTS: Product[] = [
@@ -177,6 +181,8 @@ export const PRODUCTS: Product[] = [
       label: 'Assessment Taker',
       url: process.env.NEXT_PUBLIC_EXAM_MANAGEMENT_TAKER_URL ?? 'http://localhost:5174',
     },
+    subscriptionStatus: 'active',
+    accountManager: { name: 'Sarah Chen', email: 'sarah.chen@exxat.com' },
   },
   {
     id: 'pce',
@@ -249,6 +255,8 @@ export const PRODUCTS: Product[] = [
     ],
     adminUrl: process.env.NEXT_PUBLIC_PCE_ADMIN_URL ?? 'http://localhost:3005',
     studentUrl: process.env.NEXT_PUBLIC_PCE_STUDENT_URL ?? 'http://localhost:3006',
+    subscriptionStatus: 'active',
+    accountManager: { name: 'Marcus Webb', email: 'marcus.webb@exxat.com' },
   },
   {
     id: 'patient-log',
@@ -286,6 +294,8 @@ export const PRODUCTS: Product[] = [
     ],
     adminUrl: process.env.NEXT_PUBLIC_PATIENT_LOG_ADMIN_URL ?? 'http://localhost:3003',
     studentUrl: process.env.NEXT_PUBLIC_PATIENT_LOG_STUDENT_URL ?? 'http://localhost:3004',
+    subscriptionStatus: 'trial',
+    accountManager: { name: 'Sarah Chen', email: 'sarah.chen@exxat.com' },
   },
   {
     id: 'skills-checklist',
@@ -323,6 +333,8 @@ export const PRODUCTS: Product[] = [
     ],
     adminUrl: process.env.NEXT_PUBLIC_SKILLS_CHECKLIST_ADMIN_URL ?? 'http://localhost:3007',
     studentUrl: process.env.NEXT_PUBLIC_SKILLS_CHECKLIST_STUDENT_URL ?? 'http://localhost:3008',
+    subscriptionStatus: 'trial',
+    accountManager: { name: 'Marcus Webb', email: 'marcus.webb@exxat.com' },
   },
   {
     id: 'learning-contracts',
@@ -360,6 +372,8 @@ export const PRODUCTS: Product[] = [
     ],
     adminUrl: process.env.NEXT_PUBLIC_LEARNING_CONTRACTS_ADMIN_URL ?? 'http://localhost:3009',
     studentUrl: process.env.NEXT_PUBLIC_LEARNING_CONTRACTS_STUDENT_URL ?? 'http://localhost:3010',
+    subscriptionStatus: 'not-subscribed',
+    accountManager: { name: 'Priya Nair', email: 'priya.nair@exxat.com' },
   },
   {
     id: 'faas',
@@ -381,5 +395,7 @@ export const PRODUCTS: Product[] = [
     roadmap: [],
     releaseNotes: [],
     comingSoon: true,
+    subscriptionStatus: 'not-subscribed',
+    accountManager: { name: 'Priya Nair', email: 'priya.nair@exxat.com' },
   },
 ]

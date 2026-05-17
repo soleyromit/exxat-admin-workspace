@@ -1,6 +1,7 @@
 'use client'
 
 import { SidebarTrigger, Separator } from '@exxat/ds/packages/ui/src'
+import { NotificationsPopover } from '@/components/notifications-popover'
 
 export function SiteHeader() {
   return (
@@ -10,7 +11,8 @@ export function SiteHeader() {
     >
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="h-4" />
-      <h1 className="text-base font-semibold">Workspace</h1>
+      <h1 className="text-base font-semibold flex-1">Workspace</h1>
+      <NotificationsPopover />
     </header>
   )
 }

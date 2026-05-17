@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   Sidebar,
   SidebarContent,
@@ -15,6 +16,7 @@ import {
   AvatarFallback,
   useSidebar,
 } from '@exxat/ds/packages/ui/src'
+import { ProfileSheet } from '@/components/profile-sheet'
 
 function AppHeader() {
   const { state } = useSidebar()
@@ -46,45 +48,61 @@ function AppHeader() {
 }
 
 export function AppSidebar() {
+  const [profileOpen, setProfileOpen] = useState(false)
+
   return (
-    <Sidebar variant="inset" collapsible="icon">
-      <SidebarHeader>
-        <AppHeader />
-      </SidebarHeader>
+    <>
+      <Sidebar variant="inset" collapsible="icon">
+        <SidebarHeader>
+          <AppHeader />
+        </SidebarHeader>
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton isActive tooltip="Apps">
-                  <i className="fa-light fa-grid-2" aria-hidden="true" />
-                  <span>Apps</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton isActive tooltip="Apps">
+                    <i className="fa-light fa-grid-2" aria-hidden="true" />
+                    <span>Apps</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton tooltip="Notifications">
+                    <i className="fa-light fa-bell" aria-hidden="true" />
+                    <span>Notifications</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
 
-      <SidebarFooter>
-        <SidebarSeparator />
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" tooltip="Romit Soley">
-              <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarFallback className="rounded-lg text-xs">RS</AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col gap-0.5 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">Romit Soley</span>
-                <span className="truncate text-xs text-muted-foreground">
-                  Product Designer II
-                </span>
-              </div>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-    </Sidebar>
+        <SidebarFooter>
+          <SidebarSeparator />
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                size="lg"
+                tooltip="Romit Soley"
+                onClick={() => setProfileOpen(true)}
+              >
+                <Avatar className="h-8 w-8 rounded-lg">
+                  <AvatarFallback className="rounded-lg text-xs">RS</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col gap-0.5 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">Romit Soley</span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    Product Designer II
+                  </span>
+                </div>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      </Sidebar>
+
+      <ProfileSheet open={profileOpen} onOpenChange={setProfileOpen} />
+    </>
   )
 }
