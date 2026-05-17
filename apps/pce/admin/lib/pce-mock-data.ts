@@ -11,6 +11,18 @@ export interface PceTemplate {
   usedBySurveyCount: number
   lastModified: string
   createdBy: string
+  /** Actual question content per section. Source of truth — questionCount is derived from this. */
+  questions: Record<TemplateSection, TemplateQuestion[]>
+  /** Likert pointer (3 | 4 | 5 | 7 | 10). Defaults to 5 until T30 settings page. */
+  likertPointer: 3 | 4 | 5 | 7 | 10
+}
+
+export interface TemplateQuestion {
+  id: string
+  text: string
+  answerType: 'likert' | 'free_text'
+  /** 0-based position within its section */
+  order: number
 }
 
 export interface PceInstructor {
@@ -88,34 +100,66 @@ export const MOCK_CURRENT_USER: PceUser = {
 
 export const MOCK_TEMPLATES: PceTemplate[] = [
   {
-    id: 't1',
-    name: 'Standard PCE',
-    sections: ['course_content', 'faculty_performance', 'course_director'],
-    status: 'active',
-    questionCount: 24,
-    usedBySurveyCount: 12,
-    lastModified: 'Apr 18, 2026',
-    createdBy: 'Dr. Thompson',
-  },
-  {
-    id: 't2',
-    name: 'Short Form PCE',
+    id: 'tmpl1',
+    name: 'End-of-Term Evaluation',
     sections: ['course_content', 'faculty_performance'],
     status: 'active',
-    questionCount: 16,
-    usedBySurveyCount: 4,
-    lastModified: 'Mar 02, 2026',
-    createdBy: 'Dr. Thompson',
-  },
-  {
-    id: 't3',
-    name: 'Faculty-Focused Evaluation',
-    sections: ['course_content', 'faculty_performance'],
-    status: 'draft',
     questionCount: 8,
-    usedBySurveyCount: 0,
-    lastModified: 'Apr 22, 2026',
+    usedBySurveyCount: 3,
+    lastModified: 'Apr 10, 2026',
     createdBy: 'Dr. Thompson',
+    likertPointer: 5,
+    questions: {
+      course_content: [
+        { id: 'q1', text: 'The course objectives were clearly stated.', answerType: 'likert', order: 0 },
+        { id: 'q2', text: 'Course materials supported my learning.', answerType: 'likert', order: 1 },
+        { id: 'q3', text: 'The workload was appropriate for the credit hours.', answerType: 'likert', order: 2 },
+        { id: 'q4', text: 'Assessments were aligned with learning objectives.', answerType: 'likert', order: 3 },
+        { id: 'q5', text: 'What would you change about this course?', answerType: 'free_text', order: 4 },
+      ],
+      faculty_performance: [
+        { id: 'q6', text: 'The instructor was well-prepared for each class.', answerType: 'likert', order: 0 },
+        { id: 'q7', text: 'The instructor communicated expectations clearly.', answerType: 'likert', order: 1 },
+        { id: 'q8', text: 'What feedback do you have for the instructor?', answerType: 'free_text', order: 2 },
+      ],
+      course_director: [],
+    },
+  },
+  {
+    id: 'tmpl2',
+    name: 'Faculty Midterm Check-In',
+    sections: ['faculty_performance'],
+    status: 'active',
+    questionCount: 3,
+    usedBySurveyCount: 1,
+    lastModified: 'Mar 22, 2026',
+    createdBy: 'Dr. Thompson',
+    likertPointer: 5,
+    questions: {
+      course_content: [],
+      faculty_performance: [
+        { id: 'q9',  text: 'The instructor encourages student participation.', answerType: 'likert', order: 0 },
+        { id: 'q10', text: 'The instructor is available during office hours.', answerType: 'likert', order: 1 },
+        { id: 'q11', text: 'Any concerns to share at the midpoint?', answerType: 'free_text', order: 2 },
+      ],
+      course_director: [],
+    },
+  },
+  {
+    id: 'tmpl3',
+    name: 'Exit Survey',
+    sections: ['course_content', 'faculty_performance', 'course_director'],
+    status: 'draft',
+    questionCount: 0,
+    usedBySurveyCount: 0,
+    lastModified: 'Apr 28, 2026',
+    createdBy: 'Dr. Thompson',
+    likertPointer: 5,
+    questions: {
+      course_content: [],
+      faculty_performance: [],
+      course_director: [],
+    },
   },
 ]
 
