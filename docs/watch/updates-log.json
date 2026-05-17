@@ -1,3 +1,125 @@
 {
-  "entries": []
+  "entries": [
+    {
+      "id": "2026-05-17-workspace-001",
+      "date": "2026-05-17",
+      "product": "workspace",
+      "type": "architecture",
+      "title": "PRD Watcher — daily SharePoint sync with auto-apply + flag",
+      "what": "Scheduled agent (prd-watcher-daily, 9am EDT) reads Monil's PCE PRD and Nipun's Exam Mgmt roadmap + PRD via M365 MCP. Diffs against snapshots. Applies clear changes to code; flags ambiguous ones to docs/watch/flags/. Registry at docs/watch/registry.json. 3 docs registered.",
+      "why": "Prevent design drift — when Monil or Nipun updates a PRD, code should reflect it by next morning without Romit having to prompt.",
+      "source": "Architecture — Romit",
+      "severity": null,
+      "files": [
+        "docs/watch/registry.json",
+        "docs/watch/agent-prompts/prd-watcher.md"
+      ]
+    },
+    {
+      "id": "2026-05-17-workspace-002",
+      "date": "2026-05-17",
+      "product": "workspace",
+      "type": "architecture",
+      "title": "Compliance sweep — weekly FERPA/HIPAA/WCAG audit across all product TSX",
+      "what": "Scheduled agent (compliance-sweep-weekly, Mon 8am EDT) greps all product TSX files for 12 rule violations: FERPA student-ID coexistence, WCAG opacity-60-on-text, missing aria-hidden on FA icons, raw table usage, toast usage, missing DataTable empty state, and more. Writes to docs/watch/violation-inventory.json and docs/watch/compliance-report.md. P1/P2/P3 severity with consequence language.",
+      "why": "FERPA violation = $43K–$274K fine per incident. WCAG failures block government contracts. Audit must run automatically — not only when Romit notices a problem.",
+      "source": "Architecture — Romit",
+      "severity": null,
+      "files": [
+        "docs/watch/agent-prompts/compliance-sweep.md",
+        "scripts/ds-adoption-audit.py"
+      ]
+    },
+    {
+      "id": "2026-05-17-workspace-003",
+      "date": "2026-05-17",
+      "product": "workspace",
+      "type": "architecture",
+      "title": "Doc Watcher UI — paste SharePoint links, validate duplicates, registry management",
+      "what": "Next.js app at tools/doc-watcher/ (localhost:3002, deployed to Vercel). Registry page: paste one or many SharePoint URLs, Check Links validates duplicates, Add prompts for product + label. Updates page: filterable feed of PRD changes, compliance findings, corrections — grouped by date, P1 entries red-bordered. GitHub API backend — no database.",
+      "why": "Romit needed a simple interface to register new docs without editing JSON by hand. Also a cross-reference surface to show stakeholders what changed and why.",
+      "source": "Architecture — Romit",
+      "severity": null,
+      "files": [
+        "tools/doc-watcher/app/page.tsx",
+        "tools/doc-watcher/app/updates/page.tsx",
+        "tools/doc-watcher/lib/github-storage.ts"
+      ]
+    },
+    {
+      "id": "2026-05-17-workspace-004",
+      "date": "2026-05-17",
+      "product": "workspace",
+      "type": "architecture",
+      "title": "DS snapshot — 44-component API surface, eliminates per-session DS source reads",
+      "what": "Python script (scripts/build_ds_snapshot.py) reads exxat-ds/packages/ui/src/, extracts variants, sizes, and key props via regex into docs/watch/ds-snapshot.json (44 components). Compliance-reviewer now reads snapshot in Step 0 instead of full source files. Daily refresh agent (ds-snapshot-refresh, 10am EDT) keeps it current.",
+      "why": "Reading full DS source per session cost ~4K tokens/component. Snapshot reduces it to ~50 tokens/grep — 80× reduction in DS lookup cost.",
+      "source": "Architecture — Romit",
+      "severity": null,
+      "files": [
+        "scripts/build_ds_snapshot.py",
+        "docs/watch/ds-snapshot.json",
+        "docs/watch/agent-prompts/ds-snapshot-refresh.md"
+      ]
+    },
+    {
+      "id": "2026-05-17-workspace-005",
+      "date": "2026-05-17",
+      "product": "pce",
+      "type": "architecture",
+      "title": "Stakeholder decision cache — 6 PCE decisions + weekly Granola transcript extraction",
+      "what": "docs/watch/stakeholder-decisions.json seeded with 6 confirmed PCE PRD decisions (Monil Pokar): program-level scope, clinical CE focus, anonymous responses, N=5 threshold, 1-5 Likert enforced, 7-year retention. PRD watcher Step 6 extracts new decisions on every sync. Granola intake agent (Mon 9am EDT) pulls raw 7-day transcripts and extracts Aarti/Vishaka directives.",
+      "why": "Eliminates re-reading PRDs + transcripts every session to answer 'what did Aarti confirm about X'. Queryable JSON, transcript-level granularity — not synthesised summaries.",
+      "source": "Architecture — Romit",
+      "severity": null,
+      "files": [
+        "docs/watch/stakeholder-decisions.json",
+        "docs/watch/agent-prompts/granola-intake.md"
+      ]
+    },
+    {
+      "id": "2026-05-17-workspace-006",
+      "date": "2026-05-17",
+      "product": "workspace",
+      "type": "architecture",
+      "title": "Transcript→PRD diff — weekly P1 flag when Aarti directive contradicts PRD",
+      "what": "Scheduled agent (transcript-prd-diff-weekly, Tue 9am EDT) reads 14 days of Granola transcripts, extracts directives from Aarti/Adi/Vishaka, cross-references against PRD snapshots. Any contradiction flagged P1 to docs/watch/flags/{product}.md with exact transcript quote + contradicting PRD text side by side.",
+      "why": "The cohort-filter incident: Aarti's 'no filters' directive was in the raw transcript but not in the summary — a filter was built and removed after two verification cycles. This agent catches that error class automatically.",
+      "source": "Architecture — Romit",
+      "severity": null,
+      "files": [
+        "docs/watch/agent-prompts/transcript-prd-diff.md"
+      ]
+    },
+    {
+      "id": "2026-05-17-exam-management-001",
+      "date": "2026-05-17",
+      "product": "exam-management",
+      "type": "architecture",
+      "title": "BUILD-STATUS auto-sync from Nipun's Excel roadmap",
+      "what": "PRD watcher Steps 7a–7f: when exam-roadmap-nipun Excel is processed, extract project status grid, map Excel status values (Completed→🟢 Shipped, In Progress→🟡 In Progress, Not Started→⚪ Not started), update docs/BUILD-STATUS.md Exam Management section inline. No manual updates needed.",
+      "why": "BUILD-STATUS.md was going stale — Nipun marks items complete in Excel but the doc required a manual update. Now syncs every morning.",
+      "source": "Architecture — Romit",
+      "severity": null,
+      "files": [
+        "docs/watch/agent-prompts/prd-watcher.md",
+        "docs/BUILD-STATUS.md"
+      ]
+    },
+    {
+      "id": "2026-05-17-workspace-007",
+      "date": "2026-05-17",
+      "product": "workspace",
+      "type": "architecture",
+      "title": "__updates() dev console — daily PRD + compliance feed in browser DevTools",
+      "what": "window.__updates() registered in both pce and exam-management admin apps. Auto-prints P1/prd-change summary on page load (dev only, tree-shaken in prod). Supports filters: __updates('today'), __updates('pce'), __updates('corrections'), __updates('p1'), __updates('week').",
+      "why": "Romit can cross-reference design decisions in the browser while building — see what changed today without switching tabs. Zero product UI pollution.",
+      "source": "Architecture — Romit",
+      "severity": null,
+      "files": [
+        "apps/pce/admin/app/dev-updates.ts",
+        "apps/exam-management/admin/app/dev-updates.ts"
+      ]
+    }
+  ]
 }
