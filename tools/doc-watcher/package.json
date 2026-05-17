@@ -1,0 +1,13 @@
+{
+  "name": "doc-watcher",
+  "private": true,
+  "scripts": {
+    "test": "vitest run",
+    "dev": "next dev --port 3002"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "vitest": "^2.0.0",
+    "typescript": "^5.0.0"
+  }
+}
