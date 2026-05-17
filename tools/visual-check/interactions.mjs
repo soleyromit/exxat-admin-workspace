@@ -266,6 +266,75 @@ async function clickDialogPrimarySubmit(page) {
   return { clicked: false, reason: 'no submit button found in dialog' }
 }
 
+// ── WCAG 1.4.10 Reflow — 400% zoom (320px viewport width) ──────────────────
+async function testReflow(page, route) {
+  await page.setViewportSize({ width: 320, height: 568 })
+  await page.goto(route)
+  await page.waitForLoadState('networkidle')
+
+  const hasHorizontalScroll = await page.evaluate(() => {
+    return document.documentElement.scrollWidth > document.documentElement.clientWidth
+  })
+
+  const screenshotPath = `tools/visual-check/screenshots/reflow-${route.replace(/\//g, '-')}.png`
+  await page.screenshot({ path: screenshotPath, fullPage: false })
+
+  return {
+    route,
+    test: 'WCAG 1.4.10 Reflow (320px)',
+    pass: !hasHorizontalScroll,
+    violation: hasHorizontalScroll
+      ? 'Horizontal scrollbar present at 320px viewport — reflow failure. Consequence: fails VPAT certification, blocks enterprise procurement.'
+      : null,
+    screenshot: screenshotPath,
+  }
+}
+
+// ── WCAG 1.4.12 Text Spacing ────────────────────────────────────────────────
+async function testTextSpacing(page, route) {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto(route)
+  await page.waitForLoadState('networkidle')
+
+  await page.addStyleTag({
+    content: `
+      * {
+        line-height: 1.5 !important;
+        letter-spacing: 0.12em !important;
+        word-spacing: 0.16em !important;
+      }
+      p { margin-bottom: 2em !important; }
+    `,
+  })
+
+  await page.waitForTimeout(300)
+
+  const clippedElements = await page.evaluate(() => {
+    const elements = document.querySelectorAll('*')
+    const clipped = []
+    for (const el of elements) {
+      const style = getComputedStyle(el)
+      if (style.overflow === 'hidden' && el.scrollHeight > el.clientHeight) {
+        clipped.push(el.tagName + (el.className ? '.' + el.className.split(' ')[0] : ''))
+      }
+    }
+    return clipped.slice(0, 10)
+  })
+
+  const screenshotPath = `tools/visual-check/screenshots/text-spacing-${route.replace(/\//g, '-')}.png`
+  await page.screenshot({ path: screenshotPath, fullPage: true })
+
+  return {
+    route,
+    test: 'WCAG 1.4.12 Text Spacing',
+    pass: clippedElements.length === 0,
+    violation: clippedElements.length > 0
+      ? `Content clipped under text-spacing overrides in: ${clippedElements.join(', ')}. Consequence: affects dyslexic users with OS-level spacing.`
+      : null,
+    screenshot: screenshotPath,
+  }
+}
+
 async function checkRoute(page, route) {
   const url = `${BASE_URL}${route}`
   const slug = slugify(route)
@@ -512,6 +581,33 @@ async function checkRoute(page, route) {
       return captureState(page, OUT_DIR, slug, 'theme-toggle')
     })
     result.interactions.push(themeEntry)
+
+    // ===== 13. WCAG 1.4.10 Reflow (320px) =====
+    const reflowEntry = await tryInteraction('reflow-320px', async () => {
+      const r = await testReflow(page, url)
+      // Restore desktop viewport for subsequent steps + next route.
+      await page.setViewportSize({ width: 1440, height: 900 })
+      await page.waitForTimeout(300)
+      return {
+        type: 'reflow-320px',
+        screenshot: r.screenshot,
+        pass: r.pass,
+        ...(r.violation ? { violation: r.violation } : {}),
+      }
+    })
+    result.interactions.push(reflowEntry)
+
+    // ===== 14. WCAG 1.4.12 Text Spacing =====
+    const spacingEntry = await tryInteraction('text-spacing', async () => {
+      const r = await testTextSpacing(page, url)
+      return {
+        type: 'text-spacing',
+        screenshot: r.screenshot,
+        pass: r.pass,
+        ...(r.violation ? { violation: r.violation } : {}),
+      }
+    })
+    result.interactions.push(spacingEntry)
   } catch (err) {
     result.error = err.message || String(err)
   } finally {
