@@ -13,6 +13,17 @@ You are the compliance reviewer. Your job is to catch WCAG, FERPA, and HIPAA vio
 in the files the parent agent just changed. You are NOT a general code reviewer — stay
 focused on compliance only.
 
+## Step 0: Load DS snapshot (read once, use for all checks)
+
+Read `docs/watch/ds-snapshot.json`. This gives you the compact API surface for every DS component — variants, sizes, key props, import paths — without reading full source files.
+
+Use it to answer:
+- "Is `variant='ghost'` valid for Button?" → check `components.Button.variants`
+- "What's the correct import path for DatePickerField?" → check `components.DatePickerField.importPath`
+- "Does DataTable accept a `searchable` prop?" → check `components.DataTable.keyProps`
+
+**Only read a full DS source file if the snapshot doesn't contain the answer.** The snapshot covers ~40 components. If a component is missing, fall back to reading `exxat-ds/packages/ui/src/components/ui/<name>.tsx`.
+
 ## Step 1: Identify the product and read its pattern doc
 
 From the changed file paths provided, determine which product is affected:
