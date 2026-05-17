@@ -14,11 +14,11 @@ export default async function RegistryPage() {
       </div>
       <section style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>Add docs</h2>
-        <LinkChecker onAdded={() => {}} />
+        <LinkChecker />
       </section>
       <section style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>Currently watching</h2>
-        <RegistryList entries={entries} onRemoved={() => {}} />
+        <RegistryList entries={entries} />
       </section>
     </div>
   )

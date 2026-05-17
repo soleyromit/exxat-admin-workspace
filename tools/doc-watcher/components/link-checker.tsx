@@ -1,11 +1,13 @@
 'use client'
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { checkLinks, addEntry, type CheckResult } from '@/app/actions/registry'
 
 const BTN: React.CSSProperties = { padding: '8px 16px', borderRadius: 'var(--radius)', background: 'var(--brand)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 500 }
 const CARD: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'var(--muted)', fontSize: 13 }
 
-export function LinkChecker({ onAdded }: { onAdded: () => void }) {
+export function LinkChecker() {
+  const router = useRouter()
   const [text, setText] = useState('')
   const [results, setResults] = useState<CheckResult[]>([])
   const [pending, start] = useTransition()
@@ -14,7 +16,7 @@ export function LinkChecker({ onAdded }: { onAdded: () => void }) {
   const handleAdd = (url: string) => {
     const product = prompt('Product? (pce / exam-management / other):') ?? 'other'
     const label = prompt('Label for this doc:') ?? url
-    start(async () => { await addEntry(url, product, label); setResults(r => r.filter(x => x.url !== url)); onAdded() })
+    start(async () => { await addEntry(url, product, label); setResults(r => r.filter(x => x.url !== url)); router.refresh() })
   }
 
   return (

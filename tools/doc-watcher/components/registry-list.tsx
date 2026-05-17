@@ -1,17 +1,17 @@
 'use client'
-import { useState, useTransition } from 'react'
+import { useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { removeEntry } from '@/app/actions/registry'
 import type { RegistryEntry } from '@/lib/types'
 
 const COLORS: Record<string, string> = { pce: '#0ea5e9', 'exam-management': '#8b5cf6' }
 
-export function RegistryList({ entries, onRemoved }: { entries: RegistryEntry[]; onRemoved: () => void }) {
+export function RegistryList({ entries }: { entries: RegistryEntry[] }) {
+  const router = useRouter()
   const [pending, start] = useTransition()
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_, forceUpdate] = useState(0)
   const remove = (id: string, label: string) => {
     if (!confirm(`Stop watching "${label}"?`)) return
-    start(async () => { await removeEntry(id); onRemoved() })
+    start(async () => { await removeEntry(id); router.refresh() })
   }
   if (entries.length === 0) return <p style={{ color: 'var(--muted-foreground)', fontSize: 14 }}>No docs being watched yet.</p>
   return (

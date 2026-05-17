@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: 'Doc Watcher — Exxat' }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
         <nav style={{ borderBottom: '1px solid var(--border)', padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 24, fontSize: 14 }}>
           <span style={{ fontWeight: 600, fontSize: 16 }}>Doc Watcher</span>
