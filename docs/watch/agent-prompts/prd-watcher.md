@@ -97,3 +97,79 @@ If any files in `apps/` or `docs/watch/` were modified:
 git add apps/ docs/watch/
 git commit -m "chore(prd-sync): [date] — [N] clear changes, [N] flagged"
 ```
+
+## Step 6: Extract decisions from each synced PRD
+
+For each PRD that was successfully synced (not just bootstrapped), read its content and extract decision statements:
+
+**What counts as a decision:**
+1. Any numbered item inside a section titled "Key Decisions", "Key Product Decisions", "Product Decisions", or "Scope Decisions"
+2. Any statement starting with "We will", "We won't", "Scope is", "This will not"
+3. Any sentence directly attributing a decision to a named stakeholder: "Aarti: ...", "Vishaka: ...", "[Name] confirmed:"
+
+**For each extracted decision:**
+1. Read `docs/watch/stakeholder-decisions.json`
+2. Check if a decision with the same text (or very similar meaning) already exists
+3. If it's genuinely new: append a new DecisionEntry with:
+   - `id`: `{product}-decision-{next_seq}` (increment from highest existing seq)
+   - `product`: the product this PRD belongs to
+   - `text`: the exact decision statement (clean up formatting artifacts)
+   - `stakeholder`: the PM/owner named in the PRD header
+   - `source`: `"{PRD label} §{section}"`
+   - `sourceType`: `"prd"`
+   - `date`: today's date
+   - `status`: `"confirmed"`
+4. If an existing decision is contradicted: set old `status` to `"superseded"`, set `supersededBy` to new ID
+5. Append a `decision-extracted` entry to `docs/watch/updates-log.json` for each new decision
+
+Write updated `stakeholder-decisions.json` after processing all PRDs.
+
+Note: Do NOT extract from sections marked "In Progress", "TBD", or "Open Questions".
+
+## Step 7: Sync Excel roadmap to BUILD-STATUS.md
+
+This step runs ONLY when the `exam-roadmap-nipun` registry entry was processed in Step 2.
+
+### 7a: Extract project status grid from Excel content
+
+Look for a section labeled "Project Status | Exam Management" in the Excel content. Extract rows with columns: Release Item, Status/Requirement Readiness.
+
+### 7b: Map Excel status values
+
+```
+"Completed"                  → "🟢 Shipped"
+"In Progress (final review)" → "🟡 In Progress (final review)"
+"In Progress"                → "🟡 In Progress"
+"Initial Prototyping"        → "🔵 Initial Prototyping"
+"Not Started"                → "⚪ Not started"
+"TBD"                        → SKIP (no update)
+"In progress"                → "🟡 In Progress"
+```
+
+### 7c: Update BUILD-STATUS.md
+
+Read `docs/BUILD-STATUS.md`. Find the `## Exam Management` section. For each feature-status pair, search for the feature in the section and update its status emoji/label if it changed.
+
+### 7d: Update the "Last updated" date at the top of BUILD-STATUS.md to today.
+
+### 7e: Write changes and log
+
+If any status changed: write updated `BUILD-STATUS.md`, append a `prd-change` entry to `docs/watch/updates-log.json`:
+```json
+{
+  "id": "[date]-exam-management-build-status-001",
+  "date": "[today]",
+  "product": "exam-management",
+  "type": "prd-change",
+  "title": "BUILD-STATUS updated from Nipun roadmap Excel",
+  "what": "[list of features whose status changed]",
+  "why": "Nipun's roadmap Excel updated — status changes detected",
+  "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
+  "severity": null,
+  "files": ["docs/BUILD-STATUS.md"]
+}
+```
+
+### 7f: PCE phase sync
+
+When `pce-prd-monil` was processed: check the PRD's timeline section for any phases marked as complete. If Phase 1 launch date (30 August 2026) is still future, mark PCE status as "🟡 In Progress — target 30 Aug 2026" in BUILD-STATUS.md PCE section.
