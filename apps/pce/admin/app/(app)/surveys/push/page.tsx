@@ -325,9 +325,9 @@ function Step2({ activeTerms, selectedTermId, offeringsForTerm, selectedOffering
               )}
             </p>
             {offeringsForTerm.length > 0 && (
-              <button onClick={onToggleAll} className="text-xs underline" style={{ color: 'var(--brand-color)' }}>
+              <Button variant="ghost" size="sm" onClick={onToggleAll} style={{ color: 'var(--brand-color)' }}>
                 {selectedOfferingIds.size === offeringsForTerm.length ? 'Deselect all' : 'Select all'}
-              </button>
+              </Button>
             )}
           </div>
           {offeringsForTerm.length === 0 ? (
