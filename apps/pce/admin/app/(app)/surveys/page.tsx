@@ -1,12 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   Button,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Tooltip, TooltipTrigger, TooltipContent,
   SidebarTrigger, Separator, Avatar, AvatarFallback,
+  LocalBanner,
 } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
@@ -44,6 +46,18 @@ interface SurveyRow extends Record<string, unknown> {
   extraInstructorCount: number
   responseRate: number
   deadline: string
+}
+
+function PushedBanner() {
+  const params = useSearchParams()
+  if (!params.get('pushed')) return null
+  return (
+    <div style={{ paddingInline: 28, paddingTop: 12 }}>
+      <LocalBanner variant="success">
+        Survey pushed successfully. It is now collecting responses.
+      </LocalBanner>
+    </div>
+  )
 }
 
 export default function SurveysPage() {
@@ -170,11 +184,17 @@ export default function SurveysPage() {
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
         <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Surveys</h1>
-        <Button variant="default" size="sm" onClick={() => setCreateOpen(true)}>
-          <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
-          Create Survey
+        <Button variant="default" size="sm" asChild>
+          <Link href="/surveys/push">
+            <i className="fa-light fa-paper-plane" aria-hidden="true" style={{ fontSize: 12 }} />
+            Push survey
+          </Link>
         </Button>
       </header>
+
+      <Suspense>
+        <PushedBanner />
+      </Suspense>
 
       {/* Term filter sits outside the table because it isn't a column. The
           DataTable toolbar (search + filter pills + properties) renders below. */}
