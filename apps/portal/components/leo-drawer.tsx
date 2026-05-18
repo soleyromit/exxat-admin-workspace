@@ -11,14 +11,18 @@ import {
   Button,
   Separator,
 } from '@exxat/ds/packages/ui/src'
+import { PRODUCTS } from '@/lib/products'
 
 const DEFAULT_ACCOUNT_MANAGER = { name: 'Sarah Chen', email: 'sarah.chen@exxat.com' }
 
-export function LeoDrawer() {
-  const [open, setOpen] = useState(false)
+export function LeoDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const [showTicketForm, setShowTicketForm] = useState(false)
   const [subject, setSubject] = useState('')
   const [description, setDescription] = useState('')
+
+  const activeProducts = PRODUCTS.filter(p => p.subscriptionStatus === 'active')
+  const trialProducts = PRODUCTS.filter(p => p.subscriptionStatus === 'trial')
+  const notSubscribed = PRODUCTS.filter(p => p.subscriptionStatus === 'not-subscribed' && !p.comingSoon)
 
   function handleTicketSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -29,35 +33,10 @@ export function LeoDrawer() {
       encodeURIComponent(description)
   }
 
-  return (
-    <>
-      {/* Floating Leo button */}
-      <div
-        className="fixed bottom-6 right-6 z-50"
-        style={{ zIndex: 100 }}
-      >
-        <Button
-          variant="default"
-          size="icon"
-          aria-label="Ask Leo"
-          onClick={() => setOpen(true)}
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: '50%',
-            backgroundColor: 'var(--brand-color)',
-            color: 'white',
-          }}
-        >
-          <i
-            className="fa-duotone fa-solid fa-star-christmas text-lg"
-            aria-hidden="true"
-            style={{ color: 'white' }}
-          />
-        </Button>
-      </div>
+  const bookingHref = `mailto:${DEFAULT_ACCOUNT_MANAGER.email}?subject=${encodeURIComponent('Meeting Request — Exxat Workspace')}&body=${encodeURIComponent('Hi ' + DEFAULT_ACCOUNT_MANAGER.name.split(' ')[0] + ",\n\nI'd like to schedule a time to discuss our Exxat subscription.\n\nThank you")}`
 
-      <Sheet open={open} onOpenChange={setOpen}>
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent side="right">
           <SheetHeader>
             <SheetTitle>Leo</SheetTitle>
@@ -148,9 +127,41 @@ export function LeoDrawer() {
 
             <Separator />
 
-            {/* Account manager */}
+            {/* Subscription summary */}
             <div className="flex flex-col gap-1.5">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                Your subscriptions
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {activeProducts.length} active · {trialProducts.length} trial · {notSubscribed.length} not subscribed
+              </p>
+              {trialProducts.length > 0 && (
+                <div className="flex flex-col gap-1 mt-1">
+                  {trialProducts.map(p => (
+                    <div key={p.id} className="flex items-center gap-2 text-xs" style={{ color: 'oklch(0.55 0.15 75)' }}>
+                      <i className="fa-light fa-circle-half-stroke" aria-hidden="true" />
+                      {p.name} — trial
+                    </div>
+                  ))}
+                </div>
+              )}
+              {notSubscribed.length > 0 && (
+                <div className="flex flex-col gap-1 mt-1">
+                  {notSubscribed.map(p => (
+                    <div key={p.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <i className="fa-light fa-circle-dashed" aria-hidden="true" />
+                      {p.name} — not subscribed
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Account manager */}
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Your account manager
               </p>
               <div className="flex items-center gap-3">
@@ -170,10 +181,15 @@ export function LeoDrawer() {
                   </a>
                 </div>
               </div>
+              <Button variant="outline" size="sm" className="w-full justify-start gap-2 mt-1" asChild>
+                <a href={bookingHref}>
+                  <i className="fa-light fa-calendar-plus text-sm" aria-hidden="true" />
+                  Book a meeting
+                </a>
+              </Button>
             </div>
           </div>
         </SheetContent>
       </Sheet>
-    </>
   )
 }
