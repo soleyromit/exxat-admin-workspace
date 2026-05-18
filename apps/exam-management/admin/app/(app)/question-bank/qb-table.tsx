@@ -2595,29 +2595,6 @@ function ColHeader({
           )}
           <DropdownMenuSeparator />
 
-          {/* Sort */}
-          {col.sortKey && (
-            <>
-              <DropdownMenuItem onClick={() => {
-                if (thisColRule && thisColSortDir === 'asc') { onRemoveSort?.(col.key) }
-                else { onSort(col.key, 'asc') }
-              }}>
-                <i className="fa-light fa-arrow-up-a-z" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
-                Sort Ascending
-                {thisColSortDir === 'asc' && <i className="fa-solid fa-check text-xs ml-auto" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                if (thisColRule && thisColSortDir === 'desc') { onRemoveSort?.(col.key) }
-                else { onSort(col.key, 'desc') }
-              }}>
-                <i className="fa-light fa-arrow-down-z-a" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
-                Sort Descending
-                {thisColSortDir === 'desc' && <i className="fa-solid fa-check text-xs ml-auto" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-            </>
-          )}
-
           {/* Wrap text */}
           <DropdownMenuItem onClick={onToggleWrapText}>
             <i className="fa-light fa-text-width" aria-hidden="true" style={{ fontSize: 11, width: 14 }} />
