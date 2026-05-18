@@ -95,3 +95,15 @@ Resolved since last sweep: [N]
 git add docs/watch/violation-inventory.json docs/watch/compliance-report.md docs/watch/updates-log.json
 git commit -m "chore(compliance): weekly sweep [date] — [N] open violations, [N] resolved"
 ```
+
+---
+
+## Self-improvement loop
+
+If any step fails or produces unexpected output:
+1. Identify the exact failure (error message, wrong output, missing file)
+2. Fix it inline to complete this run
+3. Append to `## Known edge cases` below so it doesn't happen again
+
+## Known edge cases
+<!-- Agent appends failure fixes here -->

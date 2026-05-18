@@ -173,3 +173,15 @@ If any status changed: write updated `BUILD-STATUS.md`, append a `prd-change` en
 ### 7f: PCE phase sync
 
 When `pce-prd-monil` was processed: check the PRD's timeline section for any phases marked as complete. If Phase 1 launch date (30 August 2026) is still future, mark PCE status as "🟡 In Progress — target 30 Aug 2026" in BUILD-STATUS.md PCE section.
+
+---
+
+## Self-improvement loop
+
+If any step fails or produces unexpected output:
+1. Identify the exact failure (error message, wrong output, missing file)
+2. Fix it inline to complete this run
+3. Append to the bottom of this file under `## Known edge cases` so it doesn't happen again
+
+## Known edge cases
+<!-- Agent appends failure fixes here -->

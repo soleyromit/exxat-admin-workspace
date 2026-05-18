@@ -49,3 +49,15 @@ git diff --quiet docs/watch/ds-snapshot.json || (
   git commit -m "chore(ds-snapshot): refresh after DS submodule update [$(date +%Y-%m-%d)]"
 )
 ```
+
+---
+
+## Self-improvement loop
+
+If any step fails or produces unexpected output:
+1. Identify the exact failure (error message, wrong output, missing file)
+2. Fix it inline to complete this run
+3. Append to `## Known edge cases` below so it doesn't happen again
+
+## Known edge cases
+<!-- Agent appends failure fixes here -->

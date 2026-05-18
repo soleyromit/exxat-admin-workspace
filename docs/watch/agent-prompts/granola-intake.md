@@ -44,3 +44,15 @@ Read `docs/watch/stakeholder-decisions.json`. For each transcript directive:
   git add docs/watch/stakeholder-decisions.json docs/watch/updates-log.json docs/watch/flags/
   git commit -m "chore(decisions): weekly Granola intake — [N] new decisions, [N] conflicts flagged"
   ```
+
+---
+
+## Self-improvement loop
+
+If any step fails or produces unexpected output:
+1. Identify the exact failure (error message, wrong output, missing file)
+2. Fix it inline to complete this run
+3. Append to `## Known edge cases` below so it doesn't happen again
+
+## Known edge cases
+<!-- Agent appends failure fixes here -->

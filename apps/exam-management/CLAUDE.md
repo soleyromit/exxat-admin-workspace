@@ -5,14 +5,13 @@
 
 ---
 
-## Session Start — Required Reads
+## When to load pattern docs (lazy — do NOT load at session start)
 
-Before any work in this product, read these two files:
+- **Before writing any UI component:** read `apps/exam-management/docs/patterns/ui-patterns.md` — UI patterns, DS map, WCAG, FERPA rules.
+- **If a P1 flag or PRD change is mentioned:** read `docs/watch/digest-latest.md` — overnight changes + compliance alerts.
+- **After any UI-touching change:** run `compliance-reviewer` alongside `verification-reviewer`.
 
-1. `apps/exam-management/docs/patterns/ui-patterns.md` — UI patterns, DS component map, accessibility checklist, FERPA rules.
-2. `docs/watch/digest-latest.md` — Morning digest: PRD changes applied overnight, compliance violations flagged.
-
-Also run `compliance-reviewer` alongside `verification-reviewer` after any UI-touching change.
+Do not load these at session start if no UI work is planned.
 
 ---
 
