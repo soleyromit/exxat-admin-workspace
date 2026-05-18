@@ -68,7 +68,7 @@ export function CreateTemplateSheet({ open, onOpenChange, template }: CreateTemp
     if (template) {
       updateTemplate(template.id, { name, sections, status })
     } else {
-      createTemplate({ name, sections, status, questionCount: 0, createdBy: 'Dr. Thompson' })
+      createTemplate({ name, sections, status, questionCount: 0, createdBy: 'Dr. Thompson', questions: { course_content: [], faculty_performance: [], course_director: [] }, likertPointer: 5 })
     }
     setErrors({})
     onOpenChange(false)
