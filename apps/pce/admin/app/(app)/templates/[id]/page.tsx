@@ -245,6 +245,7 @@ export default function TemplateEditorPage() {
                   onAdd={() => handleEditSave(q.id)}
                   onCancel={closeCard}
                   addLabel="Save"
+                  title="Edit question"
                 />
               ) : (
                 <div
@@ -306,6 +307,7 @@ export default function TemplateEditorPage() {
                 onAdd={handleAdd}
                 onCancel={closeCard}
                 addLabel="Add"
+                title="New question"
               />
             )}
 
@@ -331,19 +333,20 @@ interface ExpandCardProps {
   answerType: 'likert' | 'free_text'
   likertPointer: number
   addLabel: string
+  title: string
   onTextChange: (v: string) => void
   onTypeChange: (v: 'likert' | 'free_text') => void
   onAdd: () => void
   onCancel: () => void
 }
 
-function ExpandCard({ text, answerType, likertPointer, addLabel, onTextChange, onTypeChange, onAdd, onCancel }: ExpandCardProps) {
+function ExpandCard({ text, answerType, likertPointer, addLabel, title, onTextChange, onTypeChange, onAdd, onCancel }: ExpandCardProps) {
   return (
     <div
       className="flex flex-col gap-3 rounded-lg border-2 p-4"
       style={{ borderColor: 'var(--brand-color)', background: 'color-mix(in oklch, var(--brand-color) 4%, var(--background))' }}
     >
-      <p className="text-xs font-semibold" style={{ color: 'var(--brand-color)' }}>New question</p>
+      <p className="text-xs font-semibold" style={{ color: 'var(--brand-color)' }}>{title}</p>
       <Textarea
         autoFocus
         placeholder="Type your question…"
