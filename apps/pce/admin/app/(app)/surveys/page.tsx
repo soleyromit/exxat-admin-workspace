@@ -50,7 +50,7 @@ interface SurveyRow extends Record<string, unknown> {
 
 function PushedBanner() {
   const params = useSearchParams()
-  if (!params.get('pushed')) return null
+  if (params.get('pushed') !== '1') return null
   return (
     <div style={{ paddingInline: 28, paddingTop: 12 }}>
       <LocalBanner variant="success">
