@@ -18,7 +18,7 @@ function StatusDot({ status }: { status: Product['subscriptionStatus'] }) {
     return (
       <span
         className="inline-block h-2 w-2 rounded-full shrink-0"
-        style={{ backgroundColor: 'oklch(0.75 0.15 85)' }}
+        style={{ backgroundColor: 'var(--portal-amber-border)' }}
         aria-hidden="true"
       />
     )
@@ -90,7 +90,7 @@ export function ProductConnectorRow({ product }: { product: Product }) {
               <Badge
                 variant="outline"
                 className="rounded text-xs"
-                style={{ color: 'oklch(0.55 0.15 75)', borderColor: 'oklch(0.75 0.15 85)', backgroundColor: 'oklch(0.97 0.04 85)' }}
+                style={{ color: 'var(--portal-amber-fg)', borderColor: 'var(--portal-amber-border)', backgroundColor: 'var(--portal-amber-bg)' }}
               >
                 Trial
               </Badge>

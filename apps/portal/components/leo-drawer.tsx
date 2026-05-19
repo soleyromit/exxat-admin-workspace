@@ -138,7 +138,7 @@ export function LeoDrawer({ open, onOpenChange }: { open: boolean; onOpenChange:
               {trialProducts.length > 0 && (
                 <div className="flex flex-col gap-1 mt-1">
                   {trialProducts.map(p => (
-                    <div key={p.id} className="flex items-center gap-2 text-xs" style={{ color: 'oklch(0.55 0.15 75)' }}>
+                    <div key={p.id} className="flex items-center gap-2 text-xs" style={{ color: 'var(--portal-amber-fg)' }}>
                       <i className="fa-light fa-circle-half-stroke" aria-hidden="true" />
                       {p.name} — trial
                     </div>

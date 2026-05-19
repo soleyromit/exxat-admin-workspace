@@ -132,3 +132,10 @@
   box-shadow: none;
   cursor: default;
 }
+
+/* Portal amber — trial/warning surface (DS-013 tokens) */
+:root {
+  --portal-amber-bg: oklch(0.97 0.04 85);
+  --portal-amber-fg: oklch(0.55 0.15 75);
+  --portal-amber-border: oklch(0.75 0.15 85);
+}

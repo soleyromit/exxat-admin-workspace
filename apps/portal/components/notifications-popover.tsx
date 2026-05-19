@@ -74,8 +74,8 @@ export function NotificationsPopover() {
                 <div
                   className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full mt-0.5"
                   style={{
-                    backgroundColor: n.type === 'feature' ? 'var(--brand-tint)' : 'oklch(0.97 0.04 85)',
-                    color: n.type === 'feature' ? 'var(--brand-color)' : 'oklch(0.55 0.15 75)',
+                    backgroundColor: n.type === 'feature' ? 'var(--brand-tint)' : 'var(--portal-amber-bg)',
+                    color: n.type === 'feature' ? 'var(--brand-color)' : 'var(--portal-amber-fg)',
                   }}
                 >
                   {n.type === 'feature' ? (

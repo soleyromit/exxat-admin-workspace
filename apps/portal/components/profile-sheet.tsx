@@ -32,9 +32,9 @@ function statusBadgeStyle(status: 'active' | 'trial' | 'not-subscribed') {
   }
   if (status === 'trial') {
     return {
-      backgroundColor: 'oklch(0.97 0.04 85)',
-      color: 'oklch(0.55 0.15 75)',
-      borderColor: 'oklch(0.75 0.15 85)',
+      backgroundColor: 'var(--portal-amber-bg)',
+      color: 'var(--portal-amber-fg)',
+      borderColor: 'var(--portal-amber-border)',
     }
   }
   return {

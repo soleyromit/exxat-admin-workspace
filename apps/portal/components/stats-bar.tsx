@@ -24,7 +24,7 @@ export function StatsBar() {
       <span className="flex items-center gap-1.5">
         <span
           className="inline-block h-2 w-2 rounded-full shrink-0"
-          style={{ backgroundColor: 'oklch(0.75 0.15 85)' }}
+          style={{ backgroundColor: 'var(--portal-amber-border)' }}
           aria-hidden="true"
         />
         <span style={{ color: 'var(--foreground)', fontWeight: 500 }}>{trial}</span>
