@@ -257,8 +257,7 @@ export default function CourseOfferingsPage() {
         <div className="max-w-6xl flex flex-col gap-4">
 
           <p className="text-sm text-muted-foreground max-w-2xl">
-            A course offering is the atomic unit for evaluation per Aarti: <span className="font-mono text-xs">master course × term × cohort × faculty</span>.
-            Faculty acts on offerings; master courses are the catalog.
+            A course offering links a master course with a term, cohort, and faculty member.
           </p>
 
           {/* Toolbar — external hard-filters (term, status) + Add. Search is provided by DataTable. */}
@@ -337,7 +336,7 @@ export default function CourseOfferingsPage() {
           {!MOCK_LMS_ENABLED && (
             <p className="text-xs text-muted-foreground">
               <i className="fa-light fa-circle-info text-xs me-1" aria-hidden="true" />
-              LMS integration is OFF. Showing manually-managed list. Toggle in Settings (per workspace ADR-002).
+              LMS integration is off. This list is managed manually.
             </p>
           )}
 
@@ -351,7 +350,7 @@ export default function CourseOfferingsPage() {
             <DialogTitle>Add course offering</DialogTitle>
             <DialogDescription>
               An offering combines a master course with a term, cohort, and primary faculty.
-              Collaborators can be added later (per Aarti D7 — first-class concept).
+              Collaborators can be added after creation.
             </DialogDescription>
           </DialogHeader>
 
@@ -456,7 +455,7 @@ export default function CourseOfferingsPage() {
               {errors.primaryFacultyId ? (
                 <FieldError id="off-faculty-error">{errors.primaryFacultyId}</FieldError>
               ) : (
-                <FieldDescription id="off-faculty-desc">Course Coordinator role per Aarti D6 — full edit access. Collaborators can be added after creation.</FieldDescription>
+                <FieldDescription id="off-faculty-desc">Course Coordinator has full edit access. Collaborators can be added after creation.</FieldDescription>
               )}
             </Field>
 

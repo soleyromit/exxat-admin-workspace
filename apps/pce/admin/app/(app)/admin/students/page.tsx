@@ -229,7 +229,7 @@ export default function StudentsPage() {
               Yes
             </span>
           </TooltipTrigger>
-          <TooltipContent>Managed in cross-product Accommodations module (workspace ADR-006)</TooltipContent>
+          <TooltipContent>Managed in the Accommodations module</TooltipContent>
         </Tooltip>
       ) : (
         <span className="text-xs text-muted-foreground">—</span>
@@ -291,10 +291,10 @@ export default function StudentsPage() {
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <p className="text-sm text-muted-foreground max-w-2xl">
               {enrolledCount} enrolled · {rows.length} total · {accommodationsCount} with accommodations.
-              Per workspace ADR-002, students are typically LMS-synced; this prototype runs LMS-{MOCK_LMS_ENABLED ? 'on' : 'off'}.
+              {MOCK_LMS_ENABLED ? 'Students sync automatically from your LMS.' : 'LMS integration is off. This roster is managed manually.'}
             </p>
             <Link href="#" className="text-xs text-muted-foreground underline">
-              Manage accommodations (cross-product) →
+              Manage accommodations →
             </Link>
           </div>
 
@@ -440,7 +440,7 @@ export default function StudentsPage() {
           ) : (
             <p className="text-xs text-muted-foreground">
               <i className="fa-light fa-circle-info text-xs me-1" aria-hidden="true" />
-              LMS integration is OFF. Showing manually-managed roster. Toggle in Settings (per workspace ADR-002).
+              LMS integration is off. This roster is managed manually.
             </p>
           )}
 
@@ -453,7 +453,7 @@ export default function StudentsPage() {
           <DialogHeader>
             <DialogTitle>Add student</DialogTitle>
             <DialogDescription>
-              When LMS integration is on, students sync automatically. This manual flow is for off-LMS schools or one-off additions (per workspace ADR-002).
+              Add a student manually. When LMS integration is on, students sync automatically.
             </DialogDescription>
           </DialogHeader>
 
@@ -534,7 +534,7 @@ export default function StudentsPage() {
                 </SelectContent>
               </Select>
               <FieldDescription>
-                Accommodations for this student are managed in the cross-product Accommodations module (workspace ADR-006), not here.
+                Accommodations for this student are managed in the Accommodations module.
               </FieldDescription>
             </Field>
           </FieldGroup>

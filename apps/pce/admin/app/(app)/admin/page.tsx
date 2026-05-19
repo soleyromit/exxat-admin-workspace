@@ -37,7 +37,7 @@ const ENTITIES: EntityTile[] = [
     href: '/admin/terms', status: 'available', metric: '5 terms' },
 
   { key: 'offerings', title: 'Course Offerings', icon: 'fa-rectangle-list',
-    description: 'Course × term × cohort × faculty (atomic unit per Aarti D3).',
+    description: 'A course delivered in a specific term and cohort, taught by a faculty member.',
     href: '/admin/offerings', status: 'available', metric: '8 offerings' },
 
   // Phase 1 — coming next
@@ -47,11 +47,11 @@ const ENTITIES: EntityTile[] = [
     href: '/admin/students', status: 'available', metric: '17 students · 14 enrolled' },
 
   { key: 'faculty', title: 'Faculty', icon: 'fa-users',
-    description: 'Faculty profiles + role assignments. Shared between modules per Aarti D12.',
-    href: '/admin/faculty', status: 'available', metric: 'shared cross-product' },
+    description: 'Faculty profiles and role assignments.',
+    href: '/admin/faculty', status: 'available', metric: 'shared across modules' },
 
   { key: 'permissions', title: 'Permissions', icon: 'fa-shield-check',
-    description: 'Role assignments + collaborator grants per Aarti D6/D7.',
+    description: 'Role assignments and collaboration access.',
     href: '/admin/permissions', status: 'available', metric: '10 grants' },
 
   { key: 'content-areas', title: 'Content Areas', icon: 'fa-tags',
@@ -72,7 +72,7 @@ const ENTITIES: EntityTile[] = [
 
   // Shared module (workspace ADR-006)
   { key: 'accommodations', title: 'Accommodations', icon: 'fa-universal-access',
-    description: 'Cross-product shared module (workspace ADR-006). Master catalog consumed by Exam Mgmt + PCE.',
+    description: 'Shared disability and accommodation catalog available across all modules.',
     href: '/admin/accommodations', status: 'available', metric: '12 in catalog' },
 ]
 
@@ -153,7 +153,7 @@ export default function AdminLandingPage() {
       <div className="flex-1 overflow-auto" style={{ padding: '28px 28px 28px' }}>
         <div className="max-w-5xl flex flex-col gap-5">
           <p className="text-sm text-muted-foreground max-w-2xl">
-            Program-level master lists. Per workspace ADR-001, these 11 entities live once at program scope and are subset by every module. Phase 1 ships Master Courses + Terms — the rest follow.
+            Program-level master lists shared across all modules.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

@@ -218,7 +218,7 @@ export default function AccommodationsPage() {
         <Link href="/admin" className="text-sm text-muted-foreground">Admin</Link>
         <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
         <h1 className="text-sm font-semibold flex-1 truncate">Accommodations</h1>
-        <Badge variant="outline" className="text-[10px]">Cross-product · ADR-006</Badge>
+        <Badge variant="outline" className="text-[10px]">Shared across modules</Badge>
       </header>
 
       <div className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
@@ -226,7 +226,7 @@ export default function AccommodationsPage() {
 
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <p className="text-sm text-muted-foreground max-w-2xl">
-              Master catalog. {standardCount} standard + {customCount} custom. Per workspace ADR-006, this list is shared across modules — Exam Mgmt, PCE, and future products consume the same catalog. Faculty consume a read-only filtered view per course; never CRUD.
+              Master catalog. {standardCount} standard + {customCount} custom. This list is shared across modules — all products use the same catalog. Faculty have a read-only view per course.
             </p>
             <Link href="/admin/students" className="text-xs text-muted-foreground underline shrink-0">
               View per-student assignments →
@@ -288,7 +288,7 @@ export default function AccommodationsPage() {
 
           <p className="text-xs text-muted-foreground">
             <i className="fa-light fa-circle-info text-xs me-1" aria-hidden="true" />
-            Standard accommodations cannot be edited (only archived). Custom accommodations are school-defined and editable. Per ADR-006, this catalog is consumed by Exam Mgmt + PCE today; Patient Log + Skills Checklist + Learning Contracts will inherit it.
+            Standard accommodations cannot be edited, only archived. Custom accommodations are school-defined and editable. This catalog is shared across all modules.
           </p>
 
         </div>

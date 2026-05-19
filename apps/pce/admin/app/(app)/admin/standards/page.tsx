@@ -163,7 +163,7 @@ export default function StandardsPage() {
         <div className="max-w-5xl flex flex-col gap-4">
 
           <p className="text-sm text-muted-foreground max-w-2xl">
-            Accreditation requirements (CAPTE, ARC-PA, ASHA, NCLEX, etc.). Pre-loaded blueprints power Comp Genie-style AI gap analysis (Aarti 16:09 D8) — works without curriculum uploads.
+            Accreditation requirements (CAPTE, ARC-PA, ASHA, NCLEX, etc.). Pre-loaded blueprints power AI gap analysis without requiring curriculum uploads.
           </p>
 
           {/* Toolbar: Source hard-filter + actions. Search is provided by DataTable. */}

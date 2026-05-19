@@ -90,7 +90,7 @@ export default function AssessmentTypesPage() {
         <div className="max-w-5xl flex flex-col gap-4">
 
           <p className="text-sm text-muted-foreground max-w-2xl">
-            Five Phase 1 types ship at launch. Lockdown + remote-monitored proctoring follow in P2/P3 (per Aarti audit D13). Per-type parameter spec is a separate workstream — this list is the canonical inventory.
+            Five assessment types are available. Additional proctoring types are coming in future updates.
           </p>
 
           <DataTable<AssessmentTypeRow>

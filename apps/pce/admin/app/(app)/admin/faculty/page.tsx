@@ -124,7 +124,7 @@ export default function FacultyPage() {
         <div className="max-w-5xl flex flex-col gap-4">
 
           <p className="text-sm text-muted-foreground max-w-2xl">
-            Faculty profile is platform-level (workspace ADR-001) and shared between modules per Aarti D12. Admin manages the master list; modules consume filtered views.
+            Faculty profiles are shared across all modules. Manage the master list here.
           </p>
 
           {/* Toolbar: Add + Import sit outside the table because they aren't column controls.
@@ -182,7 +182,7 @@ export default function FacultyPage() {
           {!MOCK_LMS_ENABLED && (
             <p className="text-xs text-muted-foreground">
               <i className="fa-light fa-circle-info text-xs me-1" aria-hidden="true" />
-              LMS integration is OFF. Faculty profile editing UI is a Phase 2 follow-up — see workspace ADR-002.
+              LMS integration is off. Faculty list is managed manually.
             </p>
           )}
 

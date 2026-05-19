@@ -134,7 +134,7 @@ export default function PermissionsPage() {
 
           <p className="text-sm text-muted-foreground max-w-2xl">
             {totalGrants} grants · {adminCount} admin · {courseCoordinatorCount} course coordinators · {collaboratorCount} collaborators.
-            Per workspace ADR-004, Phase 1 collapses to 3 view tiers (admin / faculty / student). Faculty has 2 sub-roles + collaborator pattern per Aarti D6/D7. Granular per-resource permissions land in Phase 2 (pending Vishaka R7).
+            Three access levels: Admin, Faculty, and Student. Faculty has two sub-roles: Course Coordinator (full edit access) and Instructor (read + limited edit).
           </p>
 
           {/* Toolbar */}

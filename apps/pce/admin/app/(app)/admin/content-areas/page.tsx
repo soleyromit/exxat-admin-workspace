@@ -161,7 +161,7 @@ export default function ContentAreasPage() {
         <div className="max-w-5xl flex flex-col gap-4">
 
           <p className="text-sm text-muted-foreground max-w-2xl">
-            Topic taxonomy at program level. Questions tag 1-to-many; courses map to subsets. Phase 1 supports 1 level of nesting (parent → child) per the workspace tagging architecture. Same shape applies to Competencies (entity #8) and Standards (entity #9).
+            Topic taxonomy at program level. Questions can be tagged to one or more content areas; courses map to subsets. Supports one level of nesting (parent → child).
           </p>
 
           <div className="flex items-center gap-2 flex-wrap">
@@ -242,7 +242,7 @@ export default function ContentAreasPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <FieldDescription>Phase 1 supports 1 level of nesting; deeper hierarchies deferred.</FieldDescription>
+              <FieldDescription>One level of nesting supported (parent → child).</FieldDescription>
             </Field>
           </FieldGroup>
 

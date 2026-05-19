@@ -258,7 +258,7 @@ export default function TermsPage() {
           {!MOCK_LMS_ENABLED && (
             <p className="text-xs text-muted-foreground">
               <i className="fa-light fa-circle-info text-xs me-1" aria-hidden="true" />
-              LMS integration is OFF. Showing manually-managed list. Toggle in Settings (per workspace ADR-002).
+              LMS integration is off. This list is managed manually.
             </p>
           )}
 
