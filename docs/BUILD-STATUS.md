@@ -1,6 +1,6 @@
 # Workspace Build Status
 > Single source of truth for session continuity. Update after each significant build session.
-> Last updated: 2026-05-16
+> Last updated: 2026-05-19
 
 ---
 
@@ -9,7 +9,7 @@
 | Product | Status | Port | Key surface |
 |---|---|---|---|
 | **Exam Management** | 🟢 Active build | 3001 (admin), 3002 (student), 5174 (taker) | Question Bank (admin) |
-| **PCE** | 🟡 Scaffolded, routes built | 3005 (admin), 3006 (student) | Master-list entities |
+| **PCE** | 🟡 In Progress — target 30 Aug 2026 | 3005 (admin), 3006 (student) | Master-list entities |
 | **Portal** | 🟢 Active build, deployed | 3100 | Workspace hub |
 | **Patient Log** | ⚪ Scoped, not built | 3003 / 3004 | — |
 | **Skills Checklist** | ⚪ Scoped, not built | 3007 / 3008 | — |
@@ -56,6 +56,20 @@ vercel deploy --prebuilt --prod --yes
 ---
 
 ## Exam Management (`apps/exam-management/admin/`) — port 3001
+
+**Feature Status (from Nipun's Roadmap — synced 2026-05-19):**
+
+| Feature | Status |
+|---|---|
+| Create and Manage Question Bank | 🟢 Shipped |
+| My Questions & All Questions | 🟢 Shipped |
+| Assessment Creation | 🟡 In Progress |
+| In Assessment Experience (Student) | 🟡 In Progress |
+| Course Offering Perspective | 🟡 In Progress |
+| Question Creation (Manual & AI) | 🟡 In Progress |
+| Question Tagging / Import | 🟡 In Progress |
+| Assessment Distribution | 🟡 In Progress |
+| Dashboard | 🟡 In Progress |
 
 **What's built (Question Bank):**
 - Full QB view: folder tree sidebar + question table + filter sheet

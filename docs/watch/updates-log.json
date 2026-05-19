@@ -269,6 +269,18 @@
       ]
     },
     {
+      "id": "2026-05-19-exam-management-build-status-001",
+      "date": "2026-05-19",
+      "product": "exam-management",
+      "type": "prd-change",
+      "title": "BUILD-STATUS updated from Nipun roadmap Excel",
+      "what": "Added feature status table to Exam Management section: Create and Manage Question Bank → 🟢 Shipped, My Questions & All Questions → 🟢 Shipped, Assessment Creation → 🟡 In Progress, In Assessment Experience → 🟡 In Progress, Course Offering Perspective → 🟡 In Progress, Question Creation (Manual & AI) → 🟡 In Progress, Question Tagging/Import → 🟡 In Progress, Assessment Distribution → 🟡 In Progress, Dashboard → 🟡 In Progress. PCE quick-orientation status updated to 🟡 In Progress — target 30 Aug 2026. Last updated date bumped to 2026-05-19.",
+      "why": "Nipun's roadmap Excel synced for first time — status values applied to BUILD-STATUS.md. PCE Phase 1 target date (30 Aug 2026) confirmed from Monil's PRD.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
+      "severity": null,
+      "files": ["docs/BUILD-STATUS.md"]
+    },
+    {
       "id": "2026-05-17-workspace-010",
       "date": "2026-05-17",
       "product": "workspace",
