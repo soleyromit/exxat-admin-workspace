@@ -45,6 +45,21 @@ Source: 2026-05-08 Aarti audit (`docs/research/meetings/2026-05-08-aarti-design-
 | T49 | Faculty app — point-of-view doc | Faculty | Design brief | P1 | Romit drafts: persona, landing page, core workflows for faculty login. |
 | T50 | Three alignment docs | PM/Design | Process | P0 | (1) Types of questions supported, (2) config at assessment vs. question level, (3) attributes of a question. PM team to produce. |
 
+## Phase 1 design tasks — added 2026-05-19
+
+Source: `docs/research/meetings/2026-05-19-assessment-creation-workflows.md`
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T51 | Assessment creation entry modal — 4-option flow | Admin / Faculty | Assessment builder | P1 | Option cards: Copy existing / AI-generated / Upload doc / Manually select. NEW SCREEN — DESIGN-REVIEW: structural change to assessment builder entry point. |
+| T52 | AI text prompt for assessment generation | Admin / Faculty | Assessment builder | P1 | Free-text description of what assessment should test. Parameter guidance text + one example prompt shown. AI selects from QB, flags when new Qs needed. Pairs with T51 option 2. |
+| T53 | Option locking per question — question-level config | Admin / Faculty | Question editor | P1 | Lock option positions per question. ExamSoft parity. Add to question editor config panel. Currently absent. D_EM19. |
+| T54 | QB quick link on course offering overview | Admin / Faculty | Course offering detail | P1 | ✅ Applied today — added to Quick Reference sidebar in `course-offering-detail-client.tsx`. D_EM24. |
+| T55 | Results access: admin + course coordinator isolation | Admin / Faculty | Role gating | P1 | Collaborators / contributors / reviewers cannot see student scores. Coordinator can share at their discretion. DESIGN-REVIEW — auth architecture. D_EM22. |
+| T56 | Review function separated from results access | Admin / Faculty | Assessment review | P1 | Reviewer sees question feedback UI only. No student performance data exposed to reviewers. DESIGN-REVIEW — data model. D_EM23. |
+| T57 | Course offerings sorted descending, max 6-8 shown | Admin / Faculty | QB + course listing | P2 | Reverse-chrono order, load-more for older offerings. D_EM25. |
+| T58 | Download exam — Phase 1 confirmed | Admin / Faculty / Student | Pre-exam flow | P1 | Confirmed Phase 1. Default = download-and-take (not browser-only). Admin side needs download generation. Closes R3. Flag for PM + back-end alignment. D_EM26. |
+
 ## Research / blockers (R1–R10 from audit)
 
 | # | Item | Owner | Deadline |

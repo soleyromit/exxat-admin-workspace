@@ -561,6 +561,96 @@ Source: `apps/pce/docs/research/meetings/2026-05-14-course-eval-base-entities.md
 
 ---
 
+### 5.28 Assessment creation entry flow — 4-option modal (2026-05-19)
+
+Source: `docs/research/meetings/2026-05-19-assessment-creation-workflows.md` (Granola `f59cfbe4`)
+
+When starting a new assessment, faculty are presented with four options:
+1. **Copy an existing assessment** — most common; start from a prior exam and modify
+2. **AI-generated** — describe the assessment in a text prompt; AI selects from QB
+3. **Upload a document** — upload a PDF/exam paper; AI parses and builds the assessment
+4. **Manually select from QB** — browse and hand-pick questions
+
+No matter which path, the final step before publishing is always the same health-of-assessment review screen (§5.28 below).
+
+> "How would you like to start? Create questions from scratch, build from your question bank, or use a previous assessment and tweak it. So three options or something like that." — Aarti
+
+### 5.29 AI assessment generation — natural language prompt (2026-05-19)
+
+Source: `docs/research/meetings/2026-05-19-assessment-creation-workflows.md` (Granola `f59cfbe4`)
+
+For option 2 above: faculty type a free-text description of what the assessment should test. NOT dropdown menus for difficulty/Bloom's — a text box with parameter guidance shown below (example prompt provided). AI then selects from the QB. When no good matches exist, AI flags that new questions may need to be created (with option to create or skip).
+
+> "I want to be able to say two difficult questions, five medium questions, three easy questions. [A single] drop down is not going to do it... A text box that has AI where they can feed it what they want it to do." — Aarti
+
+### 5.30 Option locking within questions (2026-05-19)
+
+Source: `docs/research/meetings/2026-05-19-assessment-creation-workflows.md` (Granola `f59cfbe4`)
+
+Each question must support locking individual options to a fixed position. Faculty who are "very picky that this option should always be in the third place or the last place" need this. ExamSoft parity. Was absent from existing question editor design.
+
+> "Within a question, option locking is what I did not see. So that will need to [be added]. That's a parity thing." — Aarti
+
+### 5.31 QB quick link from course offering page (2026-05-19)
+
+Source: `docs/research/meetings/2026-05-19-assessment-creation-workflows.md` (Granola `f59cfbe4`)
+
+Every course offering page must have a visible quick-access link to the question bank for that course. Must appear in the Overview/Quick Reference area — not just in the global nav. Applied in `course-offering-detail-client.tsx`.
+
+> "There should be a quick link that goes to the question bank that is related to this course hub." — Aarti
+
+> "Why not? That's the obvious thing. Question bank is structured with course." — Aarti
+
+### 5.32 Results access = admin + course coordinator only (2026-05-19)
+
+Source: `docs/research/meetings/2026-05-19-assessment-creation-workflows.md` (Granola `f59cfbe4`)
+
+Student scores and assessment results are visible ONLY to admin and course coordinator. Collaborators, contributors, and reviewers cannot see results by default. If the course coordinator wants to share results with someone, that is their choice — the product does not grant it automatically.
+
+> "Seeing the results is today only something we want admin and course director to do. We don't want anybody else to be able to see results of student performance." — Aarti
+
+### 5.33 Review function = question feedback only, not results access (2026-05-19)
+
+Source: `docs/research/meetings/2026-05-19-assessment-creation-workflows.md` (Granola `f59cfbe4`)
+
+"Review" is a capability, not a role. Anyone can be designated as a reviewer. Being a reviewer means you can give feedback on question quality only — it does NOT grant access to see how students performed. Review and results access are completely separate gates.
+
+> "Review is a separate function. It's a feedback for questions. Scoring is a different function, and result is limited to only the core people in the course. And then they have the ability to share that with whoever they [want]." — Aarti
+
+### 5.34 Course offerings sorted descending, max 6-8 shown (2026-05-19)
+
+Source: `docs/research/meetings/2026-05-19-assessment-creation-workflows.md` (Granola `f59cfbe4`)
+
+Wherever course offerings are listed (QB context, course catalog), show them in reverse-chronological order (most recent first). Default view shows 6–8; older offerings accessible via load-more. Rationale: current offering is primary; historical offerings are reference only.
+
+> "Put this in descending order, first of all, because my most current course offering is what I care about the most and will be what I'm working [on]. You can keep the interface cleaner... six is also more than enough." — Aarti
+
+### 5.35 Download exam — confirmed Phase 1, default out-of-box (2026-05-19)
+
+Source: `docs/research/meetings/2026-05-19-assessment-creation-workflows.md` (Granola `f59cfbe4`)
+
+Download exam capability is confirmed for Phase 1. The default exam-taking experience should be download-and-take, not browser-only. Universities deal with WiFi failures and will face backlash if browser-only. Closes R3.
+
+> "Our out of the box should be download and take it. That way, the faculty and the instructors don't have to deal with any technical issues on the day off, which is always a problem." — Aarti
+
+### 5.36 AI tagging — always background, manual takes precedence (2026-05-19)
+
+Source: `docs/research/meetings/2026-05-19-assessment-creation-workflows.md` (Granola `f59cfbe4`)
+
+AI tagging runs in the background on all questions at all times. Manual tagging (faculty-applied) takes precedence when both exist. Visual treatment: AI-generated tags shown with sparkle icon or pastel colors; manually-applied tags shown at full visual weight. One tagging system — not two separate flows.
+
+> "AI should have the tagging done. And manual tagging precedes it. If there is a conflict between AI thinks this [and] manually they are saying this, we will treat it as [manual]." — Aarti
+
+### 5.37 Health-of-assessment review screen before publish (2026-05-19)
+
+Source: `docs/research/meetings/2026-05-19-assessment-creation-workflows.md` (Granola `f59cfbe4`)
+
+Before publishing any assessment — regardless of creation pathway — faculty see a unified health review screen. Columns to align on with PMs (before designing): frequency of question use, point-biserial score, difficulty distribution, Bloom's taxonomy coverage. Also flags questions with missing rationale.
+
+> "No matter which way you do it, ultimately, you do the review. And... that review screen should call out: frequency of question use, the point-biserial... score... Bloom's taxonomy. Those four, five columns, we need to align on. And that is what I mean when I say get some PM alignment on." — Aarti
+
+---
+
 ## Appendix — source meetings
 
 | Date | Title | Granola ID | Drove |
@@ -578,6 +668,7 @@ Source: `apps/pce/docs/research/meetings/2026-05-14-course-eval-base-entities.md
 | 2026-05-14 09:31 | Course evaluation survey design — base entities and product structure | `6a648f67` | Romit + Adi |
 | 2026-05-14 10:30 | Assessment builder — base entities, student experience, PRD workflow | `af529725` | Vishaka + Nipun + Romit |
 | 2026-05-14 14:02 | Exam Management — Student login experience | `81c06a04` | Vishaka + Romit |
+| 2026-05-19 13:59 | Assessment creation workflows and question bank design | `f59cfbe4` | Aarti + Vishaka + Romit |
 
 Per-meeting raw notes at `apps/exam-management/docs/research/meetings/` and `apps/pce/docs/research/meetings/`.
 

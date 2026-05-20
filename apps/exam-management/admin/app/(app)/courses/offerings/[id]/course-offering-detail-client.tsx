@@ -759,6 +759,24 @@ function OverviewTab({ offering, isPrism }: { offering: ExtendedCourseOffering; 
           ))}
         </section>
 
+        <div className="rounded-xl border border-border p-4 flex items-start gap-3"
+          style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 4%, var(--background))' }}>
+          <i className="fa-light fa-books text-sm mt-0.5 shrink-0" aria-hidden="true"
+            style={{ color: 'var(--brand-color)' }} />
+          <div>
+            <p className="text-sm font-medium text-foreground">Question bank</p>
+            <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
+              Questions, folders, and drafts for this course.
+            </p>
+            <a href="/question-bank"
+              className="inline-flex items-center gap-1.5 text-xs font-medium mt-2 no-underline hover:underline"
+              style={{ color: 'var(--brand-color)' }}>
+              Open question bank
+              <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
+            </a>
+          </div>
+        </div>
+
         {isPrism && (
           <div className="rounded-xl border border-border p-4 flex items-start gap-3"
             style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 4%, var(--background))' }}>

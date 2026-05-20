@@ -62,6 +62,15 @@ Source: `docs/research/meetings/2026-05-19-template-subject-architecture.md`
 |---|---|---|---|
 | T39 | Guest lecturer feedback flow | Phase 2 — schools use student-initiated forms today; admin visibility too low | 2026-05-19 |
 
+## Phase 1 design tasks — added 2026-05-19 (ETA sync)
+
+Source: `docs/research/meetings/2026-05-19-course-eval-eta-design-sync.md`
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T28 | Create template UI — **DEADLINE May 25** | Admin | Template creation | P1 — URGENT | Romit committed to sharing v1 before May 25. Engineering has full bandwidth and is waiting. Do not block. |
+| T29 | Push survey UI — **part of May 27 design freeze** | Admin | Survey distribution | P1 — URGENT | May 27 is the confirmed design freeze date for modules 1–3. |
+
 ## Open product questions
 
 - F2 (adjunct faculty) — email-only or rolls into faculty view? Reconfirm with Aarti.
