@@ -130,7 +130,6 @@ export default function ProductDetailPage({ id }: { id: string }) {
   const surfaces = product.comingSoon ? [] : [
     { label: 'Admin',   url: product.adminUrl,   icon: 'fa-shield-halved' },
     { label: 'Student', url: product.studentUrl, icon: 'fa-user'          },
-    ...(product.extra ? [{ label: product.extra.label, url: product.extra.url, icon: 'fa-file-pen' }] : []),
   ]
 
   return (
