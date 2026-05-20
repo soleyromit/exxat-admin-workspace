@@ -8,8 +8,10 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Build deploy summary
-        id: summary
+      - name: Post Teams notification
+        if: ${{ env.TEAMS_WEBHOOK_URL != '' }}
+        env:
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
         run: |
           BRANCH="${{ github.ref_name }}"
           AUTHOR="${{ github.actor }}"
@@ -19,24 +21,27 @@ jobs:
           URL="${{ github.server_url }}/${{ github.repository }}/commit/${SHA}"
 
           if [ "$BRANCH" = "main" ]; then
-            EMOJI=":white_check_mark:"
+            COLOR="00C851"
             ENV_LABEL="PRODUCTION"
           else
-            EMOJI=":construction:"
+            COLOR="FF8800"
             ENV_LABEL="DEV"
           fi
 
-          echo "text=${EMOJI} *${ENV_LABEL}* deploy on \`${BRANCH}\` by *${AUTHOR}*\n>${MSG}\n<${URL}|${SHORT_SHA}>" >> $GITHUB_OUTPUT
-
-      - name: Slack notification
-        if: ${{ env.SLACK_WEBHOOK_URL != '' }}
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        uses: slackapi/slack-github-action@v2.1.0
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            {
-              "text": "${{ steps.summary.outputs.text }}"
-            }
+          curl -s -X POST "$TEAMS_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"@type\": \"MessageCard\",
+              \"@context\": \"http://schema.org/extensions\",
+              \"themeColor\": \"${COLOR}\",
+              \"summary\": \"${ENV_LABEL} deploy\",
+              \"sections\": [{
+                \"activityTitle\": \"${ENV_LABEL} deploy on \\\`${BRANCH}\\\` by ${AUTHOR}\",
+                \"activityText\": \"${MSG}\",
+                \"facts\": [{
+                  \"name\": \"Commit\",
+                  \"value\": \"[${SHORT_SHA}](${URL})\"
+                }],
+                \"markdown\": true
+              }]
+            }"
