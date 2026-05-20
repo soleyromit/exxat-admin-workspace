@@ -80,7 +80,7 @@ export type QuestionPayload =
 /** Where the user wants to commit the draft when they hit Save. */
 export type SaveDestination = 'draft' | 'bank' | 'assessment' | 'review'
 
-export type EditorState = 'draft' | 'in-review' | 'saved'
+export type EditorState = 'draft' | 'saved'
 export type Confidence = 'high' | 'low' | null
 
 /**

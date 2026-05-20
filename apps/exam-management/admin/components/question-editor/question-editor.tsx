@@ -14,7 +14,7 @@
  *   - Right rail holds the metadata (objective, difficulty, Bloom, tags)
  *   - AI enhance is a first-class affordance: suggest distractors, tighten stem,
  *     auto-tag objectives — every suggestion is accept/reject
- *   - Workflow: Draft → Save (in-bank) → Add to assessment / Send for review
+ *   - Workflow: Draft → Save (in-bank) → Add to assessment
  *   - Validation is non-blocking: warnings inline, errors prevent Save
  */
 
@@ -56,7 +56,6 @@ export type SaveDestination =
   | 'draft'              // save as draft, stay in editor
   | 'bank'               // publish to QB, library row created
   | 'assessment'         // add to active assessment + bank
-  | 'review'             // submit for chair review
 
 // ─── Main shell ────────────────────────────────────────────────────────────
 
@@ -1295,9 +1294,8 @@ function ToggleSwitchRow({
 }
 
 function StateBadge({ state }: { state: QuestionDraft['state'] }) {
-  const meta = state === 'draft'    ? { label: 'Draft',     icon: 'fa-hourglass',     bg: 'var(--muted)',         fg: 'var(--muted-foreground)' }
-            : state === 'in-review' ? { label: 'In review', icon: 'fa-eye',           bg: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', fg: 'var(--chart-4)' }
-            :                         { label: 'Saved',     icon: 'fa-circle-check',  bg: 'color-mix(in oklch, var(--chart-2) 14%, var(--background))', fg: 'var(--chart-2)' }
+  const meta = state === 'draft' ? { label: 'Draft', icon: 'fa-hourglass',    bg: 'var(--muted)',         fg: 'var(--muted-foreground)' }
+                                 : { label: 'Saved', icon: 'fa-circle-check', bg: 'color-mix(in oklch, var(--chart-2) 14%, var(--background))', fg: 'var(--chart-2)' }
   return (
     <Badge variant="secondary" className="rounded text-[10px] gap-1" style={{ backgroundColor: meta.bg, color: meta.fg }}>
       <i className={`fa-light ${meta.icon}`} aria-hidden="true" style={{ fontSize: 9 }} />

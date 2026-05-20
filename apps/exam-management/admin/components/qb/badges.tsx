@@ -3,10 +3,9 @@ import type { QStatus, QType, QDiff, QBlooms } from '@/lib/qb-types'
 
 // ── Status Badge — pill + colored border + icon ───────────────────────────────
 const STATUS_MAP: Record<QStatus, { bg: string; fg: string; border: string; icon: string }> = {
-  'Saved':     { bg: 'var(--qb-status-saved-bg)',     fg: 'var(--qb-status-saved-fg)',     border: 'var(--qb-status-saved-border)',     icon: 'fa-circle-check' },
-  'Draft':     { bg: 'var(--qb-status-draft-bg)',     fg: 'var(--qb-status-draft-fg)',     border: 'var(--qb-status-draft-border)',     icon: 'fa-hourglass'    },
-  'Archived':  { bg: 'var(--qb-status-archived-bg)',  fg: 'var(--qb-status-archived-fg)',  border: 'var(--qb-status-archived-fg)',      icon: 'fa-box-archive'  },
-  'In Review': { bg: 'var(--qb-status-review-bg)',    fg: 'var(--qb-status-review-fg)',    border: 'var(--qb-status-review-fg)',        icon: 'fa-eye'          },
+  'Saved':    { bg: 'var(--qb-status-saved-bg)',    fg: 'var(--qb-status-saved-fg)',    border: 'var(--qb-status-saved-border)', icon: 'fa-circle-check' },
+  'Draft':    { bg: 'var(--qb-status-draft-bg)',    fg: 'var(--qb-status-draft-fg)',    border: 'var(--qb-status-draft-border)', icon: 'fa-hourglass'    },
+  'Archived': { bg: 'var(--qb-status-archived-bg)', fg: 'var(--qb-status-archived-fg)', border: 'var(--qb-status-archived-fg)',  icon: 'fa-box-archive'  },
 }
 
 export function StatusBadge({ status }: { status: QStatus }) {

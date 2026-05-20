@@ -1202,7 +1202,7 @@ type QBFilterOp  = 'is' | 'is_not'
 type QBFilter    = { id: string; fieldKey: QBFilterKey; operator: QBFilterOp; values: string[] }
 
 const QB_FILTER_FIELDS: { key: QBFilterKey; label: string; icon: string; options: string[]; counts?: Map<string, number> }[] = [
-  { key: 'status',       label: 'Status',          icon: 'fa-circle-dot',      options: ['Saved', 'Draft', 'In Review', 'Archived'] },
+  { key: 'status',       label: 'Status',          icon: 'fa-circle-dot',      options: ['Saved', 'Draft', 'Archived'] },
   { key: 'type',         label: 'Type',             icon: 'fa-rectangle-list',  options: ['MCQ', 'Fill blank', 'Hotspot', 'Ordering', 'Matching'] },
   { key: 'difficulty',   label: 'Difficulty',       icon: 'fa-signal',          options: ['Easy', 'Medium', 'Hard'] },
   { key: 'blooms',       label: "Bloom's",          icon: 'fa-brain',           options: ['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'] },
@@ -4015,8 +4015,8 @@ export function QBTable() {
                                 <i className="fa-light fa-copy" aria-hidden="true" style={{ fontSize: 13 }} />
                               </Button>
                             </Tip>
-                            {/* Move */}
-                            {canEditRow && (
+                            {/* Move — only in folder view */}
+                            {navView === 'folder' && canEditRow && (
                               <Tip label="Move to folder">
                                 <Button variant="ghost" size="icon-sm" className="rounded-[4px]"
                                   aria-label={`Move ${q.title} to folder`}
@@ -4054,7 +4054,7 @@ export function QBTable() {
                               <i className="fa-light fa-folder-arrow-up" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                               Copy to folder
                             </DropdownMenuItem>
-                            {canEditRow && (
+                            {navView === 'folder' && canEditRow && (
                               <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); setMoveTarget({ id: q.id, title: q.title, folder: q.folder }) }}>
                                 <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                                 Move to folder
@@ -4235,10 +4235,12 @@ export function QBTable() {
                   <i className="fa-light fa-folder-arrow-up" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                   Copy to folder
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTimeout(() => setBulkMoveOpen(true), 0)}>
-                  <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                  Move to folder
-                </DropdownMenuItem>
+                {navView === 'folder' && (
+                  <DropdownMenuItem onClick={() => setTimeout(() => setBulkMoveOpen(true), 0)}>
+                    <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                    Move to folder
+                  </DropdownMenuItem>
+                )}
                 {navView === 'folder' && selectedFolderId && (
                   <DropdownMenuItem onClick={() => { const snap = selectedQs.map(q => ({ id: q.id })); selectedQs.forEach(q => removeQuestionFromFolder(q.id, selectedFolderId)); showQBToast({ title: `${selectedQs.length} question${selectedQs.length > 1 ? 's' : ''} removed from folder`, undoFn: () => snap.forEach(({ id }) => copyQuestionToFolder(id, [selectedFolderId!])) }); clearSelection() }}>
                     <i className="fa-light fa-folder-minus" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
@@ -4443,8 +4445,8 @@ export function QBTable() {
         )
       })()}
 
-      {/* ── Bulk move to folder ── */}
-      {bulkMoveOpen && (() => {
+      {/* ── Bulk move to folder — folder view only ── */}
+      {navView === 'folder' && bulkMoveOpen && (() => {
         const selectedQs = visibleQuestions.filter(q => selectedQuestionIds.has(q.id))
         return (
           <BulkMoveDialog

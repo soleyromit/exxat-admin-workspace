@@ -467,10 +467,9 @@ export function QBProvider({ children }: { children: ReactNode }) {
     // Non-admin: folder must be accessible
     if (!isExamAdmin && !accessibleFolderIds.has(q.folder)) return false
 
-    // Visibility by status: Saved/In Review = anyone; Draft = creator only; Archived = exam admin or creator
+    // Visibility by status: Saved = anyone; Draft = creator only; Archived = exam admin or creator
     const roleVisible =
       q.status === 'Saved' ||
-      q.status === 'In Review' ||
       (q.status === 'Draft' && q.creator === currentPersona.id) ||
       (q.status === 'Archived' && (isExamAdmin || q.creator === currentPersona.id))
 
