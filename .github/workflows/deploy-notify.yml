@@ -1,0 +1,42 @@
+name: Deploy notification
+
+on:
+  push:
+    branches: [dev, main]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build deploy summary
+        id: summary
+        run: |
+          BRANCH="${{ github.ref_name }}"
+          AUTHOR="${{ github.actor }}"
+          MSG="${{ github.event.head_commit.message }}"
+          SHA="${{ github.sha }}"
+          SHORT_SHA="${SHA:0:7}"
+          URL="${{ github.server_url }}/${{ github.repository }}/commit/${SHA}"
+
+          if [ "$BRANCH" = "main" ]; then
+            EMOJI=":white_check_mark:"
+            ENV_LABEL="PRODUCTION"
+          else
+            EMOJI=":construction:"
+            ENV_LABEL="DEV"
+          fi
+
+          echo "text=${EMOJI} *${ENV_LABEL}* deploy on \`${BRANCH}\` by *${AUTHOR}*\n>${MSG}\n<${URL}|${SHORT_SHA}>" >> $GITHUB_OUTPUT
+
+      - name: Slack notification
+        if: ${{ env.SLACK_WEBHOOK_URL != '' }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "${{ steps.summary.outputs.text }}"
+            }
