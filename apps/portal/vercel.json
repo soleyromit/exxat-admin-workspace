@@ -1,6 +1,6 @@
 {
-  "installCommand": "cd ../.. && pnpm install",
-  "buildCommand": "cd ../.. && pnpm --filter @exxat/portal exec next build",
-  "outputDirectory": ".next",
-  "framework": null
+  "outputDirectory": ".vercel/output",
+  "framework": null,
+  "installCommand": "echo 'pre-built deploy — run: npx vercel build --prod && npx vercel deploy --prebuilt --prod'",
+  "buildCommand": "echo 'pre-built deploy — run: npx vercel build --prod && npx vercel deploy --prebuilt --prod'"
 }
