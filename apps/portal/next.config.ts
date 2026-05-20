@@ -3,6 +3,7 @@ import path from 'path'
 
 const nextConfig: NextConfig = {
   output: 'export',
+  trailingSlash: true,
   experimental: {
     externalDir: true,
   },
