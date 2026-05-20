@@ -13,10 +13,7 @@
  */
 
 import { useFacultySession } from '@/lib/faculty-session'
-import {
-  Button, Tip,
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
-} from '@exxat/ds/packages/ui/src'
+import { Tip } from '@exxat/ds/packages/ui/src'
 
 export function EntryPathChip() {
   const { entry, setEntry, hydrated } = useFacultySession()
@@ -27,55 +24,38 @@ export function EntryPathChip() {
 
   if (entry === 'prism') {
     return (
-      <Tip label="You came in via the Prism faculty module · click to switch to standalone">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="gap-2 h-7 rounded-full px-2.5 font-medium text-xs"
+      <Tip label="Prism entry mode — user arrived via the Prism faculty module. Switch entry mode in the persona menu (top-right).">
+        <div
+          className="flex items-center gap-2 h-7 rounded-full px-2.5 font-medium text-xs select-none"
           style={{
             backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
             color: 'var(--brand-color-dark)',
           }}
-          aria-label="Back to Prism dashboard"
-          onClick={() => setEntry('standalone')}
+          aria-label="Entry mode: Prism"
         >
-          <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 11 }} />
+          <i className="fa-light fa-grid-2" aria-hidden="true" style={{ fontSize: 11 }} />
           <span className="font-semibold tracking-wide">Prism</span>
           <span className="text-muted-foreground" aria-hidden="true">·</span>
           <span className="font-normal">Exam Management</span>
-        </Button>
+        </div>
       </Tip>
     )
   }
 
   // Standalone mode
   return (
-    <DropdownMenu modal={false}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="gap-2 h-7 rounded-full px-2.5 font-medium text-xs border border-border"
-          aria-label="Standalone exam management mode"
-        >
-          <i className="fa-light fa-clipboard-list-check text-brand" aria-hidden="true" style={{ fontSize: 11 }} />
-          <span className="font-semibold">Exam Management</span>
-          <i className="fa-light fa-chevron-down text-muted-foreground" aria-hidden="true" style={{ fontSize: 9 }} />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-72">
-        <DropdownMenuLabel>Standalone mode</DropdownMenuLabel>
-        <div className="px-2 pb-2 text-[11px] text-muted-foreground leading-snug">
-          You signed in directly to exam management.
-          <br />
-          For Prism customers, this surface also appears as a tile inside the Prism faculty module.
-        </div>
-        <div style={{ borderTop: '1px solid var(--border)', margin: '4px 0' }} />
-        <DropdownMenuItem onClick={() => setEntry('prism')}>
-          <i className="fa-light fa-grid-2" aria-hidden="true" />
-          Simulate Prism entry
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Tip label="Standalone entry mode — user logged in directly, no Prism context. Switch entry mode in the persona menu (top-right).">
+      <div
+        className="flex items-center gap-2 h-7 rounded-full px-2.5 font-medium text-xs border border-border select-none"
+        style={{ color: 'var(--muted-foreground)' }}
+        aria-label="Entry mode: Standalone"
+      >
+        <i className="fa-light fa-clipboard-list-check" aria-hidden="true" style={{ fontSize: 11 }} />
+        <span className="font-semibold text-foreground">Exam Management</span>
+        <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: 'var(--muted-foreground)' }}>
+          Standalone
+        </span>
+      </div>
+    </Tip>
   )
 }

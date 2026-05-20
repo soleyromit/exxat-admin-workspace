@@ -12,12 +12,10 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Avatar, AvatarFallback,
   Badge, Button,
   InputGroup, InputGroupAddon, InputGroupInput,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@exxat/ds/packages/ui/src'
-import { tokens } from '../tokens/design-tokens'
 
 // ─── Mock past-assessment dataset (richer than dashboard's small set) ───────
 type PastEntry = {

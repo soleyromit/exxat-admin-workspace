@@ -66,10 +66,8 @@ function KeyBadge({
       style={{
         width: '2em',
         height: '2em',
-        backgroundColor: isSelected ?
-        'var(--exam-accent)' :
-        'var(--muted)',
-        color: isSelected ? 'var(--exam-accent-text)' : 'var(--muted-foreground)',
+        backgroundColor: isSelected ? 'var(--foreground)' : 'var(--muted)',
+        color: isSelected ? 'var(--background)' : 'var(--muted-foreground)',
         border: isSelected ? 'none' : '1px solid var(--border)'
       }}>
       
@@ -85,21 +83,19 @@ function CrossOutButton({
 
 }: {isCrossed: boolean;onClick: (e: React.MouseEvent) => void;}) {
   return (
-    <button
+    <DSButton
+      variant="outline"
+      size="icon-xs"
       onClick={onClick}
-      className="p-[0.5em] rounded-lg border transition-colors exam-focus shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100 high-contrast-visible"
-      style={{
-        borderColor: 'var(--border)',
-        color: isCrossed ? 'var(--semantic-error-text)' : 'var(--muted-foreground)',
-        backgroundColor: isCrossed ?
-        'var(--muted)' :
-        'var(--card)'
-      }}
+      className="shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100 high-contrast-visible"
       aria-label={isCrossed ? 'Remove cross-out' : 'Cross out option'}
-      title={isCrossed ? 'Remove cross-out' : 'Cross out this option'}>
-      
-      <i className="fa-light fa-eye-slash" aria-hidden="true" style={{ fontSize: 16 }} />
-    </button>);
+      style={{
+        color: isCrossed ? 'var(--semantic-error-text)' : 'var(--muted-foreground)',
+        backgroundColor: isCrossed ? 'var(--muted)' : 'var(--card)',
+      }}
+    >
+      <i className="fa-light fa-eye-slash" aria-hidden="true" style={{ fontSize: 14 }} />
+    </DSButton>);
 
 }
 export function RadioMCQRenderer({
@@ -138,17 +134,20 @@ export function RadioMCQRenderer({
         const optionImage = question.optionImages?.[idx];
         return (
           <div key={idx} className="group">
-            <button
+            {/* div instead of button — CrossOutButton is a <button> inside; nesting <button> in <button> is invalid HTML */}
+            <div
               onClick={() => handleOptionClick(option)}
+              onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); handleOptionClick(option); } }}
+              tabIndex={0}
               className={`w-full text-left transition-all exam-focus flex ${hasImages ? 'flex-col' : 'flex-row items-center'} gap-3 p-[1em] rounded-xl border-2 ${isCrossed ? 'opacity-40' : ''}`}
               style={{
                 borderColor:
                 isSelected && !isCrossed ?
-                'var(--exam-accent)' :
+                'var(--foreground)' :
                 'var(--border)',
                 backgroundColor:
                 isSelected && !isCrossed ?
-                'var(--exam-accent-light)' :
+                'var(--muted)' :
                 'var(--card)',
                 cursor: 'pointer'
               }}
@@ -157,7 +156,7 @@ export function RadioMCQRenderer({
               aria-label={`Option ${SHORTCUT_KEYS[idx]}: ${option}. Click to select this answer.`}
               title={`Select option ${SHORTCUT_KEYS[idx]}`}
               {...narrateProps(`Option ${SHORTCUT_KEYS[idx]}: ${option}`)}>
-              
+
               {optionImage &&
               <img
                 src={optionImage}
@@ -169,7 +168,7 @@ export function RadioMCQRenderer({
                 <KeyBadge
                   letter={SHORTCUT_KEYS[idx]}
                   isSelected={isSelected && !isCrossed} />
-                
+
                 <span
                   className={`text-[1em] flex-1 ${isCrossed ? 'line-through' : ''}`}
                   style={{
@@ -178,15 +177,15 @@ export function RadioMCQRenderer({
                     'var(--foreground)' :
                     'var(--muted-foreground)'
                   }}>
-                  
+
                   {option}
                 </span>
                 <CrossOutButton
                   isCrossed={isCrossed}
                   onClick={(e) => toggleCrossOut(e, option)} />
-                
+
               </div>
-            </button>
+            </div>
           </div>);
 
       })}
@@ -228,30 +227,35 @@ export function CheckboxRenderer({
         const isCrossed = crossedOut.has(option);
         return (
           <div key={idx} className="group">
-            <button
+            {/* div instead of button — CrossOutButton is a <button> inside; nesting <button> in <button> is invalid HTML */}
+            <div
               onClick={() => toggleOption(option)}
+              onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleOption(option); } }}
+              tabIndex={0}
               className={`w-full text-left transition-all exam-focus flex items-center gap-4 p-[1em] rounded-xl border-2 ${isCrossed ? 'opacity-40' : ''}`}
               style={{
                 borderColor:
                 isSelected && !isCrossed ?
-                'var(--exam-accent)' :
+                'var(--foreground)' :
                 'var(--border)',
                 backgroundColor:
                 isSelected && !isCrossed ?
-                'var(--exam-accent-light)' :
+                'var(--muted)' :
                 'var(--card)',
                 cursor: 'pointer'
               }}
+              role="checkbox"
+              aria-checked={isSelected}
               aria-label={`Option ${SHORTCUT_KEYS[idx]}: ${option}. Click to toggle this selection.`}
               title={`Toggle option ${SHORTCUT_KEYS[idx]}`}
               {...narrateProps(`Option ${SHORTCUT_KEYS[idx]}: ${option}`)}>
-              
+
               <KeyBadge
                 letter={SHORTCUT_KEYS[idx]}
                 isSelected={isSelected && !isCrossed} />
-              
+
               {isSelected && !isCrossed ?
-              <i className="fa-solid fa-square-check" aria-hidden="true" style={{ fontSize: 24, color: 'var(--exam-accent)' }} /> :
+              <i className="fa-solid fa-square-check" aria-hidden="true" style={{ fontSize: 24, color: 'var(--foreground)' }} /> :
               <i className="fa-light fa-square" aria-hidden="true" style={{ fontSize: 24, color: 'var(--border)' }} />
               }
               <span
@@ -262,14 +266,14 @@ export function CheckboxRenderer({
                   'var(--foreground)' :
                   'var(--muted-foreground)'
                 }}>
-                
+
                 {option}
               </span>
               <CrossOutButton
                 isCrossed={isCrossed}
                 onClick={(e) => toggleCrossOut(e, option)} />
-              
-            </button>
+
+            </div>
           </div>);
 
       })}
@@ -312,10 +316,10 @@ export function CrossOutRenderer({
               className={`flex-1 text-left transition-all exam-focus flex items-center gap-4 p-[1em] rounded-xl border-2 ${isCrossed ? 'opacity-40' : ''}`}
               style={{
                 borderColor: isSelected ?
-                'var(--exam-accent)' :
+                'var(--foreground)' :
                 'var(--border)',
                 backgroundColor: isSelected ?
-                'var(--exam-accent-light)' :
+                'var(--muted)' :
                 'var(--card)',
                 cursor: 'pointer'
               }}
@@ -548,7 +552,7 @@ export function FillBlankRenderer({
   onSelectAnswer,
   voiceNarrator
 }: RendererProps) {
-  useNarrate(voiceNarrator);
+  const { narrateProps } = useNarrate(voiceNarrator);
   const answers = selectedAnswer || {};
   const handleSelect = (blankId: string, val: string) => {
     onSelectAnswer(question.id, {
@@ -595,7 +599,8 @@ export function FillBlankRenderer({
                 lineHeight: '1.4'
               }}
               aria-label={`Select the correct term for blank ${blankId}`}
-              title={`Select answer for blank ${blankId}`}>
+              title={`Select answer for blank ${blankId}`}
+              {...narrateProps(`Blank ${blankId}: choose the correct term`)}>
               
               <option value="" disabled>
                 Choose an answer…
@@ -1007,7 +1012,8 @@ export function EssayRenderer({
           </span>
         </div>
         <div
-          className={`font-bold ${question.essayMinWords && wordCount < question.essayMinWords ? 'text-amber-600' : 'text-green-600'}`}>
+          className="font-bold"
+          style={{ color: question.essayMinWords && wordCount < question.essayMinWords ? 'var(--state-warning-dark)' : 'var(--state-success-dark)' }}>
           
           Current word count: {wordCount}
         </div>

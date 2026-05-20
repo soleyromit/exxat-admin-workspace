@@ -13,7 +13,7 @@
 export type AssessmentStatus =
   | 'active'            // Can start now; clock has not started
   | 'in_progress'       // Student has begun; timer running
-  | 'upcoming'          // Scheduled but window not open yet
+  | 'upcoming'          // Scheduled but not yet open
   | 'submitted'         // Submitted; awaiting faculty review
   | 'results_pending'   // Results withheld — high-stakes, faculty review period
   | 'results_published' // Results available to student
@@ -74,12 +74,20 @@ export interface Assessment {
   // Accommodations (from student services, not faculty)
   accommodation?: Accommodation;
 
+  // Auto-advance (Aarti May 14): for quizzes, automatically move to next question after selection.
+  // Default: false. Configurable per assessment. Faculty must understand the student experience
+  // before enabling — Aarti: "by mistake if they do it it will be a big problem for students."
+  autoAdvance?: boolean;
+
   // Results
   score?: number;               // 0-100, only when results_published
   percentile?: number;
   passingScore: number;
   resultPublishedAt?: Date;
   resultsHoldUntil?: Date;      // High-stakes: estimated release date
+
+  // Grouping
+  term?: string;             // e.g. "Spring 2026" — used to group results by term
 
   // Review session
   reviewSessionStart?: Date;
@@ -91,46 +99,99 @@ export interface Assessment {
 // ─── Mock data — reflects Aarti's described use cases ───────────────────────
 
 const NOW = new Date();
-const inMinutes = (n: number) => new Date(NOW.getTime() + n * 60_000);
 const inDays = (n: number) => new Date(NOW.getTime() + n * 86_400_000);
 const daysAgo = (n: number) => new Date(NOW.getTime() - n * 86_400_000);
 
+// ─── Mock snapshot: one active exam, two upcoming, two past results ──────────
+
 export const MOCK_ASSESSMENTS: Assessment[] = [
+  // ── Active exam — open now, student can start immediately ─────────────────
   {
-    id: 'exam-001',
-    title: 'Clinical Anatomy — Final Examination',
-    type: 'final',
-    courseCode: 'ANAT 601',
-    courseName: 'Advanced Clinical Anatomy',
-    facultyName: 'Dr. Meera Pillai',
+    id: 'exam-active-001',
+    title: 'Anatomy & Physiology — Midterm Exam',
+    type: 'midterm',
+    courseCode: 'ANAT 401',
+    courseName: 'Anatomy & Physiology II',
+    facultyName: 'Dr. Carla Medina',
     status: 'active',
     isHighStakes: true,
-    windowStart: inMinutes(-15),
-    windowEnd: inMinutes(165),
-    durationMinutes: 150,
-    questionCount: 80,
+    windowStart: NOW,
+    windowEnd: new Date(NOW.getTime() + 3 * 60 * 60_000), // 3-hour window
+    durationMinutes: 110,
+    questionCount: 75,
+    passingScore: 75,
+    instructions: 'Covers Chapters 12–18. Closed book. No reference materials. A proctor password will be provided at exam time.',
+    allowComments: true,
+    contentAreas: [
+      { id: 'ca-a01', name: 'Nervous System', questionCount: 25, weight: 33 },
+      { id: 'ca-a02', name: 'Musculoskeletal', questionCount: 22, weight: 29 },
+      { id: 'ca-a03', name: 'Cardiovascular', questionCount: 18, weight: 24 },
+      { id: 'ca-a04', name: 'Endocrine', questionCount: 10, weight: 14 },
+    ],
+    reviewShowsCorrectAnswers: false,
+    reviewShowsRationale: false,
+  },
+
+  // ── Upcoming #1 — high-stakes + accommodation, 2 days out ───────────────
+  {
+    id: 'exam-006',
+    title: 'Pharmacology — Midterm Examination',
+    type: 'midterm',
+    courseCode: 'PHARM 502',
+    courseName: 'Clinical Pharmacology',
+    facultyName: 'Prof. Anand Kumar',
+    status: 'upcoming',
+    isHighStakes: true,
+    windowStart: inDays(2),
+    windowEnd: new Date(inDays(2).getTime() + 120 * 60_000),
+    durationMinutes: 90,
+    questionCount: 60,
     passingScore: 75,
     instructions:
-      'This examination consists of 80 multiple-choice questions covering anatomical structures, clinical correlations, and imaging interpretation. You may flag questions and return to them. A scientific calculator and anatomical reference sheet are provided. No external materials are permitted.',
-    allowComments: true,
-    referenceMaterials: ['Anatomical Reference Sheet (PDF)', 'Unit Conversion Table'],
+      'This exam covers Modules 1–3: drug classifications, mechanisms of action, pharmacokinetics, and adverse effects. No external materials permitted. Password required at exam start.',
+    allowComments: false,
     accommodation: {
       timeMultiplier: 1.5,
-      separateRoom: true,
+      separateRoom: false,
       extendedBreaks: false,
       approvedBy: 'Jennifer Walsh, Student Services',
     },
     contentAreas: [
-      { id: 'ca-001', name: 'Musculoskeletal System', questionCount: 22, weight: 27.5 },
-      { id: 'ca-002', name: 'Cardiovascular Anatomy', questionCount: 18, weight: 22.5 },
-      { id: 'ca-003', name: 'Neuroanatomy', questionCount: 20, weight: 25 },
-      { id: 'ca-004', name: 'Imaging Interpretation', questionCount: 12, weight: 15 },
-      { id: 'ca-005', name: 'Clinical Correlations', questionCount: 8, weight: 10 },
+      { id: 'ca-060', name: 'Drug Classifications', questionCount: 18, weight: 30 },
+      { id: 'ca-061', name: 'Mechanisms of Action', questionCount: 22, weight: 37 },
+      { id: 'ca-062', name: 'Pharmacokinetics', questionCount: 12, weight: 20 },
+      { id: 'ca-063', name: 'Adverse Effects', questionCount: 8, weight: 13 },
     ],
     reviewShowsCorrectAnswers: true,
     reviewShowsRationale: true,
   },
 
+  // ── Upcoming #2 — low-stakes, 1 day out ──────────────────────────────────
+  {
+    id: 'exam-007',
+    title: 'Pathophysiology — Unit 4 Quiz',
+    type: 'quiz',
+    courseCode: 'PATH 501',
+    courseName: 'Pathophysiology I',
+    facultyName: 'Dr. Sunita Raghavan',
+    status: 'upcoming',
+    isHighStakes: false,
+    windowStart: inDays(1),
+    windowEnd: new Date(inDays(1).getTime() + 45 * 60_000),
+    durationMinutes: 30,
+    questionCount: 20,
+    passingScore: 70,
+    instructions: 'Short quiz on Neoplasia and Hemodynamic Disorders. Results available immediately.',
+    allowComments: false,
+    contentAreas: [
+      { id: 'ca-070', name: 'Neoplasia', questionCount: 10, weight: 50 },
+      { id: 'ca-071', name: 'Hemodynamic Disorders', questionCount: 10, weight: 50 },
+    ],
+    reviewShowsCorrectAnswers: true,
+    reviewShowsRationale: false,
+  },
+
+  // ── Upcoming — download window not yet open, 5 days away ─────────────────
   {
     id: 'exam-002',
     title: 'Pharmacology — Module 3 Quiz',
@@ -140,8 +201,9 @@ export const MOCK_ASSESSMENTS: Assessment[] = [
     facultyName: 'Prof. Anand Kumar',
     status: 'upcoming',
     isHighStakes: false,
-    windowStart: inDays(1),
-    windowEnd: new Date(inDays(1).getTime() + 60 * 60_000),
+    autoAdvance: true,
+    windowStart: inDays(5),
+    windowEnd: new Date(inDays(5).getTime() + 60 * 60_000),
     durationMinutes: 45,
     questionCount: 30,
     passingScore: 70,
@@ -157,34 +219,7 @@ export const MOCK_ASSESSMENTS: Assessment[] = [
     reviewShowsRationale: false,
   },
 
-  {
-    id: 'exam-003',
-    title: 'Pathophysiology — Midterm Examination',
-    type: 'midterm',
-    courseCode: 'PATH 501',
-    courseName: 'Pathophysiology I',
-    facultyName: 'Dr. Sunita Raghavan',
-    status: 'results_pending',
-    isHighStakes: true,
-    windowStart: daysAgo(5),
-    windowEnd: new Date(daysAgo(5).getTime() + 120 * 60_000),
-    durationMinutes: 120,
-    questionCount: 65,
-    passingScore: 75,
-    startedAt: daysAgo(5),
-    instructions: '',
-    allowComments: true,
-    contentAreas: [
-      { id: 'ca-020', name: 'Cellular Injury & Adaptation', questionCount: 18, weight: 28 },
-      { id: 'ca-021', name: 'Inflammation & Repair', questionCount: 20, weight: 31 },
-      { id: 'ca-022', name: 'Hemodynamic Disorders', questionCount: 15, weight: 23 },
-      { id: 'ca-023', name: 'Neoplasia', questionCount: 12, weight: 18 },
-    ],
-    resultsHoldUntil: inDays(2),
-    reviewShowsCorrectAnswers: false,
-    reviewShowsRationale: false,
-  },
-
+  // ── Past result — score published ─────────────────────────────────────────
   {
     id: 'exam-004',
     title: 'Microbiology — Unit 2 Assessment',
@@ -202,6 +237,7 @@ export const MOCK_ASSESSMENTS: Assessment[] = [
     score: 84,
     percentile: 72,
     startedAt: daysAgo(12),
+    term: 'Spring 2026',
     resultPublishedAt: daysAgo(10),
     instructions: '',
     allowComments: true,
@@ -211,12 +247,11 @@ export const MOCK_ASSESSMENTS: Assessment[] = [
       { id: 'ca-032', name: 'Fungal & Parasitic Disease', questionCount: 10, weight: 20, score: 90 },
       { id: 'ca-033', name: 'Antimicrobial Therapy', questionCount: 7, weight: 14, score: 71 },
     ],
-    reviewSessionStart: inDays(1),
-    reviewSessionEnd: new Date(inDays(1).getTime() + 60 * 60_000),
     reviewShowsCorrectAnswers: true,
     reviewShowsRationale: true,
   },
 
+  // ── Past result — submitted, awaiting results ─────────────────────────────
   {
     id: 'exam-005',
     title: 'Physical Assessment Skills — Practical Exam',
@@ -224,23 +259,17 @@ export const MOCK_ASSESSMENTS: Assessment[] = [
     courseCode: 'CLIN 301',
     courseName: 'Clinical Skills I',
     facultyName: 'Prof. Marcus Lee',
-    status: 'upcoming',
+    status: 'submitted',
     isHighStakes: true,
-    windowStart: inDays(4),
-    windowEnd: new Date(inDays(4).getTime() + 90 * 60_000),
+    windowStart: daysAgo(4),
+    windowEnd: new Date(daysAgo(4).getTime() + 90 * 60_000),
     durationMinutes: 75,
     questionCount: 40,
     passingScore: 80,
-    instructions:
-      'Skills competency assessment. Questions are scenario-based. You will be evaluated on assessment technique, clinical reasoning, and documentation accuracy.',
+    term: 'Spring 2026',
+    startedAt: daysAgo(4),
+    instructions: '',
     allowComments: false,
-    accommodation: {
-      timeMultiplier: 1.5,
-      separateRoom: false,
-      extendedBreaks: true,
-      additionalNotes: '10-minute scheduled break after question 20',
-      approvedBy: 'Jennifer Walsh, Student Services',
-    },
     contentAreas: [
       { id: 'ca-040', name: 'Cardiovascular Assessment', questionCount: 12, weight: 30 },
       { id: 'ca-041', name: 'Respiratory Assessment', questionCount: 10, weight: 25 },
@@ -306,6 +335,45 @@ export function getStatusColor(status: AssessmentStatus): string {
   };
   return map[status];
 }
+
+// ─── System notification audit log ───────────────────────────────────────────
+// Per Aarti + Vishaka (May 14): all platform emails to students must be logged
+// so faculty can verify delivery ("you got it at 9AM on Monday morning").
+
+export type SystemNotificationKind =
+  | 'results_published'   // Results now visible
+  | 'review_open'         // Review session is open
+
+export interface SystemNotification {
+  id: string
+  kind: SystemNotificationKind
+  assessmentTitle: string
+  courseCode: string
+  courseName: string
+  sentAt: Date
+  channel: 'email'
+}
+
+export const MOCK_NOTIFICATIONS: SystemNotification[] = [
+  {
+    id: 'n1',
+    kind: 'results_published',
+    assessmentTitle: 'Pharmacology I — Midterm',
+    courseCode: 'PHARM 101',
+    courseName: 'Pharmacology I',
+    sentAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    channel: 'email',
+  },
+  {
+    id: 'n4',
+    kind: 'results_published',
+    assessmentTitle: 'Pharmacology I — Quiz 2',
+    courseCode: 'PHARM 101',
+    courseName: 'Pharmacology I',
+    sentAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+    channel: 'email',
+  },
+]
 
 // ─── Course-level competency aggregation ─────────────────────────────────────
 

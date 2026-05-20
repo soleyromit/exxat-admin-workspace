@@ -631,6 +631,8 @@ export function DataTableToolbar<TData extends Record<string, unknown>>({
 
 export interface DataTableExtendedProps<TData extends Record<string, unknown>>
   extends DataTableProps<TData> {
+  /** When false, hides filter pills, search input, and filter controls. Collapses toolbar to compact `py-1.5` with right-aligned toolbarSlot only. Default: true. */
+  showQueryControls?: boolean
   /** Slot for a toolbar drawer button + drawer itself (e.g. TablePropertiesDrawer) */
   toolbarSlot?: (state: ReturnType<typeof useTableState<TData>>) => React.ReactNode
   /** Slot rendered inside the floating bulk-action bar (after the "N selected" label) */
@@ -668,6 +670,7 @@ function DataTableInner<TData extends Record<string, unknown>>({
   getRowSelectionLabel,
   selectable = true,
   searchable = true,
+  showQueryControls = true,
   emptyState,
   onRowClick,
   defaultSort,
@@ -770,12 +773,13 @@ function DataTableInner<TData extends Record<string, unknown>>({
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col gap-0">
+    <div className="flex flex-col gap-0 flex-1 min-h-0">
 
       <DataTableToolbar
         state={state}
         columns={columns}
         searchable={searchable}
+        showQueryControls={showQueryControls}
         renderFilterOptionValue={renderFilterOptionValue}
         toolbarSlot={toolbarSlot}
         searchAriaLabel="Search table"
@@ -785,7 +789,7 @@ function DataTableInner<TData extends Record<string, unknown>>({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className={cn("mx-4 lg:mx-6 overflow-x-auto border border-border", hasFooter ? "rounded-t-lg" : "rounded-lg")}
+        className={cn("mx-4 lg:mx-6 overflow-auto flex-1 min-h-0 border border-border", hasFooter ? "rounded-t-lg" : "rounded-lg")}
       >
         <table
           className="w-full text-sm border-separate border-spacing-0"

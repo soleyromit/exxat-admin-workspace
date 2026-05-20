@@ -3,16 +3,20 @@ import { Question } from '../data/questions';
 export interface QuestionNavigatorPopoverProps {
   questions: Question[];
   currentIndex: number;
+  /** Aarti May 14: "skipped = questions up to the highest point reached, not answered"
+   *  Used to filter the Skipped tab — not all unanswered, only those before current progress. */
+  highestReachedIndex: number;
   answeredSet: Set<number>;
   flaggedSet: Set<number>;
   onNavigate: (index: number) => void;
   isOpen: boolean;
   onClose: () => void;
 }
-type FilterTab = 'all' | 'unanswered' | 'flagged' | 'answered';
+type FilterTab = 'all' | 'skipped' | 'flagged' | 'answered';
 export function QuestionNavigatorPopover({
   questions,
   currentIndex,
+  highestReachedIndex,
   answeredSet,
   flaggedSet,
   onNavigate,
@@ -29,14 +33,15 @@ export function QuestionNavigatorPopover({
     return () => document.removeEventListener('mousedown', handler);
   }, [isOpen, onClose]);
   if (!isOpen) return null;
-  const unansweredCount = questions.length - answeredSet.size;
+  // Skipped = unanswered questions up to the furthest point reached (Aarti May 14)
+  const skippedCount = questions.filter((_, i) => i <= highestReachedIndex && !answeredSet.has(i)).length;
   const filteredQuestions = questions.map((q, i) => ({
     q,
     i
   })).filter(({
     i
   }) => {
-    if (activeFilter === 'unanswered') return !answeredSet.has(i);
+    if (activeFilter === 'skipped') return i <= highestReachedIndex && !answeredSet.has(i);
     if (activeFilter === 'flagged') return flaggedSet.has(i);
     if (activeFilter === 'answered') return answeredSet.has(i);
     return true;
@@ -60,7 +65,7 @@ export function QuestionNavigatorPopover({
 
         <div className="flex gap-2 bg-slate-100 p-1 rounded-lg">
           <FilterButton label="All" count={questions.length} active={activeFilter === 'all'} onClick={() => setActiveFilter('all')} />
-          <FilterButton label="Unanswered" count={unansweredCount} active={activeFilter === 'unanswered'} onClick={() => setActiveFilter('unanswered')} />
+          <FilterButton label="Skipped" count={skippedCount} active={activeFilter === 'skipped'} onClick={() => setActiveFilter('skipped')} />
           <FilterButton label="Flagged" count={flaggedSet.size} active={activeFilter === 'flagged'} onClick={() => setActiveFilter('flagged')} />
         </div>
       </div>

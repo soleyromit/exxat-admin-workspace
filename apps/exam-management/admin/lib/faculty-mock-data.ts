@@ -11,7 +11,381 @@
  *
  * All mocked client-side. Course IDs align with lib/qb-mock-data.ts so faculty
  * session filters work end-to-end.
+ *
+ * ── Faculty base entity (added 2026-05-17) ───────────────────────────────────
+ * FacultyListRow and ExtendedFaculty added for the Faculty list/detail pages.
+ * facultyAccommodations already existed — preserved unchanged.
  */
+
+// ─── Faculty base entity types ────────────────────────────────────────────────
+
+export type FacultyAdminPosition = 'Program Director' | 'Course Coordinator' | 'Instructor' | 'Adjunct'
+export type FacultyRank = 'Professor' | 'Associate Professor' | 'Assistant Professor' | 'Lecturer'
+
+export interface FacultyListRow {
+  id: string
+  fullName: string
+  facultyId: string         // SIS person_sourcedid (Canvas lis.person_sourcedid)
+  email: string
+  adminPosition: FacultyAdminPosition
+  rank: FacultyRank
+  status: 'active' | 'inactive'
+  coursesAssigned: number
+  lastUpdated: string
+  /** LTI sub claim / Canvas user_id — auto-populated via LTI launch or Canvas SIS import */
+  canvasUserId?: string
+  /** Canvas login_id (username) — auto-populated when Canvas active */
+  loginId?: string
+}
+
+export interface FacultyCourse {
+  id: string
+  code: string
+  name: string
+  term: string
+  students: number
+  status: 'active' | 'completed' | 'upcoming'
+}
+
+export interface FacultyAssessment {
+  id: string
+  title: string
+  course: string
+  status: string
+  date: string
+}
+
+export interface ExtendedFaculty extends FacultyListRow {
+  phone?: string
+  department: string
+  joinDate: string
+  bio?: string
+  courses: FacultyCourse[]
+  assessmentsManaged: FacultyAssessment[]
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function daysAgoFacultyIso(d: number): string {
+  const dt = new Date('2026-05-17')
+  dt.setDate(dt.getDate() - d)
+  return dt.toISOString().split('T')[0]
+}
+
+// ─── Faculty list rows (12 records) ──────────────────────────────────────────
+
+export const facultyListRows: FacultyListRow[] = [
+  {
+    id: 'fac-001',
+    fullName: 'Dr. Anita Rao',
+    facultyId: 'FAC-2019-0042',
+    email: 'anita.rao@university.edu',
+    adminPosition: 'Program Director',
+    rank: 'Professor',
+    status: 'active',
+    coursesAssigned: 3,
+    lastUpdated: daysAgoFacultyIso(2),
+  },
+  {
+    id: 'fac-002',
+    fullName: 'Dr. Marcus Webb',
+    facultyId: 'FAC-2021-0118',
+    email: 'marcus.webb@university.edu',
+    adminPosition: 'Course Coordinator',
+    rank: 'Associate Professor',
+    status: 'active',
+    coursesAssigned: 2,
+    lastUpdated: daysAgoFacultyIso(5),
+  },
+  {
+    id: 'fac-003',
+    fullName: 'Prof. Sandra Chen',
+    facultyId: 'FAC-2018-0031',
+    email: 'sandra.chen@university.edu',
+    adminPosition: 'Instructor',
+    rank: 'Assistant Professor',
+    status: 'active',
+    coursesAssigned: 4,
+    lastUpdated: daysAgoFacultyIso(1),
+  },
+  {
+    id: 'fac-004',
+    fullName: 'Dr. James Okafor',
+    facultyId: 'FAC-2022-0207',
+    email: 'james.okafor@university.edu',
+    adminPosition: 'Instructor',
+    rank: 'Associate Professor',
+    status: 'active',
+    coursesAssigned: 2,
+    lastUpdated: daysAgoFacultyIso(8),
+  },
+  {
+    id: 'fac-005',
+    fullName: 'Prof. Meena Patel',
+    facultyId: 'FAC-2020-0088',
+    email: 'meena.patel@university.edu',
+    adminPosition: 'Course Coordinator',
+    rank: 'Professor',
+    status: 'active',
+    coursesAssigned: 3,
+    lastUpdated: daysAgoFacultyIso(3),
+  },
+  {
+    id: 'fac-006',
+    fullName: 'Dr. Carlos Rivera',
+    facultyId: 'FAC-2023-0315',
+    email: 'carlos.rivera@university.edu',
+    adminPosition: 'Adjunct',
+    rank: 'Lecturer',
+    status: 'active',
+    coursesAssigned: 1,
+    lastUpdated: daysAgoFacultyIso(14),
+  },
+  {
+    id: 'fac-007',
+    fullName: 'Dr. Sarah Mitchell',
+    facultyId: 'FAC-2017-0019',
+    email: 'sarah.mitchell@university.edu',
+    adminPosition: 'Program Director',
+    rank: 'Professor',
+    status: 'active',
+    coursesAssigned: 2,
+    lastUpdated: daysAgoFacultyIso(6),
+  },
+  {
+    id: 'fac-008',
+    fullName: 'Prof. David Kim',
+    facultyId: 'FAC-2021-0142',
+    email: 'david.kim@university.edu',
+    adminPosition: 'Instructor',
+    rank: 'Assistant Professor',
+    status: 'active',
+    coursesAssigned: 3,
+    lastUpdated: daysAgoFacultyIso(9),
+  },
+  {
+    id: 'fac-009',
+    fullName: 'Dr. Fatima Al-Hassan',
+    facultyId: 'FAC-2022-0198',
+    email: 'fatima.alhassan@university.edu',
+    adminPosition: 'Course Coordinator',
+    rank: 'Associate Professor',
+    status: 'active',
+    coursesAssigned: 2,
+    lastUpdated: daysAgoFacultyIso(11),
+  },
+  {
+    id: 'fac-010',
+    fullName: 'Prof. Robert Nguyen',
+    facultyId: 'FAC-2016-0008',
+    email: 'robert.nguyen@university.edu',
+    adminPosition: 'Adjunct',
+    rank: 'Lecturer',
+    status: 'inactive',
+    coursesAssigned: 0,
+    lastUpdated: daysAgoFacultyIso(45),
+  },
+  {
+    id: 'fac-011',
+    fullName: 'Dr. Priya Sharma',
+    facultyId: 'FAC-2024-0401',
+    email: 'priya.sharma@university.edu',
+    adminPosition: 'Instructor',
+    rank: 'Assistant Professor',
+    status: 'active',
+    coursesAssigned: 1,
+    lastUpdated: daysAgoFacultyIso(4),
+  },
+  {
+    id: 'fac-012',
+    fullName: 'Dr. Thomas Eriksson',
+    facultyId: 'FAC-2019-0057',
+    email: 'thomas.eriksson@university.edu',
+    adminPosition: 'Course Coordinator',
+    rank: 'Associate Professor',
+    status: 'inactive',
+    coursesAssigned: 0,
+    lastUpdated: daysAgoFacultyIso(62),
+  },
+]
+
+// ─── Extended faculty data (12 detailed records) ──────────────────────────────
+
+export const allFaculty: ExtendedFaculty[] = [
+  {
+    ...facultyListRows[0],
+    phone: '+1 (617) 555-0142',
+    department: 'Doctor of Physical Therapy',
+    joinDate: '2019-08-15',
+    bio: 'Dr. Rao specializes in pharmacological education and has led curriculum development across three health sciences programs. She serves as the accreditation liaison for CAPTE.',
+    courses: [
+      { id: 'course-phar101', code: 'PHAR 101', name: 'Pharmacology I', term: 'Spring 2026', students: 32, status: 'active' },
+      { id: 'course-phar201', code: 'PHAR 201', name: 'Pharmacology II', term: 'Spring 2026', students: 28, status: 'active' },
+      { id: 'course-phar101-f25', code: 'PHAR 101', name: 'Pharmacology I', term: 'Fall 2025', students: 30, status: 'completed' },
+    ],
+    assessmentsManaged: [
+      { id: 'asmt-001', title: 'Midterm Exam', course: 'PHAR 101', status: 'Approved', date: daysAgoFacultyIso(5) },
+      { id: 'asmt-002', title: 'Final Exam', course: 'PHAR 101', status: 'Pending Review', date: daysAgoFacultyIso(2) },
+      { id: 'asmt-phar101-003', title: 'Quiz 3: Drug Interactions', course: 'PHAR 101', status: 'Changes Requested', date: daysAgoFacultyIso(3) },
+      { id: 'asmt-phar101-004', title: 'Practical Skills Check', course: 'PHAR 101', status: 'In Progress', date: daysAgoFacultyIso(1) },
+    ],
+  },
+  {
+    ...facultyListRows[1],
+    phone: '+1 (617) 555-0287',
+    department: 'Doctor of Physical Therapy',
+    joinDate: '2021-01-10',
+    bio: 'Dr. Webb focuses on adaptive testing and accommodation administration. He chairs the ADA coordination committee for the health sciences division.',
+    courses: [
+      { id: 'course-biol201', code: 'BIOL 201', name: 'Cell Biology', term: 'Spring 2026', students: 28, status: 'active' },
+      { id: 'course-biol201-f25', code: 'BIOL 201', name: 'Cell Biology', term: 'Fall 2025', students: 25, status: 'completed' },
+    ],
+    assessmentsManaged: [
+      { id: 'asmt-003', title: 'Unit 1 Quiz', course: 'BIOL 201', status: 'Results Published', date: daysAgoFacultyIso(35) },
+      { id: 'asmt-biol201-002', title: 'Cell Signaling Unit Test', course: 'BIOL 201', status: 'Pending Review', date: daysAgoFacultyIso(1) },
+    ],
+  },
+  {
+    ...facultyListRows[2],
+    phone: '+1 (617) 555-0193',
+    department: 'Master of Occupational Therapy',
+    joinDate: '2018-09-01',
+    bio: 'Prof. Chen coordinates student services outreach and manages accommodation workflows across all health sciences courses. Published researcher in inclusive assessment design.',
+    courses: [
+      { id: 'course-skel101', code: 'SKEL 101', name: 'Skeletal Anatomy', term: 'Spring 2026', students: 24, status: 'active' },
+      { id: 'course-anat301', code: 'ANAT 301', name: 'Clinical Anatomy', term: 'Spring 2026', students: 22, status: 'active' },
+      { id: 'course-skel101-f25', code: 'SKEL 101', name: 'Skeletal Anatomy', term: 'Fall 2025', students: 26, status: 'completed' },
+      { id: 'course-anat301-f25', code: 'ANAT 301', name: 'Clinical Anatomy', term: 'Fall 2025', students: 20, status: 'completed' },
+    ],
+    assessmentsManaged: [
+      { id: 'asmt-skel101-001', title: 'Anatomy Lab Practical', course: 'SKEL 101', status: 'Approved', date: daysAgoFacultyIso(7) },
+      { id: 'asmt-anat301-001', title: 'Midterm — Clinical Anatomy', course: 'ANAT 301', status: 'Draft', date: daysAgoFacultyIso(12) },
+    ],
+  },
+  {
+    ...facultyListRows[3],
+    phone: '+1 (617) 555-0344',
+    department: 'Doctor of Physical Therapy',
+    joinDate: '2022-07-18',
+    bio: 'Dr. Okafor specializes in evidence-based clinical reasoning pedagogy. He integrates case-based learning with formative assessment design.',
+    courses: [
+      { id: 'course-clin201', code: 'CLIN 201', name: 'Clinical Reasoning I', term: 'Spring 2026', students: 30, status: 'active' },
+      { id: 'course-clin201-f25', code: 'CLIN 201', name: 'Clinical Reasoning I', term: 'Fall 2025', students: 29, status: 'completed' },
+    ],
+    assessmentsManaged: [
+      { id: 'asmt-clin201-001', title: 'Case Study Midterm', course: 'CLIN 201', status: 'In Progress', date: daysAgoFacultyIso(1) },
+      { id: 'asmt-clin201-002', title: 'Reasoning Skills Quiz', course: 'CLIN 201', status: 'Results Published', date: daysAgoFacultyIso(20) },
+    ],
+  },
+  {
+    ...facultyListRows[4],
+    phone: '+1 (617) 555-0471',
+    department: 'Doctor of Pharmacy',
+    joinDate: '2020-03-01',
+    bio: 'Prof. Patel is an expert in pharmaceutical sciences education and OSCE design. She leads the interprofessional education initiative across the pharmacy and nursing programs.',
+    courses: [
+      { id: 'course-phsc301', code: 'PHSC 301', name: 'Pharmaceutical Sciences', term: 'Spring 2026', students: 35, status: 'active' },
+      { id: 'course-phsc401', code: 'PHSC 401', name: 'Advanced Pharmaceutics', term: 'Spring 2026', students: 18, status: 'upcoming' },
+      { id: 'course-phsc301-f25', code: 'PHSC 301', name: 'Pharmaceutical Sciences', term: 'Fall 2025', students: 33, status: 'completed' },
+    ],
+    assessmentsManaged: [
+      { id: 'asmt-phsc301-001', title: 'Formulation Midterm', course: 'PHSC 301', status: 'Approved', date: daysAgoFacultyIso(4) },
+      { id: 'asmt-phsc301-002', title: 'Drug Delivery Systems Quiz', course: 'PHSC 301', status: 'Draft', date: daysAgoFacultyIso(10) },
+      { id: 'asmt-phsc401-001', title: 'Advanced Pharmaceutics Intro', course: 'PHSC 401', status: 'Draft', date: daysAgoFacultyIso(15) },
+    ],
+  },
+  {
+    ...facultyListRows[5],
+    phone: undefined,
+    department: 'Master of Occupational Therapy',
+    joinDate: '2023-09-05',
+    bio: undefined,
+    courses: [
+      { id: 'course-ot101', code: 'OT 101', name: 'Occupational Therapy Foundations', term: 'Spring 2026', students: 20, status: 'active' },
+    ],
+    assessmentsManaged: [
+      { id: 'asmt-ot101-001', title: 'OT Foundations Quiz 1', course: 'OT 101', status: 'Results Published', date: daysAgoFacultyIso(14) },
+    ],
+  },
+  {
+    ...facultyListRows[6],
+    phone: '+1 (617) 555-0619',
+    department: 'Doctor of Physical Therapy',
+    joinDate: '2017-08-20',
+    bio: 'Dr. Mitchell directs the DPT program and has over 15 years of experience in musculoskeletal assessment and clinical education. She chairs the curriculum committee.',
+    courses: [
+      { id: 'course-pt301', code: 'PT 301', name: 'Musculoskeletal Assessment', term: 'Spring 2026', students: 27, status: 'active' },
+      { id: 'course-pt401', code: 'PT 401', name: 'Advanced Clinical Practice', term: 'Spring 2026', students: 22, status: 'upcoming' },
+    ],
+    assessmentsManaged: [
+      { id: 'asmt-pt301-001', title: 'Musculoskeletal Midterm', course: 'PT 301', status: 'In Progress', date: daysAgoFacultyIso(1) },
+      { id: 'asmt-pt301-002', title: 'Range of Motion Practical', course: 'PT 301', status: 'Approved', date: daysAgoFacultyIso(8) },
+    ],
+  },
+  {
+    ...facultyListRows[7],
+    phone: '+1 (617) 555-0752',
+    department: 'Doctor of Pharmacy',
+    joinDate: '2021-06-14',
+    bio: 'Prof. Kim applies active learning strategies to pharmacotherapy instruction. His research focuses on spaced retrieval practice in health professions education.',
+    courses: [
+      { id: 'course-phar301', code: 'PHAR 301', name: 'Pharmacotherapy I', term: 'Spring 2026', students: 31, status: 'active' },
+      { id: 'course-phar302', code: 'PHAR 302', name: 'Pharmacotherapy II', term: 'Spring 2026', students: 29, status: 'active' },
+      { id: 'course-phar301-f25', code: 'PHAR 301', name: 'Pharmacotherapy I', term: 'Fall 2025', students: 28, status: 'completed' },
+    ],
+    assessmentsManaged: [
+      { id: 'asmt-phar301-001', title: 'Pharmacotherapy Case Exam', course: 'PHAR 301', status: 'Results Published', date: daysAgoFacultyIso(22) },
+      { id: 'asmt-phar302-001', title: 'Drug Therapy Midterm', course: 'PHAR 302', status: 'Pending Review', date: daysAgoFacultyIso(3) },
+      { id: 'asmt-phar302-002', title: 'Pharmacotherapy Quiz 2', course: 'PHAR 302', status: 'Draft', date: daysAgoFacultyIso(7) },
+    ],
+  },
+  {
+    ...facultyListRows[8],
+    phone: '+1 (617) 555-0883',
+    department: 'Master of Occupational Therapy',
+    joinDate: '2022-01-03',
+    bio: 'Dr. Al-Hassan coordinates the OT curriculum and specializes in mental health occupational therapy. She oversees assessment design for Level II fieldwork competencies.',
+    courses: [
+      { id: 'course-ot201', code: 'OT 201', name: 'Mental Health OT', term: 'Spring 2026', students: 18, status: 'active' },
+      { id: 'course-ot301', code: 'OT 301', name: 'Fieldwork Seminar', term: 'Spring 2026', students: 22, status: 'active' },
+    ],
+    assessmentsManaged: [
+      { id: 'asmt-ot201-001', title: 'Mental Health Case Study', course: 'OT 201', status: 'Approved', date: daysAgoFacultyIso(5) },
+      { id: 'asmt-ot301-001', title: 'Fieldwork Competency Check', course: 'OT 301', status: 'Draft', date: daysAgoFacultyIso(9) },
+    ],
+  },
+  {
+    ...facultyListRows[9],
+    phone: undefined,
+    department: 'Doctor of Physical Therapy',
+    joinDate: '2016-09-01',
+    bio: 'Prof. Nguyen retired from full-time teaching in 2025 after 9 years in the program. No active course assignments.',
+    courses: [],
+    assessmentsManaged: [],
+  },
+  {
+    ...facultyListRows[10],
+    phone: '+1 (617) 555-1001',
+    department: 'Doctor of Pharmacy',
+    joinDate: '2024-01-15',
+    bio: 'Dr. Sharma joined the pharmacy faculty in 2024, bringing expertise in clinical toxicology and bioavailability research.',
+    courses: [
+      { id: 'course-tox101', code: 'TOX 101', name: 'Clinical Toxicology', term: 'Spring 2026', students: 16, status: 'active' },
+    ],
+    assessmentsManaged: [
+      { id: 'asmt-tox101-001', title: 'Toxicology Unit Quiz', course: 'TOX 101', status: 'Results Published', date: daysAgoFacultyIso(17) },
+    ],
+  },
+  {
+    ...facultyListRows[11],
+    phone: undefined,
+    department: 'Master of Occupational Therapy',
+    joinDate: '2019-03-12',
+    bio: undefined,
+    courses: [],
+    assessmentsManaged: [],
+  },
+]
 
 // ─── Students ────────────────────────────────────────────────────────────────
 
@@ -19,7 +393,7 @@ export type StudentStatus = 'active' | 'at-risk' | 'top-performer' | 'inactive'
 
 export interface Student {
   id: string
-  studentId: string         // institutional ID, e.g. "STU-2024-1023"
+  studentId: string         // institutional ID / SIS user_id (Canvas lis.person_sourcedid)
   firstName: string
   lastName: string
   email: string
@@ -31,6 +405,10 @@ export interface Student {
   /** Last activity date (ISO). */
   lastActivity: string
   status: StudentStatus
+  /** LTI sub claim / Canvas user_id — auto-populated via LTI launch or Canvas SIS import */
+  canvasUserId?: string
+  /** Canvas login_id (username) — auto-populated when Canvas active */
+  loginId?: string
 }
 
 export const facultyStudents: Student[] = [
@@ -165,13 +543,13 @@ export const courseObjectives: CourseObjective[] = [
   obj('phar101', 3, 'course-phar101', 'Analyze drug-drug interaction mechanisms', 'Analyze', 18, 3, 64, 12),
   obj('phar101', 4, 'course-phar101', 'Evaluate adverse-event risk profiles', 'Evaluate', 9, 2, 69, 21),
   obj('phar101', 5, 'course-phar101', 'Distinguish receptor agonist vs antagonist effects', 'Understand', 11, 4, 82, 6),
-  obj('phar101', 6, 'course-phar101', 'Recognize black-box warning indications', 'Remember', 7, 1, null as any, null), // untested gap
+  obj('phar101', 6, 'course-phar101', 'Recognize black-box warning indications', 'Remember', 7, 1, null as unknown as number, null), // untested gap
   // BIOL201 — Cell Biology
   obj('biol201', 1, 'course-biol201', 'Identify organelle structure-function relationships', 'Understand', 16, 3, 81, 5),
   obj('biol201', 2, 'course-biol201', 'Apply cell-signaling cascade logic', 'Apply', 12, 2, 73, 18),
   obj('biol201', 3, 'course-biol201', 'Analyze membrane transport mechanisms', 'Analyze', 14, 2, 68, 18),
   obj('biol201', 4, 'course-biol201', 'Evaluate cell-cycle checkpoint failures', 'Evaluate', 8, 1, 74, 32),
-  obj('biol201', 5, 'course-biol201', 'Compare apoptosis vs necrosis pathways', 'Understand', 6, 0, null as any, null), // untested
+  obj('biol201', 5, 'course-biol201', 'Compare apoptosis vs necrosis pathways', 'Understand', 6, 0, null as unknown as number, null), // untested
   // SKEL101 — Skeletal Anatomy (viewer access)
   obj('skel101', 1, 'course-skel101', 'Identify axial vs appendicular skeleton bones', 'Remember', 24, 5, 86, 9),
   obj('skel101', 2, 'course-skel101', 'Describe joint classification by structure', 'Understand', 18, 3, 79, 14),

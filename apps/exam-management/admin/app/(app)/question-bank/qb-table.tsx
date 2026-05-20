@@ -9,7 +9,7 @@ import {
   Button, Badge, Checkbox, Input,
   Avatar, AvatarFallback,
   Sheet, SheetContent, SheetTitle,
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuLabel,
   Popover, PopoverTrigger, PopoverContent,
   Tooltip, TooltipTrigger, TooltipContent, Tip,
@@ -19,7 +19,7 @@ import {
   FieldError,
 } from '@exxat/ds/packages/ui/src'
 import type { Question, QStatus, ColumnId } from '@/lib/qb-types'
-import { MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
+import { MOCK_QB_PERSONAS, mockCourses, mockCourseOfferings } from '@/lib/qb-mock-data'
 import { RequestEditAccessModal } from './qb-modals'
 import { QBTitle } from './qb-title'
 import { EmptyState } from '@/components/empty-state'
@@ -627,26 +627,186 @@ function ArchiveQuestionDialog({ question, open, onClose, currentFolderId }: {
 }
 
 // ── Delete Question Dialog ────────────────────────────────────────────────────
-function DeleteQuestionDialog({ question, open, onClose }: { question: { id: string; title: string }; open: boolean; onClose: () => void }) {
+//
+// Two states driven by question.usedInSections:
+//   • No impact (empty) — simple confirm, immediate delete
+//   • Has impact (used in assessments) — amber warning zone listing each
+//     affected assessment; checkbox acknowledgment gates the Delete button
+function DeleteQuestionDialog({ question, open, onClose }: { question: Question; open: boolean; onClose: () => void }) {
   const { deleteQuestion, questions, restoreQuestion } = useQB()
+  const [acknowledged, setAcknowledged] = useState(false)
+
+  useEffect(() => { setAcknowledged(false) }, [question.id])
+
+  const sections = question.usedInSections ?? []
+  const hasImpact = sections.length > 0
+
+  // Derive course from folderPath: "PHAR101 QB / Antibiotics" → "PHAR101"
+  const courseCode = question.folderPath.split(' QB')[0].trim()
+  const course = mockCourses.find(c => c.code === courseCode)
+
+  // One offering per course — use the most recent one for context
+  const offering = course
+    ? mockCourseOfferings.filter(o => o.courseId === course.id).at(-1)
+    : null
+
   function handleDelete() {
     const snapshot = questions.find(q => q.id === question.id)
     deleteQuestion(question.id)
-    showQBToast({ title: 'Question deleted', undoFn: snapshot ? () => restoreQuestion(snapshot) : undefined })
+    showQBToast({
+      title: hasImpact
+        ? `Question deleted · removed from ${sections.length} assessment${sections.length !== 1 ? 's' : ''}`
+        : 'Question deleted',
+      undoFn: snapshot ? () => restoreQuestion(snapshot) : undefined,
+    })
     onClose()
   }
+
+  const previewTitle = question.title.length > 72
+    ? `"${question.title.slice(0, 72)}…"`
+    : `"${question.title}"`
+
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Delete question?</DialogTitle>
+          <div className="flex items-start gap-3">
+            {/* Icon — amber for impact, red for clean */}
+            <span
+              className="flex size-9 shrink-0 items-center justify-center rounded-full mt-0.5"
+              style={{
+                backgroundColor: hasImpact
+                  ? 'var(--standing-warning-bg)'
+                  : 'color-mix(in oklch, var(--destructive) 10%, var(--background))',
+                color: hasImpact ? 'var(--standing-warning-fg)' : 'var(--destructive)',
+              }}
+              aria-hidden="true"
+            >
+              <i
+                className={`fa-light ${hasImpact ? 'fa-triangle-exclamation' : 'fa-trash-can'}`}
+                style={{ fontSize: 16 }}
+              />
+            </span>
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-base">Delete question?</DialogTitle>
+              <DialogDescription className="text-xs mt-1 leading-snug text-muted-foreground">
+                {previewTitle}
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
-        <p className="text-sm text-muted-foreground">
-          &ldquo;{question.title.slice(0, 80)}{question.title.length > 80 ? '…' : ''}&rdquo; will be permanently removed.
-        </p>
+
+        {/* ── Impact zone ────────────────────────────────────────────────────── */}
+        {hasImpact && (
+          <div className="flex flex-col gap-4">
+            {/* Amber strip — two lines so text never wraps mid-sentence */}
+            <div
+              className="flex items-start gap-2.5 rounded-lg px-3 py-2.5"
+              style={{
+                backgroundColor: 'var(--standing-warning-bg)',
+                borderLeft: '3px solid var(--standing-warning-fg)',
+              }}
+            >
+              <i
+                className="fa-solid fa-triangle-exclamation mt-0.5 shrink-0"
+                aria-hidden="true"
+                style={{ fontSize: 13, color: 'var(--standing-warning-fg)' }}
+              />
+              <div>
+                <p className="text-sm font-semibold" style={{ color: 'var(--standing-warning-fg)' }}>
+                  Used in {sections.length} assessment{sections.length !== 1 ? 's' : ''}
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--standing-warning-fg)' }}>
+                  Removing this question affects all listed assessments immediately
+                </p>
+              </div>
+            </div>
+
+            {/* Scrollable list — capped at 3 visible rows (~192px) */}
+            <div
+              className="rounded-lg overflow-hidden"
+              style={{ border: '1px solid var(--border)' }}
+            >
+              <div
+                style={{
+                  maxHeight: 192,
+                  overflowY: 'auto',
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: 'var(--border) transparent',
+                }}
+                role="list"
+                aria-label="Affected assessments"
+              >
+                {sections.map((sectionName, i) => (
+                  <div
+                    key={sectionName}
+                    className="flex items-center gap-3 px-3 py-3"
+                    style={{ borderTop: i > 0 ? '1px solid var(--border)' : undefined }}
+                    role="listitem"
+                  >
+                    <i
+                      className="fa-light fa-clipboard-list shrink-0 text-muted-foreground"
+                      aria-hidden="true"
+                      style={{ fontSize: 14, width: 16 }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">{sectionName}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {course ? `${course.name} · ${course.code}` : courseCode}
+                        {offering && ` · ${offering.semester} · ${offering.studentCount} students`}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Consequence — plain text */}
+            <p className="text-xs text-muted-foreground leading-relaxed -mt-1">
+              Scores for students who already submitted{' '}
+              <strong className="font-medium text-foreground">will not be recalculated</strong>.
+            </p>
+
+            {/* Acknowledgment — plain checkbox row, no container border */}
+            <label
+              htmlFor="delete-acknowledge"
+              className="flex items-start gap-3 cursor-pointer"
+            >
+              <Checkbox
+                id="delete-acknowledge"
+                checked={acknowledged}
+                onCheckedChange={(v) => setAcknowledged(!!v)}
+                className="mt-0.5 shrink-0"
+              />
+              <span className="text-sm text-foreground leading-snug select-none">
+                I understand this permanently removes the question from{' '}
+                <strong>{sections.length} assessment{sections.length !== 1 ? 's' : ''}</strong>{' '}
+                and cannot be undone.
+              </span>
+            </label>
+          </div>
+        )}
+
+        {/* ── No-impact description ──────────────────────────────────────────── */}
+        {!hasImpact && (
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            This question hasn&apos;t been used in any assessment — deleting it is safe.
+            This action cannot be undone.
+          </p>
+        )}
+
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-          <Button variant="destructive" size="sm" onClick={handleDelete}>Delete</Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleDelete}
+            disabled={hasImpact && !acknowledged}
+            aria-disabled={hasImpact && !acknowledged}
+          >
+            <i className="fa-light fa-trash-can" aria-hidden="true" />
+            Delete question
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -2688,7 +2848,7 @@ export function QBTable() {
   const [moveTarget, setMoveTarget] = useState<{ id: string; title: string; folder: string } | null>(null)
   const [copyTarget, setCopyTarget] = useState<{ id: string; title: string } | null>(null)
   const [archiveTarget, setArchiveTarget] = useState<{ id: string; title: string; prevStatus: import('@/lib/qb-types').QStatus; folder: string } | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Question | null>(null)
   const [detailQuestionId, setDetailQuestionId] = useState<string | null>(null)
   const detailQuestion = detailQuestionId ? (visibleQuestions.find(q => q.id === detailQuestionId) ?? null) : null
 
@@ -3949,8 +4109,8 @@ export function QBTable() {
                                 Manage folder access
                               </DropdownMenuItem>
                             )}
-                            {canDeleteRow && q.status === 'Draft' && (q.usedInSections?.length ?? 0) === 0 && (
-                              <DropdownMenuItem variant="destructive" onClick={() => { setOpenMenuQuestionId(null); setDeleteTarget({ id: q.id, title: q.title }) }}>
+                            {canDeleteRow && q.status === 'Draft' && (
+                              <DropdownMenuItem variant="destructive" onClick={() => { setOpenMenuQuestionId(null); setDeleteTarget(q) }}>
                                 <i className="fa-light fa-trash-can" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
                                 Delete question
                               </DropdownMenuItem>

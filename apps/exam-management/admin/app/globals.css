@@ -14,7 +14,8 @@
   display: flex;
   flex-direction: row;
 }
-[data-slot="tabs-list"][data-variant="line"] [data-slot="tabs-trigger"][data-active="true"]::after {
+[data-slot="tabs-list"][data-variant="line"] [data-slot="tabs-trigger"][data-active]::after,
+[data-slot="tabs-list"][data-variant="line"] [data-slot="tabs-trigger"][data-state="active"]::after {
   content: "";
   position: absolute;
   inset-inline: 0;
@@ -106,6 +107,10 @@
   /* Folder delete impact panel */
   --qb-delete-impact-bg:     color-mix(in oklch, var(--destructive) 8%, var(--background));
   --qb-delete-impact-border: color-mix(in oklch, var(--destructive) 20%, transparent);
+
+  /* Academic standing — base entity student pages */
+  --standing-warning-bg:  oklch(0.97 0.05 85);    /* amber surface — needs attention */
+  --standing-warning-fg:  oklch(0.45 0.15 60);    /* dark amber text */
 
   /* Bloom's distribution bar */
   --qb-blooms-bar: color-mix(in oklch, var(--brand-color) 45%, var(--background));

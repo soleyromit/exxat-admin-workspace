@@ -11,6 +11,9 @@ import { VirtualKeyboard } from './components/VirtualKeyboard';
 import { CalculatorPopover } from './components/CalculatorPopover';
 import { QuestionNavigatorPopover } from './components/QuestionNavigatorPopover';
 import { AccessibilityPanel } from './components/AccessibilityPanel';
+import { GlobalReferencePanel } from './components/GlobalReferencePanel';
+import { SubmitReviewOverlay } from './components/SubmitReviewOverlay';
+import { StickyFooter } from './components/StickyFooter';
 // Question types that benefit from a calculator
 const CALCULATOR_TYPES = new Set([
 'table',
@@ -39,6 +42,8 @@ export function App() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [currentIndex, setCurrentIndex] = useState(0);
+  // Aarti May 14: "skipped = questions up to the highest point reached that are unanswered"
+  const [highestReachedIndex, setHighestReachedIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, any>>({});
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
   // Aarti-mandated: per-question comments — students flag perceived errors,
@@ -56,6 +61,8 @@ export function App() {
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [showNavigator, setShowNavigator] = useState(false);
   const [showAccessibility, setShowAccessibility] = useState(false);
+  const [showGlobalRef, setShowGlobalRef] = useState(false);
+  const [showSubmitReview, setShowSubmitReview] = useState(false);
   const [voiceNarrator, setVoiceNarrator] = useState(false);
   const [colorBlindMode, setColorBlindMode] = useState<
     'none' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'achromatopsia'>(
@@ -64,9 +71,6 @@ export function App() {
   const [theme, setTheme] = useState<'light' | 'dark' | 'high-contrast'>(
     'light'
   );
-  const [showQuestionNavInToolbar, setShowQuestionNavInToolbar] = useState(true);
-  const [showQuestionNavInHamburger, setShowQuestionNavInHamburger] =
-  useState(true);
   const { formatted: timerFormatted, totalSeconds } = useTimer(7200);
   const isLastFiveMinutes = totalSeconds <= 300;
   const { zoomPercent, zoomIn, zoomOut, announcement } = useZoom();
@@ -76,7 +80,6 @@ export function App() {
     map((q, i) => answers[q.id] !== undefined ? i : -1).
     filter((i) => i !== -1)
   );
-  const unansweredCount = questions.length - answeredIndices.size;
   // Contextual tool relevance
   const needsCalculator = CALCULATOR_TYPES.has(currentQuestion.type);
   const needsKeyboard = KEYBOARD_TYPES.has(currentQuestion.type);
@@ -90,9 +93,19 @@ export function App() {
       ...prev,
       [questionId]: answer
     }));
-  }, []);
+    if (assessment?.autoAdvance) {
+      const idx = questions.findIndex(q => q.id === questionId);
+      if (idx !== -1 && idx < questions.length - 1) {
+        setTimeout(() => {
+          setCurrentIndex(idx + 1);
+          setHighestReachedIndex(prev => Math.max(prev, idx + 1));
+        }, 350);
+      }
+    }
+  }, [assessment?.autoAdvance, questions]);
   const handleNavigate = useCallback((index: number) => {
     setCurrentIndex(index);
+    setHighestReachedIndex(prev => Math.max(prev, index));
   }, []);
   const handleToggleFlag = useCallback(() => {
     setFlagged((prev) => {
@@ -104,6 +117,10 @@ export function App() {
     });
   }, [currentIndex]);
   const handleSubmit = useCallback(() => {
+    setShowSubmitReview(true);
+  }, []);
+
+  const handleConfirmSubmit = useCallback(() => {
     navigate(`/exam/${id ?? 'demo'}/submitted`);
   }, [navigate, id]);
   const handleExit = useCallback(() => {
@@ -236,16 +253,11 @@ export function App() {
 
       <ExamToolbar
         timerFormatted={timerFormatted}
-        answeredCount={answeredIndices.size}
-        flaggedCount={flagged.size}
-        unansweredCount={unansweredCount}
+        assessmentTitle={assessment?.title}
+        courseLabel={assessment ? `${assessment.courseCode} · ${assessment.courseName}` : undefined}
         totalQuestions={questions.length}
         currentIndex={currentIndex}
         zoomPercent={zoomPercent}
-        questions={questions}
-        answeredSet={answeredIndices}
-        flaggedSet={flagged}
-        onNavigate={handleNavigate}
         onToggleCalculator={() => setShowCalculator(!showCalculator)}
         onToggleKeyboard={() => setShowKeyboard(!showKeyboard)}
         onToggleAccessibility={() => setShowAccessibility(!showAccessibility)}
@@ -254,28 +266,22 @@ export function App() {
         onSubmit={handleSubmit}
         theme={theme}
         onThemeChange={setTheme}
-        showQuestionNavInToolbar={showQuestionNavInToolbar}
-        onToggleNavInToolbar={() =>
-        setShowQuestionNavInToolbar(!showQuestionNavInToolbar)
-        }
-        showQuestionNavInHamburger={showQuestionNavInHamburger}
-        onToggleNavInHamburger={() =>
-        setShowQuestionNavInHamburger(!showQuestionNavInHamburger)
-        }
-        isFlaggedCurrent={flagged.has(currentIndex)}
-        onToggleFlag={handleToggleFlag}
         isLastFiveMinutes={isLastFiveMinutes}
         voiceNarrator={voiceNarrator}
         onToggleVoiceNarrator={() => setVoiceNarrator(!voiceNarrator)}
         colorBlindMode={colorBlindMode}
         onColorBlindModeChange={setColorBlindMode}
-        onExit={handleExit} />
+        onExit={handleExit}
+        hasGlobalRef={(assessment?.referenceMaterials?.length ?? 0) > 0}
+        isGlobalRefOpen={showGlobalRef}
+        onToggleGlobalRef={() => setShowGlobalRef(v => !v)} />
       
 
       <div className="relative flex-1 overflow-hidden flex flex-col">
         <QuestionNavigatorPopover
           questions={questions}
           currentIndex={currentIndex}
+          highestReachedIndex={highestReachedIndex}
           answeredSet={answeredIndices}
           flaggedSet={flagged}
           onNavigate={handleNavigate}
@@ -293,7 +299,7 @@ export function App() {
 
         <main
           id="main-content"
-          className="flex-1 overflow-hidden flex flex-col p-4 md:p-6"
+          className="flex-1 overflow-hidden flex flex-col p-4 md:p-6 pb-24"
           role="main"
           aria-label={`Question ${currentIndex + 1} of ${questions.length}`}>
           
@@ -341,6 +347,36 @@ export function App() {
         onClose={() => setShowCalculator(false)} />
 
       }
+
+      {/* Vishaka May 14: "bottom panel is getting lost — that is my primary way to act.
+           I have to reorient to the right-hand corner to go next." StickyFooter provides
+           bottom navigation so students never need to look at the toolbar to advance. */}
+      <StickyFooter
+        currentIndex={currentIndex}
+        totalQuestions={questions.length}
+        onNavigate={handleNavigate}
+        isFlaggedCurrent={flagged.has(currentIndex)}
+        onToggleFlag={handleToggleFlag}
+        questions={questions}
+        answeredSet={answeredIndices}
+        flaggedSet={flagged} />
+
+      <GlobalReferencePanel
+        isOpen={showGlobalRef}
+        onClose={() => setShowGlobalRef(false)}
+        materials={assessment?.referenceMaterials ?? []} />
+
+      {showSubmitReview && (
+        <SubmitReviewOverlay
+          questions={questions}
+          currentIndex={currentIndex}
+          answeredSet={answeredIndices}
+          flaggedSet={flagged}
+          highestReachedIndex={highestReachedIndex}
+          onNavigate={handleNavigate}
+          onClose={() => setShowSubmitReview(false)}
+          onConfirmSubmit={handleConfirmSubmit} />
+      )}
     </div>);
 
 }

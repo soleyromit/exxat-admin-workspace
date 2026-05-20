@@ -20,6 +20,7 @@ import {
   DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
 } from '@exxat/ds/packages/ui/src'
 import { useFacultySession } from '@/lib/faculty-session'
+import type { EntryPoint } from '@/lib/faculty-session'
 import { type Persona } from '@/lib/personas'
 
 // Per Vishaka — three institutional roles surfaced in the UI:
@@ -57,8 +58,13 @@ function roleBadgeStyle(tone: 'brand' | 'info' | 'neutral') {
   }
 }
 
+const ENTRY_CONFIG: Record<EntryPoint, { icon: string; label: string; desc: string; color: string }> = {
+  prism:      { icon: 'fa-grid-2',             label: 'Prism',      desc: 'Entered via Prism faculty module (LMS-integrated)',   color: 'var(--brand-color)' },
+  standalone: { icon: 'fa-clipboard-list-check', label: 'Standalone', desc: 'Direct login — exam management only, no Prism context', color: 'var(--muted-foreground)' },
+}
+
 export function PersonaSwitcher() {
-  const { currentPersona, setCurrentPersona, personas, hydrated } = useFacultySession()
+  const { currentPersona, setCurrentPersona, personas, hydrated, entry, setEntry } = useFacultySession()
 
   if (!hydrated) {
     // Same dimensions as the trigger so the header doesn't jump on hydration.
@@ -187,6 +193,41 @@ export function PersonaSwitcher() {
           </DropdownMenuItem>
               ))}
             </div>
+          )
+        })}
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground py-1">
+          Entry Mode
+        </DropdownMenuLabel>
+        {(['prism', 'standalone'] as EntryPoint[]).map((mode) => {
+          const cfg = ENTRY_CONFIG[mode]
+          const isActive = entry === mode
+          return (
+            <DropdownMenuItem
+              key={mode}
+              onClick={() => setEntry(mode)}
+              className="gap-2"
+            >
+              <div
+                className="flex size-7 items-center justify-center rounded shrink-0"
+                style={{
+                  backgroundColor: isActive
+                    ? 'color-mix(in oklch, var(--brand-color) 12%, var(--background))'
+                    : 'var(--muted)',
+                  color: isActive ? 'var(--brand-color)' : 'var(--muted-foreground)',
+                }}
+              >
+                <i className={`fa-light ${cfg.icon}`} aria-hidden="true" style={{ fontSize: 12 }} />
+              </div>
+              <div className="flex flex-col flex-1 min-w-0">
+                <span className="text-sm font-semibold">{cfg.label}</span>
+                <span className="text-[11px] text-muted-foreground leading-snug">{cfg.desc}</span>
+              </div>
+              {isActive && (
+                <i className="fa-solid fa-check shrink-0" aria-hidden="true"
+                  style={{ fontSize: 11, color: 'var(--brand-color)' }} />
+              )}
+            </DropdownMenuItem>
           )
         })}
         <div

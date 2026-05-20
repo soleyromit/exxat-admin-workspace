@@ -1,7 +1,8 @@
 /**
- * PRE-EXAM FLOW — 4-step setup before entering the exam engine
+ * PRE-EXAM FLOW — 5-step setup before entering the exam engine
  *
- * Per Aarti + Darshan (Granola sessions):
+ * Per Aarti + Darshan (Granola sessions) + Vishaka (May 14):
+ *   Step 0: Password — faculty-announced class password (second-level auth)
  *   Step 1: System Check — browser, connectivity, storage
  *   Step 2: Instructions & Academic Integrity — exam-specific + e-signature
  *   Step 3: Accommodation Confirmation — confirm what's applied before starting
@@ -15,8 +16,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button } from '@exxat/ds/packages/ui/src';
-import { ExamBadge } from '../components/ExamBadge';
+import { Badge, Button, Input } from '@exxat/ds/packages/ui/src';
 import { MOCK_ASSESSMENTS, getEffectiveDuration, formatDuration, Assessment } from '../data/assessments';
 
 const t = {
@@ -24,9 +24,6 @@ const t = {
   card: 'var(--card)',
   muted: 'var(--muted)',
   brand: 'var(--brand-color)',
-  brandDark: 'var(--brand-color-dark)',
-  brandSurface: 'var(--brand-color-light, #F5F3FF)',
-  brandBorder: 'var(--brand-tint, #EDE9FE)',
   fg: 'var(--foreground)',
   fgMuted: 'var(--muted-foreground)',
   border: 'var(--border)',
@@ -34,11 +31,93 @@ const t = {
 };
 
 const STEPS = [
-  { id: 'system',       label: 'System Check',          icon: 'fa-display-code' },
-  { id: 'instructions', label: 'Instructions',           icon: 'fa-file-lines' },
-  { id: 'accommodation',label: 'Accommodations',         icon: 'fa-universal-access' },
-  { id: 'ready',        label: 'Ready to Start',         icon: 'fa-circle-check' },
+  { id: 'password',      label: 'Enter Password',        icon: 'fa-lock' },
+  { id: 'system',        label: 'System Check',          icon: 'fa-display-code' },
+  { id: 'instructions',  label: 'Instructions',          icon: 'fa-file-lines' },
+  { id: 'accommodation', label: 'Accommodations',        icon: 'fa-universal-access' },
+  { id: 'ready',         label: 'Ready to Start',        icon: 'fa-circle-check' },
 ];
+
+// ─── Step 0: Password ────────────────────────────────────────────────────────
+function ExamPassword({ onNext }: { onNext: () => void }) {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState(false);
+  const [checking, setChecking] = useState(false);
+
+  // Mock password for prototype — real implementation validates against server
+  const MOCK_PASSWORD = 'EXAM2026';
+
+  function handleSubmit() {
+    setChecking(true);
+    setTimeout(() => {
+      if (password.toUpperCase() === MOCK_PASSWORD) {
+        setError(false);
+        onNext();
+      } else {
+        setError(true);
+        setChecking(false);
+      }
+    }, 600);
+  }
+
+  return (
+    <div>
+      <h2 style={{ fontSize: 22, fontWeight: 700, color: t.fg, marginBottom: 6, lineHeight: 1.2 }}>
+        Enter Exam Password
+      </h2>
+      <p style={{ fontSize: 14, color: t.fgMuted, marginBottom: 28 }}>
+        Your faculty will display or announce the password when the exam begins. This confirms you are taking the exam at the scheduled time and location.
+      </p>
+
+      <div style={{
+        background: t.muted, border: `1px solid ${t.border}`,
+        borderRadius: 10, padding: '14px 18px', marginBottom: 24,
+        display: 'flex', alignItems: 'center', gap: 10,
+      }}>
+        <i className="fa-light fa-circle-info" aria-hidden="true" style={{ color: t.brand, fontSize: 16, flexShrink: 0 }} />
+        <p style={{ fontSize: 13, color: t.fg }}>
+          The password is given verbally in class — do not share it with anyone who is not present.
+        </p>
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <label htmlFor="exam-password" style={{ fontSize: 13, fontWeight: 600, color: t.fg, display: 'block', marginBottom: 6 }}>
+          Exam Password
+        </label>
+        <Input
+          id="exam-password"
+          type="text"
+          placeholder="Enter password given by your faculty"
+          value={password}
+          onChange={e => { setPassword(e.target.value); setError(false); }}
+          onKeyDown={e => { if (e.key === 'Enter' && password) handleSubmit(); }}
+          autoComplete="off"
+          autoCapitalize="characters"
+          aria-invalid={error}
+          aria-describedby={error ? 'pw-error' : undefined}
+          className="w-full"
+        />
+        {error && (
+          <p id="pw-error" role="alert" style={{ fontSize: 13, color: 'var(--destructive)', marginTop: 6 }}>
+            <i className="fa-light fa-circle-xmark" aria-hidden="true" style={{ marginRight: 5 }} />
+            Incorrect password. Ask your faculty to confirm.
+          </p>
+        )}
+      </div>
+
+      <Button
+        size="lg"
+        onClick={handleSubmit}
+        disabled={!password || checking}
+        className="w-full"
+        aria-disabled={!password || checking}
+      >
+        <i className={`fa-light ${checking ? 'fa-spinner-third fa-spin' : 'fa-arrow-right'}`} aria-hidden="true" />
+        {checking ? 'Verifying…' : 'Continue'}
+      </Button>
+    </div>
+  );
+}
 
 // ─── Step indicator ───────────────────────────────────────────────────────────
 function StepIndicator({ current }: { current: number }) {
@@ -54,12 +133,12 @@ function StepIndicator({ current }: { current: number }) {
                 aria-current={active ? 'step' : undefined}
                 style={{
                   width: 36, height: 36, borderRadius: '50%',
-                  background: done ? 'var(--state-success-accent)' : active ? t.brand : t.muted,
+                  background: done || active ? t.brand : t.muted,
                   color: done || active ? 'var(--primary-foreground)' : t.fgMuted,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: done ? 14 : 13,
                   fontWeight: 700,
-                  border: active ? `2px solid ${t.brandDark}` : 'none',
+                  border: active ? `2px solid ${t.brand}` : 'none',
                   transition: 'all 0.2s ease',
                 }}
               >
@@ -70,14 +149,14 @@ function StepIndicator({ current }: { current: number }) {
               </div>
               <span style={{
                 fontSize: 11, fontWeight: active ? 700 : 500,
-                color: active ? t.brand : done ? 'var(--state-success-dark)' : t.fgMuted,
+                color: active ? t.brand : done ? t.brand : t.fgMuted,
                 textAlign: 'center', lineHeight: 1.3, maxWidth: 72,
               }}>
                 {step.label}
               </span>
             </div>
             {i < STEPS.length - 1 && (
-              <div style={{ flex: 1, height: 2, background: i < current ? 'var(--state-success-accent)' : t.border, marginBottom: 20, transition: 'background 0.3s ease' }} />
+              <div style={{ flex: 1, height: 2, background: i < current ? t.brand : t.border, marginBottom: 20, transition: 'background 0.3s ease' }} />
             )}
           </React.Fragment>
         );
@@ -126,7 +205,7 @@ function SystemCheck({ onNext }: { onNext: () => void }) {
 
   return (
     <div>
-      <h2 className="font-heading" style={{ fontSize: 22, fontWeight: 700, color: t.fg, marginBottom: 6, lineHeight: 1.2 }}>System Check</h2>
+      <h2 style={{ fontSize: 22, fontWeight: 700, color: t.fg, marginBottom: 6, lineHeight: 1.2 }}>System Check</h2>
       <p style={{ fontSize: 14, color: t.fgMuted, marginBottom: 28 }}>
         We're verifying your setup before the exam begins. This takes a few seconds.
       </p>
@@ -136,34 +215,31 @@ function SystemCheck({ onNext }: { onNext: () => void }) {
           <div key={item.key} style={{
             display: 'flex', alignItems: 'center', gap: 16,
             padding: '14px 18px', borderRadius: 10,
-            background: checks[item.key] ? 'var(--state-success-bg)' : t.muted,
-            border: `1px solid ${checks[item.key] ? 'var(--state-success-accent)' : t.border}`,
+            background: t.muted,
+            border: `1px solid ${t.border}`,
             transition: 'all 0.3s ease',
           }}>
             <div style={{
               width: 36, height: 36, borderRadius: '50%',
-              background: checks[item.key] ? 'var(--state-success-bg-soft)' : t.card,
-              border: `1.5px solid ${checks[item.key] ? 'var(--state-success-accent)' : t.borderControl}`,
+              background: t.card,
+              border: `1.5px solid ${t.border}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
             }}>
               {checks[item.key]
-                ? <i className="fa-solid fa-check" aria-hidden="true" style={{ color: 'var(--state-success-dark)', fontSize: 14 }} />
+                ? <i className="fa-solid fa-check" aria-hidden="true" style={{ color: t.fg, fontSize: 14 }} />
                 : <i className={`fa-light ${item.icon}`} aria-hidden="true" style={{ color: t.fgMuted, fontSize: 14, animation: 'spin 1s linear infinite' }} />
               }
             </div>
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: 14, fontWeight: 600, color: t.fg }}>{item.label}</p>
-              <p style={{ fontSize: 13, color: checks[item.key] ? 'var(--state-success-dark)' : t.fgMuted }}>
+              <p style={{ fontSize: 13, color: t.fgMuted }}>
                 {checks[item.key] ? item.detail : 'Checking…'}
               </p>
             </div>
-            <ExamBadge
-              bg={checks[item.key] ? 'var(--state-success-bg-soft)' : t.muted}
-              fg={checks[item.key] ? 'var(--state-success-dark)' : t.fgMuted}
-            >
+            <Badge variant="secondary" className="rounded-full text-xs font-semibold">
               {checks[item.key] ? 'Passed' : '…'}
-            </ExamBadge>
+            </Badge>
           </div>
         ))}
 
@@ -171,24 +247,24 @@ function SystemCheck({ onNext }: { onNext: () => void }) {
         <div style={{
           display: 'flex', alignItems: 'center', gap: 16,
           padding: '14px 18px', borderRadius: 10,
-          background: 'var(--state-warning-bg)', border: '1px solid var(--state-warning-border)',
+          background: t.muted, border: `1px solid ${t.border}`,
         }}>
           <div style={{
             width: 36, height: 36, borderRadius: '50%',
-            background: 'var(--state-warning-bg-soft)', border: '1.5px solid var(--state-warning-accent)',
+            background: t.card, border: `1.5px solid ${t.border}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>
-            <i className="fa-light fa-lock-open" aria-hidden="true" style={{ color: 'var(--state-warning-dark)', fontSize: 14 }} />
+            <i className="fa-light fa-lock-open" aria-hidden="true" style={{ color: t.fgMuted, fontSize: 14 }} />
           </div>
           <div style={{ flex: 1 }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--state-warning-darkest)' }}>Lockdown Browser</p>
-            <p style={{ fontSize: 13, color: 'var(--state-warning-dark)' }}>
-              Not required for this exam · Lockdown enforcement scheduled Q4 2026
+            <p style={{ fontSize: 14, fontWeight: 600, color: t.fg }}>Lockdown Browser</p>
+            <p style={{ fontSize: 13, color: t.fgMuted }}>
+              Not required for this exam
             </p>
           </div>
-          <ExamBadge bg="var(--state-warning-bg-soft)" fg="var(--state-warning-dark)">
+          <Badge variant="secondary" className="rounded-full text-xs font-semibold">
             Not Required
-          </ExamBadge>
+          </Badge>
         </div>
       </div>
 
@@ -206,23 +282,20 @@ function SystemCheck({ onNext }: { onNext: () => void }) {
   );
 }
 
-// ─── Step 2: Instructions + Academic Integrity ────────────────────────────────
+// ─── Step 2: Instructions ─────────────────────────────────────────────────────
 function Instructions({ exam, onNext }: { exam: Assessment; onNext: () => void }) {
-  const [agreed, setAgreed] = useState(false);
-  const [signature, setSignature] = useState('');
-
-  const canContinue = agreed && signature.trim().length > 0;
+  const [attested, setAttested] = React.useState(false);
 
   return (
     <div>
-      <h2 className="font-heading" style={{ fontSize: 22, fontWeight: 700, color: t.fg, marginBottom: 6, lineHeight: 1.2 }}>Instructions & Academic Integrity</h2>
+      <h2 style={{ fontSize: 22, fontWeight: 700, color: t.fg, marginBottom: 6, lineHeight: 1.2 }}>Instructions</h2>
       <p style={{ fontSize: 14, color: t.fgMuted, marginBottom: 24 }}>
         Read the following carefully before you begin.
       </p>
 
-      {/* Exam summary */}
+      {/* Exam summary strip */}
       <div style={{
-        background: t.brandSurface, border: `1px solid ${t.brandBorder}`,
+        background: t.muted, border: `1px solid ${t.border}`,
         borderRadius: 10, padding: 16, marginBottom: 20,
         display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12,
       }}>
@@ -232,18 +305,21 @@ function Instructions({ exam, onNext }: { exam: Assessment; onNext: () => void }
           { icon: 'fa-shield-check', label: 'Passing Score', value: `${exam.passingScore}%` },
         ].map(item => (
           <div key={item.label} style={{ textAlign: 'center' }}>
-            <i className={`fa-light ${item.icon}`} aria-hidden="true" style={{ color: t.brand, fontSize: 18, marginBottom: 4, display: 'block' }} />
+            <i className={`fa-light ${item.icon}`} aria-hidden="true" style={{ color: t.fgMuted, fontSize: 18, marginBottom: 4, display: 'block' }} />
             <p style={{ fontSize: 18, fontWeight: 800, color: t.fg }}>{item.value}</p>
             <p style={{ fontSize: 12, color: t.fgMuted }}>{item.label}</p>
           </div>
         ))}
       </div>
 
-      {/* Exam instructions */}
+      {/* Faculty Instructions */}
       <div style={{ marginBottom: 20 }}>
-        <p style={{ fontSize: 13, fontWeight: 700, color: t.fg, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          Exam Instructions
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: t.fg, textTransform: 'uppercase', letterSpacing: 0.5, margin: 0 }}>
+            Faculty Instructions
+          </p>
+          <Badge variant="secondary" className="text-xs">From your instructor</Badge>
+        </div>
         <div style={{
           background: t.card, border: `1px solid ${t.border}`,
           borderRadius: 10, padding: 16, fontSize: 14, color: t.fg,
@@ -256,7 +332,7 @@ function Instructions({ exam, onNext }: { exam: Assessment; onNext: () => void }
               <ul style={{ paddingLeft: 18, margin: 0 }}>
                 {exam.referenceMaterials.map(m => (
                   <li key={m} style={{ marginBottom: 4 }}>
-                    <i className="fa-light fa-file-pdf" aria-hidden="true" style={{ color: 'var(--state-error-accent)', marginRight: 6 }} />
+                    <i className="fa-light fa-file-pdf" aria-hidden="true" style={{ color: t.fgMuted, marginRight: 6 }} />
                     {m}
                   </li>
                 ))}
@@ -266,11 +342,14 @@ function Instructions({ exam, onNext }: { exam: Assessment; onNext: () => void }
         </div>
       </div>
 
-      {/* Academic integrity policy */}
+      {/* Exxat Platform Instructions */}
       <div style={{ marginBottom: 20 }}>
-        <p style={{ fontSize: 13, fontWeight: 700, color: t.fg, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          Academic Integrity Policy
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: t.fg, textTransform: 'uppercase', letterSpacing: 0.5, margin: 0 }}>
+            Exxat Platform Instructions
+          </p>
+          <Badge variant="secondary" className="text-xs">Academic Integrity</Badge>
+        </div>
         <div style={{
           background: t.card, border: `1px solid ${t.border}`,
           borderRadius: 10, padding: 16, fontSize: 13, color: t.fgMuted,
@@ -280,58 +359,39 @@ function Instructions({ exam, onNext }: { exam: Assessment; onNext: () => void }
         </div>
       </div>
 
-      {/* Agreement checkbox */}
-      <label style={{
-        display: 'flex', alignItems: 'flex-start', gap: 12,
-        marginBottom: 16, cursor: 'pointer', userSelect: 'none',
-      }}>
+      {/* Attestation — optional, does not gate Continue */}
+      <label
+        htmlFor="attestation"
+        style={{
+          display: 'flex', alignItems: 'flex-start', gap: 12,
+          padding: '14px 16px', borderRadius: 10, marginBottom: 24, cursor: 'pointer',
+          background: t.muted,
+          border: `1px solid ${t.border}`,
+          transition: 'all 0.2s ease',
+        }}
+      >
         <input
+          id="attestation"
           type="checkbox"
-          checked={agreed}
-          onChange={e => setAgreed(e.target.checked)}
-          required
-          aria-required="true"
-          style={{ width: 18, height: 18, marginTop: 1, accentColor: t.brand, flexShrink: 0 }}
-          aria-label="I have read and agree to the academic integrity policy"
+          checked={attested}
+          onChange={e => setAttested(e.target.checked)}
+          style={{ marginTop: 2, width: 16, height: 16, accentColor: 'var(--brand-color)', cursor: 'pointer', flexShrink: 0 }}
+          aria-label="I have read and understood the instructions"
         />
-        <span style={{ fontSize: 14, color: t.fg, lineHeight: 1.5 }}>
-          I have read and agree to the{' '}
-          <strong>Academic Integrity Policy</strong> and the exam instructions above.
-        </span>
+        <div style={{ flex: 1 }}>
+          <p style={{ fontSize: 14, fontWeight: 600, color: t.fg, margin: 0, marginBottom: 2 }}>
+            I have read and understood all instructions
+          </p>
+          <p style={{ fontSize: 12, color: t.fgMuted, margin: 0 }}>
+            Optional — you can proceed without checking this.
+          </p>
+        </div>
+        {attested && (
+          <i className="fa-solid fa-circle-check" aria-hidden="true" style={{ color: t.fg, fontSize: 18, flexShrink: 0, marginTop: 1 }} />
+        )}
       </label>
 
-      {/* E-signature — required field. aria-required surfaces the
-          requirement to assistive tech (was silent-disable only). */}
-      <div style={{ marginBottom: 24 }}>
-        <label htmlFor="esig" style={{ fontSize: 13, fontWeight: 600, color: t.fg, display: 'block', marginBottom: 6 }}>
-          Type your full name as an electronic signature *
-        </label>
-        <input
-          id="esig"
-          type="text"
-          placeholder="e.g. Ramona Sanchez"
-          value={signature}
-          onChange={e => setSignature(e.target.value)}
-          required
-          aria-required="true"
-          autoComplete="off"
-          style={{
-            width: '100%', padding: '10px 14px', borderRadius: 8,
-            border: `1.5px solid ${signature ? t.brand : t.borderControl}`,
-            fontSize: 14, color: t.fg, background: t.card,
-            outline: 'none', boxSizing: 'border-box',
-            fontFamily: 'cursive',
-          }}
-        />
-      </div>
-
-      <Button
-        size="lg"
-        onClick={onNext}
-        disabled={!canContinue}
-        className="w-full"
-        aria-disabled={!canContinue}
-      >
+      <Button size="lg" onClick={onNext} className="w-full">
         <i className="fa-light fa-arrow-right" aria-hidden="true" />
         Continue
       </Button>
@@ -346,7 +406,7 @@ function AccommodationConfirmation({ exam, onNext }: { exam: Assessment; onNext:
 
   return (
     <div>
-      <h2 className="font-heading" style={{ fontSize: 22, fontWeight: 700, color: t.fg, marginBottom: 6, lineHeight: 1.2 }}>Accommodation Confirmation</h2>
+      <h2 style={{ fontSize: 22, fontWeight: 700, color: t.fg, marginBottom: 6, lineHeight: 1.2 }}>Accommodation Confirmation</h2>
       <p style={{ fontSize: 14, color: t.fgMuted, marginBottom: 24 }}>
         Review your approved accommodations before the exam begins. If anything is incorrect, contact Student Services — do not start the exam.
       </p>
@@ -358,34 +418,31 @@ function AccommodationConfirmation({ exam, onNext }: { exam: Assessment; onNext:
               icon: 'fa-clock',
               label: 'Extended Time',
               value: `${acc.timeMultiplier}× — ${formatDuration(effectiveMins)} total (standard: ${formatDuration(exam.durationMinutes)})`,
-              color: 'var(--state-info-blue-dark)', bg: 'var(--state-info-blue-bg)', border: 'var(--state-info-blue-border)',
             },
             acc.separateRoom && {
               icon: 'fa-door-open',
               label: 'Separate Testing Room',
               value: 'You will take this exam in a private, distraction-free environment',
-              color: 'var(--state-purple-dark)', bg: 'var(--state-purple-bg)', border: 'var(--state-purple-border)',
             },
             acc.extendedBreaks && {
               icon: 'fa-mug-hot',
               label: 'Extended Breaks',
               value: acc.additionalNotes ?? 'Scheduled breaks during the exam',
-              color: 'var(--state-cyan-dark)', bg: 'var(--state-cyan-bg)', border: 'var(--state-cyan-border)',
             },
           ].filter(Boolean).map((item: any) => (
             <div key={item.label} style={{
               display: 'flex', alignItems: 'flex-start', gap: 14,
               padding: '14px 18px', borderRadius: 10,
-              background: item.bg, border: `1px solid ${item.border}`,
+              background: t.muted, border: `1px solid ${t.border}`,
             }}>
               <div style={{
                 width: 36, height: 36, borderRadius: 10,
-                background: 'var(--card)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                background: t.card, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               }}>
-                <i className={`fa-light ${item.icon}`} aria-hidden="true" style={{ color: item.color, fontSize: 16 }} />
+                <i className={`fa-light ${item.icon}`} aria-hidden="true" style={{ color: t.fgMuted, fontSize: 16 }} />
               </div>
               <div>
-                <p style={{ fontSize: 14, fontWeight: 700, color: item.color, marginBottom: 2 }}>{item.label}</p>
+                <p style={{ fontSize: 14, fontWeight: 700, color: t.fg, marginBottom: 2 }}>{item.label}</p>
                 <p style={{ fontSize: 13, color: t.fg }}>{item.value}</p>
               </div>
             </div>
@@ -439,24 +496,24 @@ function ReadyToStart({ exam, onStart }: { exam: Assessment; onStart: () => void
     <div style={{ textAlign: 'center' }}>
       <div style={{
         width: 72, height: 72, borderRadius: '50%',
-        background: 'var(--state-success-bg-soft)', border: '3px solid var(--state-success-accent)',
+        background: t.muted, border: `1px solid ${t.border}`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         margin: '0 auto 20px',
       }}>
-        <i className="fa-solid fa-circle-check" aria-hidden="true" style={{ color: 'var(--state-success-dark)', fontSize: 32 }} />
+        <i className="fa-solid fa-circle-check" aria-hidden="true" style={{ color: t.fg, fontSize: 32 }} />
       </div>
 
-      <h2 className="font-heading" style={{ fontSize: 26, fontWeight: 700, color: t.fg, marginBottom: 8, lineHeight: 1.2 }}>You're Ready</h2>
+      <h2 style={{ fontSize: 26, fontWeight: 700, color: t.fg, marginBottom: 8, lineHeight: 1.2 }}>You're Ready</h2>
       <p style={{ fontSize: 14, color: t.fgMuted, marginBottom: 28 }}>
         All checks passed. Your exam is ready to begin. The timer starts when you click Start.
       </p>
 
       {/* Final summary */}
       <div style={{
-        background: t.brandSurface, border: `1px solid ${t.brandBorder}`,
+        background: t.muted, border: `1px solid ${t.border}`,
         borderRadius: 12, padding: 20, marginBottom: 28, textAlign: 'left',
       }}>
-        <p style={{ fontSize: 13, fontWeight: 700, color: t.brand, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 14 }}>
+        <p style={{ fontSize: 13, fontWeight: 700, color: t.fgMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 14 }}>
           Exam Summary
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -466,7 +523,7 @@ function ReadyToStart({ exam, onStart }: { exam: Assessment; onStart: () => void
             { label: 'Questions', value: `${exam.questionCount}` },
             { label: 'Time Allowed', value: formatDuration(getEffectiveDuration(exam)) },
             { label: 'Passing Score', value: `${exam.passingScore}%` },
-            { label: 'Stakes', value: exam.isHighStakes ? 'High-stakes — results reviewed by faculty before release' : 'Low-stakes — results available immediately' },
+            { label: 'Results', value: exam.isHighStakes ? 'Available after faculty review' : 'Available immediately after submission' },
           ].map(item => (
             <div key={item.label}>
               <p style={{ fontSize: 11, fontWeight: 700, color: t.fgMuted, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 2 }}>{item.label}</p>
@@ -480,7 +537,6 @@ function ReadyToStart({ exam, onStart }: { exam: Assessment; onStart: () => void
         size="lg"
         onClick={onStart}
         className="w-full font-extrabold"
-        style={{ boxShadow: '0 4px 16px var(--shadow-brand)' }}
       >
         <i className="fa-solid fa-play" aria-hidden="true" />
         Start Exam — Timer Begins Now
@@ -519,9 +575,8 @@ export function PreExamFlow() {
   const hasAccommodation = Boolean(exam.accommodation);
 
   const handleNext = () => {
-    if (step === 1 && !hasAccommodation) {
-      // Skip accommodation step
-      setStep(3);
+    if (step === 2 && !hasAccommodation) {
+      setStep(4); // skip accommodation
     } else {
       setStep(s => s + 1);
     }
@@ -553,10 +608,11 @@ export function PreExamFlow() {
       <div style={{ maxWidth: 580, margin: '0 auto', padding: '36px 24px 60px' }}>
         <StepIndicator current={step} />
 
-        {step === 0 && <SystemCheck onNext={() => setStep(1)} />}
-        {step === 1 && <Instructions exam={exam} onNext={handleNext} />}
-        {step === 2 && <AccommodationConfirmation exam={exam} onNext={() => setStep(3)} />}
-        {step === 3 && <ReadyToStart exam={exam} onStart={handleStart} />}
+        {step === 0 && <ExamPassword onNext={() => setStep(1)} />}
+        {step === 1 && <SystemCheck onNext={() => setStep(2)} />}
+        {step === 2 && <Instructions exam={exam} onNext={handleNext} />}
+        {step === 3 && <AccommodationConfirmation exam={exam} onNext={() => setStep(4)} />}
+        {step === 4 && <ReadyToStart exam={exam} onStart={handleStart} />}
       </div>
     </div>
   );

@@ -22,10 +22,13 @@ import {
   Button, Badge,
   Card, CardHeader, CardTitle, CardDescription, CardContent,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
   Avatar, AvatarFallback,
   Textarea,
   Checkbox,
+  Input,
   Label,
+  Separator,
   FieldError,
   LocalBanner,
 } from '@exxat/ds/packages/ui/src'
@@ -101,6 +104,7 @@ export default function AssessmentLandingClient({ assessmentId }: { assessmentId
   const router = useRouter()
   const { getReview, transition } = useAssessmentReviews()
   const [sendOpen, setSendOpen] = useState(false)
+  const [publishOpen, setPublishOpen] = useState(false)
   const assessment = ALL_ASSESSMENTS.find(a => a.id === assessmentId)
   const course = assessment ? mockCourses.find(c => c.id === assessment.courseId) : null
   const review = getReview(assessmentId)
@@ -156,7 +160,12 @@ export default function AssessmentLandingClient({ assessmentId }: { assessmentId
         </Button>
       )}
 
-      {primaryHref ? (
+      {state === 'approved' ? (
+        <Button size="sm" variant="default" className="gap-1.5" onClick={() => setPublishOpen(true)}>
+          <i className="fa-light fa-bullhorn" aria-hidden="true" />
+          Schedule &amp; Publish
+        </Button>
+      ) : primaryHref ? (
         <Button asChild size="sm" variant={state === 'draft' || state === 'changes-requested' ? 'outline' : 'default'} className="gap-1.5">
           <Link href={primaryHref}>
             <i className="fa-light fa-arrow-right" aria-hidden="true" />
@@ -312,6 +321,73 @@ export default function AssessmentLandingClient({ assessmentId }: { assessmentId
               disabled={!['submitted', 'results-published'].includes(state)}
             />
           </section>
+
+          {/* ─── Notification delivery log ───────────────────────────────── */}
+          {['published', 'in-progress', 'submitted', 'results-published'].includes(state) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-heading text-base font-semibold flex items-center gap-2">
+                  <i className="fa-light fa-bell text-muted-foreground" aria-hidden="true" style={{ fontSize: 14 }} />
+                  Notification Delivery
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  System emails sent to enrolled students for this assessment.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col divide-y divide-border">
+                  {[
+                    {
+                      icon: 'fa-bullhorn',
+                      type: 'Announcement',
+                      description: 'Exam ready to download',
+                      sent: review?.publishedAt ? formatDateShort(review.publishedAt) : '—',
+                      count: review?.enrolledCount ?? 0,
+                      status: 'delivered',
+                    },
+                    {
+                      icon: 'fa-clock',
+                      type: 'Reminder',
+                      description: '3 days before download window closes',
+                      sent: '—',
+                      count: review?.enrolledCount ?? 0,
+                      status: 'scheduled',
+                    },
+                    {
+                      icon: 'fa-clock',
+                      type: 'Reminder',
+                      description: '1 day before download window closes',
+                      sent: '—',
+                      count: review?.enrolledCount ?? 0,
+                      status: 'scheduled',
+                    },
+                  ].map((n, i) => (
+                    <div key={i} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                      <div className="flex size-8 shrink-0 items-center justify-center rounded-md"
+                        style={{ backgroundColor: 'var(--muted)' }}>
+                        <i className={`fa-light ${n.icon}`} aria-hidden="true" style={{ fontSize: 13, color: 'var(--muted-foreground)' }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground">{n.description}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {n.type} · {n.count} students · {n.sent}
+                        </p>
+                      </div>
+                      <Badge
+                        variant="secondary"
+                        className="rounded text-[10px] shrink-0"
+                        style={n.status === 'delivered'
+                          ? { backgroundColor: 'var(--qb-status-saved-bg)', color: 'var(--qb-status-saved-fg)' }
+                          : { backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}
+                      >
+                        {n.status === 'delivered' ? 'Delivered' : 'Scheduled'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
@@ -327,6 +403,17 @@ export default function AssessmentLandingClient({ assessmentId }: { assessmentId
             notes: note,
           })
           setSendOpen(false)
+        }}
+      />
+      <SchedulePublishSheet
+        open={publishOpen}
+        onOpenChange={setPublishOpen}
+        assessmentTitle={assessment.title}
+        courseName={course.name}
+        enrolledCount={review?.enrolledCount ?? 0}
+        onPublish={() => {
+          transition(assessmentId, 'published', {})
+          setPublishOpen(false)
         }}
       />
     </>
@@ -501,6 +588,203 @@ function SendToChairDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+// ─── Schedule & Publish sheet ────────────────────────────────────────────────
+
+function SchedulePublishSheet({
+  open, onOpenChange, assessmentTitle, courseName, enrolledCount, onPublish,
+}: {
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  assessmentTitle: string
+  courseName: string
+  enrolledCount: number
+  onPublish: () => void
+}) {
+  // Download window
+  const [dlOpenDate, setDlOpenDate] = useState('')
+  const [dlCloseDate, setDlCloseDate] = useState('')
+  // Exam date/time (when the in-class exam actually happens)
+  const [examDate, setExamDate] = useState('')
+  const [examTime, setExamTime] = useState('')
+  // Notification settings
+  const [notifyOnPublish, setNotifyOnPublish] = useState(true)
+  const [remindersEnabled, setRemindersEnabled] = useState(true)
+  const [reminder7, setReminder7] = useState(false)
+  const [reminder3, setReminder3] = useState(true)
+  const [reminder1, setReminder1] = useState(true)
+  const [published, setPublished] = useState(false)
+
+  function handlePublish() {
+    setPublished(true)
+    setTimeout(() => { onPublish() }, 800)
+  }
+
+  const canPublish = dlOpenDate && dlCloseDate && examDate && examTime
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent showOverlay={false} showCloseButton={false} side="right" style={{ width: 520 }}>
+        <SheetHeader>
+          <SheetTitle>Schedule &amp; Publish</SheetTitle>
+        </SheetHeader>
+
+        {/* Confirmation banner when published */}
+        {published && (
+          <div className="mx-4 flex items-start gap-2.5 rounded-lg px-3 py-2.5 text-xs"
+            style={{ backgroundColor: 'var(--qb-status-saved-bg)', color: 'var(--qb-status-saved-fg)', border: '1px solid var(--qb-status-saved-fg)' }}>
+            <i className="fa-light fa-circle-check mt-0.5 shrink-0" aria-hidden="true" style={{ fontSize: 13 }} />
+            <span>Published — students are being notified now.</span>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-5 overflow-y-auto px-4 pb-2">
+
+          {/* Assessment context */}
+          <div className="rounded-lg border border-border bg-muted/30 px-4 py-3">
+            <p className="text-sm font-semibold text-foreground">{assessmentTitle}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{courseName} · {enrolledCount} students enrolled</p>
+          </div>
+
+          {/* ── Download window ── */}
+          <section>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Download Window</p>
+            <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+              Students must download the exam before arriving in class. The window should open a few days before the exam date.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="dl-open">Opens on <span className="text-destructive" aria-hidden="true">*</span></Label>
+                <Input id="dl-open" type="date" value={dlOpenDate} onChange={e => setDlOpenDate(e.target.value)} required aria-required="true" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="dl-close">Closes on <span className="text-destructive" aria-hidden="true">*</span></Label>
+                <Input id="dl-close" type="date" value={dlCloseDate} onChange={e => setDlCloseDate(e.target.value)} required aria-required="true" />
+              </div>
+            </div>
+          </section>
+
+          <Separator />
+
+          {/* ── Exam date & time ── */}
+          <section>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">In-Class Exam</p>
+            <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+              The date and time students see on their dashboard alongside the download card.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="exam-date">Exam Date <span className="text-destructive" aria-hidden="true">*</span></Label>
+                <Input id="exam-date" type="date" value={examDate} onChange={e => setExamDate(e.target.value)} required aria-required="true" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="exam-time">Start Time <span className="text-destructive" aria-hidden="true">*</span></Label>
+                <Input id="exam-time" type="time" value={examTime} onChange={e => setExamTime(e.target.value)} required aria-required="true" />
+              </div>
+            </div>
+          </section>
+
+          <Separator />
+
+          {/* ── Student notifications ── */}
+          <section>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Student Notifications</p>
+
+            {/* Announce on publish */}
+            <div className="flex items-start gap-3 mb-4">
+              <Checkbox
+                id="notify-on-publish"
+                checked={notifyOnPublish}
+                onCheckedChange={v => setNotifyOnPublish(Boolean(v))}
+                className="mt-0.5"
+              />
+              <div className="flex flex-col gap-0.5">
+                <Label htmlFor="notify-on-publish" className="text-sm font-medium cursor-pointer">
+                  Announce when published
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Sends &ldquo;{assessmentTitle} is ready to download&rdquo; to all {enrolledCount} enrolled students immediately on publish.
+                </p>
+              </div>
+            </div>
+
+            {/* Download window reminders */}
+            <div className="flex items-start gap-3 mb-3">
+              <Checkbox
+                id="reminders-enabled"
+                checked={remindersEnabled}
+                onCheckedChange={v => setRemindersEnabled(Boolean(v))}
+                className="mt-0.5"
+              />
+              <div className="flex flex-col gap-0.5">
+                <Label htmlFor="reminders-enabled" className="text-sm font-medium cursor-pointer">
+                  Send download reminders
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Reminds students who haven&apos;t downloaded yet as the window closes. Aarti (May 14): &ldquo;auto-notification is very important — students do that a lot, then faculty has to start late.&rdquo;
+                </p>
+              </div>
+            </div>
+
+            {remindersEnabled && (
+              <div className="ml-7 flex flex-col gap-2 mt-2 pl-3 border-l-2 border-border">
+                <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Remind before window closes</p>
+                {([
+                  { id: 'r7', label: '7 days before', checked: reminder7, set: setReminder7 },
+                  { id: 'r3', label: '3 days before', checked: reminder3, set: setReminder3 },
+                  { id: 'r1', label: '1 day before',  checked: reminder1, set: setReminder1 },
+                ] as const).map(r => (
+                  <div key={r.id} className="flex items-center gap-2">
+                    <Checkbox
+                      id={r.id}
+                      checked={r.checked}
+                      onCheckedChange={v => r.set(Boolean(v))}
+                    />
+                    <Label htmlFor={r.id} className="text-sm cursor-pointer">{r.label}</Label>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <Separator />
+
+          {/* ── Email preview ── */}
+          <section>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Announcement Email Preview</p>
+            <div className="rounded-lg border border-border bg-muted/30 px-4 py-4 text-xs text-foreground leading-relaxed space-y-2">
+              <p><span className="font-medium">From:</span> Exam Management (noreply@exams.exxat.com)</p>
+              <p><span className="font-medium">Subject:</span> {assessmentTitle} is now ready to download</p>
+              <Separator className="my-2" />
+              <p>Your exam is ready to download.</p>
+              <p className="mt-1"><span className="font-medium">Assessment:</span> {assessmentTitle}</p>
+              <p><span className="font-medium">Course:</span> {courseName}</p>
+              {dlOpenDate && dlCloseDate && (
+                <p><span className="font-medium">Download window:</span> {dlOpenDate} — {dlCloseDate}</p>
+              )}
+              {examDate && examTime && (
+                <p><span className="font-medium">Exam date:</span> {examDate} at {examTime}</p>
+              )}
+              <p className="mt-2 text-muted-foreground">Download before arriving in class. You will need the exam on your device — it cannot be downloaded in the classroom.</p>
+            </div>
+          </section>
+        </div>
+
+        <SheetFooter className="flex-row justify-end gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button
+            onClick={handlePublish}
+            disabled={!canPublish || published}
+            className="gap-1.5"
+          >
+            <i className="fa-light fa-bullhorn" aria-hidden="true" />
+            {published ? 'Publishing…' : `Publish & Notify ${enrolledCount > 0 ? `${enrolledCount} students` : ''}`}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   )
 }
 

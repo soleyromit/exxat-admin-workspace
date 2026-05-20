@@ -37,6 +37,7 @@ import { OverviewTab } from './tabs/overview-tab'
 import { AssessmentsTab } from './tabs/assessments-tab'
 import { StudentsTab } from './tabs/students-tab'
 import { AccommodationsTab } from './tabs/accommodations-tab'
+import { FacultyTab } from './tabs/faculty-tab'
 import { CreateAssessmentModal } from '@/components/create-assessment-modal'
 
 const ALL_ASSESSMENTS = [...mockAssessments, ...facultyExtraAssessments]
@@ -206,6 +207,10 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                 <i className="fa-light fa-grid-2 text-xs" aria-hidden="true" />
                 Mapping
               </TabsTrigger>
+              <TabsTrigger value="faculty" className="gap-2">
+                <i className="fa-light fa-chalkboard-user text-xs" aria-hidden="true" />
+                Faculty
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -240,6 +245,9 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                 reviewByAssessment={reviewByAssessment}
                 onJumpToTab={setActiveTab}
               />
+            </TabsContent>
+            <TabsContent value="faculty" className="m-0">
+              <FacultyTab courseId={courseId} />
             </TabsContent>
           </div>
         </Tabs>

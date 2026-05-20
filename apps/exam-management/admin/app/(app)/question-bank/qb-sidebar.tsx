@@ -3,10 +3,10 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { useQB } from './qb-state'
 import type { FolderNode } from '@/lib/qb-types'
 import {
-  Button, Tip,
+  Button, Tip, Checkbox,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
   InputGroup, InputGroupAddon, InputGroupInput, Input,
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Separator,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, Separator,
   Popover, PopoverTrigger, PopoverContent,
   FieldError,
   Command, CommandInput, CommandList, CommandGroup, CommandItem, CommandEmpty,
@@ -77,6 +77,17 @@ function getFolderIcon(node: FolderNode, expanded: boolean, selected: boolean) {
   }
 }
 
+// Walk up the folder tree to find the nearest course folder (isCourse: true)
+function findCourseFolder(nodeId: string, folders: FolderNode[]): FolderNode | undefined {
+  let node = folders.find(f => f.id === nodeId)
+  while (node) {
+    if (node.isCourse) return node
+    if (!node.parentId) return undefined
+    node = folders.find(f => f.id === node!.parentId)
+  }
+  return undefined
+}
+
 export function DeleteFolderDialog({
   node,
   open,
@@ -87,10 +98,28 @@ export function DeleteFolderDialog({
   onClose: () => void
 }) {
   const { folders, questions, deleteFolder, restoreFolders } = useQB()
+  const [acknowledged, setAcknowledged] = useState(false)
+
+  useEffect(() => { setAcknowledged(false) }, [node.id])
 
   const affectedFolderIds = getDescendantIds(node.id, folders)
+  const subfoldersCount = affectedFolderIds.size - 1  // exclude the folder itself
   const affectedQuestions = questions.filter(q => affectedFolderIds.has(q.folder))
   const usedQuestions = affectedQuestions.filter(q => (q.usedInSections?.length ?? 0) > 0)
+
+  // Deduplicate: collect unique assessment names across all affected questions
+  const affectedAssessmentNames = [...new Set(
+    usedQuestions.flatMap(q => q.usedInSections ?? [])
+  )]
+  const hasImpact = affectedAssessmentNames.length > 0
+
+  // Per-assessment: count how many questions from THIS folder each assessment contains.
+  // This is the only info we can reliably attribute per assessment — course context
+  // cannot be derived from section-name strings and would be wrong for multi-course folders.
+  const assessmentImpacts = affectedAssessmentNames.map(name => ({
+    name,
+    questionCount: usedQuestions.filter(q => (q.usedInSections ?? []).includes(name)).length,
+  }))
 
   function handleDelete() {
     const subtree = folders.filter(f => affectedFolderIds.has(f.id))
@@ -103,45 +132,149 @@ export function DeleteFolderDialog({
     <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Delete &quot;{node.name}&quot;?</DialogTitle>
-        </DialogHeader>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <p className="text-sm text-foreground">
-            This will permanently delete the folder and all subfolders.
-          </p>
-          {affectedQuestions.length > 0 && (
-            <div style={{
-              padding: 12, borderRadius: 8,
-              backgroundColor: 'var(--qb-delete-impact-bg)',
-              border: '1px solid var(--qb-delete-impact-border)',
-            }}>
-              <p className="text-xs font-semibold text-destructive" style={{ marginBottom: 6 }}>
-                <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ marginRight: 6 }} />
-                Impact: {affectedQuestions.length} question{affectedQuestions.length !== 1 ? 's' : ''} will be removed
-              </p>
-              {usedQuestions.length > 0 && (
-                <>
-                  <p className="text-xs text-destructive" style={{ marginBottom: 4 }}>
-                    {usedQuestions.length} question{usedQuestions.length !== 1 ? 's are' : ' is'} used in assessments:
-                  </p>
-                  <div style={{ maxHeight: 120, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
-                    {usedQuestions.map(q => (
-                      <div key={q.id} className="text-xs text-foreground">
-                        · {q.title.slice(0, 60)}{q.title.length > 60 ? '…' : ''}{' '}
-                        <span className="text-muted-foreground">
-                          ({(q.usedInSections ?? []).join(', ')})
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
+          <div className="flex items-start gap-3">
+            <span
+              className="flex size-8 shrink-0 items-center justify-center rounded-full mt-0.5"
+              style={{
+                backgroundColor: hasImpact
+                  ? 'var(--standing-warning-bg)'
+                  : 'color-mix(in oklch, var(--destructive) 10%, var(--background))',
+                color: hasImpact ? 'var(--standing-warning-fg)' : 'var(--destructive)',
+              }}
+              aria-hidden="true"
+            >
+              <i
+                className="fa-solid fa-triangle-exclamation"
+                style={{ fontSize: 14 }}
+              />
+            </span>
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-base leading-snug">
+                Delete &ldquo;{node.name}&rdquo;?
+              </DialogTitle>
+              <DialogDescription className="text-xs mt-0.5 text-muted-foreground">
+                {node.isCourse ? 'Course folder' : 'Subfolder'}
+                {subfoldersCount > 0 && ` · ${subfoldersCount} subfolder${subfoldersCount !== 1 ? 's' : ''}`}
+                {affectedQuestions.length > 0 && ` · ${affectedQuestions.length} question${affectedQuestions.length !== 1 ? 's' : ''}`}
+              </DialogDescription>
             </div>
+          </div>
+        </DialogHeader>
+
+        <div className="flex flex-col gap-4">
+          {/* Scope statement — plain text, no box */}
+          <p className="text-sm text-foreground leading-relaxed">
+            {affectedQuestions.length === 0
+              ? 'This folder is empty. Deleting it cannot be undone.'
+              : <>
+                  <strong>{affectedQuestions.length} question{affectedQuestions.length !== 1 ? 's' : ''}</strong>
+                  {subfoldersCount > 0 && ` across ${subfoldersCount} subfolder${subfoldersCount !== 1 ? 's' : ''}`}
+                  {' '}will be permanently deleted.
+                </>
+            }
+          </p>
+
+          {/* ── Assessment impact zone ── */}
+          {hasImpact && (
+            <>
+              {/* Amber strip — two lines so count never wraps mid-sentence */}
+              <div
+                className="flex items-start gap-2.5 rounded-lg px-3 py-2.5"
+                style={{
+                  backgroundColor: 'var(--standing-warning-bg)',
+                  borderLeft: '3px solid var(--standing-warning-fg)',
+                }}
+              >
+                <i
+                  className="fa-solid fa-triangle-exclamation mt-0.5 shrink-0"
+                  aria-hidden="true"
+                  style={{ fontSize: 13, color: 'var(--standing-warning-fg)' }}
+                />
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: 'var(--standing-warning-fg)' }}>
+                    {affectedAssessmentNames.length} assessment{affectedAssessmentNames.length !== 1 ? 's' : ''} will be affected
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--standing-warning-fg)' }}>
+                    {usedQuestions.length} of {affectedQuestions.length} questions currently used in {affectedAssessmentNames.length === 1 ? 'it' : 'them'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Scrollable list — capped at 3 visible rows (~192px) */}
+              <div
+                className="rounded-lg overflow-hidden"
+                style={{ border: '1px solid var(--border)' }}
+              >
+                <div
+                  style={{
+                    maxHeight: 192,
+                    overflowY: 'auto',
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: 'var(--border) transparent',
+                  }}
+                  role="list"
+                  aria-label="Affected assessments"
+                >
+                  {assessmentImpacts.map(({ name, questionCount }, i) => (
+                    <div
+                      key={name}
+                      className="flex items-center gap-3 px-3 py-3"
+                      style={{ borderTop: i > 0 ? '1px solid var(--border)' : undefined }}
+                      role="listitem"
+                    >
+                      <i
+                        className="fa-light fa-clipboard-list shrink-0 text-muted-foreground"
+                        aria-hidden="true"
+                        style={{ fontSize: 14, width: 16 }}
+                      />
+                      <p className="text-sm font-medium text-foreground flex-1">{name}</p>
+                      <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
+                        {questionCount} question{questionCount !== 1 ? 's' : ''} affected
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Consequence — plain text */}
+              <p className="text-xs text-muted-foreground leading-relaxed -mt-1">
+                Questions will be removed from {affectedAssessmentNames.length === 1 ? 'this assessment' : 'these assessments'} immediately.
+                {' '}Scores for students who already submitted{' '}
+                <strong className="font-medium text-foreground">will not be recalculated</strong>.
+              </p>
+
+              {/* Acknowledgment — plain checkbox row, no container border */}
+              <label
+                htmlFor="folder-delete-acknowledge"
+                className="flex items-start gap-3 cursor-pointer"
+              >
+                <Checkbox
+                  id="folder-delete-acknowledge"
+                  checked={acknowledged}
+                  onCheckedChange={(v) => setAcknowledged(!!v)}
+                  className="mt-0.5 shrink-0"
+                />
+                <span className="text-sm text-foreground leading-snug select-none">
+                  I understand this permanently affects{' '}
+                  <strong>{affectedAssessmentNames.length} assessment{affectedAssessmentNames.length !== 1 ? 's' : ''}</strong>{' '}
+                  and cannot be undone.
+                </span>
+              </label>
+            </>
           )}
         </div>
+
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-          <Button variant="destructive" size="sm" onClick={handleDelete}>Delete folder</Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleDelete}
+            disabled={hasImpact && !acknowledged}
+          >
+            <i className="fa-light fa-trash-can" aria-hidden="true" />
+            Delete folder
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

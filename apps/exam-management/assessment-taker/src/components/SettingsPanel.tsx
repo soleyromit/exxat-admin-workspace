@@ -15,10 +15,6 @@ export interface SettingsPanelProps {
   onClose: () => void;
   theme: 'light' | 'dark' | 'high-contrast';
   onThemeChange: (theme: 'light' | 'dark' | 'high-contrast') => void;
-  showQuestionNavInToolbar: boolean;
-  onToggleNavInToolbar: () => void;
-  showQuestionNavInHamburger: boolean;
-  onToggleNavInHamburger: () => void;
   onToggleCalculator: () => void;
   onToggleKeyboard: () => void;
   onToggleAccessibility: () => void;

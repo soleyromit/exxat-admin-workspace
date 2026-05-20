@@ -13,6 +13,7 @@ Workspace skills (invocable via Skill tool, slash command, or auto-fired by trig
 | `design-variants` | Stochastic design — N parallel agents in worktrees |
 | `design-critique` | Design review against DESIGN.md §4 + DS + WCAG + stakeholder perspectives |
 | `practices-audit` | Recurring audit of Claude Code best practices |
+| `cross-page-audit` | After fixing any UI pattern, audit all sibling pages for the same issue — 8 known recurring patterns pre-loaded |
 
 ## Anti-recommendations — do NOT install or invoke
 

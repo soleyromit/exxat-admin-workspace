@@ -27,7 +27,6 @@ import {
   Badge, Button,
   Textarea,
 } from '@exxat/ds/packages/ui/src'
-import { tokens } from '../tokens/design-tokens'
 
 interface Message {
   id: string

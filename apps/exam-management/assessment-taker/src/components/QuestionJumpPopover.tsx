@@ -69,9 +69,9 @@ export function QuestionJumpPopover({
   return (
     <div
       ref={ref}
-      className="absolute top-full left-0 mt-2 z-50 animate-pop-in flex flex-col overflow-hidden"
+      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 animate-pop-in flex flex-col overflow-hidden"
       style={{
-        width: '320px',
+        width: '380px',
         backgroundColor: 'var(--card)',
         border: '1px solid var(--border)',
         borderRadius: '12px',
@@ -90,7 +90,7 @@ export function QuestionJumpPopover({
       <div
         className="overflow-y-auto"
         style={{
-          maxHeight: '340px'
+          maxHeight: '420px'
         }}>
         
         {/* Flagged Section — shown first when there are flagged questions */}
@@ -257,38 +257,26 @@ function SectionGroup({
                 onNavigate(i);
                 onClose();
               }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-left transition-all hover:opacity-80 exam-focus"
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all hover:opacity-80 exam-focus"
               style={{
-                backgroundColor: isCurrent ?
-                'var(--exam-accent-light)' :
-                'transparent',
-                borderLeft: isCurrent ?
-                '3px solid var(--exam-accent)' :
-                '3px solid transparent'
+                backgroundColor: isCurrent ? 'var(--muted)' : 'transparent',
+                borderLeft: isCurrent ? '3px solid var(--foreground)' : '3px solid transparent',
               }}>
               
                   {/* Question number */}
                   <span
                 className="font-bold text-xs w-6 text-center flex-shrink-0"
-                style={{
-                  color: isCurrent ?
-                  'var(--exam-accent)' :
-                  'var(--foreground)'
-                }}>
+                style={{ color: 'var(--foreground)' }}>
                 
                     {i + 1}
                   </span>
 
                   {/* Question text preview */}
                   <span
-                className="text-[11px] leading-snug flex-1 truncate"
-                style={{
-                  color: isCurrent ?
-                  'var(--exam-accent)' :
-                  'var(--muted-foreground)'
-                }}>
-                
-                    {truncate(q.text, 40)}
+                className="text-[13px] leading-snug flex-1 truncate"
+                style={{ color: 'var(--foreground)' }}>
+
+                    {truncate(q.text, 58)}
                   </span>
 
                   {/* Status icon */}

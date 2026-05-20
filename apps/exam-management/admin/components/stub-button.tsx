@@ -33,7 +33,7 @@ export interface StubButtonProps extends Omit<DSButtonProps, 'onClick' | 'asChil
 }
 
 export function StubButton({
-  children, tooltip = 'Coming soon — post-demo', className, ...props
+  children, tooltip = 'Coming soon', className, ...props
 }: StubButtonProps) {
   return (
     <Tip label={tooltip}>

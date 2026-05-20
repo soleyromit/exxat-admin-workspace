@@ -300,6 +300,19 @@ const NAV_ITEMS_BASE = [
     icon: 'fa-graduation-cap',
   },
   {
+    key: 'students',
+    title: 'Students',
+    href: '/students',
+    icon: 'fa-user-graduate',
+  },
+  {
+    key: 'faculty',
+    title: 'Faculty',
+    href: '/faculty',
+    icon: 'fa-chalkboard-user',
+    adminOnly: true,
+  },
+  {
     key: 'question-bank',
     title: 'Question Bank',
     href: '/question-bank',
@@ -321,6 +334,9 @@ const NAV_ITEMS_BASE = [
     href: '/competency',
     icon: 'fa-bullseye-arrow',
   },
+  // Terms and Course Catalog are tabs inside the Courses page, not standalone nav items.
+  // Per Prism reference (Images #10-12) and Aarti May 8: "menu items have to only be
+  // limited to the entities that I care about in this section."
 ]
 
 // ── Footer utility items ──────────────────────────────────────────────────────

@@ -1,115 +1,8 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
-import { Question, QuestionType } from '../data/questions';
+import { Question } from '../data/questions';
 import { Tooltip } from './Tooltip';
 import { QuestionCommentBox } from './QuestionCommentBox';
-/* ── Keyboard shortcut hints per question type ──────────────────────────── */
-interface ShortcutDef {
-  keys: string[];
-  label: string;
-}
-function getShortcutsForType(type: QuestionType): ShortcutDef[] {
-  const nav: ShortcutDef[] = [
-  {
-    keys: ['←', '→'],
-    label: 'Navigate'
-  },
-  {
-    keys: ['Enter'],
-    label: 'Next'
-  },
-  {
-    keys: ['Z'],
-    label: 'Flag'
-  }];
-
-  switch (type) {
-    case 'mcq':
-    case 'image-mcq':
-    case 'video-mcq':
-    case 'audio':
-    case 'case-study':
-    case 'combined':
-    case 'table':
-    case 'pdf':
-    case 'passage':
-    case 'chart':
-    case 'cross-out':
-    case 'checkbox':
-      return nav;
-    case 'short-answer':
-    case 'essay':
-      return [
-      {
-        keys: ['Tab'],
-        label: 'Exit text field'
-      },
-      ...nav];
-
-    case 'fill-blank':
-    case 'matching':
-    case 'dropdown':
-      return [
-      {
-        keys: ['Tab'],
-        label: 'Next field'
-      },
-      ...nav];
-
-    case 'highlight':
-    case 'word-highlight':
-      return [
-      {
-        keys: ['Click'],
-        label: 'Select text'
-      },
-      ...nav];
-
-    case 'anatomy':
-      return [
-      {
-        keys: ['Click'],
-        label: 'Place pin'
-      },
-      ...nav];
-
-    default:
-      return nav;
-  }
-}
-function ShortcutHints({ type }: {type: QuestionType;}) {
-  const shortcuts = getShortcutsForType(type);
-  return (
-    <div className="flex items-center gap-4 flex-wrap">
-      {shortcuts.map((s, i) =>
-      <span key={i} className="flex items-center gap-1.5">
-          <span className="flex gap-0.5">
-            {s.keys.map((k, j) =>
-          <kbd
-            key={j}
-            className="font-mono text-xs font-bold px-1.5 py-0.5 rounded"
-            style={{
-              color: 'var(--muted-foreground)',
-              backgroundColor: 'var(--muted)',
-              border: '1px solid var(--border)'
-            }}>
-            
-                {k}
-              </kbd>
-          )}
-          </span>
-          <span
-          className="text-xs"
-          style={{
-            color: 'var(--muted-foreground)'
-          }}>
-          
-            {s.label}
-          </span>
-        </span>
-      )}
-    </div>);
-
-}
+import { Button as DSButton } from '@exxat/ds/packages/ui/src';
 function TabScrollContainer({
   children,
   style
@@ -319,7 +212,6 @@ export function SplitQuestionView({
   question.type === 'table' ||
   question.type === 'passage' ||
   question.type === 'chart';
-  const showToolbar = needsCalculator || needsKeyboard;
   const renderQuestionStem = () =>
   <div className="mb-[1.5em]">
       <div className="flex items-center gap-3 mb-[0.75em]">
@@ -330,27 +222,6 @@ export function SplitQuestionView({
         }}>
         
           Question {questionIndex + 1}
-        </span>
-        {question.required &&
-      <span
-        className="px-[0.5em] py-[0.125em] rounded text-[0.625em] font-bold uppercase tracking-wider"
-        style={{
-          backgroundColor: 'var(--required-bg)',
-          color: 'var(--required-text)',
-          border: '1px solid var(--required-border)'
-        }}>
-        
-            Required
-          </span>
-      }
-        <span
-        className="px-[0.5em] py-[0.125em] rounded text-[0.625em] font-bold uppercase tracking-wider"
-        style={{
-          backgroundColor: 'var(--muted)',
-          color: 'var(--muted-foreground)'
-        }}>
-        
-          {question.points} pts
         </span>
       </div>
       <h2
@@ -409,15 +280,9 @@ export function SplitQuestionView({
                 onClick={() => setActiveTab(i)}
                 className="relative px-4 py-2.5 text-[0.875em] font-semibold transition-colors whitespace-nowrap shrink-0"
                 style={{
-                  color: isActive ?
-                  'var(--exam-accent)' :
-                  'var(--muted-foreground)',
-                  backgroundColor: isActive ?
-                  'var(--card)' :
-                  'transparent',
-                  borderBottom: isActive ?
-                  '2px solid var(--exam-accent)' :
-                  '2px solid transparent',
+                  color: isActive ? 'var(--foreground)' : 'var(--muted-foreground)',
+                  backgroundColor: isActive ? 'var(--card)' : 'transparent',
+                  borderBottom: isActive ? '2px solid var(--foreground)' : '2px solid transparent',
                   marginBottom: '-1px',
                   cursor: 'pointer'
                 }}
@@ -794,71 +659,40 @@ export function SplitQuestionView({
         {/* Tools on the left */}
         {needsCalculator &&
         <div className="relative">
-            <Tooltip
-            content="Open the on-screen calculator to help with calculations"
-            position="top">
-            
-              <button
-              onClick={onToggleCalculator}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors exam-focus"
-              style={{
-                backgroundColor: showCalculator ?
-                'var(--exam-accent-light)' :
-                'var(--card)',
-                borderColor: showCalculator ?
-                'var(--exam-accent-border)' :
-                'var(--border)',
-                color: showCalculator ?
-                'var(--exam-accent)' :
-                'var(--muted-foreground)'
-              }}
-              aria-label="Toggle Calculator">
-              
+            <Tooltip content="Open the on-screen calculator" position="top">
+              <DSButton
+                variant="outline"
+                size="sm"
+                onClick={onToggleCalculator}
+                aria-label="Toggle Calculator"
+                style={showCalculator ? { backgroundColor: 'var(--muted)', borderColor: 'var(--foreground)', color: 'var(--foreground)' } : undefined}
+              >
                 <i className="fa-light fa-calculator" aria-hidden="true" style={{ fontSize: 14 }} />
                 Calculator
-              </button>
+              </DSButton>
             </Tooltip>
             {showCalculator && needsCalculator &&
           <div className="absolute bottom-full mb-2 left-0 z-50">
-                <CalculatorPopover
-              isOpen={true}
-              onClose={onToggleCalculator || (() => {})} />
-            
+                <CalculatorPopover isOpen={true} onClose={onToggleCalculator || (() => {})} />
               </div>
           }
           </div>
         }
         {needsKeyboard &&
-        <Tooltip
-          content="Open the virtual keyboard for text input"
-          position="top">
-          
-            <button
-            onClick={onToggleKeyboard}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors exam-focus"
-            style={{
-              backgroundColor: showKeyboard ?
-              'var(--exam-accent-light)' :
-              'var(--card)',
-              borderColor: showKeyboard ?
-              'var(--exam-accent-border)' :
-              'var(--border)',
-              color: showKeyboard ?
-              'var(--exam-accent)' :
-              'var(--muted-foreground)'
-            }}
-            aria-label="Toggle Virtual Keyboard">
-            
+        <Tooltip content="Open the virtual keyboard" position="top">
+            <DSButton
+              variant="outline"
+              size="sm"
+              onClick={onToggleKeyboard}
+              aria-label="Toggle Virtual Keyboard"
+              style={showKeyboard ? { backgroundColor: 'var(--muted)', borderColor: 'var(--foreground)', color: 'var(--foreground)' } : undefined}
+            >
               <i className="fa-light fa-keyboard" aria-hidden="true" style={{ fontSize: 14 }} />
               Keyboard
-            </button>
+            </DSButton>
           </Tooltip>
         }
 
-        {/* Shortcuts: right-aligned when tools shown, left-aligned otherwise */}
-        <div className={showToolbar ? 'ml-auto' : ''}>
-          <ShortcutHints type={question.type} />
-        </div>
       </div>);
 
   };
@@ -884,37 +718,23 @@ export function SplitQuestionView({
       
       {hasMedia ?
       <div className="flex-1 min-h-0 flex gap-6 overflow-hidden flex-row">
-          {/* LEFT: Question Stem + Media Context ONLY (no answer choices) */}
+          {/* LEFT: Question Stem + Answer Options (primary action) */}
           <div
           className="w-1/2 min-h-0 overflow-y-auto rounded-2xl border shadow-sm p-[2em] flex flex-col gap-4"
           style={{
             borderColor: 'var(--border)',
             backgroundColor: 'var(--card)'
           }}>
-          
-            {renderQuestionStem()}
-            {renderMediaOrContext()}
-          </div>
 
-          {/* RIGHT: Answer Options + Tools ONLY */}
-          <div
-          className="w-1/2 min-h-0 overflow-y-auto rounded-2xl border shadow-sm p-[2em]"
-          style={{
-            borderColor: 'var(--border)',
-            backgroundColor: 'var(--card)'
-          }}>
-          
-            <div className="mb-4">
+            {renderQuestionStem()}
+            <div>
               <h3
-              className="font-semibold text-[1em]"
-              style={{
-                color: 'var(--muted-foreground)'
-              }}>
-              
+              className="font-semibold text-[1em] mb-4"
+              style={{ color: 'var(--muted-foreground)' }}>
                 Select your answer:
               </h3>
+              {renderInteractive()}
             </div>
-            {renderInteractive()}
             {renderToolbar()}
             {renderInlineTools()}
             {allowComments && (
@@ -924,6 +744,19 @@ export function SplitQuestionView({
                 onSave={onCommentChange}
               />
             )}
+          </div>
+
+          {/* RIGHT: Reference material / context only */}
+          <div
+          className="w-1/2 min-h-0 overflow-y-auto rounded-2xl border shadow-sm p-[2em] flex flex-col gap-4"
+          style={{
+            borderColor: 'var(--border)',
+            backgroundColor: 'var(--card)'
+          }}>
+            <p className="text-[0.75em] font-bold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
+              Reference Material
+            </p>
+            {renderMediaOrContext()}
           </div>
         </div> :
 

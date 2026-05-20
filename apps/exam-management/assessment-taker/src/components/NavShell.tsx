@@ -11,7 +11,7 @@
  * surface as that evolves.
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   Avatar, AvatarFallback,
@@ -35,6 +35,36 @@ const MOCK_NOTIFICATIONS = [
   { id: 4, type: 'info' as const,    icon: 'fa-calendar',  title: 'New assessment scheduled',                      body: 'Clinical Pharmacology Exam II opens Mon May 5 at 8:00 AM', time: '1d ago', unread: false },
 ];
 
+type EntryPoint = 'prism' | 'standalone';
+
+// Key used to persist entry point across SPA navigation within the same session.
+const ENTRY_KEY = 'examEntryPoint';
+
+function resolveEntryPoint(): EntryPoint {
+  // 1. URL param is authoritative — always overrides stored value.
+  try {
+    const param = new URL(window.location.href).searchParams.get('entry');
+    if (param === 'standalone' || param === 'prism') {
+      sessionStorage.setItem(ENTRY_KEY, param);
+      return param;
+    }
+  } catch { /* SSR guard */ }
+
+  // 2. Surviving navigation: read from sessionStorage (set on the original load).
+  const stored = sessionStorage.getItem(ENTRY_KEY);
+  if (stored === 'standalone' || stored === 'prism') return stored;
+
+  // 3. Default — Prism is the primary entry path.
+  return 'prism';
+}
+
+function useEntryPoint(): EntryPoint {
+  // useState with initializer so resolveEntryPoint() runs once on mount,
+  // not on every render. Stable for the lifetime of the session.
+  const [entryPoint] = useState<EntryPoint>(resolveEntryPoint);
+  return entryPoint;
+}
+
 interface NavShellProps {
   children: React.ReactNode;
   title?: string;
@@ -42,6 +72,7 @@ interface NavShellProps {
 
 export function NavShell({ children, title }: NavShellProps) {
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const entryPoint = useEntryPoint()
 
   // ⌘K / Ctrl+K opens the command palette globally.
   // Suppress while focus is in an editable field so ⌘K can still type a literal
@@ -76,7 +107,7 @@ export function NavShell({ children, title }: NavShellProps) {
         <Sidebar variant="inset" collapsible="icon">
           {/* ─── Brand wordmark ───────────────────────────────────────── */}
           <SidebarHeader>
-            <BrandRow />
+            <BrandRow entryPoint={entryPoint} />
           </SidebarHeader>
 
           <SidebarContent>
@@ -120,12 +151,12 @@ export function NavShell({ children, title }: NavShellProps) {
             <SidebarSeparator />
             <FooterNav />
             <SidebarSeparator />
-            <ProfileFooter />
+            <ProfileFooter entryPoint={entryPoint} />
           </SidebarFooter>
         </Sidebar>
 
         <SidebarInset className="flex flex-col overflow-hidden">
-          <TopBar title={title} />
+          <TopBar title={title} entryPoint={entryPoint} />
           <main
             id="main-content"
             tabIndex={-1}
@@ -139,29 +170,52 @@ export function NavShell({ children, title }: NavShellProps) {
   );
 }
 
-// ─── Brand wordmark row (Exxat Prism + chevron) ──────────────────────────────
-function BrandRow() {
+// ─── Brand wordmark row ───────────────────────────────────────────────────────
+function BrandRow({ entryPoint }: { entryPoint: EntryPoint }) {
+  const isPrism = entryPoint === 'prism';
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <SidebarMenuButton size="lg" className="cursor-default select-none data-active:bg-transparent" tooltip="Exxat Prism">
+        <SidebarMenuButton
+          size="lg"
+          className="cursor-default select-none data-active:bg-transparent"
+          tooltip={isPrism ? 'Exxat Prism' : 'Exam Management'}
+        >
           <span
-            className="flex size-7 shrink-0 items-center justify-center rounded-full text-[13px] font-bold"
+            className="flex size-7 shrink-0 items-center justify-center text-[13px] font-bold"
             style={{
-              backgroundColor: 'var(--brand-color)',
-              color: 'var(--brand-foreground)',
+              borderRadius: isPrism ? '50%' : 8,
+              backgroundColor: isPrism ? 'var(--brand-color)' : 'var(--muted)',
+              color: isPrism ? 'var(--brand-foreground)' : 'var(--muted-foreground)',
             }}
             aria-hidden="true"
           >
-            E
+            {isPrism ? 'E' : 'EM'}
           </span>
           <span className="flex items-baseline gap-1 group-data-collapsible-icon:hidden">
-            <span className="text-base font-bold tracking-tight" style={{ color: 'var(--foreground)' }}>Exxat</span>
-            <span className="text-base font-bold tracking-tight" style={{ color: 'var(--brand-color)' }}>Prism</span>
+            {isPrism ? (
+              <>
+                <span className="text-base font-bold tracking-tight" style={{ color: 'var(--foreground)' }}>Exxat</span>
+                <span className="text-base font-bold tracking-tight" style={{ color: 'var(--brand-color)' }}>Prism</span>
+              </>
+            ) : (
+              <span className="text-base font-bold tracking-tight" style={{ color: 'var(--foreground)' }}>Exam Management</span>
+            )}
           </span>
-          <i className="fa-light fa-chevron-down ms-auto group-data-collapsible-icon:hidden" aria-hidden="true" style={{ fontSize: 11, color: 'var(--muted-foreground)' }} />
+          {isPrism && (
+            <i className="fa-light fa-chevron-down ms-auto group-data-collapsible-icon:hidden" aria-hidden="true" style={{ fontSize: 11, color: 'var(--muted-foreground)' }} />
+          )}
         </SidebarMenuButton>
       </SidebarMenuItem>
+
+      {/* Standalone: institution context row under the brand */}
+      {!isPrism && (
+        <SidebarMenuItem>
+          <div className="px-3 pb-1 group-data-collapsible-icon:hidden">
+            <p className="text-[11px] text-muted-foreground leading-tight">Rush University · PT Program</p>
+          </div>
+        </SidebarMenuItem>
+      )}
     </SidebarMenu>
   );
 }
@@ -351,7 +405,8 @@ function FooterNav() {
 }
 
 // ─── Profile footer card ─────────────────────────────────────────────────────
-function ProfileFooter() {
+function ProfileFooter({ entryPoint }: { entryPoint: EntryPoint }) {
+  const isPrism = entryPoint === 'prism';
   const navigate = useNavigate();
   return (
     <SidebarMenu>
@@ -401,6 +456,15 @@ function ProfileFooter() {
               <i className="fa-light fa-circle-question" aria-hidden="true" />
               Help & Support
             </DropdownMenuItem>
+            {isPrism && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <i className="fa-light fa-arrow-up-right-from-square" aria-hidden="true" />
+                  Open full profile in Prism
+                </DropdownMenuItem>
+              </>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onClick={() => navigate('/')}>
               <i className="fa-light fa-arrow-right-from-bracket" aria-hidden="true" />
@@ -414,7 +478,8 @@ function ProfileFooter() {
 }
 
 // ─── Top bar (sidebar trigger + breadcrumb) ──────────────────────────────────
-function TopBar({ title }: { title?: string }) {
+function TopBar({ title, entryPoint }: { title?: string; entryPoint: EntryPoint }) {
+  const isPrism = entryPoint === 'prism';
   return (
     <header
       className="flex items-center gap-3 flex-shrink-0 px-4"
@@ -437,13 +502,44 @@ function TopBar({ title }: { title?: string }) {
         </TooltipContent>
       </Tooltip>
       <div style={{ width: 1, height: 20, background: 'var(--border)', flexShrink: 0 }} />
-      <span className="text-sm font-semibold truncate" style={{ color: 'var(--foreground)' }}>
-        Exam Management
-      </span>
-      {title && (
+
+      {/* Prism: Prism > Exam Management > [page] */}
+      {isPrism ? (
         <>
-          <i className="fa-light fa-chevron-right" aria-hidden="true" style={{ fontSize: 10, color: 'var(--muted-foreground)' }} />
-          <span className="text-sm truncate" style={{ color: 'var(--muted-foreground)' }}>{title}</span>
+          <a
+            href="#prism-home"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors truncate"
+            style={{ textDecoration: 'none' }}
+          >
+            Prism
+          </a>
+          <i className="fa-light fa-chevron-right fa-xs shrink-0" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
+          <span className="text-sm font-semibold truncate" style={{ color: 'var(--foreground)' }}>
+            Exam Management
+          </span>
+          {title && (
+            <>
+              <i className="fa-light fa-chevron-right fa-xs shrink-0" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
+              <span className="text-sm truncate" style={{ color: 'var(--muted-foreground)' }}>{title}</span>
+            </>
+          )}
+        </>
+      ) : (
+        /* Standalone: Exam Management > [page] — no Prism reference */
+        <>
+          <span className="text-sm font-semibold truncate" style={{ color: 'var(--foreground)' }}>
+            Exam Management
+          </span>
+          {title && (
+            <>
+              <i className="fa-light fa-chevron-right fa-xs shrink-0" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
+              <span className="text-sm truncate" style={{ color: 'var(--muted-foreground)' }}>{title}</span>
+            </>
+          )}
+          {/* Standalone: subtle Exxat attribution far right */}
+          <span className="ms-auto text-[11px] text-muted-foreground group-data-collapsible-icon:hidden shrink-0">
+            Powered by Exxat
+          </span>
         </>
       )}
     </header>

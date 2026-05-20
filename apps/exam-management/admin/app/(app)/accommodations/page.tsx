@@ -16,6 +16,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import {
   Avatar, AvatarFallback,
   Badge, Button,
@@ -255,7 +256,11 @@ function RosterRow({ entry }: { entry: RosterEntry }) {
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <p className="text-sm font-semibold text-foreground">{entry.studentName}</p>
+          <Link href={`/students/${entry.studentId}`}
+            className="text-sm font-semibold hover:underline"
+            style={{ color: 'var(--brand-color)' }}>
+            {entry.studentName}
+          </Link>
           <Badge
             variant="secondary"
             className="rounded font-mono text-[9px] uppercase tracking-wider"

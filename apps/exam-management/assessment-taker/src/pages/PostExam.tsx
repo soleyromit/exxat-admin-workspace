@@ -9,6 +9,7 @@
  */
 
 import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { Button } from '@exxat/ds/packages/ui/src';
 import { MOCK_ASSESSMENTS } from '../data/assessments';
 
@@ -29,23 +30,80 @@ export function PostExam() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
+  // Vishaka May 14: "after they submit, a green screen should come — the upload is successful"
+  // Simulate the upload handshake before showing the final confirmation.
+  const [uploadStage, setUploadStage] = useState<'uploading' | 'uploaded'>('uploading');
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setUploadProgress(p => {
+        if (p >= 100) { clearInterval(interval); return 100; }
+        return p + 20;
+      });
+    }, 240);
+    const done = setTimeout(() => setUploadStage('uploaded'), 1500);
+    return () => { clearInterval(interval); clearTimeout(done); };
+  }, []);
+
   // For demo: default to the results_pending exam
   const exam = MOCK_ASSESSMENTS.find(a => a.id === id) ?? MOCK_ASSESSMENTS.find(a => a.status === 'results_pending')!;
   const isHighStakes = exam?.isHighStakes ?? true;
   const isPending = isHighStakes;
 
-  return (
-    <div style={{ background: t.bg, fontFamily: 'Inter, system-ui, sans-serif', minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
-        <div style={{ maxWidth: 520, width: '100%', textAlign: 'center' }}>
-
-          {/* Success icon */}
+  // Upload progress screen
+  if (uploadStage === 'uploading') {
+    return (
+      <div style={{ background: 'var(--state-success-bg)', fontFamily: 'Inter, system-ui, sans-serif', minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
+        <div style={{ maxWidth: 420, width: '100%', textAlign: 'center' }}>
           <div style={{
             width: 80, height: 80, borderRadius: '50%',
             background: 'var(--state-success-bg-soft)', border: '3px solid var(--state-success-accent)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 24px',
           }}>
+            <i className="fa-light fa-cloud-arrow-up" aria-hidden="true" style={{ fontSize: 36, color: 'var(--state-success-dark)' }} />
+          </div>
+          <h1 className="font-heading" style={{ fontSize: 26, fontWeight: 700, color: 'var(--state-success-dark)', marginBottom: 8 }}>
+            Uploading your responses…
+          </h1>
+          <p style={{ fontSize: 14, color: 'var(--state-success-dark)', marginBottom: 28, opacity: 0.8 }}>
+            Please do not close this window.
+          </p>
+          <div style={{ width: '100%', height: 8, borderRadius: 99, background: 'rgba(0,0,0,0.1)' }}>
+            <div style={{
+              height: '100%', borderRadius: 99,
+              background: 'var(--state-success-accent)',
+              width: `${uploadProgress}%`,
+              transition: 'width 0.25s ease',
+            }} />
+          </div>
+          <p style={{ fontSize: 13, color: 'var(--state-success-dark)', marginTop: 12, opacity: 0.7 }}>
+            {uploadProgress}% uploaded
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ background: t.bg, fontFamily: 'Inter, system-ui, sans-serif', minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
+        <div style={{ maxWidth: 520, width: '100%', textAlign: 'center' }}>
+
+          {/* Upload successful + exam submitted */}
+          <div style={{
+            width: 80, height: 80, borderRadius: '50%',
+            background: 'var(--state-success-bg-soft)', border: '3px solid var(--state-success-accent)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 12px',
+          }}>
             <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 36, color: 'var(--state-success-dark)' }} />
+          </div>
+          <div style={{ marginBottom: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--state-success-dark)', background: 'var(--state-success-bg)', padding: '3px 10px', borderRadius: 99 }}>
+              <i className="fa-light fa-cloud-check" aria-hidden="true" style={{ marginRight: 5 }} />
+              Upload successful
+            </span>
           </div>
 
           <h1 className="font-heading" style={{ fontSize: 28, fontWeight: 700, color: t.fg, marginBottom: 8, lineHeight: 1.2 }}>Exam Submitted</h1>

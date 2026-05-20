@@ -1,26 +1,31 @@
 'use client'
 
 /**
- * STUDENTS TAB — course-scoped student roster.
+ * STUDENTS TAB — course-scoped student roster with enrollment.
  *
  * Aarti's email: "Students registered for that course" as one of the four sections.
+ * Entry point for course-first registration: Course detail → Students → Enroll Student.
+ * (Student-first path: Student detail → Courses tab → Add to Course.)
+ *
  * Surfaces:
  *   - Per-student average across course assessments
  *   - At-risk flagging (bottom-20%) for intervention
  *   - Accommodation chip when applicable
- *   - Click row → drawer with per-assessment breakdown (scaffolded)
+ *   - Enroll Student sheet — search all students, add to this course
  */
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   Avatar, AvatarFallback,
   Button, InputGroup, InputGroupAddon, InputGroupInput,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter,
+  Separator,
   Tip,
 } from '@exxat/ds/packages/ui/src'
 import { StatusPill, MetricBar } from '@/components/faculty-ui-kit'
 import { StubButton } from '@/components/stub-button'
-import type { Student, Accommodation } from '@/lib/faculty-mock-data'
+import { facultyStudents, type Student, type Accommodation } from '@/lib/faculty-mock-data'
 
 interface StudentsTabProps {
   students: Student[]
@@ -30,9 +35,173 @@ interface StudentsTabProps {
 
 type FilterState = 'all' | 'at-risk' | 'top-performer' | 'with-accommodation'
 
+// ── Add Student Sheet ────────────────────────────────────────────────────────
+
+interface AddStudentSheetProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  enrolledIds: Set<string>
+  onEnroll: (student: Student) => void
+}
+
+function AddStudentSheet({ open, onOpenChange, enrolledIds, onEnroll }: AddStudentSheetProps) {
+  const [search, setSearch] = useState('')
+  const [justAdded, setJustAdded] = useState<Set<string>>(new Set())
+
+  const available = useMemo(
+    () => facultyStudents.filter((s) => !enrolledIds.has(s.id)),
+    [enrolledIds]
+  )
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return available
+    return available.filter(
+      (s) =>
+        s.firstName.toLowerCase().includes(q) ||
+        s.lastName.toLowerCase().includes(q) ||
+        s.studentId.toLowerCase().includes(q) ||
+        s.cohort.toLowerCase().includes(q) ||
+        s.email.toLowerCase().includes(q)
+    )
+  }, [available, search])
+
+  function handleEnroll(s: Student) {
+    onEnroll(s)
+    setJustAdded((prev) => new Set(prev).add(s.id))
+  }
+
+  function handleClose() {
+    onOpenChange(false)
+    setSearch('')
+    setJustAdded(new Set())
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={handleClose}>
+      <SheetContent
+        side="right"
+        showOverlay={false}
+        showCloseButton
+        style={{ width: 480, maxWidth: '100vw', display: 'flex', flexDirection: 'column' }}
+      >
+        <SheetHeader>
+          <SheetTitle>Enroll Student</SheetTitle>
+          <SheetDescription>
+            Search and add students to this course offering.
+          </SheetDescription>
+        </SheetHeader>
+
+        <div className="px-6 pt-4 pb-3 shrink-0">
+          <div
+            className="flex items-center gap-2 rounded-md border px-3"
+            style={{ borderColor: 'var(--border-control-35)', height: 36 }}
+          >
+            <i
+              className="fa-light fa-magnifying-glass text-muted-foreground shrink-0"
+              aria-hidden="true"
+              style={{ fontSize: 13 }}
+            />
+            <input
+              type="search"
+              placeholder="Search by name, student ID, or cohort…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+              aria-label="Search students to enroll"
+              autoFocus
+            />
+          </div>
+        </div>
+
+        <Separator />
+
+        <div className="flex-1 overflow-y-auto px-2 py-2">
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <i
+                className="fa-light fa-user-slash text-muted-foreground text-2xl mb-3"
+                aria-hidden="true"
+              />
+              <p className="text-sm font-medium text-foreground">No students available</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {search ? 'No results match your search.' : 'All students are already enrolled.'}
+              </p>
+            </div>
+          ) : (
+            <ul className="flex flex-col gap-1" role="list">
+              {filtered.map((s) => {
+                const added = justAdded.has(s.id)
+                return (
+                  <li
+                    key={s.id}
+                    className="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-muted/50 transition-colors"
+                  >
+                    <Avatar style={{ width: 36, height: 36, flexShrink: 0 }} aria-hidden="true">
+                      <AvatarFallback
+                        className="text-xs font-bold"
+                        style={{
+                          backgroundColor: 'var(--muted)',
+                          color: 'var(--muted-foreground)',
+                        }}
+                      >
+                        {s.initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {s.firstName} {s.lastName}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {s.studentId} · {s.cohort}
+                      </p>
+                    </div>
+                    {added ? (
+                      <span
+                        className="text-xs font-medium shrink-0 flex items-center gap-1"
+                        style={{ color: 'var(--qb-status-saved-fg)' }}
+                      >
+                        <i className="fa-light fa-circle-check" aria-hidden="true" />
+                        Enrolled
+                      </span>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="shrink-0 text-xs"
+                        onClick={() => handleEnroll(s)}
+                      >
+                        Enroll
+                      </Button>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+
+        <SheetFooter className="px-6 py-4 border-t border-border">
+          <Button variant="outline" size="sm" onClick={handleClose}>
+            Done
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  )
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
 export function StudentsTab({ students, courseId, accommodations }: StudentsTabProps) {
+  const [localStudents, setLocalStudents] = useState<Student[]>(students)
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<FilterState>('all')
+  const [sheetOpen, setSheetOpen] = useState(false)
+
+  // Sync when parent refreshes (e.g. route change with same component mounted)
+  useEffect(() => { setLocalStudents(students) }, [students])
+
   const accByStudent = useMemo(() => {
     const m = new Map<string, Accommodation[]>()
     for (const a of accommodations) {
@@ -42,8 +211,13 @@ export function StudentsTab({ students, courseId, accommodations }: StudentsTabP
     return m
   }, [accommodations])
 
+  const enrolledIds = useMemo(
+    () => new Set(localStudents.map((s) => s.id)),
+    [localStudents]
+  )
+
   const filtered = useMemo(() => {
-    return students.filter(s => {
+    return localStudents.filter(s => {
       const matchQuery = !query ||
         s.firstName.toLowerCase().includes(query.toLowerCase()) ||
         s.lastName.toLowerCase().includes(query.toLowerCase()) ||
@@ -54,17 +228,24 @@ export function StudentsTab({ students, courseId, accommodations }: StudentsTabP
       if (filter === 'with-accommodation') return matchQuery && accByStudent.has(s.id)
       return matchQuery
     })
-  }, [students, query, filter, accByStudent])
+  }, [localStudents, query, filter, accByStudent])
 
-  const atRiskCount = students.filter(s => s.status === 'at-risk').length
-  const topCount = students.filter(s => s.status === 'top-performer').length
-  const withAcc = students.filter(s => accByStudent.has(s.id)).length
+  const atRiskCount = localStudents.filter(s => s.status === 'at-risk').length
+  const topCount = localStudents.filter(s => s.status === 'top-performer').length
+  const withAcc = localStudents.filter(s => accByStudent.has(s.id)).length
+
+  function handleEnroll(student: Student) {
+    setLocalStudents((prev) => {
+      if (prev.some((s) => s.id === student.id)) return prev
+      return [...prev, { ...student, enrolledCourseIds: [...student.enrolledCourseIds, courseId] }]
+    })
+  }
 
   return (
     <div className="flex flex-col gap-4">
       {/* Roster summary strip */}
       <section className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(160px,1fr))]">
-        <RosterTile icon="fa-users" label="Enrolled" value={students.length} tone="brand" active={filter === 'all'} onClick={() => setFilter('all')} />
+        <RosterTile icon="fa-users" label="Enrolled" value={localStudents.length} tone="brand" active={filter === 'all'} onClick={() => setFilter('all')} />
         <RosterTile icon="fa-triangle-exclamation" label="At-risk" value={atRiskCount} tone="warning" sub="Bottom 20% by avg" active={filter === 'at-risk'} onClick={() => setFilter('at-risk')} />
         <RosterTile icon="fa-trophy" label="Top performers" value={topCount} tone="success" sub="Top 20% by avg" active={filter === 'top-performer'} onClick={() => setFilter('top-performer')} />
         <RosterTile icon="fa-universal-access" label="With accommodation" value={withAcc} tone="info" active={filter === 'with-accommodation'} onClick={() => setFilter('with-accommodation')} />
@@ -95,12 +276,16 @@ export function StudentsTab({ students, courseId, accommodations }: StudentsTabP
           </SelectContent>
         </Select>
         <span className="ms-auto text-xs text-muted-foreground">
-          {filtered.length} of {students.length} students
+          {filtered.length} of {localStudents.length} students
         </span>
         <StubButton variant="outline" size="sm" className="gap-1.5">
           <i className="fa-light fa-arrow-down-to-line" aria-hidden="true" />
           Export
         </StubButton>
+        <Button size="sm" className="gap-1.5" onClick={() => setSheetOpen(true)}>
+          <i className="fa-light fa-plus" aria-hidden="true" />
+          Enroll Student
+        </Button>
       </section>
 
       {/* Roster table */}
@@ -115,8 +300,20 @@ export function StudentsTab({ students, courseId, accommodations }: StudentsTabP
         </div>
         {filtered.length === 0 ? (
           <div className="px-6 py-12 text-center">
-            <p className="font-semibold text-foreground">No students match this filter</p>
-            <p className="text-sm text-muted-foreground mt-1">Try adjusting your search.</p>
+            <p className="font-semibold text-foreground">
+              {localStudents.length === 0 ? 'No students enrolled yet' : 'No students match this filter'}
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {localStudents.length === 0
+                ? 'Use "Enroll Student" to add students to this course.'
+                : 'Try adjusting your search.'}
+            </p>
+            {localStudents.length === 0 && (
+              <Button size="sm" className="mt-3 gap-1.5" onClick={() => setSheetOpen(true)}>
+                <i className="fa-light fa-plus" aria-hidden="true" />
+                Enroll Student
+              </Button>
+            )}
           </div>
         ) : (
           filtered.map(s => (
@@ -130,6 +327,12 @@ export function StudentsTab({ students, courseId, accommodations }: StudentsTabP
         )}
       </div>
 
+      <AddStudentSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        enrolledIds={enrolledIds}
+        onEnroll={handleEnroll}
+      />
     </div>
   )
 }
@@ -225,10 +428,16 @@ function StudentRow({
       <div className="text-xs text-muted-foreground truncate">{student.cohort}</div>
 
       <div className="flex items-center gap-2">
-        <MetricBar value={score} tone={scoreTone === 'neutral' ? 'info' : scoreTone} width="w-16" />
-        <span className={`text-xs font-bold tabular-nums w-9 text-right ${scoreColor}`}>
-          {score}%
-        </span>
+        {score > 0 ? (
+          <>
+            <MetricBar value={score} tone={scoreTone === 'neutral' ? 'info' : scoreTone} width="w-16" />
+            <span className={`text-xs font-bold tabular-nums w-9 text-right ${scoreColor}`}>
+              {score}%
+            </span>
+          </>
+        ) : (
+          <span className="text-xs text-muted-foreground">No data</span>
+        )}
       </div>
 
       <div className="text-xs text-muted-foreground">
@@ -236,19 +445,13 @@ function StudentRow({
       </div>
 
       <div className="text-end flex items-center justify-end gap-1">
-        {/* "Coming soon" affordance — uses muted-foreground at full opacity
-            (≥ 4.5:1) rather than opacity-60 on muted-foreground (~2.57:1,
-            NURS-bug-class per docs/governance/component-depth-audits notes
-            in data-table/index.tsx:1041). pointer-events-none keeps the
-            Button non-interactive while still surfacing the Tip on hover
-            (Tip wraps the focusable button). */}
-        <Tip label="Per-student detail · coming soon">
+        <Tip label="Coming soon">
           <Button
             variant="ghost"
             size="icon-sm"
             aria-disabled="true"
             className="pointer-events-none text-muted-foreground"
-            aria-label="View student detail (coming soon)"
+            aria-label="View student detail"
           >
             <i className="fa-light fa-arrow-right" aria-hidden="true" />
           </Button>

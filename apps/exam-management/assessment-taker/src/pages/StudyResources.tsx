@@ -12,14 +12,12 @@
  */
 
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import {
   Avatar, AvatarFallback,
   Badge, Button,
   InputGroup, InputGroupAddon, InputGroupInput,
   Tabs, TabsList, TabsTrigger, TabsContent,
 } from '@exxat/ds/packages/ui/src'
-import { tokens } from '../tokens/design-tokens'
 
 // ─── Mock data ──────────────────────────────────────────────────────────────
 
@@ -319,7 +317,6 @@ function FacultyPacksSection({ items }: { items: FacultyPack[] }) {
 }
 
 function FacultyPackRow({ pack }: { pack: FacultyPack }) {
-  const t = tokens
   const progressPct = pack.progress != null ? Math.round((pack.progress / pack.questionCount) * 100) : 0
   const statusTone =
     pack.status === 'completed' ? { fg: 'var(--state-success-dark)',     bg: 'var(--state-success-bg-soft)',  label: 'Completed'   } :
