@@ -34,8 +34,10 @@ import { PageHeader } from '@/components/page-header'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 import { RowActions } from '@/components/data-table/row-actions'
-import { facultyStudents, type ExtendedFaculty } from '@/lib/faculty-mock-data'
+import { facultyStudents, type ExtendedFaculty, facultyAccommodations } from '@/lib/faculty-mock-data'
 import { allFaculty } from '@/lib/faculty-mock-data'
+import { allStudents } from '@/lib/student-mock-data'
+import Link from 'next/link'
 import type { ExtendedCourseOffering } from '@/lib/course-mock-data'
 
 const IS_LMS_ACTIVE = false
@@ -583,24 +585,77 @@ function StudentsTab({ localStudents, onOpenEnroll, onNavigateStudent }: {
 
 // ── Accommodations tab ────────────────────────────────────────────────────────
 
-function AccommodationsTab({ courseName }: { courseName: string }) {
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card py-14 text-center gap-2">
-        <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-          <i className="fa-light fa-universal-access text-muted-foreground text-lg" aria-hidden="true" />
+const ACC_TYPE_LABEL: Record<string, string> = {
+  'extended-time': 'Extended Time',
+  'separate-room': 'Separate Room',
+  'extended-breaks': 'Extended Breaks',
+  'screen-reader': 'Screen Reader',
+  'quiet-room': 'Quiet Room',
+  'font-size': 'Font Size',
+}
+
+function AccommodationsTab({ offering, onNavigateStudent }: {
+  offering: ExtendedCourseOffering
+  onNavigateStudent: (id: string) => void
+}) {
+  const accs = facultyAccommodations.filter(a => a.courseId === offering.courseId)
+  const studentMap = new Map(allStudents.map(s => [s.id, `${s.firstName} ${s.lastName}`]))
+
+  if (accs.length === 0) {
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card py-14 text-center gap-2">
+          <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+            <i className="fa-light fa-universal-access text-muted-foreground text-lg" aria-hidden="true" />
+          </div>
+          <p className="font-semibold text-foreground">No accommodations for {offering.courseName}</p>
+          <p className="text-sm text-muted-foreground max-w-xs">
+            Students with approved accommodations registered for this offering will appear here.
+          </p>
         </div>
-        <p className="font-semibold text-foreground">No accommodations for {courseName}</p>
-        <p className="text-sm text-muted-foreground max-w-xs">
-          Students with approved accommodations registered for this offering will appear here.
-        </p>
-        <Button variant="outline" size="sm" className="mt-1 gap-1.5" asChild>
-          <a href="/accommodations">
-            Manage all accommodations
-            <i className="fa-light fa-arrow-up-right-from-square" aria-hidden="true" style={{ fontSize: 11 }} />
-          </a>
-        </Button>
       </div>
+    )
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-border">
+        <span className="text-xs text-muted-foreground">
+          {accs.length} accommodation{accs.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+      <ul className="divide-y divide-border">
+        {accs.map(acc => {
+          const studentName = studentMap.get(acc.studentId) ?? acc.studentId
+          return (
+            <li key={acc.id} className="flex items-center gap-4 px-5 py-4">
+              <div className="flex-1 min-w-0">
+                <button
+                  type="button"
+                  onClick={() => onNavigateStudent(acc.studentId)}
+                  className="text-sm font-medium hover:underline text-left"
+                  style={{ color: 'var(--brand-color)' }}
+                >
+                  {studentName}
+                </button>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{acc.detail}</p>
+              </div>
+              <Badge
+                variant="secondary"
+                className="rounded text-[11px] shrink-0"
+              >
+                {ACC_TYPE_LABEL[acc.type] ?? acc.type}
+              </Badge>
+              <div className="text-right shrink-0">
+                <p className="text-xs text-muted-foreground">{acc.approvedBy}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {new Date(acc.approvedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </p>
+              </div>
+            </li>
+          )
+        })}
+      </ul>
     </div>
   )
 }
@@ -982,6 +1037,10 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
                   </Badge>
                 )}
               </TabsTrigger>
+              <TabsTrigger value="accommodations">
+                <i className="fa-light fa-universal-access text-xs" aria-hidden="true" />
+                Accommodations
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -1011,6 +1070,12 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
             </TabsContent>
             <TabsContent value="resources" className="m-0">
               <ResourcesTab offering={offering} />
+            </TabsContent>
+            <TabsContent value="accommodations" className="m-0">
+              <AccommodationsTab
+                offering={offering}
+                onNavigateStudent={(id) => router.push(`/students/${id}`)}
+              />
             </TabsContent>
           </div>
         </Tabs>
