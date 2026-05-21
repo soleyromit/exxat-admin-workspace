@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { PersonaSwitcher } from './persona-switcher'
-import { EntryPathChip } from './entry-path-chip'
 
 export interface Breadcrumb {
   label: string
@@ -21,8 +20,7 @@ export function SiteHeader({ title, breadcrumbs }: SiteHeaderProps) {
       }}
       className="flex h-14 items-center gap-4 px-6 text-foreground"
     >
-      <div className="flex-1 min-w-0 flex items-center gap-3">
-        <EntryPathChip />
+      <div className="flex-1 min-w-0 flex items-center gap-2">
         <div className="flex-1 min-w-0">
         {breadcrumbs && breadcrumbs.length > 0 ? (
           <nav aria-label="Breadcrumb">
