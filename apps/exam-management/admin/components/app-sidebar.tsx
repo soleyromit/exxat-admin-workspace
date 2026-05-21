@@ -294,6 +294,12 @@ function UserFooter() {
 //     setup per student that follows them to every registered course.
 const NAV_ITEMS_BASE = [
   {
+    key: 'question-bank',
+    title: 'Question Bank',
+    href: '/question-bank',
+    icon: 'fa-books',
+  },
+  {
     key: 'courses',
     title: 'Courses',
     href: '/courses',
@@ -311,12 +317,6 @@ const NAV_ITEMS_BASE = [
     href: '/faculty',
     icon: 'fa-chalkboard-user',
     adminOnly: true,
-  },
-  {
-    key: 'question-bank',
-    title: 'Question Bank',
-    href: '/question-bank',
-    icon: 'fa-books',
   },
   {
     key: 'accommodations',
