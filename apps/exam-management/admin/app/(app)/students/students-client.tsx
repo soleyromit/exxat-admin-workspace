@@ -37,9 +37,10 @@ import { loadRecentlyViewed, type RecentlyViewedItem } from '@/lib/recently-view
 
 const IS_LMS_ACTIVE = false
 
-const TERMS = ['Fall 2026', 'Spring 2026', 'Fall 2025', 'Spring 2025'] as const
+// Terms aligned to mock cohort years: "PT Class of 2027" → year 2027, "PT Class of 2028" → year 2028.
+const TERMS = ['Fall 2027', 'Spring 2027', 'Fall 2028', 'Spring 2028'] as const
 type Term = typeof TERMS[number]
-const CURRENT_TERM: Term = 'Fall 2026'
+const CURRENT_TERM: Term = 'Fall 2027'
 
 // DataTable requires TData extends Record<string, unknown>.
 // Intersect so cell renderers keep full StudentListRow inference.
