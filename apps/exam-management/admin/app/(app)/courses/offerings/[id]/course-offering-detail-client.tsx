@@ -783,11 +783,11 @@ function OverviewTab({ offering, isPrism }: { offering: ExtendedCourseOffering; 
             <i className="fa-light fa-arrow-up-right-from-square mt-0.5 shrink-0" aria-hidden="true"
               style={{ fontSize: 13, color: 'var(--brand-color)' }} />
             <div>
-              <p className="text-sm font-medium text-foreground">Full course record in Prism</p>
+              <p className="text-sm font-medium text-foreground">Full course view in Prism</p>
               <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
                 Syllabus, LMS content, and historical offerings.
               </p>
-              <a href="#prism-course-record" target="_blank" rel="noreferrer noopener"
+              <a href="#prism-course-view" target="_blank" rel="noreferrer noopener"
                 className="inline-flex items-center gap-1.5 text-xs font-medium mt-2 no-underline hover:underline"
                 style={{ color: 'var(--brand-color)' }}>
                 View in Prism
