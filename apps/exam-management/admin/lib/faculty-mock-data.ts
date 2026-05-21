@@ -490,6 +490,7 @@ export interface Accommodation {
 
 export const facultyAccommodations: Accommodation[] = [
   // PHAR101 — 6 accommodations across the cohort
+  acc('phar101-000', 'stu-phar101-001', 'course-phar101', 'extended-time', '1.5× time multiplier', 'Sandra Chen, M.Ed.', daysAgoIso(180)),
   acc('phar101-001', 'stu-phar101-003', 'course-phar101', 'extended-time', '1.5× time multiplier', 'Sandra Chen, M.Ed.', daysAgoIso(120)),
   acc('phar101-002', 'stu-phar101-003', 'course-phar101', 'separate-room', 'Private testing room', 'Sandra Chen, M.Ed.', daysAgoIso(120)),
   acc('phar101-003', 'stu-phar101-007', 'course-phar101', 'extended-time', '2× time multiplier (testing accommodation)', 'Sandra Chen, M.Ed.', daysAgoIso(95), undefined, 'Documented learning disability — extended time approved by ADA Office.'),

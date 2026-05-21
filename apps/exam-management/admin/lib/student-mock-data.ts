@@ -117,7 +117,7 @@ const COMPETENCY_AREAS = [
 //
 // Build extended records from the existing facultyStudents data so IDs align.
 
-export const allStudents: ExtendedStudent[] = facultyStudents.slice(0, 25).map((s, i) => {
+export const allStudents: ExtendedStudent[] = facultyStudents.map((s, i) => {
   const seed = (i + 1) * 13
   const gpa = parseFloat((2.3 + ((seed * 17) % 19) / 10).toFixed(2))
   const programIdx = i % PROGRAMS.length
@@ -153,6 +153,7 @@ export const allStudents: ExtendedStudent[] = facultyStudents.slice(0, 25).map((
   ] : []
 
   const annotations: StudentAnnotation[] = [
+    // Low GPA intervention tag
     ...(gpa < 2.7 ? [{
       id: `ann-${s.id}-1`,
       text: 'Referred to Academic Support Services',
@@ -160,12 +161,21 @@ export const allStudents: ExtendedStudent[] = facultyStudents.slice(0, 25).map((
       addedDate: daysAgoIso(30),
       type: 'tag' as const,
     }] : []),
-    ...((i % 4 === 1) ? [{
+    // Periodic advising note — every 3rd student
+    ...((i % 3 === 0) ? [{
       id: `ann-${s.id}-2`,
       text: 'Student athlete — may need exam scheduling flexibility',
       addedBy: 'Student Affairs',
       addedDate: daysAgoIso(60),
       type: 'note' as const,
+    }] : []),
+    // High-achiever recognition tag — every 5th student with good GPA
+    ...((i % 5 === 0 && gpa >= 2.7) ? [{
+      id: `ann-${s.id}-3`,
+      text: "Dean's list recognition — Spring 2026",
+      addedBy: ADVISORS[advisorIdx],
+      addedDate: daysAgoIso(15),
+      type: 'tag' as const,
     }] : []),
   ]
 

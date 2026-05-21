@@ -395,7 +395,7 @@ export default function StudentsClient() {
       <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
         <PageHeader
           title="Students"
-          subtitle={`${studentListRows.length} students`}
+          subtitle={`${filtered.length} of ${studentListRows.length} students`}
           actions={
             IS_LMS_ACTIVE ? (
               <div className="flex items-center gap-2">
