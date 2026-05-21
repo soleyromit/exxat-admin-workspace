@@ -24,6 +24,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEntryPoint } from '@/lib/use-entry-point'
+import { useFacultySession } from '@/lib/faculty-session'
 import { recordView } from '@/lib/recently-viewed'
 import {
   Button, Badge, Avatar, AvatarFallback,
@@ -61,7 +62,7 @@ function StandingBadge({ status, label }: { status: string; label: string }) {
 
 // ── Overview tab ──────────────────────────────────────────────────────────────
 
-function OverviewTab({ student, isPrism }: { student: ExtendedStudent; isPrism: boolean }) {
+function OverviewTab({ student, isPrism, isAdmin }: { student: ExtendedStudent; isPrism: boolean; isAdmin: boolean }) {
   const activeInterventions = student.interventions.filter(i => i.isActive)
   const intervTypeLabel: Record<StudentIntervention['type'], string> = {
     advising: 'Advising', 'early-alert': 'Early Alert',
@@ -210,24 +211,27 @@ function OverviewTab({ student, isPrism }: { student: ExtendedStudent; isPrism: 
         )}
 
         {/* Section 4 — Academic Standing (demoted — Vishaka May 14: "not even GPA is
-            important in exam management; that should stay with the student profile") */}
-        <section aria-labelledby="standing-heading" className="rounded-xl border border-border bg-card p-5">
-          <h2 id="standing-heading" className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-3">Academic Standing</h2>
-          <div className="flex items-start gap-4">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: standingBg }}>
-              <i className={`fa-light ${standingIcon}`} aria-hidden="true" style={{ fontSize: 18, color: standingFg }} />
+            important in exam management; that should stay with the student profile")
+            Admin-only — FERPA: faculty must not see standing without role gate */}
+        {isAdmin && (
+          <section aria-labelledby="standing-heading" className="rounded-xl border border-border bg-card p-5">
+            <h2 id="standing-heading" className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-3">Academic Standing</h2>
+            <div className="flex items-start gap-4">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: standingBg }}>
+                <i className={`fa-light ${standingIcon}`} aria-hidden="true" style={{ fontSize: 18, color: standingFg }} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">{student.academicStanding.label}</p>
+                {student.academicStanding.detail && (
+                  <p className="text-sm text-muted-foreground mt-0.5">{student.academicStanding.detail}</p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  Since {new Date(student.academicStanding.since).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">{student.academicStanding.label}</p>
-              {student.academicStanding.detail && (
-                <p className="text-sm text-muted-foreground mt-0.5">{student.academicStanding.detail}</p>
-              )}
-              <p className="text-xs text-muted-foreground mt-1">
-                Since {new Date(student.academicStanding.since).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              </p>
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Section 5 — Annotations / notes (always rendered — Aarti: "notes" are a core
             detail field; empty state shows add affordance rather than hiding the section) */}
@@ -555,41 +559,103 @@ function AssessmentsTab({ student }: { student: ExtendedStudent }) {
           <h2 id="competency-heading" className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground mb-4">
             Competency Performance
           </h2>
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-5">
             {student.competencyPerformance.map(cp => {
+              // Amber for below 65, success-green for 80+, brand for in-between
+              // Never use --destructive for scores (Aarti: no red in score viz)
               const fgColor =
                 cp.avgScore >= 80 ? 'var(--qb-status-saved-fg)' :
-                cp.avgScore < 65  ? 'var(--destructive)' :
-                                    'var(--standing-warning-fg)'
+                cp.avgScore < 65  ? 'var(--standing-warning-fg)' :
+                                    'var(--brand-color)'
               const trendIcon =
                 cp.trend === 'improving' ? 'fa-arrow-trend-up' :
                 cp.trend === 'declining' ? 'fa-arrow-trend-down' : 'fa-minus'
+              const pct = `${cp.avgScore}%`
 
               return (
                 <div key={cp.area} className="flex items-center gap-3">
-                  <span className="text-sm text-foreground w-52 shrink-0 truncate" id={`comp-${cp.area.replace(/\s/g, '-')}`}>
+                  <span
+                    className="text-sm text-foreground shrink-0 truncate"
+                    id={`comp-${cp.area.replace(/\s/g, '-')}`}
+                    style={{ width: 200 }}
+                  >
                     {cp.area}
                   </span>
-                  {/* Accessible progress bar — role + aria values */}
+                  {/* Strip plot — dot on a horizontal line, no filled bar */}
                   <div
-                    role="progressbar"
-                    aria-valuenow={cp.avgScore}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-labelledby={`comp-${cp.area.replace(/\s/g, '-')}`}
-                    className="flex-1 rounded-full bg-muted h-1.5 overflow-hidden"
+                    className="flex-1 relative"
+                    role="img"
+                    aria-label={`${cp.area}: ${cp.avgScore}%`}
                   >
-                    <div className="h-full rounded-full transition-all"
-                      style={{ width: `${cp.avgScore}%`, backgroundColor: fgColor }} />
+                    <div
+                      className="rounded-full"
+                      style={{ height: 2, backgroundColor: 'var(--border)', position: 'relative' }}
+                    >
+                      {/* Threshold marker at 65% */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          left: '65%',
+                          top: -3,
+                          width: 1,
+                          height: 8,
+                          backgroundColor: 'var(--border)',
+                          opacity: 0.6,
+                        }}
+                        aria-hidden="true"
+                      />
+                      {/* Score dot */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          left: pct,
+                          top: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          width: 10,
+                          height: 10,
+                          borderRadius: '50%',
+                          backgroundColor: fgColor,
+                          border: '2px solid var(--background)',
+                          boxShadow: `0 0 0 1px ${fgColor}`,
+                        }}
+                        aria-hidden="true"
+                      />
+                    </div>
+                    <div className="flex justify-between mt-1" aria-hidden="true">
+                      <span className="text-[9px] text-muted-foreground">0%</span>
+                      <span className="text-[9px] text-muted-foreground" style={{ marginLeft: '60%' }}>65</span>
+                      <span className="text-[9px] text-muted-foreground">100%</span>
+                    </div>
                   </div>
-                  <span className="text-sm font-medium tabular-nums w-10 text-right" style={{ color: fgColor }}>
+                  <span
+                    className="text-sm font-semibold tabular-nums shrink-0"
+                    style={{ width: 36, textAlign: 'right', color: fgColor }}
+                  >
                     {cp.avgScore.toFixed(0)}%
                   </span>
-                  <i className={`fa-light ${trendIcon}`} aria-label={cp.trend}
-                    style={{ fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0 }} />
+                  <i
+                    className={`fa-light ${trendIcon} shrink-0`}
+                    aria-label={cp.trend}
+                    style={{ fontSize: 11, color: 'var(--muted-foreground)' }}
+                  />
                 </div>
               )
             })}
+          </div>
+          {/* Legend */}
+          <div className="flex items-center gap-4 mt-4 pt-3 border-t border-border">
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--standing-warning-fg)' }} aria-hidden="true" />
+              Below 65%
+            </div>
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--qb-status-saved-fg)' }} aria-hidden="true" />
+              80%+ strong
+            </div>
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <div style={{ width: 1, height: 10, backgroundColor: 'var(--border)' }} aria-hidden="true" />
+              65% threshold
+            </div>
           </div>
         </section>
       )}
@@ -685,6 +751,8 @@ export default function StudentDetailClient({ studentId }: { studentId: string }
   const student = allStudents.find(s => s.id === studentId)
   const entryPoint = useEntryPoint()
   const isPrism = entryPoint === 'prism'
+  const { role, hydrated } = useFacultySession()
+  const isAdmin = !hydrated || role === 'admin'
 
   useEffect(() => {
     if (!student) return
@@ -752,7 +820,9 @@ export default function StudentDetailClient({ studentId }: { studentId: string }
                 >
                   {student.firstName} {student.lastName}
                 </h1>
-                <StandingBadge status={student.academicStanding.status} label={student.academicStanding.label} />
+                {isAdmin && (
+                  <StandingBadge status={student.academicStanding.status} label={student.academicStanding.label} />
+                )}
                 {isPrism && (
                   <Badge variant="secondary" className="rounded text-[11px] font-semibold px-2 py-0.5"
                     style={{ backgroundColor: 'var(--brand-tint)', color: 'var(--brand-color-dark)' }}>
@@ -802,7 +872,7 @@ export default function StudentDetailClient({ studentId }: { studentId: string }
             </div>
 
             <div className="flex-1 overflow-auto pt-2 px-6 pb-6">
-              <TabsContent value="overview"       className="mt-0 outline-none"><OverviewTab       student={student} isPrism={isPrism} /></TabsContent>
+              <TabsContent value="overview"       className="mt-0 outline-none"><OverviewTab       student={student} isPrism={isPrism} isAdmin={isAdmin} /></TabsContent>
               <TabsContent value="courses"        className="mt-0 outline-none"><CoursesTab        student={student} /></TabsContent>
               <TabsContent value="assessments"    className="mt-0 outline-none"><AssessmentsTab    student={student} /></TabsContent>
               <TabsContent value="accommodations" className="mt-0 outline-none"><AccommodationsTab student={student} /></TabsContent>
