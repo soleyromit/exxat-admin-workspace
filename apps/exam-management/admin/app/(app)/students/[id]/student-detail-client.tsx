@@ -473,7 +473,7 @@ const COURSE_COLUMNS: ColumnDef<CourseEnrollmentRow>[] = [
   },
 ]
 
-function CoursesTab({ student }: { student: ExtendedStudent }) {
+function CoursesTab({ student, onEnrolled }: { student: ExtendedStudent; onEnrolled: () => void }) {
   const router = useRouter()
   const [enrollOpen, setEnrollOpen] = useState(false)
   const [selectedOfferingId, setSelectedOfferingId] = useState('')
@@ -487,6 +487,7 @@ function CoursesTab({ student }: { student: ExtendedStudent }) {
   function handleEnroll() {
     if (!selectedOfferingId) return
     setEnrolled(true)
+    onEnrolled()
     setTimeout(() => { setEnrolled(false); setEnrollOpen(false); setSelectedOfferingId('') }, 1200)
   }
 
@@ -512,10 +513,12 @@ function CoursesTab({ student }: { student: ExtendedStudent }) {
     (a, b) => (TERM_ORDER[a] ?? 99) - (TERM_ORDER[b] ?? 99)
   )
 
+  const [activeTerm, setActiveTerm] = useState(() => sortedTerms[0] ?? '')
+
   return (
     <>
       <div className="flex flex-col flex-1 min-h-0">
-        {/* Single toolbar spanning all term groups */}
+        {/* Toolbar */}
         <div className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-border">
           <span className="text-xs text-muted-foreground">
             {rows.length} course{rows.length !== 1 ? 's' : ''} enrolled
@@ -539,17 +542,21 @@ function CoursesTab({ student }: { student: ExtendedStudent }) {
             </Button>
           </div>
         ) : (
-          <div className="flex-1 overflow-auto">
-            {sortedTerms.map(term => (
-              <div key={term}>
-                <div className="flex items-center gap-2 px-4 pt-5 pb-2">
-                  <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+          <Tabs value={activeTerm} onValueChange={setActiveTerm} className="flex flex-col flex-1 min-h-0">
+            <div className="border-b border-border px-4 shrink-0">
+              <TabsList variant="line">
+                {sortedTerms.map(term => (
+                  <TabsTrigger key={term} value={term}>
                     {term}
-                  </span>
-                  <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
-                    {byTerm[term].length}
-                  </Badge>
-                </div>
+                    <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                      {byTerm[term].length}
+                    </Badge>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
+            {sortedTerms.map(term => (
+              <TabsContent key={term} value={term} className="m-0 flex-1 min-h-0">
                 <DataTable<CourseEnrollmentRow>
                   data={byTerm[term]}
                   columns={COURSE_COLUMNS}
@@ -559,9 +566,9 @@ function CoursesTab({ student }: { student: ExtendedStudent }) {
                   showQueryControls={false}
                   onRowClick={(row) => router.push(`/courses/offerings/${row.id}`)}
                 />
-              </div>
+              </TabsContent>
             ))}
-          </div>
+          </Tabs>
         )}
       </div>
 
@@ -839,6 +846,12 @@ function AccommodationsTab({ student }: { student: ExtendedStudent }) {
 
 export default function StudentDetailClient({ studentId }: { studentId: string }) {
   const [activeTab, setActiveTab] = useState('overview')
+  const [hasNewEnrollment, setHasNewEnrollment] = useState(false)
+
+  function handleTabChange(tab: string) {
+    setActiveTab(tab)
+    if (tab === 'courses') setHasNewEnrollment(false)
+  }
   const student = allStudents.find(s => s.id === studentId)
   const entryPoint = useEntryPoint()
   const isPrism = entryPoint === 'prism'
@@ -946,34 +959,48 @@ export default function StudentDetailClient({ studentId }: { studentId: string }
 
         {/* ── Tabs ──────────────────────────────────────────────────────── */}
         <div className="flex-1 overflow-auto">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="flex flex-col h-full">
             <div className="border-b border-border px-6 bg-card">
               <TabsList variant="line">
-                {([
-                  { value: 'overview',        label: 'Overview',        icon: 'fa-circle-info' },
-                  { value: 'courses',         label: 'Courses',         icon: 'fa-graduation-cap', count: student.courseEnrollments.length },
-                  { value: 'assessments',     label: 'Assessments',     icon: 'fa-file-check' },
-                  { value: 'accommodations',  label: 'Accommodations',  icon: 'fa-universal-access', count: accsCount },
-                ] as const).map(tab => (
-                  <TabsTrigger
-                    key={tab.value}
-                    value={tab.value}
-                  >
-                    <i className={`fa-light ${tab.icon}`} aria-hidden="true" style={{ fontSize: 13 }} />
-                    {tab.label}
-                    {'count' in tab && tab.count !== undefined && tab.count > 0 && (
-                      <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
-                        {tab.count}
-                      </Badge>
-                    )}
-                  </TabsTrigger>
-                ))}
+                <TabsTrigger value="overview">
+                  <i className="fa-light fa-circle-info" aria-hidden="true" style={{ fontSize: 13 }} />
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger value="courses">
+                  <i className="fa-light fa-graduation-cap" aria-hidden="true" style={{ fontSize: 13 }} />
+                  Courses
+                  {student.courseEnrollments.length > 0 && (
+                    <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                      {student.courseEnrollments.length}
+                    </Badge>
+                  )}
+                  {hasNewEnrollment && (
+                    <span
+                      className="size-2 rounded-full shrink-0"
+                      style={{ backgroundColor: 'var(--destructive)' }}
+                      aria-label="New enrollment pending review"
+                    />
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="assessments">
+                  <i className="fa-light fa-file-check" aria-hidden="true" style={{ fontSize: 13 }} />
+                  Assessments
+                </TabsTrigger>
+                <TabsTrigger value="accommodations">
+                  <i className="fa-light fa-universal-access" aria-hidden="true" style={{ fontSize: 13 }} />
+                  Accommodations
+                  {accsCount > 0 && (
+                    <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                      {accsCount}
+                    </Badge>
+                  )}
+                </TabsTrigger>
               </TabsList>
             </div>
 
             <div className="flex-1 overflow-auto pt-2 px-6 pb-6">
-              <TabsContent value="overview"       className="mt-0 outline-none"><OverviewTab       student={student} isPrism={isPrism} isAdmin={isAdmin} onViewCourses={() => setActiveTab('courses')} /></TabsContent>
-              <TabsContent value="courses"        className="mt-0 outline-none"><CoursesTab        student={student} /></TabsContent>
+              <TabsContent value="overview"       className="mt-0 outline-none"><OverviewTab       student={student} isPrism={isPrism} isAdmin={isAdmin} onViewCourses={() => handleTabChange('courses')} /></TabsContent>
+              <TabsContent value="courses"        className="mt-0 outline-none"><CoursesTab        student={student} onEnrolled={() => setHasNewEnrollment(true)} /></TabsContent>
               <TabsContent value="assessments"    className="mt-0 outline-none"><AssessmentsTab    student={student} /></TabsContent>
               <TabsContent value="accommodations" className="mt-0 outline-none"><AccommodationsTab student={student} /></TabsContent>
             </div>
