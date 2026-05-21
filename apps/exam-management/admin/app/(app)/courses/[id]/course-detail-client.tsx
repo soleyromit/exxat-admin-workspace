@@ -19,7 +19,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  Button, Tabs, TabsList, TabsTrigger, TabsContent,
+  Badge, Button, Tabs, TabsList, TabsTrigger, TabsContent,
   Tip,
 } from '@exxat/ds/packages/ui/src'
 import { SiteHeader } from '@/components/site-header'
@@ -41,6 +41,8 @@ import { FacultyTab } from './tabs/faculty-tab'
 import { CreateAssessmentModal } from '@/components/create-assessment-modal'
 
 const ALL_ASSESSMENTS = [...mockAssessments, ...facultyExtraAssessments]
+
+const IS_LMS_ACTIVE = false
 
 export default function CourseDetailClient({ courseId }: { courseId: string }) {
   const router = useRouter()
@@ -75,6 +77,13 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
     () => courseObjectives.filter(o => o.courseId === courseId),
     [courseId]
   )
+
+  // Tab count badges — Aarti May 19
+  const studentsCount = facultyStudents.filter(s => s.enrolledCourseIds?.includes(courseId)).length
+  const assessmentsCount = ALL_ASSESSMENTS.filter(a => a.courseId === courseId).length
+  // facultyListRows is not in scope here; FacultyTab manages its own data internally.
+  // Real count would come from a shared faculty-by-course query. Using 0 until that data is lifted.
+  const facultyCount = 0
 
   if (!hydrated) return null
 
@@ -140,6 +149,29 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
 
   const headerActions = (
     <div className="flex items-center gap-2">
+      {/* LMS integration chip — Vishaka May 19 */}
+      {IS_LMS_ACTIVE ? (
+        <Badge
+          variant="secondary"
+          className="rounded-full gap-1.5 text-xs shrink-0"
+          style={{
+            backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+            color: 'var(--brand-color)',
+          }}
+        >
+          <i className="fa-light fa-link" aria-hidden="true" />
+          Linked to Canvas
+        </Badge>
+      ) : (
+        <Badge
+          variant="secondary"
+          className="rounded-full gap-1.5 text-xs shrink-0"
+          style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}
+        >
+          <i className="fa-light fa-unlink" aria-hidden="true" />
+          No LMS linked
+        </Badge>
+      )}
       {accessLevel && <AccessLevelChip level={accessLevel} />}
       {liveCount > 0 && (
         <Tip label={`${liveCount} ${liveCount === 1 ? 'assessment' : 'assessments'} in progress now`}>
@@ -181,16 +213,20 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
               <TabsTrigger value="assessments" className="gap-2">
                 <i className="fa-light fa-clipboard-list text-xs" aria-hidden="true" />
                 Assessments
-                {(pendingReview > 0 || liveCount > 0) && (
-                  <span className="text-muted-foreground text-xs font-normal">
-                    {courseAssessments.length}
-                  </span>
+                {assessmentsCount > 0 && (
+                  <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                    {assessmentsCount}
+                  </Badge>
                 )}
               </TabsTrigger>
               <TabsTrigger value="students" className="gap-2">
                 <i className="fa-light fa-users text-xs" aria-hidden="true" />
                 Students
-                <span className="text-muted-foreground text-xs font-normal">{courseStudents.length}</span>
+                {studentsCount > 0 && (
+                  <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                    {studentsCount}
+                  </Badge>
+                )}
               </TabsTrigger>
               <TabsTrigger value="accommodations" className="gap-2">
                 <i className="fa-light fa-universal-access text-xs" aria-hidden="true" />
@@ -210,6 +246,11 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
               <TabsTrigger value="faculty" className="gap-2">
                 <i className="fa-light fa-chalkboard-user text-xs" aria-hidden="true" />
                 Faculty
+                {facultyCount > 0 && (
+                  <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                    {facultyCount}
+                  </Badge>
+                )}
               </TabsTrigger>
             </TabsList>
           </div>
