@@ -1535,7 +1535,7 @@ export default function CoursesClient() {
 
   return (
     <>
-      <SiteHeader title="Courses" />
+      <SiteHeader title="Courses" breadcrumbs={[{ label: 'Courses' }]} />
       <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
         <PageHeader
           title="Courses"

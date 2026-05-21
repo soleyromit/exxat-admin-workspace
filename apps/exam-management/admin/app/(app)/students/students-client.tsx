@@ -391,7 +391,7 @@ export default function StudentsClient() {
 
   return (
     <>
-      <SiteHeader title="Students" />
+      <SiteHeader title="Students" breadcrumbs={[{ label: 'Students' }]} />
       <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
         <PageHeader
           title="Students"

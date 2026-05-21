@@ -831,19 +831,17 @@ export default function FacultyDetailClient({ facultyId }: { facultyId: string }
 
   return (
     <>
-      <SiteHeader title={faculty.fullName} />
+      <SiteHeader
+        title={faculty.fullName}
+        breadcrumbs={[
+          { label: 'Faculty', href: '/faculty' },
+          { label: faculty.fullName },
+        ]}
+      />
       <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none min-h-0">
 
         {/* ── Header strip ───────────────────────────────────────────────── */}
         <div className="border-b border-border bg-card px-6 py-5">
-          {/* Back nav */}
-          <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground mb-4 px-0 h-auto" asChild>
-            <Link href="/faculty">
-              <i className="fa-light fa-chevron-left" aria-hidden="true" style={{ fontSize: 10 }} />
-              Faculty
-            </Link>
-          </Button>
-
           <div className="flex items-start gap-4 flex-wrap">
             {/* Decorative avatar — aria-hidden; name is in the h1 */}
             <Avatar style={{ width: 52, height: 52, flexShrink: 0 }} aria-hidden="true">

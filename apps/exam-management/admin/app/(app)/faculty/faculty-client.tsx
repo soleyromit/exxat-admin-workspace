@@ -391,7 +391,7 @@ export default function FacultyClient() {
 
   return (
     <>
-      <SiteHeader title="Faculty" />
+      <SiteHeader title="Faculty" breadcrumbs={[{ label: 'Faculty' }]} />
       <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
         <PageHeader
           title="Faculty"
