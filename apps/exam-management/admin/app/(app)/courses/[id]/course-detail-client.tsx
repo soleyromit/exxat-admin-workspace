@@ -38,6 +38,7 @@ import { AssessmentsTab } from './tabs/assessments-tab'
 import { StudentsTab } from './tabs/students-tab'
 import { AccommodationsTab } from './tabs/accommodations-tab'
 import { FacultyTab } from './tabs/faculty-tab'
+import { QuestionBankTab } from './tabs/question-bank-tab'
 import { CreateAssessmentModal } from '@/components/create-assessment-modal'
 
 const ALL_ASSESSMENTS = [...mockAssessments, ...facultyExtraAssessments]
@@ -252,6 +253,10 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                   </Badge>
                 )}
               </TabsTrigger>
+              <TabsTrigger value="question-bank" className="gap-2">
+                <i className="fa-light fa-books" aria-hidden="true" style={{ fontSize: 13 }} />
+                Question Bank
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -289,6 +294,9 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
             </TabsContent>
             <TabsContent value="faculty" className="m-0">
               <FacultyTab courseId={courseId} />
+            </TabsContent>
+            <TabsContent value="question-bank" className="mt-0 outline-none">
+              <QuestionBankTab courseId={courseId} />
             </TabsContent>
           </div>
         </Tabs>
