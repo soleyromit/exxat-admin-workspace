@@ -730,18 +730,27 @@ function AssessmentsTab({ faculty }: { faculty: ExtendedFaculty }) {
         ) : (
           <div className="flex flex-col gap-2">
             {qbFolders.map(folder => (
-              <div key={folder.id} className="flex items-center gap-3">
-                <div
+              <Link
+                key={folder.id}
+                href="/question-bank"
+                className="flex items-center gap-3 rounded-lg px-2 py-1.5 -mx-2 hover:bg-muted/60 transition-colors no-underline group"
+              >
+                <span
                   className="flex size-8 shrink-0 items-center justify-center rounded-md"
                   style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))' }}
                 >
                   <i className="fa-light fa-folder" aria-hidden="true" style={{ fontSize: 13, color: 'var(--brand-color)' }} />
-                </div>
+                </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{folder.name}</p>
-                  <p className="text-[11px] text-muted-foreground font-mono">{folder.course} · {folder.questionCount} questions</p>
+                  <p className="text-sm font-medium text-foreground truncate group-hover:underline underline-offset-2">
+                    {folder.name}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground font-mono">
+                    {folder.course} · {folder.questionCount} questions
+                  </p>
                 </div>
-              </div>
+                <i className="fa-light fa-arrow-up-right-from-square text-muted-foreground shrink-0" aria-hidden="true" style={{ fontSize: 10 }} />
+              </Link>
             ))}
           </div>
         )}
