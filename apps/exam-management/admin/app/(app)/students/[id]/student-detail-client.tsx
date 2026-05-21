@@ -68,19 +68,6 @@ function OverviewTab({ student, isPrism, isAdmin }: { student: ExtendedStudent; 
     advising: 'Advising', 'early-alert': 'Early Alert',
     'academic-support': 'Academic Support', tutoring: 'Tutoring', referral: 'Referral',
   }
-  const standingIcon =
-    student.academicStanding.status === 'good-standing'   ? 'fa-circle-check' :
-    student.academicStanding.status === 'needs-attention' ? 'fa-triangle-exclamation' :
-                                                            'fa-circle-xmark'
-  const standingBg =
-    student.academicStanding.status === 'good-standing'   ? 'var(--qb-status-saved-bg)' :
-    student.academicStanding.status === 'needs-attention' ? 'var(--standing-warning-bg)' :
-                                                            'color-mix(in oklch, var(--destructive) 10%, var(--background))'
-  const standingFg =
-    student.academicStanding.status === 'good-standing'   ? 'var(--qb-status-saved-fg)' :
-    student.academicStanding.status === 'needs-attention' ? 'var(--standing-warning-fg)' :
-                                                            'var(--destructive)'
-
   // Exam activity aggregates — Vishaka May 14: "# courses, # exams, completion status"
   const coursesCount    = student.courseEnrollments.length
   const examsCompleted  = student.courseEnrollments.reduce((s, c) => s + c.completedAssessments, 0)
@@ -114,7 +101,7 @@ function OverviewTab({ student, isPrism, isAdmin }: { student: ExtendedStudent; 
                 {previewCourses.map(enr => {
                   const cfg = COURSE_STATUS_CONFIG[enr.status as keyof typeof COURSE_STATUS_CONFIG]
                   return (
-                    <div key={enr.courseId} className="flex items-center gap-3">
+                    <div key={enr.offeringId} className="flex items-center gap-3">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{enr.courseName}</p>
                         <p className="text-[11px] text-muted-foreground mt-0.5">{enr.term}</p>
@@ -180,7 +167,60 @@ function OverviewTab({ student, isPrism, isAdmin }: { student: ExtendedStudent; 
           </div>
         </section>
 
-        {/* Section 3 — Active Interventions (Aarti: "only call it out if there is an active one") */}
+        {/* Section 3 — Performance Snapshot (strip plots mirroring Assessments tab) */}
+        {student.competencyPerformance.length > 0 && (
+          <section aria-labelledby="perf-snapshot-heading" className="rounded-xl border border-border bg-card p-5">
+            <h2 id="perf-snapshot-heading" className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground mb-4">
+              Performance Snapshot
+            </h2>
+            <div className="flex flex-col gap-4">
+              {student.competencyPerformance.map(cp => {
+                const fgColor =
+                  cp.avgScore >= 80 ? 'var(--qb-status-saved-fg)' :
+                  cp.avgScore < 65  ? 'var(--standing-warning-fg)' :
+                                      'var(--brand-color)'
+                const pct = `${cp.avgScore}%`
+                return (
+                  <div key={cp.area} className="flex items-center gap-3">
+                    <span className="text-sm text-foreground w-44 shrink-0 truncate">{cp.area}</span>
+                    <div className="flex-1 relative" role="img" aria-label={`${cp.area}: ${cp.avgScore}%`}>
+                      <div className="rounded-full" style={{ height: 2, backgroundColor: 'var(--border)', position: 'relative' }}>
+                        {/* Threshold tick at 65% */}
+                        <div style={{
+                          position: 'absolute', left: '65%', top: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          width: 1, height: 8,
+                          backgroundColor: 'var(--muted-foreground)',
+                          opacity: 0.4,
+                        }} />
+                        {/* Score dot */}
+                        <div style={{
+                          position: 'absolute',
+                          left: pct, top: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          width: 10, height: 10,
+                          borderRadius: '50%',
+                          backgroundColor: fgColor,
+                          border: '2px solid var(--background)',
+                          boxShadow: `0 0 0 1px ${fgColor}`,
+                        }} />
+                      </div>
+                    </div>
+                    <span className="text-sm font-semibold tabular-nums shrink-0 w-10 text-right"
+                      style={{ color: fgColor }}>
+                      {cp.avgScore}%
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-3">
+              Based on {student.courseEnrollments.reduce((n, e) => n + e.completedAssessments, 0)} completed assessments
+            </p>
+          </section>
+        )}
+
+        {/* Section 4 — Active Interventions (Aarti: "only call it out if there is an active one") */}
         {activeInterventions.length > 0 && (
           <section aria-labelledby="interventions-heading" className="rounded-xl border border-border bg-card p-5">
             <h2 id="interventions-heading" className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground mb-3">Active Interventions</h2>
@@ -210,30 +250,7 @@ function OverviewTab({ student, isPrism, isAdmin }: { student: ExtendedStudent; 
           </section>
         )}
 
-        {/* Section 4 — Academic Standing (demoted — Vishaka May 14: "not even GPA is
-            important in exam management; that should stay with the student profile")
-            Admin-only — FERPA: faculty must not see standing without role gate */}
-        {isAdmin && (
-          <section aria-labelledby="standing-heading" className="rounded-xl border border-border bg-card p-5">
-            <h2 id="standing-heading" className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-3">Academic Standing</h2>
-            <div className="flex items-start gap-4">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: standingBg }}>
-                <i className={`fa-light ${standingIcon}`} aria-hidden="true" style={{ fontSize: 18, color: standingFg }} />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">{student.academicStanding.label}</p>
-                {student.academicStanding.detail && (
-                  <p className="text-sm text-muted-foreground mt-0.5">{student.academicStanding.detail}</p>
-                )}
-                <p className="text-xs text-muted-foreground mt-1">
-                  Since {new Date(student.academicStanding.since).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </p>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* Section 5 — Annotations / notes (always rendered — Aarti: "notes" are a core
+        {/* Section 4 — Annotations / notes (always rendered — Aarti: "notes" are a core
             detail field; empty state shows add affordance rather than hiding the section) */}
         <section aria-labelledby="annotations-heading" className="rounded-xl border border-border bg-card p-5">
           <h2 id="annotations-heading" className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground mb-3">Annotations &amp; Notes</h2>
@@ -294,6 +311,33 @@ function OverviewTab({ student, isPrism, isAdmin }: { student: ExtendedStudent; 
           </Button>
         </section>
 
+        {/* Accommodations preview */}
+        {(() => {
+          const accs = facultyAccommodations.filter(a => a.studentId === student.id)
+          if (accs.length === 0) return null
+          return (
+            <section aria-labelledby="acc-preview-heading" className="rounded-xl border border-border bg-card p-5">
+              <h2 id="acc-preview-heading" className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground mb-3">
+                Accommodations
+              </h2>
+              <div className="flex flex-col gap-2">
+                {accs.slice(0, 3).map(acc => (
+                  <div key={acc.id} className="flex items-start gap-2">
+                    <i className="fa-light fa-universal-access mt-0.5 shrink-0" aria-hidden="true"
+                      style={{ fontSize: 12, color: 'var(--muted-foreground)' }} />
+                    <div className="min-w-0">
+                      <p className="text-sm text-foreground">{acc.detail}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {acc.courseId.replace('course-', '').toUpperCase()} · {acc.approvedBy}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )
+        })()}
+
         {/* Full Prism profile fallback — Aarti: "put a link, open in a new tab" */}
         {isPrism && (
           <div className="rounded-xl border border-border p-4 flex items-start gap-3"
@@ -332,7 +376,7 @@ const COURSE_STATUS_CONFIG = {
   upcoming:      { label: 'Upcoming',    icon: 'fa-clock',        bg: 'var(--muted)',               fg: 'var(--muted-foreground)' },
 }
 
-interface CourseEnrollmentRow extends Record<string, unknown> {
+interface CourseEnrollmentRow {
   id: string
   courseName: string
   courseCode: string
@@ -341,73 +385,12 @@ interface CourseEnrollmentRow extends Record<string, unknown> {
   grade: string | null
   completedAssessments: number
   assessmentCount: number
+  avgExamScore: number | null
 }
 
-const COURSE_COLUMNS: ColumnDef<CourseEnrollmentRow>[] = [
-  {
-    key: 'courseName',
-    label: 'Course',
-    sortable: true,
-    width: 240,
-    cell: (row) => (
-      <div>
-        <Link href={`/courses/${row.id as string}`}
-          className="text-sm font-medium hover:underline"
-          style={{ color: 'var(--brand-color)' }}>
-          {row.courseName as string}
-        </Link>
-        <p className="text-[11px] text-muted-foreground font-mono mt-0.5">{row.courseCode as string}</p>
-      </div>
-    ),
-  },
-  {
-    key: 'term',
-    label: 'Term',
-    sortable: true,
-    width: 120,
-    cell: (row) => <span className="text-sm text-muted-foreground whitespace-nowrap">{row.term}</span>,
-  },
-  {
-    key: 'status',
-    label: 'Status',
-    sortable: true,
-    width: 140,
-    cell: (row) => {
-      const cfg = COURSE_STATUS_CONFIG[row.status]
-      return (
-        <Badge variant="secondary" className="rounded-full text-[10px] font-semibold gap-1 px-2"
-          style={{ backgroundColor: cfg.bg, color: cfg.fg }}>
-          <i className={`fa-light ${cfg.icon}`} aria-hidden="true" style={{ fontSize: 9 }} />
-          {cfg.label}
-        </Badge>
-      )
-    },
-  },
-  {
-    key: 'grade',
-    label: 'Grade',
-    sortable: false,
-    width: 110,
-    // Grade is from LMS — Vishaka: course grades are NOT saved in exam management
-    cell: (row) => (
-      <span className="text-sm font-medium text-foreground">
-        {row.grade ?? '—'}
-        <span className="ml-1 text-[9px] font-normal text-muted-foreground">(LMS)</span>
-      </span>
-    ),
-  },
-  {
-    key: 'assessmentCount',
-    label: 'Assessments',
-    sortable: false,
-    width: 140,
-    cell: (row) => (
-      <span className="text-sm text-muted-foreground">
-        {row.completedAssessments}/{row.assessmentCount} completed
-      </span>
-    ),
-  },
-]
+const TERM_ORDER: Record<string, number> = {
+  'Spring 2026': 0, 'Fall 2026': 1, 'Fall 2025': 2, 'Spring 2025': 3, 'Fall 2024': 4,
+}
 
 function CoursesTab({ student }: { student: ExtendedStudent }) {
   const router = useRouter()
@@ -416,7 +399,7 @@ function CoursesTab({ student }: { student: ExtendedStudent }) {
   const [enrolled, setEnrolled] = useState(false)
 
   // Only show ongoing/upcoming offerings not already enrolled
-  const enrolledIds = new Set(student.courseEnrollments.map(e => e.courseId))
+  const enrolledIds = new Set(student.courseEnrollments.map(e => e.offeringId))
   const availableOfferings = courseOfferingRows.filter(
     o => (o.status === 'ongoing' || o.status === 'upcoming') && !enrolledIds.has(o.id)
   )
@@ -428,7 +411,7 @@ function CoursesTab({ student }: { student: ExtendedStudent }) {
   }
 
   const rows: CourseEnrollmentRow[] = student.courseEnrollments.map(enr => ({
-    id: enr.courseId,
+    id: enr.offeringId,   // FIXED: use offeringId (co-001) not courseId (course-phar101)
     courseName: enr.courseName,
     courseCode: enr.courseCode,
     term: enr.term,
@@ -436,43 +419,113 @@ function CoursesTab({ student }: { student: ExtendedStudent }) {
     grade: enr.grade ?? null,
     completedAssessments: enr.completedAssessments,
     assessmentCount: enr.assessmentCount,
+    avgExamScore: enr.avgExamScore ?? null,
   }))
+
+  // Group by term
+  const byTerm = rows.reduce((acc, row) => {
+    if (!acc[row.term]) acc[row.term] = []
+    acc[row.term].push(row)
+    return acc
+  }, {} as Record<string, CourseEnrollmentRow[]>)
+
+  const sortedTerms = Object.keys(byTerm).sort(
+    (a, b) => (TERM_ORDER[a] ?? 99) - (TERM_ORDER[b] ?? 99)
+  )
 
   return (
     <>
-      <DataTable<CourseEnrollmentRow>
-        data={rows}
-        columns={COURSE_COLUMNS}
-        getRowId={(row) => row.id}
-        selectable={false}
-        searchable={false}
-        showQueryControls={false}
-        onRowClick={(row) => router.push(`/courses/offerings/${row.id as string}`)}
-        toolbarSlot={() => (
-          <>
-            <span className="text-xs text-muted-foreground">
-              {rows.length} course{rows.length !== 1 ? 's' : ''} enrolled
-            </span>
-            <Button size="sm" onClick={() => setEnrollOpen(true)}>
-              <i className="fa-light fa-plus" aria-hidden="true" />
-              Enroll in Course
-            </Button>
-          </>
-        )}
-        emptyState={
-          <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
-            <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-              <i className="fa-light fa-graduation-cap text-muted-foreground text-xl" aria-hidden="true" />
+      <div className="flex flex-col min-h-0">
+        {/* Toolbar */}
+        <div className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-border">
+          <span className="text-xs text-muted-foreground">
+            {rows.length} course{rows.length !== 1 ? 's' : ''} enrolled
+          </span>
+          <Button size="sm" onClick={() => setEnrollOpen(true)}>
+            <i className="fa-light fa-plus" aria-hidden="true" />
+            Enroll in Course
+          </Button>
+        </div>
+
+        {/* Term-grouped list */}
+        <div className="flex-1 overflow-auto px-0">
+          {sortedTerms.map(term => (
+            <div key={term}>
+              <div className="px-4 pt-4 pb-2 flex items-center gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                  {term}
+                </span>
+                <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                  {byTerm[term].length}
+                </Badge>
+              </div>
+              <div className="divide-y divide-border border-y border-border">
+                {byTerm[term].map(row => {
+                  const cfg = COURSE_STATUS_CONFIG[row.status]
+                  const score = row.avgExamScore
+                  const scoreColor = score == null ? '' :
+                    score >= 80 ? 'var(--qb-status-saved-fg)' :
+                    score < 65  ? 'var(--standing-warning-fg)' :
+                                  'var(--brand-color)'
+                  return (
+                    <button
+                      key={row.id}
+                      type="button"
+                      className="w-full flex items-center gap-4 px-4 py-3.5 text-left hover:bg-muted/30 transition-colors"
+                      onClick={() => router.push(`/courses/offerings/${row.id}`)}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{row.courseName}</p>
+                        <p className="text-[11px] text-muted-foreground font-mono mt-0.5">{row.courseCode}</p>
+                      </div>
+                      <div className="flex items-center gap-4 shrink-0">
+                        {score != null && row.status !== 'upcoming' && (
+                          <span className="text-sm font-semibold tabular-nums" style={{ color: scoreColor }}>
+                            {score}%
+                          </span>
+                        )}
+                        <span className="text-[11px] text-muted-foreground tabular-nums hidden sm:block">
+                          {row.status !== 'upcoming'
+                            ? `${row.completedAssessments}/${row.assessmentCount} exams`
+                            : 'Upcoming'}
+                        </span>
+                        {row.grade && (
+                          <span className="text-sm font-semibold text-foreground tabular-nums">
+                            {row.grade}
+                            <span className="ml-1 text-[9px] font-normal text-muted-foreground">(LMS)</span>
+                          </span>
+                        )}
+                        <Badge
+                          variant="secondary"
+                          className="rounded-full text-[10px] font-semibold gap-1 px-2 shrink-0"
+                          style={{ backgroundColor: cfg.bg, color: cfg.fg }}
+                        >
+                          <i className={`fa-light ${cfg.icon}`} aria-hidden="true" style={{ fontSize: 9 }} />
+                          {cfg.label}
+                        </Badge>
+                        <i className="fa-light fa-chevron-right text-muted-foreground" aria-hidden="true" style={{ fontSize: 10 }} />
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
-            <p className="font-semibold text-foreground">No course registrations</p>
-            <p className="text-sm text-muted-foreground mt-1">This student hasn&apos;t been registered in any courses yet.</p>
-            <Button size="sm" className="mt-3" onClick={() => setEnrollOpen(true)}>
-              <i className="fa-light fa-plus" aria-hidden="true" />
-              Enroll in Course
-            </Button>
-          </div>
-        }
-      />
+          ))}
+          {rows.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+              <div className="flex size-14 items-center justify-center rounded-full bg-muted">
+                <i className="fa-light fa-graduation-cap text-muted-foreground text-xl" aria-hidden="true" />
+              </div>
+              <p className="font-semibold text-foreground">No course registrations</p>
+              <p className="text-sm text-muted-foreground mt-1">This student hasn&apos;t been registered in any courses yet.</p>
+              <Button size="sm" className="mt-3" onClick={() => setEnrollOpen(true)}>
+                <i className="fa-light fa-plus" aria-hidden="true" />
+                Enroll in Course
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Enroll in Course sheet */}
       <Sheet open={enrollOpen} onOpenChange={setEnrollOpen}>
@@ -785,19 +838,14 @@ export default function StudentDetailClient({ studentId }: { studentId: string }
 
   return (
     <>
-      <SiteHeader title={`${student.firstName} ${student.lastName}`} />
+      <SiteHeader
+        title={`${student.firstName} ${student.lastName}`}
+        breadcrumbs={[{ label: 'Students', href: '/students' }]}
+      />
       <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none min-h-0">
 
         {/* ── Header strip ───────────────────────────────────────────────── */}
         <div className="border-b border-border bg-card px-6 py-5">
-          {/* Back nav — DS Button asChild wrapping Link (fix: was raw <button>) */}
-          <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground mb-4 px-0 h-auto" asChild>
-            <Link href="/students">
-              <i className="fa-light fa-chevron-left" aria-hidden="true" style={{ fontSize: 10 }} />
-              Students
-            </Link>
-          </Button>
-
           <div className="flex items-start gap-4 flex-wrap">
             {/* Decorative avatar — aria-hidden; name is in the h1 */}
             <Avatar style={{ width: 52, height: 52, flexShrink: 0 }} aria-hidden="true">
