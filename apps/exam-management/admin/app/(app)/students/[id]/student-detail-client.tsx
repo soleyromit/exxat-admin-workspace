@@ -840,7 +840,10 @@ export default function StudentDetailClient({ studentId }: { studentId: string }
     <>
       <SiteHeader
         title={`${student.firstName} ${student.lastName}`}
-        breadcrumbs={[{ label: 'Students', href: '/students' }]}
+        breadcrumbs={[
+          { label: 'Students', href: '/students' },
+          { label: `${student.firstName} ${student.lastName}` },
+        ]}
       />
       <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none min-h-0">
 
