@@ -45,6 +45,8 @@ export interface FacultyCourse {
   term: string
   students: number
   status: 'active' | 'completed' | 'upcoming'
+  /** Access level — 'editor' = Coordinator (full edit), 'viewer' = Contributor (read-only). Aarti May 13. */
+  level?: 'editor' | 'viewer'
 }
 
 export interface FacultyAssessment {
@@ -219,9 +221,9 @@ export const allFaculty: ExtendedFaculty[] = [
     joinDate: '2019-08-15',
     bio: 'Dr. Rao specializes in pharmacological education and has led curriculum development across three health sciences programs. She serves as the accreditation liaison for CAPTE.',
     courses: [
-      { id: 'course-phar101', code: 'PHAR 101', name: 'Pharmacology I', term: 'Spring 2026', students: 32, status: 'active' },
-      { id: 'course-phar201', code: 'PHAR 201', name: 'Pharmacology II', term: 'Spring 2026', students: 28, status: 'active' },
-      { id: 'course-phar101-f25', code: 'PHAR 101', name: 'Pharmacology I', term: 'Fall 2025', students: 30, status: 'completed' },
+      { id: 'course-phar101', code: 'PHAR 101', name: 'Pharmacology I', term: 'Spring 2026', students: 32, status: 'active', level: 'editor' },
+      { id: 'course-phar201', code: 'PHAR 201', name: 'Pharmacology II', term: 'Spring 2026', students: 28, status: 'active', level: 'editor' },
+      { id: 'course-phar101-f25', code: 'PHAR 101', name: 'Pharmacology I', term: 'Fall 2025', students: 30, status: 'completed', level: 'viewer' },
     ],
     assessmentsManaged: [
       { id: 'asmt-001', title: 'Midterm Exam', course: 'PHAR 101', status: 'Approved', date: daysAgoFacultyIso(5) },
@@ -237,8 +239,8 @@ export const allFaculty: ExtendedFaculty[] = [
     joinDate: '2021-01-10',
     bio: 'Dr. Webb focuses on adaptive testing and accommodation administration. He chairs the ADA coordination committee for the health sciences division.',
     courses: [
-      { id: 'course-biol201', code: 'BIOL 201', name: 'Cell Biology', term: 'Spring 2026', students: 28, status: 'active' },
-      { id: 'course-biol201-f25', code: 'BIOL 201', name: 'Cell Biology', term: 'Fall 2025', students: 25, status: 'completed' },
+      { id: 'course-biol201', code: 'BIOL 201', name: 'Cell Biology', term: 'Spring 2026', students: 28, status: 'active', level: 'editor' },
+      { id: 'course-biol201-f25', code: 'BIOL 201', name: 'Cell Biology', term: 'Fall 2025', students: 25, status: 'completed', level: 'viewer' },
     ],
     assessmentsManaged: [
       { id: 'asmt-003', title: 'Unit 1 Quiz', course: 'BIOL 201', status: 'Results Published', date: daysAgoFacultyIso(35) },
@@ -252,10 +254,10 @@ export const allFaculty: ExtendedFaculty[] = [
     joinDate: '2018-09-01',
     bio: 'Prof. Chen coordinates student services outreach and manages accommodation workflows across all health sciences courses. Published researcher in inclusive assessment design.',
     courses: [
-      { id: 'course-skel101', code: 'SKEL 101', name: 'Skeletal Anatomy', term: 'Spring 2026', students: 24, status: 'active' },
-      { id: 'course-anat301', code: 'ANAT 301', name: 'Clinical Anatomy', term: 'Spring 2026', students: 22, status: 'active' },
-      { id: 'course-skel101-f25', code: 'SKEL 101', name: 'Skeletal Anatomy', term: 'Fall 2025', students: 26, status: 'completed' },
-      { id: 'course-anat301-f25', code: 'ANAT 301', name: 'Clinical Anatomy', term: 'Fall 2025', students: 20, status: 'completed' },
+      { id: 'course-skel101', code: 'SKEL 101', name: 'Skeletal Anatomy', term: 'Spring 2026', students: 24, status: 'active', level: 'editor' },
+      { id: 'course-anat301', code: 'ANAT 301', name: 'Clinical Anatomy', term: 'Spring 2026', students: 22, status: 'active', level: 'viewer' },
+      { id: 'course-skel101-f25', code: 'SKEL 101', name: 'Skeletal Anatomy', term: 'Fall 2025', students: 26, status: 'completed', level: 'viewer' },
+      { id: 'course-anat301-f25', code: 'ANAT 301', name: 'Clinical Anatomy', term: 'Fall 2025', students: 20, status: 'completed', level: 'viewer' },
     ],
     assessmentsManaged: [
       { id: 'asmt-skel101-001', title: 'Anatomy Lab Practical', course: 'SKEL 101', status: 'Approved', date: daysAgoFacultyIso(7) },
@@ -269,8 +271,8 @@ export const allFaculty: ExtendedFaculty[] = [
     joinDate: '2022-07-18',
     bio: 'Dr. Okafor specializes in evidence-based clinical reasoning pedagogy. He integrates case-based learning with formative assessment design.',
     courses: [
-      { id: 'course-clin201', code: 'CLIN 201', name: 'Clinical Reasoning I', term: 'Spring 2026', students: 30, status: 'active' },
-      { id: 'course-clin201-f25', code: 'CLIN 201', name: 'Clinical Reasoning I', term: 'Fall 2025', students: 29, status: 'completed' },
+      { id: 'course-clin201', code: 'CLIN 201', name: 'Clinical Reasoning I', term: 'Spring 2026', students: 30, status: 'active', level: 'editor' },
+      { id: 'course-clin201-f25', code: 'CLIN 201', name: 'Clinical Reasoning I', term: 'Fall 2025', students: 29, status: 'completed', level: 'viewer' },
     ],
     assessmentsManaged: [
       { id: 'asmt-clin201-001', title: 'Case Study Midterm', course: 'CLIN 201', status: 'In Progress', date: daysAgoFacultyIso(1) },
@@ -284,9 +286,9 @@ export const allFaculty: ExtendedFaculty[] = [
     joinDate: '2020-03-01',
     bio: 'Prof. Patel is an expert in pharmaceutical sciences education and OSCE design. She leads the interprofessional education initiative across the pharmacy and nursing programs.',
     courses: [
-      { id: 'course-phsc301', code: 'PHSC 301', name: 'Pharmaceutical Sciences', term: 'Spring 2026', students: 35, status: 'active' },
-      { id: 'course-phsc401', code: 'PHSC 401', name: 'Advanced Pharmaceutics', term: 'Spring 2026', students: 18, status: 'upcoming' },
-      { id: 'course-phsc301-f25', code: 'PHSC 301', name: 'Pharmaceutical Sciences', term: 'Fall 2025', students: 33, status: 'completed' },
+      { id: 'course-phsc301', code: 'PHSC 301', name: 'Pharmaceutical Sciences', term: 'Spring 2026', students: 35, status: 'active', level: 'editor' },
+      { id: 'course-phsc401', code: 'PHSC 401', name: 'Advanced Pharmaceutics', term: 'Spring 2026', students: 18, status: 'upcoming', level: 'editor' },
+      { id: 'course-phsc301-f25', code: 'PHSC 301', name: 'Pharmaceutical Sciences', term: 'Fall 2025', students: 33, status: 'completed', level: 'viewer' },
     ],
     assessmentsManaged: [
       { id: 'asmt-phsc301-001', title: 'Formulation Midterm', course: 'PHSC 301', status: 'Approved', date: daysAgoFacultyIso(4) },
@@ -301,7 +303,7 @@ export const allFaculty: ExtendedFaculty[] = [
     joinDate: '2023-09-05',
     bio: undefined,
     courses: [
-      { id: 'course-ot101', code: 'OT 101', name: 'Occupational Therapy Foundations', term: 'Spring 2026', students: 20, status: 'active' },
+      { id: 'course-ot101', code: 'OT 101', name: 'Occupational Therapy Foundations', term: 'Spring 2026', students: 20, status: 'active', level: 'viewer' },
     ],
     assessmentsManaged: [
       { id: 'asmt-ot101-001', title: 'OT Foundations Quiz 1', course: 'OT 101', status: 'Results Published', date: daysAgoFacultyIso(14) },
@@ -314,8 +316,8 @@ export const allFaculty: ExtendedFaculty[] = [
     joinDate: '2017-08-20',
     bio: 'Dr. Mitchell directs the DPT program and has over 15 years of experience in musculoskeletal assessment and clinical education. She chairs the curriculum committee.',
     courses: [
-      { id: 'course-pt301', code: 'PT 301', name: 'Musculoskeletal Assessment', term: 'Spring 2026', students: 27, status: 'active' },
-      { id: 'course-pt401', code: 'PT 401', name: 'Advanced Clinical Practice', term: 'Spring 2026', students: 22, status: 'upcoming' },
+      { id: 'course-pt301', code: 'PT 301', name: 'Musculoskeletal Assessment', term: 'Spring 2026', students: 27, status: 'active', level: 'editor' },
+      { id: 'course-pt401', code: 'PT 401', name: 'Advanced Clinical Practice', term: 'Spring 2026', students: 22, status: 'upcoming', level: 'viewer' },
     ],
     assessmentsManaged: [
       { id: 'asmt-pt301-001', title: 'Musculoskeletal Midterm', course: 'PT 301', status: 'In Progress', date: daysAgoFacultyIso(1) },
@@ -329,9 +331,9 @@ export const allFaculty: ExtendedFaculty[] = [
     joinDate: '2021-06-14',
     bio: 'Prof. Kim applies active learning strategies to pharmacotherapy instruction. His research focuses on spaced retrieval practice in health professions education.',
     courses: [
-      { id: 'course-phar301', code: 'PHAR 301', name: 'Pharmacotherapy I', term: 'Spring 2026', students: 31, status: 'active' },
-      { id: 'course-phar302', code: 'PHAR 302', name: 'Pharmacotherapy II', term: 'Spring 2026', students: 29, status: 'active' },
-      { id: 'course-phar301-f25', code: 'PHAR 301', name: 'Pharmacotherapy I', term: 'Fall 2025', students: 28, status: 'completed' },
+      { id: 'course-phar301', code: 'PHAR 301', name: 'Pharmacotherapy I', term: 'Spring 2026', students: 31, status: 'active', level: 'editor' },
+      { id: 'course-phar302', code: 'PHAR 302', name: 'Pharmacotherapy II', term: 'Spring 2026', students: 29, status: 'active', level: 'editor' },
+      { id: 'course-phar301-f25', code: 'PHAR 301', name: 'Pharmacotherapy I', term: 'Fall 2025', students: 28, status: 'completed', level: 'viewer' },
     ],
     assessmentsManaged: [
       { id: 'asmt-phar301-001', title: 'Pharmacotherapy Case Exam', course: 'PHAR 301', status: 'Results Published', date: daysAgoFacultyIso(22) },
@@ -346,8 +348,8 @@ export const allFaculty: ExtendedFaculty[] = [
     joinDate: '2022-01-03',
     bio: 'Dr. Al-Hassan coordinates the OT curriculum and specializes in mental health occupational therapy. She oversees assessment design for Level II fieldwork competencies.',
     courses: [
-      { id: 'course-ot201', code: 'OT 201', name: 'Mental Health OT', term: 'Spring 2026', students: 18, status: 'active' },
-      { id: 'course-ot301', code: 'OT 301', name: 'Fieldwork Seminar', term: 'Spring 2026', students: 22, status: 'active' },
+      { id: 'course-ot201', code: 'OT 201', name: 'Mental Health OT', term: 'Spring 2026', students: 18, status: 'active', level: 'editor' },
+      { id: 'course-ot301', code: 'OT 301', name: 'Fieldwork Seminar', term: 'Spring 2026', students: 22, status: 'active', level: 'viewer' },
     ],
     assessmentsManaged: [
       { id: 'asmt-ot201-001', title: 'Mental Health Case Study', course: 'OT 201', status: 'Approved', date: daysAgoFacultyIso(5) },
@@ -370,7 +372,7 @@ export const allFaculty: ExtendedFaculty[] = [
     joinDate: '2024-01-15',
     bio: 'Dr. Sharma joined the pharmacy faculty in 2024, bringing expertise in clinical toxicology and bioavailability research.',
     courses: [
-      { id: 'course-tox101', code: 'TOX 101', name: 'Clinical Toxicology', term: 'Spring 2026', students: 16, status: 'active' },
+      { id: 'course-tox101', code: 'TOX 101', name: 'Clinical Toxicology', term: 'Spring 2026', students: 16, status: 'active', level: 'editor' },
     ],
     assessmentsManaged: [
       { id: 'asmt-tox101-001', title: 'Toxicology Unit Quiz', course: 'TOX 101', status: 'Results Published', date: daysAgoFacultyIso(17) },

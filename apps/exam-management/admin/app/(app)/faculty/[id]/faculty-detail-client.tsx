@@ -33,6 +33,26 @@ import { SiteHeader } from '@/components/site-header'
 import { allFaculty, type ExtendedFaculty, type FacultyCourse, type FacultyAssessment } from '@/lib/faculty-mock-data'
 import { courseOfferingRows, type CourseOfferingRow } from '@/lib/course-mock-data'
 
+// ── Mock QB folders owned by faculty — production derives from QB folder ownership ──
+
+const MOCK_QB_FOLDERS_BY_FACULTY: Record<string, { id: string; name: string; course: string; questionCount: number }[]> = {
+  'fac-001': [
+    { id: 'f1', name: 'Pharmacology I', course: 'PHAR 101', questionCount: 48 },
+    { id: 'f2', name: 'Drug Interactions', course: 'PHAR 101', questionCount: 22 },
+  ],
+  'fac-002': [
+    { id: 'f3', name: 'Cardiology', course: 'BIOL 201', questionCount: 31 },
+  ],
+}
+
+// ── Mock pending reviews — assessments this faculty has been asked to review ──
+
+const MOCK_PENDING_REVIEWS_BY_FACULTY: Record<string, { id: string; title: string; course: string; requestedBy: string; requestedAt: string }[]> = {
+  'fac-001': [
+    { id: 'r1', title: 'Midterm 1 — Spring 2026', course: 'PHAR 101', requestedBy: 'Dr. Chen', requestedAt: '2026-05-18' },
+  ],
+}
+
 // ── Status configs ────────────────────────────────────────────────────────────
 
 const COURSE_STATUS_CONFIG = {
@@ -412,15 +432,15 @@ function AddCourseSheet({ open, onOpenChange, assignedCodes, onAdd }: AddCourseS
 
 interface TeachingTabProps {
   courses: FacultyCourse[]
+  /** Original faculty.courses array — used for level lookup even after dynamic add/remove. */
+  facultyCourses: FacultyCourse[]
   onAdd: (course: FacultyCourse) => void
   onRemove: (id: string) => void
 }
 
-function TeachingTab({ courses, onAdd, onRemove }: TeachingTabProps) {
+function TeachingTab({ courses, facultyCourses, onAdd, onRemove }: TeachingTabProps) {
   const router = useRouter()
   const [sheetOpen, setSheetOpen] = useState(false)
-
-  const columns = useMemo(() => buildCourseColumns(onRemove), [onRemove])
 
   const rows: CourseRow[] = courses.map((c: FacultyCourse) => ({
     id: c.id,
@@ -433,39 +453,108 @@ function TeachingTab({ courses, onAdd, onRemove }: TeachingTabProps) {
 
   const assignedCodes = courses.map((c) => c.code)
 
+  // Split courses by role — Aarti May 13: "Courses I'm managing" vs "Courses I'm contributing to"
+  // Level comes from the original facultyCourses array (which carries the level field).
+  // Dynamically added courses (via AddCourseSheet) default to 'viewer'.
+  const coordinatorCourses = rows.filter((r: CourseRow) => {
+    const fc = facultyCourses.find((c) => c.id === r.id) ?? courses.find((c) => c.id === r.id)
+    return fc?.level === 'editor'
+  })
+  const contributorCourses = rows.filter((r: CourseRow) => {
+    const fc = facultyCourses.find((c) => c.id === r.id) ?? courses.find((c) => c.id === r.id)
+    return fc?.level !== 'editor'
+  })
+
   return (
     <>
-      <DataTable<CourseRow>
-        data={rows}
-        columns={columns}
-        getRowId={(row) => row.id}
-        selectable={false}
-        searchable={false}
-        showQueryControls={false}
-        onRowClick={(row) => router.push(`/courses/${row.id as string}`)}
-        toolbarSlot={() => (
-          <>
-            <span className="text-xs text-muted-foreground">
-              {rows.length} course{rows.length !== 1 ? 's' : ''} assigned
-            </span>
-            <Button size="sm" className="gap-2" onClick={() => setSheetOpen(true)}>
-              <i className="fa-light fa-plus" aria-hidden="true" />
-              Add Course
-            </Button>
-          </>
-        )}
-        emptyState={
-          <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
-            <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-              <i className="fa-light fa-chalkboard text-muted-foreground text-xl" aria-hidden="true" />
-            </div>
-            <p className="font-semibold text-foreground">No courses assigned</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Use &ldquo;Add Course&rdquo; to assign course offerings.
-            </p>
+      {/* Toolbar for Add Course — sits above the split sections */}
+      <div className="flex items-center justify-between px-6 py-3 border-b border-border">
+        <span className="text-xs text-muted-foreground">
+          {rows.length} course{rows.length !== 1 ? 's' : ''} assigned
+        </span>
+        <Button size="sm" className="gap-2" onClick={() => setSheetOpen(true)}>
+          <i className="fa-light fa-plus" aria-hidden="true" />
+          Add Course
+        </Button>
+      </div>
+
+      {rows.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+          <div className="flex size-14 items-center justify-center rounded-full bg-muted">
+            <i className="fa-light fa-chalkboard text-muted-foreground text-xl" aria-hidden="true" />
           </div>
-        }
-      />
+          <p className="font-semibold text-foreground">No courses assigned</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Use &ldquo;Add Course&rdquo; to assign course offerings.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-6 pt-4">
+          {/* Coordinator courses */}
+          <section aria-labelledby="coordinator-heading">
+            <div className="flex items-center gap-2 mb-3 px-6">
+              <h2 id="coordinator-heading" className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                Courses I Coordinate
+              </h2>
+              {coordinatorCourses.length > 0 && (
+                <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                  {coordinatorCourses.length}
+                </Badge>
+              )}
+            </div>
+            {coordinatorCourses.length === 0 ? (
+              <p className="text-sm text-muted-foreground px-6">No courses as coordinator.</p>
+            ) : (
+              <DataTable<CourseRow>
+                data={coordinatorCourses}
+                columns={buildCourseColumns(onRemove)}
+                getRowId={(row) => row.id}
+                selectable={false}
+                searchable={false}
+                showQueryControls={false}
+                onRowClick={(row) => router.push(`/courses/${row.id as string}`)}
+                toolbarSlot={() => (
+                  <span className="text-xs text-muted-foreground">
+                    {coordinatorCourses.length} course{coordinatorCourses.length !== 1 ? 's' : ''}
+                  </span>
+                )}
+              />
+            )}
+          </section>
+
+          {/* Contributor courses */}
+          <section aria-labelledby="contributor-heading">
+            <div className="flex items-center gap-2 mb-3 px-6">
+              <h2 id="contributor-heading" className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                Courses I Contribute To
+              </h2>
+              {contributorCourses.length > 0 && (
+                <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                  {contributorCourses.length}
+                </Badge>
+              )}
+            </div>
+            {contributorCourses.length === 0 ? (
+              <p className="text-sm text-muted-foreground px-6">No courses as contributor.</p>
+            ) : (
+              <DataTable<CourseRow>
+                data={contributorCourses}
+                columns={buildCourseColumns(() => {})}
+                getRowId={(row) => row.id}
+                selectable={false}
+                searchable={false}
+                showQueryControls={false}
+                onRowClick={(row) => router.push(`/courses/${row.id as string}`)}
+                toolbarSlot={() => (
+                  <span className="text-xs text-muted-foreground">
+                    {contributorCourses.length} course{contributorCourses.length !== 1 ? 's' : ''}
+                  </span>
+                )}
+              />
+            )}
+          </section>
+        </div>
+      )}
 
       <AddCourseSheet
         open={sheetOpen}
@@ -548,29 +637,116 @@ function AssessmentsTab({ faculty }: { faculty: ExtendedFaculty }) {
     date: a.date,
   }))
 
+  const pendingReviews = MOCK_PENDING_REVIEWS_BY_FACULTY[faculty.id] ?? []
+  const qbFolders = MOCK_QB_FOLDERS_BY_FACULTY[faculty.id] ?? []
+
   return (
-    <DataTable<AssessmentRow>
-      data={rows}
-      columns={ASSESSMENT_COLUMNS}
-      getRowId={(row) => row.id}
-      selectable={false}
-      searchable={false}
-      showQueryControls={false}
-      toolbarSlot={() => (
-        <span className="text-xs text-muted-foreground">
-          {rows.length} assessment{rows.length !== 1 ? 's' : ''}
-        </span>
-      )}
-      emptyState={
-        <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
-          <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-            <i className="fa-light fa-file-check text-muted-foreground text-xl" aria-hidden="true" />
+    <div className="flex flex-col">
+      {/* Pending Reviews — Aarti May 19: "which reviews are they pending" */}
+      {pendingReviews.length > 0 && (
+        <section
+          aria-labelledby="pending-reviews-heading"
+          className="rounded-xl border border-border bg-card p-5 mb-4"
+          style={{ borderLeft: '3px solid var(--chart-4)' }}
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <h2 id="pending-reviews-heading" className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground">
+              Pending Reviews
+            </h2>
+            <Badge
+              variant="secondary"
+              className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center"
+              style={{
+                backgroundColor: 'color-mix(in oklch, var(--chart-4) 12%, var(--background))',
+                color: 'var(--chart-4)',
+              }}
+            >
+              {pendingReviews.length}
+            </Badge>
           </div>
-          <p className="font-semibold text-foreground">No assessments managed</p>
-          <p className="text-sm text-muted-foreground mt-1">This faculty member hasn&apos;t managed any assessments yet.</p>
+          <div className="flex flex-col gap-3">
+            {pendingReviews.map(review => (
+              <div key={review.id} className="flex items-start gap-3">
+                <div
+                  className="flex size-8 shrink-0 items-center justify-center rounded-lg mt-0.5"
+                  style={{ backgroundColor: 'color-mix(in oklch, var(--chart-4) 12%, var(--background))' }}
+                >
+                  <i className="fa-light fa-clipboard-check" aria-hidden="true" style={{ fontSize: 13, color: 'var(--chart-4)' }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{review.title}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {review.course} · Requested by {review.requestedBy} ·{' '}
+                    {new Date(review.requestedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" className="shrink-0 text-xs">
+                  Review
+                </Button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Assessments DataTable */}
+      <DataTable<AssessmentRow>
+        data={rows}
+        columns={ASSESSMENT_COLUMNS}
+        getRowId={(row) => row.id}
+        selectable={false}
+        searchable={false}
+        showQueryControls={false}
+        toolbarSlot={() => (
+          <span className="text-xs text-muted-foreground">
+            {rows.length} assessment{rows.length !== 1 ? 's' : ''}
+          </span>
+        )}
+        emptyState={
+          <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+            <div className="flex size-14 items-center justify-center rounded-full bg-muted">
+              <i className="fa-light fa-file-check text-muted-foreground text-xl" aria-hidden="true" />
+            </div>
+            <p className="font-semibold text-foreground">No assessments managed</p>
+            <p className="text-sm text-muted-foreground mt-1">This faculty member hasn&apos;t managed any assessments yet.</p>
+          </div>
+        }
+      />
+
+      {/* QB Folders owned — Aarti May 19: "which banks do they own" */}
+      <section aria-labelledby="qb-folders-heading" className="rounded-xl border border-border bg-card p-5 mt-4">
+        <div className="flex items-center gap-2 mb-3">
+          <h2 id="qb-folders-heading" className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground">
+            Question Bank Folders
+          </h2>
+          {qbFolders.length > 0 && (
+            <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+              {qbFolders.length}
+            </Badge>
+          )}
         </div>
-      }
-    />
+        {qbFolders.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No QB folders owned.</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {qbFolders.map(folder => (
+              <div key={folder.id} className="flex items-center gap-3">
+                <div
+                  className="flex size-8 shrink-0 items-center justify-center rounded-md"
+                  style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))' }}
+                >
+                  <i className="fa-light fa-folder" aria-hidden="true" style={{ fontSize: 13, color: 'var(--brand-color)' }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{folder.name}</p>
+                  <p className="text-[11px] text-muted-foreground font-mono">{folder.course} · {folder.questionCount} questions</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
   )
 }
 
@@ -732,7 +908,7 @@ export default function FacultyDetailClient({ facultyId }: { facultyId: string }
 
             <div className="flex-1 overflow-auto pt-2 px-6 pb-6">
               <TabsContent value="profile"     className="mt-0 outline-none"><ProfileTab     faculty={faculty} isPrism={isPrism} /></TabsContent>
-              <TabsContent value="teaching"    className="mt-0 outline-none"><TeachingTab    courses={assignedCourses} onAdd={handleAddCourse} onRemove={handleRemoveCourse} /></TabsContent>
+              <TabsContent value="teaching"    className="mt-0 outline-none"><TeachingTab    courses={assignedCourses} facultyCourses={faculty.courses} onAdd={handleAddCourse} onRemove={handleRemoveCourse} /></TabsContent>
               <TabsContent value="assessments" className="mt-0 outline-none"><AssessmentsTab faculty={faculty} /></TabsContent>
             </div>
           </Tabs>
