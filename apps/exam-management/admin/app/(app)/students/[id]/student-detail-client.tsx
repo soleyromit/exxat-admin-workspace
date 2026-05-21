@@ -381,7 +381,7 @@ const COURSE_STATUS_CONFIG = {
   upcoming:      { label: 'Upcoming',    icon: 'fa-clock',        bg: 'var(--muted)',               fg: 'var(--muted-foreground)' },
 }
 
-interface CourseEnrollmentRow {
+interface CourseEnrollmentRow extends Record<string, unknown> {
   id: string
   courseName: string
   courseCode: string
@@ -397,13 +397,88 @@ const TERM_ORDER: Record<string, number> = {
   'Spring 2026': 0, 'Fall 2026': 1, 'Fall 2025': 2, 'Spring 2025': 3, 'Fall 2024': 4,
 }
 
+const COURSE_COLUMNS: ColumnDef<CourseEnrollmentRow>[] = [
+  {
+    key: 'courseName',
+    label: 'Course',
+    width: 280,
+    sortable: false,
+    cell: (row) => (
+      <div>
+        <p className="text-sm font-medium text-foreground truncate">{row.courseName as string}</p>
+        <p className="text-[11px] text-muted-foreground font-mono mt-0.5">{row.courseCode as string}</p>
+      </div>
+    ),
+  },
+  {
+    key: 'avgExamScore',
+    label: 'Avg Score',
+    width: 100,
+    sortable: false,
+    cell: (row) => {
+      const score = row.avgExamScore as number | null
+      const status = row.status as string
+      if (score == null || status === 'upcoming') return <span className="text-sm text-muted-foreground">—</span>
+      const color = score >= 80 ? 'var(--qb-status-saved-fg)' : score < 65 ? 'var(--standing-warning-fg)' : 'var(--brand-color)'
+      return <span className="text-sm font-semibold tabular-nums" style={{ color }}>{score}%</span>
+    },
+  },
+  {
+    key: 'assessments',
+    label: 'Assessments',
+    width: 140,
+    sortable: false,
+    cell: (row) => {
+      if ((row.status as string) === 'upcoming') return <span className="text-sm text-muted-foreground">Upcoming</span>
+      return (
+        <span className="text-sm text-muted-foreground tabular-nums">
+          {row.completedAssessments as number}/{row.assessmentCount as number} exams
+        </span>
+      )
+    },
+  },
+  {
+    key: 'grade',
+    label: 'Grade',
+    width: 90,
+    sortable: false,
+    cell: (row) => {
+      if (!row.grade) return <span className="text-sm text-muted-foreground">—</span>
+      return (
+        <span className="text-sm font-semibold text-foreground tabular-nums">
+          {row.grade as string}
+          <span className="ml-1 text-[9px] font-normal text-muted-foreground">(LMS)</span>
+        </span>
+      )
+    },
+  },
+  {
+    key: 'status',
+    label: 'Status',
+    width: 130,
+    sortable: false,
+    cell: (row) => {
+      const cfg = COURSE_STATUS_CONFIG[row.status as keyof typeof COURSE_STATUS_CONFIG]
+      return (
+        <Badge
+          variant="secondary"
+          className="rounded-full text-[10px] font-semibold gap-1 px-2"
+          style={{ backgroundColor: cfg.bg, color: cfg.fg }}
+        >
+          <i className={`fa-light ${cfg.icon}`} aria-hidden="true" style={{ fontSize: 9 }} />
+          {cfg.label}
+        </Badge>
+      )
+    },
+  },
+]
+
 function CoursesTab({ student }: { student: ExtendedStudent }) {
   const router = useRouter()
   const [enrollOpen, setEnrollOpen] = useState(false)
   const [selectedOfferingId, setSelectedOfferingId] = useState('')
   const [enrolled, setEnrolled] = useState(false)
 
-  // Only show ongoing/upcoming offerings not already enrolled
   const enrolledIds = new Set(student.courseEnrollments.map(e => e.offeringId))
   const availableOfferings = courseOfferingRows.filter(
     o => (o.status === 'ongoing' || o.status === 'upcoming') && !enrolledIds.has(o.id)
@@ -416,7 +491,7 @@ function CoursesTab({ student }: { student: ExtendedStudent }) {
   }
 
   const rows: CourseEnrollmentRow[] = student.courseEnrollments.map(enr => ({
-    id: enr.offeringId,   // FIXED: use offeringId (co-001) not courseId (course-phar101)
+    id: enr.offeringId,
     courseName: enr.courseName,
     courseCode: enr.courseCode,
     term: enr.term,
@@ -427,7 +502,6 @@ function CoursesTab({ student }: { student: ExtendedStudent }) {
     avgExamScore: enr.avgExamScore ?? null,
   }))
 
-  // Group by term
   const byTerm = rows.reduce((acc, row) => {
     if (!acc[row.term]) acc[row.term] = []
     acc[row.term].push(row)
@@ -440,8 +514,8 @@ function CoursesTab({ student }: { student: ExtendedStudent }) {
 
   return (
     <>
-      <div className="flex flex-col min-h-0">
-        {/* Toolbar */}
+      <div className="flex flex-col flex-1 min-h-0">
+        {/* Single toolbar spanning all term groups */}
         <div className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-border">
           <span className="text-xs text-muted-foreground">
             {rows.length} course{rows.length !== 1 ? 's' : ''} enrolled
@@ -452,84 +526,43 @@ function CoursesTab({ student }: { student: ExtendedStudent }) {
           </Button>
         </div>
 
-        {/* Term-grouped list */}
-        <div className="flex-1 overflow-auto px-0">
-          {sortedTerms.map(term => (
-            <div key={term}>
-              <div className="px-4 pt-4 pb-2 flex items-center gap-2">
-                <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
-                  {term}
-                </span>
-                <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
-                  {byTerm[term].length}
-                </Badge>
-              </div>
-              <div className="divide-y divide-border border-y border-border">
-                {byTerm[term].map(row => {
-                  const cfg = COURSE_STATUS_CONFIG[row.status]
-                  const score = row.avgExamScore
-                  const scoreColor = score == null ? '' :
-                    score >= 80 ? 'var(--qb-status-saved-fg)' :
-                    score < 65  ? 'var(--standing-warning-fg)' :
-                                  'var(--brand-color)'
-                  return (
-                    <button
-                      key={row.id}
-                      type="button"
-                      className="w-full flex items-center gap-4 px-4 py-3.5 text-left hover:bg-muted/30 transition-colors"
-                      onClick={() => router.push(`/courses/offerings/${row.id}`)}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{row.courseName}</p>
-                        <p className="text-[11px] text-muted-foreground font-mono mt-0.5">{row.courseCode}</p>
-                      </div>
-                      <div className="flex items-center gap-4 shrink-0">
-                        {score != null && row.status !== 'upcoming' && (
-                          <span className="text-sm font-semibold tabular-nums" style={{ color: scoreColor }}>
-                            {score}%
-                          </span>
-                        )}
-                        <span className="text-[11px] text-muted-foreground tabular-nums hidden sm:block">
-                          {row.status !== 'upcoming'
-                            ? `${row.completedAssessments}/${row.assessmentCount} exams`
-                            : 'Upcoming'}
-                        </span>
-                        {row.grade && (
-                          <span className="text-sm font-semibold text-foreground tabular-nums">
-                            {row.grade}
-                            <span className="ml-1 text-[9px] font-normal text-muted-foreground">(LMS)</span>
-                          </span>
-                        )}
-                        <Badge
-                          variant="secondary"
-                          className="rounded-full text-[10px] font-semibold gap-1 px-2 shrink-0"
-                          style={{ backgroundColor: cfg.bg, color: cfg.fg }}
-                        >
-                          <i className={`fa-light ${cfg.icon}`} aria-hidden="true" style={{ fontSize: 9 }} />
-                          {cfg.label}
-                        </Badge>
-                        <i className="fa-light fa-chevron-right text-muted-foreground" aria-hidden="true" style={{ fontSize: 10 }} />
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
+        {rows.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+            <div className="flex size-14 items-center justify-center rounded-full bg-muted">
+              <i className="fa-light fa-graduation-cap text-muted-foreground text-xl" aria-hidden="true" />
             </div>
-          ))}
-          {rows.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
-              <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-                <i className="fa-light fa-graduation-cap text-muted-foreground text-xl" aria-hidden="true" />
+            <p className="font-semibold text-foreground">No course registrations</p>
+            <p className="text-sm text-muted-foreground mt-1">This student hasn&apos;t been registered in any courses yet.</p>
+            <Button size="sm" className="mt-3" onClick={() => setEnrollOpen(true)}>
+              <i className="fa-light fa-plus" aria-hidden="true" />
+              Enroll in Course
+            </Button>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-auto">
+            {sortedTerms.map(term => (
+              <div key={term}>
+                <div className="flex items-center gap-2 px-4 pt-5 pb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                    {term}
+                  </span>
+                  <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                    {byTerm[term].length}
+                  </Badge>
+                </div>
+                <DataTable<CourseEnrollmentRow>
+                  data={byTerm[term]}
+                  columns={COURSE_COLUMNS}
+                  getRowId={(row) => row.id}
+                  selectable={false}
+                  searchable={false}
+                  showQueryControls={false}
+                  onRowClick={(row) => router.push(`/courses/offerings/${row.id}`)}
+                />
               </div>
-              <p className="font-semibold text-foreground">No course registrations</p>
-              <p className="text-sm text-muted-foreground mt-1">This student hasn&apos;t been registered in any courses yet.</p>
-              <Button size="sm" className="mt-3" onClick={() => setEnrollOpen(true)}>
-                <i className="fa-light fa-plus" aria-hidden="true" />
-                Enroll in Course
-              </Button>
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Enroll in Course sheet */}
