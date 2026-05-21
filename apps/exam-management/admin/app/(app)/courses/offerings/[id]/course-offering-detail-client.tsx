@@ -523,9 +523,10 @@ const enrolledStudentColumns: ColumnDef<EnrolledStudentRow>[] = [
   },
 ]
 
-function StudentsTab({ localStudents, onOpenEnroll }: {
+function StudentsTab({ localStudents, onOpenEnroll, onNavigateStudent }: {
   localStudents: EnrolledStudent[]
   onOpenEnroll: () => void
+  onNavigateStudent: (id: string) => void
 }) {
   return (
     <DataTable<EnrolledStudentRow>
@@ -535,6 +536,7 @@ function StudentsTab({ localStudents, onOpenEnroll }: {
       selectable={false}
       searchable={false}
       showQueryControls={false}
+      onRowClick={(row) => onNavigateStudent(row.id as string)}
       toolbarSlot={() => (
         <>
           <span className="text-xs text-muted-foreground">
@@ -676,9 +678,10 @@ const assignedFacultyColumns: ColumnDef<AssignedFacultyRow>[] = [
   },
 ]
 
-function FacultyTab({ localFaculty, onOpenAssign }: {
+function FacultyTab({ localFaculty, onOpenAssign, onNavigateFaculty }: {
   localFaculty: AssignedFaculty[]
   onOpenAssign: () => void
+  onNavigateFaculty: (id: string) => void
 }) {
   return (
     <DataTable<AssignedFacultyRow>
@@ -688,6 +691,7 @@ function FacultyTab({ localFaculty, onOpenAssign }: {
       selectable={false}
       searchable={false}
       showQueryControls={false}
+      onRowClick={(row) => onNavigateFaculty(row.id as string)}
       toolbarSlot={() => (
         <>
           <span className="text-xs text-muted-foreground">
@@ -992,10 +996,18 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
               />
             </TabsContent>
             <TabsContent value="students" className="m-0">
-              <StudentsTab localStudents={localStudents} onOpenEnroll={() => setEnrollOpen(true)} />
+              <StudentsTab
+                localStudents={localStudents}
+                onOpenEnroll={() => setEnrollOpen(true)}
+                onNavigateStudent={(id) => router.push(`/students/${id}`)}
+              />
             </TabsContent>
             <TabsContent value="faculty" className="m-0">
-              <FacultyTab localFaculty={localFaculty} onOpenAssign={() => setAssignOpen(true)} />
+              <FacultyTab
+                localFaculty={localFaculty}
+                onOpenAssign={() => setAssignOpen(true)}
+                onNavigateFaculty={(id) => router.push(`/faculty/${id}`)}
+              />
             </TabsContent>
             <TabsContent value="resources" className="m-0">
               <ResourcesTab offering={offering} />
