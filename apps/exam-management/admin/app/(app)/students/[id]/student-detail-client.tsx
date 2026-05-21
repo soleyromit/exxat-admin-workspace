@@ -40,7 +40,7 @@ import { SiteHeader } from '@/components/site-header'
 import { StubButton } from '@/components/stub-button'
 import { allStudents, type ExtendedStudent, type StudentIntervention } from '@/lib/student-mock-data'
 import { courseOfferingRows } from '@/lib/course-mock-data'
-import { facultyAccommodations } from '@/lib/faculty-mock-data'
+import { facultyAccommodations, facultyListRows } from '@/lib/faculty-mock-data'
 
 // ── Shared standing badge (same colours as list page) ─────────────────────────
 
@@ -62,7 +62,12 @@ function StandingBadge({ status, label }: { status: string; label: string }) {
 
 // ── Overview tab ──────────────────────────────────────────────────────────────
 
-function OverviewTab({ student, isPrism, isAdmin }: { student: ExtendedStudent; isPrism: boolean; isAdmin: boolean }) {
+function OverviewTab({ student, isPrism, isAdmin, onViewCourses }: {
+  student: ExtendedStudent
+  isPrism: boolean
+  isAdmin: boolean
+  onViewCourses: () => void
+}) {
   const activeInterventions = student.interventions.filter(i => i.isActive)
   const intervTypeLabel: Record<StudentIntervention['type'], string> = {
     advising: 'Advising', 'early-alert': 'Early Alert',
@@ -123,11 +128,11 @@ function OverviewTab({ student, isPrism, isAdmin }: { student: ExtendedStudent; 
                   )
                 })}
               </div>
-              {/* "View all" stub — prototype; tab switching wired via Tabs component above */}
               <Button
                 variant="ghost"
                 size="sm"
                 className="mt-3 px-0 h-auto text-xs text-muted-foreground gap-1 hover:text-foreground hover:bg-transparent"
+                onClick={onViewCourses}
               >
                 View all {coursesCount} courses
                 <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 10 }} />
@@ -835,6 +840,7 @@ export default function StudentDetailClient({ studentId }: { studentId: string }
 
   const initials = `${student.firstName[0]}${student.lastName[0]}`
   const accsCount = facultyAccommodations.filter(a => a.studentId === student.id).length
+  const advisorFaculty = facultyListRows.find(f => f.fullName === student.advisor)
 
   return (
     <>
@@ -889,7 +895,17 @@ export default function StudentDetailClient({ studentId }: { studentId: string }
                 <Separator orientation="vertical" style={{ height: 12 }} />
                 <span>{student.program}</span>
                 <Separator orientation="vertical" style={{ height: 12 }} />
-                <span>Advisor: {student.advisor}</span>
+                {advisorFaculty ? (
+                  <Link
+                    href={`/faculty/${advisorFaculty.id}`}
+                    className="hover:underline"
+                    style={{ color: 'var(--foreground)' }}
+                  >
+                    Advisor: {student.advisor}
+                  </Link>
+                ) : (
+                  <span>Advisor: {student.advisor}</span>
+                )}
               </div>
             </div>
           </div>
@@ -923,7 +939,7 @@ export default function StudentDetailClient({ studentId }: { studentId: string }
             </div>
 
             <div className="flex-1 overflow-auto pt-2 px-6 pb-6">
-              <TabsContent value="overview"       className="mt-0 outline-none"><OverviewTab       student={student} isPrism={isPrism} isAdmin={isAdmin} /></TabsContent>
+              <TabsContent value="overview"       className="mt-0 outline-none"><OverviewTab       student={student} isPrism={isPrism} isAdmin={isAdmin} onViewCourses={() => setActiveTab('courses')} /></TabsContent>
               <TabsContent value="courses"        className="mt-0 outline-none"><CoursesTab        student={student} /></TabsContent>
               <TabsContent value="assessments"    className="mt-0 outline-none"><AssessmentsTab    student={student} /></TabsContent>
               <TabsContent value="accommodations" className="mt-0 outline-none"><AccommodationsTab student={student} /></TabsContent>
