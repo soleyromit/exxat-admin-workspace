@@ -24,6 +24,7 @@ import {
   Tooltip, TooltipTrigger, TooltipContent,
   Button, Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
   Input, Label, Separator,
+  Popover, PopoverTrigger, PopoverContent,
 } from '@exxat/ds/packages/ui/src'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
@@ -33,6 +34,12 @@ import type { ColumnDef } from '@/components/data-table/types'
 import { RowActions } from '@/components/data-table/row-actions'
 import { studentListRows, type StudentListRow, type StudentAnnotation } from '@/lib/student-mock-data'
 import { loadRecentlyViewed, type RecentlyViewedItem } from '@/lib/recently-viewed'
+
+const IS_LMS_ACTIVE = false
+
+const TERMS = ['Fall 2026', 'Spring 2026', 'Fall 2025', 'Spring 2025'] as const
+type Term = typeof TERMS[number]
+const CURRENT_TERM: Term = 'Fall 2026'
 
 // DataTable requires TData extends Record<string, unknown>.
 // Intersect so cell renderers keep full StudentListRow inference.
@@ -185,9 +192,9 @@ const COLUMNS: ColumnDef<StudentTableRow>[] = [
         row={row}
         label={row.fullName}
         actions={[
-          { label: 'Edit Student', icon: 'fa-pen', onClick: () => {} },
+          ...(!IS_LMS_ACTIVE ? [{ label: 'Edit Student', icon: 'fa-pen', onClick: () => {} }] : []),
           ...(row.prismLinked ? [{ label: 'View in Prism', icon: 'fa-arrow-up-right-from-square', onClick: () => window.open(`https://steps.exxat.com/admin/student/${row.id as string}`, '_blank') }] : []),
-          { label: 'Deactivate', icon: 'fa-ban', variant: 'destructive' as const, divider: true, onClick: () => {} },
+          ...(!IS_LMS_ACTIVE ? [{ label: 'Deactivate', icon: 'fa-ban', variant: 'destructive' as const, divider: true, onClick: () => {} }] : []),
         ]}
       />
     ),
@@ -345,6 +352,8 @@ export default function StudentsClient() {
   const [query, setQuery] = useState('')
   const [addStudentOpen, setAddStudentOpen] = useState(false)
   const [recentStudents, setRecentStudents] = useState<RecentlyViewedItem[]>([])
+  const [selectedTerm, setSelectedTerm] = useState<Term>(CURRENT_TERM)
+  const [termOpen, setTermOpen] = useState(false)
 
   const refreshRecent = useCallback(() => {
     setRecentStudents(loadRecentlyViewed('students'))
@@ -359,21 +368,25 @@ export default function StudentsClient() {
   // External search — Aarti May 13: "single line like Google search, no filters".
   // Covers non-column fields (program, annotation text) that DataTable's internal
   // search would miss. DataTable receives pre-filtered data; searchable=false.
+  // Term filter: uses cohort year as proxy since mock data has cohort not term.
   const filtered = useMemo((): StudentTableRow[] => {
     const q = query.trim().toLowerCase()
-    const rows = q
-      ? studentListRows.filter(s =>
-          s.fullName.toLowerCase().includes(q) ||
-          s.studentId.toLowerCase().includes(q) ||
-          s.email.toLowerCase().includes(q) ||
-          s.cohort.toLowerCase().includes(q) ||
-          s.advisor.toLowerCase().includes(q) ||
-          s.program.toLowerCase().includes(q) ||
-          s.annotations.some(a => a.text.toLowerCase().includes(q))
-        )
-      : studentListRows
+    const termYear = selectedTerm.split(' ')[1]
+    const rows = studentListRows.filter(s => {
+      const matchTerm = s.cohort.includes(termYear)
+      const matchQuery = !q || (
+        s.fullName.toLowerCase().includes(q) ||
+        s.studentId.toLowerCase().includes(q) ||
+        s.email.toLowerCase().includes(q) ||
+        s.cohort.toLowerCase().includes(q) ||
+        s.advisor.toLowerCase().includes(q) ||
+        s.program.toLowerCase().includes(q) ||
+        s.annotations.some(a => a.text.toLowerCase().includes(q))
+      )
+      return matchTerm && matchQuery
+    })
     return rows as StudentTableRow[]
-  }, [query])
+  }, [query, selectedTerm])
 
   return (
     <>
@@ -383,10 +396,26 @@ export default function StudentsClient() {
           title="Students"
           subtitle={`${studentListRows.length} students`}
           actions={
-            <Button size="sm" onClick={() => setAddStudentOpen(true)}>
-              <i className="fa-light fa-plus" aria-hidden="true" />
-              Add Student
-            </Button>
+            IS_LMS_ACTIVE ? (
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant="secondary"
+                  className="rounded-full gap-1.5 text-xs"
+                  style={{
+                    backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+                    color: 'var(--brand-color)',
+                  }}
+                >
+                  <i className="fa-light fa-link" aria-hidden="true" />
+                  Managed by Canvas
+                </Badge>
+              </div>
+            ) : (
+              <Button size="sm" onClick={() => setAddStudentOpen(true)}>
+                <i className="fa-light fa-plus" aria-hidden="true" />
+                Add Student
+              </Button>
+            )
           }
         />
 
@@ -394,7 +423,7 @@ export default function StudentsClient() {
           {/* Main table area */}
           <div className="flex flex-1 flex-col gap-0 min-h-0 min-w-0">
             {/* Prominent single search bar — Aarti: "single line like Google search" */}
-            <div className="px-4 lg:px-6 pt-4 pb-2">
+            <div className="px-4 lg:px-6 pt-4 pb-2 flex flex-col gap-2">
               <SearchInput
                 entityKey="students"
                 value={query}
@@ -403,6 +432,49 @@ export default function StudentsClient() {
                 aria-label="Search students"
                 width="w-full max-w-lg"
               />
+
+              {/* Term filter chip — QB pattern: dashed border = unset, solid = active */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <Popover open={termOpen} onOpenChange={setTermOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      aria-expanded={termOpen}
+                      className="inline-flex items-center gap-1.5 text-xs rounded"
+                      style={{
+                        height: 26,
+                        padding: '0 8px',
+                        border: '1.5px dashed var(--border)',
+                        backgroundColor: 'var(--background)',
+                        color: 'var(--muted-foreground)',
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                      }}
+                    >
+                      <i className="fa-light fa-calendar" aria-hidden="true" style={{ fontSize: 10 }} />
+                      <span className="font-medium">{selectedTerm}</span>
+                      <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 8 }} />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" style={{ width: 180, padding: '6px 0' }}>
+                    {TERMS.map(term => (
+                      <button
+                        key={term}
+                        type="button"
+                        onClick={() => { setSelectedTerm(term); setTermOpen(false) }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-muted transition-colors"
+                        style={{ color: term === selectedTerm ? 'var(--brand-color)' : 'var(--foreground)' }}
+                      >
+                        {term === selectedTerm && (
+                          <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, flexShrink: 0 }} />
+                        )}
+                        {term !== selectedTerm && <span style={{ width: 14, flexShrink: 0 }} aria-hidden="true" />}
+                        {term}
+                      </button>
+                    ))}
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
 
             {/* DataTable — handles column resize, sort, selection, row hover */}
