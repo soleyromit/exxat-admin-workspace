@@ -38,6 +38,8 @@ import { facultyStudents, type ExtendedFaculty } from '@/lib/faculty-mock-data'
 import { allFaculty } from '@/lib/faculty-mock-data'
 import type { ExtendedCourseOffering } from '@/lib/course-mock-data'
 
+const IS_LMS_ACTIVE = false
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type EnrolledStudent = { id: string; name: string; email: string; status: 'enrolled' | 'completed' | 'withdrawn' }
@@ -538,10 +540,24 @@ function StudentsTab({ localStudents, onOpenEnroll }: {
           <span className="text-xs text-muted-foreground">
             {localStudents.length} student{localStudents.length !== 1 ? 's' : ''} enrolled
           </span>
-          <Button size="sm" onClick={onOpenEnroll}>
-            <i className="fa-light fa-plus" aria-hidden="true" />
-            Enroll Student
-          </Button>
+          {IS_LMS_ACTIVE ? (
+            <Badge
+              variant="secondary"
+              className="rounded-full gap-1.5 text-xs"
+              style={{
+                backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+                color: 'var(--brand-color)',
+              }}
+            >
+              <i className="fa-light fa-link" aria-hidden="true" />
+              Managed by Canvas
+            </Badge>
+          ) : (
+            <Button size="sm" onClick={onOpenEnroll}>
+              <i className="fa-light fa-plus" aria-hidden="true" />
+              Enroll Student
+            </Button>
+          )}
         </>
       )}
       emptyState={
@@ -551,10 +567,12 @@ function StudentsTab({ localStudents, onOpenEnroll }: {
           </div>
           <p className="font-semibold text-foreground">No students enrolled</p>
           <p className="text-sm text-muted-foreground">Enroll students in this course offering.</p>
-          <Button size="sm" className="mt-1" onClick={onOpenEnroll}>
-            <i className="fa-light fa-plus" aria-hidden="true" />
-            Enroll Student
-          </Button>
+          {!IS_LMS_ACTIVE && (
+            <Button size="sm" className="mt-1" onClick={onOpenEnroll}>
+              <i className="fa-light fa-plus" aria-hidden="true" />
+              Enroll Student
+            </Button>
+          )}
         </div>
       }
     />
@@ -675,10 +693,24 @@ function FacultyTab({ localFaculty, onOpenAssign }: {
           <span className="text-xs text-muted-foreground">
             {localFaculty.length} faculty member{localFaculty.length !== 1 ? 's' : ''} assigned
           </span>
-          <Button size="sm" onClick={onOpenAssign}>
-            <i className="fa-light fa-plus" aria-hidden="true" />
-            Assign Faculty
-          </Button>
+          {IS_LMS_ACTIVE ? (
+            <Badge
+              variant="secondary"
+              className="rounded-full gap-1.5 text-xs"
+              style={{
+                backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+                color: 'var(--brand-color)',
+              }}
+            >
+              <i className="fa-light fa-link" aria-hidden="true" />
+              Managed by Canvas
+            </Badge>
+          ) : (
+            <Button size="sm" onClick={onOpenAssign}>
+              <i className="fa-light fa-plus" aria-hidden="true" />
+              Assign Faculty
+            </Button>
+          )}
         </>
       )}
       emptyState={
@@ -688,10 +720,12 @@ function FacultyTab({ localFaculty, onOpenAssign }: {
           </div>
           <p className="font-semibold text-foreground">No faculty assigned</p>
           <p className="text-sm text-muted-foreground">Assign a course coordinator and instructors to this offering.</p>
-          <Button size="sm" className="mt-1" onClick={onOpenAssign}>
-            <i className="fa-light fa-plus" aria-hidden="true" />
-            Assign Faculty
-          </Button>
+          {!IS_LMS_ACTIVE && (
+            <Button size="sm" className="mt-1" onClick={onOpenAssign}>
+              <i className="fa-light fa-plus" aria-hidden="true" />
+              Assign Faculty
+            </Button>
+          )}
         </div>
       }
     />
