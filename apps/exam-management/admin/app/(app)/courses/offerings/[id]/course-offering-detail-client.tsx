@@ -37,7 +37,6 @@ import { RowActions } from '@/components/data-table/row-actions'
 import { facultyStudents, type ExtendedFaculty, facultyAccommodations } from '@/lib/faculty-mock-data'
 import { allFaculty } from '@/lib/faculty-mock-data'
 import { allStudents } from '@/lib/student-mock-data'
-import Link from 'next/link'
 import type { ExtendedCourseOffering } from '@/lib/course-mock-data'
 
 const IS_LMS_ACTIVE = false
