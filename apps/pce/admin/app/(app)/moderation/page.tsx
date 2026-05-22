@@ -3,13 +3,14 @@
 import { useState } from 'react'
 import {
   Button, LocalBanner, SidebarTrigger, Separator,
+  SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton,
+  Badge,
 } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
 import { BulletGauge } from '@/components/pce/bullet-gauge'
 import { MOCK_OPEN_TEXT_RESPONSES } from '@/lib/pce-mock-data'
 import type { PceSurvey, SubjectKey } from '@/lib/pce-mock-data'
 
-// Human-readable section labels for open-text grouping
 const SUBJECT_LABELS: Record<SubjectKey, string> = {
   course_content:     'Course Content',
   course_instructor:  'Course Instructor',
@@ -28,9 +29,7 @@ export default function ModerationPage() {
   )
 
   const pending = surveys.filter(s => s.status === 'pending_review')
-
-  const selectedSurvey: PceSurvey | null =
-    pending.find(s => s.id === selectedSurveyId) ?? null
+  const selectedSurvey: PceSurvey | null = pending.find(s => s.id === selectedSurveyId) ?? null
 
   function toggleFlag(responseId: string) {
     setFlaggedIds(prev => {
@@ -40,251 +39,210 @@ export default function ModerationPage() {
     })
   }
 
-  // Responses for the selected survey
   const surveyResponses = selectedSurvey
     ? MOCK_OPEN_TEXT_RESPONSES.filter(r => r.surveyId === selectedSurvey.id)
     : []
 
-  // Group responses by sectionSubject, preserving insertion order
+  // Group by subject, preserving insertion order
   const groupedResponses: Array<{ subject: SubjectKey; responses: typeof surveyResponses }> = []
-  if (surveyResponses.length > 0) {
-    const seen = new Set<SubjectKey>()
-    for (const r of surveyResponses) {
-      if (!seen.has(r.sectionSubject)) {
-        seen.add(r.sectionSubject)
-        groupedResponses.push({ subject: r.sectionSubject, responses: [] })
-      }
-      groupedResponses.find(g => g.subject === r.sectionSubject)!.responses.push(r)
-    }
+  for (const r of surveyResponses) {
+    const group = groupedResponses.find(g => g.subject === r.sectionSubject)
+    if (group) { group.responses.push(r) }
+    else { groupedResponses.push({ subject: r.sectionSubject, responses: [r] }) }
   }
 
-  const responseCount = surveyResponses.length
-
-  // Count flagged responses belonging to the selected survey
   const surveyFlaggedCount = selectedSurvey
     ? [...flaggedIds].filter(id =>
-        MOCK_OPEN_TEXT_RESPONSES.find(r => r.id === id && r.surveyId === selectedSurvey.id)
+        MOCK_OPEN_TEXT_RESPONSES.some(r => r.id === id && r.surveyId === selectedSurvey.id)
       ).length
     : 0
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Page header */}
+
+      {/* ── Page header ── */}
       <header
         className="flex items-center gap-2 border-b border-border shrink-0"
         style={{ padding: '18px 28px 14px' }}
       >
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
-        <h1
-          className="flex-1 text-[22px] font-normal"
-          style={{ fontFamily: 'var(--font-heading)' }}
-        >
+        <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>
           Review &amp; Moderation
         </h1>
+        {pending.length > 0 && (
+          <span className="text-sm text-muted-foreground">
+            {pending.length} survey{pending.length !== 1 ? 's' : ''} pending
+          </span>
+        )}
       </header>
 
-      {/* Two-panel body */}
+      {/* ── Two-panel body ── */}
       <div className="flex flex-1 overflow-hidden">
 
-        {/* ── Left panel — survey list ─────────────────────────────────── */}
+        {/* Left: survey list using DS sidebar components */}
         <aside
           className="flex flex-col border-r border-border shrink-0 overflow-y-auto"
-          style={{ width: 300 }}
+          style={{ width: 264, background: 'var(--sidebar)' }}
         >
-          {/* Panel header */}
-          <div
-            style={{
-              padding: '12px 14px 8px',
-              borderBottom: '1px solid var(--border)',
-            }}
-          >
-            <p
-              className="text-xs font-semibold"
-              style={{ color: 'var(--muted-foreground)', letterSpacing: '0.06em' }}
-            >
-              PENDING ({pending.length})
-            </p>
-          </div>
-
-          {pending.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-12 text-center">
-              <i
-                className="fa-light fa-shield-check text-3xl"
-                aria-hidden="true"
-                style={{ color: 'var(--brand-color)' }}
-              />
-              <p className="text-sm font-medium">All caught up</p>
-              <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                No surveys pending review.
-              </p>
-            </div>
-          ) : (
-            pending.map(survey => {
-              const isSelected = selectedSurveyId === survey.id
-              const count = MOCK_OPEN_TEXT_RESPONSES.filter(
-                r => r.surveyId === survey.id
-              ).length
-
-              return (
-                <Button
-                  key={survey.id}
-                  variant="ghost"
-                  size="sm"
-                  className="w-full h-auto text-left justify-start"
-                  onClick={() => setSelectedSurveyId(survey.id)}
-                  aria-label={`Review ${survey.courseCode}`}
-                  style={{
-                    padding: '10px 14px',
-                    background: isSelected ? 'var(--brand-tint)' : 'transparent',
-                    borderBottom: '1px solid var(--border)',
-                  }}
+          <SidebarGroup>
+            <SidebarGroupLabel>
+              Needs Review
+              {pending.length > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="ml-auto rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center"
                 >
-                  <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-                    {survey.courseCode}
-                  </p>
-                  <p
-                    className="text-xs"
-                    style={{ color: 'var(--muted-foreground)', marginBottom: 6 }}
-                  >
-                    {survey.term} · {survey.enrollmentCount} enrolled
-                  </p>
-                  <BulletGauge
-                    responseCount={survey.responseCount}
-                    enrollmentCount={survey.enrollmentCount}
-                    width={80}
-                    height={5}
-                    ariaLabel={null}
-                  />
-                  <p
-                    className="text-xs"
-                    style={{ color: 'var(--muted-foreground)', marginTop: 4 }}
-                  >
-                    {count} open-text {count === 1 ? 'response' : 'responses'}
-                  </p>
-                </Button>
-              )
-            })
-          )}
+                  {pending.length}
+                </Badge>
+              )}
+            </SidebarGroupLabel>
+
+            <SidebarMenu>
+              {pending.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 py-10 px-4 text-center">
+                  <i className="fa-light fa-shield-check text-2xl" aria-hidden="true"
+                    style={{ color: 'var(--brand-color)' }} />
+                  <p className="text-sm font-medium">All caught up</p>
+                  <p className="text-xs text-muted-foreground">No surveys pending review.</p>
+                </div>
+              ) : (
+                pending.map(survey => {
+                  const isActive = selectedSurveyId === survey.id
+                  const count = MOCK_OPEN_TEXT_RESPONSES.filter(r => r.surveyId === survey.id).length
+                  const flagCount = [...flaggedIds].filter(id =>
+                    MOCK_OPEN_TEXT_RESPONSES.some(r => r.id === id && r.surveyId === survey.id)
+                  ).length
+
+                  return (
+                    <SidebarMenuItem key={survey.id}>
+                      <SidebarMenuButton
+                        isActive={isActive}
+                        onClick={() => setSelectedSurveyId(survey.id)}
+                        className="h-auto flex-col items-start gap-1.5 py-3"
+                      >
+                        <div className="flex items-center justify-between w-full gap-2">
+                          <span className="text-sm font-medium truncate">{survey.courseCode}</span>
+                          {flagCount > 0 && (
+                            <Badge
+                              variant="secondary"
+                              className="shrink-0 rounded-full text-xs"
+                            >
+                              {flagCount} flagged
+                            </Badge>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground truncate w-full">{survey.courseName}</span>
+                        <BulletGauge
+                          responseCount={survey.responseCount}
+                          enrollmentCount={survey.enrollmentCount}
+                          width={180}
+                          height={4}
+                          ariaLabel={null}
+                        />
+                        <span className="text-xs text-muted-foreground">
+                          {survey.responseRate}% · {count} open-text {count === 1 ? 'response' : 'responses'}
+                        </span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })
+              )}
+            </SidebarMenu>
+          </SidebarGroup>
         </aside>
 
-        {/* ── Right panel — response cards or empty state ──────────────── */}
+        {/* Right: response review */}
         <div className="flex flex-col flex-1 overflow-hidden">
           {selectedSurvey ? (
             <>
               {/* Detail header */}
               <div
-                className="shrink-0"
-                style={{
-                  padding: '16px 24px 12px',
-                  borderBottom: '1px solid var(--border)',
-                }}
+                className="shrink-0 flex items-start justify-between px-6 py-4 border-b border-border"
               >
-                <p className="text-base font-semibold">
-                  {selectedSurvey.courseCode} — {selectedSurvey.courseName}
-                </p>
-                <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                  {selectedSurvey.term} · {selectedSurvey.enrollmentCount} enrolled
-                  · {responseCount} {responseCount !== 1 ? 'responses' : 'response'}
-                </p>
+                <div>
+                  <p className="text-sm font-semibold">
+                    {selectedSurvey.courseCode} — {selectedSurvey.courseName}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {selectedSurvey.term} · {selectedSurvey.enrollmentCount} enrolled
+                    · {surveyResponses.length} {surveyResponses.length !== 1 ? 'responses' : 'response'}
+                    {surveyFlaggedCount > 0 && (
+                      <span style={{ color: 'var(--chart-4)' }}>
+                        {' · '}{surveyFlaggedCount} flagged
+                      </span>
+                    )}
+                  </p>
+                </div>
               </div>
 
-              {/* Scrollable response cards */}
-              <div
-                className="flex-1 overflow-y-auto"
-                style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 24 }}
-              >
+              {/* Response list */}
+              <div className="flex-1 overflow-y-auto" tabIndex={0}>
                 {surveyResponses.length === 0 ? (
-                  <div
-                    className="flex flex-col items-center justify-center py-16 gap-2 text-center"
-                  >
-                    <i
-                      className="fa-light fa-comment-lines text-3xl"
-                      aria-hidden="true"
-                      style={{ color: 'var(--muted-foreground)' }}
-                    />
+                  <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+                    <i className="fa-light fa-comment-lines text-3xl text-muted-foreground" aria-hidden="true" />
                     <p className="text-sm font-medium">No open-text responses</p>
-                    <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                      This survey has no open-text responses to moderate.
-                    </p>
+                    <p className="text-sm text-muted-foreground">Nothing to moderate for this survey.</p>
                   </div>
                 ) : (
                   groupedResponses.map(group => (
-                    <div key={group.subject} className="flex flex-col gap-3">
-                      {/* Section label */}
-                      <p
-                        className="text-xs font-semibold"
-                        style={{
-                          color: 'var(--muted-foreground)',
-                          letterSpacing: '0.06em',
-                          textTransform: 'uppercase',
-                        }}
+                    <div key={group.subject}>
+                      {/* Section heading — NOT uppercase, NOT letterSpacing */}
+                      <div
+                        className="px-6 py-2 flex items-center gap-2"
+                        style={{ borderBottom: '1px solid var(--border)', backgroundColor: 'var(--muted)' }}
                       >
-                        {SUBJECT_LABELS[group.subject] ?? group.subject}
-                      </p>
+                        <h2 className="text-xs font-medium text-muted-foreground">
+                          {SUBJECT_LABELS[group.subject] ?? group.subject}
+                        </h2>
+                        <span className="text-xs text-muted-foreground">
+                          · {group.responses.length} {group.responses.length === 1 ? 'response' : 'responses'}
+                        </span>
+                      </div>
 
-                      {/* Response cards */}
-                      {group.responses.map(response => {
+                      {/* Flat rows — Reddit / Circle pattern */}
+                      {group.responses.map((response, idx) => {
                         const isFlagged = flaggedIds.has(response.id)
                         return (
                           <div
                             key={response.id}
-                            className="flex flex-col gap-2 rounded-lg border"
-                            style={{
-                              padding: '12px 14px',
-                              borderColor: 'var(--border)',
-                              background: isFlagged ? 'var(--muted)' : 'var(--card)',
-                            }}
+                            className="flex items-start gap-4 px-6 py-4 group"
+                            style={{ borderBottom: '1px solid var(--border)' }}
                           >
-                            {/* Question text */}
-                            <p
-                              className="text-xs"
-                              style={{ color: 'var(--muted-foreground)' }}
-                            >
-                              {response.questionText}
-                            </p>
-
-                            {/* Response text + flag button */}
-                            <div className="flex items-start justify-between gap-3">
-                              <p
-                                className="text-sm flex-1 leading-relaxed"
-                                style={{
-                                  color: isFlagged
-                                    ? 'var(--muted-foreground)'
-                                    : 'var(--foreground)',
-                                  textDecoration: isFlagged ? 'line-through' : 'none',
-                                }}
-                              >
-                                {response.text}
-                              </p>
-
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                aria-label={isFlagged ? 'Unflag response' : 'Flag response'}
-                                onClick={() => toggleFlag(response.id)}
-                              >
-                                <i
-                                  className={
-                                    isFlagged
-                                      ? 'fa-light fa-eye'
-                                      : 'fa-light fa-eye-slash'
-                                  }
-                                  aria-hidden="true"
-                                  style={{ fontSize: 13 }}
-                                />
-                              </Button>
+                            <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                              <p className="text-xs text-muted-foreground">{response.questionText}</p>
+                              <p className="text-sm leading-relaxed">{response.text}</p>
+                              {isFlagged && (
+                                <span
+                                  className="text-xs font-medium self-start px-2 py-0.5 rounded-md"
+                                  style={{
+                                    backgroundColor: 'var(--muted)',
+                                    color: 'var(--chart-4)',
+                                  }}
+                                >
+                                  Hidden from faculty
+                                </span>
+                              )}
                             </div>
 
-                            {/* Flagged notice */}
-                            {isFlagged && (
-                              <p
-                                className="text-xs"
-                                style={{ color: 'var(--chart-4)' }}
-                              >
-                                Flagged — will not be shown to faculty
-                              </p>
-                            )}
+                            <Button
+                              variant={isFlagged ? 'outline' : 'ghost'}
+                              size="sm"
+                              aria-label={isFlagged ? 'Remove flag — show to faculty' : 'Flag response — hide from faculty'}
+                              onClick={() => toggleFlag(response.id)}
+                              className="shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                              style={isFlagged
+                                ? { color: 'var(--chart-4)', borderColor: 'var(--chart-4)' }
+                                : {}
+                              }
+                            >
+                              <i
+                                className={`fa-${isFlagged ? 'solid' : 'light'} fa-flag`}
+                                aria-hidden="true"
+                                style={{ fontSize: 12 }}
+                              />
+                              {isFlagged ? 'Unflag' : 'Flag'}
+                            </Button>
                           </div>
                         )
                       })}
@@ -294,21 +252,19 @@ export default function ModerationPage() {
               </div>
 
               {/* Sticky footer */}
-              <div
-                className="shrink-0 border-t border-border flex flex-col gap-3"
-                style={{ padding: '16px 24px', background: 'var(--card)' }}
-              >
-                {responseCount < 5 && (
+              <div className="shrink-0 border-t border-border px-6 py-4 flex flex-col gap-3">
+                {surveyResponses.length < 5 && (
                   <LocalBanner variant="warning">
-                    Only {responseCount} {responseCount !== 1 ? 'responses' : 'response'} received.
+                    Only {surveyResponses.length} {surveyResponses.length !== 1 ? 'responses' : 'response'} received.
                     We recommend at least 5 before sharing results with faculty.
                   </LocalBanner>
                 )}
                 <div className="flex items-center justify-between">
-                  <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                  <p className="text-xs text-muted-foreground">
                     {surveyFlaggedCount > 0
-                      ? `${surveyFlaggedCount} ${surveyFlaggedCount === 1 ? 'response' : 'responses'} flagged — will not be shared`
-                      : ''}
+                      ? `${surveyFlaggedCount} response${surveyFlaggedCount !== 1 ? 's' : ''} flagged — hidden from faculty`
+                      : 'All responses will be shared with faculty'
+                    }
                   </p>
                   <Button
                     variant="default"
@@ -318,27 +274,18 @@ export default function ModerationPage() {
                       setSelectedSurveyId(null)
                     }}
                   >
-                    <i
-                      className="fa-light fa-share-nodes"
-                      aria-hidden="true"
-                      style={{ fontSize: 12 }}
-                    />
+                    <i className="fa-light fa-share-from-square" aria-hidden="true" style={{ fontSize: 12 }} />
                     Share Results with Faculty
                   </Button>
                 </div>
               </div>
             </>
           ) : (
-            /* Empty state — no survey selected */
-            <div className="flex flex-col items-center justify-center flex-1 gap-2 text-center py-20">
-              <i
-                className="fa-light fa-inbox text-3xl"
-                aria-hidden="true"
-                style={{ color: 'var(--muted-foreground)' }}
-              />
+            <div className="flex flex-col items-center justify-center flex-1 gap-3 text-center py-20">
+              <i className="fa-light fa-inbox text-3xl text-muted-foreground" aria-hidden="true" />
               <p className="text-sm font-medium">Select a survey to review</p>
-              <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                Choose a pending survey from the left to review its responses.
+              <p className="text-sm text-muted-foreground" style={{ maxWidth: 280 }}>
+                Choose a pending survey from the left to review and moderate its responses before sharing with faculty.
               </p>
             </div>
           )}
