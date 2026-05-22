@@ -18,7 +18,7 @@
  *   - Validation is non-blocking: warnings inline, errors prevent Save
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Button, Badge, Input, Textarea, Label,
   Card, CardHeader, CardDescription, CardContent,
@@ -35,6 +35,8 @@ import {
 } from '@/lib/question-editor-types'
 import type { CourseObjective } from '@/lib/faculty-mock-data'
 import { MOCK_STANDARDS, groupedStandards, type Standard } from '@/lib/mock-standards'
+
+const GROUPED_STANDARDS = groupedStandards()
 
 // ─── Public props ──────────────────────────────────────────────────────────
 
@@ -1548,15 +1550,27 @@ function StandardsSelect({
   onUpdate: (ids: string[]) => void
 }) {
   const [open, setOpen] = useState(false)
-  const selected = MOCK_STANDARDS.filter(s => selectedIds.includes(s.id))
-  const grouped = groupedStandards()
+  const containerRef = useRef<HTMLDivElement>(null)
+  const selected: Standard[] = MOCK_STANDARDS.filter(s => selectedIds.includes(s.id))
+  const grouped = GROUPED_STANDARDS
+
+  useEffect(() => {
+    if (!open) return
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [open])
 
   function toggle(id: string) {
     onUpdate(selectedIds.includes(id) ? selectedIds.filter(x => x !== id) : [...selectedIds, id])
   }
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div ref={containerRef} className="flex flex-col gap-1.5">
       {selected.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {selected.map(s => (
@@ -1593,6 +1607,7 @@ function StandardsSelect({
           role="listbox"
           aria-multiselectable="true"
           aria-label="Available standards"
+          onKeyDown={e => { if (e.key === 'Escape') setOpen(false) }}
         >
           {Object.entries(grouped).map(([framework, stds]) => (
             <div key={framework}>
@@ -1600,11 +1615,14 @@ function StandardsSelect({
               {stds.map(s => {
                 const checked = selectedIds.includes(s.id)
                 return (
-                  <label
+                  <div
                     key={s.id}
                     role="option"
                     aria-selected={checked}
-                    className="flex items-start gap-2 px-1 py-1 rounded cursor-pointer hover:bg-muted/50"
+                    onClick={() => toggle(s.id)}
+                    onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(s.id) } }}
+                    tabIndex={0}
+                    className="flex items-start gap-2 px-1 py-1 rounded cursor-pointer hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                   >
                     <Checkbox
                       checked={checked}
@@ -1615,7 +1633,7 @@ function StandardsSelect({
                       <span className="font-mono text-muted-foreground mr-1 text-xs">{s.code}</span>
                       {s.title}
                     </span>
-                  </label>
+                  </div>
                 )
               })}
             </div>
