@@ -50,7 +50,8 @@ No `package.json` at monorepo root — `pnpm --filter` does NOT work from there.
 4. Spawn `state-review` for any new list/form/async page. NEEDS-MORE blocks done claim.
 5. Spawn `verification-reviewer`. NEEDS-MORE blocks done claim.
 6. Grep changed files for banned patterns: `uppercase tracking-wide`, `py-20 text-center`, `color-mix(in oklch`
-7. Self-reflection: 3-5 bullets (what went well, mistakes, what to check next time)
+7. **Spawn `Explore` to grep-verify every claimed change exists** (Pattern G — never claim done from memory)
+8. For every mistake found: write a discipline log entry AND either fix it now or write a rule preventing recurrence (Pattern H — no text-only self-reflections)
 
 ## Key tokens (80% of UI work — full table in `docs/CLAUDE-DS-REFERENCE.md`)
 `--background` `--foreground` `--card` `--muted` `--muted-foreground` `--border` `--border-control-35` `--brand-color` `--brand-tint` `--primary` `--destructive` `--ring` `--radius` `--control-height`
@@ -64,7 +65,7 @@ No `package.json` at monorepo root — `pnpm --filter` does NOT work from there.
 | `docs/BASE-ENTITIES.md` | Building Student / Faculty / Course / Term / Master Course pages |
 | `docs/PRODUCTS.md` | Need ports, owners, package names |
 | `docs/watch/ds-snapshot.json` | DS component variants/sizes/props lookup |
-| `docs/governance/verification-discipline.md` | Before claiming done (Patterns A-F) |
+| `docs/governance/verification-discipline.md` | Before claiming done (Patterns A-H) — includes grep-verify (G) and artifact-not-text self-reflection (H) |
 | `docs/governance/design-anti-patterns.md` | Before any UI component — banned pattern blacklist |
 | `docs/governance/component-consistency.md` | DataTable, header, sheet, dialog governance |
 | `apps/<product>/CLAUDE.md` | Per-product rules |

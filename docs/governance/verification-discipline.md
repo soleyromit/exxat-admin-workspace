@@ -15,7 +15,7 @@
 
 ---
 
-## The five patterns I keep failing on
+## The seven patterns I keep failing on
 
 ### Pattern A — "Clean" ≠ "fine"
 
@@ -109,6 +109,37 @@
 
 Static enforcement: five audit rules surface the regex-able slice (see `docs/governance/ds-adoption.md` → "State-coverage requirements"). The subagent goes deeper for non-regex-able cases.
 
+### Pattern G — Grep-verify every claimed change before declaring done (added 2026-05-22)
+
+**What I do wrong:** Say "all changes are in" from session memory. Memory is wrong — linter rollbacks, edit failures, and context compression mean what I think I wrote may not be what's in the file.
+
+**Real example (2026-05-22):** Romit asked "are these all implemented?" I had no idea without checking. The correct answer required spawning an Explore agent to grep-verify every file. Without that step I would have said "yes" when some items could have been missing.
+
+**The fix — before typing "done", "all in", "implemented", or any completion claim:**
+
+1. Spawn `Explore` agent with exact grep commands for each claimed change.
+2. Report `PRESENT (file:line snippet)` or `MISSING (what was found instead)` per item.
+3. Never claim done from session memory alone.
+4. If any item is MISSING: fix it before claiming done.
+
+### Pattern H — Self-reflections must produce artifacts, not text (added 2026-05-22)
+
+**What I do wrong:** Write "self-reflection" bullets at the end of responses that say "I should have done X" or "next time I will Y" — and then produce nothing. The bullet is discarded at context window end. The mistake repeats.
+
+**Real example (2026-05-22):** Romit asked "are these self-reflection solved or are they just text?" Correct answer: they were just text. No memory was written, no rule was updated, no discipline log entry was added.
+
+**The fix — every self-reflection bullet must immediately produce one of:**
+
+| Bullet type | Required artifact |
+|---|---|
+| "I should have done X before writing Y" | New or updated rule in verification-discipline.md (this file) |
+| "This mistake came from not reading Z" | Discipline log entry (table below) |
+| "X still isn't fixed" | TaskCreate or memory entry tracking it |
+| "This pattern will repeat across sessions" | `feedback` memory write to `/memory/` |
+| "I should make X standard" | Update CLAUDE.md, design-review-protocol.md, or per-product CLAUDE.md |
+
+If you cannot produce an artifact for a bullet, delete the bullet. No bullet without an artifact.
+
 ---
 
 ## When to apply
@@ -119,9 +150,10 @@ Static enforcement: five audit rules surface the regex-able slice (see `docs/gov
 | I just fixed a bug Romit flagged | B |
 | Romit asked me to do something "for X" where X is a set | C |
 | I touched a DS component | D, B (other places with same component) |
-| I'm about to claim a non-trivial change is done | E, A |
+| I'm about to claim a non-trivial change is done | E, A, **G** |
 | Romit asks "did you also …" | C, B (I should have anticipated) |
 | I added a page that fetches async, accepts form input, or renders a list | F |
+| I write a self-reflection bullet | **H** — produce artifact immediately or delete the bullet |
 
 ---
 
@@ -150,6 +182,12 @@ Track each time I get caught skipping a check. Pattern frequency reveals which o
 | `document-title` on mobile-viewport (Bug 2) | Not a runner timing issue. The runner's `command-palette` step (⌘K) opened `CommandPalette` which crashed with `TypeError: Cannot read properties of undefined (reading 'subscribe')` inside cmdk because DS `CommandDialog` renders `DialogPrimitive.Root` directly WITHOUT wrapping its children in cmdk's `Command` root. cmdk's `CommandInput`/`CommandList`/`CommandItem` all `useContext(CommandContext)` — without the `Command` provider, the context is undefined. The crash put Next.js into its dev error overlay (`<html id="__next_error__">`, no `lang`, no `<title>`), and the subsequent mobile-viewport screenshot captured that error state — hence the `document-title` / `html-has-lang` regression. | Wrapped `<CommandDialog>` children with `<Command>` in `apps/pce/admin/components/command-palette.tsx` (cmdk-root context provider). Imported `Command` alongside `CommandDialog` from `@exxat/ds/packages/ui/src`. | After fix, runner now captures `command-palette` state for every route (previously skipped because input never mounted), and `mobile-viewport` returns clean (`<html lang="en">` + `<title>PCE — Admin</title>` intact). Fixed 2026-05-11 by Claude. |
 | `html-has-lang` on mobile-viewport (Bug 3) | Same root cause as Bug 2 (cmdk crash → Next.js error overlay). | Same fix as Bug 2 — `<Command>` wrapper in `command-palette.tsx`. | Same verification as Bug 2 — `/tmp/visual-check/interactions/surveys.mobile-viewport.axe.json` shows 0 serious violations after fix. Fixed 2026-05-11 by Claude. |
 | TS error `onOpenAutoFocus` on `DropdownMenuContent` at `qb-table.tsx:2096` (Bug 4) | `@radix-ui/react-menu@2.1.16` moved `onOpenAutoFocus` into `MenuContentImplPrivateProps`, and `MenuRootContentTypeProps extends Omit<MenuContentImplProps, keyof MenuContentImplPrivateProps>` — so the prop is intentionally removed from the public type even though `MenuContentImpl` still wires it at runtime. The DS `DropdownMenuContent` spreads `...props` to `DropdownMenuPrimitive.Content`, so the callback DOES reach the FocusScope, but TS rightly complains about the prop being unknown. | Added a typed proxy `DropdownMenuContentEx` in `apps/exam-management/admin/app/(app)/question-bank/qb-table.tsx` (just below the imports) that re-types `DropdownMenuContent` to accept `onOpenAutoFocus`. Used the proxy for the column-header dropdown (lines 2113 + 2264). Runtime behavior unchanged — focus stays on the inline-filter search input when `hasInlineFilter` is true. | `cd apps/exam-management/admin && pnpm typecheck` exits clean. Fixed 2026-05-11 by Claude. |
+
+| 2026-05-22 | Romit | D | Fixed "no main landmark" without reading DS SidebarInset source first. SidebarInset already renders as `<main>` — added a second `<main>` and created `landmark-no-duplicate-main` across every PCE page. Pattern D: import ≠ correct use. Fix: new `nested-main-landmark` BLOCK rule in `ds-adoption-audit.py`. |
+| 2026-05-22 | Romit | G | Said "all changes are implemented" from session memory. Could not verify without spawning Explore agent. Fix: Pattern G added — grep-verify every claimed change before saying done. |
+| 2026-05-22 | Romit | H | Wrote "self-reflection" bullets across multiple responses without producing any artifact (no memory write, no rule update, no discipline log entry). The bullets were discarded and the patterns repeated within the same session. Fix: Pattern H added — every bullet must immediately produce an artifact or be deleted. |
+| 2026-05-22 | self-caught | D | Wrote SearchInput with `aria-expanded` + `aria-haspopup` without checking ARIA spec for which roles those attributes are valid on. The WAI-ARIA §6.6 / §6.23 tables are not consulted during component authoring. Fix: `aria-combobox-required` BLOCK rule in `ds-adoption-audit.py` catches this at commit time. |
+| 2026-05-22 | self-caught | A | Claimed `compliance-reviewer` had verified WCAG when it had only done static code analysis — never opened a browser, never ran axe. Said "GREENLIGHT" when 10 blocking violations existed in the live app. Fix: design-review-protocol.md Gate 2 now requires `run.mjs` + `interactions.mjs` before compliance claim; `wcag-check.yml` runs on every PR and push. |
 
 When you (Romit) catch me again, append a row. The goal is the table shrinking over time.
 
