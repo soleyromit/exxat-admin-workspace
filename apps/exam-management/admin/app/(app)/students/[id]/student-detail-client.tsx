@@ -78,6 +78,14 @@ function OverviewTab({ student, isPrism, isAdmin, onViewCourses }: {
   const examsCompleted  = student.courseEnrollments.reduce((s, c) => s + c.completedAssessments, 0)
   const examsInProgress = student.courseEnrollments.filter(c => c.status === 'in-progress').length
 
+  // Avg score across all enrolled courses (Aarti May 19: outcome mode — "Spelling Bee" engagement stats)
+  const allScores = student.enrolledCourseIds
+    .map(id => student.avgScore[id])
+    .filter((s): s is number => s != null)
+  const avgScore = allScores.length > 0
+    ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
+    : null
+
   // Show up to 4 courses in the compact list; full list lives in Courses tab
   const previewCourses = student.courseEnrollments.slice(0, 4)
 
@@ -141,34 +149,82 @@ function OverviewTab({ student, isPrism, isAdmin, onViewCourses }: {
           )}
         </section>
 
+        {/* Engagement callout — Aarti May 19: outcome mode, "Spelling Bee" personal stats */}
+        {examsCompleted > 0 && (
+          <div
+            className="rounded-xl px-4 py-3 flex items-center gap-3"
+            style={{
+              backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, var(--background))',
+              border: '1px solid color-mix(in oklch, var(--brand-color) 15%, var(--background))',
+            }}
+          >
+            <i className="fa-light fa-star shrink-0" aria-hidden="true"
+              style={{ fontSize: 16, color: 'var(--brand-color)' }} />
+            <p className="text-sm text-foreground">
+              <strong style={{ fontFamily: 'var(--font-heading)', letterSpacing: '-0.01em' }}>
+                {student.firstName}
+              </strong>
+              {' has completed '}
+              <strong>{examsCompleted}</strong>
+              {' exam'}
+              {examsCompleted !== 1 ? 's' : ''}
+              {' across '}
+              <strong>{coursesCount}</strong>
+              {' course'}
+              {coursesCount !== 1 ? 's' : ''}
+              {avgScore != null && (
+                <>{' with an average score of '}
+                  <strong style={{
+                    color: avgScore >= 80 ? 'var(--qb-status-saved-fg)'
+                      : avgScore < 65 ? 'var(--standing-warning-fg)'
+                      : 'var(--brand-color)',
+                  }}>
+                    {avgScore}%
+                  </strong>
+                </>
+              )}
+              {'.'}
+            </p>
+          </div>
+        )}
+
         {/* Section 2 — Exam Activity (Vishaka May 14: "this student was part of N courses
             and N exams, and across all of them, this is how the student has performed") */}
         <section aria-labelledby="exam-activity-heading" className="rounded-xl border border-border bg-card p-5">
           <h2 id="exam-activity-heading" className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground mb-3">
             Exam Activity
           </h2>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {([
-              { label: 'Courses',        value: coursesCount,    icon: 'fa-graduation-cap' },
-              { label: 'Exams completed', value: examsCompleted, icon: 'fa-circle-check' },
-              { label: 'In progress',    value: examsInProgress, icon: 'fa-clock-rotate-left' },
-            ] as const).map(m => (
-              <div
-                key={m.label}
-                className="flex items-center gap-2.5 rounded-lg border border-border px-3 py-3"
-                style={{ backgroundColor: 'var(--muted)' }}
-              >
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-md"
-                  style={{ backgroundColor: 'var(--background)' }}>
-                  <i className={`fa-light ${m.icon}`} aria-hidden="true"
-                    style={{ fontSize: 13, color: 'var(--muted-foreground)' }} />
+              { label: 'Courses',         value: coursesCount,                                      icon: 'fa-graduation-cap' },
+              { label: 'Exams completed', value: examsCompleted,                                    icon: 'fa-circle-check' },
+              { label: 'In progress',     value: examsInProgress,                                   icon: 'fa-clock-rotate-left' },
+              { label: 'Avg score',       value: avgScore != null ? `${avgScore}%` : '—',           icon: 'fa-chart-simple' },
+            ] as const).map(m => {
+              const scoreColor = m.label === 'Avg score' && avgScore != null
+                ? avgScore >= 80 ? 'var(--qb-status-saved-fg)'
+                : avgScore < 65  ? 'var(--standing-warning-fg)'
+                :                  'var(--brand-color)'
+                : undefined
+              return (
+                <div
+                  key={m.label}
+                  className="flex items-center gap-2.5 rounded-lg border border-border px-3 py-3"
+                  style={{ backgroundColor: 'var(--muted)' }}
+                >
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-md"
+                    style={{ backgroundColor: 'var(--background)' }}>
+                    <i className={`fa-light ${m.icon}`} aria-hidden="true"
+                      style={{ fontSize: 13, color: 'var(--muted-foreground)' }} />
+                  </div>
+                  <div>
+                    <p className="text-base font-bold leading-none tabular-nums"
+                      style={{ color: scoreColor ?? 'var(--foreground)' }}>{m.value}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{m.label}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-base font-bold text-foreground leading-none tabular-nums">{m.value}</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{m.label}</p>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </section>
 
