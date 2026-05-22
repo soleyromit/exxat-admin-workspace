@@ -119,22 +119,35 @@ const COMPETENCY_AREAS = [
 // Declared outside the map so it's not re-created on every iteration.
 
 type EnrollmentTemplate = { offeringId: string; status: 'in-progress' | 'completed' | 'upcoming' }
+
+// 2–3 year program: 3–4 courses per term, 2 terms shown (current + one prior).
+// skel101 = final semester: 2 courses only.
 const ENROLLMENT_TEMPLATES: Record<string, EnrollmentTemplate[]> = {
   phar101: [
-    { offeringId: 'co-001', status: 'in-progress' },
-    { offeringId: 'co-006', status: 'completed' },
-    { offeringId: 'co-009', status: 'completed' },
-    { offeringId: 'co-011', status: 'upcoming' },
+    // Spring 2026 — 4 active courses
+    { offeringId: 'co-001', status: 'in-progress' },  // Advanced Pharmacology
+    { offeringId: 'co-002', status: 'in-progress' },  // Cellular & Molecular Biology
+    { offeringId: 'co-003', status: 'in-progress' },  // Clinical Anatomy
+    { offeringId: 'co-005', status: 'in-progress' },  // Evidence-Based Practice I
+    // Fall 2025 — 3 completed courses
+    { offeringId: 'co-006', status: 'completed' },    // Pharmacokinetics
+    { offeringId: 'co-007', status: 'completed' },    // Foundations of Biology
+    { offeringId: 'co-010', status: 'completed' },    // Pathophysiology
   ],
   biol201: [
+    // Spring 2026 — 3 active courses
+    { offeringId: 'co-001', status: 'in-progress' },
     { offeringId: 'co-002', status: 'in-progress' },
+    { offeringId: 'co-005', status: 'in-progress' },
+    // Fall 2025 — 3 completed courses
     { offeringId: 'co-007', status: 'completed' },
+    { offeringId: 'co-006', status: 'completed' },
     { offeringId: 'co-010', status: 'completed' },
-    { offeringId: 'co-012', status: 'upcoming' },
   ],
   skel101: [
+    // Final semester — 2 courses only
     { offeringId: 'co-003', status: 'in-progress' },
-    { offeringId: 'co-008', status: 'completed' },
+    { offeringId: 'co-001', status: 'in-progress' },
   ],
 }
 
