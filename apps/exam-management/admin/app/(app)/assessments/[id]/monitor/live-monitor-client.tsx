@@ -138,6 +138,19 @@ export default function LiveMonitorClient({ assessmentId }: { assessmentId: stri
   const notStarted = snapshot.students.filter(s => s.status === 'not-started').length
   const flaggedCount = snapshot.flaggedComments.length
 
+  // Group flags by question order — key namespace `q-${questionOrder}` (distinct from per-student keys)
+  const flagsByQuestion = snapshot.flaggedComments.reduce<Record<number, { count: number; comments: string[] }>>((acc, f) => {
+    const k = f.questionOrder
+    if (!acc[k]) acc[k] = { count: 0, comments: [] }
+    acc[k].count++
+    if (f.text) acc[k].comments.push(f.text)
+    return acc
+  }, {})
+  const flaggedQuestions = Object.entries(flagsByQuestion).map(([order, data]) => ({
+    questionOrder: Number(order),
+    ...data,
+  })).sort((a, b) => b.count - a.count)
+
   const breadcrumbs = [
     { label: 'Courses', href: '/courses' },
     { label: course.name, href: `/courses/${course.id}` },
@@ -190,10 +203,10 @@ export default function LiveMonitorClient({ assessmentId }: { assessmentId: stri
   // Completion % removed — redundant once donut is gone.
   const totalStudents = snapshot.students.length
   const heroMetrics: MetricItem[] = [
-    { id: 'not-started', label: 'Not started',       value: notStarted,   delta: totalStudents > 0 ? `of ${totalStudents}` : '—',         trend: 'neutral' },
-    { id: 'in-progress', label: 'In progress',       value: inProgress,   delta: totalStudents > 0 ? `of ${totalStudents}` : '—',         trend: 'neutral' },
-    { id: 'submitted',   label: 'Submitted',         value: submitted,    delta: totalStudents > 0 ? `of ${totalStudents}` : '—',         trend: 'neutral' },
-    { id: 'flagged',     label: 'Flagged questions', value: flaggedCount, delta: flaggedCount > 0 ? 'Needs review' : 'None flagged',      trend: flaggedCount > 0 ? 'down' : 'neutral' },
+    { id: 'not-started',        label: 'Not started',       value: notStarted,                delta: totalStudents > 0 ? `of ${totalStudents}` : '—',                    trend: 'neutral' },
+    { id: 'in-progress',        label: 'In progress',       value: inProgress,                delta: totalStudents > 0 ? `of ${totalStudents}` : '—',                    trend: 'neutral' },
+    { id: 'submitted',          label: 'Submitted',         value: submitted,                 delta: totalStudents > 0 ? `of ${totalStudents}` : '—',                    trend: 'neutral' },
+    { id: 'flagged-questions',  label: 'Flagged questions', value: flaggedQuestions.length,   delta: flaggedQuestions.length > 0 ? 'Needs review' : 'None flagged',      trend: flaggedQuestions.length > 0 ? 'down' : 'neutral' },
   ]
 
   return (
@@ -213,7 +226,20 @@ export default function LiveMonitorClient({ assessmentId }: { assessmentId: stri
                 Canonical KeyMetrics organism (vendored 2026-05-11). */}
             <KeyMetrics variant="card" showHeader={false} metricsSingleRow metrics={heroMetrics} />
 
-            {/* Flagged comments at top — Aarti: "put it at the top."
+            {/* Flagged questions panel — grouped by question, not by student.
+                Coordinator can acknowledge or dismiss per question (key namespace: q-${questionOrder}).
+                Aarti: "put it at the top." */}
+            {flaggedQuestions.length > 0 && (
+              <FlaggedQuestionsPanel
+                flaggedQuestions={flaggedQuestions}
+                flagStatuses={flagStatuses}
+                onStatusChange={(key, status) =>
+                  setFlagStatuses(prev => ({ ...prev, [key]: status }))
+                }
+              />
+            )}
+
+            {/* Per-student flagged comments — detailed view with student identity.
                 Visible during the exam so coordinator can acknowledge post-exam. */}
             {flaggedCount > 0 && (
               <FlaggedCommentsQueue
@@ -549,6 +575,114 @@ function StatusDot({ status }: { status: LiveMonitorStudent['status'] }) {
       />
       {status === 'in-progress' ? 'Active' : status === 'submitted' ? 'Done' : status === 'paused' ? 'Paused' : 'Not started'}
     </span>
+  )
+}
+
+// ─── Flagged questions panel (grouped by question) ───────────────────────────
+function FlaggedQuestionsPanel({
+  flaggedQuestions,
+  flagStatuses,
+  onStatusChange,
+}: {
+  flaggedQuestions: { questionOrder: number; count: number; comments: string[] }[]
+  flagStatuses: Record<string, 'acknowledged' | 'dismissed'>
+  onStatusChange: (key: string, status: 'acknowledged' | 'dismissed') => void
+}) {
+  const unactionedCount = flaggedQuestions.filter(fq => !flagStatuses[`q-${fq.questionOrder}`]).length
+
+  return (
+    <Card className="gap-0 py-0">
+      <header
+        className="flex items-center justify-between px-4 py-2.5 border-b"
+        style={{ borderColor: 'var(--border)' }}
+      >
+        <div className="flex items-center gap-2">
+          <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 12, color: 'var(--chart-4)' }} />
+          <h2 className="font-semibold text-foreground" style={{ fontSize: 14 }}>
+            Flagged questions
+          </h2>
+          {unactionedCount > 0 ? (
+            <Badge variant="secondary" className="rounded text-[10px]" style={{ background: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', color: 'var(--chart-4)' }}>
+              {unactionedCount}
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="rounded text-[10px]">
+              {flaggedQuestions.length}
+            </Badge>
+          )}
+          {flaggedQuestions.length - unactionedCount > 0 && (
+            <span className="text-[11px] text-muted-foreground">
+              {flaggedQuestions.length - unactionedCount} of {flaggedQuestions.length} reviewed
+            </span>
+          )}
+        </div>
+        <span className="text-[11px] text-muted-foreground italic">Grouped by question</span>
+      </header>
+      <div>
+        {flaggedQuestions.map(fq => {
+          const key = `q-${fq.questionOrder}`
+          const status = flagStatuses[key]
+          return (
+            <div
+              key={fq.questionOrder}
+              className="flex items-start gap-3 px-4 py-3 border-b last:border-b-0 transition-opacity"
+              style={{ borderColor: 'var(--border)', opacity: status ? 0.6 : 1 }}
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <span className="text-sm font-semibold text-foreground">Q{fq.questionOrder}</span>
+                  <Badge
+                    variant="secondary"
+                    className="rounded text-[10px]"
+                    style={{ background: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', color: 'var(--chart-4)' }}
+                  >
+                    {fq.count} {fq.count === 1 ? 'student' : 'students'} flagged
+                  </Badge>
+                  {status && (
+                    <Badge
+                      variant="secondary"
+                      className="rounded text-[10px]"
+                      style={
+                        status === 'acknowledged'
+                          ? { backgroundColor: 'color-mix(in oklch, var(--chart-1) 14%, var(--background))', color: 'var(--chart-1)' }
+                          : { backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }
+                      }
+                    >
+                      {status === 'acknowledged' ? 'Acknowledged' : 'Dismissed'}
+                    </Badge>
+                  )}
+                </div>
+                {fq.comments.slice(0, 2).map((c, i) => (
+                  <p key={i} className="text-xs text-muted-foreground italic truncate">&ldquo;{c}&rdquo;</p>
+                ))}
+              </div>
+              {!status && (
+                <div className="shrink-0 flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs"
+                    onClick={() => onStatusChange(key, 'acknowledged')}
+                  >
+                    <i className="fa-light fa-check" aria-hidden="true" />
+                    Acknowledge
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5 text-xs"
+                    onClick={() => onStatusChange(key, 'dismissed')}
+                  >
+                    <i className="fa-light fa-xmark" aria-hidden="true" />
+                    Dismiss
+                  </Button>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </Card>
   )
 }
 
