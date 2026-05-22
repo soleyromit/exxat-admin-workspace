@@ -19,11 +19,6 @@ import {
   TooltipTrigger,
   TooltipContent,
   DragHandleGripIcon,
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
 } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
 import { MOCK_SUBJECTS } from '@/lib/pce-mock-data'
@@ -169,7 +164,7 @@ export default function TemplateEditorPage() {
           variant="secondary"
           className="rounded shrink-0"
           style={t.status === 'active'
-            ? { backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', color: 'var(--brand-color-dark)' }
+            ? { backgroundColor: 'var(--brand-tint)', color: 'var(--brand-color-dark)' }
             : { backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }
           }
         >
@@ -219,31 +214,6 @@ export default function TemplateEditorPage() {
           className="flex flex-col gap-1 border-r border-border shrink-0 overflow-y-auto"
           style={{ width: 192, padding: '16px 10px', background: 'var(--muted)' }}
         >
-          {/* Course type field */}
-          <div className="flex flex-col gap-1 mb-4" style={{ paddingInline: 6 }}>
-            <p
-              className="text-xs font-medium"
-              style={{ color: 'var(--muted-foreground)', marginBottom: 2 }}
-            >
-              Course type
-            </p>
-            <Select
-              value={t.courseType ?? 'any'}
-              onValueChange={(v) =>
-                updateTemplate(t.id, { courseType: v as 'any' | 'didactic' | 'clinical' })
-              }
-            >
-              <SelectTrigger aria-label="Course type" style={{ height: 30, fontSize: 12 }}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="any">Any</SelectItem>
-                <SelectItem value="didactic">Didactic</SelectItem>
-                <SelectItem value="clinical">Clinical</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           <p
             className="text-xs font-medium"
             style={{ color: 'var(--muted-foreground)', marginBottom: 6, paddingInline: 6 }}
@@ -290,7 +260,7 @@ export default function TemplateEditorPage() {
                   onClick={() => { setActiveSectionId(sec.id); closeCard() }}
                   className="flex flex-col items-start justify-center text-left flex-1 h-auto gap-0.5"
                   style={isActive
-                    ? { background: 'var(--brand-tint)', color: 'var(--brand-color)', fontWeight: 600, padding: '6px 8px' }
+                    ? { background: 'var(--background)', color: 'var(--foreground)', fontWeight: 600, padding: '6px 8px' }
                     : { color: count === 0 ? 'var(--muted-foreground)' : 'var(--foreground)', padding: '6px 8px' }
                   }
                 >
@@ -298,7 +268,7 @@ export default function TemplateEditorPage() {
                     <span className="text-xs leading-tight truncate">{sec.title}</span>
                     <span
                       className="text-xs tabular-nums shrink-0"
-                      style={{ color: isActive ? 'var(--brand-color)' : 'var(--muted-foreground)' }}
+                      style={{ color: 'var(--muted-foreground)' }}
                     >
                       {count}
                     </span>
@@ -306,7 +276,7 @@ export default function TemplateEditorPage() {
                   {subjectMeta && (
                     <span
                       className="text-xs leading-none"
-                      style={{ color: isActive ? 'var(--brand-color)' : 'var(--muted-foreground)', opacity: 0.75 }}
+                      style={{ color: 'var(--muted-foreground)' }}
                     >
                       {subjectMeta.label}
                     </span>
@@ -411,82 +381,55 @@ export default function TemplateEditorPage() {
                       onDragStart={() => handleDragStart(index)}
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDragEnd={handleDragEnd}
-                      className="flex items-start gap-0 rounded-lg border border-border bg-card overflow-hidden group"
-                      style={{ cursor: 'grab' }}
+                      className="flex items-center gap-2 group"
+                      style={{ borderBottom: '1px solid var(--border)', paddingBlock: 10, cursor: 'grab' }}
                     >
-                      {/* Colored left strip — answer type indicator */}
-                      <div
-                        className="shrink-0"
+                      <DragHandleGripIcon className="shrink-0 opacity-30 group-hover:opacity-60 text-muted-foreground transition-opacity" />
+                      <span className="text-sm flex-1 min-w-0 leading-snug">{q.text}</span>
+                      <Badge
+                        variant="secondary"
+                        className="rounded shrink-0"
                         style={{
-                          width: 3,
-                          alignSelf: 'stretch',
-                          background: q.answerType === 'likert'
-                            ? 'var(--brand-color)'
-                            : 'var(--border)',
+                          fontSize: 10,
+                          fontWeight: 500,
+                          paddingInline: 6,
+                          paddingBlock: 2,
+                          backgroundColor: 'var(--muted)',
+                          color: 'var(--muted-foreground)',
                         }}
-                      />
-                      {/* Drag handle */}
-                      <div className="flex items-center px-2 pt-3 shrink-0 self-start">
-                        <DragHandleGripIcon className="opacity-30 group-hover:opacity-60 text-muted-foreground transition-opacity" />
-                      </div>
-                      {/* Content */}
-                      <div className="flex flex-col gap-2 flex-1 min-w-0 py-3 pr-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="text-sm leading-snug flex-1">{q.text}</span>
-                          {/* Type badge — Aboard style, top-right */}
-                          <Badge
-                            variant="secondary"
-                            className="rounded shrink-0"
-                            style={{
-                              fontSize: 10,
-                              fontWeight: 500,
-                              paddingInline: 6,
-                              paddingBlock: 2,
-                              backgroundColor: q.answerType === 'likert'
-                                ? 'var(--brand-tint)'
-                                : 'var(--muted)',
-                              color: q.answerType === 'likert'
-                                ? 'var(--brand-color)'
-                                : 'var(--muted-foreground)',
-                            }}
+                      >
+                        {q.answerType === 'likert'
+                          ? <><i className="fa-light fa-chart-bar" aria-hidden="true" style={{ marginRight: 4 }} />Likert {t.likertPointer}</>
+                          : <><i className="fa-light fa-align-left" aria-hidden="true" style={{ marginRight: 4 }} />Free text</>
+                        }
+                      </Badge>
+                      <DropdownMenu modal={false}>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label="Question actions"
+                            onClick={(e) => e.stopPropagation()}
+                            className="shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
                           >
-                            {q.answerType === 'likert'
-                              ? <><i className="fa-light fa-chart-bar" aria-hidden="true" style={{ marginRight: 4 }} />Likert {t.likertPointer}</>
-                              : <><i className="fa-light fa-align-left" aria-hidden="true" style={{ marginRight: 4 }} />Free text</>
-                            }
-                          </Badge>
-                        </div>
-                      </div>
-                      {/* Actions */}
-                      <div className="flex items-start pt-2 pr-2 shrink-0">
-                        <DropdownMenu modal={false}>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              aria-label="Question actions"
-                              onClick={(e) => e.stopPropagation()}
-                              className="opacity-0 group-hover:opacity-100 focus:opacity-100"
-                            >
-                              <i className="fa-regular fa-ellipsis" aria-hidden="true" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-36">
-                            <DropdownMenuItem onClick={() => openEditCard(q)}>
-                              <i className="fa-light fa-pen" aria-hidden="true" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onClick={() => deleteSectionQuestion(t.id, activeSection.id, q.id)}
-                            >
-                              <i className="fa-light fa-trash" aria-hidden="true" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+                            <i className="fa-regular fa-ellipsis" aria-hidden="true" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-36">
+                          <DropdownMenuItem onClick={() => openEditCard(q)}>
+                            <i className="fa-light fa-pen" aria-hidden="true" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => deleteSectionQuestion(t.id, activeSection.id, q.id)}
+                          >
+                            <i className="fa-light fa-trash" aria-hidden="true" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   )
                 ))}
@@ -562,8 +505,8 @@ interface ExpandCardProps {
 function ExpandCard({ text, answerType, likertPointer, addLabel, title, onTextChange, onTypeChange, onAdd, onCancel }: ExpandCardProps) {
   return (
     <div
-      className="flex flex-col gap-3 rounded-lg border-2 p-4"
-      style={{ borderColor: 'var(--brand-color)', background: 'color-mix(in oklch, var(--brand-color) 4%, var(--background))' }}
+      className="flex flex-col gap-3 border border-border p-4"
+      style={{ background: 'var(--muted)' }}
     >
       <p className="text-xs font-semibold" style={{ color: 'var(--brand-color)' }}>{title}</p>
       <Textarea
