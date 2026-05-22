@@ -17,6 +17,9 @@
 | Instructor can only edit their section | ⚠️ | af529725 | UI shows assignment; RBAC enforcement needs real auth layer |
 | Instructor "section ready" signal | ❌ | af529725 | Not built |
 | Section pre-read text | ⚠️ | af529725 | `AssessmentSection.prereadText` exists in types, no UI |
+| Section content area targeting | ✅ | f274ade0, fb9e76c2 | Coordinator specifies content areas per section in Step 1 |
+| Per-section randomize toggle | ✅ | — | Toggle per section; randomize=false = fixed/locked order |
+| Instructor "section ready" signal | ✅ | af529725 | Mark ready/Reopen in SectionsOutline Step 2 header |
 | Copy from previous assessment | ⚠️ | f59cfbe4, 66898189 | MOCK_COPY_SOURCES exists; section structure copy ❌ |
 | Move questions between sections in copy flow | ❌ | 66898189 | Not built |
 | Download window configuration | ✅ | 66898189 | Built in DetailsStep — open/close dates + downloadWindowHours input (was already there, not a gap) |
@@ -43,6 +46,7 @@
 | Feature | Status | Decision Files | Notes |
 |---|---|---|---|
 | QB linked to base course (not offering) | ⚠️ | f59cfbe4, f274ade0 | Assumed in data model; needs verification |
+| Content area filter in QB picker | ✅ | fb9e76c2 | Chip filter row in assessment builder; derived from course QB subfolders |
 | Question → direct standard/competency mapping | ✅ | fb9e76c2 | StandardsSelect in question editor right rail; NAPLEX + NCLEX blueprints (commit fb6de33) |
 | Question labels (nested, program + personal) | ⚠️ | fb9e76c2 | Simple comma tags only; no nesting/program labels |
 | AI suggest standard mapping | ⚠️ | fb9e76c2 | AI objective suggestion exists; not linked to standards |
@@ -118,11 +122,11 @@
 | Terms | ⚠️ | f274ade0 | Navigation exists; entity management TBD |
 | Course Offerings | ✅ | f274ade0 | Built |
 | Accommodations admin | ❌ | f274ade0 | Not built |
-| Content areas | ❌ | f274ade0 | Not built |
+| Content areas (admin list) | ❌ | f274ade0 | No standalone content area admin page; currently derived from QB folder structure in builder |
 | Competencies | ❌ | f274ade0 | Not built |
 | Standards | ❌ | f274ade0 | Not built |
 
 ---
 
-## Last updated: 2026-05-22 (session 2 — section assignment, review workflow, standard mapping)
+## Last updated: 2026-05-22 (session 3 — content areas filter, section content area targeting, randomize, ready signal)
 ## Next review: after any new relevant meeting transcript
