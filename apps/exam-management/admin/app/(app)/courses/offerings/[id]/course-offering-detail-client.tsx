@@ -26,6 +26,7 @@ import {
   Button, Badge, Avatar, AvatarFallback,
   Tabs, TabsList, TabsTrigger, TabsContent,
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
   Separator,
 } from '@exxat/ds/packages/ui/src'
@@ -38,6 +39,8 @@ import { facultyStudents, type ExtendedFaculty, facultyAccommodations } from '@/
 import { allFaculty } from '@/lib/faculty-mock-data'
 import { allStudents } from '@/lib/student-mock-data'
 import type { ExtendedCourseOffering } from '@/lib/course-mock-data'
+import { MOCK_QB_FOLDERS, mockAssessments } from '@/lib/qb-mock-data'
+import { findPersona } from '@/lib/personas'
 
 const IS_LMS_ACTIVE = false
 
@@ -319,6 +322,144 @@ function AssignFacultySheet({
         </SheetFooter>
       </SheetContent>
     </Sheet>
+  )
+}
+
+// ── Create Assessment modal ───────────────────────────────────────────────────
+// Three entry modes per Aarti May 19: blank, QB-first, copy from previous.
+
+function CreateAssessmentModal({
+  open, onOpenChange, offeringId, courseId,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  offeringId: string
+  courseId: string
+}) {
+  const router = useRouter()
+  const [step, setStep] = useState<'pick-mode' | 'pick-source'>('pick-mode')
+
+  // Previous assessments for this course but a different offering (previous term)
+  const prevAssessments = mockAssessments.filter(
+    a => a.courseId === courseId && a.offeringId !== offeringId
+  )
+
+  function close() { onOpenChange(false); setStep('pick-mode') }
+
+  function handleMode(mode: 'blank' | 'qb' | 'copy') {
+    if (mode === 'copy') { setStep('pick-source'); return }
+    close()
+    router.push(`/assessment-builder?offeringId=${offeringId}&mode=${mode}`)
+  }
+
+  function handleSource(sourceId: string) {
+    close()
+    router.push(`/assessment-builder?offeringId=${offeringId}&mode=copy&sourceId=${sourceId}`)
+  }
+
+  const MODES = [
+    {
+      id: 'blank' as const,
+      icon: 'fa-file-pen',
+      label: 'From scratch',
+      desc: 'Start with a blank assessment and add questions from the QB.',
+    },
+    {
+      id: 'qb' as const,
+      icon: 'fa-books',
+      label: 'From question bank',
+      desc: 'Jump straight to the QB picker with smart view filters ready.',
+    },
+    {
+      id: 'copy' as const,
+      icon: 'fa-copy',
+      label: 'Copy from previous',
+      desc: "Use a previous term's assessment as your starting point — keep structure, swap questions.",
+    },
+  ]
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) close(); else onOpenChange(true) }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>New Assessment</DialogTitle>
+          <DialogDescription>How would you like to start?</DialogDescription>
+        </DialogHeader>
+
+        {step === 'pick-mode' && (
+          <div className="flex flex-col gap-2 pt-1">
+            {MODES.map(m => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => handleMode(m.id)}
+                className="flex items-start gap-4 rounded-xl border border-border p-4 text-left transition-colors hover:bg-muted/30"
+              >
+                <div
+                  className="flex size-10 shrink-0 items-center justify-center rounded-lg"
+                  style={{
+                    backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+                    color: 'var(--brand-color)',
+                  }}
+                >
+                  <i className={`fa-light ${m.icon} text-base`} aria-hidden="true" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-foreground">{m.label}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{m.desc}</p>
+                </div>
+                <i className="fa-light fa-chevron-right text-xs text-muted-foreground mt-1 shrink-0" aria-hidden="true" />
+              </button>
+            ))}
+          </div>
+        )}
+
+        {step === 'pick-source' && (
+          <div className="flex flex-col gap-3 pt-1">
+            <button
+              type="button"
+              onClick={() => setStep('pick-mode')}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors self-start"
+            >
+              <i className="fa-light fa-arrow-left" aria-hidden="true" />
+              Back
+            </button>
+            <p className="text-sm font-medium text-foreground">Select a previous assessment to copy from:</p>
+            {prevAssessments.length === 0 ? (
+              <div className="rounded-xl border border-border bg-muted/30 p-5 text-center">
+                <p className="text-sm text-muted-foreground">No previous assessments found for this course.</p>
+                <Button variant="outline" size="sm" className="mt-3" onClick={() => handleMode('blank')}>
+                  Start from scratch instead
+                </Button>
+              </div>
+            ) : (
+              prevAssessments.map(a => (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => handleSource(a.id)}
+                  className="flex items-center gap-4 rounded-xl border border-border p-4 text-left transition-colors hover:bg-muted/30"
+                >
+                  <div
+                    className="flex size-9 shrink-0 items-center justify-center rounded-lg"
+                    style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}
+                  >
+                    <i className="fa-light fa-clipboard-list text-sm" aria-hidden="true" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">{a.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {a.questionCount} questions · {a.durationMinutes} min
+                    </p>
+                  </div>
+                  <i className="fa-light fa-arrow-right text-xs text-muted-foreground shrink-0" aria-hidden="true" />
+                </button>
+              ))
+            )}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -949,6 +1090,121 @@ function ResourcesTab({ offering }: { offering: ExtendedCourseOffering }) {
   )
 }
 
+// ── Question Bank tab ─────────────────────────────────────────────────────────
+
+function QuestionBankTab({ courseId }: { courseId: string }) {
+  const qbRootId = courseId.replace('course-', '')
+  const rootFolder = MOCK_QB_FOLDERS.find(f => f.id === qbRootId)
+  const childFolders = MOCK_QB_FOLDERS.filter(f => f.parentId === qbRootId)
+
+  if (!rootFolder) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card py-14 text-center gap-2">
+        <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+          <i className="fa-light fa-books text-muted-foreground text-lg" aria-hidden="true" />
+        </div>
+        <p className="font-semibold text-foreground">No question bank linked</p>
+        <p className="text-sm text-muted-foreground">A question bank folder will appear here once this course is set up in the QB.</p>
+      </div>
+    )
+  }
+
+  const collaborators = (rootFolder.collaborators ?? []).map(id => findPersona(id)).filter(Boolean)
+  const subfolderCountByFolder = Object.fromEntries(
+    childFolders.map(f => [f.id, MOCK_QB_FOLDERS.filter(sf => sf.parentId === f.id).length])
+  )
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Summary card */}
+      <div className="rounded-xl border border-border bg-card p-4 flex items-start gap-4">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg"
+          style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', color: 'var(--brand-color)' }}>
+          <i className="fa-light fa-books text-base" aria-hidden="true" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground truncate">{rootFolder.name}</p>
+          <div className="flex items-center gap-4 mt-1.5">
+            <span className="text-xs text-muted-foreground">
+              <strong className="text-foreground">{rootFolder.count}</strong> questions
+            </span>
+            <span className="text-xs text-muted-foreground">
+              <strong className="text-foreground">{childFolders.length}</strong> folders
+            </span>
+            <span className="text-xs text-muted-foreground">
+              <strong className="text-foreground">{collaborators.length}</strong> collaborators
+            </span>
+          </div>
+          {collaborators.length > 0 && (
+            <div className="flex items-center gap-1.5 mt-2">
+              {collaborators.map(p => (
+                <Avatar key={p!.id} className="size-5">
+                  <AvatarFallback className="text-[9px]"
+                    style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
+                    {p!.initials}
+                  </AvatarFallback>
+                </Avatar>
+              ))}
+              <span className="text-[11px] text-muted-foreground ml-0.5">
+                {collaborators.map(p => p!.name.split(' ')[0]).join(', ')}
+              </span>
+            </div>
+          )}
+        </div>
+        <a href="/question-bank"
+          className="inline-flex items-center gap-1.5 text-xs font-medium shrink-0 no-underline hover:underline"
+          style={{ color: 'var(--brand-color)' }}>
+          Open QB
+          <i className="fa-light fa-arrow-up-right-from-square text-xs" aria-hidden="true" />
+        </a>
+      </div>
+
+      {/* Folder list */}
+      {childFolders.length > 0 && (
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="px-5 py-3 border-b border-border flex items-center justify-between">
+            <p className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground">Folders</p>
+          </div>
+          <ul className="divide-y divide-border">
+            {childFolders.map(folder => {
+              const subCount = subfolderCountByFolder[folder.id] ?? 0
+              const folderCollabs = (folder.collaborators ?? []).map(id => findPersona(id)).filter(Boolean)
+              return (
+                <li key={folder.id} className="flex items-center gap-3 px-5 py-3.5">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-md"
+                    style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
+                    <i className={`fa-light ${folder.isPrivateSpace ? 'fa-lock' : 'fa-folder'} text-sm`}
+                      aria-hidden="true" />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-foreground truncate">{folder.name}</p>
+                      {folder.isPrivateSpace && (
+                        <Badge variant="secondary" className="rounded text-[10px] px-1.5 py-0 shrink-0"
+                          style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
+                          Private
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {folder.count} questions
+                      {subCount > 0 && ` · ${subCount} subfolder${subCount > 1 ? 's' : ''}`}
+                      {folderCollabs.length > 0 && ` · ${folderCollabs.map(p => p!.name.split(' ')[0]).join(', ')}`}
+                    </p>
+                  </div>
+                  <span className="text-xs font-semibold text-muted-foreground tabular-nums">
+                    {folder.count}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export default function CourseOfferingDetailClient({ offering }: { offering: ExtendedCourseOffering }) {
@@ -980,6 +1236,7 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
   // Sheet open state
   const [enrollOpen, setEnrollOpen] = useState(false)
   const [assignOpen, setAssignOpen] = useState(false)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
 
   const enrolledIds = useMemo(() => new Set(localStudents.map(s => s.id)), [localStudents])
   const assignedIds = useMemo(() => new Set(localFaculty.map(f => f.id)), [localFaculty])
@@ -1059,6 +1316,15 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
                   </Badge>
                 )}
               </TabsTrigger>
+              <TabsTrigger value="question-bank">
+                <i className="fa-light fa-books text-xs" aria-hidden="true" />
+                Question Bank
+                {MOCK_QB_FOLDERS.some(f => f.id === offering.courseId.replace('course-', '')) && (
+                  <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                    {MOCK_QB_FOLDERS.filter(f => f.parentId === offering.courseId.replace('course-', '')).length}
+                  </Badge>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="resources">
                 <i className="fa-light fa-folder-open text-xs" aria-hidden="true" />
                 Resources
@@ -1082,7 +1348,7 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
             <TabsContent value="assessments" className="m-0">
               <AssessmentsTab
                 offering={offering}
-                onNewAssessment={() => router.push(`/assessment-builder?offeringId=${offering.id}`)}
+                onNewAssessment={() => setCreateModalOpen(true)}
               />
             </TabsContent>
             <TabsContent value="students" className="m-0">
@@ -1098,6 +1364,9 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
                 onOpenAssign={() => setAssignOpen(true)}
                 onNavigateFaculty={(id) => router.push(`/faculty/${id}`)}
               />
+            </TabsContent>
+            <TabsContent value="question-bank" className="m-0">
+              <QuestionBankTab courseId={offering.courseId} />
             </TabsContent>
             <TabsContent value="resources" className="m-0">
               <ResourcesTab offering={offering} />
@@ -1124,6 +1393,12 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
         onOpenChange={setAssignOpen}
         assignedIds={assignedIds}
         onAssign={f => setLocalFaculty(prev => prev.some(e => e.id === f.id) ? prev : [...prev, f])}
+      />
+      <CreateAssessmentModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        offeringId={offering.id}
+        courseId={offering.courseId}
       />
     </>
   )
