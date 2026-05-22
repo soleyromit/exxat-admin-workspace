@@ -1267,6 +1267,228 @@ function NewQuestionEditorPanel({
   )
 }
 
+// ── Selected questions outline (Step 2 left panel) ───────────────────────────
+
+function SelectedQuestionsOutline({
+  activeAsmt,
+  onRemove,
+}: {
+  activeAsmt: import('@/lib/qb-types').AssessmentDraft
+  onRemove: (questionId: string) => void
+}) {
+  const orderedQuestions = [...activeAsmt.questions].sort((a, b) => a.order - b.order)
+
+  type DisplayItem =
+    | { kind: 'section'; id: string; title: string; count: number }
+    | { kind: 'question'; questionId: string; order: number; question: import('@/lib/qb-types').Question | undefined }
+
+  const displayItems: DisplayItem[] = []
+
+  if (activeAsmt.sections.length === 0) {
+    orderedQuestions.forEach(aq => {
+      displayItems.push({
+        kind: 'question',
+        questionId: aq.questionId,
+        order: aq.order,
+        question: MOCK_QB_QUESTIONS.find(q => q.id === aq.questionId),
+      })
+    })
+  } else {
+    const assignedIds = new Set(activeAsmt.sections.flatMap(s => s.questionIds))
+    activeAsmt.sections.forEach(section => {
+      const sectionQs = orderedQuestions.filter(aq => section.questionIds.includes(aq.questionId))
+      displayItems.push({ kind: 'section', id: section.id, title: section.title, count: sectionQs.length })
+      sectionQs.forEach(aq => {
+        displayItems.push({
+          kind: 'question',
+          questionId: aq.questionId,
+          order: aq.order,
+          question: MOCK_QB_QUESTIONS.find(q => q.id === aq.questionId),
+        })
+      })
+    })
+    const unassigned = orderedQuestions.filter(aq => !assignedIds.has(aq.questionId))
+    if (unassigned.length > 0) {
+      displayItems.push({ kind: 'section', id: '__unassigned', title: 'Unassigned', count: unassigned.length })
+      unassigned.forEach(aq => {
+        displayItems.push({
+          kind: 'question',
+          questionId: aq.questionId,
+          order: aq.order,
+          question: MOCK_QB_QUESTIONS.find(q => q.id === aq.questionId),
+        })
+      })
+    }
+  }
+
+  return (
+    <aside style={{
+      width: 210, minWidth: 210, borderRight: '1px solid var(--border)',
+      display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      background: 'var(--card)',
+    }}>
+      <div style={{ padding: '10px 14px 6px', flexShrink: 0 }}>
+        <p className="text-[10px] font-bold uppercase tracking-[.07em] text-muted-foreground">
+          Selected · {activeAsmt.questions.length}
+        </p>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 6px 10px' }}>
+        {displayItems.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-center px-3">
+            <i className="fa-light fa-clipboard-list text-muted-foreground text-xl mb-2" aria-hidden="true" />
+            <p className="text-xs text-muted-foreground leading-snug">
+              Pick questions from the panel →
+            </p>
+          </div>
+        ) : (
+          displayItems.map((item, idx) => {
+            if (item.kind === 'section') {
+              return (
+                <div key={`section-${item.id}-${idx}`} className="mt-3 mb-1 px-2">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                    {item.title} ({item.count})
+                  </p>
+                </div>
+              )
+            }
+
+            return (
+              <div
+                key={item.questionId}
+                className="flex items-start gap-1.5 rounded-md px-2 py-1.5 group hover:bg-muted/40 transition-colors"
+              >
+                <span className="text-[10px] text-muted-foreground tabular-nums shrink-0 mt-0.5 w-4 text-right">
+                  {item.order}.
+                </span>
+                <p
+                  className="text-[11px] text-foreground leading-snug flex-1 min-w-0"
+                  style={{
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {item.question?.title ?? item.questionId}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => onRemove(item.questionId)}
+                  aria-label="Remove question"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                  style={{ fontSize: 10, background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--muted-foreground)', marginTop: 1 }}
+                >
+                  <i className="fa-light fa-xmark" aria-hidden="true" />
+                </button>
+              </div>
+            )
+          })
+        )}
+      </div>
+    </aside>
+  )
+}
+
+// ── Metrics panel (Step 2 right panel) ───────────────────────────────────────
+
+function MetricsPanel({
+  distribution,
+  timeMetrics,
+  overtimeMetrics,
+  durationMinutes,
+  bloomsMetrics,
+}: {
+  distribution: { Easy: number; Medium: number; Hard: number }
+  timeMetrics: { totalMin: number; avgMin: number }
+  overtimeMetrics: { allottedMin: number; delta: number; pct: number } | null
+  durationMinutes: number
+  bloomsMetrics: { level: string; count: number; pct: number }[]
+}) {
+  const total = distribution.Easy + distribution.Medium + distribution.Hard
+  const bars = [
+    { label: 'Easy',   short: 'E', count: distribution.Easy,   color: 'var(--qb-diff-bar-easy)'   },
+    { label: 'Medium', short: 'M', count: distribution.Medium, color: 'var(--qb-diff-bar-medium)' },
+    { label: 'Hard',   short: 'H', count: distribution.Hard,   color: 'var(--qb-diff-bar-hard)'   },
+  ]
+  const maxCount = Math.max(...bars.map(b => b.count), 1)
+
+  const overtime = overtimeMetrics ? (() => {
+    const { delta } = overtimeMetrics
+    if (delta > 0)  return { label: `+${Math.round(delta)} min over`, color: 'var(--chart-5)' }
+    if (delta > -5) return { label: 'Tight fit',                      color: 'var(--chart-4)' }
+    return               { label: 'On time',                          color: 'var(--qb-trust-senior-color)' }
+  })() : null
+
+  return (
+    <aside style={{
+      width: 220, minWidth: 220, borderLeft: '1px solid var(--border)',
+      display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      background: 'var(--card)', padding: '14px 16px', gap: 16,
+    }}>
+      {/* Question count */}
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-[.07em] text-muted-foreground mb-1">Questions</p>
+        <p className="text-2xl font-bold text-foreground">{total}</p>
+        <p className="text-xs text-muted-foreground">
+          {durationMinutes} min
+          {timeMetrics.avgMin > 0 ? ` · ~${Math.round(timeMetrics.avgMin * 10) / 10} min/Q` : ''}
+        </p>
+        {overtime && (
+          <p className="text-xs mt-0.5 font-medium" style={{ color: overtime.color }}>{overtime.label}</p>
+        )}
+      </div>
+
+      {/* Difficulty distribution */}
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-[.07em] text-muted-foreground mb-2">Difficulty</p>
+        <div className="flex items-end gap-3 h-14">
+          {bars.map(bar => (
+            <div key={bar.label} className="flex flex-col items-center gap-1 flex-1">
+              <span className="text-[10px] font-semibold" style={{ color: bar.color }}>
+                {bar.count > 0 ? bar.count : ''}
+              </span>
+              <div style={{
+                width: '100%', borderRadius: '3px 3px 0 0',
+                background: bar.color,
+                height: bar.count === 0 ? 3 : `${(bar.count / maxCount) * 36}px`,
+                opacity: bar.count === 0 ? 0.2 : 1,
+                transition: 'height .2s',
+              }} />
+              <span className="text-[10px] text-muted-foreground">{bar.short}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Blooms */}
+      {bloomsMetrics.length > 0 && (
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[.07em] text-muted-foreground mb-2">Bloom&apos;s</p>
+          <div className="flex flex-col gap-1.5">
+            {bloomsMetrics.slice(0, 5).map(b => (
+              <div key={b.level} className="flex items-center gap-2">
+                <div className="flex-1 bg-muted rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className="h-1.5 rounded-full"
+                    style={{ width: `${b.pct}%`, backgroundColor: 'var(--brand-color)', opacity: 0.7, transition: 'width .3s' }}
+                  />
+                </div>
+                <span className="text-[10px] text-muted-foreground w-[60px] truncate">{b.level}</span>
+                <span className="text-[10px] tabular-nums text-foreground w-6 text-right">{b.pct}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {bloomsMetrics.length === 0 && total === 0 && (
+        <p className="text-xs text-muted-foreground">Select questions to see metrics.</p>
+      )}
+    </aside>
+  )
+}
+
 // ── Details step (wizard step 1) ─────────────────────────────────────────────
 
 function DetailsStep({
