@@ -105,6 +105,11 @@ export default function AssessmentTypesPage() {
                 <p className="text-xs text-muted-foreground">Clear the search to see the full inventory.</p>
               </div>
             }
+            toolbarSlot={(state) => (
+              <span className="text-xs text-muted-foreground">
+                {state.rows.length} assessment type{state.rows.length !== 1 ? 's' : ''}
+              </span>
+            )}
           />
 
           <p className="text-xs text-muted-foreground">

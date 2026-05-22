@@ -253,6 +253,11 @@ export default function TermsPage() {
                 </p>
               </div>
             }
+            toolbarSlot={(state) => (
+              <span className="text-xs text-muted-foreground">
+                {state.rows.length} term{state.rows.length !== 1 ? 's' : ''}
+              </span>
+            )}
           />
 
           {!MOCK_LMS_ENABLED && (

@@ -178,6 +178,7 @@ export function SearchInput({
         <InputGroupInput
           ref={inputRef}
           type="search"
+          role="combobox"
           placeholder={placeholder}
           value={value}
           onFocus={handleFocus}
@@ -188,12 +189,15 @@ export function SearchInput({
           aria-expanded={showDropdown}
           aria-autocomplete="list"
           aria-haspopup="listbox"
+          aria-controls={showDropdown ? `search-suggestions-${entityKey}` : undefined}
+          aria-activedescendant={undefined}
           autoComplete="off"
         />
       </InputGroup>
 
       {showDropdown && (
         <div
+          id={`search-suggestions-${entityKey}`}
           role="listbox"
           aria-label="Search history"
           className="absolute top-full left-0 right-0 z-50 mt-1 rounded-lg border border-border bg-popover shadow-lg overflow-hidden"

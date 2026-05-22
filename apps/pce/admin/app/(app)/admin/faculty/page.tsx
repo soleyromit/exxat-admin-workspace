@@ -177,6 +177,11 @@ export default function FacultyPage() {
                 </p>
               </div>
             }
+            toolbarSlot={(state) => (
+              <span className="text-xs text-muted-foreground">
+                {state.rows.length} faculty member{state.rows.length !== 1 ? 's' : ''}
+              </span>
+            )}
           />
 
           {!MOCK_LMS_ENABLED && (

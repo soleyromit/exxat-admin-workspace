@@ -211,6 +211,11 @@ export default function StandardsPage() {
                 </p>
               </div>
             }
+            toolbarSlot={(state) => (
+              <span className="text-xs text-muted-foreground">
+                {state.rows.length} standard{state.rows.length !== 1 ? 's' : ''}
+              </span>
+            )}
           />
 
         </div>

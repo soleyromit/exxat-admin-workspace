@@ -191,6 +191,11 @@ export default function ContentAreasPage() {
               getRowId={(row) => row.id}
               selectable
               searchable
+              toolbarSlot={(state) => (
+                <span className="text-xs text-muted-foreground">
+                  {state.rows.length} content area{state.rows.length !== 1 ? 's' : ''}
+                </span>
+              )}
             />
           )}
 

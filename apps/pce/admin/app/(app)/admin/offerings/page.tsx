@@ -331,6 +331,11 @@ export default function CourseOfferingsPage() {
                 </p>
               </div>
             }
+            toolbarSlot={(state) => (
+              <span className="text-xs text-muted-foreground">
+                {state.rows.length} offering{state.rows.length !== 1 ? 's' : ''}
+              </span>
+            )}
           />
 
           {!MOCK_LMS_ENABLED && (

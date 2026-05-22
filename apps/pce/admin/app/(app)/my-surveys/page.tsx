@@ -26,6 +26,7 @@ const GROUP_LABELS: Record<SurveyStatus, string> = {
   pending_review: 'Pending review',
   collecting:     'Collecting',
   active:         'Active',
+  scheduled:      'Scheduled',
   draft:          'Draft',
   released:       'Results',
   closed:         'Past surveys',
@@ -177,6 +178,11 @@ function MySurveysContent() {
                 window.location.href = `/my-surveys/${row.survey.id}/results`
               }
             }}
+            toolbarSlot={(state) => (
+              <span className="text-xs text-muted-foreground">
+                {state.rows.length} survey{state.rows.length !== 1 ? 's' : ''}
+              </span>
+            )}
           />
         )}
       </div>

@@ -13,7 +13,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <SidebarProvider className="h-svh">
             <AppSidebar />
             <SidebarInset className="flex flex-col overflow-hidden">
-              {children}
+              <main id="main-content" tabIndex={-1} className="flex flex-col flex-1 overflow-hidden outline-none">
+                {children}
+              </main>
             </SidebarInset>
           </SidebarProvider>
         </CommandPaletteProvider>

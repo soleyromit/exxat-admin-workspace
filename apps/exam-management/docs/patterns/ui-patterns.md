@@ -39,7 +39,7 @@ Source: `apps/exam-management/admin/components/site-header.tsx`,
 
 **Differences from PCE:**
 - PCE: one inline `<header>` with `SidebarTrigger` + `<h1>` + primary action. Height: 56px via `py-4`.
-- Exam Management: two-tier header. `SiteHeader` (56px, h-14) carries breadcrumb/title; `PageHeader` (px-6 py-4) carries count subtitle + primary action. The `SidebarTrigger` is NOT in `SiteHeader` — the QB page surface exposes its own sidebar toggle in `QBHeader`.
+- Exam Management: two-tier header. `SiteHeader` (56px, h-14) carries sidebar toggle (`fa-sidebar` + `useSidebar().toggleSidebar`) + breadcrumb/title + `PersonaSwitcher`; `PageHeader` (px-6 py-4) carries count subtitle + primary action.
 
 **What NOT to do:**
 - Never collapse `SiteHeader` and `PageHeader` into one element — they have different visual weights and different roles.

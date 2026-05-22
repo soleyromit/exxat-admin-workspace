@@ -276,9 +276,9 @@ export default function SurveysPage() {
             onRowClick={(row) => {
               window.location.href = `/surveys/${row.survey.id}`
             }}
-            toolbarSlot={() => (
+            toolbarSlot={(state) => (
               <span className="text-xs text-muted-foreground">
-                {rows.length} survey{rows.length !== 1 ? 's' : ''}
+                {state.rows.length} survey{state.rows.length !== 1 ? 's' : ''}
                 {termFilter !== 'all' && ` · ${termFilter}`}
               </span>
             )}

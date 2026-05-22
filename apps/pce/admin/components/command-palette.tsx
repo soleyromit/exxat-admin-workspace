@@ -34,7 +34,6 @@ import {
   CommandEmpty,
   CommandGroup,
   CommandItem,
-  CommandSeparator,
   Kbd,
   KbdGroup,
 } from '@exxat/ds/packages/ui/src'
@@ -165,7 +164,6 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           })}
         </CommandGroup>
 
-        <CommandSeparator />
 
         <CommandGroup heading="Templates">
           {MOCK_TEMPLATES.map(t => (
@@ -181,7 +179,6 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           ))}
         </CommandGroup>
 
-        <CommandSeparator />
 
         <CommandGroup heading="Admin">
           {ADMIN_ENTITIES.map(e => (
@@ -197,7 +194,6 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           ))}
         </CommandGroup>
 
-        <CommandSeparator />
 
         <CommandGroup heading="Pages">
           {TOP_LEVEL_PAGES.map(p => (

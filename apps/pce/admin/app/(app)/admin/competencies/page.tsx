@@ -226,6 +226,11 @@ export default function CompetenciesPage() {
               getRowId={(row) => row.id}
               selectable
               searchable
+              toolbarSlot={(state) => (
+                <span className="text-xs text-muted-foreground">
+                  {state.rows.length} competenc{state.rows.length !== 1 ? 'ies' : 'y'}
+                </span>
+              )}
             />
           )}
 

@@ -33,9 +33,24 @@ No `package.json` at monorepo root — `pnpm --filter` does NOT work from there.
 - NEVER use toast for product feedback — use `LocalBanner`
 - ALWAYS `'use client'` on interactive components
 - ALWAYS `aria-hidden="true"` on FA icons; `aria-label` on icon-only buttons
-- Before new component: spawn `ds-adoption-reviewer` subagent
-- Before claiming done: spawn `verification-reviewer` subagent
 - Granola decisions: always `get_meeting_transcript` raw, never summaries. "Adi" = Aarti.
+
+## Sequential Design Protocol (non-negotiable — full spec: `docs/governance/design-review-protocol.md`)
+
+**Gate 1 — Before writing any JSX:**
+1. `query_granola_meetings` for the entity/feature → pull raw transcript if hits found → extract decisions, scope constraints, UX directives
+2. Read per-product `ui-patterns.md` + `docs/governance/design-anti-patterns.md` + `docs/governance/component-consistency.md`
+3. Check `docs/watch/ds-snapshot.json` for component availability
+4. Spawn `ds-adoption-reviewer` before any new component file
+
+**Gate 2 — After any UI-touching change, before claiming done:**
+1. Self-review against 10-point component-consistency checklist (`component-consistency.md §10`)
+2. Transcript alignment — cross-check implementation against Gate 1 Granola decisions (✅ match / ⚠ assumption / ❌ contradiction)
+3. Spawn `compliance-reviewer` — WCAG 2.1 AA + FERPA + HIPAA. NEEDS-MORE blocks done claim.
+4. Spawn `state-review` for any new list/form/async page. NEEDS-MORE blocks done claim.
+5. Spawn `verification-reviewer`. NEEDS-MORE blocks done claim.
+6. Grep changed files for banned patterns: `uppercase tracking-wide`, `py-20 text-center`, `color-mix(in oklch`
+7. Self-reflection: 3-5 bullets (what went well, mistakes, what to check next time)
 
 ## Key tokens (80% of UI work — full table in `docs/CLAUDE-DS-REFERENCE.md`)
 `--background` `--foreground` `--card` `--muted` `--muted-foreground` `--border` `--border-control-35` `--brand-color` `--brand-tint` `--primary` `--destructive` `--ring` `--radius` `--control-height`
@@ -43,11 +58,14 @@ No `package.json` at monorepo root — `pnpm --filter` does NOT work from there.
 ## 10. Workspace Doc Map (lazy-load — read only when relevant)
 | Doc | Read when |
 |---|---|
+| `docs/governance/design-review-protocol.md` | **Any UI work** — full sequential protocol with subagent trigger map |
 | `docs/CLAUDE-RULES.md` | Full always/never list, DS source rules, workspace config, new product setup, font loading, verification patterns |
 | `docs/CLAUDE-DS-REFERENCE.md` | Any UI code — tokens, component APIs, theme system |
 | `docs/BASE-ENTITIES.md` | Building Student / Faculty / Course / Term / Master Course pages |
 | `docs/PRODUCTS.md` | Need ports, owners, package names |
 | `docs/watch/ds-snapshot.json` | DS component variants/sizes/props lookup |
-| `docs/governance/verification-discipline.md` | Before claiming done |
+| `docs/governance/verification-discipline.md` | Before claiming done (Patterns A-F) |
+| `docs/governance/design-anti-patterns.md` | Before any UI component — banned pattern blacklist |
+| `docs/governance/component-consistency.md` | DataTable, header, sheet, dialog governance |
 | `apps/<product>/CLAUDE.md` | Per-product rules |
 | `apps/<product>/docs/patterns/*.md` | Per-product UI patterns (load only for that product) |

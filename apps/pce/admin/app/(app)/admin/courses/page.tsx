@@ -234,6 +234,11 @@ export default function MasterCoursesPage() {
               getRowId={(row) => row.id}
               selectable
               searchable
+              toolbarSlot={(state) => (
+                <span className="text-xs text-muted-foreground">
+                  {state.rows.length} course{state.rows.length !== 1 ? 's' : ''}
+                </span>
+              )}
             />
           )}
 

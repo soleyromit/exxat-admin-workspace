@@ -147,6 +147,11 @@ export default function TemplatesPage() {
             onRowClick={(row) => {
               window.location.href = `/templates/${row.template.id}`
             }}
+            toolbarSlot={(state) => (
+              <span className="text-xs text-muted-foreground">
+                {state.rows.length} template{state.rows.length !== 1 ? 's' : ''}
+              </span>
+            )}
           />
         )}
       </div>
