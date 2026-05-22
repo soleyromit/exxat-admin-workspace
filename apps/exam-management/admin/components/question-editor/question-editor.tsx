@@ -352,6 +352,94 @@ function TypePickerGrid({ value, onChange }: { value: EditorQType; onChange: (t:
   )
 }
 
+// ─── K-type (complex MCQ) ─────────────────────────────────────────────────
+
+function KTypeControls({ payload, onChange }: {
+  payload: Extract<QuestionPayload, { type: 'k-type' }>
+  onChange: (p: QuestionPayload) => void
+}) {
+  function updateStatement(id: string, patch: Partial<KTypeStatement>) {
+    onChange({ ...payload, statements: payload.statements.map(s => s.id === id ? { ...s, ...patch } : s) })
+  }
+  function addStatement() {
+    onChange({ ...payload, statements: [...payload.statements, { id: `ks-${Date.now()}`, text: '', correct: false }] })
+  }
+  function removeStatement(id: string) {
+    onChange({ ...payload, statements: payload.statements.filter(s => s.id !== id) })
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Statements</p>
+        <p className="text-[11px] text-muted-foreground mb-3">Mark each statement as True or False. The correct combination key is the one whose selected pattern matches.</p>
+        {payload.statements.map((stmt, idx) => (
+          <div key={stmt.id} className="flex items-start gap-2 mb-2">
+            <span className="text-xs font-mono text-muted-foreground mt-2 w-4 shrink-0">{String.fromCharCode(65 + idx)}.</span>
+            <input
+              value={stmt.text}
+              onChange={e => updateStatement(stmt.id, { text: e.target.value })}
+              placeholder={`Statement ${String.fromCharCode(65 + idx)}`}
+              className="flex-1 text-sm"
+              style={{ height: 36, padding: '0 10px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', fontSize: 13 }}
+            />
+            <Button
+              variant={stmt.correct ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => updateStatement(stmt.id, { correct: true })}
+              className="shrink-0"
+              style={{ height: 36, minWidth: 56, fontSize: 12 }}
+            >
+              True
+            </Button>
+            <Button
+              variant={!stmt.correct ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => updateStatement(stmt.id, { correct: false })}
+              className="shrink-0"
+              style={{ height: 36, minWidth: 56, fontSize: 12 }}
+            >
+              False
+            </Button>
+            {payload.statements.length > 2 && (
+              <Button variant="ghost" size="sm" onClick={() => removeStatement(stmt.id)} aria-label="Remove statement" style={{ height: 36 }}>
+                <i className="fa-light fa-xmark" aria-hidden="true" />
+              </Button>
+            )}
+          </div>
+        ))}
+        <Button variant="ghost" size="sm" onClick={addStatement} className="gap-1.5 mt-1">
+          <i className="fa-light fa-plus" aria-hidden="true" />
+          Add statement
+        </Button>
+      </div>
+
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Combination keys</p>
+        <p className="text-[11px] text-muted-foreground mb-3">Define what each answer key (A, B, C, D) means — which statements are true in that combination. Mark the correct key.</p>
+        {payload.combinationKeys.map((key) => (
+          <div key={key.id} className="flex items-center gap-2 mb-2">
+            <Button
+              variant={key.isCorrect ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => onChange({ ...payload, combinationKeys: payload.combinationKeys.map(k => ({ ...k, isCorrect: k.id === key.id })) })}
+              style={{ height: 32, width: 32, padding: 0, fontWeight: 700, fontSize: 13, flexShrink: 0 }}
+              aria-label={`Mark key ${key.label} as correct`}
+            >
+              {key.label}
+            </Button>
+            <span className="text-xs text-muted-foreground flex-1">
+              {payload.statements.length > 0
+                ? payload.statements.map((s, i) => `${String.fromCharCode(65 + i)}=${s.correct ? 'T' : 'F'}`).join(', ')
+                : 'Define statements above'}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ─── Type-specific controls ───────────────────────────────────────────────
 
 function TypeControls({
@@ -1311,93 +1399,5 @@ function ConfidenceBadge({ level }: { level: 'high' | 'low' }) {
     <Badge variant="secondary" className="rounded text-[10px]" style={{ backgroundColor: meta.bg, color: meta.fg }}>
       {meta.label}
     </Badge>
-  )
-}
-
-// ─── K-type (complex MCQ) ─────────────────────────────────────────────────
-
-function KTypeControls({ payload, onChange }: {
-  payload: Extract<QuestionPayload, { type: 'k-type' }>
-  onChange: (p: QuestionPayload) => void
-}) {
-  function updateStatement(id: string, patch: Partial<KTypeStatement>) {
-    onChange({ ...payload, statements: payload.statements.map(s => s.id === id ? { ...s, ...patch } : s) })
-  }
-  function addStatement() {
-    onChange({ ...payload, statements: [...payload.statements, { id: `ks-${Date.now()}`, text: '', correct: false }] })
-  }
-  function removeStatement(id: string) {
-    onChange({ ...payload, statements: payload.statements.filter(s => s.id !== id) })
-  }
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Statements</p>
-        <p className="text-[11px] text-muted-foreground mb-3">Mark each statement as True or False. The correct combination key is the one whose selected pattern matches.</p>
-        {payload.statements.map((stmt, idx) => (
-          <div key={stmt.id} className="flex items-start gap-2 mb-2">
-            <span className="text-xs font-mono text-muted-foreground mt-2 w-4 shrink-0">{String.fromCharCode(65 + idx)}.</span>
-            <input
-              value={stmt.text}
-              onChange={e => updateStatement(stmt.id, { text: e.target.value })}
-              placeholder={`Statement ${String.fromCharCode(65 + idx)}`}
-              className="flex-1 text-sm"
-              style={{ height: 36, padding: '0 10px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', fontSize: 13 }}
-            />
-            <Button
-              variant={stmt.correct ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => updateStatement(stmt.id, { correct: true })}
-              className="shrink-0"
-              style={{ height: 36, minWidth: 56, fontSize: 12 }}
-            >
-              True
-            </Button>
-            <Button
-              variant={!stmt.correct ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => updateStatement(stmt.id, { correct: false })}
-              className="shrink-0"
-              style={{ height: 36, minWidth: 56, fontSize: 12 }}
-            >
-              False
-            </Button>
-            {payload.statements.length > 2 && (
-              <Button variant="ghost" size="sm" onClick={() => removeStatement(stmt.id)} aria-label="Remove statement" style={{ height: 36 }}>
-                <i className="fa-light fa-xmark" aria-hidden="true" />
-              </Button>
-            )}
-          </div>
-        ))}
-        <Button variant="ghost" size="sm" onClick={addStatement} className="gap-1.5 mt-1">
-          <i className="fa-light fa-plus" aria-hidden="true" />
-          Add statement
-        </Button>
-      </div>
-
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Combination keys</p>
-        <p className="text-[11px] text-muted-foreground mb-3">Define what each answer key (A, B, C, D) means — which statements are true in that combination. Mark the correct key.</p>
-        {payload.combinationKeys.map((key) => (
-          <div key={key.id} className="flex items-center gap-2 mb-2">
-            <Button
-              variant={key.isCorrect ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => onChange({ ...payload, combinationKeys: payload.combinationKeys.map(k => ({ ...k, isCorrect: k.id === key.id })) })}
-              style={{ height: 32, width: 32, padding: 0, fontWeight: 700, fontSize: 13, flexShrink: 0 }}
-              aria-label={`Mark key ${key.label} as correct`}
-            >
-              {key.label}
-            </Button>
-            <span className="text-xs text-muted-foreground flex-1">
-              {payload.statements.length > 0
-                ? payload.statements.map((s, i) => `${String.fromCharCode(65 + i)}=${s.correct ? 'T' : 'F'}`).join(', ')
-                : 'Define statements above'}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
   )
 }
