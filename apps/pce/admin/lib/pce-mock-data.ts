@@ -31,7 +31,7 @@ export interface PceOpenTextResponse {
   id: string
   surveyId: string
   questionText: string
-  responseText: string
+  text: string
   sectionSubject: SubjectKey
   flagged?: boolean
 }
@@ -201,7 +201,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr1',
     surveyId: 's1',
     questionText: 'What would you change about this course?',
-    responseText: 'The pacing in the second half of the semester felt rushed. More time on lab applications would help.',
+    text: 'The pacing in the second half of the semester felt rushed. More time on lab applications would help.',
     sectionSubject: 'course_content',
     flagged: false,
   },
@@ -209,7 +209,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr2',
     surveyId: 's1',
     questionText: 'What would you change about this course?',
-    responseText: 'More worked examples in the assessments. The gap between lecture content and exam difficulty was significant.',
+    text: 'More worked examples in the assessments. The gap between lecture content and exam difficulty was significant.',
     sectionSubject: 'course_content',
     flagged: false,
   },
@@ -217,7 +217,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr3',
     surveyId: 's1',
     questionText: 'What feedback do you have for the instructor?',
-    responseText: 'Very approachable during office hours. Could improve clarity on assignment expectations.',
+    text: 'Very approachable during office hours. Could improve clarity on assignment expectations.',
     sectionSubject: 'course_instructor',
     flagged: false,
   },
@@ -225,7 +225,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr4',
     surveyId: 's1',
     questionText: 'What feedback do you have for the instructor?',
-    responseText: 'This professor is terrible and should not be teaching.',
+    text: 'This professor is terrible and should not be teaching.',
     sectionSubject: 'course_instructor',
     flagged: true,
   },
@@ -233,7 +233,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr5',
     surveyId: 's1',
     questionText: 'What feedback do you have for the instructor?',
-    responseText: 'Lectures were well-structured and the supplementary readings added real depth.',
+    text: 'Lectures were well-structured and the supplementary readings added real depth.',
     sectionSubject: 'course_instructor',
     flagged: false,
   },
@@ -241,7 +241,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr6',
     surveyId: 's5',
     questionText: 'What would you change about this course?',
-    responseText: 'Guest lecturers were excellent but the transition between topics could be smoother.',
+    text: 'Guest lecturers were excellent but the transition between topics could be smoother.',
     sectionSubject: 'course_content',
     flagged: false,
   },
@@ -249,7 +249,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
     id: 'otr7',
     surveyId: 's6',
     questionText: 'What would you change about this course?',
-    responseText: 'More clinical examples early on would have helped connect theory to practice.',
+    text: 'More clinical examples early on would have helped connect theory to practice.',
     sectionSubject: 'course_content',
     flagged: false,
   },

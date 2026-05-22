@@ -202,7 +202,7 @@ export default function TemplateEditorPage() {
           {/* Course type field */}
           <div className="flex flex-col gap-1 mb-4" style={{ paddingInline: 6 }}>
             <p
-              className="text-xs font-semibold uppercase tracking-wide"
+              className="text-xs font-medium"
               style={{ color: 'var(--muted-foreground)', marginBottom: 2 }}
             >
               Course type
@@ -225,7 +225,7 @@ export default function TemplateEditorPage() {
           </div>
 
           <p
-            className="text-xs font-semibold uppercase tracking-wide"
+            className="text-xs font-medium"
             style={{ color: 'var(--muted-foreground)', marginBottom: 6, paddingInline: 6 }}
           >
             Sections
@@ -238,9 +238,11 @@ export default function TemplateEditorPage() {
 
             return (
               <div key={section} className="flex items-center group">
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => { setActiveSection(section); closeCard() }}
-                  className="flex items-center justify-between rounded-md text-sm px-2.5 py-2 text-left flex-1 transition-colors"
+                  className="flex items-center justify-between text-sm px-2.5 py-2 text-left flex-1 h-auto"
                   style={isActive
                     ? { background: 'var(--brand-tint)', color: 'var(--brand-color)', fontWeight: 600 }
                     : { color: count === 0 ? 'var(--muted-foreground)' : 'var(--foreground)' }
@@ -253,7 +255,7 @@ export default function TemplateEditorPage() {
                   >
                     {count}
                   </span>
-                </button>
+                </Button>
 
                 {/* Remove section button — only shown when section has 0 questions */}
                 {canRemove ? (

@@ -311,7 +311,7 @@ function ContextPanel({
     >
       {/* Term */}
       <div className="flex flex-col gap-0.5">
-        <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted-foreground)' }}>
+        <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
           Term
         </p>
         <p className="text-sm font-medium">{selectedTerm.name}</p>
@@ -353,7 +353,7 @@ function ContextPanel({
         <>
           <div className="border-t border-border" />
           <div className="flex flex-col gap-1">
-            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted-foreground)' }}>
+            <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
               Window
             </p>
             <p className="text-sm">
@@ -430,7 +430,7 @@ function Step1({
 
       {/* Term selector */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted-foreground)' }}>
+        <label className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
           Term
         </label>
         <Select value={selectedTermId} onValueChange={onTermChange}>
@@ -451,7 +451,7 @@ function Step1({
       {selectedTermId && (
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between mb-1">
-            <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted-foreground)' }}>
+            <label className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
               Course offerings
             </label>
             <span className="text-xs tabular-nums" style={{ color: 'var(--muted-foreground)' }}>
@@ -618,7 +618,7 @@ function Step2({
               className="flex items-center gap-3 rounded-lg px-3 py-2.5"
               style={{ background: 'var(--muted)', border: '1px solid var(--border)' }}
             >
-              <span className="text-xs font-medium uppercase tracking-wide shrink-0" style={{ color: 'var(--muted-foreground)' }}>
+              <span className="text-xs font-medium shrink-0" style={{ color: 'var(--muted-foreground)' }}>
                 Assign all
               </span>
               <Select value="" onValueChange={v => { if (v) onBulkAssign(v) }}>
@@ -780,13 +780,13 @@ function Step3({
         style={{ padding: '16px', gridTemplateColumns: '1fr 1fr', background: 'var(--card)' }}
       >
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted-foreground)' }}>
+          <label className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
             Opens on
           </label>
           <DatePickerField value={openDate} onChange={onOpenDateChange} />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted-foreground)' }}>
+          <label className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
             Closes on
           </label>
           <DatePickerField value={closeDate} onChange={onCloseDateChange} />
