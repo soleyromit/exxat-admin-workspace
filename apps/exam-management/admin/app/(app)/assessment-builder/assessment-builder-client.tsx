@@ -6,6 +6,8 @@ import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   Input,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
+  Separator,
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
   Checkbox,
   Field, FieldLabel, FieldError,
@@ -265,6 +267,7 @@ export default function AssessmentBuilderClient() {
   )
 
   const [sectionsOpen, setSectionsOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   function addSection(title: string) {
     setActiveAsmt(prev => prev ? {
@@ -343,6 +346,17 @@ export default function AssessmentBuilderClient() {
             Editing: {activeAsmt.title} · {activeAsmt.questions.length} questions
           </Badge>
         )}
+        {activeAsmt && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Assessment settings"
+            onClick={() => setSettingsOpen(true)}
+            style={{ marginLeft: 'auto' }}
+          >
+            <i className="fa-light fa-gear" aria-hidden="true" />
+          </Button>
+        )}
       </div>
 
       {/* Main split */}
@@ -415,6 +429,12 @@ export default function AssessmentBuilderClient() {
             })
           })
         }}
+      />
+      <AssessmentSettingsSheet
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        settings={activeAsmt?.settings ?? { type: 'Exam', passwordRequired: false, password: '', randomize: false, showRationaleAfter: true }}
+        onSave={(s) => setActiveAsmt(prev => prev ? { ...prev, settings: s } : prev)}
       />
     </div>
   )
@@ -1242,6 +1262,179 @@ function NewQuestionEditorPanel({
         </div>
       )}
     </div>
+  )
+}
+
+// ── Assessment settings sheet ─────────────────────────────────────────────────
+
+function AssessmentSettingsSheet({
+  open,
+  onOpenChange,
+  settings,
+  onSave,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  settings: import('@/lib/qb-types').AssessmentSettings
+  onSave: (s: import('@/lib/qb-types').AssessmentSettings) => void
+}) {
+  const [local, setLocal] = React.useState(settings)
+
+  React.useEffect(() => { setLocal(settings) }, [settings])
+
+  function toggleField(key: 'passwordRequired' | 'randomize' | 'showRationaleAfter') {
+    setLocal(prev => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  const TYPES: import('@/lib/qb-types').AssessmentType[] = ['Exam', 'Quiz', 'Assignment']
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" style={{ width: 360, maxWidth: '90vw' }}>
+        <SheetHeader>
+          <SheetTitle>Assessment Settings</SheetTitle>
+        </SheetHeader>
+
+        <div className="flex flex-col gap-5 mt-6">
+          {/* Assessment type */}
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">Type</p>
+            <div className="flex gap-2">
+              {TYPES.map(t => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setLocal(prev => ({ ...prev, type: t }))}
+                  className="flex-1 rounded-lg border py-2 text-sm font-medium transition-colors"
+                  style={{
+                    borderColor: local.type === t ? 'var(--brand-color)' : 'var(--border)',
+                    backgroundColor: local.type === t
+                      ? 'color-mix(in oklch, var(--brand-color) 10%, var(--background))'
+                      : 'transparent',
+                    color: local.type === t ? 'var(--brand-color)' : 'var(--muted-foreground)',
+                  }}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Password */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Password required</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Students enter a password to unlock the exam.</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={local.passwordRequired}
+                aria-label="Toggle password required"
+                onClick={() => toggleField('passwordRequired')}
+                style={{
+                  width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0,
+                  backgroundColor: local.passwordRequired ? 'var(--brand-color)' : 'var(--muted)',
+                  position: 'relative', transition: 'background-color .15s',
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: 2,
+                  left: local.passwordRequired ? 18 : 2,
+                  width: 16, height: 16, borderRadius: '50%',
+                  backgroundColor: 'white',
+                  transition: 'left .15s',
+                  display: 'block',
+                }} />
+              </button>
+            </div>
+            {local.passwordRequired && (
+              <input
+                type="text"
+                placeholder="Set exam password…"
+                value={local.password}
+                onChange={e => setLocal(prev => ({ ...prev, password: e.target.value }))}
+                style={{
+                  height: 36, padding: '0 12px', fontSize: 13,
+                  border: '1px solid var(--border)', borderRadius: 8,
+                  background: 'var(--background)', color: 'var(--foreground)', outline: 'none',
+                }}
+              />
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Randomize */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">Randomize question order</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Each student sees questions in a different order.</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={local.randomize}
+              aria-label="Toggle randomize question order"
+              onClick={() => toggleField('randomize')}
+              style={{
+                width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0,
+                backgroundColor: local.randomize ? 'var(--brand-color)' : 'var(--muted)',
+                position: 'relative', transition: 'background-color .15s',
+              }}
+            >
+              <span style={{
+                position: 'absolute', top: 2,
+                left: local.randomize ? 18 : 2,
+                width: 16, height: 16, borderRadius: '50%',
+                backgroundColor: 'white',
+                transition: 'left .15s',
+                display: 'block',
+              }} />
+            </button>
+          </div>
+
+          <Separator />
+
+          {/* Show rationale */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">Show rationale after submission</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Students see the correct answer and rationale after submitting.</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={local.showRationaleAfter}
+              aria-label="Toggle show rationale after submission"
+              onClick={() => toggleField('showRationaleAfter')}
+              style={{
+                width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0,
+                backgroundColor: local.showRationaleAfter ? 'var(--brand-color)' : 'var(--muted)',
+                position: 'relative', transition: 'background-color .15s',
+              }}
+            >
+              <span style={{
+                position: 'absolute', top: 2,
+                left: local.showRationaleAfter ? 18 : 2,
+                width: 16, height: 16, borderRadius: '50%',
+                backgroundColor: 'white',
+                transition: 'left .15s',
+                display: 'block',
+              }} />
+            </button>
+          </div>
+        </div>
+
+        <SheetFooter className="mt-8">
+          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button size="sm" onClick={() => { onSave(local); onOpenChange(false) }}>Save settings</Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   )
 }
 
