@@ -1267,6 +1267,248 @@ function NewQuestionEditorPanel({
   )
 }
 
+// ── Details step (wizard step 1) ─────────────────────────────────────────────
+
+function DetailsStep({
+  activeAsmt,
+  mockCoursesLocal,
+  mockCourseOfferingsLocal,
+  courseId,
+  offeringId,
+  onCourseChange,
+  onOfferingChange,
+  onUpdate,
+  onContinue,
+  onCancel,
+}: {
+  activeAsmt: import('@/lib/qb-types').AssessmentDraft | null
+  mockCoursesLocal: { id: string; name: string; code: string }[]
+  mockCourseOfferingsLocal: { id: string; courseId: string; semester: string }[]
+  courseId: string
+  offeringId: string
+  onCourseChange: (id: string) => void
+  onOfferingChange: (id: string) => void
+  onUpdate: (patch: Partial<import('@/lib/qb-types').AssessmentDraft>) => void
+  onContinue: () => void
+  onCancel: () => void
+}) {
+  const name     = activeAsmt?.title ?? ''
+  const settings = activeAsmt?.settings ?? { type: 'Exam' as import('@/lib/qb-types').AssessmentType, passwordRequired: false, password: '', randomize: false, showRationaleAfter: true }
+  const duration = activeAsmt?.durationMinutes ?? 90
+
+  const TYPES: import('@/lib/qb-types').AssessmentType[] = ['Exam', 'Quiz', 'Assignment']
+
+  function patchSettings(patch: Partial<import('@/lib/qb-types').AssessmentSettings>) {
+    onUpdate({ settings: { ...settings, ...patch } })
+  }
+
+  function Toggle({ checked, onChange, label, description }: { checked: boolean; onChange: (v: boolean) => void; label: string; description: string }) {
+    return (
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-foreground">{label}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={checked}
+          aria-label={label}
+          onClick={() => onChange(!checked)}
+          style={{
+            width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0,
+            backgroundColor: checked ? 'var(--brand-color)' : 'var(--muted)',
+            position: 'relative', transition: 'background-color .15s',
+          }}
+        >
+          <span style={{
+            position: 'absolute', top: 2, left: checked ? 18 : 2,
+            width: 16, height: 16, borderRadius: '50%', backgroundColor: 'white',
+            transition: 'left .15s', display: 'block',
+          }} />
+        </button>
+      </div>
+    )
+  }
+
+  const offerings = mockCourseOfferingsLocal.filter(o => o.courseId === courseId)
+  const canContinue = name.trim().length > 0
+
+  return (
+    <div className="flex flex-col flex-1 overflow-auto">
+      {/* Course + Offering context bar */}
+      <div
+        className="flex items-center gap-4 px-6 py-3 shrink-0"
+        style={{ borderBottom: '1px solid var(--border)', backgroundColor: 'var(--muted)' }}
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-muted-foreground">Course</span>
+          <select
+            value={courseId}
+            onChange={e => onCourseChange(e.target.value)}
+            style={{ fontSize: 13, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--foreground)', padding: '4px 8px', cursor: 'pointer' }}
+          >
+            {mockCoursesLocal.map(c => (
+              <option key={c.id} value={c.id}>{c.code} · {c.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-muted-foreground">Offering</span>
+          <select
+            value={offeringId}
+            onChange={e => onOfferingChange(e.target.value)}
+            style={{ fontSize: 13, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--foreground)', padding: '4px 8px', cursor: 'pointer' }}
+          >
+            {offerings.map(o => (
+              <option key={o.id} value={o.id}>{o.semester}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Main 2-col form */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-8 px-8 py-8 max-w-5xl mx-auto w-full">
+        {/* Left — identity */}
+        <div className="flex flex-col gap-5">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Assessment name *</p>
+            <input
+              type="text"
+              value={name}
+              onChange={e => onUpdate({ title: e.target.value })}
+              placeholder="e.g. Midterm Exam"
+              autoFocus
+              style={{
+                width: '100%', height: 44, padding: '0 14px', fontSize: 16, fontWeight: 500,
+                border: '1px solid var(--border)', borderRadius: 10,
+                background: 'var(--background)', color: 'var(--foreground)', outline: 'none',
+              }}
+              onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--brand-color)' }}
+              onBlur={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--border)' }}
+            />
+          </div>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">
+              Description <span className="font-normal normal-case tracking-normal text-[11px]">— optional, shown to students before they start</span>
+            </p>
+            <textarea
+              placeholder="Brief context about what this assessment covers…"
+              rows={5}
+              style={{
+                width: '100%', padding: '10px 14px', fontSize: 14, lineHeight: '1.5',
+                border: '1px solid var(--border)', borderRadius: 10, resize: 'vertical',
+                background: 'var(--background)', color: 'var(--foreground)', outline: 'none',
+              }}
+              onFocus={e => { (e.target as HTMLTextAreaElement).style.borderColor = 'var(--brand-color)' }}
+              onBlur={e => { (e.target as HTMLTextAreaElement).style.borderColor = 'var(--border)' }}
+            />
+          </div>
+        </div>
+
+        {/* Right — settings */}
+        <div className="flex flex-col gap-5">
+          {/* Type */}
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Type</p>
+            <div className="flex gap-2">
+              {TYPES.map(t => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => patchSettings({ type: t })}
+                  className="flex-1 rounded-lg border py-2.5 text-sm font-medium transition-colors"
+                  style={{
+                    borderColor: settings.type === t ? 'var(--brand-color)' : 'var(--border)',
+                    background: settings.type === t
+                      ? 'color-mix(in oklch, var(--brand-color) 10%, var(--background))'
+                      : 'transparent',
+                    color: settings.type === t ? 'var(--brand-color)' : 'var(--muted-foreground)',
+                  }}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Duration */}
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Duration</p>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={5}
+                max={300}
+                value={duration}
+                onChange={e => {
+                  const v = parseInt(e.target.value)
+                  if (!isNaN(v) && v >= 5) onUpdate({ durationMinutes: v })
+                }}
+                style={{
+                  width: 80, height: 36, padding: '0 10px', fontSize: 14, textAlign: 'center',
+                  border: '1px solid var(--border)', borderRadius: 8,
+                  background: 'var(--background)', color: 'var(--foreground)', outline: 'none',
+                }}
+              />
+              <span className="text-sm text-muted-foreground">minutes</span>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Toggles */}
+          <div className="flex flex-col gap-4">
+            <Toggle
+              checked={settings.passwordRequired}
+              onChange={v => patchSettings({ passwordRequired: v })}
+              label="Password required"
+              description="Students enter a password to unlock the exam."
+            />
+            {settings.passwordRequired && (
+              <input
+                type="text"
+                placeholder="Set exam password…"
+                value={settings.password}
+                onChange={e => patchSettings({ password: e.target.value })}
+                style={{
+                  height: 36, padding: '0 12px', fontSize: 13, marginTop: -8,
+                  border: '1px solid var(--border)', borderRadius: 8,
+                  background: 'var(--background)', color: 'var(--foreground)', outline: 'none', width: '100%',
+                }}
+              />
+            )}
+            <Toggle
+              checked={settings.randomize}
+              onChange={v => patchSettings({ randomize: v })}
+              label="Randomize question order"
+              description="Each student sees questions in a different order."
+            />
+            <Toggle
+              checked={settings.showRationaleAfter}
+              onChange={v => patchSettings({ showRationaleAfter: v })}
+              label="Show rationale after submission"
+              description="Students see the correct answer and rationale after submitting."
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div
+        className="flex items-center justify-between px-8 py-4 shrink-0"
+        style={{ borderTop: '1px solid var(--border)', background: 'var(--card)' }}
+      >
+        <Button variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
+        <Button size="sm" disabled={!canContinue} onClick={onContinue} className="gap-1.5">
+          Continue
+          <i className="fa-light fa-arrow-right" aria-hidden="true" />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 // ── Wizard header ─────────────────────────────────────────────────────────────
 
 function WizardHeader({
