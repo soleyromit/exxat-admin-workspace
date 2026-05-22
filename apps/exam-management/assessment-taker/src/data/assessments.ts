@@ -3,7 +3,7 @@
  *
  * Reflects Aarti + Vishaka's architecture from Granola sessions:
  *   - Active assessments always front and center
- *   - Two result publication modes: immediate (low-stakes) vs faculty-reviewed (high-stakes)
+ *   - Two result publication modes: immediate vs faculty-reviewed
  *   - Accommodations owned by student services, applied at assessment level
  *   - Three result tiers: assessment → course → program (program deferred 2027)
  *   - Section-based timing architecture (UI deferred 2027, but data model supports it)
@@ -15,7 +15,7 @@ export type AssessmentStatus =
   | 'in_progress'       // Student has begun; timer running
   | 'upcoming'          // Scheduled but not yet open
   | 'submitted'         // Submitted; awaiting faculty review
-  | 'results_pending'   // Results withheld — high-stakes, faculty review period
+  | 'results_pending'   // Results withheld — faculty review period
   | 'results_published' // Results available to student
   | 'review_available'  // Scheduled review session window is open
   | 'review_complete';  // Review session closed
@@ -84,7 +84,7 @@ export interface Assessment {
   percentile?: number;
   passingScore: number;
   resultPublishedAt?: Date;
-  resultsHoldUntil?: Date;      // High-stakes: estimated release date
+  resultsHoldUntil?: Date;      // Estimated release date when results are pending faculty review
 
   // Grouping
   term?: string;             // e.g. "Spring 2026" — used to group results by term
@@ -132,7 +132,7 @@ export const MOCK_ASSESSMENTS: Assessment[] = [
     reviewShowsRationale: false,
   },
 
-  // ── Upcoming #1 — high-stakes + accommodation, 2 days out ───────────────
+  // ── Upcoming #1 — proctored + accommodation, 2 days out ───────────────
   {
     id: 'exam-006',
     title: 'Pharmacology — Midterm Examination',
@@ -166,7 +166,7 @@ export const MOCK_ASSESSMENTS: Assessment[] = [
     reviewShowsRationale: true,
   },
 
-  // ── Upcoming #2 — low-stakes, 1 day out ──────────────────────────────────
+  // ── Upcoming #2 — self-paced, 1 day out ──────────────────────────────────
   {
     id: 'exam-007',
     title: 'Pathophysiology — Unit 4 Quiz',

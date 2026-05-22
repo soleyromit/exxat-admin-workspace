@@ -193,14 +193,14 @@ export default function SettingsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="immediate">Immediate (low-stakes quiz)</SelectItem>
-                      <SelectItem value="faculty-published">Faculty-published (high-stakes)</SelectItem>
+                      <SelectItem value="immediate">Immediate</SelectItem>
+                      <SelectItem value="faculty-published">Faculty-published</SelectItem>
                     </SelectContent>
                   </Select>
                 </SettingRow>
 
                 <SettingRow
-                  label="Default chair-review window for high-stakes exams"
+                  label="Default chair-review window"
                   hint="Days faculty have to consult with chair before publishing."
                   readOnly={isReadOnly}
                 >

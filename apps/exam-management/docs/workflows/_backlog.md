@@ -60,6 +60,17 @@ Source: `docs/research/meetings/2026-05-19-assessment-creation-workflows.md`
 | T57 | Course offerings sorted descending, max 6-8 shown | Admin / Faculty | QB + course listing | P2 | Reverse-chrono order, load-more for older offerings. D_EM25. |
 | T58 | Download exam — Phase 1 confirmed | Admin / Faculty / Student | Pre-exam flow | P1 | Confirmed Phase 1. Default = download-and-take (not browser-only). Admin side needs download generation. Closes R3. Flag for PM + back-end alignment. D_EM26. |
 
+## Phase 1 design tasks — added 2026-05-21
+
+Source: `docs/research/meetings/2026-05-21-assessment-prd-accessibility-download.md`
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T59 | Remove high/low stakes labels from all UI | Admin / Faculty / Student | All exam management surfaces | P1 | ✅ Applied today: `create-assessment-modal.tsx`, `settings/page.tsx`, `PostExam.tsx`, `assessments.ts`. D_EM29. |
+| T60 | Accessibility settings panel for exam-taker | Student | Assessment taker | P1 | NEW SCREEN NEEDED. Settings during exam: text-to-speech toggle, 200% magnification, dyslexic font toggle, high contrast toggle. DESIGN-REVIEW — pending final ExamSoft parity check from consultant. D_EM30. |
+| T61 | ExamSoft parity table — full exam management module | PM / Nipun | Process / PRD | P0 (blocker) | PM task: every feature tagged as parity / parity-deferred / differentiator. Must be complete before further setup screen design. D_EM35. |
+| T62 | Copy assessment — section reorganization UX | Admin / Faculty | Assessment builder | P1 | Builds on T51 "Copy existing" path. After copy: support moving questions between sections, re-assigning sections to different faculty. DESIGN-REVIEW — requires section drag+drop or move-to-section affordance. D_EM33. |
+
 ## Research / blockers (R1–R10 from audit)
 
 | # | Item | Owner | Deadline |

@@ -299,6 +299,7 @@ Everything about the course must be accessible but secondary to the assessment w
 | 2D scatter plot for difficulty × point-biserial | Use 3-bucket x-axis (easy/medium/hard) instead; scatter misleads until Romit understands point-biserial | 2026-05-08 |
 | Objective as prominent per-question field | Objective is metadata ("FYI") — content area is the relevant forward field. Show objective on hover/click only | 2026-05-08 |
 | Flagged-only exclusion for curving | Must be able to exclude ANY question, not just flagged | 2026-05-08 |
+| "High stakes" / "low stakes" labels | Don't categorize assessments by stakes level anywhere in the product — no meaningful product distinction. Removed from all UI labels, copy, and tooltips. | 2026-05-21 |
 
 ---
 
@@ -538,6 +539,61 @@ Performance statistics (historical usage + difficulty tags) visible while buildi
 
 Three alignment docs needed (PM/Vishal to produce): types of questions supported, configuration at assessment vs. question level, attributes of a question.
 
+### 5.38 Accessibility Phase 1 targets — pending ExamSoft parity check (2026-05-21)
+
+Source: `docs/research/meetings/2026-05-21-assessment-prd-accessibility-download.md` (Granola `66898189`)
+
+Phase 1 accessibility targets for the exam-taking experience:
+- **Text-to-speech** — Phase 1
+- **200% magnification** — Phase 1 (explicitly chose 200% not 400%; "start at 200%")
+- **Dyslexic font support** — Phase 1 (entire font of the feature changes to dyslexic-friendly)
+- **High contrast color combinations** — Phase 1
+- **Speech-to-text** — lowest priority; likely Phase 2
+
+**Caveat:** scope confirmed pending consultant response on ExamSoft's own accessibility compliance. If ExamSoft doesn't comply, Phase 2 deferral is an acceptable fallback for January 2027 launch.
+
+Design task generated: T60 (accessibility settings panel for exam-taker) — DESIGN-REVIEW.
+
+### 5.39 Download workflow — explicit coordinator window + lockdown model (2026-05-21)
+
+Source: `docs/research/meetings/2026-05-21-assessment-prd-accessibility-download.md` (Granola `66898189`)
+
+Builds on §5.35 (download exam confirmed Phase 1). Adds workflow detail:
+
+- **Download window** is coordinator-configured: opens at publication, closes approximately 2 hours before exam time.
+- **Explicit student action required** — no auto-download. The student must consciously initiate. Product must make the call-to-action unmissable ("you have to create a workflow that will explicitly point them that there is some action needed").
+- **Lockdown browser** during exam — password (given in the exam room on exam day) decrypts the locally downloaded exam.
+- **Async submission** — student clicks Submit → exam locks immediately → background upload → "uploaded successfully" on reconnect. Never lost post-submit.
+- If WiFi fails at submit time → exam re-submits automatically when student's device reconnects.
+
+> "You have to create a workflow that will explicitly point them that there is some action needed from them they come to take the actual exam. That's what that whole download workflow is." — Vishaka
+
+> "If they are not able to submit because of lack of connectivity, then whenever they are connected to the network again, is when it gets submitted." — Vishaka
+
+### 5.40 Copy assessment — section-level copy with reorganization capability (2026-05-21)
+
+Source: `docs/research/meetings/2026-05-21-assessment-prd-accessibility-download.md` (Granola `66898189`)
+
+Builds on §5.28 (Copy existing assessment as one of the 4 entry options). Adds structural detail:
+
+- Faculty copy an entire prior-year exam: **sections copy, questions copy, structure copies**.
+- Faculty-to-section assignments may change after copy (faculty may have left; content coverage dates may differ from prior year).
+- Questions should be **movable between sections** post-copy.
+- Points structure typically stays the same (most exams = 1 point per question).
+- Net result: faculty spend their time editing and reorganizing, not rebuilding from scratch.
+
+> "A way for us to copy the structure in terms of and the questions, but giving them the ability to edit, reorganize questions, move them to other sections. Would help." — Vishaka
+
+Design task generated: T62 (copy assessment — section reorganization UX) — DESIGN-REVIEW.
+
+### 5.41 Faculty exam planning cadence (2026-05-21)
+
+Source: `docs/research/meetings/2026-05-21-assessment-prd-accessibility-download.md` (Granola `66898189`)
+
+Faculty do NOT plan their exam schedule at the start of a term. Typical build window: **10 days to 1 month before the actual exam**. Some faculty wait until the week before. Product should not rely on a term-level "blueprint" of upcoming assessments to drive UX flows. Any "upcoming exam reminder" feature must account for this — it cannot depend on a coordinator inputting a full schedule at term start.
+
+> "Some faculty like working on an assessment ten days before the actual assessment. Like, if a course has two midterms and one final... they may not go at the beginning of the course first week and say, oh, I have two midterms, one on this day." — Vishaka
+
 ---
 
 ## 6.11 PCE — Phase 1 survey scope (2026-05-14)
@@ -669,6 +725,7 @@ Before publishing any assessment — regardless of creation pathway — faculty 
 | 2026-05-14 10:30 | Assessment builder — base entities, student experience, PRD workflow | `af529725` | Vishaka + Nipun + Romit |
 | 2026-05-14 14:02 | Exam Management — Student login experience | `81c06a04` | Vishaka + Romit |
 | 2026-05-19 13:59 | Assessment creation workflows and question bank design | `f59cfbe4` | Aarti + Vishaka + Romit |
+| 2026-05-21 10:33 | Assessment PRD — accessibility standards, offline exam download, and parity with ExamSoft | `66898189` | Vishaka + Nipun + Romit |
 
 Per-meeting raw notes at `apps/exam-management/docs/research/meetings/` and `apps/pce/docs/research/meetings/`.
 
