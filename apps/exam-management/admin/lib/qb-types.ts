@@ -89,6 +89,23 @@ export interface AssessmentQuestion {
   order: number
 }
 
+export type AssessmentType = 'Exam' | 'Quiz' | 'Assignment'
+
+export interface AssessmentSettings {
+  type: AssessmentType
+  passwordRequired: boolean
+  password: string
+  randomize: boolean
+  showRationaleAfter: boolean
+}
+
+export interface AssessmentSection {
+  id: string
+  title: string
+  facultyId?: string       // optional faculty assignment (persona ID)
+  questionIds: string[]    // ordered list of question IDs in this section
+}
+
 export interface AssessmentDraft {
   id: string
   title: string
@@ -96,6 +113,8 @@ export interface AssessmentDraft {
   offeringId: string
   questions: AssessmentQuestion[]
   durationMinutes: number
+  sections: AssessmentSection[]        // empty array = no sections
+  settings: AssessmentSettings
 }
 
 export interface SmartView {

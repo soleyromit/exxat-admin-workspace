@@ -81,6 +81,8 @@ export default function AssessmentBuilderClient() {
       offeringId: draft.offeringId,
       questions: [],
       durationMinutes: draft.durationMinutes,
+      sections: [],
+      settings: { type: 'Exam', passwordRequired: false, password: '', randomize: false, showRationaleAfter: true },
     })
     setCourseId(draft.courseId)
     setOfferingId(draft.offeringId)
@@ -121,6 +123,8 @@ export default function AssessmentBuilderClient() {
       offeringId: source.offeringId,
       questions: [],
       durationMinutes: source.durationMinutes,
+      sections: [],
+      settings: { type: 'Exam', passwordRequired: false, password: '', randomize: false, showRationaleAfter: true },
     })
   }
 
@@ -132,6 +136,8 @@ export default function AssessmentBuilderClient() {
       offeringId,
       questions: [],
       durationMinutes: 60,
+      sections: [],
+      settings: { type: 'Exam', passwordRequired: false, password: '', randomize: false, showRationaleAfter: true },
     })
   }
 
@@ -215,6 +221,37 @@ export default function AssessmentBuilderClient() {
     [activeAsmt]
   )
 
+  const [sectionsOpen, setSectionsOpen] = useState(false)
+
+  function addSection(title: string) {
+    setActiveAsmt(prev => prev ? {
+      ...prev,
+      sections: [...prev.sections, { id: `sec-${Date.now()}`, title, questionIds: [] }],
+    } : prev)
+  }
+
+  function removeSection(sectionId: string) {
+    setActiveAsmt(prev => prev ? {
+      ...prev,
+      sections: prev.sections.filter(s => s.id !== sectionId),
+    } : prev)
+  }
+
+  function assignQuestionToSection(questionId: string, sectionId: string | null) {
+    setActiveAsmt(prev => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        sections: prev.sections.map(s => ({
+          ...s,
+          questionIds: sectionId === s.id
+            ? [...new Set([...s.questionIds, questionId])]
+            : s.questionIds.filter(id => id !== questionId),
+        })),
+      }
+    })
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* WCAG page-has-heading-one — sr-only h1; visible heading is the
@@ -273,21 +310,33 @@ export default function AssessmentBuilderClient() {
           onCreate={createAssessment}
         />
         {activeAsmt ? (
-          <ABQuestionPicker
-            selectedIds={selectedIds}
-            onToggle={toggleQuestion}
-            activeAsmt={activeAsmt}
-            onDurationChange={(min) => setActiveAsmt(prev => prev ? { ...prev, durationMinutes: min } : prev)}
-            smartViews={allSmartViews}
-            activeViewId={smartViewId}
-            onViewChange={setSmartViewId}
-            onSaveView={saveSmartView}
-            userCreated={userCreated}
-            onCreateQuestion={createQuestion}
-            onCreateFromDraft={createQuestionFromDraft}
-            authorPersonaId={currentPersona.id}
-            onOpenAi={() => setAiOpen(true)}
-          />
+          <>
+            <ABQuestionPicker
+              selectedIds={selectedIds}
+              onToggle={toggleQuestion}
+              activeAsmt={activeAsmt}
+              onDurationChange={(min) => setActiveAsmt(prev => prev ? { ...prev, durationMinutes: min } : prev)}
+              smartViews={allSmartViews}
+              activeViewId={smartViewId}
+              onViewChange={setSmartViewId}
+              onSaveView={saveSmartView}
+              userCreated={userCreated}
+              onCreateQuestion={createQuestion}
+              onCreateFromDraft={createQuestionFromDraft}
+              authorPersonaId={currentPersona.id}
+              onOpenAi={() => setAiOpen(true)}
+              sectionsOpen={sectionsOpen}
+              onToggleSections={() => setSectionsOpen(p => !p)}
+            />
+            {sectionsOpen && (
+              <SectionsPanel
+                activeAsmt={activeAsmt}
+                onAddSection={addSection}
+                onRemoveSection={removeSection}
+                onAssignQuestion={assignQuestionToSection}
+              />
+            )}
+          </>
         ) : (
           <div className="text-muted-foreground" style={{
             flex: 1,
@@ -429,6 +478,7 @@ function ABQuestionPicker({
   selectedIds, onToggle, activeAsmt, onDurationChange,
   smartViews, activeViewId, onViewChange, onSaveView,
   userCreated, onCreateQuestion, onCreateFromDraft, authorPersonaId, onOpenAi,
+  sectionsOpen, onToggleSections,
 }: {
   selectedIds: Set<string>
   onToggle: (id: string) => void
@@ -443,6 +493,8 @@ function ABQuestionPicker({
   onCreateFromDraft: (draft: QuestionDraft, dest: SaveDestination) => Question
   authorPersonaId: string
   onOpenAi: () => void
+  sectionsOpen: boolean
+  onToggleSections: () => void
 }) {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   const [saveConfirmed, setSaveConfirmed] = useState(false)
@@ -571,6 +623,16 @@ function ABQuestionPicker({
       }}>
         <span className="text-sm font-semibold">{activeAsmt.title}</span>
         <span className="text-xs text-muted-foreground">· {selectedIds.size} questions selected</span>
+        <Button
+          variant={sectionsOpen ? 'default' : 'outline'}
+          size="sm"
+          onClick={onToggleSections}
+          className="gap-1.5 shrink-0 ml-auto"
+          style={{ height: 28, fontSize: 12 }}
+        >
+          <i className="fa-light fa-layer-group" aria-hidden="true" />
+          Sections{activeAsmt.sections.length > 0 ? ` (${activeAsmt.sections.length})` : ''}
+        </Button>
       </div>
 
       {/* Source bar — Vishaka: questions can come from multiple places. Make
@@ -1088,6 +1150,139 @@ function NewQuestionEditorPanel({
           </ul>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Sections panel ────────────────────────────────────────────────────────────
+
+function SectionsPanel({
+  activeAsmt,
+  onAddSection,
+  onRemoveSection,
+  onAssignQuestion,
+}: {
+  activeAsmt: import('@/lib/qb-types').AssessmentDraft
+  onAddSection: (title: string) => void
+  onRemoveSection: (id: string) => void
+  onAssignQuestion: (questionId: string, sectionId: string | null) => void
+}) {
+  const [newTitle, setNewTitle] = useState('')
+
+  const unassigned = activeAsmt.questions.filter(
+    q => !activeAsmt.sections.some(s => s.questionIds.includes(q.questionId))
+  )
+
+  function submit() {
+    const t = newTitle.trim()
+    if (!t) return
+    onAddSection(t)
+    setNewTitle('')
+  }
+
+  return (
+    <div style={{ width: 280, minWidth: 280, borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--card)' }}>
+      <div className="text-[10px] font-bold uppercase tracking-[.07em] text-muted-foreground" style={{ padding: '10px 14px 6px', flexShrink: 0 }}>
+        Sections
+      </div>
+
+      <div style={{ flex: 1, overflow: 'auto', padding: '0 10px 10px' }}>
+        {unassigned.length > 0 && (
+          <div className="mb-3">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 px-1">
+              Unassigned ({unassigned.length})
+            </p>
+            <div className="rounded-lg border border-dashed border-border p-2 flex flex-col gap-1">
+              {unassigned.slice(0, 6).map(q => {
+                const question = MOCK_QB_QUESTIONS.find(mq => mq.id === q.questionId)
+                return (
+                  <div key={q.questionId} className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <i className="fa-light fa-grip-dots-vertical shrink-0" aria-hidden="true" style={{ fontSize: 10 }} />
+                    <span className="truncate flex-1">{question?.title ?? q.questionId}</span>
+                    {activeAsmt.sections.length > 0 && (
+                      <select
+                        aria-label="Assign to section"
+                        onChange={e => onAssignQuestion(q.questionId, e.target.value || null)}
+                        defaultValue=""
+                        style={{ fontSize: 10, borderRadius: 4, border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--foreground)', padding: '1px 4px', maxWidth: 80, cursor: 'pointer' }}
+                      >
+                        <option value="">Assign…</option>
+                        {activeAsmt.sections.map(s => (
+                          <option key={s.id} value={s.id}>{s.title}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                )
+              })}
+              {unassigned.length > 6 && (
+                <p className="text-[10px] text-muted-foreground px-1">+{unassigned.length - 6} more</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeAsmt.sections.map((section, idx) => (
+          <div key={section.id} className="mb-3">
+            <div className="flex items-center justify-between mb-1.5 px-1">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                {idx + 1}. {section.title} ({section.questionIds.length})
+              </p>
+              <button
+                type="button"
+                onClick={() => onRemoveSection(section.id)}
+                aria-label={`Remove section ${section.title}`}
+                style={{ fontSize: 10, background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--muted-foreground)' }}
+              >
+                <i className="fa-light fa-xmark" aria-hidden="true" />
+              </button>
+            </div>
+            <div className="rounded-lg border border-border p-2 flex flex-col gap-1 min-h-[40px]"
+              style={{ background: 'color-mix(in oklch, var(--brand-color) 4%, var(--background))' }}>
+              {section.questionIds.length === 0 ? (
+                <p className="text-[10px] text-muted-foreground italic px-1">No questions assigned yet</p>
+              ) : (
+                section.questionIds.slice(0, 4).map(qId => {
+                  const question = MOCK_QB_QUESTIONS.find(mq => mq.id === qId)
+                  return (
+                    <div key={qId} className="flex items-center gap-2 text-xs text-foreground">
+                      <i className="fa-light fa-circle-dot shrink-0" aria-hidden="true" style={{ fontSize: 9, color: 'var(--brand-color)' }} />
+                      <span className="truncate">{question?.title ?? qId}</span>
+                    </div>
+                  )
+                })
+              )}
+              {section.questionIds.length > 4 && (
+                <p className="text-[10px] text-muted-foreground px-1">+{section.questionIds.length - 4} more</p>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {activeAsmt.sections.length === 0 && unassigned.length === 0 && (
+          <p className="text-xs text-muted-foreground text-center py-8">
+            Add questions first, then organize them into sections.
+          </p>
+        )}
+      </div>
+
+      <div style={{ padding: '8px 10px', borderTop: '1px solid var(--border)', flexShrink: 0, display: 'flex', gap: 6 }}>
+        <input
+          type="text"
+          placeholder="Section name…"
+          value={newTitle}
+          onChange={e => setNewTitle(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && submit()}
+          style={{
+            flex: 1, height: 32, fontSize: 12, padding: '0 8px',
+            border: '1px solid var(--border)', borderRadius: 6,
+            background: 'var(--background)', color: 'var(--foreground)', outline: 'none',
+          }}
+        />
+        <Button size="sm" variant="outline" onClick={submit} style={{ height: 32, padding: '0 10px', fontSize: 12 }}>
+          Add
+        </Button>
+      </div>
     </div>
   )
 }
