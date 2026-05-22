@@ -1,6 +1,40 @@
-export type SurveyStatus = 'draft' | 'active' | 'collecting' | 'pending_review' | 'released' | 'closed'
+export type SurveyStatus = 'draft' | 'active' | 'collecting' | 'scheduled' | 'pending_review' | 'released' | 'closed'
 export type TemplateSection = 'course_content' | 'faculty_performance' | 'course_director'
 export type UserRole = 'admin' | 'faculty'
+export type SubjectKey = 'course_content' | 'course_instructor' | 'course_coordinator' | 'teaching_assistant' | 'lab_instructor' | 'course_director'
+export type SurveyType = 'course_evaluation' | 'programmatic'
+export type CourseTypeFilter = 'didactic' | 'clinical' | 'any'
+
+export interface PceSubject {
+  key: SubjectKey
+  label: string
+  description: string
+  isGeneral: boolean  // true = always available (e.g. Course Content), false = Prism role-based
+  prismCount?: number // how many courses in the mock data have this role assigned
+}
+
+export interface PceTemplateSection {
+  id: string
+  subjectKey: SubjectKey
+  title: string  // admin-customizable display name
+  questions: TemplateQuestion[]
+  order: number
+}
+
+export interface PceProgram {
+  id: string
+  name: string
+  code: string
+}
+
+export interface PceOpenTextResponse {
+  id: string
+  surveyId: string
+  questionText: string
+  responseText: string
+  sectionSubject: SubjectKey
+  flagged?: boolean
+}
 
 export interface PceTemplate {
   id: string
@@ -15,6 +49,11 @@ export interface PceTemplate {
   questions: Record<TemplateSection, TemplateQuestion[]>
   /** Likert pointer (3 | 4 | 5 | 7 | 10). Defaults to 5 until T30 settings page. */
   likertPointer: 3 | 4 | 5 | 7 | 10
+  courseType?: CourseTypeFilter
+  /** 'course_evaluation' | 'programmatic'. Added in Phase 1 expansion. */
+  surveyType?: SurveyType
+  /** Dynamic subject-based sections (additive — parallel to legacy questions/sections). */
+  templateSections?: PceTemplateSection[]
 }
 
 export interface TemplateQuestion {
@@ -53,6 +92,14 @@ export interface PceSurvey {
   createdAt: string
   releasedAt?: string
   closedAt?: string
+  /** 'course_evaluation' | 'programmatic'. */
+  surveyType?: SurveyType
+  /** YYYY-MM-DD — date the survey opens for student responses. */
+  openDate?: string
+  /** Academic year string, e.g. '2025–2026'. */
+  academicYear?: string
+  /** FK → PceProgram */
+  programId?: string
 }
 
 export interface PriorOffering {
@@ -98,6 +145,116 @@ export const MOCK_CURRENT_USER: PceUser = {
   role: 'admin',
 }
 
+export const MOCK_SUBJECTS: PceSubject[] = [
+  {
+    key: 'course_content',
+    label: 'Course Content',
+    description: 'Evaluates the course itself — structure, materials, objectives, workload.',
+    isGeneral: true,
+  },
+  {
+    key: 'course_instructor',
+    label: 'Course Instructor',
+    description: 'Evaluates faculty who teach portions of the course.',
+    isGeneral: false,
+    prismCount: 3,
+  },
+  {
+    key: 'course_coordinator',
+    label: 'Course Coordinator',
+    description: 'Evaluates the faculty member responsible for managing the course.',
+    isGeneral: false,
+    prismCount: 1,
+  },
+  {
+    key: 'teaching_assistant',
+    label: 'Teaching Assistant',
+    description: 'Evaluates TAs who support instruction.',
+    isGeneral: false,
+    prismCount: 0,
+  },
+  {
+    key: 'lab_instructor',
+    label: 'Lab Instructor',
+    description: 'Evaluates faculty running lab sessions.',
+    isGeneral: false,
+    prismCount: 1,
+  },
+  {
+    key: 'course_director',
+    label: 'Course Director',
+    description: 'Evaluates the director overseeing the course curriculum.',
+    isGeneral: false,
+    prismCount: 1,
+  },
+]
+
+export const MOCK_PROGRAMS: PceProgram[] = [
+  { id: 'prog1', name: 'Doctor of Physical Therapy', code: 'DPT' },
+  { id: 'prog2', name: 'Master of Science in Nursing', code: 'MSN' },
+  { id: 'prog3', name: 'Doctor of Pharmacy', code: 'PharmD' },
+  { id: 'prog4', name: 'Physician Assistant Studies', code: 'PA' },
+]
+
+export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
+  {
+    id: 'otr1',
+    surveyId: 's1',
+    questionText: 'What would you change about this course?',
+    responseText: 'The pacing in the second half of the semester felt rushed. More time on lab applications would help.',
+    sectionSubject: 'course_content',
+    flagged: false,
+  },
+  {
+    id: 'otr2',
+    surveyId: 's1',
+    questionText: 'What would you change about this course?',
+    responseText: 'More worked examples in the assessments. The gap between lecture content and exam difficulty was significant.',
+    sectionSubject: 'course_content',
+    flagged: false,
+  },
+  {
+    id: 'otr3',
+    surveyId: 's1',
+    questionText: 'What feedback do you have for the instructor?',
+    responseText: 'Very approachable during office hours. Could improve clarity on assignment expectations.',
+    sectionSubject: 'course_instructor',
+    flagged: false,
+  },
+  {
+    id: 'otr4',
+    surveyId: 's1',
+    questionText: 'What feedback do you have for the instructor?',
+    responseText: 'This professor is terrible and should not be teaching.',
+    sectionSubject: 'course_instructor',
+    flagged: true,
+  },
+  {
+    id: 'otr5',
+    surveyId: 's1',
+    questionText: 'What feedback do you have for the instructor?',
+    responseText: 'Lectures were well-structured and the supplementary readings added real depth.',
+    sectionSubject: 'course_instructor',
+    flagged: false,
+  },
+  {
+    id: 'otr6',
+    surveyId: 's5',
+    questionText: 'What would you change about this course?',
+    responseText: 'Guest lecturers were excellent but the transition between topics could be smoother.',
+    sectionSubject: 'course_content',
+    flagged: false,
+  },
+  {
+    id: 'otr7',
+    surveyId: 's6',
+    questionText: 'What would you change about this course?',
+    responseText: 'More clinical examples early on would have helped connect theory to practice.',
+    sectionSubject: 'course_content',
+    flagged: false,
+  },
+]
+
 export const MOCK_TEMPLATES: PceTemplate[] = [
   {
     id: 'tmpl1',
@@ -109,6 +266,8 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
     lastModified: 'Apr 10, 2026',
     createdBy: 'Dr. Thompson',
     likertPointer: 5,
+    courseType: 'any',
+    surveyType: 'course_evaluation',
     questions: {
       course_content: [
         { id: 'q1', text: 'The course objectives were clearly stated.', answerType: 'likert', order: 0 },
@@ -124,6 +283,32 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
       ],
       course_director: [],
     },
+    templateSections: [
+      {
+        id: 'ts1-1',
+        subjectKey: 'course_content',
+        title: 'Course Content',
+        order: 0,
+        questions: [
+          { id: 'q1', text: 'The course objectives were clearly stated.', answerType: 'likert', order: 0 },
+          { id: 'q2', text: 'Course materials supported my learning.', answerType: 'likert', order: 1 },
+          { id: 'q3', text: 'The workload was appropriate for the credit hours.', answerType: 'likert', order: 2 },
+          { id: 'q4', text: 'Assessments were aligned with learning objectives.', answerType: 'likert', order: 3 },
+          { id: 'q5', text: 'What would you change about this course?', answerType: 'free_text', order: 4 },
+        ],
+      },
+      {
+        id: 'ts1-2',
+        subjectKey: 'course_instructor',
+        title: 'Faculty Performance',
+        order: 1,
+        questions: [
+          { id: 'q6', text: 'The instructor was well-prepared for each class.', answerType: 'likert', order: 0 },
+          { id: 'q7', text: 'The instructor communicated expectations clearly.', answerType: 'likert', order: 1 },
+          { id: 'q8', text: 'What feedback do you have for the instructor?', answerType: 'free_text', order: 2 },
+        ],
+      },
+    ],
   },
   {
     id: 'tmpl2',
@@ -135,6 +320,8 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
     lastModified: 'Mar 22, 2026',
     createdBy: 'Dr. Thompson',
     likertPointer: 5,
+    courseType: 'any',
+    surveyType: 'course_evaluation',
     questions: {
       course_content: [],
       faculty_performance: [
@@ -144,6 +331,19 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
       ],
       course_director: [],
     },
+    templateSections: [
+      {
+        id: 'ts2-1',
+        subjectKey: 'course_instructor',
+        title: 'Faculty Performance',
+        order: 0,
+        questions: [
+          { id: 'q9',  text: 'The instructor encourages student participation.', answerType: 'likert', order: 0 },
+          { id: 'q10', text: 'The instructor is available during office hours.', answerType: 'likert', order: 1 },
+          { id: 'q11', text: 'Any concerns to share at the midpoint?', answerType: 'free_text', order: 2 },
+        ],
+      },
+    ],
   },
   {
     id: 'tmpl3',
@@ -155,11 +355,14 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
     lastModified: 'Apr 28, 2026',
     createdBy: 'Dr. Thompson',
     likertPointer: 5,
+    courseType: 'any',
+    surveyType: 'course_evaluation',
     questions: {
       course_content: [],
       faculty_performance: [],
       course_director: [],
     },
+    templateSections: [],
   },
 ]
 
@@ -190,6 +393,10 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     enrollmentCount: 50,
     deadline: 'Apr 30, 2026',
     createdAt: 'Jan 15, 2026',
+    surveyType: 'course_evaluation',
+    openDate: '2026-01-16',
+    academicYear: '2025–2026',
+    programId: 'prog1',
   },
   {
     id: 's2',
@@ -210,6 +417,10 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     enrollmentCount: 50,
     deadline: 'May 05, 2026',
     createdAt: 'Jan 15, 2026',
+    surveyType: 'course_evaluation',
+    openDate: '2026-01-16',
+    academicYear: '2025–2026',
+    programId: 'prog2',
   },
   {
     id: 's3',
@@ -232,6 +443,10 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     deadline: 'Apr 15, 2026',
     createdAt: 'Jan 15, 2026',
     releasedAt: 'Apr 17, 2026',
+    surveyType: 'course_evaluation',
+    openDate: '2026-01-16',
+    academicYear: '2025–2026',
+    programId: 'prog3',
   },
   {
     id: 's4',
@@ -255,6 +470,10 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     createdAt: 'Aug 20, 2025',
     releasedAt: 'Dec 14, 2025',
     closedAt: 'Jan 10, 2026',
+    surveyType: 'course_evaluation',
+    openDate: '2025-08-21',
+    academicYear: '2025–2026',
+    programId: 'prog1',
   },
   {
     id: 's5',
@@ -275,6 +494,10 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     enrollmentCount: 30,
     deadline: 'Apr 22, 2026',
     createdAt: 'Jan 15, 2026',
+    surveyType: 'course_evaluation',
+    openDate: '2026-01-16',
+    academicYear: '2025–2026',
+    programId: 'prog2',
   },
   {
     id: 's6',
@@ -294,6 +517,10 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     enrollmentCount: 10,
     deadline: 'Apr 22, 2026',
     createdAt: 'Jan 15, 2026',
+    surveyType: 'course_evaluation',
+    openDate: '2026-01-16',
+    academicYear: '2025–2026',
+    programId: 'prog3',
   },
   {
     id: 's7',
@@ -311,6 +538,10 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     enrollmentCount: 35,
     deadline: 'May 30, 2026',
     createdAt: 'Apr 20, 2026',
+    surveyType: 'course_evaluation',
+    openDate: '2026-04-21',
+    academicYear: '2025–2026',
+    programId: 'prog1',
   },
 ]
 
@@ -429,6 +660,7 @@ export interface CourseOffering {
   /** Roster size */
   enrolledCount: number
   status: 'planned' | 'active' | 'completed' | 'archived'
+  courseType?: 'didactic' | 'clinical'
 }
 
 // Permissions (entity #6) — role × scope grants
@@ -637,14 +869,14 @@ export const MOCK_STANDARDS: Standard[] = [
 ]
 
 export const MOCK_COURSE_OFFERINGS: CourseOffering[] = [
-  { id: 'co1', masterCourseId: 'mc1', termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f2', collaboratorIds: ['f1'], enrolledCount: 50, status: 'active' },
-  { id: 'co2', masterCourseId: 'mc2', termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f3', collaboratorIds: ['f1'], enrolledCount: 50, status: 'active' },
-  { id: 'co3', masterCourseId: 'mc3', termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 50, status: 'completed' },
-  { id: 'co4', masterCourseId: 'mc4', termId: 'pt2', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 50, status: 'archived' },
-  { id: 'co5', masterCourseId: 'mc5', termId: 'pt1', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 30, status: 'active' },
-  { id: 'co6', masterCourseId: 'mc6', termId: 'pt1', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 10, status: 'active' },
-  { id: 'co7', masterCourseId: 'mc7', termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f2', collaboratorIds: [],     enrolledCount: 35, status: 'planned' },
-  { id: 'co8', masterCourseId: 'mc1', termId: 'pt5', cohort: 'Class of 2028', primaryFacultyId: 'f2', collaboratorIds: ['f1'], enrolledCount: 50, status: 'planned' },
+  { id: 'co1', masterCourseId: 'mc1', termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f2', collaboratorIds: ['f1'], enrolledCount: 50, status: 'active',    courseType: 'didactic'  },
+  { id: 'co2', masterCourseId: 'mc2', termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f3', collaboratorIds: ['f1'], enrolledCount: 50, status: 'active',    courseType: 'clinical'  },
+  { id: 'co3', masterCourseId: 'mc3', termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 50, status: 'completed',  courseType: 'clinical'  },
+  { id: 'co4', masterCourseId: 'mc4', termId: 'pt2', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 50, status: 'archived'   },
+  { id: 'co5', masterCourseId: 'mc5', termId: 'pt1', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 30, status: 'active',    courseType: 'didactic'  },
+  { id: 'co6', masterCourseId: 'mc6', termId: 'pt1', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 10, status: 'active',    courseType: 'didactic'  },
+  { id: 'co7', masterCourseId: 'mc7', termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f2', collaboratorIds: [],     enrolledCount: 35, status: 'planned',   courseType: 'didactic'  },
+  { id: 'co8', masterCourseId: 'mc1', termId: 'pt5', cohort: 'Class of 2028', primaryFacultyId: 'f2', collaboratorIds: ['f1'], enrolledCount: 50, status: 'planned',   courseType: 'didactic'  },
 ]
 
 export const SECTION_LABELS: Record<TemplateSection, string> = {

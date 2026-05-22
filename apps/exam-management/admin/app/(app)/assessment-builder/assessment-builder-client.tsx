@@ -266,6 +266,8 @@ export default function AssessmentBuilderClient() {
     [activeAsmt]
   )
 
+  const [activeStep, setActiveStep] = useState<1 | 2 | 3>(1)
+
   const [sectionsOpen, setSectionsOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
@@ -1261,6 +1263,127 @@ function NewQuestionEditorPanel({
           </ul>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Wizard header ─────────────────────────────────────────────────────────────
+
+function WizardHeader({
+  activeStep,
+  onStepClick,
+  assessmentName,
+  courseLabel,
+  onSaveDraft,
+  canSave,
+}: {
+  activeStep: 1 | 2 | 3
+  onStepClick: (step: 1 | 2 | 3) => void
+  assessmentName: string
+  courseLabel: string
+  onSaveDraft: () => void
+  canSave: boolean
+}) {
+  const STEPS: { id: 1 | 2 | 3; label: string; icon: string }[] = [
+    { id: 1, label: 'Details',  icon: 'fa-circle-info' },
+    { id: 2, label: 'Build',    icon: 'fa-books' },
+    { id: 3, label: 'Review',   icon: 'fa-circle-check' },
+  ]
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 20px',
+        height: 52,
+        borderBottom: '1px solid var(--border)',
+        background: 'var(--card)',
+        flexShrink: 0,
+        gap: 16,
+      }}
+    >
+      {/* Left: breadcrumb */}
+      <div className="flex items-center gap-2 min-w-0 shrink-0">
+        <span className="text-xs text-muted-foreground truncate hidden sm:block">{courseLabel}</span>
+        {courseLabel && <i className="fa-light fa-chevron-right text-[10px] text-muted-foreground hidden sm:block" aria-hidden="true" />}
+        <span className="text-sm font-semibold text-foreground truncate max-w-[160px]">
+          {assessmentName || 'New Assessment'}
+        </span>
+      </div>
+
+      {/* Center: step indicators */}
+      <div className="flex items-center gap-1" role="tablist" aria-label="Assessment wizard steps">
+        {STEPS.map((step, idx) => {
+          const isActive    = activeStep === step.id
+          const isCompleted = activeStep > step.id
+          const isClickable = step.id < activeStep
+
+          return (
+            <React.Fragment key={step.id}>
+              {idx > 0 && (
+                <div
+                  style={{
+                    width: 32, height: 1,
+                    backgroundColor: isCompleted ? 'var(--brand-color)' : 'var(--border)',
+                    transition: 'background-color .2s',
+                  }}
+                />
+              )}
+              <button
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => isClickable && onStepClick(step.id)}
+                disabled={!isClickable && !isActive}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '4px 10px',
+                  borderRadius: 20,
+                  border: '1px solid',
+                  borderColor: isActive ? 'var(--brand-color)' : isCompleted ? 'var(--brand-color)' : 'var(--border)',
+                  backgroundColor: isActive
+                    ? 'color-mix(in oklch, var(--brand-color) 10%, var(--background))'
+                    : isCompleted ? 'color-mix(in oklch, var(--brand-color) 6%, var(--background))'
+                    : 'transparent',
+                  color: isActive ? 'var(--brand-color)' : isCompleted ? 'var(--brand-color)' : 'var(--muted-foreground)',
+                  fontSize: 12,
+                  fontWeight: isActive ? 600 : 400,
+                  cursor: isClickable ? 'pointer' : 'default',
+                  background: isActive
+                    ? 'color-mix(in oklch, var(--brand-color) 10%, var(--background))'
+                    : isCompleted ? 'color-mix(in oklch, var(--brand-color) 6%, var(--background))'
+                    : 'none',
+                  transition: 'all .15s',
+                }}
+              >
+                <i
+                  className={`fa-light ${isCompleted ? 'fa-circle-check' : step.icon} text-xs`}
+                  aria-hidden="true"
+                />
+                <span>{step.label}</span>
+              </button>
+            </React.Fragment>
+          )
+        })}
+      </div>
+
+      {/* Right: save draft */}
+      <div className="flex items-center gap-2 shrink-0">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onSaveDraft}
+          disabled={!canSave}
+          className="gap-1.5"
+        >
+          <i className="fa-light fa-floppy-disk" aria-hidden="true" />
+          Save draft
+        </Button>
+      </div>
     </div>
   )
 }

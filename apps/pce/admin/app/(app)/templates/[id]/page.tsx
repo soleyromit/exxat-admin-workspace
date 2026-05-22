@@ -19,15 +19,15 @@ import {
   TooltipTrigger,
   TooltipContent,
   DragHandleGripIcon,
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
 } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
+import { SECTION_LABELS } from '@/lib/pce-mock-data'
 import type { TemplateSection, TemplateQuestion } from '@/lib/pce-mock-data'
-
-const SECTION_LABELS: Record<TemplateSection, string> = {
-  course_content:      'Course Content',
-  faculty_performance: 'Faculty Performance',
-  course_director:     'Course Director',
-}
 
 const ALL_SECTIONS: TemplateSection[] = ['course_content', 'faculty_performance', 'course_director']
 
@@ -35,7 +35,6 @@ export default function TemplateEditorPage() {
   const { id } = useParams<{ id: string }>()
   const { templates, updateTemplate, addQuestion, updateQuestion, deleteQuestion, reorderQuestions } = usePce()
 
-  const [activeSection, setActiveSection] = useState<TemplateSection>('course_content')
   const [openCard, setOpenCard] = useState<'new' | string | null>(null)
   const [cardText, setCardText] = useState('')
   const [cardType, setCardType] = useState<'likert' | 'free_text'>('likert')
@@ -43,6 +42,11 @@ export default function TemplateEditorPage() {
   const dragIndex = useRef<number | null>(null)
 
   const template = templates.find(t => t.id === id)
+
+  // Derive activeSection lazily — must be declared before early return
+  const [activeSection, setActiveSection] = useState<TemplateSection>(
+    () => template?.sections[0] ?? 'course_content'
+  )
 
   if (!template) {
     return (
@@ -57,8 +61,7 @@ export default function TemplateEditorPage() {
   }
 
   // template is guaranteed non-undefined beyond this point (early return above)
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const t = template!
+  const t = template
 
   const totalQuestions = Object.values(t.questions).flat().length
   const canPublish = totalQuestions > 0
@@ -121,7 +124,16 @@ export default function TemplateEditorPage() {
     updateTemplate(t.id, { status: 'draft' })
   }
 
+  function handleRemoveSection(section: TemplateSection) {
+    const nextSections = t.sections.filter(s => s !== section)
+    updateTemplate(t.id, { sections: nextSections })
+    if (activeSection === section) {
+      setActiveSection(nextSections.find(s => s !== section) ?? nextSections[0] ?? 'course_content')
+    }
+  }
+
   const sectionQs = t.questions[activeSection]
+  const availableSections = ALL_SECTIONS.filter(s => !t.sections.includes(s))
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
@@ -187,29 +199,126 @@ export default function TemplateEditorPage() {
           className="flex flex-col gap-1 border-r border-border shrink-0 overflow-y-auto"
           style={{ width: 168, padding: '16px 10px', background: 'var(--muted)' }}
         >
-          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted-foreground)', marginBottom: 6, paddingInline: 6 }}>
+          {/* Course type field */}
+          <div className="flex flex-col gap-1 mb-4" style={{ paddingInline: 6 }}>
+            <p
+              className="text-xs font-semibold uppercase tracking-wide"
+              style={{ color: 'var(--muted-foreground)', marginBottom: 2 }}
+            >
+              Course type
+            </p>
+            <Select
+              value={t.courseType ?? 'any'}
+              onValueChange={(v) =>
+                updateTemplate(t.id, { courseType: v as 'any' | 'didactic' | 'clinical' })
+              }
+            >
+              <SelectTrigger aria-label="Course type" style={{ height: 30, fontSize: 12 }}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any</SelectItem>
+                <SelectItem value="didactic">Didactic</SelectItem>
+                <SelectItem value="clinical">Clinical</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <p
+            className="text-xs font-semibold uppercase tracking-wide"
+            style={{ color: 'var(--muted-foreground)', marginBottom: 6, paddingInline: 6 }}
+          >
             Sections
           </p>
-          {ALL_SECTIONS.map(section => {
+
+          {t.sections.map(section => {
             const count = t.questions[section].length
             const isActive = section === activeSection
+            const canRemove = count === 0
+
             return (
-              <button
-                key={section}
-                onClick={() => { setActiveSection(section); closeCard() }}
-                className="flex items-center justify-between rounded-md text-sm px-2.5 py-2 text-left w-full transition-colors"
-                style={isActive
-                  ? { background: 'var(--brand-tint)', color: 'var(--brand-color)', fontWeight: 600 }
-                  : { color: count === 0 ? 'var(--muted-foreground)' : 'var(--foreground)' }
-                }
-              >
-                <span className="leading-tight">{SECTION_LABELS[section]}</span>
-                <span className="text-xs tabular-nums ml-2" style={{ color: isActive ? 'var(--brand-color)' : 'var(--muted-foreground)' }}>
-                  {count}
-                </span>
-              </button>
+              <div key={section} className="flex items-center group">
+                <button
+                  onClick={() => { setActiveSection(section); closeCard() }}
+                  className="flex items-center justify-between rounded-md text-sm px-2.5 py-2 text-left flex-1 transition-colors"
+                  style={isActive
+                    ? { background: 'var(--brand-tint)', color: 'var(--brand-color)', fontWeight: 600 }
+                    : { color: count === 0 ? 'var(--muted-foreground)' : 'var(--foreground)' }
+                  }
+                >
+                  <span className="leading-tight">{SECTION_LABELS[section]}</span>
+                  <span
+                    className="text-xs tabular-nums ml-2"
+                    style={{ color: isActive ? 'var(--brand-color)' : 'var(--muted-foreground)' }}
+                  >
+                    {count}
+                  </span>
+                </button>
+
+                {/* Remove section button — only shown when section has 0 questions */}
+                {canRemove ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={`Remove ${SECTION_LABELS[section]} section`}
+                        className="shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                        style={{ width: 20, height: 20 }}
+                        onClick={() => handleRemoveSection(section)}
+                      >
+                        <i className="fa-light fa-xmark text-xs" aria-hidden="true" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">Remove section</TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span
+                        className="shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100 flex items-center justify-center"
+                        style={{ width: 20, height: 20, cursor: 'default' }}
+                        tabIndex={0}
+                      >
+                        <i className="fa-light fa-xmark text-xs" aria-hidden="true" style={{ color: 'var(--muted-foreground)', opacity: 0.4 }} />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">Remove all questions first</TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
             )
           })}
+
+          {/* Add section button */}
+          {availableSections.length > 0 && (
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start mt-1 text-xs"
+                  style={{ color: 'var(--muted-foreground)' }}
+                >
+                  <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                  Add section
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" style={{ minWidth: 180 }}>
+                {availableSections.map(s => (
+                  <DropdownMenuItem
+                    key={s}
+                    onClick={() => {
+                      updateTemplate(t.id, { sections: [...t.sections, s] })
+                      setActiveSection(s)
+                    }}
+                  >
+                    {SECTION_LABELS[s]}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </aside>
 
         <main className="flex flex-col flex-1 overflow-y-auto" style={{ padding: '20px 28px 32px' }}>
@@ -254,45 +363,82 @@ export default function TemplateEditorPage() {
                   onDragStart={() => handleDragStart(index)}
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDragEnd={handleDragEnd}
-                  className="flex items-start gap-2 rounded-lg border border-border bg-card px-3 py-2.5 group"
+                  className="flex items-start gap-0 rounded-lg border border-border bg-card overflow-hidden group"
                   style={{ cursor: 'grab' }}
                 >
-                  <DragHandleGripIcon className="mt-0.5 shrink-0 opacity-40 text-muted-foreground" />
-                  <span className="flex-1 text-sm leading-snug">{q.text}</span>
-                  <Badge
-                    variant="secondary"
-                    className="rounded shrink-0 text-xs"
-                    style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)', fontWeight: 400 }}
-                  >
-                    {q.answerType === 'likert' ? `Likert ${t.likertPointer}` : 'Free text'}
-                  </Badge>
-                  <DropdownMenu modal={false}>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label="Question actions"
-                        onClick={(e) => e.stopPropagation()}
-                        className="shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  {/* Colored left strip — answer type indicator */}
+                  <div
+                    className="shrink-0"
+                    style={{
+                      width: 3,
+                      alignSelf: 'stretch',
+                      background: q.answerType === 'likert'
+                        ? 'var(--brand-color)'
+                        : 'var(--border)',
+                    }}
+                  />
+                  {/* Drag handle */}
+                  <div className="flex items-center px-2 pt-3 shrink-0 self-start">
+                    <DragHandleGripIcon className="opacity-30 group-hover:opacity-60 text-muted-foreground transition-opacity" />
+                  </div>
+                  {/* Content */}
+                  <div className="flex flex-col gap-2 flex-1 min-w-0 py-3 pr-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-sm leading-snug flex-1">{q.text}</span>
+                      {/* Type badge — Aboard style, top-right */}
+                      <Badge
+                        variant="secondary"
+                        className="rounded shrink-0"
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 500,
+                          paddingInline: 6,
+                          paddingBlock: 2,
+                          backgroundColor: q.answerType === 'likert'
+                            ? 'var(--brand-tint)'
+                            : 'var(--muted)',
+                          color: q.answerType === 'likert'
+                            ? 'var(--brand-color)'
+                            : 'var(--muted-foreground)',
+                        }}
                       >
-                        <i className="fa-regular fa-ellipsis" aria-hidden="true" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-36">
-                      <DropdownMenuItem onClick={() => openEditCard(q)}>
-                        <i className="fa-light fa-pen" aria-hidden="true" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onClick={() => deleteQuestion(t.id, activeSection, q.id)}
-                      >
-                        <i className="fa-light fa-trash" aria-hidden="true" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        {q.answerType === 'likert'
+                          ? <><i className="fa-light fa-chart-bar" aria-hidden="true" style={{ marginRight: 4 }} />Likert {t.likertPointer}</>
+                          : <><i className="fa-light fa-align-left" aria-hidden="true" style={{ marginRight: 4 }} />Free text</>
+                        }
+                      </Badge>
+                    </div>
+                  </div>
+                  {/* Actions */}
+                  <div className="flex items-start pt-2 pr-2 shrink-0">
+                    <DropdownMenu modal={false}>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label="Question actions"
+                          onClick={(e) => e.stopPropagation()}
+                          className="opacity-0 group-hover:opacity-100 focus:opacity-100"
+                        >
+                          <i className="fa-regular fa-ellipsis" aria-hidden="true" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-36">
+                        <DropdownMenuItem onClick={() => openEditCard(q)}>
+                          <i className="fa-light fa-pen" aria-hidden="true" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => deleteQuestion(t.id, activeSection, q.id)}
+                        >
+                          <i className="fa-light fa-trash" aria-hidden="true" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
               )
             ))}
