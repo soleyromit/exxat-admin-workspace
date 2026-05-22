@@ -226,7 +226,7 @@ function SubjectCard({ subject, isSelected, isDisabled, onSelect }: SubjectCardP
         )}
         {/* Zero prismCount warning */}
         {!subject.isGeneral && subject.prismCount === 0 && !isDisabled && (
-          <p className="text-xs mt-0.5" style={{ color: 'color-mix(in oklch, oklch(0.75 0.15 85) 100%, transparent)' }}>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--chart-4)' }}>
             No {subject.label.toLowerCase()}s assigned yet. Will auto-suppress.
           </p>
         )}
@@ -253,7 +253,7 @@ function SubjectCard({ subject, isSelected, isDisabled, onSelect }: SubjectCardP
         ) : subject.prismCount === 0 ? (
           <span
             className="text-xs font-medium"
-            style={{ color: 'color-mix(in oklch, oklch(0.75 0.15 85) 100%, transparent)' }}
+            style={{ color: 'var(--chart-4)' }}
           >
             0 in Prism
           </span>
