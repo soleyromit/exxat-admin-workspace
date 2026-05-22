@@ -133,6 +133,9 @@ export interface AssessmentSection {
   facultyId?: string
   prereadText?: string            // NEW: case-study preread block
   questionIds: string[]
+  contentAreaIds?: string[]       // content areas this section targets (folder IDs)
+  randomize?: boolean             // shuffle questions within this section independently
+  status?: 'drafting' | 'ready'  // instructor signals section is ready for coordinator review
 }
 
 export type QuestionHealthFlag =
