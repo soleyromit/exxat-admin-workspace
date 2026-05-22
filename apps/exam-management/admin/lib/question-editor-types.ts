@@ -57,7 +57,7 @@ export const QUESTION_TYPE_BY_ID: Record<EditorQType, QuestionTypeMeta> =
 
 // ─── Per-type payloads ──────────────────────────────────────────────────────
 
-export interface McqOption     { id: string; text: string; correct: boolean; rationale?: string }
+export interface McqOption     { id: string; text: string; correct: boolean; rationale?: string; locked?: boolean }
 export interface MatchPair     { id: string; left: string; rightId: string }
 export interface MatchRight    { id: string; text: string }
 export interface OrderItem     { id: string; text: string; canonicalIdx: number }
