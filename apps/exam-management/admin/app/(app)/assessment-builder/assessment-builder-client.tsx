@@ -870,7 +870,9 @@ function ABQuestionPicker({
             onBlur={e => {
               const val = e.target.value.trim()
               if (val && val !== 'New Assessment') onRenameAsmt(val)
+              ;(e.target as HTMLInputElement).style.boxShadow = 'none'
             }}
+            onFocus={e => { (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px color-mix(in oklch, var(--brand-color) 25%, transparent)' }}
             onKeyDown={e => {
               if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
             }}
@@ -1384,11 +1386,13 @@ function NewQuestionEditorPanel({
 
   return (
     <div style={{ flex: 1, overflow: 'auto', background: 'var(--background)' }}>
-      {confirmation && (
-        <div className="mx-auto max-w-3xl mt-4">
-          <LocalBanner variant="success">{confirmation}</LocalBanner>
-        </div>
-      )}
+      <div role="status" aria-live="polite">
+        {confirmation && (
+          <div className="mx-auto max-w-3xl mt-4">
+            <LocalBanner variant="success">{confirmation}</LocalBanner>
+          </div>
+        )}
+      </div>
       <QuestionEditor
         draft={draft}
         onChange={setDraft}
@@ -1734,7 +1738,7 @@ function InstructionsPreview({ text, requireAck }: { text: string; requireAck: b
       <button
         type="button"
         onClick={() => setExpanded((e) => !e)}
-        className="flex items-center justify-between w-full px-5 py-3 text-left"
+        className="flex items-center justify-between w-full px-5 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded"
         style={{ background: 'none', border: 'none', cursor: 'pointer' }}
       >
         <div className="flex items-center gap-2">
@@ -2226,6 +2230,7 @@ function DetailsStep({
             <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Assessment name *</p>
             <input
               type="text"
+              aria-label="Assessment name"
               value={name}
               onChange={e => onUpdate({ title: e.target.value })}
               placeholder="e.g. Midterm Exam"
@@ -2235,8 +2240,8 @@ function DetailsStep({
                 border: '1px solid var(--border)', borderRadius: 10,
                 background: 'var(--background)', color: 'var(--foreground)', outline: 'none',
               }}
-              onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--brand-color)' }}
-              onBlur={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--border)' }}
+              onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--brand-color)'; (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px color-mix(in oklch, var(--brand-color) 25%, transparent)' }}
+              onBlur={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--border)'; (e.target as HTMLInputElement).style.boxShadow = 'none' }}
             />
           </div>
           <div>
@@ -2244,6 +2249,7 @@ function DetailsStep({
               Description <span className="font-normal normal-case tracking-normal text-[11px]">— optional, shown to students before they start</span>
             </p>
             <textarea
+              aria-label="Description"
               placeholder="Brief context about what this assessment covers…"
               rows={5}
               style={{
@@ -2251,8 +2257,8 @@ function DetailsStep({
                 border: '1px solid var(--border)', borderRadius: 10, resize: 'vertical',
                 background: 'var(--background)', color: 'var(--foreground)', outline: 'none',
               }}
-              onFocus={e => { (e.target as HTMLTextAreaElement).style.borderColor = 'var(--brand-color)' }}
-              onBlur={e => { (e.target as HTMLTextAreaElement).style.borderColor = 'var(--border)' }}
+              onFocus={e => { (e.target as HTMLTextAreaElement).style.borderColor = 'var(--brand-color)'; (e.target as HTMLTextAreaElement).style.boxShadow = '0 0 0 2px color-mix(in oklch, var(--brand-color) 25%, transparent)' }}
+              onBlur={e => { (e.target as HTMLTextAreaElement).style.borderColor = 'var(--border)'; (e.target as HTMLTextAreaElement).style.boxShadow = 'none' }}
             />
           </div>
         </div>
@@ -2262,7 +2268,7 @@ function DetailsStep({
           {/* Type */}
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Type *</p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Assessment type">
               {TYPES.map(({ type, icon, description }) => {
                 const active = settings.type === type
                 return (
@@ -2295,6 +2301,7 @@ function DetailsStep({
             <div className="flex items-center gap-2">
               <input
                 type="number"
+                aria-label="Duration in minutes"
                 min={5}
                 max={300}
                 value={duration}
@@ -2307,6 +2314,8 @@ function DetailsStep({
                   border: '1px solid var(--border)', borderRadius: 8,
                   background: 'var(--background)', color: 'var(--foreground)', outline: 'none',
                 }}
+                onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--brand-color)'; (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px color-mix(in oklch, var(--brand-color) 25%, transparent)' }}
+                onBlur={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--border)'; (e.target as HTMLInputElement).style.boxShadow = 'none' }}
               />
               <span className="text-sm text-muted-foreground">minutes</span>
             </div>
@@ -2373,6 +2382,7 @@ function DetailsStep({
             {addingSec ? (
               <div className="flex items-center gap-2">
                 <input
+                  aria-label="Section name"
                   autoFocus
                   value={newSectionTitle}
                   onChange={e => setNewSectionTitle(e.target.value)}
@@ -2424,18 +2434,24 @@ function DetailsStep({
                   <p className="text-xs text-muted-foreground mb-1.5">Opens</p>
                   <input
                     type="datetime-local"
+                    aria-label="Opens"
                     value={settings.openDate?.slice(0, 16) ?? ''}
                     onChange={e => patchSettings({ openDate: e.target.value ? new Date(e.target.value).toISOString() : null })}
                     style={{ width: '100%', height: 36, padding: '0 8px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none' }}
+                    onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--brand-color)'; (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px color-mix(in oklch, var(--brand-color) 25%, transparent)' }}
+                    onBlur={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--border)'; (e.target as HTMLInputElement).style.boxShadow = 'none' }}
                   />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground mb-1.5">Closes</p>
                   <input
                     type="datetime-local"
+                    aria-label="Closes"
                     value={settings.closeDate?.slice(0, 16) ?? ''}
                     onChange={e => patchSettings({ closeDate: e.target.value ? new Date(e.target.value).toISOString() : null })}
                     style={{ width: '100%', height: 36, padding: '0 8px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none' }}
+                    onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--brand-color)'; (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px color-mix(in oklch, var(--brand-color) 25%, transparent)' }}
+                    onBlur={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--border)'; (e.target as HTMLInputElement).style.boxShadow = 'none' }}
                   />
                 </div>
               </div>
@@ -2448,11 +2464,14 @@ function DetailsStep({
                   <span className="text-xs text-muted-foreground">Students can pre-download</span>
                   <input
                     type="number"
+                    aria-label="Download window in hours"
                     min={1}
                     max={168}
                     value={settings.downloadWindowHours}
                     onChange={e => patchSettings({ downloadWindowHours: Math.max(1, parseInt(e.target.value) || 24) })}
                     style={{ width: 60, height: 32, padding: '0 8px', fontSize: 13, textAlign: 'center', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none' }}
+                    onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--brand-color)'; (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px color-mix(in oklch, var(--brand-color) 25%, transparent)' }}
+                    onBlur={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--border)'; (e.target as HTMLInputElement).style.boxShadow = 'none' }}
                   />
                   <span className="text-xs text-muted-foreground">hours before exam start</span>
                 </div>
@@ -2475,11 +2494,14 @@ function DetailsStep({
             <div>
               <p className="text-xs text-muted-foreground mb-1.5">Pre-exam instructions (optional)</p>
               <textarea
+                aria-label="Pre-exam instructions"
                 value={settings.instructionsText}
                 onChange={e => patchSettings({ instructionsText: e.target.value })}
                 placeholder="Academic integrity statement, exam rules, or any instructions students see before they start…"
                 rows={3}
                 style={{ width: '100%', padding: '8px 10px', fontSize: 13, lineHeight: 1.5, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', resize: 'vertical' }}
+                onFocus={e => { (e.target as HTMLTextAreaElement).style.borderColor = 'var(--brand-color)'; (e.target as HTMLTextAreaElement).style.boxShadow = '0 0 0 2px color-mix(in oklch, var(--brand-color) 25%, transparent)' }}
+                onBlur={e => { (e.target as HTMLTextAreaElement).style.borderColor = 'var(--border)'; (e.target as HTMLTextAreaElement).style.boxShadow = 'none' }}
               />
               {settings.instructionsText.trim() && (
                 <Toggle
@@ -2586,6 +2608,7 @@ function WizardHeader({
                 aria-selected={isActive}
                 onClick={() => isClickable && onStepClick(step.id)}
                 disabled={!isClickable && !isActive}
+                className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded-full"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -2673,8 +2696,9 @@ function AssessmentSettingsSheet({
                 <button
                   key={t}
                   type="button"
+                  aria-pressed={local.type === t}
                   onClick={() => setLocal(prev => ({ ...prev, type: t }))}
-                  className="flex-1 rounded-lg border py-2 text-sm font-medium transition-colors"
+                  className="flex-1 rounded-lg border py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                   style={{
                     borderColor: local.type === t ? 'var(--brand-color)' : 'var(--border)',
                     backgroundColor: local.type === t
