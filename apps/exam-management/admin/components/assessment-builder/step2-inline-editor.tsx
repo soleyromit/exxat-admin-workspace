@@ -47,6 +47,7 @@ export function InlineQuestionEditor({ question, onSave, onCancel, onCopyAndModi
           value={stem}
           onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setStem(e.target.value)}
           className="text-xs min-h-16 resize-y"
+          aria-label="Question stem"
         />
       </div>
 
@@ -62,6 +63,7 @@ export function InlineQuestionEditor({ question, onSave, onCancel, onCopyAndModi
           onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRationale(e.target.value)}
           placeholder="Explain why this answer is correct…"
           className="text-xs min-h-12 resize-y"
+          aria-label="Rationale"
           style={{ borderColor: !rationale.trim() ? 'color-mix(in oklch, var(--foreground) 30%, oklch(80% 0.15 80))' : undefined }}
         />
       </div>

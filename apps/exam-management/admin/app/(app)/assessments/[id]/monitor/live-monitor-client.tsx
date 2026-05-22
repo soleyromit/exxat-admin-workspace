@@ -212,6 +212,10 @@ export default function LiveMonitorClient({ assessmentId }: { assessmentId: stri
   return (
     <>
       <SiteHeader title={`${assessment.title} — Live`} breadcrumbs={breadcrumbs} />
+      {/* Offscreen live region — announces status counts to screen readers on each tick */}
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {`${submitted} submitted, ${inProgress} in progress, ${notStarted} not started`}
+      </div>
       <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none overflow-hidden">
         <PageHeader
           title={assessment.title}
@@ -532,6 +536,7 @@ function StudentRow({ s }: { s: LiveMonitorStudent }) {
             style={{ color: isLowTime ? 'var(--chart-4)' : 'var(--foreground)' }}
           >
             {minRemaining}m left
+            {isLowTime && <span className="sr-only"> (low time remaining)</span>}
           </span>
         ) : s.status === 'submitted' ? (
           <span className="text-muted-foreground">Done</span>

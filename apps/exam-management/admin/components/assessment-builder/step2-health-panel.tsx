@@ -115,7 +115,8 @@ export function HealthPanel({ activeAsmt, objectives, timeMetrics, distribution,
               <div key={o.id} className="flex items-center gap-2 mb-1">
                 <i
                   className={`fa-light ${coveredObjectiveIds.has(o.id) ? 'fa-circle-check' : 'fa-circle-xmark'}`}
-                  aria-hidden="true"
+                  role="img"
+                  aria-label={coveredObjectiveIds.has(o.id) ? 'Covered' : 'Not covered'}
                   style={{ fontSize: 10, color: coveredObjectiveIds.has(o.id) ? 'var(--brand-color)' : 'var(--muted-foreground)', width: 12 }}
                 />
                 <span className="text-[10px] text-muted-foreground truncate">{o.title.slice(0, 45)}</span>

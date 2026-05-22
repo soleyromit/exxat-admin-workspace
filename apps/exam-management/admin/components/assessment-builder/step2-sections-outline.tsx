@@ -93,7 +93,7 @@ function SectionGroup({ section, questions, onRemove, onEdit, editingId }: {
       <button
         type="button"
         onClick={() => setCollapsed(c => !c)}
-        className="flex items-center gap-2 w-full px-3 py-1.5 text-left"
+        className="flex items-center gap-2 w-full px-3 py-1.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded"
         style={{ background: 'none', border: 'none', cursor: 'pointer' }}
       >
         <i
@@ -135,6 +135,9 @@ function QuestionRow({ questionId, question, onRemove, onEdit, isEditing, indent
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onFocus={() => setHovered(true)}
+      onBlur={() => setHovered(false)}
+      tabIndex={-1}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -148,6 +151,7 @@ function QuestionRow({ questionId, question, onRemove, onEdit, isEditing, indent
       {missingRationale && (
         <i
           className="fa-light fa-triangle-exclamation shrink-0"
+          role="img"
           aria-label="Missing rationale"
           style={{ fontSize: 10, color: 'color-mix(in oklch, var(--foreground) 35%, oklch(80% 0.15 80))' }}
         />
@@ -156,6 +160,7 @@ function QuestionRow({ questionId, question, onRemove, onEdit, isEditing, indent
       {poorPbis && !missingRationale && (
         <i
           className="fa-light fa-chart-line-down shrink-0"
+          role="img"
           aria-label="Low point-biserial"
           style={{ fontSize: 10, color: 'color-mix(in oklch, var(--foreground) 35%, oklch(80% 0.15 80))' }}
         />
@@ -187,7 +192,7 @@ function QuestionRow({ questionId, question, onRemove, onEdit, isEditing, indent
             size="sm"
             onClick={() => onEdit(questionId)}
             aria-label="Edit question"
-            className="h-5 w-5 p-0 shrink-0"
+            className="h-7 w-7 p-0 shrink-0"
           >
             <i className="fa-light fa-pen" aria-hidden="true" style={{ fontSize: 9 }} />
           </Button>
@@ -196,7 +201,7 @@ function QuestionRow({ questionId, question, onRemove, onEdit, isEditing, indent
             size="sm"
             onClick={() => onRemove(questionId)}
             aria-label="Remove question"
-            className="h-5 w-5 p-0 shrink-0"
+            className="h-7 w-7 p-0 shrink-0"
           >
             <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 9 }} />
           </Button>

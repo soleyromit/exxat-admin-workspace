@@ -402,13 +402,15 @@ function CreateAssessmentModal({
 
         {step === 'pick-mode' && (
           <div className="flex flex-col gap-3 pt-1">
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2" role="radiogroup" aria-label="Assessment creation mode">
               {MODES.map(m => (
                 <button
                   key={m.id}
                   type="button"
+                  role="radio"
+                  aria-checked={mode === m.id}
                   onClick={() => setMode(m.id)}
-                  className="flex items-start gap-4 rounded-xl border p-4 text-left transition-colors hover:bg-muted/30"
+                  className="flex items-start gap-4 rounded-xl border p-4 text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                   style={{
                     borderColor: mode === m.id ? 'color-mix(in oklch, var(--brand-color) 55%, transparent)' : 'var(--border)',
                     background: mode === m.id ? 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' : 'var(--card)',
@@ -804,7 +806,7 @@ function AccommodationsTab({ offering, onNavigateStudent }: {
                 <button
                   type="button"
                   onClick={() => onNavigateStudent(acc.studentId)}
-                  className="text-sm font-medium hover:underline text-left"
+                  className="text-sm font-medium hover:underline text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:rounded"
                   style={{ color: 'var(--brand-color)' }}
                 >
                   {studentName}
