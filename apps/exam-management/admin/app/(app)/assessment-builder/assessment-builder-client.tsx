@@ -2138,6 +2138,7 @@ function DetailsStep({
   const [newSectionTitle, setNewSectionTitle] = useState('')
   const [addingSec, setAddingSec] = useState(false)
   const sections = activeAsmt?.sections ?? []
+  const activeFaculty = useMemo(() => facultyListRows.filter(f => f.status === 'active'), [])
 
   function addSection() {
     const title = newSectionTitle.trim()
@@ -2393,7 +2394,7 @@ function DetailsStep({
                           <SelectItem value="__none__">
                             <span className="text-muted-foreground">Unassigned</span>
                           </SelectItem>
-                          {facultyListRows.filter(f => f.status === 'active').map(f => (
+                          {activeFaculty.map(f => (
                             <SelectItem key={f.id} value={f.id}>
                               {f.fullName}
                               <span className="text-muted-foreground ml-1.5 text-xs">· {f.adminPosition}</span>
