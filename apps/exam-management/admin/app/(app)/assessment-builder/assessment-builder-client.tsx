@@ -2245,6 +2245,14 @@ function DetailsStep({
   const sections = activeAsmt?.sections ?? []
   const activeFaculty = useMemo(() => facultyListRows.filter(f => f.status === 'active'), [])
 
+  const thisCourseForDetails = mockCourses.find(c => c.id === courseId)
+  const sectionContentAreas = useMemo<FolderNode[]>(
+    () => thisCourseForDetails
+      ? MOCK_QB_FOLDERS.filter(f => f.parentId === thisCourseForDetails.questionBankFolderId)
+      : [],
+    [thisCourseForDetails]
+  )
+
   function addSection() {
     const title = newSectionTitle.trim()
     if (!title) return
@@ -2288,6 +2296,46 @@ function DetailsStep({
             transition: 'left .15s', display: 'block',
           }} />
         </button>
+      </div>
+    )
+  }
+
+  function SectionContentAreaSelect({
+    selectedIds: selectedCaIds,
+    onChange,
+  }: {
+    selectedIds: string[]
+    onChange: (ids: string[]) => void
+  }) {
+    if (sectionContentAreas.length === 0) return null
+    function toggle(id: string) {
+      onChange(selectedCaIds.includes(id)
+        ? selectedCaIds.filter(x => x !== id)
+        : [...selectedCaIds, id])
+    }
+    return (
+      <div className="flex flex-wrap gap-1">
+        {sectionContentAreas.map(ca => {
+          const selected = selectedCaIds.includes(ca.id)
+          return (
+            <button
+              key={ca.id}
+              type="button"
+              onClick={() => toggle(ca.id)}
+              aria-pressed={selected}
+              className="text-xs px-2 py-0.5 rounded-full border transition-colors"
+              style={{
+                background: selected ? 'var(--muted)' : 'transparent',
+                borderColor: selected ? 'var(--foreground)' : 'var(--border)',
+                color: selected ? 'var(--foreground)' : 'var(--muted-foreground)',
+                fontWeight: selected ? 600 : 400,
+                cursor: 'pointer',
+              }}
+            >
+              {ca.name}
+            </button>
+          )
+        })}
       </div>
     )
   }
@@ -2507,6 +2555,51 @@ function DetailsStep({
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
+
+                    {/* Content area targeting */}
+                    {sectionContentAreas.length > 0 && (
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs text-muted-foreground">Content areas</span>
+                        <SectionContentAreaSelect
+                          selectedIds={sec.contentAreaIds ?? []}
+                          onChange={ids => onUpdate({
+                            sections: sections.map(s =>
+                              s.id === sec.id ? { ...s, contentAreaIds: ids } : s
+                            ),
+                          })}
+                        />
+                      </div>
+                    )}
+
+                    {/* Per-section randomize toggle */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-medium text-foreground">Randomize questions</p>
+                        <p className="text-xs text-muted-foreground">Shuffle order within this section</p>
+                      </div>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={sec.randomize ?? false}
+                        aria-label={`Randomize questions in section ${sec.title}`}
+                        onClick={() => onUpdate({
+                          sections: sections.map(s =>
+                            s.id === sec.id ? { ...s, randomize: !(s.randomize ?? false) } : s
+                          ),
+                        })}
+                        style={{
+                          width: 32, height: 18, borderRadius: 9, border: 'none', cursor: 'pointer', flexShrink: 0,
+                          backgroundColor: (sec.randomize ?? false) ? 'var(--foreground)' : 'var(--muted)',
+                          position: 'relative', transition: 'background-color .15s',
+                        }}
+                      >
+                        <span style={{
+                          position: 'absolute', top: 1, left: (sec.randomize ?? false) ? 15 : 1,
+                          width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)',
+                          transition: 'left .15s', display: 'block',
+                        }} />
+                      </button>
                     </div>
                   </div>
                 ))}
