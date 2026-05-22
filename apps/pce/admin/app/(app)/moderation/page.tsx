@@ -83,7 +83,7 @@ export default function ModerationPage() {
         {/* Left: survey list using DS sidebar components */}
         <aside
           className="flex flex-col border-r border-border shrink-0 overflow-y-auto"
-          style={{ width: 264, background: 'var(--sidebar)' }}
+          style={{ width: 264, background: 'var(--background)' }}
         >
           <SidebarGroup>
             <SidebarGroupLabel>
@@ -119,7 +119,7 @@ export default function ModerationPage() {
                       <SidebarMenuButton
                         isActive={isActive}
                         onClick={() => setSelectedSurveyId(survey.id)}
-                        className="h-auto flex-col items-start gap-1.5 py-3"
+                        className="h-auto flex-col items-start gap-1.5 py-3 data-active:bg-muted data-active:shadow-none data-active:ring-0"
                       >
                         <div className="flex items-center justify-between w-full gap-2">
                           <span className="text-sm font-medium truncate">{survey.courseCode}</span>

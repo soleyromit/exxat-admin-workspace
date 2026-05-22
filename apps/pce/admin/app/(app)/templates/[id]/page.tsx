@@ -310,7 +310,7 @@ export default function TemplateEditorPage() {
         {/* Left: section navigator */}
         <aside
           className="flex flex-col border-r border-border shrink-0 overflow-y-auto"
-          style={{ width: 200, background: 'var(--sidebar)' }}
+          style={{ width: 200, background: 'var(--background)' }}
         >
           <SidebarGroup>
             <SidebarGroupLabel>Sections</SidebarGroupLabel>
@@ -342,7 +342,7 @@ export default function TemplateEditorPage() {
                         isActive={isActive}
                         size="sm"
                         onClick={() => setActiveSectionId(sec.id)}
-                        className="flex-col items-start h-auto gap-0 py-1.5"
+                        className="flex-col items-start h-auto gap-0 py-1.5 data-active:bg-muted data-active:shadow-none data-active:ring-0"
                       >
                         <div className="flex items-center justify-between w-full gap-1">
                           <span className="text-xs leading-tight truncate">{sec.title}</span>
