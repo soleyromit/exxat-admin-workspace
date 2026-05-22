@@ -131,6 +131,7 @@ export interface AssessmentSection {
   id: string
   title: string
   facultyId?: string
+  collaboratorId?: string         // second instructor who can view/edit this section
   prereadText?: string            // NEW: case-study preread block
   questionIds: string[]
   contentAreaIds?: string[]       // content areas this section targets (folder IDs)
