@@ -42,8 +42,17 @@ export function SendForReviewDialog({ open, onOpenChange, onSubmit }: Props) {
     setDueDate('')
   }
 
+  function handleOpenChange(next: boolean) {
+    if (!next) {
+      setSelectedIds([])
+      setMessage('')
+      setDueDate('')
+    }
+    onOpenChange(next)
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Send for review</DialogTitle>
@@ -106,7 +115,7 @@ export function SendForReviewDialog({ open, onOpenChange, onSubmit }: Props) {
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" size="sm" onClick={() => handleOpenChange(false)}>
             Cancel
           </Button>
           <Button

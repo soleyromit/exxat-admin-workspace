@@ -14,7 +14,7 @@ import {
   LocalBanner,
 } from '@exxat/ds/packages/ui/src'
 import { mockCourses, mockCourseOfferings, mockAssessments, MOCK_QB_QUESTIONS } from '@/lib/qb-mock-data'
-import type { AssessmentDraft, AssessmentQuestion, AssessmentSection, Question, SmartView, QType, QDiff } from '@/lib/qb-types'
+import type { AssessmentDraft, AssessmentQuestion, AssessmentSection, Question, SmartView, QType, QDiff, AssessmentReviewRequest, AssessmentStatus } from '@/lib/qb-types'
 import { SYSTEM_SMART_VIEWS, defaultAssessmentSettings } from '@/lib/qb-types'
 import { courseObjectives, facultyListRows, type CourseObjective } from '@/lib/faculty-mock-data'
 import { useFacultySession } from '@/lib/faculty-session'
@@ -378,7 +378,7 @@ export default function AssessmentBuilderClient() {
     setSendForReviewOpen(true)
   }
 
-  function handleReviewSubmit(req: import('@/lib/qb-types').AssessmentReviewRequest) {
+  function handleReviewSubmit(req: AssessmentReviewRequest) {
     setActiveAsmt(prev => prev ? {
       ...prev,
       settings: {
@@ -387,6 +387,16 @@ export default function AssessmentBuilderClient() {
         reviewRequest: req,
       },
     } : prev)
+  }
+
+  function handlePublish() {
+    if (!activeAsmt) return
+    setActiveAsmt(prev => prev ? {
+      ...prev,
+      settings: { ...prev.settings, status: 'scheduled' },
+    } : prev)
+    // In a real app this would navigate to the assessment detail page.
+    // For now, stay on the builder so the status update is visible.
   }
 
   return (
@@ -553,6 +563,7 @@ export default function AssessmentBuilderClient() {
           onBack={() => setActiveStep(2)}
           onSaveAsDraft={handleSaveDraft}
           onSendToChair={handleSendToChair}
+          onPublish={handlePublish}
         />
       )}
 
@@ -1465,8 +1476,9 @@ function ReviewStep({
   onBack,
   onSaveAsDraft,
   onSendToChair,
+  onPublish,
 }: {
-  activeAsmt: import('@/lib/qb-types').AssessmentDraft
+  activeAsmt: AssessmentDraft
   courseLabel: string
   distribution: { Easy: number; Medium: number; Hard: number }
   bloomsMetrics: { level: string; count: number; pct: number }[]
@@ -1474,6 +1486,7 @@ function ReviewStep({
   onBack: () => void
   onSaveAsDraft: () => void
   onSendToChair: () => void
+  onPublish: () => void
 }) {
   const totalQ  = distribution.Easy + distribution.Medium + distribution.Hard
   const s       = activeAsmt.settings
@@ -1665,7 +1678,7 @@ function ReviewStep({
             status={activeAsmt.settings.status ?? 'draft'}
             reviewRequest={activeAsmt.settings.reviewRequest ?? null}
             onSendForReview={onSendToChair}
-            onPublish={() => {/* handled by onSendToChair with null reviewer = direct publish */}}
+            onPublish={onPublish}
           />
         </div>
 
@@ -1812,14 +1825,14 @@ function InstructionsPreview({ text, requireAck }: { text: string; requireAck: b
 }
 
 function ApprovalPanel({ status, reviewRequest, onSendForReview, onPublish }: {
-  status: import('@/lib/qb-types').AssessmentStatus
-  reviewRequest: import('@/lib/qb-types').AssessmentReviewRequest | null
+  status: AssessmentStatus
+  reviewRequest: AssessmentReviewRequest | null
   onSendForReview: () => void
   onPublish: () => void
 }) {
   const [showPublishWarning, setShowPublishWarning] = useState(false)
 
-  const statusLabel: Record<import('@/lib/qb-types').AssessmentStatus, string> = {
+  const statusLabel: Record<AssessmentStatus, string> = {
     draft: 'Draft',
     'pending-review': 'Pending review',
     'changes-requested': 'Changes requested',
