@@ -9,9 +9,8 @@
  * Tab/column variations by product: see docs/BASE-ENTITIES.md
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { loadRecentlyViewed, type RecentlyViewedItem } from '@/lib/recently-viewed'
 import { useEntryPoint } from '@/lib/use-entry-point'
 import {
   Badge, Avatar, AvatarFallback,
@@ -360,18 +359,6 @@ export default function FacultyClient() {
   const isPrism = entryPoint === 'prism'
   const columns = useMemo(() => buildFacultyColumns(isPrism), [isPrism])
 
-  const [recentFaculty, setRecentFaculty] = useState<RecentlyViewedItem[]>([])
-
-  const refreshRecent = useCallback(() => {
-    setRecentFaculty(loadRecentlyViewed('faculty'))
-  }, [])
-
-  useEffect(() => {
-    refreshRecent()
-    window.addEventListener('focus', refreshRecent)
-    return () => window.removeEventListener('focus', refreshRecent)
-  }, [refreshRecent])
-
   // External search — mirrors Students pattern.
   // Covers fields that aren't DataTable columns (department, rank, position).
   const filtered = useMemo((): FacultyTableRow[] => {
@@ -420,8 +407,7 @@ export default function FacultyClient() {
           }
         />
 
-        <div className="flex flex-1 min-h-0">
-          <div className="flex flex-1 flex-col gap-0 min-h-0 min-w-0">
+        <div className="flex flex-1 flex-col gap-0 min-h-0 min-w-0">
             {/* Single search bar — mirrors Aarti's "Google search" directive from Students */}
             <div className="px-4 lg:px-6 pt-4 pb-2">
               <SearchInput
@@ -462,50 +448,6 @@ export default function FacultyClient() {
                 </span>
               )}
             />
-          </div>
-
-          {/* Recently viewed — xl only, matches student list pattern exactly */}
-          <aside
-            className="w-64 shrink-0 hidden xl:flex flex-col gap-3 px-6 pt-1"
-            aria-label="Recently viewed faculty"
-          >
-            <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
-              Recently viewed
-            </p>
-            {recentFaculty.length === 0 ? (
-              <div
-                className="rounded-xl border border-dashed border-border bg-card p-4 flex flex-col items-center justify-center gap-2 text-center"
-                style={{ minHeight: 120 }}
-              >
-                <i className="fa-light fa-clock-rotate-left text-muted-foreground" aria-hidden="true" style={{ fontSize: 18 }} />
-                <p className="text-xs text-muted-foreground">Recently viewed faculty will appear here</p>
-              </div>
-            ) : (
-              <ul className="flex flex-col gap-1">
-                {recentFaculty.map((item) => (
-                  <li key={item.id}>
-                    <button
-                      type="button"
-                      onClick={() => router.push(item.href)}
-                      className="w-full flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-muted/60 transition-colors"
-                    >
-                      <span
-                        className="flex size-7 shrink-0 items-center justify-center rounded-md"
-                        style={{ backgroundColor: 'var(--muted)' }}
-                        aria-hidden="true"
-                      >
-                        <i className="fa-light fa-chalkboard-user text-muted-foreground" style={{ fontSize: 12 }} aria-hidden="true" />
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
-                        <p className="text-[11px] text-muted-foreground truncate">{item.subtitle}</p>
-                      </div>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </aside>
         </div>
       </div>
 

@@ -30,7 +30,6 @@ import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
-import { loadRecentlyViewed, type RecentlyViewedItem } from '@/lib/recently-viewed'
 import { mockCourses, mockCourseOfferings, mockAssessments } from '@/lib/qb-mock-data'
 import {
   facultyStudents, facultyAccommodations, courseObjectives, facultyExtraAssessments,
@@ -1013,14 +1012,6 @@ function CourseOfferingsTab() {
   const isPrism = entryPoint === 'prism'
   const offeringColumns = useMemo(() => buildOfferingColumns(isPrism), [isPrism])
 
-  const [recentOfferings, setRecentOfferings] = useState<RecentlyViewedItem[]>([])
-  const refreshRecent = useCallback(() => { setRecentOfferings(loadRecentlyViewed('courses')) }, [])
-  useEffect(() => {
-    refreshRecent()
-    window.addEventListener('focus', refreshRecent)
-    return () => window.removeEventListener('focus', refreshRecent)
-  }, [refreshRecent])
-
   const filtered = useMemo((): OfferingTableRow[] => {
     const q = query.trim().toLowerCase()
     let rows = statusFilter === 'all'
@@ -1054,8 +1045,7 @@ function CourseOfferingsTab() {
   }), [])
 
   return (
-    <div className="flex flex-1 min-h-0">
-      <div className="flex flex-col flex-1 min-h-0 min-w-0">
+    <div className="flex flex-col flex-1 min-h-0 min-w-0">
         <div className="flex items-center gap-3 px-6 pt-4 pb-2 shrink-0 flex-wrap">
           {/* Status filter pills */}
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -1130,50 +1120,6 @@ function CourseOfferingsTab() {
             </span>
           )}
         />
-      </div>
-
-      {/* Recently viewed — xl only, same pattern as faculty-client.tsx */}
-      <aside
-        className="w-64 shrink-0 hidden xl:flex flex-col gap-3 px-6 pt-1"
-        aria-label="Recently viewed offerings"
-      >
-        <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
-          Recently viewed
-        </p>
-        {recentOfferings.length === 0 ? (
-          <div
-            className="rounded-xl border border-dashed border-border bg-card p-4 flex flex-col items-center justify-center gap-2 text-center"
-            style={{ minHeight: 120 }}
-          >
-            <i className="fa-light fa-clock-rotate-left text-muted-foreground" aria-hidden="true" style={{ fontSize: 18 }} />
-            <p className="text-xs text-muted-foreground">Recently viewed offerings will appear here</p>
-          </div>
-        ) : (
-          <ul className="flex flex-col gap-1">
-            {recentOfferings.map((item) => (
-              <li key={item.id}>
-                <button
-                  type="button"
-                  onClick={() => router.push(item.href)}
-                  className="w-full flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-muted/60 transition-colors"
-                >
-                  <span
-                    className="flex size-7 shrink-0 items-center justify-center rounded-md"
-                    style={{ backgroundColor: 'var(--muted)' }}
-                    aria-hidden="true"
-                  >
-                    <i className="fa-light fa-book text-muted-foreground" style={{ fontSize: 12 }} aria-hidden="true" />
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
-                    <p className="text-[11px] text-muted-foreground truncate">{item.subtitle}</p>
-                  </div>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </aside>
 
       <AddOfferingSheet open={addOfferingOpen} onOpenChange={setAddOfferingOpen} />
     </div>

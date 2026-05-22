@@ -17,7 +17,7 @@
  * Tab/column variations by product: see docs/BASE-ENTITIES.md
  */
 
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Badge, Avatar, AvatarFallback,
@@ -33,7 +33,6 @@ import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 import { RowActions } from '@/components/data-table/row-actions'
 import { studentListRows, type StudentListRow, type StudentAnnotation } from '@/lib/student-mock-data'
-import { loadRecentlyViewed, type RecentlyViewedItem } from '@/lib/recently-viewed'
 
 const IS_LMS_ACTIVE = false
 
@@ -352,19 +351,8 @@ export default function StudentsClient() {
   const router = useRouter()
   const [query, setQuery] = useState('')
   const [addStudentOpen, setAddStudentOpen] = useState(false)
-  const [recentStudents, setRecentStudents] = useState<RecentlyViewedItem[]>([])
   const [selectedTerm, setSelectedTerm] = useState<Term>(CURRENT_TERM)
   const [termOpen, setTermOpen] = useState(false)
-
-  const refreshRecent = useCallback(() => {
-    setRecentStudents(loadRecentlyViewed('students'))
-  }, [])
-
-  useEffect(() => {
-    refreshRecent()
-    window.addEventListener('focus', refreshRecent)
-    return () => window.removeEventListener('focus', refreshRecent)
-  }, [refreshRecent])
 
   // External search — Aarti May 13: "single line like Google search, no filters".
   // Covers non-column fields (program, annotation text) that DataTable's internal
@@ -420,9 +408,7 @@ export default function StudentsClient() {
           }
         />
 
-        <div className="flex flex-1 min-h-0">
-          {/* Main table area */}
-          <div className="flex flex-1 flex-col gap-0 min-h-0 min-w-0">
+        <div className="flex flex-1 flex-col gap-0 min-h-0 min-w-0">
             {/* Prominent single search bar — Aarti: "single line like Google search" */}
             <div className="px-4 lg:px-6 pt-4 pb-2 flex flex-col gap-2">
               <SearchInput
@@ -506,47 +492,6 @@ export default function StudentsClient() {
                 </span>
               )}
             />
-          </div>
-
-          {/* Right panel — recently viewed students */}
-          <aside className="w-64 shrink-0 hidden xl:flex flex-col gap-3 px-6 pt-1" aria-label="Recently viewed students">
-            <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
-              Recently viewed
-            </p>
-            {recentStudents.length === 0 ? (
-              <div
-                className="rounded-xl border border-dashed border-border bg-card p-4 flex flex-col items-center justify-center gap-2 text-center"
-                style={{ minHeight: 120 }}
-              >
-                <i className="fa-light fa-clock-rotate-left text-muted-foreground" aria-hidden="true" style={{ fontSize: 18 }} />
-                <p className="text-xs text-muted-foreground">Recently viewed students will appear here</p>
-              </div>
-            ) : (
-              <ul className="flex flex-col gap-1">
-                {recentStudents.map((item) => (
-                  <li key={item.id}>
-                    <button
-                      type="button"
-                      onClick={() => router.push(item.href)}
-                      className="w-full flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-muted/60 transition-colors"
-                    >
-                      <span
-                        className="flex size-7 shrink-0 items-center justify-center rounded-md"
-                        style={{ backgroundColor: 'var(--muted)' }}
-                        aria-hidden="true"
-                      >
-                        <i className="fa-light fa-graduation-cap text-muted-foreground" style={{ fontSize: 12 }} aria-hidden="true" />
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
-                        <p className="text-[11px] text-muted-foreground truncate">{item.subtitle}</p>
-                      </div>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </aside>
         </div>
       </div>
 
