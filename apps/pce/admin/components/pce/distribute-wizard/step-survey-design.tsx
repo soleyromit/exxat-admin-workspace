@@ -93,7 +93,7 @@ export function StepSurveyDesign({
             </p>
           </div>
           <Button variant="outline" size="sm" asChild>
-            <a href="/templates" target="_blank" rel="noreferrer">
+            <a href="/templates" target="_blank" rel="noreferrer" aria-label="Go to templates (opens in new tab)">
               Go to templates
               <i
                 className="fa-light fa-arrow-up-right-from-square ml-1.5 text-xs"
@@ -255,6 +255,7 @@ export function StepSurveyDesign({
               rel="noreferrer"
               className="text-xs"
               style={{ color: 'var(--brand-color)' }}
+              aria-label="Create a template (opens in new tab)"
             >
               Create a template
               <i

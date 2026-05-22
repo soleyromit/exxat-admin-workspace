@@ -213,13 +213,13 @@ export function StepDistribution({
                           <i
                             className="fa-solid fa-triangle-exclamation text-xs shrink-0"
                             aria-hidden="true"
-                            style={{ color: 'color-mix(in oklch, var(--foreground) 50%, oklch(75% 0.15 80))' }}
+                            style={{ color: 'color-mix(in oklch, var(--foreground) 50%, var(--chart-4))' }}
                           />
                         )}
                       </div>
                       <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
                         {faculty ? faculty.name : (
-                          <span style={{ color: 'color-mix(in oklch, var(--foreground) 50%, oklch(75% 0.15 80))' }}>
+                          <span style={{ color: 'color-mix(in oklch, var(--foreground) 50%, var(--chart-4))' }}>
                             Unassigned faculty
                           </span>
                         )}
@@ -235,14 +235,14 @@ export function StepDistribution({
                       className="flex items-start gap-2"
                       style={{
                         padding: '6px 14px 8px 52px',
-                        background: 'color-mix(in oklch, oklch(75% 0.15 80) 8%, var(--card))',
+                        background: 'color-mix(in oklch, var(--chart-4) 8%, var(--card))',
                         borderBottom: isLast ? 'none' : '1px solid var(--border)',
                       }}
                     >
                       <i
                         className="fa-light fa-circle-info text-xs shrink-0 mt-0.5"
                         aria-hidden="true"
-                        style={{ color: 'color-mix(in oklch, var(--foreground) 50%, oklch(75% 0.15 80))' }}
+                        style={{ color: 'color-mix(in oklch, var(--foreground) 50%, var(--chart-4))' }}
                       />
                       <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
                         No instructor assigned. Instructor section will be suppressed in this survey.
