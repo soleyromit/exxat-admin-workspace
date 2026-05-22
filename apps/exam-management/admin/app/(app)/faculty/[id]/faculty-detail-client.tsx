@@ -77,7 +77,42 @@ function assessmentStatusStyle(status: string): { bg: string; fg: string } {
 // ── Profile tab ───────────────────────────────────────────────────────────────
 
 function ProfileTab({ faculty, isPrism }: { faculty: ExtendedFaculty; isPrism: boolean }) {
+  const pendingReviewCount = (MOCK_PENDING_REVIEWS_BY_FACULTY[faculty.id] ?? []).length
+  const qbFolderCount = (MOCK_QB_FOLDERS_BY_FACULTY[faculty.id] ?? []).length
+
   return (
+    <div className="flex flex-col gap-5">
+
+      {/* Quick outcome stats — blended with identity so Profile feels active, not just static */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { icon: 'fa-graduation-cap',  label: 'Courses',         value: faculty.courses.length },
+          { icon: 'fa-clipboard-list',  label: 'Assessments',     value: faculty.assessmentsManaged.length },
+          { icon: 'fa-clock',           label: 'Pending reviews', value: pendingReviewCount },
+          { icon: 'fa-folder',          label: 'QB folders',      value: qbFolderCount },
+        ].map(stat => (
+          <div
+            key={stat.label}
+            className="rounded-xl border border-border bg-card px-4 py-4 flex items-center gap-3"
+          >
+            <div
+              className="flex size-9 shrink-0 items-center justify-center rounded-lg"
+              style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))' }}
+            >
+              <i
+                className={`fa-light ${stat.icon}`}
+                aria-hidden="true"
+                style={{ fontSize: 15, color: 'var(--brand-color)' }}
+              />
+            </div>
+            <div>
+              <p className="text-lg font-bold text-foreground leading-none tabular-nums">{stat.value}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 flex flex-col gap-5">
 
@@ -166,6 +201,7 @@ function ProfileTab({ faculty, isPrism }: { faculty: ExtendedFaculty; isPrism: b
           </div>
         </div>
       )}
+    </div>
     </div>
   )
 }
