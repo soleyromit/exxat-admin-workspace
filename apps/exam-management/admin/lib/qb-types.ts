@@ -101,7 +101,7 @@ export type AssessmentStatus =
   | 'completed'
 
 export interface AssessmentReviewRequest {
-  reviewerId: string    // persona ID
+  reviewerIds: string[]    // FacultyListRow IDs — multiple reviewers allowed
   message: string
   dueDate: string | null  // ISO date string
   sentAt: string          // ISO timestamp

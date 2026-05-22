@@ -27,6 +27,7 @@ import {
 import { SectionsOutline } from '@/components/assessment-builder/step2-sections-outline'
 import { HealthPanel } from '@/components/assessment-builder/step2-health-panel'
 import { InlineQuestionEditor } from '@/components/assessment-builder/step2-inline-editor'
+import { SendForReviewDialog } from '@/components/assessment-builder/send-for-review-dialog'
 
 // Estimated minutes per question type (base, before difficulty adjustment)
 const TIME_BY_TYPE: Record<QType, number> = {
@@ -321,6 +322,7 @@ export default function AssessmentBuilderClient() {
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null)
 
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [sendForReviewOpen, setSendForReviewOpen] = useState(false)
 
   function addSection(title: string) {
     setActiveAsmt(prev => prev ? {
@@ -373,9 +375,18 @@ export default function AssessmentBuilderClient() {
   }
 
   function handleSendToChair() {
-    if (activeAsmt) {
-      router.push(`/assessments/${activeAsmt.id}`)
-    }
+    setSendForReviewOpen(true)
+  }
+
+  function handleReviewSubmit(req: import('@/lib/qb-types').AssessmentReviewRequest) {
+    setActiveAsmt(prev => prev ? {
+      ...prev,
+      settings: {
+        ...prev.settings,
+        status: 'pending-review',
+        reviewRequest: req,
+      },
+    } : prev)
   }
 
   return (
@@ -574,6 +585,11 @@ export default function AssessmentBuilderClient() {
         onOpenChange={setSettingsOpen}
         settings={activeAsmt?.settings ?? defaultAssessmentSettings('Exam')}
         onSave={(s) => setActiveAsmt(prev => prev ? { ...prev, settings: s } : prev)}
+      />
+      <SendForReviewDialog
+        open={sendForReviewOpen}
+        onOpenChange={setSendForReviewOpen}
+        onSubmit={handleReviewSubmit}
       />
     </div>
   )
@@ -1818,12 +1834,12 @@ function ApprovalPanel({ status, reviewRequest, onSendForReview, onPublish }: {
       <div className="flex items-center justify-between">
         <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">Approval</p>
         <span
-          className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+          className="text-xs font-medium px-2 py-0.5 rounded-full"
           style={{
             background: status === 'approved'
-              ? 'color-mix(in oklch, var(--brand-color) 10%, var(--background))'
+              ? 'color-mix(in oklch, var(--chart-2) 12%, var(--background))'
               : 'var(--muted)',
-            color: status === 'approved' ? 'var(--brand-color)' : 'var(--muted-foreground)',
+            color: status === 'approved' ? 'var(--chart-2)' : 'var(--muted-foreground)',
           }}
         >
           {statusLabel[status]}
@@ -1837,8 +1853,16 @@ function ApprovalPanel({ status, reviewRequest, onSendForReview, onPublish }: {
       )}
 
       {reviewRequest && (
-        <div className="text-xs text-muted-foreground">
-          Sent for review{reviewRequest.dueDate ? ` · due ${formatDateTime(reviewRequest.dueDate)}` : ''}
+        <div className="text-xs text-muted-foreground flex flex-col gap-1">
+          <span>
+            Sent to{' '}
+            {reviewRequest.reviewerIds
+              .map(id => facultyListRows.find(f => f.id === id)?.fullName ?? id)
+              .join(', ')}
+          </span>
+          {reviewRequest.dueDate && (
+            <span>Due {formatDateTime(reviewRequest.dueDate)}</span>
+          )}
         </div>
       )}
 
