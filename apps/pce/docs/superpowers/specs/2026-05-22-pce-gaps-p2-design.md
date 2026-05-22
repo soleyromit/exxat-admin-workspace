@@ -2,7 +2,7 @@
 **Date:** 2026-05-22
 **Author:** Romit Soley (Product Designer II)
 **Status:** Approved — ready for planning
-**Source:** PRD (Monil Pokar, May 12 2026) + 8 Granola transcripts (Apr 21–May 19)
+**Source:** PRD (Monil Pokar, May 12 2026) + 8 Granola transcripts (Apr 21–May 19) + Roadmap CSVs (Capabilities + Phase 1 tabs)
 **Execution order:** Quick fixes → Student survey → Faculty results → Wizard/template gaps → Settings
 
 ---
@@ -21,6 +21,65 @@
 | C2 | Underbuilt | Template duplicate — no-op handler | Low |
 | C3 | Underbuilt | PDF import button — missing from template editor | Medium |
 | C4 | Underbuilt | Moderation tab on survey detail page | Medium |
+| D1 | Wrong label | Status display labels: "collecting"→"Live", "released"→"Results Available" | High |
+| D2 | Missing | Result Release Date field in wizard Communication step | High |
+| D3 | Underbuilt | Settings page: configurable threshold + Likert N + results access matrix | Medium |
+| D4 | Underbuilt | Reminder cadence: custom days OR recurring frequency (not just "3 days before") | Medium |
+
+---
+
+## 0.5 Roadmap CSV Additions (2026-05-22)
+
+### Survey Status Labels (D1)
+
+The roadmap defines the correct display labels. The internal status keys stay the same but GROUP_LABELS and badges must show these exact strings:
+
+| Internal key | Current display | Correct display |
+|---|---|---|
+| `collecting` | "Collecting" | **"Live"** |
+| `released` | "Shared with Faculty" | **"Results Available"** |
+| `scheduled` | "Scheduled" | "Scheduled" ✓ |
+| `pending_review` | "Needs Action" | "Needs Action" ✓ |
+| `draft` | "Draft" | "Draft" ✓ |
+| `closed` | "Closed" | "Closed" ✓ |
+
+Files to update: `surveys/page.tsx` GROUP_LABELS, `my-surveys/page.tsx` GROUP_LABELS, `pce-badges.tsx` STATUS_CONFIG.
+
+### Result Release Date (D2)
+
+The roadmap Step 2 Create Survey → Basic Details shows: "Start date, End Date and Result Release Date (optional)."
+
+This is separate from close date — it controls WHEN faculty can access results (the admin can set this in advance rather than manually clicking "Share Results"). Add to wizard Communication step:
+
+```
+Results access date (optional)
+[DatePickerField — defaults to empty, meaning admin controls manually]
+If set: system auto-enables results on that date.
+```
+
+Add `resultReleaseDate?: string` to `PceSurvey` and `PushWizardConfig`.
+
+### Settings page scope (D3)
+
+Roadmap lists Settings fields for CE:
+1. Cover image, Logo, Brand Color (Phase 2 — skip)
+2. **Minimum threshold** — configurable (default 5). Changes the threshold shown in moderation warning and used in results suppression.
+3. **Likert N** — configurable (3 / 4 / 5 / 7 / 10). Roadmap overrides PRD NFR. Use program-level setting.
+4. **Results access matrix** — who sees what (configurable defaults): Instructor sees Instructor + Course Content; Coordinator sees Coordinator + Course Content; Program Director sees all.
+
+For Phase 1: build threshold and Likert N as editable fields. Skip cover image/logo. Show access matrix as read-only informational table (configurable in Phase 2).
+
+### Reminder cadence (D4)
+
+Roadmap: "Set custom days OR repeat cadence — frequency: daily, weekly, biweekly, monthly, quarterly."
+
+For Phase 1: keep as "N days before close" (our existing approach) but add a "repeat" option: send reminder every N days after first reminder until close.
+
+```
+[✓ Enable reminder]
+First reminder: [3 ▾] days before close
+Repeat every:   [—  ▾] (none / daily / every 3 days / weekly)
+```
 
 ---
 
