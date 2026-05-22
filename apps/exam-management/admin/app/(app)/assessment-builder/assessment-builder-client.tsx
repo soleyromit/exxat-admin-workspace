@@ -1,6 +1,6 @@
 'use client'
 import React, { useEffect, useState, useMemo, useCallback } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import {
   Button, Badge,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
@@ -53,6 +53,7 @@ function formatMin(min: number): string {
 export default function AssessmentBuilderClient() {
   const { currentPersona } = useFacultySession()
   const searchParams = useSearchParams()
+  const router = useRouter()
   const { drafts: localDrafts, hydrated: draftsHydrated } = useAssessmentDrafts()
 
   // URL hand-off from CreateAssessmentModal: ?draftId=X&courseId=Y
@@ -140,6 +141,12 @@ export default function AssessmentBuilderClient() {
   const offerings = mockCourseOfferings.filter(o => o.courseId === courseId)
   const assessments = mockAssessments.filter(a => a.courseId === courseId && a.offeringId === offeringId)
   const allSmartViews = useMemo(() => [...SYSTEM_SMART_VIEWS, ...savedViews], [savedViews])
+
+  const currentCourse   = mockCourses.find(c => c.id === courseId)
+  const currentOffering = mockCourseOfferings.find(o => o.id === offeringId)
+  const courseLabel = currentCourse
+    ? `${currentCourse.code} · ${currentOffering?.semester ?? ''}`
+    : ''
 
   const saveSmartView = useCallback((view: SmartView) => {
     setSavedViews(prev => {
@@ -266,6 +273,43 @@ export default function AssessmentBuilderClient() {
     [activeAsmt]
   )
 
+  const distribution = useMemo(() => {
+    const picked = MOCK_QB_QUESTIONS.filter(q => selectedIds.has(q.id))
+    return {
+      Easy:   picked.filter(q => q.difficulty === 'Easy').length,
+      Medium: picked.filter(q => q.difficulty === 'Medium').length,
+      Hard:   picked.filter(q => q.difficulty === 'Hard').length,
+    }
+  }, [selectedIds])
+
+  const bloomsMetrics = useMemo(() => {
+    const picked = MOCK_QB_QUESTIONS.filter(q => selectedIds.has(q.id))
+    if (picked.length === 0) return []
+    const counts: Record<string, number> = {}
+    for (const q of picked) counts[q.blooms] = (counts[q.blooms] ?? 0) + 1
+    const total = picked.length
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([level, count]) => ({ level, count, pct: Math.round((count / total) * 100) }))
+  }, [selectedIds])
+
+  const timeMetrics = useMemo(() => {
+    const picked = MOCK_QB_QUESTIONS.filter(q => selectedIds.has(q.id))
+    if (picked.length === 0) return { totalMin: 0, avgMin: 0 }
+    const totalMin = picked.reduce(
+      (sum, q) => sum + (TIME_BY_TYPE[q.type] ?? 2) * (DIFF_MULT[q.difficulty] ?? 1),
+      0
+    )
+    return { totalMin, avgMin: totalMin / picked.length }
+  }, [selectedIds])
+
+  const overtimeMetrics = useMemo(() => {
+    if (timeMetrics.totalMin === 0) return null
+    const delta = timeMetrics.totalMin - (activeAsmt?.durationMinutes ?? 0)
+    const pct = Math.round((timeMetrics.totalMin / (activeAsmt?.durationMinutes ?? 1)) * 100)
+    return { allottedMin: activeAsmt?.durationMinutes ?? 0, delta, pct }
+  }, [timeMetrics.totalMin, activeAsmt?.durationMinutes])
+
   const [activeStep, setActiveStep] = useState<1 | 2 | 3>(1)
 
   const [sectionsOpen, setSectionsOpen] = useState(false)
@@ -301,76 +345,95 @@ export default function AssessmentBuilderClient() {
     })
   }
 
+  function removeQuestion(questionId: string) {
+    setActiveAsmt(prev => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        questions: prev.questions
+          .filter(q => q.questionId !== questionId)
+          .map((q, i) => ({ ...q, order: i + 1 })),
+        sections: prev.sections.map(s => ({
+          ...s,
+          questionIds: s.questionIds.filter(id => id !== questionId),
+        })),
+      }
+    })
+  }
+
+  function handleSaveDraft() {
+    router.push('/courses')
+  }
+
+  function handleSendToChair() {
+    if (activeAsmt) {
+      router.push(`/assessments/${activeAsmt.id}`)
+    }
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      {/* WCAG page-has-heading-one — sr-only h1; visible heading is the
-         Course selector + active assessment badge below. */}
       <h1 className="sr-only">Assessment Builder</h1>
-      {/* Course + Offering selector bar */}
-      <div style={{
-        padding: '10px 20px',
-        borderBottom: '1px solid var(--border)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        background: 'var(--ab-selector-bar-bg)',
-        flexShrink: 0,
-      }}>
-        <span className="text-xs font-semibold text-muted-foreground">Course</span>
-        <Select value={courseId} onValueChange={(val) => {
-          setCourseId(val)
-          const first = mockCourseOfferings.find(o => o.courseId === val)
-          if (first) setOfferingId(first.id)
-          setActiveAsmt(null)
-        }}>
-          <SelectTrigger className="text-sm" style={{ width: 180, height: 32 }} aria-label="Filter by question type">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {mockCourses.map(c => (
-              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <span className="text-xs font-semibold text-muted-foreground">Offering</span>
-        <Select value={offeringId} onValueChange={(val) => { setOfferingId(val); setActiveAsmt(null) }}>
-          <SelectTrigger className="text-sm" style={{ width: 148, height: 32 }} aria-label="Filter by difficulty">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {offerings.map(o => (
-              <SelectItem key={o.id} value={o.id}>{o.semester}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {activeAsmt && (
-          <Badge variant="secondary" className="rounded text-[11px]" style={{ marginLeft: 8 }}>
-            Editing: {activeAsmt.title} · {activeAsmt.questions.length} questions
-          </Badge>
-        )}
-        {activeAsmt && (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Assessment settings"
-            onClick={() => setSettingsOpen(true)}
-            style={{ marginLeft: 'auto' }}
-          >
-            <i className="fa-light fa-gear" aria-hidden="true" />
-          </Button>
-        )}
-      </div>
 
-      {/* Main split */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-        <ABAssessmentList
-          assessments={assessments}
-          activeId={activeAsmt?.id ?? null}
-          onOpen={openAssessment}
-          onCreate={createAssessment}
+      {/* Wizard header — replaces the old selector bar */}
+      <WizardHeader
+        activeStep={activeStep}
+        onStepClick={setActiveStep}
+        assessmentName={activeAsmt?.title ?? ''}
+        courseLabel={courseLabel}
+        onSaveDraft={handleSaveDraft}
+        canSave={!!activeAsmt}
+      />
+
+      {/* Step 1 — Details */}
+      {activeStep === 1 && (
+        <DetailsStep
+          activeAsmt={activeAsmt}
+          mockCoursesLocal={mockCourses}
+          mockCourseOfferingsLocal={mockCourseOfferings}
+          courseId={courseId}
+          offeringId={offeringId}
+          onCourseChange={(val) => {
+            setCourseId(val)
+            const first = mockCourseOfferings.find(o => o.courseId === val)
+            if (first) setOfferingId(first.id)
+            setActiveAsmt(null)
+          }}
+          onOfferingChange={(val) => { setOfferingId(val); setActiveAsmt(null) }}
+          onUpdate={(patch) => {
+            setActiveAsmt(prev => {
+              if (!prev) {
+                return {
+                  id: `asmt-new-${Date.now()}`,
+                  title: patch.title ?? 'New Assessment',
+                  courseId,
+                  offeringId,
+                  questions: [],
+                  durationMinutes: patch.durationMinutes ?? 90,
+                  sections: [],
+                  settings: patch.settings ?? { type: 'Exam' as const, passwordRequired: false, password: '', randomize: false, showRationaleAfter: true },
+                  ...patch,
+                }
+              }
+              return { ...prev, ...patch }
+            })
+          }}
+          onContinue={() => setActiveStep(2)}
+          onCancel={() => router.push('/courses')}
         />
-        {activeAsmt ? (
-          <>
+      )}
+
+      {/* Step 2 — Build (3-panel canvas) */}
+      {activeStep === 2 && activeAsmt && (
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+          {/* Left: selected questions outline */}
+          <SelectedQuestionsOutline
+            activeAsmt={activeAsmt}
+            onRemove={removeQuestion}
+          />
+
+          {/* Center: question picker + sections panel + footer */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
             <ABQuestionPicker
               selectedIds={selectedIds}
               onToggle={toggleQuestion}
@@ -385,10 +448,10 @@ export default function AssessmentBuilderClient() {
               onCreateFromDraft={createQuestionFromDraft}
               authorPersonaId={currentPersona.id}
               onOpenAi={() => setAiOpen(true)}
-              sectionsOpen={sectionsOpen}
-              onToggleSections={() => setSectionsOpen(p => !p)}
               isCopyMode={urlMode === 'copy'}
               onRenameAsmt={(title) => setActiveAsmt(prev => prev ? { ...prev, title } : prev)}
+              sectionsOpen={sectionsOpen}
+              onToggleSections={() => setSectionsOpen(p => !p)}
             />
             {sectionsOpen && (
               <SectionsPanel
@@ -398,25 +461,69 @@ export default function AssessmentBuilderClient() {
                 onAssignQuestion={assignQuestionToSection}
               />
             )}
-          </>
-        ) : (
-          <div className="text-muted-foreground" style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexDirection: 'column',
-            gap: 12,
-          }}>
-            <i className="fa-light fa-pen-ruler" aria-hidden="true" style={{ fontSize: 32, opacity: 0.4 }} />
-            <span className="text-sm">Select an assessment to start picking questions</span>
+            {/* Step 2 navigation footer */}
+            <div
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '8px 20px', borderTop: '1px solid var(--border)',
+                background: 'var(--card)', flexShrink: 0,
+              }}
+            >
+              <Button variant="ghost" size="sm" onClick={() => setActiveStep(1)} className="gap-1.5">
+                <i className="fa-light fa-arrow-left" aria-hidden="true" />
+                Back
+              </Button>
+              <Button size="sm" onClick={() => setActiveStep(3)} className="gap-1.5">
+                Review
+                <i className="fa-light fa-arrow-right" aria-hidden="true" />
+              </Button>
+            </div>
           </div>
-        )}
-      </div>
 
-      {/* AI Generate modal — opened from the AI source tab in the picker.
-          On accept, the chosen drafts flow through createQuestion so they
-          land directly in the active assessment. */}
+          {/* Right: metrics panel */}
+          <MetricsPanel
+            distribution={distribution}
+            timeMetrics={timeMetrics}
+            overtimeMetrics={overtimeMetrics}
+            durationMinutes={activeAsmt.durationMinutes}
+            bloomsMetrics={bloomsMetrics}
+          />
+        </div>
+      )}
+
+      {/* Step 2 — no active assessment */}
+      {activeStep === 2 && !activeAsmt && (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
+          <p className="text-sm text-muted-foreground">No assessment selected. Go back to Details to set one up.</p>
+          <Button size="sm" onClick={() => setActiveStep(1)} className="gap-1.5">
+            <i className="fa-light fa-arrow-left" aria-hidden="true" />
+            Back to Details
+          </Button>
+        </div>
+      )}
+
+      {/* Step 3 — Review */}
+      {activeStep === 3 && activeAsmt && (
+        <ReviewStep
+          activeAsmt={activeAsmt}
+          courseLabel={courseLabel}
+          distribution={distribution}
+          bloomsMetrics={bloomsMetrics}
+          timeMetrics={timeMetrics}
+          onBack={() => setActiveStep(2)}
+          onSaveAsDraft={handleSaveDraft}
+          onSendToChair={handleSendToChair}
+        />
+      )}
+
+      {/* Step 3 — no active assessment */}
+      {activeStep === 3 && !activeAsmt && (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Button size="sm" onClick={() => setActiveStep(1)}>← Back to Details</Button>
+        </div>
+      )}
+
+      {/* Sheets + modals — always mounted so they survive step transitions */}
       <AiGenerateModal
         open={aiOpen}
         onOpenChange={setAiOpen}
@@ -424,18 +531,14 @@ export default function AssessmentBuilderClient() {
         acceptLabel="Add to assessment"
         onAccept={(drafts) => {
           drafts.forEach(d => {
-            createQuestion({
-              title: d.stem,
-              options: d.options,
-              correctIdx: d.correctIdx,
-            })
+            createQuestion({ title: d.stem, options: d.options, correctIdx: d.correctIdx })
           })
         }}
       />
       <AssessmentSettingsSheet
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
-        settings={activeAsmt?.settings ?? { type: 'Exam', passwordRequired: false, password: '', randomize: false, showRationaleAfter: true }}
+        settings={activeAsmt?.settings ?? { type: 'Exam' as const, passwordRequired: false, password: '', randomize: false, showRationaleAfter: true }}
         onSave={(s) => setActiveAsmt(prev => prev ? { ...prev, settings: s } : prev)}
       />
     </div>
@@ -567,7 +670,6 @@ function ABQuestionPicker({
   onRenameAsmt: (title: string) => void
 }) {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
-  const [saveConfirmed, setSaveConfirmed] = useState(false)
   const [newViewName, setNewViewName] = useState('')
   const [newViewNameError, setNewViewNameError] = useState<string | null>(null)
   const [source, setSource] = useState<PickerSource>('this-course')
@@ -610,43 +712,6 @@ function ABQuestionPicker({
       return true
     })
   }, [activeView, sourcedQuestions])
-
-  const distribution = useMemo(() => {
-    const picked = MOCK_QB_QUESTIONS.filter(q => selectedIds.has(q.id))
-    return {
-      Easy:   picked.filter(q => q.difficulty === 'Easy').length,
-      Medium: picked.filter(q => q.difficulty === 'Medium').length,
-      Hard:   picked.filter(q => q.difficulty === 'Hard').length,
-    }
-  }, [selectedIds])
-
-  const bloomsMetrics = useMemo(() => {
-    const picked = MOCK_QB_QUESTIONS.filter(q => selectedIds.has(q.id))
-    if (picked.length === 0) return []
-    const counts: Record<string, number> = {}
-    for (const q of picked) counts[q.blooms] = (counts[q.blooms] ?? 0) + 1
-    const total = picked.length
-    return Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .map(([level, count]) => ({ level, count, pct: Math.round((count / total) * 100) }))
-  }, [selectedIds])
-
-  const timeMetrics = useMemo(() => {
-    const picked = MOCK_QB_QUESTIONS.filter(q => selectedIds.has(q.id))
-    if (picked.length === 0) return { totalMin: 0, avgMin: 0 }
-    const totalMin = picked.reduce(
-      (sum, q) => sum + (TIME_BY_TYPE[q.type] ?? 2) * (DIFF_MULT[q.difficulty] ?? 1),
-      0
-    )
-    return { totalMin, avgMin: totalMin / picked.length }
-  }, [selectedIds])
-
-  const overtimeMetrics = useMemo(() => {
-    if (timeMetrics.totalMin === 0) return null
-    const delta = timeMetrics.totalMin - activeAsmt.durationMinutes
-    const pct = Math.round((timeMetrics.totalMin / activeAsmt.durationMinutes) * 100)
-    return { allottedMin: activeAsmt.durationMinutes, delta, pct }
-  }, [timeMetrics.totalMin, activeAsmt.durationMinutes])
 
   function handleSaveView() {
     const trimmed = newViewName.trim()
@@ -952,19 +1017,6 @@ function ABQuestionPicker({
         </Table>
       </div>
       )}
-
-      {/* Footer diff chart */}
-      <ABDiffChart
-        distribution={distribution}
-        timeMetrics={timeMetrics}
-        overtimeMetrics={overtimeMetrics}
-        durationMinutes={activeAsmt.durationMinutes}
-        onDurationChange={onDurationChange}
-        bloomsMetrics={bloomsMetrics}
-        saveConfirmed={saveConfirmed}
-        onSave={() => { setSaveConfirmed(true); setTimeout(() => setSaveConfirmed(false), 2000) }}
-        onCancel={() => {}}
-      />
 
       {/* Save smart view dialog — Field + FieldError surfaces both
           "required" and "duplicate name" failures (was silent disable
