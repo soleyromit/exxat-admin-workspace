@@ -531,25 +531,49 @@ function CoursesTab({ student, onEnrolled }: { student: ExtendedStudent; onEnrol
             </Button>
           </div>
         ) : (
+          {/* Tabs root controls which TabsContent is visible; nav is custom to avoid
+              DS TabsTrigger's h-[calc(100%-1px)] flex-1 expanding in vertical mode */}
           <Tabs
             orientation="vertical"
             value={activeTerm}
             onValueChange={setActiveTerm}
             className="flex flex-1 min-h-0"
           >
-            {/* Term list — DS default variant gives pill-style active state */}
-            <TabsList className="w-44 shrink-0 h-auto flex-col items-start rounded-none border-r border-border px-2 py-3 gap-0.5">
-              {sortedTerms.map(term => (
-                <TabsTrigger key={term} value={term} className="w-full justify-between px-3 py-2 flex-none">
-                  <span>{term}</span>
-                  <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
-                    {byTerm[term].length}
-                  </Badge>
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            {/* Custom vertical nav — DS tokens, no trigger height constraints */}
+            <nav
+              aria-label="Select term"
+              className="w-44 shrink-0 border-r border-border py-2 px-2 flex flex-col gap-0.5"
+            >
+              {sortedTerms.map(term => {
+                const isActive = activeTerm === term
+                return (
+                  <button
+                    key={term}
+                    type="button"
+                    onClick={() => setActiveTerm(term)}
+                    className="w-full flex items-center justify-between rounded-md px-3 py-2 text-sm text-left transition-colors"
+                    style={{
+                      backgroundColor: isActive
+                        ? 'color-mix(in oklch, var(--brand-color) 10%, var(--background))'
+                        : 'transparent',
+                      color: isActive ? 'var(--foreground)' : 'var(--muted-foreground)',
+                      fontWeight: isActive ? 500 : 400,
+                    }}
+                    aria-current={isActive ? 'true' : undefined}
+                  >
+                    <span>{term}</span>
+                    <Badge
+                      variant="secondary"
+                      className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center"
+                    >
+                      {byTerm[term].length}
+                    </Badge>
+                  </button>
+                )
+              })}
+            </nav>
 
-            {/* Per-term DataTable with Enroll button inside the content area */}
+            {/* Per-term content */}
             {sortedTerms.map(term => (
               <TabsContent key={term} value={term} className="m-0 flex-1 min-h-0 flex flex-col">
                 <div className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-border">
