@@ -16,7 +16,7 @@ import {
 import { mockCourses, mockCourseOfferings, mockAssessments, MOCK_QB_QUESTIONS } from '@/lib/qb-mock-data'
 import type { AssessmentDraft, AssessmentQuestion, AssessmentSection, Question, SmartView, QType, QDiff } from '@/lib/qb-types'
 import { SYSTEM_SMART_VIEWS, defaultAssessmentSettings } from '@/lib/qb-types'
-import { courseObjectives, type CourseObjective } from '@/lib/faculty-mock-data'
+import { courseObjectives, facultyListRows, type CourseObjective } from '@/lib/faculty-mock-data'
 import { useFacultySession } from '@/lib/faculty-session'
 import { useAssessmentDrafts } from '@/lib/assessment-draft-store'
 import { AiGenerateModal } from '@/components/ai-generate-modal'
@@ -2360,20 +2360,48 @@ function DetailsStep({
                 {sections.map(sec => (
                   <div
                     key={sec.id}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
+                    className="flex flex-col gap-1.5 px-3 py-2.5 rounded-lg"
                     style={{ border: '1px solid var(--border)', background: 'var(--card)' }}
                   >
-                    <i className="fa-light fa-layer-group" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)' }} />
-                    <span className="flex-1 text-foreground truncate">{sec.title}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeSection(sec.id)}
-                      aria-label={`Remove section ${sec.title}`}
-                      className="h-6 w-6 p-0 shrink-0"
-                    >
-                      <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 11 }} />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <i className="fa-light fa-layer-group" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)' }} />
+                      <span className="flex-1 text-sm text-foreground truncate">{sec.title}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeSection(sec.id)}
+                        aria-label={`Remove section ${sec.title}`}
+                        className="h-6 w-6 p-0 shrink-0"
+                      >
+                        <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 11 }} />
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground w-20 shrink-0">Assigned to</span>
+                      <Select
+                        value={sec.facultyId ?? '__none__'}
+                        onValueChange={val => onUpdate({
+                          sections: sections.map(s =>
+                            s.id === sec.id ? { ...s, facultyId: val === '__none__' ? undefined : val } : s
+                          ),
+                        })}
+                      >
+                        <SelectTrigger className="h-7 text-xs flex-1" aria-label={`Assign faculty to section ${sec.title}`}>
+                          <SelectValue placeholder="Assign faculty…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">
+                            <span className="text-muted-foreground">Unassigned</span>
+                          </SelectItem>
+                          {facultyListRows.filter(f => f.status === 'active').map(f => (
+                            <SelectItem key={f.id} value={f.id}>
+                              {f.fullName}
+                              <span className="text-muted-foreground ml-1.5 text-xs">· {f.adminPosition}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 ))}
               </div>

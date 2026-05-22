@@ -5,6 +5,7 @@ import { Button, Badge } from '@exxat/ds/packages/ui/src'
 import type { AssessmentDraft, AssessmentSection } from '@/lib/qb-types'
 import type { Question } from '@/lib/qb-types'
 import { MOCK_MISSING_RATIONALE_QUESTION_IDS, MOCK_POOR_PBIS_QUESTION_IDS } from '@/lib/qb-mock-data'
+import { facultyListRows } from '@/lib/faculty-mock-data'
 
 interface Props {
   activeAsmt: AssessmentDraft
@@ -87,6 +88,9 @@ function SectionGroup({ section, questions, onRemove, onEdit, editingId }: {
 }) {
   const [collapsed, setCollapsed] = useState(false)
   const qById = Object.fromEntries(questions.map(q => [q.id, q]))
+  const assignedFaculty = section.facultyId
+    ? facultyListRows.find(f => f.id === section.facultyId)
+    : null
 
   return (
     <div>
@@ -101,8 +105,16 @@ function SectionGroup({ section, questions, onRemove, onEdit, editingId }: {
           aria-hidden="true"
           style={{ fontSize: 9, color: 'var(--muted-foreground)', width: 10 }}
         />
-        <span className="text-[11px] font-semibold text-foreground truncate flex-1">{section.title}</span>
-        <span className="text-[10px] text-muted-foreground shrink-0">{section.questionIds.length}</span>
+        <span className="text-xs font-semibold text-foreground truncate flex-1">{section.title}</span>
+        {assignedFaculty && (
+          <span
+            className="text-xs text-muted-foreground shrink-0 truncate max-w-[70px]"
+            title={assignedFaculty.fullName}
+          >
+            {assignedFaculty.fullName.split(' ').slice(-1)[0]}
+          </span>
+        )}
+        <span className="text-xs text-muted-foreground shrink-0">{section.questionIds.length}</span>
       </button>
       {!collapsed && section.questionIds.map(qId => (
         <QuestionRow
