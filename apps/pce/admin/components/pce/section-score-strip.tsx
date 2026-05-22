@@ -39,10 +39,10 @@ export interface SectionScoreStripProps {
 
 // Fixed internal constants.
 const SVG_HEIGHT = 32   // total viewBox height
-const TRACK_Y = 10      // y-coordinate of the track line
-const TICK_Y1 = 7       // top of tick marks
-const TICK_Y2 = 13      // bottom of tick marks
-const LABEL_Y = 26      // y-coordinate of number labels
+const TRACK_Y = 8       // y-coordinate of the track line
+const TICK_Y1 = 5       // top of tick marks (TRACK_Y - 3)
+const TICK_Y2 = 11      // bottom of tick marks (TRACK_Y + 3)
+const LABEL_Y = 24      // y-coordinate of number labels (TRACK_Y + 16)
 const SCALE_MIN = 1
 const SCALE_MAX = 5
 const SCALE_STEPS = 5   // positions: 1, 2, 3, 4, 5

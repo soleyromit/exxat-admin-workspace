@@ -109,8 +109,7 @@ export function BulletGauge({
           y1={0}
           x2={thresholdX}
           y2={height}
-          stroke="var(--muted-foreground)"
-          strokeOpacity={0.4}
+          stroke="var(--border)"
           strokeWidth={1}
           strokeDasharray="1.5 1"
           vectorEffect="non-scaling-stroke"
