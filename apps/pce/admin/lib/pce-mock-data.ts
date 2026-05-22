@@ -385,7 +385,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
       { term: 'Spring 2024', courseAvg: 4.0, facultyAvg: 4.2 },
       { term: 'Spring 2025', courseAvg: 4.1, facultyAvg: 4.2 },
     ],
-    templateId: 't1',
+    templateId: 'tmpl1',
     status: 'pending_review',
     instructors: [INSTRUCTORS.patel, { ...INSTRUCTORS.chen, role: 'guest' }],
     responseRate: 68,
@@ -409,7 +409,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
       { term: 'Spring 2024', courseAvg: 3.6, facultyAvg: 3.8 },
       { term: 'Spring 2025', courseAvg: 3.9, facultyAvg: 4.0 },
     ],
-    templateId: 't1',
+    templateId: 'tmpl1',
     status: 'collecting',
     instructors: [INSTRUCTORS.williams, { ...INSTRUCTORS.chen, role: 'guest' }],
     responseRate: 42,
@@ -434,7 +434,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
       { term: 'Spring 2024', courseAvg: 4.1, facultyAvg: 4.4 },
       { term: 'Spring 2025', courseAvg: 4.0, facultyAvg: 4.5 },
     ],
-    templateId: 't2',
+    templateId: 'tmpl2',
     status: 'released',
     instructors: [INSTRUCTORS.williams],
     responseRate: 91,
@@ -460,7 +460,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
       { term: 'Fall 2023', courseAvg: 4.2, facultyAvg: 4.3 },
       { term: 'Fall 2024', courseAvg: 4.0, facultyAvg: 4.0 },
     ],
-    templateId: 't2',
+    templateId: 'tmpl2',
     status: 'closed',
     instructors: [INSTRUCTORS.kim],
     responseRate: 88,
@@ -486,7 +486,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
       { term: 'Spring 2024', courseAvg: 4.0, facultyAvg: 4.1 },
       { term: 'Spring 2025', courseAvg: 4.0, facultyAvg: 4.0 },
     ],
-    templateId: 't1',
+    templateId: 'tmpl1',
     status: 'pending_review',
     instructors: [INSTRUCTORS.kim],
     responseRate: 73,
@@ -509,7 +509,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     priorOfferings: [
       { term: 'Spring 2025', courseAvg: 3.8, facultyAvg: 4.0 },
     ],
-    templateId: 't1',
+    templateId: 'tmpl1',
     status: 'pending_review',
     instructors: [INSTRUCTORS.kim],
     responseRate: 80,
@@ -530,7 +530,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     cohort: 'Class of 2027',
     courseType: 'didactic',
     /* No prior offerings — first time this course is offered. */
-    templateId: 't2',
+    templateId: 'tmpl2',
     status: 'draft',
     instructors: [INSTRUCTORS.patel],
     responseRate: 0,
@@ -582,6 +582,29 @@ export const MOCK_RESPONSES: PceResponse[] = [
     comments: [
       { section: 'course_content', text: 'Great course structure overall.', sentiment: 'positive' },
       { section: 'faculty_performance', text: 'Lectures were engaging and informative.', sentiment: 'positive' },
+    ],
+  },
+  {
+    surveyId: 's5',
+    sectionScores: [
+      { section: 'course_content', avg: 3.9, count: 22 },
+      { section: 'faculty_performance', avg: 4.1, count: 22 },
+    ],
+    comments: [
+      { section: 'faculty_performance', text: 'Clear expectations set from day one.', sentiment: 'positive' },
+      { section: 'course_content', text: 'Clinical simulations could be more realistic.', sentiment: 'concern' },
+      { section: 'course_content', text: 'Well-organized course overall.', sentiment: 'positive' },
+    ],
+  },
+  {
+    surveyId: 's6',
+    sectionScores: [
+      { section: 'course_content', avg: 4.2, count: 8 },
+      { section: 'faculty_performance', avg: 4.4, count: 8 },
+    ],
+    comments: [
+      { section: 'course_content', text: 'The intro to medicine course exceeded expectations.', sentiment: 'positive' },
+      { section: 'faculty_performance', text: 'Great communicator and approachable outside class.', sentiment: 'positive' },
     ],
   },
 ]
