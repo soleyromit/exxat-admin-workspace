@@ -30,7 +30,7 @@ import {
 import { QBToggle } from '@/components/qb/toggle'
 import {
   type EditorQType, type QuestionDraft, type QuestionPayload,
-  type DraftValidationIssue,
+  type DraftValidationIssue, type KTypeStatement,
   QUESTION_TYPES, defaultPayload, validateDraft,
 } from '@/lib/question-editor-types'
 import type { CourseObjective } from '@/lib/faculty-mock-data'
@@ -179,14 +179,9 @@ export function QuestionEditor({
           <div className="flex flex-col gap-5">
             {/* Type picker */}
             <section className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Question type
-                </h2>
-                <span className="text-[11px] text-muted-foreground">
-                  Switching type clears type-specific answer data
-                </span>
-              </div>
+              <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+                Question type
+              </h2>
               <TypePickerGrid value={draft.type} onChange={setType} />
             </section>
 
@@ -326,28 +321,30 @@ export function QuestionEditor({
 
 function TypePickerGrid({ value, onChange }: { value: EditorQType; onChange: (t: EditorQType) => void }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+    <div className="flex flex-wrap gap-1.5">
       {QUESTION_TYPES.map(t => {
         const active = t.id === value
         return (
           <Button
             key={t.id}
             variant="ghost"
+            size="sm"
             onClick={() => onChange(t.id)}
             aria-pressed={active}
-            className={`flex-col items-start justify-start text-left h-auto rounded-lg border px-3 py-2.5 whitespace-normal ${
-              active
-                ? 'border-brand/60 bg-brand/8 ring-1 ring-brand/30'
-                : 'border-border bg-card hover:border-brand/40 hover:bg-muted/30'
-            }`}
+            title={t.shortDescription}
+            className="gap-1.5 h-7 px-2.5 text-xs rounded-full"
+            style={{
+              border: `1px solid ${active ? 'color-mix(in oklch, var(--brand-color) 55%, transparent)' : 'var(--border)'}`,
+              background: active ? 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' : 'transparent',
+              fontWeight: active ? 600 : 400,
+            }}
           >
-            <div className="flex items-center gap-2 mb-1">
-              <i className={`fa-light ${t.icon} ${active ? 'text-brand-dark' : 'text-muted-foreground'}`} aria-hidden="true" style={{ fontSize: 13 }} />
-              <span className={`text-xs font-semibold ${active ? 'text-foreground' : 'text-foreground'}`}>
-                {t.label}
-              </span>
-            </div>
-            <p className="text-[10px] text-muted-foreground leading-snug line-clamp-2">{t.shortDescription}</p>
+            <i
+              className={`fa-light ${t.icon}`}
+              aria-hidden="true"
+              style={{ fontSize: 11, color: active ? 'var(--brand-color)' : 'var(--muted-foreground)' }}
+            />
+            {t.label}
           </Button>
         )
       })}
@@ -394,6 +391,8 @@ function TypeControls({
       return <OrderingControls payload={payload} onChange={onChange} />
     case 'hotspot':
       return <HotspotControls payload={payload} onChange={onChange} />
+    case 'k-type':
+      return <KTypeControls payload={payload} onChange={onChange} />
   }
 }
 
@@ -1312,5 +1311,93 @@ function ConfidenceBadge({ level }: { level: 'high' | 'low' }) {
     <Badge variant="secondary" className="rounded text-[10px]" style={{ backgroundColor: meta.bg, color: meta.fg }}>
       {meta.label}
     </Badge>
+  )
+}
+
+// ─── K-type (complex MCQ) ─────────────────────────────────────────────────
+
+function KTypeControls({ payload, onChange }: {
+  payload: Extract<QuestionPayload, { type: 'k-type' }>
+  onChange: (p: QuestionPayload) => void
+}) {
+  function updateStatement(id: string, patch: Partial<KTypeStatement>) {
+    onChange({ ...payload, statements: payload.statements.map(s => s.id === id ? { ...s, ...patch } : s) })
+  }
+  function addStatement() {
+    onChange({ ...payload, statements: [...payload.statements, { id: `ks-${Date.now()}`, text: '', correct: false }] })
+  }
+  function removeStatement(id: string) {
+    onChange({ ...payload, statements: payload.statements.filter(s => s.id !== id) })
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Statements</p>
+        <p className="text-[11px] text-muted-foreground mb-3">Mark each statement as True or False. The correct combination key is the one whose selected pattern matches.</p>
+        {payload.statements.map((stmt, idx) => (
+          <div key={stmt.id} className="flex items-start gap-2 mb-2">
+            <span className="text-xs font-mono text-muted-foreground mt-2 w-4 shrink-0">{String.fromCharCode(65 + idx)}.</span>
+            <input
+              value={stmt.text}
+              onChange={e => updateStatement(stmt.id, { text: e.target.value })}
+              placeholder={`Statement ${String.fromCharCode(65 + idx)}`}
+              className="flex-1 text-sm"
+              style={{ height: 36, padding: '0 10px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', fontSize: 13 }}
+            />
+            <Button
+              variant={stmt.correct ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => updateStatement(stmt.id, { correct: true })}
+              className="shrink-0"
+              style={{ height: 36, minWidth: 56, fontSize: 12 }}
+            >
+              True
+            </Button>
+            <Button
+              variant={!stmt.correct ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => updateStatement(stmt.id, { correct: false })}
+              className="shrink-0"
+              style={{ height: 36, minWidth: 56, fontSize: 12 }}
+            >
+              False
+            </Button>
+            {payload.statements.length > 2 && (
+              <Button variant="ghost" size="sm" onClick={() => removeStatement(stmt.id)} aria-label="Remove statement" style={{ height: 36 }}>
+                <i className="fa-light fa-xmark" aria-hidden="true" />
+              </Button>
+            )}
+          </div>
+        ))}
+        <Button variant="ghost" size="sm" onClick={addStatement} className="gap-1.5 mt-1">
+          <i className="fa-light fa-plus" aria-hidden="true" />
+          Add statement
+        </Button>
+      </div>
+
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Combination keys</p>
+        <p className="text-[11px] text-muted-foreground mb-3">Define what each answer key (A, B, C, D) means — which statements are true in that combination. Mark the correct key.</p>
+        {payload.combinationKeys.map((key) => (
+          <div key={key.id} className="flex items-center gap-2 mb-2">
+            <Button
+              variant={key.isCorrect ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => onChange({ ...payload, combinationKeys: payload.combinationKeys.map(k => ({ ...k, isCorrect: k.id === key.id })) })}
+              style={{ height: 32, width: 32, padding: 0, fontWeight: 700, fontSize: 13, flexShrink: 0 }}
+              aria-label={`Mark key ${key.label} as correct`}
+            >
+              {key.label}
+            </Button>
+            <span className="text-xs text-muted-foreground flex-1">
+              {payload.statements.length > 0
+                ? payload.statements.map((s, i) => `${String.fromCharCode(65 + i)}=${s.correct ? 'T' : 'F'}`).join(', ')
+                : 'Define statements above'}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }

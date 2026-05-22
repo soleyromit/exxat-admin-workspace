@@ -27,6 +27,7 @@ export type EditorQType =
   | 'matching'
   | 'ordering'
   | 'hotspot'
+  | 'k-type'
 
 export interface QuestionTypeMeta {
   id: EditorQType
@@ -48,6 +49,7 @@ export const QUESTION_TYPES: QuestionTypeMeta[] = [
   { id: 'matching',      label: 'Matching',         icon: 'fa-arrow-right-arrow-left', baseMinutes: 3.0, shortDescription: 'Pair terms on the left to definitions on the right' },
   { id: 'ordering',      label: 'Ordering',         icon: 'fa-arrow-down-1-9', baseMinutes: 3.0, shortDescription: 'Place items in the correct sequence' },
   { id: 'hotspot',       label: 'Hotspot',          icon: 'fa-bullseye',      baseMinutes: 2.5, shortDescription: 'Click the correct region of an image' },
+  { id: 'k-type',        label: 'K-type',           icon: 'fa-table-list',    baseMinutes: 3.0, shortDescription: 'Complex MCQ — each option rated True/False, select correct combination' },
 ]
 
 export const QUESTION_TYPE_BY_ID: Record<EditorQType, QuestionTypeMeta> =
@@ -62,6 +64,7 @@ export interface OrderItem     { id: string; text: string; canonicalIdx: number 
 export interface FillBlankSpan { id: string; acceptedAnswers: string[]; caseSensitive: boolean }
 export interface Hotspot       { id: string; x: number; y: number; w: number; h: number; label: string }
 export interface RubricCriterion { id: string; label: string; weight: number; description: string }
+export interface KTypeStatement  { id: string; text: string; correct: boolean }
 
 export type QuestionPayload =
   | { type: 'mcq';          options: McqOption[]; shuffle: boolean }
@@ -74,6 +77,7 @@ export type QuestionPayload =
   | { type: 'matching';     lefts: MatchPair[]; rights: MatchRight[] }
   | { type: 'ordering';     items: OrderItem[] }
   | { type: 'hotspot';      imageUrl: string; hotspots: Hotspot[] }
+  | { type: 'k-type';       statements: KTypeStatement[]; combinationKeys: { id: string; label: string; selectedIds: string[]; isCorrect: boolean }[] }
 
 // ─── Workflow ──────────────────────────────────────────────────────────────
 
@@ -198,6 +202,22 @@ export function defaultPayload(type: EditorQType): QuestionPayload {
         imageUrl: '',
         hotspots: [],
       }
+    case 'k-type':
+      return {
+        type: 'k-type',
+        statements: [
+          { id: newPayloadId('ks'), text: '', correct: true },
+          { id: newPayloadId('ks'), text: '', correct: false },
+          { id: newPayloadId('ks'), text: '', correct: false },
+          { id: newPayloadId('ks'), text: '', correct: false },
+        ],
+        combinationKeys: [
+          { id: newPayloadId('kk'), label: 'A', selectedIds: [], isCorrect: false },
+          { id: newPayloadId('kk'), label: 'B', selectedIds: [], isCorrect: false },
+          { id: newPayloadId('kk'), label: 'C', selectedIds: [], isCorrect: false },
+          { id: newPayloadId('kk'), label: 'D', selectedIds: [], isCorrect: false },
+        ],
+      }
   }
 }
 
@@ -312,6 +332,7 @@ const TYPE_TO_QB_TYPE: Record<EditorQType, Question['type']> = {
   'matching':     'Matching',
   'ordering':     'Ordering',
   'hotspot':      'Hotspot',
+  'k-type':       'MCQ',
 }
 
 export function toQuestion(draft: QuestionDraft, opts: { folderPath: string; folder: string }): Question {
