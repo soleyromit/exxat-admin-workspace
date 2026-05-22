@@ -138,7 +138,7 @@ export function QuestionEditor({
       {!compact && (
         <header className="flex items-center justify-between gap-3 px-6 py-3 border-b border-border bg-card shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <Badge variant="secondary" className="rounded font-mono text-[10px]">{draft.code}</Badge>
+            <Badge variant="secondary" className="rounded font-mono text-[10px]" suppressHydrationWarning>{draft.code}</Badge>
             <h1 className="text-sm font-semibold text-foreground truncate">
               {draft.stem.trim() ? draft.stem.trim().slice(0, 80) : 'New question'}
             </h1>
@@ -364,7 +364,7 @@ function KTypeControls({ payload, onChange }: {
     onChange({ ...payload, statements: payload.statements.map(s => s.id === id ? { ...s, ...patch } : s) })
   }
   function addStatement() {
-    onChange({ ...payload, statements: [...payload.statements, { id: `ks-${Date.now()}`, text: '', correct: false }] })
+    onChange({ ...payload, statements: [...payload.statements, { id: `ks-${Math.random().toString(36).slice(2, 9)}`, text: '', correct: false }] })
   }
   function removeStatement(id: string) {
     onChange({ ...payload, statements: payload.statements.filter(s => s.id !== id) })
@@ -512,7 +512,7 @@ function McqControls({
   function addOption() {
     onChange({
       ...payload,
-      options: [...payload.options, { id: `opt-${Date.now()}-${payload.options.length}`, text: '', correct: false }],
+      options: [...payload.options, { id: `opt-${Math.random().toString(36).slice(2, 9)}-${payload.options.length}`, text: '', correct: false }],
     })
   }
 
@@ -854,7 +854,7 @@ function EssayControls({
   function addCriterion() {
     onChange({
       ...payload,
-      rubric: [...payload.rubric, { id: `rb-${Date.now()}`, label: '', weight: 0, description: '' }],
+      rubric: [...payload.rubric, { id: `rb-${Math.random().toString(36).slice(2, 9)}`, label: '', weight: 0, description: '' }],
     })
   }
   function removeCriterion(idx: number) {
@@ -922,7 +922,7 @@ function FillBlankControls({
     const tokens = Array.from(value.matchAll(/\[\[([^\]]*)\]\]/g)).map(m => m[1])
     const blanks = tokens.map((tok, i) => {
       const existing = payload.blanks[i]
-      return existing ?? { id: `blk-${Date.now()}-${i}`, acceptedAnswers: [tok], caseSensitive: false }
+      return existing ?? { id: `blk-${Math.random().toString(36).slice(2, 9)}-${i}`, acceptedAnswers: [tok], caseSensitive: false }
     })
     onChange({ ...payload, stemTemplate: value, blanks })
   }
@@ -1029,10 +1029,10 @@ function MatchingControls({
     onChange({ ...payload, rights: payload.rights.map((r, i) => i === idx ? { ...r, ...patch } : r) })
   }
   function addPair() {
-    const r = { id: `r-${Date.now()}`, text: '' }
+    const r = { id: `r-${Math.random().toString(36).slice(2, 9)}`, text: '' }
     onChange({
       ...payload,
-      lefts: [...payload.lefts, { id: `l-${Date.now()}`, left: '', rightId: r.id }],
+      lefts: [...payload.lefts, { id: `l-${Math.random().toString(36).slice(2, 9)}`, left: '', rightId: r.id }],
       rights: [...payload.rights, r],
     })
   }
@@ -1097,7 +1097,7 @@ function OrderingControls({
   function addItem() {
     onChange({
       ...payload,
-      items: [...payload.items, { id: `o-${Date.now()}`, text: '', canonicalIdx: payload.items.length }],
+      items: [...payload.items, { id: `o-${Math.random().toString(36).slice(2, 9)}`, text: '', canonicalIdx: payload.items.length }],
     })
   }
   function removeItem(idx: number) {
@@ -1150,7 +1150,7 @@ function HotspotControls({
     onChange({
       ...payload,
       hotspots: [...payload.hotspots, {
-        id: `hs-${Date.now()}`,
+        id: `hs-${Math.random().toString(36).slice(2, 9)}`,
         x: Math.max(0, x - 6),
         y: Math.max(0, y - 6),
         w: 12,
@@ -1246,12 +1246,12 @@ function MetadataPanel({
           <Label htmlFor="meta-objective" className="text-xs font-medium">Course objective</Label>
           <span className="text-[10px] text-muted-foreground">one per question</span>
         </div>
-        <Select value={draft.objectiveId ?? ''} onValueChange={v => onUpdate('objectiveId', v || null)}>
+        <Select value={draft.objectiveId ?? '__none__'} onValueChange={v => onUpdate('objectiveId', v === '__none__' ? null : v)}>
           <SelectTrigger id="meta-objective" className="text-xs">
             <SelectValue placeholder="Select objective…" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">
+            <SelectItem value="__none__">
               <span className="text-muted-foreground">None</span>
             </SelectItem>
             {objectives.map(o => (

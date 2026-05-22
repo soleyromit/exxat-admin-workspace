@@ -116,7 +116,8 @@ export interface QuestionDraft {
 // ─── Defaults per type ─────────────────────────────────────────────────────
 
 let pidCounter = 0
-const newPayloadId = (prefix: string) => `${prefix}-${Date.now()}-${++pidCounter}`
+// No Date.now() — counter-only IDs are stable across SSR + hydration.
+const newPayloadId = (prefix: string) => `${prefix}-${++pidCounter}`
 
 export function defaultPayload(type: EditorQType): QuestionPayload {
   switch (type) {
@@ -232,8 +233,8 @@ export function createDraft(opts: {
 }): QuestionDraft {
   const type = opts.type ?? 'mcq'
   return {
-    id: `draft-${Date.now()}`,
-    code: opts.code ?? `DRAFT-${String(Math.floor(Date.now() / 1000) % 10000).padStart(4, '0')}`,
+    id: `draft-${++pidCounter}`,
+    code: opts.code ?? `DRAFT-${String(pidCounter).padStart(4, '0')}`,
     type,
     stem: '',
     explanation: '',
