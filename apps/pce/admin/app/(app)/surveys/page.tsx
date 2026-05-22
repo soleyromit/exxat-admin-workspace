@@ -14,7 +14,11 @@ import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { ResponseGauge } from '@/components/pce/response-gauge'
 import { CreateSurveySheet, CloseSurveyDialog } from '@/components/pce/pce-modals'
-import { MOCK_TERMS } from '@/lib/pce-mock-data'
+import {
+  MOCK_TERMS,
+  MOCK_PROGRAM_TERMS,
+  MOCK_COURSE_OFFERINGS,
+} from '@/lib/pce-mock-data'
 import type { PceSurvey, SurveyStatus } from '@/lib/pce-mock-data'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
@@ -28,6 +32,7 @@ const GROUP_LABELS: Record<SurveyStatus, string> = {
   pending_review: 'Needs Action',
   collecting:     'Collecting',
   active:         'Active',
+  scheduled:      'Scheduled',
   draft:          'Draft',
   released:       'Shared with Faculty',
   closed:         'Closed',
@@ -65,6 +70,19 @@ export default function SurveysPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [closeSurvey, setCloseSurvey] = useState<PceSurvey | null>(null)
   const [termFilter, setTermFilter] = useState('all')
+
+  // Run Evaluation banner: show when active term has offerings but no surveys pushed
+  const activeTerm = MOCK_PROGRAM_TERMS.find(t => t.status === 'active') ?? null
+  const activeTermOfferings = activeTerm
+    ? MOCK_COURSE_OFFERINGS.filter(o => o.termId === activeTerm.id)
+    : []
+  const activeTermSurveys = activeTerm
+    ? surveys.filter(s => s.term === activeTerm.name)
+    : []
+  const showRunBanner =
+    activeTerm !== null &&
+    activeTermOfferings.length > 0 &&
+    activeTermSurveys.length === 0
 
   const filtered = surveys.filter(s => {
     if (termFilter !== 'all' && s.term !== termFilter) return false
@@ -192,6 +210,35 @@ export default function SurveysPage() {
         </Button>
       </header>
 
+      {showRunBanner && activeTerm && (
+        <div style={{ paddingInline: 28, paddingTop: 12, paddingBottom: 4 }}>
+          <div
+            className="flex items-center gap-3 rounded-xl border border-border"
+            style={{ padding: '14px 18px', background: 'var(--brand-tint)' }}
+          >
+            {/* Pulsing dot */}
+            <div
+              className="shrink-0 rounded-full animate-pulse"
+              style={{ width: 8, height: 8, background: 'var(--brand-color)' }}
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+                {activeTerm.name} evaluation cycle is ready to launch
+              </p>
+              <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                {activeTermOfferings.length} courses found · all with enrolled students
+              </p>
+            </div>
+            <Button variant="default" size="sm" asChild>
+              <Link href="/surveys/run-evaluation">
+                Run evaluation
+                <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 12 }} />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      )}
+
       <Suspense>
         <PushedBanner />
       </Suspense>
@@ -229,6 +276,12 @@ export default function SurveysPage() {
             onRowClick={(row) => {
               window.location.href = `/surveys/${row.survey.id}`
             }}
+            toolbarSlot={() => (
+              <span className="text-xs text-muted-foreground">
+                {rows.length} survey{rows.length !== 1 ? 's' : ''}
+                {termFilter !== 'all' && ` · ${termFilter}`}
+              </span>
+            )}
           />
         )}
       </div>
