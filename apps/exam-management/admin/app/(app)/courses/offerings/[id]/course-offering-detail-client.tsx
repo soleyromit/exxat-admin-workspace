@@ -41,6 +41,7 @@ import { allStudents } from '@/lib/student-mock-data'
 import type { ExtendedCourseOffering } from '@/lib/course-mock-data'
 import { MOCK_QB_FOLDERS, mockAssessments } from '@/lib/qb-mock-data'
 import { findPersona } from '@/lib/personas'
+import { ImportAssessmentModal } from '@/components/import-assessment-modal'
 
 const IS_LMS_ACTIVE = false
 
@@ -326,28 +327,35 @@ function AssignFacultySheet({
 }
 
 // ── Create Assessment modal ───────────────────────────────────────────────────
-// Three entry modes per Aarti May 19: blank, QB-first, copy from previous.
+// Four entry modes per Aarti May 19: blank, QB-first, copy from previous, import PDF.
 
 function CreateAssessmentModal({
-  open, onOpenChange, offeringId, courseId,
+  open, onOpenChange, offeringId, courseId, onOpenImport,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   offeringId: string
   courseId: string
+  onOpenImport: () => void
 }) {
   const router = useRouter()
   const [step, setStep] = useState<'pick-mode' | 'pick-source'>('pick-mode')
+  const [mode, setMode] = useState<'blank' | 'qb' | 'copy' | 'import'>('blank')
 
   // Previous assessments for this course but a different offering (previous term)
   const prevAssessments = mockAssessments.filter(
     a => a.courseId === courseId && a.offeringId !== offeringId
   )
 
-  function close() { onOpenChange(false); setStep('pick-mode') }
+  function close() { onOpenChange(false); setStep('pick-mode'); setMode('blank') }
 
-  function handleMode(mode: 'blank' | 'qb' | 'copy') {
+  function handleContinue() {
     if (mode === 'copy') { setStep('pick-source'); return }
+    if (mode === 'import') {
+      close()
+      onOpenImport()
+      return
+    }
     close()
     router.push(`/assessment-builder?offeringId=${offeringId}&mode=${mode}`)
   }
@@ -357,24 +365,30 @@ function CreateAssessmentModal({
     router.push(`/assessment-builder?offeringId=${offeringId}&mode=copy&sourceId=${sourceId}`)
   }
 
-  const MODES = [
+  const MODES: { id: 'blank' | 'qb' | 'copy' | 'import'; icon: string; label: string; desc: string }[] = [
     {
-      id: 'blank' as const,
+      id: 'blank',
       icon: 'fa-file-pen',
       label: 'From scratch',
       desc: 'Start with a blank assessment and add questions from the QB.',
     },
     {
-      id: 'qb' as const,
+      id: 'qb',
       icon: 'fa-books',
       label: 'From question bank',
       desc: 'Jump straight to the QB picker with smart view filters ready.',
     },
     {
-      id: 'copy' as const,
+      id: 'copy',
       icon: 'fa-copy',
       label: 'Copy from previous',
       desc: "Use a previous term's assessment as your starting point — keep structure, swap questions.",
+    },
+    {
+      id: 'import',
+      icon: 'fa-file-import',
+      label: 'Import PDF',
+      desc: 'Upload a paper exam. We match questions to your QB automatically.',
     },
   ]
 
@@ -387,30 +401,47 @@ function CreateAssessmentModal({
         </DialogHeader>
 
         {step === 'pick-mode' && (
-          <div className="flex flex-col gap-2 pt-1">
-            {MODES.map(m => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => handleMode(m.id)}
-                className="flex items-start gap-4 rounded-xl border border-border p-4 text-left transition-colors hover:bg-muted/30"
-              >
-                <div
-                  className="flex size-10 shrink-0 items-center justify-center rounded-lg"
+          <div className="flex flex-col gap-3 pt-1">
+            <div className="flex flex-col gap-2">
+              {MODES.map(m => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setMode(m.id)}
+                  className="flex items-start gap-4 rounded-xl border p-4 text-left transition-colors hover:bg-muted/30"
                   style={{
-                    backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
-                    color: 'var(--brand-color)',
+                    borderColor: mode === m.id ? 'color-mix(in oklch, var(--brand-color) 55%, transparent)' : 'var(--border)',
+                    background: mode === m.id ? 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' : 'var(--card)',
                   }}
                 >
-                  <i className={`fa-light ${m.icon} text-base`} aria-hidden="true" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-foreground">{m.label}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{m.desc}</p>
-                </div>
-                <i className="fa-light fa-chevron-right text-xs text-muted-foreground mt-1 shrink-0" aria-hidden="true" />
-              </button>
-            ))}
+                  <div
+                    className="flex size-10 shrink-0 items-center justify-center rounded-lg"
+                    style={{
+                      backgroundColor: mode === m.id
+                        ? 'color-mix(in oklch, var(--brand-color) 15%, var(--background))'
+                        : 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+                      color: 'var(--brand-color)',
+                    }}
+                  >
+                    <i className={`fa-light ${m.icon} text-base`} aria-hidden="true" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-foreground">{m.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{m.desc}</p>
+                  </div>
+                  {mode === m.id && (
+                    <i className="fa-light fa-circle-check text-sm mt-1 shrink-0" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
+                  )}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <Button variant="outline" size="sm" onClick={close}>Cancel</Button>
+              <Button variant="default" size="sm" onClick={handleContinue} className="gap-1.5">
+                Continue
+                <i className="fa-light fa-arrow-right" aria-hidden="true" />
+              </Button>
+            </div>
           </div>
         )}
 
@@ -428,7 +459,7 @@ function CreateAssessmentModal({
             {prevAssessments.length === 0 ? (
               <div className="rounded-xl border border-border bg-muted/30 p-5 text-center">
                 <p className="text-sm text-muted-foreground">No previous assessments found for this course.</p>
-                <Button variant="outline" size="sm" className="mt-3" onClick={() => handleMode('blank')}>
+                <Button variant="outline" size="sm" className="mt-3" onClick={() => { setMode('blank'); setStep('pick-mode') }}>
                   Start from scratch instead
                 </Button>
               </div>
@@ -1237,6 +1268,7 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
   const [enrollOpen, setEnrollOpen] = useState(false)
   const [assignOpen, setAssignOpen] = useState(false)
   const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
 
   const enrolledIds = useMemo(() => new Set(localStudents.map(s => s.id)), [localStudents])
   const assignedIds = useMemo(() => new Set(localFaculty.map(f => f.id)), [localFaculty])
@@ -1399,6 +1431,15 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
         onOpenChange={setCreateModalOpen}
         offeringId={offering.id}
         courseId={offering.courseId}
+        onOpenImport={() => setImportOpen(true)}
+      />
+      <ImportAssessmentModal
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        courseCode={offering.courseNumber}
+        onImport={(questions) => {
+          router.push(`/assessment-builder?offeringId=${offering.id}&mode=import&questionCount=${questions.length}`)
+        }}
       />
     </>
   )
