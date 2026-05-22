@@ -57,7 +57,7 @@ export const QUESTION_TYPE_BY_ID: Record<EditorQType, QuestionTypeMeta> =
 
 // ─── Per-type payloads ──────────────────────────────────────────────────────
 
-export interface McqOption     { id: string; text: string; correct: boolean }
+export interface McqOption     { id: string; text: string; correct: boolean; rationale?: string }
 export interface MatchPair     { id: string; left: string; rightId: string }
 export interface MatchRight    { id: string; text: string }
 export interface OrderItem     { id: string; text: string; canonicalIdx: number }
@@ -69,7 +69,7 @@ export interface KTypeStatement  { id: string; text: string; correct: boolean }
 export type QuestionPayload =
   | { type: 'mcq';          options: McqOption[]; shuffle: boolean }
   | { type: 'multi-select'; options: McqOption[]; shuffle: boolean; partialCredit: boolean }
-  | { type: 'true-false';   correct: boolean }
+  | { type: 'true-false';   correct: boolean; rationale?: string }
   | { type: 'short-answer'; acceptedAnswers: string[]; caseSensitive: boolean }
   | { type: 'numeric';      answer: number; tolerance: number; units: string }
   | { type: 'essay';        wordLimit: number; rubric: RubricCriterion[] }
@@ -274,6 +274,15 @@ export function validateDraft(d: QuestionDraft): DraftValidationIssue[] {
     }
     if (d.payload.type === 'mcq' && correct.length > 1) {
       issues.push({ field: 'options', message: 'MCQ has multiple correct — switch to Multi-select?', severity: 'warning' })
+    }
+    const missingRationale = correct.filter(o => !o.rationale?.trim())
+    if (missingRationale.length > 0) {
+      issues.push({ field: 'rationale', message: `${missingRationale.length} correct option${missingRationale.length > 1 ? 's are' : ' is'} missing a rationale`, severity: 'warning' })
+    }
+  }
+  if (d.payload.type === 'true-false') {
+    if (!d.payload.rationale?.trim()) {
+      issues.push({ field: 'rationale', message: 'Add a rationale explaining why this answer is correct', severity: 'warning' })
     }
   }
   if (d.payload.type === 'short-answer') {
