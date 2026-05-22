@@ -22,6 +22,11 @@ on:
       - 'apps/pce/admin/**'
       - 'apps/exam-management/admin/**'
       - 'tools/visual-check/**'
+  pull_request:
+    paths:
+      - 'apps/pce/admin/**'
+      - 'apps/exam-management/admin/**'
+      - 'tools/visual-check/**'
   schedule:
     # Nightly at 7am UTC — catches regressions from DS updates
     - cron: '0 7 * * *'
@@ -70,7 +75,13 @@ jobs:
     if: needs.detect.outputs.pce_changed == 'true'
     runs-on: ubuntu-latest
     env:
-      TARGET_URL: ${{ github.ref_name == 'main' && vars.PCE_ADMIN_PROD_URL || vars.PCE_ADMIN_DEV_URL }}
+      TARGET_URL: >-
+        ${{
+          github.event_name == 'pull_request'
+          && format('https://exxat-pce-admin-tau-git-{0}-soleyromits-projects.vercel.app',
+               github.head_ref)
+          || (github.ref_name == 'main' && vars.PCE_ADMIN_PROD_URL || vars.PCE_ADMIN_DEV_URL)
+        }}
       VISUAL_CHECK_OUT_DIR: /tmp/visual-check/pce
       WCAG_PRODUCT: pce-admin
 
@@ -162,7 +173,13 @@ jobs:
     if: needs.detect.outputs.em_changed == 'true'
     runs-on: ubuntu-latest
     env:
-      TARGET_URL: ${{ github.ref_name == 'main' && vars.EM_ADMIN_PROD_URL || vars.EM_ADMIN_DEV_URL }}
+      TARGET_URL: >-
+        ${{
+          github.event_name == 'pull_request'
+          && format('https://exxat-exam-management-admin-git-{0}-soleyromits-projects.vercel.app',
+               github.head_ref)
+          || (github.ref_name == 'main' && vars.EM_ADMIN_PROD_URL || vars.EM_ADMIN_DEV_URL)
+        }}
       VISUAL_CHECK_OUT_DIR: /tmp/visual-check/em
       WCAG_PRODUCT: em-admin
 

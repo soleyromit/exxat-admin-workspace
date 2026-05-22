@@ -271,6 +271,44 @@ SKELETON_RE = re.compile(r"\bSkeleton\b")
 FERPA_STUDENT_ID_RE = re.compile(r"\bstudentId\b|\bstudentName\b|\bstudentEmail\b")
 FERPA_RESPONSE_TEXT_RE = re.compile(r"\bresponseText\b|\bresponseBody\b|\banswerText\b")
 
+# ── WCAG ARIA regexes (added 2026-05-22) ─────────────────────────────────────
+#
+# Rule: aria-combobox-required
+# aria-expanded / aria-haspopup / aria-autocomplete are only valid on elements
+# that carry role="combobox" (or a handful of others — button, listbox, etc.).
+# On a bare <input> or <InputGroupInput> without role="combobox" these are
+# disallowed (ARIA 1.2 §6.6 aria-expanded / §6.23 aria-haspopup).
+# Source of incident: search-input.tsx shipped without role="combobox"; caught
+# as aria-allowed-attr (critical) in axe-core scan 2026-05-22.
+ARIA_COMBOBOX_ATTRS_RE = re.compile(
+    r"<\s*(?:InputGroupInput|input)\b(?P<attrs>[^>]{0,600}?)"
+    r"(?P<trigger>aria-expanded|aria-haspopup|aria-autocomplete)"
+    r"(?:[^>]{0,600}?)>",
+    re.DOTALL,
+)
+ROLE_COMBOBOX_RE = re.compile(r'\brole\s*=\s*["\']combobox["\']')
+
+# Rule: nested-main-landmark
+# DS SidebarInset renders as <main data-slot="sidebar-inset">. Adding a
+# second <main> inside it violates landmark uniqueness (WCAG 1.3.6 / ARIA
+# 4.3.2). Source of incident: layout.tsx fix added <main> inside SidebarInset,
+# creating landmark-no-duplicate-main (moderate) across all PCE admin pages.
+SIDEBAR_INSET_IMPORT_RE = re.compile(r"\bSidebarInset\b")
+MAIN_ELEMENT_OPEN_RE = re.compile(r"<\s*main\b")
+
+# Rule: color-mix-contrast-risk
+# color-mix() with oklch or hsl produces colors whose contrast ratio cannot
+# be computed at static-analysis time. When used as backgroundColor / background
+# in an inline style on a non-decorative element, flag it so the author verifies
+# contrast manually or in the visual-check run. Does NOT flag :root / theme files.
+# Source of incident: badge on PCE root page produced 2.46:1 from color-mix.
+COLOR_MIX_INLINE_BG_RE = re.compile(
+    r"style\s*=\s*\{\s*\{[^}]{0,800}"
+    r"(?:backgroundColor|background)\s*:\s*['\"`]?color-mix\s*\("
+    r"|(?:backgroundColor|background)[^}]{0,400}color-mix\s*\(",
+    re.DOTALL,
+)
+
 # ── Models ──────────────────────────────────────────────────────────────────
 @dataclass
 class Gap:
@@ -713,6 +751,119 @@ def scan_file_for_async_fetch_no_skeleton(rel: str, text: str) -> list[Gap]:
         ),
     )]
 
+def scan_file_for_aria_combobox_required(rel: str, text: str) -> list[Gap]:
+    """Flag aria-expanded / aria-haspopup / aria-autocomplete on <input> or
+    <InputGroupInput> without role="combobox" in the same element opening tag.
+
+    WCAG 4.1.2 (ARIA 1.2 §6.6 aria-expanded): these attributes are only
+    allowed on roles that explicitly list them as supported — combobox is the
+    relevant one for search inputs with a popup list. Without role="combobox"
+    axe-core raises aria-allowed-attr (critical).
+    """
+    if "components/data-table/" in rel:
+        return []
+    gaps: list[Gap] = []
+    for m in ARIA_COMBOBOX_ATTRS_RE.finditer(text):
+        attrs = m.group("attrs") + m.group("trigger")
+        # If role="combobox" is already in the same opening tag, it's fine.
+        if ROLE_COMBOBOX_RE.search(attrs):
+            continue
+        line_no = text[: m.start()].count("\n") + 1
+        trigger = m.group("trigger")
+        gaps.append(Gap(
+            severity="block",
+            rule="aria-combobox-required",
+            file=rel,
+            line=line_no,
+            message=(
+                f"`{trigger}` on `<input>` / `<InputGroupInput>` requires "
+                "`role=\"combobox\"` on the same element — without it axe-core "
+                "raises aria-allowed-attr (critical). Add `role=\"combobox\"` "
+                "to the input and `id` + `role=\"listbox\"` to the popup. "
+                "Canonical: apps/exam-management/admin/components/search-input.tsx"
+            ),
+        ))
+        if len(gaps) >= 3:
+            break
+    return gaps
+
+
+def scan_file_for_nested_main_landmark(rel: str, text: str) -> list[Gap]:
+    """Flag <main> inside a file that also imports SidebarInset.
+
+    DS SidebarInset renders as <main data-slot="sidebar-inset"> in the DOM.
+    Adding a second <main> creates landmark-no-duplicate-main (moderate) and
+    landmark-main-is-top-level (moderate) across every page in the product.
+    Source: PCE layout.tsx fix 2026-05-22 introduced nested <main>.
+
+    Exemption: the DS source itself (exxat-ds/, studentUX/).
+    """
+    if "exxat-ds/" in rel or "studentUX/" in rel:
+        return []
+    if not SIDEBAR_INSET_IMPORT_RE.search(text):
+        return []
+    for m in MAIN_ELEMENT_OPEN_RE.finditer(text):
+        # Skip matches inside comments: // ... or {/* ... */}
+        line_start = text.rfind("\n", 0, m.start()) + 1
+        line_text = text[line_start: text.find("\n", m.start())]
+        stripped = line_text.lstrip()
+        if stripped.startswith("//") or stripped.startswith("*") or "{/*" in line_text:
+            continue
+        line_no = text[: m.start()].count("\n") + 1
+        return [Gap(
+            severity="block",
+            rule="nested-main-landmark",
+            file=rel,
+            line=line_no,
+            message=(
+                "`<main>` element found in a file that imports `SidebarInset`. "
+                "DS `SidebarInset` already renders as `<main data-slot=\"sidebar-inset\">` "
+                "— adding a second `<main>` creates a nested landmark violation "
+                "(WCAG 4.1.1 / aria-landmark-no-duplicate-main). "
+                "Remove the `<main>` wrapper; use a `<div>` instead. "
+                "To support skip-link focus, add `id=\"main-content\" tabIndex={-1}` "
+                "to the `SidebarInset` prop (if it passes unknown props to its element)."
+            ),
+        )]
+    return []
+
+
+def scan_file_for_color_mix_contrast_risk(rel: str, text: str) -> list[Gap]:
+    """Flag color-mix() used as backgroundColor / background in inline styles
+    on non-decorative elements.
+
+    color-mix() with oklch or hsl tokens produces computed colors whose
+    contrast ratio cannot be verified at static-analysis time. This is warn-only;
+    the author must verify in the visual-check browser run (axe measures contrast
+    against the actual rendered color).
+
+    Source: PCE root page badge used color-mix() → 2.46:1 contrast (needs 4.5:1).
+    Exempts: CSS files, theme files, decorative containers.
+    """
+    if rel.endswith(".css") or "theme" in rel.lower():
+        return []
+    gaps: list[Gap] = []
+    for m in COLOR_MIX_INLINE_BG_RE.finditer(text):
+        line_no = text[: m.start()].count("\n") + 1
+        gaps.append(Gap(
+            severity="warn",
+            rule="color-mix-contrast-risk",
+            file=rel,
+            line=line_no,
+            message=(
+                "`color-mix()` used as `backgroundColor`/`background` in an "
+                "inline style. The resulting contrast ratio cannot be verified "
+                "statically — must be confirmed in the visual-check axe run "
+                "(WCAG 1.4.3: text ≥4.5:1, UI ≥3:1). "
+                "If the element contains text, verify contrast using the browser "
+                "DevTools color picker. Prefer DS token pairs with known contrast."
+            ),
+        ))
+        if len(gaps) >= 3:
+            break
+    return gaps
+
+
 def scan_file_for_ferpa_data_coexistence(rel: str, text: str) -> list[Gap]:
     """FERPA §99.31 data-flow check.
 
@@ -850,6 +1001,10 @@ def audit_product(product: str, role: str, root: Path) -> ProductReport:
             scan_file_for_async_fetch_no_skeleton,
             # FERPA data-flow check — added 2026-05-17.
             scan_file_for_ferpa_data_coexistence,
+            # WCAG ARIA + landmark checks — added 2026-05-22.
+            scan_file_for_aria_combobox_required,
+            scan_file_for_nested_main_landmark,
+            scan_file_for_color_mix_contrast_risk,
         ):
             for g in fn(short_rel, text):
                 g.file = rel

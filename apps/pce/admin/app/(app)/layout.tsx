@@ -12,10 +12,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <CommandPaletteProvider>
           <SidebarProvider className="h-svh">
             <AppSidebar />
+            {/* SidebarInset renders as <main> natively — do NOT add another <main> inside */}
             <SidebarInset className="flex flex-col overflow-hidden">
-              <main id="main-content" tabIndex={-1} className="flex flex-col flex-1 overflow-hidden outline-none">
-                {children}
-              </main>
+              {children}
             </SidebarInset>
           </SidebarProvider>
         </CommandPaletteProvider>
