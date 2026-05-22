@@ -520,145 +520,70 @@ function McqControls({
     onChange({ ...payload, options: payload.options.filter((_, i) => i !== idx) })
   }
 
-  // Shared option card renderer used by both MCQ and Multi-select
-  function OptionCard({ opt, i, selector }: { opt: typeof payload.options[0]; i: number; selector: React.ReactNode }) {
-    const missingRationale = opt.correct && !opt.rationale?.trim()
-    return (
-      <div
-        key={opt.id}
-        className="rounded-lg border overflow-hidden transition-colors"
-        style={{
-          borderColor: opt.correct
-            ? 'color-mix(in oklch, var(--brand-color) 50%, transparent)'
-            : 'var(--border)',
-          background: opt.correct
-            ? 'color-mix(in oklch, var(--brand-color) 5%, var(--background))'
-            : 'var(--card)',
-        }}
-      >
-        {/* Option row */}
-        <div className="flex items-center gap-2 px-3 py-2.5">
-          {selector}
-          <span
-            className="font-mono text-xs font-bold w-4 shrink-0 text-center"
-            style={{ color: opt.correct ? 'var(--brand-color)' : 'var(--muted-foreground)' }}
-          >
-            {String.fromCharCode(65 + i)}
-          </span>
-          <Input
-            type="text"
-            value={opt.text}
-            onChange={e => setOption(i, { text: e.target.value })}
-            placeholder={`Option ${String.fromCharCode(65 + i)}`}
-            className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 h-8 px-1"
-          />
-          {opt.correct && (
-            <Badge
-              variant="secondary"
-              className="text-[9px] shrink-0"
-              style={{
-                background: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))',
-                color: 'var(--brand-color)',
-              }}
-            >
-              Correct
-            </Badge>
-          )}
-          {/* Lock toggle — only meaningful when shuffle is on */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => setOption(i, { locked: !opt.locked })}
-                aria-label={opt.locked ? 'Unlock position' : 'Lock position — stays fixed when options shuffle'}
-                aria-pressed={!!opt.locked}
-                style={{ color: opt.locked ? 'var(--brand-color)' : 'var(--muted-foreground)', opacity: !payload.shuffle ? 0.35 : 1 }}
-                disabled={!payload.shuffle}
-              >
-                <i className={`fa-light ${opt.locked ? 'fa-lock' : 'fa-lock-open'}`} aria-hidden="true" style={{ fontSize: 13 }} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {!payload.shuffle ? 'Enable shuffle to use option locking' : opt.locked ? 'Locked — won\'t shuffle' : 'Lock this option\'s position'}
-            </TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => removeOption(i)}
-                disabled={payload.options.length <= 2}
-                aria-label={`Remove option ${String.fromCharCode(65 + i)}`}
-              >
-                <i className="fa-light fa-trash-can" aria-hidden="true" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Remove</TooltipContent>
-          </Tooltip>
-        </div>
-
-        {/* Rationale — inside the card, visible when correct or rationale exists */}
-        {(opt.correct || opt.rationale) && (
-          <div
-            className="px-3 pb-2.5"
-            style={{ borderTop: `1px solid color-mix(in oklch, var(--brand-color) 20%, transparent)` }}
-          >
-            <div className="flex items-start gap-1.5 pt-2 relative">
-              <i
-                className="fa-light fa-quote-left shrink-0 mt-1"
-                aria-hidden="true"
-                style={{ fontSize: 10, color: 'var(--brand-color)', opacity: 0.6 }}
-              />
-              <Textarea
-                value={opt.rationale ?? ''}
-                onChange={e => setOption(i, { rationale: e.target.value })}
-                placeholder={opt.correct
-                  ? 'Explain why this is correct — students see this during review'
-                  : 'Explain why this distractor is wrong (optional)'}
-                className="flex-1 text-xs min-h-[52px] resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 p-0"
-                rows={2}
-              />
-              {missingRationale && (
-                <span
-                  className="text-[9px] font-semibold shrink-0 mt-1"
-                  style={{ color: 'color-mix(in oklch, var(--foreground) 40%, oklch(80% 0.15 80))' }}
-                >
-                  missing
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    )
-  }
+  const cardStyle = (correct: boolean): React.CSSProperties => ({
+    borderColor: correct
+      ? 'color-mix(in oklch, var(--brand-color) 50%, transparent)'
+      : 'var(--border)',
+    background: correct
+      ? 'color-mix(in oklch, var(--brand-color) 5%, var(--background))'
+      : 'var(--card)',
+  })
 
   return (
     <div className="flex flex-col gap-2.5">
       <p className="text-[11px] text-muted-foreground -mt-1">
         {isMulti ? 'Mark all correct answers — students can earn partial credit.' : 'Mark exactly one correct answer.'}
       </p>
+
       {isMulti ? (
         <div className="flex flex-col gap-1.5">
-          {payload.options.map((opt, i) => (
-            <OptionCard
-              key={opt.id}
-              opt={opt}
-              i={i}
-              selector={
-                <Checkbox
-                  id={`opt-${opt.id}`}
-                  checked={opt.correct}
-                  onCheckedChange={c => setOption(i, { correct: !!c })}
-                  aria-label={`Mark option ${String.fromCharCode(65 + i)} correct`}
-                />
-              }
-            />
-          ))}
+          {payload.options.map((opt, i) => {
+            const letter = String.fromCharCode(65 + i)
+            const missingRationale = opt.correct && !opt.rationale?.trim()
+            return (
+              <div key={opt.id} className="rounded-lg border overflow-hidden transition-colors" style={cardStyle(opt.correct)}>
+                <div className="flex items-center gap-2 px-3 py-2.5">
+                  <Checkbox
+                    id={`opt-${opt.id}`}
+                    checked={opt.correct}
+                    onCheckedChange={c => setOption(i, { correct: !!c })}
+                    aria-label={`Mark option ${letter} correct`}
+                  />
+                  <span className="font-mono text-xs font-bold w-4 shrink-0 text-center" style={{ color: opt.correct ? 'var(--brand-color)' : 'var(--muted-foreground)' }}>{letter}</span>
+                  <Input type="text" value={opt.text} onChange={e => setOption(i, { text: e.target.value })} placeholder={`Option ${letter}`} className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 h-8 px-1" />
+                  {opt.correct && <Badge variant="secondary" className="text-[9px] shrink-0" style={{ background: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))', color: 'var(--brand-color)' }}>Correct</Badge>}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon-sm" onClick={() => setOption(i, { locked: !opt.locked })} aria-label={opt.locked ? 'Unlock' : 'Lock position'} aria-pressed={!!opt.locked} disabled={!payload.shuffle} style={{ color: opt.locked ? 'var(--brand-color)' : 'var(--muted-foreground)', opacity: !payload.shuffle ? 0.35 : 1 }}>
+                        <i className={`fa-light ${opt.locked ? 'fa-lock' : 'fa-lock-open'}`} aria-hidden="true" style={{ fontSize: 13 }} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{!payload.shuffle ? 'Enable shuffle to lock positions' : opt.locked ? "Locked — won't shuffle" : 'Lock this position'}</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon-sm" onClick={() => removeOption(i)} disabled={payload.options.length <= 2} aria-label={`Remove option ${letter}`}>
+                        <i className="fa-light fa-trash-can" aria-hidden="true" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Remove</TooltipContent>
+                  </Tooltip>
+                </div>
+                {(opt.correct || opt.rationale) && (
+                  <div className="px-3 pb-2.5" style={{ borderTop: '1px solid color-mix(in oklch, var(--brand-color) 20%, transparent)' }}>
+                    <div className="flex items-start gap-1.5 pt-2">
+                      <i className="fa-light fa-quote-left shrink-0 mt-1" aria-hidden="true" style={{ fontSize: 10, color: 'var(--brand-color)', opacity: 0.6 }} />
+                      <Textarea value={opt.rationale ?? ''} onChange={e => setOption(i, { rationale: e.target.value })} placeholder={opt.correct ? 'Explain why this is correct — students see this during review' : 'Explain why this distractor is wrong (optional)'} className="flex-1 text-xs min-h-[52px] resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 p-0" rows={2} />
+                      {missingRationale && <span className="text-[9px] font-semibold shrink-0 mt-1" style={{ color: 'color-mix(in oklch, var(--foreground) 40%, oklch(80% 0.15 80))' }}>missing</span>}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       ) : (
+        /* MCQ — RadioGroupItem must be a direct stable child of RadioGroup (no wrapper component) */
         <RadioGroup
           value={payload.options.find(o => o.correct)?.id ?? ''}
           onValueChange={val => {
@@ -667,21 +592,47 @@ function McqControls({
           }}
           className="flex flex-col gap-1.5"
         >
-          {payload.options.map((opt, i) => (
-            <Label key={opt.id} htmlFor={`opt-${opt.id}`} className="cursor-pointer block">
-              <OptionCard
-                opt={opt}
-                i={i}
-                selector={
-                  <RadioGroupItem
-                    value={opt.id}
-                    id={`opt-${opt.id}`}
-                    aria-label={`Mark option ${String.fromCharCode(65 + i)} correct`}
-                  />
-                }
-              />
-            </Label>
-          ))}
+          {payload.options.map((opt, i) => {
+            const letter = String.fromCharCode(65 + i)
+            const missingRationale = opt.correct && !opt.rationale?.trim()
+            return (
+              <Label key={opt.id} htmlFor={`opt-${opt.id}`} className="cursor-pointer">
+                <div className="rounded-lg border overflow-hidden transition-colors" style={cardStyle(opt.correct)}>
+                  <div className="flex items-center gap-2 px-3 py-2.5">
+                    <RadioGroupItem value={opt.id} id={`opt-${opt.id}`} aria-label={`Mark option ${letter} correct`} />
+                    <span className="font-mono text-xs font-bold w-4 shrink-0 text-center" style={{ color: opt.correct ? 'var(--brand-color)' : 'var(--muted-foreground)' }}>{letter}</span>
+                    <Input type="text" value={opt.text} onChange={e => { e.stopPropagation(); setOption(i, { text: e.target.value }) }} onClick={e => e.stopPropagation()} placeholder={`Option ${letter}`} className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 h-8 px-1" />
+                    {opt.correct && <Badge variant="secondary" className="text-[9px] shrink-0" style={{ background: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))', color: 'var(--brand-color)' }}>Correct</Badge>}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon-sm" onClick={e => { e.preventDefault(); setOption(i, { locked: !opt.locked }) }} aria-label={opt.locked ? 'Unlock' : 'Lock position'} aria-pressed={!!opt.locked} disabled={!payload.shuffle} style={{ color: opt.locked ? 'var(--brand-color)' : 'var(--muted-foreground)', opacity: !payload.shuffle ? 0.35 : 1 }}>
+                          <i className={`fa-light ${opt.locked ? 'fa-lock' : 'fa-lock-open'}`} aria-hidden="true" style={{ fontSize: 13 }} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>{!payload.shuffle ? 'Enable shuffle to lock positions' : opt.locked ? "Locked — won't shuffle" : 'Lock this position'}</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon-sm" onClick={e => { e.preventDefault(); removeOption(i) }} disabled={payload.options.length <= 2} aria-label={`Remove option ${letter}`}>
+                          <i className="fa-light fa-trash-can" aria-hidden="true" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Remove</TooltipContent>
+                    </Tooltip>
+                  </div>
+                  {(opt.correct || opt.rationale) && (
+                    <div className="px-3 pb-2.5" style={{ borderTop: '1px solid color-mix(in oklch, var(--brand-color) 20%, transparent)' }}>
+                      <div className="flex items-start gap-1.5 pt-2">
+                        <i className="fa-light fa-quote-left shrink-0 mt-1" aria-hidden="true" style={{ fontSize: 10, color: 'var(--brand-color)', opacity: 0.6 }} />
+                        <Textarea value={opt.rationale ?? ''} onChange={e => setOption(i, { rationale: e.target.value })} onClick={e => e.stopPropagation()} placeholder={opt.correct ? 'Explain why this is correct — students see this during review' : 'Explain why this distractor is wrong (optional)'} className="flex-1 text-xs min-h-[52px] resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 p-0" rows={2} />
+                        {missingRationale && <span className="text-[9px] font-semibold shrink-0 mt-1" style={{ color: 'color-mix(in oklch, var(--foreground) 40%, oklch(80% 0.15 80))' }}>missing</span>}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Label>
+            )
+          })}
         </RadioGroup>
       )}
       <div className="flex items-center justify-between gap-3 pt-1">
