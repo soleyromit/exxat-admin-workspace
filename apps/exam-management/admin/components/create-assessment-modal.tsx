@@ -267,7 +267,7 @@ export function CreateAssessmentModal({
                   >
                     <span className="text-sm font-semibold text-foreground">Proctored</span>
                     <span className="text-[11px] text-muted-foreground leading-snug">
-                      Single window · lockdown ready · high-stakes
+                      Single window · lockdown ready
                     </span>
                   </Button>
                   <Button
@@ -280,7 +280,7 @@ export function CreateAssessmentModal({
                   >
                     <span className="text-sm font-semibold text-foreground">Self-paced</span>
                     <span className="text-[11px] text-muted-foreground leading-snug">
-                      Open window · casual practice · low-stakes
+                      Open window · student-paced
                     </span>
                   </Button>
                 </div>
@@ -348,7 +348,7 @@ export function CreateAssessmentModal({
                     onCheckedChange={(c) => setHoldForReview(c === true)}
                   />
                   <div>
-                    <p className="text-sm text-foreground">Hold for faculty review (recommended for high-stakes)</p>
+                    <p className="text-sm text-foreground">Hold for faculty review (recommended)</p>
                     <p className="text-xs text-muted-foreground">
                       Default: 3-day review window before publishing results
                     </p>
@@ -360,7 +360,7 @@ export function CreateAssessmentModal({
                     onCheckedChange={(c) => setHoldForReview(c !== true)}
                   />
                   <div>
-                    <p className="text-sm text-foreground">Show results immediately on submit (low-stakes only)</p>
+                    <p className="text-sm text-foreground">Show results immediately on submit</p>
                   </div>
                 </label>
               </div>

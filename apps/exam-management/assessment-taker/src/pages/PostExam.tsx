@@ -135,7 +135,7 @@ export function PostExam() {
                 </p>
                 <p style={{ fontSize: 14, color: t.fg, lineHeight: 1.6, marginBottom: isPending ? 12 : 0 }}>
                   {isPending
-                    ? 'This is a high-stakes exam. Your faculty will review submissions before releasing results — this typically takes 3–4 business days. You will receive a notification when results are published.'
+                    ? 'Your faculty will review submissions before releasing results — this typically takes 3–4 business days. You will receive a notification when results are published.'
                     : 'Your results are ready. You can view your score and performance breakdown now.'
                   }
                 </p>
