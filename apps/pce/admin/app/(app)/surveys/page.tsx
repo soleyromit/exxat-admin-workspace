@@ -12,7 +12,7 @@ import {
 } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
-import { ResponseGauge } from '@/components/pce/response-gauge'
+import { BulletGauge } from '@/components/pce/bullet-gauge'
 import { CreateSurveySheet, CloseSurveyDialog } from '@/components/pce/pce-modals'
 import {
   MOCK_TERMS,
@@ -169,14 +169,25 @@ export default function SurveysPage() {
       key: 'responseRate',
       label: 'Response rate',
       sortable: true,
-      width: 200,
+      width: 180,
       cell: (row) => (
-        <ResponseGauge
-          rate={row.survey.responseRate}
-          responseCount={row.survey.responseCount}
-          enrollmentCount={row.survey.enrollmentCount}
-          showBar={row.survey.responseRate > 0}
-        />
+        <div className="flex flex-col gap-1" style={{ minWidth: 120 }}>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-sm font-semibold tabular-nums">{row.survey.responseRate}%</span>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {row.survey.responseCount}/{row.survey.enrollmentCount}
+            </span>
+          </div>
+          {row.survey.enrollmentCount > 0 && (
+            <BulletGauge
+              responseCount={row.survey.responseCount}
+              enrollmentCount={row.survey.enrollmentCount}
+              width={120}
+              height={4}
+              ariaLabel={null}
+            />
+          )}
+        </div>
       ),
     },
     {
@@ -242,6 +253,44 @@ export default function SurveysPage() {
       <Suspense>
         <PushedBanner />
       </Suspense>
+
+      {/* ── Term health stats ── Wayyy/Sprig pattern: stats before the list */}
+      {filtered.length > 0 && (() => {
+        const live = filtered.filter(s => s.status === 'collecting' || s.status === 'active').length
+        const needsAction = filtered.filter(s => s.status === 'pending_review').length
+        const belowThreshold = filtered.filter(s =>
+          (s.status === 'collecting' || s.status === 'active') && s.responseCount < 5
+        ).length
+        const avgRate = Math.round(
+          filtered.filter(s => s.responseCount > 0).reduce((sum, s) => sum + s.responseRate, 0) /
+          Math.max(filtered.filter(s => s.responseCount > 0).length, 1)
+        )
+        const stats = [
+          { label: 'Total surveys', value: String(filtered.length), warn: false },
+          { label: 'Live now', value: String(live), warn: false },
+          { label: 'Needs review', value: String(needsAction), warn: needsAction > 0 },
+          { label: 'Below threshold', value: String(belowThreshold), warn: belowThreshold > 0 },
+          { label: 'Avg response rate', value: filtered.some(s => s.responseCount > 0) ? `${avgRate}%` : '—', warn: false },
+        ]
+        return (
+          <div
+            className="flex items-center border-b border-border shrink-0"
+            style={{ paddingInline: 28, paddingBlock: 12, gap: 32 }}
+          >
+            {stats.map(stat => (
+              <div key={stat.label} className="flex flex-col gap-0.5">
+                <span
+                  className="text-xl font-semibold tabular-nums"
+                  style={{ color: stat.warn ? 'var(--chart-4)' : 'var(--foreground)' }}
+                >
+                  {stat.value}
+                </span>
+                <span className="text-xs text-muted-foreground">{stat.label}</span>
+              </div>
+            ))}
+          </div>
+        )
+      })()}
 
       {/* Term filter sits outside the table because it isn't a column. The
           DataTable toolbar (search + filter pills + properties) renders below. */}
