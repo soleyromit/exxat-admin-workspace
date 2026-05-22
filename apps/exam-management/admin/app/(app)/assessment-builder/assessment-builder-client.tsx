@@ -14,9 +14,9 @@ import {
   LocalBanner,
 } from '@exxat/ds/packages/ui/src'
 import { mockCourses, mockCourseOfferings, mockAssessments, MOCK_QB_QUESTIONS } from '@/lib/qb-mock-data'
-import type { AssessmentDraft, AssessmentQuestion, Question, SmartView, QType, QDiff } from '@/lib/qb-types'
-import { SYSTEM_SMART_VIEWS } from '@/lib/qb-types'
-import { courseObjectives } from '@/lib/faculty-mock-data'
+import type { AssessmentDraft, AssessmentQuestion, AssessmentSection, Question, SmartView, QType, QDiff } from '@/lib/qb-types'
+import { SYSTEM_SMART_VIEWS, defaultAssessmentSettings } from '@/lib/qb-types'
+import { courseObjectives, type CourseObjective } from '@/lib/faculty-mock-data'
 import { useFacultySession } from '@/lib/faculty-session'
 import { useAssessmentDrafts } from '@/lib/assessment-draft-store'
 import { AiGenerateModal } from '@/components/ai-generate-modal'
@@ -24,6 +24,9 @@ import { QuestionEditor } from '@/components/question-editor/question-editor'
 import {
   createDraft, toQuestion, type QuestionDraft, type SaveDestination,
 } from '@/lib/question-editor-types'
+import { SectionsOutline } from '@/components/assessment-builder/step2-sections-outline'
+import { HealthPanel } from '@/components/assessment-builder/step2-health-panel'
+import { InlineQuestionEditor } from '@/components/assessment-builder/step2-inline-editor'
 
 // Estimated minutes per question type (base, before difficulty adjustment)
 const TIME_BY_TYPE: Record<QType, number> = {
@@ -87,7 +90,8 @@ export default function AssessmentBuilderClient() {
       questions: [],
       durationMinutes: draft.durationMinutes,
       sections: [],
-      settings: { type: 'Exam', passwordRequired: false, password: '', randomize: false, showRationaleAfter: true },
+      settings: defaultAssessmentSettings('Exam'),
+      healthFlags: [],
     })
     setCourseId(draft.courseId)
     setOfferingId(draft.offeringId)
@@ -119,7 +123,8 @@ export default function AssessmentBuilderClient() {
       questions: sourceQuestions,
       durationMinutes: source.durationMinutes,
       sections: [],
-      settings: { type: 'Exam', passwordRequired: false, password: '', randomize: false, showRationaleAfter: true },
+      settings: defaultAssessmentSettings('Exam'),
+      healthFlags: [],
     })
     setCourseId(source.courseId)
   }, [urlMode, urlSourceId]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -159,7 +164,6 @@ export default function AssessmentBuilderClient() {
   function openAssessment(asmtId: string) {
     const source = assessments.find(a => a.id === asmtId)
     if (!source) return
-    setSectionsOpen(false)
     setActiveAsmt({
       id: source.id,
       title: source.title,
@@ -168,7 +172,8 @@ export default function AssessmentBuilderClient() {
       questions: [],
       durationMinutes: source.durationMinutes,
       sections: [],
-      settings: { type: 'Exam', passwordRequired: false, password: '', randomize: false, showRationaleAfter: true },
+      settings: defaultAssessmentSettings('Exam'),
+      healthFlags: [],
     })
   }
 
@@ -181,7 +186,8 @@ export default function AssessmentBuilderClient() {
       questions: [],
       durationMinutes: 60,
       sections: [],
-      settings: { type: 'Exam', passwordRequired: false, password: '', randomize: false, showRationaleAfter: true },
+      settings: defaultAssessmentSettings('Exam'),
+      healthFlags: [],
     })
   }
 
@@ -312,7 +318,8 @@ export default function AssessmentBuilderClient() {
 
   const [activeStep, setActiveStep] = useState<1 | 2 | 3>(1)
 
-  const [sectionsOpen, setSectionsOpen] = useState(false)
+  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null)
+
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   function addSection(title: string) {
@@ -411,7 +418,8 @@ export default function AssessmentBuilderClient() {
                   questions: [],
                   durationMinutes: patch.durationMinutes ?? 90,
                   sections: [],
-                  settings: patch.settings ?? { type: 'Exam' as const, passwordRequired: false, password: '', randomize: false, showRationaleAfter: true },
+                  settings: defaultAssessmentSettings('Exam'),
+                  healthFlags: [],
                   ...patch,
                 }
               }
@@ -426,11 +434,38 @@ export default function AssessmentBuilderClient() {
       {/* Step 2 — Build (3-panel canvas) */}
       {activeStep === 2 && activeAsmt && (
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-          {/* Left: selected questions outline */}
-          <SelectedQuestionsOutline
-            activeAsmt={activeAsmt}
-            onRemove={removeQuestion}
-          />
+          {/* Left: sections outline */}
+          <div style={{ width: 240, minWidth: 240, borderRight: '1px solid var(--border)', flexShrink: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <SectionsOutline
+              activeAsmt={activeAsmt}
+              selectedIds={selectedIds}
+              questions={MOCK_QB_QUESTIONS}
+              onRemove={removeQuestion}
+              onEditQuestion={id => setEditingQuestionId(prev => prev === id ? null : id)}
+              editingQuestionId={editingQuestionId}
+            />
+            {editingQuestionId && (() => {
+              const q = MOCK_QB_QUESTIONS.find(q => q.id === editingQuestionId)
+              if (!q) return null
+              return (
+                <div style={{ borderTop: '1px solid var(--border)', padding: '8px 0', flexShrink: 0 }}>
+                  <InlineQuestionEditor
+                    question={q}
+                    onSave={() => {
+                      // In mock: just close the editor. Real: update QB store.
+                      setEditingQuestionId(null)
+                    }}
+                    onCancel={() => setEditingQuestionId(null)}
+                    onCopyAndModify={(copyQ) => {
+                      // Create a new question derived from this one
+                      createQuestion({ title: copyQ.title + ' (copy)', options: [], correctIdx: 0 })
+                      setEditingQuestionId(null)
+                    }}
+                  />
+                </div>
+              )
+            })()}
+          </div>
 
           {/* Center: question picker + sections panel + footer */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
@@ -450,17 +485,8 @@ export default function AssessmentBuilderClient() {
               onOpenAi={() => setAiOpen(true)}
               isCopyMode={urlMode === 'copy'}
               onRenameAsmt={(title) => setActiveAsmt(prev => prev ? { ...prev, title } : prev)}
-              sectionsOpen={sectionsOpen}
-              onToggleSections={() => setSectionsOpen(p => !p)}
+              onAssignToSection={assignQuestionToSection}
             />
-            {sectionsOpen && (
-              <SectionsPanel
-                activeAsmt={activeAsmt}
-                onAddSection={addSection}
-                onRemoveSection={removeSection}
-                onAssignQuestion={assignQuestionToSection}
-              />
-            )}
             {/* Step 2 navigation footer */}
             <div
               style={{
@@ -480,14 +506,17 @@ export default function AssessmentBuilderClient() {
             </div>
           </div>
 
-          {/* Right: metrics panel */}
-          <MetricsPanel
-            distribution={distribution}
-            timeMetrics={timeMetrics}
-            overtimeMetrics={overtimeMetrics}
-            durationMinutes={activeAsmt.durationMinutes}
-            bloomsMetrics={bloomsMetrics}
-          />
+          {/* Right: health panel */}
+          <div style={{ width: 280, minWidth: 280, borderLeft: '1px solid var(--border)', flexShrink: 0, overflow: 'hidden' }}>
+            <HealthPanel
+              activeAsmt={activeAsmt}
+              objectives={courseObjectives.filter(o => o.courseId === activeAsmt.courseId)}
+              timeMetrics={timeMetrics}
+              distribution={distribution}
+              bloomsMetrics={bloomsMetrics}
+              targetQuestions={50}
+            />
+          </div>
         </div>
       )}
 
@@ -527,7 +556,12 @@ export default function AssessmentBuilderClient() {
       <AiGenerateModal
         open={aiOpen}
         onOpenChange={setAiOpen}
-        objectives={courseObjectives.filter(o => o.courseId === activeAsmt?.courseId && !o.lastAssessed)}
+        objectives={courseObjectives.filter(o => {
+          if (o.courseId !== activeAsmt?.courseId) return false
+          if (!o.lastAssessed) return true
+          const daysAgo = (Date.now() - new Date(o.lastAssessed).getTime()) / (1000 * 60 * 60 * 24)
+          return daysAgo > 60
+        })}
         acceptLabel="Add to assessment"
         onAccept={(drafts) => {
           drafts.forEach(d => {
@@ -538,7 +572,7 @@ export default function AssessmentBuilderClient() {
       <AssessmentSettingsSheet
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
-        settings={activeAsmt?.settings ?? { type: 'Exam' as const, passwordRequired: false, password: '', randomize: false, showRationaleAfter: true }}
+        settings={activeAsmt?.settings ?? defaultAssessmentSettings('Exam')}
         onSave={(s) => setActiveAsmt(prev => prev ? { ...prev, settings: s } : prev)}
       />
     </div>
@@ -638,6 +672,79 @@ const DURATION_OPTIONS = [
   { label: '3 hours', value: 180 },
 ]
 
+// ─── Section assign dropdown ─────────────────────────────────────────────────
+
+function SectionAssignDropdown({ sections, onAssign, isSelected }: {
+  sections: AssessmentSection[]
+  onAssign: (sectionId: string | null) => void
+  isSelected: boolean
+}) {
+  const [open, setOpen] = useState(false)
+
+  if (isSelected) {
+    return (
+      <Button variant="outline" size="sm" onClick={() => onAssign(null)} style={{ height: 28, fontSize: 11, gap: 4 }}>
+        <i className="fa-light fa-check" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
+        Added
+      </Button>
+    )
+  }
+
+  if (sections.length === 0) {
+    return (
+      <Button variant="default" size="sm" onClick={() => onAssign(null)} style={{ height: 28, fontSize: 11 }}>
+        Use
+      </Button>
+    )
+  }
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <Button
+        variant="default"
+        size="sm"
+        onClick={() => setOpen(o => !o)}
+        style={{ height: 28, fontSize: 11, gap: 4 }}
+      >
+        Use
+        <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 9 }} />
+      </Button>
+      {open && (
+        <>
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 49 }}
+            onClick={() => setOpen(false)}
+          />
+          <div style={{
+            position: 'absolute', right: 0, top: '100%', marginTop: 4,
+            background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8,
+            boxShadow: '0 4px 16px color-mix(in oklch, var(--foreground) 10%, transparent)',
+            zIndex: 50, minWidth: 180, overflow: 'hidden',
+          }}>
+            <div
+              onClick={() => { onAssign(null); setOpen(false) }}
+              className="flex items-center gap-2 px-3 py-2 text-xs cursor-pointer hover:bg-muted"
+            >
+              <i className="fa-light fa-layer-group" aria-hidden="true" style={{ color: 'var(--muted-foreground)', width: 14 }} />
+              Unassigned
+            </div>
+            {sections.map(s => (
+              <div
+                key={s.id}
+                onClick={() => { onAssign(s.id); setOpen(false) }}
+                className="flex items-center gap-2 px-3 py-2 text-xs cursor-pointer hover:bg-muted"
+              >
+                <i className="fa-light fa-layer-group" aria-hidden="true" style={{ color: 'var(--brand-color)', width: 14 }} />
+                {s.title}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 // ─── Question source — Vishaka: questions can come from multiple places ────
 //   1. THIS course's question bank (default)
 //   2. OTHER courses' question banks (e.g. shared bug content across micro + immuno)
@@ -649,7 +756,7 @@ function ABQuestionPicker({
   selectedIds, onToggle, activeAsmt, onDurationChange,
   smartViews, activeViewId, onViewChange, onSaveView,
   userCreated, onCreateQuestion, onCreateFromDraft, authorPersonaId, onOpenAi,
-  sectionsOpen, onToggleSections, isCopyMode, onRenameAsmt,
+  isCopyMode, onRenameAsmt, onAssignToSection,
 }: {
   selectedIds: Set<string>
   onToggle: (id: string) => void
@@ -664,10 +771,9 @@ function ABQuestionPicker({
   onCreateFromDraft: (draft: QuestionDraft, dest: SaveDestination) => Question
   authorPersonaId: string
   onOpenAi: () => void
-  sectionsOpen: boolean
-  onToggleSections: () => void
   isCopyMode: boolean
   onRenameAsmt: (title: string) => void
+  onAssignToSection?: (questionId: string, sectionId: string | null) => void
 }) {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   const [newViewName, setNewViewName] = useState('')
@@ -740,7 +846,7 @@ function ABQuestionPicker({
     { id: 'this-course',   label: thisCourse ? `${thisCourse.code} bank` : 'This course',   icon: 'fa-folder',          sub: 'Default — pull from this course' },
     { id: 'other-courses', label: 'Other courses',     icon: 'fa-folder-tree',     sub: 'Pull from another course\'s QB' },
     { id: 'new-question',  label: 'New question',      icon: 'fa-pen-to-square',   sub: 'Create inline in this assessment' },
-    { id: 'ai-generate',   label: 'AI generate',       icon: 'fa-sparkles',        sub: 'From course objectives' },
+    { id: 'ai-generate',   label: 'AI gap fill',        icon: 'fa-sparkles',        sub: 'Cover untested objectives' },
   ]
 
   const isQbSource = source === 'this-course' || source === 'other-courses'
@@ -784,16 +890,6 @@ function ABQuestionPicker({
           <span className="text-sm font-semibold">{activeAsmt.title}</span>
         )}
         <span className="text-xs text-muted-foreground">· {selectedIds.size} questions selected</span>
-        <Button
-          variant={sectionsOpen ? 'default' : 'outline'}
-          size="sm"
-          onClick={onToggleSections}
-          className="gap-1.5 shrink-0 ml-auto"
-          style={{ height: 28, fontSize: 12 }}
-        >
-          <i className="fa-light fa-layer-group" aria-hidden="true" />
-          Sections{activeAsmt.sections.length > 0 ? ` (${activeAsmt.sections.length})` : ''}
-        </Button>
       </div>
 
       {/* Copy mode banner — shown when arriving via "Copy from previous" */}
@@ -942,6 +1038,12 @@ function ABQuestionPicker({
         <AiGeneratePanel
           courseLabel={thisCourse ? `${thisCourse.code} · ${thisCourse.name}` : 'this course'}
           onOpen={onOpenAi}
+          gapObjectives={courseObjectives.filter(o => {
+            if (o.courseId !== activeAsmt.courseId) return false
+            if (!o.lastAssessed) return true
+            const days = (Date.now() - new Date(o.lastAssessed).getTime()) / (1000 * 60 * 60 * 24)
+            return days > 60
+          })}
         />
       )}
 
@@ -956,12 +1058,13 @@ function ABQuestionPicker({
               <TableHead style={{ width: 80 }}>Difficulty</TableHead>
               <TableHead style={{ width: 100 }}>Type</TableHead>
               <TableHead style={{ width: 60 }}>Usage</TableHead>
+              <TableHead style={{ width: 90 }}></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredQuestions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-sm text-muted-foreground" style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <TableCell colSpan={6} className="text-sm text-muted-foreground" style={{ textAlign: 'center', padding: '40px 20px' }}>
                   No questions match this view
                 </TableCell>
               </TableRow>
@@ -1009,6 +1112,18 @@ function ABQuestionPicker({
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {(q.usage ?? 0) > 0 ? `${q.usage}×` : '—'}
+                  </TableCell>
+                  <TableCell onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                    <SectionAssignDropdown
+                      sections={activeAsmt.sections}
+                      isSelected={isPicked}
+                      onAssign={(sectionId) => {
+                        if (!isPicked) onToggle(q.id)
+                        if (sectionId !== null) {
+                          onAssignToSection?.(q.id, sectionId)
+                        }
+                      }}
+                    />
                   </TableCell>
                 </TableRow>
               )
@@ -1353,6 +1468,56 @@ function ReviewStep({
     <div className="flex flex-col flex-1 overflow-auto">
       <div className="flex-1 px-8 py-8 max-w-3xl mx-auto w-full flex flex-col gap-6">
 
+        {/* Health banner */}
+        {(() => {
+          const flags = activeAsmt.healthFlags ?? []
+          const missingRationale = flags.filter(f => f.type === 'missing-rationale').length
+          const poorPbis = flags.filter(f => f.type === 'poor-pbis').length
+          const hasIssues = missingRationale > 0 || poorPbis > 0
+
+          return (
+            <div
+              className="flex items-center gap-3 rounded-xl px-4 py-3"
+              style={{
+                background: hasIssues
+                  ? 'color-mix(in oklch, oklch(80% 0.15 80) 8%, var(--background))'
+                  : 'color-mix(in oklch, var(--brand-color) 6%, var(--background))',
+                border: `1px solid ${hasIssues
+                  ? 'color-mix(in oklch, oklch(80% 0.15 80) 25%, transparent)'
+                  : 'color-mix(in oklch, var(--brand-color) 20%, transparent)'}`,
+              }}
+            >
+              <i
+                className={`fa-light ${hasIssues ? 'fa-triangle-exclamation' : 'fa-circle-check'} shrink-0`}
+                aria-hidden="true"
+                style={{
+                  fontSize: 16,
+                  color: hasIssues ? 'color-mix(in oklch, var(--foreground) 50%, oklch(80% 0.15 80))' : 'var(--brand-color)',
+                }}
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground">
+                  {hasIssues ? 'Needs attention before publishing' : 'Ready to publish'}
+                </p>
+                {hasIssues && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {[
+                      missingRationale > 0 && `${missingRationale} questions missing rationale`,
+                      poorPbis > 0 && `${poorPbis} low point-biserial`,
+                    ].filter(Boolean).join(' · ')}
+                  </p>
+                )}
+              </div>
+              {hasIssues && (
+                <Button variant="outline" size="sm" onClick={onBack} className="gap-1.5 shrink-0 text-xs">
+                  <i className="fa-light fa-arrow-left" aria-hidden="true" />
+                  Fix in Build
+                </Button>
+              )}
+            </div>
+          )
+        })()}
+
         {/* Summary card */}
         <div className="rounded-xl border border-border bg-card p-6 flex flex-col gap-3">
           <div className="flex items-start justify-between gap-4">
@@ -1440,6 +1605,50 @@ function ReviewStep({
           </div>
         )}
 
+        {/* Instructions preview */}
+        {activeAsmt.settings.instructionsText.trim() && (
+          <InstructionsPreview text={activeAsmt.settings.instructionsText} requireAck={activeAsmt.settings.requireAcknowledgment} />
+        )}
+
+        {/* Schedule + Approval */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Schedule */}
+          <div className="rounded-xl border border-border bg-card p-5">
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-3">Schedule</p>
+            {activeAsmt.settings.type === 'Pop Quiz' ? (
+              <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                <i className="fa-light fa-bolt mt-0.5" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
+                <span>Pop quizzes are started live in class. No scheduling needed.</span>
+              </div>
+            ) : activeAsmt.settings.openDate ? (
+              <div className="flex flex-col gap-2">
+                <ScheduleRow label="Opens" value={formatDateTime(activeAsmt.settings.openDate)} />
+                {activeAsmt.settings.closeDate && (
+                  <ScheduleRow label="Closes" value={formatDateTime(activeAsmt.settings.closeDate)} />
+                )}
+                {activeAsmt.settings.type === 'Exam' && (
+                  <ScheduleRow
+                    label="Download from"
+                    value={activeAsmt.settings.openDate
+                      ? formatDateTime(new Date(new Date(activeAsmt.settings.openDate).getTime() - activeAsmt.settings.downloadWindowHours * 3600000).toISOString())
+                      : '—'}
+                  />
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">No schedule set — go back to Step 1 to add dates.</p>
+            )}
+          </div>
+
+          {/* Approval */}
+          <ApprovalPanel
+            status={activeAsmt.settings.status ?? 'draft'}
+            reviewRequest={activeAsmt.settings.reviewRequest ?? null}
+            onSendForReview={onSendToChair}
+            onPublish={() => {/* handled by onSendToChair with null reviewer = direct publish */}}
+          />
+        </div>
+
         {/* Blooms */}
         {bloomsMetrics.length > 0 && (
           <div className="rounded-xl border border-border bg-card p-5">
@@ -1496,6 +1705,120 @@ function ReviewStep({
             Send to chair
           </Button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ── ReviewStep helpers ────────────────────────────────────────────────────────
+
+function ScheduleRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">{label}</span>
+      <span className="text-xs text-foreground">{value}</span>
+    </div>
+  )
+}
+
+function formatDateTime(iso: string): string {
+  try {
+    return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }).format(new Date(iso))
+  } catch { return iso }
+}
+
+function InstructionsPreview({ text, requireAck }: { text: string; requireAck: boolean }) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-5">
+      <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Pre-exam instructions</p>
+      <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{text}</p>
+      {requireAck && (
+        <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
+          <i className="fa-light fa-circle-check" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
+          Students must acknowledge before starting
+        </p>
+      )}
+    </div>
+  )
+}
+
+function ApprovalPanel({ status, reviewRequest, onSendForReview, onPublish }: {
+  status: import('@/lib/qb-types').AssessmentStatus
+  reviewRequest: import('@/lib/qb-types').AssessmentReviewRequest | null
+  onSendForReview: () => void
+  onPublish: () => void
+}) {
+  const [showPublishWarning, setShowPublishWarning] = useState(false)
+
+  const statusLabel: Record<import('@/lib/qb-types').AssessmentStatus, string> = {
+    draft: 'Draft',
+    'pending-review': 'Pending review',
+    'changes-requested': 'Changes requested',
+    approved: 'Approved',
+    scheduled: 'Scheduled',
+    live: 'Live',
+    completed: 'Completed',
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-5 flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">Approval</p>
+        <span
+          className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+          style={{
+            background: status === 'approved'
+              ? 'color-mix(in oklch, var(--brand-color) 10%, var(--background))'
+              : 'var(--muted)',
+            color: status === 'approved' ? 'var(--brand-color)' : 'var(--muted-foreground)',
+          }}
+        >
+          {statusLabel[status]}
+        </span>
+      </div>
+
+      {status === 'draft' && (
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Send to a chair or senior faculty for review before publishing. This is optional but recommended for high-stakes exams.
+        </p>
+      )}
+
+      {reviewRequest && (
+        <div className="text-xs text-muted-foreground">
+          Sent for review{reviewRequest.dueDate ? ` · due ${formatDateTime(reviewRequest.dueDate)}` : ''}
+        </div>
+      )}
+
+      <div className="flex flex-col gap-2">
+        {status === 'draft' && (
+          <Button variant="outline" size="sm" onClick={onSendForReview} className="gap-1.5 justify-center">
+            <i className="fa-light fa-paper-plane" aria-hidden="true" />
+            Send for review
+          </Button>
+        )}
+
+        {showPublishWarning ? (
+          <div
+            className="rounded-lg px-3 py-2.5 text-xs"
+            style={{ background: 'color-mix(in oklch, oklch(80% 0.15 80) 8%, var(--background))', border: '1px solid color-mix(in oklch, oklch(80% 0.15 80) 25%, transparent)' }}
+          >
+            <p className="text-foreground font-medium mb-1">This assessment hasn&apos;t been reviewed.</p>
+            <p className="text-muted-foreground mb-2">Most programs get chair approval before high-stakes exams. You can still publish.</p>
+            <Button variant="default" size="sm" onClick={onPublish} className="w-full">
+              Publish anyway
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant={status === 'approved' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => status === 'approved' ? onPublish() : setShowPublishWarning(true)}
+            className="gap-1.5 justify-center"
+          >
+            <i className="fa-light fa-rocket-launch" aria-hidden="true" />
+            {status === 'approved' ? 'Publish' : 'Publish without review'}
+          </Button>
+        )}
       </div>
     </div>
   )
@@ -1749,10 +2072,33 @@ function DetailsStep({
   onCancel: () => void
 }) {
   const name     = activeAsmt?.title ?? ''
-  const settings = activeAsmt?.settings ?? { type: 'Exam' as import('@/lib/qb-types').AssessmentType, passwordRequired: false, password: '', randomize: false, showRationaleAfter: true }
+  const settings = activeAsmt?.settings ?? defaultAssessmentSettings('Exam')
   const duration = activeAsmt?.durationMinutes ?? 90
 
-  const TYPES: import('@/lib/qb-types').AssessmentType[] = ['Exam', 'Quiz', 'Assignment']
+  const TYPES: { type: import('@/lib/qb-types').AssessmentType; icon: string; description: string }[] = [
+    { type: 'Exam',       icon: 'fa-file-certificate',  description: 'Timed, scheduled, downloadable' },
+    { type: 'Quiz',       icon: 'fa-clipboard-question', description: 'Lighter, still timed' },
+    { type: 'Pop Quiz',   icon: 'fa-bolt',               description: 'Live start/stop in class' },
+    { type: 'Assignment', icon: 'fa-pen-ruler',          description: 'Due-date based, no QB structure' },
+  ]
+
+  const [newSectionTitle, setNewSectionTitle] = useState('')
+  const [addingSec, setAddingSec] = useState(false)
+  const sections = activeAsmt?.sections ?? []
+
+  function addSection() {
+    const title = newSectionTitle.trim()
+    if (!title) return
+    onUpdate({
+      sections: [...sections, { id: `sec-${Date.now()}`, title, questionIds: [] }],
+    })
+    setNewSectionTitle('')
+    setAddingSec(false)
+  }
+
+  function removeSection(id: string) {
+    onUpdate({ sections: sections.filter(s => s.id !== id) })
+  }
 
   function patchSettings(patch: Partial<import('@/lib/qb-types').AssessmentSettings>) {
     onUpdate({ settings: { ...settings, ...patch } })
@@ -1866,25 +2212,31 @@ function DetailsStep({
         <div className="flex flex-col gap-5">
           {/* Type */}
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Type</p>
-            <div className="flex gap-2">
-              {TYPES.map(t => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => patchSettings({ type: t })}
-                  className="flex-1 rounded-lg border py-2.5 text-sm font-medium transition-colors"
-                  style={{
-                    borderColor: settings.type === t ? 'var(--brand-color)' : 'var(--border)',
-                    background: settings.type === t
-                      ? 'color-mix(in oklch, var(--brand-color) 10%, var(--background))'
-                      : 'transparent',
-                    color: settings.type === t ? 'var(--brand-color)' : 'var(--muted-foreground)',
-                  }}
-                >
-                  {t}
-                </button>
-              ))}
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Type *</p>
+            <div className="grid grid-cols-2 gap-2">
+              {TYPES.map(({ type, icon, description }) => {
+                const active = settings.type === type
+                return (
+                  <Button
+                    key={type}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => patchSettings({ type })}
+                    aria-pressed={active}
+                    className="h-auto flex-col items-start text-left px-3 py-2.5 gap-1"
+                    style={{
+                      border: `1px solid ${active ? 'color-mix(in oklch, var(--brand-color) 55%, transparent)' : 'var(--border)'}`,
+                      background: active ? 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' : 'transparent',
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <i className={`fa-light ${icon}`} aria-hidden="true" style={{ color: active ? 'var(--brand-color)' : 'var(--muted-foreground)', fontSize: 13 }} />
+                      <span className="text-xs font-semibold text-foreground">{type}</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">{description}</p>
+                  </Button>
+                )
+              })}
             </div>
           </div>
 
@@ -1911,10 +2263,8 @@ function DetailsStep({
             </div>
           </div>
 
-          <Separator />
-
-          {/* Toggles */}
-          <div className="flex flex-col gap-4">
+          {/* Password */}
+          <div className="flex flex-col gap-2">
             <Toggle
               checked={settings.passwordRequired}
               onChange={v => patchSettings({ passwordRequired: v })}
@@ -1928,18 +2278,170 @@ function DetailsStep({
                 value={settings.password}
                 onChange={e => patchSettings({ password: e.target.value })}
                 style={{
-                  height: 36, padding: '0 12px', fontSize: 13, marginTop: -8,
+                  height: 36, padding: '0 12px', fontSize: 13,
                   border: '1px solid var(--border)', borderRadius: 8,
                   background: 'var(--background)', color: 'var(--foreground)', outline: 'none', width: '100%',
                 }}
               />
             )}
+          </div>
+
+          <Separator />
+
+          {/* Sections */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">Sections</p>
+              <p className="text-[10px] text-muted-foreground">
+                Multi-faculty or case-study preread
+              </p>
+            </div>
+
+            {sections.length > 0 && (
+              <div className="flex flex-col gap-1.5">
+                {sections.map(sec => (
+                  <div
+                    key={sec.id}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
+                    style={{ border: '1px solid var(--border)', background: 'var(--card)' }}
+                  >
+                    <i className="fa-light fa-layer-group" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)' }} />
+                    <span className="flex-1 text-foreground truncate">{sec.title}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeSection(sec.id)}
+                      aria-label={`Remove section ${sec.title}`}
+                      className="h-6 w-6 p-0 shrink-0"
+                    >
+                      <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 11 }} />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {addingSec ? (
+              <div className="flex items-center gap-2">
+                <input
+                  autoFocus
+                  value={newSectionTitle}
+                  onChange={e => setNewSectionTitle(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') addSection()
+                    if (e.key === 'Escape') { setAddingSec(false); setNewSectionTitle('') }
+                  }}
+                  placeholder="Section name…"
+                  maxLength={60}
+                  style={{
+                    flex: 1, height: 36, padding: '0 10px', fontSize: 13,
+                    border: '1px solid var(--brand-color)', borderRadius: 8,
+                    background: 'var(--background)', color: 'var(--foreground)', outline: 'none',
+                  }}
+                />
+                <Button variant="default" size="sm" onClick={addSection} style={{ height: 36 }}>Add</Button>
+                <Button variant="ghost" size="sm" onClick={() => { setAddingSec(false); setNewSectionTitle('') }} style={{ height: 36 }}>
+                  <i className="fa-light fa-xmark" aria-hidden="true" />
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setAddingSec(true)}
+                className="gap-1.5 self-start"
+              >
+                <i className="fa-light fa-plus" aria-hidden="true" />
+                Add section
+              </Button>
+            )}
+          </div>
+
+          {/* Delivery Settings */}
+          <div className="flex flex-col gap-4" style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">Delivery</p>
+
+            {settings.type === 'Pop Quiz' ? (
+              <div
+                className="flex items-start gap-3 rounded-lg px-3 py-2.5 text-xs"
+                style={{ background: 'color-mix(in oklch, var(--brand-color) 6%, var(--background))', border: '1px solid var(--border)' }}
+              >
+                <i className="fa-light fa-bolt mt-0.5 shrink-0" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
+                <span className="text-muted-foreground">Pop quizzes are started live in class — no scheduling needed. Students see it the moment you start it.</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1.5">Opens</p>
+                  <input
+                    type="datetime-local"
+                    value={settings.openDate?.slice(0, 16) ?? ''}
+                    onChange={e => patchSettings({ openDate: e.target.value ? new Date(e.target.value).toISOString() : null })}
+                    style={{ width: '100%', height: 36, padding: '0 8px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none' }}
+                  />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1.5">Closes</p>
+                  <input
+                    type="datetime-local"
+                    value={settings.closeDate?.slice(0, 16) ?? ''}
+                    onChange={e => patchSettings({ closeDate: e.target.value ? new Date(e.target.value).toISOString() : null })}
+                    style={{ width: '100%', height: 36, padding: '0 8px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none' }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {settings.type === 'Exam' && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Download window</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Students can pre-download</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={168}
+                    value={settings.downloadWindowHours}
+                    onChange={e => patchSettings({ downloadWindowHours: Math.max(1, parseInt(e.target.value) || 24) })}
+                    style={{ width: 60, height: 32, padding: '0 8px', fontSize: 13, textAlign: 'center', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none' }}
+                  />
+                  <span className="text-xs text-muted-foreground">hours before exam start</span>
+                </div>
+              </div>
+            )}
+
             <Toggle
               checked={settings.randomize}
               onChange={v => patchSettings({ randomize: v })}
               label="Randomize question order"
-              description="Each student sees questions in a different order."
+              description="Students see questions in a different sequence"
             />
+            <Toggle
+              checked={settings.randomizeOptions}
+              onChange={v => patchSettings({ randomizeOptions: v })}
+              label="Randomize option order"
+              description="Shuffle answer choices within each question"
+            />
+
+            <div>
+              <p className="text-xs text-muted-foreground mb-1.5">Pre-exam instructions (optional)</p>
+              <textarea
+                value={settings.instructionsText}
+                onChange={e => patchSettings({ instructionsText: e.target.value })}
+                placeholder="Academic integrity statement, exam rules, or any instructions students see before they start…"
+                rows={3}
+                style={{ width: '100%', padding: '8px 10px', fontSize: 13, lineHeight: 1.5, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', resize: 'vertical' }}
+              />
+              {settings.instructionsText.trim() && (
+                <Toggle
+                  checked={settings.requireAcknowledgment}
+                  onChange={v => patchSettings({ requireAcknowledgment: v })}
+                  label="Require student acknowledgment"
+                  description="Students must check a box before starting"
+                />
+              )}
+            </div>
+
             <Toggle
               checked={settings.showRationaleAfter}
               onChange={v => patchSettings({ showRationaleAfter: v })}
@@ -2391,48 +2893,97 @@ function SectionsPanel({
   )
 }
 
-// ─── AI generate — entry point to gap-fill wizard ────────────────────────────
-//
-// Aarti's differentiator: generate questions from course objectives, targeting
-// gaps the curriculum hasn't covered. This panel surfaces the concept with a
-// clear CTA. Full wizard (objective picker → AI stream → review/edit → publish)
-// is a separate flow built off this entry point.
-function AiGeneratePanel({ courseLabel, onOpen }: { courseLabel: string; onOpen: () => void }) {
+// ─── AI gap fill — shows which objectives are untested, then launches generator ─
+function AiGeneratePanel({
+  courseLabel,
+  onOpen,
+  gapObjectives,
+}: {
+  courseLabel: string
+  onOpen: () => void
+  gapObjectives: CourseObjective[]
+}) {
+  const neverAssessed = gapObjectives.filter(o => !o.lastAssessed)
+  const stale = gapObjectives.filter(o => {
+    if (!o.lastAssessed) return false
+    const days = (Date.now() - new Date(o.lastAssessed).getTime()) / (1000 * 60 * 60 * 24)
+    return days > 60
+  })
+
   return (
     <div style={{ flex: 1, overflow: 'auto', padding: 24, background: 'var(--background)' }}>
-      <LocalBanner
-        variant="promo"
-        icon="fa-sparkles"
-        title="AI-generated questions from course objectives"
-        className="max-w-2xl"
-      >
-        <p className="leading-relaxed">
-          For <strong className="text-foreground">{courseLabel}</strong>, the AI scans untested or under-tested
-          course objectives, generates candidate questions matched to your difficulty + Bloom mix, and lets
-          you review/edit each one before adding to the assessment.
-        </p>
-        <ul className="flex flex-col gap-1.5 text-xs mt-3">
-          <li className="flex items-start gap-2">
-            <i className="fa-light fa-circle-check text-brand mt-0.5" aria-hidden="true" />
-            Targets gaps in your curriculum mapping (objectives never assessed)
-          </li>
-          <li className="flex items-start gap-2">
-            <i className="fa-light fa-circle-check text-brand mt-0.5" aria-hidden="true" />
-            Honours your difficulty/Blooms targets configured for this assessment
-          </li>
-          <li className="flex items-start gap-2">
-            <i className="fa-light fa-circle-check text-brand mt-0.5" aria-hidden="true" />
-            Every generated question is editable before it&apos;s added — and optionally written back to the question bank
-          </li>
-        </ul>
-        <div className="flex items-center gap-2 mt-3">
-          <Button variant="default" size="sm" className="gap-2" onClick={onOpen}>
+      <div className="max-w-2xl flex flex-col gap-4">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">AI gap fill</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Objectives in <strong className="text-foreground">{courseLabel}</strong> not yet covered by this assessment
+            </p>
+          </div>
+          <Button
+            variant="default"
+            size="sm"
+            className="gap-2 shrink-0"
+            onClick={onOpen}
+            disabled={gapObjectives.length === 0}
+          >
             <i className="fa-duotone fa-solid fa-sparkles" aria-hidden="true" />
-            Open generator
+            Generate questions
           </Button>
-          <span className="text-[11px] text-muted-foreground">Wizard launches in a side panel</span>
         </div>
-      </LocalBanner>
+
+        {gapObjectives.length === 0 ? (
+          <LocalBanner variant="success" icon="fa-circle-check" title="All objectives covered">
+            <p>Every course objective has been assessed within the last 60 days.</p>
+          </LocalBanner>
+        ) : (
+          <>
+            {neverAssessed.length > 0 && (
+              <div className="rounded-lg border border-border bg-card overflow-hidden">
+                <div className="px-4 py-2.5 border-b border-border flex items-center gap-2">
+                  <i className="fa-light fa-circle-exclamation" aria-hidden="true" style={{ color: 'var(--foreground)', fontSize: 12 }} />
+                  <span className="text-xs font-semibold text-foreground">{neverAssessed.length} never assessed</span>
+                  <span className="text-xs text-muted-foreground">— students haven&apos;t seen these at all</span>
+                </div>
+                <div className="divide-y divide-border">
+                  {neverAssessed.map(o => (
+                    <div key={o.id} className="px-4 py-2.5 flex items-start gap-3">
+                      <Badge variant="outline" className="text-[10px] font-mono shrink-0 mt-0.5">{o.bloomsLevel}</Badge>
+                      <span className="text-xs text-foreground leading-relaxed">{o.title}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {stale.length > 0 && (
+              <div className="rounded-lg border border-border bg-card overflow-hidden">
+                <div className="px-4 py-2.5 border-b border-border flex items-center gap-2">
+                  <i className="fa-light fa-clock" aria-hidden="true" style={{ color: 'var(--muted-foreground)', fontSize: 12 }} />
+                  <span className="text-xs font-semibold text-foreground">{stale.length} stale</span>
+                  <span className="text-xs text-muted-foreground">— last assessed over 60 days ago</span>
+                </div>
+                <div className="divide-y divide-border">
+                  {stale.map(o => {
+                    const days = Math.round((Date.now() - new Date(o.lastAssessed!).getTime()) / (1000 * 60 * 60 * 24))
+                    return (
+                      <div key={o.id} className="px-4 py-2.5 flex items-start gap-3">
+                        <Badge variant="outline" className="text-[10px] font-mono shrink-0 mt-0.5">{o.bloomsLevel}</Badge>
+                        <span className="text-xs text-foreground leading-relaxed flex-1">{o.title}</span>
+                        <span className="text-[10px] text-muted-foreground shrink-0">{days}d ago</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            <p className="text-[11px] text-muted-foreground">
+              The generator matches questions to your difficulty and Bloom&apos;s targets. Each question is reviewable before it&apos;s added to the assessment.
+            </p>
+          </>
+        )}
+      </div>
     </div>
   )
 }
