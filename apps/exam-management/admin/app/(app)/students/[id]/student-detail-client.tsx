@@ -535,12 +535,15 @@ function CoursesTab({ student, onEnrolled }: { student: ExtendedStudent; onEnrol
             orientation="vertical"
             value={activeTerm}
             onValueChange={setActiveTerm}
-            className="flex flex-1 min-h-0 gap-0 relative"
+            className="flex flex-1 min-h-0 gap-0"
+            style={{
+              backgroundImage: 'linear-gradient(to right, transparent 11rem, var(--border) 11rem, var(--border) calc(11rem + 1px), transparent calc(11rem + 1px))',
+            }}
           >
             {/* Custom vertical nav — DS tokens, no trigger height constraints */}
             <nav
               aria-label="Select term"
-              className="w-44 shrink-0 py-2 px-2 flex flex-col gap-0.5 relative z-10"
+              className="w-44 shrink-0 py-2 px-2 flex flex-col gap-0.5"
             >
               {sortedTerms.map(term => {
                 const isActive = activeTerm === term
@@ -571,8 +574,6 @@ function CoursesTab({ student, onEnrolled }: { student: ExtendedStudent; onEnrol
               })}
             </nav>
 
-            {/* Absolute divider — always spans full Tabs height regardless of content */}
-            <div className="absolute inset-y-0 w-px bg-border" style={{ left: '11rem' }} />
 
             {/* Per-term content */}
             {sortedTerms.map(term => (
