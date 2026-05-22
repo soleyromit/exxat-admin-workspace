@@ -12,7 +12,7 @@ import {
   LocalBanner,
 } from '@exxat/ds/packages/ui/src'
 import { mockCourses, mockCourseOfferings, mockAssessments, MOCK_QB_QUESTIONS } from '@/lib/qb-mock-data'
-import type { AssessmentDraft, Question, SmartView, QType, QDiff } from '@/lib/qb-types'
+import type { AssessmentDraft, AssessmentQuestion, Question, SmartView, QType, QDiff } from '@/lib/qb-types'
 import { SYSTEM_SMART_VIEWS } from '@/lib/qb-types'
 import { courseObjectives } from '@/lib/faculty-mock-data'
 import { useFacultySession } from '@/lib/faculty-session'
@@ -59,6 +59,8 @@ export default function AssessmentBuilderClient() {
   // builder lands ready instead of empty.
   const urlCourseId = searchParams?.get('courseId') ?? null
   const urlDraftId = searchParams?.get('draftId') ?? null
+  const urlMode = (searchParams?.get('mode') ?? null) as 'blank' | 'qb' | 'copy' | null
+  const urlSourceId = searchParams?.get('sourceId') ?? null
 
   const initialCourseId = urlCourseId ?? mockCourses[0]?.id ?? ''
   const [courseId, setCourseId] = useState(initialCourseId)
@@ -87,6 +89,38 @@ export default function AssessmentBuilderClient() {
     setCourseId(draft.courseId)
     setOfferingId(draft.offeringId)
   }, [urlDraftId, draftsHydrated, localDrafts, activeAsmt?.id])
+
+  // Load source assessment questions when arriving via "Copy from previous"
+  useEffect(() => {
+    if (urlMode !== 'copy' || !urlSourceId) return
+    const source = mockAssessments.find(a => a.id === urlSourceId)
+    if (!source) return
+    // Already loaded — don't overwrite
+    if (activeAsmt?.id === `asmt-copy-${urlSourceId}`) return
+
+    const sourceCode = (mockCourses.find(c => c.id === source.courseId)?.code ?? '').toLowerCase()
+    const sourceQuestions = MOCK_QB_QUESTIONS
+      .filter(q => q.folder.startsWith(sourceCode))
+      .slice(0, source.questionCount)
+      .map((q, i): AssessmentQuestion => ({ questionId: q.id, order: i + 1 }))
+
+    const targetOfferingId = urlCourseId
+      ? (mockCourseOfferings.find(o => o.courseId === source.courseId)?.id ?? source.offeringId)
+      : source.offeringId
+
+    setActiveAsmt({
+      id: `asmt-copy-${urlSourceId}`,
+      title: `${source.title} (copy)`,
+      courseId: source.courseId,
+      offeringId: targetOfferingId,
+      questions: sourceQuestions,
+      durationMinutes: source.durationMinutes,
+      sections: [],
+      settings: { type: 'Exam', passwordRequired: false, password: '', randomize: false, showRationaleAfter: true },
+    })
+    setCourseId(source.courseId)
+  }, [urlMode, urlSourceId]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const [smartViewId, setSmartViewId] = useState<string>('all')
   const [savedViews, setSavedViews] = useState<SmartView[]>(() => {
     try {
@@ -337,6 +371,8 @@ export default function AssessmentBuilderClient() {
               onOpenAi={() => setAiOpen(true)}
               sectionsOpen={sectionsOpen}
               onToggleSections={() => setSectionsOpen(p => !p)}
+              isCopyMode={urlMode === 'copy'}
+              onRenameAsmt={(title) => setActiveAsmt(prev => prev ? { ...prev, title } : prev)}
             />
             {sectionsOpen && (
               <SectionsPanel
@@ -488,7 +524,7 @@ function ABQuestionPicker({
   selectedIds, onToggle, activeAsmt, onDurationChange,
   smartViews, activeViewId, onViewChange, onSaveView,
   userCreated, onCreateQuestion, onCreateFromDraft, authorPersonaId, onOpenAi,
-  sectionsOpen, onToggleSections,
+  sectionsOpen, onToggleSections, isCopyMode, onRenameAsmt,
 }: {
   selectedIds: Set<string>
   onToggle: (id: string) => void
@@ -505,6 +541,8 @@ function ABQuestionPicker({
   onOpenAi: () => void
   sectionsOpen: boolean
   onToggleSections: () => void
+  isCopyMode: boolean
+  onRenameAsmt: (title: string) => void
 }) {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   const [saveConfirmed, setSaveConfirmed] = useState(false)
@@ -631,7 +669,33 @@ function ABQuestionPicker({
         gap: 8,
         flexShrink: 0,
       }}>
-        <span className="text-sm font-semibold">{activeAsmt.title}</span>
+        {activeAsmt.title === 'New Assessment' ? (
+          <input
+            aria-label="Assessment name"
+            defaultValue={activeAsmt.title}
+            placeholder="Assessment name…"
+            onBlur={e => {
+              const val = e.target.value.trim()
+              if (val && val !== 'New Assessment') onRenameAsmt(val)
+            }}
+            onKeyDown={e => {
+              if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+            }}
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              background: 'transparent',
+              border: 'none',
+              borderBottom: '1px solid var(--brand-color)',
+              outline: 'none',
+              color: 'var(--foreground)',
+              width: 200,
+              padding: '0 2px',
+            }}
+          />
+        ) : (
+          <span className="text-sm font-semibold">{activeAsmt.title}</span>
+        )}
         <span className="text-xs text-muted-foreground">· {selectedIds.size} questions selected</span>
         <Button
           variant={sectionsOpen ? 'default' : 'outline'}
@@ -644,6 +708,23 @@ function ABQuestionPicker({
           Sections{activeAsmt.sections.length > 0 ? ` (${activeAsmt.sections.length})` : ''}
         </Button>
       </div>
+
+      {/* Copy mode banner — shown when arriving via "Copy from previous" */}
+      {isCopyMode && activeAsmt.questions.length > 0 && (
+        <div
+          className="flex items-center gap-3 px-4 py-2.5 text-xs shrink-0"
+          style={{
+            backgroundColor: 'color-mix(in oklch, var(--brand-color) 6%, var(--background))',
+            borderBottom: '1px solid var(--border)',
+          }}
+        >
+          <i className="fa-light fa-copy shrink-0" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
+          <span className="text-foreground">
+            <strong>{activeAsmt.questions.length} questions</strong> copied from previous assessment.
+            Swap, remove, or add questions below.
+          </span>
+        </div>
+      )}
 
       {/* Source bar — Vishaka: questions can come from multiple places. Make
           the source explicit and switchable, default to this course's QB. */}
