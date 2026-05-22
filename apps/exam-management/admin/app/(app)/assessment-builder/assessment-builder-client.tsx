@@ -224,9 +224,15 @@ export default function AssessmentBuilderClient() {
           })),
         }
       }
+      const nextSections = activeSectionId
+        ? prev.sections.map(s => s.id === activeSectionId
+            ? { ...s, questionIds: [...new Set([...s.questionIds, questionId])] }
+            : s)
+        : prev.sections
       return {
         ...prev,
         questions: [...prev.questions, { questionId, order: prev.questions.length + 1 }],
+        sections: nextSections,
       }
     })
   }
@@ -338,20 +344,8 @@ export default function AssessmentBuilderClient() {
 
   // Change 2: HealthPanel is hidden by default; toggled via icon button
   const [showHealth, setShowHealth] = useState(false)
-
-  // Change 3: sections sub-phase for Step 2
-  const [builderPhase, setBuilderPhase] = useState<'sections' | 'questions'>('sections')
-
-  // When entering Step 2: start in sections phase if no sections exist yet, otherwise go to questions
-  useEffect(() => {
-    if (activeStep === 2) {
-      if (activeAsmt && activeAsmt.sections.length === 0) {
-        setBuilderPhase('sections')
-      } else {
-        setBuilderPhase('questions')
-      }
-    }
-  }, [activeStep]) // eslint-disable-line react-hooks/exhaustive-deps
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null)
+  const [detailQuestionId, setDetailQuestionId] = useState<string | null>(null)
 
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null)
 
@@ -496,146 +490,104 @@ export default function AssessmentBuilderClient() {
       {/* Step 2 — Build */}
       {activeStep === 2 && activeAsmt && (
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-          {/* Left: sections outline — always visible in questions phase */}
-          {builderPhase === 'questions' && (
-            <div style={{ width: 240, minWidth: 240, borderRight: '1px solid var(--border)', flexShrink: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-              <SectionsOutline
-                activeAsmt={activeAsmt}
-                selectedIds={selectedIds}
-                questions={MOCK_QB_QUESTIONS}
-                onRemove={removeQuestion}
-                onEditQuestion={id => setEditingQuestionId(prev => prev === id ? null : id)}
-                editingQuestionId={editingQuestionId}
-                onUpdateSection={updateSection}
-                onAddSection={addSection}
-              />
-              {editingQuestionId && (() => {
-                const q = MOCK_QB_QUESTIONS.find(q => q.id === editingQuestionId)
-                if (!q) return null
-                return (
-                  <div style={{ borderTop: '1px solid var(--border)', padding: '8px 0', flexShrink: 0 }}>
-                    <InlineQuestionEditor
-                      question={q}
-                      onSave={() => {
-                        setEditingQuestionId(null)
-                      }}
-                      onCancel={() => setEditingQuestionId(null)}
-                      onCopyAndModify={(copyQ) => {
-                        createQuestion({ title: copyQ.title + ' (copy)', options: [], correctIdx: 0 })
-                        setEditingQuestionId(null)
-                      }}
-                    />
-                  </div>
-                )
-              })()}
-            </div>
-          )}
-
-          {/* Center: sections sub-phase OR question picker */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-            {builderPhase === 'sections' ? (
-              /* Sections setup sub-phase */
-              <>
-                <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">Set up sections</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Organize questions by topic or assign sections to instructors. You can skip this and add sections later.</p>
-                  </div>
-                </div>
-                <div style={{ flex: 1, overflow: 'auto' }}>
-                  <SectionsOutline
-                    activeAsmt={activeAsmt}
-                    selectedIds={selectedIds}
-                    questions={MOCK_QB_QUESTIONS}
-                    onRemove={removeQuestion}
-                    onEditQuestion={id => setEditingQuestionId(prev => prev === id ? null : id)}
-                    editingQuestionId={editingQuestionId}
-                    onUpdateSection={updateSection}
-                    onAddSection={addSection}
-                  />
-                </div>
-                <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexShrink: 0, background: 'var(--card)' }}>
-                  <Button variant="ghost" size="sm" onClick={() => setActiveStep(1)} className="gap-1.5">
-                    <i className="fa-light fa-arrow-left" aria-hidden="true" />
-                    Back
-                  </Button>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <Button variant="ghost" size="sm" onClick={() => setBuilderPhase('questions')}>
-                      Skip
-                    </Button>
-                    <Button size="sm" onClick={() => setBuilderPhase('questions')} className="gap-1.5">
-                      Start building questions
-                      <i className="fa-light fa-arrow-right" aria-hidden="true" />
-                    </Button>
-                  </div>
-                </div>
-              </>
-            ) : (
-              /* Questions picking sub-phase */
-              <>
-                <button
-                  type="button"
-                  onClick={() => setBuilderPhase('sections')}
-                  className="text-xs text-muted-foreground flex items-center gap-1 px-4 py-2 hover:text-foreground transition-colors"
-                  style={{ background: 'none', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', flexShrink: 0 }}
-                >
-                  <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 10 }} />
-                  Back to sections
-                </button>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '4px 12px', borderBottom: '1px solid var(--border)', flexShrink: 0, gap: 4 }}>
-                  {/* Change 2: HealthPanel toggle button */}
-                  <Button
-                    variant={showHealth ? 'secondary' : 'ghost'}
-                    size="sm"
-                    onClick={() => setShowHealth(h => !h)}
-                    aria-label={showHealth ? 'Hide health panel' : 'Show health panel'}
-                    aria-pressed={showHealth}
-                    className="h-7 w-7 p-0"
-                  >
-                    <i className="fa-light fa-heart-pulse" aria-hidden="true" />
-                  </Button>
-                </div>
-                <ABQuestionPicker
-                  selectedIds={selectedIds}
-                  onToggle={toggleQuestion}
-                  activeAsmt={activeAsmt}
-                  onDurationChange={(min) => setActiveAsmt(prev => prev ? { ...prev, durationMinutes: min } : prev)}
-                  smartViews={allSmartViews}
-                  activeViewId={smartViewId}
-                  onViewChange={setSmartViewId}
-                  onSaveView={saveSmartView}
-                  userCreated={userCreated}
-                  onCreateQuestion={createQuestion}
-                  onCreateFromDraft={createQuestionFromDraft}
-                  authorPersonaId={currentPersona.id}
-                  onOpenAi={() => setAiOpen(true)}
-                  isCopyMode={urlMode === 'copy'}
-                  onRenameAsmt={(title) => setActiveAsmt(prev => prev ? { ...prev, title } : prev)}
-                  onAssignToSection={assignQuestionToSection}
-                />
-                {/* Step 2 navigation footer */}
-                <div
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '8px 20px', borderTop: '1px solid var(--border)',
-                    background: 'var(--card)', flexShrink: 0,
-                  }}
-                >
-                  <Button variant="ghost" size="sm" onClick={() => setActiveStep(1)} className="gap-1.5">
-                    <i className="fa-light fa-arrow-left" aria-hidden="true" />
-                    Back
-                  </Button>
-                  <Button size="sm" onClick={() => setActiveStep(3)} className="gap-1.5">
-                    Review
-                    <i className="fa-light fa-arrow-right" aria-hidden="true" />
-                  </Button>
-                </div>
-              </>
-            )}
+          {/* Left: sections outline — always visible */}
+          <div style={{ width: 240, minWidth: 200, maxWidth: 280, borderRight: '1px solid var(--border)', flexShrink: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <SectionsOutline
+              activeAsmt={activeAsmt}
+              selectedIds={selectedIds}
+              questions={MOCK_QB_QUESTIONS}
+              onRemove={removeQuestion}
+              onEditQuestion={id => setEditingQuestionId(prev => prev === id ? null : id)}
+              editingQuestionId={editingQuestionId}
+              onUpdateSection={updateSection}
+              onAddSection={addSection}
+              activeSectionId={activeSectionId}
+              onSetActiveSection={setActiveSectionId}
+              onShowDetail={id => setDetailQuestionId(prev => prev === id ? null : id)}
+            />
           </div>
 
-          {/* Right: health panel — only in questions phase when toggled on */}
-          {builderPhase === 'questions' && showHealth && (
+          {/* Center: question picker */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+            {/* "Adding to" banner */}
+            {activeSectionId && (() => {
+              const sec = activeAsmt.sections.find(s => s.id === activeSectionId)
+              if (!sec) return null
+              return (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '6px 16px', background: 'var(--muted)',
+                  borderBottom: '1px solid var(--border)', flexShrink: 0,
+                }}>
+                  <i className="fa-light fa-arrow-right-to-bracket text-foreground" aria-hidden="true" style={{ fontSize: 11 }} />
+                  <span className="text-xs font-medium text-foreground truncate flex-1">
+                    Adding to: <strong>{sec.title}</strong>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveSectionId(null)}
+                    aria-label="Stop adding to this section"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 2 }}
+                  >
+                    <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 11 }} />
+                  </button>
+                </div>
+              )
+            })()}
+
+            {/* Health toggle toolbar */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '4px 12px', borderBottom: '1px solid var(--border)', flexShrink: 0, gap: 4 }}>
+              <Button
+                variant={showHealth ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setShowHealth(h => !h)}
+                aria-label={showHealth ? 'Hide health panel' : 'Show health panel'}
+                aria-pressed={showHealth}
+                className="h-7 w-7 p-0"
+              >
+                <i className="fa-light fa-heart-pulse" aria-hidden="true" />
+              </Button>
+            </div>
+
+            <ABQuestionPicker
+              selectedIds={selectedIds}
+              onToggle={toggleQuestion}
+              activeAsmt={activeAsmt}
+              onDurationChange={(min) => setActiveAsmt(prev => prev ? { ...prev, durationMinutes: min } : prev)}
+              smartViews={allSmartViews}
+              activeViewId={smartViewId}
+              onViewChange={setSmartViewId}
+              onSaveView={saveSmartView}
+              userCreated={userCreated}
+              onCreateQuestion={createQuestion}
+              onCreateFromDraft={createQuestionFromDraft}
+              authorPersonaId={currentPersona.id}
+              onOpenAi={() => setAiOpen(true)}
+              isCopyMode={urlMode === 'copy'}
+              onRenameAsmt={(title) => setActiveAsmt(prev => prev ? { ...prev, title } : prev)}
+              onAssignToSection={assignQuestionToSection}
+              activeSectionId={activeSectionId}
+            />
+
+            {/* Step 2 navigation footer */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '8px 20px', borderTop: '1px solid var(--border)',
+              background: 'var(--card)', flexShrink: 0,
+            }}>
+              <Button variant="ghost" size="sm" onClick={() => setActiveStep(1)} className="gap-1.5">
+                <i className="fa-light fa-arrow-left" aria-hidden="true" />
+                Back
+              </Button>
+              <Button size="sm" onClick={() => setActiveStep(3)} className="gap-1.5">
+                Review
+                <i className="fa-light fa-arrow-right" aria-hidden="true" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Right: health panel */}
+          {showHealth && (
             <div style={{ width: 260, borderLeft: '1px solid var(--border)', flexShrink: 0, overflow: 'auto' }}>
               <HealthPanel
                 activeAsmt={activeAsmt}
@@ -892,7 +844,7 @@ function ABQuestionPicker({
   selectedIds, onToggle, activeAsmt, onDurationChange,
   smartViews, activeViewId, onViewChange, onSaveView,
   userCreated, onCreateQuestion, onCreateFromDraft, authorPersonaId, onOpenAi,
-  isCopyMode, onRenameAsmt, onAssignToSection,
+  isCopyMode, onRenameAsmt, onAssignToSection, activeSectionId,
 }: {
   selectedIds: Set<string>
   onToggle: (id: string) => void
@@ -910,6 +862,7 @@ function ABQuestionPicker({
   isCopyMode: boolean
   onRenameAsmt: (title: string) => void
   onAssignToSection?: (questionId: string, sectionId: string | null) => void
+  activeSectionId?: string | null
 }) {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   const [newViewName, setNewViewName] = useState('')
