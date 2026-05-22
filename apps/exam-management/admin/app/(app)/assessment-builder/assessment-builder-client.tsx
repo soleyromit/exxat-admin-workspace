@@ -1208,13 +1208,14 @@ function ABQuestionPicker({
               <TableHead style={{ width: 80 }}>Difficulty</TableHead>
               <TableHead style={{ width: 100 }}>Type</TableHead>
               <TableHead style={{ width: 60 }}>Usage</TableHead>
-              <TableHead style={{ width: 90 }}></TableHead>
+              <TableHead style={{ width: 60 }}>PBI</TableHead>
+              <TableHead style={{ width: 72 }}></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredQuestions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-sm text-muted-foreground" style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <TableCell colSpan={7} className="text-sm text-muted-foreground" style={{ textAlign: 'center', padding: '40px 20px' }}>
                   No questions match this view
                 </TableCell>
               </TableRow>
@@ -1263,17 +1264,36 @@ function ABQuestionPicker({
                   <TableCell className="text-xs text-muted-foreground">
                     {(q.usage ?? 0) > 0 ? `${q.usage}×` : '—'}
                   </TableCell>
+                  <TableCell className="text-xs font-mono" style={{ color: (q.pbis !== null && q.pbis < 0.2) ? 'var(--chart-4)' : 'var(--muted-foreground)' }}>
+                    {q.pbis !== null ? (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                        {q.pbis < 0.2 && <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 9 }} />}
+                        {q.pbis.toFixed(2)}
+                      </span>
+                    ) : '—'}
+                  </TableCell>
                   <TableCell onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-                    <SectionAssignDropdown
-                      sections={activeAsmt.sections}
-                      isSelected={isPicked}
-                      onAssign={(sectionId) => {
-                        if (!isPicked) onToggle(q.id)
-                        if (sectionId !== null) {
-                          onAssignToSection?.(q.id, sectionId)
-                        }
-                      }}
-                    />
+                    {isPicked ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onToggle(q.id)}
+                        style={{ height: 28, fontSize: 11 }}
+                        aria-label={`Remove ${q.title} from assessment`}
+                      >
+                        <i className="fa-light fa-check" aria-hidden="true" style={{ color: 'var(--chart-2)', marginRight: 4 }} />
+                        Added
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => onToggle(q.id)}
+                        style={{ height: 28, fontSize: 11 }}
+                      >
+                        + Use
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               )
