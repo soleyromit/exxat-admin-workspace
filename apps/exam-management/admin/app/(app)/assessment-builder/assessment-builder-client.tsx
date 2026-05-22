@@ -1728,15 +1728,64 @@ function formatDateTime(iso: string): string {
 }
 
 function InstructionsPreview({ text, requireAck }: { text: string; requireAck: boolean }) {
+  const [expanded, setExpanded] = useState(false)
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
-      <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Pre-exam instructions</p>
-      <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{text}</p>
-      {requireAck && (
-        <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
-          <i className="fa-light fa-circle-check" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
-          Students must acknowledge before starting
-        </p>
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setExpanded((e) => !e)}
+        className="flex items-center justify-between w-full px-5 py-3 text-left"
+        style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+      >
+        <div className="flex items-center gap-2">
+          <i
+            className="fa-light fa-file-lines"
+            aria-hidden="true"
+            style={{ color: 'var(--brand-color)', fontSize: 13 }}
+          />
+          <span className="text-xs font-semibold text-foreground">
+            Pre-exam instructions configured
+          </span>
+          {requireAck && (
+            <Badge variant="outline" className="text-[10px]">
+              Acknowledgment required
+            </Badge>
+          )}
+        </div>
+        <i
+          className={`fa-light ${expanded ? 'fa-chevron-up' : 'fa-chevron-down'} text-muted-foreground`}
+          aria-hidden="true"
+          style={{ fontSize: 10 }}
+        />
+      </button>
+      {expanded && (
+        <div className="px-5 pb-4 border-t border-border">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 pt-3">
+            Students will see:
+          </p>
+          <div
+            className="rounded-lg p-4 text-sm text-foreground leading-relaxed whitespace-pre-wrap"
+            style={{ background: 'var(--muted)', fontSize: 13 }}
+          >
+            {text}
+          </div>
+          {requireAck && (
+            <div className="flex items-center gap-2 mt-3 opacity-60">
+              <div
+                style={{
+                  width: 16,
+                  height: 16,
+                  borderRadius: 4,
+                  border: '1.5px solid var(--border)',
+                  background: 'var(--background)',
+                }}
+              />
+              <span className="text-xs text-muted-foreground">
+                I have read and understood the above instructions
+              </span>
+            </div>
+          )}
+        </div>
       )}
     </div>
   )
