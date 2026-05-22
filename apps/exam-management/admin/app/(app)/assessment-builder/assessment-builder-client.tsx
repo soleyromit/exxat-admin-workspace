@@ -379,6 +379,13 @@ export default function AssessmentBuilderClient() {
     })
   }
 
+  function updateSection(sectionId: string, patch: Partial<AssessmentSection>) {
+    setActiveAsmt(prev => prev ? {
+      ...prev,
+      sections: prev.sections.map(s => s.id === sectionId ? { ...s, ...patch } : s),
+    } : prev)
+  }
+
   function handleSaveDraft() {
     router.push('/courses')
   }
@@ -473,6 +480,7 @@ export default function AssessmentBuilderClient() {
               onRemove={removeQuestion}
               onEditQuestion={id => setEditingQuestionId(prev => prev === id ? null : id)}
               editingQuestionId={editingQuestionId}
+              onUpdateSection={updateSection}
             />
             {editingQuestionId && (() => {
               const q = MOCK_QB_QUESTIONS.find(q => q.id === editingQuestionId)

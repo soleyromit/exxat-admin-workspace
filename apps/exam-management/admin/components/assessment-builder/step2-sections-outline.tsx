@@ -14,9 +14,10 @@ interface Props {
   onRemove: (questionId: string) => void
   onEditQuestion: (questionId: string) => void
   editingQuestionId: string | null
+  onUpdateSection: (sectionId: string, patch: Partial<AssessmentSection>) => void
 }
 
-export function SectionsOutline({ activeAsmt, selectedIds, questions, onRemove, onEditQuestion, editingQuestionId }: Props) {
+export function SectionsOutline({ activeAsmt, selectedIds, questions, onRemove, onEditQuestion, editingQuestionId, onUpdateSection }: Props) {
   const qById = Object.fromEntries(questions.map(q => [q.id, q]))
 
   // Build section → question mapping
@@ -53,6 +54,7 @@ export function SectionsOutline({ activeAsmt, selectedIds, questions, onRemove, 
             onRemove={onRemove}
             onEdit={onEditQuestion}
             editingId={editingQuestionId}
+            onUpdateSection={onUpdateSection}
           />
         ))}
 
@@ -79,43 +81,80 @@ export function SectionsOutline({ activeAsmt, selectedIds, questions, onRemove, 
   )
 }
 
-function SectionGroup({ section, questions, onRemove, onEdit, editingId }: {
+function SectionGroup({ section, questions, onRemove, onEdit, editingId, onUpdateSection }: {
   section: AssessmentSection
   questions: Question[]
   onRemove: (id: string) => void
   onEdit: (id: string) => void
   editingId: string | null
+  onUpdateSection: (sectionId: string, patch: Partial<AssessmentSection>) => void
 }) {
   const [collapsed, setCollapsed] = useState(false)
   const qById = Object.fromEntries(questions.map(q => [q.id, q]))
   const assignedFaculty = section.facultyId
     ? facultyListRows.find(f => f.id === section.facultyId)
     : null
+  const isReady = section.status === 'ready'
 
   return (
     <div>
-      <button
-        type="button"
-        onClick={() => setCollapsed(c => !c)}
-        className="flex items-center gap-2 w-full px-3 py-1.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded"
-        style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-      >
-        <i
-          className={`fa-light ${collapsed ? 'fa-chevron-right' : 'fa-chevron-down'}`}
-          aria-hidden="true"
-          style={{ fontSize: 9, color: 'var(--muted-foreground)', width: 10 }}
-        />
-        <span className="text-xs font-semibold text-foreground truncate flex-1">{section.title}</span>
-        {assignedFaculty && (
-          <span
-            className="text-xs text-muted-foreground shrink-0 truncate max-w-[70px]"
-            title={assignedFaculty.fullName}
+      {/* Section header row */}
+      <div className="flex items-center gap-1 w-full px-3 py-1.5">
+        {/* Collapse trigger — takes up remaining space */}
+        <button
+          type="button"
+          onClick={() => setCollapsed(c => !c)}
+          className="flex items-center gap-2 flex-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded min-w-0"
+          style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+        >
+          <i
+            className={`fa-light ${collapsed ? 'fa-chevron-right' : 'fa-chevron-down'}`}
+            aria-hidden="true"
+            style={{ fontSize: 9, color: 'var(--muted-foreground)', width: 10, flexShrink: 0 }}
+          />
+          <span className="text-xs font-semibold text-foreground truncate">{section.title}</span>
+          {assignedFaculty && (
+            <span
+              className="text-xs text-muted-foreground shrink-0 truncate max-w-[60px]"
+              title={assignedFaculty.fullName}
+            >
+              {assignedFaculty.fullName.split(' ').slice(-1)[0]}
+            </span>
+          )}
+          <span className="text-xs text-muted-foreground shrink-0">{section.questionIds.length}</span>
+        </button>
+
+        {/* Status chip + action — outside collapse button */}
+        {isReady ? (
+          <>
+            <span
+              className="text-xs font-semibold shrink-0"
+              style={{ color: 'var(--chart-2)' }}
+            >
+              Ready
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onUpdateSection(section.id, { status: 'drafting' })}
+              className="h-5 px-1.5 text-xs shrink-0"
+              aria-label={`Reopen section ${section.title}`}
+            >
+              Reopen
+            </Button>
+          </>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onUpdateSection(section.id, { status: 'ready' })}
+            className="h-5 px-1.5 text-xs shrink-0"
+            aria-label={`Mark section ${section.title} as ready`}
           >
-            {assignedFaculty.fullName.split(' ').slice(-1)[0]}
-          </span>
+            Mark ready
+          </Button>
         )}
-        <span className="text-xs text-muted-foreground shrink-0">{section.questionIds.length}</span>
-      </button>
+      </div>
       {!collapsed && section.questionIds.map(qId => (
         <QuestionRow
           key={qId}
