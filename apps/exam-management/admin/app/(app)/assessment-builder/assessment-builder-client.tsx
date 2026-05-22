@@ -1345,7 +1345,7 @@ function WizardHeader({
                   borderRadius: 20,
                   border: '1px solid',
                   borderColor: isActive ? 'var(--brand-color)' : isCompleted ? 'var(--brand-color)' : 'var(--border)',
-                  backgroundColor: isActive
+                  background: isActive
                     ? 'color-mix(in oklch, var(--brand-color) 10%, var(--background))'
                     : isCompleted ? 'color-mix(in oklch, var(--brand-color) 6%, var(--background))'
                     : 'transparent',
@@ -1353,10 +1353,7 @@ function WizardHeader({
                   fontSize: 12,
                   fontWeight: isActive ? 600 : 400,
                   cursor: isClickable ? 'pointer' : 'default',
-                  background: isActive
-                    ? 'color-mix(in oklch, var(--brand-color) 10%, var(--background))'
-                    : isCompleted ? 'color-mix(in oklch, var(--brand-color) 6%, var(--background))'
-                    : 'none',
+                  opacity: (!isClickable && !isActive) ? 0.45 : 1,
                   transition: 'all .15s',
                 }}
               >
