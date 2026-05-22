@@ -1267,6 +1267,188 @@ function NewQuestionEditorPanel({
   )
 }
 
+// ── Review step (wizard step 3) ───────────────────────────────────────────────
+
+function ReviewStep({
+  activeAsmt,
+  courseLabel,
+  distribution,
+  bloomsMetrics,
+  timeMetrics,
+  onBack,
+  onSaveAsDraft,
+  onSendToChair,
+}: {
+  activeAsmt: import('@/lib/qb-types').AssessmentDraft
+  courseLabel: string
+  distribution: { Easy: number; Medium: number; Hard: number }
+  bloomsMetrics: { level: string; count: number; pct: number }[]
+  timeMetrics: { totalMin: number; avgMin: number }
+  onBack: () => void
+  onSaveAsDraft: () => void
+  onSendToChair: () => void
+}) {
+  const totalQ  = distribution.Easy + distribution.Medium + distribution.Hard
+  const s       = activeAsmt.settings
+
+  const bars = [
+    { label: 'Easy',   count: distribution.Easy,   color: 'var(--qb-diff-bar-easy)'   },
+    { label: 'Medium', count: distribution.Medium, color: 'var(--qb-diff-bar-medium)' },
+    { label: 'Hard',   count: distribution.Hard,   color: 'var(--qb-diff-bar-hard)'   },
+  ]
+
+  return (
+    <div className="flex flex-col flex-1 overflow-auto">
+      <div className="flex-1 px-8 py-8 max-w-3xl mx-auto w-full flex flex-col gap-6">
+
+        {/* Summary card */}
+        <div className="rounded-xl border border-border bg-card p-6 flex flex-col gap-3">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2
+                className="text-2xl font-semibold text-foreground"
+                style={{ fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em' }}
+              >
+                {activeAsmt.title}
+              </h2>
+              <p className="text-sm text-muted-foreground mt-0.5">{courseLabel}</p>
+            </div>
+            <Badge
+              variant="secondary"
+              className="rounded text-xs shrink-0"
+              style={{
+                backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+                color: 'var(--brand-color)',
+              }}
+            >
+              {s.type}
+            </Badge>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+            {[
+              { label: 'Questions', value: String(totalQ) },
+              { label: 'Duration',  value: `${activeAsmt.durationMinutes} min` },
+              { label: 'Password',  value: s.passwordRequired ? 'Required' : 'None' },
+              { label: 'Randomize', value: s.randomize ? 'On' : 'Off' },
+            ].map(({ label, value }) => (
+              <div key={label}>
+                <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">{label}</p>
+                <p className="text-sm font-medium text-foreground mt-0.5">{value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Difficulty breakdown */}
+        {totalQ > 0 && (
+          <div className="rounded-xl border border-border bg-card p-5">
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-4">Difficulty distribution</p>
+            <div className="flex items-center gap-6">
+              {bars.map(bar => (
+                <div key={bar.label} className="flex items-center gap-2">
+                  <div
+                    className="h-2.5 rounded-full"
+                    style={{
+                      width: totalQ > 0 ? `${Math.round((bar.count / totalQ) * 120)}px` : '8px',
+                      minWidth: bar.count > 0 ? 8 : 0,
+                      backgroundColor: bar.color,
+                      opacity: bar.count === 0 ? 0.15 : 0.8,
+                    }}
+                  />
+                  <span className="text-xs text-muted-foreground shrink-0">{bar.label}</span>
+                  <span className="text-xs font-semibold text-foreground shrink-0 tabular-nums">{bar.count}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-3">
+              Estimated time: ~{Math.round(timeMetrics.totalMin)} min total
+              {timeMetrics.avgMin > 0 ? ` · ~${Math.round(timeMetrics.avgMin * 10) / 10} min per question` : ''}
+            </p>
+          </div>
+        )}
+
+        {/* Sections breakdown */}
+        {activeAsmt.sections.length > 0 && (
+          <div className="rounded-xl border border-border bg-card p-5">
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-3">Sections</p>
+            <div className="flex flex-col divide-y divide-border">
+              {activeAsmt.sections.map((section, idx) => (
+                <div key={section.id} className="flex items-center justify-between py-2.5">
+                  <p className="text-sm text-foreground">
+                    <span className="text-muted-foreground mr-2">{idx + 1}.</span>
+                    {section.title}
+                  </p>
+                  <Badge variant="secondary" className="rounded text-xs">
+                    {section.questionIds.length} Q
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Blooms */}
+        {bloomsMetrics.length > 0 && (
+          <div className="rounded-xl border border-border bg-card p-5">
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-3">
+              Bloom&apos;s taxonomy coverage
+            </p>
+            <div className="flex flex-col gap-2">
+              {bloomsMetrics.map(b => (
+                <div key={b.level} className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground w-20 shrink-0">{b.level}</span>
+                  <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
+                    <div
+                      className="h-2 rounded-full"
+                      style={{
+                        width: `${b.pct}%`,
+                        backgroundColor: 'var(--brand-color)',
+                        opacity: 0.7,
+                        transition: 'width .3s',
+                      }}
+                    />
+                  </div>
+                  <span className="text-xs text-foreground font-medium tabular-nums w-8 text-right">{b.pct}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {totalQ === 0 && (
+          <div className="rounded-xl border border-dashed border-border p-8 text-center">
+            <i className="fa-light fa-clipboard-list text-muted-foreground text-2xl mb-3 block" aria-hidden="true" />
+            <p className="text-sm text-muted-foreground">No questions selected yet. Go back to Build to add questions.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div
+        className="flex items-center justify-between px-8 py-4 shrink-0"
+        style={{ borderTop: '1px solid var(--border)', background: 'var(--card)' }}
+      >
+        <Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5">
+          <i className="fa-light fa-arrow-left" aria-hidden="true" />
+          Back to Build
+        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={onSaveAsDraft} className="gap-1.5">
+            <i className="fa-light fa-floppy-disk" aria-hidden="true" />
+            Save as draft
+          </Button>
+          <Button size="sm" onClick={onSendToChair} className="gap-1.5">
+            <i className="fa-light fa-paper-plane" aria-hidden="true" />
+            Send to chair
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Selected questions outline (Step 2 left panel) ───────────────────────────
 
 function SelectedQuestionsOutline({
