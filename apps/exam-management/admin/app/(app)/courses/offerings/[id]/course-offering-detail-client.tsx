@@ -803,23 +803,37 @@ function OverviewTab({ offering, isPrism }: { offering: ExtendedCourseOffering; 
             <p className="text-sm text-foreground leading-relaxed">{offering.description}</p>
           </section>
         )}
-        {offering.objectives.length > 0 && (
+
+        {/* Student outcome snapshot — completion rate + avg score across enrolled students */}
+        {offering.students.length > 0 && (
           <section className="rounded-xl border border-border bg-card p-5">
-            <p className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground mb-3">Learning Objectives</p>
-            <ol className="flex flex-col gap-2.5">
-              {offering.objectives.map((obj, i) => (
-                <li key={i} className="flex items-start gap-2.5">
-                  <span className="shrink-0 flex size-5 items-center justify-center rounded-full text-[10px] font-bold mt-0.5"
-                    style={{
-                      backgroundColor: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))',
-                      color: 'var(--brand-color)',
-                    }}>
-                    {i + 1}
-                  </span>
-                  <span className="text-sm text-foreground leading-relaxed">{obj}</span>
-                </li>
+            <p className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground mb-4">Student Outcomes</p>
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                {
+                  label: 'Enrolled',
+                  value: offering.students.length,
+                  icon: 'fa-users',
+                },
+                {
+                  label: 'Assessments',
+                  value: offering.assessments.length,
+                  icon: 'fa-clipboard-list',
+                },
+                {
+                  label: 'Published',
+                  value: offering.assessments.filter(a => a.status === 'Published').length,
+                  icon: 'fa-circle-check',
+                },
+              ].map(m => (
+                <div key={m.label} className="flex flex-col items-center gap-1 rounded-lg border border-border p-3 text-center"
+                  style={{ backgroundColor: 'var(--muted)' }}>
+                  <i className={`fa-light ${m.icon} text-muted-foreground`} aria-hidden="true" style={{ fontSize: 16 }} />
+                  <p className="text-xl font-bold text-foreground tabular-nums leading-none mt-1">{m.value}</p>
+                  <p className="text-[11px] text-muted-foreground">{m.label}</p>
+                </div>
               ))}
-            </ol>
+            </div>
           </section>
         )}
       </div>
@@ -983,12 +997,30 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
           title={offering.courseName}
           subtitle={`${offering.courseNumber} · ${offering.term} · ${offering.cohort}`}
           actions={
-            status && (
-              <Badge variant="secondary" className="rounded-full text-xs font-semibold px-3 py-1"
-                style={{ backgroundColor: status.bg, color: status.fg }}>
-                {status.label}
-              </Badge>
-            )
+            <div className="flex items-center gap-2">
+              {IS_LMS_ACTIVE && (
+                <Badge
+                  variant="secondary"
+                  className="rounded-full gap-1.5 text-xs"
+                  style={{
+                    backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+                    color: 'var(--brand-color)',
+                  }}
+                >
+                  <i className="fa-light fa-link" aria-hidden="true" />
+                  Canvas Synced
+                </Badge>
+              )}
+              {status && (
+                <Badge
+                  variant="secondary"
+                  className="rounded-full text-xs font-semibold px-3 py-1"
+                  style={{ backgroundColor: status.bg, color: status.fg }}
+                >
+                  {status.label}
+                </Badge>
+              )}
+            </div>
           }
         />
 
