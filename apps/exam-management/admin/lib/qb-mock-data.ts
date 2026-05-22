@@ -563,3 +563,55 @@ export const mockAssessments: Assessment[] = [
   { id: 'asmt-006', courseId: 'course-biol201', offeringId: 'offering-biol201-sp25', title: 'Midterm — Spring 2025',         questionCount: 35, diffDistribution: { Easy: 10, Medium: 18, Hard: 7  }, durationMinutes: 75  },
   { id: 'asmt-007', courseId: 'course-biol201', offeringId: 'offering-biol201-sp25', title: 'Lab Practical — Spring 2025',   questionCount: 25, diffDistribution: { Easy: 5,  Medium: 12, Hard: 8  }, durationMinutes: 45  },
 ]
+
+// ─── Health flag helpers ──────────────────────────────────────────────────────
+
+export const MOCK_POOR_PBIS_QUESTION_IDS = new Set([
+  // Seeded IDs that simulate questions with low point-biserial
+  'phar101-q006', 'phar101-q014', 'biol201-q003',
+])
+
+export const MOCK_MISSING_RATIONALE_QUESTION_IDS = new Set([
+  'phar101-q008', 'phar101-q012', 'phar101-q019',
+])
+
+/** Returns health flags for a given set of selected question IDs */
+export function computeHealthFlags(questionIds: string[]): import('./qb-types').QuestionHealthFlag[] {
+  const flags: import('./qb-types').QuestionHealthFlag[] = []
+  for (const qId of questionIds) {
+    if (MOCK_MISSING_RATIONALE_QUESTION_IDS.has(qId)) {
+      flags.push({ type: 'missing-rationale', questionId: qId })
+    }
+    if (MOCK_POOR_PBIS_QUESTION_IDS.has(qId)) {
+      const q = MOCK_QB_QUESTIONS.find(q => q.id === qId)
+      flags.push({ type: 'poor-pbis', questionId: qId, pbis: q?.pbis ?? 0.08 })
+    }
+  }
+  return flags
+}
+
+// Mock previous-term assessments for "copy from previous" modal
+// (these already exist — add pbisWarning field)
+export const MOCK_COPY_SOURCES = [
+  {
+    id: 'asmt-004',
+    courseId: 'course-phar101',
+    title: 'Midterm 1 — Spring 2025',
+    questionCount: 42,
+    durationMinutes: 90,
+    poorPbisCount: 3,    // used to show warning in copy modal
+    sections: [
+      { id: 'sec-sp25-1', title: "Dr. Mehra's Section", questionIds: [] },
+      { id: 'sec-sp25-2', title: "Dr. Purani's Section", questionIds: [] },
+    ],
+  },
+  {
+    id: 'asmt-005',
+    courseId: 'course-phar101',
+    title: 'Final Exam — Spring 2025',
+    questionCount: 58,
+    durationMinutes: 150,
+    poorPbisCount: 0,
+    sections: [],
+  },
+]

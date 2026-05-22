@@ -89,22 +89,55 @@ export interface AssessmentQuestion {
   order: number
 }
 
-export type AssessmentType = 'Exam' | 'Quiz' | 'Assignment'
+export type AssessmentType = 'Exam' | 'Quiz' | 'Pop Quiz' | 'Assignment'
+
+export type AssessmentStatus =
+  | 'draft'
+  | 'pending-review'
+  | 'changes-requested'
+  | 'approved'
+  | 'scheduled'
+  | 'live'
+  | 'completed'
+
+export interface AssessmentReviewRequest {
+  reviewerId: string    // persona ID
+  message: string
+  dueDate: string | null  // ISO date string
+  sentAt: string          // ISO timestamp
+}
 
 export interface AssessmentSettings {
   type: AssessmentType
   passwordRequired: boolean
   password: string
   randomize: boolean
+  randomizeOptions: boolean      // NEW: randomize option order within each question
   showRationaleAfter: boolean
+  // Scheduling
+  openDate: string | null        // ISO datetime
+  closeDate: string | null       // ISO datetime
+  downloadWindowHours: number    // hours before openDate students can pre-download
+  timezone: string               // e.g. "America/New_York"
+  // Pre-exam
+  instructionsText: string
+  requireAcknowledgment: boolean
+  // Workflow
+  status: AssessmentStatus
+  reviewRequest: AssessmentReviewRequest | null
 }
 
 export interface AssessmentSection {
   id: string
   title: string
-  facultyId?: string       // optional faculty assignment (persona ID)
-  questionIds: string[]    // ordered list of question IDs in this section
+  facultyId?: string
+  prereadText?: string            // NEW: case-study preread block
+  questionIds: string[]
 }
+
+export type QuestionHealthFlag =
+  | { type: 'missing-rationale'; questionId: string }
+  | { type: 'poor-pbis'; questionId: string; pbis: number }
 
 export interface AssessmentDraft {
   id: string
@@ -113,8 +146,29 @@ export interface AssessmentDraft {
   offeringId: string
   questions: AssessmentQuestion[]
   durationMinutes: number
-  sections: AssessmentSection[]        // empty array = no sections
+  sections: AssessmentSection[]
   settings: AssessmentSettings
+  healthFlags: QuestionHealthFlag[]   // NEW: computed flags surfaced in Step 2 + Step 3
+}
+
+/** Convenience factory for default settings */
+export function defaultAssessmentSettings(type: AssessmentType = 'Exam'): AssessmentSettings {
+  return {
+    type,
+    passwordRequired: false,
+    password: '',
+    randomize: false,
+    randomizeOptions: false,
+    showRationaleAfter: true,
+    openDate: null,
+    closeDate: null,
+    downloadWindowHours: 24,
+    timezone: 'America/New_York',
+    instructionsText: '',
+    requireAcknowledgment: false,
+    status: 'draft',
+    reviewRequest: null,
+  }
 }
 
 export interface SmartView {
