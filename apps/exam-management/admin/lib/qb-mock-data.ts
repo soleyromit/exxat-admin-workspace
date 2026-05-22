@@ -557,4 +557,9 @@ export const mockAssessments: Assessment[] = [
   { id: 'asmt-001', courseId: 'course-phar101', offeringId: 'offering-phar101-f25', title: 'Midterm Exam',  questionCount: 40, diffDistribution: { Easy: 10, Medium: 20, Hard: 10 }, durationMinutes: 90  },
   { id: 'asmt-002', courseId: 'course-phar101', offeringId: 'offering-phar101-f25', title: 'Final Exam',   questionCount: 60, diffDistribution: { Easy: 15, Medium: 25, Hard: 20 }, durationMinutes: 150 },
   { id: 'asmt-003', courseId: 'course-biol201', offeringId: 'offering-biol201-f25', title: 'Unit 1 Quiz',  questionCount: 20, diffDistribution: { Easy: 8,  Medium: 8,  Hard: 4  }, durationMinutes: 30  },
+  // Previous-term assessments (Spring 2025) — used as copy sources in the Create Assessment modal
+  { id: 'asmt-004', courseId: 'course-phar101', offeringId: 'offering-phar101-sp25', title: 'Midterm 1 — Spring 2025',      questionCount: 42, diffDistribution: { Easy: 12, Medium: 22, Hard: 8  }, durationMinutes: 90  },
+  { id: 'asmt-005', courseId: 'course-phar101', offeringId: 'offering-phar101-sp25', title: 'Final Exam — Spring 2025',      questionCount: 58, diffDistribution: { Easy: 14, Medium: 26, Hard: 18 }, durationMinutes: 150 },
+  { id: 'asmt-006', courseId: 'course-biol201', offeringId: 'offering-biol201-sp25', title: 'Midterm — Spring 2025',         questionCount: 35, diffDistribution: { Easy: 10, Medium: 18, Hard: 7  }, durationMinutes: 75  },
+  { id: 'asmt-007', courseId: 'course-biol201', offeringId: 'offering-biol201-sp25', title: 'Lab Practical — Spring 2025',   questionCount: 25, diffDistribution: { Easy: 5,  Medium: 12, Hard: 8  }, durationMinutes: 45  },
 ]
