@@ -27,7 +27,7 @@ import Link from 'next/link'
 /* Group order + display labels for the status column. Drives DataTable's
    group-row dividers when defaultGroupBy="status". Aarti's directive: active
    buckets first, closed at the bottom. */
-const GROUP_ORDER: SurveyStatus[] = ['pending_review', 'collecting', 'active', 'draft', 'released', 'closed']
+const GROUP_ORDER: SurveyStatus[] = ['pending_review', 'collecting', 'active', 'scheduled', 'draft', 'released', 'closed']
 const GROUP_LABELS: Record<SurveyStatus, string> = {
   pending_review: 'Needs Action',
   collecting:     'Collecting',

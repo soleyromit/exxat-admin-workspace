@@ -408,22 +408,23 @@ export default function RunEvaluationPage() {
                               ● Ready
                             </span>
                           ) : (
-                            <button
-                              type="button"
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="rounded-full h-auto shrink-0"
+                              style={{
+                                padding: '4px 10px',
+                                fontSize: 12,
+                                background: 'color-mix(in oklch, var(--chart-4) 15%, var(--background))',
+                                color: 'var(--chart-4)',
+                              }}
                               onClick={() => {
                                 setFixOffering(offering)
                                 setFixTab('faculty')
                               }}
-                              className="text-xs font-medium rounded-full shrink-0 cursor-pointer"
-                              style={{
-                                padding: '4px 10px',
-                                background: 'color-mix(in oklch, var(--chart-4) 15%, var(--background))',
-                                color: 'var(--chart-4)',
-                                border: 'none',
-                              }}
                             >
                               ⚠ Fix →
-                            </button>
+                            </Button>
                           )}
                         </div>
                       )
