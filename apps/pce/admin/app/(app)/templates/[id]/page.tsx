@@ -8,6 +8,11 @@ import {
   Badge,
   Separator,
   SidebarTrigger,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
   Textarea,
   DropdownMenu,
   DropdownMenuTrigger,
@@ -211,130 +216,100 @@ export default function TemplateEditorPage() {
 
       <div className="flex flex-1 overflow-hidden">
         <aside
-          className="flex flex-col gap-1 border-r border-border shrink-0 overflow-y-auto"
-          style={{ width: 192, padding: '16px 10px', background: 'var(--muted)' }}
+          className="flex flex-col border-r border-border shrink-0 overflow-y-auto"
+          style={{ width: 200, background: 'var(--sidebar)' }}
         >
-          <p
-            className="text-xs font-medium"
-            style={{ color: 'var(--muted-foreground)', marginBottom: 6, paddingInline: 6 }}
-          >
-            Sections
-          </p>
+          <SidebarGroup>
+            <SidebarGroupLabel>Sections</SidebarGroupLabel>
+            <SidebarMenu>
+              {sections.length === 0 && (
+                <p className="px-2 py-1 text-xs text-muted-foreground">No sections yet</p>
+              )}
 
-          {sections.length === 0 && (
-            <p
-              className="text-xs px-2 py-1"
-              style={{ color: 'var(--muted-foreground)' }}
-            >
-              No sections yet
-            </p>
-          )}
+              {sections.map((sec, index) => {
+                const count = sec.questions.length
+                const isActive = sec.id === activeSectionId
+                const canRemove = count === 0
+                const subjectMeta = MOCK_SUBJECTS.find(s => s.key === sec.subjectKey)
 
-          {sections.map((sec, index) => {
-            const count = sec.questions.length
-            const isActive = sec.id === activeSectionId
-            const canRemove = count === 0
-            const subjectMeta = MOCK_SUBJECTS.find(s => s.key === sec.subjectKey)
-
-            return (
-              <div
-                key={sec.id}
-                className="flex items-center group"
-                draggable
-                onDragStart={() => handleSectionDragStart(index)}
-                onDragOver={(e) => handleSectionDragOver(e, index)}
-                onDragEnd={handleSectionDragEnd}
-                style={{ cursor: 'grab' }}
-              >
-                {/* Drag handle */}
-                <div
-                  className="flex items-center shrink-0 pl-1"
-                  style={{ color: 'var(--muted-foreground)' }}
-                >
-                  <DragHandleGripIcon className="opacity-30 group-hover:opacity-60 transition-opacity" />
-                </div>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => { setActiveSectionId(sec.id); closeCard() }}
-                  className="flex flex-col items-start justify-center text-left flex-1 h-auto gap-0.5"
-                  style={isActive
-                    ? { background: 'var(--background)', color: 'var(--foreground)', fontWeight: 600, padding: '6px 8px' }
-                    : { color: count === 0 ? 'var(--muted-foreground)' : 'var(--foreground)', padding: '6px 8px' }
-                  }
-                >
-                  <div className="flex items-center justify-between w-full gap-1">
-                    <span className="text-xs leading-tight truncate">{sec.title}</span>
-                    <span
-                      className="text-xs tabular-nums shrink-0"
-                      style={{ color: 'var(--muted-foreground)' }}
+                return (
+                  <SidebarMenuItem key={sec.id}>
+                    <div
+                      className="flex items-center gap-1 group/sec"
+                      draggable
+                      onDragStart={() => handleSectionDragStart(index)}
+                      onDragOver={(e) => handleSectionDragOver(e, index)}
+                      onDragEnd={handleSectionDragEnd}
+                      style={{ cursor: 'grab' }}
                     >
-                      {count}
-                    </span>
-                  </div>
-                  {subjectMeta && (
-                    <span
-                      className="text-xs leading-none"
-                      style={{ color: 'var(--muted-foreground)' }}
-                    >
-                      {subjectMeta.label}
-                    </span>
-                  )}
-                </Button>
-
-                {/* Remove section button — only shown when section has 0 questions */}
-                {canRemove ? (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={`Remove ${sec.title} section`}
-                        className="shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
-                        style={{ width: 20, height: 20 }}
-                        onClick={() => {
-                          removeTemplateSection(t.id, sec.id)
-                          if (activeSectionId === sec.id) {
-                            const next = sections.find(s => s.id !== sec.id)
-                            setActiveSectionId(next?.id ?? null)
-                          }
-                        }}
+                      <div className="shrink-0 pl-1 opacity-20 group-hover/sec:opacity-50 transition-opacity text-muted-foreground">
+                        <DragHandleGripIcon />
+                      </div>
+                      <SidebarMenuButton
+                        isActive={isActive}
+                        size="sm"
+                        onClick={() => { setActiveSectionId(sec.id); closeCard() }}
+                        className="flex-col items-start h-auto gap-0 py-1.5"
                       >
-                        <i className="fa-light fa-xmark text-xs" aria-hidden="true" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">Remove section</TooltipContent>
-                  </Tooltip>
-                ) : (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span
-                        className="shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100 flex items-center justify-center"
-                        style={{ width: 20, height: 20, cursor: 'default' }}
-                        tabIndex={0}
-                      >
-                        <i className="fa-light fa-xmark text-xs" aria-hidden="true" style={{ color: 'var(--muted-foreground)', opacity: 0.4 }} />
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">Remove all questions first</TooltipContent>
-                  </Tooltip>
-                )}
-              </div>
-            )
-          })}
+                        <div className="flex items-center justify-between w-full gap-1">
+                          <span className="text-xs leading-tight truncate">{sec.title}</span>
+                          <span className="text-xs tabular-nums shrink-0 text-muted-foreground">{count}</span>
+                        </div>
+                        {subjectMeta && (
+                          <span className="text-[11px] leading-none text-muted-foreground truncate w-full">
+                            {subjectMeta.label}
+                          </span>
+                        )}
+                      </SidebarMenuButton>
+                      {canRemove ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label={`Remove ${sec.title} section`}
+                              className="shrink-0 opacity-0 group-hover/sec:opacity-100 focus:opacity-100"
+                              style={{ width: 20, height: 20 }}
+                              onClick={() => {
+                                removeTemplateSection(t.id, sec.id)
+                                if (activeSectionId === sec.id) {
+                                  const next = sections.find(s => s.id !== sec.id)
+                                  setActiveSectionId(next?.id ?? null)
+                                }
+                              }}
+                            >
+                              <i className="fa-light fa-xmark text-xs" aria-hidden="true" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right">Remove section</TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span
+                              className="shrink-0 opacity-0 group-hover/sec:opacity-40 flex items-center justify-center cursor-default"
+                              style={{ width: 20, height: 20 }}
+                              tabIndex={0}
+                            >
+                              <i className="fa-light fa-xmark text-xs text-muted-foreground" aria-hidden="true" />
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="right">Remove all questions first</TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
+                  </SidebarMenuItem>
+                )
+              })}
 
-          {/* Add section button — opens SubjectPickerSheet */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start mt-1 text-xs"
-            style={{ color: 'var(--muted-foreground)' }}
-            onClick={() => setPickerOpen(true)}
-          >
-            <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-            Add section
-          </Button>
+              <SidebarMenuItem>
+                <SidebarMenuButton size="sm" onClick={() => setPickerOpen(true)}>
+                  <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                  Add section
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroup>
         </aside>
 
         <main className="flex flex-col flex-1 overflow-y-auto" style={{ padding: '20px 28px 32px' }}>
