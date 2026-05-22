@@ -127,20 +127,17 @@ export default function ModerationPage() {
               ).length
 
               return (
-                <button
+                <Button
                   key={survey.id}
-                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="w-full h-auto text-left justify-start"
                   onClick={() => setSelectedSurveyId(survey.id)}
-                  className="w-full text-left"
+                  aria-label={`Review ${survey.courseCode}`}
                   style={{
                     padding: '10px 14px',
                     background: isSelected ? 'var(--brand-tint)' : 'transparent',
                     borderBottom: '1px solid var(--border)',
-                    cursor: 'pointer',
-                    border: 'none',
-                    borderBottomColor: 'var(--border)',
-                    borderBottomWidth: 1,
-                    borderBottomStyle: 'solid',
                   }}
                 >
                   <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
@@ -165,7 +162,7 @@ export default function ModerationPage() {
                   >
                     {count} open-text {count === 1 ? 'response' : 'responses'}
                   </p>
-                </button>
+                </Button>
               )
             })
           )}
