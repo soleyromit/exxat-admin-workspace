@@ -507,6 +507,7 @@ export default function AssessmentBuilderClient() {
                 onEditQuestion={id => setEditingQuestionId(prev => prev === id ? null : id)}
                 editingQuestionId={editingQuestionId}
                 onUpdateSection={updateSection}
+                onAddSection={addSection}
               />
               {editingQuestionId && (() => {
                 const q = MOCK_QB_QUESTIONS.find(q => q.id === editingQuestionId)
@@ -550,6 +551,7 @@ export default function AssessmentBuilderClient() {
                     onEditQuestion={id => setEditingQuestionId(prev => prev === id ? null : id)}
                     editingQuestionId={editingQuestionId}
                     onUpdateSection={updateSection}
+                    onAddSection={addSection}
                   />
                 </div>
                 <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexShrink: 0, background: 'var(--card)' }}>

@@ -15,9 +15,12 @@ interface Props {
   onEditQuestion: (questionId: string) => void
   editingQuestionId: string | null
   onUpdateSection: (sectionId: string, patch: Partial<AssessmentSection>) => void
+  onAddSection?: (title: string) => void
 }
 
-export function SectionsOutline({ activeAsmt, selectedIds, questions, onRemove, onEditQuestion, editingQuestionId, onUpdateSection }: Props) {
+export function SectionsOutline({ activeAsmt, selectedIds, questions, onRemove, onEditQuestion, editingQuestionId, onUpdateSection, onAddSection }: Props) {
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [newTitle, setNewTitle] = useState('')
   const qById = Object.fromEntries(questions.map(q => [q.id, q]))
 
   // Build section → question mapping
@@ -29,6 +32,14 @@ export function SectionsOutline({ activeAsmt, selectedIds, questions, onRemove, 
   const totalFlags = activeAsmt.questions.filter(aq =>
     MOCK_MISSING_RATIONALE_QUESTION_IDS.has(aq.questionId)
   ).length
+
+  function handleAddSection() {
+    const trimmed = newTitle.trim()
+    if (!trimmed) return
+    onAddSection?.(trimmed)
+    setNewTitle('')
+    setShowAddForm(false)
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
@@ -45,6 +56,49 @@ export function SectionsOutline({ activeAsmt, selectedIds, questions, onRemove, 
 
       {/* Scrollable list */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+        {/* Inline add-section form */}
+        {onAddSection && (
+          <div style={{ padding: '6px 12px', borderBottom: '1px solid var(--border)' }}>
+            {showAddForm ? (
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  value={newTitle}
+                  onChange={e => setNewTitle(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') handleAddSection()
+                    if (e.key === 'Escape') { setShowAddForm(false); setNewTitle('') }
+                  }}
+                  placeholder="Section title…"
+                  autoFocus
+                  style={{
+                    flex: 1, fontSize: 12, padding: '4px 8px', borderRadius: 'var(--radius)',
+                    border: '1px solid var(--border-control-35)', background: 'var(--background)',
+                    color: 'var(--foreground)', outline: 'none', fontFamily: 'inherit',
+                  }}
+                  aria-label="New section title"
+                />
+                <Button size="sm" onClick={handleAddSection} className="h-6 px-2 text-xs">
+                  Add
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => { setShowAddForm(false); setNewTitle('') }} className="h-6 px-2 text-xs">
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowAddForm(true)}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}
+              >
+                <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 10 }} />
+                Add section
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Sections */}
         {activeAsmt.sections.map(section => (
           <SectionGroup
