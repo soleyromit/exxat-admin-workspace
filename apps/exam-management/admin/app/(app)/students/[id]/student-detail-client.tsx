@@ -531,8 +531,6 @@ function CoursesTab({ student, onEnrolled }: { student: ExtendedStudent; onEnrol
             </Button>
           </div>
         ) : (
-          {/* Tabs root controls which TabsContent is visible; nav is custom to avoid
-              DS TabsTrigger's h-[calc(100%-1px)] flex-1 expanding in vertical mode */}
           <Tabs
             orientation="vertical"
             value={activeTerm}
