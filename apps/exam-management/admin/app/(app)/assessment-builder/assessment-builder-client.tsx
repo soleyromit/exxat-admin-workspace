@@ -1323,7 +1323,7 @@ function DetailsStep({
         >
           <span style={{
             position: 'absolute', top: 2, left: checked ? 18 : 2,
-            width: 16, height: 16, borderRadius: '50%', backgroundColor: 'white',
+            width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)',
             transition: 'left .15s', display: 'block',
           }} />
         </button>
@@ -1707,7 +1707,7 @@ function AssessmentSettingsSheet({
                   position: 'absolute', top: 2,
                   left: local.passwordRequired ? 18 : 2,
                   width: 16, height: 16, borderRadius: '50%',
-                  backgroundColor: 'white',
+                  backgroundColor: 'var(--background)',
                   transition: 'left .15s',
                   display: 'block',
                 }} />
@@ -1752,7 +1752,7 @@ function AssessmentSettingsSheet({
                 position: 'absolute', top: 2,
                 left: local.randomize ? 18 : 2,
                 width: 16, height: 16, borderRadius: '50%',
-                backgroundColor: 'white',
+                backgroundColor: 'var(--background)',
                 transition: 'left .15s',
                 display: 'block',
               }} />
@@ -1783,7 +1783,7 @@ function AssessmentSettingsSheet({
                 position: 'absolute', top: 2,
                 left: local.showRationaleAfter ? 18 : 2,
                 width: 16, height: 16, borderRadius: '50%',
-                backgroundColor: 'white',
+                backgroundColor: 'var(--background)',
                 transition: 'left .15s',
                 display: 'block',
               }} />
