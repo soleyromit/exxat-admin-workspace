@@ -542,21 +542,27 @@ function CoursesTab({ student, onEnrolled }: { student: ExtendedStudent; onEnrol
             </Button>
           </div>
         ) : (
-          <Tabs value={activeTerm} onValueChange={setActiveTerm} className="flex flex-col flex-1 min-h-0">
-            <div className="border-b border-border px-4 shrink-0">
-              <TabsList variant="line">
-                {sortedTerms.map(term => (
-                  <TabsTrigger key={term} value={term}>
-                    {term}
-                    <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
-                      {byTerm[term].length}
-                    </Badge>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </div>
+          <Tabs
+            orientation="vertical"
+            value={activeTerm}
+            onValueChange={setActiveTerm}
+            className="flex flex-1 min-h-0"
+          >
+            <TabsList
+              variant="line"
+              className="w-40 shrink-0 flex-col items-start border-r border-border px-2 py-3 gap-0.5"
+            >
+              {sortedTerms.map(term => (
+                <TabsTrigger key={term} value={term} className="w-full justify-between px-3 py-2">
+                  <span className="text-sm">{term}</span>
+                  <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                    {byTerm[term].length}
+                  </Badge>
+                </TabsTrigger>
+              ))}
+            </TabsList>
             {sortedTerms.map(term => (
-              <TabsContent key={term} value={term} className="m-0 flex-1 min-h-0">
+              <TabsContent key={term} value={term} className="m-0 flex-1 min-h-0 overflow-auto">
                 <DataTable<CourseEnrollmentRow>
                   data={byTerm[term]}
                   columns={COURSE_COLUMNS}
