@@ -23,7 +23,7 @@ import {
   Button, Badge, Input, Textarea, Label,
   Card, CardHeader, CardDescription, CardContent,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  RadioGroup, RadioGroupItem, Checkbox,
+  Checkbox,
   Tooltip, TooltipTrigger, TooltipContent,
   LocalBanner,
 } from '@exxat/ds/packages/ui/src'
@@ -34,6 +34,7 @@ import {
   QUESTION_TYPES, defaultPayload, validateDraft,
 } from '@/lib/question-editor-types'
 import type { CourseObjective } from '@/lib/faculty-mock-data'
+import { MOCK_STANDARDS, groupedStandards, type Standard } from '@/lib/mock-standards'
 
 // ─── Public props ──────────────────────────────────────────────────────────
 
@@ -138,14 +139,14 @@ export function QuestionEditor({
       {!compact && (
         <header className="flex items-center justify-between gap-3 px-6 py-3 border-b border-border bg-card shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <Badge variant="secondary" className="rounded font-mono text-[10px]" suppressHydrationWarning>{draft.code}</Badge>
+            <Badge variant="secondary" className="rounded font-mono text-xs" suppressHydrationWarning>{draft.code}</Badge>
             <h1 className="text-sm font-semibold text-foreground truncate">
               {draft.stem.trim() ? draft.stem.trim().slice(0, 80) : 'New question'}
             </h1>
             <StateBadge state={draft.state} />
             {draft.aiOriginated && (
-              <Badge variant="secondary" className="rounded text-[10px] gap-1">
-                <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" style={{ fontSize: 9 }} />
+              <Badge variant="secondary" className="rounded text-xs gap-1">
+                <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" />
                 AI draft
               </Badge>
             )}
@@ -179,7 +180,7 @@ export function QuestionEditor({
           <div className="flex flex-col gap-5">
             {/* Type picker */}
             <section className="rounded-xl border border-border bg-card p-4">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+              <h2 className="text-xs font-semibold text-muted-foreground mb-3">
                 Question type
               </h2>
               <TypePickerGrid value={draft.type} onChange={setType} />
@@ -188,7 +189,7 @@ export function QuestionEditor({
             {/* Stem editor */}
             <section className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center justify-between mb-2">
-                <Label htmlFor="stem" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                <Label htmlFor="stem" className="text-xs font-semibold text-muted-foreground">
                   Question stem <span className="text-destructive">*</span>
                 </Label>
                 <Tooltip>
@@ -200,7 +201,7 @@ export function QuestionEditor({
                       disabled={aiThinking || !draft.stem.trim()}
                       className="text-xs gap-1.5 h-7"
                     >
-                      <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" style={{ fontSize: 11 }} />
+                      <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" style={{ fontSize: 14 }} />
                       Tighten with AI
                     </Button>
                   </TooltipTrigger>
@@ -220,7 +221,7 @@ export function QuestionEditor({
                   body={
                     <div className="flex flex-col gap-2">
                       <p className="text-xs line-clamp-3 text-muted-foreground italic">{aiSuggestion.before || '—'}</p>
-                      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold text-muted-foreground">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                         <i className="fa-light fa-arrow-down" aria-hidden="true" />
                         After
                       </div>
@@ -237,7 +238,7 @@ export function QuestionEditor({
             {/* Type-specific control */}
             <section className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                <h2 className="text-xs font-semibold text-muted-foreground">
                   Answer
                 </h2>
                 {(draft.payload.type === 'mcq' || draft.payload.type === 'multi-select') && (
@@ -248,7 +249,7 @@ export function QuestionEditor({
                     disabled={aiThinking || !draft.stem.trim()}
                     className="text-xs gap-1.5 h-7"
                   >
-                    <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" style={{ fontSize: 11 }} />
+                    <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" style={{ fontSize: 14 }} />
                     Suggest distractors
                   </Button>
                 )}
@@ -265,8 +266,8 @@ export function QuestionEditor({
             {/* Question-level explanation — only for types without per-option rationale */}
             {draft.payload.type !== 'mcq' && draft.payload.type !== 'multi-select' && draft.payload.type !== 'true-false' && (
               <section className="rounded-xl border border-border bg-card p-4">
-                <Label htmlFor="explanation" className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 block">
-                  Rationale <span className="font-normal text-muted-foreground normal-case tracking-normal text-[11px]">— shown to students during review session</span>
+                <Label htmlFor="explanation" className="text-xs font-semibold text-muted-foreground mb-2 block">
+                  Rationale <span className="font-normal text-muted-foreground normal-case tracking-normal text-xs">— shown to students during review session</span>
                 </Label>
                 <Textarea
                   id="explanation"
@@ -336,15 +337,16 @@ function TypePickerGrid({ value, onChange }: { value: EditorQType; onChange: (t:
             title={t.shortDescription}
             className="gap-1.5 h-7 px-2.5 text-xs rounded-full"
             style={{
-              border: `1px solid ${active ? 'color-mix(in oklch, var(--brand-color) 55%, transparent)' : 'var(--border)'}`,
-              background: active ? 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' : 'transparent',
+              border: '1px solid var(--border)',
+              background: active ? 'var(--muted)' : 'transparent',
               fontWeight: active ? 600 : 400,
+              color: active ? 'var(--foreground)' : 'var(--muted-foreground)',
             }}
           >
             <i
               className={`fa-light ${t.icon}`}
               aria-hidden="true"
-              style={{ fontSize: 11, color: active ? 'var(--brand-color)' : 'var(--muted-foreground)' }}
+              style={{ color: active ? 'var(--foreground)' : 'var(--muted-foreground)' }}
             />
             {t.label}
           </Button>
@@ -373,8 +375,8 @@ function KTypeControls({ payload, onChange }: {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Statements</p>
-        <p className="text-[11px] text-muted-foreground mb-3">Mark each statement as True or False. The correct combination key is the one whose selected pattern matches.</p>
+        <p className="text-xs font-semibold text-muted-foreground mb-2">Statements</p>
+        <p className="text-xs text-muted-foreground mb-3">Mark each statement as True or False. The correct combination key is the one whose selected pattern matches.</p>
         {payload.statements.map((stmt, idx) => (
           <div key={stmt.id} className="flex items-start gap-2 mb-2">
             <span className="text-xs font-mono text-muted-foreground mt-2 w-4 shrink-0">{String.fromCharCode(65 + idx)}.</span>
@@ -417,8 +419,8 @@ function KTypeControls({ payload, onChange }: {
       </div>
 
       <div>
-        <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Combination keys</p>
-        <p className="text-[11px] text-muted-foreground mb-3">Define what each answer key (A, B, C, D) means — which statements are true in that combination. Mark the correct key.</p>
+        <p className="text-xs font-semibold text-muted-foreground mb-2">Combination keys</p>
+        <p className="text-xs text-muted-foreground mb-3">Define what each answer key (A, B, C, D) means — which statements are true in that combination. Mark the correct key.</p>
         {payload.combinationKeys.map((key) => (
           <div key={key.id} className="flex items-center gap-2 mb-2">
             <Button
@@ -521,17 +523,13 @@ function McqControls({
   }
 
   const cardStyle = (correct: boolean): React.CSSProperties => ({
-    borderColor: correct
-      ? 'color-mix(in oklch, var(--brand-color) 50%, transparent)'
-      : 'var(--border)',
-    background: correct
-      ? 'color-mix(in oklch, var(--brand-color) 5%, var(--background))'
-      : 'var(--card)',
+    borderColor: correct ? 'var(--chart-2)' : 'var(--border)',
+    background: 'var(--card)',
   })
 
   return (
     <div className="flex flex-col gap-2.5">
-      <p className="text-[11px] text-muted-foreground -mt-1">
+      <p className="text-xs text-muted-foreground -mt-1">
         {isMulti ? 'Mark all correct answers — students can earn partial credit.' : 'Mark exactly one correct answer.'}
       </p>
 
@@ -549,12 +547,12 @@ function McqControls({
                     onCheckedChange={c => setOption(i, { correct: !!c })}
                     aria-label={`Mark option ${letter} correct`}
                   />
-                  <span className="font-mono text-xs font-bold w-4 shrink-0 text-center" style={{ color: opt.correct ? 'var(--brand-color)' : 'var(--muted-foreground)' }}>{letter}</span>
+                  <span className="font-mono text-xs font-bold w-4 shrink-0 text-center text-muted-foreground">{letter}</span>
                   <Input type="text" value={opt.text} onChange={e => setOption(i, { text: e.target.value })} placeholder={`Option ${letter}`} className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 h-8 px-1" />
-                  {opt.correct && <Badge variant="secondary" className="text-[9px] shrink-0" style={{ background: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))', color: 'var(--brand-color)' }}>Correct</Badge>}
+                  {opt.correct && <Badge variant="secondary" className="text-xs shrink-0" style={{ color: 'var(--chart-2)' }}>Correct</Badge>}
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon-sm" onClick={() => setOption(i, { locked: !opt.locked })} aria-label={opt.locked ? 'Unlock' : 'Lock position'} aria-pressed={!!opt.locked} disabled={!payload.shuffle} style={{ color: opt.locked ? 'var(--brand-color)' : 'var(--muted-foreground)', opacity: !payload.shuffle ? 0.35 : 1 }}>
+                      <Button variant="ghost" size="icon-sm" onClick={() => setOption(i, { locked: !opt.locked })} aria-label={opt.locked ? 'Unlock' : 'Lock position'} aria-pressed={!!opt.locked} disabled={!payload.shuffle} style={{ color: opt.locked ? 'var(--foreground)' : 'var(--muted-foreground)', opacity: !payload.shuffle ? 0.35 : 1 }}>
                         <i className={`fa-light ${opt.locked ? 'fa-lock' : 'fa-lock-open'}`} aria-hidden="true" style={{ fontSize: 13 }} />
                       </Button>
                     </TooltipTrigger>
@@ -570,11 +568,11 @@ function McqControls({
                   </Tooltip>
                 </div>
                 {(opt.correct || opt.rationale) && (
-                  <div className="px-3 pb-2.5" style={{ borderTop: '1px solid color-mix(in oklch, var(--brand-color) 20%, transparent)' }}>
+                  <div className="px-3 pb-2.5" style={{ borderTop: '1px solid var(--border)' }}>
                     <div className="flex items-start gap-1.5 pt-2">
-                      <i className="fa-light fa-quote-left shrink-0 mt-1" aria-hidden="true" style={{ fontSize: 10, color: 'var(--brand-color)', opacity: 0.6 }} />
+                      <i className="fa-light fa-quote-left shrink-0 mt-1 text-xs" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
                       <Textarea value={opt.rationale ?? ''} onChange={e => setOption(i, { rationale: e.target.value })} placeholder={opt.correct ? 'Explain why this is correct — students see this during review' : 'Explain why this distractor is wrong (optional)'} className="flex-1 text-xs min-h-[52px] resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 p-0" rows={2} />
-                      {missingRationale && <span className="text-[9px] font-semibold shrink-0 mt-1" style={{ color: 'color-mix(in oklch, var(--foreground) 40%, oklch(80% 0.15 80))' }}>missing</span>}
+                      {missingRationale && <span className="text-xs font-medium shrink-0 mt-1 text-chart-4">missing</span>}
                     </div>
                   </div>
                 )}
@@ -583,57 +581,108 @@ function McqControls({
           })}
         </div>
       ) : (
-        /* MCQ — RadioGroupItem must be a direct stable child of RadioGroup (no wrapper component) */
-        <RadioGroup
-          value={payload.options.find(o => o.correct)?.id ?? ''}
-          onValueChange={val => {
-            const idx = payload.options.findIndex(o => o.id === val)
-            if (idx >= 0) setOption(idx, { correct: true })
-          }}
-          className="flex flex-col gap-1.5"
-        >
+        /* MCQ — custom role="radiogroup" so the visual indicator is driven directly from opt.correct,
+           not from Radix's internal data-state (which requires htmlFor→native input, not a button). */
+        <div role="radiogroup" aria-label="Answer options" className="flex flex-col gap-1.5">
           {payload.options.map((opt, i) => {
             const letter = String.fromCharCode(65 + i)
             const missingRationale = opt.correct && !opt.rationale?.trim()
+            const noCorrect = !payload.options.some(o => o.correct)
+            function handleKeyDown(e: React.KeyboardEvent) {
+              if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                e.preventDefault()
+                setOption((i + 1) % payload.options.length, { correct: true })
+              } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                e.preventDefault()
+                setOption((i - 1 + payload.options.length) % payload.options.length, { correct: true })
+              }
+            }
             return (
-              <Label key={opt.id} htmlFor={`opt-${opt.id}`} className="cursor-pointer">
-                <div className="rounded-lg border overflow-hidden transition-colors" style={cardStyle(opt.correct)}>
-                  <div className="flex items-center gap-2 px-3 py-2.5">
-                    <RadioGroupItem value={opt.id} id={`opt-${opt.id}`} aria-label={`Mark option ${letter} correct`} />
-                    <span className="font-mono text-xs font-bold w-4 shrink-0 text-center" style={{ color: opt.correct ? 'var(--brand-color)' : 'var(--muted-foreground)' }}>{letter}</span>
-                    <Input type="text" value={opt.text} onChange={e => { e.stopPropagation(); setOption(i, { text: e.target.value }) }} onClick={e => e.stopPropagation()} placeholder={`Option ${letter}`} className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 h-8 px-1" />
-                    {opt.correct && <Badge variant="secondary" className="text-[9px] shrink-0" style={{ background: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))', color: 'var(--brand-color)' }}>Correct</Badge>}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon-sm" onClick={e => { e.preventDefault(); setOption(i, { locked: !opt.locked }) }} aria-label={opt.locked ? 'Unlock' : 'Lock position'} aria-pressed={!!opt.locked} disabled={!payload.shuffle} style={{ color: opt.locked ? 'var(--brand-color)' : 'var(--muted-foreground)', opacity: !payload.shuffle ? 0.35 : 1 }}>
-                          <i className={`fa-light ${opt.locked ? 'fa-lock' : 'fa-lock-open'}`} aria-hidden="true" style={{ fontSize: 13 }} />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>{!payload.shuffle ? 'Enable shuffle to lock positions' : opt.locked ? "Locked — won't shuffle" : 'Lock this position'}</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon-sm" onClick={e => { e.preventDefault(); removeOption(i) }} disabled={payload.options.length <= 2} aria-label={`Remove option ${letter}`}>
-                          <i className="fa-light fa-trash-can" aria-hidden="true" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Remove</TooltipContent>
-                    </Tooltip>
+              <div
+                key={opt.id}
+                role="radio"
+                aria-checked={opt.correct}
+                tabIndex={opt.correct || (noCorrect && i === 0) ? 0 : -1}
+                onClick={() => setOption(i, { correct: true })}
+                onKeyDown={handleKeyDown}
+                className="rounded-lg border overflow-hidden transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                style={cardStyle(opt.correct)}
+              >
+                <div className="flex items-center gap-2 px-3 py-2.5">
+                  {/* Custom radio indicator — renders from opt.correct, no Radix dependency */}
+                  <div
+                    className="size-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors"
+                    style={{ borderColor: opt.correct ? 'var(--chart-2)' : 'var(--border)' }}
+                  >
+                    {opt.correct && (
+                      <div className="size-2 rounded-full" style={{ background: 'var(--chart-2)' }} />
+                    )}
                   </div>
-                  {(opt.correct || opt.rationale) && (
-                    <div className="px-3 pb-2.5" style={{ borderTop: '1px solid color-mix(in oklch, var(--brand-color) 20%, transparent)' }}>
-                      <div className="flex items-start gap-1.5 pt-2">
-                        <i className="fa-light fa-quote-left shrink-0 mt-1" aria-hidden="true" style={{ fontSize: 10, color: 'var(--brand-color)', opacity: 0.6 }} />
-                        <Textarea value={opt.rationale ?? ''} onChange={e => setOption(i, { rationale: e.target.value })} onClick={e => e.stopPropagation()} placeholder={opt.correct ? 'Explain why this is correct — students see this during review' : 'Explain why this distractor is wrong (optional)'} className="flex-1 text-xs min-h-[52px] resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 p-0" rows={2} />
-                        {missingRationale && <span className="text-[9px] font-semibold shrink-0 mt-1" style={{ color: 'color-mix(in oklch, var(--foreground) 40%, oklch(80% 0.15 80))' }}>missing</span>}
-                      </div>
-                    </div>
-                  )}
+                  <span className="font-mono text-xs font-bold w-4 shrink-0 text-center text-muted-foreground">{letter}</span>
+                  <Input
+                    type="text"
+                    value={opt.text}
+                    onChange={e => setOption(i, { text: e.target.value })}
+                    onClick={e => e.stopPropagation()}
+                    onKeyDown={e => e.stopPropagation()}
+                    placeholder={`Option ${letter}`}
+                    className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 h-8 px-1"
+                    aria-label={`Option ${letter} text`}
+                  />
+                  {opt.correct && <Badge variant="secondary" className="text-xs shrink-0" style={{ color: 'var(--chart-2)' }}>Correct</Badge>}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={e => { e.stopPropagation(); setOption(i, { locked: !opt.locked }) }}
+                        aria-label={opt.locked ? 'Unlock' : 'Lock position'}
+                        aria-pressed={!!opt.locked}
+                        disabled={!payload.shuffle}
+                        style={{ color: opt.locked ? 'var(--foreground)' : 'var(--muted-foreground)', opacity: !payload.shuffle ? 0.35 : 1 }}
+                      >
+                        <i className={`fa-light ${opt.locked ? 'fa-lock' : 'fa-lock-open'}`} aria-hidden="true" style={{ fontSize: 13 }} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{!payload.shuffle ? 'Enable shuffle to lock positions' : opt.locked ? "Locked — won't shuffle" : 'Lock this position'}</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={e => { e.stopPropagation(); removeOption(i) }}
+                        disabled={payload.options.length <= 2}
+                        aria-label={`Remove option ${letter}`}
+                      >
+                        <i className="fa-light fa-trash-can" aria-hidden="true" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Remove</TooltipContent>
+                  </Tooltip>
                 </div>
-              </Label>
+                {(opt.correct || opt.rationale) && (
+                  <div className="px-3 pb-2.5" style={{ borderTop: '1px solid var(--border)' }}>
+                    <div className="flex items-start gap-1.5 pt-2">
+                      <i className="fa-light fa-quote-left shrink-0 mt-1 text-xs" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
+                      <Textarea
+                        value={opt.rationale ?? ''}
+                        onChange={e => setOption(i, { rationale: e.target.value })}
+                        onClick={e => e.stopPropagation()}
+                        onKeyDown={e => e.stopPropagation()}
+                        placeholder={opt.correct ? 'Explain why this is correct — students see this during review' : 'Explain why this distractor is wrong (optional)'}
+                        className="flex-1 text-xs min-h-[52px] resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 p-0"
+                        rows={2}
+                        aria-label={`Rationale for option ${letter}`}
+                      />
+                      {missingRationale && <span className="text-xs font-medium shrink-0 mt-1 text-chart-4">missing</span>}
+                    </div>
+                  </div>
+                )}
+              </div>
             )
           })}
-        </RadioGroup>
+        </div>
       )}
       <div className="flex items-center justify-between gap-3 pt-1">
         <Button variant="outline" size="sm" onClick={addOption} className="gap-1.5">
@@ -665,7 +714,7 @@ function McqControls({
             <ul className="flex flex-col gap-1">
               {aiSuggestion.newDistractors.map((d, i) => (
                 <li key={i} className="text-sm text-foreground flex items-center gap-2">
-                  <span className="size-4 rounded-full bg-muted text-[10px] font-bold flex items-center justify-center text-muted-foreground">
+                  <span className="size-4 rounded-full bg-muted text-xs font-bold flex items-center justify-center text-muted-foreground">
                     {String.fromCharCode(65 + payload.options.length + i)}
                   </span>
                   {d}
@@ -689,31 +738,42 @@ function TrueFalseControls({
 }: { payload: Extract<QuestionPayload, { type: 'true-false' }>; onChange: (p: QuestionPayload) => void }) {
   return (
     <div className="flex flex-col gap-3">
-      <RadioGroup
-        value={payload.correct ? 'true' : 'false'}
-        onValueChange={v => onChange({ ...payload, correct: v === 'true' })}
-        className="flex gap-3"
-      >
-        <Label htmlFor="tf-true" className={`flex-1 flex items-center gap-2 rounded-lg border px-4 py-3 cursor-pointer transition-colors ${payload.correct ? 'border-brand/60 bg-brand/8' : 'border-border hover:bg-muted/30'}`}>
-          <RadioGroupItem value="true" id="tf-true" />
-          <i className="fa-light fa-circle-check text-chart-2" aria-hidden="true" />
-          <span className="text-sm font-medium">True</span>
-          {payload.correct && <Badge variant="secondary" className="rounded text-[9px] ms-auto">Correct</Badge>}
-        </Label>
-        <Label htmlFor="tf-false" className={`flex-1 flex items-center gap-2 rounded-lg border px-4 py-3 cursor-pointer transition-colors ${!payload.correct ? 'border-brand/60 bg-brand/8' : 'border-border hover:bg-muted/30'}`}>
-          <RadioGroupItem value="false" id="tf-false" />
-          <i className="fa-light fa-circle-xmark text-destructive" aria-hidden="true" />
-          <span className="text-sm font-medium">False</span>
-          {!payload.correct && <Badge variant="secondary" className="rounded text-[9px] ms-auto">Correct</Badge>}
-        </Label>
-      </RadioGroup>
+      <div role="radiogroup" aria-label="True or False" className="flex gap-3">
+        {([true, false] as const).map(val => {
+          const isSelected = payload.correct === val
+          return (
+            <div
+              key={String(val)}
+              role="radio"
+              aria-checked={isSelected}
+              tabIndex={isSelected || (!payload.correct && val) ? 0 : -1}
+              onClick={() => onChange({ ...payload, correct: val })}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                  e.preventDefault()
+                  onChange({ ...payload, correct: !val })
+                }
+              }}
+              className={`flex-1 flex items-center gap-2 rounded-lg border px-4 py-3 cursor-pointer transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 ${isSelected ? 'border-chart-2/60 bg-muted/30' : 'border-border hover:bg-muted/20'}`}
+            >
+              <div
+                className="size-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors"
+                style={{ borderColor: isSelected ? 'var(--chart-2)' : 'var(--border)' }}
+              >
+                {isSelected && <div className="size-2 rounded-full" style={{ background: 'var(--chart-2)' }} />}
+              </div>
+              <i className={`fa-light ${val ? 'fa-circle-check text-chart-2' : 'fa-circle-xmark text-destructive'}`} aria-hidden="true" />
+              <span className="text-sm font-medium">{val ? 'True' : 'False'}</span>
+              {isSelected && <Badge variant="secondary" className="rounded text-xs ms-auto" style={{ color: 'var(--chart-2)' }}>Correct</Badge>}
+            </div>
+          )
+        })}
+      </div>
       <div className="relative">
         <Label htmlFor="tf-rationale" className="text-xs font-medium block mb-1">
           Rationale
           {!payload.rationale?.trim() && (
-            <span className="ms-1.5 text-[10px] font-semibold" style={{ color: 'color-mix(in oklch, var(--foreground) 40%, oklch(80% 0.15 80))' }}>
-              missing
-            </span>
+            <span className="ms-1.5 text-xs font-medium text-chart-4">missing</span>
           )}
         </Label>
         <Textarea
@@ -721,7 +781,8 @@ function TrueFalseControls({
           value={payload.rationale ?? ''}
           onChange={e => onChange({ ...payload, rationale: e.target.value })}
           placeholder="Explain why the statement is true or false — students see this during review"
-          className={`text-xs min-h-14 resize-none ${!payload.rationale?.trim() ? 'border-amber-400/50' : ''}`}
+          className="text-xs min-h-14 resize-none"
+          style={!payload.rationale?.trim() ? { borderColor: 'var(--chart-4)' } : undefined}
           rows={2}
         />
       </div>
@@ -746,13 +807,13 @@ function ShortAnswerControls({
   }
   return (
     <div className="flex flex-col gap-2.5">
-      <p className="text-[11px] text-muted-foreground -mt-1">
+      <p className="text-xs text-muted-foreground -mt-1">
         Provide every accepted spelling/casing variant. Grading is exact-match against any one of them.
       </p>
       <ul className="flex flex-col gap-2">
         {payload.acceptedAnswers.map((a, i) => (
           <li key={i} className="flex items-center gap-2">
-            <span className="text-[10px] font-mono uppercase text-muted-foreground tracking-wider w-6">
+            <span className="text-xs font-mono text-muted-foreground w-6">
               {i === 0 ? 'Main' : `Alt ${i}`}
             </span>
             <Input value={a} onChange={e => setAnswer(i, e.target.value)} placeholder="Accepted answer" className="flex-1" />
@@ -815,7 +876,7 @@ function NumericControls({
           placeholder="mg, mL, mmHg…"
         />
       </div>
-      <p className="col-span-3 text-[11px] text-muted-foreground">
+      <p className="col-span-3 text-xs text-muted-foreground">
         A response is correct if {Number.isFinite(payload.answer) ? `|response − ${payload.answer}| ≤ ${payload.tolerance}` : 'response is within tolerance of the answer'}{payload.units ? ` (units: ${payload.units})` : ''}.
       </p>
     </div>
@@ -857,7 +918,7 @@ function EssayControls({
       <div>
         <div className="flex items-center justify-between mb-2">
           <Label className="text-xs font-medium">Rubric</Label>
-          <span className={`text-[11px] font-mono tabular-nums ${totalWeight === 100 ? 'text-chart-2' : 'text-chart-4'}`}>
+          <span className={`text-xs font-mono tabular-nums ${totalWeight === 100 ? 'text-chart-2' : 'text-chart-4'}`}>
             Total: {totalWeight}%
           </span>
         </div>
@@ -913,7 +974,7 @@ function FillBlankControls({
       <div>
         <Label htmlFor="fb-template" className="text-xs font-medium block mb-1">
           Sentence template
-          <span className="ms-1 text-[10px] text-muted-foreground">— wrap blanks in <code className="font-mono">[[ ]]</code></span>
+          <span className="ms-1 text-xs text-muted-foreground">— wrap blanks in <code className="font-mono">[[ ]]</code></span>
         </Label>
         <Textarea
           id="fb-template"
@@ -948,7 +1009,7 @@ function FillBlankControls({
               </li>
             ))}
           </ul>
-          <p className="text-[11px] text-muted-foreground">Separate multiple accepted answers with <code className="font-mono">|</code>.</p>
+          <p className="text-xs text-muted-foreground">Separate multiple accepted answers with <code className="font-mono">|</code>.</p>
         </div>
       )}
     </div>
@@ -972,7 +1033,7 @@ function FillBlankPreview({ template }: { template: string }) {
       className="ring-0 border border-dashed border-border bg-muted/20"
     >
       <CardHeader>
-        <CardDescription className="text-[10px] font-bold uppercase tracking-wider">
+        <CardDescription className="text-xs font-semibold text-muted-foreground">
           Student-facing preview
         </CardDescription>
       </CardHeader>
@@ -983,7 +1044,7 @@ function FillBlankPreview({ template }: { template: string }) {
             : (
               <span
                 key={i}
-                className="inline-block min-w-12 px-2 mx-0.5 rounded bg-background border-b-2 border-brand text-center text-xs font-mono text-muted-foreground align-baseline"
+                className="inline-block min-w-12 px-2 mx-0.5 rounded bg-background border-b-2 border-foreground/30 text-center text-xs font-mono text-muted-foreground align-baseline"
                 style={{ paddingTop: 1, paddingBottom: 1 }}
               >
                 #{p.idx + 1}
@@ -1026,7 +1087,7 @@ function MatchingControls({
   }
   return (
     <div className="flex flex-col gap-2.5">
-      <p className="text-[11px] text-muted-foreground -mt-1">
+      <p className="text-xs text-muted-foreground -mt-1">
         Pair items on the left with their match on the right. Right column is shown shuffled to students.
       </p>
       <ul className="flex flex-col gap-2">
@@ -1087,7 +1148,7 @@ function OrderingControls({
   }
   return (
     <div className="flex flex-col gap-2.5">
-      <p className="text-[11px] text-muted-foreground -mt-1">
+      <p className="text-xs text-muted-foreground -mt-1">
         Use ↑ / ↓ to set the canonical order. Items will be presented to students in shuffled order.
       </p>
       <ul className="flex flex-col gap-1.5">
@@ -1178,7 +1239,7 @@ function HotspotControls({
             className="absolute rounded border-2 border-brand bg-brand/12"
             style={{ left: `${h.x}%`, top: `${h.y}%`, width: `${h.w}%`, height: `${h.h}%` }}
           >
-            <span className="absolute -top-5 left-0 text-[9px] font-mono bg-brand text-brand-foreground px-1 rounded">
+            <span className="absolute -top-5 left-0 text-xs font-mono bg-brand text-brand-foreground px-1 rounded">
               {h.label}
             </span>
             <Button
@@ -1193,7 +1254,7 @@ function HotspotControls({
           </div>
         ))}
       </div>
-      <p className="text-[11px] text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         {payload.hotspots.length} {payload.hotspots.length === 1 ? 'hotspot' : 'hotspots'} marked. Click anywhere on the image to add another.
       </p>
     </div>
@@ -1218,12 +1279,12 @@ function MetadataPanel({
   const objective = objectives.find(o => o.id === draft.objectiveId)
   return (
     <section className="rounded-xl border border-border bg-card p-4 flex flex-col gap-3">
-      <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Tagging</h2>
+      <h2 className="text-xs font-semibold text-muted-foreground">Tagging</h2>
 
       <div>
         <div className="flex items-center justify-between mb-1">
           <Label htmlFor="meta-objective" className="text-xs font-medium">Course objective</Label>
-          <span className="text-[10px] text-muted-foreground">one per question</span>
+          <span className="text-xs text-muted-foreground">one per question</span>
         </div>
         <Select value={draft.objectiveId ?? '__none__'} onValueChange={v => onUpdate('objectiveId', v === '__none__' ? null : v)}>
           <SelectTrigger id="meta-objective" className="text-xs">
@@ -1241,7 +1302,7 @@ function MetadataPanel({
           </SelectContent>
         </Select>
         {objective && (
-          <p className="text-[10px] text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             <i className="fa-light fa-bullseye-pointer me-1" aria-hidden="true" />
             Bloom level: {objective.bloomsLevel}
           </p>
@@ -1249,11 +1310,11 @@ function MetadataPanel({
         <Button
           variant="ghost"
           size="sm"
-          className="text-[11px] gap-1.5 h-7 mt-1.5 -ms-2"
+          className="text-xs gap-1.5 h-7 mt-1.5 -ms-2"
           onClick={onRunAi}
           disabled={aiThinking || objectives.length === 0 || !draft.stem.trim()}
         >
-          <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" style={{ fontSize: 10 }} />
+          <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" style={{ fontSize: 14 }} />
           AI suggest objective
         </Button>
         {aiSuggestion && (
@@ -1263,10 +1324,10 @@ function MetadataPanel({
             body={
               <div className="flex flex-col gap-1">
                 {draft.objectiveId && objective && (
-                  <p className="text-[10px] text-muted-foreground line-through">{objective.title}</p>
+                  <p className="text-xs text-muted-foreground line-through">{objective.title}</p>
                 )}
                 <p className="text-xs text-foreground font-medium">{aiSuggestion.objectiveTitle}</p>
-                <p className="text-[10px] text-muted-foreground">Match confidence: {Math.round(aiSuggestion.confidence * 100)}%</p>
+                <p className="text-xs text-muted-foreground">Match confidence: {Math.round(aiSuggestion.confidence * 100)}%</p>
               </div>
             }
             rationale={aiSuggestion.rationale}
@@ -1310,7 +1371,7 @@ function MetadataPanel({
       <div>
         <div className="flex items-center justify-between mb-1">
           <Label htmlFor="meta-tags" className="text-xs font-medium">Custom labels</Label>
-          <span className="text-[10px] text-muted-foreground">comma-separated</span>
+          <span className="text-xs text-muted-foreground">comma-separated</span>
         </div>
         <Input
           id="meta-tags"
@@ -1322,7 +1383,7 @@ function MetadataPanel({
         {draft.tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-1.5">
             {draft.tags.map(t => (
-              <Badge key={t} variant="secondary" className="rounded text-[9px] gap-1">
+              <Badge key={t} variant="secondary" className="rounded text-xs gap-1">
                 {t}
                 <Button
                   variant="ghost"
@@ -1338,6 +1399,17 @@ function MetadataPanel({
           </div>
         )}
       </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <Label className="text-xs font-medium">Standards</Label>
+          <span className="text-xs text-muted-foreground">direct mapping</span>
+        </div>
+        <StandardsSelect
+          selectedIds={draft.standardIds ?? []}
+          onUpdate={ids => onUpdate('standardIds', ids)}
+        />
+      </div>
     </section>
   )
 }
@@ -1352,11 +1424,11 @@ function WorkflowPanel({
 }) {
   return (
     <section className="rounded-xl border border-border bg-card p-4 flex flex-col gap-3">
-      <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Workflow</h2>
+      <h2 className="text-xs font-semibold text-muted-foreground">Workflow</h2>
 
       <div>
         <Label className="text-xs font-medium block mb-1">Confidence marker</Label>
-        <p className="text-[10px] text-muted-foreground mb-2">
+        <p className="text-xs text-muted-foreground mb-2">
           Used by reviewers to filter low-confidence drafts during bulk review.
         </p>
         <div className="flex gap-1.5">
@@ -1388,7 +1460,7 @@ function WorkflowPanel({
 
       <div>
         <Label className="text-xs font-medium block mb-1">Bulk-import status</Label>
-        <p className="text-[10px] text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           {draft.aiOriginated
             ? 'This draft was generated by AI — flag any factual issues during review.'
             : 'Manually authored — no AI assist. AI enhance is still available per field.'}
@@ -1446,10 +1518,10 @@ function AiSuggestionCard({
     <div className={`rounded-lg border border-brand/30 bg-brand/5 ${compact ? 'p-2.5 mt-2' : 'p-3 mt-3'} flex flex-col gap-2`}>
       <div className="flex items-center gap-2">
         <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" style={{ fontSize: compact ? 10 : 11 }} />
-        <span className={`${compact ? 'text-[11px]' : 'text-xs'} font-bold text-brand-dark`}>{title}</span>
+        <span className="text-xs font-semibold text-foreground">{title}</span>
       </div>
       <div>{body}</div>
-      <p className={`${compact ? 'text-[10px]' : 'text-[11px]'} text-muted-foreground italic`}>
+      <p className="text-xs text-muted-foreground italic">
         {rationale}
       </p>
       <div className="flex items-center gap-1.5">
@@ -1462,6 +1534,94 @@ function AiSuggestionCard({
           Reject
         </Button>
       </div>
+    </div>
+  )
+}
+
+// ─── Standards multi-select ───────────────────────────────────────────────────
+
+function StandardsSelect({
+  selectedIds,
+  onUpdate,
+}: {
+  selectedIds: string[]
+  onUpdate: (ids: string[]) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const selected = MOCK_STANDARDS.filter(s => selectedIds.includes(s.id))
+  const grouped = groupedStandards()
+
+  function toggle(id: string) {
+    onUpdate(selectedIds.includes(id) ? selectedIds.filter(x => x !== id) : [...selectedIds, id])
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {selected.map(s => (
+            <Badge key={s.id} variant="secondary" className="rounded text-xs gap-1">
+              <span className="font-mono text-muted-foreground">{s.framework}</span>
+              {' '}{s.code}
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onClick={() => toggle(s.id)}
+                aria-label={`Remove ${s.title}`}
+                className="size-3 p-0 hover:bg-transparent"
+              >
+                <i className="fa-solid fa-xmark" aria-hidden="true" style={{ fontSize: 8 }} />
+              </Button>
+            </Badge>
+          ))}
+        </div>
+      )}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setOpen(o => !o)}
+        className="gap-1.5 h-7 text-xs justify-start"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+      >
+        <i className="fa-light fa-plus" aria-hidden="true" />
+        {selected.length === 0 ? 'Map to standard…' : 'Add more'}
+      </Button>
+      {open && (
+        <div
+          className="rounded-lg border border-border bg-card p-2"
+          role="listbox"
+          aria-multiselectable="true"
+          aria-label="Available standards"
+        >
+          {Object.entries(grouped).map(([framework, stds]) => (
+            <div key={framework}>
+              <p className="text-xs font-semibold text-muted-foreground px-1 pt-2 pb-1">{framework}</p>
+              {stds.map(s => {
+                const checked = selectedIds.includes(s.id)
+                return (
+                  <label
+                    key={s.id}
+                    role="option"
+                    aria-selected={checked}
+                    className="flex items-start gap-2 px-1 py-1 rounded cursor-pointer hover:bg-muted/50"
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={() => toggle(s.id)}
+                      aria-label={s.title}
+                    />
+                    <span className="text-xs leading-relaxed">
+                      <span className="font-mono text-muted-foreground mr-1 text-xs">{s.code}</span>
+                      {s.title}
+                    </span>
+                  </label>
+                )
+              })}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -1483,8 +1643,8 @@ function StateBadge({ state }: { state: QuestionDraft['state'] }) {
   const meta = state === 'draft' ? { label: 'Draft', icon: 'fa-hourglass',    bg: 'var(--muted)',         fg: 'var(--muted-foreground)' }
                                  : { label: 'Saved', icon: 'fa-circle-check', bg: 'color-mix(in oklch, var(--chart-2) 14%, var(--background))', fg: 'var(--chart-2)' }
   return (
-    <Badge variant="secondary" className="rounded text-[10px] gap-1" style={{ backgroundColor: meta.bg, color: meta.fg }}>
-      <i className={`fa-light ${meta.icon}`} aria-hidden="true" style={{ fontSize: 9 }} />
+    <Badge variant="secondary" className="rounded text-xs gap-1" style={{ backgroundColor: meta.bg, color: meta.fg }}>
+      <i className={`fa-light ${meta.icon}`} aria-hidden="true" style={{ fontSize: 12 }} />
       {meta.label}
     </Badge>
   )
@@ -1495,7 +1655,7 @@ function ConfidenceBadge({ level }: { level: 'high' | 'low' }) {
     ? { label: 'High confidence', bg: 'color-mix(in oklch, var(--chart-2) 14%, var(--background))', fg: 'var(--chart-2)' }
     : { label: 'Low confidence',  bg: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', fg: 'var(--chart-4)' }
   return (
-    <Badge variant="secondary" className="rounded text-[10px]" style={{ backgroundColor: meta.bg, color: meta.fg }}>
+    <Badge variant="secondary" className="rounded text-xs" style={{ backgroundColor: meta.bg, color: meta.fg }}>
       {meta.label}
     </Badge>
   )

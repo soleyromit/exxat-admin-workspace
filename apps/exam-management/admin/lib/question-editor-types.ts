@@ -104,6 +104,7 @@ export interface QuestionDraft {
   objectiveId: string | null         // course-objective tag
   folderId: string | null
   tags: string[]
+  standardIds: string[]               // direct mapping to standards/competencies
   state: EditorState
   confidence: Confidence             // AI-set; faculty can override
   payload: QuestionPayload
@@ -243,6 +244,7 @@ export function createDraft(opts: {
     objectiveId: opts.objectiveId ?? null,
     folderId: opts.folderId ?? null,
     tags: [],
+    standardIds: [],
     state: 'draft',
     confidence: null,
     payload: defaultPayload(type),
