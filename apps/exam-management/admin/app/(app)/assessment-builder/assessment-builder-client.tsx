@@ -13,8 +13,8 @@ import {
   Field, FieldLabel, FieldError,
   LocalBanner,
 } from '@exxat/ds/packages/ui/src'
-import { mockCourses, mockCourseOfferings, mockAssessments, MOCK_QB_QUESTIONS } from '@/lib/qb-mock-data'
-import type { AssessmentDraft, AssessmentQuestion, AssessmentSection, Question, SmartView, QType, QDiff, AssessmentReviewRequest, AssessmentStatus } from '@/lib/qb-types'
+import { mockCourses, mockCourseOfferings, mockAssessments, MOCK_QB_QUESTIONS, MOCK_QB_FOLDERS } from '@/lib/qb-mock-data'
+import type { AssessmentDraft, AssessmentQuestion, AssessmentSection, Question, SmartView, QType, QDiff, AssessmentReviewRequest, AssessmentStatus, FolderNode } from '@/lib/qb-types'
 import { SYSTEM_SMART_VIEWS, defaultAssessmentSettings } from '@/lib/qb-types'
 import { courseObjectives, facultyListRows, type CourseObjective } from '@/lib/faculty-mock-data'
 import { useFacultySession } from '@/lib/faculty-session'
@@ -43,6 +43,15 @@ const DIFF_MULT: Record<QDiff, number> = {
   Easy:   1.0,
   Medium: 1.25,
   Hard:   1.5,
+}
+
+/** Recursively collect a folder ID and all its descendants. */
+function getAllSubfolderIds(folderId: string): string[] {
+  const result: string[] = [folderId]
+  MOCK_QB_FOLDERS.filter(f => f.parentId === folderId).forEach(child => {
+    result.push(...getAllSubfolderIds(child.id))
+  })
+  return result
 }
 
 function formatMin(min: number): string {
@@ -807,6 +816,7 @@ function ABQuestionPicker({
   const [newViewNameError, setNewViewNameError] = useState<string | null>(null)
   const [source, setSource] = useState<PickerSource>('this-course')
   const [otherCourseId, setOtherCourseId] = useState<string>('')
+  const [selectedContentAreaId, setSelectedContentAreaId] = useState<string | null>(null)
 
   const activeView = smartViews.find(v => v.id === activeViewId) ?? smartViews[0]
 
@@ -819,6 +829,17 @@ function ABQuestionPicker({
     () => mockCourses.filter(c => c.id !== activeAsmt.courseId),
     [activeAsmt.courseId]
   )
+
+  // Content areas = direct-child folders of the course QB root
+  const contentAreas = useMemo<FolderNode[]>(() => {
+    if (!thisCourse) return []
+    return MOCK_QB_FOLDERS.filter(f => f.parentId === thisCourse.questionBankFolderId)
+  }, [thisCourse])
+
+  // Reset content area filter when source or course changes
+  useEffect(() => {
+    setSelectedContentAreaId(null)
+  }, [source, activeAsmt.courseId])
 
   // Source-scoped questions: only questions tagged to the relevant QB folder.
   const sourcedQuestions = useMemo(() => {
@@ -835,16 +856,22 @@ function ABQuestionPicker({
     return [] // new-question + ai-generate render their own UI
   }, [source, thisCourseFolderPrefix, otherCourseId])
 
+  const contentAreaFilteredQuestions = useMemo(() => {
+    if (!selectedContentAreaId) return sourcedQuestions
+    const ids = new Set(getAllSubfolderIds(selectedContentAreaId))
+    return sourcedQuestions.filter(q => ids.has(q.folder))
+  }, [sourcedQuestions, selectedContentAreaId])
+
   const filteredQuestions = useMemo(() => {
     const { difficulty, type, blooms, unusedOnly } = activeView?.filters ?? {}
-    return sourcedQuestions.filter(q => {
+    return contentAreaFilteredQuestions.filter(q => {
       if (difficulty?.length && !difficulty.includes(q.difficulty)) return false
       if (type?.length && !type.includes(q.type)) return false
       if (blooms?.length && !blooms.includes(q.blooms)) return false
       if (unusedOnly && (q.usage ?? 0) > 0) return false
       return true
     })
-  }, [activeView, sourcedQuestions])
+  }, [activeView, contentAreaFilteredQuestions])
 
   function handleSaveView() {
     const trimmed = newViewName.trim()
@@ -1000,6 +1027,47 @@ function ABQuestionPicker({
               {sourcedQuestions.length} questions available
             </span>
           )}
+        </div>
+      )}
+
+      {/* Content area filter — primary navigation for QB question picking */}
+      {isQbSource && contentAreas.length > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '6px 16px',
+            borderBottom: '1px solid var(--border)',
+            overflowX: 'auto',
+            flexShrink: 0,
+            background: 'var(--background)',
+          }}
+          role="group"
+          aria-label="Filter by content area"
+        >
+          <span className="text-xs text-muted-foreground shrink-0">Area</span>
+          <Button
+            variant={selectedContentAreaId === null ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedContentAreaId(null)}
+            className="shrink-0 rounded-full text-xs h-7 px-3"
+          >
+            All
+          </Button>
+          {contentAreas.map(ca => (
+            <Button
+              key={ca.id}
+              variant={selectedContentAreaId === ca.id ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedContentAreaId(prev => prev === ca.id ? null : ca.id)}
+              className="shrink-0 rounded-full text-xs h-7 px-3 whitespace-nowrap"
+              aria-pressed={selectedContentAreaId === ca.id}
+            >
+              {ca.name}
+              <span className="ms-1.5 text-xs opacity-60">{ca.count}</span>
+            </Button>
+          ))}
         </div>
       )}
 
