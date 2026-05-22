@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Button, Badge, LocalBanner } from '@exxat/ds/packages/ui/src'
+import { Button, Badge, LocalBanner, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@exxat/ds/packages/ui/src'
 
 type ImportStep = 'upload' | 'review' | 'confirming'
 
@@ -34,8 +34,6 @@ export function ImportAssessmentModal({ open, onOpenChange, courseCode, onImport
   const [fileName, setFileName] = useState<string | null>(null)
   const [excluded, setExcluded] = useState<Set<string>>(new Set())
 
-  if (!open) return null
-
   const matchedCount = MOCK_PARSED.filter(q => q.matchedQBId !== null).length
   const newCount = MOCK_PARSED.filter(q => q.matchedQBId === null).length
 
@@ -64,21 +62,15 @@ export function ImportAssessmentModal({ open, onOpenChange, courseCode, onImport
   }
 
   return (
-    <div
-      style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'color-mix(in oklch, var(--foreground) 40%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-      onClick={e => { if (e.target === e.currentTarget) onOpenChange(false) }}
-    >
-      <div style={{ background: 'var(--background)', borderRadius: 16, border: '1px solid var(--border)', width: '100%', maxWidth: 560, maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-[560px] max-h-[85vh] flex flex-col overflow-hidden p-0">
         {/* Header */}
-        <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-          <div>
-            <h2 className="text-base font-semibold text-foreground">Import from PDF</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">{courseCode} · We match to your question bank automatically</p>
-          </div>
-          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} aria-label="Close" className="h-8 w-8 p-0">
-            <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 14 }} />
-          </Button>
-        </div>
+        <DialogHeader className="px-6 pt-5 pb-4 border-b border-border shrink-0">
+          <DialogTitle className="text-base font-semibold">Import from PDF</DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
+            {courseCode} · We match to your question bank automatically
+          </DialogDescription>
+        </DialogHeader>
 
         {/* Body */}
         <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
@@ -103,12 +95,14 @@ export function ImportAssessmentModal({ open, onOpenChange, courseCode, onImport
                   <input type="file" accept=".pdf" onChange={handleFileChange} style={{ display: 'none' }} />
                 </label>
               </div>
-              {fileName && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <i className="fa-light fa-spinner fa-spin" aria-hidden="true" />
-                  Parsing {fileName}…
-                </div>
-              )}
+              <div role="status" aria-live="polite" className="flex items-center gap-2 text-xs text-muted-foreground" style={{ minHeight: 20 }}>
+                {fileName && (
+                  <>
+                    <i className="fa-light fa-spinner fa-spin" aria-hidden="true" />
+                    Parsing {fileName}…
+                  </>
+                )}
+              </div>
             </div>
           )}
 
@@ -160,9 +154,9 @@ export function ImportAssessmentModal({ open, onOpenChange, courseCode, onImport
           )}
         </div>
 
-        {/* Footer */}
+        {/* Footer — only in review step */}
         {step === 'review' && (
-          <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <div className="px-6 py-4 border-t border-border flex items-center justify-between shrink-0">
             <span className="text-xs text-muted-foreground">
               {MOCK_PARSED.length - excluded.size} of {MOCK_PARSED.length} questions selected
             </span>
@@ -181,7 +175,7 @@ export function ImportAssessmentModal({ open, onOpenChange, courseCode, onImport
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
