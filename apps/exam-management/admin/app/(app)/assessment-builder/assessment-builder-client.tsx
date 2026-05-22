@@ -116,6 +116,7 @@ export default function AssessmentBuilderClient() {
   function openAssessment(asmtId: string) {
     const source = assessments.find(a => a.id === asmtId)
     if (!source) return
+    setSectionsOpen(false)
     setActiveAsmt({
       id: source.id,
       title: source.title,
@@ -146,11 +147,19 @@ export default function AssessmentBuilderClient() {
     setActiveAsmt(prev => {
       if (!prev) return prev
       const exists = prev.questions.find(q => q.questionId === questionId)
+      if (exists) {
+        return {
+          ...prev,
+          questions: prev.questions.filter(q => q.questionId !== questionId),
+          sections: prev.sections.map(s => ({
+            ...s,
+            questionIds: s.questionIds.filter(id => id !== questionId),
+          })),
+        }
+      }
       return {
         ...prev,
-        questions: exists
-          ? prev.questions.filter(q => q.questionId !== questionId)
-          : [...prev.questions, { questionId, order: prev.questions.length + 1 }],
+        questions: [...prev.questions, { questionId, order: prev.questions.length + 1 }],
       }
     })
   }
@@ -242,6 +251,7 @@ export default function AssessmentBuilderClient() {
       if (!prev) return prev
       return {
         ...prev,
+        // sectionId=null means unassign — remove from all sections (works because each question is in at most one section)
         sections: prev.sections.map(s => ({
           ...s,
           questionIds: sectionId === s.id
@@ -1162,7 +1172,7 @@ function SectionsPanel({
   onRemoveSection,
   onAssignQuestion,
 }: {
-  activeAsmt: import('@/lib/qb-types').AssessmentDraft
+  activeAsmt: AssessmentDraft
   onAddSection: (title: string) => void
   onRemoveSection: (id: string) => void
   onAssignQuestion: (questionId: string, sectionId: string | null) => void
@@ -1202,8 +1212,10 @@ function SectionsPanel({
                     {activeAsmt.sections.length > 0 && (
                       <select
                         aria-label="Assign to section"
-                        onChange={e => onAssignQuestion(q.questionId, e.target.value || null)}
-                        defaultValue=""
+                        value=""
+                        onChange={e => {
+                          if (e.target.value) onAssignQuestion(q.questionId, e.target.value)
+                        }}
                         style={{ fontSize: 10, borderRadius: 4, border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--foreground)', padding: '1px 4px', maxWidth: 80, cursor: 'pointer' }}
                       >
                         <option value="">Assign…</option>
