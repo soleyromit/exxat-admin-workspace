@@ -2,197 +2,351 @@
 
 import { useState } from 'react'
 import {
-  Button, Avatar, AvatarFallback, SidebarTrigger, Separator,
+  Button, LocalBanner, SidebarTrigger, Separator,
 } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
-import { ResponseGauge } from '@/components/pce/response-gauge'
-import { ReleaseSheet, ReleaseBulkDialog } from '@/components/pce/pce-modals'
-import type { PceSurvey } from '@/lib/pce-mock-data'
-import { DataTable } from '@/components/data-table'
-import type { ColumnDef } from '@/components/data-table/types'
+import { BulletGauge } from '@/components/pce/bullet-gauge'
+import { MOCK_OPEN_TEXT_RESPONSES } from '@/lib/pce-mock-data'
+import type { PceSurvey, SubjectKey } from '@/lib/pce-mock-data'
 
-/* Flat row type — moderation queue is a single status bucket (pending_review)
-   so no defaultGroupBy. Sortable scalars surfaced as properties. */
-interface ModerationRow extends Record<string, unknown> {
-  id: string
-  survey: PceSurvey
-  courseCode: string
-  term: string
-  deadline: string
-  responseRate: number
-  instructorCount: number
+// Human-readable section labels for open-text grouping
+const SUBJECT_LABELS: Record<SubjectKey, string> = {
+  course_content:     'Course Content',
+  course_instructor:  'Course Instructor',
+  course_coordinator: 'Course Coordinator',
+  teaching_assistant: 'Teaching Assistant',
+  lab_instructor:     'Lab Instructor',
+  course_director:    'Course Director',
 }
 
 export default function ModerationPage() {
-  const { surveys, releaseSurvey } = usePce()
-  const [surveyToRelease, setSurveyToRelease] = useState<PceSurvey | null>(null)
-  const [bulkIds, setBulkIds] = useState<string[]>([])
+  const { surveys, enableResults } = usePce()
+
+  const [selectedSurveyId, setSelectedSurveyId] = useState<string | null>(null)
+  const [flaggedIds, setFlaggedIds] = useState<Set<string>>(
+    () => new Set(MOCK_OPEN_TEXT_RESPONSES.filter(r => r.flagged).map(r => r.id))
+  )
 
   const pending = surveys.filter(s => s.status === 'pending_review')
 
-  const rows: ModerationRow[] = pending.map(s => ({
-    id: s.id,
-    survey: s,
-    courseCode: s.courseCode,
-    term: s.term,
-    deadline: s.deadline ?? '',
-    responseRate: s.responseRate,
-    instructorCount: s.instructors.length,
-  }))
+  const selectedSurvey: PceSurvey | null =
+    pending.find(s => s.id === selectedSurveyId) ?? null
 
-  const handleBulkRelease = () => {
-    bulkIds.forEach(id => releaseSurvey(id))
-    setBulkIds([])
+  function toggleFlag(responseId: string) {
+    setFlaggedIds(prev => {
+      const next = new Set(prev)
+      next.has(responseId) ? next.delete(responseId) : next.add(responseId)
+      return next
+    })
   }
 
-  const columns: ColumnDef<ModerationRow>[] = [
-    {
-      key: 'courseCode',
-      label: 'Course',
-      sortable: true,
-      width: 200,
-      cell: (row) => (
-        <div className="flex flex-col gap-0.5">
-          <span className="text-sm font-medium">{row.survey.courseCode}</span>
-          <span className="text-xs text-muted-foreground">{row.survey.term}</span>
-        </div>
-      ),
-    },
-    {
-      key: 'deadline',
-      label: 'Deadline',
-      sortable: true,
-      width: 140,
-      cell: (row) => (
-        <span className="text-sm font-medium text-muted-foreground">{row.survey.deadline || '—'}</span>
-      ),
-    },
-    {
-      key: 'responseRate',
-      label: 'Responses',
-      sortable: true,
-      width: 200,
-      cell: (row) => (
-        <ResponseGauge
-          rate={row.survey.responseRate}
-          responseCount={row.survey.responseCount}
-          enrollmentCount={row.survey.enrollmentCount}
-          showBar={false}
-        />
-      ),
-    },
-    {
-      key: 'instructorCount',
-      label: 'Instructors',
-      sortable: true,
-      width: 140,
-      cell: (row) => (
-        <div className="flex items-center gap-1">
-          {row.survey.instructors.slice(0, 2).map(i => (
-            <Avatar key={i.id} className="h-6 w-6">
-              <AvatarFallback
-                className="text-xs"
-                style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}
-              >
-                {i.initials}
-              </AvatarFallback>
-            </Avatar>
-          ))}
-          {row.survey.instructors.length > 2 && (
-            <span className="text-xs ml-1 text-muted-foreground">
-              +{row.survey.instructors.length - 2}
-            </span>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: 'actions',
-      label: '',
-      width: 160,
-      cell: (row) => (
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={(e) => {
-            e.stopPropagation()
-            setSurveyToRelease(row.survey)
-          }}
-        >
-          Review &amp; Release
-        </Button>
-      ),
-    },
-  ]
+  // Responses for the selected survey
+  const surveyResponses = selectedSurvey
+    ? MOCK_OPEN_TEXT_RESPONSES.filter(r => r.surveyId === selectedSurvey.id)
+    : []
+
+  // Group responses by sectionSubject, preserving insertion order
+  const groupedResponses: Array<{ subject: SubjectKey; responses: typeof surveyResponses }> = []
+  if (surveyResponses.length > 0) {
+    const seen = new Set<SubjectKey>()
+    for (const r of surveyResponses) {
+      if (!seen.has(r.sectionSubject)) {
+        seen.add(r.sectionSubject)
+        groupedResponses.push({ subject: r.sectionSubject, responses: [] })
+      }
+      groupedResponses.find(g => g.subject === r.sectionSubject)!.responses.push(r)
+    }
+  }
+
+  const responseCount = surveyResponses.length
+
+  // Count flagged responses belonging to the selected survey
+  const surveyFlaggedCount = selectedSurvey
+    ? [...flaggedIds].filter(id =>
+        MOCK_OPEN_TEXT_RESPONSES.find(r => r.id === id && r.surveyId === selectedSurvey.id)
+      ).length
+    : 0
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
+      {/* Page header */}
+      <header
+        className="flex items-center gap-2 border-b border-border shrink-0"
+        style={{ padding: '18px 28px 14px' }}
+      >
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
-        <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Review &amp; Moderation</h1>
+        <h1
+          className="flex-1 text-[22px] font-normal"
+          style={{ fontFamily: 'var(--font-heading)' }}
+        >
+          Review &amp; Moderation
+        </h1>
       </header>
 
-      {pending.length > 0 && (
-        <div className="py-2 border-b border-border shrink-0" style={{ paddingInline: 28 }}>
-          <p className="text-sm text-muted-foreground">
-            {pending.length} {pending.length === 1 ? 'survey' : 'surveys'} pending review
-          </p>
-        </div>
-      )}
+      {/* Two-panel body */}
+      <div className="flex flex-1 overflow-hidden">
 
-      <div className="flex-1 overflow-auto" style={{ paddingBlock: 16, paddingInline: 0 }}>
-        {pending.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-20">
-            <i
-              className="fa-light fa-shield-check"
-              aria-hidden="true"
-              style={{ fontSize: 48, color: 'var(--brand-color)' }}
-            />
-            <div className="flex flex-col gap-1">
+        {/* ── Left panel — survey list ─────────────────────────────────── */}
+        <aside
+          className="flex flex-col border-r border-border shrink-0 overflow-y-auto"
+          style={{ width: 300 }}
+        >
+          {/* Panel header */}
+          <div
+            style={{
+              padding: '12px 14px 8px',
+              borderBottom: '1px solid var(--border)',
+            }}
+          >
+            <p
+              className="text-xs font-semibold"
+              style={{ color: 'var(--muted-foreground)', letterSpacing: '0.06em' }}
+            >
+              PENDING ({pending.length})
+            </p>
+          </div>
+
+          {pending.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-12 text-center">
+              <i
+                className="fa-light fa-shield-check text-3xl"
+                aria-hidden="true"
+                style={{ color: 'var(--brand-color)' }}
+              />
               <p className="text-sm font-medium">All caught up</p>
-              <p className="text-sm text-muted-foreground" style={{ maxWidth: 360 }}>
-                No surveys are waiting for review. When a survey closes, it will appear here
-                before faculty can see results.
+              <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                No surveys pending review.
               </p>
             </div>
-          </div>
-        ) : (
-          <DataTable<ModerationRow>
-            data={rows}
-            columns={columns}
-            getRowId={(row) => row.id}
-            selectable
-            searchable
-            defaultSort={{ key: 'deadline', dir: 'asc' }}
-            onRowClick={(row) => setSurveyToRelease(row.survey)}
-            bulkActionsSlot={(selectedSet) => (
-              <Button
-                size="sm"
-                variant="default"
-                onClick={() => {
-                  setBulkIds(Array.from(selectedSet).map(String))
+          ) : (
+            pending.map(survey => {
+              const isSelected = selectedSurveyId === survey.id
+              const count = MOCK_OPEN_TEXT_RESPONSES.filter(
+                r => r.surveyId === survey.id
+              ).length
+
+              return (
+                <button
+                  key={survey.id}
+                  type="button"
+                  onClick={() => setSelectedSurveyId(survey.id)}
+                  className="w-full text-left"
+                  style={{
+                    padding: '10px 14px',
+                    background: isSelected ? 'var(--brand-tint)' : 'transparent',
+                    borderBottom: '1px solid var(--border)',
+                    cursor: 'pointer',
+                    border: 'none',
+                    borderBottomColor: 'var(--border)',
+                    borderBottomWidth: 1,
+                    borderBottomStyle: 'solid',
+                  }}
+                >
+                  <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+                    {survey.courseCode}
+                  </p>
+                  <p
+                    className="text-xs"
+                    style={{ color: 'var(--muted-foreground)', marginBottom: 6 }}
+                  >
+                    {survey.term} · {survey.enrollmentCount} enrolled
+                  </p>
+                  <BulletGauge
+                    responseCount={survey.responseCount}
+                    enrollmentCount={survey.enrollmentCount}
+                    width={80}
+                    height={5}
+                    ariaLabel={null}
+                  />
+                  <p
+                    className="text-xs"
+                    style={{ color: 'var(--muted-foreground)', marginTop: 4 }}
+                  >
+                    {count} open-text {count === 1 ? 'response' : 'responses'}
+                  </p>
+                </button>
+              )
+            })
+          )}
+        </aside>
+
+        {/* ── Right panel — response cards or empty state ──────────────── */}
+        <div className="flex flex-col flex-1 overflow-hidden">
+          {selectedSurvey ? (
+            <>
+              {/* Detail header */}
+              <div
+                className="shrink-0"
+                style={{
+                  padding: '16px 24px 12px',
+                  borderBottom: '1px solid var(--border)',
                 }}
               >
-                <i className="fa-light fa-paper-plane" aria-hidden="true" style={{ fontSize: 12 }} />
-                Release {selectedSet.size} selected
-              </Button>
-            )}
-          />
-        )}
-      </div>
+                <p className="text-base font-semibold">
+                  {selectedSurvey.courseCode} — {selectedSurvey.courseName}
+                </p>
+                <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                  {selectedSurvey.term} · {selectedSurvey.enrollmentCount} enrolled
+                  · {responseCount} {responseCount !== 1 ? 'responses' : 'response'}
+                </p>
+              </div>
 
-      <ReleaseSheet
-        open={!!surveyToRelease}
-        onOpenChange={v => { if (!v) setSurveyToRelease(null) }}
-        survey={surveyToRelease}
-      />
-      <ReleaseBulkDialog
-        open={bulkIds.length > 0}
-        onOpenChange={v => { if (!v) setBulkIds([]) }}
-        surveyIds={bulkIds}
-        onConfirm={handleBulkRelease}
-      />
+              {/* Scrollable response cards */}
+              <div
+                className="flex-1 overflow-y-auto"
+                style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 24 }}
+              >
+                {surveyResponses.length === 0 ? (
+                  <div
+                    className="flex flex-col items-center justify-center py-16 gap-2 text-center"
+                  >
+                    <i
+                      className="fa-light fa-comment-lines text-3xl"
+                      aria-hidden="true"
+                      style={{ color: 'var(--muted-foreground)' }}
+                    />
+                    <p className="text-sm font-medium">No open-text responses</p>
+                    <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                      This survey has no open-text responses to moderate.
+                    </p>
+                  </div>
+                ) : (
+                  groupedResponses.map(group => (
+                    <div key={group.subject} className="flex flex-col gap-3">
+                      {/* Section label */}
+                      <p
+                        className="text-xs font-semibold"
+                        style={{
+                          color: 'var(--muted-foreground)',
+                          letterSpacing: '0.06em',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        {SUBJECT_LABELS[group.subject] ?? group.subject}
+                      </p>
+
+                      {/* Response cards */}
+                      {group.responses.map(response => {
+                        const isFlagged = flaggedIds.has(response.id)
+                        return (
+                          <div
+                            key={response.id}
+                            className="flex flex-col gap-2 rounded-lg border"
+                            style={{
+                              padding: '12px 14px',
+                              borderColor: 'var(--border)',
+                              background: isFlagged ? 'var(--muted)' : 'var(--card)',
+                            }}
+                          >
+                            {/* Question text */}
+                            <p
+                              className="text-xs"
+                              style={{ color: 'var(--muted-foreground)' }}
+                            >
+                              {response.questionText}
+                            </p>
+
+                            {/* Response text + flag button */}
+                            <div className="flex items-start justify-between gap-3">
+                              <p
+                                className="text-sm flex-1 leading-relaxed"
+                                style={{
+                                  color: isFlagged
+                                    ? 'var(--muted-foreground)'
+                                    : 'var(--foreground)',
+                                  textDecoration: isFlagged ? 'line-through' : 'none',
+                                }}
+                              >
+                                {response.text}
+                              </p>
+
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label={isFlagged ? 'Unflag response' : 'Flag response'}
+                                onClick={() => toggleFlag(response.id)}
+                              >
+                                <i
+                                  className={
+                                    isFlagged
+                                      ? 'fa-light fa-eye'
+                                      : 'fa-light fa-eye-slash'
+                                  }
+                                  aria-hidden="true"
+                                  style={{ fontSize: 13 }}
+                                />
+                              </Button>
+                            </div>
+
+                            {/* Flagged notice */}
+                            {isFlagged && (
+                              <p
+                                className="text-xs"
+                                style={{ color: 'var(--chart-4)' }}
+                              >
+                                Flagged — will not be shown to faculty
+                              </p>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Sticky footer */}
+              <div
+                className="shrink-0 border-t border-border flex flex-col gap-3"
+                style={{ padding: '16px 24px', background: 'var(--card)' }}
+              >
+                {responseCount < 5 && (
+                  <LocalBanner variant="warning">
+                    Only {responseCount} {responseCount !== 1 ? 'responses' : 'response'} received.
+                    We recommend at least 5 before sharing results with faculty.
+                  </LocalBanner>
+                )}
+                <div className="flex items-center justify-between">
+                  <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                    {surveyFlaggedCount > 0
+                      ? `${surveyFlaggedCount} ${surveyFlaggedCount === 1 ? 'response' : 'responses'} flagged — will not be shared`
+                      : ''}
+                  </p>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => {
+                      enableResults(selectedSurvey.id)
+                      setSelectedSurveyId(null)
+                    }}
+                  >
+                    <i
+                      className="fa-light fa-share-nodes"
+                      aria-hidden="true"
+                      style={{ fontSize: 12 }}
+                    />
+                    Share Results with Faculty
+                  </Button>
+                </div>
+              </div>
+            </>
+          ) : (
+            /* Empty state — no survey selected */
+            <div className="flex flex-col items-center justify-center flex-1 gap-2 text-center py-20">
+              <i
+                className="fa-light fa-inbox text-3xl"
+                aria-hidden="true"
+                style={{ color: 'var(--muted-foreground)' }}
+              />
+              <p className="text-sm font-medium">Select a survey to review</p>
+              <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                Choose a pending survey from the left to review its responses.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
