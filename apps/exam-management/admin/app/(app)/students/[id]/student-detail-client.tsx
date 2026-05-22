@@ -518,17 +518,6 @@ function CoursesTab({ student, onEnrolled }: { student: ExtendedStudent; onEnrol
   return (
     <>
       <div className="flex flex-col flex-1 min-h-0">
-        {/* Toolbar */}
-        <div className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-border">
-          <span className="text-xs text-muted-foreground">
-            {rows.length} course{rows.length !== 1 ? 's' : ''} enrolled
-          </span>
-          <Button size="sm" onClick={() => setEnrollOpen(true)}>
-            <i className="fa-light fa-plus" aria-hidden="true" />
-            Enroll in Course
-          </Button>
-        </div>
-
         {rows.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
             <div className="flex size-14 items-center justify-center rounded-full bg-muted">
@@ -548,30 +537,41 @@ function CoursesTab({ student, onEnrolled }: { student: ExtendedStudent; onEnrol
             onValueChange={setActiveTerm}
             className="flex flex-1 min-h-0"
           >
-            <TabsList
-              variant="line"
-              className="w-40 shrink-0 flex-col items-start border-r border-border px-2 py-3 gap-0.5"
-            >
+            {/* Term list — DS default variant gives pill-style active state */}
+            <TabsList className="w-44 shrink-0 h-auto flex-col items-start rounded-none border-r border-border px-2 py-3 gap-0.5">
               {sortedTerms.map(term => (
-                <TabsTrigger key={term} value={term} className="w-full justify-between px-3 py-2">
-                  <span className="text-sm">{term}</span>
+                <TabsTrigger key={term} value={term} className="w-full justify-between px-3 py-2 flex-none">
+                  <span>{term}</span>
                   <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
                     {byTerm[term].length}
                   </Badge>
                 </TabsTrigger>
               ))}
             </TabsList>
+
+            {/* Per-term DataTable with Enroll button inside the content area */}
             {sortedTerms.map(term => (
-              <TabsContent key={term} value={term} className="m-0 flex-1 min-h-0 overflow-auto">
-                <DataTable<CourseEnrollmentRow>
-                  data={byTerm[term]}
-                  columns={COURSE_COLUMNS}
-                  getRowId={(row) => row.id}
-                  selectable={false}
-                  searchable={false}
-                  showQueryControls={false}
-                  onRowClick={(row) => router.push(`/courses/offerings/${row.id}`)}
-                />
+              <TabsContent key={term} value={term} className="m-0 flex-1 min-h-0 flex flex-col">
+                <div className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-border">
+                  <span className="text-xs text-muted-foreground">
+                    {byTerm[term].length} course{byTerm[term].length !== 1 ? 's' : ''} · {term}
+                  </span>
+                  <Button size="sm" onClick={() => setEnrollOpen(true)}>
+                    <i className="fa-light fa-plus" aria-hidden="true" />
+                    Enroll in Course
+                  </Button>
+                </div>
+                <div className="flex-1 min-h-0 overflow-auto">
+                  <DataTable<CourseEnrollmentRow>
+                    data={byTerm[term]}
+                    columns={COURSE_COLUMNS}
+                    getRowId={(row) => row.id}
+                    selectable={false}
+                    searchable={false}
+                    showQueryControls={false}
+                    onRowClick={(row) => router.push(`/courses/offerings/${row.id}`)}
+                  />
+                </div>
               </TabsContent>
             ))}
           </Tabs>
