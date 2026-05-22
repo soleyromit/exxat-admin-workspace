@@ -69,7 +69,7 @@ function FolderCard({ href, icon, title, description, metric, status = 'availabl
         <div
           className="flex items-center justify-center w-10 h-10 rounded-md mb-2"
           style={{
-            backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+            backgroundColor: 'var(--brand-tint)',
           }}
         >
           <i

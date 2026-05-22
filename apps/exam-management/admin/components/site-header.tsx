@@ -46,7 +46,10 @@ export function SiteHeader({ title, breadcrumbs }: SiteHeaderProps) {
       <div className="flex-1 min-w-0 flex items-center gap-2">
         <div className="flex-1 min-w-0">
         {breadcrumbs && breadcrumbs.length > 0 ? (
-          <nav aria-label="Breadcrumb">
+          <>
+            {/* Visually hidden h1 ensures every page has a level-one heading for screen readers */}
+            <h1 className="sr-only">{title}</h1>
+            <nav aria-label="Breadcrumb">
             <ol className="flex items-center gap-2 text-sm">
               {breadcrumbs.map((crumb, index) => (
                 <li key={index} className="flex items-center gap-2">
@@ -75,6 +78,7 @@ export function SiteHeader({ title, breadcrumbs }: SiteHeaderProps) {
               ))}
             </ol>
           </nav>
+          </>
         ) : (
           <h1 className="text-base font-semibold truncate">{title}</h1>
         )}

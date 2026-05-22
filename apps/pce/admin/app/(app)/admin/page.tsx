@@ -114,7 +114,7 @@ function EntityCard({ entity }: { entity: EntityTile }) {
         </CardAction>
         <div
           className="flex items-center justify-center w-9 h-9 rounded-md mb-2"
-          style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))' }}
+          style={{ backgroundColor: 'var(--brand-tint)' }}
         >
           <i
             className={`fa-light ${entity.icon} text-sm`}

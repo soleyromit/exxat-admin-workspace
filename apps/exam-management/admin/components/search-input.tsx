@@ -210,13 +210,14 @@ export function SearchInput({
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                   Recently Viewed
                 </span>
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={handleClearViewed}
-                  className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                  className="h-auto py-0 px-1 text-[10px] text-muted-foreground"
                 >
                   Clear
-                </button>
+                </Button>
               </div>
               <ul>
                 {visibleViewed.map((item) => (
@@ -260,13 +261,14 @@ export function SearchInput({
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                   Recent Searches
                 </span>
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={handleClearSearches}
-                  className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                  className="h-auto py-0 px-1 text-[10px] text-muted-foreground"
                 >
                   Clear all
-                </button>
+                </Button>
               </div>
               <ul className="pb-1">
                 {visibleRecent.map((term) => (
@@ -283,14 +285,15 @@ export function SearchInput({
                         style={{ fontSize: 12, width: 14 }}
                       />
                       <span className="flex-1 text-sm text-foreground truncate">{term}</span>
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
                         onClick={(e) => handleRemoveRecent(e, term)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-muted-foreground hover:text-foreground"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
                         aria-label={`Remove "${term}" from recent searches`}
                       >
                         <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 11 }} />
-                      </button>
+                      </Button>
                     </div>
                   </li>
                 ))}

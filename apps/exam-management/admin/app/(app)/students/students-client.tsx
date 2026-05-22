@@ -424,40 +424,33 @@ export default function StudentsClient() {
               <div className="flex items-center gap-2 flex-wrap">
                 <Popover open={termOpen} onOpenChange={setTermOpen}>
                   <PopoverTrigger asChild>
-                    <button
-                      type="button"
+                    <Button
+                      variant="outline"
+                      size="sm"
                       aria-expanded={termOpen}
-                      className="inline-flex items-center gap-1.5 text-xs rounded"
-                      style={{
-                        height: 26,
-                        padding: '0 8px',
-                        border: '1.5px dashed var(--border)',
-                        backgroundColor: 'var(--background)',
-                        color: 'var(--muted-foreground)',
-                        cursor: 'pointer',
-                        userSelect: 'none',
-                      }}
+                      className="h-[26px] gap-1.5 text-xs text-muted-foreground border-dashed px-2"
                     >
                       <i className="fa-light fa-calendar" aria-hidden="true" style={{ fontSize: 10 }} />
                       <span className="font-medium">{selectedTerm}</span>
                       <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 8 }} />
-                    </button>
+                    </Button>
                   </PopoverTrigger>
                   <PopoverContent align="start" style={{ width: 180, padding: '6px 0' }}>
                     {TERMS.map(term => (
-                      <button
+                      <Button
                         key={term}
-                        type="button"
+                        variant="ghost"
+                        size="sm"
                         onClick={() => { setSelectedTerm(term); setTermOpen(false) }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-muted transition-colors"
+                        className="w-full justify-start gap-2 px-3 rounded-none"
                         style={{ color: term === selectedTerm ? 'var(--brand-color)' : 'var(--foreground)' }}
                       >
-                        {term === selectedTerm && (
-                          <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, flexShrink: 0 }} />
-                        )}
-                        {term !== selectedTerm && <span style={{ width: 14, flexShrink: 0 }} aria-hidden="true" />}
+                        {term === selectedTerm
+                          ? <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, flexShrink: 0 }} />
+                          : <span style={{ width: 14, flexShrink: 0 }} aria-hidden="true" />
+                        }
                         {term}
-                      </button>
+                      </Button>
                     ))}
                   </PopoverContent>
                 </Popover>
