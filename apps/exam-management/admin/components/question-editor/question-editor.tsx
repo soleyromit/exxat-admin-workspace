@@ -524,10 +524,10 @@ function McqControls({
       <p className="text-[11px] text-muted-foreground -mt-1">
         {isMulti ? 'Mark all correct answers — students can earn partial credit.' : 'Mark exactly one correct answer.'}
       </p>
-      <ul className="flex flex-col gap-2">
-        {payload.options.map((opt, i) => (
-          <li key={opt.id} className="flex items-start gap-2">
-            {isMulti ? (
+      {isMulti ? (
+        <ul className="flex flex-col gap-2">
+          {payload.options.map((opt, i) => (
+            <li key={opt.id} className="flex items-start gap-2">
               <Checkbox
                 id={`opt-${opt.id}`}
                 checked={opt.correct}
@@ -535,39 +535,80 @@ function McqControls({
                 aria-label={`Mark option ${String.fromCharCode(65 + i)} correct`}
                 className="mt-2"
               />
-            ) : (
-              <RadioGroup value={opt.correct ? opt.id : ''} onValueChange={(_v) => setOption(i, { correct: true })}>
-                <RadioGroupItem value={opt.id} id={`opt-${opt.id}`} aria-label={`Mark option ${String.fromCharCode(65 + i)} correct`} className="mt-2" />
-              </RadioGroup>
-            )}
-            <span className="font-mono text-xs font-bold w-5 text-center text-muted-foreground mt-2.5">
-              {String.fromCharCode(65 + i)}
-            </span>
-            <Input
-              type="text"
-              value={opt.text}
-              onChange={e => setOption(i, { text: e.target.value })}
-              placeholder={`Option ${String.fromCharCode(65 + i)}`}
-              className="flex-1"
-            />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => removeOption(i)}
-                  disabled={payload.options.length <= 2}
-                  aria-label={`Remove option ${String.fromCharCode(65 + i)}`}
-                  className="mt-1"
-                >
-                  <i className="fa-light fa-trash-can" aria-hidden="true" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Remove option</TooltipContent>
-            </Tooltip>
-          </li>
-        ))}
-      </ul>
+              <span className="font-mono text-xs font-bold w-5 text-center text-muted-foreground mt-2.5">
+                {String.fromCharCode(65 + i)}
+              </span>
+              <Input
+                type="text"
+                value={opt.text}
+                onChange={e => setOption(i, { text: e.target.value })}
+                placeholder={`Option ${String.fromCharCode(65 + i)}`}
+                className="flex-1"
+              />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => removeOption(i)}
+                    disabled={payload.options.length <= 2}
+                    aria-label={`Remove option ${String.fromCharCode(65 + i)}`}
+                    className="mt-1"
+                  >
+                    <i className="fa-light fa-trash-can" aria-hidden="true" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Remove option</TooltipContent>
+              </Tooltip>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <RadioGroup
+          value={payload.options.find(o => o.correct)?.id ?? ''}
+          onValueChange={val => {
+            const idx = payload.options.findIndex(o => o.id === val)
+            if (idx >= 0) setOption(idx, { correct: true })
+          }}
+          className="flex flex-col gap-2"
+        >
+          {payload.options.map((opt, i) => (
+            <div key={opt.id} className="flex items-start gap-2">
+              <RadioGroupItem
+                value={opt.id}
+                id={`opt-${opt.id}`}
+                aria-label={`Mark option ${String.fromCharCode(65 + i)} correct`}
+                className="mt-2"
+              />
+              <span className="font-mono text-xs font-bold w-5 text-center text-muted-foreground mt-2.5">
+                {String.fromCharCode(65 + i)}
+              </span>
+              <Input
+                type="text"
+                value={opt.text}
+                onChange={e => setOption(i, { text: e.target.value })}
+                placeholder={`Option ${String.fromCharCode(65 + i)}`}
+                className="flex-1"
+              />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => removeOption(i)}
+                    disabled={payload.options.length <= 2}
+                    aria-label={`Remove option ${String.fromCharCode(65 + i)}`}
+                    className="mt-1"
+                  >
+                    <i className="fa-light fa-trash-can" aria-hidden="true" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Remove option</TooltipContent>
+              </Tooltip>
+            </div>
+          ))}
+        </RadioGroup>
+      )}
       <div className="flex items-center justify-between gap-3 pt-1">
         <Button variant="outline" size="sm" onClick={addOption} className="gap-1.5">
           <i className="fa-light fa-plus" aria-hidden="true" />
