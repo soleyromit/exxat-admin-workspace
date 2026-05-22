@@ -143,6 +143,18 @@ Every gate cites a rule ID. Hook output references the ID so violations are audi
 - **I18N-003** — CSS uses logical properties (`padding-inline-start`, `margin-inline-end`, `text-align: start`) instead of physical (`left`/`right`); Tailwind logical classes (`ps-*`, `pe-*`, `me-*`, `start-*`, `end-*`) are first-class. *Gate:* code review.
 - **I18N-004** — New locale activation requires ADR documenting locale, glossary owner, QA path. *Gate:* governance.
 
+### UX — Design Process Protocol (2026-05-22)
+
+Seven phases required before any screen design or implementation. Non-negotiable. No phase can be skipped. Gate: UserPromptSubmit when "design / new screen / new page / redesign" is detected.
+
+- **UX-001 (Synthesis)** — Before any screen: extract ALL entities + relationships from docs + transcripts. Write "Job to be done" per persona (one sentence). Write "Moment that matters" per persona. Write "Primary fear" per persona. Map the entity state machine. Map the full entity chain (e.g., Template → Survey → Response → Analytics → Action Plan). *Gate:* mandatory; blocks UX-002.
+- **UX-002 (Purpose Statements)** — For EVERY screen: write "This screen exists so [persona] can [specific decision or action]." If unsatisfied in one sentence, the screen is not ready to design. List every decision + every data item needed. Verify all needed data is visible on this screen without navigation. *Gate:* mandatory; blocks UX-003.
+- **UX-003 (Mobbin Research)** — Search Mobbin for the FLOW TYPE (not the product category) before sketching. "moderation queue" not "survey tool". "analytics with comparison" not "faculty dashboard". Pull 3-5 screens. Extract the principle (how does the layout answer the question? where does the primary action live? how does it handle empty state?). Never search once at project start and stop — search per flow type every time. *Gate:* mandatory; Mobbin MCP must be called. *(Memory: [[feedback_basic_claude_design]])*
+- **UX-004 (Contextual Data Map)** — For each decision point: list the data the user needs, confirm it is on this screen. If they must navigate away to get it, that is a design failure. Fix by bringing the data to the screen (inline summary, tooltip, sheet from right) or removing the decision from this screen. *Gate:* mandatory.
+- **UX-005 (AI Layer Map)** — Map AI assistance at every friction/decision point. AI is not a panel — it is a layer. Every form field: can AI pre-fill? Every decision: can AI recommend with visible reasoning? Every data display: can AI add insight? AI entry points must be documented before implementation. *Gate:* mandatory for any screen touching evaluation, analytics, or distribution workflows.
+- **UX-006 (Visualization Purpose)** — For every data point shown, write: (1) the question it answers, (2) the action the user takes after reading it. No action = no chart; replace with text. Chart type selection: comparison → bullet/strip; trend → sparkline/slope; threshold → BulletGauge; composition → only then bar. Never progress bar for performance metric. *(Rules: VIZ-001, VIZ-002, VIZ-004, VIZ-010)*
+- **UX-007 (State Coverage)** — Every screen defines: empty (what user does NEXT), loading (skeleton), error (specific + recovery action), partial (degraded experience), at-threshold (200 items), first-time (onboarding vs. empty). No screen is done without all 6 states documented. *Gate:* state-review subagent call before any PR.
+
 ---
 
 ## 5. Triggers (auto-firing)

@@ -1,7 +1,59 @@
 # PCE Admin — UI Patterns + Compliance Reference
 
 > Living doc. Read at session start via CLAUDE.md. Updated in the same commit whenever a new pattern is established.
-> Last extracted from codebase: 2026-05-17.
+> Last extracted from codebase: 2026-05-22.
+
+---
+
+## 0. Screen Purpose Map (UX-002 compliance)
+
+Every PCE screen has one sentence describing why it exists. Build nothing without one.
+
+| Screen | Persona | Purpose |
+|---|---|---|
+| Surveys home | Admin | Give a semester-health view and surface exactly what needs action today (at-risk surveys, response rate trajectory, batch status) |
+| Survey detail | Admin | Decide whether to send a reminder, close early, or wait — with response trajectory visible without navigating away |
+| Push wizard | Admin | Distribute evaluations to an entire semester batch with smart defaults, minimizing per-course configuration |
+| Run Evaluation | Admin | Reduce end-of-term distribution to 3 clicks for experienced admins — Leo handles audit, window, and course readiness |
+| Template editor | Admin | Build a reusable evaluation instrument that generates comparable data across semesters and faculty groups |
+| Templates list | Admin | Find, reuse, duplicate, or archive instruments across terms |
+| Moderation | Admin | Review feedback quality and protect faculty from inappropriate content before releasing results that affect their careers and performance reviews |
+| Settings | Admin | Configure program-level defaults (Likert scale, response threshold, access matrix) that propagate to all new evaluations |
+| Surveys home (student) | Student | See all open evaluations, understand what's due and when, and start/continue/edit responses |
+| Survey form (student) | Student | Complete an anonymous section-by-section evaluation in under 8 minutes with trust signals at every step |
+| My Surveys | Faculty | Monitor surveys where they are an instructor — see Live response rate and access Results when released |
+| Faculty results | Faculty | Understand teaching effectiveness per dimension, compare to peers (weighted), and identify one thing to improve before the next offering |
+
+---
+
+## 0.1 AI Layer Map (UX-005 compliance)
+
+Where AI should be active in PCE (not just Leo panel):
+
+| Screen | AI touchpoint |
+|---|---|
+| Template editor | Question suggestions per subject; accreditation alignment indicator; balance check (too many Likert, no open-text) |
+| Wizard Step 1 | Auto-detect active term + program; pre-select most recent used |
+| Wizard Step 2 | Flag courses with <5 enrolled (auto-deselect); flag unassigned faculty inline |
+| Wizard Step 4 | Smart window suggestion (term end −7d open, +14d close); detect past open date |
+| Survey detail | Response rate trajectory insight ("At this rate, you'll reach threshold by Jun 8"); one-click nudge recommendation |
+| Moderation | AI sentiment pre-tag per response (positive/negative/concerning); theme identification across responses |
+| Faculty results | Actionable insight per section ("Students found pacing rushed — 4 of 7 comments"); improvement prompt |
+
+---
+
+## 0.2 Visualization Purpose Map (UX-006 compliance)
+
+Every viz answers one question and prompts one action.
+
+| Component | Question answered | Action prompted |
+|---|---|---|
+| BulletGauge (response rate) | "Have we hit the 5-response threshold?" | Send reminder / release results |
+| SectionScoreStrip | "How did this section score on 1–5?" | Read comments for context |
+| MicroTrend sparkline | "Is this course improving, stable, or declining?" | Investigate declining courses |
+| Comparison strip (me / dept / school) | "Am I above or below my peers?" | Write action plan |
+| Response rate trajectory (admin) | "Will we reach threshold before close?" | Send reminder now |
+| Sentiment tag (AI, moderation) | "Is this response flagged by AI as concerning?" | Review + approve or flag |
 
 ---
 
