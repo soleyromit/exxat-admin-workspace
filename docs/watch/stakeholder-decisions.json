@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-05-17",
+  "lastUpdated": "2026-05-23",
   "decisions": [
     {
       "id": "pce-decision-001",
@@ -59,6 +59,36 @@
       "source": "PCE PRD §9 Non-Functional Requirements",
       "sourceType": "prd",
       "date": "2026-05-17",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-007",
+      "product": "pce",
+      "text": "The overall approach is to re-design Surveys in such a way that Course Evaluation and Survey can co-exist.",
+      "stakeholder": "Monil Pokar",
+      "source": "PCE PRD §2 Key Product Decisions #4",
+      "sourceType": "prd",
+      "date": "2026-05-23",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-008",
+      "product": "pce",
+      "text": "Three new constructs introduced to enable CE: Survey type (mandatory — Course evaluations or General surveys), Course type (optional — Didactic or Clinical), and Subject (assigned to each section).",
+      "stakeholder": "Monil Pokar",
+      "source": "PCE PRD §2 Key Product Decisions #5",
+      "sourceType": "prd",
+      "date": "2026-05-23",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-009",
+      "product": "pce",
+      "text": "We will just track submission and not the responses — survey responses are untraceable to individual students; no IP address, device ID, or response timing metadata exposed.",
+      "stakeholder": "Monil Pokar",
+      "source": "PCE PRD §9 Non-Functional Requirements — Anonymity/Privacy",
+      "sourceType": "prd",
+      "date": "2026-05-23",
       "status": "confirmed"
     }
   ]
