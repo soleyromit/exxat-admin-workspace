@@ -10,14 +10,7 @@
       "why": "Single source of truth for all Exxat product apps. DS submodules prevent divergence from the canonical design system. CLAUDE.md ensures every session starts with the same context.",
       "source": "Architecture — Romit",
       "severity": null,
-      "files": [
-        "CLAUDE.md",
-        "pnpm-workspace.yaml",
-        "turbo.json",
-        "tsconfig.base.json",
-        "exxat-ds/",
-        "studentUX/"
-      ]
+      "files": ["CLAUDE.md","pnpm-workspace.yaml","turbo.json","tsconfig.base.json","exxat-ds/","studentUX/"]
     },
     {
       "id": "2026-04-16-exam-management-001",
@@ -29,10 +22,7 @@
       "why": "First product app in the monorepo. Established the pattern all other products follow: next.config.ts webpack alias, globals.css DS import, layout.tsx with Typekit + FA.",
       "source": "Architecture — Romit",
       "severity": null,
-      "files": [
-        "apps/exam-management/admin/",
-        "apps/exam-management/assessment-taker/"
-      ]
+      "files": ["apps/exam-management/admin/","apps/exam-management/assessment-taker/"]
     },
     {
       "id": "2026-04-20-exam-management-002",
@@ -44,9 +34,7 @@
       "why": "Original QB had raw HTML tables, non-DS buttons, and a state shape that couldn't support multi-folder questions or role-based views. Redesign aligned with Aarti's PRD §3 requirements.",
       "source": "Architecture — Romit",
       "severity": null,
-      "files": [
-        "apps/exam-management/admin/app/(app)/question-bank/"
-      ]
+      "files": ["apps/exam-management/admin/app/(app)/question-bank/"]
     },
     {
       "id": "2026-04-21-exam-management-003",
@@ -58,10 +46,7 @@
       "why": "Assessment Builder is the core workflow connecting QB to assessments. Courses page is the entry point for faculty. Column drag-reorder was a direct Aarti directive.",
       "source": "Architecture — Romit",
       "severity": null,
-      "files": [
-        "apps/exam-management/admin/app/(app)/assessment-builder/",
-        "apps/exam-management/admin/app/(app)/courses/"
-      ]
+      "files": ["apps/exam-management/admin/app/(app)/assessment-builder/","apps/exam-management/admin/app/(app)/courses/"]
     },
     {
       "id": "2026-05-12-workspace-001",
@@ -73,11 +58,7 @@
       "why": "DS submodule updates were silently breaking product code. Subagent telemetry enables the architect agent to propose rules based on evidence. Appearances toggle: Aarti needs to preview both Exxat One and Prism branding.",
       "source": "Architecture — Romit",
       "severity": null,
-      "files": [
-        "docs/governance/",
-        "scripts/architect-input.py",
-        ".claude/hooks/"
-      ]
+      "files": ["docs/governance/","scripts/architect-input.py",".claude/hooks/"]
     },
     {
       "id": "2026-05-12-exam-management-004",
@@ -89,9 +70,7 @@
       "why": "WCAG 400% compliance is non-negotiable for government/healthcare contracts. Multi-column sort was a backlog item from Aarti's May 7 session.",
       "source": "Architecture — Romit",
       "severity": null,
-      "files": [
-        "apps/exam-management/admin/app/(app)/question-bank/"
-      ]
+      "files": ["apps/exam-management/admin/app/(app)/question-bank/"]
     },
     {
       "id": "2026-05-13-exam-management-005",
@@ -103,9 +82,7 @@
       "why": "Archive/restore/copy were the last PRD §4.6 gaps. Bulk bar enables faculty to manage large question sets efficiently. Lock icons surface visibility rules without a tooltip.",
       "source": "Architecture — Romit",
       "severity": null,
-      "files": [
-        "apps/exam-management/admin/app/(app)/question-bank/"
-      ]
+      "files": ["apps/exam-management/admin/app/(app)/question-bank/"]
     },
     {
       "id": "2026-05-14-exam-management-006",
@@ -117,9 +94,7 @@
       "why": "Full-text search was the last major missing QB feature. Toast+undo pattern matches PRD §4.6 reversibility requirement. Sidebar pinned section surfaced most-used folders.",
       "source": "Architecture — Romit",
       "severity": null,
-      "files": [
-        "apps/exam-management/admin/app/(app)/question-bank/"
-      ]
+      "files": ["apps/exam-management/admin/app/(app)/question-bank/"]
     },
     {
       "id": "2026-05-14-portal-001",
@@ -131,9 +106,7 @@
       "why": "Single entry point to all Exxat products. Romit and Arun need a launcher that looks production-ready for stakeholder demos. Prism theme aligns with the new brand direction.",
       "source": "Architecture — Romit",
       "severity": null,
-      "files": [
-        "apps/portal/"
-      ]
+      "files": ["apps/portal/"]
     },
     {
       "id": "2026-05-16-workspace-002",
@@ -145,9 +118,7 @@
       "why": "Context compaction was causing sessions to start cold — not knowing what was already built and what was in-progress. BUILD-STATUS.md is the first thing a new session reads.",
       "source": "Architecture — Romit",
       "severity": null,
-      "files": [
-        "docs/BUILD-STATUS.md"
-      ]
+      "files": ["docs/BUILD-STATUS.md"]
     },
     {
       "id": "2026-05-17-workspace-003",
@@ -159,10 +130,7 @@
       "why": "Prevent design drift — when Monil or Nipun updates a PRD, code should reflect it by next morning without Romit having to prompt.",
       "source": "Architecture — Romit",
       "severity": null,
-      "files": [
-        "docs/watch/registry.json",
-        "docs/watch/agent-prompts/prd-watcher.md"
-      ]
+      "files": ["docs/watch/registry.json","docs/watch/agent-prompts/prd-watcher.md"]
     },
     {
       "id": "2026-05-17-workspace-004",
@@ -174,10 +142,7 @@
       "why": "FERPA violation = $43K–$274K fine per incident. WCAG failures block government contracts. Audit must run automatically — not only when Romit notices a problem.",
       "source": "Architecture — Romit",
       "severity": null,
-      "files": [
-        "docs/watch/agent-prompts/compliance-sweep.md",
-        "scripts/ds-adoption-audit.py"
-      ]
+      "files": ["docs/watch/agent-prompts/compliance-sweep.md","scripts/ds-adoption-audit.py"]
     },
     {
       "id": "2026-05-17-workspace-005",
@@ -189,10 +154,7 @@
       "why": "Without these docs, every session re-discovers the same violations — wrong DataTable pattern, raw buttons, missing aria-hidden. Loading them at start eliminates the correction loop.",
       "source": "Architecture — Romit",
       "severity": null,
-      "files": [
-        "apps/pce/docs/patterns/pce-ui-patterns.md",
-        "apps/exam-management/docs/patterns/ui-patterns.md"
-      ]
+      "files": ["apps/pce/docs/patterns/pce-ui-patterns.md","apps/exam-management/docs/patterns/ui-patterns.md"]
     },
     {
       "id": "2026-05-17-workspace-006",
@@ -204,9 +166,7 @@
       "why": "Romit needed a simple interface to register new docs without editing JSON by hand. Also a cross-reference surface to show stakeholders (Arun, Nipun, Monil) what changed and why.",
       "source": "Architecture — Romit",
       "severity": null,
-      "files": [
-        "tools/doc-watcher/"
-      ]
+      "files": ["tools/doc-watcher/"]
     },
     {
       "id": "2026-05-17-workspace-007",
@@ -218,11 +178,7 @@
       "why": "Reading full DS source per session cost ~4K tokens/component. Snapshot reduces it to ~50 tokens/grep — 80× reduction in DS lookup cost per session.",
       "source": "Architecture — Romit",
       "severity": null,
-      "files": [
-        "scripts/build_ds_snapshot.py",
-        "docs/watch/ds-snapshot.json",
-        "docs/watch/agent-prompts/ds-snapshot-refresh.md"
-      ]
+      "files": ["scripts/build_ds_snapshot.py","docs/watch/ds-snapshot.json","docs/watch/agent-prompts/ds-snapshot-refresh.md"]
     },
     {
       "id": "2026-05-17-workspace-008",
@@ -234,10 +190,7 @@
       "why": "Eliminates re-reading PRDs + transcripts every session to answer 'what did Aarti confirm about X'. Queryable JSON, transcript-level granularity — not synthesised summaries.",
       "source": "Architecture — Romit",
       "severity": null,
-      "files": [
-        "docs/watch/stakeholder-decisions.json",
-        "docs/watch/agent-prompts/granola-intake.md"
-      ]
+      "files": ["docs/watch/stakeholder-decisions.json","docs/watch/agent-prompts/granola-intake.md"]
     },
     {
       "id": "2026-05-17-workspace-009",
@@ -249,9 +202,7 @@
       "why": "The cohort-filter incident: Aarti's 'no filters' directive was in the raw transcript but not in the summary — a filter was built and removed after two verification cycles. This agent catches that error class automatically.",
       "source": "Architecture — Romit",
       "severity": null,
-      "files": [
-        "docs/watch/agent-prompts/transcript-prd-diff.md"
-      ]
+      "files": ["docs/watch/agent-prompts/transcript-prd-diff.md"]
     },
     {
       "id": "2026-05-17-exam-management-007",
@@ -263,10 +214,7 @@
       "why": "BUILD-STATUS.md was going stale — Nipun marks items complete in Excel but the doc required a manual update. Now syncs every morning.",
       "source": "Architecture — Romit",
       "severity": null,
-      "files": [
-        "docs/watch/agent-prompts/prd-watcher.md",
-        "docs/BUILD-STATUS.md"
-      ]
+      "files": ["docs/watch/agent-prompts/prd-watcher.md","docs/BUILD-STATUS.md"]
     },
     {
       "id": "2026-05-19-exam-management-build-status-001",
@@ -281,6 +229,105 @@
       "files": ["docs/BUILD-STATUS.md"]
     },
     {
+      "id": "2026-05-23-exam-management-build-status-001",
+      "date": "2026-05-23",
+      "product": "exam-management",
+      "type": "prd-change",
+      "title": "BUILD-STATUS updated from Nipun roadmap Excel",
+      "what": "Added two new feature rows: 'Setup — Logo, LMS integration, RBAC, Import Courses' → 🟡 In Progress; 'Base entities — Faculty, Students' → 🟡 In Progress. Last updated date bumped to 2026-05-23.",
+      "why": "Nipun's roadmap Excel updated — two new work items appeared that were not previously tracked in BUILD-STATUS.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
+      "severity": null,
+      "files": ["docs/BUILD-STATUS.md"]
+    },
+    {
+      "id": "2026-05-23-pce-flagged-001",
+      "date": "2026-05-23",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD — Distribute Survey wizard steps now defined (5-step structure)",
+      "what": "Step 2 Distribute Survey now has explicit 5-step wizard: Properties/Details, Distribution, Survey Design, Communication, Report Access.",
+      "why": "CLEAR design decision — this will drive the wizard step structure in the PCE admin app when Distribute Survey is built.",
+      "source": "PCE PRD §4.2 Step 2 — Distribute Survey"
+    },
+    {
+      "id": "2026-05-23-pce-flagged-002",
+      "date": "2026-05-23",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD — Shared Platform Architecture section added under Analytics",
+      "what": "New section: Shared Platform Architecture (Between PCE and General Surveys): Survey type, Template engine, Distribution engine, Analytics foundation.",
+      "why": "AMBIGUOUS — implications for whether PCE and General Surveys share data models or just UI patterns. Needs clarification from Monil.",
+      "source": "PCE PRD §5 Analytics"
+    },
+    {
+      "id": "2026-05-23-pce-flagged-003",
+      "date": "2026-05-23",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD — Limitation of Current Survey Capability section added",
+      "what": "New section documenting 3 limitations of current Exxat Surveys: no bulk push, auto-render sections, access control within form.",
+      "why": "Non-functional context addition explaining redesign rationale. No code action needed.",
+      "source": "PCE PRD §3 User Personas (new subsection)"
+    },
+    {
+      "id": "2026-05-23-pce-flagged-004",
+      "date": "2026-05-23",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD — Dependency renamed: SIS/course roster → SIS/LMS",
+      "what": "Dependencies table: 'SIS/course roster integration' renamed to 'SIS/LMS'; risk text changed from 'Surveys cannot auto-trigger; manual workaround required for Phase 1' to 'Survey distribution cannot be automated'.",
+      "why": "CLEAR — scope of dependency broadened. Informational.",
+      "source": "PCE PRD §12 Dependencies and Risks"
+    },
+    {
+      "id": "2026-05-23-exam-flagged-001",
+      "date": "2026-05-23",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "Exam Roadmap — 'Question bank on screen analytics' removed from Excel",
+      "what": "Feature that was previously listed as TBD is no longer present in Nipun's Excel. Never reached BUILD-STATUS (was TBD → skipped).",
+      "why": "CLEAR removal — possible descope or deferral. Confirm with Nipun.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)"
+    },
+    {
+      "id": "2026-05-23-exam-flagged-002",
+      "date": "2026-05-23",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "Exam Roadmap — Stakeholder Alignment column added; Question Creation has open alignment points",
+      "what": "New 'Stakeholder Allignment' column in Excel. Question creation (Manual & AI) marked with 'Alignment Points' — suggests open stakeholder disagreements.",
+      "why": "AMBIGUOUS — unknown what alignment gaps exist for Question Creation.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)"
+    },
+    {
+      "id": "2026-05-23-pce-decision-001",
+      "date": "2026-05-23",
+      "product": "pce",
+      "type": "decision-extracted",
+      "title": "PCE PRD — Decision extracted: Survey/CE co-existence redesign approach (pce-decision-007)",
+      "what": "New decision: The overall approach is to re-design Surveys so that Course Evaluation and Survey can co-exist.",
+      "source": "PCE PRD §2 Key Product Decisions #4"
+    },
+    {
+      "id": "2026-05-23-pce-decision-002",
+      "date": "2026-05-23",
+      "product": "pce",
+      "type": "decision-extracted",
+      "title": "PCE PRD — Decision extracted: Three new constructs (pce-decision-008)",
+      "what": "New decision: Introduce Survey type, Course type, and Subject as three new constructs to enable CE distribution.",
+      "source": "PCE PRD §2 Key Product Decisions #5"
+    },
+    {
+      "id": "2026-05-23-pce-decision-003",
+      "date": "2026-05-23",
+      "product": "pce",
+      "type": "decision-extracted",
+      "title": "PCE PRD — Decision extracted: Track submission only, not responses (pce-decision-009) — FERPA implication",
+      "what": "New decision: Track submission only, not response content. FERPA implication: student responses must remain untraceable.",
+      "source": "PCE PRD §9 Non-Functional Requirements — Anonymity/Privacy"
+    },
+    {
       "id": "2026-05-17-workspace-010",
       "date": "2026-05-17",
       "product": "workspace",
@@ -290,10 +337,7 @@
       "why": "Romit can cross-reference design decisions in the browser while building — see what changed today without switching tabs. Zero product UI pollution.",
       "source": "Architecture — Romit",
       "severity": null,
-      "files": [
-        "apps/pce/admin/app/dev-updates.ts",
-        "apps/exam-management/admin/app/dev-updates.ts"
-      ]
+      "files": ["apps/pce/admin/app/dev-updates.ts","apps/exam-management/admin/app/dev-updates.ts"]
     }
   ]
 }
