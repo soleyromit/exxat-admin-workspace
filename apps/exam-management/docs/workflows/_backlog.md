@@ -71,6 +71,17 @@ Source: `docs/research/meetings/2026-05-21-assessment-prd-accessibility-download
 | T61 | ExamSoft parity table — full exam management module | PM / Nipun | Process / PRD | P0 (blocker) | PM task: every feature tagged as parity / parity-deferred / differentiator. Must be complete before further setup screen design. D_EM35. |
 | T62 | Copy assessment — section reorganization UX | Admin / Faculty | Assessment builder | P1 | Builds on T51 "Copy existing" path. After copy: support moving questions between sections, re-assigning sections to different faculty. DESIGN-REVIEW — requires section drag+drop or move-to-section affordance. D_EM33. |
 
+## Phase 1 design tasks — added 2026-05-22
+
+Source: `docs/research/meetings/2026-05-22-assessment-question-design-ai-scoring.md`
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T63 | AI option button + "Add option" — label and placement redesign | Admin / Faculty | Question editor | P1 | "Suggest distractors" (top-right) is too narrow; should cover correct answer too. Vishaka direction: label = "Add using AI" or similar. But placement (together vs. separate) is explicitly NOT decided — "haven't made it yet." DESIGN-REVIEW. D_EM39. |
+| T64 | Scoring fields: per-question total + per-option scores | Admin / Faculty | Question editor | P0 (Tuesday deadline) | Currently entirely missing. Must add: (1) per-question total points, (2) per-option score (correct = N pts, others = 0 by default), (3) editable partial credit per option. Aarti expects to sign off on Tuesday. DESIGN-REVIEW — requires QuestionDraft type + UI. D_EM41. |
+| T65 | Reference documents/images: upload in question creation form | Admin / Faculty | Question editor | P1 | Vishaka: "where are you allowing for reference documents to be uploaded?" Currently no upload field. Applies to all question types. DESIGN-REVIEW — new field + UI. D_EM38. |
+| T66 | Assessment creation: 2-stage flow (build vs. publish/admin) | Admin / Faculty | Assessment builder / create flow | P1 | Stage 1 = question building. Stage 2 = publish/admin setup (dates, download window, randomization). Faculty should not see delivery options while building. Vishaka directive. DESIGN-REVIEW — structural rearchitecture of create-assessment-modal. D_EM37. |
+
 ## Research / blockers (R1–R10 from audit)
 
 | # | Item | Owner | Deadline |
