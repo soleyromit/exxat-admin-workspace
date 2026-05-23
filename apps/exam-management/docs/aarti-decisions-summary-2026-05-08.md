@@ -300,6 +300,8 @@ Everything about the course must be accessible but secondary to the assessment w
 | Objective as prominent per-question field | Objective is metadata ("FYI") — content area is the relevant forward field. Show objective on hover/click only | 2026-05-08 |
 | Flagged-only exclusion for curving | Must be able to exclude ANY question, not just flagged | 2026-05-08 |
 | "High stakes" / "low stakes" labels | Don't categorize assessments by stakes level anywhere in the product — no meaningful product distinction. Removed from all UI labels, copy, and tooltips. | 2026-05-21 |
+| K-type questions | Not Phase 1. Not impactful enough for current release. "Do not obsess about the questions that they are not going to offer." | 2026-05-22 |
+| Out-of-BRD question type discussion in design sessions | "I don't want to even, like, spend one second or one microsecond talking about a question type that is not going to be supported in our current release." Only work on question types in the BRD. | 2026-05-22 |
 
 ---
 
@@ -705,6 +707,65 @@ Before publishing any assessment — regardless of creation pathway — faculty 
 
 > "No matter which way you do it, ultimately, you do the review. And... that review screen should call out: frequency of question use, the point-biserial... score... Bloom's taxonomy. Those four, five columns, we need to align on. And that is what I mean when I say get some PM alignment on." — Aarti
 
+### 5.42 Assessment creation — "Copy from existing" includes same-term (2026-05-22)
+
+Source: `docs/research/meetings/2026-05-22-assessment-question-design-ai-scoring.md` (Granola `1ce6d16e`)
+
+"Copy from existing" is not limited to prior-term exams. Same-term assessments are valid sources. Existing modal label ("Copy from existing") is correct. This clarifies §5.28.
+
+> "You can change user previous terms assessment. It could be the same term also. Right? So user previous assessment is fine." — Vishaka
+
+### 5.43 Assessment creation — two-stage flow: build first, publish second (2026-05-22)
+
+Source: `docs/research/meetings/2026-05-22-assessment-question-design-ai-scoring.md` (Granola `1ce6d16e`)
+
+Assessment setup must be split into two distinct stages:
+- **Stage 1 (Build):** Assessment name + metadata + question selection/creation. Nothing about delivery.
+- **Stage 2 (Publish):** Dates, download window, randomization, time limit, scoring publication mode.
+
+Faculty building their assessment should not be shown delivery/scheduling options until the question-building stage is complete.
+
+> "Administration of exam related setup, like the dates, the publishing, the download window, whether they want to randomize, what is the time, scoring, all of that should be a separate workspace for them. Because when they are putting together the assessment, they are just worrying about, okay, which questions do I want to include?" — Vishaka
+
+Design task generated: T66 (two-stage assessment creation flow) — DESIGN-REVIEW.
+
+### 5.44 Question editor — reference documents/images upload is missing (2026-05-22)
+
+Source: `docs/research/meetings/2026-05-22-assessment-question-design-ai-scoring.md` (Granola `1ce6d16e`)
+
+Vishaka asked where reference documents and images are uploaded in the question creation form. Currently they are not present. Must be added before Tuesday review. Applies to all question types — a question may reference an image or external document that students see alongside the question.
+
+> "Where in the process of creating a question, where are you allowing for the reference documents to be uploaded?" — Vishaka
+
+Design task generated: T65 (reference documents/images in question editor) — DESIGN-REVIEW.
+
+### 5.45 Question editor — essay rubric is optional, framed for AI grading (2026-05-22)
+
+Source: `docs/research/meetings/2026-05-22-assessment-question-design-ai-scoring.md` (Granola `1ce6d16e`)
+
+For essay-type questions, the rubric is optional — faculty can skip it and grade manually. When provided, AI can use the rubric to assist with grading suggestions. Framing: "Optional rubric — if you want AI to support grading."
+
+Applied today: updated rubric label in `QuestionEditor` EssayControls (question-editor.tsx).
+
+> "Make make this rubric optional. Okay. And say, optional rubric in case you want AI to support grading or recommend grading or whatever. So they know it's optional. They can move on. They don't have to do anything." — Vishaka
+
+### 5.46 Question editor — scoring must be complete: per-question + per-option (2026-05-22)
+
+Source: `docs/research/meetings/2026-05-22-assessment-question-design-ai-scoring.md` (Granola `1ce6d16e`)
+
+Every question form must show all of:
+1. **Per-question total score** — how many points this question is worth
+2. **Per-option score** — default: correct option = N points, all others = 0
+3. **Editable partial credit** — instructor can override any option's point value ("I'll make that zero, two and a half")
+
+Current question editor is missing items 1 and 2 entirely. Partial credit toggle exists but shows no point values. This is a P0 blocker — Aarti expects to see complete scoring by Tuesday.
+
+> "The correct choice is going to have five points. The other ones is going to have zero points or 10 points or 20 points or 100 points. The default is that there is a right answer and everything else is zero. But I want to give somebody a partial credit. I'll make that zero, two and a half." — Vishaka
+
+> "When I when we look at the data on Tuesday, can we make sure that if there are 10 things that have to be set up for a question, that all 10 things are addressed." — Aarti
+
+Design task generated: T64 (scoring fields in question editor) — DESIGN-REVIEW.
+
 ---
 
 ## Appendix — source meetings
@@ -726,6 +787,7 @@ Before publishing any assessment — regardless of creation pathway — faculty 
 | 2026-05-14 14:02 | Exam Management — Student login experience | `81c06a04` | Vishaka + Romit |
 | 2026-05-19 13:59 | Assessment creation workflows and question bank design | `f59cfbe4` | Aarti + Vishaka + Romit |
 | 2026-05-21 10:33 | Assessment PRD — accessibility standards, offline exam download, and parity with ExamSoft | `66898189` | Vishaka + Nipun + Romit |
+| 2026-05-22 13:23 | Assessment question design — AI features, scoring, and workflow | `1ce6d16e` | Aarti + Vishaka + Romit |
 
 Per-meeting raw notes at `apps/exam-management/docs/research/meetings/` and `apps/pce/docs/research/meetings/`.
 
