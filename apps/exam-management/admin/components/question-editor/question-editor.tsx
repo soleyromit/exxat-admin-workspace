@@ -35,7 +35,7 @@ import {
 } from '@/lib/question-editor-types'
 import type { CourseObjective } from '@/lib/faculty-mock-data'
 
-// ─── Public props ──────────────────────────────────────────────────────────
+// ─── Public props ──────────────────────────────────────────────
 
 export interface QuestionEditorProps {
   draft: QuestionDraft
@@ -57,7 +57,7 @@ export type SaveDestination =
   | 'bank'               // publish to QB, library row created
   | 'assessment'         // add to active assessment + bank
 
-// ─── Main shell ────────────────────────────────────────────────────────────
+// ─── Main shell ──────────────────────────────────────────────
 
 export function QuestionEditor({
   draft, onChange, objectives, compact = false,
@@ -83,7 +83,7 @@ export function QuestionEditor({
     onChange({ ...draft, payload })
   }
 
-  // ─── AI enhance — mock suggestion engine ────────────────────────────────
+  // ─── AI enhance — mock suggestion engine ──────────────────────────────────
   function runAi(action: 'tighten-stem' | 'add-distractors' | 'tag-objective') {
     setAiThinking(true)
     setTimeout(() => {
@@ -322,7 +322,7 @@ export function QuestionEditor({
   )
 }
 
-// ─── Type picker grid ─────────────────────────────────────────────────────
+// ─── Type picker grid ───────────────────────────────────────────────
 
 function TypePickerGrid({ value, onChange }: { value: EditorQType; onChange: (t: EditorQType) => void }) {
   return (
@@ -355,7 +355,7 @@ function TypePickerGrid({ value, onChange }: { value: EditorQType; onChange: (t:
   )
 }
 
-// ─── Type-specific controls ───────────────────────────────────────────────
+// ─── Type-specific controls ─────────────────────────────────────────────
 
 function TypeControls({
   payload, onChange, aiSuggestion, onAcceptAi, onRejectAi,
@@ -397,7 +397,7 @@ function TypeControls({
   }
 }
 
-// ─── MCQ / Multi-select ───────────────────────────────────────────────────
+// ─── MCQ / Multi-select ─────────────────────────────────────────────
 
 function McqControls({
   payload, onChange, aiSuggestion, onAcceptAi, onRejectAi,
@@ -528,7 +528,7 @@ function McqControls({
   )
 }
 
-// ─── True / False ─────────────────────────────────────────────────────────
+// ─── True / False ──────────────────────────────────────────────────
 
 function TrueFalseControls({
   payload, onChange,
@@ -555,7 +555,7 @@ function TrueFalseControls({
   )
 }
 
-// ─── Short answer ─────────────────────────────────────────────────────────
+// ─── Short answer ─────────────────────────────────────────────────
 
 function ShortAnswerControls({
   payload, onChange,
@@ -604,7 +604,7 @@ function ShortAnswerControls({
   )
 }
 
-// ─── Numeric ──────────────────────────────────────────────────────────────
+// ─── Numeric ────────────────────────────────────────────────────
 
 function NumericControls({
   payload, onChange,
@@ -648,7 +648,7 @@ function NumericControls({
   )
 }
 
-// ─── Essay ────────────────────────────────────────────────────────────────
+// ─── Essay ──────────────────────────────────────────────────────────
 
 function EssayControls({
   payload, onChange,
@@ -682,7 +682,12 @@ function EssayControls({
       </div>
       <div>
         <div className="flex items-center justify-between mb-2">
-          <Label className="text-xs font-medium">Rubric</Label>
+          <Label className="text-xs font-medium">
+            Rubric{' '}
+            <span className="font-normal text-muted-foreground normal-case tracking-normal text-[11px]">
+              (optional — enables AI grading assistance)
+            </span>
+          </Label>
           <span className={`text-[11px] font-mono tabular-nums ${totalWeight === 100 ? 'text-chart-2' : 'text-chart-4'}`}>
             Total: {totalWeight}%
           </span>
@@ -717,7 +722,7 @@ function EssayControls({
   )
 }
 
-// ─── Fill in the blank ────────────────────────────────────────────────────
+// ─── Fill in the blank ─────────────────────────────────────────────────
 
 function FillBlankControls({
   payload, onChange,
@@ -822,7 +827,7 @@ function FillBlankPreview({ template }: { template: string }) {
   )
 }
 
-// ─── Matching ─────────────────────────────────────────────────────────────
+// ─── Matching ───────────────────────────────────────────────────────
 
 function MatchingControls({
   payload, onChange,
@@ -883,7 +888,7 @@ function MatchingControls({
   )
 }
 
-// ─── Ordering ─────────────────────────────────────────────────────────────
+// ─── Ordering ────────────────────────────────────────────────────────
 
 function OrderingControls({
   payload, onChange,
@@ -943,7 +948,7 @@ function OrderingControls({
   )
 }
 
-// ─── Hotspot ──────────────────────────────────────────────────────────────
+// ─── Hotspot ──────────────────────────────────────────────────────────
 
 function HotspotControls({
   payload, onChange,
@@ -1026,7 +1031,7 @@ function HotspotControls({
   )
 }
 
-// ─── Metadata panel ───────────────────────────────────────────────────────
+// ─── Metadata panel ───────────────────────────────────────────────
 
 function MetadataPanel({
   draft, objectives, onUpdate,
@@ -1156,7 +1161,7 @@ function MetadataPanel({
   )
 }
 
-// ─── Workflow panel ───────────────────────────────────────────────────────
+// ─── Workflow panel ────────────────────────────────────────────────
 
 function WorkflowPanel({
   draft, onUpdate,
@@ -1212,7 +1217,7 @@ function WorkflowPanel({
   )
 }
 
-// ─── Validation panel ─────────────────────────────────────────────────────
+// ─── Validation panel ────────────────────────────────────────────────
 
 function ValidationPanel({ errors, warnings }: { errors: DraftValidationIssue[]; warnings: DraftValidationIssue[] }) {
   if (errors.length === 0 && warnings.length === 0) return null
@@ -1239,7 +1244,7 @@ function ValidationPanel({ errors, warnings }: { errors: DraftValidationIssue[];
   )
 }
 
-// ─── AI suggestion shared card ────────────────────────────────────────────
+// ─── AI suggestion shared card ─────────────────────────────────────────────
 
 type AiSuggestion =
   | { kind: 'stem'; before: string; after: string; rationale: string }
