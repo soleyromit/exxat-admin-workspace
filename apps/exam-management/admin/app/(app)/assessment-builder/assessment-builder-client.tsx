@@ -722,10 +722,15 @@ export default function AssessmentBuilderClient() {
           distribution={distribution}
           bloomsMetrics={bloomsMetrics}
           timeMetrics={timeMetrics}
+          totalAssigned={totalAssigned}
+          bonusTotal={bonusTotal}
+          unassignedPts={unassignedPts}
+          sectionSubtotals={sectionSubtotals}
           onBack={() => setActiveStep(2)}
           onSaveAsDraft={handleSaveDraft}
           onSendToChair={handleSendToChair}
           onPublish={handlePublish}
+          onOpenGradingTray={() => setShowGrading(true)}
         />
       )}
 
@@ -1722,20 +1727,30 @@ function ReviewStep({
   distribution,
   bloomsMetrics,
   timeMetrics,
+  totalAssigned,
+  bonusTotal,
+  unassignedPts,
+  sectionSubtotals,
   onBack,
   onSaveAsDraft,
   onSendToChair,
   onPublish,
+  onOpenGradingTray,
 }: {
   activeAsmt: AssessmentDraft
   courseLabel: string
   distribution: { Easy: number; Medium: number; Hard: number }
   bloomsMetrics: { level: string; count: number; pct: number }[]
   timeMetrics: { totalMin: number; avgMin: number }
+  totalAssigned: number
+  bonusTotal: number
+  unassignedPts: number
+  sectionSubtotals: Map<string, number>
   onBack: () => void
   onSaveAsDraft: () => void
   onSendToChair: () => void
   onPublish: () => void
+  onOpenGradingTray: () => void
 }) {
   const totalQ  = distribution.Easy + distribution.Medium + distribution.Hard
   const s       = activeAsmt.settings
@@ -1749,6 +1764,23 @@ function ReviewStep({
   return (
     <div className="flex flex-col flex-1 overflow-auto">
       <div className="flex-1 px-8 py-8 max-w-3xl mx-auto w-full flex flex-col gap-6">
+
+        {/* Unassigned points warning */}
+        {activeAsmt.settings.graded && unassignedPts !== 0 && (
+          <LocalBanner variant="warning">
+            <span>
+              {Math.abs(unassignedPts)} pts {unassignedPts > 0 ? 'unassigned' : 'over budget'} — question point values don&apos;t add up to {activeAsmt.settings.totalMarks} pts.{' '}
+              <button
+                type="button"
+                onClick={() => { onBack(); onOpenGradingTray() }}
+                aria-label="Fix points in Build step"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 0, textDecoration: 'underline', fontWeight: 600 }}
+              >
+                Fix in Build →
+              </button>
+            </span>
+          </LocalBanner>
+        )}
 
         {/* Health banner */}
         {(() => {
@@ -1824,12 +1856,15 @@ function ReviewStep({
             </Badge>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 pt-2">
             {[
               { label: 'Questions', value: String(totalQ) },
               { label: 'Duration',  value: `${activeAsmt.durationMinutes} min` },
               { label: 'Password',  value: s.passwordRequired ? 'Required' : 'None' },
               { label: 'Randomize', value: s.randomize ? 'On' : 'Off' },
+              s.graded
+                ? { label: 'Total', value: bonusTotal > 0 ? `${s.totalMarks} pts +${bonusTotal}` : `${s.totalMarks} pts` }
+                : { label: 'Total', value: 'Ungraded' },
             ].map(({ label, value }) => (
               <div key={label}>
                 <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">{label}</p>
@@ -1844,21 +1879,35 @@ function ReviewStep({
           <div className="rounded-xl border border-border bg-card p-5">
             <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-4">Difficulty distribution</p>
             <div className="flex items-center gap-6">
-              {bars.map(bar => (
-                <div key={bar.label} className="flex items-center gap-2">
-                  <div
-                    className="h-2.5 rounded-full"
-                    style={{
-                      width: totalQ > 0 ? `${Math.round((bar.count / totalQ) * 120)}px` : '8px',
-                      minWidth: bar.count > 0 ? 8 : 0,
-                      backgroundColor: bar.color,
-                      opacity: bar.count === 0 ? 0.15 : 0.8,
-                    }}
-                  />
-                  <span className="text-xs text-muted-foreground shrink-0">{bar.label}</span>
-                  <span className="text-xs font-semibold text-foreground shrink-0 tabular-nums">{bar.count}</span>
-                </div>
-              ))}
+              {bars.map(bar => {
+                const barPts = s.graded ? activeAsmt.questions
+                  .filter(q => {
+                    const m = MOCK_QB_QUESTIONS.find(mq => mq.id === q.questionId)
+                    return m?.difficulty === bar.label && !q.bonus
+                  })
+                  .reduce((sum, q) => sum + q.points, 0) : 0
+                const pct = s.graded && s.totalMarks > 0 ? Math.round((barPts / s.totalMarks) * 100) : 0
+                return (
+                  <div key={bar.label} className="flex items-center gap-2">
+                    <div
+                      className="h-2.5 rounded-full"
+                      style={{
+                        width: totalQ > 0 ? `${Math.round((bar.count / totalQ) * 120)}px` : '8px',
+                        minWidth: bar.count > 0 ? 8 : 0,
+                        backgroundColor: bar.color,
+                        opacity: bar.count === 0 ? 0.15 : 0.8,
+                      }}
+                    />
+                    <span className="text-xs text-muted-foreground shrink-0">{bar.label}</span>
+                    <span className="text-xs font-semibold text-foreground shrink-0 tabular-nums">{bar.count}</span>
+                    {s.graded && barPts > 0 && (
+                      <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
+                        · {barPts} pts ({pct}%)
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
             </div>
             <p className="text-xs text-muted-foreground mt-3">
               Estimated time: ~{Math.round(timeMetrics.totalMin)} min total
@@ -1878,9 +1927,16 @@ function ReviewStep({
                     <span className="text-muted-foreground mr-2">{idx + 1}.</span>
                     {section.title}
                   </p>
-                  <Badge variant="secondary" className="rounded text-xs">
-                    {section.questionIds.length} Q
-                  </Badge>
+                  <div className="flex items-center gap-3">
+                    {s.graded && (
+                      <span className="text-xs text-muted-foreground tabular-nums">
+                        {sectionSubtotals.get(section.id) ?? 0} pts
+                      </span>
+                    )}
+                    <Badge variant="secondary" className="rounded text-xs">
+                      {section.questionIds.length} Q
+                    </Badge>
+                  </div>
                 </div>
               ))}
             </div>
