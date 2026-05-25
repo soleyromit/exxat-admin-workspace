@@ -87,6 +87,8 @@ export interface Assessment {
 export interface AssessmentQuestion {
   questionId: string
   order: number
+  points: number   // point value for this question; 0 until explicitly set
+  bonus: boolean   // bonus questions award points but don't count against totalMarks
 }
 
 export type AssessmentType = 'Exam' | 'Quiz' | 'Pop Quiz' | 'Assignment'
@@ -125,6 +127,11 @@ export interface AssessmentSettings {
   // Workflow
   status: AssessmentStatus
   reviewRequest: AssessmentReviewRequest | null
+  // Grading
+  graded: boolean               // false = ungraded; only valid for Quiz / Assignment
+  totalMarks: number            // default 100
+  negativeMarking: boolean      // applies to MCQ only; assessment-level
+  negativeMarkingFraction: number // deducted per wrong answer; default 0.25
 }
 
 export interface AssessmentSection {
@@ -172,6 +179,10 @@ export function defaultAssessmentSettings(type: AssessmentType = 'Exam'): Assess
     requireAcknowledgment: false,
     status: 'draft',
     reviewRequest: null,
+    graded: true,
+    totalMarks: 100,
+    negativeMarking: false,
+    negativeMarkingFraction: 0.25,
   }
 }
 
