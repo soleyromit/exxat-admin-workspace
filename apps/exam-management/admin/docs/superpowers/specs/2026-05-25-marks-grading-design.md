@@ -14,7 +14,7 @@ The assessment builder produces assessments with no grade. Duration is configure
 
 ## 2. Scope
 
-**In:** Total marks, per-question point entry, graded/ungraded toggle, assessment-level negative marking, grading tray UI, Review step point summary.
+**In:** Total marks, per-question point entry, graded/ungraded toggle, assessment-level negative marking, bonus questions, grading tray UI, Review step point summary.
 
 **Out (Phase 2+):** Per-question negative marking override, section-level points budget enforcement as a hard gate, rubric-based grading (Essay type), partial credit for MSQ.
 
@@ -38,6 +38,7 @@ interface AssessmentQuestion {
   order: number
   // --- NEW ---
   points: number                // default: Math.floor(totalMarks / questionCount) on tray open
+  bonus: boolean                // default: false — see §5.8
 }
 ```
 
@@ -45,9 +46,10 @@ Three derived values, computed via `useMemo` (following existing builder pattern
 
 | Derived | Formula |
 |---|---|
-| `totalAssigned` | `sum(questions[].points)` |
+| `totalAssigned` | `sum(questions[].points)` where `bonus === false` |
 | `unassignedPts` | `settings.totalMarks - totalAssigned` |
-| `sectionSubtotals` | `Map<sectionId, sum(section.questionIds → points)>` |
+| `sectionSubtotals` | `Map<sectionId, sum(section.questionIds → points)>` (bonus questions included in subtotal display but marked separately) |
+| `bonusTotal` | `sum(questions[].points)` where `bonus === true` |
 
 `defaultAssessmentSettings()` in `qb-types.ts` gains defaults: `graded: true`, `totalMarks: 100`, `negativeMarking: false`, `negativeMarkingFraction: 0.25`.
 
@@ -171,6 +173,25 @@ When `toggleQuestion()` adds a new question to the assessment:
 - If `totalAssigned === 0` (no points set yet): new question gets `points: 0` — "Distribute evenly" handles first-time setup.
 - If `totalAssigned > 0` (at least one question has points): new question inherits `Math.floor(totalMarks / (currentCount + 1))` as a default. A `LocalBanner variant="info"` in the tray header reads "Points redistributed — review totals." Dismissed on next tray interaction.
 
+### 5.8 Bonus questions
+
+A bonus question awards its points to students who answer correctly, but does not count against the total marks denominator. A student scoring 105/100 is valid.
+
+**Tray column addition:**
+
+```
+│  □ │  # │ Question                  │  Pts  │ Bonus │  Applied neg │
+│  □ │  3 │ Extra credit concept…     │  [5]  │  ★   │      —       │
+```
+
+- "Bonus" column renders a `<Button variant="ghost" size="sm" aria-pressed={bonus}>` with a `fa-light fa-star` icon (filled `fa-solid` when active).
+- Toggling bonus sets `question.bonus = true` and adds a `★ Bonus` chip to that row's question label.
+- Bonus questions are excluded from `totalAssigned` and the "Distribute evenly" calculation.
+- Bonus questions are excluded from the "unassigned pts" warning — they are intentionally outside the total.
+- Negative marking does not apply to bonus questions (wrong answer = 0, not negative). "Applied neg" cell shows `—` for bonus rows.
+
+**Bulk:** Selecting bonus rows and using "Set selected to X pts" works normally — point value is independent of bonus status.
+
 ---
 
 ## 6. Step 3 — Review changes
@@ -181,9 +202,10 @@ Adds "Total" as a 5th stat column alongside Questions / Duration / Password / Ra
 
 ```
 Questions   Duration   Password   Randomize   Total
-   12        90 min    Required      On       100 pts
+   12        90 min    Required      On       100 pts + 5 bonus
 ```
 
+If `bonusTotal > 0`: appends `+ N bonus` in `var(--muted-foreground)` after the main pts value.
 If `graded === false`: shows "Ungraded" in place of pts value.
 
 ### 6.2 Difficulty distribution card
@@ -204,8 +226,10 @@ Adds a pts column to each section row:
 
 ```
 1.  Section A     6 Q     60 pts
-2.  Section B     6 Q     40 pts
+2.  Section B     5 Q     40 pts  +  1 bonus (5 pts)
 ```
+
+Bonus questions within a section are counted separately with a `★` chip.
 
 ### 6.4 Unassigned points warning
 
@@ -230,6 +254,8 @@ If `unassignedPts !== 0`, renders above the Summary card using the existing `<Lo
 | Question removed | Points removed from sum. Warning re-evaluates. |
 | `negativeMarking = false` | Applied neg column hidden from tray. |
 | `totalMarks` changed in Step 1 | Existing question points unchanged. Tray header shows new mismatch. Faculty must redistribute manually or use "Distribute evenly." |
+| Question marked bonus | Excluded from `totalAssigned`, "Distribute evenly", unassigned-pts warning, and negative marking. Points still configurable. |
+| All questions are bonus | `totalAssigned === 0`, unassigned-pts warning suppressed (intentional). Review shows "0 pts + N bonus." |
 
 ---
 
@@ -237,6 +263,6 @@ If `unassignedPts !== 0`, renders above the Summary card using the existing `<Lo
 
 | File | Change |
 |---|---|
-| `lib/qb-types.ts` | Add 4 fields to `AssessmentSettings`; add `points` to `AssessmentQuestion`; update `defaultAssessmentSettings()` |
+| `lib/qb-types.ts` | Add 4 fields to `AssessmentSettings`; add `points` + `bonus` to `AssessmentQuestion`; update `defaultAssessmentSettings()` |
 | `assessment-builder-client.tsx` | Grading section in `DetailsStep`; `showGrading` state + toolbar toggle; `GradingTray` component; Review step additions; unassigned-pts banner |
 | No new files required | `GradingTray` is a local function component in the builder client (same pattern as `ReviewStep`, `DetailsStep`) |
