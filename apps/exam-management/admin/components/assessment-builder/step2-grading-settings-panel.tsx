@@ -26,7 +26,7 @@ export function GradingSettingsPanel({ settings, onPatch }: GradingSettingsPanel
       {/* Weightage toggle */}
       <div className="flex items-center gap-2">
         <p className="text-xs text-muted-foreground shrink-0">Weightage</p>
-        <div className="flex gap-1.5" role="radiogroup" aria-label="Assessment weightage">
+        <div className="flex gap-1.5" role="group" aria-label="Assessment weightage">
           {(['Graded', 'Ungraded'] as const).map(option => {
             const wantsUngraded = option === 'Ungraded'
             const isDisabled = wantsUngraded && settings.type === 'Exam'
@@ -34,17 +34,13 @@ export function GradingSettingsPanel({ settings, onPatch }: GradingSettingsPanel
             return (
               <Button
                 key={option}
-                variant="ghost"
+                variant={isActive ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => { if (!isDisabled) onPatch({ graded: !wantsUngraded }) }}
                 aria-pressed={isActive}
                 disabled={isDisabled}
                 title={isDisabled ? 'Ungraded is only available for Quiz and Assignment' : undefined}
                 className="h-7 px-3 text-xs font-medium"
-                style={{
-                  border: `1px solid ${isActive ? 'var(--foreground)' : 'var(--border)'}`,
-                  background: isActive ? 'var(--muted)' : 'transparent',
-                }}
               >
                 {option}
               </Button>

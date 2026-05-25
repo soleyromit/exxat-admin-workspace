@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button, Checkbox } from '@exxat/ds/packages/ui/src'
+import { Button, Checkbox, Input } from '@exxat/ds/packages/ui/src'
 import type { AssessmentDraft, AssessmentQuestion, AssessmentSection } from '@/lib/qb-types'
 import type { Question } from '@/lib/qb-types'
 import { MOCK_QB_QUESTIONS } from '@/lib/qb-mock-data'
@@ -150,11 +150,11 @@ export function GradingTray({
         }}
       >
         <div />
-        <span className="text-[10px] text-muted-foreground">#</span>
-        <span className="text-[10px] text-muted-foreground">Question</span>
-        <span className="text-[10px] text-muted-foreground text-center">Pts</span>
-        <span className="text-[10px] text-muted-foreground text-center">Bonus</span>
-        {showNeg && <span className="text-[10px] text-muted-foreground text-right">Neg</span>}
+        <span className="text-xs text-muted-foreground">#</span>
+        <span className="text-xs text-muted-foreground">Question</span>
+        <span className="text-xs text-muted-foreground text-center">Pts</span>
+        <span className="text-xs text-muted-foreground text-center">Bonus</span>
+        {showNeg && <span className="text-xs text-muted-foreground text-right">Neg</span>}
       </div>
 
       {/* Scrollable rows */}
@@ -169,11 +169,11 @@ export function GradingTray({
                   padding: '3px 16px', background: 'var(--muted)',
                 }}
               >
-                <span className="text-[10px] font-semibold text-muted-foreground">
+                <span className="text-xs font-semibold text-muted-foreground">
                   {row.title}
                 </span>
                 <span
-                  className="text-[10px] font-semibold"
+                  className="text-xs font-semibold"
                   style={{ color: row.isOver ? 'var(--chart-4)' : 'var(--muted-foreground)' }}
                 >
                   {row.subtotal} pts{row.isOver && <i className="fa-light fa-triangle-exclamation ms-1" aria-hidden="true" />}
@@ -209,18 +209,14 @@ export function GradingTray({
         borderTop: '1px solid var(--border)', flexShrink: 0,
       }}>
         <span className="text-xs text-muted-foreground">Set selected to</span>
-        <input
+        <Input
           type="number"
           min={0}
           step={1}
           value={bulkPts}
           onChange={e => setBulkPts(e.target.value)}
           aria-label="Bulk points value"
-          style={{
-            width: 48, height: 26, fontSize: 12, textAlign: 'center', padding: '0 4px',
-            border: '1px solid var(--border)', borderRadius: 6,
-            background: 'var(--background)', color: 'var(--foreground)', outline: 'none',
-          }}
+          style={{ width: 48, height: 26, fontSize: 12, textAlign: 'center', padding: '0 4px' }}
         />
         <span className="text-xs text-muted-foreground">pts</span>
         <Button
@@ -284,10 +280,10 @@ function QuestionTrayRow({
         onCheckedChange={onToggleSelect}
         aria-label={`Select ${meta?.title ?? aq.questionId}`}
       />
-      <span className="text-[10px] text-muted-foreground tabular-nums">{order}</span>
+      <span className="text-xs text-muted-foreground tabular-nums">{order}</span>
       <span className="text-xs text-foreground truncate" title={meta?.title}>
         {aq.bonus && (
-          <i className="fa-solid fa-star text-[9px] me-1" aria-hidden="true"
+          <i className="fa-solid fa-star text-xs me-1" aria-hidden="true"
              style={{ color: 'var(--brand-color)' }} />
         )}
         {meta?.title?.slice(0, 55) ?? aq.questionId}
@@ -310,6 +306,7 @@ function QuestionTrayRow({
               if (e.key === 'Escape') { setInputVal(String(aq.points)); setEditing(false) }
             }}
             autoFocus
+            aria-label={`Points for ${meta?.title ?? aq.questionId}`}
             style={{
               width: 44, height: 22, fontSize: 12, textAlign: 'center', padding: '0 4px',
               border: '1px solid var(--brand-color)', borderRadius: 4,
@@ -317,18 +314,15 @@ function QuestionTrayRow({
             }}
           />
         ) : (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => { setEditing(true); setInputVal(String(aq.points)) }}
             aria-label={`Edit points for ${meta?.title ?? aq.questionId}, currently ${aq.points}`}
-            style={{
-              width: 44, height: 22, fontSize: 12, textAlign: 'center', padding: '0 4px',
-              border: '1px solid var(--border)', borderRadius: 4, cursor: 'text',
-              background: 'var(--muted)', color: 'var(--foreground)', fontWeight: 600,
-            }}
+            style={{ width: 44, height: 22, fontSize: 12, cursor: 'text', fontWeight: 600 }}
           >
             {aq.points}
-          </button>
+          </Button>
         )}
       </div>
 
@@ -340,7 +334,7 @@ function QuestionTrayRow({
           aria-pressed={aq.bonus}
           aria-label={aq.bonus ? 'Remove bonus designation' : 'Mark as bonus question'}
           onClick={() => onUpdateBonus(aq.questionId, !aq.bonus)}
-          className="h-6 w-6 p-0"
+          className="h-7 w-7 p-0"
         >
           <i
             className={aq.bonus ? 'fa-solid fa-star' : 'fa-light fa-star'}
@@ -353,7 +347,7 @@ function QuestionTrayRow({
       {/* Applied neg */}
       {showNeg && (
         <span
-          className="text-[10px] tabular-nums text-right"
+          className="text-xs tabular-nums text-right"
           style={{ color: aq.bonus || neg === null ? 'var(--muted-foreground)' : 'var(--chart-4)' }}
         >
           {aq.bonus || neg === null ? '—' : neg.toFixed(2)}
