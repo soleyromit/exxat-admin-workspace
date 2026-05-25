@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-05-23",
+  "lastUpdated": "2026-05-25",
   "decisions": [
     {
       "id": "pce-decision-001",
@@ -89,6 +89,216 @@
       "source": "PCE PRD §9 Non-Functional Requirements — Anonymity/Privacy",
       "sourceType": "prd",
       "date": "2026-05-23",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-010",
+      "product": "pce",
+      "text": "FERPA does not apply to student-to-faculty course feedback — student feedback is voluntary and not classified as academic data (grades, scores, recordings). Faculty will not know the names of the students who submitted feedback. Anonymity is a design principle, not a FERPA requirement in this context.",
+      "stakeholder": "Monil Pokar",
+      "source": "Course evaluation and survey design — base entities, template workflow, and ETAs transcript — May 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-05-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-011",
+      "product": "pce",
+      "text": "Template 'subjects' are populated from the program's Prism course-level role associations — the same lookup used by course role configuration. No separate subject list is maintained in PCE. If the program adds a new role, it flows through Prism-based configuration and auto-appears in PCE subject selection.",
+      "stakeholder": "Monil Pokar",
+      "source": "Post-course evaluation template — workflow, role-based access, and distribution setup with Monel transcript — May 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-05-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-012",
+      "product": "pce",
+      "text": "A template section for a given subject will not render to the student if that subject (role) does not exist in the course offering. The same template can be used across all courses — sections appear or disappear based on the course's role configuration. This eliminates the need for separate templates per course type.",
+      "stakeholder": "Monil Pokar",
+      "source": "Post-course evaluation template — workflow, role-based access, and distribution setup with Monel transcript — May 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-05-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-013",
+      "product": "pce",
+      "text": "PCE distribution must always be tied to a course — no distribution without course association. This is the key differentiator from general surveys. Faculty who want to push a survey without a course association must use the general survey tool.",
+      "stakeholder": "Vishaka Bhavsar",
+      "source": "Post-course evaluation template — workflow, role-based access, and distribution setup with Monel transcript — May 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-05-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-014",
+      "product": "pce",
+      "text": "Phase 1 will not include predefined out-of-the-box templates. Users start with an empty template. Three creation paths: import an existing evaluation document (PDF/Word) via AI parsing, build manually question by question, or (future) pick from question bank. No vendor-provided starter templates.",
+      "stakeholder": "Monil Pokar",
+      "source": "Post-course evaluation template — workflow, role-based access, and distribution setup with Monel transcript — May 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-05-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-015",
+      "product": "pce",
+      "text": "Distribution filters for course selection: term and academic year are required; cohort is optional and used by lockstep programs. These three filters together identify the course offerings to distribute to. For standalone (non-Prism) users, a quick-entry path for course name, number, term, and academic year must be provided.",
+      "stakeholder": "Monil Pokar",
+      "source": "Post-course evaluation template — workflow, role-based access, and distribution setup with Monel transcript — May 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-05-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-016",
+      "product": "pce",
+      "text": "If a template has a course type (Didactic or Clinical) assigned, it auto-assigns to matching course offerings during distribution. If no course type is set in the template, manual course-type assignment is required per course during distribution setup.",
+      "stakeholder": "Monil Pokar",
+      "source": "Post-course evaluation template — workflow, role-based access, and distribution setup with Monel transcript — May 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-05-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-017",
+      "product": "pce",
+      "text": "Guest lecturer evaluation is out of scope for PCE phase 1. It remains student-initiated and is handled via the general survey tool. Course coordinators initiating guest lecturer feedback can use PCE in a future phase once reliable event-based distribution is supported.",
+      "stakeholder": "Vishaka Bhavsar",
+      "source": "Post-course evaluation template — workflow, role-based access, and distribution setup with Monel transcript — May 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-05-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-001",
+      "product": "exam-management",
+      "text": "Exam download capability is in scope for phase 1 — students must be able to download the exam to their local device within a coordinator-defined download window before the exam. Taking the exam must not require active Internet once downloaded. An explicit, actionable download prompt must be shown to students (not automatic background download).",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Assessment creation workflows and question bank design transcript — May 19, 2026; confirmed in Assessment PRD — accessibility standards, offline exam download, and parity with ExamSoft transcript — May 21, 2026",
+      "sourceType": "transcript",
+      "date": "2026-05-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-002",
+      "product": "exam-management",
+      "text": "The question bank exists at the base course level, not the course offering level. All offerings of the same base course share one question bank. Questions added during assessment creation or directly in the bank always save at the base course level — never at the offering level.",
+      "stakeholder": "Vishaka Bhavsar",
+      "source": "Assessment creation workflows and question bank design transcript — May 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-05-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-003",
+      "product": "exam-management",
+      "text": "Question-level review and approval workflow is out of scope for at least 1 year minimum. Assessment-level review is in scope for phase 1. The review status checkbox currently shown in the question bank table must be removed.",
+      "stakeholder": "Vishal (PM)",
+      "source": "Question bank design — move/copy options, design system alignment, and setup entities transcript — May 20, 2026",
+      "sourceType": "transcript",
+      "date": "2026-05-20",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-004",
+      "product": "exam-management",
+      "text": "Phase 1 UI does not allow creating assessments outside a course context. All assessments must be created within a course. The backend must be architected to accommodate standalone assessments in the future, but no frontend capability will be built in phase 1.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Assessment creation workflows and question bank design transcript — May 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-05-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-005",
+      "product": "exam-management",
+      "text": "Three roles for exam management: Admin (institution-wide superuser), Course Coordinator (superuser for their course — creates assessments, manages sections, views results), and Collaborator (flexible contributor — can add/edit questions in a course they are assigned to). The Collaborator role does not grant access to student results.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Assessment creation workflows and question bank design transcript — May 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-05-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-006",
+      "product": "exam-management",
+      "text": "Review function is entirely separate from results access. A reviewer can give feedback on assessment questions before publishing but cannot view student scores or performance data. Only Admin and Course Coordinator (Director) roles can view student results. A reviewer's status per assessment is tracked independently.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Assessment creation workflows and question bank design transcript — May 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-05-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-007",
+      "product": "exam-management",
+      "text": "Assignment assessment type is deprioritized for phase 1. Faculty use LMS (e.g., Canvas) for assignments and import scores there. Exam and Quiz are the primary supported assessment types. Assignment can be added to the backend, but no UI capability in phase 1.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Assessment creation workflows and question bank design transcript — May 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-05-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-008",
+      "product": "exam-management",
+      "text": "AI tagging runs in the background for all questions. When manual tagging exists, it takes precedence over AI-generated tags. Both are visible — AI tags shown with an AI indicator, manual tags shown prominently. The system always maintains AI tags but defers to human judgment when there is a conflict.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Assessment creation workflows and question bank design transcript — May 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-05-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-009",
+      "product": "exam-management",
+      "text": "Question rationale (explanation of the correct answer) is stored at the question bank level — never at the assessment level. It is editable within the assessment creation workflow, but all edits save back to the source question in the question bank. If rationale is missing, the assessment review screen must flag it.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Assessment creation workflows and question bank design transcript — May 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-05-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-010",
+      "product": "exam-management",
+      "text": "Option position randomization within a question (locking individual option positions) is an ExamSoft parity feature and must be included in assessment setup configuration for phase 1. This is separate from question-level randomization (already captured) and section-level randomization.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Assessment creation workflows and question bank design transcript — May 19, 2026",
+      "sourceType": "transcript",
+      "date": "2026-05-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-011",
+      "product": "exam-management",
+      "text": "Assessment creation supports exactly 4 methods: (1) Copy existing assessment — the most common use case (faculty recycle 5–15% of questions from previous exams); (2) AI prompt-based generation — faculty describe the assessment in natural language and AI selects questions from the bank; (3) Import PDF/document — AI parses an existing exam paper and creates the assessment; (4) Manual selection from question bank. No matter which method is used, the final review and publish steps are identical.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Assessment creation workflows and question bank design transcript — May 19, 2026; confirmed in Assessment question design — AI features, scoring, and workflow transcript — May 22, 2026",
+      "sourceType": "transcript",
+      "date": "2026-05-19",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-012",
+      "product": "exam-management",
+      "text": "Phase 1 accessibility targets for the exam-taking experience: 200% magnification, text-to-speech (pending ExamSoft parity check), dyslexic font support, and high contrast color ratios. Accessibility compliance is acceptable to defer for the January launch but must reach parity with ExamSoft by phase 2 at latest.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Assessment PRD — accessibility standards, offline exam download, and parity with ExamSoft transcript — May 21, 2026",
+      "sourceType": "transcript",
+      "date": "2026-05-21",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-013",
+      "product": "exam-management",
+      "text": "Point-by-serial score in the question bank table displays as plain text, not a bar chart. Aarti and Vishaka reviewed and rejected the bar concept.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Question bank design — move/copy options, design system alignment, and setup entities transcript — May 20, 2026",
+      "sourceType": "transcript",
+      "date": "2026-05-20",
       "status": "confirmed"
     }
   ]

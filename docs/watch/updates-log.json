@@ -338,6 +338,24 @@
       "source": "Architecture — Romit",
       "severity": null,
       "files": ["apps/pce/admin/app/dev-updates.ts","apps/exam-management/admin/app/dev-updates.ts"]
+    },
+    {
+      "id": "2026-05-25-granola-intake-pce-001",
+      "date": "2026-05-25",
+      "product": "pce",
+      "type": "decision-extracted",
+      "title": "Granola intake — 8 new PCE decisions from May 19 transcripts",
+      "what": "Extracted 8 confirmed PCE design decisions from two May 19 meeting transcripts (Course evaluation and survey design — base entities, template workflow, and ETAs; Post-course evaluation template — workflow, role-based access, and distribution setup with Monel). Decisions cover: FERPA scope for student feedback, subject population from Prism course-level roles, conditional section rendering, course-association requirement for distribution, no predefined templates in phase 1, distribution filters (term + academic year required, cohort optional), template auto-assignment by course type, and guest lecturer evaluation deferred to general survey. Added as pce-decision-010 through pce-decision-017.",
+      "source": "Course evaluation and survey design — base entities, template workflow, and ETAs transcript — May 19, 2026; Post-course evaluation template — workflow, role-based access, and distribution setup with Monel transcript — May 19, 2026"
+    },
+    {
+      "id": "2026-05-25-granola-intake-exam-001",
+      "date": "2026-05-25",
+      "product": "exam-management",
+      "type": "decision-extracted",
+      "title": "Granola intake — 13 new Exam Management decisions from May 19–22 transcripts",
+      "what": "Extracted 13 confirmed Exam Management design decisions from four transcripts (Assessment creation workflows and question bank design — May 19; Question bank design — move/copy options — May 20; Assessment PRD — accessibility standards, offline exam download, and parity with ExamSoft — May 21; Assessment question design — AI features, scoring, and workflow — May 22). Decisions cover: offline exam download in scope, question bank at base course level, question-level review deferred 1+ year, no standalone assessments in phase 1 UI, three roles (Admin/Coordinator/Collaborator), review separate from results access, assignments deprioritized, AI tagging always runs with manual override precedence, rationale stored at QB level, option position randomization as ExamSoft parity, 4 assessment creation methods (copy/AI/import/manual), phase 1 accessibility targets (200% zoom, text-to-speech, dyslexic font, high contrast), and point-by-serial as text not bar. Added as exam-decision-001 through exam-decision-013.",
+      "source": "Assessment creation workflows and question bank design transcript — May 19, 2026; Question bank design — move/copy options, design system alignment, and setup entities transcript — May 20, 2026; Assessment PRD — accessibility standards, offline exam download, and parity with ExamSoft transcript — May 21, 2026; Assessment question design — AI features, scoring, and workflow transcript — May 22, 2026"
     }
   ]
 }
