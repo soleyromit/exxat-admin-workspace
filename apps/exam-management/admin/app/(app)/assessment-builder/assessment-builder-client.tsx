@@ -28,6 +28,8 @@ import {
 import { SectionsOutline } from '@/components/assessment-builder/step2-sections-outline'
 import { HealthPanel } from '@/components/assessment-builder/step2-health-panel'
 import { InlineQuestionEditor } from '@/components/assessment-builder/step2-inline-editor'
+import { GradingTray } from '@/components/assessment-builder/step2-grading-tray'
+import { GradingSettingsPanel } from '@/components/assessment-builder/step2-grading-settings-panel'
 import {
   computeTotalAssigned,
   computeBonusTotal,
@@ -614,6 +616,19 @@ export default function AssessmentBuilderClient() {
               >
                 <i className="fa-light fa-heart-pulse" aria-hidden="true" />
               </Button>
+              {activeAsmt.settings.graded && (
+                <Button
+                  variant={showGrading ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setShowGrading(g => !g)}
+                  aria-label={showGrading ? 'Hide grading tray' : 'Show grading tray'}
+                  aria-pressed={showGrading}
+                  className="h-7 gap-1.5 px-2"
+                >
+                  <i className="fa-light fa-scale-balanced" aria-hidden="true" />
+                  <span className="text-xs">pts</span>
+                </Button>
+              )}
             </div>
 
             <ABQuestionPicker
@@ -635,6 +650,25 @@ export default function AssessmentBuilderClient() {
               onAssignToSection={assignQuestionToSection}
               activeSectionId={activeSectionId}
             />
+
+            {/* Grading settings panel */}
+            {showGrading && (
+              <GradingSettingsPanel
+                settings={activeAsmt.settings}
+                onPatch={patch => setActiveAsmt(prev => prev ? { ...prev, settings: { ...prev.settings, ...patch } } : prev)}
+              />
+            )}
+
+            {/* Grading tray */}
+            {showGrading && activeAsmt.settings.graded && (
+              <GradingTray
+                activeAsmt={activeAsmt}
+                onUpdatePoints={updateQuestionPoints}
+                onUpdateBonus={updateQuestionBonus}
+                onDistributeEvenly={handleDistributeEvenly}
+                onBulkSetPoints={bulkSetPoints}
+              />
+            )}
 
             {/* Step 2 navigation footer */}
             <div style={{
