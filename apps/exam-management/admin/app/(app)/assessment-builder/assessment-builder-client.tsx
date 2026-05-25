@@ -28,6 +28,13 @@ import {
 import { SectionsOutline } from '@/components/assessment-builder/step2-sections-outline'
 import { HealthPanel } from '@/components/assessment-builder/step2-health-panel'
 import { InlineQuestionEditor } from '@/components/assessment-builder/step2-inline-editor'
+import {
+  computeTotalAssigned,
+  computeBonusTotal,
+  computeUnassignedPts,
+  distributeEvenly as distributeEvenlyUtil,
+  computeSectionSubtotals,
+} from '@/lib/assessment-grading'
 import { SendForReviewDialog } from '@/components/assessment-builder/send-for-review-dialog'
 
 // Estimated minutes per question type (base, before difficulty adjustment)
@@ -127,7 +134,7 @@ export default function AssessmentBuilderClient() {
     const sourceQuestions = MOCK_QB_QUESTIONS
       .filter(q => q.folder.startsWith(sourceCode))
       .slice(0, source.questionCount)
-      .map((q, i): AssessmentQuestion => ({ questionId: q.id, order: i + 1 }))
+      .map((q, i): AssessmentQuestion => ({ questionId: q.id, order: i + 1, points: 0, bonus: false }))
 
     const targetOfferingId = urlCourseId
       ? (mockCourseOfferings.find(o => o.courseId === source.courseId)?.id ?? source.offeringId)
@@ -231,7 +238,7 @@ export default function AssessmentBuilderClient() {
         : prev.sections
       return {
         ...prev,
-        questions: [...prev.questions, { questionId, order: prev.questions.length + 1 }],
+        questions: [...prev.questions, { questionId, order: prev.questions.length + 1, points: 0, bonus: false }],
         sections: nextSections,
       }
     })
@@ -253,7 +260,7 @@ export default function AssessmentBuilderClient() {
     if (activeAsmt && (dest === 'assessment' || dest === 'bank')) {
       setActiveAsmt(prev => prev ? {
         ...prev,
-        questions: [...prev.questions, { questionId: q.id, order: prev.questions.length + 1 }],
+        questions: [...prev.questions, { questionId: q.id, order: prev.questions.length + 1, points: 0, bonus: false }],
       } : prev)
     }
     return q
@@ -292,7 +299,7 @@ export default function AssessmentBuilderClient() {
     if (activeAsmt) {
       setActiveAsmt(prev => prev ? {
         ...prev,
-        questions: [...prev.questions, { questionId: q.id, order: prev.questions.length + 1 }],
+        questions: [...prev.questions, { questionId: q.id, order: prev.questions.length + 1, points: 0, bonus: false }],
       } : prev)
     }
     return q
@@ -340,10 +347,34 @@ export default function AssessmentBuilderClient() {
     return { allottedMin: activeAsmt?.durationMinutes ?? 0, delta, pct }
   }, [timeMetrics.totalMin, activeAsmt?.durationMinutes])
 
+  const totalAssigned = useMemo(
+    () => computeTotalAssigned(activeAsmt?.questions ?? []),
+    [activeAsmt?.questions],
+  )
+  const bonusTotal = useMemo(
+    () => computeBonusTotal(activeAsmt?.questions ?? []),
+    [activeAsmt?.questions],
+  )
+  const unassignedPts = useMemo(
+    () => computeUnassignedPts(
+      activeAsmt?.settings.totalMarks ?? 100,
+      activeAsmt?.questions ?? [],
+    ),
+    [activeAsmt?.questions, activeAsmt?.settings.totalMarks],
+  )
+  const sectionSubtotals = useMemo(
+    () => computeSectionSubtotals(
+      activeAsmt?.sections ?? [],
+      activeAsmt?.questions ?? [],
+    ),
+    [activeAsmt?.sections, activeAsmt?.questions],
+  )
+
   const [activeStep, setActiveStep] = useState<1 | 2 | 3>(1)
 
   // Change 2: HealthPanel is hidden by default; toggled via icon button
   const [showHealth, setShowHealth] = useState(false)
+  const [showGrading, setShowGrading] = useState(false)
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null)
   const [detailQuestionId, setDetailQuestionId] = useState<string | null>(null)
 
@@ -396,6 +427,42 @@ export default function AssessmentBuilderClient() {
         })),
       }
     })
+  }
+
+  function updateQuestionPoints(questionId: string, points: number) {
+    setActiveAsmt(prev => prev ? {
+      ...prev,
+      questions: prev.questions.map(q =>
+        q.questionId === questionId ? { ...q, points: Math.max(0, points) } : q,
+      ),
+    } : prev)
+  }
+
+  function updateQuestionBonus(questionId: string, bonus: boolean) {
+    setActiveAsmt(prev => prev ? {
+      ...prev,
+      questions: prev.questions.map(q =>
+        q.questionId === questionId ? { ...q, bonus } : q,
+      ),
+    } : prev)
+  }
+
+  function handleDistributeEvenly() {
+    if (!activeAsmt) return
+    setActiveAsmt(prev => prev ? {
+      ...prev,
+      questions: distributeEvenlyUtil(prev.questions, prev.settings.totalMarks),
+    } : prev)
+  }
+
+  function bulkSetPoints(questionIds: string[], points: number) {
+    const ids = new Set(questionIds)
+    setActiveAsmt(prev => prev ? {
+      ...prev,
+      questions: prev.questions.map(q =>
+        ids.has(q.questionId) ? { ...q, points: Math.max(0, points) } : q,
+      ),
+    } : prev)
   }
 
   function updateSection(sectionId: string, patch: Partial<AssessmentSection>) {
