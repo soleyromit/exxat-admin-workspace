@@ -8,11 +8,12 @@
  * Tabs sit between PageHeader and the scrollable tab-content region.
  *
  * Tabs:
- *   1. Overview (default)  — KPI strip + Course Objectives (curricular loop)
- *   2. Questions           — filtered question list with embedded psychometrics
- *   3. Assessments         — list with approval-workflow states + reviewer panel
- *   4. Students            — roster with per-course performance + bottom-20% flag
- *   5. Accommodations      — read-only, approver attribution
+ *   1. Assessments (default) — list with approval-workflow states + reviewer panel (Aarti May 7)
+ *   2. Questions             — course-scoped QB view with p-biserial, difficulty, Bloom's
+ *   3. Students              — roster with per-course performance + bottom-20% flag
+ *   4. Accommodations        — read-only, approver attribution
+ *   5. Mapping               — curricular matrix (objectives × assessments)
+ *   6. Faculty               — faculty associated with this course
  */
 
 import { useMemo, useState } from 'react'
@@ -35,6 +36,7 @@ import { AccessLevelChip, StatusPill } from '@/components/faculty-ui-kit'
 
 import { OverviewTab } from './tabs/overview-tab'
 import { AssessmentsTab } from './tabs/assessments-tab'
+import { QuestionsTab } from './tabs/questions-tab'
 import { StudentsTab } from './tabs/students-tab'
 import { AccommodationsTab } from './tabs/accommodations-tab'
 import { FacultyTab } from './tabs/faculty-tab'
@@ -187,6 +189,10 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                   </span>
                 )}
               </TabsTrigger>
+              <TabsTrigger value="questions" className="gap-2">
+                <i className="fa-light fa-book-open text-xs" aria-hidden="true" />
+                Questions
+              </TabsTrigger>
               <TabsTrigger value="students" className="gap-2">
                 <i className="fa-light fa-users text-xs" aria-hidden="true" />
                 Students
@@ -222,6 +228,9 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                 isViewer={isViewer}
                 courseId={courseId}
               />
+            </TabsContent>
+            <TabsContent value="questions" className="m-0">
+              <QuestionsTab courseId={courseId} isViewer={isViewer} />
             </TabsContent>
             <TabsContent value="students" className="m-0">
               <StudentsTab

@@ -82,6 +82,14 @@ Source: `docs/research/meetings/2026-05-22-assessment-question-design-ai-scoring
 | T65 | Reference documents/images: upload in question creation form | Admin / Faculty | Question editor | P1 | Vishaka: "where are you allowing for reference documents to be uploaded?" Currently no upload field. Applies to all question types. DESIGN-REVIEW — new field + UI. D_EM38. |
 | T66 | Assessment creation: 2-stage flow (build vs. publish/admin) | Admin / Faculty | Assessment builder / create flow | P1 | Stage 1 = question building. Stage 2 = publish/admin setup (dates, download window, randomization). Faculty should not see delivery options while building. Vishaka directive. DESIGN-REVIEW — structural rearchitecture of create-assessment-modal. D_EM37. |
 
+## Phase 1 design tasks — added 2026-05-25
+
+Source: weekly Granola audit (meeting `f59cfbe4` cross-reference pass 5)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T67 | Questions tab — wire up in course-detail hub | Admin / Faculty | Course detail (`courses/[id]`) | P1 | ✅ Applied 2026-05-25. `QuestionsTab` component existed and was complete but not imported or rendered. Now wired as the second tab between Assessments and Students. Fulfills D_EM24 (course-hub level) — filtered question list with p-biserial, difficulty, Bloom's, and flagged-item toggle scoped to the course's QB folder. |
+
 ## Research / blockers (R1–R10 from audit)
 
 | # | Item | Owner | Deadline |
