@@ -15,7 +15,7 @@ function PbiChip({ pbis }: { pbis: number | null | undefined }) {
         display: 'inline-flex', alignItems: 'center', gap: 4,
         padding: '2px 8px', borderRadius: 999,
         background: 'var(--muted)', color: 'var(--muted-foreground)',
-        fontSize: 11, fontWeight: 500,
+        fontSize: 12, fontWeight: 500,
       }}>
         Manual grading
       </span>
@@ -26,11 +26,9 @@ function PbiChip({ pbis }: { pbis: number | null | undefined }) {
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 4,
       padding: '2px 8px', borderRadius: 999,
-      background: isLow
-        ? 'color-mix(in oklch, var(--chart-4) 14%, white)'
-        : 'color-mix(in oklch, var(--chart-2) 14%, white)',
+      background: 'var(--muted)',
       color: isLow ? 'oklch(0.40 0.19 27)' : 'oklch(0.38 0.14 160)',
-      fontSize: 11, fontWeight: 500,
+      fontSize: 12, fontWeight: 500,
     }}>
       <span style={{
         width: 6, height: 6, borderRadius: '50%',
@@ -50,11 +48,9 @@ function FooterChip({ children, warn }: { children: React.ReactNode; warn?: bool
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 3,
       padding: '2px 7px', borderRadius: 999,
-      background: warn
-        ? 'color-mix(in oklch, var(--chart-4) 12%, white)'
-        : 'var(--muted)',
+      background: 'var(--muted)',
       color: warn ? 'oklch(0.40 0.19 27)' : 'var(--muted-foreground)',
-      fontSize: 11, fontWeight: 500,
+      fontSize: 12, fontWeight: 500,
     }}>
       {children}
     </span>
@@ -65,10 +61,10 @@ function FooterChip({ children, warn }: { children: React.ReactNode; warn?: bool
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{
-      fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)',
-      textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6,
-    }}>
+    <div
+      className="text-xs font-semibold text-muted-foreground"
+      style={{ marginBottom: 6 }}
+    >
       {children}
     </div>
   )
@@ -99,7 +95,7 @@ function OptionPreview({ option }: { option: QuestionOption }) {
         <span style={{
           flexShrink: 0, width: 20, height: 20, borderRadius: '50%',
           background: 'var(--muted)', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', fontSize: 11, fontWeight: 600,
+          justifyContent: 'center', fontSize: 12, fontWeight: 600,
           color: 'var(--foreground)',
         }}>
           {option.key}
@@ -110,7 +106,7 @@ function OptionPreview({ option }: { option: QuestionOption }) {
           </p>
           {option.isCorrect && (
             <span style={{
-              fontSize: 11, fontWeight: 600,
+              fontSize: 12, fontWeight: 600,
               color: 'oklch(0.38 0.14 160)',
             }}>
               ✓ Correct
@@ -170,8 +166,8 @@ function DetailsTab({ question }: { question: Question }) {
               </div>
               {correctOption?.rationale && (
                 <div style={{
-                  background: 'color-mix(in oklch, var(--chart-2) 8%, var(--background))',
-                  border: '1px solid var(--chart-2)',
+                  background: 'var(--muted)',
+                  border: '1px solid var(--border)',
                   borderRadius: 8, padding: 12,
                 }}>
                   <Eyebrow>Correct answer rationale</Eyebrow>
@@ -179,7 +175,7 @@ function DetailsTab({ question }: { question: Question }) {
                     {correctOption.rationale}
                   </p>
                   {correctOption.rationaleAuthor && (
-                    <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: '4px 0 0' }}>
+                    <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '4px 0 0' }}>
                       — {correctOption.rationaleAuthor}
                     </p>
                   )}
@@ -199,7 +195,7 @@ function DetailsTab({ question }: { question: Question }) {
                   <span style={{
                     flexShrink: 0, width: 18, height: 18, borderRadius: '50%',
                     background: 'var(--background)', display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', fontSize: 10, fontWeight: 700,
+                    justifyContent: 'center', fontSize: 12, fontWeight: 700,
                     color: 'var(--foreground)',
                   }}>
                     {opt.key}
@@ -208,7 +204,7 @@ function DetailsTab({ question }: { question: Question }) {
                     {opt.text}
                   </span>
                   {opt.isCorrect && (
-                    <span style={{ fontSize: 11, color: 'oklch(0.38 0.14 160)', fontWeight: 600, flexShrink: 0 }}>✓</span>
+                    <span style={{ fontSize: 12, color: 'oklch(0.38 0.14 160)', fontWeight: 600, flexShrink: 0 }}>✓</span>
                   )}
                 </div>
               ))}
@@ -226,7 +222,7 @@ function DetailsTab({ question }: { question: Question }) {
                 {stemText}
               </p>
               {question.minWordCount && (
-                <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: '8px 0 0' }}>
+                <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '8px 0 0' }}>
                   Minimum response: {question.minWordCount} words
                 </p>
               )}
@@ -255,7 +251,7 @@ function DetailsTab({ question }: { question: Question }) {
                     }}>
                       <span style={{ fontSize: 12, color: 'var(--foreground)' }}>{r.criterion}</span>
                       <span style={{
-                        fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)',
+                        fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)',
                         flexShrink: 0, marginLeft: 12,
                       }}>
                         {r.points} pt{r.points !== 1 ? 's' : ''}
@@ -326,7 +322,7 @@ function DetailsTab({ question }: { question: Question }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {allLocations.map((loc, i) => (
             <div key={i} style={{
-              fontSize: 11, color: 'var(--foreground)', lineHeight: 1.4,
+              fontSize: 12, color: 'var(--foreground)', lineHeight: 1.4,
               padding: '4px 8px', background: 'var(--muted)', borderRadius: 6,
             }}>
               {loc.folderPath.split(' / ').map((seg, si) => (
@@ -355,7 +351,7 @@ function DetailsTab({ question }: { question: Question }) {
                 display: 'inline-flex', alignItems: 'center',
                 padding: '2px 7px', borderRadius: 999,
                 background: 'var(--muted)', color: 'var(--muted-foreground)',
-                fontSize: 11, fontWeight: 500,
+                fontSize: 12, fontWeight: 500,
                 border: '1px solid var(--border)',
               }}>
                 {tag}
@@ -363,9 +359,9 @@ function DetailsTab({ question }: { question: Question }) {
             ))}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-            <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>Bloom&apos;s:</span>
+            <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>Bloom&apos;s:</span>
             <span style={{
-              fontSize: 11, fontWeight: 600, color: 'var(--foreground)',
+              fontSize: 12, fontWeight: 600, color: 'var(--foreground)',
               padding: '1px 6px', background: 'var(--muted)', borderRadius: 4,
             }}>
               {question.blooms}
@@ -400,8 +396,8 @@ function StatsTab({ question }: { question: Question }) {
       {pbisLow && (
         <div style={{
           padding: '10px 14px', marginBottom: 14,
-          background: 'color-mix(in oklch, var(--chart-4) 10%, var(--background))',
-          border: '1px solid var(--chart-4)', borderRadius: 8,
+          background: 'var(--muted)',
+          border: '1px solid var(--border)', borderRadius: 8,
           fontSize: 12, color: 'oklch(0.40 0.19 27)', lineHeight: 1.5,
         }}>
           <div style={{ fontWeight: 600, marginBottom: 4 }}>
@@ -438,7 +434,7 @@ function StatsTab({ question }: { question: Question }) {
               ? `${question.correctness}%`
               : '—'}
           </div>
-          <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 4 }}>Correctness</div>
+          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>Correctness</div>
         </div>
         {/* Avg time */}
         <div style={{
@@ -452,7 +448,7 @@ function StatsTab({ question }: { question: Question }) {
                 : `${Math.round(question.avgTimeSeconds / 60)}m`
               : '—'}
           </div>
-          <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 4 }}>Avg time</div>
+          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>Avg time</div>
         </div>
         {/* Difficulty */}
         <div style={{
@@ -465,7 +461,7 @@ function StatsTab({ question }: { question: Question }) {
           }}>
             {question.difficulty}
           </div>
-          <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 4 }}>Difficulty</div>
+          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>Difficulty</div>
         </div>
       </div>
 
@@ -497,10 +493,10 @@ function StatsTab({ question }: { question: Question }) {
             }} />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-            <span style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>0.00</span>
-            <span style={{ fontSize: 10, color: 'var(--muted-foreground)', position: 'absolute', left: '20%' }}>0.20 fair</span>
-            <span style={{ fontSize: 10, color: 'var(--muted-foreground)', position: 'absolute', left: '30%' }}>0.30 good</span>
-            <span style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>1.00</span>
+            <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>0.00</span>
+            <span style={{ fontSize: 12, color: 'var(--muted-foreground)', position: 'absolute', left: '20%' }}>0.20 fair</span>
+            <span style={{ fontSize: 12, color: 'var(--muted-foreground)', position: 'absolute', left: '30%' }}>0.30 good</span>
+            <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>1.00</span>
           </div>
           <div style={{ position: 'relative', height: 14 }} />
         </div>
@@ -514,18 +510,17 @@ function StatsTab({ question }: { question: Question }) {
         }}>
           <div style={{
             padding: '8px 14px', borderBottom: '1px solid var(--border)',
-            fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)',
-            textTransform: 'uppercase', letterSpacing: '0.05em',
+            fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)',
           }}>
             Option distribution ({question.totalAttempts ?? totalOptionSelections} attempts)
           </div>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: 'var(--muted)' }}>
-                <th style={{ padding: '5px 12px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', width: 50 }}>Option</th>
-                <th style={{ padding: '5px 12px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', width: 60 }}>Count</th>
-                <th style={{ padding: '5px 12px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', width: 48 }}>%</th>
-                <th style={{ padding: '5px 12px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)' }}>Bar</th>
+                <th style={{ padding: '5px 12px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', width: 50 }}>Option</th>
+                <th style={{ padding: '5px 12px', textAlign: 'right', fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', width: 60 }}>Count</th>
+                <th style={{ padding: '5px 12px', textAlign: 'right', fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', width: 48 }}>%</th>
+                <th style={{ padding: '5px 12px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)' }}>Bar</th>
               </tr>
             </thead>
             <tbody>
@@ -541,7 +536,7 @@ function StatsTab({ question }: { question: Question }) {
                         width: 20, height: 20, borderRadius: '50%',
                         background: isCorrect ? 'var(--chart-2)' : 'var(--muted)',
                         color: isCorrect ? 'white' : 'var(--foreground)',
-                        fontSize: 11, fontWeight: 700,
+                        fontSize: 12, fontWeight: 700,
                       }}>
                         {opt.key}
                       </span>
@@ -580,7 +575,7 @@ function StatsTab({ question }: { question: Question }) {
           <div key={label} style={{
             background: 'var(--muted)', borderRadius: 8, padding: '10px 12px',
           }}>
-            <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginBottom: 3 }}>{label}</div>
+            <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 3 }}>{label}</div>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)' }}>{value}</div>
           </div>
         ))}
@@ -639,7 +634,7 @@ function VersionsTab({
                   </span>
                   {isViewing ? (
                     <span style={{
-                      fontSize: 11, fontWeight: 600, padding: '1px 7px', borderRadius: 999,
+                      fontSize: 12, fontWeight: 600, padding: '1px 7px', borderRadius: 999,
                       background: 'var(--brand-color)', color: 'white',
                     }}>
                       Viewing
@@ -649,7 +644,7 @@ function VersionsTab({
                       variant="outline"
                       size="sm"
                       onClick={() => onView(entry.version)}
-                      style={{ height: 22, fontSize: 11, padding: '0 8px' }}
+                      style={{ height: 22, fontSize: 12, padding: '0 8px' }}
                     >
                       View this version
                     </Button>
@@ -663,7 +658,7 @@ function VersionsTab({
                     background: 'var(--muted)', borderRadius: 6, padding: '7px 10px', marginBottom: 6,
                   }}>
                     {entry.changes.map((c, ci) => (
-                      <div key={ci} style={{ fontSize: 11, color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
+                      <div key={ci} style={{ fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
                         <span style={{ marginRight: 4 }}>·</span>{c}
                       </div>
                     ))}
@@ -673,7 +668,7 @@ function VersionsTab({
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                     {entry.usedInAssessments.map(name => (
                       <span key={name} style={{
-                        fontSize: 11, padding: '1px 7px', borderRadius: 999,
+                        fontSize: 12, padding: '1px 7px', borderRadius: 999,
                         background: 'var(--muted)', color: 'var(--muted-foreground)',
                         border: '1px solid var(--border)',
                       }}>
@@ -695,8 +690,8 @@ function VersionsTab({
 
 function CollaboratorsTab({ collaborators }: { collaborators: QuestionCollaborator[] }) {
   const roleStyle: Record<string, { bg: string; color: string }> = {
-    owner: { bg: 'color-mix(in oklch, var(--brand-color) 12%, white)', color: 'var(--brand-color)' },
-    edit:  { bg: 'color-mix(in oklch, var(--chart-1) 12%, white)', color: 'var(--chart-1)' },
+    owner: { bg: 'var(--muted)', color: 'var(--brand-color)' },
+    edit:  { bg: 'var(--muted)', color: 'var(--chart-1)' },
     view:  { bg: 'var(--muted)', color: 'var(--muted-foreground)' },
   }
 
@@ -728,14 +723,14 @@ function CollaboratorsTab({ collaborators }: { collaborators: QuestionCollaborat
                   {persona?.name ?? c.personaId}
                 </div>
                 {persona?.role && (
-                  <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+                  <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
                     {persona.role.replace(/_/g, ' ')}
                   </div>
                 )}
               </div>
               {/* Role chip */}
               <span style={{
-                fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999,
+                fontSize: 12, fontWeight: 600, padding: '2px 8px', borderRadius: 999,
                 background: style.bg, color: style.color,
                 textTransform: 'capitalize',
               }}>
@@ -904,7 +899,7 @@ export function QuestionDetailSheet({
                 )}
                 {tab.badge !== undefined && (
                   <span style={{
-                    fontSize: 10, fontWeight: 700, lineHeight: 1,
+                    fontSize: 12, fontWeight: 700, lineHeight: 1,
                     padding: '1px 5px', borderRadius: 999,
                     background: 'var(--muted)', color: 'var(--muted-foreground)',
                   }}>
