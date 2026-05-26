@@ -119,6 +119,7 @@ export interface Assessment {
   questionCount: number
   diffDistribution: Record<QDiff, number>
   durationMinutes: number
+  collaboratorIds?: string[]
 }
 
 export interface AssessmentQuestion {
@@ -197,6 +198,7 @@ export interface AssessmentDraft {
   sections: AssessmentSection[]
   settings: AssessmentSettings
   healthFlags: QuestionHealthFlag[]   // NEW: computed flags surfaced in Step 2 + Step 3
+  collaboratorIds?: string[]
 }
 
 /** Convenience factory for default settings */
