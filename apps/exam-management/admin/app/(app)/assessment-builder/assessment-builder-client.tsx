@@ -10,13 +10,12 @@ import {
   Separator,
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
   Checkbox,
-  Field, FieldLabel, FieldError,
   LocalBanner,
   useSidebar,
 } from '@exxat/ds/packages/ui/src'
 import { mockCourses, mockCourseOfferings, mockAssessments, MOCK_QB_QUESTIONS, MOCK_QB_FOLDERS } from '@/lib/qb-mock-data'
-import type { AssessmentDraft, AssessmentQuestion, AssessmentSection, Question, SmartView, QType, QDiff, AssessmentReviewRequest, AssessmentStatus, FolderNode } from '@/lib/qb-types'
-import { SYSTEM_SMART_VIEWS, defaultAssessmentSettings } from '@/lib/qb-types'
+import type { AssessmentDraft, AssessmentQuestion, AssessmentSection, Question, QType, QDiff, AssessmentReviewRequest, AssessmentStatus, FolderNode } from '@/lib/qb-types'
+import { defaultAssessmentSettings } from '@/lib/qb-types'
 import { courseObjectives, facultyListRows, type CourseObjective } from '@/lib/faculty-mock-data'
 import { useFacultySession } from '@/lib/faculty-session'
 import { useAssessmentDrafts } from '@/lib/assessment-draft-store'
@@ -39,6 +38,7 @@ import {
 } from '@/lib/assessment-grading'
 import { SendForReviewDialog } from '@/components/assessment-builder/send-for-review-dialog'
 import { QuestionDetailSheet } from './question-detail-sheet'
+import { QbSearchBar, type QbFilter } from '@/components/assessment-builder/step2-qb-search-bar'
 
 // Estimated minutes per question type (base, before difficulty adjustment)
 const TIME_BY_TYPE: Record<QType, number> = {
@@ -157,14 +157,6 @@ export default function AssessmentBuilderClient() {
     setCourseId(source.courseId)
   }, [urlMode, urlSourceId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const [smartViewId, setSmartViewId] = useState<string>('all')
-  const [savedViews, setSavedViews] = useState<SmartView[]>(() => {
-    try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem('qb-smart-views') : null
-      return stored ? JSON.parse(stored) : []
-    } catch { return [] }
-  })
-
   // Session-scoped user-created questions (from inline "New question" panel)
   const [userCreated, setUserCreated] = useState<Question[]>([])
 
@@ -173,21 +165,12 @@ export default function AssessmentBuilderClient() {
 
   const offerings = mockCourseOfferings.filter(o => o.courseId === courseId)
   const assessments = mockAssessments.filter(a => a.courseId === courseId && a.offeringId === offeringId)
-  const allSmartViews = useMemo(() => [...SYSTEM_SMART_VIEWS, ...savedViews], [savedViews])
 
   const currentCourse   = mockCourses.find(c => c.id === courseId)
   const currentOffering = mockCourseOfferings.find(o => o.id === offeringId)
   const courseLabel = currentCourse
     ? `${currentCourse.code} · ${currentOffering?.semester ?? ''}`
     : ''
-
-  const saveSmartView = useCallback((view: SmartView) => {
-    setSavedViews(prev => {
-      const next = [...prev, view]
-      try { localStorage.setItem('qb-smart-views', JSON.stringify(next)) } catch {}
-      return next
-    })
-  }, [])
 
   function openAssessment(asmtId: string) {
     const source = assessments.find(a => a.id === asmtId)
@@ -637,10 +620,6 @@ export default function AssessmentBuilderClient() {
               onToggle={toggleQuestion}
               activeAsmt={activeAsmt}
               onDurationChange={(min) => setActiveAsmt(prev => prev ? { ...prev, durationMinutes: min } : prev)}
-              smartViews={allSmartViews}
-              activeViewId={smartViewId}
-              onViewChange={setSmartViewId}
-              onSaveView={saveSmartView}
               userCreated={userCreated}
               onCreateQuestion={createQuestion}
               onCreateFromDraft={createQuestionFromDraft}
@@ -956,7 +935,6 @@ type PickerSource = 'this-course' | 'other-courses' | 'new-question' | 'ai-gener
 
 function ABQuestionPicker({
   selectedIds, onToggle, activeAsmt, onDurationChange,
-  smartViews, activeViewId, onViewChange, onSaveView,
   userCreated, onCreateQuestion, onCreateFromDraft, authorPersonaId, onOpenAi,
   isCopyMode, onRenameAsmt, onAssignToSection, activeSectionId,
 }: {
@@ -964,10 +942,6 @@ function ABQuestionPicker({
   onToggle: (id: string) => void
   activeAsmt: AssessmentDraft
   onDurationChange: (min: number) => void
-  smartViews: SmartView[]
-  activeViewId: string
-  onViewChange: (id: string) => void
-  onSaveView: (v: SmartView) => void
   userCreated: Question[]
   onCreateQuestion: (input: { title: string; options: string[]; correctIdx: number }) => Question
   onCreateFromDraft: (draft: QuestionDraft, dest: SaveDestination) => Question
@@ -978,14 +952,11 @@ function ABQuestionPicker({
   onAssignToSection?: (questionId: string, sectionId: string | null) => void
   activeSectionId?: string | null
 }) {
-  const [saveDialogOpen, setSaveDialogOpen] = useState(false)
-  const [newViewName, setNewViewName] = useState('')
-  const [newViewNameError, setNewViewNameError] = useState<string | null>(null)
   const [source, setSource] = useState<PickerSource>('this-course')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [activeFilters, setActiveFilters] = useState<QbFilter[]>([])
   const [otherCourseId, setOtherCourseId] = useState<string>('')
   const [selectedContentAreaId, setSelectedContentAreaId] = useState<string | null>(null)
-
-  const activeView = smartViews.find(v => v.id === activeViewId) ?? smartViews[0]
 
   // The current course's folder prefix is derived from its code
   // (e.g. "PHAR101" → "phar101").
@@ -1030,38 +1001,18 @@ function ABQuestionPicker({
   }, [sourcedQuestions, selectedContentAreaId])
 
   const filteredQuestions = useMemo(() => {
-    const { difficulty, type, blooms, unusedOnly } = activeView?.filters ?? {}
-    return contentAreaFilteredQuestions.filter(q => {
-      if (difficulty?.length && !difficulty.includes(q.difficulty)) return false
-      if (type?.length && !type.includes(q.type)) return false
-      if (blooms?.length && !blooms.includes(q.blooms)) return false
-      if (unusedOnly && (q.usage ?? 0) > 0) return false
-      return true
-    })
-  }, [activeView, contentAreaFilteredQuestions])
-
-  function handleSaveView() {
-    const trimmed = newViewName.trim()
-    if (!trimmed) {
-      setNewViewNameError('Give the smart view a name.')
-      return
+    let qs = contentAreaFilteredQuestions
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase()
+      qs = qs.filter(item => item.title.toLowerCase().includes(q))
     }
-    // Reject duplicate name vs system or saved views (case-insensitive).
-    const dup = smartViews.find(v => v.label.toLowerCase() === trimmed.toLowerCase())
-    if (dup) {
-      setNewViewNameError(`A view called "${dup.label}" already exists.`)
-      return
+    for (const f of activeFilters) {
+      if (f.key === 'difficulty') qs = qs.filter(item => item.difficulty === f.label)
+      if (f.key === 'type') qs = qs.filter(item => item.type === f.label)
+      if (f.key === 'blooms') qs = qs.filter(item => item.blooms === f.label)
     }
-    setNewViewNameError(null)
-    onSaveView({
-      id: `user-${Date.now()}`,
-      label: trimmed,
-      isSystem: false,
-      filters: activeView?.filters ?? {},
-    })
-    setNewViewName('')
-    setSaveDialogOpen(false)
-  }
+    return qs
+  }, [contentAreaFilteredQuestions, searchQuery, activeFilters])
 
   const sourceTabs: Array<{ id: PickerSource; label: string; icon: string; sub: string }> = [
     { id: 'this-course',   label: thisCourse ? `${thisCourse.code} bank` : 'This course',   icon: 'fa-folder',          sub: 'Default — pull from this course' },
@@ -1238,49 +1189,17 @@ function ABQuestionPicker({
         </div>
       )}
 
-      {/* Smart view chips — only for QB sources (this/other) */}
+      {/* QbSearchBar — AI search + filter tags for QB sources */}
       {isQbSource && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '8px 16px',
-          borderBottom: '1px solid var(--border)',
-          overflowX: 'auto',
-          flexShrink: 0,
-          background: 'var(--ab-smart-view-bar-bg)',
-        }}>
-          {smartViews.map(view => {
-            const isActive = activeViewId === view.id
-            return (
-              <Button
-                key={view.id}
-                variant={isActive ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => onViewChange(view.id)}
-                className="shrink-0 rounded-full text-[11px] h-7 px-3"
-                style={!view.isSystem && !isActive
-                  ? { borderStyle: 'dashed', color: 'var(--brand-color)', borderColor: 'var(--brand-color)' }
-                  : undefined}
-              >
-                {!view.isSystem && (
-                  <i className="fa-solid fa-star text-[9px] mr-1" aria-hidden="true" />
-                )}
-                {view.label}
-              </Button>
-            )
-          })}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSaveDialogOpen(true)}
-            className="shrink-0 rounded-full text-[11px] h-7 px-3"
-            style={{ color: 'var(--brand-color)', opacity: 0.7 }}
-          >
-            <i className="fa-light fa-plus" aria-hidden="true" />
-            {' '}Save view
-          </Button>
-        </div>
+        <QbSearchBar
+          value={searchQuery}
+          onChange={setSearchQuery}
+          activeFilters={activeFilters}
+          onRemoveFilter={(key, label) =>
+            setActiveFilters(prev => prev.filter(f => !(f.key === key && f.label === label)))
+          }
+          resultCount={filteredQuestions.length}
+        />
       )}
 
       {/* New-question source — inline editor (full type/form-control coverage)
@@ -1417,49 +1336,6 @@ function ABQuestionPicker({
       </div>
       )}
 
-      {/* Save smart view dialog — Field + FieldError surfaces both
-          "required" and "duplicate name" failures (was silent disable
-          on submit button). */}
-      <Dialog
-        open={saveDialogOpen}
-        onOpenChange={(o) => {
-          if (!o) { setNewViewName(''); setNewViewNameError(null) }
-          setSaveDialogOpen(o)
-        }}
-      >
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Save smart view</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground" style={{ marginBottom: 8 }}>
-            Saves the current filter configuration as &ldquo;{activeView?.label}&rdquo; with a custom name.
-          </p>
-          <Field orientation="vertical">
-            <FieldLabel htmlFor="save-view-name">View name *</FieldLabel>
-            <Input
-              id="save-view-name"
-              autoFocus
-              value={newViewName}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                setNewViewName(e.target.value)
-                if (newViewNameError) setNewViewNameError(null)
-              }}
-              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleSaveView()}
-              placeholder="View name…"
-              aria-required="true"
-              aria-invalid={!!newViewNameError}
-              aria-describedby={newViewNameError ? 'save-view-name-error' : undefined}
-            />
-            {newViewNameError && (
-              <FieldError id="save-view-name-error">{newViewNameError}</FieldError>
-            )}
-          </Field>
-          <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setSaveDialogOpen(false)}>Cancel</Button>
-            <Button variant="default" size="sm" onClick={handleSaveView}>Save</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
