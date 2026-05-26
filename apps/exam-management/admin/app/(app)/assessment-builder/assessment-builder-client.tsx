@@ -1,11 +1,10 @@
 'use client'
-import React, { useEffect, useState, useMemo, useCallback } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import {
   Button, Badge,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   Input,
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
   Separator,
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
@@ -26,7 +25,6 @@ import {
 } from '@/lib/question-editor-types'
 import { SectionsOutline } from '@/components/assessment-builder/step2-sections-outline'
 import { HealthPanel } from '@/components/assessment-builder/step2-health-panel'
-import { InlineQuestionEditor } from '@/components/assessment-builder/step2-inline-editor'
 import { GradingTray } from '@/components/assessment-builder/step2-grading-tray'
 import { GradingSettingsPanel } from '@/components/assessment-builder/step2-grading-settings-panel'
 import {
