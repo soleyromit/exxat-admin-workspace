@@ -368,10 +368,111 @@ function CanvasHeader({
   )
 }
 
-function CanvasBody(_props: {
+// ─── CanvasBody ───────────────────────────────────────────────────────────────
+
+const QUICK_STARTS: { id: QuickStart; label: string }[] = [
+  { id: 'blank',     label: 'Blank start' },
+  { id: 'copy',      label: "Copy last year's" },
+  { id: 'pdf',       label: 'Import PDF' },
+  { id: 'blueprint', label: 'Use blueprint' },
+]
+
+function CanvasBody({
+  prompt, onPromptChange, onSubmit,
+}: {
   prompt: string
   onPromptChange: (v: string) => void
   onSubmit: (mode: QuickStart) => void
 }) {
-  return <div style={{ flex: 1, background: 'var(--brand-tint)' }} />
+  return (
+    <div style={{
+      flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: [
+        'radial-gradient(ellipse 65% 50% at 50% 60%, oklch(0.96 0.03 342), transparent 75%)',
+        'radial-gradient(ellipse 40% 35% at 8% 88%, oklch(0.93 0.04 330), transparent 70%)',
+        'radial-gradient(ellipse 35% 30% at 90% 10%, oklch(0.94 0.03 350), transparent 65%)',
+        'oklch(0.985 0.01 343)',
+      ].join(', '),
+      overflow: 'auto',
+      padding: '32px 16px',
+    }}>
+      <div style={{ width: 520, textAlign: 'center' }}>
+        <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em', margin: '0 0 6px', color: 'var(--foreground)' }}>
+          What should this look like?
+        </h2>
+        <p style={{ fontSize: 13, color: 'var(--muted-foreground)', margin: '0 0 20px', lineHeight: 1.5 }}>
+          Describe sections, topics, faculty, timing.<br />Or pick a starting point below.
+        </p>
+
+        {/* Prompt box */}
+        <div style={{
+          border: '1.5px solid var(--foreground)', borderRadius: 12,
+          background: 'var(--background)', overflow: 'hidden',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.07)', textAlign: 'left',
+        }}>
+          <textarea
+            value={prompt}
+            onChange={e => onPromptChange(e.target.value)}
+            placeholder='e.g. "3 sections, 20 questions each — Cardiovascular Pharm, Renal Pharm, Clinical Application. Assign to Mehra, Patel, Kim. 90 min, proctored."'
+            rows={3}
+            aria-label="Describe assessment structure"
+            style={{
+              width: '100%', fontSize: 13, color: 'var(--foreground)',
+              padding: '13px 16px 8px', lineHeight: 1.55,
+              border: 'none', outline: 'none', resize: 'none',
+              background: 'transparent', fontFamily: 'inherit',
+              boxSizing: 'border-box',
+            }}
+          />
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
+            borderTop: '1px solid var(--border)', background: 'var(--muted)',
+          }}>
+            <button
+              type="button"
+              style={{ fontSize: 12, padding: '3px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--background)', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--foreground)' }}
+            >
+              📋 Copy from last year&#39;s
+            </button>
+            <button
+              type="button"
+              style={{ fontSize: 12, padding: '3px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--background)', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--foreground)' }}
+            >
+              📎 Attach blueprint
+            </button>
+            <button
+              type="button"
+              onClick={() => onSubmit('blank')}
+              aria-label="Submit prompt"
+              style={{
+                marginLeft: 'auto', width: 30, height: 30, borderRadius: 8,
+                background: 'var(--foreground)', border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <svg viewBox="0 0 16 16" fill="white" width="13" height="13" aria-hidden="true"><path d="M14.5 8L2 14l2.5-6L2 2z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Quick-start chips */}
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16, flexWrap: 'wrap' }}>
+          {QUICK_STARTS.map(qs => (
+            <button
+              key={qs.id}
+              type="button"
+              onClick={() => onSubmit(qs.id)}
+              style={{
+                fontSize: 12, padding: '5px 14px', borderRadius: 20,
+                border: '1px solid var(--border)', background: 'var(--background)',
+                cursor: 'pointer', fontFamily: 'inherit', color: 'var(--foreground)',
+              }}
+            >
+              {qs.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
 }
