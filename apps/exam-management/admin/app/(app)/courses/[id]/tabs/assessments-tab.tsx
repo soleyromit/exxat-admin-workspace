@@ -20,13 +20,13 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Button, Tip,
   Collapsible, CollapsibleTrigger, CollapsibleContent,
 } from '@exxat/ds/packages/ui/src'
 import { StatusPill, type Tone } from '@/components/faculty-ui-kit'
 import { WorkflowStepIndicator } from '@/components/workflow-step-indicator'
-import { CreateAssessmentModal } from '@/components/create-assessment-modal'
 import type { Assessment, QDiff } from '@/lib/qb-types'
 import type { AssessmentReview, AssessmentReviewState } from '@/lib/faculty-mock-data'
 
@@ -83,7 +83,10 @@ const COMPLETION_BUCKETS: {
 ]
 
 export function AssessmentsTab({ assessments, reviewByAssessment, isViewer, courseId }: AssessmentsTabProps) {
-  const [modalOpen, setModalOpen] = useState(false)
+  const router = useRouter()
+  function openCanvas() {
+    router.push(`/assessment-builder/create?courseId=${courseId}`)
+  }
   const [completedOpen, setCompletedOpen] = useState(false)
   const [filterBucket, setFilterBucket] = useState<CompletionBucket | null>(null)
 
@@ -126,21 +129,14 @@ export function AssessmentsTab({ assessments, reviewByAssessment, isViewer, cour
             : 'Build your first assessment from existing questions in the Question Bank.'}
         </p>
         {!isViewer && (
-          <>
-            <Button
-              size="default"
-              className="mt-4 gap-2"
-              onClick={() => setModalOpen(true)}
-            >
-              <i className="fa-light fa-plus" aria-hidden="true" />
-              Create assessment
-            </Button>
-            <CreateAssessmentModal
-              open={modalOpen}
-              onOpenChange={setModalOpen}
-              courseId={courseId}
-            />
-          </>
+          <Button
+            size="default"
+            className="mt-4 gap-2"
+            onClick={openCanvas}
+          >
+            <i className="fa-light fa-plus" aria-hidden="true" />
+            Create assessment
+          </Button>
         )}
       </div>
     )
@@ -197,7 +193,7 @@ export function AssessmentsTab({ assessments, reviewByAssessment, isViewer, cour
             </div>
           </div>
           {!isViewer && (
-            <Button size="sm" className="gap-2 shrink-0" onClick={() => setModalOpen(true)}>
+            <Button size="sm" className="gap-2 shrink-0" onClick={openCanvas}>
               <i className="fa-light fa-plus" aria-hidden="true" />
               Create assessment
             </Button>
@@ -222,12 +218,6 @@ export function AssessmentsTab({ assessments, reviewByAssessment, isViewer, cour
           </div>
         )}
       </div>
-
-      <CreateAssessmentModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        courseId={courseId}
-      />
 
       {visibleGroups.map(g => {
         const items = grouped.get(g.key)!
