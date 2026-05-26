@@ -408,7 +408,7 @@ function CanvasBody({
         <div style={{
           border: '1.5px solid var(--foreground)', borderRadius: 12,
           background: 'var(--background)', overflow: 'hidden',
-          boxShadow: '0 2px 12px rgba(0,0,0,0.07)', textAlign: 'left',
+          textAlign: 'left',
         }}>
           <textarea
             value={prompt}
