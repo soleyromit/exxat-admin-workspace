@@ -37,6 +37,7 @@ export function QbSearchBar({
         />
         {value && (
           <button
+            type="button"
             onClick={() => onChange('')}
             aria-label="Clear search"
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 0, display: 'flex' }}
@@ -44,7 +45,7 @@ export function QbSearchBar({
             <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 12 }} />
           </button>
         )}
-        <span style={{ fontSize: 12, color: 'var(--muted-foreground)', background: 'var(--muted)', padding: '2px 6px', borderRadius: 4, flexShrink: 0 }}>↵</span>
+        <span aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)', background: 'var(--muted)', padding: '2px 6px', borderRadius: 4, flexShrink: 0 }}>↵</span>
       </div>
 
       {/* Active filter tags */}
@@ -62,17 +63,20 @@ export function QbSearchBar({
             >
               {f.label}
               <button
+                type="button"
                 onClick={() => onRemoveFilter(f.key, f.label)}
                 aria-label={`Remove ${f.label} filter`}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 0, lineHeight: 1, fontSize: 13 }}
-              >×</button>
+              >
+                <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 11 }} />
+              </button>
             </span>
           ))}
         </div>
       )}
 
       {/* Result count */}
-      <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 6 }}>
+      <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '6px 0 0' }}>
         {resultCount} question{resultCount !== 1 ? 's' : ''} · sorted by relevance + PBI
       </p>
     </div>
