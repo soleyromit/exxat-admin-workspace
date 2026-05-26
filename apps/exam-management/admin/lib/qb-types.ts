@@ -9,6 +9,30 @@ export type QDiff   = 'Easy' | 'Medium' | 'Hard'
 export type QBlooms = 'Remember' | 'Understand' | 'Apply' | 'Analyze' | 'Evaluate' | 'Create'
 export type TrustLevel = 'junior' | 'mid' | 'senior'
 
+export type QLayout = 'stacked' | 'split'
+
+export interface QuestionOption {
+  key: string              // 'A' | 'B' | 'C' | 'D'
+  text: string
+  isCorrect: boolean
+  rationaleAuthor?: string // "Dr. Sarah Chen" — shown on correct option
+  rationale: string        // Full rationale for correct; "why wrong" for distractors
+}
+
+export interface QuestionVersionEntry {
+  version: number
+  modifiedBy: string       // display name e.g. "Dr. Sarah Chen"
+  date: string             // ISO date string e.g. "2026-05-14"
+  isOriginal?: boolean     // true on v1
+  changes: string[]        // bullet list of what changed from prior version
+  usedInAssessments: string[] // assessment names that used this version
+}
+
+export interface QuestionCollaborator {
+  personaId: string
+  role: 'owner' | 'edit' | 'view'
+}
+
 export interface Question {
   id: string
   code: string
@@ -32,6 +56,19 @@ export interface Question {
   usedInSections?: string[]
   pinned?: boolean
   favorited?: boolean
+  // Question detail panel fields (optional — present when detail data is loaded)
+  layout?: QLayout
+  stemText?: string                        // full question stem; falls back to title
+  options?: QuestionOption[]               // MCQ / MSQ only
+  rubric?: { criterion: string; points: number }[]  // Essay only
+  minWordCount?: number                    // Essay only
+  correctness?: number | null              // 0–100; % students who answered correctly
+  avgTimeSeconds?: number | null           // avg seconds per student
+  pValue?: number | null                   // numeric difficulty 0–1
+  optionDistribution?: { key: string; count: number }[]  // per-option selection counts
+  totalAttempts?: number | null            // total student attempts across all versions
+  versionHistory?: QuestionVersionEntry[]  // sorted newest-first
+  collaborators?: QuestionCollaborator[]   // includes owner
 }
 
 export type AccessRole = 'edit' | 'view'
