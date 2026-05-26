@@ -4,7 +4,6 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Button, LocalBanner } from '@exxat/ds/packages/ui/src'
 import { useAssessmentDrafts } from '@/lib/assessment-draft-store'
 import { mockCourses, mockCourseOfferings } from '@/lib/qb-mock-data'
-import { facultyListRows } from '@/lib/faculty-mock-data'
 import type { AssessmentType } from '@/lib/qb-types'
 
 type QuickStart = 'blank' | 'copy' | 'pdf' | 'blueprint'
@@ -14,6 +13,8 @@ function getFacultyInitial(fullName: string): string {
   return (parts[parts.length - 1]?.[0] ?? '?').toUpperCase()
 }
 
+// Decorative avatar backgrounds — no DS token equivalents for avatar colors.
+// oklch(0.57 0.24 342) ≈ var(--brand-color); others are chart-palette hues.
 const AVATAR_COLORS = [
   'oklch(0.65 0.18 160)',
   'oklch(0.65 0.18 55)',
@@ -122,5 +123,5 @@ function CanvasBody(_props: {
   onPromptChange: (v: string) => void
   onSubmit: (mode: QuickStart) => void
 }) {
-  return <div style={{ flex: 1, background: 'oklch(0.985 0.01 343)' }} />
+  return <div style={{ flex: 1, background: 'var(--brand-tint)' }} />
 }
