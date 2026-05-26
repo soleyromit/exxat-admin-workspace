@@ -329,7 +329,7 @@ function DetailsTab({ question }: { question: Question }) {
                 <span key={si}>
                   {si > 0 && (
                     <i className="fa-light fa-chevron-right" aria-hidden="true"
-                      style={{ fontSize: 9, color: 'var(--muted-foreground)', margin: '0 3px' }} />
+                      style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '0 3px' }} />
                   )}
                   <span style={{ color: si === loc.folderPath.split(' / ').length - 1 ? 'var(--foreground)' : 'var(--muted-foreground)' }}>
                     {seg}
@@ -500,7 +500,7 @@ function StatsTab({ question }: { question: Question }) {
                 borderRadius: 4, transition: 'width .3s',
               }} />
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, position: 'relative' }}>
               <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>0.00</span>
               <span style={{ fontSize: 12, color: 'var(--muted-foreground)', position: 'absolute', left: '20%' }}>0.20 fair</span>
               <span style={{ fontSize: 12, color: 'var(--muted-foreground)', position: 'absolute', left: '30%' }}>0.30 good</span>
@@ -635,7 +635,7 @@ function VersionsTab({
               }}>
                 {isViewing && (
                   <i className="fa-solid fa-check" aria-hidden="true"
-                    style={{ fontSize: 8, color: 'var(--primary-foreground)' }} />
+                    style={{ fontSize: 12, color: 'var(--primary-foreground)' }} />
                 )}
               </div>
               {/* Content */}
@@ -973,7 +973,7 @@ export function QuestionDetailSheet({
           </div>
           {/* Right: actions */}
           <div style={{ display: 'flex', gap: 8 }}>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" disabled>
               Remove from section
             </Button>
             <Button
