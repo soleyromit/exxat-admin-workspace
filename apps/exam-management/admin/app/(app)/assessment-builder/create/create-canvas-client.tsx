@@ -123,7 +123,9 @@ function ChipPopover({ label, children }: { label: string; children: React.React
       {open && (
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 49 }} onClick={() => setOpen(false)} />
-          <div style={{
+          <div
+            role="menu"
+            style={{
             position: 'absolute', top: '100%', left: 0, marginTop: 4,
             background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8,
             boxShadow: '0 4px 16px rgba(0,0,0,0.10)', zIndex: 50, minWidth: 180, padding: 12,
@@ -265,7 +267,9 @@ function CanvasHeader({
             </div>
           ))}
           {selectedFaculty.length > 5 && (
-            <div style={{
+            <div
+              title={`${selectedFaculty.length - 5} more collaborator${selectedFaculty.length - 5 > 1 ? 's' : ''}`}
+              style={{
               width: 24, height: 24, borderRadius: '50%',
               background: 'var(--muted)', border: '2px solid var(--background)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -316,7 +320,7 @@ function CanvasHeader({
                     }}
                   />
                 </div>
-                <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+                <div role="menu" style={{ maxHeight: 200, overflowY: 'auto' }}>
                   {filteredFaculty.length === 0 ? (
                     <div style={{ padding: '10px 12px', fontSize: 13, color: 'var(--muted-foreground)' }}>No faculty found</div>
                   ) : filteredFaculty.map((f, i) => {
