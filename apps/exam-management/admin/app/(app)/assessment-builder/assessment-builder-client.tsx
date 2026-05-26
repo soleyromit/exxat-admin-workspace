@@ -38,6 +38,7 @@ import {
   computeSectionSubtotals,
 } from '@/lib/assessment-grading'
 import { SendForReviewDialog } from '@/components/assessment-builder/send-for-review-dialog'
+import { QuestionDetailSheet } from './question-detail-sheet'
 
 // Estimated minutes per question type (base, before difficulty adjustment)
 const TIME_BY_TYPE: Record<QType, number> = {
@@ -3427,113 +3428,6 @@ function SectionsPanel({
         </Button>
       </div>
     </div>
-  )
-}
-
-// ─── Question detail Sheet ────────────────────────────────────────────────────
-
-function QuestionDetailSheet({
-  questionId, questions, open, onOpenChange, onEdit,
-}: {
-  questionId: string | null
-  questions: Question[]
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onEdit: (id: string) => void
-}) {
-  const question = questions.find(q => q.id === (questionId ?? ''))
-  if (!question) return null
-
-  const pbisLow = question.pbis !== null && question.pbis < 0.2
-  const diffColor: Record<string, string> = {
-    Easy: 'var(--chart-2)', Medium: 'var(--chart-4)', Hard: 'var(--destructive)',
-  }
-  const pbisDir = question.pbisDir
-  const pbisDirIcon = pbisDir === 'up' ? 'fa-arrow-trend-up'
-    : pbisDir === 'down' ? 'fa-arrow-trend-down'
-    : 'fa-minus'
-  const pbisDirColor = pbisDir === 'up' ? 'var(--chart-2)'
-    : pbisDir === 'down' ? 'var(--chart-4)'
-    : 'var(--muted-foreground)'
-
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" style={{ width: 420, maxWidth: '90vw', display: 'flex', flexDirection: 'column', padding: 0 }}>
-        <SheetHeader style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-mono text-muted-foreground">{question.code}</span>
-            <span className="text-xs font-semibold" style={{ color: diffColor[question.difficulty] ?? 'var(--foreground)' }}>
-              {question.difficulty}
-            </span>
-            <span className="text-xs text-muted-foreground">{question.type}</span>
-            <span className="text-xs text-muted-foreground">{question.blooms}</span>
-          </div>
-          <SheetTitle className="text-sm font-semibold text-foreground mt-2 leading-snug">
-            {question.title}
-          </SheetTitle>
-        </SheetHeader>
-
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Stats row */}
-          <div className="flex items-center gap-6 flex-wrap">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-xs text-muted-foreground">Usage</span>
-              <span className="text-sm font-semibold text-foreground">
-                {(question.usage ?? 0) > 0 ? `${question.usage}×` : 'Never used'}
-              </span>
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <span className="text-xs text-muted-foreground">Point-biserial</span>
-              <span
-                className="text-sm font-semibold font-mono flex items-center gap-1.5"
-                style={{ color: pbisLow ? 'var(--chart-4)' : 'var(--foreground)' }}
-              >
-                {question.pbis !== null ? (
-                  <>
-                    {question.pbis.toFixed(2)}
-                    <i className={`fa-light ${pbisDirIcon}`} aria-hidden="true" style={{ fontSize: 10, color: pbisDirColor }} />
-                    {pbisLow && (
-                      <span className="text-xs font-normal text-muted-foreground">⚠ low</span>
-                    )}
-                  </>
-                ) : '—'}
-              </span>
-            </div>
-          </div>
-
-          {/* Tags */}
-          {question.tags.length > 0 && (
-            <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">Tags</span>
-              <div className="flex flex-wrap gap-1">
-                {question.tags.map(tag => (
-                  <span
-                    key={tag}
-                    className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Folder */}
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xs text-muted-foreground">Location</span>
-            <span className="text-xs text-foreground">{question.folderPath}</span>
-          </div>
-        </div>
-
-        <SheetFooter style={{ padding: '12px 20px', borderTop: '1px solid var(--border)', flexShrink: 0, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Close</Button>
-          <Button size="sm" onClick={() => { onEdit(question.id); onOpenChange(false) }} className="gap-1.5">
-            <i className="fa-light fa-pen" aria-hidden="true" />
-            Edit question
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
   )
 }
 
