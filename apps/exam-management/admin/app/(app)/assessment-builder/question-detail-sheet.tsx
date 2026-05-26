@@ -27,7 +27,7 @@ function PbiChip({ pbis }: { pbis: number | null | undefined }) {
       display: 'inline-flex', alignItems: 'center', gap: 4,
       padding: '2px 8px', borderRadius: 999,
       background: 'var(--muted)',
-      color: isLow ? 'oklch(0.40 0.19 27)' : 'oklch(0.38 0.14 160)',
+      color: isLow ? 'var(--qb-pbi-low-color)' : 'var(--qb-pbi-good-color)',
       fontSize: 12, fontWeight: 500,
     }}>
       <span style={{
@@ -49,7 +49,7 @@ function FooterChip({ children, warn }: { children: React.ReactNode; warn?: bool
       display: 'inline-flex', alignItems: 'center', gap: 3,
       padding: '2px 7px', borderRadius: 999,
       background: 'var(--muted)',
-      color: warn ? 'oklch(0.40 0.19 27)' : 'var(--muted-foreground)',
+      color: warn ? 'var(--qb-pbi-low-color)' : 'var(--muted-foreground)',
       fontSize: 12, fontWeight: 500,
     }}>
       {children}
@@ -107,7 +107,7 @@ function OptionPreview({ option }: { option: QuestionOption }) {
           {option.isCorrect && (
             <span style={{
               fontSize: 12, fontWeight: 600,
-              color: 'oklch(0.38 0.14 160)',
+              color: 'var(--qb-pbi-good-color)',
             }}>
               ✓ Correct
             </span>
@@ -204,7 +204,7 @@ function DetailsTab({ question }: { question: Question }) {
                     {opt.text}
                   </span>
                   {opt.isCorrect && (
-                    <span style={{ fontSize: 12, color: 'oklch(0.38 0.14 160)', fontWeight: 600, flexShrink: 0 }}>✓</span>
+                    <span style={{ fontSize: 12, color: 'var(--qb-pbi-good-color)', fontWeight: 600, flexShrink: 0 }}>✓</span>
                   )}
                 </div>
               ))}
@@ -382,8 +382,8 @@ function StatsTab({ question }: { question: Question }) {
 
   const diffColor: Record<string, string> = {
     Easy:   'var(--chart-2)',
-    Medium: 'var(--chart-4)',
-    Hard:   'var(--destructive)',
+    Medium: 'var(--muted-foreground)',
+    Hard:   'var(--chart-4)',
   }
 
   const totalOptionSelections = question.optionDistribution
@@ -398,7 +398,7 @@ function StatsTab({ question }: { question: Question }) {
           padding: '10px 14px', marginBottom: 14,
           background: 'var(--muted)',
           border: '1px solid var(--border)', borderRadius: 8,
-          fontSize: 12, color: 'oklch(0.40 0.19 27)', lineHeight: 1.5,
+          fontSize: 12, color: 'var(--qb-pbi-low-color)', lineHeight: 1.5,
         }}>
           <div style={{ fontWeight: 600, marginBottom: 4 }}>
             <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ marginRight: 6 }} />
@@ -475,30 +475,39 @@ function StatsTab({ question }: { question: Question }) {
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 10 }}>
             <span style={{
               fontSize: 28, fontWeight: 700,
-              color: pbisLow ? 'oklch(0.40 0.19 27)' : 'var(--foreground)',
+              color: pbisLow ? 'var(--qb-pbi-low-color)' : 'var(--foreground)',
             }}>
               {pbis.toFixed(2)}
             </span>
             {pbisLow && (
-              <span style={{ fontSize: 12, color: 'oklch(0.40 0.19 27)', fontWeight: 500 }}>Low</span>
+              <span style={{ fontSize: 12, color: 'var(--qb-pbi-low-color)', fontWeight: 500 }}>Low</span>
             )}
           </div>
           {/* Horizontal bar with zone markers */}
-          <div style={{ position: 'relative', height: 8, background: 'var(--muted)', borderRadius: 4, overflow: 'hidden' }}>
-            <div style={{
-              position: 'absolute', left: 0, top: 0, bottom: 0,
-              width: `${Math.min(pbis * 100, 100)}%`,
-              background: pbisLow ? 'var(--chart-4)' : 'var(--chart-2)',
-              borderRadius: 4, transition: 'width .3s',
-            }} />
+          <div
+            role="img"
+            aria-label={`Point-biserial: ${pbis.toFixed(2)}. ${
+              pbis < 0.2 ? 'Low — below 0.20 threshold.'
+                : pbis < 0.3 ? 'Fair — between 0.20 and 0.30.'
+                : 'Good — above 0.30.'
+            }`}
+          >
+            <div style={{ position: 'relative', height: 8, background: 'var(--muted)', borderRadius: 4, overflow: 'hidden' }}>
+              <div style={{
+                position: 'absolute', left: 0, top: 0, bottom: 0,
+                width: `${Math.min(pbis * 100, 100)}%`,
+                background: pbisLow ? 'var(--chart-4)' : 'var(--chart-2)',
+                borderRadius: 4, transition: 'width .3s',
+              }} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+              <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>0.00</span>
+              <span style={{ fontSize: 12, color: 'var(--muted-foreground)', position: 'absolute', left: '20%' }}>0.20 fair</span>
+              <span style={{ fontSize: 12, color: 'var(--muted-foreground)', position: 'absolute', left: '30%' }}>0.30 good</span>
+              <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>1.00</span>
+            </div>
+            <div style={{ position: 'relative', height: 14 }} />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-            <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>0.00</span>
-            <span style={{ fontSize: 12, color: 'var(--muted-foreground)', position: 'absolute', left: '20%' }}>0.20 fair</span>
-            <span style={{ fontSize: 12, color: 'var(--muted-foreground)', position: 'absolute', left: '30%' }}>0.30 good</span>
-            <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>1.00</span>
-          </div>
-          <div style={{ position: 'relative', height: 14 }} />
         </div>
       )}
 
@@ -515,6 +524,9 @@ function StatsTab({ question }: { question: Question }) {
             Option distribution ({question.totalAttempts ?? totalOptionSelections} attempts)
           </div>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <caption style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}>
+              Option distribution
+            </caption>
             <thead>
               <tr style={{ background: 'var(--muted)' }}>
                 <th style={{ padding: '5px 12px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', width: 50 }}>Option</th>
@@ -535,7 +547,7 @@ function StatsTab({ question }: { question: Question }) {
                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                         width: 20, height: 20, borderRadius: '50%',
                         background: isCorrect ? 'var(--chart-2)' : 'var(--muted)',
-                        color: isCorrect ? 'white' : 'var(--foreground)',
+                        color: isCorrect ? 'var(--primary-foreground)' : 'var(--foreground)',
                         fontSize: 12, fontWeight: 700,
                       }}>
                         {opt.key}
@@ -623,7 +635,7 @@ function VersionsTab({
               }}>
                 {isViewing && (
                   <i className="fa-solid fa-check" aria-hidden="true"
-                    style={{ fontSize: 8, color: 'white' }} />
+                    style={{ fontSize: 8, color: 'var(--primary-foreground)' }} />
                 )}
               </div>
               {/* Content */}
@@ -635,7 +647,7 @@ function VersionsTab({
                   {isViewing ? (
                     <span style={{
                       fontSize: 12, fontWeight: 600, padding: '1px 7px', borderRadius: 999,
-                      background: 'var(--brand-color)', color: 'white',
+                      background: 'var(--brand-color)', color: 'var(--primary-foreground)',
                     }}>
                       Viewing
                     </span>
@@ -644,7 +656,7 @@ function VersionsTab({
                       variant="outline"
                       size="sm"
                       onClick={() => onView(entry.version)}
-                      style={{ height: 22, fontSize: 12, padding: '0 8px' }}
+                      style={{ fontSize: 12, padding: '0 8px' }}
                     >
                       View this version
                     </Button>
@@ -713,7 +725,7 @@ function CollaboratorsTab({ collaborators }: { collaborators: QuestionCollaborat
                 width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
                 background: persona?.color ?? 'var(--muted)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 12, fontWeight: 700, color: 'white',
+                fontSize: 12, fontWeight: 700, color: 'var(--primary-foreground)',
               }}>
                 {persona?.initials ?? c.personaId.slice(0, 2).toUpperCase()}
               </div>
@@ -789,6 +801,7 @@ export function QuestionDetailSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
+        aria-label={`Question detail: ${question.title}`}
         style={{
           width: '82vw', maxWidth: 960,
           display: 'flex', flexDirection: 'column',
@@ -847,20 +860,15 @@ export function QuestionDetailSheet({
           </Button>
 
           {/* Close button */}
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => onOpenChange(false)}
             aria-label="Close detail panel"
-            style={{
-              flexShrink: 0,
-              width: 28, height: 28, borderRadius: 6,
-              background: 'none', border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--muted-foreground)',
-            }}
+            style={{ minWidth: 44, minHeight: 44, flexShrink: 0 }}
           >
-            <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 14 }} />
-          </button>
+            <i className="fa-light fa-xmark" aria-hidden="true" />
+          </Button>
         </div>
 
         {/* ── Tab bar ────────────────────────────────────────────────────── */}
@@ -878,6 +886,8 @@ export function QuestionDetailSheet({
               <button
                 key={tab.id}
                 role="tab"
+                id={`tab-${tab.id}`}
+                aria-controls={`panel-${tab.id}`}
                 aria-selected={isActive}
                 onClick={() => setActiveTab(tab.id)}
                 style={{
@@ -894,8 +904,13 @@ export function QuestionDetailSheet({
               >
                 {tab.label}
                 {tab.warn && (
-                  <i className="fa-light fa-triangle-exclamation" aria-hidden="true"
-                    style={{ fontSize: 11, color: 'var(--chart-4)' }} />
+                  <>
+                    <i className="fa-solid fa-triangle-exclamation" aria-hidden="true"
+                      style={{ fontSize: 11, color: 'var(--chart-4)' }} />
+                    <span style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}>
+                      (has warning)
+                    </span>
+                  </>
                 )}
                 {tab.badge !== undefined && (
                   <span style={{
@@ -912,7 +927,12 @@ export function QuestionDetailSheet({
         </div>
 
         {/* ── Tab panels ────────────────────────────────────────────────── */}
-        <div style={{ flex: 1, overflow: 'hidden', padding: '16px 20px' }}>
+        <div
+          role="tabpanel"
+          id={`panel-${activeTab}`}
+          aria-labelledby={`tab-${activeTab}`}
+          style={{ flex: 1, overflow: 'hidden', padding: '16px 20px' }}
+        >
           {activeTab === 'details' && (
             <DetailsTab question={question} />
           )}

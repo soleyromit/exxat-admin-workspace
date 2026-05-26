@@ -123,6 +123,10 @@
 
   /* Bulk-action floating bar shadow */
   --qb-bulk-bar-shadow: 0 8px 32px oklch(0 0 0 / 0.14), 0 2px 8px oklch(0 0 0 / 0.08);
+
+  /* QB / Assessment Builder — PBI color tokens */
+  --qb-pbi-low-color:  oklch(0.40 0.19 27);   /* amber-red — below 0.20 threshold */
+  --qb-pbi-good-color: oklch(0.38 0.14 160);  /* green     — at or above 0.30     */
 }
 
 /* Courses table row tints */
