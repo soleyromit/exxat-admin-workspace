@@ -533,6 +533,7 @@ export default function AssessmentBuilderClient() {
   // Tab-based navigation replacing the old step wizard
   const [activeTab, setActiveTab] = useState<'setup' | 'build' | 'review'>('build')
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [pickerMethod, setPickerMethod] = useState<'qb' | 'pdf' | 'manual'>('qb')
   const [assignSheetSectionId, setAssignSheetSectionId] = useState<string | null>(null)
 
   // Legacy — kept for dead-code components that reference it
@@ -1384,21 +1385,38 @@ export default function AssessmentBuilderClient() {
                   <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
 
                     {activeSectionQuestions.length === 0 ? (
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '24px' }}>
-                        <i className="fa-light fa-circle-question text-muted-foreground" aria-hidden="true" style={{ fontSize: 28 }} />
-                        <p className="text-sm font-medium text-foreground">No questions yet</p>
-                        <p className="text-xs text-muted-foreground" style={{ textAlign: 'center', maxWidth: 260 }}>
-                          Add questions from the question bank or let Leo generate them based on this section&apos;s topic.
-                        </p>
-                        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                          <Button size="sm" variant="outline" onClick={() => setPickerOpen(true)} className="gap-1.5">
-                            <i className="fa-light fa-database" aria-hidden="true" />
-                            Question Bank
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => setAiPromptOpen(true)} className="gap-1.5">
-                            <i className="fa-light fa-sparkles" aria-hidden="true" />
-                            Ask Leo
-                          </Button>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20, padding: '32px 24px' }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <p className="text-sm font-semibold text-foreground" style={{ marginBottom: 4 }}>No questions yet</p>
+                          <p className="text-xs text-muted-foreground">Choose how to add questions to this section.</p>
+                        </div>
+                        <div style={{ display: 'flex', gap: 10, width: '100%', maxWidth: 480 }}>
+                          {([
+                            { method: 'qb' as const,     icon: 'fa-database',       label: 'Question Bank',  desc: 'Search and pick from saved questions' },
+                            { method: 'pdf' as const,    icon: 'fa-file-pdf',       label: 'Import PDF',     desc: 'Upload a doc; Leo extracts questions' },
+                            { method: 'manual' as const, icon: 'fa-pen-to-square',  label: 'From scratch',   desc: 'Write a question stem and options' },
+                          ] as const).map(({ method, icon, label, desc }) => (
+                            <button
+                              key={method}
+                              type="button"
+                              onClick={() => { setPickerMethod(method); setPickerOpen(true) }}
+                              style={{
+                                flex: 1, textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
+                                background: 'var(--background)',
+                                border: '1px solid var(--border)',
+                                borderRadius: 10, padding: '14px 14px 12px',
+                                display: 'flex', flexDirection: 'column', gap: 8,
+                              }}
+                            >
+                              <div style={{ width: 30, height: 30, borderRadius: 7, background: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <i className={`fa-light ${icon}`} aria-hidden="true" style={{ fontSize: 13, color: 'var(--muted-foreground)' }} />
+                              </div>
+                              <div>
+                                <div className="text-xs font-semibold text-foreground" style={{ marginBottom: 2 }}>{label}</div>
+                                <div className="text-xs text-muted-foreground">{desc}</div>
+                              </div>
+                            </button>
+                          ))}
                         </div>
                       </div>
                     ) : (
@@ -1855,40 +1873,14 @@ export default function AssessmentBuilderClient() {
 
       {/* ── QB Picker Dialog (centered modal) ──────────────────────────────── */}
       {pickerOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Add from Question Bank"
-          style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.15)' }}
-          onClick={e => { if (e.target === e.currentTarget) setPickerOpen(false) }}
-        >
-          <div style={{
-            background: 'var(--background)', border: '1px solid var(--border)', borderRadius: 12,
-            width: 540, maxHeight: '70vh', display: 'flex', flexDirection: 'column',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)', overflow: 'hidden',
-          }}>
-            {/* Header */}
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 14, fontWeight: 600, flex: 1, color: 'var(--foreground)' }}>Add from Question Bank</span>
-              {activeSection && (
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--brand-color)', background: 'color-mix(in srgb, var(--brand-color) 10%, var(--background))', border: '1px solid color-mix(in srgb, var(--brand-color) 25%, var(--background))', padding: '2px 8px', borderRadius: 20 }}>
-                  {activeAsmt ? activeAsmt.sections.findIndex(s => s.id === activeSection.id) + 1 : ''}. {activeSection.title}
-                </span>
-              )}
-              <Button variant="ghost" size="sm" onClick={() => setPickerOpen(false)} aria-label="Close question bank picker">
-                <i className="fa-light fa-xmark" aria-hidden="true" />
-              </Button>
-            </div>
-            {/* Command-palette picker */}
-            <QBCommandPicker
-              selectedIds={selectedIds}
-              onToggle={toggleQuestion}
-              activeSection={activeSection}
-              activeAsmt={activeAsmt}
-              onClose={() => setPickerOpen(false)}
-            />
-          </div>
-        </div>
+        <AddQuestionsModal
+          initialMethod={pickerMethod}
+          selectedIds={selectedIds}
+          onToggle={toggleQuestion}
+          activeSection={activeSection}
+          activeAsmt={activeAsmt}
+          onClose={() => setPickerOpen(false)}
+        />
       )}
 
       {/* ── Review tab ────────────────────────────────────────────────────── */}
@@ -5801,178 +5793,359 @@ function PreExamBlock({
 
 // ── QB Command-Palette Picker ────────────────────────────────────────────────
 
-function QBCommandPicker({ selectedIds, onToggle, activeSection, activeAsmt, onClose }: {
+// ─── Add Questions Modal — 3 methods: QB / Import PDF / From scratch ─────────
+
+const ADD_METHODS = [
+  { id: 'qb'     as const, icon: 'fa-database',      label: 'Question Bank' },
+  { id: 'pdf'    as const, icon: 'fa-file-pdf',       label: 'Import PDF'    },
+  { id: 'manual' as const, icon: 'fa-pen-to-square',  label: 'From scratch'  },
+]
+
+function AddQuestionsModal({ initialMethod, selectedIds, onToggle, activeSection, activeAsmt, onClose }: {
+  initialMethod: 'qb' | 'pdf' | 'manual'
   selectedIds: Set<string>
   onToggle: (id: string) => void
   activeSection: AssessmentSection | null
   activeAsmt: AssessmentDraft | null
   onClose: () => void
 }) {
-  const [searchQuery, setSearchQuery] = useState('RAAS inhibitors, medium difficulty, MCQ')
-  const [activeFilters, setActiveFilters] = useState<string[]>(['MCQ', 'Medium'])
+  const [method, setMethod] = React.useState<'qb' | 'pdf' | 'manual'>(initialMethod)
 
-  const filteredQuestions = useMemo(() => {
-    let qs = MOCK_QB_QUESTIONS.filter(q => q.status !== 'Draft')
-    const q = searchQuery.toLowerCase().trim()
-    if (q) {
-      qs = qs.filter(item =>
-        item.title.toLowerCase().includes(q) ||
-        item.folder.toLowerCase().includes(q)
-      )
-    }
-    for (const f of activeFilters) {
-      if (f === 'MCQ') qs = qs.filter(item => item.type === 'MCQ')
-      else if (f === 'Medium') qs = qs.filter(item => item.difficulty === 'Medium')
-      else if (f === 'Easy') qs = qs.filter(item => item.difficulty === 'Easy')
-      else if (f === 'Hard') qs = qs.filter(item => item.difficulty === 'Hard')
-    }
-    return qs
-  }, [searchQuery, activeFilters])
+  // QB state
+  const [searchQuery, setSearchQuery] = React.useState('')
+  const [activeFilters, setActiveFilters] = React.useState<string[]>([])
 
-  const displayQuestions = filteredQuestions.slice(0, 8)
+  // PDF state
+  const [pdfFile, setPdfFile] = React.useState<File | null>(null)
+  const [pdfParsing, setPdfParsing] = React.useState(false)
+  const [pdfExtracted, setPdfExtracted] = React.useState<Question[]>([])
+  const pdfInputRef = React.useRef<HTMLInputElement>(null)
+  const [pdfDragging, setPdfDragging] = React.useState(false)
 
-  const removeFilter = (f: string) => setActiveFilters(prev => prev.filter(x => x !== f))
+  // Manual state
+  const [stem, setStem] = React.useState('')
+  const [opts, setOpts] = React.useState(['', '', '', ''])
+  const [correctIdx, setCorrectIdx] = React.useState<number | null>(null)
 
   const sectionLabel = activeSection && activeAsmt
     ? `${activeAsmt.sections.findIndex(s => s.id === activeSection.id) + 1}. ${activeSection.title}`
-    : 'assessment'
+    : 'section'
+
+  // QB filtered questions
+  const qbQuestions = useMemo(() => {
+    let qs = MOCK_QB_QUESTIONS.filter(q => q.status !== 'Draft')
+    const q = searchQuery.toLowerCase().trim()
+    if (q) qs = qs.filter(item => item.title.toLowerCase().includes(q) || item.folder.toLowerCase().includes(q))
+    for (const f of activeFilters) {
+      if (f === 'MCQ') qs = qs.filter(item => item.type === 'MCQ')
+      if (f === 'Medium') qs = qs.filter(item => item.difficulty === 'Medium')
+      if (f === 'Easy') qs = qs.filter(item => item.difficulty === 'Easy')
+      if (f === 'Hard') qs = qs.filter(item => item.difficulty === 'Hard')
+    }
+    return qs.slice(0, 10)
+  }, [searchQuery, activeFilters])
+
+  function acceptPdf(f: File | undefined) {
+    if (!f) return
+    setPdfFile(f)
+    setPdfParsing(true)
+    setTimeout(() => { setPdfExtracted(MOCK_PDF_EXTRACTED); setPdfParsing(false) }, 1800)
+  }
+
+  const manualValid = stem.trim().length > 0 && correctIdx !== null && opts[correctIdx]?.trim().length > 0
+
+  const diffColor: Record<string, string> = {
+    Easy: 'var(--qb-diff-bar-easy)', Medium: 'var(--qb-diff-bar-medium)', Hard: 'var(--qb-diff-bar-hard)',
+  }
+  const diffWeight: Record<string, string> = {
+    Easy: 'font-normal', Medium: 'font-semibold', Hard: 'font-extrabold',
+  }
 
   return (
-    <>
-      {/* Search area */}
-      <div style={{ padding: '12px 16px 8px' }}>
-        <div style={{
-          border: '1.5px solid var(--border)', borderRadius: 8,
-          display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px',
-        }}>
-          {/* Sparkle icon */}
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0, color: 'var(--muted-foreground)' }}>
-            <path d="M8 2L9.5 6.5L14 8L9.5 9.5L8 14L6.5 9.5L2 8L6.5 6.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-          </svg>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            aria-label="Search questions"
-            style={{
-              flex: 1, border: 'none', outline: 'none', background: 'transparent',
-              fontSize: 13, color: 'var(--foreground)', fontFamily: 'inherit',
-            }}
-          />
-          <div style={{
-            fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)',
-            background: 'var(--muted)', borderRadius: 4, padding: '2px 6px', flexShrink: 0,
-          }}>
-            ↵
-          </div>
-        </div>
-        {/* Filter tag row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>Filters:</span>
-          {activeFilters.map(f => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => removeFilter(f)}
-              aria-label={`Remove filter ${f}`}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 4,
-                fontSize: 12, fontWeight: 500, color: 'var(--foreground)',
-                background: 'var(--muted)', border: '1px solid var(--border)',
-                borderRadius: 20, padding: '2px 8px', cursor: 'pointer', fontFamily: 'inherit',
-              }}
-            >
-              {f}
-              <span aria-hidden="true" style={{ fontSize: 12 }}>×</span>
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => {/* no-op for now */}}
-            style={{
-              fontSize: 12, color: 'var(--muted-foreground)',
-              background: 'none', border: '1px dashed var(--border)',
-              borderRadius: 20, padding: '2px 8px', cursor: 'pointer', fontFamily: 'inherit',
-            }}
-          >
-            + filter
-          </button>
-        </div>
-      </div>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Add questions"
+      style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.15)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div style={{ background: 'var(--background)', border: '1px solid var(--border)', borderRadius: 12, width: 580, maxHeight: '78vh', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', overflow: 'hidden' }}>
 
-      {/* Result count row */}
-      <div style={{
-        padding: '4px 16px 6px', borderBottom: '1px solid var(--border)',
-        fontSize: 12, color: 'var(--muted-foreground)',
-      }}>
-        {displayQuestions.length} question{displayQuestions.length !== 1 ? 's' : ''} · sorted by relevance + PBI
-      </div>
+        {/* Header */}
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <span style={{ fontSize: 14, fontWeight: 600, flex: 1, color: 'var(--foreground)' }}>Add questions</span>
+          {activeSection && (
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--brand-color)', background: 'color-mix(in srgb, var(--brand-color) 10%, var(--background))', border: '1px solid color-mix(in srgb, var(--brand-color) 25%, var(--background))', padding: '2px 8px', borderRadius: 20 }}>
+              → {sectionLabel}
+            </span>
+          )}
+          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close">
+            <i className="fa-light fa-xmark" aria-hidden="true" />
+          </Button>
+        </div>
 
-      {/* Results list */}
-      <div style={{ overflowY: 'auto', maxHeight: 240, borderTop: '1px solid var(--border)' }}>
-        {displayQuestions.map(q => {
-          const isSelected = selectedIds.has(q.id)
-          const pbiLow = q.pbis !== null && q.pbis < 0.2
-          const contentArea = q.folder.split('/').slice(1, 2).join('')
-          return (
-            <div
-              key={q.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => onToggle(q.id)}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onToggle(q.id) }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 10, padding: '9px 16px',
-                borderBottom: '1px solid var(--border)', cursor: 'pointer',
-                background: isSelected ? 'oklch(0.975 0.012 342)' : 'transparent',
-              }}
-            >
-              {/* Checkbox */}
-              <div style={{
-                width: 15, height: 15, borderRadius: 3, flexShrink: 0,
-                border: isSelected ? 'none' : '1.5px solid var(--border)',
-                background: isSelected ? 'var(--brand-color)' : 'transparent',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                {isSelected && (
-                  <svg width="8" height="8" viewBox="0 0 10 10" fill="white" aria-hidden="true">
-                    <path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
+        {/* Method tab bar */}
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', flexShrink: 0, background: 'var(--muted)' }}>
+          {ADD_METHODS.map(m => {
+            const isActive = method === m.id
+            return (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setMethod(m.id)}
+                style={{
+                  flex: 1, padding: '10px 8px', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                  background: isActive ? 'var(--background)' : 'transparent',
+                  borderBottom: isActive ? '2px solid var(--brand-color)' : '2px solid transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  fontSize: 13, fontWeight: isActive ? 600 : 400,
+                  color: isActive ? 'var(--foreground)' : 'var(--muted-foreground)',
+                }}
+              >
+                <i className={`fa-light ${m.icon}`} aria-hidden="true" style={{ fontSize: 12 }} />
+                {m.label}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* ── QB tab ── */}
+        {method === 'qb' && (
+          <>
+            <div style={{ padding: '10px 16px 8px', flexShrink: 0 }}>
+              <div style={{ border: '1.5px solid var(--border)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px' }}>
+                <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 13, color: 'var(--muted-foreground)', flexShrink: 0 }} />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Search by topic, keyword, or describe what you need…"
+                  aria-label="Search questions"
+                  autoFocus
+                  style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 13, color: 'var(--foreground)', fontFamily: 'inherit' }}
+                />
               </div>
-              {/* Stem */}
-              <span style={{ fontSize: 13, flex: 1, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', color: 'var(--foreground)' }}>
-                {q.title}
-              </span>
-              {/* Content area */}
-              {contentArea && (
-                <span className="text-xs" style={{ color: 'var(--muted-foreground)', flexShrink: 0 }}>
-                  {contentArea.charAt(0).toUpperCase() + contentArea.slice(1)}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                {['MCQ', 'Easy', 'Medium', 'Hard'].map(f => {
+                  const on = activeFilters.includes(f)
+                  return (
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => setActiveFilters(prev => on ? prev.filter(x => x !== f) : [...prev, f])}
+                      style={{
+                        fontSize: 11, fontWeight: 500, borderRadius: 20, padding: '2px 9px', cursor: 'pointer', fontFamily: 'inherit',
+                        background: on ? 'var(--foreground)' : 'var(--muted)',
+                        color: on ? 'var(--background)' : 'var(--muted-foreground)',
+                        border: on ? 'none' : '1px solid var(--border)',
+                      }}
+                    >
+                      {f}
+                    </button>
+                  )
+                })}
+                <span style={{ fontSize: 11, color: 'var(--muted-foreground)', marginLeft: 4 }}>
+                  {qbQuestions.length} result{qbQuestions.length !== 1 ? 's' : ''}
                 </span>
-              )}
-              {/* PBI */}
-              {q.pbis !== null && (
-                <span className="text-xs font-semibold text-foreground" style={{ flexShrink: 0 }}>
-                  {pbiLow && <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ marginRight: 2 }} />}
-                  {q.pbis.toFixed(2)}
-                </span>
-              )}
+              </div>
             </div>
-          )
-        })}
-      </div>
+            <div style={{ flex: 1, overflowY: 'auto', borderTop: '1px solid var(--border)' }}>
+              {qbQuestions.length === 0 ? (
+                <div style={{ padding: '32px 16px', textAlign: 'center', fontSize: 13, color: 'var(--muted-foreground)' }}>No questions match</div>
+              ) : qbQuestions.map(q => {
+                const isPicked = selectedIds.has(q.id)
+                const contentArea = q.folder.split('/').slice(-1)[0] ?? ''
+                return (
+                  <div
+                    key={q.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onToggle(q.id)}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onToggle(q.id) }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isPicked ? 'var(--brand-tint)' : 'transparent' }}
+                  >
+                    <div style={{ width: 15, height: 15, borderRadius: 3, flexShrink: 0, border: isPicked ? 'none' : '1.5px solid var(--border)', background: isPicked ? 'var(--brand-color)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {isPicked && <svg width="8" height="8" viewBox="0 0 10 10" fill="white" aria-hidden="true"><path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                    </div>
+                    <span style={{ fontSize: 13, flex: 1, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', color: 'var(--foreground)' }}>{q.title}</span>
+                    {contentArea && <span className="text-xs text-muted-foreground" style={{ flexShrink: 0 }}>{contentArea}</span>}
+                    <span className={`text-xs ${diffWeight[q.difficulty] ?? ''}`} style={{ color: diffColor[q.difficulty], flexShrink: 0 }}>{q.difficulty}</span>
+                    {q.pbis !== null && <span className="text-xs font-mono text-foreground" style={{ flexShrink: 0 }}>{q.pbis.toFixed(2)}</span>}
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        )}
 
-      {/* Footer */}
-      <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, background: 'var(--muted)' }}>
-        <span style={{ fontSize: 13, color: 'var(--muted-foreground)', flex: 1 }}>
-          {selectedIds.size > 0 ? `${selectedIds.size} selected` : 'Select questions to add'}
-        </span>
-        <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
-        <Button size="sm" onClick={onClose} className="gap-1.5" disabled={selectedIds.size === 0}>
-          Add {selectedIds.size > 0 ? selectedIds.size : ''} to {sectionLabel}
-        </Button>
+        {/* ── PDF tab ── */}
+        {method === 'pdf' && (
+          !pdfFile ? (
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', gap: 16 }}>
+              <div
+                onDragOver={e => { e.preventDefault(); setPdfDragging(true) }}
+                onDragLeave={() => setPdfDragging(false)}
+                onDrop={e => { e.preventDefault(); setPdfDragging(false); acceptPdf(e.dataTransfer.files[0]) }}
+                onClick={() => pdfInputRef.current?.click()}
+                style={{ width: '100%', maxWidth: 360, border: `2px dashed ${pdfDragging ? 'var(--brand-color)' : 'var(--border)'}`, borderRadius: 12, padding: '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, cursor: 'pointer', background: pdfDragging ? 'var(--brand-tint)' : 'var(--muted)', textAlign: 'center', transition: 'border-color 0.15s, background 0.15s' }}
+              >
+                <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--background)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <i className="fa-light fa-arrow-up-from-bracket" aria-hidden="true" style={{ fontSize: 18, color: 'var(--brand-color)' }} />
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-foreground" style={{ marginBottom: 3 }}>Drop a PDF here</div>
+                  <div className="text-xs text-muted-foreground">or click to browse · PDF only</div>
+                </div>
+                <input ref={pdfInputRef} type="file" accept=".pdf,application/pdf" aria-label="Select PDF file" style={{ display: 'none' }} onChange={e => acceptPdf(e.target.files?.[0])} />
+              </div>
+              <div style={{ maxWidth: 360, width: '100%' }}>
+                <p className="text-xs font-medium text-muted-foreground" style={{ marginBottom: 6 }}>Leo will extract:</p>
+                {['Question stems and answer choices', 'Section structure and topics', 'Timing and instruction notes'].map((item, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 4 }}>
+                    <i className="fa-light fa-check" aria-hidden="true" style={{ fontSize: 10, color: 'var(--chart-2)', flexShrink: 0 }} />
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : pdfParsing ? (
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, padding: 32 }}>
+              <i className="fa-light fa-loader fa-spin" aria-hidden="true" style={{ fontSize: 28, color: 'var(--brand-color)' }} />
+              <div style={{ textAlign: 'center' }}>
+                <div className="text-sm font-medium text-foreground" style={{ marginBottom: 3 }}>Extracting questions…</div>
+                <div className="text-xs text-muted-foreground">{pdfFile.name}</div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px', borderBottom: '1px solid var(--border)', background: 'var(--muted)', flexShrink: 0 }}>
+                <i className="fa-light fa-file-pdf" aria-hidden="true" style={{ fontSize: 14, color: 'var(--brand-color)', flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="text-xs font-semibold text-foreground" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pdfFile.name}</div>
+                  <div className="text-xs text-muted-foreground">{pdfExtracted.length} questions extracted</div>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => { setPdfFile(null); setPdfExtracted([]) }}>Change file</Button>
+              </div>
+              <div style={{ flex: 1, overflowY: 'auto' }}>
+                {pdfExtracted.map(q => {
+                  const isPicked = selectedIds.has(q.id)
+                  return (
+                    <div
+                      key={q.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => onToggle(q.id)}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onToggle(q.id) }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderBottom: '1px solid var(--border)', cursor: 'pointer', background: isPicked ? 'var(--brand-tint)' : 'transparent' }}
+                    >
+                      <div style={{ width: 15, height: 15, borderRadius: 3, flexShrink: 0, border: isPicked ? 'none' : '1.5px solid var(--border)', background: isPicked ? 'var(--brand-color)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {isPicked && <svg width="8" height="8" viewBox="0 0 10 10" fill="white" aria-hidden="true"><path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                      </div>
+                      <span style={{ fontSize: 13, flex: 1, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', color: 'var(--foreground)' }}>{q.title}</span>
+                      <span className={`text-xs ${diffWeight[q.difficulty] ?? ''}`} style={{ color: diffColor[q.difficulty], flexShrink: 0 }}>{q.difficulty}</span>
+                      <span className="text-xs text-muted-foreground font-medium" style={{ flexShrink: 0 }}>{q.type}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </>
+          )
+        )}
+
+        {/* ── From scratch tab ── */}
+        {method === 'manual' && (
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {/* Stem */}
+            <div>
+              <label className="text-xs font-semibold text-foreground" style={{ display: 'block', marginBottom: 6 }}>Question stem</label>
+              <textarea
+                value={stem}
+                onChange={e => setStem(e.target.value)}
+                placeholder="A 45-year-old patient presents with…"
+                rows={4}
+                aria-label="Question stem"
+                style={{ width: '100%', fontSize: 13, color: 'var(--foreground)', padding: '10px 12px', border: '1.5px solid var(--border)', borderRadius: 8, fontFamily: 'inherit', lineHeight: 1.5, resize: 'vertical', outline: 'none', background: 'var(--background)', boxSizing: 'border-box' }}
+              />
+            </div>
+            {/* Options */}
+            <div>
+              <label className="text-xs font-semibold text-foreground" style={{ display: 'block', marginBottom: 6 }}>Answer choices <span className="text-muted-foreground font-normal">— click the letter to mark correct</span></label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {opts.map((opt, i) => {
+                  const letter = String.fromCharCode(65 + i)
+                  const isCorrect = correctIdx === i
+                  return (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => setCorrectIdx(isCorrect ? null : i)}
+                        aria-label={`Mark option ${letter} as correct`}
+                        aria-pressed={isCorrect}
+                        style={{
+                          width: 28, height: 28, borderRadius: 6, border: 'none', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
+                          background: isCorrect ? 'var(--chart-2)' : 'var(--muted)',
+                          color: isCorrect ? 'white' : 'var(--muted-foreground)',
+                          fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          transition: 'background 0.12s, color 0.12s',
+                        }}
+                      >
+                        {letter}
+                      </button>
+                      <input
+                        type="text"
+                        value={opt}
+                        onChange={e => setOpts(prev => prev.map((o, j) => j === i ? e.target.value : o))}
+                        placeholder={`Option ${letter}`}
+                        aria-label={`Option ${letter}`}
+                        style={{ flex: 1, fontSize: 13, padding: '7px 10px', border: `1.5px solid ${isCorrect ? 'var(--chart-2)' : 'var(--border)'}`, borderRadius: 7, fontFamily: 'inherit', color: 'var(--foreground)', background: 'var(--background)', outline: 'none', transition: 'border-color 0.12s' }}
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+            {/* Type / difficulty row */}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ flex: 1 }}>
+                <label className="text-xs font-semibold text-foreground" style={{ display: 'block', marginBottom: 6 }}>Type</label>
+                <select aria-label="Question type" style={{ width: '100%', fontSize: 12, padding: '6px 8px', border: '1px solid var(--border)', borderRadius: 7, fontFamily: 'inherit', color: 'var(--foreground)', background: 'var(--background)' }}>
+                  <option>MCQ</option><option>MSQ</option><option>True/False</option><option>Short Answer</option>
+                </select>
+              </div>
+              <div style={{ flex: 1 }}>
+                <label className="text-xs font-semibold text-foreground" style={{ display: 'block', marginBottom: 6 }}>Difficulty</label>
+                <select aria-label="Difficulty" style={{ width: '100%', fontSize: 12, padding: '6px 8px', border: '1px solid var(--border)', borderRadius: 7, fontFamily: 'inherit', color: 'var(--foreground)', background: 'var(--background)' }}>
+                  <option>Easy</option><option>Medium</option><option>Hard</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, background: 'var(--card)', flexShrink: 0 }}>
+          <span style={{ fontSize: 13, color: 'var(--muted-foreground)', flex: 1 }}>
+            {method === 'qb'
+              ? (selectedIds.size > 0 ? `${selectedIds.size} selected` : 'Select questions to add')
+              : method === 'pdf'
+              ? (pdfExtracted.length > 0 ? `${selectedIds.size} of ${pdfExtracted.length} selected` : pdfFile ? 'Extracting…' : 'Upload a PDF to begin')
+              : (manualValid ? 'Ready to add' : 'Fill in the stem and mark an answer')}
+          </span>
+          <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+          {method === 'manual' ? (
+            <Button size="sm" disabled={!manualValid} onClick={onClose} className="gap-1.5">
+              <i className="fa-light fa-plus" aria-hidden="true" />
+              Add question
+            </Button>
+          ) : (
+            <Button size="sm" disabled={selectedIds.size === 0} onClick={onClose} className="gap-1.5">
+              Add {selectedIds.size > 0 ? selectedIds.size : ''} to {sectionLabel}
+            </Button>
+          )}
+        </div>
+
       </div>
-    </>
+    </div>
   )
 }
 
