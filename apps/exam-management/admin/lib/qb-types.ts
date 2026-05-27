@@ -178,7 +178,9 @@ export interface AssessmentSettings {
 export interface AssessmentSection {
   id: string
   title: string
-  facultyId?: string
+  facultyId?: string              // kept for compat — prefer facultyIds going forward
+  facultyIds?: string[]           // all faculty/contributors owning this section
+  questionTarget?: number         // expected number of questions this section should have
   collaboratorId?: string         // second instructor who can view/edit this section
   prereadText?: string            // NEW: case-study preread block
   instructions?: string           // procedural instructions shown before section starts

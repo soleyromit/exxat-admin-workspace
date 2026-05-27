@@ -436,6 +436,10 @@ export default function AssessmentBuilderClient() {
   const [pinnedQuestionIds, setPinnedQuestionIds] = useState<Set<string>>(new Set())
   const [assessmentDescription, setAssessmentDescription] = useState('')
   const [sectionAnalysisOpen, setSectionAnalysisOpen] = useState(false)
+  const [lastMovedId, setLastMovedId] = useState<string | null>(null)
+  const [aiPromptOpen, setAiPromptOpen] = useState(false)
+  const [aiPromptText, setAiPromptText] = useState('')
+  const [aiBuilding, setAiBuilding] = useState(false)
 
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [sendForReviewOpen, setSendForReviewOpen] = useState(false)
@@ -472,6 +476,8 @@ export default function AssessmentBuilderClient() {
         sections: prev.sections.map(s => s.id === sectionId ? { ...s, questionIds: newIds } : s),
       }
     })
+    setLastMovedId(questionId)
+    setTimeout(() => setLastMovedId(cur => cur === questionId ? null : cur), 700)
   }
 
   function togglePinQuestion(questionId: string) {
@@ -610,7 +616,7 @@ export default function AssessmentBuilderClient() {
 
   // Section status: Ready if fill ≥ 80% of some target, else Drafting
   function sectionFillPct(sec: AssessmentSection): number {
-    const target = 20
+    const target = sec.questionTarget ?? 20
     return Math.min(100, Math.round((sec.questionIds.length / target) * 100))
   }
 
@@ -1046,10 +1052,9 @@ export default function AssessmentBuilderClient() {
                 const isActive = sec.id === activeSectionId
                 const fillPct = sectionFillPct(sec)
                 const isReady = fillPct >= 80
-                const faculty = sec.facultyId ? facultyListRows.find(f => f.id === sec.facultyId) : null
-                const initials = faculty ? faculty.fullName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : null
+                const facIds = sec.facultyIds?.length ? sec.facultyIds : sec.facultyId ? [sec.facultyId] : []
+                const sectionFaculty = facultyListRows.filter(f => facIds.includes(f.id))
                 const AVATAR_COLORS = ['#7c6bbf', '#3b7abf', '#4e9a6b', '#bf5b3b', '#b87c3b']
-                const avatarColor = AVATAR_COLORS[idx % AVATAR_COLORS.length]
                 return (
                   <div key={sec.id}>
                     <button
@@ -1070,34 +1075,50 @@ export default function AssessmentBuilderClient() {
                       {isReady ? (
                         <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--chart-2)', flexShrink: 0 }}>✓</span>
                       ) : (
-                        <span className="text-xs text-muted-foreground" style={{ flexShrink: 0 }}>{sec.questionIds.length}/20</span>
+                        <span className="text-xs text-muted-foreground" style={{ flexShrink: 0 }}>{sec.questionIds.length}/{sec.questionTarget ?? 20}</span>
                       )}
                     </button>
-                    {/* Faculty row */}
-                    {faculty ? (() => {
-                      const mockDueDate = idx === 1 ? 'Due May 20' : null
-                      return (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0 12px 3px 22px' }}>
-                          <div style={{
-                            width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
-                            background: avatarColor, display: 'flex', alignItems: 'center',
-                            justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#fff',
-                          }}>
-                            {initials}
-                          </div>
-                          <span className="text-xs text-muted-foreground" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 11 }}>
-                            {faculty.fullName.split(' ').slice(-1)[0]}
-                          </span>
-                          {mockDueDate && (
-                            <span style={{ fontSize: 11, color: 'var(--chart-4)', fontWeight: 600 }}>{mockDueDate}</span>
-                          )}
-                        </div>
-                      )
-                    })() : (
+                    {/* Faculty row — multi-faculty stacked avatars */}
+                    {sectionFaculty.length > 0 ? (
                       <button
                         type="button"
                         onClick={() => setAssignSheetSectionId(sec.id)}
-                        style={{ fontSize: 11, color: 'var(--brand-color)', fontWeight: 500, padding: '0 12px 3px 22px', display: 'block', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '0 12px 4px 22px', background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', fontFamily: 'inherit' }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          {sectionFaculty.slice(0, 3).map((fac, fi) => {
+                            const ini = fac.fullName.split(' ').filter(Boolean).map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
+                            const col = ASSIGN_AVATAR_COLORS[fac.id] ?? AVATAR_COLORS[fi % AVATAR_COLORS.length]
+                            return (
+                              <div key={fac.id} title={fac.fullName} style={{
+                                width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
+                                background: col, display: 'flex', alignItems: 'center',
+                                justifyContent: 'center', fontSize: 9, fontWeight: 700, color: '#fff',
+                                border: '1.5px solid var(--background)',
+                                marginRight: fi < Math.min(sectionFaculty.length, 3) - 1 ? -5 : 0,
+                              }}>{ini}</div>
+                            )
+                          })}
+                          {sectionFaculty.length > 3 && (
+                            <div style={{ width: 16, height: 16, borderRadius: '50%', background: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: 'var(--muted-foreground)', fontWeight: 600, border: '1.5px solid var(--background)', marginLeft: -5 }}>
+                              +{sectionFaculty.length - 3}
+                            </div>
+                          )}
+                        </div>
+                        <span style={{ fontSize: 11, color: 'var(--muted-foreground)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {sectionFaculty.length === 1 ? sectionFaculty[0].fullName.split(' ').slice(-1)[0] : `${sectionFaculty.length} faculty`}
+                        </span>
+                        {sec.questionTarget != null && (
+                          <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+                            {sec.questionIds.length}<span style={{ opacity: 0.5 }}>/{sec.questionTarget}</span>
+                          </span>
+                        )}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setAssignSheetSectionId(sec.id)}
+                        style={{ fontSize: 11, color: 'var(--brand-color)', fontWeight: 500, padding: '0 12px 4px 22px', display: 'block', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
                       >
                         ＋ Assign faculty
                       </button>
@@ -1137,32 +1158,29 @@ export default function AssessmentBuilderClient() {
                     <span className="text-sm font-semibold text-foreground truncate flex-1">
                       {activeAsmt.sections.findIndex(s => s.id === activeSection.id) + 1}. {activeSection.title}
                     </span>
-                    {/* Faculty avatars — multi-contributor display */}
-                    {activeSectionQuestions.length > 0 && (() => {
-                      const HEADER_AVATARS = [
-                        { initials: 'SM', color: '#7c6bbf', name: 'Dr. S. Mehra' },
-                        { initials: 'RK', color: '#3b7abf', name: 'Dr. R. Kim' },
-                        { initials: 'AP', color: '#bf5b3b', name: 'Dr. A. Patel' },
-                      ]
+                    {/* Faculty avatars — from real section assignment */}
+                    {(() => {
+                      const facIds = activeSection.facultyIds?.length ? activeSection.facultyIds : activeSection.facultyId ? [activeSection.facultyId] : []
+                      const headerFaculty = facultyListRows.filter(f => facIds.includes(f.id))
+                      if (headerFaculty.length === 0) return null
+                      const FALLBACK_COLORS = ['#7c6bbf', '#3b7abf', '#bf5b3b']
                       return (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
-                            {HEADER_AVATARS.map((av, i) => (
-                              <div
-                                key={av.initials}
-                                title={av.name}
-                                style={{
-                                  width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-                                  background: av.color, display: 'flex', alignItems: 'center',
-                                  justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#fff',
-                                  border: '2px solid var(--background)',
-                                  marginRight: i < HEADER_AVATARS.length - 1 ? -6 : 0,
-                                }}
-                              >
-                                {av.initials}
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          {headerFaculty.slice(0, 4).map((fac, i) => {
+                            const initials = fac.fullName.split(' ').filter(Boolean).map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
+                            const color = ASSIGN_AVATAR_COLORS[fac.id] ?? FALLBACK_COLORS[i % FALLBACK_COLORS.length]
+                            return (
+                              <div key={fac.id} title={fac.fullName} style={{
+                                width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+                                background: color, display: 'flex', alignItems: 'center',
+                                justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#fff',
+                                border: '2px solid var(--background)',
+                                marginRight: i < Math.min(headerFaculty.length, 4) - 1 ? -6 : 0,
+                              }}>
+                                {initials}
                               </div>
-                            ))}
-                          </div>
+                            )
+                          })}
                         </div>
                       )
                     })()}
@@ -1208,7 +1226,10 @@ export default function AssessmentBuilderClient() {
                             style={{
                               display: 'flex', alignItems: 'center', gap: 6,
                               padding: '5px 8px 5px 14px', borderBottom: '1px solid color-mix(in srgb, var(--border) 50%, transparent)',
-                              background: isPinned ? 'color-mix(in srgb, var(--chart-2) 4%, var(--background))' : undefined,
+                              background: lastMovedId === q.id
+                                ? 'color-mix(in srgb, var(--brand-color) 12%, var(--background))'
+                                : isPinned ? 'color-mix(in srgb, var(--chart-2) 4%, var(--background))' : undefined,
+                              transition: 'background 0.6s ease',
                             }}
                           >
                             {/* Reorder controls */}
@@ -1305,6 +1326,71 @@ export default function AssessmentBuilderClient() {
                 </div>
               )}
             </div>
+
+            {/* ── AI Prompt Bar ─────────────────────────────────────── */}
+            {activeSection && (
+              <div style={{
+                borderTop: '1px solid var(--border)', flexShrink: 0, background: 'var(--card)',
+              }}>
+                {aiPromptOpen ? (
+                  <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <textarea
+                      autoFocus
+                      rows={2}
+                      placeholder={`Ask Leo to adjust "${activeSection.title}"… e.g. "Add 3 MCQ on pharmacology at medium difficulty"`}
+                      value={aiPromptText}
+                      onChange={e => setAiPromptText(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Escape') { setAiPromptOpen(false); setAiPromptText('') }
+                        if (e.key === 'Enter' && !e.shiftKey && aiPromptText.trim()) {
+                          e.preventDefault()
+                          setAiBuilding(true)
+                          setTimeout(() => { setAiBuilding(false); setAiPromptOpen(false); setAiPromptText('') }, 1800)
+                        }
+                      }}
+                      style={{
+                        width: '100%', fontSize: 13, padding: '6px 9px', resize: 'none',
+                        border: '1px solid var(--border)', borderRadius: 7, fontFamily: 'inherit',
+                        color: 'var(--foreground)', background: 'var(--background)', outline: 'none',
+                        boxSizing: 'border-box', lineHeight: 1.5,
+                      }}
+                    />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>Enter to send · Shift+Enter for new line · Esc to close</span>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button type="button" onClick={() => { setAiPromptOpen(false); setAiPromptText('') }}
+                          style={{ fontSize: 12, padding: '3px 8px', background: 'none', border: '1px solid var(--border)', borderRadius: 5, cursor: 'pointer', color: 'var(--muted-foreground)', fontFamily: 'inherit' }}>
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!aiPromptText.trim() || aiBuilding}
+                          onClick={() => {
+                            setAiBuilding(true)
+                            setTimeout(() => { setAiBuilding(false); setAiPromptOpen(false); setAiPromptText('') }, 1800)
+                          }}
+                          style={{ fontSize: 12, padding: '3px 10px', background: 'var(--brand-color)', border: 'none', borderRadius: 5, cursor: aiPromptText.trim() ? 'pointer' : 'default', color: '#fff', fontWeight: 600, fontFamily: 'inherit', opacity: aiPromptText.trim() ? 1 : 0.5 }}
+                        >
+                          {aiBuilding ? 'Building…' : 'Send'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setAiPromptOpen(true)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 14px',
+                      background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+                    }}
+                  >
+                    <i className="fa-light fa-sparkles" aria-hidden="true" style={{ fontSize: 13, color: 'var(--brand-color)' }} />
+                    <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>Ask Leo to adjust this section…</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
         </div>
@@ -1449,9 +1535,9 @@ export default function AssessmentBuilderClient() {
                     status: (activeAsmt?.questions.length ?? 0) >= 1 ? 'Complete' : 'Incomplete',
                   },
                   {
-                    ok: !activeAsmt || activeAsmt.sections.length === 0 || activeAsmt.sections.every(s => !!s.facultyId),
+                    ok: !activeAsmt || activeAsmt.sections.length === 0 || activeAsmt.sections.every(s => (s.facultyIds?.length ?? 0) > 0 || !!s.facultyId),
                     label: 'All sections assigned to faculty',
-                    status: (!activeAsmt || activeAsmt.sections.length === 0 || activeAsmt.sections.every(s => !!s.facultyId)) ? 'Complete' : 'Incomplete',
+                    status: (!activeAsmt || activeAsmt.sections.length === 0 || activeAsmt.sections.every(s => (s.facultyIds?.length ?? 0) > 0 || !!s.facultyId)) ? 'Complete' : 'Incomplete',
                   },
                   {
                     ok: !!(activeAsmt?.settings?.openDate),
@@ -1590,7 +1676,7 @@ export default function AssessmentBuilderClient() {
         section={activeAsmt?.sections.find(s => s.id === assignSheetSectionId) ?? null}
         sectionIndex={activeAsmt?.sections.findIndex(s => s.id === assignSheetSectionId) ?? -1}
         collaboratorIds={activeAsmt?.collaboratorIds ?? []}
-        onAssignFaculty={(sectionId, facultyId) => updateSection(sectionId, { facultyId })}
+        onAssignFaculty={(sectionId, patch) => updateSection(sectionId, patch)}
       />
       <SectionAnalysisSheet
         open={sectionAnalysisOpen}
@@ -3491,10 +3577,10 @@ function DetailsStep({
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground w-20 shrink-0">Assigned to</span>
                       <Select
-                        value={sec.facultyId ?? '__none__'}
+                        value={(sec.facultyIds?.[0] ?? sec.facultyId) ?? '__none__'}
                         onValueChange={val => onUpdate({
                           sections: sections.map(s =>
-                            s.id === sec.id ? { ...s, facultyId: val === '__none__' ? undefined : val } : s
+                            s.id === sec.id ? { ...s, facultyIds: val === '__none__' ? undefined : [val], facultyId: undefined } : s
                           ),
                         })}
                       >
@@ -4797,21 +4883,36 @@ function SectionAssignSheet({
   section: AssessmentSection | null
   sectionIndex: number
   collaboratorIds: string[]
-  onAssignFaculty: (sectionId: string, facultyId: string | undefined) => void
+  onAssignFaculty: (sectionId: string, patch: { facultyIds?: string[]; questionTarget?: number }) => void
 }) {
-  const [selectedId, setSelectedId] = React.useState<string | undefined>(section?.facultyId)
+  const initialFacIds = React.useMemo(() => {
+    if (!section) return new Set<string>()
+    if (section.facultyIds?.length) return new Set(section.facultyIds)
+    if (section.facultyId) return new Set([section.facultyId])
+    return new Set<string>()
+  }, [section?.id, section?.facultyIds, section?.facultyId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Sync when the section changes
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(initialFacIds)
+  const [questionTarget, setQuestionTarget] = React.useState<string>(section?.questionTarget?.toString() ?? '')
+
   React.useEffect(() => {
-    setSelectedId(section?.facultyId)
-  }, [section?.id, section?.facultyId])
+    setSelectedIds(initialFacIds)
+    setQuestionTarget(section?.questionTarget?.toString() ?? '')
+  }, [section?.id, initialFacIds]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Build the faculty pool from canvas collaborators
   const facultyPool = collaboratorIds.length > 0
     ? facultyListRows.filter(f => collaboratorIds.includes(f.id))
-    : facultyListRows.slice(0, 4) // fallback: show first 4 if no collaborators assigned
+    : facultyListRows.slice(0, 6)
 
   if (!section) return null
+
+  function toggleFac(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) { next.delete(id) } else { next.add(id) }
+      return next
+    })
+  }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -4819,36 +4920,35 @@ function SectionAssignSheet({
         side="right"
         style={{ width: 320, display: 'flex', flexDirection: 'column', padding: 0 }}
       >
-        {/* Header */}
         <SheetHeader style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
           <SheetTitle style={{ fontSize: 13, fontWeight: 600 }}>
             {sectionIndex + 1}. {section.title}
           </SheetTitle>
-          <p className="text-xs text-muted-foreground">Select the faculty responsible for this section</p>
+          <p className="text-xs text-muted-foreground">Assign faculty who will contribute to this section. Select multiple.</p>
         </SheetHeader>
 
-        {/* Body */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
-          {/* Faculty selection — canvas collaborators */}
+          {/* Faculty multi-select */}
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '12px 16px 6px' }}>
-            {collaboratorIds.length > 0 ? 'From canvas collaborators' : 'Faculty'}
+            {collaboratorIds.length > 0 ? 'Assessment collaborators' : 'Faculty'}
           </div>
           {facultyPool.length === 0 ? (
             <p style={{ fontSize: 13, color: 'var(--muted-foreground)', padding: '8px 16px' }}>
               No collaborators were added on the canvas. Add faculty there first.
             </p>
           ) : facultyPool.map(fac => {
-            const initials = fac.fullName.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase()
+            const initials = fac.fullName.split(' ').filter(Boolean).map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
             const color = ASSIGN_AVATAR_COLORS[fac.id] ?? '#7c6bbf'
-            const isSelected = selectedId === fac.id
+            const isSelected = selectedIds.has(fac.id)
             return (
               <button
                 key={fac.id}
                 type="button"
-                onClick={() => setSelectedId(isSelected ? undefined : fac.id)}
+                onClick={() => toggleFac(fac.id)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px',
-                  width: '100%', textAlign: 'left', background: isSelected ? 'color-mix(in srgb, var(--brand-color) 8%, var(--background))' : 'none',
+                  width: '100%', textAlign: 'left',
+                  background: isSelected ? 'color-mix(in srgb, var(--brand-color) 8%, var(--background))' : 'none',
                   border: 'none', borderLeft: `3px solid ${isSelected ? 'var(--brand-color)' : 'transparent'}`,
                   cursor: 'pointer', fontFamily: 'inherit',
                 }}
@@ -4864,43 +4964,69 @@ function SectionAssignSheet({
                   <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)' }}>{fac.fullName}</div>
                   <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{fac.rank}</div>
                 </div>
-                {isSelected && (
-                  <i className="fa-solid fa-circle-check" aria-hidden="true"
-                    style={{ fontSize: 16, color: 'var(--brand-color)', flexShrink: 0 }} />
-                )}
+                <div style={{
+                  width: 18, height: 18, borderRadius: 4, border: `2px solid ${isSelected ? 'var(--brand-color)' : 'var(--border-control-35, var(--border))'}`,
+                  background: isSelected ? 'var(--brand-color)' : 'transparent', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {isSelected && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, color: '#fff' }} />}
+                </div>
               </button>
             )
           })}
 
+          {/* Question target */}
+          <div style={{ padding: '14px 16px', borderTop: '1px solid var(--border)', marginTop: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)', marginBottom: 5 }}>
+              Question target <span style={{ fontWeight: 400, color: 'var(--muted-foreground)' }}>(optional)</span>
+            </div>
+            <input
+              type="number"
+              min={1}
+              max={200}
+              value={questionTarget}
+              onChange={e => setQuestionTarget(e.target.value)}
+              placeholder="e.g. 15"
+              aria-label="Target number of questions for this section"
+              style={{ fontSize: 13, border: '1px solid var(--border)', borderRadius: 6, padding: '5px 9px', width: 90, fontFamily: 'inherit', color: 'var(--foreground)', background: 'var(--background)', outline: 'none' }}
+            />
+            <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 5 }}>How many questions this section should have. Shown as progress in the sidebar.</p>
+          </div>
+
           {/* Contribution deadline */}
-          <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', marginTop: 8 }}>
-            <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 5 }}>
-              Contribution deadline <span style={{ opacity: 0.7 }}>(optional)</span>
+          <div style={{ padding: '0 16px 14px', borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)', marginBottom: 5 }}>
+              Contribution deadline <span style={{ fontWeight: 400, color: 'var(--muted-foreground)' }}>(optional)</span>
             </div>
             <input
               type="text"
               defaultValue=""
-              placeholder="e.g. May 20, 2026"
+              placeholder="e.g. May 30, 2026"
               aria-label="Contribution deadline"
               style={{ fontSize: 13, border: '1px solid var(--border)', borderRadius: 6, padding: '5px 9px', width: '100%', fontFamily: 'inherit', color: 'var(--foreground)', background: 'var(--background)', outline: 'none', boxSizing: 'border-box' }}
             />
-            <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>Faculty see this due date in their course view.</div>
           </div>
         </div>
 
-        {/* Footer */}
-        <SheetFooter style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button
-            size="sm"
-            disabled={!selectedId}
-            onClick={() => {
-              if (section) onAssignFaculty(section.id, selectedId)
-              onOpenChange(false)
-            }}
-          >
-            Save assignment
-          </Button>
+        <SheetFooter style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
+            {selectedIds.size === 0 ? 'No faculty assigned' : `${selectedIds.size} faculty`}
+          </span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                if (section) onAssignFaculty(section.id, {
+                  facultyIds: selectedIds.size > 0 ? [...selectedIds] : undefined,
+                  questionTarget: questionTarget ? Number(questionTarget) : undefined,
+                })
+                onOpenChange(false)
+              }}
+            >
+              Save
+            </Button>
+          </div>
         </SheetFooter>
       </SheetContent>
     </Sheet>
