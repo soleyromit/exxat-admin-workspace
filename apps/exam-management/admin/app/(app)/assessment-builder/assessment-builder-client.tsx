@@ -2830,28 +2830,6 @@ function DetailsStep({
               description="Shuffle answer choices within each question"
             />
 
-            <div>
-              <p className="text-xs text-muted-foreground mb-1.5">Pre-exam instructions (optional)</p>
-              <textarea
-                aria-label="Pre-exam instructions"
-                value={settings.instructionsText}
-                onChange={e => patchSettings({ instructionsText: e.target.value })}
-                placeholder="Academic integrity statement, exam rules, or any instructions students see before they start…"
-                rows={3}
-                style={{ width: '100%', padding: '8px 10px', fontSize: 13, lineHeight: 1.5, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', resize: 'vertical' }}
-                onFocus={e => { (e.target as HTMLTextAreaElement).style.borderColor = 'var(--brand-color)'; (e.target as HTMLTextAreaElement).style.boxShadow = '0 0 0 2px color-mix(in oklch, var(--brand-color) 25%, transparent)' }}
-                onBlur={e => { (e.target as HTMLTextAreaElement).style.borderColor = 'var(--border)'; (e.target as HTMLTextAreaElement).style.boxShadow = 'none' }}
-              />
-              {settings.instructionsText.trim() && (
-                <Toggle
-                  checked={settings.requireAcknowledgment}
-                  onChange={v => patchSettings({ requireAcknowledgment: v })}
-                  label="Require student acknowledgment"
-                  description="Students must check a box before starting"
-                />
-              )}
-            </div>
-
             <Toggle
               checked={settings.showRationaleAfter}
               onChange={v => patchSettings({ showRationaleAfter: v })}
@@ -3159,6 +3137,104 @@ function AssessmentSettingsSheet({
               }} />
             </button>
           </div>
+
+          <Separator />
+
+          {/* Pre-exam setup */}
+          <div className="flex flex-col gap-0">
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-3">Pre-exam setup</p>
+
+            {/* Instructions block */}
+            <PreExamBlock
+              label="Instructions"
+              description="Cover page text shown before the exam starts"
+              enabled={!!local.instructionsText.trim()}
+              onToggle={() => setLocal(prev => ({ ...prev, instructionsText: prev.instructionsText.trim() ? '' : ' ' }))}
+            >
+              <textarea
+                aria-label="Pre-exam instructions"
+                value={local.instructionsText}
+                onChange={e => setLocal(prev => ({ ...prev, instructionsText: e.target.value }))}
+                placeholder="Read all questions carefully. No external resources…"
+                rows={3}
+                style={{ width: '100%', padding: '8px 10px', fontSize: 13, lineHeight: 1.5, border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}
+              />
+              {local.instructionsText.trim() && (
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-xs text-muted-foreground">Require student acknowledgment</p>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={local.requireAcknowledgment}
+                    aria-label="Toggle require acknowledgment"
+                    onClick={() => setLocal(prev => ({ ...prev, requireAcknowledgment: !prev.requireAcknowledgment }))}
+                    style={{ width: 32, height: 18, borderRadius: 9, border: 'none', cursor: 'pointer', flexShrink: 0, backgroundColor: local.requireAcknowledgment ? 'var(--brand-color)' : 'var(--muted)', position: 'relative', transition: 'background-color .15s' }}
+                  >
+                    <span style={{ position: 'absolute', top: 2, left: local.requireAcknowledgment ? 14 : 2, width: 14, height: 14, borderRadius: '50%', backgroundColor: 'var(--background)', transition: 'left .15s', display: 'block' }} />
+                  </button>
+                </div>
+              )}
+            </PreExamBlock>
+
+            {/* Ethics / Policy block */}
+            <PreExamBlock
+              label="Ethics / policy"
+              description="Honor code or institutional policy text"
+              enabled={!!local.policyText.trim()}
+              onToggle={() => setLocal(prev => ({ ...prev, policyText: prev.policyText.trim() ? '' : ' ' }))}
+            >
+              <textarea
+                aria-label="Ethics and policy text"
+                value={local.policyText}
+                onChange={e => setLocal(prev => ({ ...prev, policyText: e.target.value }))}
+                placeholder="By participating in this exam, you agree to…"
+                rows={3}
+                style={{ width: '100%', padding: '8px 10px', fontSize: 13, lineHeight: 1.5, border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}
+              />
+            </PreExamBlock>
+
+            {/* Attestation block */}
+            <PreExamBlock
+              label="Attestation"
+              description='Student checks "I agree" to unlock the exam'
+              enabled={!!local.attestationText.trim()}
+              onToggle={() => setLocal(prev => ({ ...prev, attestationText: prev.attestationText.trim() ? '' : ' ' }))}
+            >
+              <textarea
+                aria-label="Attestation text"
+                value={local.attestationText}
+                onChange={e => setLocal(prev => ({ ...prev, attestationText: e.target.value }))}
+                placeholder="I affirm that I will complete this exam independently…"
+                rows={2}
+                style={{ width: '100%', padding: '8px 10px', fontSize: 13, lineHeight: 1.5, border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}
+              />
+            </PreExamBlock>
+
+            {/* Tech check block */}
+            <PreExamBlock
+              label="Tech check"
+              description="Pre-flight system check students complete before starting"
+              enabled={local.techCheck.audio || local.techCheck.video || local.techCheck.wifi || local.techCheck.os}
+              onToggle={() => {
+                const anyOn = local.techCheck.audio || local.techCheck.video || local.techCheck.wifi || local.techCheck.os
+                setLocal(prev => ({ ...prev, techCheck: { audio: !anyOn, video: false, wifi: false, os: false } }))
+              }}
+            >
+              <div className="flex flex-wrap gap-2">
+                {(['audio', 'video', 'wifi', 'os'] as const).map(key => (
+                  <label key={key} className="flex items-center gap-1.5 text-xs cursor-pointer" style={{ padding: '3px 8px', border: `1px solid ${local.techCheck[key] ? 'var(--foreground)' : 'var(--border)'}`, borderRadius: 5 }}>
+                    <input
+                      type="checkbox"
+                      checked={local.techCheck[key]}
+                      onChange={() => setLocal(prev => ({ ...prev, techCheck: { ...prev.techCheck, [key]: !prev.techCheck[key] } }))}
+                      style={{ margin: 0 }}
+                    />
+                    {key === 'audio' ? 'Audio' : key === 'video' ? 'Camera' : key === 'wifi' ? 'Wi-Fi' : 'OS'}
+                  </label>
+                ))}
+              </div>
+            </PreExamBlock>
+          </div>
         </div>
 
         <SheetFooter className="mt-8">
@@ -3396,6 +3472,58 @@ function AiGeneratePanel({
           </>
         )}
       </div>
+    </div>
+  )
+}
+
+// ── PreExamBlock ───────────────────────────────────────────────────────────────
+
+function PreExamBlock({
+  label, description, enabled, onToggle, children,
+}: {
+  label: string
+  description: string
+  enabled: boolean
+  onToggle: () => void
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = React.useState(enabled)
+
+  React.useEffect(() => { if (enabled && !open) setOpen(true) }, [enabled])
+
+  return (
+    <div style={{ borderBottom: '1px solid var(--border)' }}>
+      <div className="flex items-center gap-3 py-2.5">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={enabled}
+          aria-label={`Toggle ${label}`}
+          onClick={onToggle}
+          style={{ width: 32, height: 18, borderRadius: 9, border: 'none', cursor: 'pointer', flexShrink: 0, backgroundColor: enabled ? 'var(--brand-color)' : 'var(--muted)', position: 'relative', transition: 'background-color .15s' }}
+        >
+          <span style={{ position: 'absolute', top: 2, left: enabled ? 14 : 2, width: 14, height: 14, borderRadius: '50%', backgroundColor: 'var(--background)', transition: 'left .15s', display: 'block' }} />
+        </button>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-foreground">{label}</p>
+          <p className="text-xs text-muted-foreground">{description}</p>
+        </div>
+        {enabled && (
+          <button
+            type="button"
+            aria-label={open ? `Collapse ${label}` : `Expand ${label}`}
+            onClick={() => setOpen(o => !o)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 4 }}
+          >
+            <i className={`fa-light ${open ? 'fa-chevron-up' : 'fa-chevron-down'}`} aria-hidden="true" style={{ fontSize: 10 }} />
+          </button>
+        )}
+      </div>
+      {enabled && open && (
+        <div style={{ paddingBottom: 12 }}>
+          {children}
+        </div>
+      )}
     </div>
   )
 }
