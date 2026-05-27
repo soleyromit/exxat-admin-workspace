@@ -13,6 +13,7 @@
  *  ✓ Active theme shown via aria-checked (RadioItem) (4.1.3)
  */
 
+import type * as React from "react"
 import { useTheme } from "next-themes"
 import { Link } from "@/lib/next-compat"
 
@@ -46,12 +47,14 @@ import { cn } from "@/lib/utils"
 
 export function NavUser({
   user,
+  extraMenuItems,
 }: {
   user: {
     name: string
     email: string
     avatar: string
   }
+  extraMenuItems?: React.ReactNode
 }) {
   const { isMobile, state }               = useSidebar()
   const { theme }                 = useTheme()
@@ -174,6 +177,8 @@ export function NavUser({
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
+
+            {extraMenuItems}
 
             <DropdownMenuSeparator />
 
