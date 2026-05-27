@@ -496,6 +496,7 @@ export default function AssessmentBuilderClient() {
         assessmentName={activeAsmt?.title ?? ''}
         courseLabel={courseLabel}
         onSaveDraft={handleSaveDraft}
+        onOpenSettings={() => setSettingsOpen(true)}
         canSave={!!activeAsmt}
       />
 
@@ -2863,6 +2864,7 @@ function WizardHeader({
   assessmentName,
   courseLabel,
   onSaveDraft,
+  onOpenSettings,
   canSave,
 }: {
   activeStep: 1 | 2 | 3
@@ -2870,6 +2872,7 @@ function WizardHeader({
   assessmentName: string
   courseLabel: string
   onSaveDraft: () => void
+  onOpenSettings: () => void
   canSave: boolean
 }) {
   const STEPS: { id: 1 | 2 | 3; label: string; icon: string }[] = [
@@ -2957,8 +2960,18 @@ function WizardHeader({
         })}
       </div>
 
-      {/* Right: save draft */}
+      {/* Right: settings + save draft */}
       <div className="flex items-center gap-2 shrink-0">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onOpenSettings}
+          aria-label="Assessment settings"
+          className="gap-1.5"
+        >
+          <i className="fa-light fa-gear" aria-hidden="true" />
+          <span className="text-xs">Settings</span>
+        </Button>
         <Button
           variant="outline"
           size="sm"
