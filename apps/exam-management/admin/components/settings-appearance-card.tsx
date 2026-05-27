@@ -153,10 +153,10 @@ const TEXT_SIZE_LABEL: Record<TextSizePreference, string> = {
 
 export function SettingsAppearanceCard() {
   const { theme, setTheme } = useTheme()
-  const { brand, setBrand, contrastPref, setContrast, textSizePref, setTextSize, mounted } = useAppTheme()
+  const { contrastPref, setContrast, textSizePref, setTextSize, mounted } = useAppTheme()
 
   const safeTheme = mounted ? ((theme ?? "system") as "system" | "light" | "dark") : "system"
-  const safeBrand = mounted ? brand : "one"
+  const safeBrand: Brand = "prism"
   const safeContrast = mounted ? contrastPref : "system"
   const safeTextSize = mounted ? textSizePref : "default"
 
@@ -229,7 +229,7 @@ export function SettingsAppearanceCard() {
                 className="w-full"
                 options={contrastTiles}
                 columns={3}
-                value={safeContrast}
+                value={(safeContrast === "windows" ? "high" : safeContrast) as "system" | "normal" | "high"}
                 onValueChange={(v) => setContrast(v)}
                 interaction="button"
               />
@@ -249,16 +249,6 @@ export function SettingsAppearanceCard() {
               />
             </SettingsFormRow>
 
-            <SettingsFormRow label="Product brand">
-              <SelectionTileGrid<"one" | "prism">
-                className="w-full"
-                options={BRAND_TILES}
-                columns={2}
-                value={safeBrand}
-                onValueChange={(v) => setBrand(v)}
-                interaction="button"
-              />
-            </SettingsFormRow>
           </FieldGroup>
         )}
       </div>
