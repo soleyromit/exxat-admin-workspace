@@ -559,10 +559,8 @@ function QbFolderPicker({
 // ─── CanvasBody ───────────────────────────────────────────────────────────────
 
 const QUICK_STARTS: { id: QuickStart; label: string; icon: string }[] = [
-  { id: 'blank', label: 'Blank start',     icon: 'fa-file-plus' },
-  { id: 'copy',  label: "Copy last year's", icon: 'fa-copy' },
-  { id: 'qb',   label: 'From QB',          icon: 'fa-database' },
-  { id: 'pdf',  label: 'Import PDF',       icon: 'fa-file-pdf' },
+  { id: 'blank', label: 'Build new',       icon: 'fa-file-plus' },
+  { id: 'copy',  label: 'Copy existing',   icon: 'fa-copy' },
 ]
 
 // ─── Prompt parser ────────────────────────────────────────────────────────────

@@ -2331,7 +2331,7 @@ function SectionAssignDropdown({ sections, onAssign, isSelected }: {
 //   2. OTHER courses' question banks (e.g. shared bug content across micro + immuno)
 //   3. NEW question created inline within this assessment
 //   4. AI generate from course objectives (Aarti's principle)
-type PickerSource = 'this-course' | 'other-courses' | 'new-question' | 'ai-generate'
+type PickerSource = 'this-course' | 'other-courses' | 'new-question' | 'ai-generate' | 'pdf-import'
 
 function ABQuestionPicker({
   selectedIds, onToggle, activeAsmt, onDurationChange,
@@ -2419,6 +2419,7 @@ function ABQuestionPicker({
     { id: 'other-courses', label: 'Other courses',     icon: 'fa-folder-tree',     sub: 'Pull from another course\'s QB' },
     { id: 'new-question',  label: 'New question',      icon: 'fa-pen-to-square',   sub: 'Create inline in this assessment' },
     { id: 'ai-generate',   label: 'AI gap fill',        icon: 'fa-sparkles',        sub: 'Cover untested objectives' },
+    { id: 'pdf-import',    label: 'Import PDF',         icon: 'fa-file-pdf',        sub: 'Extract questions from a document' },
   ]
 
   const isQbSource = source === 'this-course' || source === 'other-courses'
@@ -2625,6 +2626,17 @@ function ABQuestionPicker({
             const days = (Date.now() - new Date(o.lastAssessed).getTime()) / (1000 * 60 * 60 * 24)
             return days > 60
           })}
+        />
+      )}
+
+      {/* PDF import source */}
+      {source === 'pdf-import' && (
+        <PdfImportPanel
+          selectedIds={selectedIds}
+          onToggle={onToggle}
+          activeSectionId={activeSectionId}
+          onAssignToSection={onAssignToSection}
+          onBack={() => setSource('this-course')}
         />
       )}
 
@@ -6482,5 +6494,192 @@ function SectionAnalysisSheet({ open, onOpenChange, section, sectionIndex, quest
         )}
       </SheetContent>
     </Sheet>
+  )
+}
+
+// ─── PDF Import Panel ─────────────────────────────────────────────────────────
+
+const MOCK_PDF_EXTRACTED: Question[] = [
+  { id: 'pdf-q-1', code: 'PDF-001', version: 1, age: 'New', title: 'A 55-year-old patient on warfarin presents with an INR of 5.2 and reports minor gum bleeding. No active hemorrhage. Which intervention is most appropriate?', type: 'MCQ', status: 'Saved', difficulty: 'Medium', blooms: 'Apply', folder: 'pdf-import', folderPath: 'Imported from PDF', tags: [], usage: 0, pbis: null, pbisDir: null },
+  { id: 'pdf-q-2', code: 'PDF-002', version: 1, age: 'New', title: 'Which beta-blocker has the highest degree of cardioselectivity at therapeutic doses?', type: 'MCQ', status: 'Saved', difficulty: 'Easy', blooms: 'Remember', folder: 'pdf-import', folderPath: 'Imported from PDF', tags: [], usage: 0, pbis: null, pbisDir: null },
+  { id: 'pdf-q-3', code: 'PDF-003', version: 1, age: 'New', title: 'A patient with acute STEMI receives thrombolytics. 90 minutes later, ST segments remain elevated and chest pain persists. The most appropriate next step is:', type: 'MCQ', status: 'Saved', difficulty: 'Hard', blooms: 'Analyze', folder: 'pdf-import', folderPath: 'Imported from PDF', tags: [], usage: 0, pbis: null, pbisDir: null },
+  { id: 'pdf-q-4', code: 'PDF-004', version: 1, age: 'New', title: 'Which of the following is an absolute contraindication to ACE inhibitor therapy?', type: 'MCQ', status: 'Saved', difficulty: 'Medium', blooms: 'Apply', folder: 'pdf-import', folderPath: 'Imported from PDF', tags: [], usage: 0, pbis: null, pbisDir: null },
+  { id: 'pdf-q-5', code: 'PDF-005', version: 1, age: 'New', title: 'A 68-year-old with HFrEF (EF 30%) is started on spironolactone. Which laboratory value requires the closest monitoring in the first 4 weeks?', type: 'MCQ', status: 'Saved', difficulty: 'Medium', blooms: 'Apply', folder: 'pdf-import', folderPath: 'Imported from PDF', tags: [], usage: 0, pbis: null, pbisDir: null },
+  { id: 'pdf-q-6', code: 'PDF-006', version: 1, age: 'New', title: 'Describe the mechanism by which digoxin reduces ventricular rate in atrial fibrillation without converting the rhythm.', type: 'Short Answer', status: 'Saved', difficulty: 'Hard', blooms: 'Understand', folder: 'pdf-import', folderPath: 'Imported from PDF', tags: [], usage: 0, pbis: null, pbisDir: null },
+  { id: 'pdf-q-7', code: 'PDF-007', version: 1, age: 'New', title: 'A patient on long-term amiodarone develops elevated liver enzymes, hypothyroidism, and pulmonary infiltrates. Which adverse effect profile best accounts for these findings?', type: 'MCQ', status: 'Saved', difficulty: 'Hard', blooms: 'Analyze', folder: 'pdf-import', folderPath: 'Imported from PDF', tags: [], usage: 0, pbis: null, pbisDir: null },
+  { id: 'pdf-q-8', code: 'PDF-008', version: 1, age: 'New', title: 'Which loop diuretic formulation is preferred for a patient with acute pulmonary edema who cannot tolerate furosemide due to sulfa allergy?', type: 'MCQ', status: 'Saved', difficulty: 'Easy', blooms: 'Apply', folder: 'pdf-import', folderPath: 'Imported from PDF', tags: [], usage: 0, pbis: null, pbisDir: null },
+]
+
+function PdfImportPanel({
+  selectedIds, onToggle, onBack,
+}: {
+  selectedIds: Set<string>
+  onToggle: (id: string) => void
+  activeSectionId?: string | null
+  onAssignToSection?: (questionId: string, sectionId: string | null) => void
+  onBack: () => void
+}) {
+  const [file, setFile] = React.useState<File | null>(null)
+  const [isDragging, setIsDragging] = React.useState(false)
+  const [isParsing, setIsParsing] = React.useState(false)
+  const [extracted, setExtracted] = React.useState<Question[]>([])
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+  function accept(f: File | undefined) {
+    if (!f) return
+    setFile(f)
+    setIsParsing(true)
+    setTimeout(() => { setExtracted(MOCK_PDF_EXTRACTED); setIsParsing(false) }, 1800)
+  }
+
+  const diffColor: Record<string, string> = {
+    Easy: 'var(--qb-diff-bar-easy)', Medium: 'var(--qb-diff-bar-medium)', Hard: 'var(--qb-diff-bar-hard)',
+  }
+  const diffWeight: Record<string, string> = {
+    Easy: 'font-normal', Medium: 'font-semibold', Hard: 'font-extrabold',
+  }
+
+  // Drop zone — no file yet
+  if (!file) {
+    return (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', gap: 16 }}>
+        <div
+          onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={e => { e.preventDefault(); setIsDragging(false); accept(e.dataTransfer.files[0]) }}
+          onClick={() => fileInputRef.current?.click()}
+          style={{
+            width: '100%', maxWidth: 360,
+            border: `2px dashed ${isDragging ? 'var(--brand-color)' : 'var(--border)'}`,
+            borderRadius: 12, padding: '32px 24px',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+            cursor: 'pointer',
+            background: isDragging ? 'var(--brand-tint)' : 'var(--muted)',
+            transition: 'border-color 0.15s, background 0.15s',
+            textAlign: 'center',
+          }}
+        >
+          <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--background)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <i className="fa-light fa-arrow-up-from-bracket" aria-hidden="true" style={{ fontSize: 18, color: 'var(--brand-color)' }} />
+          </div>
+          <div>
+            <div className="text-sm font-medium text-foreground" style={{ marginBottom: 3 }}>Drop a PDF here</div>
+            <div className="text-xs text-muted-foreground">or click to browse · PDF only</div>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,application/pdf"
+            aria-label="Select PDF file"
+            style={{ display: 'none' }}
+            onChange={e => accept(e.target.files?.[0])}
+          />
+        </div>
+        <div style={{ maxWidth: 360, width: '100%' }}>
+          <p className="text-xs font-medium text-muted-foreground" style={{ marginBottom: 6 }}>Leo will extract:</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {['Question stems and answer choices', 'Section structure and topics', 'Instructions and timing notes'].map((item, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--muted-foreground)' }}>
+                <i className="fa-light fa-check" aria-hidden="true" style={{ fontSize: 10, color: 'var(--chart-2)', flexShrink: 0 }} />
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Parsing state
+  if (isParsing) {
+    return (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, padding: 32 }}>
+        <i className="fa-light fa-loader fa-spin" aria-hidden="true" style={{ fontSize: 28, color: 'var(--brand-color)' }} />
+        <div style={{ textAlign: 'center' }}>
+          <div className="text-sm font-medium text-foreground" style={{ marginBottom: 3 }}>Extracting questions…</div>
+          <div className="text-xs text-muted-foreground">{file.name}</div>
+        </div>
+      </div>
+    )
+  }
+
+  // Extracted questions — same table as QB
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* File banner */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px', borderBottom: '1px solid var(--border)', background: 'var(--muted)', flexShrink: 0 }}>
+        <i className="fa-light fa-file-pdf" aria-hidden="true" style={{ fontSize: 14, color: 'var(--brand-color)', flexShrink: 0 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="text-xs font-semibold text-foreground" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</div>
+          <div className="text-xs text-muted-foreground">{extracted.length} questions extracted</div>
+        </div>
+        <Button
+          variant="ghost" size="sm"
+          onClick={() => { setFile(null); setExtracted([]) }}
+          style={{ flexShrink: 0 }}
+        >
+          Change file
+        </Button>
+      </div>
+
+      {/* Question table — identical style to QB source */}
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        <Table style={{ width: '100%' }}>
+          <TableHeader>
+            <TableRow>
+              <TableHead style={{ width: 36 }}></TableHead>
+              <TableHead>Question</TableHead>
+              <TableHead style={{ width: 80 }}>Difficulty</TableHead>
+              <TableHead style={{ width: 100 }}>Type</TableHead>
+              <TableHead style={{ width: 72 }}></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {extracted.map(q => {
+              const isPicked = selectedIds.has(q.id)
+              return (
+                <TableRow
+                  key={q.id}
+                  onClick={() => onToggle(q.id)}
+                  style={{ cursor: 'pointer', background: isPicked ? 'var(--ab-picker-selected-bg)' : undefined }}
+                >
+                  <TableCell>
+                    <Checkbox
+                      checked={isPicked}
+                      onCheckedChange={() => onToggle(q.id)}
+                      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                      aria-label={`Select ${q.title}`}
+                    />
+                  </TableCell>
+                  <TableCell className="text-sm" style={{ maxWidth: 400 }}>
+                    <div style={{ lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {q.title}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className={`text-xs ${diffWeight[q.difficulty] ?? ''}`} style={{ color: diffColor[q.difficulty] }}>{q.difficulty}</span>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground font-medium">
+                    {q.type}
+                  </TableCell>
+                  <TableCell onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                    {isPicked ? (
+                      <Button variant="outline" size="sm" onClick={() => onToggle(q.id)} style={{ height: 28 }} aria-label={`Remove ${q.title}`}>
+                        <i className="fa-light fa-check" aria-hidden="true" style={{ color: 'var(--chart-2)', marginRight: 4 }} />
+                        Added
+                      </Button>
+                    ) : (
+                      <Button variant="default" size="sm" onClick={() => onToggle(q.id)} style={{ height: 28 }}>
+                        + Use
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
   )
 }
