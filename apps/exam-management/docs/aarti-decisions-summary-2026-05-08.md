@@ -598,11 +598,13 @@ Faculty do NOT plan their exam schedule at the start of a term. Typical build wi
 
 ---
 
-## 6.11 PCE — Phase 1 survey scope (2026-05-14)
+## 6.11 PCE — Phase 1 survey scope (2026-05-14) ⚠️ PARTIALLY SUPERSEDED by §6.12
 
 Source: `apps/pce/docs/research/meetings/2026-05-14-course-eval-base-entities.md` (Granola `6a648f67`)
 
-**Answer types Phase 1:** Likert scale + free text ONLY.
+**⚠️ Answer types: superseded.** §6.12 clarifies that Phase 1 will have 3rd and 4th answer types. Design must use a dropdown, not fixed buttons.
+
+**Answer types Phase 1:** Likert scale + free text as baseline. ~~ONLY~~ — see §6.12.
 
 **NOT Phase 1:** question bank import for surveys, AI-native survey flow (traditional/manual flow comes first), analytics (PRD not yet approved).
 
@@ -619,19 +621,59 @@ Source: `apps/pce/docs/research/meetings/2026-05-14-course-eval-base-entities.md
 
 ---
 
-### 5.28 Assessment creation entry flow — 4-option modal (2026-05-19)
+## 6.12 PCE — Survey status lifecycle, landing page separation, and answer type extensibility (2026-05-26)
+
+Source: `apps/pce/docs/research/meetings/2026-05-26-survey-design-templates-push-workflow.md` (Granola `433fe75c`)
+
+### Survey status lifecycle (full detail)
+
+`Draft → Scheduled → Live → Closed (Pending Review) → Results Released`
+
+| Status | Trigger |
+|---|---|
+| **Draft** | Survey is being created/configured, not yet pushed |
+| **Scheduled** | Push complete; start date is in the future |
+| **Live** | Start date reached; collecting responses |
+| **Closed / Pending Review** | Close date reached; admin must review open-text comments (hide/unhide) |
+| **Results Released** | Admin clicked Release; faculty can now see results |
+
+"Scheduled" is a new status not currently in the code. Design-review task added (T40 PCE).
+
+### Separate landing pages for general surveys and course evaluation
+
+General surveys and course evaluation must have **separate landing pages and separate creation flows.** "Both of them will have separate landing page and separate creation step." — Nipun. Back-end: `survey_type = 'programmatic' vs 'course_evaluation'`. Current single surveys page must be split. New page task: T41 PCE.
+
+### Answer type extensibility
+
+Phase 1 will include **3rd and 4th answer types** beyond Likert and free text. Design must use a **dropdown** for answer type selection — not fixed radio/option buttons. "Definitely, there will be a third type and fourth type very soon. In fact, in phase one only." — Nipun.
+
+### Bounce email NOT tracked
+
+Bounce email data (failed email delivery to students) is NOT shown in the course evaluation UI. "We will not tell the user that this morning [person's] email got bounced. It's fine." Admin should fix wrong email in Prism system.
+
+### Faculty results gated on "Results Released"
+
+Faculty login experience shows surveys only when status = `released`. Before that, faculty cannot see anything.
+
+### Review and Release step
+
+When status = `pending_review`, admin sees a "Review & Release" CTA. Inside: list of open-text comments with per-comment hide/unhide toggle. After reviewing, admin clicks Release → status changes to `released` → faculty can see.
+
+---
+
+### 5.28 Assessment creation entry flow — 4-option modal (2026-05-19) ⚠️ SUPERSEDED by §5.50
 
 Source: `docs/research/meetings/2026-05-19-assessment-creation-workflows.md` (Granola `f59cfbe4`)
 
-When starting a new assessment, faculty are presented with four options:
-1. **Copy an existing assessment** — most common; start from a prior exam and modify
-2. **AI-generated** — describe the assessment in a text prompt; AI selects from QB
-3. **Upload a document** — upload a PDF/exam paper; AI parses and builds the assessment
-4. **Manually select from QB** — browse and hand-pick questions
+~~When starting a new assessment, faculty are presented with four options:~~
+~~1. Copy an existing assessment~~
+~~2. AI-generated~~
+~~3. Upload a document~~
+~~4. Manually select from QB~~
 
-No matter which path, the final step before publishing is always the same health-of-assessment review screen (§5.28 below).
+**⚠️ SUPERSEDED 2026-05-27.** Entry is now **2 options only**: Build new OR Copy existing. AI, QB selection, and PDF import are all question-addition methods INSIDE the builder. See §5.50.
 
-> "How would you like to start? Create questions from scratch, build from your question bank, or use a previous assessment and tweak it. So three options or something like that." — Aarti
+> "How would you like to start? Create questions from scratch, build from your question bank, or use a previous assessment and tweak it. So three options or something like that." — Aarti (2026-05-19; revised 2026-05-27)
 
 ### 5.29 AI assessment generation — natural language prompt (2026-05-19)
 
@@ -683,7 +725,7 @@ Wherever course offerings are listed (QB context, course catalog), show them in 
 
 > "Put this in descending order, first of all, because my most current course offering is what I care about the most and will be what I'm working [on]. You can keep the interface cleaner... six is also more than enough." — Aarti
 
-### 5.35 Download exam — confirmed Phase 1, default out-of-box (2026-05-19)
+### 5.35 Download exam — ~~confirmed Phase 1~~ ⚠️ SUPERSEDED by §5.47 — now Q1 2027 (2026-05-19 decision; revised 2026-05-27)
 
 Source: `docs/research/meetings/2026-05-19-assessment-creation-workflows.md` (Granola `f59cfbe4`)
 
@@ -766,6 +808,80 @@ Current question editor is missing items 1 and 2 entirely. Partial credit toggle
 
 Design task generated: T64 (scoring fields in question editor) — DESIGN-REVIEW.
 
+### 5.47 Offline mode / download exam — Q1 deliverable, NOT December launch (2026-05-27)
+
+Source: `docs/research/meetings/2026-05-27-exam-management-status-offline-faculty-access.md` (Granola `943b9e4a`)
+
+**⚠️ SUPERSEDES §5.35 and T58.** Download exam / offline mode is no longer a Phase 1 (December 2026) deliverable. December launch = browser-only.
+
+- Browser-based exam has a preload safety net: all exam data downloads at exam start. WiFi drop after start does not strand students. Known gap: if WiFi fails before login, student cannot begin.
+- Offline mode (download file in advance, lockdown during exam) = **Q1 2027 target.**
+- No standalone desktop client being built. **Respondus integration** (lockdown browser vendor) preferred over building own. Research required.
+
+> "We are not going to make standalone desktop a must-have for launch. It will be highly desirable to have it, but not a must-have. As long as there is a fixed date by which we can do it." — Aarti
+
+Design tasks updated: T58 revised to Q1. T69 (Respondus integration research) added to backlog.
+
+### 5.48 Faculty access levels — 4-tier model, roles document needed (2026-05-27)
+
+Source: `docs/research/meetings/2026-05-27-exam-management-status-offline-faculty-access.md` (Granola `943b9e4a`)
+
+Four tiers of faculty access at the course level:
+
+| Tier | Capability |
+|---|---|
+| **Full access** | CRUD on assessments, questions, students, accommodations |
+| **Read-only** | View everything, modify nothing |
+| **Add assessments (own only)** | Create and edit their own assessments; cannot modify others' |
+| **Section contributor** | Add/modify questions in their assigned section only — **Phase 2** |
+
+Score visibility is independent: contributor/reviewer access does NOT grant access to student scores (reinforces §5.32). Roles alignment document (Romit + PMs + Vishaka) is a P0 blocker before designing access-control screens. T68 added to backlog.
+
+### 5.49 Contributor and reviewer workflows — Phase 2 confirmed (2026-05-27)
+
+Source: `docs/research/meetings/2026-05-27-exam-management-status-offline-faculty-access.md` (Granola `943b9e4a`) + `docs/research/meetings/2026-05-27-assessment-creation-entry-points-question-selection.md` (Granola `693723b8`)
+
+Both contributor workflow (faculty assigned to a section with question target + deadline) and reviewer workflow (send assessment for question-quality feedback) are **explicitly deferred to Phase 2.** Confirmed in two separate meetings on the same day.
+
+Code status: neither workflow was built into the assessment builder. The design prototype had the section-assignment UI but code does not. No code removal needed — design direction is confirmed.
+
+### 5.50 Assessment creation entry — reduced to 2 options; all methods inside builder (2026-05-27)
+
+Source: `docs/research/meetings/2026-05-27-assessment-creation-entry-points-question-selection.md` (Granola `693723b8`)
+
+**⚠️ SUPERSEDES §5.28 (4-option entry modal).** Entry is now 2 options only:
+
+1. **Build new** (blank start)
+2. **Copy existing** (from any prior or current-term assessment)
+
+AI prompt, question bank selection, and PDF import all move **inside the builder** as question-addition methods available during creation — not as separate starting paths. The current `create-assessment-modal.tsx` already implements 2 options correctly. **T51 (4-option modal build) is CANCELLED.**
+
+> "In the beginning, limiting it to two options, like copy from somewhere or create new, are good options." — Aarti
+
+### 5.51 Point-biserial: number in builder, red if negative (2026-05-27)
+
+Source: `docs/research/meetings/2026-05-27-assessment-creation-entry-points-question-selection.md` (Granola `693723b8`)
+
+During question selection in the assessment builder, show point-biserial as a **plain number** in the question row. If the value is negative, render it **red**. Future enhancement (not committed): flag questions in the bottom 20th percentile by a calculated threshold. No scatter plot — reinforces §5.15.
+
+> "Showing the number and making it in red if it's negative are good starting points for us." — Nipun + Aarti
+
+Design task: T71 added to backlog.
+
+### 5.52 Assessment summary screen before publish (2026-05-27)
+
+Source: `docs/research/meetings/2026-05-27-assessment-creation-entry-points-question-selection.md` (Granola `693723b8`)
+
+Before final publish, faculty see a summary screen showing: total questions, expected completion time, psychometric summary (point-biserial range, difficulty distribution, Bloom's coverage), questions with missing rationale flagged. This sits between Stage 2 (Build) and Stage 3 (Publish). NEW PAGE NEEDED.
+
+Design task: T72 added to backlog — DESIGN-REVIEW.
+
+### 5.53 Match-the-following confirmed for Phase 1 (2026-05-27)
+
+Source: `docs/research/meetings/2026-05-27-assessment-creation-entry-points-question-selection.md` (Granola `693723b8`)
+
+Nipun confirmed match-the-following is included in the Phase 1 question types list. Design needs to cover this type when building question-editor screens.
+
 ---
 
 ## Appendix — source meetings
@@ -788,6 +904,8 @@ Design task generated: T64 (scoring fields in question editor) — DESIGN-REVIEW
 | 2026-05-19 13:59 | Assessment creation workflows and question bank design | `f59cfbe4` | Aarti + Vishaka + Romit |
 | 2026-05-21 10:33 | Assessment PRD — accessibility standards, offline exam download, and parity with ExamSoft | `66898189` | Vishaka + Nipun + Romit |
 | 2026-05-22 13:23 | Assessment question design — AI features, scoring, and workflow | `1ce6d16e` | Aarti + Vishaka + Romit |
+| 2026-05-27 07:29 | Exam management — assessment creation, faculty access, and offline mode | `943b9e4a` | Aarti + Vishal + Nipun + Romit |
+| 2026-05-27 05:57 | Assessment creation — entry points, question selection, and setup workflow | `693723b8` | Aarti + Vishaka + Nipun + Romit |
 
 Per-meeting raw notes at `apps/exam-management/docs/research/meetings/` and `apps/pce/docs/research/meetings/`.
 
