@@ -354,8 +354,12 @@ export default function AssessmentBuilderClient() {
     [activeAsmt?.sections, activeAsmt?.questions],
   )
 
-  // Skip Step 1 (Details) when arriving from the canvas — metadata already captured there
-  const [activeStep, setActiveStep] = useState<1 | 2 | 3>(urlDraftId ? 2 : 1)
+  // Tab-based navigation replacing the old step wizard
+  const [activeTab, setActiveTab] = useState<'overview' | 'questions' | 'settings'>('questions')
+  const [pickerOpen, setPickerOpen] = useState(false)
+
+  // Legacy — kept for dead-code components that reference it
+  const [activeStep] = useState<1 | 2 | 3>(2)
 
   // Change 2: HealthPanel is hidden by default; toggled via icon button
   const [showHealth, setShowHealth] = useState(false)
@@ -486,242 +490,577 @@ export default function AssessmentBuilderClient() {
     // For now, stay on the builder so the status update is visible.
   }
 
+  // Derive active section object for workspace view
+  const activeSection = activeAsmt?.sections.find(s => s.id === activeSectionId) ?? null
+
+  // Questions in the active section
+  const activeSectionQuestions = activeSection
+    ? activeSection.questionIds
+        .map(qId => {
+          const aq = activeAsmt?.questions.find(q => q.questionId === qId)
+          const q = MOCK_QB_QUESTIONS.find(q => q.id === qId)
+          return aq && q ? { aq, q } : null
+        })
+        .filter(Boolean) as Array<{ aq: AssessmentQuestion; q: Question }>
+    : []
+
+  // Section status: Ready if fill ≥ 80% of some target, else Drafting
+  function sectionFillPct(sec: AssessmentSection): number {
+    const target = 20
+    return Math.min(100, Math.round((sec.questionIds.length / target) * 100))
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <h1 className="sr-only">Assessment Builder</h1>
 
-      {/* Wizard header — replaces the old selector bar */}
-      <WizardHeader
-        activeStep={activeStep}
-        onStepClick={setActiveStep}
-        assessmentName={activeAsmt?.title ?? ''}
-        courseLabel={courseLabel}
-        onSaveDraft={handleSaveDraft}
-        onOpenSettings={() => setSettingsOpen(true)}
-        canSave={!!activeAsmt}
-      />
-
-      {/* Step 1 — Details */}
-      {activeStep === 1 && (
-        <DetailsStep
-          activeAsmt={activeAsmt}
-          mockCoursesLocal={mockCourses}
-          mockCourseOfferingsLocal={mockCourseOfferings}
-          courseId={courseId}
-          offeringId={offeringId}
-          onCourseChange={(val) => {
-            setCourseId(val)
-            const first = mockCourseOfferings.find(o => o.courseId === val)
-            if (first) setOfferingId(first.id)
-            setActiveAsmt(null)
+      {/* ── New header (52px) ─────────────────────────────────────────────── */}
+      <div style={{
+        display: 'flex', alignItems: 'center',
+        padding: '0 16px', height: 52,
+        borderBottom: '1px solid var(--border)',
+        background: 'var(--card)', flexShrink: 0, gap: 8,
+      }}>
+        {/* Left: back + separator + editable title + chips */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push('/assessment-builder/create')}
+          className="gap-1.5 shrink-0"
+        >
+          <i className="fa-light fa-arrow-left" aria-hidden="true" />
+          {currentCourse?.code ?? 'Back'}
+        </Button>
+        <span style={{ color: 'var(--border)', fontSize: 14, flexShrink: 0 }}>/</span>
+        <input
+          aria-label="Assessment title"
+          value={activeAsmt?.title ?? 'New Assessment'}
+          onChange={e => {
+            const val = e.target.value
+            setActiveAsmt(prev => prev ? { ...prev, title: val } : prev)
           }}
-          onOfferingChange={(val) => { setOfferingId(val); setActiveAsmt(null) }}
-          onUpdate={(patch) => {
-            setActiveAsmt(prev => {
-              if (!prev) {
-                return {
-                  id: `asmt-new-${Date.now()}`,
-                  title: patch.title ?? 'New Assessment',
-                  courseId,
-                  offeringId,
-                  questions: [],
-                  durationMinutes: patch.durationMinutes ?? 90,
-                  sections: [],
-                  settings: defaultAssessmentSettings('Exam'),
-                  healthFlags: [],
-                  ...patch,
-                }
-              }
-              return { ...prev, ...patch }
-            })
+          style={{
+            fontSize: 13, fontWeight: 600,
+            background: 'transparent', border: 'none',
+            borderBottom: '1.5px solid var(--brand-color)',
+            outline: 'none', color: 'var(--foreground)',
+            width: 200, padding: '0 2px',
           }}
-          onContinue={() => setActiveStep(2)}
-          onCancel={() => router.push('/courses')}
         />
-      )}
+        <Button variant="outline" size="sm" style={{ fontSize: 11, height: 26 }}>
+          {activeAsmt?.settings?.type ?? 'Exam'}
+        </Button>
+        <Button variant="outline" size="sm" style={{ fontSize: 11, height: 26 }}>
+          {activeAsmt?.settings?.openDate
+            ? new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date(activeAsmt.settings.openDate))
+            : 'No date'}
+        </Button>
+        <Button variant="outline" size="sm" style={{ fontSize: 11, height: 26 }}>
+          {activeAsmt?.durationMinutes ? `${activeAsmt.durationMinutes} min` : '90 min'}
+        </Button>
 
-      {/* Step 2 — Build */}
-      {activeStep === 2 && activeAsmt && (
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-          {/* Left: sections outline — always visible */}
-          <div style={{ width: 240, minWidth: 200, maxWidth: 280, borderRight: '1px solid var(--border)', flexShrink: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <SectionsOutline
-              activeAsmt={activeAsmt}
-              selectedIds={selectedIds}
-              questions={MOCK_QB_QUESTIONS}
-              onRemove={removeQuestion}
-              onEditQuestion={id => setEditingQuestionId(prev => prev === id ? null : id)}
-              editingQuestionId={editingQuestionId}
-              onUpdateSection={updateSection}
-              onAddSection={addSection}
-              activeSectionId={activeSectionId}
-              onSetActiveSection={setActiveSectionId}
-              onShowDetail={id => setDetailQuestionId(prev => prev === id ? null : id)}
-            />
-          </div>
+        {/* Right */}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Badge variant="secondary" style={{ fontSize: 11 }}>Draft</Badge>
+          <Button variant="outline" size="sm">Preview</Button>
+          <Button size="sm" onClick={() => setSendForReviewOpen(true)} className="gap-1.5">
+            <i className="fa-light fa-paper-plane" aria-hidden="true" />
+            Send for review
+          </Button>
+        </div>
+      </div>
 
-          {/* Center: question picker */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-            {/* "Adding to" banner */}
-            {activeSectionId && (() => {
-              const sec = activeAsmt.sections.find(s => s.id === activeSectionId)
-              if (!sec) return null
-              return (
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '6px 16px', background: 'var(--muted)',
-                  borderBottom: '1px solid var(--border)', flexShrink: 0,
-                }}>
-                  <i className="fa-light fa-arrow-right-to-bracket text-foreground" aria-hidden="true" style={{ fontSize: 11 }} />
-                  <span className="text-xs font-medium text-foreground truncate flex-1">
-                    Adding to: <strong>{sec.title}</strong>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setActiveSectionId(null)}
-                    aria-label="Stop adding to this section"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 2 }}
-                  >
-                    <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 11 }} />
-                  </button>
-                </div>
-              )
-            })()}
-
-            {/* Health toggle toolbar */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '4px 12px', borderBottom: '1px solid var(--border)', flexShrink: 0, gap: 4 }}>
-              <Button
-                variant={showHealth ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setShowHealth(h => !h)}
-                aria-label={showHealth ? 'Hide health panel' : 'Show health panel'}
-                aria-pressed={showHealth}
-                className="h-7 w-7 p-0"
-              >
-                <i className="fa-light fa-heart-pulse" aria-hidden="true" />
-              </Button>
-              {activeAsmt.settings.graded && (
-                <Button
-                  variant={showGrading ? 'secondary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setShowGrading(g => !g)}
-                  aria-label={showGrading ? 'Hide grading tray' : 'Show grading tray'}
-                  aria-pressed={showGrading}
-                  className="h-7 gap-1.5 px-2"
-                >
-                  <i className="fa-light fa-scale-balanced" aria-hidden="true" />
-                  <span className="text-xs">pts</span>
-                </Button>
+      {/* ── Tab bar (38px) ────────────────────────────────────────────────── */}
+      <div style={{
+        display: 'flex', alignItems: 'stretch',
+        height: 38, borderBottom: '1px solid var(--border)',
+        background: 'var(--card)', flexShrink: 0, padding: '0 16px',
+      }}>
+        {[
+          { id: 'overview' as const,  label: 'Overview',  done: !!activeAsmt, num: 1 },
+          { id: 'questions' as const, label: 'Questions', done: false,         num: 2, count: activeAsmt?.questions.length ?? 0 },
+          { id: 'settings' as const,  label: 'Settings',  done: false,         num: 3 },
+        ].map(tab => {
+          const isActive = activeTab === tab.id
+          const isDone = tab.done && !isActive
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => { setActiveTab(tab.id); if (tab.id !== 'questions') setPickerOpen(false) }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '0 14px', fontSize: 12, fontWeight: isActive ? 600 : 500,
+                color: isActive ? 'var(--foreground)' : isDone ? 'var(--chart-2)' : 'var(--muted-foreground)',
+                background: 'none', border: 'none',
+                borderBottom: isActive ? '2px solid var(--foreground)' : '2px solid transparent',
+                cursor: 'pointer', whiteSpace: 'nowrap',
+              }}
+            >
+              <span style={{
+                width: 18, height: 18, borderRadius: '50%', fontSize: 11, fontWeight: 700,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                background: isActive ? 'var(--foreground)' : isDone ? 'var(--chart-2)' : 'var(--muted)',
+                color: isActive || isDone ? '#fff' : 'var(--muted-foreground)',
+              }}>
+                {isDone ? '✓' : tab.num}
+              </span>
+              {tab.label}
+              {'count' in tab && (tab.count as number) > 0 && (
+                <Badge variant="secondary" style={{ fontSize: 10, height: 16, padding: '0 5px' }}>
+                  {tab.count as number}
+                </Badge>
               )}
-            </div>
+            </button>
+          )
+        })}
+      </div>
 
-            <ABQuestionPicker
-              selectedIds={selectedIds}
-              onToggle={toggleQuestion}
-              activeAsmt={activeAsmt}
-              onDurationChange={(min) => setActiveAsmt(prev => prev ? { ...prev, durationMinutes: min } : prev)}
-              userCreated={userCreated}
-              onCreateQuestion={createQuestion}
-              onCreateFromDraft={createQuestionFromDraft}
-              authorPersonaId={currentPersona.id}
-              onOpenAi={() => setAiOpen(true)}
-              isCopyMode={urlMode === 'copy'}
-              onRenameAsmt={(title) => setActiveAsmt(prev => prev ? { ...prev, title } : prev)}
-              onAssignToSection={assignQuestionToSection}
-              activeSectionId={activeSectionId}
-            />
-
-            {/* Grading settings panel */}
-            {showGrading && (
-              <GradingSettingsPanel
-                settings={activeAsmt.settings}
-                onPatch={patch => setActiveAsmt(prev => prev ? { ...prev, settings: { ...prev.settings, ...patch } } : prev)}
-              />
-            )}
-
-            {/* Grading tray */}
-            {showGrading && activeAsmt.settings.graded && (
-              <GradingTray
-                activeAsmt={activeAsmt}
-                onUpdatePoints={updateQuestionPoints}
-                onUpdateBonus={updateQuestionBonus}
-                onDistributeEvenly={handleDistributeEvenly}
-                onBulkSetPoints={bulkSetPoints}
-              />
-            )}
-
-            {/* Step 2 navigation footer */}
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '8px 20px', borderTop: '1px solid var(--border)',
-              background: 'var(--card)', flexShrink: 0,
-            }}>
-              <Button variant="ghost" size="sm" onClick={() => setActiveStep(1)} className="gap-1.5">
-                <i className="fa-light fa-arrow-left" aria-hidden="true" />
-                Back
-              </Button>
-              <Button size="sm" onClick={() => setActiveStep(3)} className="gap-1.5">
-                Review
+      {/* ── Overview tab ─────────────────────────────────────────────────── */}
+      {activeTab === 'overview' && (
+        <div style={{ flex: 1, overflow: 'auto', padding: '32px 40px' }}>
+          {activeAsmt ? (
+            <div style={{ maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-1">Assessment</p>
+                <p className="text-2xl font-semibold text-foreground" style={{ letterSpacing: '-0.02em' }}>{activeAsmt.title}</p>
+                <p className="text-sm text-muted-foreground mt-1">{courseLabel}</p>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
+                {[
+                  { label: 'Type',      value: activeAsmt.settings?.type ?? 'Exam' },
+                  { label: 'Duration',  value: `${activeAsmt.durationMinutes ?? 90} min` },
+                  { label: 'Sections',  value: String(activeAsmt.sections.length) },
+                  { label: 'Questions', value: String(activeAsmt.questions.length) },
+                ].map(({ label, value }) => (
+                  <div key={label} style={{ padding: '12px 14px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--card)' }}>
+                    <p className="text-xs text-muted-foreground mb-1">{label}</p>
+                    <p className="text-sm font-semibold text-foreground">{value}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                This was set up on the canvas. Use the header chips above to edit title, type, date, or duration inline.
+              </p>
+              <Button variant="outline" size="sm" onClick={() => setActiveTab('questions')} className="gap-1.5 self-start">
+                Continue to Questions
                 <i className="fa-light fa-arrow-right" aria-hidden="true" />
               </Button>
             </div>
-          </div>
-
-          {/* Right: health panel */}
-          {showHealth && (
-            <div style={{ width: 260, borderLeft: '1px solid var(--border)', flexShrink: 0, overflow: 'auto' }}>
-              <HealthPanel
-                activeAsmt={activeAsmt}
-                objectives={courseObjectives.filter(o => o.courseId === activeAsmt.courseId)}
-                timeMetrics={timeMetrics}
-                distribution={distribution}
-                bloomsMetrics={bloomsMetrics}
-                targetQuestions={50}
-              />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 12 }}>
+              <p className="text-sm text-muted-foreground">No assessment found. Start from the canvas.</p>
+              <Button size="sm" onClick={() => router.push('/assessment-builder/create')} className="gap-1.5">
+                <i className="fa-light fa-arrow-left" aria-hidden="true" />
+                Back to canvas
+              </Button>
             </div>
           )}
         </div>
       )}
 
-      {/* Step 2 — no active assessment */}
-      {activeStep === 2 && !activeAsmt && (
+      {/* ── Questions tab ─────────────────────────────────────────────────── */}
+      {activeTab === 'questions' && activeAsmt && (
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+
+          {/* Left: sections sidebar (240px) */}
+          <div style={{ width: 240, minWidth: 200, maxWidth: 280, borderRight: '1px solid var(--border)', flexShrink: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--sidebar)' }}>
+            <div style={{ padding: '10px 12px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+              <span className="text-xs font-bold uppercase tracking-[0.07em] text-muted-foreground">Sections</span>
+              <button
+                type="button"
+                aria-label="Add section"
+                onClick={() => {
+                  const title = window.prompt('Section name:')
+                  if (title?.trim()) addSection(title.trim())
+                }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--brand-color)', fontSize: 12, fontWeight: 600, fontFamily: 'inherit' }}
+              >
+                + Add
+              </button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {activeAsmt.sections.length === 0 ? (
+                <div style={{ padding: '20px 12px', textAlign: 'center' }}>
+                  <p className="text-xs text-muted-foreground">No sections yet.</p>
+                </div>
+              ) : activeAsmt.sections.map((sec, idx) => {
+                const isActive = sec.id === activeSectionId
+                const fillPct = sectionFillPct(sec)
+                const isReady = fillPct >= 80
+                return (
+                  <div key={sec.id}>
+                    <button
+                      type="button"
+                      onClick={() => { setActiveSectionId(sec.id); setPickerOpen(false) }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 7,
+                        padding: '6px 12px', width: '100%', textAlign: 'left',
+                        background: isActive ? 'var(--background)' : 'none',
+                        border: 'none', borderLeft: `3px solid ${isActive ? 'var(--brand-color)' : 'transparent'}`,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: isActive ? 'var(--brand-color)' : 'var(--border)', flexShrink: 0 }} />
+                      <span className="text-xs font-medium text-foreground" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {idx + 1}. {sec.title}
+                      </span>
+                      <span className="text-xs text-muted-foreground">{sec.questionIds.length}</span>
+                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '2px 12px 5px 22px' }}>
+                      <div style={{ flex: 1, height: 3, borderRadius: 2, background: 'var(--border)' }}>
+                        <div style={{ height: '100%', borderRadius: 2, background: 'var(--chart-2)', width: `${fillPct}%` }} />
+                      </div>
+                      <span style={{ fontSize: 10, color: isReady ? 'var(--chart-2)' : 'var(--muted-foreground)', fontWeight: 600 }}>
+                        {isReady ? 'Ready' : 'Drafting'}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+              {/* Unassigned questions indicator */}
+              {(() => {
+                const assignedIds = new Set(activeAsmt.sections.flatMap(s => s.questionIds))
+                const unassignedCount = activeAsmt.questions.filter(q => !assignedIds.has(q.questionId)).length
+                if (unassignedCount === 0) return null
+                return (
+                  <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border)' }}>
+                    <p className="text-xs text-muted-foreground">
+                      <i className="fa-light fa-layer-group" aria-hidden="true" style={{ marginRight: 4 }} />
+                      {unassignedCount} unassigned
+                    </p>
+                  </div>
+                )
+              })()}
+            </div>
+          </div>
+
+          {/* Center: section workspace OR QB picker */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+            {pickerOpen ? (
+              /* ── QB Picker view ── */
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                {/* Back to section header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderBottom: '1px solid var(--border)', flexShrink: 0, background: 'var(--muted)' }}>
+                  <Button variant="ghost" size="sm" onClick={() => setPickerOpen(false)} className="gap-1.5 h-7 text-xs">
+                    <i className="fa-light fa-arrow-left" aria-hidden="true" />
+                    Back to section
+                  </Button>
+                  {activeSection && (
+                    <span className="text-xs text-muted-foreground">Adding to: <strong className="text-foreground">{activeSection.title}</strong></span>
+                  )}
+                </div>
+                {/* Existing QB picker */}
+                <ABQuestionPicker
+                  selectedIds={selectedIds}
+                  onToggle={toggleQuestion}
+                  activeAsmt={activeAsmt}
+                  onDurationChange={(min) => setActiveAsmt(prev => prev ? { ...prev, durationMinutes: min } : prev)}
+                  userCreated={userCreated}
+                  onCreateQuestion={createQuestion}
+                  onCreateFromDraft={createQuestionFromDraft}
+                  authorPersonaId={currentPersona.id}
+                  onOpenAi={() => setAiOpen(true)}
+                  isCopyMode={urlMode === 'copy'}
+                  onRenameAsmt={(title) => setActiveAsmt(prev => prev ? { ...prev, title } : prev)}
+                  onAssignToSection={assignQuestionToSection}
+                  activeSectionId={activeSectionId}
+                />
+              </div>
+            ) : (
+              /* ── Section Workspace view ── */
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                {activeSection ? (
+                  <>
+                    {/* Section header bar */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 14px', height: 40, borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+                      <span className="text-sm font-semibold text-foreground truncate flex-1">
+                        §{(activeAsmt.sections.findIndex(s => s.id === activeSection.id) + 1)} — {activeSection.title}
+                      </span>
+                      {activeSection.facultyId && (() => {
+                        const faculty = facultyListRows.find(f => f.id === activeSection.facultyId)
+                        return faculty ? (
+                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'var(--muted)', color: 'var(--muted-foreground)' }}>
+                            {faculty.fullName}
+                          </span>
+                        ) : null
+                      })()}
+                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'var(--muted)', color: 'var(--muted-foreground)' }}>
+                        {activeSectionQuestions.length} Q
+                      </span>
+                      <Button variant="outline" size="sm" style={{ fontSize: 11, height: 26 }} onClick={() => setPickerOpen(true)}>
+                        + Add questions
+                      </Button>
+                    </div>
+
+                    {/* Scrollable workspace */}
+                    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+                      {/* Instructions + Preread — always visible, side by side */}
+                      <div style={{ display: 'flex', gap: 10, padding: '10px 14px', borderBottom: '1px solid var(--border)', flexShrink: 0, background: 'var(--background)' }}>
+                        {/* Instructions */}
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <span style={{ width: 8, height: 8, borderRadius: 2, background: '#bfdbfe', flexShrink: 0 }} />
+                            <span className="text-xs font-bold uppercase tracking-[0.06em] text-muted-foreground">Instructions</span>
+                            <span style={{ fontSize: 10, color: 'var(--muted-foreground)', marginLeft: 'auto' }}>shown before section starts</span>
+                          </div>
+                          <textarea
+                            aria-label={`Instructions for section ${activeSection.title}`}
+                            value={activeSection.instructions ?? ''}
+                            onChange={e => updateSection(activeSection.id, { instructions: e.target.value })}
+                            placeholder="Procedural directions for students (timing, tools, rules)…"
+                            rows={2}
+                            style={{
+                              border: '1px solid var(--border)', borderLeft: '3px solid #bfdbfe',
+                              borderRadius: 5, padding: '6px 8px', fontSize: 12, fontFamily: 'inherit',
+                              color: 'var(--foreground)', resize: 'vertical', minHeight: 52, outline: 'none',
+                              lineHeight: 1.45, width: '100%', background: 'var(--background)',
+                            }}
+                            onFocus={e => { (e.target as HTMLTextAreaElement).style.borderColor = 'var(--foreground)' }}
+                            onBlur={e => { (e.target as HTMLTextAreaElement).style.borderColor = 'var(--border)' }}
+                          />
+                        </div>
+                        {/* Preread */}
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <span style={{ width: 8, height: 8, borderRadius: 2, background: '#ddd6fe', flexShrink: 0 }} />
+                            <span className="text-xs font-bold uppercase tracking-[0.06em] text-muted-foreground">Preread</span>
+                            <span style={{ fontSize: 10, color: 'var(--muted-foreground)', marginLeft: 'auto' }}>shown alongside questions</span>
+                          </div>
+                          <textarea
+                            aria-label={`Preread material for section ${activeSection.title}`}
+                            value={activeSection.prereadText ?? ''}
+                            onChange={e => updateSection(activeSection.id, { prereadText: e.target.value })}
+                            placeholder="Case study, clinical vignette, or reference material shown to the left of questions…"
+                            rows={2}
+                            style={{
+                              border: '1px solid var(--border)', borderLeft: '3px solid #ddd6fe',
+                              borderRadius: 5, padding: '6px 8px', fontSize: 12, fontFamily: 'inherit',
+                              color: 'var(--foreground)', resize: 'vertical', minHeight: 52, outline: 'none',
+                              lineHeight: 1.45, width: '100%', background: 'var(--background)',
+                            }}
+                            onFocus={e => { (e.target as HTMLTextAreaElement).style.borderColor = 'var(--foreground)' }}
+                            onBlur={e => { (e.target as HTMLTextAreaElement).style.borderColor = 'var(--border)' }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Questions list */}
+                      <div>
+                        {activeSectionQuestions.length === 0 ? (
+                          <div style={{ padding: '32px 14px', textAlign: 'center' }}>
+                            <p className="text-sm text-muted-foreground">No questions in this section yet.</p>
+                          </div>
+                        ) : activeSectionQuestions.map(({ aq, q }, idx) => {
+                          const pbiLow = q.pbis !== null && q.pbis < 0.2
+                          return (
+                            <div
+                              key={q.id}
+                              style={{
+                                display: 'flex', alignItems: 'baseline', gap: 8,
+                                padding: '6px 14px', borderBottom: '1px solid var(--border)',
+                                cursor: 'pointer',
+                              }}
+                              onClick={() => setDetailQuestionId(prev => prev === q.id ? null : q.id)}
+                            >
+                              <span className="text-xs text-muted-foreground" style={{ width: 18, textAlign: 'right', flexShrink: 0 }}>{idx + 1}</span>
+                              <span className="text-xs text-foreground" style={{ flex: 1, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', lineHeight: 1.4 }}>
+                                {q.title}
+                              </span>
+                              {q.pbis !== null && (
+                                <span className="text-xs font-semibold" style={{ color: pbiLow ? 'var(--chart-5)' : 'var(--chart-2)', flexShrink: 0 }}>
+                                  {q.pbis.toFixed(2)}
+                                </span>
+                              )}
+                              <span className="text-xs text-muted-foreground" style={{ flexShrink: 0 }}>{q.type}</span>
+                              <span className="text-xs text-muted-foreground" style={{ flexShrink: 0 }}>{aq.points > 0 ? `${aq.points} pts` : '—'}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      {/* Add from QB row */}
+                      <button
+                        type="button"
+                        onClick={() => setPickerOpen(true)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 6,
+                          padding: '7px 14px', color: 'var(--muted-foreground)', fontSize: 12,
+                          borderTop: '1px solid var(--border)', cursor: 'pointer',
+                          background: 'none', border: 'none', width: '100%', textAlign: 'left', fontFamily: 'inherit',
+                        }}
+                      >
+                        <i className="fa-light fa-plus" aria-hidden="true" />
+                        Add from question bank
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  /* No section selected */
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 }}>
+                    {activeAsmt.sections.length === 0 ? (
+                      <>
+                        <i className="fa-light fa-layer-group text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
+                        <p className="text-sm text-muted-foreground text-center">No sections yet. Add a section in the left panel to get started.</p>
+                        <Button variant="outline" size="sm" onClick={() => setPickerOpen(true)} className="gap-1.5">
+                          <i className="fa-light fa-plus" aria-hidden="true" />
+                          Browse question bank
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-muted-foreground">Select a section from the left panel.</p>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Right: section meta panel (216px) */}
+          <div style={{ width: 216, borderLeft: '1px solid var(--border)', flexShrink: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', background: 'var(--card)' }}>
+            {activeSection ? (
+              <>
+                {/* Section meta */}
+                <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)' }}>
+                  <p className="text-xs font-bold uppercase tracking-[0.07em] text-muted-foreground mb-2">Section</p>
+                  {[
+                    { key: 'Faculty', value: (() => { const f = facultyListRows.find(f => f.id === activeSection.facultyId); return f?.fullName ?? '—' })() },
+                    { key: 'Questions', value: `${activeSectionQuestions.length}` },
+                    { key: 'Avg PBI', value: (() => {
+                      const pbis = activeSectionQuestions.map(({ q }) => q.pbis).filter(p => p !== null) as number[]
+                      return pbis.length > 0 ? (pbis.reduce((a, b) => a + b, 0) / pbis.length).toFixed(2) : '—'
+                    })() },
+                  ].map(({ key, value }) => (
+                    <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                      <span className="text-xs text-muted-foreground">{key}</span>
+                      <span className="text-xs font-semibold text-foreground">{value}</span>
+                    </div>
+                  ))}
+                </div>
+                {/* Distribution */}
+                <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)' }}>
+                  <p className="text-xs font-bold uppercase tracking-[0.07em] text-muted-foreground mb-2">Distribution</p>
+                  {(['Easy', 'Medium', 'Hard'] as const).map(diff => {
+                    const count = activeSectionQuestions.filter(({ q }) => q.difficulty === diff).length
+                    return (
+                      <div key={diff} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                        <span className="text-xs text-muted-foreground">{diff}</span>
+                        <span className="text-xs font-semibold text-foreground">{count}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+                {/* Section options */}
+                <div style={{ padding: '10px 12px' }}>
+                  <p className="text-xs font-bold uppercase tracking-[0.07em] text-muted-foreground mb-2">Section options</p>
+                  {[
+                    { label: 'Shuffle questions', key: 'randomize' as const },
+                  ].map(({ label, key }) => (
+                    <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                      <span style={{ flex: 1, fontSize: 12 }}>{label}</span>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={!!(activeSection as unknown as Record<string, unknown>)[key]}
+                        aria-label={label}
+                        onClick={() => updateSection(activeSection.id, { [key]: !((activeSection as unknown as Record<string, unknown>)[key]) })}
+                        style={{
+                          width: 28, height: 16, borderRadius: 8, border: 'none', cursor: 'pointer',
+                          background: (activeSection as unknown as Record<string, unknown>)[key] ? 'var(--foreground)' : 'var(--muted)',
+                          position: 'relative', flexShrink: 0,
+                        }}
+                      >
+                        <span style={{
+                          position: 'absolute', top: 2,
+                          left: (activeSection as unknown as Record<string, unknown>)[key] ? 12 : 2,
+                          width: 12, height: 12, borderRadius: '50%', background: '#fff',
+                          transition: 'left .15s', display: 'block',
+                        }} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              /* No section — show overall assessment metrics */
+              <div style={{ padding: '10px 12px' }}>
+                <p className="text-xs font-bold uppercase tracking-[0.07em] text-muted-foreground mb-2">Assessment</p>
+                {[
+                  { key: 'Questions', value: String(activeAsmt.questions.length) },
+                  { key: 'Sections',  value: String(activeAsmt.sections.length) },
+                  { key: 'Duration',  value: `${activeAsmt.durationMinutes} min` },
+                ].map(({ key, value }) => (
+                  <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                    <span className="text-xs text-muted-foreground">{key}</span>
+                    <span className="text-xs font-semibold text-foreground">{value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Questions tab — no active assessment */}
+      {activeTab === 'questions' && !activeAsmt && (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
-          <p className="text-sm text-muted-foreground">No assessment selected. Go back to Details to set one up.</p>
-          <Button size="sm" onClick={() => setActiveStep(1)} className="gap-1.5">
+          <p className="text-sm text-muted-foreground">No assessment found. Start from the canvas.</p>
+          <Button size="sm" onClick={() => router.push('/assessment-builder/create')} className="gap-1.5">
             <i className="fa-light fa-arrow-left" aria-hidden="true" />
-            Back to Details
+            Back to canvas
           </Button>
         </div>
       )}
 
-      {/* Step 3 — Review */}
-      {activeStep === 3 && activeAsmt && (
-        <ReviewStep
-          activeAsmt={activeAsmt}
-          courseLabel={courseLabel}
-          distribution={distribution}
-          bloomsMetrics={bloomsMetrics}
-          timeMetrics={timeMetrics}
-          totalAssigned={totalAssigned}
-          bonusTotal={bonusTotal}
-          unassignedPts={unassignedPts}
-          sectionSubtotals={sectionSubtotals}
-          onBack={() => setActiveStep(2)}
-          onSaveAsDraft={handleSaveDraft}
-          onSendToChair={handleSendToChair}
-          onPublish={handlePublish}
-          onOpenGradingTray={() => setShowGrading(true)}
-        />
-      )}
+      {/* ── Settings tab ─────────────────────────────────────────────────── */}
+      {activeTab === 'settings' && (
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+          {/* Left: settings content */}
+          <div style={{ flex: 1, overflowY: 'auto', borderRight: '1px solid var(--border)' }}>
+            <AssessmentSettingsContent
+              settings={activeAsmt?.settings ?? defaultAssessmentSettings('Exam')}
+              onPatch={patch => setActiveAsmt(prev => prev ? { ...prev, settings: { ...prev.settings, ...patch } } : prev)}
+            />
+          </div>
+          {/* Right: summary panel (180px) */}
+          <div style={{ width: 180, flexShrink: 0, overflowY: 'auto', background: 'var(--card)', padding: '14px 14px' }}>
+            <p className="text-xs font-bold uppercase tracking-[0.07em] text-muted-foreground mb-3">Summary</p>
+            {[
+              { key: 'Questions', value: String(activeAsmt?.questions.length ?? 0) },
+              { key: 'Duration',  value: `${activeAsmt?.durationMinutes ?? 90} min` },
+              { key: 'Sections',  value: String(activeAsmt?.sections.length ?? 0) },
+            ].map(({ key, value }) => (
+              <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                <span className="text-xs text-muted-foreground">{key}</span>
+                <span className="text-xs font-semibold text-foreground">{value}</span>
+              </div>
+            ))}
 
-      {/* Step 3 — no active assessment */}
-      {activeStep === 3 && !activeAsmt && (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Button size="sm" onClick={() => setActiveStep(1)}>← Back to Details</Button>
+            <p className="text-xs font-bold uppercase tracking-[0.07em] text-muted-foreground mb-2 mt-4">Pre-exam checklist</p>
+            {[
+              { label: 'Instructions', done: !!(activeAsmt?.settings?.instructionsText?.trim()) },
+              { label: 'Ethics / policy', done: !!(activeAsmt?.settings?.policyText?.trim()) },
+              { label: 'Attestation', done: !!(activeAsmt?.settings?.attestationText?.trim()) },
+              { label: 'Tech check', done: !!(activeAsmt?.settings?.techCheck?.audio || activeAsmt?.settings?.techCheck?.video) },
+            ].map(({ label, done }) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+                <i
+                  className={`fa-light ${done ? 'fa-circle-check' : 'fa-circle'}`}
+                  aria-hidden="true"
+                  style={{ fontSize: 12, color: done ? 'var(--chart-2)' : 'var(--border)', flexShrink: 0 }}
+                />
+                <span className="text-xs text-muted-foreground">{label}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Sheets + modals — always mounted so they survive step transitions */}
+      {/* Sheets + modals — always mounted so they survive tab transitions */}
       <AiGenerateModal
         open={aiOpen}
         onOpenChange={setAiOpen}
@@ -2877,7 +3216,6 @@ function WizardHeader({
   canSave: boolean
 }) {
   const STEPS: { id: 1 | 2 | 3; label: string; icon: string }[] = [
-    { id: 1, label: 'Details',  icon: 'fa-circle-info' },
     { id: 2, label: 'Build',    icon: 'fa-books' },
     { id: 3, label: 'Review',   icon: 'fa-circle-check' },
   ]
@@ -2983,6 +3321,220 @@ function WizardHeader({
           <i className="fa-light fa-floppy-disk" aria-hidden="true" />
           Save draft
         </Button>
+      </div>
+    </div>
+  )
+}
+
+// ── Assessment settings content (inline, used in Settings tab) ───────────────
+
+function AssessmentSettingsContent({
+  settings,
+  onPatch,
+}: {
+  settings: import('@/lib/qb-types').AssessmentSettings
+  onPatch: (patch: Partial<import('@/lib/qb-types').AssessmentSettings>) => void
+}) {
+  const TYPES: import('@/lib/qb-types').AssessmentType[] = ['Exam', 'Quiz', 'Assignment']
+
+  function Toggle({ checked, onChange, label, description }: {
+    checked: boolean; onChange: (v: boolean) => void; label: string; description?: string
+  }) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ minWidth: 0 }}>
+          <p className="text-sm font-medium text-foreground">{label}</p>
+          {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={checked}
+          aria-label={label}
+          onClick={() => onChange(!checked)}
+          style={{
+            width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0,
+            backgroundColor: checked ? 'var(--brand-color)' : 'var(--muted)',
+            position: 'relative', transition: 'background-color .15s',
+          }}
+        >
+          <span style={{
+            position: 'absolute', top: 2, left: checked ? 18 : 2,
+            width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)',
+            transition: 'left .15s', display: 'block',
+          }} />
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ padding: '0 0 40px' }}>
+      {/* Type */}
+      <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--border)' }}>
+        <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Scheduling</p>
+        <p className="text-xs text-muted-foreground mb-2">Assessment type</p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {TYPES.map(t => (
+            <button
+              key={t}
+              type="button"
+              aria-pressed={settings.type === t}
+              onClick={() => onPatch({ type: t })}
+              style={{
+                flex: 1, borderRadius: 8, border: '1px solid',
+                borderColor: settings.type === t ? 'var(--brand-color)' : 'var(--border)',
+                background: settings.type === t ? 'color-mix(in oklch, var(--brand-color) 10%, var(--background))' : 'transparent',
+                color: settings.type === t ? 'var(--brand-color)' : 'var(--muted-foreground)',
+                padding: '8px 0', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Scheduling toggles */}
+      <div style={{ padding: '0 20px' }}>
+        <Toggle
+          checked={settings.passwordRequired}
+          onChange={v => onPatch({ passwordRequired: v })}
+          label="Password required"
+          description="Students enter a password to unlock the exam."
+        />
+        {settings.passwordRequired && (
+          <input
+            type="text"
+            placeholder="Set exam password…"
+            value={settings.password}
+            onChange={e => onPatch({ password: e.target.value })}
+            style={{ height: 36, padding: '0 12px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', width: '100%', marginBottom: 8 }}
+          />
+        )}
+        <Toggle
+          checked={settings.randomize}
+          onChange={v => onPatch({ randomize: v })}
+          label="Randomize question order"
+          description="Each student sees questions in a different order."
+        />
+        <Toggle
+          checked={settings.randomizeOptions}
+          onChange={v => onPatch({ randomizeOptions: v })}
+          label="Randomize option order"
+          description="Shuffle answer choices within each question."
+        />
+        <Toggle
+          checked={settings.showRationaleAfter}
+          onChange={v => onPatch({ showRationaleAfter: v })}
+          label="Show rationale after submission"
+          description="Students see the correct answer and rationale after submitting."
+        />
+      </div>
+
+      {/* Grading */}
+      <div style={{ padding: '12px 20px 0', borderTop: '1px solid var(--border)', marginTop: 4 }}>
+        <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-3">Grading</p>
+        <Toggle
+          checked={settings.graded}
+          onChange={v => onPatch({ graded: v })}
+          label="Graded"
+          description="Assign point values to questions."
+        />
+        {settings.graded && (
+          <div style={{ padding: '8px 0' }}>
+            <p className="text-xs text-muted-foreground mb-1">Total marks</p>
+            <input
+              type="number"
+              aria-label="Total marks"
+              min={1}
+              value={settings.totalMarks}
+              onChange={e => {
+                const v = parseInt(e.target.value)
+                if (!isNaN(v) && v > 0) onPatch({ totalMarks: v })
+              }}
+              style={{ width: 80, height: 32, padding: '0 8px', fontSize: 13, textAlign: 'center', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none' }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Pre-exam setup */}
+      <div style={{ borderTop: '1px solid var(--border)', marginTop: 8 }}>
+        <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground" style={{ padding: '12px 20px 4px' }}>Pre-exam setup</p>
+        <div style={{ padding: '0 20px' }}>
+          <PreExamBlock
+            label="Instructions"
+            description="Cover page text shown before the exam starts"
+            enabled={!!settings.instructionsText.trim()}
+            onToggle={() => onPatch({ instructionsText: settings.instructionsText.trim() ? '' : ' ' })}
+          >
+            <textarea
+              aria-label="Pre-exam instructions"
+              value={settings.instructionsText}
+              onChange={e => onPatch({ instructionsText: e.target.value })}
+              placeholder="Read all questions carefully. No external resources…"
+              rows={3}
+              style={{ width: '100%', padding: '8px 10px', fontSize: 13, lineHeight: 1.5, border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}
+            />
+          </PreExamBlock>
+
+          <PreExamBlock
+            label="Ethics / policy"
+            description="Honor code or institutional policy text"
+            enabled={!!settings.policyText.trim()}
+            onToggle={() => onPatch({ policyText: settings.policyText.trim() ? '' : ' ' })}
+          >
+            <textarea
+              aria-label="Ethics and policy text"
+              value={settings.policyText}
+              onChange={e => onPatch({ policyText: e.target.value })}
+              placeholder="By participating in this exam, you agree to…"
+              rows={3}
+              style={{ width: '100%', padding: '8px 10px', fontSize: 13, lineHeight: 1.5, border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}
+            />
+          </PreExamBlock>
+
+          <PreExamBlock
+            label="Attestation"
+            description='Student checks "I agree" to unlock the exam'
+            enabled={!!settings.attestationText.trim()}
+            onToggle={() => onPatch({ attestationText: settings.attestationText.trim() ? '' : ' ' })}
+          >
+            <textarea
+              aria-label="Attestation text"
+              value={settings.attestationText}
+              onChange={e => onPatch({ attestationText: e.target.value })}
+              placeholder="I affirm that I will complete this exam independently…"
+              rows={2}
+              style={{ width: '100%', padding: '8px 10px', fontSize: 13, lineHeight: 1.5, border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}
+            />
+          </PreExamBlock>
+
+          <PreExamBlock
+            label="Tech check"
+            description="Pre-flight system check students complete before starting"
+            enabled={settings.techCheck.audio || settings.techCheck.video || settings.techCheck.wifi || settings.techCheck.os}
+            onToggle={() => {
+              const anyOn = settings.techCheck.audio || settings.techCheck.video || settings.techCheck.wifi || settings.techCheck.os
+              onPatch({ techCheck: { audio: !anyOn, video: false, wifi: false, os: false } })
+            }}
+          >
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {(['audio', 'video', 'wifi', 'os'] as const).map(key => (
+                <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '3px 8px', border: `1px solid ${settings.techCheck[key] ? 'var(--foreground)' : 'var(--border)'}`, borderRadius: 5, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={settings.techCheck[key]}
+                    onChange={() => onPatch({ techCheck: { ...settings.techCheck, [key]: !settings.techCheck[key] } })}
+                    style={{ margin: 0 }}
+                  />
+                  {key === 'audio' ? 'Audio' : key === 'video' ? 'Camera' : key === 'wifi' ? 'Wi-Fi' : 'OS'}
+                </label>
+              ))}
+            </div>
+          </PreExamBlock>
+        </div>
       </div>
     </div>
   )
