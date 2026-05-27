@@ -193,6 +193,23 @@ function SectionGroup({
           />
           <span className="text-xs font-semibold text-foreground truncate">{section.title}</span>
           <span className="text-xs text-muted-foreground shrink-0">{section.questionIds.length}</span>
+          {/* Content indicator dots */}
+          {(section.instructions || section.prereadText) && (
+            <div style={{ display: 'flex', flexDirection: 'row', gap: 3, flexShrink: 0 }}>
+              {section.instructions && (
+                <span
+                  style={{ width: 6, height: 6, borderRadius: '50%', background: '#bfdbfe', display: 'inline-block' }}
+                  title="Has section instructions"
+                />
+              )}
+              {section.prereadText && (
+                <span
+                  style={{ width: 6, height: 6, borderRadius: '50%', background: '#ddd6fe', display: 'inline-block' }}
+                  title="Has preread / case vignette"
+                />
+              )}
+            </div>
+          )}
         </button>
 
         {/* Faculty + collaborator chips */}
@@ -270,6 +287,46 @@ function SectionGroup({
           onShowDetail={onShowDetail}
         />
       ))}
+
+      {/* Inline instructions + preread fields when section is active */}
+      {isActive && (
+        <div style={{ padding: '8px 12px 10px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ position: 'relative' }}>
+            <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 3, borderRadius: '3px 0 0 3px', background: '#bfdbfe' }} />
+            <textarea
+              aria-label={`Instructions for section ${section.title}`}
+              value={section.instructions ?? ''}
+              onChange={e => onUpdateSection(section.id, { instructions: e.target.value })}
+              placeholder="Section instructions (shown before this section starts)…"
+              rows={2}
+              style={{
+                width: '100%', paddingLeft: 10, paddingRight: 8, paddingTop: 6, paddingBottom: 6,
+                fontSize: 11, lineHeight: 1.5, fontFamily: 'inherit',
+                border: '1px solid var(--border)', borderLeft: 'none', borderRadius: '0 4px 4px 0',
+                background: 'var(--background)', color: 'var(--foreground)',
+                outline: 'none', resize: 'none',
+              }}
+            />
+          </div>
+          <div style={{ position: 'relative' }}>
+            <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 3, borderRadius: '3px 0 0 3px', background: '#ddd6fe' }} />
+            <textarea
+              aria-label={`Preread for section ${section.title}`}
+              value={section.prereadText ?? ''}
+              onChange={e => onUpdateSection(section.id, { prereadText: e.target.value })}
+              placeholder="Preread / case vignette (shown alongside questions)…"
+              rows={2}
+              style={{
+                width: '100%', paddingLeft: 10, paddingRight: 8, paddingTop: 6, paddingBottom: 6,
+                fontSize: 11, lineHeight: 1.5, fontFamily: 'inherit',
+                border: '1px solid var(--border)', borderLeft: 'none', borderRadius: '0 4px 4px 0',
+                background: 'var(--background)', color: 'var(--foreground)',
+                outline: 'none', resize: 'none',
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
