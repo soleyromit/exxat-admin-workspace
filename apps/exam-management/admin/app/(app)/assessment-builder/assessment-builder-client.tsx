@@ -1201,6 +1201,15 @@ export default function AssessmentBuilderClient() {
                           <span className="text-xs text-muted-foreground" style={{ flexShrink: 0 }}>{sec.questionIds.length}/{sec.questionTarget ?? 20}</span>
                         )}
                       </button>
+                      {/* Section settings icon */}
+                      <button
+                        type="button"
+                        aria-label={`Section settings for ${sec.title}`}
+                        onClick={() => setAssignSheetSectionId(sec.id)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 4px', color: 'var(--muted-foreground)', flexShrink: 0, lineHeight: 1 }}
+                      >
+                        <i className="fa-light fa-sliders" aria-hidden="true" style={{ fontSize: 12 }} />
+                      </button>
                       {/* Section reorder buttons */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 0, paddingRight: 6, flexShrink: 0 }}>
                         <button
@@ -5997,7 +6006,7 @@ function SectionAssignSheet({
           <SheetTitle style={{ fontSize: 13, fontWeight: 600 }}>
             {sectionIndex + 1}. {section.title}
           </SheetTitle>
-          <p className="text-xs text-muted-foreground">Assign faculty who will contribute to this section. Select multiple.</p>
+          <p className="text-xs text-muted-foreground">Section settings — timer, pre-read, instructions, and faculty assignment.</p>
         </SheetHeader>
 
         <div style={{ flex: 1, overflowY: 'auto' }}>
