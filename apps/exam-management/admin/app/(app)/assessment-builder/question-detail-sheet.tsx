@@ -1,7 +1,7 @@
 'use client'
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Sheet, SheetContent, SheetTitle, Button } from '@exxat/ds/packages/ui/src'
-import type { Question, QuestionVersionEntry, QuestionCollaborator, QuestionOption } from '@/lib/qb-types'
+import type { Question, QuestionVersionEntry, QuestionCollaborator } from '@/lib/qb-types'
 import { MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
 
 type DetailTab = 'details' | 'stats' | 'versions' | 'collaborators'
@@ -81,52 +81,354 @@ function MetaDivider() {
   )
 }
 
-// ─── Helper: Option preview ──────────────────────────────────────────────────
+// ─── Type-specific preview components ────────────────────────────────────────
 
-function OptionPreview({ option }: { option: QuestionOption }) {
+function StemBlock({ children, note }: { children: React.ReactNode; note?: string }) {
   return (
-    <div style={{ marginBottom: 8 }}>
-      {/* Boxed card — matches test-taker layout */}
-      <div style={{
-        display: 'flex', alignItems: 'flex-start', gap: 10,
-        border: `1px solid ${option.isCorrect ? 'var(--chart-2)' : 'var(--border)'}`,
-        borderRadius: 7, padding: '8px 10px',
-        background: option.isCorrect ? 'oklch(0.97 0.025 160)' : 'transparent',
-      }}>
-        <span style={{
-          flexShrink: 0, width: 24, height: 24, borderRadius: 5,
-          background: option.isCorrect ? 'var(--chart-2)' : 'var(--muted)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 12, fontWeight: 700,
-          color: option.isCorrect ? '#fff' : 'var(--muted-foreground)',
-        }}>
-          {option.key}
-        </span>
-        <div style={{ flex: 1 }}>
-          <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--foreground)', margin: 0 }}>
-            {option.text}
-          </p>
-          {option.isCorrect && (
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--chart-2)', display: 'block', marginTop: 2 }}>
-              ✓ Correct
+    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: 14, marginBottom: 10 }}>
+      <Eyebrow>Question stem</Eyebrow>
+      <p style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--foreground)', margin: 0 }}>{children}</p>
+      {note && <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '6px 0 0', fontStyle: 'italic' }}>{note}</p>}
+    </div>
+  )
+}
+
+function RationaleBlock({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginTop: 4, padding: '6px 10px', background: 'var(--muted)', borderRadius: 6, fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
+      <span style={{ fontWeight: 600, color: 'var(--foreground)', marginRight: 6 }}>{label}</span>
+      {children}
+    </div>
+  )
+}
+
+/** Stacked MCQ — stem + options with per-option rationale (correct + "why incorrect") */
+function MCQStackedPreview({ question }: { question: Question }) {
+  const stemText = question.stemText ?? question.title
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <StemBlock>{stemText}</StemBlock>
+      {question.options?.map(opt => (
+        <div key={opt.key} style={{ marginBottom: 2 }}>
+          <div style={{
+            display: 'flex', alignItems: 'flex-start', gap: 10,
+            border: `1px solid ${opt.isCorrect ? 'var(--chart-2)' : 'var(--border)'}`,
+            borderRadius: 7, padding: '9px 11px',
+            background: opt.isCorrect ? 'oklch(0.97 0.025 160)' : 'transparent',
+          }}>
+            <span style={{
+              flexShrink: 0, width: 24, height: 24, borderRadius: 5,
+              background: opt.isCorrect ? 'var(--chart-2)' : 'var(--muted)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 12, fontWeight: 700,
+              color: opt.isCorrect ? '#fff' : 'var(--muted-foreground)',
+            }}>
+              {opt.key}
             </span>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--foreground)', margin: 0 }}>{opt.text}</p>
+              {opt.isCorrect && (
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--chart-2)', display: 'block', marginTop: 3 }}>✓ Correct</span>
+              )}
+            </div>
+          </div>
+          {opt.rationale && (
+            <RationaleBlock label={opt.isCorrect ? `Rationale${opt.rationaleAuthor ? ` — ${opt.rationaleAuthor}` : ''}` : 'Why this is incorrect'}>
+              {opt.rationale}
+            </RationaleBlock>
           )}
         </div>
-      </div>
-      {option.rationale && (
-        <div style={{
-          marginLeft: 34, marginTop: 4,
-          padding: '6px 10px',
-          background: 'var(--muted)', borderRadius: 6,
-          fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1.5,
-        }}>
-          <span style={{ fontWeight: 600, color: 'var(--foreground)' }}>
-            {option.isCorrect
-              ? `Rationale${option.rationaleAuthor ? ` — ${option.rationaleAuthor}` : ''}`
-              : 'Why this is incorrect'}
-          </span>
-          <span style={{ marginLeft: 6 }}>{option.rationale}</span>
+      ))}
+    </div>
+  )
+}
+
+/** Split MCQ — stem + correct rationale on left; options with distractor rationale on right */
+function MCQSplitPreview({ question }: { question: Question }) {
+  const stemText = question.stemText ?? question.title
+  const correctOption = question.options?.find(o => o.isCorrect)
+  return (
+    <div style={{ display: 'flex', gap: 12, height: '100%' }}>
+      {/* Left: stem + correct rationale */}
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: 14, marginBottom: 10 }}>
+          <Eyebrow>Question stem</Eyebrow>
+          <p style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--foreground)', margin: 0 }}>{stemText}</p>
         </div>
+        {correctOption?.rationale && (
+          <div style={{
+            background: 'color-mix(in srgb, var(--chart-2) 7%, var(--background))',
+            border: '1px solid color-mix(in srgb, var(--chart-2) 25%, var(--background))',
+            borderRadius: 8, padding: 12,
+          }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--chart-2)', marginBottom: 5 }}>
+              Rationale{correctOption.rationaleAuthor ? ` — ${correctOption.rationaleAuthor}` : ''}
+            </div>
+            <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--foreground)', margin: 0 }}>{correctOption.rationale}</p>
+          </div>
+        )}
+      </div>
+      {/* Right: options + distractor rationale */}
+      <div style={{ width: '44%', flexShrink: 0, overflowY: 'auto' }}>
+        <Eyebrow>Select one answer</Eyebrow>
+        {question.options?.map(opt => (
+          <div key={opt.key} style={{ marginBottom: 6 }}>
+            <div style={{
+              display: 'flex', alignItems: 'flex-start', gap: 8,
+              border: `1px solid ${opt.isCorrect ? 'var(--chart-2)' : 'var(--border)'}`,
+              borderRadius: 7, padding: '7px 9px',
+              background: opt.isCorrect ? 'oklch(0.97 0.025 160)' : 'transparent',
+            }}>
+              <span style={{
+                flexShrink: 0, width: 22, height: 22, borderRadius: 4,
+                background: opt.isCorrect ? 'var(--chart-2)' : 'var(--muted)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 11, fontWeight: 700,
+                color: opt.isCorrect ? '#fff' : 'var(--muted-foreground)',
+              }}>
+                {opt.key}
+              </span>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 12, lineHeight: 1.4, color: 'var(--foreground)', margin: 0 }}>{opt.text}</p>
+                {opt.isCorrect && (
+                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--chart-2)', display: 'block', marginTop: 2 }}>✓ Correct</span>
+                )}
+              </div>
+            </div>
+            {!opt.isCorrect && opt.rationale && (
+              <RationaleBlock label="Why incorrect">{opt.rationale}</RationaleBlock>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** Ordering — numbered sequence with rationale per step */
+function OrderingPreview({ question }: { question: Question }) {
+  const stemText = question.stemText ?? question.title
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <StemBlock>{stemText}</StemBlock>
+      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 2 }}>
+        Correct sequence
+      </div>
+      {question.options?.map((opt, idx) => (
+        <div key={opt.key} style={{ marginBottom: 2 }}>
+          <div style={{
+            display: 'flex', alignItems: 'flex-start', gap: 10,
+            border: '1px solid var(--chart-2)', borderRadius: 7, padding: '9px 11px',
+            background: 'oklch(0.97 0.025 160)',
+          }}>
+            <span style={{
+              flexShrink: 0, width: 24, height: 24, borderRadius: '50%',
+              background: 'var(--chart-2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 12, fontWeight: 700, color: '#fff',
+            }}>
+              {idx + 1}
+            </span>
+            <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--foreground)', margin: 0, flex: 1 }}>{opt.text}</p>
+          </div>
+          {opt.rationale && (
+            <RationaleBlock label="Why this position">{opt.rationale}</RationaleBlock>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** Matching — prompt → answer pairs with rationale */
+function MatchingPreview({ question }: { question: Question }) {
+  const stemText = question.stemText ?? question.title
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <StemBlock>{stemText}</StemBlock>
+      {/* Column headers */}
+      <div style={{ display: 'flex', gap: 2, marginBottom: 2 }}>
+        <div style={{ flex: 1, fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Drug / Prompt</div>
+        <div style={{ flex: 2, fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Correct match</div>
+      </div>
+      {question.options?.map(opt => {
+        // Split "Drug → Match" on first →
+        const parts = opt.text.split('→')
+        const prompt = parts[0]?.trim() ?? opt.text
+        const match = parts.slice(1).join('→').trim()
+        return (
+          <div key={opt.key} style={{ marginBottom: 2 }}>
+            <div style={{
+              display: 'flex', alignItems: 'stretch', gap: 2,
+              border: '1px solid var(--chart-2)', borderRadius: 7, overflow: 'hidden',
+              background: 'oklch(0.97 0.025 160)',
+            }}>
+              {/* Key label */}
+              <div style={{
+                width: 28, flexShrink: 0,
+                background: 'var(--chart-2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 12, fontWeight: 700, color: '#fff',
+              }}>
+                {opt.key}
+              </div>
+              {/* Prompt */}
+              <div style={{ flex: 1, padding: '7px 8px', borderRight: '1px solid color-mix(in srgb, var(--chart-2) 30%, transparent)' }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)' }}>{prompt}</span>
+              </div>
+              {/* Arrow */}
+              <div style={{ width: 24, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--chart-2)', fontSize: 12 }}>→</div>
+              {/* Match */}
+              <div style={{ flex: 2, padding: '7px 8px' }}>
+                <span style={{ fontSize: 12, color: 'var(--foreground)', lineHeight: 1.4 }}>{match || opt.text}</span>
+              </div>
+            </div>
+            {opt.rationale && (
+              <RationaleBlock label="Why this match">{opt.rationale}</RationaleBlock>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/** Fill blank (cloze) — stem with blank marker + answer revealed below */
+function FillBlankPreview({ question }: { question: Question }) {
+  const stemText = question.stemText ?? question.title
+  const hasRubric = question.rubric && question.rubric.length > 0
+  if (hasRubric) {
+    // Long-form / essay fill-blank — render as essay
+    return <EssayPreview question={question} />
+  }
+  // Cloze style — show blanks + answers
+  const parts = stemText.split(/\[BLANK\]|\[___\]|___+/)
+  const answers = question.options ?? []
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: 14 }}>
+        <Eyebrow>Question stem</Eyebrow>
+        <p style={{ fontSize: 13, lineHeight: 1.8, color: 'var(--foreground)', margin: 0 }}>
+          {parts.map((part, i) => (
+            <React.Fragment key={i}>
+              {part}
+              {i < parts.length - 1 && (
+                <span style={{
+                  display: 'inline-block',
+                  borderBottom: '2px solid var(--chart-2)',
+                  minWidth: 80, marginInline: 4, verticalAlign: 'bottom',
+                  textAlign: 'center', fontSize: 12, fontWeight: 700, color: 'var(--chart-2)',
+                  lineHeight: '1.4',
+                }}>
+                  {answers[i]?.text ?? '___'}
+                </span>
+              )}
+            </React.Fragment>
+          ))}
+        </p>
+      </div>
+      {answers.length > 0 && (
+        <>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Correct answers</div>
+          {answers.map((ans, i) => (
+            <div key={ans.key} style={{ marginBottom: 2 }}>
+              <div style={{
+                display: 'flex', alignItems: 'flex-start', gap: 10,
+                border: '1px solid var(--chart-2)', borderRadius: 7, padding: '8px 10px',
+                background: 'oklch(0.97 0.025 160)',
+              }}>
+                <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: 'var(--chart-2)', minWidth: 24 }}>
+                  #{i + 1}
+                </span>
+                <p style={{ fontSize: 13, color: 'var(--foreground)', margin: 0, flex: 1 }}>{ans.text}</p>
+              </div>
+              {ans.rationale && (
+                <RationaleBlock label="Rationale">{ans.rationale}</RationaleBlock>
+              )}
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  )
+}
+
+/** Essay / long-form response */
+function EssayPreview({ question }: { question: Question }) {
+  const stemText = question.stemText ?? question.title
+  const rubricTotal = question.rubric?.reduce((s, r) => s + r.points, 0) ?? 0
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <StemBlock note={question.minWordCount ? `Minimum ${question.minWordCount} words` : undefined}>
+        {stemText}
+      </StemBlock>
+      {/* Student response area */}
+      <div style={{
+        background: 'var(--muted)', border: '1.5px solid var(--border)',
+        borderRadius: 8, padding: 14, minHeight: 80,
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+      }}>
+        <span style={{ fontSize: 12, color: 'var(--muted-foreground)', fontStyle: 'italic' }}>Student response area</span>
+        {question.minWordCount && (
+          <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>0 / {question.minWordCount} words minimum</span>
+        )}
+      </div>
+      {/* Rubric */}
+      {question.rubric && question.rubric.length > 0 && (
+        <div style={{
+          background: 'color-mix(in srgb, var(--chart-2) 6%, var(--background))',
+          border: '1px solid color-mix(in srgb, var(--chart-2) 22%, var(--background))',
+          borderRadius: 8, padding: 13,
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--chart-2)', marginBottom: 8 }}>
+            Scoring rubric
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            {question.rubric.map((r, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, paddingBottom: 5, borderBottom: `1px solid color-mix(in srgb, var(--chart-2) 15%, var(--background))` }}>
+                <span style={{ fontSize: 12, color: 'var(--foreground)', flex: 1, lineHeight: 1.4 }}>{r.criterion}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-foreground)', flexShrink: 0 }}>{r.points} pt{r.points !== 1 ? 's' : ''}</span>
+              </div>
+            ))}
+            <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 2 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)' }}>Total</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--chart-2)' }}>{rubricTotal} pts</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Hotspot — placeholder with annotation zone marker */
+function HotspotPreview({ question }: { question: Question }) {
+  const stemText = question.stemText ?? question.title
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <StemBlock>{stemText}</StemBlock>
+      <div style={{
+        background: 'var(--muted)', border: '1px dashed var(--border)',
+        borderRadius: 8, minHeight: 160, position: 'relative', overflow: 'hidden',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <span style={{ fontSize: 12, color: 'var(--muted-foreground)', fontStyle: 'italic' }}>
+          Hotspot image — student taps the correct region
+        </span>
+        {/* Simulated correct zone */}
+        <div style={{
+          position: 'absolute', top: '30%', left: '55%',
+          width: 48, height: 48, borderRadius: '50%',
+          border: '2px solid var(--chart-2)',
+          background: 'oklch(0.97 0.025 160)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 11, fontWeight: 700, color: 'var(--chart-2)',
+        }}>
+          ✓
+        </div>
+      </div>
+      {question.options?.[0]?.rationale && (
+        <RationaleBlock label="Correct zone rationale">{question.options[0].rationale}</RationaleBlock>
       )}
     </div>
   )
@@ -135,149 +437,40 @@ function OptionPreview({ option }: { option: QuestionOption }) {
 // ─── Tab: Details ─────────────────────────────────────────────────────────────
 
 function DetailsTab({ question }: { question: Question }) {
-  const isSplit = question.layout === 'split'
-  const isEssay = !question.options || question.options.length === 0
-  const stemText = question.stemText ?? question.title
-  const correctOption = question.options?.find(o => o.isCorrect)
-
   const allLocations = [
     { folderPath: question.folderPath },
     ...(question.extraFolders ?? []),
   ]
 
+  // Route rendering by question type
+  function QuestionPreview() {
+    switch (question.type) {
+      case 'Ordering':
+        return <OrderingPreview question={question} />
+      case 'Matching':
+        return <MatchingPreview question={question} />
+      case 'Hotspot':
+        return <HotspotPreview question={question} />
+      case 'Fill blank': {
+        const hasRubric = question.rubric && question.rubric.length > 0
+        const hasOptions = question.options && question.options.length > 0
+        return hasRubric || !hasOptions
+          ? <EssayPreview question={question} />
+          : <FillBlankPreview question={question} />
+      }
+      case 'MCQ':
+      default:
+        return question.layout === 'split'
+          ? <MCQSplitPreview question={question} />
+          : <MCQStackedPreview question={question} />
+    }
+  }
+
   return (
     <div style={{ display: 'flex', gap: 16, height: '100%', overflow: 'hidden' }}>
       {/* Left: question preview */}
       <div style={{ flex: 1, overflowY: 'auto', paddingRight: 8 }}>
-        {isSplit && !isEssay ? (
-          /* Split layout */
-          <div style={{ display: 'flex', gap: 12, height: '100%' }}>
-            {/* Left col: stem + correct rationale */}
-            <div style={{ flex: 1, overflowY: 'auto' }}>
-              <div style={{
-                background: 'var(--card)', border: '1px solid var(--border)',
-                borderRadius: 8, padding: 14, marginBottom: 10,
-              }}>
-                <Eyebrow>Question stem</Eyebrow>
-                <p style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--foreground)', margin: 0 }}>
-                  {stemText}
-                </p>
-              </div>
-              {correctOption?.rationale && (
-                <div style={{
-                  background: 'var(--muted)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 8, padding: 12,
-                }}>
-                  <Eyebrow>Correct answer rationale</Eyebrow>
-                  <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--foreground)', margin: 0 }}>
-                    {correctOption.rationale}
-                  </p>
-                  {correctOption.rationaleAuthor && (
-                    <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '4px 0 0' }}>
-                      — {correctOption.rationaleAuthor}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-            {/* Right col: compact option list */}
-            <div style={{ width: '42%', overflowY: 'auto', flexShrink: 0 }}>
-              <Eyebrow>Options</Eyebrow>
-              {question.options?.map(opt => (
-                <div key={opt.key} style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '6px 8px', marginBottom: 4,
-                  borderLeft: opt.isCorrect ? '3px solid var(--chart-2)' : '3px solid transparent',
-                  background: 'var(--muted)', borderRadius: 4,
-                }}>
-                  <span style={{
-                    flexShrink: 0, width: 18, height: 18, borderRadius: '50%',
-                    background: 'var(--background)', display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', fontSize: 12, fontWeight: 700,
-                    color: 'var(--foreground)',
-                  }}>
-                    {opt.key}
-                  </span>
-                  <span style={{ fontSize: 12, color: 'var(--foreground)', flex: 1 }} className="truncate">
-                    {opt.text}
-                  </span>
-                  {opt.isCorrect && (
-                    <span style={{ fontSize: 12, color: 'var(--qb-pbi-good-color)', fontWeight: 600, flexShrink: 0 }}>✓</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : isEssay ? (
-          /* Essay layout */
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{
-              background: 'var(--card)', border: '1px solid var(--border)',
-              borderRadius: 8, padding: 14,
-            }}>
-              <Eyebrow>Question stem</Eyebrow>
-              <p style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--foreground)', margin: 0 }}>
-                {stemText}
-              </p>
-              {question.minWordCount && (
-                <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '8px 0 0' }}>
-                  Minimum response: {question.minWordCount} words
-                </p>
-              )}
-            </div>
-            {/* Student response placeholder */}
-            <div style={{
-              background: 'var(--muted)', border: '1px dashed var(--border)',
-              borderRadius: 8, padding: 16, minHeight: 80,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <span style={{ fontSize: 12, color: 'var(--muted-foreground)', fontStyle: 'italic' }}>
-                Student essay response area
-              </span>
-            </div>
-            {question.rubric && question.rubric.length > 0 && (
-              <div style={{
-                background: 'var(--card)', border: '1px solid var(--border)',
-                borderRadius: 8, padding: 14,
-              }}>
-                <Eyebrow>Rubric</Eyebrow>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {question.rubric.map((r, i) => (
-                    <div key={i} style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      padding: '6px 0', borderBottom: '1px solid var(--border)',
-                    }}>
-                      <span style={{ fontSize: 12, color: 'var(--foreground)' }}>{r.criterion}</span>
-                      <span style={{
-                        fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)',
-                        flexShrink: 0, marginLeft: 12,
-                      }}>
-                        {r.points} pt{r.points !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          /* Stacked MCQ layout */
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{
-              background: 'var(--card)', border: '1px solid var(--border)',
-              borderRadius: 8, padding: 14,
-            }}>
-              <Eyebrow>Question stem</Eyebrow>
-              <p style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--foreground)', margin: 0 }}>
-                {stemText}
-              </p>
-            </div>
-            {question.options?.map(opt => (
-              <OptionPreview key={opt.key} option={opt} />
-            ))}
-          </div>
-        )}
+        <QuestionPreview />
       </div>
 
       {/* Right: meta sidebar */}

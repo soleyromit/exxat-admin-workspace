@@ -164,6 +164,23 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     tags: ['spectrum', 'ordering', 'gram-coverage'], usage: 9, pbis: 0.29, pbisDir: 'down',
     creator: 'persona-admin', lastEditedBy: 'persona-admin',
     usedInSections: ['Final 2023'], favorited: true,
+    layout: 'stacked' as const,
+    stemText: 'Arrange the following antibiotics in order of increasing spectrum of antibacterial coverage (narrowest → broadest):',
+    // For Ordering: options represent items in CORRECT sequence order. key = position label.
+    options: [
+      { key: '1', text: 'Vancomycin', isCorrect: true, rationale: 'Narrowest — gram-positive only (including MRSA). No gram-negative activity. Used for resistant gram-positive organisms when beta-lactams fail.' },
+      { key: '2', text: 'Amoxicillin', isCorrect: true, rationale: 'Narrow but covers gram-positive cocci + some gram-negative rods (H. influenzae, E. coli sensitive strains). Common confusion: broader than Vancomycin on gram-negatives.' },
+      { key: '3', text: 'Azithromycin', isCorrect: true, rationale: 'Broader gram-positive + strong atypical coverage (Mycoplasma, Legionella, Chlamydia). Also covers some gram-negatives. Common distractor: students place this before Amoxicillin.' },
+      { key: '4', text: 'Ciprofloxacin', isCorrect: true, rationale: 'Broadest — strong gram-negative including Pseudomonas, moderate gram-positive, intracellular pathogens. Fluoroquinolone with the widest clinical spectrum of the four.' },
+    ],
+    correctness: 68,
+    avgTimeSeconds: 95,
+    totalAttempts: 185,
+    versionHistory: [
+      { version: 2, modifiedBy: 'Dr. James Wu', date: '2026-03-10', changes: ['Added individual rationale for each position to help students understand the reasoning'], usedInAssessments: ['Final 2023', 'Midterm 2024'] },
+      { version: 1, modifiedBy: 'Dr. James Wu', date: '2025-09-01', isOriginal: true, changes: [], usedInAssessments: ['Final 2022'] },
+    ],
+    collaborators: [{ personaId: 'p1', role: 'owner' as const }, { personaId: 'p2', role: 'edit' as const }],
   },
   {
     id: 'q-004', code: 'PH-ANA-001', version: 4, age: '14 months',
@@ -173,6 +190,24 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     tags: ['NSAID', 'GI-protection', 'PPI'], usage: 22, pbis: 0.48, pbisDir: 'flat',
     creator: 'persona-thompson', lastEditedBy: 'persona-patel',
     usedInSections: ['Midterm 2024', 'Final 2023', 'Quiz 3'], pinned: true,
+    layout: 'stacked' as const,
+    stemText: 'A 55-year-old patient on chronic NSAID therapy for osteoarthritis presents with epigastric pain and nausea. Upper endoscopy shows superficial gastric erosions. Which concomitant medication is most appropriate to add?',
+    options: [
+      { key: 'A', text: 'Omeprazole (PPI)', isCorrect: true, rationaleAuthor: 'Dr. R. Thompson', rationale: 'PPIs are first-line for NSAID-induced gastropathy. They suppress gastric acid by irreversibly inhibiting H⁺/K⁺-ATPase, significantly reducing erosion risk and promoting mucosal healing.' },
+      { key: 'B', text: 'Sucralfate', isCorrect: false, rationale: 'Sucralfate provides mucosal coating but does not reduce acid secretion. It is less effective than PPIs for NSAID-associated mucosal injury and lacks the prophylactic evidence base.' },
+      { key: 'C', text: 'Antacids (aluminum hydroxide)', isCorrect: false, rationale: 'Antacids neutralize acid transiently but do not heal erosions or prevent recurrence. Insufficient for active NSAID-induced disease — only appropriate for symptomatic relief.' },
+      { key: 'D', text: 'Misoprostol', isCorrect: false, rationale: 'Prostaglandin analogue with proven mucosal protection, but poor tolerability (diarrhea, cramping) makes it second-line. PPIs are preferred unless the patient is pregnant (misoprostol is used in obstetrics).' },
+    ],
+    correctness: 82,
+    avgTimeSeconds: 58,
+    totalAttempts: 412,
+    versionHistory: [
+      { version: 4, modifiedBy: 'Dr. M. Patel', date: '2026-01-15', changes: ['Added distractor rationales for B, C, D; expanded clinical context in stem'], usedInAssessments: ['Midterm 2024', 'Final 2023'] },
+      { version: 3, modifiedBy: 'Dr. M. Patel', date: '2025-06-01', changes: ['Revised stem for clarity'], usedInAssessments: ['Midterm 2023'] },
+      { version: 2, modifiedBy: 'Dr. R. Thompson', date: '2024-09-01', changes: ['Added option D (Misoprostol)'], usedInAssessments: [] },
+      { version: 1, modifiedBy: 'Dr. R. Thompson', date: '2024-01-01', isOriginal: true, changes: [], usedInAssessments: [] },
+    ],
+    collaborators: [{ personaId: 'p2', role: 'owner' as const }, { personaId: 'p3', role: 'edit' as const }],
   },
   {
     id: 'q-005', code: 'PH-ANA-002', version: 1, age: '3 weeks',
@@ -181,6 +216,22 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     folder: 'phar101-analgesics', folderPath: 'PHAR101 QB / Analgesics & Pain Management',
     tags: ['opioids', 'receptor', 'matching'], usage: 0, pbis: null, pbisDir: null,
     creator: 'persona-admin', lastEditedBy: 'persona-admin', usedInSections: [],
+    layout: 'stacked' as const,
+    stemText: 'Match each opioid analgesic (left) to its primary receptor subtype and principal clinical indication (right):',
+    // For Matching: options = left-side prompts. key = prompt label, text = correct right-side match, rationale = explanation.
+    options: [
+      { key: 'A', text: 'Morphine → μ (mu) agonist → Acute severe pain (post-surgical, cancer)', isCorrect: true, rationale: 'Morphine is the prototypical full μ-agonist. Strong analgesic for acute severe pain. Ceiling effect absent — dose titration limited only by side effects (respiratory depression, constipation).' },
+      { key: 'B', text: 'Buprenorphine → μ partial agonist / κ antagonist → Opioid use disorder, chronic pain', isCorrect: true, rationale: 'Partial agonist with high μ-receptor affinity — displaces full agonists. Used for OUD (Suboxone = buprenorphine + naloxone). Ceiling on respiratory depression makes it safer in overdose.' },
+      { key: 'C', text: 'Tramadol → μ agonist + SNRI activity → Moderate chronic pain', isCorrect: true, rationale: 'Dual mechanism: weak μ-agonism + inhibits serotonin/norepinephrine reuptake. Lower abuse potential than morphine. Risk: serotonin syndrome when combined with SSRIs/MAOIs.' },
+      { key: 'D', text: 'Nalbuphine → κ agonist / μ antagonist → Moderate pain, pruritus reversal', isCorrect: true, rationale: 'Mixed agonist-antagonist. κ activation provides analgesia; μ-blockade reverses μ-mediated respiratory depression and pruritus (e.g., epidural opioid side effects) without completely reversing analgesia.' },
+    ],
+    correctness: null,
+    avgTimeSeconds: null,
+    totalAttempts: 0,
+    versionHistory: [
+      { version: 1, modifiedBy: 'Dr. Admin', date: '2026-05-01', isOriginal: true, changes: [], usedInAssessments: [] },
+    ],
+    collaborators: [{ personaId: 'p1', role: 'owner' as const }],
   },
   {
     id: 'q-006', code: 'PH-CV-001', version: 2, age: '6 months',
