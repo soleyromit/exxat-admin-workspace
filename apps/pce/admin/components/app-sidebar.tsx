@@ -66,7 +66,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
-} from "@exxatdesignux/ui"
+} from "@/components/ui/sheet"
 
 // ─── Active-link helper ───────────────────────────────────────────────────────
 

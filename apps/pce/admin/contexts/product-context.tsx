@@ -1,3 +1,4 @@
+"use client"
 // contexts/product-context.tsx
 export {
   ProductProvider,

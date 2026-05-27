@@ -2,14 +2,9 @@
 
 import * as React from "react"
 import { useTheme } from "next-themes"
-import {
-  FieldGroup,
-  SelectionTileGrid,
-  useAppTheme,
-  type Brand,
-  type TextSizePreference,
-} from "@exxatdesignux/ui"
-import type { SelectionTileOption } from "@exxatdesignux/ui"
+import { FieldGroup } from "@/components/ui/field"
+import { SelectionTileGrid, type SelectionTileOption } from "@/components/ui/selection-tile-grid"
+import { useAppTheme, type Brand, type TextSizePreference } from "@/hooks/use-app-theme"
 import { SettingsFormRow } from "@/components/settings-form-row"
 import { cn } from "@/lib/utils"
 
