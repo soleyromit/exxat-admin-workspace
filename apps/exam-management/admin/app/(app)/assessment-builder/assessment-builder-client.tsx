@@ -856,20 +856,26 @@ export default function AssessmentBuilderClient() {
                       )}
                     </button>
                     {/* Faculty row */}
-                    {faculty ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0 12px 3px 22px' }}>
-                        <div style={{
-                          width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
-                          background: avatarColor, display: 'flex', alignItems: 'center',
-                          justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#fff',
-                        }}>
-                          {initials}
+                    {faculty ? (() => {
+                      const mockDueDate = idx === 1 ? 'Due May 20' : null
+                      return (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0 12px 3px 22px' }}>
+                          <div style={{
+                            width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                            background: avatarColor, display: 'flex', alignItems: 'center',
+                            justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#fff',
+                          }}>
+                            {initials}
+                          </div>
+                          <span className="text-xs text-muted-foreground" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 11 }}>
+                            {faculty.fullName.split(' ').slice(-1)[0]}
+                          </span>
+                          {mockDueDate && (
+                            <span style={{ fontSize: 11, color: 'var(--chart-4)', fontWeight: 600 }}>{mockDueDate}</span>
+                          )}
                         </div>
-                        <span className="text-xs text-muted-foreground" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 11 }}>
-                          {faculty.fullName.split(' ').slice(-1)[0]}
-                        </span>
-                      </div>
-                    ) : (
+                      )
+                    })() : (
                       <button
                         type="button"
                         onClick={() => setAssignSheetSectionId(sec.id)}
@@ -919,18 +925,32 @@ export default function AssessmentBuilderClient() {
                     <span className="text-sm font-semibold text-foreground truncate flex-1">
                       §{(activeAsmt.sections.findIndex(s => s.id === activeSection.id) + 1)} — {activeSection.title}
                     </span>
-                    {/* Faculty avatars */}
-                    {activeSection.facultyId && (() => {
-                      const faculty = facultyListRows.find(f => f.id === activeSection.facultyId)
-                      if (!faculty) return null
-                      const initials = faculty.fullName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
+                    {/* Faculty avatars — multi-contributor display */}
+                    {activeSectionQuestions.length > 0 && (() => {
+                      const HEADER_AVATARS = [
+                        { initials: 'SM', color: '#7c6bbf', name: 'Dr. S. Mehra' },
+                        { initials: 'RK', color: '#3b7abf', name: 'Dr. R. Kim' },
+                        { initials: 'AP', color: '#bf5b3b', name: 'Dr. A. Patel' },
+                      ]
                       return (
-                        <div title={faculty.fullName} style={{
-                          width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-                          background: 'var(--brand-color)', display: 'flex', alignItems: 'center',
-                          justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#fff',
-                        }}>
-                          {initials}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            {HEADER_AVATARS.map((av, i) => (
+                              <div
+                                key={av.initials}
+                                title={av.name}
+                                style={{
+                                  width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+                                  background: av.color, display: 'flex', alignItems: 'center',
+                                  justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#fff',
+                                  border: '2px solid var(--background)',
+                                  marginRight: i < HEADER_AVATARS.length - 1 ? -6 : 0,
+                                }}
+                              >
+                                {av.initials}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )
                     })()}
@@ -1058,14 +1078,14 @@ export default function AssessmentBuilderClient() {
         >
           <div style={{
             background: 'var(--background)', border: '1px solid var(--border)', borderRadius: 12,
-            width: 640, maxHeight: '70vh', display: 'flex', flexDirection: 'column',
+            width: 540, maxHeight: '70vh', display: 'flex', flexDirection: 'column',
             boxShadow: '0 8px 32px rgba(0,0,0,0.12)', overflow: 'hidden',
           }}>
             {/* Header */}
             <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ fontSize: 14, fontWeight: 600, flex: 1, color: 'var(--foreground)' }}>Add from Question Bank</span>
               {activeSection && (
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--brand-color)', background: 'color-mix(in srgb, var(--brand-color) 10%, white)', border: '1px solid color-mix(in srgb, var(--brand-color) 25%, white)', padding: '2px 8px', borderRadius: 20 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--brand-color)', background: 'color-mix(in srgb, var(--brand-color) 10%, var(--background))', border: '1px solid color-mix(in srgb, var(--brand-color) 25%, var(--background))', padding: '2px 8px', borderRadius: 20 }}>
                   §{activeAsmt ? activeAsmt.sections.findIndex(s => s.id === activeSection.id) + 1 : ''} {activeSection.title}
                 </span>
               )}
@@ -1073,34 +1093,14 @@ export default function AssessmentBuilderClient() {
                 <i className="fa-light fa-xmark" aria-hidden="true" />
               </Button>
             </div>
-            {/* Picker content */}
-            <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-              {activeAsmt && <ABQuestionPicker
-                selectedIds={selectedIds}
-                onToggle={toggleQuestion}
-                activeAsmt={activeAsmt}
-                onDurationChange={(min) => setActiveAsmt(prev => prev ? { ...prev, durationMinutes: min } : prev)}
-                userCreated={userCreated}
-                onCreateQuestion={createQuestion}
-                onCreateFromDraft={createQuestionFromDraft}
-                authorPersonaId={currentPersona.id}
-                onOpenAi={() => setAiOpen(true)}
-                isCopyMode={urlMode === 'copy'}
-                onRenameAsmt={(title) => setActiveAsmt(prev => prev ? { ...prev, title } : prev)}
-                onAssignToSection={assignQuestionToSection}
-                activeSectionId={activeSectionId}
-              />}
-            </div>
-            {/* Footer */}
-            <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, background: 'var(--muted)' }}>
-              <span style={{ fontSize: 13, color: 'var(--muted-foreground)', flex: 1 }}>
-                {selectedIds.size > 0 ? `${selectedIds.size} selected` : 'Select questions to add'}
-              </span>
-              <Button variant="ghost" size="sm" onClick={() => setPickerOpen(false)}>Cancel</Button>
-              <Button size="sm" onClick={() => setPickerOpen(false)} className="gap-1.5" disabled={selectedIds.size === 0}>
-                Add {selectedIds.size > 0 ? selectedIds.size : ''} to {activeSection ? `§${activeAsmt ? activeAsmt.sections.findIndex(s => s.id === activeSection.id) + 1 : ''}` : 'assessment'}
-              </Button>
-            </div>
+            {/* Command-palette picker */}
+            <QBCommandPicker
+              selectedIds={selectedIds}
+              onToggle={toggleQuestion}
+              activeSection={activeSection}
+              activeAsmt={activeAsmt}
+              onClose={() => setPickerOpen(false)}
+            />
           </div>
         </div>
       )}
@@ -4333,6 +4333,183 @@ function PreExamBlock({
         </div>
       )}
     </div>
+  )
+}
+
+// ── QB Command-Palette Picker ────────────────────────────────────────────────
+
+function QBCommandPicker({ selectedIds, onToggle, activeSection, activeAsmt, onClose }: {
+  selectedIds: Set<string>
+  onToggle: (id: string) => void
+  activeSection: AssessmentSection | null
+  activeAsmt: AssessmentDraft | null
+  onClose: () => void
+}) {
+  const [searchQuery, setSearchQuery] = useState('RAAS inhibitors, medium difficulty, MCQ')
+  const [activeFilters, setActiveFilters] = useState<string[]>(['MCQ', 'Medium'])
+
+  const filteredQuestions = useMemo(() => {
+    let qs = MOCK_QB_QUESTIONS
+    const q = searchQuery.toLowerCase().trim()
+    if (q) {
+      qs = qs.filter(item =>
+        item.title.toLowerCase().includes(q) ||
+        item.folder.toLowerCase().includes(q)
+      )
+    }
+    for (const f of activeFilters) {
+      if (f === 'MCQ') qs = qs.filter(item => item.type === 'MCQ')
+      else if (f === 'Medium') qs = qs.filter(item => item.difficulty === 'Medium')
+      else if (f === 'Easy') qs = qs.filter(item => item.difficulty === 'Easy')
+      else if (f === 'Hard') qs = qs.filter(item => item.difficulty === 'Hard')
+    }
+    return qs
+  }, [searchQuery, activeFilters])
+
+  const displayQuestions = filteredQuestions.slice(0, 8)
+
+  const removeFilter = (f: string) => setActiveFilters(prev => prev.filter(x => x !== f))
+
+  const sectionLabel = activeSection && activeAsmt
+    ? `§${activeAsmt.sections.findIndex(s => s.id === activeSection.id) + 1}`
+    : 'assessment'
+
+  return (
+    <>
+      {/* Search area */}
+      <div style={{ padding: '12px 16px 8px' }}>
+        <div style={{
+          border: '1.5px solid var(--border)', borderRadius: 8,
+          display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px',
+        }}>
+          {/* Sparkle icon */}
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0, color: 'var(--muted-foreground)' }}>
+            <path d="M8 2L9.5 6.5L14 8L9.5 9.5L8 14L6.5 9.5L2 8L6.5 6.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+          </svg>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            aria-label="Search questions"
+            style={{
+              flex: 1, border: 'none', outline: 'none', background: 'transparent',
+              fontSize: 13, color: 'var(--foreground)', fontFamily: 'inherit',
+            }}
+          />
+          <div style={{
+            fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)',
+            background: 'var(--muted)', borderRadius: 4, padding: '2px 6px', flexShrink: 0,
+          }}>
+            ↵
+          </div>
+        </div>
+        {/* Filter tag row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>Filters:</span>
+          {activeFilters.map(f => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => removeFilter(f)}
+              aria-label={`Remove filter ${f}`}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                fontSize: 12, fontWeight: 500, color: 'var(--foreground)',
+                background: 'var(--muted)', border: '1px solid var(--border)',
+                borderRadius: 20, padding: '2px 8px', cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              {f}
+              <span aria-hidden="true" style={{ fontSize: 11 }}>×</span>
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => {/* no-op for now */}}
+            style={{
+              fontSize: 12, color: 'var(--muted-foreground)',
+              background: 'none', border: '1px dashed var(--border)',
+              borderRadius: 20, padding: '2px 8px', cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            + filter
+          </button>
+        </div>
+      </div>
+
+      {/* Result count row */}
+      <div style={{
+        padding: '4px 16px 6px', borderBottom: '1px solid var(--border)',
+        fontSize: 12, color: 'var(--muted-foreground)',
+      }}>
+        {displayQuestions.length} question{displayQuestions.length !== 1 ? 's' : ''} · sorted by relevance + PBI
+      </div>
+
+      {/* Results list */}
+      <div style={{ overflowY: 'auto', maxHeight: 240, borderTop: '1px solid var(--border)' }}>
+        {displayQuestions.map(q => {
+          const isSelected = selectedIds.has(q.id)
+          const pbiLow = q.pbis !== null && q.pbis < 0.2
+          const contentArea = q.folder.split('/').slice(1, 2).join('')
+          return (
+            <div
+              key={q.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => onToggle(q.id)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onToggle(q.id) }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '9px 16px',
+                borderBottom: '1px solid var(--border)', cursor: 'pointer',
+                background: isSelected ? 'oklch(0.975 0.012 342)' : 'transparent',
+              }}
+            >
+              {/* Checkbox */}
+              <div style={{
+                width: 15, height: 15, borderRadius: 3, flexShrink: 0,
+                border: isSelected ? 'none' : '1.5px solid var(--border)',
+                background: isSelected ? 'var(--brand-color)' : 'transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {isSelected && (
+                  <svg width="8" height="8" viewBox="0 0 10 10" fill="white" aria-hidden="true">
+                    <path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
+              {/* Stem */}
+              <span style={{ fontSize: 13, flex: 1, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', color: 'var(--foreground)' }}>
+                {q.title}
+              </span>
+              {/* Content area */}
+              {contentArea && (
+                <span className="text-xs" style={{ color: 'var(--muted-foreground)', flexShrink: 0 }}>
+                  {contentArea.charAt(0).toUpperCase() + contentArea.slice(1)}
+                </span>
+              )}
+              {/* PBI */}
+              {q.pbis !== null && (
+                <span className="text-xs font-semibold" style={{ color: pbiLow ? 'var(--chart-4)' : 'var(--chart-2)', flexShrink: 0 }}>
+                  {pbiLow && <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ marginRight: 2 }} />}
+                  {q.pbis.toFixed(2)}
+                </span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, background: 'var(--muted)' }}>
+        <span style={{ fontSize: 13, color: 'var(--muted-foreground)', flex: 1 }}>
+          {selectedIds.size > 0 ? `${selectedIds.size} selected` : 'Select questions to add'}
+        </span>
+        <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+        <Button size="sm" onClick={onClose} className="gap-1.5" disabled={selectedIds.size === 0}>
+          Add {selectedIds.size > 0 ? selectedIds.size : ''} to {sectionLabel}
+        </Button>
+      </div>
+    </>
   )
 }
 
