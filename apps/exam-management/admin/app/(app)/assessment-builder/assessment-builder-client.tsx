@@ -13,6 +13,7 @@ import {
   useSidebar,
 } from '@exxat/ds/packages/ui/src'
 import { mockCourses, mockCourseOfferings, mockAssessments, MOCK_QB_QUESTIONS, MOCK_QB_FOLDERS } from '@/lib/qb-mock-data'
+import { PERSONAS } from '@/lib/personas'
 import type { AssessmentDraft, AssessmentQuestion, AssessmentSection, Question, QType, QDiff, AssessmentReviewRequest, AssessmentStatus, FolderNode } from '@/lib/qb-types'
 import { defaultAssessmentSettings } from '@/lib/qb-types'
 import { courseObjectives, facultyListRows, type CourseObjective } from '@/lib/faculty-mock-data'
@@ -87,6 +88,22 @@ function formatMin(min: number): string {
   const h = Math.floor(rounded / 60)
   const m = rounded % 60
   return m > 0 ? `${h}h ${m}m` : `${h}h`
+}
+
+const PERSONA_BY_ID = Object.fromEntries(PERSONAS.map(p => [p.id, p]))
+
+const TYPE_ICONS_Q: Record<string, string> = {
+  'MCQ':        'fa-light fa-circle-dot',
+  'Fill blank': 'fa-light fa-i-cursor',
+  'Hotspot':    'fa-light fa-crosshairs',
+  'Ordering':   'fa-light fa-list-ol',
+  'Matching':   'fa-light fa-arrows-left-right',
+}
+
+const DIFF_COLORS: Record<string, string> = {
+  'Easy':   'var(--qb-diff-bar-easy)',
+  'Medium': 'var(--qb-diff-bar-medium)',
+  'Hard':   'var(--qb-diff-bar-hard)',
 }
 
 export default function AssessmentBuilderClient() {
@@ -1220,20 +1237,22 @@ export default function AssessmentBuilderClient() {
                         const pbiLow = q.pbis !== null && q.pbis < 0.2
                         const isPinned = pinnedQuestionIds.has(q.id)
                         const totalQ = activeSectionQuestions.length
+                        const creatorPersona = q.creator ? PERSONA_BY_ID[q.creator] : null
+                        const editorPersona = (q.lastEditedBy && q.lastEditedBy !== q.creator) ? PERSONA_BY_ID[q.lastEditedBy] : null
                         return (
                           <div
                             key={q.id}
                             style={{
-                              display: 'flex', alignItems: 'center', gap: 6,
-                              padding: '5px 8px 5px 14px', borderBottom: '1px solid color-mix(in srgb, var(--border) 50%, transparent)',
+                              display: 'flex', alignItems: 'flex-start', gap: 6,
+                              padding: '6px 8px 6px 14px', borderBottom: '1px solid color-mix(in srgb, var(--border) 50%, transparent)',
                               background: lastMovedId === q.id
                                 ? 'color-mix(in srgb, var(--brand-color) 12%, var(--background))'
                                 : isPinned ? 'color-mix(in srgb, var(--chart-2) 4%, var(--background))' : undefined,
                               transition: 'background 0.6s ease',
                             }}
                           >
-                            {/* Reorder controls */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 0, flexShrink: 0 }}>
+                            {/* Reorder controls — centered */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 0, flexShrink: 0, paddingTop: 3 }}>
                               <button
                                 type="button"
                                 aria-label={`Move ${q.title} up`}
@@ -1250,31 +1269,82 @@ export default function AssessmentBuilderClient() {
                               ><i className="fa-solid fa-angle-down" aria-hidden="true" /></button>
                             </div>
                             {/* Row number */}
-                            <span className="text-xs text-muted-foreground" style={{ width: 16, textAlign: 'right', flexShrink: 0 }}>{idx + 1}</span>
-                            {/* Title — clickable for detail */}
-                            <span
-                              role="button"
-                              tabIndex={0}
-                              style={{ fontSize: 13, flex: 1, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', lineHeight: 1.4, color: 'var(--foreground)', cursor: 'pointer' }}
-                              onClick={() => setDetailQuestionId(prev => prev === q.id ? null : q.id)}
-                              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setDetailQuestionId(prev => prev === q.id ? null : q.id) }}
-                            >
-                              {q.title}
-                            </span>
-                            {/* PBI */}
-                            {q.pbis !== null && (
-                              <span className="text-xs font-semibold" style={{ color: pbiLow ? 'var(--qb-pbi-low-color, var(--chart-4))' : 'var(--chart-2)', flexShrink: 0 }}>
-                                {pbiLow && <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ marginRight: 2 }} />}
-                                {q.pbis.toFixed(2)}
+                            <span className="text-xs text-muted-foreground" style={{ width: 16, textAlign: 'right', flexShrink: 0, paddingTop: 3 }}>{idx + 1}</span>
+                            {/* Content column — title + stats */}
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
+                              {/* Title row */}
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                style={{ fontSize: 13, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', lineHeight: 1.4, color: 'var(--foreground)', cursor: 'pointer', display: 'block' }}
+                                onClick={() => setDetailQuestionId(prev => prev === q.id ? null : q.id)}
+                                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setDetailQuestionId(prev => prev === q.id ? null : q.id) }}
+                              >
+                                {q.title}
                               </span>
-                            )}
+                              {/* Stats row */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'nowrap' }}>
+                                {/* Type */}
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0 }}>
+                                  {TYPE_ICONS_Q[q.type] && <i className={TYPE_ICONS_Q[q.type]} aria-hidden="true" style={{ fontSize: 10 }} />}
+                                  {q.type}
+                                </span>
+                                <span aria-hidden="true" style={{ color: 'var(--border)', fontSize: 10, flexShrink: 0 }}>·</span>
+                                {/* Difficulty */}
+                                <span style={{ fontSize: 11, color: DIFF_COLORS[q.difficulty] ?? 'var(--muted-foreground)', fontWeight: 600, flexShrink: 0 }}>{q.difficulty}</span>
+                                <span aria-hidden="true" style={{ color: 'var(--border)', fontSize: 10, flexShrink: 0 }}>·</span>
+                                {/* Bloom's */}
+                                <span style={{ fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.blooms}</span>
+                                {/* PBI */}
+                                {q.pbis !== null && (
+                                  <>
+                                    <span aria-hidden="true" style={{ color: 'var(--border)', fontSize: 10, flexShrink: 0 }}>·</span>
+                                    <span style={{ fontSize: 11, fontWeight: 600, color: pbiLow ? 'var(--qb-pbi-low-color, var(--chart-4))' : 'var(--chart-2)', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 2 }}>
+                                      {pbiLow && <i className="fa-light fa-triangle-exclamation" aria-hidden="true" />}
+                                      {q.pbis.toFixed(2)}
+                                    </span>
+                                  </>
+                                )}
+                                <div style={{ flex: 1 }} />
+                                {/* Collaborator avatars */}
+                                <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                                  {creatorPersona && (
+                                    <div
+                                      title={`Created by ${creatorPersona.name}`}
+                                      style={{
+                                        width: 18, height: 18, borderRadius: '50%',
+                                        background: creatorPersona.color,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontSize: 9, fontWeight: 700, color: '#fff', flexShrink: 0,
+                                      }}
+                                    >
+                                      {creatorPersona.initials}
+                                    </div>
+                                  )}
+                                  {editorPersona && (
+                                    <div
+                                      title={`Last edited by ${editorPersona.name}`}
+                                      style={{
+                                        width: 18, height: 18, borderRadius: '50%',
+                                        background: editorPersona.color,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontSize: 9, fontWeight: 700, color: '#fff', flexShrink: 0,
+                                        marginLeft: -5, border: '1.5px solid var(--background)',
+                                      }}
+                                    >
+                                      {editorPersona.initials}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
                             {/* Pin button */}
                             <button
                               type="button"
                               aria-label={isPinned ? `Unpin ${q.title}` : `Pin ${q.title} — won't be randomized`}
                               title={isPinned ? 'Pinned — stays fixed during randomization' : 'Pin to fix position during randomization'}
                               onClick={e => { e.stopPropagation(); togglePinQuestion(q.id) }}
-                              style={{ background: 'none', border: 'none', padding: '3px 4px', cursor: 'pointer', color: isPinned ? 'var(--brand-color)' : 'var(--muted-foreground)', fontSize: 11, flexShrink: 0, opacity: isPinned ? 1 : 0.4 }}
+                              style={{ background: 'none', border: 'none', padding: '3px 4px', cursor: 'pointer', color: isPinned ? 'var(--brand-color)' : 'var(--muted-foreground)', fontSize: 11, flexShrink: 0, opacity: isPinned ? 1 : 0.4, marginTop: 1 }}
                             >
                               <i className={isPinned ? 'fa-solid fa-thumbtack' : 'fa-light fa-thumbtack'} aria-hidden="true" />
                             </button>
