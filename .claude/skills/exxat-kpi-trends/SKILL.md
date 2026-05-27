@@ -1,8 +1,8 @@
 ---
 name: exxat-kpi-trends
-description: Use when adding or reviewing KeyMetrics trend arrows, polarity, and ChartCard miniMetrics
+description: Exxat DS — KPI trend arrows and polarity. Use when adding or reviewing KeyMetrics, lib/mock/*-kpi.ts helpers, or ChartCard miniMetrics / kpi-chart trends.
+user-invocable: true
 ---
-
 # Exxat DS — KPI trend arrows and polarity
 
 Use when adding or reviewing **`KeyMetrics`**, **`lib/mock/*-kpi.ts`** helpers, or **`ChartCard`** **`miniMetrics`** / **`kpi-chart`** trends.

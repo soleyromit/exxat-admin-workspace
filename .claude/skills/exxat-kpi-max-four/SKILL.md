@@ -1,8 +1,8 @@
 ---
 name: exxat-kpi-max-four
-description: Use when building KeyMetrics on ListPageTemplate or Data tab key-metrics cards
+description: Exxat DS — KPI strip (max four). Use when building KeyMetrics on ListPageTemplate or Data tab key-metrics cards. Enforces four-tile maximum and dashboard persistence rules.
+user-invocable: true
 ---
-
 # Exxat DS — KPI strip (max four)
 
 Use when building **`KeyMetrics`** on **`ListPageTemplate`** or **Data tab** key-metrics cards.
