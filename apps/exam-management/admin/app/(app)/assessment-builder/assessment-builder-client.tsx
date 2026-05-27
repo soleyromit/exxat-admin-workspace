@@ -54,6 +54,23 @@ const DIFF_MULT: Record<QDiff, number> = {
   Hard:   1.5,
 }
 
+/** Parse section names from a canvas prompt. Handles numbered lists and "sections:" notation. */
+function parseSectionsFromPrompt(prompt: string): string[] {
+  if (!prompt.trim()) return []
+  // Match numbered items: "1. Cardiovascular Pharm" or "§1 CV Pharm"
+  const numbered = [...prompt.matchAll(/(?:^|\n)\s*(?:\d+[\.\)]|§\d+)\s+([^\n,·—]{3,50})/g)]
+    .map(m => m[1].trim())
+    .filter(Boolean)
+  if (numbered.length >= 2) return numbered.slice(0, 8)
+  // Match "sections:" keyword followed by comma-separated list
+  const after = prompt.match(/sections?:?\s+([^\n]{8,})/i)
+  if (after) {
+    const parts = after[1].split(/,\s*/).map(s => s.trim()).filter(s => s.length >= 3)
+    if (parts.length >= 2) return parts.slice(0, 8)
+  }
+  return []
+}
+
 /** Recursively collect a folder ID and all its descendants. */
 function getAllSubfolderIds(folderId: string): string[] {
   const result: string[] = [folderId]
@@ -100,28 +117,69 @@ export default function AssessmentBuilderClient() {
     mockCourseOfferings.find(o => o.courseId === initialCourseId)?.id ?? ''
   )
   const [activeAsmt, setActiveAsmt] = useState<AssessmentDraft | null>(null)
+  // 'idle' → 'building' (AI animation) → 'ready' (full builder)
+  const [builderState, setBuilderState] = useState<'idle' | 'building' | 'ready'>('idle')
 
   // When the draft store hydrates and we have a draftId in the URL, load
   // the matching draft as activeAsmt. Once-only (idempotent on draftId).
+  // Also reads the prompt from sessionStorage to scaffold sections + questions.
   useEffect(() => {
     if (!urlDraftId || !draftsHydrated) return
     const draft = localDrafts.find(d => d.id === urlDraftId)
     if (!draft) return
     if (activeAsmt?.id === draft.id) return
-    setActiveAsmt({
+
+    // Read canvas prompt from sessionStorage
+    let storedPrompt = ''
+    try { storedPrompt = sessionStorage.getItem(`asmt-creation-prompt-${draft.id}`) ?? '' } catch {}
+
+    // Parse sections from prompt ("1. Section Name", "§1 Name", etc.)
+    const parsedSections = parseSectionsFromPrompt(storedPrompt)
+    const courseCode = (mockCourses.find(c => c.id === draft.courseId)?.code ?? '').toLowerCase()
+
+    const sections: AssessmentSection[] = parsedSections.map((title, i) => {
+      const sectionId = `sec-${draft.id}-${i}`
+      // Pull up to 20 relevant QB questions for this section
+      const keyword = title.toLowerCase().split(/\s+/)[0]
+      const sectionQIds = MOCK_QB_QUESTIONS
+        .filter(q => q.folder.toLowerCase().includes(keyword) || q.folder.startsWith(courseCode))
+        .slice(i * 20, i * 20 + 20)
+        .map(q => q.id)
+      return { id: sectionId, title, questionIds: sectionQIds }
+    })
+
+    const allQIds = sections.flatMap(s => s.questionIds)
+    const questions: AssessmentQuestion[] = allQIds.map((qId, i) => ({
+      questionId: qId, order: i + 1, points: 4, bonus: false,
+    }))
+
+    const newAsmt: AssessmentDraft = {
       id: draft.id,
       title: draft.title,
       courseId: draft.courseId,
       offeringId: draft.offeringId,
-      questions: [],
+      questions,
       durationMinutes: draft.durationMinutes,
-      sections: [],
+      sections,
       settings: defaultAssessmentSettings('Exam'),
       healthFlags: [],
-    })
+    }
+
+    if (parsedSections.length > 0) {
+      // Show brief AI-building animation before revealing the builder
+      setBuilderState('building')
+      setTimeout(() => {
+        setActiveAsmt(newAsmt)
+        setActiveSectionId(sections[0]?.id ?? null)
+        setBuilderState('ready')
+      }, 2200)
+    } else {
+      setActiveAsmt(newAsmt)
+      setBuilderState('ready')
+    }
     setCourseId(draft.courseId)
     setOfferingId(draft.offeringId)
-  }, [urlDraftId, draftsHydrated, localDrafts, activeAsmt?.id])
+  }, [urlDraftId, draftsHydrated, localDrafts, activeAsmt?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load source assessment questions when arriving via "Copy from previous"
   useEffect(() => {
@@ -509,6 +567,67 @@ export default function AssessmentBuilderClient() {
   function sectionFillPct(sec: AssessmentSection): number {
     const target = 20
     return Math.min(100, Math.round((sec.questionIds.length / target) * 100))
+  }
+
+  // ── Scene 2: AI building animation ─────────────────────────────────────────
+  if (builderState === 'building') {
+    const buildingTitle = localDrafts.find(d => d.id === urlDraftId)?.title ?? 'New Assessment'
+    const previewSections = parseSectionsFromPrompt(
+      (() => { try { return sessionStorage.getItem(`asmt-creation-prompt-${urlDraftId}`) ?? '' } catch { return '' } })()
+    )
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+        <h1 className="sr-only">Building assessment</h1>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', padding: '0 16px', height: 52, borderBottom: '1px solid var(--border)', background: 'var(--card)', flexShrink: 0, gap: 8 }}>
+          <span className="text-xs text-muted-foreground">← {currentCourse?.code ?? 'Back'}</span>
+          <span style={{ color: 'var(--border)', fontSize: 14 }}>/</span>
+          <span className="text-sm font-semibold text-foreground">{buildingTitle}</span>
+          <div style={{ marginLeft: 'auto' }}>
+            <Badge variant="secondary" style={{ fontSize: 11 }}>Building…</Badge>
+          </div>
+        </div>
+        {/* Progress bar */}
+        <div style={{ height: 3, background: 'var(--muted)' }}>
+          <div style={{ height: '100%', background: 'var(--brand-color)', width: '60%', transition: 'width 2s ease' }} />
+        </div>
+        {/* Body */}
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+          {/* Sections sidebar */}
+          <div style={{ width: 196, borderRight: '1px solid var(--border)', background: 'var(--sidebar)', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '10px 12px 6px' }}>
+              <span className="text-xs font-bold uppercase tracking-[0.07em] text-muted-foreground">Sections</span>
+            </div>
+            {previewSections.map((name, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 12px', borderLeft: `3px solid ${i === 0 ? 'var(--brand-color)' : 'transparent'}`, background: i === 0 ? 'var(--background)' : 'none' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: i === 0 ? 'var(--brand-color)' : 'var(--border)', flexShrink: 0 }} />
+                <span className="text-xs font-medium text-foreground truncate flex-1">§{i + 1} {name}</span>
+                <span className="text-xs text-muted-foreground">0/20</span>
+              </div>
+            ))}
+          </div>
+          {/* Building center */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ height: 40, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', padding: '0 14px', gap: 8, background: 'color-mix(in srgb, var(--brand-color) 5%, var(--background))' }}>
+              <span className="text-sm font-semibold text-foreground flex-1">§1 — {previewSections[0] ?? 'Section 1'}</span>
+              <span className="text-xs text-muted-foreground">Building…</span>
+            </div>
+            <div style={{ padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {[
+                'Pulling questions from QB…',
+                'Checking difficulty distribution…',
+                `Assigning to ${currentCourse?.code ?? 'faculty'}…`,
+              ].map((msg, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', fontSize: 12, color: 'var(--muted-foreground)', background: 'var(--muted)', borderRadius: 6, opacity: 1 - i * 0.3 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--brand-color)', flexShrink: 0 }} />
+                  {msg}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
