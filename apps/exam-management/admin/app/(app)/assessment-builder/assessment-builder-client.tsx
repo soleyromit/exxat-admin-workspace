@@ -435,6 +435,7 @@ export default function AssessmentBuilderClient() {
   const [addSectionTitle, setAddSectionTitle] = useState('')
   const [pinnedQuestionIds, setPinnedQuestionIds] = useState<Set<string>>(new Set())
   const [assessmentDescription, setAssessmentDescription] = useState('')
+  const [sectionAnalysisOpen, setSectionAnalysisOpen] = useState(false)
 
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [sendForReviewOpen, setSendForReviewOpen] = useState(false)
@@ -1175,6 +1176,18 @@ export default function AssessmentBuilderClient() {
                         {activeSectionQuestions.length} Q
                       </span>
                     )}
+                    {/* Section analysis icon */}
+                    {activeSectionQuestions.length > 0 && (
+                      <button
+                        type="button"
+                        aria-label="Section analysis"
+                        title="View section analysis"
+                        onClick={() => setSectionAnalysisOpen(true)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: '4px 6px', borderRadius: 5, display: 'flex', alignItems: 'center', fontSize: 13 }}
+                      >
+                        <i className="fa-light fa-chart-simple" aria-hidden="true" />
+                      </button>
+                    )}
                   </div>
 
                   {/* Scrollable question list */}
@@ -1205,15 +1218,15 @@ export default function AssessmentBuilderClient() {
                                 aria-label={`Move ${q.title} up`}
                                 onClick={e => { e.stopPropagation(); reorderQuestionInSection(activeSection.id, q.id, 'up') }}
                                 disabled={idx === 0}
-                                style={{ background: 'none', border: 'none', padding: '1px 3px', cursor: idx === 0 ? 'default' : 'pointer', color: 'var(--muted-foreground)', fontSize: 8, lineHeight: 1, opacity: idx === 0 ? 0.25 : 0.6 }}
-                              >▲</button>
+                                style={{ background: 'none', border: 'none', padding: '1px 3px', cursor: idx === 0 ? 'default' : 'pointer', color: 'var(--muted-foreground)', fontSize: 9, lineHeight: 1, opacity: idx === 0 ? 0.25 : 0.6 }}
+                              ><i className="fa-solid fa-angle-up" aria-hidden="true" /></button>
                               <button
                                 type="button"
                                 aria-label={`Move ${q.title} down`}
                                 onClick={e => { e.stopPropagation(); reorderQuestionInSection(activeSection.id, q.id, 'down') }}
                                 disabled={idx === totalQ - 1}
-                                style={{ background: 'none', border: 'none', padding: '1px 3px', cursor: idx === totalQ - 1 ? 'default' : 'pointer', color: 'var(--muted-foreground)', fontSize: 8, lineHeight: 1, opacity: idx === totalQ - 1 ? 0.25 : 0.6 }}
-                              >▼</button>
+                                style={{ background: 'none', border: 'none', padding: '1px 3px', cursor: idx === totalQ - 1 ? 'default' : 'pointer', color: 'var(--muted-foreground)', fontSize: 9, lineHeight: 1, opacity: idx === totalQ - 1 ? 0.25 : 0.6 }}
+                              ><i className="fa-solid fa-angle-down" aria-hidden="true" /></button>
                             </div>
                             {/* Row number */}
                             <span className="text-xs text-muted-foreground" style={{ width: 16, textAlign: 'right', flexShrink: 0 }}>{idx + 1}</span>
@@ -1248,96 +1261,6 @@ export default function AssessmentBuilderClient() {
                         )
                       })}
 
-                      {/* ── Per-section analytics ── */}
-                      {activeSectionQuestions.length > 0 && (() => {
-                        const qs = activeSectionQuestions.map(({ q }) => q)
-                        const typeCounts: Record<string, number> = {}
-                        const bloomsCounts: Record<string, number> = {}
-                        const diffCounts = { Easy: 0, Medium: 0, Hard: 0 }
-                        let lowPbi = 0
-                        for (const q of qs) {
-                          typeCounts[q.type] = (typeCounts[q.type] ?? 0) + 1
-                          bloomsCounts[q.blooms] = (bloomsCounts[q.blooms] ?? 0) + 1
-                          if (q.difficulty === 'Easy') diffCounts.Easy++
-                          else if (q.difficulty === 'Medium') diffCounts.Medium++
-                          else diffCounts.Hard++
-                          if (q.pbis !== null && q.pbis < 0.2) lowPbi++
-                        }
-                        const total = qs.length
-                        const topBlooms = Object.entries(bloomsCounts).sort((a, b) => b[1] - a[1]).slice(0, 3)
-                        return (
-                          <div style={{ borderTop: '1px solid var(--border)', padding: '10px 14px 12px', background: 'var(--muted)', flexShrink: 0 }}>
-                            <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', marginBottom: 8 }}>
-                              Section analysis · {total} Q
-                            </div>
-                            <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-                              {/* Type distribution */}
-                              <div>
-                                <div style={{ fontSize: 10, color: 'var(--muted-foreground)', marginBottom: 3 }}>By type</div>
-                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                                  {Object.entries(typeCounts).map(([type, count]) => (
-                                    <span key={type} style={{ fontSize: 11, color: 'var(--foreground)' }}>
-                                      <span style={{ fontWeight: 600 }}>{count}</span> <span style={{ color: 'var(--muted-foreground)' }}>{type}</span>
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                              {/* Difficulty */}
-                              <div>
-                                <div style={{ fontSize: 10, color: 'var(--muted-foreground)', marginBottom: 3 }}>Difficulty</div>
-                                <div style={{ display: 'flex', gap: 6 }}>
-                                  {[
-                                    { label: 'E', count: diffCounts.Easy, color: 'var(--qb-diff-bar-easy)' },
-                                    { label: 'M', count: diffCounts.Medium, color: 'var(--qb-diff-bar-medium)' },
-                                    { label: 'H', count: diffCounts.Hard, color: 'var(--qb-diff-bar-hard)' },
-                                  ].filter(b => b.count > 0).map(b => (
-                                    <span key={b.label} style={{ fontSize: 11 }}>
-                                      <span style={{ fontWeight: 600, color: b.color }}>{b.count}</span>
-                                      <span style={{ color: 'var(--muted-foreground)' }}> {b.label}</span>
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                              {/* Bloom's */}
-                              <div>
-                                <div style={{ fontSize: 10, color: 'var(--muted-foreground)', marginBottom: 3 }}>Bloom&apos;s</div>
-                                <div style={{ display: 'flex', gap: 6 }}>
-                                  {topBlooms.map(([level, count]) => (
-                                    <span key={level} style={{ fontSize: 11, color: 'var(--foreground)' }}>
-                                      <span style={{ fontWeight: 600 }}>{Math.round((count / total) * 100)}%</span>
-                                      <span style={{ color: 'var(--muted-foreground)' }}> {level}</span>
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                              {/* PBI health */}
-                              {lowPbi > 0 && (
-                                <div>
-                                  <div style={{ fontSize: 10, color: 'var(--muted-foreground)', marginBottom: 3 }}>PBI flags</div>
-                                  <span style={{ fontSize: 11, color: 'var(--chart-4)', fontWeight: 600 }}>
-                                    <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ marginRight: 3 }} />
-                                    {lowPbi} low (&lt;0.20)
-                                  </span>
-                                </div>
-                              )}
-                              {/* Pinned */}
-                              {pinnedQuestionIds.size > 0 && (() => {
-                                const sectionPinned = qs.filter(q => pinnedQuestionIds.has(q.id)).length
-                                if (sectionPinned === 0) return null
-                                return (
-                                  <div>
-                                    <div style={{ fontSize: 10, color: 'var(--muted-foreground)', marginBottom: 3 }}>Pinned</div>
-                                    <span style={{ fontSize: 11, color: 'var(--brand-color)', fontWeight: 600 }}>
-                                      <i className="fa-solid fa-thumbtack" aria-hidden="true" style={{ marginRight: 3 }} />
-                                      {sectionPinned} fixed
-                                    </span>
-                                  </div>
-                                )
-                              })()}
-                            </div>
-                          </div>
-                        )
-                      })()}
                     </div>
 
                     {/* Footer: add actions */}
@@ -1668,6 +1591,14 @@ export default function AssessmentBuilderClient() {
         sectionIndex={activeAsmt?.sections.findIndex(s => s.id === assignSheetSectionId) ?? -1}
         collaboratorIds={activeAsmt?.collaboratorIds ?? []}
         onAssignFaculty={(sectionId, facultyId) => updateSection(sectionId, { facultyId })}
+      />
+      <SectionAnalysisSheet
+        open={sectionAnalysisOpen}
+        onOpenChange={setSectionAnalysisOpen}
+        section={activeSection}
+        sectionIndex={activeAsmt?.sections.findIndex(s => s.id === activeSectionId) ?? -1}
+        questions={activeSectionQuestions.map(({ q }) => q)}
+        pinnedQuestionIds={pinnedQuestionIds}
       />
     </div>
   )
@@ -4971,6 +4902,224 @@ function SectionAssignSheet({
             Save assignment
           </Button>
         </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  )
+}
+
+// ── Section Analysis Sheet ────────────────────────────────────────────────────
+
+function HBar({ label, count, total, color, labelWidth = 90, icon }: {
+  label: string
+  count: number
+  total: number
+  color: string
+  labelWidth?: number
+  icon?: string
+}) {
+  const pct = total > 0 ? Math.round((count / total) * 100) : 0
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <span style={{ fontSize: 12, color: 'var(--muted-foreground)', width: labelWidth, flexShrink: 0, textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5 }}>
+        {icon && <i className={icon} aria-hidden="true" style={{ fontSize: 11 }} />}
+        {label}
+      </span>
+      <div style={{ flex: 1, height: 10, borderRadius: 5, background: 'var(--border)', overflow: 'hidden' }}>
+        <div style={{
+          width: `${pct}%`, height: '100%', borderRadius: 5, background: color,
+          minWidth: count > 0 ? 5 : 0, transition: 'width 0.4s ease',
+        }} />
+      </div>
+      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)', width: 22, textAlign: 'right', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{count}</span>
+      <span style={{ fontSize: 11, color: 'var(--muted-foreground)', width: 30, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{pct > 0 ? `${pct}%` : ''}</span>
+    </div>
+  )
+}
+
+function SectionAnalysisSheet({ open, onOpenChange, section, sectionIndex, questions, pinnedQuestionIds }: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  section: import('@/lib/qb-types').AssessmentSection | null
+  sectionIndex: number
+  questions: import('@/lib/qb-types').Question[]
+  pinnedQuestionIds: Set<string>
+}) {
+  if (!section) return null
+  const total = questions.length
+
+  const typeCounts: Record<string, number> = {}
+  const bloomsCounts: Record<string, number> = {}
+  const diffCounts: Record<string, number> = { Easy: 0, Medium: 0, Hard: 0 }
+  const pbiGroups = { good: 0, ok: 0, low: 0, missing: 0 }
+
+  for (const q of questions) {
+    typeCounts[q.type] = (typeCounts[q.type] ?? 0) + 1
+    bloomsCounts[q.blooms] = (bloomsCounts[q.blooms] ?? 0) + 1
+    if (q.difficulty === 'Easy') diffCounts.Easy++
+    else if (q.difficulty === 'Medium') diffCounts.Medium++
+    else diffCounts.Hard++
+    if (q.pbis === null) pbiGroups.missing++
+    else if (q.pbis >= 0.3) pbiGroups.good++
+    else if (q.pbis >= 0.2) pbiGroups.ok++
+    else pbiGroups.low++
+  }
+
+  const BLOOMS_ORDER = ['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'] as const
+  const BLOOMS_COLORS: Record<string, string> = {
+    Remember:   'oklch(0.72 0.09 250)',
+    Understand: 'oklch(0.70 0.12 230)',
+    Apply:      'var(--brand-color)',
+    Analyze:    'oklch(0.62 0.14 270)',
+    Evaluate:   'oklch(0.58 0.15 290)',
+    Create:     'oklch(0.55 0.16 310)',
+  }
+  const TYPE_COLORS: Record<string, string> = {
+    'MCQ':        'var(--brand-color)',
+    'Fill blank': 'oklch(0.65 0.12 195)',
+    'Hotspot':    'oklch(0.62 0.14 130)',
+    'Ordering':   'oklch(0.65 0.13 55)',
+    'Matching':   'oklch(0.60 0.14 30)',
+  }
+  const TYPE_ICONS: Record<string, string> = {
+    'MCQ':        'fa-light fa-circle-dot',
+    'Fill blank': 'fa-light fa-i-cursor',
+    'Hotspot':    'fa-light fa-crosshairs',
+    'Ordering':   'fa-light fa-list-ol',
+    'Matching':   'fa-light fa-arrows-left-right',
+  }
+
+  const pinnedCount = questions.filter(q => pinnedQuestionIds.has(q.id)).length
+  const lowPbiQuestions = questions.filter(q => q.pbis !== null && q.pbis < 0.2)
+
+  function ChartSection({ title, children }: { title: string; children: React.ReactNode }) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)' }}>
+          {title}
+        </div>
+        {children}
+      </div>
+    )
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" style={{ width: 380, maxWidth: '90vw', display: 'flex', flexDirection: 'column', padding: 0 }}>
+        <SheetHeader style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+          <SheetTitle style={{ fontSize: 14, fontWeight: 600 }}>
+            {sectionIndex + 1}. {section.title}
+          </SheetTitle>
+          <p className="text-xs text-muted-foreground">{total} question{total !== 1 ? 's' : ''} · section analysis</p>
+        </SheetHeader>
+
+        {total === 0 ? (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <p className="text-sm text-muted-foreground">No questions in this section yet.</p>
+          </div>
+        ) : (
+          <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 32px', display: 'flex', flexDirection: 'column', gap: 28 }}>
+
+            {/* ── Difficulty ── */}
+            <ChartSection title="Difficulty">
+              <div style={{ display: 'flex', height: 12, borderRadius: 6, overflow: 'hidden', gap: 1 }}>
+                {diffCounts.Easy > 0 && <div style={{ flex: diffCounts.Easy, background: 'var(--qb-diff-bar-easy)', minWidth: 4, transition: 'flex 0.4s ease' }} title={`Easy: ${diffCounts.Easy}`} />}
+                {diffCounts.Medium > 0 && <div style={{ flex: diffCounts.Medium, background: 'var(--qb-diff-bar-medium)', minWidth: 4, transition: 'flex 0.4s ease' }} title={`Medium: ${diffCounts.Medium}`} />}
+                {diffCounts.Hard > 0 && <div style={{ flex: diffCounts.Hard, background: 'var(--qb-diff-bar-hard)', minWidth: 4, transition: 'flex 0.4s ease' }} title={`Hard: ${diffCounts.Hard}`} />}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <HBar label="Easy" count={diffCounts.Easy} total={total} color="var(--qb-diff-bar-easy)" labelWidth={60} />
+                <HBar label="Medium" count={diffCounts.Medium} total={total} color="var(--qb-diff-bar-medium)" labelWidth={60} />
+                <HBar label="Hard" count={diffCounts.Hard} total={total} color="var(--qb-diff-bar-hard)" labelWidth={60} />
+              </div>
+            </ChartSection>
+
+            {/* ── Question type ── */}
+            <ChartSection title="Question type">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {Object.entries(typeCounts)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([type, count]) => (
+                    <HBar key={type} label={type} count={count} total={total} color={TYPE_COLORS[type] ?? 'var(--muted-foreground)'} labelWidth={82} icon={TYPE_ICONS[type]} />
+                  ))}
+              </div>
+            </ChartSection>
+
+            {/* ── Bloom's taxonomy ── */}
+            <ChartSection title="Bloom's taxonomy">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {BLOOMS_ORDER.map(level => (
+                  <HBar key={level} label={level} count={bloomsCounts[level] ?? 0} total={total} color={BLOOMS_COLORS[level] ?? 'var(--muted-foreground)'} labelWidth={80} />
+                ))}
+              </div>
+              {(() => {
+                const covered = BLOOMS_ORDER.filter(l => (bloomsCounts[l] ?? 0) > 0).length
+                return (
+                  <p style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
+                    {covered} of 6 levels covered
+                    {covered <= 2 ? ' — consider adding higher-order questions' : ''}
+                  </p>
+                )
+              })()}
+            </ChartSection>
+
+            {/* ── PBI health ── */}
+            <ChartSection title="Point-biserial (PBI)">
+              <div style={{ display: 'flex', height: 12, borderRadius: 6, overflow: 'hidden', gap: 1 }}>
+                {pbiGroups.good > 0 && <div style={{ flex: pbiGroups.good, background: 'var(--chart-2)', minWidth: 4 }} title={`Good ≥0.30: ${pbiGroups.good}`} />}
+                {pbiGroups.ok > 0 && <div style={{ flex: pbiGroups.ok, background: 'var(--chart-4)', minWidth: 4 }} title={`Acceptable 0.20–0.29: ${pbiGroups.ok}`} />}
+                {pbiGroups.low > 0 && <div style={{ flex: pbiGroups.low, background: 'var(--chart-5)', minWidth: 4 }} title={`Low <0.20: ${pbiGroups.low}`} />}
+                {pbiGroups.missing > 0 && <div style={{ flex: pbiGroups.missing, background: 'var(--border)', minWidth: 4 }} title={`No data: ${pbiGroups.missing}`} />}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <HBar label="Good ≥0.30" count={pbiGroups.good} total={total} color="var(--chart-2)" labelWidth={88} />
+                <HBar label="OK 0.20–0.29" count={pbiGroups.ok} total={total} color="var(--chart-4)" labelWidth={88} />
+                <HBar label="Low < 0.20" count={pbiGroups.low} total={total} color="var(--chart-5)" labelWidth={88} />
+                {pbiGroups.missing > 0 && (
+                  <HBar label="No data" count={pbiGroups.missing} total={total} color="var(--border)" labelWidth={88} />
+                )}
+              </div>
+              {lowPbiQuestions.length > 0 && (
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginBottom: 6 }}>Needs review:</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {lowPbiQuestions.map(q => (
+                      <div key={q.id} style={{
+                        display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 6,
+                        background: 'color-mix(in srgb, var(--chart-5) 6%, var(--background))',
+                        border: '1px solid color-mix(in srgb, var(--chart-5) 20%, transparent)',
+                      }}>
+                        <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 10, color: 'var(--chart-5)', flexShrink: 0 }} />
+                        <span style={{ fontSize: 12, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--foreground)' }}>
+                          {q.title}
+                        </span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--chart-5)', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
+                          {q.pbis!.toFixed(2)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </ChartSection>
+
+            {/* ── Randomization ── */}
+            {pinnedCount > 0 && (
+              <ChartSection title="Randomization">
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <div style={{ flex: 1, padding: '10px 14px', borderRadius: 8, background: 'var(--muted)', textAlign: 'center' }}>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--brand-color)' }}>{pinnedCount}</div>
+                    <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 2 }}>Pinned · fixed</div>
+                  </div>
+                  <div style={{ flex: 1, padding: '10px 14px', borderRadius: 8, background: 'var(--muted)', textAlign: 'center' }}>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--foreground)' }}>{total - pinnedCount}</div>
+                    <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 2 }}>Randomized</div>
+                  </div>
+                </div>
+              </ChartSection>
+            )}
+
+          </div>
+        )}
       </SheetContent>
     </Sheet>
   )
