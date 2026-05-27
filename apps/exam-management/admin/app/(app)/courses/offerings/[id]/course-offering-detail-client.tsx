@@ -1269,7 +1269,7 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
   // Sheet open state
   const [enrollOpen, setEnrollOpen] = useState(false)
   const [assignOpen, setAssignOpen] = useState(false)
-  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [createModalOpen, setCreateModalOpen] = useState(false) // kept for ImportAssessmentModal only
   const [importOpen, setImportOpen] = useState(false)
 
   const enrolledIds = useMemo(() => new Set(localStudents.map(s => s.id)), [localStudents])
@@ -1382,7 +1382,7 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
             <TabsContent value="assessments" className="m-0">
               <AssessmentsTab
                 offering={offering}
-                onNewAssessment={() => setCreateModalOpen(true)}
+                onNewAssessment={() => router.push(`/assessment-builder/create?courseId=${offering.courseId}&offeringId=${offering.id}`)}
               />
             </TabsContent>
             <TabsContent value="students" className="m-0">
@@ -1427,13 +1427,6 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
         onOpenChange={setAssignOpen}
         assignedIds={assignedIds}
         onAssign={f => setLocalFaculty(prev => prev.some(e => e.id === f.id) ? prev : [...prev, f])}
-      />
-      <CreateAssessmentModal
-        open={createModalOpen}
-        onOpenChange={setCreateModalOpen}
-        offeringId={offering.id}
-        courseId={offering.courseId}
-        onOpenImport={() => setImportOpen(true)}
       />
       <ImportAssessmentModal
         open={importOpen}

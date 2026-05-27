@@ -39,7 +39,6 @@ import { StudentsTab } from './tabs/students-tab'
 import { AccommodationsTab } from './tabs/accommodations-tab'
 import { FacultyTab } from './tabs/faculty-tab'
 import { QuestionBankTab } from './tabs/question-bank-tab'
-import { CreateAssessmentModal } from '@/components/create-assessment-modal'
 
 const ALL_ASSESSMENTS = [...mockAssessments, ...facultyExtraAssessments]
 
@@ -306,7 +305,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
 }
 
 function PrimaryAction({ isViewer, courseId }: { isViewer: boolean; courseId: string }) {
-  const [modalOpen, setModalOpen] = useState(false)
+  const router = useRouter()
   if (isViewer) {
     return (
       <Tip label="Read-only access — you can't create assessments in this course.">
@@ -318,16 +317,9 @@ function PrimaryAction({ isViewer, courseId }: { isViewer: boolean; courseId: st
     )
   }
   return (
-    <>
-      <Button size="sm" className="gap-2" onClick={() => setModalOpen(true)}>
-        <i className="fa-light fa-plus" aria-hidden="true" />
-        New assessment
-      </Button>
-      <CreateAssessmentModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        courseId={courseId}
-      />
-    </>
+    <Button size="sm" className="gap-2" onClick={() => router.push(`/assessment-builder/create?courseId=${courseId}`)}>
+      <i className="fa-light fa-plus" aria-hidden="true" />
+      New assessment
+    </Button>
   )
 }
