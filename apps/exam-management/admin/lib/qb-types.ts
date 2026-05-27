@@ -124,6 +124,12 @@ export interface Assessment {
   collaboratorIds?: string[]
 }
 
+export interface ReferenceMaterial {
+  id: string
+  label: string
+  url: string
+}
+
 export interface QuestionGradingConfig {
   randomizeOptions?: boolean               // per-question override of assessment-level setting
   negativeMarkingWeight?: number | null   // per-question override: null = inherit assessment default; 0 = off; 0.25/0.33/0.5 = deduction fraction
@@ -141,6 +147,11 @@ export interface QuestionGradingConfig {
   matchExtraDistractors?: boolean
   hotspotMultipleAllowed?: boolean
   hotspotPartialCredit?: boolean
+  // Per-question tool overrides
+  calculatorOverride?: 'none' | 'basic' | 'scientific'  // undefined = inherit assessment default
+  textHighlightOverride?: boolean | null                 // null/undefined = inherit; true = force on; false = force off
+  onScreenKeyboard?: boolean
+  referenceMaterials?: ReferenceMaterial[]
 }
 
 export interface AssessmentQuestion {

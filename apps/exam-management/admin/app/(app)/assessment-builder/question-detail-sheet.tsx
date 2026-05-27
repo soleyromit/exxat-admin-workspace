@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import { Sheet, SheetContent, SheetTitle, Button } from '@exxat/ds/packages/ui/src'
-import type { Question, QuestionVersionEntry, QuestionCollaborator, QuestionGradingConfig } from '@/lib/qb-types'
+import type { Question, QuestionVersionEntry, QuestionCollaborator, QuestionGradingConfig, ReferenceMaterial, DigitalToolsConfig } from '@/lib/qb-types'
 import { MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
 
 type DetailTab = 'details' | 'stats' | 'versions' | 'collaborators'
@@ -1436,6 +1436,208 @@ function GradingRulesSection({
   )
 }
 
+// ─── Per-question tools section ───────────────────────────────────────────────
+
+function QuestionToolsSection({
+  config,
+  onChange,
+  assessmentDigitalTools,
+}: {
+  config: QuestionGradingConfig
+  onChange: (patch: Partial<QuestionGradingConfig>) => void
+  assessmentDigitalTools?: DigitalToolsConfig
+}) {
+  const chipStyle = (active: boolean): React.CSSProperties => ({
+    fontSize: 12, padding: '4px 10px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
+    border: `1px solid ${active ? 'var(--brand-color)' : 'var(--border)'}`,
+    background: active ? 'var(--brand-tint)' : 'transparent',
+    color: active ? 'var(--brand-color)' : 'var(--muted-foreground)',
+  })
+  const focusRing = {
+    onFocus: (e: React.FocusEvent<HTMLButtonElement>) => { e.currentTarget.style.outline = '2px solid var(--ring)'; e.currentTarget.style.outlineOffset = '2px' },
+    onBlur: (e: React.FocusEvent<HTMLButtonElement>) => { e.currentTarget.style.outline = 'none'; e.currentTarget.style.outlineOffset = '0' },
+  }
+
+  const calcOptions: Array<['none' | 'basic' | 'scientific' | undefined, string]> = [
+    [undefined, 'Inherit'],
+    ['none', 'Off'],
+    ['basic', 'Basic'],
+    ['scientific', 'Scientific'],
+  ]
+
+  const highlightOptions: Array<[boolean | null | undefined, string]> = [
+    [undefined, 'Inherit'],
+    [true, 'On'],
+    [false, 'Off'],
+  ]
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <p style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', margin: 0 }}>Tools</p>
+
+      {/* Calculator */}
+      <div>
+        <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '0 0 6px' }}>Calculator</p>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {calcOptions.map(([val, label]) => {
+            const active = config.calculatorOverride === val
+            return (
+              <button key={label} type="button" aria-pressed={active} onClick={() => onChange({ calculatorOverride: val })} style={chipStyle(active)} {...focusRing}>
+                {label}
+              </button>
+            )
+          })}
+        </div>
+        {config.calculatorOverride === undefined && assessmentDigitalTools && (
+          <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>
+            Assessment default: {assessmentDigitalTools.calculator === 'none' ? 'off' : assessmentDigitalTools.calculator}
+          </p>
+        )}
+      </div>
+
+      {/* Text highlighting */}
+      <div>
+        <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '0 0 6px' }}>Text highlighting</p>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {highlightOptions.map(([val, label]) => {
+            const current = config.textHighlightOverride === undefined ? undefined : config.textHighlightOverride
+            const active = current === val
+            return (
+              <button key={label} type="button" aria-pressed={active} onClick={() => onChange({ textHighlightOverride: val === undefined ? undefined : val })} style={chipStyle(active)} {...focusRing}>
+                {label}
+              </button>
+            )
+          })}
+        </div>
+        {config.textHighlightOverride === undefined && assessmentDigitalTools && (
+          <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>
+            Assessment default: {assessmentDigitalTools.textHighlight ? 'on' : 'off'}
+          </p>
+        )}
+      </div>
+
+      {/* On-screen keyboard */}
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+        <input
+          type="checkbox"
+          checked={config.onScreenKeyboard ?? false}
+          onChange={e => onChange({ onScreenKeyboard: e.target.checked })}
+          aria-label="Enable on-screen keyboard for this question"
+        />
+        <span style={{ color: 'var(--foreground)' }}>On-screen keyboard</span>
+      </label>
+    </div>
+  )
+}
+
+// ─── Per-question references section ──────────────────────────────────────────
+
+function ReferencesSection({
+  config,
+  onChange,
+}: {
+  config: QuestionGradingConfig
+  onChange: (patch: Partial<QuestionGradingConfig>) => void
+}) {
+  const [label, setLabel] = useState('')
+  const [url, setUrl] = useState('')
+
+  const refs = config.referenceMaterials ?? []
+
+  function addRef() {
+    const trimLabel = label.trim()
+    const trimUrl = url.trim()
+    if (!trimLabel || !trimUrl) return
+    const newRef: ReferenceMaterial = {
+      id: `ref-${Date.now()}`,
+      label: trimLabel,
+      url: trimUrl,
+    }
+    onChange({ referenceMaterials: [...refs, newRef] })
+    setLabel('')
+    setUrl('')
+  }
+
+  function removeRef(id: string) {
+    onChange({ referenceMaterials: refs.filter(r => r.id !== id) })
+  }
+
+  const inputStyle: React.CSSProperties = {
+    fontSize: 13, padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 6,
+    background: 'var(--background)', color: 'var(--foreground)', outline: 'none',
+    fontFamily: 'inherit', boxSizing: 'border-box',
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <p style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', margin: 0 }}>References</p>
+
+      {/* Existing references */}
+      {refs.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {refs.map(ref => (
+            <div key={ref.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--muted)' }}>
+              <i className="fa-light fa-link" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)', flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 13, color: 'var(--foreground)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ref.label}</p>
+                <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ref.url}</p>
+              </div>
+              <button
+                type="button"
+                aria-label={`Remove reference ${ref.label}`}
+                onClick={() => removeRef(ref.id)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 2, flexShrink: 0, fontFamily: 'inherit' }}
+              >
+                <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 13 }} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add reference form */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <input
+          type="text"
+          placeholder="Label (e.g. Drug reference table)"
+          value={label}
+          onChange={e => setLabel(e.target.value)}
+          aria-label="Reference label"
+          style={{ ...inputStyle, width: '100%' }}
+          onFocus={e => { e.currentTarget.style.borderColor = 'var(--ring)'; e.currentTarget.style.boxShadow = '0 0 0 2px var(--ring)' }}
+          onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
+        />
+        <div style={{ display: 'flex', gap: 5 }}>
+          <input
+            type="url"
+            placeholder="URL"
+            value={url}
+            onChange={e => setUrl(e.target.value)}
+            aria-label="Reference URL"
+            style={{ ...inputStyle, flex: 1 }}
+            onFocus={e => { e.currentTarget.style.borderColor = 'var(--ring)'; e.currentTarget.style.boxShadow = '0 0 0 2px var(--ring)' }}
+            onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addRef() } }}
+          />
+          <button
+            type="button"
+            aria-label="Add reference"
+            onClick={addRef}
+            disabled={!label.trim() || !url.trim()}
+            style={{
+              padding: '5px 12px', fontSize: 12, borderRadius: 6, border: 'none', cursor: 'pointer',
+              fontFamily: 'inherit', background: 'var(--brand-color)', color: 'var(--background)', fontWeight: 600,
+              opacity: (!label.trim() || !url.trim()) ? 0.4 : 1,
+            }}
+          >
+            Add
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export function QuestionDetailSheet({
@@ -1447,6 +1649,7 @@ export function QuestionDetailSheet({
   gradingConfig,
   onGradingConfigChange,
   assessmentNegativeMarking,
+  assessmentDigitalTools,
 }: {
   questionId: string | null
   questions: Question[]
@@ -1456,6 +1659,7 @@ export function QuestionDetailSheet({
   gradingConfig?: QuestionGradingConfig
   onGradingConfigChange?: (patch: Partial<QuestionGradingConfig>) => void
   assessmentNegativeMarking?: { enabled: boolean; fraction: number }
+  assessmentDigitalTools?: DigitalToolsConfig
 }) {
   const question = questions.find(q => q.id === (questionId ?? ''))
   const [activeTab, setActiveTab] = useState<DetailTab>('details')
@@ -1640,12 +1844,27 @@ export function QuestionDetailSheet({
         {onGradingConfigChange && (
           <>
             <div style={{ height: 1, background: 'var(--border)', margin: '0 20px' }} />
-            <div style={{ padding: '14px 20px', overflowY: 'auto', maxHeight: 320, flexShrink: 0 }}>
+            <div style={{ padding: '14px 20px', overflowY: 'auto', maxHeight: 260, flexShrink: 0 }}>
               <GradingRulesSection
                 question={question}
                 config={gradingConfig ?? {}}
                 onChange={onGradingConfigChange}
                 assessmentNegativeMarking={assessmentNegativeMarking}
+              />
+            </div>
+            <div style={{ height: 1, background: 'var(--border)', margin: '0 20px' }} />
+            <div style={{ padding: '14px 20px', overflowY: 'auto', maxHeight: 280, flexShrink: 0 }}>
+              <QuestionToolsSection
+                config={gradingConfig ?? {}}
+                onChange={onGradingConfigChange}
+                assessmentDigitalTools={assessmentDigitalTools}
+              />
+            </div>
+            <div style={{ height: 1, background: 'var(--border)', margin: '0 20px' }} />
+            <div style={{ padding: '14px 20px', overflowY: 'auto', maxHeight: 260, flexShrink: 0 }}>
+              <ReferencesSection
+                config={gradingConfig ?? {}}
+                onChange={onGradingConfigChange}
               />
             </div>
           </>

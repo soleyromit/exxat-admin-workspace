@@ -2085,6 +2085,7 @@ export default function AssessmentBuilderClient() {
           enabled: activeAsmt.settings.negativeMarking,
           fraction: activeAsmt.settings.negativeMarkingFraction,
         } : undefined}
+        assessmentDigitalTools={activeAsmt?.settings.digitalTools}
         onGradingConfigChange={(patch) => {
           if (!detailQuestionId) return
           setActiveAsmt(prev => prev ? {
