@@ -10,7 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@exxatdesignux/ui": "^0.6.15",
+    "@exxatdesignux/ui": "^0.6.14",
     "clsx": "^2.1.1",
     "motion": "^12.40.0",
     "next": "^15.3.1",
