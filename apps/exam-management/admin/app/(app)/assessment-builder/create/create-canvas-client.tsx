@@ -376,6 +376,24 @@ const QUICK_STARTS: { id: QuickStart; label: string }[] = [
   { id: 'qb',   label: 'Build from QB' },
 ]
 
+const EXAMPLE_PROMPT = `Cardiology Midterm · Exam · 90 min · password required · randomize questions
+
+3 sections:
+1. Cardiovascular Pharm — 20 Q, assign Dr. Mehra
+   Instructions: "No calculators. Select the best mechanism-based answer."
+   Preread: "A 58-year-old male with HTN and DM2 presents with bilateral pitting edema, elevated BNP, and a BP of 162/98. Current meds: metformin, lisinopril."
+
+2. Renal & Electrolytes — 15 Q, assign Dr. Patel
+
+3. Clinical Application — 15 Q, assign Dr. Kim
+   Preread: "A 72-year-old post-CABG patient on warfarin presents with an INR of 4.2 and reports minor gum bleeding. No active hemorrhage."
+
+Pre-exam setup:
+- General instructions: "Read all questions carefully. Close all other applications before starting."
+- Ethics / policy: Institutional honor code
+- Attestation: "I affirm I will complete this exam independently and without unauthorized assistance."
+- Tech check: audio + camera`
+
 function CanvasBody({
   prompt, onPromptChange, onSubmit,
 }: {
@@ -412,8 +430,8 @@ function CanvasBody({
           <textarea
             value={prompt}
             onChange={e => onPromptChange(e.target.value)}
-            placeholder='e.g. "3 sections, 20 questions each — Cardiovascular Pharm, Renal Pharm, Clinical Application. Assign to Mehra, Patel, Kim. 90 min, proctored."'
-            rows={3}
+            placeholder='e.g. "3 sections, 20 Q each — Cardiovascular Pharm, Renal, Clinical Application. Assign Mehra, Patel, Kim. 90 min, proctored, tech check on."'
+            rows={prompt.includes('\n') ? 10 : 3}
             aria-label="Describe assessment structure"
             style={{
               width: '100%', fontSize: 13, color: 'var(--foreground)',
@@ -429,15 +447,10 @@ function CanvasBody({
           }}>
             <button
               type="button"
+              onClick={() => onPromptChange(EXAMPLE_PROMPT)}
               style={{ fontSize: 12, padding: '3px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--background)', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--foreground)' }}
             >
-              📋 Copy from last year&#39;s
-            </button>
-            <button
-              type="button"
-              style={{ fontSize: 12, padding: '3px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--background)', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--foreground)' }}
-            >
-              📎 Attach blueprint
+              ✦ Try an example
             </button>
             <button
               type="button"
