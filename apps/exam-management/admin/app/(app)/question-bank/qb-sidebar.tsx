@@ -10,6 +10,7 @@ import {
   Popover, PopoverTrigger, PopoverContent,
   FieldError,
   Command, CommandInput, CommandList, CommandGroup, CommandItem, CommandEmpty,
+  Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   useSidebar,
 } from '@exxat/ds/packages/ui/src'
 import { mockCourses, mockCourseOfferings, MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
@@ -494,11 +495,11 @@ export function ManageShellAccessDialog({ node, open, onClose }: {
   onClose: () => void
 }) {
   const { currentPersona, personas, addShellCollaborator, removeShellCollaborator, updateShellCollaboratorRole, folders } = useQB()
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const [addPersonaId, setAddPersonaId] = useState('')
   const [addRole, setAddRole] = useState<AccessRole>('edit')
-  const [addOpen, setAddOpen] = useState(false)
 
-  // Re-read node from live state so the list updates in real time
   const liveNode = folders.find(f => f.id === node.id) ?? node
   const collaboratorIds = liveNode.collaborators ?? []
   const roles = liveNode.collaboratorRoles ?? {}
@@ -512,10 +513,19 @@ export function ManageShellAccessDialog({ node, open, onClose }: {
   )
 
   const canManage = currentPersona.role === 'exam_admin' || collaboratorIds.includes(currentPersona.id)
+  const selectedPerson = addablePersonas.find(p => p.id === addPersonaId)
 
   function courseName(n: FolderNode) {
     const code = n.name.match(/^([A-Z0-9]+)/)?.[1]
     return code ? `${code} · Question Bank` : n.name
+  }
+
+  function handleAdd() {
+    if (!addPersonaId) return
+    addShellCollaborator(liveNode.id, addPersonaId, addRole)
+    setAddPersonaId('')
+    setAddRole('edit')
+    setSearchQuery('')
   }
 
   return (
@@ -528,7 +538,100 @@ export function ManageShellAccessDialog({ node, open, onClose }: {
           </DialogDescription>
         </DialogHeader>
 
-        {/* Current access list */}
+        {/* Add person — searchable Command picker at the TOP */}
+        {canManage && addablePersonas.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  role="combobox"
+                  aria-expanded={searchOpen}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    width: '100%', padding: '7px 10px',
+                    border: '1px solid var(--border-control-35)',
+                    borderRadius: 'var(--radius)',
+                    background: 'var(--background)',
+                    cursor: 'pointer', textAlign: 'left',
+                  }}
+                >
+                  <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)', flexShrink: 0 }} />
+                  <span className="text-sm" style={{ color: selectedPerson ? 'var(--foreground)' : 'var(--muted-foreground)', flex: 1 }}>
+                    {selectedPerson ? selectedPerson.name : 'Search people to add…'}
+                  </span>
+                  {selectedPerson && (
+                    <button
+                      type="button"
+                      aria-label="Clear selection"
+                      onClick={e => { e.stopPropagation(); setAddPersonaId(''); setSearchQuery('') }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 0, display: 'flex', alignItems: 'center' }}
+                    >
+                      <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 11 }} />
+                    </button>
+                  )}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" style={{ padding: 0, width: 'var(--radix-popover-trigger-width)' }}>
+                <Command>
+                  <CommandInput
+                    placeholder="Search people…"
+                    value={searchQuery}
+                    onValueChange={setSearchQuery}
+                  />
+                  <CommandList>
+                    <CommandEmpty>No people found.</CommandEmpty>
+                    <CommandGroup>
+                      {addablePersonas.map(p => (
+                        <CommandItem
+                          key={p.id}
+                          value={p.name}
+                          onSelect={() => {
+                            setAddPersonaId(p.id)
+                            setSearchQuery('')
+                            setSearchOpen(false)
+                          }}
+                        >
+                          <span style={{ flex: 1 }}>{p.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {p.role === 'course_director' ? 'Director' : 'Instructor'}
+                          </span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+
+            {/* Pending add row — shown once a person is selected */}
+            {selectedPerson && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
+                <div style={{ width: 28, height: 28, borderRadius: '50%', backgroundColor: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span className="text-[10px] font-bold text-muted-foreground">{selectedPerson.initials}</span>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="text-sm font-medium text-foreground" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedPerson.name}</div>
+                  <div className="text-xs text-muted-foreground">{selectedPerson.role === 'course_director' ? 'Course Director' : 'Instructor'}</div>
+                </div>
+                <Select value={addRole} onValueChange={v => setAddRole(v as AccessRole)}>
+                  <SelectTrigger size="sm" style={{ width: 86, flexShrink: 0 }}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="view">View</SelectItem>
+                    <SelectItem value="edit">Edit</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="default" size="sm" onClick={handleAdd} style={{ flexShrink: 0 }}>
+                  Add
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* People with access */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground" style={{ marginBottom: 4 }}>
             People with access
@@ -560,25 +663,16 @@ export function ManageShellAccessDialog({ node, open, onClose }: {
                   <div className="text-sm font-medium text-foreground" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
                   <div className="text-xs text-muted-foreground">{p.role === 'course_director' ? 'Course Director' : 'Instructor'}</div>
                 </div>
-                {/* Role toggle */}
                 {canManage ? (
-                  <div style={{ display: 'flex', borderRadius: 6, border: '1px solid var(--border)', overflow: 'hidden', flexShrink: 0 }}>
-                    {(['view', 'edit'] as AccessRole[]).map(r => (
-                      <button
-                        key={r}
-                        type="button"
-                        onClick={() => updateShellCollaboratorRole(liveNode.id, p.id, r)}
-                        style={{
-                          padding: '3px 8px', fontSize: 11, fontWeight: 500, border: 'none', cursor: 'pointer',
-                          backgroundColor: role === r ? 'var(--foreground)' : 'transparent',
-                          color: role === r ? 'var(--background)' : 'var(--muted-foreground)',
-                          transition: 'background 120ms',
-                        }}
-                      >
-                        {r === 'view' ? 'View' : 'Edit'}
-                      </button>
-                    ))}
-                  </div>
+                  <Select value={role} onValueChange={v => updateShellCollaboratorRole(liveNode.id, p.id, v as AccessRole)}>
+                    <SelectTrigger size="sm" style={{ width: 86, flexShrink: 0 }}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="view">View</SelectItem>
+                      <SelectItem value="edit">Edit</SelectItem>
+                    </SelectContent>
+                  </Select>
                 ) : (
                   <span className="text-xs text-muted-foreground" style={{ flexShrink: 0 }}>
                     {role === 'view' ? 'View' : 'Edit'}
@@ -604,79 +698,6 @@ export function ManageShellAccessDialog({ node, open, onClose }: {
             </p>
           )}
         </div>
-
-        {/* Add people — only for admins and existing collaborators */}
-        {canManage && addablePersonas.length > 0 && (
-          <>
-            <div style={{ height: 1, backgroundColor: 'var(--border)', margin: '4px 0' }} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
-                Add people
-              </p>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                {/* Person picker */}
-                <div style={{ flex: 1, position: 'relative' }}>
-                  <DropdownMenu open={addOpen} onOpenChange={setAddOpen} modal={false}>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline" size="sm"
-                        style={{ width: '100%', justifyContent: 'space-between', fontWeight: 400 }}
-                      >
-                        <span className="text-sm" style={{ color: addPersonaId ? 'var(--foreground)' : 'var(--muted-foreground)' }}>
-                          {addPersonaId
-                            ? (addablePersonas.find(p => p.id === addPersonaId)?.name ?? 'Select person')
-                            : 'Select person'}
-                        </span>
-                        <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 10 }} />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-52">
-                      {addablePersonas.map(p => (
-                        <DropdownMenuItem key={p.id} onClick={() => { setAddPersonaId(p.id); setAddOpen(false) }}>
-                          <span>{p.name}</span>
-                          <span className="ml-auto text-xs text-muted-foreground">
-                            {p.role === 'course_director' ? 'Director' : 'Instructor'}
-                          </span>
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                {/* Role toggle for new person */}
-                <div style={{ display: 'flex', borderRadius: 6, border: '1px solid var(--border)', overflow: 'hidden', flexShrink: 0 }}>
-                  {(['view', 'edit'] as AccessRole[]).map(r => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setAddRole(r)}
-                      style={{
-                        padding: '5px 8px', fontSize: 11, fontWeight: 500, border: 'none', cursor: 'pointer',
-                        backgroundColor: addRole === r ? 'var(--foreground)' : 'transparent',
-                        color: addRole === r ? 'var(--background)' : 'var(--muted-foreground)',
-                        transition: 'background 120ms',
-                      }}
-                    >
-                      {r === 'view' ? 'View' : 'Edit'}
-                    </button>
-                  ))}
-                </div>
-                <Button
-                  variant="default" size="sm"
-                  disabled={!addPersonaId}
-                  style={{ flexShrink: 0 }}
-                  onClick={() => {
-                    if (!addPersonaId) return
-                    addShellCollaborator(liveNode.id, addPersonaId, addRole)
-                    setAddPersonaId('')
-                    setAddRole('edit')
-                  }}
-                >
-                  Add
-                </Button>
-              </div>
-            </div>
-          </>
-        )}
 
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={onClose}>Done</Button>
