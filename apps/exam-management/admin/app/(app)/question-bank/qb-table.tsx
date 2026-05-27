@@ -768,10 +768,7 @@ function LocationCell({ question }: { question: Question }) {
         aria-label={`Navigate to ${displayName}`}
         title={loc.folderPath}
       >
-        {targetFolder?.isPrivateSpace
-          ? <i className="fa-solid fa-lock" aria-hidden="true" style={{ fontSize: 10, flexShrink: 0, color: 'var(--muted-foreground)' }} />
-          : <span aria-hidden="true" style={{ width: 10, flexShrink: 0 }} />
-        }
+        <span aria-hidden="true" style={{ width: 10, flexShrink: 0 }} />
         <span style={{ display: 'block', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'underline', textUnderlineOffset: 2 }}>
           {displayName}
         </span>

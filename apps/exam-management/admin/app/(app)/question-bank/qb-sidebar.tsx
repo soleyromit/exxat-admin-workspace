@@ -63,10 +63,6 @@ function getDescendantIds(id: string, folders: FolderNode[]): Set<string> {
 
 function getFolderIcon(node: FolderNode, expanded: boolean, selected: boolean) {
   const colorCls = selected ? 'text-foreground' : 'text-muted-foreground'
-  // Private folders: lock icon replaces the folder/graduation icon
-  if (node.isPrivateSpace) {
-    return { cls: 'fa-solid fa-lock', colorCls }
-  }
   if (node.icon) {
     return { cls: `${selected ? 'fa-solid' : 'fa-light'} ${node.icon}`, colorCls }
   }
@@ -510,8 +506,7 @@ export function FolderContextMenu({
   onOpenChange?: (open: boolean) => void
   alwaysVisible?: boolean
 }) {
-  const { setFolderPrivacy, pinnedFolderIds, toggleFolderPin } = useQB()
-  const isPrivate = !!node.isPrivateSpace
+  const { pinnedFolderIds, toggleFolderPin } = useQB()
   const isPinned = pinnedFolderIds.has(node.id)
 
   return (
@@ -538,19 +533,6 @@ export function FolderContextMenu({
           <i className="fa-light fa-folder-plus" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
           New Subfolder
         </DropdownMenuItem>
-        {isAdmin && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => { setFolderPrivacy(node.id, !isPrivate); showSidebarToast(isPrivate ? `"${node.name}" is now public` : `"${node.name}" is now private`, () => setFolderPrivacy(node.id, isPrivate)) }}>
-              <i
-                className={`fa-light ${isPrivate ? 'fa-lock-open' : 'fa-lock'}`}
-                aria-hidden="true"
-                style={{ fontSize: 12, width: 14 }}
-              />
-              {isPrivate ? 'Make public' : 'Make private'}
-            </DropdownMenuItem>
-          </>
-        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => onRename()}>
           <i className="fa-light fa-pen" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
