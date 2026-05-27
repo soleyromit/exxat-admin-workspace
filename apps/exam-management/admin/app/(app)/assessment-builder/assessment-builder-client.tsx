@@ -137,6 +137,8 @@ export default function AssessmentBuilderClient() {
     const parsedSections = parseSectionsFromPrompt(storedPrompt)
     const courseCode = (mockCourses.find(c => c.id === draft.courseId)?.code ?? '').toLowerCase()
 
+    // Round-robin assign canvas collaborators to sections
+    const colIds = draft.collaboratorIds ?? []
     const sections: AssessmentSection[] = parsedSections.map((title, i) => {
       const sectionId = `sec-${draft.id}-${i}`
       // Pull up to 20 relevant QB questions for this section
@@ -145,7 +147,8 @@ export default function AssessmentBuilderClient() {
         .filter(q => q.folder.toLowerCase().includes(keyword) || q.folder.startsWith(courseCode))
         .slice(i * 20, i * 20 + 20)
         .map(q => q.id)
-      return { id: sectionId, title, questionIds: sectionQIds }
+      const facultyId = colIds.length > 0 ? colIds[i % colIds.length] : undefined
+      return { id: sectionId, title, questionIds: sectionQIds, facultyId }
     })
 
     const allQIds = sections.flatMap(s => s.questionIds)
@@ -163,6 +166,7 @@ export default function AssessmentBuilderClient() {
       sections,
       settings: defaultAssessmentSettings('Exam'),
       healthFlags: [],
+      collaboratorIds: draft.collaboratorIds,
     }
 
     if (parsedSections.length > 0) {
@@ -431,6 +435,13 @@ export default function AssessmentBuilderClient() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [sendForReviewOpen, setSendForReviewOpen] = useState(false)
 
+  // Auto-open QB picker when arriving via "Build from QB" quick-start
+  useEffect(() => {
+    if (urlMode === 'qb' && builderState === 'ready') {
+      setPickerOpen(true)
+    }
+  }, [urlMode, builderState])
+
   function addSection(title: string) {
     setActiveAsmt(prev => prev ? {
       ...prev,
@@ -572,9 +583,8 @@ export default function AssessmentBuilderClient() {
   // ── Scene 2: AI building animation ─────────────────────────────────────────
   if (builderState === 'building') {
     const buildingTitle = localDrafts.find(d => d.id === urlDraftId)?.title ?? 'New Assessment'
-    const previewSections = parseSectionsFromPrompt(
-      (() => { try { return sessionStorage.getItem(`asmt-creation-prompt-${urlDraftId}`) ?? '' } catch { return '' } })()
-    )
+    const buildingPrompt = (() => { try { return sessionStorage.getItem(`asmt-creation-prompt-${urlDraftId}`) ?? '' } catch { return '' } })()
+    const previewSections = parseSectionsFromPrompt(buildingPrompt)
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
         <h1 className="sr-only">Building assessment</h1>
@@ -606,8 +616,26 @@ export default function AssessmentBuilderClient() {
               </div>
             ))}
           </div>
-          {/* Building center */}
+          {/* Building center — shows original prompt + AI status */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            {/* Original prompt — always visible so user knows what's being built */}
+            {buildingPrompt && (
+              <div style={{
+                padding: '10px 16px 8px', borderBottom: '1px solid var(--border)',
+                background: 'var(--card)', flexShrink: 0,
+              }}>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', marginBottom: 6 }}>
+                  Your prompt
+                </div>
+                <pre style={{
+                  fontSize: 12, lineHeight: 1.6, color: 'var(--foreground)',
+                  whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0,
+                  fontFamily: 'inherit', maxHeight: 120, overflowY: 'auto',
+                }}>
+                  {buildingPrompt}
+                </pre>
+              </div>
+            )}
             <div style={{ height: 40, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', padding: '0 14px', gap: 8, background: 'color-mix(in srgb, var(--brand-color) 5%, var(--background))' }}>
               <span className="text-sm font-semibold text-foreground flex-1">§1 — {previewSections[0] ?? 'Section 1'}</span>
               <span className="text-xs text-muted-foreground">Building…</span>
@@ -1421,6 +1449,7 @@ export default function AssessmentBuilderClient() {
         onOpenChange={(o) => { if (!o) setAssignSheetSectionId(null) }}
         section={activeAsmt?.sections.find(s => s.id === assignSheetSectionId) ?? null}
         sectionIndex={activeAsmt?.sections.findIndex(s => s.id === assignSheetSectionId) ?? -1}
+        collaboratorIds={activeAsmt?.collaboratorIds ?? []}
         onAssignFaculty={(sectionId, facultyId) => updateSection(sectionId, { facultyId })}
       />
     </div>
@@ -4601,27 +4630,38 @@ function QBCommandPicker({ selectedIds, onToggle, activeSection, activeAsmt, onC
 
 // ── Section Assign Sheet ─────────────────────────────────────────────────────
 
+const ASSIGN_AVATAR_COLORS: Record<string, string> = {
+  'fac-001': '#7c6bbf', 'fac-002': '#3b7abf', 'fac-003': '#4e9a6b',
+  'fac-004': '#bf5b3b', 'fac-005': '#b87c3b', 'fac-006': '#3b9abf',
+  'fac-007': '#6b7cbf', 'fac-008': '#4e7a6b', 'fac-009': '#9a4e6b',
+}
+
 function SectionAssignSheet({
   open,
   onOpenChange,
   section,
   sectionIndex,
+  collaboratorIds,
   onAssignFaculty,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   section: AssessmentSection | null
   sectionIndex: number
+  collaboratorIds: string[]
   onAssignFaculty: (sectionId: string, facultyId: string | undefined) => void
 }) {
-  const MOCK_CONTRIBUTORS = [
-    { id: 'fac-002', name: 'Dr. Regina Kim', initials: 'RK', color: '#3b7abf', role: 'Contributor' },
-    { id: 'fac-004', name: 'Dr. N. Patel', initials: 'NP', color: '#4e9a6b', role: 'Contributor' },
-  ]
-  const MOCK_GRADERS = [
-    { id: 'fac-001', name: 'Dr. S. Mehra', initials: 'SM', color: '#7c6bbf', role: 'Grader' },
-    { id: 'fac-002', name: 'Dr. Regina Kim', initials: 'RK', color: '#3b7abf', role: 'Grader' },
-  ]
+  const [selectedId, setSelectedId] = React.useState<string | undefined>(section?.facultyId)
+
+  // Sync when the section changes
+  React.useEffect(() => {
+    setSelectedId(section?.facultyId)
+  }, [section?.id, section?.facultyId])
+
+  // Build the faculty pool from canvas collaborators
+  const facultyPool = collaboratorIds.length > 0
+    ? facultyListRows.filter(f => collaboratorIds.includes(f.id))
+    : facultyListRows.slice(0, 4) // fallback: show first 4 if no collaborators assigned
 
   if (!section) return null
 
@@ -4629,7 +4669,6 @@ function SectionAssignSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        aria-label={`Assign faculty to ${section.title}`}
         style={{ width: 320, display: 'flex', flexDirection: 'column', padding: 0 }}
       >
         {/* Header */}
@@ -4637,36 +4676,56 @@ function SectionAssignSheet({
           <SheetTitle style={{ fontSize: 13, fontWeight: 600 }}>
             §{sectionIndex + 1} — {section.title}
           </SheetTitle>
-          <p className="text-xs text-muted-foreground">Assign contributors and graders per section</p>
+          <p className="text-xs text-muted-foreground">Select the faculty responsible for this section</p>
         </SheetHeader>
 
         {/* Body */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
-          {/* Contributors group */}
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '12px 16px 5px' }}>
-            Contributors — Add questions
+          {/* Faculty selection — canvas collaborators */}
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '12px 16px 6px' }}>
+            {collaboratorIds.length > 0 ? 'From canvas collaborators' : 'Faculty'}
           </div>
-          {MOCK_CONTRIBUTORS.map(person => (
-            <div key={person.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 16px' }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: person.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
-                {person.initials}
-              </div>
-              <span style={{ fontSize: 13, fontWeight: 500, flex: 1, color: 'var(--foreground)' }}>{person.name}</span>
-              <span style={{ fontSize: 12, padding: '2px 7px', borderRadius: 4, background: 'var(--muted)', color: 'var(--muted-foreground)' }}>{person.role}</span>
-              <Button variant="ghost" size="sm" aria-label={`Remove ${person.name}`} style={{ padding: '0 6px', color: 'var(--muted-foreground)' }}>
-                <i className="fa-light fa-xmark" aria-hidden="true" />
-              </Button>
-            </div>
-          ))}
-          <button
-            type="button"
-            style={{ fontSize: 12, color: 'var(--brand-color)', fontWeight: 600, padding: '4px 16px', display: 'block', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
-          >
-            ＋ Add contributor
-          </button>
+          {facultyPool.length === 0 ? (
+            <p style={{ fontSize: 13, color: 'var(--muted-foreground)', padding: '8px 16px' }}>
+              No collaborators were added on the canvas. Add faculty there first.
+            </p>
+          ) : facultyPool.map(fac => {
+            const initials = fac.fullName.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase()
+            const color = ASSIGN_AVATAR_COLORS[fac.id] ?? '#7c6bbf'
+            const isSelected = selectedId === fac.id
+            return (
+              <button
+                key={fac.id}
+                type="button"
+                onClick={() => setSelectedId(isSelected ? undefined : fac.id)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px',
+                  width: '100%', textAlign: 'left', background: isSelected ? 'color-mix(in srgb, var(--brand-color) 8%, var(--background))' : 'none',
+                  border: 'none', borderLeft: `3px solid ${isSelected ? 'var(--brand-color)' : 'transparent'}`,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                <div style={{
+                  width: 32, height: 32, borderRadius: '50%', background: color,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 13, fontWeight: 700, color: '#fff', flexShrink: 0,
+                }}>
+                  {initials}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)' }}>{fac.fullName}</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{fac.rank}</div>
+                </div>
+                {isSelected && (
+                  <i className="fa-solid fa-circle-check" aria-hidden="true"
+                    style={{ fontSize: 16, color: 'var(--brand-color)', flexShrink: 0 }} />
+                )}
+              </button>
+            )
+          })}
 
-          {/* Deadline */}
-          <div style={{ padding: '8px 16px 12px' }}>
+          {/* Contribution deadline */}
+          <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', marginTop: 8 }}>
             <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 5 }}>
               Contribution deadline <span style={{ opacity: 0.7 }}>(optional)</span>
             </div>
@@ -4675,37 +4734,10 @@ function SectionAssignSheet({
               defaultValue=""
               placeholder="e.g. May 20, 2026"
               aria-label="Contribution deadline"
-              style={{ fontSize: 13, fontWeight: 500, border: '1px solid var(--border)', borderRadius: 6, padding: '5px 9px', width: '100%', fontFamily: 'inherit', color: 'var(--foreground)', background: 'var(--background)', outline: 'none' }}
+              style={{ fontSize: 13, border: '1px solid var(--border)', borderRadius: 6, padding: '5px 9px', width: '100%', fontFamily: 'inherit', color: 'var(--foreground)', background: 'var(--background)', outline: 'none', boxSizing: 'border-box' }}
             />
-            <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>Contributors see this in their faculty view.</div>
+            <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>Faculty see this due date in their course view.</div>
           </div>
-
-          <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
-
-          {/* Graders group */}
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '12px 16px 5px' }}>
-            Graders — Review submitted responses
-          </div>
-          {MOCK_GRADERS.map(person => (
-            <div key={person.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 16px' }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: person.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
-                {person.initials}
-              </div>
-              <span style={{ fontSize: 13, fontWeight: 500, flex: 1, color: 'var(--foreground)' }}>{person.name}</span>
-              <span style={{ fontSize: 12, padding: '2px 7px', borderRadius: 4, background: 'var(--muted)', color: 'var(--muted-foreground)' }}>{person.role}</span>
-              <Button variant="ghost" size="sm" aria-label={`Remove ${person.name}`} style={{ padding: '0 6px', color: 'var(--muted-foreground)' }}>
-                <i className="fa-light fa-xmark" aria-hidden="true" />
-              </Button>
-            </div>
-          ))}
-          <button
-            type="button"
-            style={{ fontSize: 12, color: 'var(--brand-color)', fontWeight: 600, padding: '4px 16px', display: 'block', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
-          >
-            ＋ Add grader
-          </button>
-
-          <div style={{ height: 10 }} />
         </div>
 
         {/* Footer */}
@@ -4713,9 +4745,9 @@ function SectionAssignSheet({
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button
             size="sm"
+            disabled={!selectedId}
             onClick={() => {
-              // Assign first contributor as faculty contact
-              if (section) onAssignFaculty(section.id, MOCK_CONTRIBUTORS[0]?.id)
+              if (section) onAssignFaculty(section.id, selectedId)
               onOpenChange(false)
             }}
           >

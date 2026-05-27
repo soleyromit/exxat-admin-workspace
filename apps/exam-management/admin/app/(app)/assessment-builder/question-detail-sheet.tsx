@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Sheet, SheetContent, Button } from '@exxat/ds/packages/ui/src'
+import { Sheet, SheetContent, SheetTitle, Button } from '@exxat/ds/packages/ui/src'
 import type { Question, QuestionVersionEntry, QuestionCollaborator, QuestionOption } from '@/lib/qb-types'
 import { MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
 
@@ -86,29 +86,28 @@ function MetaDivider() {
 function OptionPreview({ option }: { option: QuestionOption }) {
   return (
     <div style={{ marginBottom: 8 }}>
+      {/* Boxed card — matches test-taker layout */}
       <div style={{
-        display: 'flex', alignItems: 'flex-start', gap: 8,
-        borderLeft: option.isCorrect ? '3px solid var(--chart-2)' : '3px solid transparent',
-        paddingLeft: 8,
-        paddingTop: 4, paddingBottom: 4,
+        display: 'flex', alignItems: 'flex-start', gap: 10,
+        border: `1px solid ${option.isCorrect ? 'var(--chart-2)' : 'var(--border)'}`,
+        borderRadius: 7, padding: '8px 10px',
+        background: option.isCorrect ? 'oklch(0.97 0.025 160)' : 'transparent',
       }}>
         <span style={{
-          flexShrink: 0, width: 20, height: 20, borderRadius: '50%',
-          background: 'var(--muted)', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', fontSize: 12, fontWeight: 600,
-          color: 'var(--foreground)',
+          flexShrink: 0, width: 24, height: 24, borderRadius: 5,
+          background: option.isCorrect ? 'var(--chart-2)' : 'var(--muted)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 12, fontWeight: 700,
+          color: option.isCorrect ? '#fff' : 'var(--muted-foreground)',
         }}>
           {option.key}
         </span>
         <div style={{ flex: 1 }}>
-          <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--foreground)', margin: 0 }}>
+          <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--foreground)', margin: 0 }}>
             {option.text}
           </p>
           {option.isCorrect && (
-            <span style={{
-              fontSize: 12, fontWeight: 600,
-              color: 'var(--qb-pbi-good-color)',
-            }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--chart-2)', display: 'block', marginTop: 2 }}>
               ✓ Correct
             </span>
           )}
@@ -116,7 +115,7 @@ function OptionPreview({ option }: { option: QuestionOption }) {
       </div>
       {option.rationale && (
         <div style={{
-          marginLeft: 36, marginTop: 4,
+          marginLeft: 34, marginTop: 4,
           padding: '6px 10px',
           background: 'var(--muted)', borderRadius: 6,
           fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1.5,
@@ -801,13 +800,15 @@ export function QuestionDetailSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        aria-label={`Question detail: ${question.title}`}
         style={{
           width: '82vw', maxWidth: 960,
           display: 'flex', flexDirection: 'column',
           padding: 0,
         }}
       >
+        {/* Visually-hidden title satisfies Radix DialogContent accessibility requirement */}
+        <SheetTitle className="sr-only">{question.title}</SheetTitle>
+
         {/* ── Header (52px) ─────────────────────────────────────────────── */}
         <div style={{
           height: 52, flexShrink: 0,

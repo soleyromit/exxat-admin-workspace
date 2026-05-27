@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button, LocalBanner } from '@exxat/ds/packages/ui/src'
 import { useAssessmentDrafts } from '@/lib/assessment-draft-store'
-import { mockCourses, mockCourseOfferings } from '@/lib/qb-mock-data'
+import { mockCourses, mockCourseOfferings, mockAssessments } from '@/lib/qb-mock-data'
 import type { AssessmentType } from '@/lib/qb-types'
 import { facultyListRows } from '@/lib/faculty-mock-data'
 
@@ -42,6 +42,7 @@ export default function CreateCanvasClient() {
   const [collaboratorIds, setCollaboratorIds] = useState<string[]>([])
   const [prompt, setPrompt]                 = useState(EXAMPLE_PROMPT)
   const [nameError, setNameError]           = useState('')
+  const [copyPickerOpen, setCopyPickerOpen] = useState(false)
 
   // Auto-fill name + date from prompt when those fields are still empty
   React.useEffect(() => {
@@ -52,12 +53,17 @@ export default function CreateCanvasClient() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prompt])
 
-  function handleSubmit(mode: QuickStart = 'blank') {
+  function handleSubmit(mode: QuickStart = 'blank', sourceId?: string) {
     if (!name.trim()) {
       setNameError('Assessment name is required.')
       return
     }
     setNameError('')
+    // "Copy last year's" — must pick a source first
+    if (mode === 'copy' && !sourceId) {
+      setCopyPickerOpen(true)
+      return
+    }
     const draft = addDraft({
       courseId,
       offeringId: offeringId || (mockCourseOfferings.find(o => o.courseId === courseId)?.id ?? ''),
@@ -70,9 +76,13 @@ export default function CreateCanvasClient() {
     if (prompt.trim()) {
       try { sessionStorage.setItem(`asmt-creation-prompt-${draft.id}`, prompt.trim()) } catch {}
     }
-    const qs = mode !== 'blank' ? `&mode=${mode}` : ''
-    router.push(`/assessment-builder?draftId=${draft.id}&courseId=${courseId}${qs}`)
+    const modeQs = mode !== 'blank' ? `&mode=${mode}` : ''
+    const sourceQs = sourceId ? `&sourceId=${sourceId}` : ''
+    router.push(`/assessment-builder?draftId=${draft.id}&courseId=${courseId}${modeQs}${sourceQs}`)
   }
+
+  // All assessments for this course — source candidates for "Copy last year's"
+  const courseAssessments = mockAssessments.filter(a => a.courseId === courseId)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
@@ -103,6 +113,49 @@ export default function CreateCanvasClient() {
         onPromptChange={setPrompt}
         onSubmit={handleSubmit}
       />
+
+      {/* Copy source picker — shown when user clicks "Copy last year's" */}
+      {copyPickerOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Pick assessment to copy"
+          style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.18)' }}
+          onClick={e => { if (e.target === e.currentTarget) setCopyPickerOpen(false) }}
+        >
+          <div style={{ background: 'var(--background)', border: '1px solid var(--border)', borderRadius: 12, width: 420, maxHeight: '60vh', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 32px rgba(0,0,0,0.14)', overflow: 'hidden' }}>
+            <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 14, fontWeight: 600, flex: 1, color: 'var(--foreground)' }}>Copy from a previous assessment</span>
+              <Button variant="ghost" size="sm" onClick={() => setCopyPickerOpen(false)} aria-label="Close">
+                <i className="fa-light fa-xmark" aria-hidden="true" />
+              </Button>
+            </div>
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              {courseAssessments.length === 0 ? (
+                <p style={{ fontSize: 13, color: 'var(--muted-foreground)', padding: '20px 16px', textAlign: 'center' }}>
+                  No previous assessments found for this course.
+                </p>
+              ) : courseAssessments.map(a => (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => {
+                    setCopyPickerOpen(false)
+                    handleSubmit('copy', a.id)
+                  }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', fontFamily: 'inherit' }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)', marginBottom: 2 }}>{a.title}</div>
+                    <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{a.questionCount} questions · {a.durationMinutes} min</div>
+                  </div>
+                  <i className="fa-light fa-copy" aria-hidden="true" style={{ color: 'var(--brand-color)', fontSize: 14 }} />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
