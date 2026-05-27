@@ -1,6 +1,6 @@
 ---
 name: exxat-card-vs-list-rows
-description: Use when choosing between card grids, DataTable, or simple list rows for a surface in the Exxat DS.
+description: Use when choosing card grids, DataTable, or simple list rows for a surface
 ---
 
 # Exxat DS — cards vs rows vs lists

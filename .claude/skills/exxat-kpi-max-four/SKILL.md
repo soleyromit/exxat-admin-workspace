@@ -1,6 +1,6 @@
 ---
 name: exxat-kpi-max-four
-description: Use when building KeyMetrics on ListPageTemplate or Data tab — enforces the four-KPI maximum rule.
+description: Use when building KeyMetrics on ListPageTemplate or Data tab key-metrics cards
 ---
 
 # Exxat DS — KPI strip (max four)

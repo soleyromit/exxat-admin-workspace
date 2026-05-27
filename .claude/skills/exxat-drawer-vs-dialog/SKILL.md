@@ -1,6 +1,6 @@
 ---
 name: exxat-drawer-vs-dialog
-description: Use when choosing between Radix Dialog/AlertDialog, floating Sheet panels, or a route for a detail flow in the Exxat DS.
+description: Use when choosing Dialog/AlertDialog vs Sheet panels vs route for a flow
 ---
 
 # Exxat DS — drawer vs dialog

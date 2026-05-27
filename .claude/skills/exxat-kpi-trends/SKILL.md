@@ -1,6 +1,6 @@
 ---
 name: exxat-kpi-trends
-description: Use when adding or reviewing KeyMetrics trend arrows, polarity, or miniMetrics kpi-chart trends in the Exxat DS.
+description: Use when adding or reviewing KeyMetrics trend arrows, polarity, and ChartCard miniMetrics
 ---
 
 # Exxat DS — KPI trend arrows and polarity
