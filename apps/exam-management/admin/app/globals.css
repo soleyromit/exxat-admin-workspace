@@ -1,5 +1,6 @@
-@import '@exxatdesignux/ui/src/globals.css';
+@import '../../../../exxat-ds/packages/ui/src/theme.css';
 @import "tailwindcss";
+@source '../../../../exxat-ds/packages/ui/src/**/*.{ts,tsx}';
 
 /* ── DS Tabs fix — DS sets data-orientation="horizontal" but its Tailwind
    classes look for `data-horizontal` (a non-existent attribute). That breaks

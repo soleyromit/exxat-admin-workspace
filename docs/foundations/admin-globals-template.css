@@ -15,7 +15,7 @@
  */
 
 /* ── REQUIRED HEADER ─────────────────────────────────────────────────────── */
-@import '@exxatdesignux/ui/src/globals.css';
+@import '../../../../exxat-ds/packages/ui/src/theme.css';
 @import "tailwindcss";
 @source '../../../../exxat-ds/packages/ui/src/**/*.{ts,tsx}';
 
