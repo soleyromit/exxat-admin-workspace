@@ -5,7 +5,6 @@
     "ignoreDeprecations": "5.0",
     "baseUrl": ".",
     "paths": {
-      "@exxat/ds/*": ["../../exxat-ds/*"],
       "@/*": ["./*"]
     }
   },

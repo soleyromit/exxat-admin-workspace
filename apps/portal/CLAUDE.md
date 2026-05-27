@@ -11,7 +11,7 @@ Romit Soley (Product Designer II, Exxat) owns this product.
 - **Status:** active
 - **Admin package:** `@exxat/portal`
 - **Port:** 3100
-- **DS:** Admin DS only (`@exxat/ds`)
+- **DS:** `@exxatdesignux/ui` (canonical npm package)
 - **Owner (PM):** Romit
 - **Owner (Dev):** Romit
 - **Priority:** high
