@@ -4740,7 +4740,7 @@ function AssessmentSettingsSheet({
 
   React.useEffect(() => { setLocal(settings) }, [settings])
 
-  function toggleField(key: 'passwordRequired' | 'randomize' | 'showRationaleAfter' | 'requireAnswer' | 'backwardNavigationAllowed' | 'secureMode' | 'showRawScore' | 'showPercentage' | 'postExamReviewEnabled') {
+  function toggleField(key: 'passwordRequired' | 'randomize' | 'showRationaleAfter' | 'requireAnswer' | 'backwardNavigationAllowed' | 'forwardOnlySections' | 'requireAnswerForSectionAdvance' | 'forcedTimerTransition' | 'secureMode' | 'showRawScore' | 'showPercentage' | 'postExamReviewEnabled') {
     setLocal(prev => ({ ...prev, [key]: !prev[key] }))
   }
 
@@ -4924,6 +4924,57 @@ function AssessmentSettingsSheet({
                 style={{ width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0, backgroundColor: local.backwardNavigationAllowed ? 'var(--brand-color)' : 'var(--muted)', position: 'relative', transition: 'background-color .15s' }}
               >
                 <span style={{ position: 'absolute', top: 2, left: local.backwardNavigationAllowed ? 18 : 2, width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)', transition: 'left .15s', display: 'block' }} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between gap-4 py-3 border-b border-border">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Forward-only sections</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Once students advance past a section, they cannot return to it.</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={local.forwardOnlySections}
+                aria-label="Toggle forward-only sections"
+                onClick={() => toggleField('forwardOnlySections')}
+                style={{ width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0, backgroundColor: local.forwardOnlySections ? 'var(--brand-color)' : 'var(--muted)', position: 'relative', transition: 'background-color .15s' }}
+              >
+                <span style={{ position: 'absolute', top: 2, left: local.forwardOnlySections ? 18 : 2, width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)', transition: 'left .15s', display: 'block' }} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between gap-4 py-3 border-b border-border">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Require all answers before advancing section</p>
+                <p className="text-xs text-muted-foreground mt-0.5">All questions in the current section must be answered before students can move to the next section.</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={local.requireAnswerForSectionAdvance}
+                aria-label="Toggle require all answers before advancing section"
+                onClick={() => toggleField('requireAnswerForSectionAdvance')}
+                style={{ width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0, backgroundColor: local.requireAnswerForSectionAdvance ? 'var(--brand-color)' : 'var(--muted)', position: 'relative', transition: 'background-color .15s' }}
+              >
+                <span style={{ position: 'absolute', top: 2, left: local.requireAnswerForSectionAdvance ? 18 : 2, width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)', transition: 'left .15s', display: 'block' }} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between gap-4 py-3 border-b border-border">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Auto-advance on section timer expiry</p>
+                <p className="text-xs text-muted-foreground mt-0.5">When a section's timer runs out, students are automatically moved to the next section. Unanswered questions are auto-submitted.</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={local.forcedTimerTransition}
+                aria-label="Toggle auto-advance on section timer expiry"
+                onClick={() => toggleField('forcedTimerTransition')}
+                style={{ width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0, backgroundColor: local.forcedTimerTransition ? 'var(--brand-color)' : 'var(--muted)', position: 'relative', transition: 'background-color .15s' }}
+              >
+                <span style={{ position: 'absolute', top: 2, left: local.forcedTimerTransition ? 18 : 2, width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)', transition: 'left .15s', display: 'block' }} />
               </button>
             </div>
 
