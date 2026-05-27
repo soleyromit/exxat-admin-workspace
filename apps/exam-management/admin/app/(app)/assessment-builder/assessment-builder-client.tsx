@@ -1547,6 +1547,7 @@ export default function AssessmentBuilderClient() {
                                         if (flag.type === 'poor-pbis') return `Low pt-biserial (${flag.pbis.toFixed(2)})`
                                         if (flag.type === 'poor-discriminator') return `Poor discriminator (pbis ${flag.pbis.toFixed(2)})`
                                         if (flag.type === 'extreme-difficulty') return `Extreme difficulty (p=${flag.pValue.toFixed(2)})`
+                                        if (flag.type === 'near-zero-discrimination') return `Near-zero discrimination (D=${flag.discriminationIndex.toFixed(2)})`
                                         return 'Quality flag'
                                       })()
                                       return (
