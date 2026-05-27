@@ -1227,132 +1227,170 @@ export default function AssessmentBuilderClient() {
 
                   {/* Scrollable question list */}
                   <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-                    {/* Questions list */}
-                    <div>
-                      {activeSectionQuestions.length === 0 ? (
-                        <div style={{ padding: '32px 14px', textAlign: 'center' }}>
-                          <p className="text-sm text-muted-foreground">No questions in this section yet.</p>
-                        </div>
-                      ) : activeSectionQuestions.map(({ aq, q }, idx) => {
-                        const pbiLow = q.pbis !== null && q.pbis < 0.2
-                        const isPinned = pinnedQuestionIds.has(q.id)
-                        const totalQ = activeSectionQuestions.length
-                        const creatorPersona = q.creator ? PERSONA_BY_ID[q.creator] : null
-                        const editorPersona = (q.lastEditedBy && q.lastEditedBy !== q.creator) ? PERSONA_BY_ID[q.lastEditedBy] : null
-                        return (
-                          <div
-                            key={q.id}
-                            style={{
-                              display: 'flex', alignItems: 'flex-start', gap: 6,
-                              padding: '6px 8px 6px 14px', borderBottom: '1px solid color-mix(in srgb, var(--border) 50%, transparent)',
-                              background: lastMovedId === q.id
-                                ? 'color-mix(in srgb, var(--brand-color) 12%, var(--background))'
-                                : isPinned ? 'color-mix(in srgb, var(--chart-2) 4%, var(--background))' : undefined,
-                              transition: 'background 0.6s ease',
-                            }}
-                          >
-                            {/* Reorder controls — centered */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 0, flexShrink: 0, paddingTop: 3 }}>
-                              <button
-                                type="button"
-                                aria-label={`Move ${q.title} up`}
-                                onClick={e => { e.stopPropagation(); reorderQuestionInSection(activeSection.id, q.id, 'up') }}
-                                disabled={idx === 0}
-                                style={{ background: 'none', border: 'none', padding: '1px 3px', cursor: idx === 0 ? 'default' : 'pointer', color: 'var(--muted-foreground)', fontSize: 9, lineHeight: 1, opacity: idx === 0 ? 0.25 : 0.6 }}
-                              ><i className="fa-solid fa-angle-up" aria-hidden="true" /></button>
-                              <button
-                                type="button"
-                                aria-label={`Move ${q.title} down`}
-                                onClick={e => { e.stopPropagation(); reorderQuestionInSection(activeSection.id, q.id, 'down') }}
-                                disabled={idx === totalQ - 1}
-                                style={{ background: 'none', border: 'none', padding: '1px 3px', cursor: idx === totalQ - 1 ? 'default' : 'pointer', color: 'var(--muted-foreground)', fontSize: 9, lineHeight: 1, opacity: idx === totalQ - 1 ? 0.25 : 0.6 }}
-                              ><i className="fa-solid fa-angle-down" aria-hidden="true" /></button>
-                            </div>
-                            {/* Row number */}
-                            <span className="text-xs text-muted-foreground" style={{ width: 16, textAlign: 'right', flexShrink: 0, paddingTop: 3 }}>{idx + 1}</span>
-                            {/* Content column — title + stats */}
-                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
-                              {/* Title row */}
-                              <span
-                                role="button"
-                                tabIndex={0}
-                                style={{ fontSize: 13, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', lineHeight: 1.4, color: 'var(--foreground)', cursor: 'pointer', display: 'block' }}
-                                onClick={() => setDetailQuestionId(prev => prev === q.id ? null : q.id)}
-                                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setDetailQuestionId(prev => prev === q.id ? null : q.id) }}
+
+                    {activeSectionQuestions.length === 0 ? (
+                      <div style={{ padding: '32px 14px', textAlign: 'center' }}>
+                        <p className="text-sm text-muted-foreground">No questions in this section yet.</p>
+                      </div>
+                    ) : (
+                      <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                        <colgroup>
+                          <col style={{ width: 52 }} />{/* # + reorder */}
+                          <col />{/* Question — takes remaining width */}
+                          <col style={{ width: 78 }} />{/* Type */}
+                          <col style={{ width: 68 }} />{/* Difficulty */}
+                          <col style={{ width: 84 }} />{/* Bloom's */}
+                          <col style={{ width: 50 }} />{/* PBI */}
+                          <col style={{ width: 48 }} />{/* By */}
+                          <col style={{ width: 32 }} />{/* Pin */}
+                        </colgroup>
+                        <thead>
+                          <tr style={{
+                            position: 'sticky', top: 0, zIndex: 1,
+                            background: 'var(--muted)',
+                            borderBottom: '1px solid var(--border)',
+                          }}>
+                            {(['#', 'Question', 'Type', 'Diff.', 'Bloom\'s', 'PBI', 'By', ''] as const).map((label, i) => (
+                              <th key={i} scope="col" style={{
+                                padding: i === 0 ? '5px 4px' : '5px 8px',
+                                fontSize: 11, fontWeight: 600,
+                                color: 'var(--muted-foreground)',
+                                textTransform: 'uppercase', letterSpacing: '0.05em',
+                                textAlign: i === 0 ? 'center' : i >= 5 ? 'right' : 'left',
+                                whiteSpace: 'nowrap',
+                              }}>
+                                {label}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {activeSectionQuestions.map(({ aq, q }, idx) => {
+                            const pbiLow = q.pbis !== null && q.pbis < 0.2
+                            const isPinned = pinnedQuestionIds.has(q.id)
+                            const totalQ = activeSectionQuestions.length
+                            const creatorPersona = q.creator ? PERSONA_BY_ID[q.creator] : null
+                            const editorPersona = (q.lastEditedBy && q.lastEditedBy !== q.creator) ? PERSONA_BY_ID[q.lastEditedBy] : null
+                            return (
+                              <tr
+                                key={q.id}
+                                style={{
+                                  borderBottom: '1px solid color-mix(in srgb, var(--border) 45%, transparent)',
+                                  background: lastMovedId === q.id
+                                    ? 'color-mix(in srgb, var(--brand-color) 10%, var(--background))'
+                                    : isPinned ? 'color-mix(in srgb, var(--chart-2) 4%, var(--background))' : undefined,
+                                  transition: 'background 0.6s ease',
+                                }}
                               >
-                                {q.title}
-                              </span>
-                              {/* Stats row */}
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'nowrap' }}>
+                                {/* # + reorder */}
+                                <td style={{ padding: '4px 4px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                                    <button type="button" aria-label={`Move ${q.title} up`}
+                                      onClick={e => { e.stopPropagation(); reorderQuestionInSection(activeSection.id, q.id, 'up') }}
+                                      disabled={idx === 0}
+                                      style={{ background: 'none', border: 'none', padding: '1px 4px', cursor: idx === 0 ? 'default' : 'pointer', color: 'var(--muted-foreground)', fontSize: 9, lineHeight: 1, opacity: idx === 0 ? 0.2 : 0.55 }}
+                                    ><i className="fa-solid fa-angle-up" aria-hidden="true" /></button>
+                                    <span style={{ fontSize: 11, color: 'var(--muted-foreground)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{idx + 1}</span>
+                                    <button type="button" aria-label={`Move ${q.title} down`}
+                                      onClick={e => { e.stopPropagation(); reorderQuestionInSection(activeSection.id, q.id, 'down') }}
+                                      disabled={idx === totalQ - 1}
+                                      style={{ background: 'none', border: 'none', padding: '1px 4px', cursor: idx === totalQ - 1 ? 'default' : 'pointer', color: 'var(--muted-foreground)', fontSize: 9, lineHeight: 1, opacity: idx === totalQ - 1 ? 0.2 : 0.55 }}
+                                    ><i className="fa-solid fa-angle-down" aria-hidden="true" /></button>
+                                  </div>
+                                </td>
+
+                                {/* Question title */}
+                                <td style={{ padding: '8px 8px', verticalAlign: 'middle' }}>
+                                  <span
+                                    role="button"
+                                    tabIndex={0}
+                                    style={{ fontSize: 13, display: 'block', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', color: 'var(--foreground)', cursor: 'pointer', lineHeight: 1.4 }}
+                                    onClick={() => setDetailQuestionId(prev => prev === q.id ? null : q.id)}
+                                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setDetailQuestionId(prev => prev === q.id ? null : q.id) }}
+                                  >
+                                    {q.title}
+                                  </span>
+                                </td>
+
                                 {/* Type */}
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0 }}>
-                                  {TYPE_ICONS_Q[q.type] && <i className={TYPE_ICONS_Q[q.type]} aria-hidden="true" style={{ fontSize: 10 }} />}
-                                  {q.type}
-                                </span>
-                                <span aria-hidden="true" style={{ color: 'var(--border)', fontSize: 10, flexShrink: 0 }}>·</span>
+                                <td style={{ padding: '8px 8px', verticalAlign: 'middle' }}>
+                                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--muted-foreground)' }}>
+                                    {TYPE_ICONS_Q[q.type] && <i className={TYPE_ICONS_Q[q.type]} aria-hidden="true" style={{ fontSize: 11, flexShrink: 0 }} />}
+                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.type}</span>
+                                  </span>
+                                </td>
+
                                 {/* Difficulty */}
-                                <span style={{ fontSize: 11, color: DIFF_COLORS[q.difficulty] ?? 'var(--muted-foreground)', fontWeight: 600, flexShrink: 0 }}>{q.difficulty}</span>
-                                <span aria-hidden="true" style={{ color: 'var(--border)', fontSize: 10, flexShrink: 0 }}>·</span>
+                                <td style={{ padding: '8px 8px', verticalAlign: 'middle' }}>
+                                  <span style={{ fontSize: 12, fontWeight: 600, color: DIFF_COLORS[q.difficulty] ?? 'var(--muted-foreground)' }}>
+                                    {q.difficulty}
+                                  </span>
+                                </td>
+
                                 {/* Bloom's */}
-                                <span style={{ fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.blooms}</span>
+                                <td style={{ padding: '8px 8px', verticalAlign: 'middle' }}>
+                                  <span style={{ fontSize: 12, color: 'var(--muted-foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
+                                    {q.blooms}
+                                  </span>
+                                </td>
+
                                 {/* PBI */}
-                                {q.pbis !== null && (
-                                  <>
-                                    <span aria-hidden="true" style={{ color: 'var(--border)', fontSize: 10, flexShrink: 0 }}>·</span>
-                                    <span style={{ fontSize: 11, fontWeight: 600, color: pbiLow ? 'var(--qb-pbi-low-color, var(--chart-4))' : 'var(--chart-2)', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <td style={{ padding: '8px 8px', verticalAlign: 'middle', textAlign: 'right' }}>
+                                  {q.pbis !== null ? (
+                                    <span style={{ fontSize: 12, fontWeight: 600, color: pbiLow ? 'var(--qb-pbi-low-color, var(--chart-4))' : 'var(--chart-2)', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                                       {pbiLow && <i className="fa-light fa-triangle-exclamation" aria-hidden="true" />}
                                       {q.pbis.toFixed(2)}
                                     </span>
-                                  </>
-                                )}
-                                <div style={{ flex: 1 }} />
-                                {/* Collaborator avatars */}
-                                <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                                  {creatorPersona && (
-                                    <div
-                                      title={`Created by ${creatorPersona.name}`}
-                                      style={{
-                                        width: 18, height: 18, borderRadius: '50%',
+                                  ) : (
+                                    <span style={{ fontSize: 12, color: 'var(--border)' }}>—</span>
+                                  )}
+                                </td>
+
+                                {/* By — creator + editor avatars */}
+                                <td style={{ padding: '8px 6px', verticalAlign: 'middle', textAlign: 'right' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                                    {creatorPersona && (
+                                      <div title={`Created by ${creatorPersona.name}`} style={{
+                                        width: 20, height: 20, borderRadius: '50%',
                                         background: creatorPersona.color,
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         fontSize: 9, fontWeight: 700, color: '#fff', flexShrink: 0,
-                                      }}
-                                    >
-                                      {creatorPersona.initials}
-                                    </div>
-                                  )}
-                                  {editorPersona && (
-                                    <div
-                                      title={`Last edited by ${editorPersona.name}`}
-                                      style={{
-                                        width: 18, height: 18, borderRadius: '50%',
+                                      }}>
+                                        {creatorPersona.initials}
+                                      </div>
+                                    )}
+                                    {editorPersona && (
+                                      <div title={`Last edited by ${editorPersona.name}`} style={{
+                                        width: 20, height: 20, borderRadius: '50%',
                                         background: editorPersona.color,
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         fontSize: 9, fontWeight: 700, color: '#fff', flexShrink: 0,
-                                        marginLeft: -5, border: '1.5px solid var(--background)',
-                                      }}
-                                    >
-                                      {editorPersona.initials}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            {/* Pin button */}
-                            <button
-                              type="button"
-                              aria-label={isPinned ? `Unpin ${q.title}` : `Pin ${q.title} — won't be randomized`}
-                              title={isPinned ? 'Pinned — stays fixed during randomization' : 'Pin to fix position during randomization'}
-                              onClick={e => { e.stopPropagation(); togglePinQuestion(q.id) }}
-                              style={{ background: 'none', border: 'none', padding: '3px 4px', cursor: 'pointer', color: isPinned ? 'var(--brand-color)' : 'var(--muted-foreground)', fontSize: 11, flexShrink: 0, opacity: isPinned ? 1 : 0.4, marginTop: 1 }}
-                            >
-                              <i className={isPinned ? 'fa-solid fa-thumbtack' : 'fa-light fa-thumbtack'} aria-hidden="true" />
-                            </button>
-                          </div>
-                        )
-                      })}
+                                        marginLeft: -6, border: '1.5px solid var(--background)',
+                                      }}>
+                                        {editorPersona.initials}
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
 
-                    </div>
+                                {/* Pin */}
+                                <td style={{ padding: '8px 6px', verticalAlign: 'middle', textAlign: 'center' }}>
+                                  <button
+                                    type="button"
+                                    aria-label={isPinned ? `Unpin ${q.title}` : `Pin ${q.title} — won't be randomized`}
+                                    title={isPinned ? 'Pinned — stays fixed during randomization' : 'Pin to fix position during randomization'}
+                                    onClick={e => { e.stopPropagation(); togglePinQuestion(q.id) }}
+                                    style={{ background: 'none', border: 'none', padding: '3px', cursor: 'pointer', color: isPinned ? 'var(--brand-color)' : 'var(--muted-foreground)', fontSize: 11, opacity: isPinned ? 1 : 0.35 }}
+                                  >
+                                    <i className={isPinned ? 'fa-solid fa-thumbtack' : 'fa-light fa-thumbtack'} aria-hidden="true" />
+                                  </button>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    )}
 
                     {/* Footer: add actions */}
                     <div style={{
