@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import { Sheet, SheetContent, SheetTitle, Button } from '@exxat/ds/packages/ui/src'
-import type { Question, QuestionVersionEntry, QuestionCollaborator } from '@/lib/qb-types'
+import type { Question, QuestionVersionEntry, QuestionCollaborator, QuestionGradingConfig } from '@/lib/qb-types'
 import { MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
 
 type DetailTab = 'details' | 'stats' | 'versions' | 'collaborators'
@@ -108,6 +108,9 @@ function MCQStackedPreview({ question }: { question: Question }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <StemBlock>{stemText}</StemBlock>
+      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 2 }}>
+        Select one answer
+      </div>
       {question.options?.map(opt => (
         <div key={opt.key} style={{ marginBottom: 2 }}>
           <div style={{
@@ -116,19 +119,22 @@ function MCQStackedPreview({ question }: { question: Question }) {
             borderRadius: 7, padding: '9px 11px',
             background: opt.isCorrect ? 'oklch(0.97 0.025 160)' : 'transparent',
           }}>
+            {/* Radio affordance — circle = single-select */}
             <span style={{
-              flexShrink: 0, width: 24, height: 24, borderRadius: 5,
-              background: opt.isCorrect ? 'var(--chart-2)' : 'var(--muted)',
+              flexShrink: 0, width: 22, height: 22, borderRadius: '50%',
+              border: `2px solid ${opt.isCorrect ? 'var(--chart-2)' : 'var(--border)'}`,
+              background: opt.isCorrect ? 'var(--chart-2)' : 'transparent',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 12, fontWeight: 700,
+              fontSize: 11, fontWeight: 700,
               color: opt.isCorrect ? '#fff' : 'var(--muted-foreground)',
+              marginTop: 1,
             }}>
               {opt.key}
             </span>
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--foreground)', margin: 0 }}>{opt.text}</p>
               {opt.isCorrect && (
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--chart-2)', display: 'block', marginTop: 3 }}>✓ Correct</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--chart-2)', display: 'block', marginTop: 3 }}>✓ Correct answer</span>
               )}
             </div>
           </div>
@@ -170,7 +176,7 @@ function MCQSplitPreview({ question }: { question: Question }) {
       </div>
       {/* Right: options + distractor rationale */}
       <div style={{ width: '44%', flexShrink: 0, overflowY: 'auto' }}>
-        <Eyebrow>Select one answer</Eyebrow>
+        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 6 }}>Select one answer</div>
         {question.options?.map(opt => (
           <div key={opt.key} style={{ marginBottom: 6 }}>
             <div style={{
@@ -179,12 +185,15 @@ function MCQSplitPreview({ question }: { question: Question }) {
               borderRadius: 7, padding: '7px 9px',
               background: opt.isCorrect ? 'oklch(0.97 0.025 160)' : 'transparent',
             }}>
+              {/* Radio affordance — circle = single-select */}
               <span style={{
-                flexShrink: 0, width: 22, height: 22, borderRadius: 4,
-                background: opt.isCorrect ? 'var(--chart-2)' : 'var(--muted)',
+                flexShrink: 0, width: 20, height: 20, borderRadius: '50%',
+                border: `2px solid ${opt.isCorrect ? 'var(--chart-2)' : 'var(--border)'}`,
+                background: opt.isCorrect ? 'var(--chart-2)' : 'transparent',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 11, fontWeight: 700,
+                fontSize: 10, fontWeight: 700,
                 color: opt.isCorrect ? '#fff' : 'var(--muted-foreground)',
+                marginTop: 1,
               }}>
                 {opt.key}
               </span>
@@ -434,6 +443,248 @@ function HotspotPreview({ question }: { question: Question }) {
   )
 }
 
+/** MSQ — Multiple Select: checkbox affordance, multiple correct answers */
+function MSQPreview({ question }: { question: Question }) {
+  const stemText = question.stemText ?? question.title
+  const correctCount = question.options?.filter(o => o.isCorrect).length ?? 0
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <StemBlock>{stemText}</StemBlock>
+      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 2 }}>
+        Select all that apply — {correctCount} correct answer{correctCount !== 1 ? 's' : ''}
+      </div>
+      {question.options?.map(opt => (
+        <div key={opt.key} style={{ marginBottom: 2 }}>
+          <div style={{
+            display: 'flex', alignItems: 'flex-start', gap: 10,
+            border: `1px solid ${opt.isCorrect ? 'var(--chart-2)' : 'var(--border)'}`,
+            borderRadius: 7, padding: '9px 11px',
+            background: opt.isCorrect ? 'oklch(0.97 0.025 160)' : 'transparent',
+          }}>
+            {/* Checkbox affordance — square = multi-select */}
+            <span style={{
+              flexShrink: 0, width: 20, height: 20, borderRadius: 4,
+              border: `2px solid ${opt.isCorrect ? 'var(--chart-2)' : 'var(--border)'}`,
+              background: opt.isCorrect ? 'var(--chart-2)' : 'transparent',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              marginTop: 1,
+            }}>
+              {opt.isCorrect && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, color: '#fff' }} />}
+            </span>
+            <div style={{ flex: 1 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted-foreground)', marginRight: 6 }}>{opt.key}.</span>
+              <span style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--foreground)' }}>{opt.text}</span>
+              {opt.isCorrect && (
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--chart-2)', display: 'block', marginTop: 3 }}>✓ Correct</span>
+              )}
+            </div>
+          </div>
+          {opt.rationale && (
+            <RationaleBlock label={opt.isCorrect ? `Rationale${opt.rationaleAuthor ? ` — ${opt.rationaleAuthor}` : ''}` : 'Why this is incorrect'}>
+              {opt.rationale}
+            </RationaleBlock>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** True/False — large T/F toggle affordance */
+function TrueFalsePreview({ question }: { question: Question }) {
+  const stemText = question.stemText ?? question.title
+  const correctOpt = question.options?.find(o => o.isCorrect)
+  const wrongOpt = question.options?.find(o => !o.isCorrect)
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <StemBlock>{stemText}</StemBlock>
+      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 2 }}>
+        Select one — True or False
+      </div>
+      <div style={{ display: 'flex', gap: 10 }}>
+        {question.options?.map(opt => (
+          <div key={opt.key} style={{
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+            padding: '18px 14px', borderRadius: 10,
+            border: `2px solid ${opt.isCorrect ? 'var(--chart-2)' : 'var(--border)'}`,
+            background: opt.isCorrect ? 'oklch(0.97 0.025 160)' : 'transparent',
+            cursor: 'default',
+          }}>
+            {/* Radio affordance */}
+            <span style={{
+              width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+              border: `2px solid ${opt.isCorrect ? 'var(--chart-2)' : 'var(--border)'}`,
+              background: opt.isCorrect ? 'var(--chart-2)' : 'transparent',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {opt.isCorrect && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, color: '#fff' }} />}
+            </span>
+            <span style={{
+              fontSize: 18, fontWeight: 700,
+              color: opt.isCorrect ? 'var(--chart-2)' : 'var(--muted-foreground)',
+            }}>
+              {opt.text}
+            </span>
+          </div>
+        ))}
+      </div>
+      {correctOpt?.rationale && (
+        <RationaleBlock label={`Rationale${correctOpt.rationaleAuthor ? ` — ${correctOpt.rationaleAuthor}` : ''}`}>
+          {correctOpt.rationale}
+        </RationaleBlock>
+      )}
+      {wrongOpt?.rationale && (
+        <RationaleBlock label="Why the other option is incorrect">
+          {wrongOpt.rationale}
+        </RationaleBlock>
+      )}
+    </div>
+  )
+}
+
+/** Short Answer — free text with keyword list + rubric */
+function ShortAnswerPreview({ question }: { question: Question }) {
+  const stemText = question.stemText ?? question.title
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <StemBlock note={question.minWordCount ? `Minimum ${question.minWordCount} words` : undefined}>
+        {stemText}
+      </StemBlock>
+      {/* Student response area */}
+      <div style={{
+        background: 'var(--muted)', border: '1.5px solid var(--border)',
+        borderRadius: 8, padding: 14, minHeight: 80,
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+      }}>
+        <span style={{ fontSize: 12, color: 'var(--muted-foreground)', fontStyle: 'italic' }}>Student response — short text</span>
+        {question.minWordCount && (
+          <span style={{ fontSize: 12, color: 'var(--muted-foreground)', flexShrink: 0 }}>0 / {question.minWordCount} words min</span>
+        )}
+      </div>
+      {/* Expected keywords/phrases */}
+      {question.options && question.options.length > 0 && (
+        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: 12 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 8 }}>
+            Expected keywords / acceptable phrases
+          </div>
+          {question.options.map((opt, i) => (
+            <div key={opt.key} style={{ marginBottom: i < (question.options?.length ?? 0) - 1 ? 8 : 0 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <span style={{
+                  flexShrink: 0, fontSize: 11, fontWeight: 700, color: 'var(--chart-2)',
+                  minWidth: 20, paddingTop: 1,
+                }}>
+                  {opt.key}.
+                </span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', flex: 1 }}>{opt.text}</span>
+              </div>
+              {opt.rationale && (
+                <div style={{ marginLeft: 28, marginTop: 3, fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
+                  {opt.rationale}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      {/* Rubric */}
+      {question.rubric && question.rubric.length > 0 && (
+        <div style={{
+          background: 'color-mix(in srgb, var(--chart-2) 6%, var(--background))',
+          border: '1px solid color-mix(in srgb, var(--chart-2) 22%, var(--background))',
+          borderRadius: 8, padding: 13,
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--chart-2)', marginBottom: 8 }}>
+            Scoring rubric — {question.rubric.reduce((s, r) => s + r.points, 0)} pts total
+          </div>
+          {question.rubric.map((r, i) => (
+            <div key={i} style={{
+              display: 'flex', justifyContent: 'space-between', gap: 8,
+              paddingBottom: 5, marginBottom: 5,
+              borderBottom: i < (question.rubric?.length ?? 0) - 1 ? `1px solid color-mix(in srgb, var(--chart-2) 15%, var(--background))` : 'none',
+            }}>
+              <span style={{ fontSize: 12, color: 'var(--foreground)', flex: 1, lineHeight: 1.4 }}>{r.criterion}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-foreground)', flexShrink: 0 }}>{r.points} pt{r.points !== 1 ? 's' : ''}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Extended Matching — shared option pool + numbered sub-questions */
+function ExtendedMatchingPreview({ question }: { question: Question }) {
+  const stemText = question.stemText ?? question.title
+  const pool = question.extendedMatchingPool ?? []
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <StemBlock>{stemText}</StemBlock>
+      {/* Option pool */}
+      {pool.length > 0 && (
+        <div style={{ background: 'var(--muted)', borderRadius: 8, padding: 12 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 8 }}>
+            Option list — select from these for each question below
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '4px 16px' }}>
+            {pool.map(opt => (
+              <div key={opt.key} style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--foreground)', flexShrink: 0, minWidth: 18 }}>{opt.key}.</span>
+                <span style={{ fontSize: 12, color: 'var(--foreground)' }}>{opt.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* Sub-questions */}
+      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', marginTop: 2 }}>
+        Questions — choose one option per stem
+      </div>
+      {question.options?.map((opt, idx) => {
+        // Extract correct answer key from rationale prefix "X (Option Text) — explanation"
+        const correctKey = opt.rationale?.match(/^([A-H])\s/)?.[1] ?? null
+        const correctPoolItem = pool.find(p => p.key === correctKey)
+        return (
+          <div key={opt.key} style={{ marginBottom: 4 }}>
+            <div style={{
+              display: 'flex', alignItems: 'flex-start', gap: 10,
+              border: '1px solid var(--border)', borderRadius: 7, padding: '10px 12px',
+            }}>
+              <span style={{
+                flexShrink: 0, width: 22, height: 22, borderRadius: '50%',
+                background: 'var(--muted)', border: '1px solid var(--border)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 11, fontWeight: 700, color: 'var(--muted-foreground)',
+                marginTop: 1,
+              }}>
+                {idx + 1}
+              </span>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--foreground)', margin: 0 }}>{opt.text}</p>
+                {correctPoolItem && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                    <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>Correct answer:</span>
+                    <span style={{
+                      fontSize: 12, fontWeight: 700, padding: '1px 8px', borderRadius: 4,
+                      background: 'oklch(0.97 0.025 160)', color: 'var(--chart-2)',
+                      border: '1px solid var(--chart-2)',
+                    }}>
+                      {correctPoolItem.key} — {correctPoolItem.text}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+            {opt.rationale && (
+              <RationaleBlock label="Rationale">{opt.rationale}</RationaleBlock>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // ─── Tab: Details ─────────────────────────────────────────────────────────────
 
 function DetailsTab({ question }: { question: Question }) {
@@ -451,6 +702,8 @@ function DetailsTab({ question }: { question: Question }) {
         return <MatchingPreview question={question} />
       case 'Hotspot':
         return <HotspotPreview question={question} />
+      case 'MSQ':
+        return <MSQPreview question={question} />
       case 'Fill blank': {
         const hasRubric = question.rubric && question.rubric.length > 0
         const hasOptions = question.options && question.options.length > 0
@@ -458,6 +711,14 @@ function DetailsTab({ question }: { question: Question }) {
           ? <EssayPreview question={question} />
           : <FillBlankPreview question={question} />
       }
+      case 'True/False':
+        return <TrueFalsePreview question={question} />
+      case 'Short Answer':
+        return <ShortAnswerPreview question={question} />
+      case 'Extended Matching':
+        return <ExtendedMatchingPreview question={question} />
+      case 'Essay':
+        return <EssayPreview question={question} />
       case 'MCQ':
       default:
         return question.layout === 'split'
@@ -951,6 +1212,216 @@ function CollaboratorsTab({ collaborators }: { collaborators: QuestionCollaborat
   )
 }
 
+// ─── Grading rules section ────────────────────────────────────────────────────
+
+function GradingRulesSection({
+  question,
+  config,
+  onChange,
+}: {
+  question: Question
+  config: QuestionGradingConfig
+  onChange: (patch: Partial<QuestionGradingConfig>) => void
+}) {
+  const type = question.type
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', marginBottom: 4, margin: 0 }}>Grading rules</p>
+
+      {/* Randomize options — MCQ, MSQ, True/False, Ordering, Extended Matching */}
+      {['MCQ', 'MSQ', 'True/False', 'Ordering', 'Extended Matching'].includes(type) && (
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+          <input
+            type="checkbox"
+            checked={config.randomizeOptions ?? false}
+            onChange={e => onChange({ randomizeOptions: e.target.checked })}
+            aria-label="Randomize option order per student"
+          />
+          <span style={{ color: 'var(--foreground)' }}>Randomize options per student</span>
+        </label>
+      )}
+
+      {/* Distractor locking — MCQ, MSQ */}
+      {['MCQ', 'MSQ'].includes(type) && (
+        <div>
+          <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 6, margin: '0 0 6px' }}>Pin options to bottom (distractor lock)</p>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {['D', 'E', 'None of the above', 'All of the above'].map(key => {
+              const locked = config.distractorLockKeys?.includes(key) ?? false
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  aria-pressed={locked}
+                  onClick={() => onChange({
+                    distractorLockKeys: locked
+                      ? (config.distractorLockKeys ?? []).filter(k => k !== key)
+                      : [...(config.distractorLockKeys ?? []), key],
+                  })}
+                  style={{
+                    fontSize: 12, padding: '3px 10px', borderRadius: 20, cursor: 'pointer', fontFamily: 'inherit',
+                    border: `1px solid ${locked ? 'var(--brand-color)' : 'var(--border)'}`,
+                    background: locked ? 'var(--brand-tint)' : 'transparent',
+                    color: locked ? 'var(--brand-color)' : 'var(--muted-foreground)',
+                  }}
+                >{key}</button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* MSQ scoring mode */}
+      {type === 'MSQ' && (
+        <div>
+          <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 6, margin: '0 0 6px' }}>Scoring mode</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {([
+              ['standard', 'Standard — full credit for exact match'],
+              ['all-or-nothing', 'All-or-nothing'],
+              ['partial-additive', 'Partial — additive (points per correct option)'],
+              ['partial-proportional', 'Partial — proportional'],
+              ['right-minus-wrong', 'Right minus wrong'],
+            ] as const).map(([val, label]) => (
+              <label key={val} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name={`msq-mode-${question.id}`}
+                  value={val}
+                  checked={(config.msqMode ?? 'standard') === val}
+                  onChange={() => onChange({ msqMode: val })}
+                  aria-label={label}
+                />
+                <span style={{ color: 'var(--foreground)' }}>{label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Fill blank / Short Answer */}
+      {['Fill blank', 'Short Answer'].includes(type) && (
+        <>
+          <div>
+            <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 6, margin: '0 0 6px' }}>Match mode</p>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {(['exact', 'contains'] as const).map(mode => (
+                <button
+                  key={mode}
+                  type="button"
+                  aria-pressed={(config.fillBlankMatchMode ?? 'exact') === mode}
+                  onClick={() => onChange({ fillBlankMatchMode: mode })}
+                  style={{
+                    flex: 1, fontSize: 12, padding: '5px 0', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
+                    border: `1px solid ${(config.fillBlankMatchMode ?? 'exact') === mode ? 'var(--brand-color)' : 'var(--border)'}`,
+                    background: (config.fillBlankMatchMode ?? 'exact') === mode ? 'var(--brand-tint)' : 'transparent',
+                    color: (config.fillBlankMatchMode ?? 'exact') === mode ? 'var(--brand-color)' : 'var(--muted-foreground)',
+                  }}
+                >{mode === 'exact' ? 'Exact match' : 'Contains'}</button>
+              ))}
+            </div>
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+            <input
+              type="checkbox"
+              checked={config.fillBlankCaseSensitive ?? false}
+              onChange={e => onChange({ fillBlankCaseSensitive: e.target.checked })}
+              aria-label="Case sensitive matching"
+            />
+            <span style={{ color: 'var(--foreground)' }}>Case sensitive</span>
+          </label>
+          <div>
+            <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 4, margin: '0 0 4px' }}>Alternate accepted spellings</p>
+            <input
+              type="text"
+              aria-label="Add alternate accepted answer"
+              placeholder="Type and press Enter to add…"
+              style={{ width: '100%', fontSize: 13, padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
+              onFocus={e => { e.currentTarget.style.borderColor = 'var(--ring)'; e.currentTarget.style.boxShadow = '0 0 0 2px var(--ring)' }}
+              onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  const v = (e.currentTarget.value ?? '').trim()
+                  if (v && !(config.alternateAcceptedAnswers ?? []).includes(v)) {
+                    onChange({ alternateAcceptedAnswers: [...(config.alternateAcceptedAnswers ?? []), v] })
+                    e.currentTarget.value = ''
+                  }
+                }
+              }}
+            />
+            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 6 }}>
+              {(config.alternateAcceptedAnswers ?? []).map(ans => (
+                <span key={ans} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '2px 8px', borderRadius: 20, border: '1px solid var(--border)', color: 'var(--foreground)', background: 'var(--muted)' }}>
+                  {ans}
+                  <button type="button" aria-label={`Remove ${ans}`} onClick={() => onChange({ alternateAcceptedAnswers: (config.alternateAcceptedAnswers ?? []).filter(a => a !== ans) })} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 0, lineHeight: 1, fontFamily: 'inherit' }}>
+                    <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 10 }} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Matching */}
+      {type === 'Matching' && (
+        <>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+            <input type="checkbox" checked={config.matchPartialCredit ?? false} onChange={e => onChange({ matchPartialCredit: e.target.checked })} aria-label="Partial credit per matched pair" />
+            <span style={{ color: 'var(--foreground)' }}>Partial credit per correctly matched pair</span>
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+            <input type="checkbox" checked={config.matchExtraDistractors ?? false} onChange={e => onChange({ matchExtraDistractors: e.target.checked })} aria-label="Include extra distractors" />
+            <span style={{ color: 'var(--foreground)' }}>Include extra distractors (more answers than prompts)</span>
+          </label>
+        </>
+      )}
+
+      {/* Hotspot */}
+      {type === 'Hotspot' && (
+        <>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+            <input type="checkbox" checked={config.hotspotMultipleAllowed ?? false} onChange={e => onChange({ hotspotMultipleAllowed: e.target.checked })} aria-label="Allow multiple hotspot selections" />
+            <span style={{ color: 'var(--foreground)' }}>Allow multiple hotspot areas</span>
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+            <input type="checkbox" checked={config.hotspotPartialCredit ?? false} onChange={e => onChange({ hotspotPartialCredit: e.target.checked })} aria-label="Partial credit per hotspot area" />
+            <span style={{ color: 'var(--foreground)' }}>Partial credit per correct area</span>
+          </label>
+        </>
+      )}
+
+      {/* Essay */}
+      {type === 'Essay' && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <label style={{ fontSize: 12, color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>Word limit</label>
+            <input
+              type="number"
+              min={10}
+              max={5000}
+              value={config.essayWordLimit ?? ''}
+              onChange={e => onChange({ essayWordLimit: e.target.value ? parseInt(e.target.value) : null })}
+              placeholder="None"
+              aria-label="Essay word limit"
+              style={{ width: 80, fontSize: 13, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', fontFamily: 'inherit' }}
+              onFocus={e => { e.currentTarget.style.borderColor = 'var(--ring)'; e.currentTarget.style.boxShadow = '0 0 0 2px var(--ring)' }}
+              onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
+            />
+            <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>words</span>
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+            <input type="checkbox" checked={config.essayBlindGrading ?? false} onChange={e => onChange({ essayBlindGrading: e.target.checked })} aria-label="Enable blind grading for this essay" />
+            <span style={{ color: 'var(--foreground)' }}>Blind grading (hide student name during grading)</span>
+          </label>
+        </>
+      )}
+    </div>
+  )
+}
+
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export function QuestionDetailSheet({
@@ -959,12 +1430,16 @@ export function QuestionDetailSheet({
   open,
   onOpenChange,
   onEdit,
+  gradingConfig,
+  onGradingConfigChange,
 }: {
   questionId: string | null
   questions: Question[]
   open: boolean
   onOpenChange: (open: boolean) => void
   onEdit: (id: string) => void
+  gradingConfig?: QuestionGradingConfig
+  onGradingConfigChange?: (patch: Partial<QuestionGradingConfig>) => void
 }) {
   const question = questions.find(q => q.id === (questionId ?? ''))
   const [activeTab, setActiveTab] = useState<DetailTab>('details')
@@ -1144,6 +1619,20 @@ export function QuestionDetailSheet({
             <CollaboratorsTab collaborators={collaborators} />
           )}
         </div>
+
+        {/* ── Grading rules (type-conditional) ─────────────────────────── */}
+        {onGradingConfigChange && (
+          <>
+            <div style={{ height: 1, background: 'var(--border)', margin: '0 20px' }} />
+            <div style={{ padding: '14px 20px', overflowY: 'auto', maxHeight: 320, flexShrink: 0 }}>
+              <GradingRulesSection
+                question={question}
+                config={gradingConfig ?? {}}
+                onChange={onGradingConfigChange}
+              />
+            </div>
+          </>
+        )}
 
         {/* ── Footer (50px) ─────────────────────────────────────────────── */}
         <div style={{

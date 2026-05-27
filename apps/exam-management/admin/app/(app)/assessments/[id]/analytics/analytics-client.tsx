@@ -53,6 +53,21 @@ export default function AnalyticsClient({ assessmentId }: { assessmentId: string
   const [activeView, setActiveView] = useState<'overview' | 'items' | 'content-areas' | 'curve'>('overview')
   const [curveApplied, setCurveApplied] = useState(false)
 
+  // Per-question regrading state — keyed by question order index
+  const [invalidatedQs, setInvalidatedQs] = useState<Set<number>>(new Set())
+  const [discardedQs, setDiscardedQs] = useState<Set<number>>(new Set())
+  const [correctedKeys, setCorrectedKeys] = useState<Record<number, string>>({})
+  const [additionalKeys, setAdditionalKeys] = useState<Record<number, string[]>>({})
+
+  // Grade curve state
+  const [curveMethod, setCurveMethod] = useState<'flat' | 'percentage' | 'top-100'>('flat')
+  const [curveValue, setCurveValue] = useState<string>('')
+  const [curveAppliedMethod, setCurveAppliedMethod] = useState<string | null>(null)
+
+  // Audit log state
+  const [auditLog, setAuditLog] = useState<{ timestamp: string; action: string; note: string }[]>([])
+  const [pendingNote, setPendingNote] = useState<string>('')
+
   // Build data — psychometrics for first N questions in this assessment
   const items = useMemo(() => {
     if (!assessment) return []
@@ -201,7 +216,197 @@ export default function AnalyticsClient({ assessmentId }: { assessmentId: string
           <ItemsView items={items} />
         </TabsContent>
             <TabsContent value="curve" className="m-0">
-              <CurveView scoreDist={scoreDist} items={items} />
+              <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 28 }}>
+
+                {/* ── Section 1: Per-question adjustments ── */}
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--foreground)', marginBottom: 12 }}>Question-level adjustments</p>
+                  <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ background: 'var(--muted)', borderBottom: '1px solid var(--border)' }}>
+                          <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: 'var(--foreground)', width: 40 }}>#</th>
+                          <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: 'var(--foreground)' }}>Question</th>
+                          <th style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 600, color: 'var(--foreground)', width: 100 }}>Status</th>
+                          <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: 'var(--foreground)', width: 260 }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {items.slice(0, 20).map((item) => {
+                          const isInvalidated = invalidatedQs.has(item.order)
+                          const isDiscarded = discardedQs.has(item.order)
+                          const hasCorrectedKey = correctedKeys[item.order]
+                          const hasAdditionalKeys = (additionalKeys[item.order] ?? []).length > 0
+                          return (
+                            <tr key={item.order} style={{ borderBottom: '1px solid var(--border)', background: isInvalidated || isDiscarded ? 'var(--muted)' : undefined }}>
+                              <td style={{ padding: '8px 12px', color: 'var(--muted-foreground)', fontVariantNumeric: 'tabular-nums' }}>{item.order}</td>
+                              <td style={{ padding: '8px 12px', color: 'var(--foreground)' }}>
+                                <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--muted-foreground)', marginRight: 8 }}>{item.code}</span>
+                                <span style={{ textDecoration: isDiscarded ? 'line-through' : undefined }}>{item.title.length > 60 ? item.title.slice(0, 60) + '…' : item.title}</span>
+                              </td>
+                              <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                                {isInvalidated && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'var(--muted)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}>Full credit</span>}
+                                {isDiscarded && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'var(--muted)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}>Excluded</span>}
+                                {hasCorrectedKey && !isInvalidated && !isDiscarded && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'var(--brand-tint)', color: 'var(--brand-color)', border: '1px solid var(--ring)' }}>Key: {hasCorrectedKey}</span>}
+                                {hasAdditionalKeys && !isInvalidated && !isDiscarded && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'var(--brand-tint)', color: 'var(--brand-color)', border: '1px solid var(--ring)', marginLeft: 4 }}>+{additionalKeys[item.order].length} key{additionalKeys[item.order].length > 1 ? 's' : ''}</span>}
+                                {!isInvalidated && !isDiscarded && !hasCorrectedKey && !hasAdditionalKeys && <span style={{ color: 'var(--muted-foreground)', fontSize: 11 }}>—</span>}
+                              </td>
+                              <td style={{ padding: '8px 12px', textAlign: 'right' }}>
+                                <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
+                                  {!isDiscarded && (
+                                    <button
+                                      type="button"
+                                      aria-pressed={isInvalidated}
+                                      aria-label={`${isInvalidated ? 'Undo invalidate' : 'Invalidate'} question ${item.order}`}
+                                      onClick={() => {
+                                        setInvalidatedQs(prev => { const s = new Set(prev); isInvalidated ? s.delete(item.order) : s.add(item.order); return s })
+                                        if (!isInvalidated) {
+                                          setAuditLog(prev => [...prev, { timestamp: new Date().toISOString(), action: `Q${item.order}: Invalidated (full credit)`, note: pendingNote }])
+                                          setPendingNote('')
+                                        }
+                                      }}
+                                      style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit', border: `1px solid ${isInvalidated ? 'var(--brand-color)' : 'var(--border)'}`, background: isInvalidated ? 'var(--brand-tint)' : 'transparent', color: isInvalidated ? 'var(--brand-color)' : 'var(--muted-foreground)' }}
+                                    >{isInvalidated ? 'Undo' : 'Invalidate'}</button>
+                                  )}
+                                  {!isInvalidated && (
+                                    <button
+                                      type="button"
+                                      aria-pressed={isDiscarded}
+                                      aria-label={`${isDiscarded ? 'Undo discard' : 'Discard'} question ${item.order}`}
+                                      onClick={() => {
+                                        setDiscardedQs(prev => { const s = new Set(prev); isDiscarded ? s.delete(item.order) : s.add(item.order); return s })
+                                        if (!isDiscarded) {
+                                          setAuditLog(prev => [...prev, { timestamp: new Date().toISOString(), action: `Q${item.order}: Discarded (excluded from denominator)`, note: pendingNote }])
+                                          setPendingNote('')
+                                        }
+                                      }}
+                                      style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit', border: `1px solid ${isDiscarded ? 'var(--border)' : 'var(--border)'}`, background: isDiscarded ? 'var(--muted)' : 'transparent', color: 'var(--muted-foreground)' }}
+                                    >{isDiscarded ? 'Undo discard' : 'Discard'}</button>
+                                  )}
+                                  {!isInvalidated && !isDiscarded && (
+                                    <select
+                                      aria-label={`Correct answer key for question ${item.order}`}
+                                      value={correctedKeys[item.order] ?? ''}
+                                      onChange={e => {
+                                        const val = e.target.value
+                                        setCorrectedKeys(prev => ({ ...prev, [item.order]: val }))
+                                        if (val) {
+                                          setAuditLog(prev => [...prev, { timestamp: new Date().toISOString(), action: `Q${item.order}: Key corrected → ${val}`, note: pendingNote }])
+                                          setPendingNote('')
+                                        }
+                                      }}
+                                      style={{ fontSize: 11, padding: '3px 6px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)', color: 'var(--foreground)', cursor: 'pointer', fontFamily: 'inherit', height: 26 }}
+                                    >
+                                      <option value="">Fix key…</option>
+                                      {['A', 'B', 'C', 'D', 'E'].map(k => <option key={k} value={k}>{k}</option>)}
+                                    </select>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  {items.length > 20 && (
+                    <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 8 }}>Showing first 20 of {items.length} questions.</p>
+                  )}
+                </div>
+
+                {/* ── Section 2: Grade curve ── */}
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--foreground)', marginBottom: 12 }}>Grade curve</p>
+                  <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {(['flat', 'percentage', 'top-100'] as const).map((val) => {
+                        const label = val === 'flat' ? 'Flat ±pts' : val === 'percentage' ? '% curve' : 'Top score = 100%'
+                        return (
+                          <button
+                            key={val}
+                            type="button"
+                            aria-pressed={curveMethod === val}
+                            onClick={() => setCurveMethod(val)}
+                            style={{ flex: 1, fontSize: 12, padding: '6px 0', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit', border: `1px solid ${curveMethod === val ? 'var(--brand-color)' : 'var(--border)'}`, background: curveMethod === val ? 'var(--brand-tint)' : 'transparent', color: curveMethod === val ? 'var(--brand-color)' : 'var(--muted-foreground)' }}
+                          >{label}</button>
+                        )
+                      })}
+                    </div>
+                    {curveMethod !== 'top-100' && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <input
+                          type="number"
+                          aria-label={curveMethod === 'flat' ? 'Points to add or subtract' : 'Percentage curve value'}
+                          value={curveValue}
+                          onChange={e => setCurveValue(e.target.value)}
+                          placeholder={curveMethod === 'flat' ? '±pts (e.g. +5 or −3)' : '% (e.g. 10)'}
+                          style={{ flex: 1, height: 36, padding: '0 10px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', fontFamily: 'inherit' }}
+                          onFocus={e => { e.currentTarget.style.borderColor = 'var(--ring)'; e.currentTarget.style.boxShadow = '0 0 0 2px var(--ring)' }}
+                          onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
+                        />
+                        <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{curveMethod === 'flat' ? 'pts to all students' : '% applied'}</span>
+                      </div>
+                    )}
+                    {curveAppliedMethod && (
+                      <p style={{ fontSize: 12, color: 'var(--chart-2)', fontWeight: 600 }}>
+                        <i className="fa-light fa-circle-check" aria-hidden="true" style={{ marginRight: 6 }} />
+                        Curve applied: {curveAppliedMethod}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      disabled={curveMethod !== 'top-100' && curveValue.trim() === ''}
+                      onClick={() => {
+                        const desc = curveMethod === 'top-100' ? 'Top score = 100%' : `${curveMethod === 'flat' ? 'Flat' : 'Percentage'} curve: ${curveValue}`
+                        setCurveApplied(true)
+                        setCurveAppliedMethod(desc)
+                        setAuditLog(prev => [...prev, { timestamp: new Date().toISOString(), action: `Grade curve applied: ${desc}`, note: pendingNote }])
+                        setPendingNote('')
+                      }}
+                      style={{ alignSelf: 'flex-start', fontSize: 13, fontWeight: 600, padding: '8px 16px', borderRadius: 8, border: '1px solid var(--brand-color)', background: 'var(--brand-color)', color: 'var(--background)', cursor: curveMethod !== 'top-100' && curveValue.trim() === '' ? 'not-allowed' : 'pointer', opacity: curveMethod !== 'top-100' && curveValue.trim() === '' ? 0.5 : 1, fontFamily: 'inherit' }}
+                    >Apply curve</button>
+                  </div>
+                </div>
+
+                {/* ── Section 3: Audit log ── */}
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--foreground)', marginBottom: 4 }}>Audit log</p>
+                  <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 12 }}>Every adjustment is logged with instructor, timestamp, and reason.</p>
+                  <div style={{ marginBottom: 10 }}>
+                    <input
+                      type="text"
+                      aria-label="Note for next adjustment"
+                      placeholder="Add a note for your next adjustment (required for audit)…"
+                      value={pendingNote}
+                      onChange={e => setPendingNote(e.target.value)}
+                      style={{ width: '100%', height: 36, padding: '0 10px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                      onFocus={e => { e.currentTarget.style.borderColor = 'var(--ring)'; e.currentTarget.style.boxShadow = '0 0 0 2px var(--ring)' }}
+                      onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
+                    />
+                  </div>
+                  {auditLog.length === 0 ? (
+                    <p style={{ fontSize: 13, color: 'var(--muted-foreground)', fontStyle: 'italic' }}>No adjustments made yet.</p>
+                  ) : (
+                    <div role="log" aria-live="polite" style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+                      {[...auditLog].reverse().map((entry, i) => (
+                        <div key={i} style={{ padding: '10px 14px', borderBottom: i < auditLog.length - 1 ? '1px solid var(--border)' : undefined, display: 'flex', gap: 12 }}>
+                          <div style={{ flexShrink: 0 }}>
+                            <i className="fa-light fa-clock" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)' }} />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: 13, color: 'var(--foreground)', fontWeight: 500 }}>{entry.action}</p>
+                            {entry.note && <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 2 }}>Note: {entry.note}</p>}
+                            <p style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 2 }}>
+                              {new Date(entry.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+              </div>
             </TabsContent>
         <TabsContent value="content-areas" className="m-0">
           <ContentAreasView courseId={course.id} />

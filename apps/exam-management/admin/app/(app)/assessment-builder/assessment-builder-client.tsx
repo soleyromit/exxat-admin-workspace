@@ -41,11 +41,16 @@ import { QbSearchBar, type QbFilter } from '@/components/assessment-builder/step
 
 // Estimated minutes per question type (base, before difficulty adjustment)
 const TIME_BY_TYPE: Record<QType, number> = {
-  'MCQ':        1.5,
-  'Fill blank':  2.0,
-  'Hotspot':    2.5,
-  'Ordering':   3.0,
-  'Matching':   3.0,
+  'MCQ':               1.5,
+  'MSQ':               2.0,
+  'Fill blank':         2.0,
+  'Hotspot':           2.5,
+  'Ordering':          3.0,
+  'Matching':          3.0,
+  'True/False':        1.0,
+  'Short Answer':      3.0,
+  'Extended Matching': 4.0,
+  'Essay':             5.0,
 }
 
 // Difficulty multiplier on base time
@@ -93,11 +98,16 @@ function formatMin(min: number): string {
 const PERSONA_BY_ID = Object.fromEntries(PERSONAS.map(p => [p.id, p]))
 
 const TYPE_ICONS_Q: Record<string, string> = {
-  'MCQ':        'fa-light fa-circle-dot',
-  'Fill blank': 'fa-light fa-i-cursor',
-  'Hotspot':    'fa-light fa-crosshairs',
-  'Ordering':   'fa-light fa-list-ol',
-  'Matching':   'fa-light fa-arrows-left-right',
+  'MCQ':               'fa-light fa-circle-dot',
+  'MSQ':               'fa-light fa-list-check',
+  'Fill blank':        'fa-light fa-i-cursor',
+  'Hotspot':           'fa-light fa-crosshairs',
+  'Ordering':          'fa-light fa-list-ol',
+  'Matching':          'fa-light fa-arrows-left-right',
+  'True/False':        'fa-light fa-toggle-large-on',
+  'Short Answer':      'fa-light fa-text',
+  'Extended Matching': 'fa-light fa-table-list',
+  'Essay':             'fa-light fa-pen-line',
 }
 
 const DIFF_COLORS: Record<string, string> = {
@@ -432,6 +442,84 @@ export default function AssessmentBuilderClient() {
     ),
     [activeAsmt?.sections, activeAsmt?.questions],
   )
+  const totalScore = useMemo(
+    () => (activeAsmt?.questions ?? []).reduce((sum, q) => sum + (q.points ?? 0), 0),
+    [activeAsmt?.questions],
+  )
+
+  const psychoMetrics = useMemo(() => {
+    if (!activeAsmt) return null
+    const questions = activeAsmt.questions
+    if (questions.length === 0) return null
+
+    // map question IDs to QB data
+    const qMap = Object.fromEntries(MOCK_QB_QUESTIONS.map(q => [q.id, q]))
+
+    const pValues: number[] = []
+    const pbisValues: number[] = []
+
+    questions.forEach(aq => {
+      const q = qMap[aq.questionId]
+      if (q?.pValue != null) pValues.push(q.pValue)
+      if (q?.pbis != null) pbisValues.push(q.pbis)
+    })
+
+    if (pValues.length === 0 && pbisValues.length === 0) return null
+
+    const avg = (arr: number[]) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null
+
+    // Upper/lower 27%: sort by pValue, take top and bottom 27%
+    const sorted = [...pValues].sort((a, b) => b - a)
+    const cutoff = Math.max(1, Math.floor(sorted.length * 0.27))
+    const upper27avg = avg(sorted.slice(0, cutoff))
+    const lower27avg = avg(sorted.slice(-cutoff))
+
+    return {
+      avgPValue: avg(pValues),
+      avgPbis: avg(pbisValues),
+      upper27avg,
+      lower27avg,
+      hasData: pValues.length > 0 || pbisValues.length > 0,
+    }
+  }, [activeAsmt])
+
+  const computedHealthFlags = useMemo(() => {
+    if (!activeAsmt) return []
+    const questions = activeAsmt.questions
+    const qMap = Object.fromEntries(MOCK_QB_QUESTIONS.map(q => [q.id, q]))
+    const newFlags: import('@/lib/qb-types').QuestionHealthFlag[] = []
+
+    questions.forEach(aq => {
+      const q = qMap[aq.questionId]
+      if (!q) return
+      // Missing rationale: no rationale on any option
+      if (q.options && q.options.every(o => !o.rationale || o.rationale.trim() === '')) {
+        newFlags.push({ type: 'missing-rationale', questionId: aq.questionId })
+      }
+      // Poor pbis (legacy threshold)
+      if (q.pbis != null && q.pbis < 0.2 && q.pbis >= 0.1) {
+        newFlags.push({ type: 'poor-pbis', questionId: aq.questionId, pbis: q.pbis })
+      }
+      // Psychometric outliers
+      if (q.pbis != null && q.pbis < 0.1) {
+        newFlags.push({ type: 'poor-discriminator', questionId: aq.questionId, pbis: q.pbis })
+      }
+      if (q.pValue != null && (q.pValue < 0.15 || q.pValue > 0.9)) {
+        newFlags.push({ type: 'extreme-difficulty', questionId: aq.questionId, pValue: q.pValue })
+      }
+    })
+
+    return newFlags
+  }, [activeAsmt])
+
+  // Sync computed health flags back to activeAsmt state
+  useEffect(() => {
+    if (!activeAsmt) return
+    const existing = JSON.stringify(activeAsmt.healthFlags)
+    const next = JSON.stringify(computedHealthFlags)
+    if (existing === next) return
+    setActiveAsmt(prev => prev ? { ...prev, healthFlags: computedHealthFlags } : prev)
+  }, [computedHealthFlags]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Tab-based navigation replacing the old step wizard
   const [activeTab, setActiveTab] = useState<'setup' | 'build' | 'review'>('build')
@@ -460,6 +548,7 @@ export default function AssessmentBuilderClient() {
 
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [sendForReviewOpen, setSendForReviewOpen] = useState(false)
+  const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<string>>(new Set())
 
   // Auto-open QB picker when arriving via "Build from QB" quick-start
   useEffect(() => {
@@ -511,6 +600,19 @@ export default function AssessmentBuilderClient() {
       ...prev,
       sections: prev.sections.filter(s => s.id !== sectionId),
     } : prev)
+  }
+
+  function reorderSection(sectionId: string, direction: 'up' | 'down') {
+    setActiveAsmt(prev => {
+      if (!prev) return prev
+      const idx = prev.sections.findIndex(s => s.id === sectionId)
+      if (idx < 0) return prev
+      const newIdx = direction === 'up' ? idx - 1 : idx + 1
+      if (newIdx < 0 || newIdx >= prev.sections.length) return prev
+      const sections = [...prev.sections]
+      ;[sections[idx], sections[newIdx]] = [sections[newIdx], sections[idx]]
+      return { ...prev, sections }
+    })
   }
 
   function assignQuestionToSection(questionId: string, sectionId: string | null) {
@@ -1073,27 +1175,48 @@ export default function AssessmentBuilderClient() {
                 const sectionFaculty = facultyListRows.filter(f => facIds.includes(f.id))
                 return (
                   <div key={sec.id}>
-                    <button
-                      type="button"
-                      onClick={() => { setActiveSectionId(sec.id); setPickerOpen(false) }}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 7,
-                        padding: '7px 12px', width: '100%', textAlign: 'left',
-                        background: isActive ? 'var(--background)' : 'none',
-                        border: 'none', borderLeft: `3px solid ${isActive ? 'var(--brand-color)' : 'transparent'}`,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: isActive ? 'var(--brand-color)' : 'var(--border)', flexShrink: 0 }} />
-                      <span className="text-xs font-medium text-foreground" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {idx + 1}. {sec.title}
-                      </span>
-                      {isReady ? (
-                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--chart-2)', flexShrink: 0 }}>✓</span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground" style={{ flexShrink: 0 }}>{sec.questionIds.length}/{sec.questionTarget ?? 20}</span>
-                      )}
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', background: isActive ? 'var(--background)' : 'none', borderLeft: `3px solid ${isActive ? 'var(--brand-color)' : 'transparent'}` }}>
+                      <button
+                        type="button"
+                        onClick={() => { setActiveSectionId(sec.id); setPickerOpen(false) }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 7,
+                          padding: '7px 4px 7px 12px', flex: 1, minWidth: 0, textAlign: 'left',
+                          background: 'none', border: 'none', cursor: 'pointer',
+                        }}
+                      >
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: isActive ? 'var(--brand-color)' : 'var(--border)', flexShrink: 0 }} />
+                        <span className="text-xs font-medium text-foreground" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {idx + 1}. {sec.title}
+                        </span>
+                        {isReady ? (
+                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--chart-2)', flexShrink: 0 }}>✓</span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground" style={{ flexShrink: 0 }}>{sec.questionIds.length}/{sec.questionTarget ?? 20}</span>
+                        )}
+                      </button>
+                      {/* Section reorder buttons */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 0, paddingRight: 6, flexShrink: 0 }}>
+                        <button
+                          type="button"
+                          onClick={() => reorderSection(sec.id, 'up')}
+                          disabled={idx === 0}
+                          aria-label={`Move ${sec.title} up`}
+                          style={{ background: 'none', border: 'none', cursor: idx === 0 ? 'default' : 'pointer', padding: '1px 3px', color: idx === 0 ? 'var(--border)' : 'var(--muted-foreground)', lineHeight: 1 }}
+                        >
+                          <i className="fa-light fa-chevron-up" aria-hidden="true" style={{ fontSize: 9 }} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => reorderSection(sec.id, 'down')}
+                          disabled={idx === activeAsmt.sections.length - 1}
+                          aria-label={`Move ${sec.title} down`}
+                          style={{ background: 'none', border: 'none', cursor: idx === activeAsmt.sections.length - 1 ? 'default' : 'pointer', padding: '1px 3px', color: idx === activeAsmt.sections.length - 1 ? 'var(--border)' : 'var(--muted-foreground)', lineHeight: 1 }}
+                        >
+                          <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 9 }} />
+                        </button>
+                      </div>
+                    </div>
                     {/* Faculty row — compact text label */}
                     {sectionFaculty.length > 0 ? (
                       <button
@@ -1198,7 +1321,7 @@ export default function AssessmentBuilderClient() {
                   <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
 
                     {activeSectionQuestions.length === 0 ? (
-                      <div style={{ padding: '48px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '24px' }}>
                         <i className="fa-light fa-circle-question text-muted-foreground" aria-hidden="true" style={{ fontSize: 28 }} />
                         <p className="text-sm font-medium text-foreground">No questions yet</p>
                         <p className="text-xs text-muted-foreground" style={{ textAlign: 'center', maxWidth: 260 }}>
@@ -1216,8 +1339,93 @@ export default function AssessmentBuilderClient() {
                         </div>
                       </div>
                     ) : (
+                      <>
+                      {bulkSelectedIds.size > 0 && (
+                        <div
+                        role="status"
+                        aria-live="polite"
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 10, padding: '6px 14px',
+                          background: 'var(--brand-tint)',
+                          borderBottom: '1px solid var(--ring)',
+                          flexShrink: 0,
+                        }}
+                      >
+                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--brand-color)' }}>
+                            {bulkSelectedIds.size} selected
+                          </span>
+                          <span style={{ color: 'var(--border)' }}>·</span>
+                          <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>Set points:</span>
+                          <input
+                            type="number"
+                            aria-label="Bulk set points for selected questions"
+                            min={0}
+                            placeholder="pts"
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') {
+                                const v = parseInt((e.target as HTMLInputElement).value)
+                                if (!isNaN(v)) {
+                                  bulkSetPoints([...bulkSelectedIds], v);
+                                  (e.target as HTMLInputElement).value = ''
+                                }
+                              }
+                            }}
+                            style={{ width: 52, height: 26, textAlign: 'center', fontSize: 12, border: '1px solid var(--border)', borderRadius: 5, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', padding: '0 4px' }}
+                          />
+                          <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>· Enter to apply</span>
+                          {activeAsmt.sections.length > 1 && (
+                            <>
+                              <span style={{ color: 'var(--border)' }}>·</span>
+                              <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>Move to:</span>
+                              <select
+                                aria-label="Move selected questions to section"
+                                defaultValue=""
+                                onChange={e => {
+                                  const targetSectionId = e.target.value
+                                  if (!targetSectionId || !activeAsmt) return
+                                  const selectedIds = [...bulkSelectedIds]
+                                  setActiveAsmt(prev => {
+                                    if (!prev) return prev
+                                    const sectionsWithout = prev.sections.map(sec => ({
+                                      ...sec,
+                                      questionIds: sec.questionIds.filter(qId => !selectedIds.includes(qId)),
+                                    }))
+                                    const sectionsWithMoved = sectionsWithout.map(sec => {
+                                      if (sec.id !== targetSectionId) return sec
+                                      const existing = new Set(sec.questionIds)
+                                      const toAdd = selectedIds.filter(qId => !existing.has(qId))
+                                      return { ...sec, questionIds: [...sec.questionIds, ...toAdd] }
+                                    })
+                                    return { ...prev, sections: sectionsWithMoved }
+                                  })
+                                  setBulkSelectedIds(new Set())
+                                  e.target.value = ''
+                                }}
+                                style={{
+                                  fontSize: 12, padding: '2px 6px', border: '1px solid var(--border)', borderRadius: 6,
+                                  background: 'var(--background)', color: 'var(--foreground)', outline: 'none', cursor: 'pointer',
+                                  fontFamily: 'inherit', height: 26,
+                                }}
+                              >
+                                <option value="" disabled>Select section…</option>
+                                {activeAsmt.sections.map(sec => (
+                                  <option key={sec.id} value={sec.id}>{sec.title}</option>
+                                ))}
+                              </select>
+                            </>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setBulkSelectedIds(new Set())}
+                            style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'var(--muted-foreground)', fontFamily: 'inherit' }}
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      )}
                       <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
                         <colgroup>
+                          <col style={{ width: 36 }} />{/* Bulk select */}
                           <col style={{ width: 52 }} />{/* # + reorder */}
                           <col />{/* Question — takes remaining width */}
                           <col style={{ width: 78 }} />{/* Type */}
@@ -1225,15 +1433,28 @@ export default function AssessmentBuilderClient() {
                           <col style={{ width: 84 }} />{/* Bloom's */}
                           <col style={{ width: 50 }} />{/* PBI */}
                           <col style={{ width: 48 }} />{/* By */}
+                          <col style={{ width: 48 }} />{/* Pts */}
+                          <col style={{ width: 44 }} />{/* Bonus */}
                           <col style={{ width: 32 }} />{/* Pin */}
                         </colgroup>
                         <thead>
-                          <tr style={{
-                            position: 'sticky', top: 0, zIndex: 1,
-                            background: 'var(--muted)',
-                            borderBottom: '1px solid var(--border)',
-                          }}>
-                            {(['#', 'Question', 'Type', 'Diff.', 'Bloom\'s', 'PBI', 'By', ''] as const).map((label, i) => (
+                          <tr style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--muted)', borderBottom: '1px solid var(--border)' }}>
+                            <th scope="col" style={{ padding: '5px 8px', width: 36, textAlign: 'center' }}>
+                              <input
+                                type="checkbox"
+                                aria-label="Select all questions"
+                                checked={bulkSelectedIds.size === activeSectionQuestions.length && activeSectionQuestions.length > 0}
+                                onChange={e => {
+                                  if (e.target.checked) {
+                                    setBulkSelectedIds(new Set(activeSectionQuestions.map(({ q }) => q.id)))
+                                  } else {
+                                    setBulkSelectedIds(new Set())
+                                  }
+                                }}
+                                style={{ cursor: 'pointer' }}
+                              />
+                            </th>
+                            {(['#', 'Question', 'Type', 'Diff.', 'Bloom\'s', 'PBI', 'By', 'Pts', 'Bonus', ''] as const).map((label, i) => (
                               <th key={i} scope="col" style={{
                                 padding: i === 0 ? '5px 4px' : '5px 8px',
                                 fontSize: 11, fontWeight: 600,
@@ -1265,6 +1486,24 @@ export default function AssessmentBuilderClient() {
                                   transition: 'background 0.6s ease',
                                 }}
                               >
+                                {/* Bulk select checkbox */}
+                                <td style={{ padding: '4px 8px', textAlign: 'center', verticalAlign: 'middle' }}>
+                                  <input
+                                    type="checkbox"
+                                    aria-label={`Select ${q.title}`}
+                                    checked={bulkSelectedIds.has(q.id)}
+                                    onChange={e => {
+                                      e.stopPropagation()
+                                      setBulkSelectedIds(prev => {
+                                        const next = new Set(prev)
+                                        if (e.target.checked) next.add(q.id)
+                                        else next.delete(q.id)
+                                        return next
+                                      })
+                                    }}
+                                    style={{ cursor: 'pointer' }}
+                                  />
+                                </td>
                                 {/* # + reorder */}
                                 <td style={{ padding: '4px 4px', textAlign: 'center', verticalAlign: 'middle' }}>
                                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
@@ -1284,15 +1523,36 @@ export default function AssessmentBuilderClient() {
 
                                 {/* Question title */}
                                 <td style={{ padding: '8px 8px', verticalAlign: 'middle' }}>
-                                  <span
-                                    role="button"
-                                    tabIndex={0}
-                                    style={{ fontSize: 13, display: 'block', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', color: 'var(--foreground)', cursor: 'pointer', lineHeight: 1.4 }}
-                                    onClick={() => setDetailQuestionId(prev => prev === q.id ? null : q.id)}
-                                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setDetailQuestionId(prev => prev === q.id ? null : q.id) }}
-                                  >
-                                    {q.title}
-                                  </span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                                    <span
+                                      role="button"
+                                      tabIndex={0}
+                                      style={{ fontSize: 13, flex: 1, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', color: 'var(--foreground)', cursor: 'pointer', lineHeight: 1.4 }}
+                                      onClick={() => setDetailQuestionId(prev => prev === q.id ? null : q.id)}
+                                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setDetailQuestionId(prev => prev === q.id ? null : q.id) }}
+                                    >
+                                      {q.title}
+                                    </span>
+                                    {(() => {
+                                      const flag = activeAsmt.healthFlags.find(f => f.questionId === q.id)
+                                      if (!flag) return null
+                                      const flagTitle = (() => {
+                                        if (flag.type === 'missing-rationale') return 'Missing rationale'
+                                        if (flag.type === 'poor-pbis') return `Low pt-biserial (${flag.pbis.toFixed(2)})`
+                                        if (flag.type === 'poor-discriminator') return `Poor discriminator (pbis ${flag.pbis.toFixed(2)})`
+                                        if (flag.type === 'extreme-difficulty') return `Extreme difficulty (p=${flag.pValue.toFixed(2)})`
+                                        return 'Quality flag'
+                                      })()
+                                      return (
+                                        <i
+                                          className="fa-solid fa-triangle-exclamation"
+                                          aria-hidden="true"
+                                          title={flagTitle}
+                                          style={{ fontSize: 11, color: 'var(--chart-4)', flexShrink: 0 }}
+                                        />
+                                      )
+                                    })()}
+                                  </div>
                                 </td>
 
                                 {/* Type */}
@@ -1356,6 +1616,47 @@ export default function AssessmentBuilderClient() {
                                   </div>
                                 </td>
 
+                                {/* Pts — editable point value */}
+                                <td style={{ padding: '4px 6px', verticalAlign: 'middle', textAlign: 'right' }}>
+                                  <input
+                                    type="number"
+                                    aria-label={`Points for ${q.title}`}
+                                    min={0}
+                                    value={aq.points}
+                                    onClick={e => e.stopPropagation()}
+                                    onChange={e => {
+                                      const v = parseInt(e.target.value)
+                                      updateQuestionPoints(q.id, isNaN(v) ? 0 : v)
+                                    }}
+                                    style={{
+                                      width: 38, height: 24, textAlign: 'center', fontSize: 12,
+                                      border: '1px solid var(--border)', borderRadius: 5,
+                                      background: 'var(--background)', color: 'var(--foreground)',
+                                      outline: 'none', padding: '0 4px',
+                                    }}
+                                  />
+                                </td>
+
+                                {/* Bonus toggle */}
+                                <td style={{ padding: '4px 6px', verticalAlign: 'middle', textAlign: 'right' }}>
+                                  <button
+                                    type="button"
+                                    aria-label={aq.bonus ? `Remove bonus flag from ${q.title}` : `Mark ${q.title} as bonus`}
+                                    title={aq.bonus ? 'Bonus — points awarded but not counted against total' : 'Mark as bonus question'}
+                                    onClick={e => { e.stopPropagation(); updateQuestionBonus(q.id, !aq.bonus) }}
+                                    style={{
+                                      background: aq.bonus ? 'color-mix(in srgb, var(--chart-4) 12%, var(--background))' : 'none',
+                                      border: `1px solid ${aq.bonus ? 'var(--chart-4)' : 'transparent'}`,
+                                      borderRadius: 4, padding: '2px 5px', cursor: 'pointer',
+                                      color: aq.bonus ? 'var(--chart-4)' : 'var(--muted-foreground)',
+                                      fontSize: 10, fontWeight: 700, fontFamily: 'inherit',
+                                      opacity: aq.bonus ? 1 : 0.35,
+                                    }}
+                                  >
+                                    B+
+                                  </button>
+                                </td>
+
                                 {/* Pin */}
                                 <td style={{ padding: '8px 6px', verticalAlign: 'middle', textAlign: 'center' }}>
                                   <button
@@ -1373,30 +1674,31 @@ export default function AssessmentBuilderClient() {
                           })}
                         </tbody>
                       </table>
-                    )}
 
-                    {/* Footer: add actions */}
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '8px 14px', borderTop: '1px solid var(--border)',
-                      color: 'var(--muted-foreground)', fontSize: 12, flexShrink: 0,
-                    }}>
-                      <button
-                        type="button"
-                        onClick={() => setPickerOpen(true)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', fontSize: 12, fontFamily: 'inherit', padding: 0 }}
-                      >
-                        ＋ Add from Question Bank
-                      </button>
-                      <span style={{ color: 'var(--border)' }}>·</span>
-                      <button
-                        type="button"
-                        onClick={() => setPickerOpen(true)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', fontSize: 12, fontFamily: 'inherit', padding: 0 }}
-                      >
-                        + Create new
-                      </button>
-                    </div>
+                      {/* Footer: add actions — only shown when section has questions */}
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        padding: '8px 14px', borderTop: '1px solid var(--border)',
+                        color: 'var(--muted-foreground)', fontSize: 12, flexShrink: 0,
+                      }}>
+                        <button
+                          type="button"
+                          onClick={() => setPickerOpen(true)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', fontSize: 12, fontFamily: 'inherit', padding: 0 }}
+                        >
+                          ＋ Add from Question Bank
+                        </button>
+                        <span style={{ color: 'var(--border)' }}>·</span>
+                        <button
+                          type="button"
+                          onClick={() => setPickerOpen(true)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', fontSize: 12, fontFamily: 'inherit', padding: 0 }}
+                        >
+                          + Create new
+                        </button>
+                      </div>
+                      </>
+                    )}
                   </div>
                 </>
               ) : (
@@ -1484,6 +1786,15 @@ export default function AssessmentBuilderClient() {
             )}
           </div>
 
+          <MetricsPanel
+            distribution={distribution}
+            timeMetrics={timeMetrics}
+            overtimeMetrics={overtimeMetrics}
+            durationMinutes={activeAsmt.durationMinutes}
+            bloomsMetrics={bloomsMetrics}
+            totalScore={totalScore}
+            psychoMetrics={psychoMetrics}
+          />
         </div>
       )}
 
@@ -1591,7 +1902,7 @@ export default function AssessmentBuilderClient() {
                         display: 'flex', alignItems: 'baseline', gap: 10,
                         border: `2px solid ${i === 1 ? 'var(--brand-color)' : 'var(--border)'}`,
                         borderRadius: 10, padding: '10px 14px', marginBottom: 8,
-                        background: i === 1 ? 'color-mix(in srgb, var(--brand-color) 6%, white)' : 'transparent',
+                        background: i === 1 ? 'var(--brand-tint)' : 'transparent',
                         fontSize: 13, cursor: 'pointer', color: 'var(--foreground)',
                       }}>
                         <span style={{
@@ -1661,8 +1972,8 @@ export default function AssessmentBuilderClient() {
 
                 {/* Send for review box */}
                 <div style={{
-                  background: 'color-mix(in srgb, var(--chart-4) 8%, white)',
-                  border: '1px solid color-mix(in srgb, var(--chart-4) 25%, white)',
+                  background: 'var(--muted)',
+                  border: '1px solid var(--border)',
                   borderRadius: 10, padding: 14, marginBottom: 14,
                 }}>
                   <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, color: 'var(--foreground)' }}>Send for review</p>
@@ -1687,8 +1998,8 @@ export default function AssessmentBuilderClient() {
             {/* Right: publish panel (280px) */}
             <div style={{ width: 280, flexShrink: 0, overflowY: 'auto', padding: 16 }}>
               <div style={{
-                background: 'color-mix(in srgb, var(--brand-color) 7%, white)',
-                border: '1px solid color-mix(in srgb, var(--brand-color) 22%, white)',
+                background: 'var(--brand-tint)',
+                border: '1px solid var(--ring)',
                 borderRadius: 10, padding: 14,
               }}>
                 <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 4, color: 'var(--foreground)' }}>Ready to publish?</p>
@@ -1760,6 +2071,20 @@ export default function AssessmentBuilderClient() {
         open={detailQuestionId !== null}
         onOpenChange={(o) => { if (!o) setDetailQuestionId(null) }}
         onEdit={(id) => { setEditingQuestionId(id); setDetailQuestionId(null) }}
+        gradingConfig={
+          activeAsmt?.questions.find(aq => aq.questionId === detailQuestionId)?.gradingConfig
+        }
+        onGradingConfigChange={(patch) => {
+          if (!detailQuestionId) return
+          setActiveAsmt(prev => prev ? {
+            ...prev,
+            questions: prev.questions.map(aq =>
+              aq.questionId === detailQuestionId
+                ? { ...aq, gradingConfig: { ...(aq.gradingConfig ?? {}), ...patch } }
+                : aq
+            ),
+          } : prev)
+        }}
       />
       <SectionAssignSheet
         open={assignSheetSectionId !== null}
@@ -1920,7 +2245,7 @@ function SectionAssignDropdown({ sections, onAssign, isSelected }: {
           <div style={{
             position: 'absolute', right: 0, top: '100%', marginTop: 4,
             background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8,
-            boxShadow: '0 4px 16px color-mix(in oklch, var(--foreground) 10%, transparent)',
+            boxShadow: '0 4px 12px var(--border)',
             zIndex: 50, minWidth: 180, overflow: 'hidden',
           }}>
             <div
@@ -2065,7 +2390,7 @@ function ABQuestionPicker({
               if (val && val !== 'New Assessment') onRenameAsmt(val)
               ;(e.target as HTMLInputElement).style.boxShadow = 'none'
             }}
-            onFocus={e => { (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px color-mix(in oklch, var(--brand-color) 25%, transparent)' }}
+            onFocus={e => { (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px var(--ring)' }}
             onKeyDown={e => {
               if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
             }}
@@ -2092,7 +2417,7 @@ function ABQuestionPicker({
         <div
           className="flex items-center gap-3 px-4 py-2.5 text-xs shrink-0"
           style={{
-            backgroundColor: 'color-mix(in oklch, var(--brand-color) 6%, var(--background))',
+            backgroundColor: 'var(--brand-tint)',
             borderBottom: '1px solid var(--border)',
           }}
         >
@@ -2124,7 +2449,7 @@ function ABQuestionPicker({
               className="flex flex-col items-start justify-center gap-0.5 h-auto px-4 py-2.5 text-start whitespace-normal shrink-0 rounded-none"
               style={{
                 borderBottom: isActive ? '2px solid var(--brand-color)' : '2px solid transparent',
-                background: isActive ? 'color-mix(in oklch, var(--brand-color) 6%, var(--background))' : 'transparent',
+                background: isActive ? 'var(--brand-tint)' : 'transparent',
                 color: isActive ? 'var(--foreground)' : 'var(--muted-foreground)',
               }}
               aria-current={isActive ? 'page' : undefined}
@@ -2595,7 +2920,7 @@ function NewQuestionEditorPanel({
                 key={q.id}
                 className="rounded-md px-3 py-2 text-xs flex items-center gap-2"
                 style={{
-                  background: 'color-mix(in oklch, var(--brand-color) 5%, var(--card))',
+                  background: 'var(--brand-tint)',
                   border: '1px solid var(--border)',
                 }}
               >
@@ -2691,12 +3016,8 @@ function ReviewStep({
             <div
               className="flex items-center gap-3 rounded-xl px-4 py-3"
               style={{
-                background: hasIssues
-                  ? 'color-mix(in oklch, oklch(80% 0.15 80) 8%, var(--background))'
-                  : 'color-mix(in oklch, var(--brand-color) 6%, var(--background))',
-                border: `1px solid ${hasIssues
-                  ? 'color-mix(in oklch, oklch(80% 0.15 80) 25%, transparent)'
-                  : 'color-mix(in oklch, var(--brand-color) 20%, transparent)'}`,
+                background: hasIssues ? 'var(--muted)' : 'var(--brand-tint)',
+                border: `1px solid ${hasIssues ? 'var(--border)' : 'var(--ring)'}`,
               }}
             >
               <i
@@ -2704,7 +3025,7 @@ function ReviewStep({
                 aria-hidden="true"
                 style={{
                   fontSize: 16,
-                  color: hasIssues ? 'color-mix(in oklch, var(--foreground) 50%, oklch(80% 0.15 80))' : 'var(--brand-color)',
+                  color: hasIssues ? 'var(--muted-foreground)' : 'var(--brand-color)',
                 }}
               />
               <div className="flex-1 min-w-0">
@@ -2746,7 +3067,7 @@ function ReviewStep({
               variant="secondary"
               className="rounded text-xs shrink-0"
               style={{
-                backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+                backgroundColor: 'var(--brand-tint)',
                 color: 'var(--brand-color)',
               }}
             >
@@ -3053,7 +3374,7 @@ function ApprovalPanel({ status, reviewRequest, onSendForReview, onPublish }: {
           className="text-xs font-medium px-2 py-0.5 rounded-full"
           style={{
             background: status === 'approved'
-              ? 'color-mix(in oklch, var(--chart-2) 12%, var(--background))'
+              ? 'var(--muted)'
               : 'var(--muted)',
             color: status === 'approved' ? 'var(--chart-2)' : 'var(--muted-foreground)',
           }}
@@ -3093,7 +3414,7 @@ function ApprovalPanel({ status, reviewRequest, onSendForReview, onPublish }: {
         {showPublishWarning ? (
           <div
             className="rounded-lg px-3 py-2.5 text-xs"
-            style={{ background: 'color-mix(in oklch, oklch(80% 0.15 80) 8%, var(--background))', border: '1px solid color-mix(in oklch, oklch(80% 0.15 80) 25%, transparent)' }}
+            style={{ background: 'var(--muted)', border: '1px solid var(--border)' }}
           >
             <p className="text-foreground font-medium mb-1">This assessment hasn&apos;t been reviewed.</p>
             <p className="text-muted-foreground mb-2">Most programs get chair approval before high-stakes exams. You can still publish.</p>
@@ -3248,12 +3569,22 @@ function MetricsPanel({
   overtimeMetrics,
   durationMinutes,
   bloomsMetrics,
+  totalScore,
+  psychoMetrics,
 }: {
   distribution: { Easy: number; Medium: number; Hard: number }
   timeMetrics: { totalMin: number; avgMin: number }
   overtimeMetrics: { allottedMin: number; delta: number; pct: number } | null
   durationMinutes: number
   bloomsMetrics: { level: string; count: number; pct: number }[]
+  totalScore: number
+  psychoMetrics: {
+    avgPValue: number | null
+    avgPbis: number | null
+    upper27avg: number | null
+    lower27avg: number | null
+    hasData: boolean
+  } | null
 }) {
   const total = distribution.Easy + distribution.Medium + distribution.Hard
   const bars = [
@@ -3287,6 +3618,11 @@ function MetricsPanel({
         {overtime && (
           <p className="text-xs mt-0.5 font-medium" style={{ color: overtime.color }}>{overtime.label}</p>
         )}
+        {totalScore > 0 && (
+          <p className="text-xs mt-1 text-muted-foreground">
+            <span className="font-semibold text-foreground">{totalScore}</span> pts assigned
+          </p>
+        )}
       </div>
 
       {/* Difficulty distribution */}
@@ -3310,6 +3646,44 @@ function MetricsPanel({
           ))}
         </div>
       </div>
+
+      {/* Psychometrics */}
+      {psychoMetrics?.hasData && (
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[.07em] text-muted-foreground mb-2">Psychometrics</p>
+          <div className="flex flex-col gap-1.5">
+            {psychoMetrics.avgPValue != null && (
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-muted-foreground">Avg difficulty</span>
+                <span className="text-[11px] tabular-nums font-medium text-foreground">
+                  {(psychoMetrics.avgPValue * 100).toFixed(0)}%
+                </span>
+              </div>
+            )}
+            {psychoMetrics.avgPbis != null && (
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-muted-foreground">Avg pt-biserial</span>
+                <span
+                  className="text-[11px] tabular-nums font-medium"
+                  style={{
+                    color: psychoMetrics.avgPbis >= 0.2 ? 'var(--chart-2)' : 'var(--chart-4)'
+                  }}
+                >
+                  {psychoMetrics.avgPbis.toFixed(2)}
+                </span>
+              </div>
+            )}
+            {psychoMetrics.upper27avg != null && psychoMetrics.lower27avg != null && (
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-muted-foreground">Top / bottom 27%</span>
+                <span className="text-[11px] tabular-nums font-medium text-foreground">
+                  {(psychoMetrics.upper27avg * 100).toFixed(0)}% / {(psychoMetrics.lower27avg * 100).toFixed(0)}%
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Blooms */}
       {bloomsMetrics.length > 0 && (
@@ -3529,7 +3903,7 @@ function DetailsStep({
                 border: '1px solid var(--border)', borderRadius: 10,
                 background: 'var(--background)', color: 'var(--foreground)', outline: 'none',
               }}
-              onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--brand-color)'; (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px color-mix(in oklch, var(--brand-color) 25%, transparent)' }}
+              onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--brand-color)'; (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px var(--ring)' }}
               onBlur={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--border)'; (e.target as HTMLInputElement).style.boxShadow = 'none' }}
             />
           </div>
@@ -3546,7 +3920,7 @@ function DetailsStep({
                 border: '1px solid var(--border)', borderRadius: 10, resize: 'vertical',
                 background: 'var(--background)', color: 'var(--foreground)', outline: 'none',
               }}
-              onFocus={e => { (e.target as HTMLTextAreaElement).style.borderColor = 'var(--brand-color)'; (e.target as HTMLTextAreaElement).style.boxShadow = '0 0 0 2px color-mix(in oklch, var(--brand-color) 25%, transparent)' }}
+              onFocus={e => { (e.target as HTMLTextAreaElement).style.borderColor = 'var(--brand-color)'; (e.target as HTMLTextAreaElement).style.boxShadow = '0 0 0 2px var(--ring)' }}
               onBlur={e => { (e.target as HTMLTextAreaElement).style.borderColor = 'var(--border)'; (e.target as HTMLTextAreaElement).style.boxShadow = 'none' }}
             />
           </div>
@@ -3569,8 +3943,8 @@ function DetailsStep({
                     aria-pressed={active}
                     className="h-auto flex-col items-start text-left px-3 py-2.5 gap-1"
                     style={{
-                      border: `1px solid ${active ? 'color-mix(in oklch, var(--brand-color) 55%, transparent)' : 'var(--border)'}`,
-                      background: active ? 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' : 'transparent',
+                      border: `1px solid ${active ? 'var(--brand-color)' : 'var(--border)'}`,
+                      background: active ? 'var(--brand-tint)' : 'transparent',
                     }}
                   >
                     <div className="flex items-center gap-2">
@@ -3603,7 +3977,7 @@ function DetailsStep({
                   border: '1px solid var(--border)', borderRadius: 8,
                   background: 'var(--background)', color: 'var(--foreground)', outline: 'none',
                 }}
-                onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--brand-color)'; (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px color-mix(in oklch, var(--brand-color) 25%, transparent)' }}
+                onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--brand-color)'; (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px var(--ring)' }}
                 onBlur={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--border)'; (e.target as HTMLInputElement).style.boxShadow = 'none' }}
               />
               <span className="text-sm text-muted-foreground">minutes</span>
@@ -3785,7 +4159,7 @@ function DetailsStep({
             {settings.type === 'Pop Quiz' ? (
               <div
                 className="flex items-start gap-3 rounded-lg px-3 py-2.5 text-xs"
-                style={{ background: 'color-mix(in oklch, var(--brand-color) 6%, var(--background))', border: '1px solid var(--border)' }}
+                style={{ background: 'var(--brand-tint)', border: '1px solid var(--border)' }}
               >
                 <i className="fa-light fa-bolt mt-0.5 shrink-0" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
                 <span className="text-muted-foreground">Pop quizzes are started live in class — no scheduling needed. Students see it the moment you start it.</span>
@@ -3800,7 +4174,7 @@ function DetailsStep({
                     value={settings.openDate?.slice(0, 16) ?? ''}
                     onChange={e => patchSettings({ openDate: e.target.value ? new Date(e.target.value).toISOString() : null })}
                     style={{ width: '100%', height: 36, padding: '0 8px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none' }}
-                    onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--brand-color)'; (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px color-mix(in oklch, var(--brand-color) 25%, transparent)' }}
+                    onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--brand-color)'; (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px var(--ring)' }}
                     onBlur={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--border)'; (e.target as HTMLInputElement).style.boxShadow = 'none' }}
                   />
                 </div>
@@ -3812,10 +4186,26 @@ function DetailsStep({
                     value={settings.closeDate?.slice(0, 16) ?? ''}
                     onChange={e => patchSettings({ closeDate: e.target.value ? new Date(e.target.value).toISOString() : null })}
                     style={{ width: '100%', height: 36, padding: '0 8px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none' }}
-                    onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--brand-color)'; (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px color-mix(in oklch, var(--brand-color) 25%, transparent)' }}
+                    onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--brand-color)'; (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px var(--ring)' }}
                     onBlur={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--border)'; (e.target as HTMLInputElement).style.boxShadow = 'none' }}
                   />
                 </div>
+              </div>
+            )}
+
+            {settings.type !== 'Pop Quiz' && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5">Visible to students</p>
+                <input
+                  type="datetime-local"
+                  aria-label="Visible to students date"
+                  value={settings.visibleDate?.slice(0, 16) ?? ''}
+                  onChange={e => patchSettings({ visibleDate: e.target.value ? new Date(e.target.value).toISOString() : null })}
+                  style={{ width: '100%', height: 36, padding: '0 8px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none' }}
+                  onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--ring)'; (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px var(--ring)' }}
+                  onBlur={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--border)'; (e.target as HTMLInputElement).style.boxShadow = 'none' }}
+                />
+                <p className="text-xs text-muted-foreground mt-1">Card appears on student dashboard before the exam window opens.</p>
               </div>
             )}
 
@@ -3832,7 +4222,7 @@ function DetailsStep({
                     value={settings.downloadWindowHours}
                     onChange={e => patchSettings({ downloadWindowHours: Math.max(1, parseInt(e.target.value) || 24) })}
                     style={{ width: 60, height: 32, padding: '0 8px', fontSize: 13, textAlign: 'center', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none' }}
-                    onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--brand-color)'; (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px color-mix(in oklch, var(--brand-color) 25%, transparent)' }}
+                    onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--brand-color)'; (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px var(--ring)' }}
                     onBlur={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--border)'; (e.target as HTMLInputElement).style.boxShadow = 'none' }}
                   />
                   <span className="text-xs text-muted-foreground">hours before exam start</span>
@@ -3859,6 +4249,117 @@ function DetailsStep({
               label="Show rationale after submission"
               description="Students see the correct answer and rationale after submitting."
             />
+
+            <Separator />
+
+            {/* Delivery */}
+            <div className="flex flex-col gap-3">
+              <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">Delivery</p>
+
+              {/* Pre-flight date */}
+              {settings.type !== 'Pop Quiz' && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1.5">Pre-flight opens</p>
+                  <input
+                    type="datetime-local"
+                    aria-label="Pre-flight opens date"
+                    value={settings.openableDate?.slice(0, 16) ?? ''}
+                    onChange={e => patchSettings({ openableDate: e.target.value ? new Date(e.target.value).toISOString() : null })}
+                    style={{ width: '100%', height: 36, padding: '0 8px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none' }}
+                    onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--ring)'; (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px var(--ring)' }}
+                    onBlur={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--border)'; (e.target as HTMLInputElement).style.boxShadow = 'none' }}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Students can enter the pre-exam screen and download exam data from this time.</p>
+                </div>
+              )}
+
+              {/* Resume password */}
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5">Resume password <span className="text-muted-foreground/60">(optional)</span></p>
+                <input
+                  type="text"
+                  aria-label="Resume password"
+                  placeholder="Leave blank — no resume password"
+                  value={settings.resumePassword}
+                  onChange={e => patchSettings({ resumePassword: e.target.value })}
+                  style={{ width: '100%', height: 36, padding: '0 8px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none' }}
+                  onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--ring)'; (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px var(--ring)' }}
+                  onBlur={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--border)'; (e.target as HTMLInputElement).style.boxShadow = 'none' }}
+                />
+                <p className="text-xs text-muted-foreground mt-1">Required to resume after an authorized break.</p>
+              </div>
+
+              {/* Breaks */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">Max breaks</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Leave blank for unlimited. Set to 0 to block all breaks.</p>
+                </div>
+                <input
+                  type="number"
+                  aria-label="Maximum breaks allowed"
+                  min={0}
+                  max={20}
+                  placeholder="∞"
+                  value={settings.maxBreaks ?? ''}
+                  onChange={e => patchSettings({ maxBreaks: e.target.value === '' ? null : Math.max(0, parseInt(e.target.value) || 0) })}
+                  style={{ width: 56, height: 32, padding: '0 8px', fontSize: 13, textAlign: 'center', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none' }}
+                  onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--ring)'; (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px var(--ring)' }}
+                  onBlur={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--border)'; (e.target as HTMLInputElement).style.boxShadow = 'none' }}
+                />
+              </div>
+
+              <Toggle
+                checked={settings.allowUnauthorizedBreaks}
+                onChange={v => patchSettings({ allowUnauthorizedBreaks: v })}
+                label="Allow unauthorized breaks"
+                description="Students can take breaks without proctor approval."
+              />
+            </div>
+
+            <Separator />
+
+            {/* Audience */}
+            <div className="flex flex-col gap-3">
+              <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">Audience</p>
+              <Toggle
+                checked={settings.publishToAll}
+                onChange={v => patchSettings({ publishToAll: v, studentGroupIds: v ? [] : settings.studentGroupIds })}
+                label="All enrolled students"
+                description="When off, select specific student groups below."
+              />
+              {!settings.publishToAll && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">Student groups</p>
+                  {(['Group A – Morning session', 'Group B – Afternoon session', 'Remedial cohort', 'Honors track'] as const).map((group, i) => {
+                    const id = `group-${i}`
+                    const selected = settings.studentGroupIds.includes(id)
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => patchSettings({
+                          studentGroupIds: selected
+                            ? settings.studentGroupIds.filter(x => x !== id)
+                            : [...settings.studentGroupIds, id]
+                        })}
+                        style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          width: '100%', padding: '7px 10px', marginBottom: 4,
+                          border: `1px solid ${selected ? 'var(--brand-color)' : 'var(--border)'}`,
+                          borderRadius: 8, background: selected ? 'var(--brand-tint)' : 'transparent',
+                          cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+                        }}
+                      >
+                        <span style={{ fontSize: 13, color: 'var(--foreground)' }}>{group}</span>
+                        {selected && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 11, color: 'var(--brand-color)' }} />}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -3959,8 +4460,8 @@ function WizardHeader({
                   border: '1px solid',
                   borderColor: isActive ? 'var(--brand-color)' : isCompleted ? 'var(--brand-color)' : 'var(--border)',
                   background: isActive
-                    ? 'color-mix(in oklch, var(--brand-color) 10%, var(--background))'
-                    : isCompleted ? 'color-mix(in oklch, var(--brand-color) 6%, var(--background))'
+                    ? 'var(--brand-tint)'
+                    : isCompleted ? 'var(--brand-tint)'
                     : 'transparent',
                   color: isActive ? 'var(--brand-color)' : isCompleted ? 'var(--brand-color)' : 'var(--muted-foreground)',
                   fontSize: 12,
@@ -4066,7 +4567,7 @@ function AssessmentSettingsContent({
               style={{
                 flex: 1, borderRadius: 8, border: '1px solid',
                 borderColor: settings.type === t ? 'var(--brand-color)' : 'var(--border)',
-                background: settings.type === t ? 'color-mix(in oklch, var(--brand-color) 10%, var(--background))' : 'transparent',
+                background: settings.type === t ? 'var(--brand-tint)' : 'transparent',
                 color: settings.type === t ? 'var(--brand-color)' : 'var(--muted-foreground)',
                 padding: '8px 0', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
               }}
@@ -4239,7 +4740,7 @@ function AssessmentSettingsSheet({
 
   React.useEffect(() => { setLocal(settings) }, [settings])
 
-  function toggleField(key: 'passwordRequired' | 'randomize' | 'showRationaleAfter') {
+  function toggleField(key: 'passwordRequired' | 'randomize' | 'showRationaleAfter' | 'requireAnswer' | 'backwardNavigationAllowed' | 'secureMode' | 'showRawScore' | 'showPercentage' | 'postExamReviewEnabled') {
     setLocal(prev => ({ ...prev, [key]: !prev[key] }))
   }
 
@@ -4267,7 +4768,7 @@ function AssessmentSettingsSheet({
                   style={{
                     borderColor: local.type === t ? 'var(--brand-color)' : 'var(--border)',
                     backgroundColor: local.type === t
-                      ? 'color-mix(in oklch, var(--brand-color) 10%, var(--background))'
+                      ? 'var(--brand-tint)'
                       : 'transparent',
                     color: local.type === t ? 'var(--brand-color)' : 'var(--muted-foreground)',
                   }}
@@ -4384,6 +4885,398 @@ function AssessmentSettingsSheet({
                 display: 'block',
               }} />
             </button>
+          </div>
+
+          <Separator />
+
+          {/* Navigation & access */}
+          <div className="flex flex-col gap-0">
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-3">Navigation &amp; access</p>
+
+            <div className="flex items-center justify-between gap-4 pb-3 border-b border-border">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Require answer before advancing</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Students must answer each question before moving to the next.</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={local.requireAnswer}
+                aria-label="Toggle require answer before advancing"
+                onClick={() => toggleField('requireAnswer')}
+                style={{ width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0, backgroundColor: local.requireAnswer ? 'var(--brand-color)' : 'var(--muted)', position: 'relative', transition: 'background-color .15s' }}
+              >
+                <span style={{ position: 'absolute', top: 2, left: local.requireAnswer ? 18 : 2, width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)', transition: 'left .15s', display: 'block' }} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between gap-4 py-3 border-b border-border">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Allow backward navigation</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Students can return to previously answered questions.</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={local.backwardNavigationAllowed}
+                aria-label="Toggle backward navigation"
+                onClick={() => toggleField('backwardNavigationAllowed')}
+                style={{ width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0, backgroundColor: local.backwardNavigationAllowed ? 'var(--brand-color)' : 'var(--muted)', position: 'relative', transition: 'background-color .15s' }}
+              >
+                <span style={{ position: 'absolute', top: 2, left: local.backwardNavigationAllowed ? 18 : 2, width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)', transition: 'left .15s', display: 'block' }} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between gap-4 pt-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Secure mode</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Enforces lockdown browser (Respondus). Students cannot switch apps.</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={local.secureMode}
+                aria-label="Toggle secure mode"
+                onClick={() => toggleField('secureMode')}
+                style={{ width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0, backgroundColor: local.secureMode ? 'var(--brand-color)' : 'var(--muted)', position: 'relative', transition: 'background-color .15s' }}
+              >
+                <span style={{ position: 'absolute', top: 2, left: local.secureMode ? 18 : 2, width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)', transition: 'left .15s', display: 'block' }} />
+              </button>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Grading & Marking */}
+          <div className="flex flex-col gap-0">
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-3">Grading &amp; marking</p>
+
+            <div className="flex items-center justify-between gap-4 pb-3 border-b border-border">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Negative marking</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Deduct points for incorrect MCQ answers.</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={local.negativeMarking}
+                aria-label="Toggle negative marking"
+                onClick={() => setLocal(prev => ({ ...prev, negativeMarking: !prev.negativeMarking }))}
+                style={{ width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0, backgroundColor: local.negativeMarking ? 'var(--brand-color)' : 'var(--muted)', position: 'relative', transition: 'background-color .15s' }}
+              >
+                <span style={{ position: 'absolute', top: 2, left: local.negativeMarking ? 18 : 2, width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)', transition: 'left .15s', display: 'block' }} />
+              </button>
+            </div>
+
+            {local.negativeMarking && (
+              <div className="flex items-center gap-3 pt-2 pb-3 border-b border-border">
+                <p className="text-xs text-muted-foreground flex-1">Fraction deducted per wrong answer</p>
+                <input
+                  type="number"
+                  aria-label="Negative marking fraction"
+                  min={0.1}
+                  max={1}
+                  step={0.05}
+                  value={local.negativeMarkingFraction}
+                  onChange={e => {
+                    const v = parseFloat(e.target.value)
+                    if (!isNaN(v) && v > 0 && v <= 1) setLocal(prev => ({ ...prev, negativeMarkingFraction: v }))
+                  }}
+                  style={{ width: 70, height: 32, padding: '0 8px', fontSize: 13, textAlign: 'center', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none' }}
+                />
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Post-exam results */}
+          <div className="flex flex-col gap-0">
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-3">Post-exam results</p>
+
+            <div className="flex items-center justify-between gap-4 pb-3 border-b border-border">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Show raw score</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Student sees their numeric score after submission.</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={local.showRawScore}
+                aria-label="Toggle show raw score"
+                onClick={() => toggleField('showRawScore')}
+                style={{ width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0, backgroundColor: local.showRawScore ? 'var(--brand-color)' : 'var(--muted)', position: 'relative', transition: 'background-color .15s' }}
+              >
+                <span style={{ position: 'absolute', top: 2, left: local.showRawScore ? 18 : 2, width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)', transition: 'left .15s', display: 'block' }} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between gap-4 py-3 border-b border-border">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Show percentage</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Student sees their percentage score after submission.</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={local.showPercentage}
+                aria-label="Toggle show percentage"
+                onClick={() => toggleField('showPercentage')}
+                style={{ width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0, backgroundColor: local.showPercentage ? 'var(--brand-color)' : 'var(--muted)', position: 'relative', transition: 'background-color .15s' }}
+              >
+                <span style={{ position: 'absolute', top: 2, left: local.showPercentage ? 18 : 2, width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)', transition: 'left .15s', display: 'block' }} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between gap-4 py-3 border-b border-border">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Post-exam review</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Students can review their answers and feedback after submission.</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={local.postExamReviewEnabled}
+                aria-label="Toggle post-exam review"
+                onClick={() => toggleField('postExamReviewEnabled')}
+                style={{ width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0, backgroundColor: local.postExamReviewEnabled ? 'var(--brand-color)' : 'var(--muted)', position: 'relative', transition: 'background-color .15s' }}
+              >
+                <span style={{ position: 'absolute', top: 2, left: local.postExamReviewEnabled ? 18 : 2, width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)', transition: 'left .15s', display: 'block' }} />
+              </button>
+            </div>
+
+            {local.postExamReviewEnabled && (
+              <div className="flex flex-col gap-2 pt-2">
+                <div className="flex items-center gap-3">
+                  <p className="text-xs text-muted-foreground flex-1">Delay before students can review</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <input
+                      type="number"
+                      aria-label="Post-exam review delay in hours"
+                      min={0}
+                      step={1}
+                      value={local.postExamReviewDelayHours ?? 0}
+                      onChange={e => {
+                        const v = parseInt(e.target.value)
+                        setLocal(prev => ({ ...prev, postExamReviewDelayHours: isNaN(v) || v === 0 ? null : v }))
+                      }}
+                      style={{ width: 60, height: 32, padding: '0 8px', fontSize: 13, textAlign: 'center', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none' }}
+                    />
+                    <span className="text-xs text-muted-foreground">hours (0 = immediately)</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-4 pt-2 border-t border-border mt-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">Lockdown browser for review</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Students must use Respondus to access their review.</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={local.postExamReviewLockdown}
+                    aria-label="Toggle lockdown browser for review"
+                    onClick={() => setLocal(prev => ({ ...prev, postExamReviewLockdown: !prev.postExamReviewLockdown }))}
+                    style={{ width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0, backgroundColor: local.postExamReviewLockdown ? 'var(--brand-color)' : 'var(--muted)', position: 'relative', transition: 'background-color .15s' }}
+                  >
+                    <span style={{ position: 'absolute', top: 2, left: local.postExamReviewLockdown ? 18 : 2, width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)', transition: 'left .15s', display: 'block' }} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between gap-4 pt-2 border-t border-border">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">Show incorrect answers only</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Students see only questions they answered incorrectly.</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={local.postExamReviewIncorrectOnly}
+                    aria-label="Toggle incorrect answers only"
+                    onClick={() => setLocal(prev => ({ ...prev, postExamReviewIncorrectOnly: !prev.postExamReviewIncorrectOnly }))}
+                    style={{ width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0, backgroundColor: local.postExamReviewIncorrectOnly ? 'var(--brand-color)' : 'var(--muted)', position: 'relative', transition: 'background-color .15s' }}
+                  >
+                    <span style={{ position: 'absolute', top: 2, left: local.postExamReviewIncorrectOnly ? 18 : 2, width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)', transition: 'left .15s', display: 'block' }} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between gap-4 pt-2 border-t border-border">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">Show rationale &amp; answer</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Display correct answer and rationale during review.</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={local.postExamReviewShowRationale}
+                    aria-label="Toggle show rationale in review"
+                    onClick={() => setLocal(prev => ({ ...prev, postExamReviewShowRationale: !prev.postExamReviewShowRationale }))}
+                    style={{ width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0, backgroundColor: local.postExamReviewShowRationale ? 'var(--brand-color)' : 'var(--muted)', position: 'relative', transition: 'background-color .15s' }}
+                  >
+                    <span style={{ position: 'absolute', top: 2, left: local.postExamReviewShowRationale ? 18 : 2, width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)', transition: 'left .15s', display: 'block' }} />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-3 pt-2 border-t border-border">
+                  <p className="text-xs text-muted-foreground flex-1">Review session time limit</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <input
+                      type="number"
+                      aria-label="Review time limit in minutes"
+                      min={0}
+                      step={5}
+                      value={local.postExamReviewTimeLimitMinutes ?? 0}
+                      onChange={e => {
+                        const v = parseInt(e.target.value)
+                        setLocal(prev => ({ ...prev, postExamReviewTimeLimitMinutes: isNaN(v) || v === 0 ? null : v }))
+                      }}
+                      style={{ width: 60, height: 30, padding: '0 8px', fontSize: 13, textAlign: 'center', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none' }}
+                    />
+                    <span className="text-xs text-muted-foreground">min (0 = unlimited)</span>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Review access password (optional)</p>
+                  <input
+                    type="text"
+                    aria-label="Review access password"
+                    placeholder="Leave blank for no password…"
+                    value={local.postExamReviewPassword}
+                    onChange={e => setLocal(prev => ({ ...prev, postExamReviewPassword: e.target.value }))}
+                    style={{ height: 32, padding: '0 10px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', width: '100%' }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Exam end */}
+          <div className="flex flex-col gap-0">
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-3">Exam end</p>
+            <div className="flex items-center justify-between gap-4 pb-3 border-b border-border">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Allow early submission</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Students can submit the exam before the timer expires.</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={local.allowEarlySubmission}
+                aria-label="Toggle allow early submission"
+                onClick={() => setLocal(prev => ({ ...prev, allowEarlySubmission: !prev.allowEarlySubmission }))}
+                style={{ width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0, backgroundColor: local.allowEarlySubmission ? 'var(--brand-color)' : 'var(--muted)', position: 'relative', transition: 'background-color .15s' }}
+              >
+                <span style={{ position: 'absolute', top: 2, left: local.allowEarlySubmission ? 18 : 2, width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)', transition: 'left .15s', display: 'block' }} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between gap-4 pt-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Blind scoring</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Student names hidden during manual grading and essay review.</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={local.blindScoring}
+                aria-label="Toggle blind scoring"
+                onClick={() => setLocal(prev => ({ ...prev, blindScoring: !prev.blindScoring }))}
+                style={{ width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0, backgroundColor: local.blindScoring ? 'var(--brand-color)' : 'var(--muted)', position: 'relative', transition: 'background-color .15s' }}
+              >
+                <span style={{ position: 'absolute', top: 2, left: local.blindScoring ? 18 : 2, width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)', transition: 'left .15s', display: 'block' }} />
+              </button>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Digital tools */}
+          <div className="flex flex-col gap-3">
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">Digital tools</p>
+
+            {/* Calculator */}
+            <div>
+              <p className="text-xs text-muted-foreground mb-1.5">Calculator</p>
+              <div className="flex gap-2">
+                {(['none', 'basic', 'scientific'] as const).map(opt => {
+                  const tools = local.digitalTools ?? { calculator: 'none' as const, textHighlight: true, scratchpad: false, scratchpadFeedback: false, allowCopyPaste: false, warningAlarmMinutes: 5, spellCheck: false, findReplace: false }
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      aria-pressed={tools.calculator === opt}
+                      onClick={() => setLocal(prev => ({ ...prev, digitalTools: { ...(prev.digitalTools ?? tools), calculator: opt } }))}
+                      className="flex-1 rounded-lg border py-1.5 text-xs font-medium transition-colors"
+                      style={{
+                        borderColor: tools.calculator === opt ? 'var(--brand-color)' : 'var(--border)',
+                        backgroundColor: tools.calculator === opt ? 'var(--brand-tint)' : 'transparent',
+                        color: tools.calculator === opt ? 'var(--brand-color)' : 'var(--muted-foreground)',
+                        cursor: 'pointer', fontFamily: 'inherit',
+                      }}
+                    >
+                      {opt === 'none' ? 'None' : opt === 'basic' ? 'Basic' : 'Scientific'}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Tool toggles */}
+            {([
+              { key: 'textHighlight' as const,      label: 'Text highlight',           desc: 'Students can highlight text in questions.' },
+              { key: 'scratchpad' as const,          label: 'Notes / scratchpad',       desc: 'Digital scratchpad for rough work.' },
+              { key: 'scratchpadFeedback' as const,  label: 'Allow scratchpad feedback', desc: 'Faculty can review student scratchpad notes.' },
+              { key: 'allowCopyPaste' as const,      label: 'Allow copy/paste',         desc: 'Permit clipboard operations during the exam.' },
+              { key: 'spellCheck' as const,          label: 'Spell check (essay)',      desc: 'Enable spell checking for essay responses.' },
+              { key: 'findReplace' as const,         label: 'Find & replace (essay)',   desc: 'Enable find & replace for essay responses.' },
+            ] as const).map(({ key, label, desc }) => {
+              const tools = local.digitalTools ?? { calculator: 'none' as const, textHighlight: true, scratchpad: false, scratchpadFeedback: false, allowCopyPaste: false, warningAlarmMinutes: 5, spellCheck: false, findReplace: false }
+              return (
+                <div key={key} className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">{label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={tools[key]}
+                    aria-label={`Toggle ${label}`}
+                    onClick={() => setLocal(prev => { const dt = prev.digitalTools ?? tools; return { ...prev, digitalTools: { ...dt, [key]: !dt[key] } } })}
+                    style={{ width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0, backgroundColor: tools[key] ? 'var(--brand-color)' : 'var(--muted)', position: 'relative', transition: 'background-color .15s' }}
+                  >
+                    <span style={{ position: 'absolute', top: 2, left: tools[key] ? 18 : 2, width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)', transition: 'left .15s', display: 'block' }} />
+                  </button>
+                </div>
+              )
+            })}
+
+            {/* Warning alarm */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground">Warning alarm</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Alert students before the timer expires. Set to 0 to disable.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  aria-label="Warning alarm minutes before expiry"
+                  min={0}
+                  max={30}
+                  value={local.digitalTools?.warningAlarmMinutes ?? 0}
+                  onChange={e => {
+                    const v = parseInt(e.target.value)
+                    const tools = local.digitalTools ?? { calculator: 'none' as const, textHighlight: true, scratchpad: false, scratchpadFeedback: false, allowCopyPaste: false, warningAlarmMinutes: 5, spellCheck: false, findReplace: false }
+                    setLocal(prev => ({ ...prev, digitalTools: { ...(prev.digitalTools ?? tools), warningAlarmMinutes: isNaN(v) || v === 0 ? null : v } }))
+                  }}
+                  style={{ width: 50, height: 30, textAlign: 'center', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', padding: '0 4px' }}
+                />
+                <span className="text-xs text-muted-foreground">min</span>
+              </div>
+            </div>
           </div>
 
           <Separator />
@@ -4580,7 +5473,7 @@ function SectionsPanel({
               </button>
             </div>
             <div className="rounded-lg border border-border p-2 flex flex-col gap-1 min-h-[40px]"
-              style={{ background: 'color-mix(in oklch, var(--brand-color) 4%, var(--background))' }}>
+              style={{ background: 'var(--brand-tint)' }}>
               {section.questionIds.length === 0 ? (
                 <p className="text-[10px] text-muted-foreground italic px-1">No questions assigned yet</p>
               ) : (
@@ -4974,7 +5867,7 @@ function SectionAssignSheet({
   section: AssessmentSection | null
   sectionIndex: number
   collaboratorIds: string[]
-  onAssignFaculty: (sectionId: string, patch: { facultyIds?: string[]; questionTarget?: number }) => void
+  onAssignFaculty: (sectionId: string, patch: { facultyIds?: string[]; questionTarget?: number; prereadText?: string; instructions?: string; timeLimitMinutes?: number; prereadTimerMinutes?: number | null; excludePrereadFromDuration?: boolean; sectionWarningAlarmMinutes?: number | null }) => void
 }) {
   const initialFacIds = React.useMemo(() => {
     if (!section) return new Set<string>()
@@ -4985,10 +5878,22 @@ function SectionAssignSheet({
 
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(initialFacIds)
   const [questionTarget, setQuestionTarget] = React.useState<string>(section?.questionTarget?.toString() ?? '')
+  const [prereadText, setPrereadText] = React.useState<string>(section?.prereadText ?? '')
+  const [sectionInstructions, setSectionInstructions] = React.useState<string>(section?.instructions ?? '')
+  const [timeLimitMinutes, setTimeLimitMinutes] = React.useState<string>(section?.timeLimitMinutes?.toString() ?? '')
+  const [prereadTimer, setPrereadTimer] = React.useState<string>(section?.prereadTimerMinutes?.toString() ?? '')
+  const [excludePrereadFromDuration, setExcludePrereadFromDuration] = React.useState(section?.excludePrereadFromDuration ?? false)
+  const [sectionWarningAlarm, setSectionWarningAlarm] = React.useState<string>(section?.sectionWarningAlarmMinutes?.toString() ?? '')
 
   React.useEffect(() => {
     setSelectedIds(initialFacIds)
     setQuestionTarget(section?.questionTarget?.toString() ?? '')
+    setPrereadText(section?.prereadText ?? '')
+    setSectionInstructions(section?.instructions ?? '')
+    setTimeLimitMinutes(section?.timeLimitMinutes?.toString() ?? '')
+    setPrereadTimer(section?.prereadTimerMinutes?.toString() ?? '')
+    setExcludePrereadFromDuration(section?.excludePrereadFromDuration ?? false)
+    setSectionWarningAlarm(section?.sectionWarningAlarmMinutes?.toString() ?? '')
   }, [section?.id, initialFacIds]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const facultyPool = collaboratorIds.length > 0
@@ -5035,11 +5940,12 @@ function SectionAssignSheet({
               <button
                 key={fac.id}
                 type="button"
+                aria-pressed={isSelected}
                 onClick={() => toggleFac(fac.id)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px',
                   width: '100%', textAlign: 'left',
-                  background: isSelected ? 'color-mix(in srgb, var(--brand-color) 8%, var(--background))' : 'none',
+                  background: isSelected ? 'var(--brand-tint)' : 'none',
                   border: 'none', borderLeft: `3px solid ${isSelected ? 'var(--brand-color)' : 'transparent'}`,
                   cursor: 'pointer', fontFamily: 'inherit',
                 }}
@@ -5080,8 +5986,119 @@ function SectionAssignSheet({
               placeholder="e.g. 15"
               aria-label="Target number of questions for this section"
               style={{ fontSize: 13, border: '1px solid var(--border)', borderRadius: 6, padding: '5px 9px', width: 90, fontFamily: 'inherit', color: 'var(--foreground)', background: 'var(--background)', outline: 'none' }}
+              onFocus={e => { e.currentTarget.style.borderColor = 'var(--ring)'; e.currentTarget.style.boxShadow = '0 0 0 2px var(--ring)' }}
+              onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
             />
             <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 5 }}>How many questions this section should have. Shown as progress in the sidebar.</p>
+          </div>
+
+          {/* Section pre-read */}
+          <div style={{ padding: '0 16px 14px', borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)', marginBottom: 5 }}>
+              Case / pre-read <span style={{ fontWeight: 400, color: 'var(--muted-foreground)' }}>(optional)</span>
+            </div>
+            <textarea
+              aria-label="Section pre-read or case study text"
+              value={prereadText}
+              onChange={e => setPrereadText(e.target.value)}
+              placeholder="Paste case study or clinical vignette shown before this section's questions…"
+              rows={4}
+              style={{ width: '100%', fontSize: 13, lineHeight: 1.5, padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box' }}
+              onFocus={e => { e.currentTarget.style.borderColor = 'var(--ring)'; e.currentTarget.style.boxShadow = '0 0 0 2px var(--ring)' }}
+              onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
+            />
+            <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>Shown to students as a reading block before they see this section's questions.</p>
+            {prereadText.trim() && (
+              <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <label style={{ fontSize: 12, color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>Reading time limit</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={60}
+                    value={prereadTimer}
+                    onChange={e => setPrereadTimer(e.target.value)}
+                    placeholder="—"
+                    aria-label="Preread timer in minutes"
+                    style={{ width: 52, fontSize: 12, border: '1px solid var(--border)', borderRadius: 6, padding: '3px 6px', color: 'var(--foreground)', background: 'var(--background)', outline: 'none', fontFamily: 'inherit', textAlign: 'center' }}
+                    onFocus={e => { e.currentTarget.style.borderColor = 'var(--ring)'; e.currentTarget.style.boxShadow = '0 0 0 2px var(--ring)' }}
+                    onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
+                  />
+                  <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>min</span>
+                </div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--muted-foreground)', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={excludePrereadFromDuration}
+                    onChange={e => setExcludePrereadFromDuration(e.target.checked)}
+                    aria-label="Exclude preread from total duration"
+                  />
+                  Exclude from total duration
+                </label>
+              </div>
+            )}
+          </div>
+
+          {/* Section instructions */}
+          <div style={{ padding: '0 16px 14px', borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)', marginBottom: 5 }}>
+              Section instructions <span style={{ fontWeight: 400, color: 'var(--muted-foreground)' }}>(optional)</span>
+            </div>
+            <textarea
+              aria-label="Section-specific instructions for students"
+              value={sectionInstructions}
+              onChange={e => setSectionInstructions(e.target.value)}
+              placeholder="e.g. Answer all questions in this section before proceeding. Calculator not permitted."
+              rows={3}
+              style={{ width: '100%', fontSize: 13, lineHeight: 1.5, padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box' }}
+              onFocus={e => { e.currentTarget.style.borderColor = 'var(--ring)'; e.currentTarget.style.boxShadow = '0 0 0 2px var(--ring)' }}
+              onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
+            />
+          </div>
+
+          {/* Section timer */}
+          <div style={{ padding: '0 16px 14px', borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)', marginBottom: 5 }}>
+              Section time limit <span style={{ fontWeight: 400, color: 'var(--muted-foreground)' }}>(optional)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="number"
+                min={1}
+                max={480}
+                value={timeLimitMinutes}
+                onChange={e => setTimeLimitMinutes(e.target.value)}
+                placeholder="—"
+                aria-label="Section time limit in minutes"
+                style={{ fontSize: 13, border: '1px solid var(--border)', borderRadius: 6, padding: '5px 9px', width: 70, fontFamily: 'inherit', color: 'var(--foreground)', background: 'var(--background)', outline: 'none' }}
+              onFocus={e => { e.currentTarget.style.borderColor = 'var(--ring)'; e.currentTarget.style.boxShadow = '0 0 0 2px var(--ring)' }}
+              onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
+              />
+              <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>minutes</span>
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 5 }}>Students have this many minutes for this section. Leave blank for no section limit.</p>
+          </div>
+
+          {/* Section warning alarm */}
+          <div style={{ padding: '0 16px 14px', borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)', marginBottom: 5 }}>
+              Warning alarm <span style={{ fontWeight: 400, color: 'var(--muted-foreground)' }}>(optional)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="number"
+                min={1}
+                max={30}
+                value={sectionWarningAlarm}
+                onChange={e => setSectionWarningAlarm(e.target.value)}
+                placeholder="—"
+                aria-label="Section warning alarm minutes before expiry"
+                style={{ fontSize: 13, border: '1px solid var(--border)', borderRadius: 6, padding: '5px 9px', width: 60, fontFamily: 'inherit', color: 'var(--foreground)', background: 'var(--background)', outline: 'none' }}
+                onFocus={e => { e.currentTarget.style.borderColor = 'var(--ring)'; e.currentTarget.style.boxShadow = '0 0 0 2px var(--ring)' }}
+                onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
+              />
+              <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>min before section ends (blank = use assessment default)</span>
+            </div>
           </div>
 
           {/* Contribution deadline */}
@@ -5095,6 +6112,8 @@ function SectionAssignSheet({
               placeholder="e.g. May 30, 2026"
               aria-label="Contribution deadline"
               style={{ fontSize: 13, border: '1px solid var(--border)', borderRadius: 6, padding: '5px 9px', width: '100%', fontFamily: 'inherit', color: 'var(--foreground)', background: 'var(--background)', outline: 'none', boxSizing: 'border-box' }}
+              onFocus={e => { e.currentTarget.style.borderColor = 'var(--ring)'; e.currentTarget.style.boxShadow = '0 0 0 2px var(--ring)' }}
+              onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
             />
           </div>
         </div>
@@ -5111,6 +6130,12 @@ function SectionAssignSheet({
                 if (section) onAssignFaculty(section.id, {
                   facultyIds: selectedIds.size > 0 ? [...selectedIds] : undefined,
                   questionTarget: questionTarget ? Number(questionTarget) : undefined,
+                  prereadText: prereadText.trim() || undefined,
+                  instructions: sectionInstructions.trim() || undefined,
+                  timeLimitMinutes: timeLimitMinutes ? Number(timeLimitMinutes) : undefined,
+                  prereadTimerMinutes: prereadTimer ? parseInt(prereadTimer) : null,
+                  excludePrereadFromDuration,
+                  sectionWarningAlarmMinutes: sectionWarningAlarm ? parseInt(sectionWarningAlarm) : null,
                 })
                 onOpenChange(false)
               }}

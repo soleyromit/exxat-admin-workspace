@@ -44,6 +44,17 @@ export default function CreateCanvasClient() {
   const [nameError, setNameError]           = useState('')
   const [copyPickerOpen, setCopyPickerOpen] = useState(false)
 
+  // T2-A: primary intent
+  const [primaryIntent, setPrimaryIntent] = useState('')
+
+  // T2-B: blueprint targets
+  const [targetDiff, setTargetDiff] = useState<{ Easy: string; Medium: string; Hard: string }>({ Easy: '', Medium: '', Hard: '' })
+  const [targetType, setTargetType] = useState<{ MCQ: string; MSQ: string; Essay: string }>({ MCQ: '', MSQ: '', Essay: '' })
+  const [blueprintTargetsOpen, setBlueprintTargetsOpen] = useState(false)
+
+  // T2-C: syllabus upload
+  const [syllabusFile, setSyllabusFile] = useState<File | null>(null)
+
   // Auto-fill name + date from prompt when those fields are still empty
   React.useEffect(() => {
     if (!prompt.trim()) return
@@ -76,6 +87,20 @@ export default function CreateCanvasClient() {
     if (prompt.trim()) {
       try { sessionStorage.setItem(`asmt-creation-prompt-${draft.id}`, prompt.trim()) } catch {}
     }
+    // T2-D: persist new PRD fields alongside the prompt
+    try {
+      const prdMeta = {
+        primaryIntent: primaryIntent.trim() || undefined,
+        targetDiffDistribution: (targetDiff.Easy || targetDiff.Medium || targetDiff.Hard)
+          ? { Easy: parseInt(targetDiff.Easy) || 0, Medium: parseInt(targetDiff.Medium) || 0, Hard: parseInt(targetDiff.Hard) || 0 }
+          : undefined,
+        targetTypeDistribution: (targetType.MCQ || targetType.MSQ || targetType.Essay)
+          ? { MCQ: parseInt(targetType.MCQ) || 0, MSQ: parseInt(targetType.MSQ) || 0, Essay: parseInt(targetType.Essay) || 0 }
+          : undefined,
+        syllabusUrl: syllabusFile ? URL.createObjectURL(syllabusFile) : undefined,
+      }
+      sessionStorage.setItem(`asmt-creation-prd-${draft.id}`, JSON.stringify(prdMeta))
+    } catch { /* quota error — non-fatal */ }
     const modeQs = mode !== 'blank' ? `&mode=${mode}` : ''
     const sourceQs = sourceId ? `&sourceId=${sourceId}` : ''
     router.push(`/assessment-builder?draftId=${draft.id}&courseId=${courseId}${modeQs}${sourceQs}`)
@@ -112,6 +137,16 @@ export default function CreateCanvasClient() {
         prompt={prompt}
         onPromptChange={setPrompt}
         onSubmit={handleSubmit}
+        primaryIntent={primaryIntent}
+        onPrimaryIntentChange={setPrimaryIntent}
+        targetDiff={targetDiff}
+        onTargetDiffChange={setTargetDiff}
+        targetType={targetType}
+        onTargetTypeChange={setTargetType}
+        blueprintTargetsOpen={blueprintTargetsOpen}
+        onBlueprintTargetsToggle={() => setBlueprintTargetsOpen(o => !o)}
+        syllabusFile={syllabusFile}
+        onSyllabusFileChange={setSyllabusFile}
       />
 
       {/* Copy source picker — shown when user clicks "Copy last year's" */}
@@ -320,7 +355,7 @@ function CanvasHeader({
                 background: AVATAR_COLORS[i % AVATAR_COLORS.length],
                 border: '2px solid var(--background)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 11, fontWeight: 700, color: '#fff',
+                fontSize: 11, fontWeight: 700, color: 'var(--background)',
                 marginRight: i < selectedFaculty.length - 1 ? -6 : 0,
                 zIndex: 5 - i, position: 'relative',
               }}
@@ -402,7 +437,7 @@ function CanvasHeader({
                           width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
                           background: AVATAR_COLORS[i % AVATAR_COLORS.length],
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 11, fontWeight: 700, color: '#fff',
+                          fontSize: 11, fontWeight: 700, color: 'var(--background)',
                         }}>
                           {getFacultyInitial(f.fullName)}
                         </div>
@@ -488,11 +523,29 @@ Pre-exam setup:
 
 function CanvasBody({
   prompt, onPromptChange, onSubmit,
+  primaryIntent, onPrimaryIntentChange,
+  targetDiff, onTargetDiffChange,
+  targetType, onTargetTypeChange,
+  blueprintTargetsOpen, onBlueprintTargetsToggle,
+  syllabusFile, onSyllabusFileChange,
 }: {
   prompt: string
   onPromptChange: (v: string) => void
   onSubmit: (mode: QuickStart) => void
+  primaryIntent: string
+  onPrimaryIntentChange: (v: string) => void
+  targetDiff: { Easy: string; Medium: string; Hard: string }
+  onTargetDiffChange: (v: { Easy: string; Medium: string; Hard: string }) => void
+  targetType: { MCQ: string; MSQ: string; Essay: string }
+  onTargetTypeChange: (v: { MCQ: string; MSQ: string; Essay: string }) => void
+  blueprintTargetsOpen: boolean
+  onBlueprintTargetsToggle: () => void
+  syllabusFile: File | null
+  onSyllabusFileChange: (f: File | null) => void
 }) {
+  const diffSum = (parseInt(targetDiff.Easy) || 0) + (parseInt(targetDiff.Medium) || 0) + (parseInt(targetDiff.Hard) || 0)
+  const typeSum = (parseInt(targetType.MCQ) || 0) + (parseInt(targetType.MSQ) || 0) + (parseInt(targetType.Essay) || 0)
+
   return (
     <div style={{
       flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -512,6 +565,26 @@ function CanvasBody({
         <p style={{ fontSize: 13, color: 'var(--muted-foreground)', margin: '0 0 20px', lineHeight: 1.5 }}>
           Describe sections, topics, faculty, timing.<br />Or pick a starting point below.
         </p>
+
+        {/* T2-A: Primary intent field */}
+        <div style={{ marginBottom: 12, textAlign: 'left' }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)', display: 'block', marginBottom: 4 }}>
+            What is this exam evaluating?
+            <span style={{ fontWeight: 400, color: 'var(--muted-foreground)', marginLeft: 6 }}>(optional)</span>
+          </label>
+          <textarea
+            aria-label="Primary exam intent"
+            value={primaryIntent}
+            onChange={e => onPrimaryIntentChange(e.target.value.slice(0, 280))}
+            placeholder="e.g. Evaluating foundational knowledge of cardiovascular pharmacology"
+            rows={2}
+            maxLength={280}
+            style={{ width: '100%', fontSize: 13, lineHeight: 1.5, padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
+            onFocus={e => { e.currentTarget.style.borderColor = 'var(--ring)'; e.currentTarget.style.boxShadow = '0 0 0 2px var(--ring)' }}
+            onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
+          />
+          <p role="status" aria-live="polite" style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 3, textAlign: 'right' }}>{primaryIntent.length}/280</p>
+        </div>
 
         {/* Prompt box */}
         <div style={{
@@ -550,6 +623,95 @@ function CanvasBody({
               <svg viewBox="0 0 16 16" fill="white" width="13" height="13" aria-hidden="true"><path d="M14.5 8L2 14l2.5-6L2 2z"/></svg>
             </button>
           </div>
+        </div>
+
+        {/* T2-B: Blueprint targets (collapsible) */}
+        <div style={{ marginTop: 12, textAlign: 'left' }}>
+          <button
+            type="button"
+            onClick={onBlueprintTargetsToggle}
+            aria-expanded={blueprintTargetsOpen}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', fontSize: 12, padding: '2px 0', fontFamily: 'inherit' }}
+          >
+            <i className={`fa-light ${blueprintTargetsOpen ? 'fa-chevron-down' : 'fa-chevron-right'}`} aria-hidden="true" style={{ fontSize: 10 }} />
+            Blueprint targets
+          </button>
+
+          {blueprintTargetsOpen && (
+            <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {/* Difficulty row */}
+              <div>
+                <p style={{ fontSize: 11, color: 'var(--muted-foreground)', marginBottom: 4 }}>Difficulty</p>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {(['Easy', 'Medium', 'Hard'] as const).map(diff => (
+                    <div key={diff} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)' }}>
+                      <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{diff}</span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={targetDiff[diff]}
+                        onChange={e => onTargetDiffChange({ ...targetDiff, [diff]: e.target.value })}
+                        aria-label={`Target ${diff} percentage`}
+                        style={{ width: 40, fontSize: 12, border: 'none', background: 'transparent', outline: 'none', color: 'var(--foreground)', fontFamily: 'inherit', textAlign: 'right' }}
+                      />
+                      <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>%</span>
+                    </div>
+                  ))}
+                </div>
+                {diffSum > 100 && (
+                  <p style={{ fontSize: 11, color: 'var(--destructive)', marginTop: 4 }}>Sum exceeds 100%</p>
+                )}
+              </div>
+
+              {/* Type row */}
+              <div>
+                <p style={{ fontSize: 11, color: 'var(--muted-foreground)', marginBottom: 4 }}>Question type</p>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {(['MCQ', 'MSQ', 'Essay'] as const).map(qt => (
+                    <div key={qt} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)' }}>
+                      <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{qt}</span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={targetType[qt]}
+                        onChange={e => onTargetTypeChange({ ...targetType, [qt]: e.target.value })}
+                        aria-label={`Target ${qt} percentage`}
+                        style={{ width: 40, fontSize: 12, border: 'none', background: 'transparent', outline: 'none', color: 'var(--foreground)', fontFamily: 'inherit', textAlign: 'right' }}
+                      />
+                      <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>%</span>
+                    </div>
+                  ))}
+                </div>
+                {typeSum > 100 && (
+                  <p style={{ fontSize: 11, color: 'var(--destructive)', marginTop: 4 }}>Sum exceeds 100%</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* T2-C: Syllabus upload */}
+        <div style={{ marginTop: 8, textAlign: 'left' }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)', display: 'block', marginBottom: 4 }}>
+            Attach syllabus <span style={{ fontWeight: 400, color: 'var(--muted-foreground)' }}>(optional, PDF)</span>
+          </label>
+          {syllabusFile ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--muted)' }}>
+              <i className="fa-light fa-file-pdf" aria-hidden="true" style={{ color: 'var(--brand-color)', fontSize: 14 }} />
+              <span style={{ fontSize: 12, color: 'var(--foreground)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{syllabusFile.name}</span>
+              <button type="button" onClick={() => onSyllabusFileChange(null)} aria-label="Remove syllabus" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 2, fontFamily: 'inherit' }}>
+                <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 12 }} />
+              </button>
+            </div>
+          ) : (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', border: '1px dashed var(--border)', borderRadius: 6, cursor: 'pointer', color: 'var(--muted-foreground)', fontSize: 12 }}>
+              <i className="fa-light fa-arrow-up-from-bracket" aria-hidden="true" />
+              <span>Click to upload PDF</span>
+              <input type="file" accept=".pdf" aria-label="Upload syllabus PDF" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) onSyllabusFileChange(f) }} />
+            </label>
+          )}
         </div>
 
         {/* Quick-start chips */}
