@@ -1,23 +1,47 @@
 # CLAUDE.md — Exam Management
 
-## MANDATORY: Before writing any implementation plan
+## MANDATORY: Decision files are the source of truth — read them first
 
-**Pull raw Granola transcripts first. No exceptions.**
+**Every prompt touching assessment, QB, or any EM feature must start here:**
 
-Summaries and memory files lose specifics. Option locking, K-type questions, instructions pages, download windows — these were all in raw transcripts and in no summary. Plans written from summaries generate rework.
+```
+admin/docs/decisions/feature-registry.md   ← status of every feature
+admin/docs/decisions/<meeting-id>.md       ← structured decisions, quotes, gaps
+```
 
-1. `query_granola_meetings` — find which meetings are relevant (discovery only, not the source)
-2. `get_meeting_transcript` for every relevant meeting — read the actual words
-3. Cross-reference each planned feature against the raw transcripts before writing a single task
-4. **Walk the actual code of every entity mentioned** — after reading, open the file and verify each requirement is implemented. "I read it and noted it" ≠ "the code reflects it." Rationale on McqOption, single objective, per-option True/False rationale were all in the transcripts and all missed because the code was never checked against what was said.
+**Do NOT write a single line of implementation without first:**
+1. Reading `feature-registry.md` to know what's built vs. missing
+2. Reading every decision file relevant to the feature you're implementing
+3. Citing the decision file + quote for every planned feature
+4. Any feature with no citation = unverified, flag it explicitly
 
-**Relevant meeting IDs for Exam Management (pull these first for any assessment/QB feature):**
-- `f59cfbe4` — Assessment creation workflows and question bank design (May 19)
-- `af529725` — Assessment builder: base entities, student experience, PRD workflow (May 14)
-- `b68ede99` — Assessment overview design: completion status, workflow, pop quiz (May 7)
-- `fb9e76c2` — AI-aided question creation and curricular assessment mapping (May 7)
-- `4e1c850e` — Live monitoring, question analysis, accommodations with Aarti (May 8)
-- `66898189` — Assessment PRD: accessibility, offline exam download, ExamSoft parity (May 21)
+**If the decision file doesn't exist yet for a meeting, pull the raw transcript and create it before continuing.**
+
+Decision files live at: `admin/docs/decisions/` — one per meeting, template at `_template.md`.
+
+---
+
+## MANDATORY: After any new Granola meeting
+
+When a new exam-management Granola meeting happens:
+1. `get_meeting_transcript` — pull the raw transcript (NOT the summary)
+2. Create `admin/docs/decisions/<meeting-id>.md` using `_template.md`
+3. Update `admin/docs/decisions/feature-registry.md` with any new or changed features
+4. Update the meeting ID list below
+
+---
+
+## Granola meeting IDs — exam management decisions
+
+Full decision files at `admin/docs/decisions/`:
+
+- `f59cfbe4-8964-4169-af2f-d1ccd6f91c06` — Assessment creation workflows + QB design (May 19)
+- `af529725-f08b-4a9e-9e6e-c4968b540338` — Assessment builder: base entities, student experience, PRD workflow (May 14) ← **REVIEW WORKFLOW defined here**
+- `b68ede99-005a-44bf-aa3c-001e3753d8d8` — Assessment overview: completion status, pop quiz (May 7)
+- `fb9e76c2-bc27-40d7-bc07-1d2a7e1fab0a` — AI-aided question creation + curricular assessment mapping (May 7)
+- `4e1c850e-d760-4d05-81a1-a52287b9ae21` — Live monitoring, question analysis, accommodations (May 8)
+- `66898189-b888-4d9a-8765-c0ebd838cc78` — Assessment PRD: accessibility, offline download, ExamSoft parity (May 21)
+- `f274ade0-f47a-4d61-bbdc-1eeee5e08ca0` — Curriculum mapping, base entities, product alignment (May 8)
 - `f274ade0` — Curriculum mapping, base entities, product alignment: Vishaka + Aarti (May 8)
 
 Add new meeting IDs here as they happen.

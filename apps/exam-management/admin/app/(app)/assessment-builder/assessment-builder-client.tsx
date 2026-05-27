@@ -3666,17 +3666,17 @@ function MetricsPanel({
           <div className="flex flex-col gap-1.5">
             {psychoMetrics.avgPValue != null && (
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-muted-foreground">Avg difficulty</span>
-                <span className="text-[11px] tabular-nums font-medium text-foreground">
+                <span className="text-xs text-muted-foreground">Avg difficulty</span>
+                <span className="text-xs tabular-nums font-medium text-foreground">
                   {(psychoMetrics.avgPValue * 100).toFixed(0)}%
                 </span>
               </div>
             )}
             {psychoMetrics.avgPbis != null && (
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-muted-foreground">Avg pt-biserial</span>
+                <span className="text-xs text-muted-foreground">Avg pt-biserial</span>
                 <span
-                  className="text-[11px] tabular-nums font-medium"
+                  className="text-xs tabular-nums font-medium"
                   style={{
                     color: psychoMetrics.avgPbis >= 0.2 ? 'var(--chart-2)' : 'var(--chart-4)'
                   }}
@@ -3687,9 +3687,9 @@ function MetricsPanel({
             )}
             {psychoMetrics.avgDiscriminationIndex != null && (
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-muted-foreground">Avg discrimination</span>
+                <span className="text-xs text-muted-foreground">Avg discrimination</span>
                 <span
-                  className="text-[11px] tabular-nums font-medium"
+                  className="text-xs tabular-nums font-medium"
                   style={{
                     color: psychoMetrics.avgDiscriminationIndex >= 0.3 ? 'var(--chart-2)' : 'var(--chart-4)'
                   }}
@@ -3700,8 +3700,8 @@ function MetricsPanel({
             )}
             {psychoMetrics.upper27avg != null && psychoMetrics.lower27avg != null && (
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-muted-foreground">Top / bottom 27%</span>
-                <span className="text-[11px] tabular-nums font-medium text-foreground">
+                <span className="text-xs text-muted-foreground">Top / bottom 27%</span>
+                <span className="text-xs tabular-nums font-medium text-foreground">
                   {(psychoMetrics.upper27avg * 100).toFixed(0)}% / {(psychoMetrics.lower27avg * 100).toFixed(0)}%
                 </span>
               </div>

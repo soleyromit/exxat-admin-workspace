@@ -243,12 +243,17 @@ export default function TemplateEditorPage() {
           Templates
         </Link>
         <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
-        <h1
-          className="text-sm font-semibold flex-1 truncate"
-          style={{ fontFamily: 'var(--font-heading)' }}
-        >
-          {t.name}
-        </h1>
+        <input
+          className="text-sm font-semibold flex-1 min-w-0 bg-transparent outline-none truncate"
+          style={{ fontFamily: 'var(--font-heading)', color: 'var(--foreground)' }}
+          value={t.name}
+          aria-label="Template name"
+          onChange={e => updateTemplate(t.id, { name: e.target.value })}
+          onBlur={e => {
+            const trimmed = e.target.value.trim()
+            if (!trimmed) updateTemplate(t.id, { name: 'Untitled template' })
+          }}
+        />
         <Badge
           variant="secondary"
           className="rounded shrink-0"
@@ -349,7 +354,7 @@ export default function TemplateEditorPage() {
                           <span className="text-xs tabular-nums shrink-0 text-muted-foreground">{count}</span>
                         </div>
                         {subjectMeta && (
-                          <span className="text-[11px] leading-none text-muted-foreground truncate w-full">
+                          <span className="text-xs leading-none text-muted-foreground truncate w-full">
                             {subjectMeta.label}
                           </span>
                         )}
@@ -489,7 +494,7 @@ export default function TemplateEditorPage() {
 
                         {/* Answer type chip */}
                         <span
-                          className="shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-md tabular-nums"
+                          className="shrink-0 text-xs font-medium px-2 py-0.5 rounded-md tabular-nums"
                           style={{
                             backgroundColor: 'var(--muted)',
                             color: 'var(--muted-foreground)',

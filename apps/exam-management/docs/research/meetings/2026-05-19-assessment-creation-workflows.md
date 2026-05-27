@@ -95,3 +95,109 @@ granola_id: f59cfbe4-8964-4169-af2f-d1ccd6f91c06
 | T56 — Review function separated from results access | P1 | Reviewer role = question feedback only. Must not surface student performance data. DESIGN-REVIEW — data model. |
 | T57 — Course offerings sorted descending, max 6-8 shown | P2 | In QB context and any list of course offerings: reverse-chrono, load-more for older. |
 | T58 — Download exam as Phase 1 confirmed | P1 | Upgrade R3 from research to confirmed feature. Default = download-and-take. Student flow already has download section (T30) but admin side needs download generation support. Flag for PM/back-end alignment. |
+
+---
+
+## Base Entity Design Review (same meeting — Romit showed prototype to Aarti + Vishaka)
+
+> Note: The second half of this meeting was a live design review of the base entity prototypes (Student, Faculty, Course Offering). Decisions below are from that portion of the raw transcript.
+
+### Decisions
+
+| # | Decision | Scope | Quote |
+|---|---|---|---|
+| D_EM_BASE1 | **LMS integration chip on Course Offering header** — if Canvas/LMS is linked, show a chip on the course offering page header indicating the sync source. Not a "full record" link — frame it as a "view" not a "record". | Admin / Faculty | "There can be a chip that indicates if there is a link between the course offering and LMS integration. There is already a link and we are pulling data from their LMS or not." — Vishaka |
+| D_EM_BASE2 | **Course Offering overview Phase 1 = QB stats only. Learning objectives deprioritized.** QB quick link + basic stats (# questions) is the primary overview content. Learning objectives in the overview = Phase 2. "We should be very intentional in why are they here — they are here to create and administer assessments." | Admin / Faculty | "Question bank is more relevant for this page than showing objectives... Question bank is the perfect landing spot. So we can say that Phase 1, we will only have the question bank stats." — Aarti |
+| D_EM_BASE3 | **Tab counter badges on Course Offering** — student count, faculty count, assessment count shown as badge counters on the tab labels. Aarti explicitly called out these counters as "everything I need to know about the course." | Admin / Faculty | "There is no students, so there's no chip on the student. Like, counter on the student. But if there is, the counter tells me everything I need to know about the course." — Aarti |
+| D_EM_BASE4 | **Faculty detail must show: courses owned, QB folders owned, assessments created, pending reviews.** These are first-class columns/sections on the faculty detail page — not secondary. | Admin | "I want to see how is the faculty doing, which courses are they owning, which banks do they own, which assessments have they created, which reviews are they pending. Like, it's part of my product and my workflow." — Aarti |
+| D_EM_BASE5 | **Student entity has two distinct modes: setup (manage) and outcome (performance).** Setup = add/remove/disable students, manage LTI import. Outcome = how is this student doing — # assessments taken, performance across assessments, fun engagement stats. These are two different views/contexts, not one blended page. | Admin | "When you show it under setup, you are allowing me to add a student, remove a student... But when I tell you to bubble up the student as a stakeholder entry or an analyzable or an interpretation thing, I want to know how is the student doing." — Aarti |
+| D_EM_BASE6 | **Left nav order: QB first, Courses second**, then other entities. QB is the primary daily-use entity; courses are the organizational container. | Admin / Faculty | "Question bank can be on the top and then courses can be the second one, and then some of these other things can fall at the bottom." — Aarti |
+| D_EM_BASE7 | **Content Area + Competency are first-class navigation entities (Phase 2), not just standards.** Each gets a dedicated left-nav entry with its own dashboard: courses covering it, assessments mapped to it, QB coverage, student performance on it. Phase 1 = basic setup only. Phase 2 = full analytics/heat map dashboard. | Admin | "I want a left hand side menu that says content area. Then I want a way to — a dashboard of sorts, a report, a heat map, multiple tabs... helping me do a deep dive on how I'm doing on each of the content." — Aarti |
+
+---
+
+### Verbatim quotes (base entity section)
+
+> "The default landing should always be assessments, like we talked about because they are in the assessment model." — Aarti (Course Offering landing tab)
+
+> "See, there should be — a quick link [that goes] to the question bank that is related to this course hub. Oh, yeah. No. We didn't go to that extent yet... Why not? That's the obvious thing. Question bank is structured with course. I'm not going to ever have somebody come in and work here in isolation. They'll pretty much always pick their course and go to the question bank for that course." — Aarti (QB link from Course Offering)
+
+> "Not full course record — they think about it as a view. Full course view in Prism. Or not full course record." — Vishaka (on Prism fallback link label — call it "view" not "record")
+
+> "Which courses are they owning, which banks do they own, which assessments have they created, which reviews are they pending. Like, it's part of my product and my workflow and everything." — Aarti (on Faculty detail required fields)
+
+> "When you show it here [in setup], you are allowing me to add a student, remove a student, make a student, disable, invite student to the platform... But when I tell you to bubble up the student as a stakeholder entry or an analyzable or an interpretation thing, then I want to know how is the student doing." — Aarti (setup vs. outcome mode)
+
+> "Course is a vehicle through which you achieve your goal of teaching all your content areas to your students... I'm only going to look through the lens of a vehicle — how will I get the big picture?" — Aarti (on Content Area as a top-level entity)
+
+---
+
+### Design tasks generated (base entity portion)
+
+| Task | Priority | Notes |
+|---|---|---|
+| T59 — LMS chip on Course Offering header | P1 | Small chip near title showing Canvas sync status. "Linked to Canvas" / "Not linked". Not a record link — a status indicator. |
+| T60 — QB stats block on Course Offering overview | P1 | Replace or supplement learning objectives with QB quick link + stats (# questions, last updated). Phase 1. Learning objectives move to Phase 2. |
+| T61 — Tab counter badges on Course Offering | P1 | Add count badges to Students / Faculty / Assessments tabs (mirrors pattern already on Student detail). |
+| T62 — Faculty detail: pending reviews + QB folders + assessments created | P1 | Add these as columns/sections to faculty detail. Pending reviews needs a dedicated section. |
+| T63 — Prism fallback label: "View full profile" → "View in Prism" (no "record") | P2 | Small wording fix per Vishaka. Already partially correct in student detail — audit faculty detail too. |
+| T64 — Content Area + Competency entities (Phase 2 backlog) | P2 backlog | Dedicated left-nav entries, each with analytics dashboard tabs. Not Phase 1. Add to backlog now so backend architecture accounts for it. |
+
+---
+
+## Additional Decisions — from SharePoint summary (same meeting, May 19)
+
+> Source: Written summary doc shared to SharePoint. Supplements raw Granola transcript. Adds detail on items partially covered above and introduces new decisions not yet recorded.
+
+### Exam Delivery
+
+| # | Decision | Scope |
+|---|---|---|
+| D_EM29 | **Print-ready exam generation required.** System must produce print-ready Scantron copies. Course admins keep 2–3 printed copies per exam as device-failure backup. Print output is a deliverable, not a nice-to-have. | Admin |
+| D_EM30 | **Five-stage exam workflow is the official model.** Create → Publish/Distribute → Take (download + upload as sub-steps) → Grade (review, curve, publish results) → Review (optional, per assessment, coordinator's discretion). | All |
+| D_EM31 | **Student post-grade review: password-gated, locked browser, shows Q + student answer + correct answer + rationale.** Instructor opt-in per assessment. Rationale display is also instructor-controlled. Browser must block copy, export, and screenshot. | Student / Admin |
+
+### Assessment Creation Detail
+
+| # | Decision | Scope |
+|---|---|---|
+| D_EM32 | **Question source tagging in AI workflow.** Every AI-surfaced question labeled visibly as "selected from bank" or "newly generated." When faculty accept a newly generated question, it auto-flows into the QB. Transparent sourcing is mandatory, not optional. | Admin / Faculty |
+| D_EM33 | **Import fuzzy matching UI.** When a PDF/Word exam is uploaded, AI parses each question and displays match status: "found in QB" or "not found." User decides per question: link to existing question or save as new. Prevents silent duplication; allows legitimate variants. | Admin / Faculty |
+| D_EM34 | **Question versioning trigger = edited after use only.** A new version is created only when a question is edited after it has already been used in a published assessment. Prior versions preserved with original assessment data. Rationale cannot differ between uses of the same question version — it is fixed at the version level. | Admin / Faculty |
+| D_EM35 | **Question ownership and authorship tracked.** Every question has an original author. Ownership is transferable. Bulk ownership transfer must be supported for faculty departures. Contributors cannot edit questions they do not own. Open question: may RBAC at folder level make explicit ownership redundant — confirm with engineering. | Admin |
+| D_EM36 | **Outside-course assessment creation = Phase 2, 2027, only if demand exists.** Back end must accommodate the capability. No Phase 1 UI. Will only be revisited if real institutional demand emerges. | Admin |
+| D_EM37 | **Section creation is optional and must precede contributor work.** Course coordinator creates sections first; contributors fill their assigned sections. Sections are not mandatory — single-faculty assessments skip this step. | Admin / Faculty |
+| D_EM38 | **Sections serve two use cases: multi-faculty division AND case-study grouping.** For multi-faculty: one section per instructor. For case studies: 3–5 related questions tied to a shared reference passage or scenario. Both use cases use the same section construct. | Admin / Faculty |
+| D_EM39 | **Contributors can see all questions in an assessment they contribute to.** Privacy boundary is student results only, not question content. Question visibility and results visibility are controlled separately. | Faculty |
+| D_EM40 | **Question type set expanded.** Phase 1 includes: true/false, MCQ (single select, multi-select, K-type), fill in the blank, hotspot, true/false hotspot with pictures, match the following, and short answer (free text). MCQ subtypes must all be explicitly supported, not bundled. | Admin / Faculty |
+| D_EM41 | **AI can generate questions from uploaded content** (PPT, lecture notes, etc.) as part of the AI creation flow. This is a differentiator — faculty can bring source material and let AI draft questions from it. | Admin / Faculty |
+
+### AI-Assisted Grading
+
+| # | Decision | Scope |
+|---|---|---|
+| D_EM42 | **AI-assisted essay/short-answer grading = opt-in toggle per question.** Coordinator supplies ideal answer (full points reference) and grading guidelines (clarity, structure, inference, etc.). AI produces a recommended score per student response. Faculty accept or reject. Recommendation is advisory, not automatic. | Admin / Faculty |
+| D_EM43 | **Simple AI essay grading in Phase 1 is the foundation for rubric-based grading in Phase 2.** Build Phase 1 so the rubric expansion fits cleanly. Do not block Phase 1 on rubric completion. | Admin / Faculty |
+
+### Curriculum and Standards
+
+| # | Decision | Scope |
+|---|---|---|
+| D_EM44 | **Both curriculum mapping path and direct assessment mapping path must be supported.** Choice should be intentional and explicit, not automatic. Curriculum mapping path closes the curricular assessment loop. Direct mapping (ExamSoft-style) tags questions straight to standards. Schools choose which path; product supports both. | Admin |
+| D_EM45 | **Standards library needs explicit bucket typing.** Each standard must be categorized as filling either the "content area" bucket or the "competency" bucket (per program). This categorization enables course offering overviews to intelligently surface relevant data rather than showing all standards indiscriminately. | Admin |
+
+---
+
+### Additional design tasks (SharePoint additions)
+
+| Task | Priority | Notes |
+|---|---|---|
+| T65 — Print-ready exam output | P1 | Generate Scantron-compatible print version per assessment. Flag for engineering — PDF generation with answer bubbles required. |
+| T66 — Student review mode: password gate + locked browser | P1 | Password prompt before review starts. Locked browser session — no copy/export/screenshot. Show Q + student answer + correct answer + rationale. Instructor toggles rationale visibility separately. |
+| T67 — Question source tags in AI flow ("from bank" / "newly generated") | P1 | Visual labels on every AI-surfaced question in the assessment builder. Accepted new questions route to QB. |
+| T68 — Import fuzzy matching UI | P1 | Per-parsed-question status: "found" / "not found." User action: link to existing or save as new. |
+| T69 — Question versioning: post-use trigger only | P2 | Versioning logic confirmed — new version created only on edit after published use. Rationale fixed per version. Flag for engineering. |
+| T70 — Match-the-following + short-answer question types | P1 | Add to question editor. MCQ subtypes (single/multi/K-type) must be distinct UI options, not bundled. |
+| T71 — AI generation from uploaded content (PPT/lecture notes) | P1 | Upload flow in AI creation path. AI parses doc and drafts questions. Faculty review and accept/reject. Accepted questions flow to QB. |
+| T72 — AI-assisted essay grading toggle per question | P2 | Opt-in toggle in question editor. Coordinator inputs ideal answer + grading guidelines. AI recommends score per student. Faculty accept/reject. |
+| T73 — Standards library: bucket typing UI (content area vs competency) | P2 | Admin settings: tag each standard as content-area type or competency type. Drives course offering overview widgets. |

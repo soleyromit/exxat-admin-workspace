@@ -16,6 +16,7 @@ import {
 import { usePce } from '@/components/pce/pce-state'
 import { useCommandPalette } from '@/components/command-palette'
 import { SettingsAppearanceCard } from '@/components/settings-appearance-card'
+import { SurveyModeToggle } from '@/components/pce/survey-mode-toggle'
 
 function AppHeader() {
   const { state } = useSidebar()
@@ -109,6 +110,15 @@ function UserFooter() {
                 Appearance
               </DropdownMenuItem>
             </DropdownMenuGroup>
+
+            <DropdownMenuSeparator />
+
+            <div className="px-2 py-2">
+              <p className="text-xs font-medium mb-2" style={{ color: 'var(--muted-foreground)' }}>
+                Survey module
+              </p>
+              <SurveyModeToggle />
+            </div>
 
             <DropdownMenuSeparator />
 

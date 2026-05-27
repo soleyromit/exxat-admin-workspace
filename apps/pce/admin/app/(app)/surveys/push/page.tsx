@@ -5,20 +5,19 @@ import Link from 'next/link'
 import { Separator, SidebarTrigger } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
 import { WizardNav } from '@/components/pce/wizard-nav'
-import { StepProperties } from '@/components/pce/distribute-wizard/step-properties'
+import { StepProperties, type SurveyVisibility } from '@/components/pce/distribute-wizard/step-properties'
 import { StepDistribution } from '@/components/pce/distribute-wizard/step-distribution'
 import { StepSurveyDesign } from '@/components/pce/distribute-wizard/step-survey-design'
 import { StepCommunication } from '@/components/pce/distribute-wizard/step-communication'
-import { StepReportAccess } from '@/components/pce/distribute-wizard/step-report-access'
 import { StepSuccess } from '@/components/pce/distribute-wizard/step-success'
+import { StepDistributionGeneral } from '@/components/pce/distribute-wizard/step-distribution-general'
 import {
   MOCK_PROGRAM_TERMS,
   MOCK_COURSE_OFFERINGS,
-  MOCK_PROGRAMS,
   type SurveyType,
 } from '@/lib/pce-mock-data'
 
-type WizardStep = 1 | 2 | 3 | 4 | 5 | 'success'
+type WizardStep = 1 | 2 | 3 | 4 | 'success'
 
 function dateToYmd(d: Date | undefined): string {
   if (!d) return ''
@@ -32,14 +31,17 @@ Your evaluation for {{course_name}} is open until {{close_date}}. Your responses
 Take the survey: {{survey_link}}`
 
 export default function PushSurveyPage() {
-  const { templates, pushSurveyBatch } = usePce()
+  const { templates, pushSurveyBatch, surveyMode } = usePce()
 
   const [step, setStep] = useState<WizardStep>(1)
 
   // Step 1 — Properties
-  const [surveyType, setSurveyType] = useState<SurveyType>('course_evaluation')
+  const [surveyType, setSurveyType] = useState<SurveyType>(
+    surveyMode === 'general' ? 'programmatic' : 'course_evaluation'
+  )
   const [termId, setTermId] = useState('')
-  const [programId, setProgramId] = useState('')
+  const [surveyDescription, setSurveyDescription] = useState('')
+  const [surveyVisibility, setSurveyVisibility] = useState<SurveyVisibility>('program')
 
   // Step 2 — Distribution
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set())
@@ -65,7 +67,6 @@ export default function PushSurveyPage() {
 
   const selectedTerm = MOCK_PROGRAM_TERMS.find(t => t.id === termId) ?? null
   const academicYear = selectedTerm?.academicYear ?? ''
-  const selectedProgram = MOCK_PROGRAMS.find(p => p.id === programId) ?? null
 
   const offeringsForTerm = useMemo(
     () =>
@@ -86,7 +87,6 @@ export default function PushSurveyPage() {
 
   function handleTermChange(v: string) {
     setTermId(v)
-    // Reset downstream state
     setExcludedIds(new Set())
     setTemplateAssignments({})
   }
@@ -109,7 +109,9 @@ export default function PushSurveyPage() {
   }
 
   function handleStep1Next() {
-    setTemplateAssignments(buildAutoTemplates())
+    if (surveyMode !== 'general') {
+      setTemplateAssignments(buildAutoTemplates())
+    }
     setStep(2)
   }
 
@@ -149,7 +151,7 @@ export default function PushSurveyPage() {
       surveyType,
       termId,
       academicYear,
-      programId,
+      programId: '',
       courseOfferingIds: selectedOfferings.map(o => o.id),
       templateAssignments,
       openDate: openYmd,
@@ -166,9 +168,10 @@ export default function PushSurveyPage() {
 
   function handleReset() {
     setStep(1)
-    setSurveyType('course_evaluation')
+    setSurveyType(surveyMode === 'general' ? 'programmatic' : 'course_evaluation')
     setTermId('')
-    setProgramId('')
+    setSurveyDescription('')
+    setSurveyVisibility('program')
     setExcludedIds(new Set())
     setTemplateAssignments({})
     setOpenDate(undefined)
@@ -188,8 +191,8 @@ export default function PushSurveyPage() {
     }
   }
 
-  const currentStepNum = step === 'success' ? 6 : (step as number)
-  const completedUpTo = step === 'success' ? 5 : (step as number) - 1
+  const currentStepNum = step === 'success' ? 5 : (step as number)
+  const completedUpTo = step === 'success' ? 4 : (step as number) - 1
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -228,26 +231,42 @@ export default function PushSurveyPage() {
         <div className="flex-1 overflow-auto" style={{ padding: '32px 40px 48px' }}>
           {step === 1 && (
             <StepProperties
-              surveyType={surveyType}
+              surveyMode={surveyMode}
               termId={termId}
-              programId={programId}
-              onSurveyTypeChange={setSurveyType}
+              description={surveyDescription}
+              visibility={surveyVisibility}
               onTermChange={handleTermChange}
-              onProgramChange={setProgramId}
+              onDescriptionChange={setSurveyDescription}
+              onVisibilityChange={setSurveyVisibility}
               onNext={handleStep1Next}
             />
           )}
 
-          {step === 2 && selectedTerm && (
+          {step === 2 && surveyMode === 'general' && (
+            <StepDistributionGeneral
+              onBack={() => setStep(1)}
+              onNext={() => setStep(3)}
+            />
+          )}
+
+          {step === 2 && surveyMode !== 'general' && selectedTerm && (
             <StepDistribution
               offeringsForTerm={offeringsForTerm}
               selectedOfferings={selectedOfferings}
               excludedIds={excludedIds}
               selectedTerm={selectedTerm}
-              programName={selectedProgram?.name ?? ''}
+              instructorAccess={instructorAccess}
+              coordinatorAccess={coordinatorAccess}
+              publishedTemplates={publishedTemplates}
+              templateAssignments={templateAssignments}
               onToggleOffering={handleToggleOffering}
               onSelectAll={handleSelectAll}
               onDeselectAll={handleDeselectAll}
+              onInstructorAccessChange={setInstructorAccess}
+              onCoordinatorAccessChange={setCoordinatorAccess}
+              onTemplateChange={(offeringId, tmplId) =>
+                setTemplateAssignments(p => ({ ...p, [offeringId]: tmplId }))
+              }
               onBack={() => setStep(1)}
               onNext={() => setStep(3)}
             />
@@ -282,23 +301,6 @@ export default function PushSurveyPage() {
               onReminderEnabledChange={setReminderEnabled}
               onReminderDaysChange={setReminderDaysBefore}
               onBack={() => setStep(3)}
-              onNext={() => setStep(5)}
-            />
-          )}
-
-          {step === 5 && selectedTerm && (
-            <StepReportAccess
-              instructorAccess={instructorAccess}
-              coordinatorAccess={coordinatorAccess}
-              onInstructorAccessChange={setInstructorAccess}
-              onCoordinatorAccessChange={setCoordinatorAccess}
-              selectedOfferings={selectedOfferings}
-              selectedTerm={selectedTerm}
-              openDate={openDate}
-              closeDate={closeDate}
-              templateAssignments={templateAssignments}
-              publishedTemplates={publishedTemplates}
-              onBack={() => setStep(4)}
               onPush={handlePush}
             />
           )}
@@ -311,6 +313,7 @@ export default function PushSurveyPage() {
               onReset={handleReset}
             />
           )}
+
         </div>
       </div>
     </div>

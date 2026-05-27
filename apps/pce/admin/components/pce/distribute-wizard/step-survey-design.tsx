@@ -32,13 +32,11 @@ function CourseTypeBadge({ type }: { type: 'didactic' | 'clinical' }) {
       variant="secondary"
       className="rounded shrink-0"
       style={{
-        fontSize: 10,
+        fontSize: 12,
         fontWeight: 500,
         paddingInline: 6,
         paddingBlock: 2,
-        backgroundColor: isDidactic
-          ? 'var(--brand-tint)'
-          : 'color-mix(in oklch, var(--brand-color) 12%, var(--muted))',
+        backgroundColor: isDidactic ? 'var(--brand-tint)' : 'var(--muted)',
         color: isDidactic ? 'var(--brand-color)' : 'var(--muted-foreground)',
       }}
     >
@@ -68,7 +66,7 @@ export function StepSurveyDesign({
       {/* Header */}
       <div className="flex flex-col gap-1">
         <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
-          Step 3 of 5
+          Step 3 of 4
         </p>
         <h2 className="text-lg font-semibold">Survey design</h2>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
@@ -202,7 +200,7 @@ export function StepSurveyDesign({
                   {/* Assignment status indicator */}
                   <span
                     className="text-xs shrink-0"
-                    style={{ color: isAssigned ? 'var(--brand-color)' : 'color-mix(in oklch, var(--destructive) 70%, var(--muted-foreground))' }}
+                    style={{ color: isAssigned ? 'var(--brand-color)' : 'var(--destructive)' }}
                   >
                     {isAssigned ? (
                       <>
@@ -225,9 +223,7 @@ export function StepSurveyDesign({
                         style={{
                           height: 32,
                           fontSize: 13,
-                          borderColor: isAssigned
-                            ? 'var(--border-control-35)'
-                            : 'color-mix(in oklch, var(--destructive) 60%, var(--border))',
+                          borderColor: isAssigned ? 'var(--border-control-35)' : 'var(--destructive)',
                         }}
                       >
                         <SelectValue placeholder="Choose…" />

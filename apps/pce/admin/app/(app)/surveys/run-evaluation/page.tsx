@@ -17,25 +17,18 @@ import {
   MOCK_MASTER_COURSES,
   MOCK_PROGRAMS,
   MOCK_FACULTY,
+  MOCK_STUDENTS,
+  MOCK_COURSE_ENROLLMENTS,
   type CourseOffering,
+  type ProgramTerm,
 } from '@/lib/pce-mock-data'
+import { CourseManagementSheet } from '@/components/pce/course-management-sheet'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type RunPhase = 'pre_audit' | 'scanning' | 'window_proposed' | 'course_list' | 'success'
+type RunPhase = 'pre_audit' | 'needs_dates' | 'scanning' | 'window_proposed' | 'course_list' | 'success'
 
-// ── Leo mock messages ────────────────────────────────────────────────────────
-
-const LEO_MESSAGES = [
-  'Scanning Spring 2026 courses for Doctor of Physical Therapy…',
-  'Found 14 courses — 11 Didactic, 3 Clinical.',
-  'All courses have enrolled students.',
-  '1 course has no faculty assigned: MED 410. The Instructor section will be suppressed.',
-  'Term dates found: Spring 2026 ends May 30, 2026.',
-  'Suggested survey window: Opens May 23 · Closes Jun 13.',
-]
-
-// ── Helper: get master course for offering ───────────────────────────────────
+// ── Helpers: get related data ────────────────────────────────────────────────
 
 function getMasterCourse(offering: CourseOffering) {
   return MOCK_MASTER_COURSES.find(c => c.id === offering.masterCourseId)
@@ -45,53 +38,100 @@ function getFaculty(offering: CourseOffering) {
   return MOCK_FACULTY.find(f => f.id === offering.primaryFacultyId)
 }
 
+// ── Dynamic Leo messages ─────────────────────────────────────────────────────
+
+function buildLeoMessages(
+  term: ProgramTerm,
+  offerings: CourseOffering[],
+  programName: string,
+  openDate: Date,
+  closeDate: Date,
+): string[] {
+  const didactic = offerings.filter(o => o.courseType === 'didactic').length
+  const clinical = offerings.filter(o => o.courseType === 'clinical').length
+  const noFaculty = offerings.filter(o => !getFaculty(o))
+  const endLabel = new Date(term.endDate + 'T00:00:00').toLocaleDateString('en-US', {
+    month: 'long', day: 'numeric', year: 'numeric',
+  })
+  const openLabel = openDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const closeLabel = closeDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+  return [
+    `Scanning ${term.name} courses for ${programName}…`,
+    `Found ${offerings.length} course${offerings.length !== 1 ? 's' : ''} — ${didactic} Didactic, ${clinical} Clinical.`,
+    `All courses have enrolled students.`,
+    noFaculty.length > 0
+      ? `${noFaculty.length} course${noFaculty.length > 1 ? 's have' : ' has'} no faculty — Instructor section will be suppressed.`
+      : `All courses have faculty assigned.`,
+    `Term dates found: ${term.name} ends ${endLabel}.`,
+    `Suggested survey window: Opens ${openLabel} · Closes ${closeLabel}.`,
+  ]
+}
+
+// ── Compute window from term end date ────────────────────────────────────────
+
+function computeWindow(term: ProgramTerm): { openDate: Date; closeDate: Date } {
+  const end = new Date(term.endDate + 'T00:00:00')
+  return {
+    openDate: new Date(end.getTime() - 7 * 24 * 60 * 60 * 1000),
+    closeDate: new Date(end.getTime() + 14 * 24 * 60 * 60 * 1000),
+  }
+}
+
 // ── Main page ────────────────────────────────────────────────────────────────
 
 export default function RunEvaluationPage() {
   const { surveys, templates, pushSurveyBatch } = usePce()
 
-  // Pre-populate to active term and first program
   const activeTerm = MOCK_PROGRAM_TERMS.find(t => t.status === 'active') ?? MOCK_PROGRAM_TERMS[0]
+  const initialWindow = computeWindow(activeTerm)
 
   const [phase, setPhase] = useState<RunPhase>('pre_audit')
   const [termId, setTermId] = useState(activeTerm.id)
   const [programId, setProgramId] = useState(MOCK_PROGRAMS[0].id)
   const [messages, setMessages] = useState<string[]>([])
   const [editingDates, setEditingDates] = useState(false)
-  const [openDate, setOpenDate] = useState<Date>(new Date('2026-05-23'))
-  const [closeDate, setCloseDate] = useState<Date>(new Date('2026-06-13'))
+  const [openDate, setOpenDate] = useState<Date>(initialWindow.openDate)
+  const [closeDate, setCloseDate] = useState<Date>(initialWindow.closeDate)
   const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set())
   const [fixOffering, setFixOffering] = useState<CourseOffering | null>(null)
   const [fixTab, setFixTab] = useState<'faculty' | 'students' | 'template'>('faculty')
+  // For missing term-dates branch
+  const [missingTermOpen, setMissingTermOpen] = useState<Date | undefined>()
+  const [missingTermClose, setMissingTermClose] = useState<Date | undefined>()
 
-  // Offerings for selected term
+  const selectedTerm = MOCK_PROGRAM_TERMS.find(t => t.id === termId) ?? activeTerm
+  const selectedProgram = MOCK_PROGRAMS.find(p => p.id === programId) ?? null
   const termOfferings = MOCK_COURSE_OFFERINGS.filter(o => o.termId === termId)
 
-  // All courses ready when all are resolved or have faculty
-  const allReady = termOfferings.every(o => {
-    const hasFaculty = !!getFaculty(o)
-    return hasFaculty || resolvedIds.has(o.id)
-  })
+  const allReady = termOfferings.every(o => !!getFaculty(o) || resolvedIds.has(o.id))
 
-  // Active template for template assignments
   const activeTemplate = templates.find(t => t.status === 'active') ?? null
-
-  // ── Scanning: append messages one by one ────────────────────────────────────
 
   const scanTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
   function startScan() {
+    // If term has no end date, collect dates first
+    if (!selectedTerm.endDate) {
+      setPhase('needs_dates')
+      return
+    }
+
+    const window = computeWindow(selectedTerm)
+    setOpenDate(window.openDate)
+    setCloseDate(window.closeDate)
+
     setPhase('scanning')
     setMessages([])
-    // Clear any lingering timers
     scanTimersRef.current.forEach(clearTimeout)
     scanTimersRef.current = []
 
-    LEO_MESSAGES.forEach((msg, i) => {
+    const msgs = buildLeoMessages(selectedTerm, termOfferings, selectedProgram?.name ?? 'your program', window.openDate, window.closeDate)
+
+    msgs.forEach((msg, i) => {
       const t = setTimeout(() => {
         setMessages(prev => [...prev, msg])
-        if (i === LEO_MESSAGES.length - 1) {
-          // After last message, advance to window_proposed
+        if (i === msgs.length - 1) {
           const t2 = setTimeout(() => setPhase('window_proposed'), 400)
           scanTimersRef.current.push(t2)
         }
@@ -100,15 +140,33 @@ export default function RunEvaluationPage() {
     })
   }
 
-  // Cleanup on unmount
+  function confirmMissingDates() {
+    if (!missingTermOpen || !missingTermClose) return
+    setOpenDate(missingTermOpen)
+    setCloseDate(missingTermClose)
+    setPhase('scanning')
+    setMessages([])
+
+    const fakeTerm = { ...selectedTerm, endDate: missingTermClose.toISOString().split('T')[0] }
+    const msgs = buildLeoMessages(fakeTerm, termOfferings, selectedProgram?.name ?? 'your program', missingTermOpen, missingTermClose)
+
+    msgs.forEach((msg, i) => {
+      const t = setTimeout(() => {
+        setMessages(prev => [...prev, msg])
+        if (i === msgs.length - 1) {
+          const t2 = setTimeout(() => setPhase('window_proposed'), 400)
+          scanTimersRef.current.push(t2)
+        }
+      }, (i + 1) * 800)
+      scanTimersRef.current.push(t)
+    })
+  }
+
   useEffect(() => {
     return () => scanTimersRef.current.forEach(clearTimeout)
   }, [])
 
-  // ── Push surveys ─────────────────────────────────────────────────────────────
-
   function handlePush() {
-    const term = MOCK_PROGRAM_TERMS.find(t => t.id === termId)
     const templateAssignments: Record<string, string> = {}
     termOfferings.forEach(o => {
       templateAssignments[o.id] = activeTemplate?.id ?? ''
@@ -117,7 +175,7 @@ export default function RunEvaluationPage() {
     pushSurveyBatch({
       surveyType: 'course_evaluation',
       termId,
-      academicYear: term?.academicYear ?? '2025–2026',
+      academicYear: selectedTerm.academicYear,
       programId,
       courseOfferingIds: termOfferings.map(o => o.id),
       templateAssignments,
@@ -133,12 +191,6 @@ export default function RunEvaluationPage() {
     setPhase('success')
   }
 
-  // ── Helpers ──────────────────────────────────────────────────────────────────
-
-  function formatDate(d: Date) {
-    return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-  }
-
   function formatDateShort(d: Date) {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
@@ -146,8 +198,6 @@ export default function RunEvaluationPage() {
   function isOfferingReady(o: CourseOffering) {
     return !!getFaculty(o) || resolvedIds.has(o.id)
   }
-
-  // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <>
@@ -158,12 +208,8 @@ export default function RunEvaluationPage() {
       >
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
-        {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-sm" aria-label="Breadcrumb">
-          <Link
-            href="/surveys"
-            className="text-muted-foreground hover:text-foreground transition-colors"
-          >
+          <Link href="/surveys" className="text-muted-foreground hover:text-foreground transition-colors">
             Surveys
           </Link>
           <i className="fa-light fa-chevron-right" aria-hidden="true" style={{ fontSize: 10, color: 'var(--muted-foreground)' }} />
@@ -171,19 +217,38 @@ export default function RunEvaluationPage() {
         </nav>
       </header>
 
-      <div
-        className="flex-1 overflow-auto"
-        style={{ paddingBlock: 28, paddingInline: 28 }}
-      >
+      <div className="flex-1 overflow-auto" style={{ paddingBlock: 28, paddingInline: 28 }}>
         <div style={{ maxWidth: 720 }}>
+          <div className="flex flex-col gap-6">
 
-          {/* ── Phase: pre_audit ── */}
-          {(phase === 'pre_audit' || phase === 'scanning' || phase === 'window_proposed' || phase === 'course_list') && (
-            <div className="flex flex-col gap-6">
+            {/* ── Cycle banner (pre_audit only) ── */}
+            {phase === 'pre_audit' && (
+              <div
+                className="flex items-start gap-3 rounded-xl px-5 py-4"
+                style={{
+                  background: 'var(--brand-color-surface)',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                <i
+                  className="fa-light fa-sparkles shrink-0 mt-0.5"
+                  aria-hidden="true"
+                  style={{ fontSize: 14, color: 'var(--brand-color)' }}
+                />
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: 'var(--brand-color-dark)' }}>
+                    {selectedTerm.name} evaluation cycle is ready to launch
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--brand-color-dark)', opacity: 0.75 }}>
+                    Select the program, run the audit to review courses, then push evaluations to students.
+                  </p>
+                </div>
+              </div>
+            )}
 
-              {/* Selectors row */}
+            {/* Selectors row */}
+            {(phase === 'pre_audit' || phase === 'needs_dates' || phase === 'scanning' || phase === 'window_proposed' || phase === 'course_list') && (
               <div className="flex flex-wrap items-center gap-3">
-                {/* Term selector */}
                 <Select value={termId} onValueChange={setTermId} disabled={phase !== 'pre_audit'}>
                   <SelectTrigger className="h-9 w-40 text-sm" aria-label="Select term">
                     <SelectValue placeholder="Select term" />
@@ -195,22 +260,15 @@ export default function RunEvaluationPage() {
                   </SelectContent>
                 </Select>
 
-                {/* Academic year — derived from term */}
-                <Select
-                  value={MOCK_PROGRAM_TERMS.find(t => t.id === termId)?.academicYear ?? ''}
-                  disabled
-                >
+                <Select value={selectedTerm.academicYear} disabled>
                   <SelectTrigger className="h-9 w-36 text-sm" aria-label="Academic year">
                     <SelectValue placeholder="Academic year" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={MOCK_PROGRAM_TERMS.find(t => t.id === termId)?.academicYear ?? ''}>
-                      {MOCK_PROGRAM_TERMS.find(t => t.id === termId)?.academicYear ?? ''}
-                    </SelectItem>
+                    <SelectItem value={selectedTerm.academicYear}>{selectedTerm.academicYear}</SelectItem>
                   </SelectContent>
                 </Select>
 
-                {/* Program selector */}
                 <Select value={programId} onValueChange={setProgramId} disabled={phase !== 'pre_audit'}>
                   <SelectTrigger className="h-9 w-56 text-sm" aria-label="Select program">
                     <SelectValue placeholder="Select program" />
@@ -229,245 +287,317 @@ export default function RunEvaluationPage() {
                   </Button>
                 )}
               </div>
+            )}
 
-              {/* ── Leo panel (scanning + window_proposed + course_list) ── */}
-              {(phase === 'scanning' || phase === 'window_proposed' || phase === 'course_list') && (
-                <div
-                  className="flex flex-col gap-4 rounded-xl border border-border"
-                  style={{ padding: '18px 20px', background: 'var(--muted)' }}
-                >
-                  {/* Leo header */}
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="shrink-0 rounded-full animate-pulse"
-                      style={{
-                        width: 8,
-                        height: 8,
-                        background: phase === 'scanning' ? 'var(--brand-color)' : 'var(--muted-foreground)',
-                        animationPlayState: phase === 'scanning' ? 'running' : 'paused',
-                      }}
-                    />
-                    <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted-foreground)' }}>
-                      Leo
-                    </span>
+            {/* ── Missing term dates branch ── */}
+            {phase === 'needs_dates' && (
+              <div
+                className="flex flex-col gap-4 rounded-xl px-5 py-4"
+                style={{ background: 'var(--muted)', border: '1px solid var(--border)' }}
+              >
+                <div className="flex items-start gap-2">
+                  <i className="fa-light fa-triangle-exclamation shrink-0 mt-0.5" aria-hidden="true" style={{ fontSize: 13, color: 'var(--chart-4)' }} />
+                  <div>
+                    <p className="text-sm font-semibold">Term dates not found for {selectedTerm.name}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Enter the survey open and close dates to continue. These will be saved for future use.
+                    </p>
                   </div>
-
-                  {/* Messages */}
-                  <div className="flex flex-col gap-2">
-                    {messages.map((msg, i) => (
-                      <p key={i} className="text-sm" style={{ color: 'var(--foreground)' }}>
-                        {msg}
-                      </p>
-                    ))}
-                    {phase === 'scanning' && messages.length === 0 && (
-                      <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                        Analyzing your program data…
-                      </p>
-                    )}
+                </div>
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Survey opens</label>
+                    <DatePickerField value={missingTermOpen} onChange={d => { if (d) setMissingTermOpen(d) }} />
                   </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Survey closes</label>
+                    <DatePickerField value={missingTermClose} onChange={d => { if (d) setMissingTermClose(d) }} />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    disabled={!missingTermOpen || !missingTermClose}
+                    onClick={confirmMissingDates}
+                  >
+                    Confirm Dates
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setPhase('pre_audit')}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
 
-                  {/* Window proposal */}
-                  {(phase === 'window_proposed' || phase === 'course_list') && (
-                    <div
-                      className="flex flex-col gap-4 rounded-lg border border-border"
-                      style={{ padding: '14px 16px', background: 'var(--card)' }}
-                    >
-                      {!editingDates ? (
-                        <>
-                          <div className="flex flex-col gap-1">
-                            <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-                              Suggested survey window
-                            </p>
-                            <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                              Opens {formatDateShort(openDate)}, {openDate.getFullYear()} · Closes {formatDateShort(closeDate)}, {closeDate.getFullYear()}
-                            </p>
-                          </div>
-                          {phase === 'window_proposed' && (
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="default"
-                                size="sm"
-                                onClick={() => setPhase('course_list')}
-                              >
-                                <i className="fa-light fa-check" aria-hidden="true" style={{ fontSize: 12 }} />
-                                Looks right
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setEditingDates(true)}
-                              >
-                                Edit dates
-                              </Button>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div className="flex flex-col gap-4">
-                          <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-                            Edit survey window
-                          </p>
-                          <div className="flex flex-wrap gap-4">
-                            <div className="flex flex-col gap-1.5">
-                              <label className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
-                                Opens
-                              </label>
-                              <DatePickerField value={openDate} onChange={(d) => { if (d) setOpenDate(d) }} />
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                              <label className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
-                                Closes
-                              </label>
-                              <DatePickerField value={closeDate} onChange={(d) => { if (d) setCloseDate(d) }} />
-                            </div>
-                          </div>
-                          <div>
-                            <Button
-                              variant="default"
-                              size="sm"
-                              onClick={() => {
-                                setEditingDates(false)
-                                setPhase('course_list')
-                              }}
-                            >
-                              Confirm dates
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+            {/* ── Leo panel — dark gradient (scanning + window_proposed) ── */}
+            {(phase === 'scanning' || phase === 'window_proposed') && (
+              <div
+                className="flex flex-col gap-4 rounded-xl"
+                style={{
+                  padding: '20px 22px',
+                  background: 'linear-gradient(155deg, hsl(246 55% 11%) 0%, hsl(248 48% 17%) 100%)',
+                  border: '1px solid hsl(246 40% 25%)',
+                }}
+              >
+                {/* Leo header with animated orb */}
+                <div className="flex items-center gap-3">
+                  <div
+                    className={phase === 'scanning' ? 'animate-pulse' : ''}
+                    style={{
+                      width: 16,
+                      height: 16,
+                      borderRadius: '50%',
+                      flexShrink: 0,
+                      background: 'radial-gradient(circle at 35% 35%, hsl(258 100% 82%), hsl(246 80% 55%))',
+                      boxShadow: phase === 'scanning' ? '0 0 10px 3px hsl(258 70% 60% / 0.5)' : 'none',
+                    }}
+                  />
+                  <span className="text-xs font-semibold" style={{ color: 'hsl(246 60% 78%)' }}>
+                    Leo
+                  </span>
+                </div>
+
+                {/* Messages */}
+                <div className="flex flex-col gap-2">
+                  {messages.map((msg, i) => (
+                    <p key={i} className="text-sm" style={{ color: 'hsl(0 0% 88%)' }}>
+                      {msg}
+                    </p>
+                  ))}
+                  {phase === 'scanning' && messages.length === 0 && (
+                    <p className="text-sm" style={{ color: 'hsl(246 30% 60%)' }}>
+                      Analyzing your program data…
+                    </p>
                   )}
                 </div>
-              )}
 
-              {/* ── Course list ── */}
-              {phase === 'course_list' && (
-                <div className="flex flex-col gap-3">
-                  <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-                    {termOfferings.length} courses · {MOCK_PROGRAM_TERMS.find(t => t.id === termId)?.name}
-                  </p>
-
-                  <div className="flex flex-col gap-2">
-                    {termOfferings.map(offering => {
-                      const course = getMasterCourse(offering)
-                      const faculty = getFaculty(offering)
-                      const ready = isOfferingReady(offering)
-                      const noFaculty = !faculty && !resolvedIds.has(offering.id)
-
-                      return (
-                        <div
-                          key={offering.id}
-                          className="flex items-center gap-4 rounded-xl border border-border"
-                          style={{ padding: '14px 18px', background: 'var(--card)' }}
-                        >
-                          {/* Course info */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-                                {course?.code ?? offering.id}
-                              </span>
-                              <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                                {course?.name}
-                              </span>
-                              {offering.courseType && (
-                                <span
-                                  className="text-xs rounded-full"
-                                  style={{
-                                    padding: '2px 8px',
-                                    background: 'var(--muted)',
-                                    color: 'var(--muted-foreground)',
-                                    border: '1px solid var(--border)',
-                                  }}
-                                >
-                                  {offering.courseType === 'didactic' ? 'Didactic' : 'Clinical'}
-                                </span>
-                              )}
-                              {noFaculty && (
-                                <i
-                                  className="fa-light fa-triangle-exclamation"
-                                  aria-hidden="true"
-                                  style={{ fontSize: 12, color: 'var(--chart-4)' }}
-                                />
-                              )}
-                            </div>
-                            <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
-                              {faculty ? faculty.name : 'Unassigned'} · {offering.enrolledCount} students
-                            </p>
-                          </div>
-
-                          {/* Status badge */}
-                          {ready ? (
-                            <span
-                              className="text-xs font-medium rounded-full shrink-0"
-                              style={{
-                                padding: '4px 10px',
-                                background: 'var(--brand-tint)',
-                                color: 'var(--brand-color)',
-                              }}
-                            >
-                              ● Ready
-                            </span>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="rounded-full h-auto shrink-0"
-                              style={{
-                                padding: '4px 10px',
-                                fontSize: 12,
-                                background: 'color-mix(in oklch, var(--chart-4) 15%, var(--background))',
-                                color: 'var(--chart-4)',
-                              }}
-                              onClick={() => {
-                                setFixOffering(offering)
-                                setFixTab('faculty')
-                              }}
-                            >
-                              ⚠ Fix →
-                            </Button>
-                          )}
+                {/* Survey window proposal */}
+                {phase === 'window_proposed' && (
+                  <div
+                    className="flex flex-col gap-4 rounded-lg"
+                    style={{
+                      padding: '14px 16px',
+                      background: 'hsl(246 45% 15%)',
+                      border: '1px solid hsl(246 38% 27%)',
+                    }}
+                  >
+                    {!editingDates ? (
+                      <>
+                        <div className="flex flex-col gap-1">
+                          <p className="text-sm font-semibold" style={{ color: 'hsl(0 0% 92%)' }}>
+                            Suggested survey window
+                          </p>
+                          <p className="text-sm" style={{ color: 'hsl(246 30% 65%)' }}>
+                            Opens {formatDateShort(openDate)}, {openDate.getFullYear()} · Closes {formatDateShort(closeDate)}, {closeDate.getFullYear()}
+                          </p>
                         </div>
-                      )
-                    })}
-                  </div>
-
-                  {/* Push button */}
-                  <div className="pt-2">
-                    <Button
-                      variant="default"
-                      size="sm"
-                      disabled={!allReady}
-                      onClick={handlePush}
-                    >
-                      <i className="fa-light fa-paper-plane" aria-hidden="true" style={{ fontSize: 12 }} />
-                      Push Surveys
-                    </Button>
-                    {!allReady && (
-                      <p className="text-xs mt-2" style={{ color: 'var(--muted-foreground)' }}>
-                        Resolve all issues before pushing.
-                      </p>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => setPhase('course_list')}
+                          >
+                            <i className="fa-light fa-check" aria-hidden="true" style={{ fontSize: 12 }} />
+                            Looks right
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingDates(true)}
+                            style={{ borderColor: 'hsl(246 38% 35%)', color: 'hsl(0 0% 80%)' }}
+                          >
+                            Edit dates
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex flex-col gap-4">
+                        <p className="text-sm font-semibold" style={{ color: 'hsl(0 0% 92%)' }}>
+                          Edit survey window
+                        </p>
+                        <div className="flex flex-wrap gap-4">
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-medium" style={{ color: 'hsl(246 30% 65%)' }}>
+                              Opens
+                            </label>
+                            <DatePickerField value={openDate} onChange={(d) => { if (d) setOpenDate(d) }} />
+                          </div>
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-medium" style={{ color: 'hsl(246 30% 65%)' }}>
+                              Closes
+                            </label>
+                            <DatePickerField value={closeDate} onChange={(d) => { if (d) setCloseDate(d) }} />
+                          </div>
+                        </div>
+                        <div>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => {
+                              setEditingDates(false)
+                              setPhase('course_list')
+                            }}
+                          >
+                            Confirm dates
+                          </Button>
+                        </div>
+                      </div>
                     )}
                   </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
 
-          {/* ── Phase: success ── */}
-          {phase === 'success' && (
-            <SuccessState
-              offeringCount={termOfferings.length}
-              termName={MOCK_PROGRAM_TERMS.find(t => t.id === termId)?.name ?? ''}
-              offerings={termOfferings}
-              openDate={openDate}
-              onReset={() => {
-                setPhase('pre_audit')
-                setMessages([])
-                setResolvedIds(new Set())
-                setEditingDates(false)
-              }}
-            />
-          )}
+            {/* ── Leo summary bar (course_list phase) ── */}
+            {phase === 'course_list' && (
+              <div
+                className="flex items-center gap-3 rounded-lg"
+                style={{ padding: '10px 14px', background: 'var(--muted)', border: '1px solid var(--border)' }}
+              >
+                <div
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    background: 'var(--brand-color)',
+                    flexShrink: 0,
+                  }}
+                />
+                <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                  Leo — Found {termOfferings.length} courses · Survey window {formatDateShort(openDate)}–{formatDateShort(closeDate)}
+                </span>
+              </div>
+            )}
+
+            {/* ── Course list ── */}
+            {phase === 'course_list' && (
+              <div className="flex flex-col gap-3">
+                <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+                  {termOfferings.length} courses · {selectedTerm.name}
+                </p>
+
+                <div className="flex flex-col gap-2">
+                  {termOfferings.map(offering => {
+                    const course = getMasterCourse(offering)
+                    const faculty = getFaculty(offering)
+                    const ready = isOfferingReady(offering)
+                    const noFaculty = !faculty && !resolvedIds.has(offering.id)
+
+                    return (
+                      <div
+                        key={offering.id}
+                        className="flex items-center gap-4 rounded-xl border border-border"
+                        style={{ padding: '14px 18px', background: 'var(--card)' }}
+                      >
+                        {/* Course info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+                              {course?.code ?? offering.id}
+                            </span>
+                            <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                              {course?.name}
+                            </span>
+                            {offering.courseType && (
+                              <span
+                                className="text-xs rounded-full"
+                                style={{
+                                  padding: '2px 8px',
+                                  background: 'var(--muted)',
+                                  color: 'var(--muted-foreground)',
+                                  border: '1px solid var(--border)',
+                                }}
+                              >
+                                {offering.courseType === 'didactic' ? 'Didactic' : 'Clinical'}
+                              </span>
+                            )}
+                            {noFaculty && (
+                              <i
+                                className="fa-light fa-triangle-exclamation"
+                                aria-hidden="true"
+                                style={{ fontSize: 12, color: 'var(--chart-4)' }}
+                              />
+                            )}
+                          </div>
+                          <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
+                            {faculty ? faculty.name : 'Unassigned'} · {offering.enrolledCount} students
+                            {activeTemplate && ` · ${activeTemplate.name}`}
+                          </p>
+                        </div>
+
+                        {/* Status badge */}
+                        {ready ? (
+                          <span
+                            className="text-xs font-medium rounded-full shrink-0"
+                            style={{
+                              padding: '4px 10px',
+                              background: 'var(--brand-tint)',
+                              color: 'var(--brand-color)',
+                            }}
+                          >
+                            ● Ready
+                          </span>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="rounded-full h-auto shrink-0"
+                            style={{
+                              padding: '4px 10px',
+                              fontSize: 12,
+                              background: 'var(--muted)',
+                              color: 'var(--chart-4)',
+                            }}
+                            onClick={() => {
+                              setFixOffering(offering)
+                              setFixTab('faculty')
+                            }}
+                          >
+                            ⚠ Fix →
+                          </Button>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Push button */}
+                <div className="pt-2">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    disabled={!allReady}
+                    onClick={handlePush}
+                  >
+                    <i className="fa-light fa-paper-plane" aria-hidden="true" style={{ fontSize: 12 }} />
+                    Push Surveys
+                  </Button>
+                  {!allReady && (
+                    <p className="text-xs mt-2" style={{ color: 'var(--muted-foreground)' }}>
+                      Resolve all issues before pushing.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── Success ── */}
+            {phase === 'success' && (
+              <SuccessState
+                offeringCount={termOfferings.length}
+                termName={selectedTerm.name}
+                offerings={termOfferings}
+                openDate={openDate}
+                onReset={() => {
+                  setPhase('pre_audit')
+                  setMessages([])
+                  setResolvedIds(new Set())
+                  setEditingDates(false)
+                }}
+              />
+            )}
+          </div>
         </div>
       </div>
 
@@ -476,7 +606,7 @@ export default function RunEvaluationPage() {
         <SheetContent side="right" className="flex flex-col gap-0 p-0" style={{ width: 480, maxWidth: '90vw' }}>
           <SheetHeader className="px-6 py-5 border-b border-border shrink-0">
             <SheetTitle className="text-base">
-              {getMasterCourse(fixOffering!)?.code ?? ''} — {getMasterCourse(fixOffering!)?.name ?? ''}
+              {fixOffering ? `${getMasterCourse(fixOffering)?.code ?? ''} — ${getMasterCourse(fixOffering)?.name ?? ''}` : ''}
             </SheetTitle>
             <p className="text-sm mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
               Fix before pushing
@@ -492,7 +622,6 @@ export default function RunEvaluationPage() {
                   <TabsTrigger value="template">Template</TabsTrigger>
                 </TabsList>
 
-                {/* Faculty tab */}
                 <TabsContent value="faculty" className="pt-4">
                   <FixFacultyTab
                     offering={fixOffering}
@@ -503,12 +632,10 @@ export default function RunEvaluationPage() {
                   />
                 </TabsContent>
 
-                {/* Students tab */}
                 <TabsContent value="students" className="pt-4">
                   <FixStudentsTab offering={fixOffering} />
                 </TabsContent>
 
-                {/* Template tab */}
                 <TabsContent value="template" className="pt-4">
                   <FixTemplateTab activeTemplateName={activeTemplate?.name ?? null} />
                 </TabsContent>
@@ -543,7 +670,6 @@ function SuccessState({
       className="flex flex-col items-center gap-8 py-16 text-center"
       style={{ maxWidth: 480, marginInline: 'auto' }}
     >
-      {/* Icon */}
       <div
         className="flex items-center justify-center rounded-full"
         style={{ width: 64, height: 64, background: 'var(--brand-tint)' }}
@@ -555,7 +681,6 @@ function SuccessState({
         />
       </div>
 
-      {/* Heading */}
       <div className="flex flex-col gap-2">
         <h2 className="text-xl font-semibold">
           {offeringCount} survey{offeringCount !== 1 ? 's' : ''} pushed for {termName}
@@ -565,7 +690,6 @@ function SuccessState({
         </p>
       </div>
 
-      {/* Course code pills */}
       <div className="flex flex-wrap gap-1.5 justify-center">
         {offerings.map(offering => {
           const course = MOCK_MASTER_COURSES.find(c => c.id === offering.masterCourseId)
@@ -586,7 +710,6 @@ function SuccessState({
         })}
       </div>
 
-      {/* Actions */}
       <div className="flex items-center gap-3">
         <Button variant="outline" size="sm" onClick={onReset}>
           Run another
@@ -602,7 +725,7 @@ function SuccessState({
   )
 }
 
-// ── Fix drawer tab: Faculty ───────────────────────────────────────────────────
+// ── Fix drawer tabs ───────────────────────────────────────────────────────────
 
 function FixFacultyTab({
   offering,
@@ -639,7 +762,7 @@ function FixFacultyTab({
     <div className="flex flex-col gap-4">
       <div
         className="rounded-lg border border-border p-4 flex flex-col gap-2"
-        style={{ background: 'color-mix(in oklch, var(--chart-4) 8%, var(--card))' }}
+        style={{ background: 'var(--muted)' }}
       >
         <p className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
           No faculty assigned to this course offering.
@@ -657,11 +780,17 @@ function FixFacultyTab({
   )
 }
 
-// ── Fix drawer tab: Students ──────────────────────────────────────────────────
-
 function FixStudentsTab({ offering }: { offering: CourseOffering }) {
+  const [rosterOpen, setRosterOpen] = useState(false)
+
+  const enrolledIds = MOCK_COURSE_ENROLLMENTS[offering.id] ?? []
+  const enrolledStudents = enrolledIds
+    .map(id => MOCK_STUDENTS.find(s => s.id === id))
+    .filter(Boolean) as typeof MOCK_STUDENTS
+
   return (
     <div className="flex flex-col gap-3">
+      {/* Summary row */}
       <div
         className="flex items-center gap-3 rounded-lg border border-border"
         style={{ padding: '12px 14px', background: 'var(--card)' }}
@@ -671,7 +800,7 @@ function FixStudentsTab({ offering }: { offering: CourseOffering }) {
           aria-hidden="true"
           style={{ fontSize: 18, color: 'var(--brand-color)' }}
         />
-        <div>
+        <div className="flex-1">
           <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
             {offering.enrolledCount} students enrolled
           </p>
@@ -679,12 +808,67 @@ function FixStudentsTab({ offering }: { offering: CourseOffering }) {
             All enrolled students will receive the survey on the open date.
           </p>
         </div>
+        <Button variant="outline" size="sm" onClick={() => setRosterOpen(true)}>
+          <i className="fa-light fa-list-ul" aria-hidden="true" style={{ fontSize: 12 }} />
+          Manage roster
+        </Button>
       </div>
+
+      {/* Student preview list */}
+      {enrolledStudents.length > 0 && (
+        <div
+          className="flex flex-col rounded-lg border border-border overflow-hidden"
+          style={{ background: 'var(--card)' }}
+        >
+          {enrolledStudents.map((student, i) => (
+            <div
+              key={student.id}
+              className="flex items-center gap-3"
+              style={{
+                padding: '8px 14px',
+                borderBottom: i < enrolledStudents.length - 1 ? '1px solid var(--border)' : 'none',
+              }}
+            >
+              <div
+                className="flex items-center justify-center rounded-full shrink-0"
+                style={{
+                  width: 26, height: 26,
+                  background: 'var(--avatar-initials-bg)',
+                  color: 'var(--avatar-initials-fg)',
+                  fontSize: 11, fontWeight: 600,
+                }}
+              >
+                {student.firstName[0]}{student.lastName[0]}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">{student.firstName} {student.lastName}</p>
+                <p className="text-xs truncate" style={{ color: 'var(--muted-foreground)' }}>
+                  {student.email}
+                </p>
+              </div>
+            </div>
+          ))}
+          {offering.enrolledCount > enrolledStudents.length && (
+            <div
+              className="flex items-center justify-center"
+              style={{ padding: '8px 14px', borderTop: '1px solid var(--border)' }}
+            >
+              <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                +{offering.enrolledCount - enrolledStudents.length} more not shown in demo
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      <CourseManagementSheet
+        offering={offering}
+        open={rosterOpen}
+        onOpenChange={setRosterOpen}
+      />
     </div>
   )
 }
-
-// ── Fix drawer tab: Template ──────────────────────────────────────────────────
 
 function FixTemplateTab({ activeTemplateName }: { activeTemplateName: string | null }) {
   if (activeTemplateName) {

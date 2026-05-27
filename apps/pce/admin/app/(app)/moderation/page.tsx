@@ -5,6 +5,7 @@ import {
   Button, LocalBanner, SidebarTrigger, Separator,
   SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton,
   Badge,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
 import { BulletGauge } from '@/components/pce/bullet-gauge'
@@ -27,6 +28,7 @@ export default function ModerationPage() {
   const [flaggedIds, setFlaggedIds] = useState<Set<string>>(
     () => new Set(MOCK_OPEN_TEXT_RESPONSES.filter(r => r.flagged).map(r => r.id))
   )
+  const [shareConfirmOpen, setShareConfirmOpen] = useState(false)
 
   const pending = surveys.filter(s => s.status === 'pending_review')
   const selectedSurvey: PceSurvey | null = pending.find(s => s.id === selectedSurveyId) ?? null
@@ -58,6 +60,7 @@ export default function ModerationPage() {
     : 0
 
   return (
+    <>
     <div className="flex flex-col h-full overflow-hidden">
 
       {/* ── Page header ── */}
@@ -91,7 +94,7 @@ export default function ModerationPage() {
               {pending.length > 0 && (
                 <Badge
                   variant="secondary"
-                  className="ml-auto rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center"
+                  className="ml-auto rounded-full text-xs px-1.5 py-0 min-w-[18px] text-center"
                 >
                   {pending.length}
                 </Badge>
@@ -269,10 +272,7 @@ export default function ModerationPage() {
                   <Button
                     variant="default"
                     size="sm"
-                    onClick={() => {
-                      enableResults(selectedSurvey.id)
-                      setSelectedSurveyId(null)
-                    }}
+                    onClick={() => setShareConfirmOpen(true)}
                   >
                     <i className="fa-light fa-share-from-square" aria-hidden="true" style={{ fontSize: 12 }} />
                     Share Results with Faculty
@@ -292,5 +292,49 @@ export default function ModerationPage() {
         </div>
       </div>
     </div>
+
+    {/* Share confirmation dialog */}
+    <Dialog open={shareConfirmOpen} onOpenChange={setShareConfirmOpen}>
+      <DialogContent style={{ maxWidth: 440 }}>
+        <DialogHeader>
+          <DialogTitle>Share results with faculty?</DialogTitle>
+          <DialogDescription>
+            {selectedSurvey && surveyResponses.length < 5 ? (
+              <>
+                Only <strong>{surveyResponses.length}</strong> {surveyResponses.length === 1 ? 'response' : 'responses'} received — below the recommended minimum of 5.
+                {' '}Faculty will see aggregate scores based on this small sample.
+              </>
+            ) : (
+              <>
+                Results for <strong>{selectedSurvey?.courseCode}</strong> will be shared with faculty.
+                {surveyFlaggedCount > 0 && (
+                  <> {surveyFlaggedCount} flagged {surveyFlaggedCount === 1 ? 'response has' : 'responses have'} been hidden.</>
+                )}
+              </>
+            )}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="flex-row justify-end gap-2 pt-2">
+          <Button variant="outline" size="sm" onClick={() => setShareConfirmOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => {
+              if (selectedSurvey) {
+                enableResults(selectedSurvey.id)
+                setSelectedSurveyId(null)
+              }
+              setShareConfirmOpen(false)
+            }}
+          >
+            <i className="fa-light fa-share-from-square" aria-hidden="true" style={{ fontSize: 12 }} />
+            Share Results
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   )
 }

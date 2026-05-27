@@ -10,10 +10,9 @@ interface WizardNavProps {
 
 const STEPS = [
   { n: 1, label: 'Properties' },
-  { n: 2, label: 'Courses' },
+  { n: 2, label: 'Courses & access' },
   { n: 3, label: 'Design' },
   { n: 4, label: 'Communicate' },
-  { n: 5, label: 'Access' },
 ]
 
 export function WizardNav({ currentStep, completedUpTo, onStepClick }: WizardNavProps) {
@@ -23,7 +22,7 @@ export function WizardNav({ currentStep, completedUpTo, onStepClick }: WizardNav
       style={{ width: 220, background: 'var(--muted)', padding: '24px 12px' }}
     >
       <p
-        className="text-xs font-semibold uppercase tracking-wider mb-4"
+        className="text-xs font-semibold mb-4"
         style={{ color: 'var(--muted-foreground)', paddingInline: 8 }}
       >
         Steps

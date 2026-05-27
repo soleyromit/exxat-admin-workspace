@@ -1,6 +1,6 @@
 {
   "_note": "Watcher state. Hashes of last-seen content per source. Updated by scripts/claude-updates-watch.py. Do not edit by hand.",
-  "last_checked": "2026-05-18T12:26:55.703051+00:00",
+  "last_checked": "2026-05-25T12:30:00.999137+00:00",
   "sources": {
     "claude-code-changelog": {
       "hash": "f8633114fe33e4c4",

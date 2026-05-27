@@ -28,7 +28,7 @@ function getDescendantIds(id: string, folders: FolderNode[]): Set<string> {
 
 // Collaborator avatar stack
 function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] }) {
-  const { currentPersona, setCollaboratorsModalFolderId, selectedFolderId } = useQB()
+  const { currentPersona } = useQB()
   const isAdmin = currentPersona.role === 'exam_admin'
   const MAX_SHOWN = 3
   const personas = MOCK_QB_PERSONAS.filter(p => collaboratorIds.includes(p.id))
@@ -94,16 +94,6 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
             </div>
           ))}
         </div>
-        {isAdmin && (
-          <Button
-            variant="outline" size="sm"
-            className="w-full mt-3 gap-1.5 text-xs"
-            onClick={() => setCollaboratorsModalFolderId(selectedFolderId)}
-          >
-            <i className="fa-light fa-user-plus" aria-hidden="true" />
-            Manage access
-          </Button>
-        )}
       </PopoverContent>
     </Popover>
   )
@@ -115,7 +105,6 @@ export function QBTitle() {
     selectedFolder, visibleQuestions, navView,
     folders, questions, renameFolder,
     currentPersona, selectedFolderId,
-    setCollaboratorsModalFolderId,
   } = useQB()
   const isAdmin = currentPersona.role === 'exam_admin'
   const count = visibleQuestions.length
@@ -212,31 +201,17 @@ export function QBTitle() {
         </Button>
       </div>
 
-      {/* Subtitle: count + collaborators + manage access — fixed 28px height so layout never shifts */}
+      {/* Subtitle: count + collaborators — fixed 28px height so layout never shifts */}
       <div className="qb-title-text" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 1, minHeight: 28 }}>
         <span className="text-sm text-muted-foreground">
           {count} question{count !== 1 ? 's' : ''} · Last updated now
         </span>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          visibility: (collaboratorIds.length > 0 || (isAdmin && selectedFolder)) ? 'visible' : 'hidden',
-        }}>
-          <span style={{ width: 1, height: 12, backgroundColor: 'var(--border)', display: 'inline-block' }} />
-          {collaboratorIds.length > 0 && (
+        {collaboratorIds.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ width: 1, height: 12, backgroundColor: 'var(--border)', display: 'inline-block' }} />
             <CollaboratorAvatars collaboratorIds={collaboratorIds} />
-          )}
-          {isAdmin && selectedFolder && (
-            <Button
-              variant="ghost" size="icon-xs"
-              aria-label="Manage access"
-              className="text-muted-foreground"
-              style={{ width: 28, height: 28 }}
-              onClick={() => setCollaboratorsModalFolderId(selectedFolderId)}
-            >
-              <i className="fa-light fa-user-plus" aria-hidden="true" style={{ fontSize: 14 }} />
-            </Button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Dialogs */}

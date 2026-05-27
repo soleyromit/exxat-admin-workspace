@@ -9,7 +9,7 @@ import {
 } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
-import { ResponseGauge } from '@/components/pce/response-gauge'
+import { BulletGauge } from '@/components/pce/bullet-gauge'
 import { MOCK_TERMS } from '@/lib/pce-mock-data'
 import type { PceSurvey, SurveyStatus } from '@/lib/pce-mock-data'
 import { DataTable } from '@/components/data-table'
@@ -99,11 +99,12 @@ function MySurveysContent() {
       sortable: true,
       width: 200,
       cell: (row) => (
-        <ResponseGauge
-          rate={row.survey.responseRate}
+        <BulletGauge
           responseCount={row.survey.responseCount}
           enrollmentCount={row.survey.enrollmentCount}
-          showBar={row.survey.responseRate > 0}
+          width={120}
+          height={4}
+          ariaLabel={null}
         />
       ),
     },

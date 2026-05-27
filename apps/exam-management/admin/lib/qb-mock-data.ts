@@ -97,6 +97,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     folder: 'phar101-antibiotics', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials',
     extraFolders: [{ folder: 'biol201-membrane', folderPath: 'BIOL201 QB / Membrane Transport' }],
     tags: ['beta-lactam', 'allergy', 'streptococcus'], usage: 14, pbis: 0.41, pbisDir: 'up',
+    discriminationIndex: 0.45,
     creator: 'persona-admin', lastEditedBy: 'persona-chen',
     usedInSections: ['Midterm 2024', 'Final 2023'], pinned: true,
     layout: 'split' as const,
@@ -142,10 +143,10 @@ export const MOCK_QB_QUESTIONS: Question[] = [
       },
     ],
     collaborators: [
-      { personaId: 'p1', role: 'owner' as const },
-      { personaId: 'p2', role: 'edit' as const },
-      { personaId: 'p3', role: 'view' as const },
-      { personaId: 'p4', role: 'view' as const },
+      { personaId: 'persona-admin', role: 'owner' as const },
+      { personaId: 'persona-thompson', role: 'edit' as const },
+      { personaId: 'persona-chen', role: 'view' as const },
+      { personaId: 'persona-patel', role: 'view' as const },
     ],
   },
   {
@@ -162,6 +163,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'Ordering', status: 'Saved', difficulty: 'Hard', blooms: 'Evaluate',
     folder: 'phar101-antibiotics', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials',
     tags: ['spectrum', 'ordering', 'gram-coverage'], usage: 9, pbis: 0.29, pbisDir: 'down',
+    discriminationIndex: 0.28,
     creator: 'persona-admin', lastEditedBy: 'persona-admin',
     usedInSections: ['Final 2023'], favorited: true,
     layout: 'stacked' as const,
@@ -180,7 +182,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
       { version: 2, modifiedBy: 'Dr. James Wu', date: '2026-03-10', changes: ['Added individual rationale for each position to help students understand the reasoning'], usedInAssessments: ['Final 2023', 'Midterm 2024'] },
       { version: 1, modifiedBy: 'Dr. James Wu', date: '2025-09-01', isOriginal: true, changes: [], usedInAssessments: ['Final 2022'] },
     ],
-    collaborators: [{ personaId: 'p1', role: 'owner' as const }, { personaId: 'p2', role: 'edit' as const }],
+    collaborators: [{ personaId: 'persona-admin', role: 'owner' as const }, { personaId: 'persona-thompson', role: 'edit' as const }],
   },
   {
     id: 'q-004', code: 'PH-ANA-001', version: 4, age: '14 months',
@@ -188,6 +190,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Easy', blooms: 'Apply',
     folder: 'phar101-analgesics', folderPath: 'PHAR101 QB / Analgesics & Pain Management',
     tags: ['NSAID', 'GI-protection', 'PPI'], usage: 22, pbis: 0.48, pbisDir: 'flat',
+    discriminationIndex: 0.52,
     creator: 'persona-thompson', lastEditedBy: 'persona-patel',
     usedInSections: ['Midterm 2024', 'Final 2023', 'Quiz 3'], pinned: true,
     layout: 'stacked' as const,
@@ -207,7 +210,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
       { version: 2, modifiedBy: 'Dr. R. Thompson', date: '2024-09-01', changes: ['Added option D (Misoprostol)'], usedInAssessments: [] },
       { version: 1, modifiedBy: 'Dr. R. Thompson', date: '2024-01-01', isOriginal: true, changes: [], usedInAssessments: [] },
     ],
-    collaborators: [{ personaId: 'p2', role: 'owner' as const }, { personaId: 'p3', role: 'edit' as const }],
+    collaborators: [{ personaId: 'persona-thompson', role: 'owner' as const }, { personaId: 'persona-chen', role: 'edit' as const }],
   },
   {
     id: 'q-005', code: 'PH-ANA-002', version: 1, age: '3 weeks',
@@ -231,7 +234,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     versionHistory: [
       { version: 1, modifiedBy: 'Dr. Admin', date: '2026-05-01', isOriginal: true, changes: [], usedInAssessments: [] },
     ],
-    collaborators: [{ personaId: 'p1', role: 'owner' as const }],
+    collaborators: [{ personaId: 'persona-admin', role: 'owner' as const }],
   },
   {
     id: 'q-006', code: 'PH-CV-001', version: 2, age: '6 months',
@@ -243,6 +246,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
       { folder: 'skel101-shoulder',    folderPath: 'SKEL101 QB / Shoulder Complex' },
     ],
     tags: ['hypertension', 'ACE-inhibitor', 'contraindication'], usage: 11, pbis: 0.37, pbisDir: 'up',
+    discriminationIndex: 0.32,
     creator: 'persona-admin', lastEditedBy: 'persona-admin',
     usedInSections: ['Midterm 2024'],
   },
@@ -252,6 +256,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'Fill blank', status: 'Saved', difficulty: 'Hard', blooms: 'Analyze',
     folder: 'phar101-cardio', folderPath: 'PHAR101 QB / Cardiovascular Drugs',
     tags: ['heart-failure', 'digoxin', 'frank-starling'], usage: 3, pbis: 0.18, pbisDir: 'down',
+    discriminationIndex: 0.17,
     creator: 'persona-chen', lastEditedBy: 'persona-chen', usedInSections: ['Quiz 2'],
     layout: 'stacked' as const,
     stemText: 'Explain the Frank-Starling mechanism and its clinical relevance to digoxin therapy in a patient with systolic heart failure and atrial fibrillation. In your response, describe the physiological basis, how digoxin modulates ventricular function, and why rate control matters in this context.',
@@ -283,8 +288,8 @@ export const MOCK_QB_QUESTIONS: Question[] = [
       },
     ],
     collaborators: [
-      { personaId: 'p1', role: 'owner' as const },
-      { personaId: 'p3', role: 'view' as const },
+      { personaId: 'persona-admin', role: 'owner' as const },
+      { personaId: 'persona-chen', role: 'view' as const },
     ],
   },
   {
@@ -326,6 +331,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     folder: 'biol201-membrane', folderPath: 'BIOL201 QB / Membrane Transport',
     extraFolders: [{ folder: 'phar101-cardio', folderPath: 'PHAR101 QB / Cardiovascular Drugs' }],
     tags: ['active-transport', 'ATP', 'gradient'], usage: 31, pbis: 0.52, pbisDir: 'flat',
+    discriminationIndex: 0.48,
     creator: 'persona-admin', lastEditedBy: 'persona-chen',
     usedInSections: ['Midterm 2024', 'Final 2023', 'Quiz 1'],
   },
@@ -339,6 +345,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
       { folder: 'biol201-mendelian', folderPath: 'BIOL201 QB / Mendelian Genetics' },
     ],
     tags: ['meiosis', 'crossing-over', 'genetics'], usage: 7, pbis: 0.33, pbisDir: 'up',
+    discriminationIndex: 0.38,
     creator: 'persona-admin', lastEditedBy: 'persona-admin', usedInSections: ['Quiz 2'],
   },
   {
@@ -348,6 +355,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     folder: 'skel101-shoulder', folderPath: 'SKEL101 QB / Shoulder Complex',
     extraFolders: [{ folder: 'skel101-cervical', folderPath: 'SKEL101 QB / Cervical Spine' }],
     tags: ['glenohumeral', 'rotator-cuff', 'stabilization'], usage: 19, pbis: 0.44, pbisDir: 'flat',
+    discriminationIndex: 0.41,
     creator: 'persona-admin', lastEditedBy: 'persona-admin',
     usedInSections: ['Midterm 2024', 'Final 2023'], favorited: true,
   },
@@ -358,6 +366,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'Fill blank', status: 'Saved', difficulty: 'Easy', blooms: 'Understand',
     folder: 'biol201-membrane', folderPath: 'BIOL201 QB / Membrane Transport',
     tags: ['Na-K-pump', 'resting-potential', 'active-transport'], usage: 24, pbis: 0.51, pbisDir: 'flat',
+    discriminationIndex: 0.49,
     creator: 'persona-thompson', lastEditedBy: 'persona-chen', usedInSections: ['Quiz 1', 'Midterm 2024'],
   },
   {
@@ -366,6 +375,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Medium', blooms: 'Analyze',
     folder: 'biol201-membrane', folderPath: 'BIOL201 QB / Membrane Transport',
     tags: ['facilitated-diffusion', 'active-transport', 'comparison'], usage: 8, pbis: 0.39, pbisDir: 'up',
+    discriminationIndex: 0.35,
     creator: 'persona-chen', lastEditedBy: 'persona-chen', usedInSections: ['Quiz 1'],
   },
   {
@@ -383,6 +393,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'Ordering', status: 'Saved', difficulty: 'Easy', blooms: 'Remember',
     folder: 'biol201-mitosis', folderPath: 'BIOL201 QB / Mitosis & Meiosis',
     tags: ['mitosis', 'cell-cycle', 'checkpoints'], usage: 28, pbis: 0.56, pbisDir: 'flat',
+    discriminationIndex: 0.53,
     creator: 'persona-thompson', lastEditedBy: 'persona-thompson', usedInSections: ['Quiz 2', 'Midterm 2024'],
   },
   {
@@ -391,6 +402,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Hard', blooms: 'Evaluate',
     folder: 'biol201-mitosis', folderPath: 'BIOL201 QB / Mitosis & Meiosis',
     tags: ['nondisjunction', 'meiosis-II', 'gametes'], usage: 11, pbis: 0.28, pbisDir: 'down',
+    discriminationIndex: 0.26,
     creator: 'persona-chen', lastEditedBy: 'persona-chen', usedInSections: ['Final 2023'],
   },
   // ── BIOL201 – Mendelian Genetics ──────────────────────────────────────────
@@ -400,6 +412,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Easy', blooms: 'Apply',
     folder: 'biol201-mendelian', folderPath: 'BIOL201 QB / Mendelian Genetics',
     tags: ['dihybrid', 'phenotype-ratio', 'mendel'], usage: 35, pbis: 0.62, pbisDir: 'flat',
+    discriminationIndex: 0.58,
     creator: 'persona-thompson', lastEditedBy: 'persona-chen', usedInSections: ['Quiz 3', 'Midterm 2024', 'Final 2023'],
   },
   {
@@ -408,6 +421,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'Fill blank', status: 'Saved', difficulty: 'Medium', blooms: 'Understand',
     folder: 'biol201-mendelian', folderPath: 'BIOL201 QB / Mendelian Genetics',
     tags: ['incomplete-dominance', 'codominance', 'ABO'], usage: 16, pbis: 0.45, pbisDir: 'up',
+    discriminationIndex: 0.43,
     creator: 'persona-chen', lastEditedBy: 'persona-chen', usedInSections: ['Quiz 3'],
   },
   {
@@ -425,6 +439,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Easy', blooms: 'Remember',
     folder: 'biol201-molecular', folderPath: 'BIOL201 QB / Molecular Biology',
     tags: ['replication', 'helicase', 'DNA'], usage: 29, pbis: 0.58, pbisDir: 'flat',
+    discriminationIndex: 0.55,
     creator: 'persona-admin', lastEditedBy: 'persona-admin', usedInSections: ['Quiz 4', 'Final 2023'],
   },
   {
@@ -433,6 +448,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Medium', blooms: 'Analyze',
     folder: 'biol201-molecular', folderPath: 'BIOL201 QB / Molecular Biology',
     tags: ['DNA-polymerase', 'replication', 'prokaryote'], usage: 13, pbis: 0.42, pbisDir: 'up',
+    discriminationIndex: 0.40,
     creator: 'persona-chen', lastEditedBy: 'persona-chen', usedInSections: ['Quiz 4'],
   },
   // ── SKEL101 – Shoulder Complex ────────────────────────────────────────────
@@ -442,6 +458,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Medium', blooms: 'Understand',
     folder: 'skel101-shoulder', folderPath: 'SKEL101 QB / Shoulder Complex',
     tags: ['impingement', 'supraspinatus', 'rotator-cuff'], usage: 15, pbis: 0.38, pbisDir: 'flat',
+    discriminationIndex: 0.33,
     creator: 'persona-kim', lastEditedBy: 'persona-kim', usedInSections: ['Midterm 2024'],
   },
   {
@@ -459,6 +476,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Medium', blooms: 'Apply',
     folder: 'skel101-cervical', folderPath: 'SKEL101 QB / Cervical Spine',
     tags: ['dermatome', 'nerve-root', 'cervical'], usage: 21, pbis: 0.47, pbisDir: 'up',
+    discriminationIndex: 0.44,
     creator: 'persona-admin', lastEditedBy: 'persona-kim', usedInSections: ['Final 2023', 'Midterm 2024'],
   },
   {
@@ -467,6 +485,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'Fill blank', status: 'Saved', difficulty: 'Hard', blooms: 'Create',
     folder: 'skel101-cervical', folderPath: 'SKEL101 QB / Cervical Spine',
     tags: ['upper-crossed', 'posture', 'cervical-loading'], usage: 6, pbis: 0.22, pbisDir: 'down',
+    discriminationIndex: 0.19,
     creator: 'persona-kim', lastEditedBy: 'persona-kim', usedInSections: ['Quiz 2'],
   },
   {
@@ -484,6 +503,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Easy', blooms: 'Remember',
     folder: 'skel101-lumbar', folderPath: 'SKEL101 QB / Lumbar Spine',
     tags: ['transverse-abdominis', 'lumbar-stability', 'activation'], usage: 18, pbis: 0.49, pbisDir: 'flat',
+    discriminationIndex: 0.46,
     creator: 'persona-admin', lastEditedBy: 'persona-kim', usedInSections: ['Quiz 3', 'Final 2023'],
   },
   {
@@ -492,6 +512,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'Fill blank', status: 'Saved', difficulty: 'Hard', blooms: 'Evaluate',
     folder: 'skel101-lumbar', folderPath: 'SKEL101 QB / Lumbar Spine',
     tags: ['McKenzie', 'stabilization', 'evidence-based'], usage: 4, pbis: 0.19, pbisDir: 'down',
+    discriminationIndex: 0.08,
     creator: 'persona-kim', lastEditedBy: 'persona-kim', usedInSections: ['Final 2023'],
   },
   // ── PHAR101 – additional ──────────────────────────────────────────────────
@@ -509,6 +530,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'Matching', status: 'Saved', difficulty: 'Medium', blooms: 'Understand',
     folder: 'phar101-cardio', folderPath: 'PHAR101 QB / Cardiovascular Drugs',
     tags: ['antiarrhythmic', 'ion-channel', 'Vaughan-Williams'], usage: 9, pbis: 0.36, pbisDir: 'flat',
+    discriminationIndex: 0.31,
     creator: 'persona-thompson', lastEditedBy: 'persona-patel', usedInSections: ['Midterm 2024'],
   },
   {
@@ -517,6 +539,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Hard', blooms: 'Analyze',
     folder: 'phar101-cns', folderPath: 'PHAR101 QB / CNS & Psychotropics',
     tags: ['lithium-toxicity', 'tremor', 'management'], usage: 7, pbis: 0.31, pbisDir: 'up',
+    discriminationIndex: 0.36,
     creator: 'persona-chen', lastEditedBy: 'persona-thompson', usedInSections: ['Final 2023'],
   },
   {
@@ -525,6 +548,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Archived', difficulty: 'Hard', blooms: 'Analyze',
     folder: 'phar101-cns', folderPath: 'PHAR101 QB / CNS & Psychotropics',
     tags: ['haloperidol', 'risperidone', 'elderly', 'pharmacokinetics'], usage: 3, pbis: 0.22, pbisDir: 'down',
+    discriminationIndex: 0.06,
     creator: 'persona-admin', lastEditedBy: 'persona-admin', usedInSections: ['Midterm 2024'],
   },
 
@@ -535,6 +559,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Easy', blooms: 'Remember',
     folder: 'phar101-abx-gram-pos', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms',
     tags: ['gram-stain', 'cell-wall', 'peptidoglycan'], usage: 18, pbis: 0.44, pbisDir: 'flat',
+    discriminationIndex: 0.42,
     creator: 'persona-thompson', lastEditedBy: 'persona-thompson', usedInSections: ['Midterm 2024'],
   },
   {
@@ -543,6 +568,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'Ordering', status: 'Saved', difficulty: 'Medium', blooms: 'Analyze',
     folder: 'phar101-abx-gram-pos', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms',
     tags: ['spectrum', 'gram-positive', 'cocci'], usage: 11, pbis: 0.38, pbisDir: 'up',
+    discriminationIndex: 0.34,
     creator: 'persona-chen', lastEditedBy: 'persona-chen', usedInSections: ['Final 2024'],
   },
   {
@@ -551,6 +577,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Hard', blooms: 'Understand',
     folder: 'phar101-abx-gram-pos', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms',
     tags: ['teichoic-acid', 'immunology', 'virulence'], usage: 5, pbis: 0.27, pbisDir: 'down',
+    discriminationIndex: 0.24,
     creator: 'persona-patel', lastEditedBy: 'persona-thompson', usedInSections: [],
   },
 
@@ -561,6 +588,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Medium', blooms: 'Apply',
     folder: 'phar101-abx-gpos-staph', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms / Staphylococcus Coverage',
     tags: ['MSSA', 'step-down', 'oral-therapy'], usage: 14, pbis: 0.42, pbisDir: 'up',
+    discriminationIndex: 0.40,
     creator: 'persona-thompson', lastEditedBy: 'persona-patel', usedInSections: ['Midterm 2024', 'Final 2023'],
   },
   {
@@ -569,6 +597,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Hard', blooms: 'Evaluate',
     folder: 'phar101-abx-gpos-staph', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms / Staphylococcus Coverage',
     tags: ['cefazolin', 'vancomycin', 'mechanism'], usage: 6, pbis: 0.33, pbisDir: 'flat',
+    discriminationIndex: 0.37,
     creator: 'persona-chen', lastEditedBy: 'persona-chen', usedInSections: [],
   },
 
@@ -579,6 +608,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Easy', blooms: 'Remember',
     folder: 'phar101-abx-gpos-strep', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms / Streptococcus Coverage',
     tags: ['GAS', 'pharyngitis', 'penicillin'], usage: 20, pbis: 0.51, pbisDir: 'up',
+    discriminationIndex: 0.48,
     creator: 'persona-thompson', lastEditedBy: 'persona-thompson', usedInSections: ['Midterm 2024'],
   },
   {
@@ -587,6 +617,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Hard', blooms: 'Apply',
     folder: 'phar101-abx-gpos-strep', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms / Streptococcus Coverage',
     tags: ['endocarditis', 'penicillin-allergy', 'alternative'], usage: 8, pbis: 0.35, pbisDir: 'down',
+    discriminationIndex: 0.30,
     creator: 'persona-patel', lastEditedBy: 'persona-chen', usedInSections: ['Final 2024'],
   },
 
@@ -597,6 +628,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Hard', blooms: 'Evaluate',
     folder: 'phar101-abx-mrsa', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms / Staphylococcus Coverage / MRSA Protocols',
     tags: ['vancomycin', 'TDM', 'AUC-guided'], usage: 9, pbis: 0.29, pbisDir: 'up',
+    discriminationIndex: 0.07,
     creator: 'persona-chen', lastEditedBy: 'persona-patel', usedInSections: ['Final 2024'],
   },
   {
@@ -605,6 +637,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Medium', blooms: 'Apply',
     folder: 'phar101-abx-mrsa', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms / Staphylococcus Coverage / MRSA Protocols',
     tags: ['daptomycin', 'contraindication', 'pneumonia'], usage: 12, pbis: 0.45, pbisDir: 'flat',
+    discriminationIndex: 0.44,
     creator: 'persona-thompson', lastEditedBy: 'persona-thompson', usedInSections: ['Midterm 2024'],
   },
 
@@ -615,6 +648,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Medium', blooms: 'Understand',
     folder: 'phar101-abx-mssa', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms / Staphylococcus Coverage / MSSA Protocols',
     tags: ['nafcillin', 'bactericidal', 'beta-lactam-preference'], usage: 7, pbis: 0.38, pbisDir: 'up',
+    discriminationIndex: 0.35,
     creator: 'persona-patel', lastEditedBy: 'persona-patel', usedInSections: [],
   },
   {
@@ -623,6 +657,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Hard', blooms: 'Analyze',
     folder: 'phar101-abx-mssa', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms / Staphylococcus Coverage / MSSA Protocols',
     tags: ['nafcillin', 'nephrotoxicity', 'interstitial-nephritis'], usage: 4, pbis: 0.22, pbisDir: 'down',
+    discriminationIndex: 0.09,
     creator: 'persona-chen', lastEditedBy: 'persona-chen', usedInSections: ['Final 2023'],
   },
 
@@ -633,6 +668,7 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     type: 'MCQ', status: 'Saved', difficulty: 'Hard', blooms: 'Evaluate',
     folder: 'phar101-abx-mrsa-combo', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials / Gram-Positive Organisms / Staphylococcus Coverage / MRSA Protocols / Combination Therapy',
     tags: ['refractory-MRSA', 'combination', 'vancomycin-MIC'], usage: 3, pbis: 0.19, pbisDir: 'down',
+    discriminationIndex: 0.05,
     creator: 'persona-thompson', lastEditedBy: 'persona-patel', usedInSections: ['Final 2024'],
     layout: 'stacked' as const,
     stemText: 'A 54-year-old patient with refractory MRSA bacteremia is failing vancomycin monotherapy (trough 18 mcg/mL). Which combination regimen has the strongest evidence for salvage therapy?',
@@ -670,8 +706,8 @@ export const MOCK_QB_QUESTIONS: Question[] = [
       },
     ],
     collaborators: [
-      { personaId: 'p2', role: 'owner' as const },
-      { personaId: 'p1', role: 'edit' as const },
+      { personaId: 'persona-thompson', role: 'owner' as const },
+      { personaId: 'persona-admin', role: 'edit' as const },
     ],
   },
   {
@@ -682,6 +718,62 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     tags: ['rifampin', 'synergy', 'biofilm', 'drug-interaction'], usage: 0, pbis: null, pbisDir: null,
     creator: 'persona-chen', lastEditedBy: 'persona-chen', usedInSections: [],
   },
+  // ── Essay ────────────────────────────────────────────────────────────────────
+  {
+    id: 'q-essay-001',
+    code: 'PHAR-ESS-001',
+    version: 2,
+    age: '8 months',
+    title: 'A patient with chronic kidney disease (stage 3) is prescribed metformin for new-onset type 2 diabetes. Evaluate the appropriateness of this decision and outline the monitoring parameters required.',
+    type: 'Essay' as const,
+    status: 'Saved' as const,
+    difficulty: 'Hard' as const,
+    blooms: 'Evaluate' as const,
+    folder: 'phar101-cardio',
+    folderPath: 'PHAR101 QB / Cardiovascular Drugs',
+    tags: ['diabetes', 'CKD', 'metformin', 'monitoring'],
+    usage: 31,
+    pbis: 0.38,
+    pbisDir: 'up' as const,
+    discriminationIndex: 0.34,
+    creator: 'persona-chen',
+    lastEditedBy: 'persona-chen',
+    stemText: 'A 62-year-old male with chronic kidney disease (eGFR 42 mL/min/1.73m²) presents with a new diagnosis of type 2 diabetes. His endocrinologist initiates metformin 500 mg twice daily. Evaluate the appropriateness of this prescribing decision and describe the monitoring plan you would implement.',
+    layout: 'stacked' as const,
+    minWordCount: 150,
+    correctness: null,
+    avgTimeSeconds: 540,
+    pValue: null,
+    totalAttempts: 31,
+    rubric: [
+      { criterion: 'Correctly identifies that metformin is relatively contraindicated at eGFR < 45 and provides clinical rationale', points: 10 },
+      { criterion: 'Discusses lactic acidosis risk and mechanism in CKD patients', points: 8 },
+      { criterion: 'Proposes appropriate alternative agents (e.g., DPP-4 inhibitors, GLP-1 agonists with dose adjustment) with justification', points: 8 },
+      { criterion: 'Outlines complete monitoring parameters: eGFR frequency, lactic acid, HbA1c targets in CKD', points: 9 },
+    ],
+    versionHistory: [
+      {
+        version: 2,
+        modifiedBy: 'Dr. Sarah Chen',
+        date: '2025-12-10',
+        isOriginal: false,
+        changes: ['Updated eGFR threshold from <30 to <45 per 2024 ADA guidelines', 'Added GLP-1 agonist as preferred alternative'],
+        usedInAssessments: ['PHAR101 Midterm 2025'],
+      },
+      {
+        version: 1,
+        modifiedBy: 'Dr. Sarah Chen',
+        date: '2025-04-18',
+        isOriginal: true,
+        changes: ['Initial question creation'],
+        usedInAssessments: [],
+      },
+    ],
+    collaborators: [
+      { personaId: 'persona-chen', role: 'owner' as const },
+      { personaId: 'persona-admin', role: 'view' as const },
+    ],
+  },
   // Untagged question — demonstrates ADR-003 "All Questions" location anchor
   {
     id: 'q-untagged-001', code: 'UNTAGGED-001', version: 1, age: '2 days',
@@ -690,6 +782,203 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     folder: '', folderPath: '',
     tags: ['antipsychotics', 'metabolic', 'adverse-effects'], usage: 0, pbis: null, pbisDir: null,
     creator: 'persona-admin', lastEditedBy: 'persona-admin', usedInSections: [],
+  },
+
+  // ── True/False ──────────────────────────────────────────────────────────────
+  {
+    id: 'q-tf-001', code: 'PH-ANT-TF-001', version: 2, age: '5 months',
+    title: 'Vancomycin is the drug of choice for methicillin-sensitive Staphylococcus aureus (MSSA) bacteremia.',
+    type: 'True/False' as const, status: 'Saved' as const, difficulty: 'Easy' as const, blooms: 'Remember' as const,
+    folder: 'phar101-antibiotics', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials',
+    tags: ['MSSA', 'vancomycin', 'bacteremia'], usage: 18, pbis: 0.53, pbisDir: 'flat' as const,
+    discriminationIndex: 0.50,
+    creator: 'persona-thompson', lastEditedBy: 'persona-chen',
+    usedInSections: ['Midterm 2024'],
+    stemText: 'Vancomycin is the drug of choice for methicillin-sensitive Staphylococcus aureus (MSSA) bacteremia.',
+    options: [
+      { key: 'T', text: 'True', isCorrect: false, rationale: 'Vancomycin is inferior to beta-lactams for MSSA bacteremia. It is reserved for MRSA or documented beta-lactam allergy due to lower bactericidal efficacy and higher treatment failure rates.' },
+      { key: 'F', text: 'False', isCorrect: true, rationaleAuthor: 'Dr. Sarah Thompson', rationale: 'FALSE — Beta-lactams (nafcillin, oxacillin, or cefazolin) are preferred for MSSA bacteremia. Vancomycin has lower bactericidal activity against MSSA and is associated with significantly higher treatment failure rates. Guideline recommendation: use the most active beta-lactam to which the organism is susceptible.' },
+    ],
+    correctness: 74,
+    avgTimeSeconds: 42,
+    pValue: 0.74,
+    totalAttempts: 312,
+    optionDistribution: [
+      { key: 'T', count: 81 },
+      { key: 'F', count: 231 },
+    ],
+    versionHistory: [
+      {
+        version: 2,
+        modifiedBy: 'Dr. Steven Chen',
+        date: '2026-04-10',
+        changes: ['Added detailed distractor rationale for "True" — emphasizes clinical failure data and guideline reference'],
+        usedInAssessments: ['Midterm 2024', 'ID Module Quiz'],
+      },
+      {
+        version: 1,
+        modifiedBy: 'Dr. Sarah Thompson',
+        date: '2026-01-15',
+        isOriginal: true,
+        changes: [],
+        usedInAssessments: ['Quiz 2 — Fall 2025'],
+      },
+    ],
+    collaborators: [
+      { personaId: 'persona-thompson', role: 'owner' as const },
+      { personaId: 'persona-chen', role: 'edit' as const },
+    ],
+  },
+  // ── MSQ (Multiple Select) ───────────────────────────────────────────────────
+  {
+    id: 'q-msq-001', code: 'PH-CV-MSQ-001', version: 2, age: '4 months',
+    title: 'Which of the following are known cardioprotective mechanisms of ACE inhibitors in heart failure with reduced ejection fraction (HFrEF)? Select ALL that apply.',
+    type: 'MSQ' as const, status: 'Saved' as const, difficulty: 'Hard' as const, blooms: 'Analyze' as const,
+    folder: 'phar101-cardio', folderPath: 'PHAR101 QB / Cardiovascular Drugs',
+    tags: ['ACE-inhibitor', 'HFrEF', 'cardioprotection', 'MSQ'], usage: 11, pbis: 0.38, pbisDir: 'up' as const,
+    discriminationIndex: 0.33,
+    creator: 'persona-admin', lastEditedBy: 'persona-thompson',
+    usedInSections: ['Final 2023'],
+    stemText: 'A 62-year-old patient with HFrEF (EF 30%) is started on lisinopril. Which of the following are established cardioprotective mechanisms of ACE inhibitor therapy in this condition? Select ALL that apply.',
+    options: [
+      { key: 'A', text: 'Reduction in afterload via vasodilation (decreased angiotensin II-mediated vasoconstriction)', isCorrect: true, rationaleAuthor: 'Dr. Sarah Thompson', rationale: 'CORRECT — ACE inhibitors block conversion of angiotensin I → II, reducing systemic vascular resistance and afterload. This decreases wall stress and myocardial oxygen demand.' },
+      { key: 'B', text: 'Prevention of aldosterone-mediated sodium and water retention, reducing preload', isCorrect: true, rationale: 'CORRECT — By suppressing angiotensin II, ACE inhibitors reduce aldosterone secretion, limiting sodium/water retention. Lower preload decreases ventricular filling pressures and congestion.' },
+      { key: 'C', text: 'Increased heart rate to compensate for reduced stroke volume', isCorrect: false, rationale: 'INCORRECT — ACE inhibitors do not increase heart rate. Compensatory tachycardia is a feature of untreated heart failure driven by sympathetic activation. ACE inhibitors attenuate neurohormonal activation.' },
+      { key: 'D', text: 'Attenuation of cardiac remodeling (reduced ventricular hypertrophy and fibrosis)', isCorrect: true, rationale: 'CORRECT — Angiotensin II promotes myocardial fibrosis and hypertrophy. ACE inhibitors reduce these pro-fibrotic effects, enabling reverse remodeling over months of therapy.' },
+      { key: 'E', text: 'Bradykinin accumulation contributing to vasodilation and anti-fibrotic effects', isCorrect: true, rationale: 'CORRECT — ACE also degrades bradykinin; ACE inhibition raises bradykinin levels. Bradykinin promotes vasodilation via NO/PGI₂ and has anti-fibrotic effects — a mechanistic advantage over ARBs which do not raise bradykinin.' },
+    ],
+    correctness: 44,
+    avgTimeSeconds: 148,
+    pValue: 0.44,
+    totalAttempts: 203,
+    optionDistribution: [
+      { key: 'A', count: 178 },
+      { key: 'B', count: 141 },
+      { key: 'C', count: 67 },
+      { key: 'D', count: 122 },
+      { key: 'E', count: 89 },
+    ],
+    versionHistory: [
+      {
+        version: 2,
+        modifiedBy: 'Dr. Sarah Thompson',
+        date: '2026-04-18',
+        changes: ['Added option E (bradykinin mechanism)', 'Expanded rationales to distinguish ACE inhibitors from ARBs'],
+        usedInAssessments: ['Cardiovascular Pharmacology Final'],
+      },
+      {
+        version: 1,
+        modifiedBy: 'Ms. Hannah Park',
+        date: '2026-02-10',
+        isOriginal: true,
+        changes: [],
+        usedInAssessments: ['Final 2023'],
+      },
+    ],
+    collaborators: [
+      { personaId: 'persona-admin', role: 'owner' as const },
+      { personaId: 'persona-thompson', role: 'edit' as const },
+      { personaId: 'persona-chen', role: 'view' as const },
+    ],
+  },
+  // ── Short Answer ────────────────────────────────────────────────────────────
+  {
+    id: 'q-sa-001', code: 'PH-CV-SA-001', version: 1, age: '3 months',
+    title: "Name the three components of Virchow's triad and briefly explain how each contributes to venous thromboembolism.",
+    type: 'Short Answer' as const, status: 'Saved' as const, difficulty: 'Medium' as const, blooms: 'Understand' as const,
+    folder: 'phar101-cardio', folderPath: 'PHAR101 QB / Cardiovascular Drugs',
+    tags: ['Virchow', 'VTE', 'thrombosis'], usage: 12, pbis: null, pbisDir: null,
+    creator: 'persona-chen', lastEditedBy: 'persona-chen',
+    usedInSections: ['Quiz 2'],
+    stemText: "Name the three components of Virchow's triad and briefly explain how each contributes to venous thromboembolism (VTE).",
+    minWordCount: 80,
+    options: [
+      { key: '1', text: 'Stasis / venous stasis', isCorrect: true, rationale: 'Reduced blood flow allows coagulation factors to accumulate locally. Common in prolonged immobility, post-operative states, or heart failure with reduced ejection fraction.' },
+      { key: '2', text: 'Endothelial injury / vessel wall damage', isCorrect: true, rationale: 'Disruption of the vascular endothelium exposes subendothelial collagen, triggering platelet adhesion and the coagulation cascade. Caused by trauma, surgery, or catheter insertion.' },
+      { key: '3', text: 'Hypercoagulability / thrombophilia', isCorrect: true, rationale: 'An imbalance toward coagulation — inherited (Factor V Leiden, Protein C/S deficiency) or acquired (malignancy, OCP use, antiphospholipid syndrome).' },
+    ],
+    rubric: [
+      { criterion: "Correctly names all three components of Virchow's triad", points: 3 },
+      { criterion: "Explains each component's mechanism with a clinical example", points: 3 },
+      { criterion: 'Uses appropriate physiological/pharmacological terminology', points: 1 },
+    ],
+    correctness: null,
+    avgTimeSeconds: 240,
+    totalAttempts: 87,
+    versionHistory: [
+      {
+        version: 1,
+        modifiedBy: 'Dr. Steven Chen',
+        date: '2026-03-05',
+        isOriginal: true,
+        changes: [],
+        usedInAssessments: ['Cardiology Quiz 2'],
+      },
+    ],
+    collaborators: [
+      { personaId: 'persona-chen', role: 'owner' as const },
+      { personaId: 'persona-patel', role: 'view' as const },
+    ],
+  },
+  // ── Extended Matching ───────────────────────────────────────────────────────
+  {
+    id: 'q-em-001', code: 'PH-ANT-EM-001', version: 2, age: '7 months',
+    title: 'Extended matching: Select the most appropriate antibiotic for each clinical scenario.',
+    type: 'Extended Matching' as const, status: 'Saved' as const, difficulty: 'Hard' as const, blooms: 'Apply' as const,
+    folder: 'phar101-antibiotics', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials',
+    tags: ['antibiotic-selection', 'clinical-reasoning', 'extended-matching'], usage: 6, pbis: 0.34, pbisDir: 'up' as const,
+    discriminationIndex: 0.29,
+    creator: 'persona-admin', lastEditedBy: 'persona-thompson',
+    usedInSections: ['Final 2023'],
+    stemText: 'For each clinical scenario below, select the SINGLE most appropriate antibiotic from the option list. Each option may be used once, more than once, or not at all.',
+    extendedMatchingPool: [
+      { key: 'A', text: 'Vancomycin' },
+      { key: 'B', text: 'Cefazolin' },
+      { key: 'C', text: 'Piperacillin-tazobactam' },
+      { key: 'D', text: 'Azithromycin' },
+      { key: 'E', text: 'Metronidazole' },
+      { key: 'F', text: 'Ciprofloxacin' },
+      { key: 'G', text: 'Trimethoprim-sulfamethoxazole' },
+      { key: 'H', text: 'Daptomycin' },
+    ],
+    options: [
+      { key: '1', text: 'A 35-year-old with community-acquired MSSA skin abscess requiring IV therapy. No drug allergies.', isCorrect: true, rationale: 'B (Cefazolin) — first-line beta-lactam for MSSA. Superior efficacy over vancomycin for susceptible organisms. Anti-staphylococcal beta-lactams are guideline-preferred.' },
+      { key: '2', text: 'A 70-year-old ICU patient with hospital-acquired pneumonia. MRSA detected on respiratory BAL culture.', isCorrect: true, rationale: 'A (Vancomycin) — standard of care for MRSA pneumonia. Dose by AUC/MIC-guided TDM. Linezolid is an alternative but not listed.' },
+      { key: '3', text: 'A 50-year-old post-bowel perforation with polymicrobial intra-abdominal infection. Coverage needed for gram-negatives and anaerobes.', isCorrect: true, rationale: 'C (Piperacillin-tazobactam) — broad-spectrum beta-lactam/BLI covering gram-negatives, gram-positives, and anaerobes. First-line for moderate-severe intra-abdominal sepsis.' },
+      { key: '4', text: 'A 28-year-old with gradual-onset atypical community-acquired pneumonia (walking pneumonia, no consolidation on X-ray).', isCorrect: true, rationale: 'D (Azithromycin) — macrolide effective against Mycoplasma pneumoniae and Chlamydophila pneumoniae, the most common atypical pathogens. Oral convenience and good coverage profile.' },
+    ],
+    correctness: 58,
+    avgTimeSeconds: 185,
+    pValue: 0.58,
+    totalAttempts: 94,
+    optionDistribution: [
+      { key: 'Q1-B', count: 54 },
+      { key: 'Q2-A', count: 61 },
+      { key: 'Q3-C', count: 49 },
+      { key: 'Q4-D', count: 57 },
+    ],
+    versionHistory: [
+      {
+        version: 2,
+        modifiedBy: 'Dr. Sarah Thompson',
+        date: '2026-04-22',
+        changes: ['Added stem 4 (atypical pneumonia)', 'Expanded rationale for all stems with distractor guidance'],
+        usedInAssessments: ['Final 2023', 'Infectious Disease Module Exam'],
+      },
+      {
+        version: 1,
+        modifiedBy: 'Ms. Hannah Park',
+        date: '2026-01-28',
+        isOriginal: true,
+        changes: [],
+        usedInAssessments: ['Final 2023'],
+      },
+    ],
+    collaborators: [
+      { personaId: 'persona-admin', role: 'owner' as const },
+      { personaId: 'persona-thompson', role: 'edit' as const },
+      { personaId: 'persona-chen', role: 'view' as const },
+    ],
   },
 ]
 

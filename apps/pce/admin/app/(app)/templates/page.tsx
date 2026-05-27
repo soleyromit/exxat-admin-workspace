@@ -1,15 +1,16 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Button,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
   SidebarTrigger, Separator,
 } from '@exxat/ds/packages/ui/src'
 import { usePce } from '@/components/pce/pce-state'
-import { TemplateSectionChips, SurveyStatusBadge } from '@/components/pce/pce-badges'
-import { CreateTemplateSheet, DeleteTemplateDialog } from '@/components/pce/pce-modals'
-import type { PceTemplate, TemplateSection, SurveyStatus } from '@/lib/pce-mock-data'
+import { SurveyStatusBadge } from '@/components/pce/pce-badges'
+import { DeleteTemplateDialog } from '@/components/pce/pce-modals'
+import type { PceTemplate, SurveyStatus, SurveyType } from '@/lib/pce-mock-data'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 import Link from 'next/link'
@@ -20,7 +21,6 @@ interface TemplateRow extends Record<string, unknown> {
   id: string
   template: PceTemplate
   name: string
-  sections: TemplateSection[]
   questionCount: number
   usedBySurveyCount: number
   status: SurveyStatus
@@ -28,16 +28,35 @@ interface TemplateRow extends Record<string, unknown> {
 }
 
 export default function TemplatesPage() {
-  const { templates } = usePce()
-  const [createOpen, setCreateOpen] = useState(false)
-  const [editTemplate, setEditTemplate] = useState<PceTemplate | null>(null)
+  const { templates, surveyMode, createTemplate, user } = usePce()
+  const router = useRouter()
   const [deleteTemplate, setDeleteTemplate] = useState<PceTemplate | null>(null)
 
-  const rows: TemplateRow[] = templates.map(t => ({
+  function handleNewTemplate() {
+    const id = createTemplate({
+      name: 'Untitled template',
+      sections: ['course_content'],
+      status: 'draft',
+      questionCount: 0,
+      createdBy: user.name,
+      surveyType: (surveyMode === 'general' ? 'programmatic' : 'course_evaluation') as SurveyType,
+      questions: { course_content: [], faculty_performance: [], course_director: [] },
+      likertPointer: 5,
+      templateSections: [],
+    })
+    router.push(`/templates/${id}`)
+  }
+
+  const modeTemplates = templates.filter(t =>
+    surveyMode === 'course_evaluation'
+      ? (!t.surveyType || t.surveyType === 'course_evaluation')
+      : t.surveyType === 'programmatic'
+  )
+
+  const rows: TemplateRow[] = modeTemplates.map(t => ({
     id: t.id,
     template: t,
     name: t.name,
-    sections: t.sections,
     questionCount: t.questionCount,
     usedBySurveyCount: t.usedBySurveyCount,
     status: t.status,
@@ -61,35 +80,33 @@ export default function TemplatesPage() {
       ),
     },
     {
-      key: 'sections',
-      label: 'Sections',
-      width: 280,
-      cell: (row) => <TemplateSectionChips sections={row.template.sections} />,
-    },
-    {
       key: 'questionCount',
       label: 'Questions',
       sortable: true,
-      width: 110,
+      width: 120,
       cell: (row) => (
-        <div className="text-right tabular-nums text-sm">{row.template.questionCount}</div>
+        <span className="text-sm text-muted-foreground">
+          {row.template.questionCount > 0
+            ? <><span className="font-medium text-foreground">{row.template.questionCount}</span> questions</>
+            : 'No questions'}
+        </span>
       ),
     },
     {
       key: 'usedBySurveyCount',
       label: 'Used by',
       sortable: true,
-      width: 110,
+      width: 140,
       cell: (row) => (
-        <div className="text-right">
-          {row.template.usedBySurveyCount > 0 ? (
-            <Button variant="link" size="sm" className="h-auto p-0 tabular-nums text-sm">
-              {row.template.usedBySurveyCount}
-            </Button>
-          ) : (
-            <span className="tabular-nums text-sm text-muted-foreground">0</span>
-          )}
-        </div>
+        row.template.usedBySurveyCount > 0 ? (
+          <Button variant="link" size="sm" className="h-auto p-0 text-sm font-normal text-muted-foreground hover:text-foreground">
+            <span className="font-medium text-foreground">{row.template.usedBySurveyCount}</span>
+            &nbsp;{row.template.usedBySurveyCount === 1 ? 'survey' : 'surveys'}
+            <i className="fa-light fa-arrow-up-right-from-square ms-1 text-xs" aria-hidden="true" />
+          </Button>
+        ) : (
+          <span className="text-sm text-muted-foreground">Not used</span>
+        )
       ),
     },
     {
@@ -114,7 +131,7 @@ export default function TemplatesPage() {
       width: 44,
       cell: (row) => (
         <RowActions
-          onEdit={() => setEditTemplate(row.template)}
+          onEdit={() => router.push(`/templates/${row.template.id}`)}
           onDelete={() => setDeleteTemplate(row.template)}
         />
       ),
@@ -128,7 +145,7 @@ export default function TemplatesPage() {
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
         <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Templates</h1>
-        <Button variant="default" size="sm" onClick={() => setCreateOpen(true)}>
+        <Button variant="default" size="sm" onClick={handleNewTemplate}>
           <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
           New Template
         </Button>
@@ -136,7 +153,7 @@ export default function TemplatesPage() {
 
       <div className="flex-1 overflow-auto" style={{ paddingBlock: 16, paddingInline: 0 }}>
         {rows.length === 0 ? (
-          <EmptyState onCreate={() => setCreateOpen(true)} />
+          <EmptyState onCreate={handleNewTemplate} mode={surveyMode} />
         ) : (
           <DataTable<TemplateRow>
             data={rows}
@@ -156,15 +173,6 @@ export default function TemplatesPage() {
         )}
       </div>
 
-      <CreateTemplateSheet
-        open={createOpen}
-        onOpenChange={v => { setCreateOpen(v) }}
-      />
-      <CreateTemplateSheet
-        open={!!editTemplate}
-        onOpenChange={v => { if (!v) setEditTemplate(null) }}
-        template={editTemplate ?? undefined}
-      />
       <DeleteTemplateDialog
         open={!!deleteTemplate}
         onOpenChange={v => { if (!v) setDeleteTemplate(null) }}
@@ -210,7 +218,8 @@ function RowActions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => 
   )
 }
 
-function EmptyState({ onCreate }: { onCreate: () => void }) {
+function EmptyState({ onCreate, mode }: { onCreate: () => void; mode: 'course_evaluation' | 'general' }) {
+  const isGeneral = mode === 'general'
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
       <i
@@ -219,14 +228,16 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
         style={{ fontSize: 40, color: 'var(--muted-foreground)' }}
       />
       <div className="flex flex-col gap-1">
-        <p className="text-sm font-medium">No templates yet</p>
+        <p className="text-sm font-medium">{isGeneral ? 'No general survey templates yet' : 'No templates yet'}</p>
         <p className="text-sm text-muted-foreground" style={{ maxWidth: 320 }}>
-          Create a template to start distributing post course evaluations.
+          {isGeneral
+            ? 'Create a template for alumni outcomes, preceptor satisfaction, or other program-level surveys.'
+            : 'Create a template to start distributing post course evaluations.'}
         </p>
       </div>
       <Button variant="default" size="sm" onClick={onCreate}>
         <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
-        Create Template
+        {isGeneral ? 'Create General Template' : 'Create Template'}
       </Button>
     </div>
   )

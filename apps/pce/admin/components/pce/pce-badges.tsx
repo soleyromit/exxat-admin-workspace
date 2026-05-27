@@ -48,6 +48,13 @@ const STATUS_CONFIG: Record<SurveyStatus, { label: string; variant: BadgeVariant
     fg: 'var(--pce-status-released-fg)',
     dot: 'var(--pce-status-released-fg)',
   },
+  scheduled: {
+    label: 'Scheduled',
+    variant: 'outline',
+    bg: 'color-mix(in oklch, var(--brand-color) 6%, var(--background))',
+    fg: 'var(--brand-color-dark)',
+    dot: 'var(--brand-color)',
+  },
   closed: {
     label: 'Closed',
     variant: 'outline',

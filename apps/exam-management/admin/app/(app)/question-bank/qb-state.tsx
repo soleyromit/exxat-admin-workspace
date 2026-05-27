@@ -47,8 +47,6 @@ interface QBState {
   moveFolder: (id: string, newParentId: string) => void
   setFolderIcon: (id: string, icon: string) => void
   setFolderPrivacy: (id: string, isPrivate: boolean) => void
-  addFolderCollaborator: (folderId: string, personaId: string) => void
-  removeFolderCollaborator: (folderId: string, personaId: string) => void
 
   sidebarSearch: string
   setSidebarSearch: (v: string) => void
@@ -98,9 +96,6 @@ interface QBState {
 
   openMenuQuestionId: string | null
   setOpenMenuQuestionId: (id: string | null) => void
-
-  collaboratorsModalFolderId: string | null
-  setCollaboratorsModalFolderId: (id: string | null) => void
 
   dialogActive: boolean
   setDialogActive: (v: boolean) => void
@@ -180,7 +175,6 @@ export function QBProvider({ children }: { children: ReactNode }) {
   const [draggedFolderId, setDraggedFolderId] = useState<string | null>(null)
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null)
   const [openMenuQuestionId, setOpenMenuQuestionId] = useState<string | null>(null)
-  const [collaboratorsModalFolderId, setCollaboratorsModalFolderId] = useState<string | null>(null)
   const [dialogActive, setDialogActive] = useState(false)
   const [folders, setFolders] = useState<FolderNode[]>(MOCK_QB_FOLDERS)
 
@@ -332,22 +326,6 @@ export function QBProvider({ children }: { children: ReactNode }) {
       return { ...f, isPrivateSpace: isPrivate, collaborators }
     }))
   }, [currentPersona.id])
-
-  const addFolderCollaborator = useCallback((folderId: string, personaId: string) => {
-    setFolders(prev => prev.map(f => {
-      if (f.id !== folderId) return f
-      const existing = f.collaborators ?? []
-      if (existing.includes(personaId)) return f
-      return { ...f, collaborators: [...existing, personaId] }
-    }))
-  }, [])
-
-  const removeFolderCollaborator = useCallback((folderId: string, personaId: string) => {
-    setFolders(prev => prev.map(f => {
-      if (f.id !== folderId) return f
-      return { ...f, collaborators: (f.collaborators ?? []).filter(id => id !== personaId) }
-    }))
-  }, [])
 
   const updateQuestion = useCallback((id: string, updates: Partial<Question>) => {
     setQuestionsState(prev => prev.map(q => q.id === id ? { ...q, ...updates } : q))
@@ -517,7 +495,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
     sidebarOpen, setSidebarOpen,
     selectedFolderId, setSelectedFolderId,
     expandedFolderIds, toggleFolder,
-    folders, createFolder, renameFolder, deleteFolder, restoreFolders, moveFolder, setFolderIcon, setFolderPrivacy, addFolderCollaborator, removeFolderCollaborator,
+    folders, createFolder, renameFolder, deleteFolder, restoreFolders, moveFolder, setFolderIcon, setFolderPrivacy,
     sidebarSearch, setSidebarSearch,
     highlightedFolderId, setHighlightedFolderId, navigateToFolder,
     myQuestionsOnly, setMyQuestionsOnly,
@@ -535,7 +513,6 @@ export function QBProvider({ children }: { children: ReactNode }) {
     draggedFolderId, setDraggedFolderId,
     dragOverFolderId, setDragOverFolderId,
     openMenuQuestionId, setOpenMenuQuestionId,
-    collaboratorsModalFolderId, setCollaboratorsModalFolderId,
     dialogActive, setDialogActive,
     visibleQuestions, selectedFolder, accessibleFolderIds,
     closeAllOverlays,

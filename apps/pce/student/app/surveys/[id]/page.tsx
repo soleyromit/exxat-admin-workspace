@@ -180,9 +180,9 @@ export default function TakeSurveyPage() {
         <div
           className="flex items-center gap-2 px-6 py-3 text-sm border-b"
           style={{
-            backgroundColor: 'color-mix(in oklch, var(--chart-4) 15%, transparent)',
+            backgroundColor: 'var(--muted)',
             borderColor: 'var(--border)',
-            color: 'color-mix(in oklch, var(--chart-4) 65%, var(--foreground))',
+            color: 'var(--chart-4)',
           }}
         >
           <i className="fa-light fa-pen-to-square shrink-0" aria-hidden="true" style={{ fontSize: 13 }} />
@@ -460,7 +460,7 @@ function RatingInput({
               key={n}
               variant="outline"
               onClick={() => onChange(n)}
-              className="flex flex-1 flex-col items-center gap-1.5 rounded-xl h-auto py-3"
+              className="flex flex-1 flex-col items-center rounded-xl h-auto py-3"
               style={{
                 borderColor: value === n ? 'var(--brand-color)' : 'var(--border)',
                 backgroundColor: value === n ? 'var(--brand-color-surface)' : 'var(--background)',
@@ -475,15 +475,15 @@ function RatingInput({
               >
                 {n}
               </span>
-              <span className="text-xs text-center px-1 leading-tight text-muted-foreground">
-                {RATING_LABELS[n]}
-              </span>
             </Button>
           ))}
         </div>
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>Strongly Disagree</span>
-          <span>Strongly Agree</span>
+        <div className="flex">
+          {[1, 2, 3, 4, 5].map(n => (
+            <span key={n} className="flex-1 text-center text-xs text-muted-foreground leading-tight px-0.5">
+              {RATING_LABELS[n]}
+            </span>
+          ))}
         </div>
       </div>
     </div>

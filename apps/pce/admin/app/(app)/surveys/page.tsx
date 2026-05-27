@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import React, { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   Button,
@@ -24,18 +24,51 @@ import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 import Link from 'next/link'
 
+function formatIsoDate(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
 /* Group order + display labels for the status column. Drives DataTable's
    group-row dividers when defaultGroupBy="status". Aarti's directive: active
    buckets first, closed at the bottom. */
-const GROUP_ORDER: SurveyStatus[] = ['pending_review', 'collecting', 'active', 'scheduled', 'draft', 'released', 'closed']
+const GROUP_ORDER: SurveyStatus[] = ['draft', 'scheduled', 'collecting', 'active', 'pending_review', 'released', 'closed']
 const GROUP_LABELS: Record<SurveyStatus, string> = {
-  pending_review: 'Needs Action',
-  collecting:     'Collecting',
-  active:         'Active',
-  scheduled:      'Scheduled',
   draft:          'Draft',
-  released:       'Shared with Faculty',
+  scheduled:      'Scheduled',
+  collecting:     'Collecting Responses',
+  active:         'Active',
+  pending_review: 'Pending Review',
+  released:       'Results Released',
   closed:         'Closed',
+}
+
+/* Transcript (May 26): status context in its own "Details" column —
+   neutral muted text. Empty for draft/closed/collecting (no info needed). */
+function StatusContextCell({ survey }: { survey: PceSurvey }) {
+  const muted: React.CSSProperties = { color: 'var(--muted-foreground)' }
+
+  if (survey.status === 'scheduled' && survey.openDate) {
+    return <span className="text-sm" style={muted}>Opens {formatIsoDate(survey.openDate)}</span>
+  }
+  if ((survey.status === 'collecting' || survey.status === 'active') && survey.deadline) {
+    return <span className="text-sm" style={muted}>Closes {survey.deadline}</span>
+  }
+  if (survey.status === 'pending_review') {
+    return (
+      <Link href="/moderation" className="text-sm hover:underline" style={muted} onClick={(e) => e.stopPropagation()}>
+        Ready to release →
+      </Link>
+    )
+  }
+  if (survey.status === 'released') {
+    return (
+      <Link href={`/surveys/${survey.id}`} className="text-sm hover:underline" style={muted} onClick={(e) => e.stopPropagation()}>
+        Results shared →
+      </Link>
+    )
+  }
+  return null
 }
 
 /* Row type flattened with sortable scalar fields. Canonical DataTable's
@@ -66,25 +99,33 @@ function PushedBanner() {
 }
 
 export default function SurveysPage() {
-  const { surveys } = usePce()
+  const { surveys, surveyMode } = usePce()
   const [createOpen, setCreateOpen] = useState(false)
   const [closeSurvey, setCloseSurvey] = useState<PceSurvey | null>(null)
   const [termFilter, setTermFilter] = useState('all')
 
-  // Run Evaluation banner: show when active term has offerings but no surveys pushed
+  // Run Evaluation banner: show when active term has offerings but no CE surveys pushed
   const activeTerm = MOCK_PROGRAM_TERMS.find(t => t.status === 'active') ?? null
   const activeTermOfferings = activeTerm
     ? MOCK_COURSE_OFFERINGS.filter(o => o.termId === activeTerm.id)
     : []
   const activeTermSurveys = activeTerm
-    ? surveys.filter(s => s.term === activeTerm.name)
+    ? surveys.filter(s => s.term === activeTerm.name && (!s.surveyType || s.surveyType === 'course_evaluation'))
     : []
   const showRunBanner =
+    surveyMode === 'course_evaluation' &&
     activeTerm !== null &&
     activeTermOfferings.length > 0 &&
     activeTermSurveys.length === 0
 
-  const filtered = surveys.filter(s => {
+  // Filter by mode first, then by term
+  const modeFiltered = surveys.filter(s =>
+    surveyMode === 'course_evaluation'
+      ? (!s.surveyType || s.surveyType === 'course_evaluation')
+      : s.surveyType === 'programmatic'
+  )
+
+  const filtered = modeFiltered.filter(s => {
     if (termFilter !== 'all' && s.term !== termFilter) return false
     return true
   })
@@ -104,7 +145,78 @@ export default function SurveysPage() {
     }
   })
 
-  const columns: ColumnDef<SurveyRow>[] = [
+  const responseRateCell = (row: SurveyRow) => (
+    <div className="flex flex-col gap-1" style={{ minWidth: 120 }}>
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-sm font-semibold tabular-nums">{row.survey.responseRate}%</span>
+        <span className="text-xs text-muted-foreground tabular-nums">
+          {row.survey.responseCount}/{row.survey.enrollmentCount}
+        </span>
+      </div>
+      {row.survey.enrollmentCount > 0 && (
+        <BulletGauge
+          responseCount={row.survey.responseCount}
+          enrollmentCount={row.survey.enrollmentCount}
+          width={120}
+          height={4}
+          ariaLabel={null}
+        />
+      )}
+    </div>
+  )
+
+  const columns: ColumnDef<SurveyRow>[] = surveyMode === 'general' ? [
+    {
+      key: 'courseCode',
+      label: 'Survey title',
+      sortable: true,
+      width: 320,
+      cell: (row) => (
+        <Link
+          href={`/surveys/${row.survey.id}`}
+          className="font-medium hover:underline text-sm"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {row.survey.courseCode}
+        </Link>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      sortable: true,
+      width: 150,
+      cell: (row) => <SurveyStatusBadge status={row.status} />,
+    },
+    {
+      key: 'statusContext',
+      label: 'Details',
+      width: 200,
+      cell: (row) => <StatusContextCell survey={row.survey} />,
+    },
+    {
+      key: 'responseRate',
+      label: 'Response rate',
+      sortable: true,
+      width: 180,
+      cell: responseRateCell,
+    },
+    {
+      key: 'deadline',
+      label: 'Deadline',
+      sortable: true,
+      width: 140,
+      cell: (row) => (
+        <span className="text-sm text-muted-foreground">{row.deadline || '—'}</span>
+      ),
+    },
+    {
+      key: 'actions',
+      label: '',
+      width: 44,
+      cell: (row) => <RowActions survey={row.survey} onClose={() => setCloseSurvey(row.survey)} />,
+    },
+  ] : [
     {
       key: 'courseCode',
       label: 'Course',
@@ -162,33 +274,21 @@ export default function SurveysPage() {
       key: 'status',
       label: 'Status',
       sortable: true,
-      width: 160,
+      width: 150,
       cell: (row) => <SurveyStatusBadge status={row.status} />,
+    },
+    {
+      key: 'statusContext',
+      label: 'Details',
+      width: 200,
+      cell: (row) => <StatusContextCell survey={row.survey} />,
     },
     {
       key: 'responseRate',
       label: 'Response rate',
       sortable: true,
       width: 180,
-      cell: (row) => (
-        <div className="flex flex-col gap-1" style={{ minWidth: 120 }}>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-sm font-semibold tabular-nums">{row.survey.responseRate}%</span>
-            <span className="text-xs text-muted-foreground tabular-nums">
-              {row.survey.responseCount}/{row.survey.enrollmentCount}
-            </span>
-          </div>
-          {row.survey.enrollmentCount > 0 && (
-            <BulletGauge
-              responseCount={row.survey.responseCount}
-              enrollmentCount={row.survey.enrollmentCount}
-              width={120}
-              height={4}
-              ariaLabel={null}
-            />
-          )}
-        </div>
-      ),
+      cell: responseRateCell,
     },
     {
       key: 'deadline',
@@ -196,7 +296,7 @@ export default function SurveysPage() {
       sortable: true,
       width: 140,
       cell: (row) => (
-        <span className="text-sm font-medium text-muted-foreground">{row.deadline || '—'}</span>
+        <span className="text-sm text-muted-foreground">{row.deadline || '—'}</span>
       ),
     },
     {
@@ -311,6 +411,7 @@ export default function SurveysPage() {
           <EmptySurveys
             onCreate={() => setCreateOpen(true)}
             hasFilters={termFilter !== 'all'}
+            mode={surveyMode}
           />
         ) : (
           <DataTable<SurveyRow>
@@ -363,16 +464,33 @@ function RowActions({ survey, onClose }: { survey: PceSurvey; onClose: () => voi
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44" onClick={(e) => e.stopPropagation()}>
-        <DropdownMenuItem asChild>
-          <Link href={`/surveys/${survey.id}`}>
-            <i className="fa-light fa-eye" aria-hidden="true" />
-            View
-          </Link>
-        </DropdownMenuItem>
+        {survey.status === 'pending_review' ? (
+          <DropdownMenuItem asChild>
+            <Link href="/moderation">
+              <i className="fa-light fa-shield-check" aria-hidden="true" />
+              Review &amp; Release
+            </Link>
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem asChild>
+            <Link href={`/surveys/${survey.id}`}>
+              <i className="fa-light fa-eye" aria-hidden="true" />
+              View
+            </Link>
+          </DropdownMenuItem>
+        )}
         {survey.status === 'collecting' && (
           <DropdownMenuItem>
             <i className="fa-light fa-bell" aria-hidden="true" />
             Send Reminder
+          </DropdownMenuItem>
+        )}
+        {survey.status === 'released' && (
+          <DropdownMenuItem asChild>
+            <Link href={`/surveys/${survey.id}`}>
+              <i className="fa-light fa-chart-mixed" aria-hidden="true" />
+              View Results
+            </Link>
           </DropdownMenuItem>
         )}
         {survey.status === 'collecting' && (
@@ -389,24 +507,35 @@ function RowActions({ survey, onClose }: { survey: PceSurvey; onClose: () => voi
   )
 }
 
-function EmptySurveys({ onCreate, hasFilters }: { onCreate: () => void; hasFilters: boolean }) {
+function EmptySurveys({
+  onCreate,
+  hasFilters,
+  mode,
+}: {
+  onCreate: () => void
+  hasFilters: boolean
+  mode: 'course_evaluation' | 'general'
+}) {
+  const isGeneral = mode === 'general'
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
       <i className="fa-light fa-paper-plane text-muted-foreground" aria-hidden="true" style={{ fontSize: 40 }} />
       <div className="flex flex-col gap-1">
         <p className="text-sm font-medium">
-          {hasFilters ? 'No surveys match these filters' : 'No surveys yet'}
+          {hasFilters ? 'No surveys match these filters' : isGeneral ? 'No general surveys yet' : 'No surveys yet'}
         </p>
         <p className="text-sm text-muted-foreground" style={{ maxWidth: 320 }}>
           {hasFilters
             ? 'Try adjusting your filters.'
+            : isGeneral
+            ? 'Push a general survey to alumni, preceptors, or external reviewers.'
             : 'Create a survey from a template to start collecting responses.'}
         </p>
       </div>
       {!hasFilters && (
         <Button variant="default" size="sm" onClick={onCreate}>
           <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
-          Create Survey
+          {isGeneral ? 'Create General Survey' : 'Create Survey'}
         </Button>
       )}
     </div>

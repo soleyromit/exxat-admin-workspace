@@ -65,6 +65,7 @@ export interface Question {
   correctness?: number | null              // 0–100; % students who answered correctly
   avgTimeSeconds?: number | null           // avg seconds per student
   pValue?: number | null                   // numeric difficulty 0–1
+  discriminationIndex?: number | null   // D-value: discrimination index from historical data (0–1; higher = better discrimination)
   optionDistribution?: { key: string; count: number }[]  // per-option selection counts
   totalAttempts?: number | null            // total student attempts across all versions
   versionHistory?: QuestionVersionEntry[]  // sorted newest-first
@@ -125,7 +126,7 @@ export interface Assessment {
 
 export interface QuestionGradingConfig {
   randomizeOptions?: boolean               // per-question override of assessment-level setting
-  distractorLockKeys?: string[]            // option keys that stay pinned at bottom (e.g. "E")
+  negativeMarkingWeight?: number | null   // per-question override: null = inherit assessment default; 0 = off; 0.25/0.33/0.5 = deduction fraction
   msqMode?: 'standard' | 'all-or-nothing' | 'partial-additive' | 'partial-proportional' | 'right-minus-wrong'
   fillBlankMatchMode?: 'exact' | 'contains'
   fillBlankCaseSensitive?: boolean
@@ -207,6 +208,9 @@ export interface AssessmentSettings {
   negativeMarkingFraction: number // deducted per wrong answer; default 0.25
   requireAnswer: boolean           // students must answer before advancing to next question
   backwardNavigationAllowed: boolean  // students can return to previous questions within a section
+  forwardOnlySections: boolean       // once student advances past a section, cannot return (forward-only)
+  requireAnswerForSectionAdvance: boolean  // all questions in active section must be answered before section transition
+  forcedTimerTransition: boolean     // section timer expiry forces student to next section; unanswered auto-submitted
   secureMode: boolean              // enforces lockdown browser (Respondus integration)
   showRawScore: boolean            // show raw score to student after submission
   showPercentage: boolean          // show percentage score to student after submission
@@ -259,6 +263,7 @@ export type QuestionHealthFlag =
   | { type: 'poor-pbis'; questionId: string; pbis: number }
   | { type: 'poor-discriminator'; questionId: string; pbis: number }
   | { type: 'extreme-difficulty'; questionId: string; pValue: number }
+  | { type: 'near-zero-discrimination'; questionId: string; discriminationIndex: number }
 
 export interface AssessmentDraft {
   id: string
@@ -303,6 +308,9 @@ export function defaultAssessmentSettings(type: AssessmentType = 'Exam'): Assess
     negativeMarkingFraction: 0.25,
     requireAnswer: false,
     backwardNavigationAllowed: true,
+    forwardOnlySections: false,
+    requireAnswerForSectionAdvance: false,
+    forcedTimerTransition: false,
     secureMode: false,
     showRawScore: true,
     showPercentage: true,

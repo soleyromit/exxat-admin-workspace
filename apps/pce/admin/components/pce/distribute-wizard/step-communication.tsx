@@ -10,6 +10,7 @@ import {
   SelectContent,
   SelectItem,
   SelectValue,
+  Textarea,
 } from '@exxat/ds/packages/ui/src'
 
 interface StepCommunicationProps {
@@ -26,17 +27,14 @@ interface StepCommunicationProps {
   onReminderEnabledChange: (v: boolean) => void
   onReminderDaysChange: (v: number) => void
   onBack: () => void
-  onNext: () => void
+  onPush: () => void
 }
 
 const REMINDER_DAY_OPTIONS = [1, 2, 3, 5, 7, 14]
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p
-      className="text-xs font-semibold uppercase tracking-wider"
-      style={{ color: 'var(--muted-foreground)' }}
-    >
+    <p className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
       {children}
     </p>
   )
@@ -56,7 +54,7 @@ export function StepCommunication({
   onReminderEnabledChange,
   onReminderDaysChange,
   onBack,
-  onNext,
+  onPush,
 }: StepCommunicationProps) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -74,7 +72,7 @@ export function StepCommunication({
       {/* Header */}
       <div className="flex flex-col gap-1">
         <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
-          Step 4 of 5
+          Step 4 of 4
         </p>
         <h2 className="text-lg font-semibold">Communication</h2>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
@@ -165,7 +163,7 @@ export function StepCommunication({
                 className="rounded px-1"
                 style={{
                   background: 'var(--muted)',
-                  fontSize: 11,
+                  fontSize: 12,
                   color: 'var(--muted-foreground)',
                 }}
               >
@@ -174,20 +172,13 @@ export function StepCommunication({
               supported)
             </span>
           </label>
-          <textarea
+          <Textarea
             id="email-body"
             value={emailBody}
             onChange={e => onEmailBodyChange(e.target.value)}
             rows={7}
-            className="w-full rounded-md text-sm font-mono resize-y"
-            style={{
-              padding: '8px 10px',
-              border: '1px solid var(--border-control-35)',
-              background: 'var(--card)',
-              color: 'var(--foreground)',
-              outline: 'none',
-              lineHeight: 1.6,
-            }}
+            className="text-sm font-mono resize-y"
+            style={{ lineHeight: 1.6 }}
             aria-label="Email body"
           />
           <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
@@ -204,7 +195,7 @@ export function StepCommunication({
                   className="rounded px-1"
                   style={{
                     background: 'var(--muted)',
-                    fontSize: 11,
+                    fontSize: 12,
                     color: 'var(--muted-foreground)',
                   }}
                 >
@@ -279,10 +270,10 @@ export function StepCommunication({
           variant="default"
           size="sm"
           disabled={!canContinue}
-          onClick={onNext}
+          onClick={onPush}
         >
-          Continue
-          <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 12 }} />
+          <i className="fa-light fa-paper-plane" aria-hidden="true" style={{ fontSize: 12 }} />
+          Push surveys
         </Button>
       </div>
     </div>

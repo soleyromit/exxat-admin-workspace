@@ -54,6 +54,9 @@ importers:
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@22.19.17)(lightningcss@1.32.0)(msw@2.13.3(@types/node@22.19.17)(typescript@5.9.3))
 
   apps/exam-management/assessment-taker:
     dependencies:

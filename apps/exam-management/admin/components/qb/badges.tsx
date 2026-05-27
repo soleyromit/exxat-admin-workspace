@@ -25,11 +25,16 @@ export function StatusBadge({ status }: { status: QStatus }) {
 
 // ── Type Badge — neutral muted text + icon ────────────────────────────────────
 const TYPE_ICONS: Record<QType, string> = {
-  'MCQ':        'fa-list-ul',
-  'Fill blank': 'fa-input-text',
-  'Hotspot':    'fa-crosshairs',
-  'Ordering':   'fa-arrow-up-arrow-down',
-  'Matching':   'fa-arrows-left-right-to-line',
+  'MCQ':               'fa-list-ul',
+  'MSQ':               'fa-list-check',
+  'Fill blank':        'fa-input-text',
+  'Hotspot':           'fa-crosshairs',
+  'Ordering':          'fa-arrow-up-arrow-down',
+  'Matching':          'fa-arrows-left-right-to-line',
+  'True/False':        'fa-toggle-large-on',
+  'Short Answer':      'fa-text',
+  'Extended Matching': 'fa-table-list',
+  'Essay':             'fa-pen-line',
 }
 
 export function TypeBadge({ type }: { type: QType }) {

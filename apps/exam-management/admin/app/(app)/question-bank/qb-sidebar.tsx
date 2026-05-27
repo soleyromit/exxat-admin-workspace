@@ -510,7 +510,7 @@ export function FolderContextMenu({
   onOpenChange?: (open: boolean) => void
   alwaysVisible?: boolean
 }) {
-  const { setCollaboratorsModalFolderId, setFolderPrivacy, pinnedFolderIds, toggleFolderPin } = useQB()
+  const { setFolderPrivacy, pinnedFolderIds, toggleFolderPin } = useQB()
   const isPrivate = !!node.isPrivateSpace
   const isPinned = pinnedFolderIds.has(node.id)
 
@@ -540,10 +540,6 @@ export function FolderContextMenu({
         </DropdownMenuItem>
         {isAdmin && (
           <>
-            <DropdownMenuItem onClick={() => setCollaboratorsModalFolderId(node.id)}>
-              <i className="fa-light fa-users" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-              Manage Access
-            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => { setFolderPrivacy(node.id, !isPrivate); showSidebarToast(isPrivate ? `"${node.name}" is now public` : `"${node.name}" is now private`, () => setFolderPrivacy(node.id, isPrivate)) }}>
               <i

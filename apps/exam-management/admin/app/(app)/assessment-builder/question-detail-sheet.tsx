@@ -1264,6 +1264,8 @@ function GradingRulesSection({
                   type="button"
                   aria-pressed={isSelected}
                   onClick={() => onChange({ negativeMarkingWeight: val })}
+                  onFocus={e => { e.currentTarget.style.outline = '2px solid var(--ring)'; e.currentTarget.style.outlineOffset = '2px' }}
+                  onBlur={e => { e.currentTarget.style.outline = 'none'; e.currentTarget.style.outlineOffset = '0' }}
                   style={{
                     fontSize: 12, padding: '4px 10px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
                     border: `1px solid ${isSelected ? 'var(--brand-color)' : 'var(--border)'}`,
@@ -1275,7 +1277,7 @@ function GradingRulesSection({
             })}
           </div>
           {(config.negativeMarkingWeight === null || config.negativeMarkingWeight === undefined) && assessmentNegativeMarking && (
-            <p style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 4 }}>
+            <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>
               {assessmentNegativeMarking.enabled
                 ? `Assessment default: deduct −${assessmentNegativeMarking.fraction} per wrong answer`
                 : 'Assessment default: off'}

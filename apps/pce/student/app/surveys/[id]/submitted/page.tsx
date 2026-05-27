@@ -31,7 +31,7 @@ export default function SubmittedPage() {
             className="flex h-8 w-8 items-center justify-center rounded-lg"
             style={{ backgroundColor: 'var(--brand-color)' }}
           >
-            <i className="fa-light fa-paper-plane text-white text-sm" aria-hidden="true" />
+            <i className="fa-light fa-paper-plane text-sm" aria-hidden="true" style={{ color: 'var(--background)' }} />
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Exxat</p>
@@ -73,7 +73,7 @@ export default function SubmittedPage() {
           {/* What happens next */}
           <Card className="w-full text-left gap-3 py-4">
             <CardHeader className="px-5 pt-0">
-              <CardDescription className="text-xs font-semibold uppercase tracking-wide">
+              <CardDescription className="text-xs font-semibold text-muted-foreground">
                 What happens next
               </CardDescription>
             </CardHeader>
@@ -135,8 +135,8 @@ export default function SubmittedPage() {
               <div
                 className="w-full rounded-xl px-4 py-3 flex items-start gap-2.5 text-sm"
                 style={{
-                  backgroundColor: 'color-mix(in oklch, var(--chart-4) 15%, transparent)',
-                  color: 'color-mix(in oklch, var(--chart-4) 65%, var(--foreground))',
+                  backgroundColor: 'var(--muted)',
+                  color: 'var(--chart-4)',
                 }}
               >
                 <i className="fa-light fa-pen-to-square shrink-0 mt-0.5" aria-hidden="true" style={{ fontSize: 13 }} />

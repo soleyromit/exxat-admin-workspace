@@ -2816,7 +2816,6 @@ export function QBTable() {
     anchorQuestionId, setAnchorQuestionId,
     folders,
     navigateToFolder,
-    setCollaboratorsModalFolderId,
     selectedFolderId,
     selectedFolder,
     navView,
@@ -3295,19 +3294,6 @@ export function QBTable() {
             })()}
 
             {/* Manage access icon */}
-            {isExamAdmin && selectedFolder && (
-              <Tip label="Manage access">
-                <Button
-                  variant="ghost" size="icon-xs"
-                  aria-label="Manage access"
-                  className="text-muted-foreground"
-                  style={{ width: 26, height: 26, flexShrink: 0 }}
-                  onClick={() => setCollaboratorsModalFolderId(selectedFolderId)}
-                >
-                  <i className="fa-light fa-user-plus" aria-hidden="true" style={{ fontSize: 12 }} />
-                </Button>
-              </Tip>
-            )}
           </div>
 
           {/* Add Question — icon-only at high zoom to save space, labelled at normal zoom */}
@@ -4099,15 +4085,9 @@ export function QBTable() {
                                 )}
                               </>
                             )}
-                            {/* Group 4 — Admin / destructive */}
-                            {(isExamAdmin || (canDeleteRow && q.status === 'Draft' && (q.usedInSections?.length ?? 0) === 0)) && (
+                            {/* Group 4 — Destructive */}
+                            {(canDeleteRow && q.status === 'Draft' && (q.usedInSections?.length ?? 0) === 0) && (
                               <DropdownMenuSeparator />
-                            )}
-                            {isExamAdmin && (
-                              <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); setCollaboratorsModalFolderId(q.folder) }}>
-                                <i className="fa-light fa-users" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                                Manage folder access
-                              </DropdownMenuItem>
                             )}
                             {canDeleteRow && q.status === 'Draft' && (
                               <DropdownMenuItem variant="destructive" onClick={() => { setOpenMenuQuestionId(null); setDeleteTarget(q) }}>

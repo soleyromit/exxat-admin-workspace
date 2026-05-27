@@ -116,7 +116,7 @@ const LEGACY_SECTION_MAP: Record<string, string> = {
 function KpiCard({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="border border-border rounded-lg p-4 flex flex-col gap-3 bg-card">
-      <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
       {children}
     </div>
   )
@@ -140,6 +140,7 @@ export default function SurveyDetailPage() {
   const [releaseOpen,  setReleaseOpen]  = useState(false)
   const [localFlagged, setLocalFlagged] = useState<Set<string>>(new Set())
   const [activeTab,    setActiveTab]    = useState('overview')
+  const [linkCopied,   setLinkCopied]   = useState(false)
 
   const survey        = surveys.find(s => s.id === id)
   const template      = survey ? templates.find(t => t.id === survey.templateId) : null
@@ -181,6 +182,15 @@ export default function SurveyDetailPage() {
   const canClose       = survey.status === 'collecting' || survey.status === 'active'
   const isPendingReview = survey.status === 'pending_review'
   const isReleased     = survey.status === 'released' || survey.status === 'closed'
+  const isActive       = survey.status === 'active' || survey.status === 'collecting'
+
+  const MOCK_SURVEY_LINK = `https://survey.exxat.com/s/${survey.id}`
+
+  function handleCopyLink() {
+    navigator.clipboard.writeText(MOCK_SURVEY_LINK).catch(() => {})
+    setLinkCopied(true)
+    setTimeout(() => setLinkCopied(false), 2000)
+  }
 
   function toggleFlag(responseId: string) {
     setLocalFlagged(prev => {
@@ -213,6 +223,21 @@ export default function SurveyDetailPage() {
         </h1>
         <SurveyStatusBadge status={survey.status} />
         <div className="flex items-center gap-2">
+          {isActive && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCopyLink}
+              aria-label="Copy student survey link"
+            >
+              <i
+                className={`fa-light fa-${linkCopied ? 'check' : 'link'}`}
+                aria-hidden="true"
+                style={{ fontSize: 12, color: linkCopied ? 'var(--chart-2)' : undefined }}
+              />
+              {linkCopied ? 'Link copied' : 'Copy survey link'}
+            </Button>
+          )}
           {canClose && (
             <SendReminderPopover survey={survey}>
               <Button variant="outline" size="sm">
@@ -263,7 +288,7 @@ export default function SurveyDetailPage() {
                 <i className="fa-light fa-table-list" aria-hidden="true" style={{ fontSize: 13 }} />
                 Sections
                 {templateSections.length > 0 && (
-                  <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                  <Badge variant="secondary" className="rounded-full text-xs px-1.5 py-0 min-w-[18px] text-center">
                     {templateSections.length}
                   </Badge>
                 )}
@@ -272,7 +297,7 @@ export default function SurveyDetailPage() {
                 <i className="fa-light fa-comment-lines" aria-hidden="true" style={{ fontSize: 13 }} />
                 Responses
                 {responses && responses.comments.length > 0 && (
-                  <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                  <Badge variant="secondary" className="rounded-full text-xs px-1.5 py-0 min-w-[18px] text-center">
                     {responses.comments.length}
                   </Badge>
                 )}
@@ -284,7 +309,7 @@ export default function SurveyDetailPage() {
                   {flaggedCount > 0 && (
                     <Badge
                       variant="secondary"
-                      className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center"
+                      className="rounded-full text-xs px-1.5 py-0 min-w-[18px] text-center"
                       style={{ backgroundColor: 'var(--chart-4)', color: 'var(--background)' }}
                     >
                       {flaggedCount}
@@ -732,7 +757,7 @@ export default function SurveyDetailPage() {
                             }}
                           >
                             <div className="flex-1 flex flex-col gap-1.5 min-w-0">
-                              <p className="text-[11px] font-medium text-muted-foreground">
+                              <p className="text-xs font-medium text-muted-foreground">
                                 {SUBJECT_LABEL[resp.sectionSubject] ?? resp.sectionSubject}
                               </p>
                               <p className="text-xs text-muted-foreground">{resp.questionText}</p>

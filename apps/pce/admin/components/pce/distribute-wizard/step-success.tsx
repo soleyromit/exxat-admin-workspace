@@ -27,6 +27,8 @@ export function StepSuccess({
 
   return (
     <div
+      role="status"
+      aria-live="polite"
       className="flex flex-col items-center gap-8 py-16 text-center"
       style={{ maxWidth: 480, marginInline: 'auto' }}
     >
