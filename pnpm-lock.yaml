@@ -6,11 +6,13 @@ settings:
 
 importers:
 
+  .: {}
+
   apps/exam-management/admin:
     dependencies:
       '@exxatdesignux/ui':
-        specifier: ^0.6.14
-        version: 0.6.14(@emotion/is-prop-valid@1.4.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(immer@11.1.8)(next-themes@0.4.6(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react-router-dom@6.30.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5)(redux@5.0.1)(styled-components@6.4.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(use-sync-external-store@1.6.0(react@19.2.5))
+        specifier: ^0.6.15
+        version: 0.6.15(@emotion/is-prop-valid@1.4.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(immer@11.1.8)(next-themes@0.4.6(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react-router-dom@6.30.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5)(redux@5.0.1)(styled-components@6.4.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(use-sync-external-store@1.6.0(react@19.2.5))
       '@radix-ui/react-hover-card':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -192,8 +194,8 @@ importers:
   apps/pce/admin:
     dependencies:
       '@exxatdesignux/ui':
-        specifier: ^0.6.14
-        version: 0.6.14(@emotion/is-prop-valid@1.4.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(immer@11.1.8)(next-themes@0.4.6(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react-router-dom@6.30.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5)(redux@5.0.1)(styled-components@6.4.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(use-sync-external-store@1.6.0(react@19.2.5))
+        specifier: ^0.6.15
+        version: 0.6.15(@emotion/is-prop-valid@1.4.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(immer@11.1.8)(next-themes@0.4.6(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react-router-dom@6.30.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5)(redux@5.0.1)(styled-components@6.4.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(use-sync-external-store@1.6.0(react@19.2.5))
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -280,8 +282,8 @@ importers:
   apps/portal:
     dependencies:
       '@exxatdesignux/ui':
-        specifier: ^0.6.14
-        version: 0.6.14(@emotion/is-prop-valid@1.4.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(immer@11.1.8)(next-themes@0.4.6(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react-router-dom@6.30.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5)(redux@5.0.1)(styled-components@6.4.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(use-sync-external-store@1.6.0(react@19.2.5))
+        specifier: ^0.6.15
+        version: 0.6.15(@emotion/is-prop-valid@1.4.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(immer@11.1.8)(next-themes@0.4.6(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react-router-dom@6.30.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5)(redux@5.0.1)(styled-components@6.4.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(use-sync-external-store@1.6.0(react@19.2.5))
       next:
         specifier: ^15.3.1
         version: 15.5.15(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -770,8 +772,8 @@ packages:
     resolution: {integrity: sha512-d9zaMRSTIKDLhctzH12MtXvJKSSUhaHcjV+2Z+GK+EEY7XKpP5yR4x+N3TAcHTcu963nIr+TMcCb4DBCYX1z6Q==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
 
-  '@exxatdesignux/ui@0.6.14':
-    resolution: {integrity: sha512-xELcIyqNyRwFwwwsR6/pOhoUnuxd/dY6n0w9GQAU8kO8WBcBNrgVt8WkYOapjafnyjapn4rst6vjybiQROcOhw==}
+  '@exxatdesignux/ui@0.6.15':
+    resolution: {integrity: sha512-Xtzt6ZJ75u3AWOBmh3gN9ScqqBpEwf9w1P5j5jo6IecQzi7itzi9IXnJZf7oXg75xZlP5A3+wNXFsM8JO4Tojg==}
     engines: {node: '>=22.0.0'}
     hasBin: true
     peerDependencies:
@@ -4946,7 +4948,7 @@ snapshots:
 
   '@eslint/js@8.57.1': {}
 
-  '@exxatdesignux/ui@0.6.14(@emotion/is-prop-valid@1.4.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(immer@11.1.8)(next-themes@0.4.6(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react-router-dom@6.30.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5)(redux@5.0.1)(styled-components@6.4.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(use-sync-external-store@1.6.0(react@19.2.5))':
+  '@exxatdesignux/ui@0.6.15(@emotion/is-prop-valid@1.4.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(immer@11.1.8)(next-themes@0.4.6(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react-router-dom@6.30.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5)(redux@5.0.1)(styled-components@6.4.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(use-sync-external-store@1.6.0(react@19.2.5))':
     dependencies:
       '@hookform/resolvers': 5.2.2(react-hook-form@7.72.1(react@19.2.5))
       '@radix-ui/react-dialog': 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
