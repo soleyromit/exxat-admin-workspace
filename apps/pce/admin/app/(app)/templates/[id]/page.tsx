@@ -29,7 +29,7 @@ import {
   TooltipTrigger,
   TooltipContent,
   DragHandleGripIcon,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { usePce } from '@/components/pce/pce-state'
 import { MOCK_SUBJECTS } from '@/lib/pce-mock-data'
 import type { TemplateQuestion, PceTemplateSection } from '@/lib/pce-mock-data'
@@ -299,6 +299,22 @@ export default function TemplateEditorPage() {
           )}
         </div>
       </header>
+
+      {/* ── Description ── */}
+      <div
+        className="border-b border-border shrink-0"
+        style={{ paddingInline: 28, paddingBlock: 10 }}
+      >
+        <input
+          type="text"
+          value={t.description ?? ''}
+          onChange={e => updateTemplate(t.id, { description: e.target.value })}
+          placeholder="Add a description…"
+          aria-label="Template description"
+          className="w-full text-sm bg-transparent outline-none"
+          style={{ color: t.description ? 'var(--muted-foreground)' : undefined }}
+        />
+      </div>
 
       {/* ── Save confirmation ── */}
       {saved && (

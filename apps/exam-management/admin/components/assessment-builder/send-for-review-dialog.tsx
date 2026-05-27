@@ -4,7 +4,7 @@ import { useState } from 'react'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
   Button, Checkbox, Label, Textarea,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { facultyListRows } from '@/lib/faculty-mock-data'
 import type { AssessmentReviewRequest } from '@/lib/qb-types'
 

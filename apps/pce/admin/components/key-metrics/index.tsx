@@ -8,8 +8,8 @@
  * apps/pce/admin/app/(app)/analytics/page.tsx.
  *
  * Diffs vs canonical:
- *   • All `@/components/ui/*` imports rewired to `@exxat/ds/packages/ui/src`
- *   • `@/lib/utils` rewired to `@exxat/ds/packages/ui/src` (cn re-exported there)
+ *   • All `@/components/ui/*` imports rewired to `@exxatdesignux/ui`
+ *   • `@/lib/utils` rewired to `@exxatdesignux/ui` (cn re-exported there)
  *   • `useAskLeo` + `AskLeoShortcutKbds` stubbed locally — PCE has no Ask Leo
  *     provider yet. Stub yields no-op toggle and renders nothing for the kbd
  *     hint. When PCE adopts an Ask Leo provider, swap the stubs for real
@@ -46,7 +46,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   cn,
-} from "@exxat/ds/packages/ui/src"
+} from "@exxatdesignux/ui"
 
 /* ── Ask Leo stubs ─────────────────────────────────────────────────────────
  * PCE has no Ask Leo provider yet. These are no-op shims so KeyMetrics

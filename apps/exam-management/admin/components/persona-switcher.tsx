@@ -18,7 +18,7 @@ import {
   Badge, Button,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
   DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { useFacultySession } from '@/lib/faculty-session'
 import type { EntryPoint } from '@/lib/faculty-session'
 import { type Persona } from '@/lib/personas'

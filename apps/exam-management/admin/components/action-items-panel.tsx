@@ -16,7 +16,7 @@
 import { useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Button } from '@exxat/ds/packages/ui/src'
+import { Button } from '@exxatdesignux/ui'
 import { mockCourses, mockAssessments } from '@/lib/qb-mock-data'
 import {
   facultyStudents, facultyAccommodations, courseObjectives,

@@ -29,7 +29,7 @@ import {
   Tip,
   Tabs, TabsList, TabsTrigger, TabsContent,
   LocalBanner,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
 import { StatusPill, KpiTile } from '@/components/faculty-ui-kit'

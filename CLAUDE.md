@@ -7,8 +7,9 @@ Romit Soley (Product Designer II, Exxat). Main branch = Himanshu Suthar (Enginee
 
 ## Repo
 `/Users/romitsoley/Work/` — monorepo root
-- `exxat-ds/packages/ui/src/` — Admin DS submodule (READ ONLY, NEVER EDIT)
+- `exxat-ds/packages/ui/src/` — Admin DS submodule (READ ONLY, NEVER EDIT — legacy reference only)
 - `studentUX/src/` — Student DS submodule (READ ONLY, NEVER EDIT)
+- `@exxatdesignux/ui` — **new canonical Admin DS package** (npm, source of truth for all products)
 - `apps/<product>/{admin,student}/` — product apps
 - `docs/` — spec, registries, governance, patterns, watch system
 
@@ -16,7 +17,7 @@ Romit Soley (Product Designer II, Exxat). Main branch = Himanshu Suthar (Enginee
 Active: `exam-management` (3001), `pce` (3005), `portal` (3100). See `docs/PRODUCTS.md` for full registry.
 
 ## DS Imports
-**Admin:** `import { Button, ... } from '@exxat/ds/packages/ui/src'` · CSS: `@import '../../../../exxat-ds/packages/ui/src/theme.css'`
+**Admin:** `import { Button, ... } from '@exxatdesignux/ui'` · CSS: `@import '@exxatdesignux/ui/globals.css'`
 **Student:** `import { Button } from '@exxat/student/components/ui/button'` · CSS: `@import '../../../../studentUX/src/styles/globals.css'`
 
 ## Dev Server

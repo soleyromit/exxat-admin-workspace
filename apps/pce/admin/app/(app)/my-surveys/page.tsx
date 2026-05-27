@@ -6,7 +6,7 @@ import {
   Button,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   SidebarTrigger, Separator, Skeleton,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { BulletGauge } from '@/components/pce/bullet-gauge'

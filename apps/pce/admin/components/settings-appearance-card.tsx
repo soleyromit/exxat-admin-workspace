@@ -8,8 +8,8 @@ import {
   useAppTheme,
   type Brand,
   type TextSizePreference,
-} from "@exxat/ds/packages/ui/src"
-import type { SelectionTileOption } from "@exxat/ds/packages/ui/src"
+} from "@exxatdesignux/ui"
+import type { SelectionTileOption } from "@exxatdesignux/ui"
 import { SettingsFormRow } from "@/components/settings-form-row"
 import { cn } from "@/lib/utils"
 
@@ -153,11 +153,12 @@ const TEXT_SIZE_LABEL: Record<TextSizePreference, string> = {
 
 export function SettingsAppearanceCard() {
   const { theme, setTheme } = useTheme()
-  const { brand, setBrand, contrastPref, setContrast, textSizePref, setTextSize, mounted } = useAppTheme()
+  const { contrastPref, setContrast, textSizePref, setTextSize, mounted } = useAppTheme()
+  const [brand, setBrand] = React.useState<Brand>("prism")
 
   const safeTheme = mounted ? ((theme ?? "system") as "system" | "light" | "dark") : "system"
-  const safeBrand = mounted ? brand : "one"
-  const safeContrast = mounted ? contrastPref : "system"
+  const safeBrand = brand
+  const safeContrast = mounted ? (contrastPref as "system" | "normal" | "high") : "system"
   const safeTextSize = mounted ? textSizePref : "default"
 
   const themeTiles = React.useMemo(

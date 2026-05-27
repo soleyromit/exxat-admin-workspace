@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams } from 'next/navigation'
-import { Button, Separator, SidebarTrigger, Badge } from '@exxat/ds/packages/ui/src'
+import { Button, Separator, SidebarTrigger, Badge } from '@exxatdesignux/ui'
 import { usePce } from '@/components/pce/pce-state'
 import { SectionScoreStrip } from '@/components/pce/section-score-strip'
 import { AiInsightCard } from '@/components/pce/ai-insight-card'

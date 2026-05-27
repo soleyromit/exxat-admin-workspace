@@ -24,14 +24,14 @@
  */
 
 import * as React from "react"
-import { cn } from "@exxat/ds/packages/ui/src"
-import { Button } from "@exxat/ds/packages/ui/src"
-import { Input } from "@exxat/ds/packages/ui/src"
-import { Kbd, KbdGroup } from "@exxat/ds/packages/ui/src"
-import { Tip } from "@exxat/ds/packages/ui/src"
-import { useModKeyLabel } from "@exxat/ds/packages/ui/src"
+import { cn } from "@exxatdesignux/ui"
+import { Button } from "@exxatdesignux/ui"
+import { Input } from "@exxatdesignux/ui"
+import { Kbd, KbdGroup } from "@exxatdesignux/ui"
+import { Tip } from "@exxatdesignux/ui"
+import { useModKeyLabel } from "@exxatdesignux/ui"
 import { isEditableTarget } from "@/lib/editable-target"
-import { Checkbox } from "@exxat/ds/packages/ui/src"
+import { Checkbox } from "@exxatdesignux/ui"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,21 +39,21 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@exxat/ds/packages/ui/src"
+} from "@exxatdesignux/ui"
 import {
   Popover,
   PopoverAnchor,
   PopoverContent,
   PopoverTrigger,
-} from "@exxat/ds/packages/ui/src"
+} from "@exxatdesignux/ui"
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@exxat/ds/packages/ui/src"
+} from "@exxatdesignux/ui"
 import { OPERATOR_LABELS } from "@/components/table-properties/types"
 import type { ActiveFilter } from "@/components/table-properties/types"
-import { formatYmdForDisplay } from "@exxat/ds/packages/ui/src"
+import { formatYmdForDisplay } from "@exxatdesignux/ui"
 import { FilterDateCalendar } from "./filter-date-calendar"
 import type { DataTableProps, ColumnDef, SortDir } from "./types"
 import { useTableState } from "./use-table-state"

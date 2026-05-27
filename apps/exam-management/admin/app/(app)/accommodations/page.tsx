@@ -23,7 +23,7 @@ import {
   InputGroup, InputGroupAddon, InputGroupInput,
   LocalBanner,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
 import { AddAccommodationModal } from '@/components/add-accommodation-modal'

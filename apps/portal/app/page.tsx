@@ -1,14 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { SidebarProvider, SidebarInset, TooltipProvider, Input, Button } from '@exxat/ds/packages/ui/src'
+import { SidebarProvider, SidebarInset, TooltipProvider, Input, Button } from '@exxatdesignux/ui'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { ProductConnectorRow } from '@/components/product-card-connector'
 import { StatsBar } from '@/components/stats-bar'
 import { LeoDrawer } from '@/components/leo-drawer'
 import { PRODUCTS } from '@/lib/products'
-import { Card } from '@exxat/ds/packages/ui/src'
+import { Card } from '@exxatdesignux/ui'
 
 export default function WorkspacePage() {
   const [leoOpen, setLeoOpen] = useState(false)

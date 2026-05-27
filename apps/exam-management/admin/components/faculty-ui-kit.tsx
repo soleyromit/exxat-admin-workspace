@@ -14,7 +14,7 @@
  */
 
 import type { ReactNode } from 'react'
-import { Card, CardContent, Badge, Button } from '@exxat/ds/packages/ui/src'
+import { Card, CardContent, Badge, Button } from '@exxatdesignux/ui'
 
 export type Tone = 'brand' | 'info' | 'warning' | 'success' | 'neutral' | 'destructive'
 

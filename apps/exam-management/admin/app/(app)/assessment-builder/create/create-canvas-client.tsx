@@ -1,7 +1,7 @@
 'use client'
 import React, { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Button, LocalBanner } from '@exxat/ds/packages/ui/src'
+import { Button, LocalBanner } from '@exxatdesignux/ui'
 import { useAssessmentDrafts } from '@/lib/assessment-draft-store'
 import { mockCourses, mockCourseOfferings, mockAssessments, MOCK_QB_FOLDERS } from '@/lib/qb-mock-data'
 import type { AssessmentType } from '@/lib/qb-types'

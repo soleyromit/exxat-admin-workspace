@@ -13,7 +13,7 @@
  */
 
 import { useFacultySession } from '@/lib/faculty-session'
-import { Tip } from '@exxat/ds/packages/ui/src'
+import { Tip } from '@exxatdesignux/ui'
 
 export function EntryPathChip() {
   const { entry, setEntry, hydrated } = useFacultySession()

@@ -25,7 +25,7 @@ import {
   Button, Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
   Input, Label, Separator,
   Popover, PopoverTrigger, PopoverContent,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
 import { SearchInput } from '@/components/search-input'

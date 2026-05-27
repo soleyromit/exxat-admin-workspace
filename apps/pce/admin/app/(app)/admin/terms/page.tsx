@@ -21,7 +21,7 @@ import {
   LocalBanner,
   SidebarTrigger, Separator,
   DatePickerField,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 
 /** YYYY-MM-DD string ↔ Date helpers. Keeps mock data shape stable while DatePickerField
  *  works with native Date. Strings preserve lexicographic == chronological order for sort. */

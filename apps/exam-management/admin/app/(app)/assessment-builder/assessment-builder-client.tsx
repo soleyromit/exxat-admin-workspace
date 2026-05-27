@@ -14,7 +14,7 @@ import {
   useSidebar,
   Avatar, AvatarFallback, AvatarGroup,
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { mockCourses, mockCourseOfferings, mockAssessments, MOCK_QB_QUESTIONS, MOCK_QB_FOLDERS } from '@/lib/qb-mock-data'
 import { PERSONAS } from '@/lib/personas'
 import type { AssessmentDraft, AssessmentQuestion, AssessmentSection, Question, QType, QDiff, AssessmentReviewRequest, AssessmentStatus, FolderNode } from '@/lib/qb-types'
@@ -1748,15 +1748,7 @@ export default function AssessmentBuilderClient() {
                           onClick={() => setPickerOpen(true)}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', fontSize: 12, fontFamily: 'inherit', padding: 0 }}
                         >
-                          ＋ Add from Question Bank
-                        </button>
-                        <span style={{ color: 'var(--border)' }}>·</span>
-                        <button
-                          type="button"
-                          onClick={() => setPickerOpen(true)}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', fontSize: 12, fontFamily: 'inherit', padding: 0 }}
-                        >
-                          + Create new
+                          + Add questions
                         </button>
                       </div>
                       </>
@@ -1772,7 +1764,7 @@ export default function AssessmentBuilderClient() {
                       <p className="text-sm text-muted-foreground text-center">No sections yet. Add a section in the left panel to get started.</p>
                       <Button variant="outline" size="sm" onClick={() => setPickerOpen(true)} className="gap-1.5">
                         <i className="fa-light fa-plus" aria-hidden="true" />
-                        Browse question bank
+                        Add questions
                       </Button>
                     </>
                   ) : (

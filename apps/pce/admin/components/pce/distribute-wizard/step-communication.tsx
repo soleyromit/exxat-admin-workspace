@@ -11,7 +11,7 @@ import {
   SelectItem,
   SelectValue,
   Textarea,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 
 interface StepCommunicationProps {
   openDate: Date | undefined
@@ -27,7 +27,7 @@ interface StepCommunicationProps {
   onReminderEnabledChange: (v: boolean) => void
   onReminderDaysChange: (v: number) => void
   onBack: () => void
-  onPush: () => void
+  onNext: () => void
 }
 
 const REMINDER_DAY_OPTIONS = [1, 2, 3, 5, 7, 14]
@@ -54,7 +54,7 @@ export function StepCommunication({
   onReminderEnabledChange,
   onReminderDaysChange,
   onBack,
-  onPush,
+  onNext,
 }: StepCommunicationProps) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -72,7 +72,7 @@ export function StepCommunication({
       {/* Header */}
       <div className="flex flex-col gap-1">
         <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
-          Step 4 of 4
+          Step 4 of 5
         </p>
         <h2 className="text-lg font-semibold">Communication</h2>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
@@ -270,10 +270,10 @@ export function StepCommunication({
           variant="default"
           size="sm"
           disabled={!canContinue}
-          onClick={onPush}
+          onClick={onNext}
         >
-          <i className="fa-light fa-paper-plane" aria-hidden="true" style={{ fontSize: 12 }} />
-          Push surveys
+          Continue
+          <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 12 }} />
         </Button>
       </div>
     </div>

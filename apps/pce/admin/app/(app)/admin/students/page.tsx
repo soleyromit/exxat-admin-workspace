@@ -25,7 +25,7 @@ import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Badge, Avatar, AvatarFallback, LocalBanner,
   SidebarTrigger, Separator,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import {
   MOCK_STUDENTS, MOCK_COHORTS, MOCK_LMS_ENABLED,
   type Student,

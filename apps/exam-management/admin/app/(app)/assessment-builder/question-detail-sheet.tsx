@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect } from 'react'
-import { Sheet, SheetContent, SheetClose, SheetTitle, Button, Collapsible, CollapsibleTrigger, CollapsibleContent, Separator, ToggleSwitch, Card } from '@exxat/ds/packages/ui/src'
+import { Sheet, SheetContent, SheetClose, SheetTitle, Button, Collapsible, CollapsibleTrigger, CollapsibleContent, Separator, ToggleSwitch, Card } from '@exxatdesignux/ui'
 import type { Question, QuestionVersionEntry, QuestionCollaborator, QuestionGradingConfig, ReferenceMaterial, DigitalToolsConfig } from '@/lib/qb-types'
 import { MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
 

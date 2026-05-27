@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from '@exxat/ds/packages/ui/src'
+import { Button } from '@exxatdesignux/ui'
 
 interface WizardNavProps {
   currentStep: number
@@ -10,9 +10,10 @@ interface WizardNavProps {
 
 const STEPS = [
   { n: 1, label: 'Properties' },
-  { n: 2, label: 'Courses & access' },
+  { n: 2, label: 'Distribution' },
   { n: 3, label: 'Design' },
   { n: 4, label: 'Communicate' },
+  { n: 5, label: 'Report access' },
 ]
 
 export function WizardNav({ currentStep, completedUpTo, onStepClick }: WizardNavProps) {

@@ -11,7 +11,7 @@ import {
   Input,
   Label,
   Separator,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { MOCK_SUBJECTS } from '@/lib/pce-mock-data'
 import type { SubjectKey, PceSubject } from '@/lib/pce-mock-data'
 

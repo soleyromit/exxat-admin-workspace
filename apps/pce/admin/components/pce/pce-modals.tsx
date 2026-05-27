@@ -11,7 +11,7 @@ import {
   LocalBanner,
   DatePickerField,
   formatDateUS,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { ResponseGauge } from '@/components/pce/response-gauge'

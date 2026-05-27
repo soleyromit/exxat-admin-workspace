@@ -9,7 +9,7 @@ import {
   LocalBanner, Card, CardHeader, CardTitle, CardDescription, CardContent,
   Badge,
   SidebarTrigger, Separator,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 import { KeyMetrics } from '@/components/key-metrics'

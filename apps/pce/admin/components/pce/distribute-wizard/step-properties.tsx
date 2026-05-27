@@ -8,7 +8,7 @@ import {
   SelectItem,
   SelectValue,
   Textarea,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { MOCK_PROGRAM_TERMS } from '@/lib/pce-mock-data'
 
 export type SurveyVisibility = 'program' | 'admin_only'
@@ -65,7 +65,7 @@ export function StepProperties({
       {/* Header */}
       <div className="flex flex-col gap-1">
         <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
-          Step 1 of 4
+          Step 1 of 5
         </p>
         <h2 className="text-lg font-semibold">Properties</h2>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>

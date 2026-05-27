@@ -13,7 +13,7 @@ import { useMemo } from 'react'
 import {
   Avatar, AvatarFallback, Button, LocalBanner,
   Card, CardHeader, CardTitle, CardDescription,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { StubButton } from '@/components/stub-button'
 import type { Student, Accommodation, AccommodationType } from '@/lib/faculty-mock-data'
 

@@ -10,7 +10,7 @@ import {
   Input,
   Button,
   Separator,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { PRODUCTS } from '@/lib/products'
 
 const DEFAULT_ACCOUNT_MANAGER = { name: 'Sarah Chen', email: 'sarah.chen@exxat.com' }

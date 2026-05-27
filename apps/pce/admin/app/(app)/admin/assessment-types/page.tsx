@@ -18,7 +18,7 @@ import Link from 'next/link'
 import {
   Badge,
   SidebarTrigger, Separator,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { MOCK_ASSESSMENT_TYPES } from '@/lib/pce-mock-data'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'

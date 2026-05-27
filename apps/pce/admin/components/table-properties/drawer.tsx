@@ -39,7 +39,7 @@ import {
   SheetTitle,
   Tip,
   ToggleSwitch,
-} from "@exxat/ds/packages/ui/src"
+} from "@exxatdesignux/ui"
 import { FilterDateCalendar } from "@/components/data-table/filter-date-calendar"
 import {
   type ActiveFilter,

@@ -33,7 +33,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   Label,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 import { SiteHeader } from '@/components/site-header'

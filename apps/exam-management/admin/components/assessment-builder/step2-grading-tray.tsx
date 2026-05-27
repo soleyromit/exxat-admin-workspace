@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button, Checkbox, Input } from '@exxat/ds/packages/ui/src'
+import { Button, Checkbox, Input } from '@exxatdesignux/ui'
 import type { AssessmentDraft, AssessmentQuestion, AssessmentSection } from '@/lib/qb-types'
 import type { Question } from '@/lib/qb-types'
 import { MOCK_QB_QUESTIONS } from '@/lib/qb-mock-data'

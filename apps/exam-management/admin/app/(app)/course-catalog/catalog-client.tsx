@@ -35,7 +35,7 @@ import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
 import { DataTable } from '@/components/data-table'

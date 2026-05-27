@@ -25,7 +25,7 @@ import {
   Separator,
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
   SheetFooter,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 import { RowActions } from '@/components/data-table/row-actions'

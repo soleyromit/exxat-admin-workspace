@@ -1,6 +1,6 @@
 'use client'
 
-import { Badge } from '@exxat/ds/packages/ui/src'
+import { Badge } from '@exxatdesignux/ui'
 import type { SurveyStatus, TemplateSection } from '@/lib/pce-mock-data'
 import { SECTION_ABBREV } from '@/lib/pce-mock-data'
 

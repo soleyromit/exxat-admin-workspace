@@ -6,7 +6,7 @@ import {
   Popover, PopoverTrigger, PopoverContent,
   Tip,
   Avatar, AvatarFallback,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import type { FolderNode, Persona } from '@/lib/qb-types'
 import { PERSONAS as GLOBAL_PERSONAS } from '@/lib/personas'
 

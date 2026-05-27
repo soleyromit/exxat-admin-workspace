@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Label } from "@exxat/ds/packages/ui/src"
+import { Label } from "@exxatdesignux/ui"
 import { cn } from "@/lib/utils"
 
 // Vendored from exxat-ds/apps/web/components/settings-form-row.tsx (2026-05-12).

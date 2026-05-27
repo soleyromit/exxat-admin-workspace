@@ -1,0 +1,41 @@
+---
+description: Application sidebar — DS shell only; legacy screenshots are IA reference, not visual spec
+globs: "**/app-sidebar.tsx,**/navigation*.tsx,**/lib/mock/navigation.tsx,**/lib/*-navigation.tsx"
+alwaysApply: false
+appliesTo: [react]
+---
+
+# Exxat DS — application sidebar shell (MUST)
+
+Customer / legacy app **screenshots** may show **what links exist** — not **how the sidebar is styled**. Full policy: **`exxat-no-image-pixel-copy.mdc`**.
+
+## Screenshots are allowed to inform (content only)
+
+- Nav **labels**, **grouping**, **route paths**, **Font Awesome icon suffixes**
+- Whether a row needs **children**, a **secondary panel**, or a **badge**
+
+## Screenshots MUST NOT drive styling (MUST NOT)
+
+- **Per-section label colors** (magenta / teal / gold text on every row in a group)
+- **Custom active pills** (hand-built white `rounded-*` + shadow instead of `SidebarMenuButton` `data-active`)
+- **Non-token sidebar fills** (pink wash, `#hex` tints, inline `style={{ color: … }}`)
+- **Forking `app-sidebar.tsx` layout** for one product while rest of DS uses shared chrome
+- **Re-implementing `isNavActive`** in the app — use **`@exxatdesignux/ui/lib/nav-active`** (see **`exxat-nav-single-active.mdc`**)
+
+## MUST — DS sidebar chrome
+
+1. **Shell:** **`AppSidebar`** + **`SidebarMenuButton`** / **`SidebarGroup`** / **`SidebarGroupLabel`** from **`@exxatdesignux/ui`** (or app shims). Reference: **`components/sidebar/app-sidebar.tsx`**, **`AGENTS.md` §9.1**, **`exxat-ds-skill` §3.1–§3.2**.
+2. **Typography:** Row labels **`text-sidebar-foreground`** (default from `SidebarMenuButton`). Section headings **`SidebarGroupLabel`** + **`text-sidebar-section-label`** — not rainbow section body text.
+3. **Active state:** Pass **`isActive`** into **`SidebarMenuButton`** only. Expanded rail: **one** active row (`data-active` → background pill + ring from DS). Collapsible parent stays **neutral** when a child is active. Icon rail: parent icon may light up when any child is active.
+4. **Icons:** **`fa-light`** idle / **`fa-solid`** active on the **icon** only — do **not** recolor the label per module.
+5. **Nav data:** Add or extend **`lib/mock/navigation.tsx`** (or a file it imports). **MUST NOT** paste a full legacy sidebar component from a customer repo into **`apps/web`**.
+6. **Consumer products:** Prism / customer hubs belong in a **separate consumer repo** with **`@exxatdesignux/ui`** — not product-specific rewrites of the DS monorepo sidebar.
+
+## Reference (canonical visual)
+
+- **`components/sidebar/app-sidebar.tsx`** + **`lib/mock/navigation.tsx`**
+- **`packages/ui/src/components/ui/sidebar.tsx`** — `data-active:bg-background` pill
+
+## Anti-pattern
+
+Legacy Exxat Prism sidebar: color-coded **text** per module block, pink sidebar wash, bespoke selection chrome — **do not reproduce** when building on Exxat DS.

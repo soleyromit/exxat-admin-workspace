@@ -1,4 +1,4 @@
-import { Badge } from '@exxat/ds/packages/ui/src'
+import { Badge } from '@exxatdesignux/ui'
 import type { QStatus, QType, QDiff, QBlooms } from '@/lib/qb-types'
 
 // ── Status Badge — pill + colored border + icon ───────────────────────────────

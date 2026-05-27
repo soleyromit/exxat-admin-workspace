@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import type { Product } from '@/lib/products'
 
 function ProductHeader({ colorKey, icon, muted }: { colorKey: string; icon: string; muted?: boolean }) {

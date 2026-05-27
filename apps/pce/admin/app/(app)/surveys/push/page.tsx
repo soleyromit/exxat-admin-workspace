@@ -2,13 +2,14 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Separator, SidebarTrigger } from '@exxat/ds/packages/ui/src'
+import { Separator, SidebarTrigger } from '@exxatdesignux/ui'
 import { usePce } from '@/components/pce/pce-state'
 import { WizardNav } from '@/components/pce/wizard-nav'
 import { StepProperties, type SurveyVisibility } from '@/components/pce/distribute-wizard/step-properties'
 import { StepDistribution } from '@/components/pce/distribute-wizard/step-distribution'
 import { StepSurveyDesign } from '@/components/pce/distribute-wizard/step-survey-design'
 import { StepCommunication } from '@/components/pce/distribute-wizard/step-communication'
+import { StepReportAccess } from '@/components/pce/distribute-wizard/step-report-access'
 import { StepSuccess } from '@/components/pce/distribute-wizard/step-success'
 import { StepDistributionGeneral } from '@/components/pce/distribute-wizard/step-distribution-general'
 import {
@@ -17,7 +18,7 @@ import {
   type SurveyType,
 } from '@/lib/pce-mock-data'
 
-type WizardStep = 1 | 2 | 3 | 4 | 'success'
+type WizardStep = 1 | 2 | 3 | 4 | 5 | 'success'
 
 function dateToYmd(d: Date | undefined): string {
   if (!d) return ''
@@ -191,8 +192,8 @@ export default function PushSurveyPage() {
     }
   }
 
-  const currentStepNum = step === 'success' ? 5 : (step as number)
-  const completedUpTo = step === 'success' ? 4 : (step as number) - 1
+  const currentStepNum = step === 'success' ? 6 : (step as number)
+  const completedUpTo = step === 'success' ? 5 : (step as number) - 1
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -255,15 +256,11 @@ export default function PushSurveyPage() {
               selectedOfferings={selectedOfferings}
               excludedIds={excludedIds}
               selectedTerm={selectedTerm}
-              instructorAccess={instructorAccess}
-              coordinatorAccess={coordinatorAccess}
               publishedTemplates={publishedTemplates}
               templateAssignments={templateAssignments}
               onToggleOffering={handleToggleOffering}
               onSelectAll={handleSelectAll}
               onDeselectAll={handleDeselectAll}
-              onInstructorAccessChange={setInstructorAccess}
-              onCoordinatorAccessChange={setCoordinatorAccess}
               onTemplateChange={(offeringId, tmplId) =>
                 setTemplateAssignments(p => ({ ...p, [offeringId]: tmplId }))
               }
@@ -301,6 +298,17 @@ export default function PushSurveyPage() {
               onReminderEnabledChange={setReminderEnabled}
               onReminderDaysChange={setReminderDaysBefore}
               onBack={() => setStep(3)}
+              onNext={() => setStep(5)}
+            />
+          )}
+
+          {step === 5 && (
+            <StepReportAccess
+              instructorAccess={instructorAccess}
+              coordinatorAccess={coordinatorAccess}
+              onInstructorAccessChange={setInstructorAccess}
+              onCoordinatorAccessChange={setCoordinatorAccess}
+              onBack={() => setStep(4)}
               onPush={handlePush}
             />
           )}

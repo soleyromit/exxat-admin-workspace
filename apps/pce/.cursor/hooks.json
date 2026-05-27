@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": ".cursor/hooks/exxat-session-status.mjs"
+      }
+    ],
+    "preToolUse": [
+      {
+        "_comment": "Matcher covers BOTH Claude-native tool names (Write, StrReplace, EditNotebook) AND Cursor's edit tools (write/Write, edit_file, search_replace, create_file, MultiEdit). Missing a name here = silent bypass; the brief-gate fires on the path AFTER this matcher gates the tool, so adding names is safe (the hook itself validates the path).",
+        "command": ".cursor/hooks/exxat-brief-gate.mjs",
+        "matcher": "^(Write|write|StrReplace|Edit|EditNotebook|MultiEdit|write_file|edit_file|search_replace|create_file|multi_edit|multi_edit_file)$"
+      }
+    ]
+  }
+}

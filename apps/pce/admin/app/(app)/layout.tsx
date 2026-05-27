@@ -1,6 +1,6 @@
 'use client'
 
-import { SidebarProvider, SidebarInset, TooltipProvider } from '@exxat/ds/packages/ui/src'
+import { SidebarProvider, SidebarInset, TooltipProvider } from '@exxatdesignux/ui'
 import { AppSidebar } from '@/components/app-sidebar'
 import { PceProvider } from '@/components/pce/pce-state'
 import { CommandPaletteProvider } from '@/components/command-palette'

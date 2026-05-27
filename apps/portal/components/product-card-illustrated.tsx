@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { ILLUSTRATIONS } from '@/lib/illustrations'
 import type { Product } from '@/lib/products'
 

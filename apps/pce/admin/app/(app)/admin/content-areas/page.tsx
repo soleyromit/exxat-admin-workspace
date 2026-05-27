@@ -22,7 +22,7 @@ import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Badge,
   SidebarTrigger, Separator,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { MOCK_CONTENT_AREAS, type ContentArea } from '@/lib/pce-mock-data'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'

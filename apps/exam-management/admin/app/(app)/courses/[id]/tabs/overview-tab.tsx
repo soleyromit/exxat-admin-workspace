@@ -22,7 +22,7 @@ import {
   Button, Badge,
   Card, CardHeader, CardTitle, CardDescription, CardContent,
   Tooltip, TooltipTrigger, TooltipContent,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { mockCourses, MOCK_QB_QUESTIONS } from '@/lib/qb-mock-data'
 import { QBToggle } from '@/components/qb/toggle'
 import { AiGenerateModal } from '@/components/ai-generate-modal'

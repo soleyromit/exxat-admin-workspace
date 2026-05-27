@@ -36,7 +36,7 @@ import {
   CommandItem,
   Kbd,
   KbdGroup,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { MOCK_SURVEYS, MOCK_TEMPLATES } from '@/lib/pce-mock-data'
 import { isEditableTarget } from '@/lib/editable-target'
 

@@ -27,7 +27,7 @@ import {
   Checkbox,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   LocalBanner,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { useAssessmentDrafts } from '@/lib/assessment-draft-store'
 import { mockCourses, mockCourseOfferings, mockAssessments } from '@/lib/qb-mock-data'
 

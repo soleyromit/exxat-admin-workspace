@@ -19,7 +19,7 @@ import {
   Button, Badge, InputGroup, InputGroupAddon, InputGroupInput,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   Tip,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { mockCourses, MOCK_QB_QUESTIONS } from '@/lib/qb-mock-data'
 import { questionPsychometrics } from '@/lib/faculty-mock-data'
 import type { Question, QDiff, QBlooms } from '@/lib/qb-types'

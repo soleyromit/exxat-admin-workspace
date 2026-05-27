@@ -12,7 +12,7 @@ import {
   Command, CommandInput, CommandList, CommandGroup, CommandItem, CommandEmpty,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   useSidebar,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { mockCourses, mockCourseOfferings, MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
 import { toast } from 'sonner'
 

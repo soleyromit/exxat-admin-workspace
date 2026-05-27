@@ -4,7 +4,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
   Button, Textarea,
   Field, FieldLabel,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 
 // ── Request Edit Access Modal ─────────────────────────────────────────────────
 export function RequestEditAccessModal({ questionTitle, open, onOpenChange }: {

@@ -95,15 +95,13 @@ Config anchors: `vite.config.ts`, `tsconfig.json`, `src/index.css` (theme.css �
 
 **globals.css:**
 ```css
-@import '../../../../exxat-ds/packages/ui/src/theme.css';
+@import '@exxatdesignux/ui/globals.css';
 @import "tailwindcss";
-@source '../../../../exxat-ds/packages/ui/src/**/*.{ts,tsx}';
 ```
 
-**next.config.ts webpack aliases:**
+**Component imports:**
 ```ts
-'@exxat/ds'      → path.resolve(__dirname, '../../../exxat-ds')
-'@exxat/student' → path.resolve(__dirname, '../../../studentUX/src')
+import { Button, ... } from '@exxatdesignux/ui'
 ```
 
 **layout.tsx:** `<html lang="en" className="theme-one">` + Typekit + FA Kit (see `docs/CLAUDE-RULES.md` §Font loading)

@@ -15,7 +15,7 @@
  */
 
 import Link from 'next/link'
-import { Button, Badge } from '@exxat/ds/packages/ui/src'
+import { Button, Badge } from '@exxatdesignux/ui'
 import { mockCourses, MOCK_QB_QUESTIONS } from '@/lib/qb-mock-data'
 
 interface QuestionBankTabProps {

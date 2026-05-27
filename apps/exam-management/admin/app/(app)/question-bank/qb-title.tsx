@@ -6,7 +6,7 @@ import {
   Button, Badge, Avatar, AvatarFallback, Input,
   Popover, PopoverTrigger, PopoverContent,
   Tooltip, TooltipTrigger, TooltipContent,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
 import { FolderContextMenu, MoveFolderDialog, DeleteFolderDialog, ManageShellAccessDialog } from './qb-sidebar'
 

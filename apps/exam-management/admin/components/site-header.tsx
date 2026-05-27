@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useSidebar, Button, Tip } from '@exxat/ds/packages/ui/src'
+import { useSidebar, Button, Tip } from '@exxatdesignux/ui'
 import { PersonaSwitcher } from './persona-switcher'
 
 export interface Breadcrumb {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button, Textarea } from '@exxat/ds/packages/ui/src'
+import { Button, Textarea } from '@exxatdesignux/ui'
 import type { Question } from '@/lib/qb-types'
 
 interface Props {

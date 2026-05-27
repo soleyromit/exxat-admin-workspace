@@ -21,7 +21,7 @@ import {
   SheetFooter,
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
   Separator,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 import { allFaculty, type ExtendedFaculty } from '@/lib/faculty-mock-data'

@@ -26,7 +26,7 @@ import {
   Checkbox,
   Tooltip, TooltipTrigger, TooltipContent,
   LocalBanner,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { QBToggle } from '@/components/qb/toggle'
 import {
   type EditorQType, type QuestionDraft, type QuestionPayload,

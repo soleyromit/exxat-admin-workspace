@@ -16,7 +16,7 @@
  *     - `apps/exam-management/admin/components/micro-trend.tsx`    (identical)
  *
  *   Upstream candidate: when DS publishes a `<MicroTrend>` primitive, both
- *   vendors should delete + import from `@exxat/ds/packages/ui/src`.
+ *   vendors should delete + import from `@exxatdesignux/ui`.
  *
  * Design intent (per `feedback_viz_first.md`):
  *   - viz first, no chrome: NO axes, NO labels, NO legend, NO tooltip.

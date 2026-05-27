@@ -30,7 +30,7 @@ import {
   SheetDescription,
   Badge,
   useSidebar,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { useFacultySession } from '@/lib/faculty-session'
 import { SettingsAppearanceCard } from '@/components/settings-appearance-card'
 

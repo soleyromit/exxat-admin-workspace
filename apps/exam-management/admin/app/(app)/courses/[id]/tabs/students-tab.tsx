@@ -22,7 +22,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter,
   Separator,
   Tip,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { StatusPill, MetricBar } from '@/components/faculty-ui-kit'
 import { StubButton } from '@/components/stub-button'
 import { facultyStudents, type Student, type Accommodation } from '@/lib/faculty-mock-data'

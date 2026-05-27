@@ -24,7 +24,7 @@ import {
   RadioGroup, RadioGroupItem,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   LocalBanner,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { EmptyState } from '@/components/empty-state'
 import { useStudentAccommodations } from '@/lib/student-accommodation-store'
 import { facultyStudents, facultyAccommodations, type AccommodationType, type Student } from '@/lib/faculty-mock-data'

@@ -22,7 +22,7 @@ import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   LocalBanner,
   SidebarTrigger, Separator,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import {
   MOCK_MASTER_COURSES, MOCK_LMS_ENABLED,
   type MasterCourse,

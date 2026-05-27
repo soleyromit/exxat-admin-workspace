@@ -17,7 +17,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
   TableHeader, TableBody, TableRow, TableHead, TableCell,
   FieldError,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import type { Question, QStatus, ColumnId } from '@/lib/qb-types'
 import { MOCK_QB_PERSONAS, mockCourses, mockCourseOfferings } from '@/lib/qb-mock-data'
 import { RequestEditAccessModal } from './qb-modals'

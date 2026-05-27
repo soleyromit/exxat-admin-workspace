@@ -1,4 +1,4 @@
-import { SidebarProvider, SidebarInset, TooltipProvider, Toaster } from '@exxat/ds/packages/ui/src'
+import { SidebarProvider, SidebarInset, TooltipProvider, Toaster } from '@exxatdesignux/ui'
 import { AppSidebar } from '@/components/app-sidebar'
 import { FacultySessionProvider } from '@/lib/faculty-session'
 import { AssessmentReviewProvider } from '@/lib/assessment-review-store'

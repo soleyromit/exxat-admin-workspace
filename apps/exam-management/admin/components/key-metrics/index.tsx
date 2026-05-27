@@ -46,7 +46,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   cn,
-} from "@exxat/ds/packages/ui/src"
+} from "@exxatdesignux/ui"
 
 /* ── Ask Leo stubs ─────────────────────────────────────────────────────────
  * PCE has no Ask Leo provider yet. These are no-op shims so KeyMetrics

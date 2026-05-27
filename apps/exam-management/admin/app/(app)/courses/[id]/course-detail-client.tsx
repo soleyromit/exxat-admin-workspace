@@ -21,7 +21,7 @@ import { useRouter } from 'next/navigation'
 import {
   Badge, Button, Tabs, TabsList, TabsTrigger, TabsContent,
   Tip,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
 import { mockCourses, mockCourseOfferings, mockAssessments } from '@/lib/qb-mock-data'

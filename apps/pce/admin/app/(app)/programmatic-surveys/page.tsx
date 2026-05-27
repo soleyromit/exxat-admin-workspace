@@ -10,7 +10,7 @@
  */
 
 import Link from 'next/link'
-import { Button, SidebarTrigger, Separator } from '@exxat/ds/packages/ui/src'
+import { Button, SidebarTrigger, Separator } from '@exxatdesignux/ui'
 
 export default function ProgrammaticSurveysPage() {
   return (

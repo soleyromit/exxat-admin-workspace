@@ -15,7 +15,7 @@ import {
   Avatar,
   AvatarFallback,
   useSidebar,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { ProfileSheet } from '@/components/profile-sheet'
 
 function AppHeader() {

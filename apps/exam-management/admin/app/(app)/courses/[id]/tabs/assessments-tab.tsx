@@ -24,7 +24,7 @@ import { useRouter } from 'next/navigation'
 import {
   Button, Tip,
   Collapsible, CollapsibleTrigger, CollapsibleContent,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { StatusPill, type Tone } from '@/components/faculty-ui-kit'
 import { WorkflowStepIndicator } from '@/components/workflow-step-indicator'
 import type { Assessment, QDiff } from '@/lib/qb-types'

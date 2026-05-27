@@ -22,7 +22,7 @@ import Link from 'next/link'
 import {
   SidebarTrigger, Separator,
   Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { usePce } from '@/components/pce/pce-state'
 
 interface FolderCardProps {

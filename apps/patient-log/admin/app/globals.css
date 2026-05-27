@@ -1,6 +1,5 @@
-@import '../../../../exxat-ds/packages/ui/src/theme.css';
+@import '@exxatdesignux/ui/globals.css';
 @import "tailwindcss";
-@source '../../../../exxat-ds/packages/ui/src/**/*.{ts,tsx}';
 
 /* DS Tabs fix */
 [data-slot="tabs"][data-orientation="horizontal"] {

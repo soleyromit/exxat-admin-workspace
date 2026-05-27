@@ -27,7 +27,7 @@ import {
   Field, FieldLabel, FieldGroup, FieldDescription,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   SidebarTrigger, Separator,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import {
   MOCK_ROLE_ASSIGNMENTS, MOCK_FACULTY, MOCK_COURSE_OFFERINGS, MOCK_MASTER_COURSES, MOCK_PROGRAM_TERMS,
   ROLE_LABELS, ROLE_DESCRIPTIONS,

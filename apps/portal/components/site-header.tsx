@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { SidebarTrigger, Separator, Button } from '@exxat/ds/packages/ui/src'
+import { SidebarTrigger, Separator, Button } from '@exxatdesignux/ui'
 import { NotificationsPopover } from '@/components/notifications-popover'
 import { LeoDrawer } from '@/components/leo-drawer'
 

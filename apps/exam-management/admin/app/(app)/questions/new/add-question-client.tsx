@@ -27,7 +27,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 
 // ─── LocationsSelector ────────────────────────────────────────────────────────
 

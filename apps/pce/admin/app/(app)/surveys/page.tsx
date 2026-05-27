@@ -9,7 +9,7 @@ import {
   Tooltip, TooltipTrigger, TooltipContent,
   SidebarTrigger, Separator, Avatar, AvatarFallback,
   LocalBanner,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { BulletGauge } from '@/components/pce/bullet-gauge'
@@ -471,6 +471,20 @@ function RowActions({ survey, onClose }: { survey: PceSurvey; onClose: () => voi
               Review &amp; Release
             </Link>
           </DropdownMenuItem>
+        ) : survey.status === 'draft' ? (
+          <DropdownMenuItem asChild>
+            <Link href={`/surveys/${survey.id}`}>
+              <i className="fa-light fa-pen" aria-hidden="true" />
+              Edit
+            </Link>
+          </DropdownMenuItem>
+        ) : survey.status === 'released' ? (
+          <DropdownMenuItem asChild>
+            <Link href={`/surveys/${survey.id}`}>
+              <i className="fa-light fa-chart-mixed" aria-hidden="true" />
+              View Results
+            </Link>
+          </DropdownMenuItem>
         ) : (
           <DropdownMenuItem asChild>
             <Link href={`/surveys/${survey.id}`}>
@@ -479,21 +493,13 @@ function RowActions({ survey, onClose }: { survey: PceSurvey; onClose: () => voi
             </Link>
           </DropdownMenuItem>
         )}
-        {survey.status === 'collecting' && (
+        {(survey.status === 'collecting' || survey.status === 'active') && (
           <DropdownMenuItem>
             <i className="fa-light fa-bell" aria-hidden="true" />
             Send Reminder
           </DropdownMenuItem>
         )}
-        {survey.status === 'released' && (
-          <DropdownMenuItem asChild>
-            <Link href={`/surveys/${survey.id}`}>
-              <i className="fa-light fa-chart-mixed" aria-hidden="true" />
-              View Results
-            </Link>
-          </DropdownMenuItem>
-        )}
-        {survey.status === 'collecting' && (
+        {(survey.status === 'collecting' || survey.status === 'active') && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onClick={onClose}>

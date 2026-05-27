@@ -6,7 +6,7 @@ import {
   SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton,
   Badge,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { usePce } from '@/components/pce/pce-state'
 import { BulletGauge } from '@/components/pce/bullet-gauge'
 import { MOCK_OPEN_TEXT_RESPONSES } from '@/lib/pce-mock-data'

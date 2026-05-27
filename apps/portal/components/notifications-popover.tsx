@@ -8,7 +8,7 @@ import {
   Button,
   Badge,
   Separator,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 
 type Notification = {
   id: number

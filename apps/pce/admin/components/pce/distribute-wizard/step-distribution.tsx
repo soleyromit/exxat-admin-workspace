@@ -8,7 +8,7 @@ import {
   LocalBanner,
   Avatar,
   AvatarFallback,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import {
   MOCK_MASTER_COURSES,
   MOCK_FACULTY,
@@ -23,15 +23,11 @@ interface StepDistributionProps {
   selectedOfferings: CourseOffering[]
   excludedIds: Set<string>
   selectedTerm: ProgramTerm
-  instructorAccess: boolean
-  coordinatorAccess: boolean
   publishedTemplates: import('@/lib/pce-mock-data').PceTemplate[]
   templateAssignments: Record<string, string>
   onToggleOffering: (id: string) => void
   onSelectAll: () => void
   onDeselectAll: () => void
-  onInstructorAccessChange: (v: boolean) => void
-  onCoordinatorAccessChange: (v: boolean) => void
   onTemplateChange: (offeringId: string, tmplId: string) => void
   onBack: () => void
   onNext: () => void
@@ -62,15 +58,11 @@ export function StepDistribution({
   selectedOfferings,
   excludedIds,
   selectedTerm,
-  instructorAccess,
-  coordinatorAccess,
   publishedTemplates,
   templateAssignments,
   onToggleOffering,
   onSelectAll,
   onDeselectAll,
-  onInstructorAccessChange,
-  onCoordinatorAccessChange,
   onTemplateChange,
   onBack,
   onNext,
@@ -102,7 +94,7 @@ export function StepDistribution({
       {/* Header */}
       <div className="flex flex-col gap-1">
         <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
-          Step 2 of 4
+          Step 2 of 5
         </p>
         <h2 className="text-lg font-semibold">Courses &amp; access</h2>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
@@ -268,68 +260,6 @@ export function StepDistribution({
       <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
         {selectedOfferings.length} of {offeringsForTerm.length} course{offeringsForTerm.length !== 1 ? 's' : ''} selected
       </p>
-
-      <div className="border-t border-border" />
-
-      {/* Results access */}
-      <div className="flex flex-col gap-3">
-        <div>
-          <p className="text-sm font-semibold">Results access</p>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
-            Who can view results once you release them?
-          </p>
-        </div>
-        <div
-          className="flex flex-col rounded-xl border border-border overflow-hidden"
-          style={{ background: 'var(--card)' }}
-        >
-          {/* Admin — always on */}
-          <div
-            className="flex items-center gap-3"
-            style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', background: 'var(--muted)' }}
-          >
-            <i
-              className="fa-solid fa-check text-xs shrink-0"
-              aria-hidden="true"
-              style={{ color: 'var(--brand-color)', width: 16 }}
-            />
-            <p className="text-sm flex-1">Admin</p>
-            <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Always on</span>
-          </div>
-
-          {/* Instructors */}
-          <label
-            className="flex items-center gap-3 cursor-pointer"
-            style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)' }}
-          >
-            <Checkbox
-              checked={instructorAccess}
-              onCheckedChange={v => onInstructorAccessChange(!!v)}
-              aria-label="Allow instructors to view their course results"
-            />
-            <div className="flex-1">
-              <p className="text-sm">Instructors</p>
-              <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Can view results for their own courses</p>
-            </div>
-          </label>
-
-          {/* Coordinators */}
-          <label
-            className="flex items-center gap-3 cursor-pointer"
-            style={{ padding: '10px 14px' }}
-          >
-            <Checkbox
-              checked={coordinatorAccess}
-              onCheckedChange={v => onCoordinatorAccessChange(!!v)}
-              aria-label="Allow coordinators to view all course results"
-            />
-            <div className="flex-1">
-              <p className="text-sm">Coordinators</p>
-              <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Can view results across all courses</p>
-            </div>
-          </label>
-        </div>
-      </div>
 
       {/* Nav */}
       <div className="border-t border-border pt-4 flex items-center justify-between">

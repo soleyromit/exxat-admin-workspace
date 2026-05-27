@@ -23,7 +23,7 @@ import { useState } from 'react'
 import {
   Button,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 
 /**
  * A single action in a row's kebab menu.

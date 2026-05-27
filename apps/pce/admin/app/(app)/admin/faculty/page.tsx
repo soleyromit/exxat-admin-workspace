@@ -16,7 +16,7 @@ import {
   Tooltip, TooltipContent, TooltipTrigger,
   Avatar, AvatarFallback,
   SidebarTrigger, Separator,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import {
   MOCK_FACULTY, MOCK_LMS_ENABLED, MOCK_COURSE_OFFERINGS,
   type PceInstructor,

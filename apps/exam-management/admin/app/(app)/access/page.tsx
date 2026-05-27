@@ -25,7 +25,7 @@ import {
   Input, Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   Field, FieldGroup, FieldLabel, FieldDescription, FieldError,
   Tooltip, TooltipTrigger, TooltipContent,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 
 type Role = 'Admin' | 'Faculty (Editor)' | 'Faculty (Viewer)'
 

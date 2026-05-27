@@ -12,7 +12,7 @@ import Link from 'next/link'
 import {
   SidebarTrigger, Separator,
   Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 
 interface EntityTile {
   key: string

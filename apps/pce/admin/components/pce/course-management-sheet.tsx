@@ -14,7 +14,7 @@ import {
   TabsList,
   TabsTrigger,
   TabsContent,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import {
   MOCK_FACULTY,
   MOCK_STUDENTS,

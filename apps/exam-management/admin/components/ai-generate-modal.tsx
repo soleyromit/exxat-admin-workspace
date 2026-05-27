@@ -22,7 +22,7 @@ import {
   Button, Badge, Checkbox,
   Tip,
   LocalBanner,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { StatusPill, BloomChip, DifficultyChip, type Tone } from '@/components/faculty-ui-kit'
 import type { CourseObjective } from '@/lib/faculty-mock-data'
 

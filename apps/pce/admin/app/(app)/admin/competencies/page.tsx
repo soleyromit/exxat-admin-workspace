@@ -21,7 +21,7 @@ import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Badge, LocalBanner,
   SidebarTrigger, Separator,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { MOCK_COMPETENCIES, type Competency } from '@/lib/pce-mock-data'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'

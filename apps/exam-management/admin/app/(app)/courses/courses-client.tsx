@@ -23,7 +23,7 @@ import {
   ViewSegmentedControl,
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
   Input, Label, Separator, Textarea,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { RowActions } from '@/components/data-table/row-actions'
 import { SearchInput } from '@/components/search-input'
 import { SiteHeader } from '@/components/site-header'

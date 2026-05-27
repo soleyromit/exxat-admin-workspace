@@ -31,7 +31,7 @@ import {
   Separator,
   FieldError,
   LocalBanner,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
 import { WorkflowStepIndicator } from '@/components/workflow-step-indicator'

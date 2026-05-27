@@ -9,7 +9,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
   Tabs, TabsList, TabsTrigger, TabsContent,
   DatePickerField,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { usePce } from '@/components/pce/pce-state'
 import {
   MOCK_PROGRAM_TERMS,

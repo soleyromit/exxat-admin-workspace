@@ -1,6 +1,6 @@
 'use client'
 
-import { Button, Input, Checkbox } from '@exxat/ds/packages/ui/src'
+import { Button, Input, Checkbox } from '@exxatdesignux/ui'
 import type { AssessmentSettings } from '@/lib/qb-types'
 
 interface GradingSettingsPanelProps {

@@ -8,8 +8,8 @@ import {
   useAppTheme,
   type Brand,
   type TextSizePreference,
-} from "@exxat/ds/packages/ui/src"
-import type { SelectionTileOption } from "@exxat/ds/packages/ui/src"
+} from "@exxatdesignux/ui"
+import type { SelectionTileOption } from "@exxatdesignux/ui"
 import { SettingsFormRow } from "@/components/settings-form-row"
 import { cn } from "@/lib/utils"
 

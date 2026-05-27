@@ -23,7 +23,7 @@ import {
   Tabs, TabsList, TabsTrigger, TabsContent,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   Tip,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { QBToggle } from '@/components/qb/toggle'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Button } from '@exxat/ds/packages/ui/src'
+import { Button } from '@exxatdesignux/ui'
 import {
   MOCK_MASTER_COURSES,
   type CourseOffering,

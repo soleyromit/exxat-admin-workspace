@@ -12,7 +12,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
   Kbd, KbdGroup,
   useSidebar,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { usePce } from '@/components/pce/pce-state'
 import { useCommandPalette } from '@/components/command-palette'
 import { SettingsAppearanceCard } from '@/components/settings-appearance-card'

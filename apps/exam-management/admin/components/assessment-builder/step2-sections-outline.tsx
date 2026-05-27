@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@exxat/ds/packages/ui/src'
+import { Button } from '@exxatdesignux/ui'
 import type { AssessmentDraft, AssessmentSection } from '@/lib/qb-types'
 import type { Question } from '@/lib/qb-types'
 import { MOCK_MISSING_RATIONALE_QUESTION_IDS, MOCK_POOR_PBIS_QUESTION_IDS } from '@/lib/qb-mock-data'

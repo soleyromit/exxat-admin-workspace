@@ -24,7 +24,7 @@ import {
   Button,
   Tabs, TabsList, TabsTrigger, TabsContent,
   Table, TableHeader, TableBody, TableFooter, TableRow, TableHead, TableCell,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import * as HoverCardPrimitive from '@radix-ui/react-hover-card'
 import type { CourseObjective, Student, AssessmentReview } from '@/lib/faculty-mock-data'
 import type { Assessment, QDiff } from '@/lib/qb-types'

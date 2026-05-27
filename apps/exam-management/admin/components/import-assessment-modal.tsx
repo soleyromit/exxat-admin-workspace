@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Button, Badge, LocalBanner, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@exxat/ds/packages/ui/src'
+import { Button, Badge, LocalBanner, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@exxatdesignux/ui'
 
 type ImportStep = 'upload' | 'review' | 'confirming'
 

@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import {
   Button, Separator, SidebarTrigger, Avatar, AvatarFallback, Badge,
   Tabs, TabsList, TabsTrigger, TabsContent,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { BulletGauge } from '@/components/pce/bullet-gauge'

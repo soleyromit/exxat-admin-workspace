@@ -6,7 +6,7 @@ import {
   Checkbox,
   Textarea,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { MOCK_STUDENTS } from '@/lib/pce-mock-data'
 
 interface StepDistributionGeneralProps {

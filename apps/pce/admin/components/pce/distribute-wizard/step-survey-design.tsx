@@ -8,7 +8,7 @@ import {
   SelectContent,
   SelectItem,
   SelectValue,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import {
   MOCK_MASTER_COURSES,
   type CourseOffering,
@@ -66,7 +66,7 @@ export function StepSurveyDesign({
       {/* Header */}
       <div className="flex flex-col gap-1">
         <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
-          Step 3 of 4
+          Step 3 of 5
         </p>
         <h2 className="text-lg font-semibold">Survey design</h2>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>

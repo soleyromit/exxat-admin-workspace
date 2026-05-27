@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Button, Badge } from '@exxat/ds/packages/ui/src'
+import { Button, Badge } from '@exxatdesignux/ui'
 import type { Product } from '@/lib/products'
 
 function StatusDot({ status }: { status: Product['subscriptionStatus'] }) {

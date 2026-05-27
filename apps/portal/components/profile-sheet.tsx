@@ -13,7 +13,7 @@ import {
   Separator,
   Button,
   Checkbox,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { PRODUCTS } from '@/lib/products'
 
 function subscriptionLabel(status: 'active' | 'trial' | 'not-subscribed') {

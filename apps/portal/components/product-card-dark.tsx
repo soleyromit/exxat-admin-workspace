@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import type { Product } from '@/lib/products'
 
 export function ProductCardDark({ product }: { product: Product }) {

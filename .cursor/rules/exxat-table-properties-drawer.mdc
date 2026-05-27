@@ -1,0 +1,79 @@
+---
+description: TablePropertiesDrawer must receive currentView and onViewChange when used with ListPageTemplate view tabs. Auto-attaches when editing apps/web React files; ask explicitly when wiring view-type-aware drawers.
+globs: {components,lib,src}/**/*.{tsx,ts}
+alwaysApply: false
+appliesTo: [react]
+---
+
+# Exxat DS — Table properties + active view
+
+**Authoritative detail:** **`./AGENTS.md` §4.2**.
+
+## Why this exists
+
+`TablePropertiesDrawer` uses **`currentView`** (`DataListViewType`) for the first summary row (“Board display” vs “Table display”, matching icons/descriptions) and to show **table-only** vs **board-only** sub-panels. If **`currentView`** is omitted, the drawer assumes **table** — wrong when the tab is **Board**, **List**, or **Dashboard**.
+
+## MUST
+
+When **`ListPageTemplate`** drives **`tab.viewType`** and the page renders **`TablePropertiesDrawer`** (directly or via a toolbar slot):
+
+1. Pass **`currentView={view}`** (same value as **`tab.viewType`** passed into your table component).
+2. Pass **`onViewChange`** from **`renderContent={(tab, updateTab) => ...}`** so the drawer’s view-type tiles stay in sync with the tab:
+
+   ```tsx
+   import { dataListViewIcon, type DataListViewType } from "@/lib/data-list-view"
+
+   onViewChange={(v: DataListViewType) =>
+     updateTab({ viewType: v, icon: dataListViewIcon(v) })
+   }
+   ```
+
+3. Thread **`view`** and **`onViewChange`** through: **client → table component → drawer toolbar → `TablePropertiesDrawer`**.
+
+**Reference implementations:** `components/library-hub-client.tsx` + `library-table.tsx` (canonical seven-view hub), `components/columns-showcase.tsx` (`LibraryTable` + custom `columnDefs`), `components/tokens-themes-client.tsx` (`FULL_HUB_SUPPORTED_VIEWS` + `tokens-hub-auxiliary-views.tsx`). **Add view allowlist:** **`.cursor/rules/exxat-hub-supported-views.mdc`**.
+
+## Deep-linking into a specific panel
+
+`TablePropertiesDrawer` accepts an optional **`initialPanel`** prop so callsites can open the drawer focused on a named panel — `"main"` (default), `"table-display"`, `"filter"`, `"sort"`, `"group"`, `"columns"`, or `"conditional-rules"`. The current built-in use is the **Add Conditional Rule** item in every column header menu, which deep-links to the **Conditional rules** panel.
+
+### MUST
+
+1. **One state pair owns it.** `useTableState` exposes **`sheetInitialPanel`** + **`setSheetInitialPanel`** alongside `sheetOpen` / `setSheetOpen`. Read both in the drawer button; pass **`initialPanel={sheetInitialPanel}`** to `TablePropertiesDrawer`. Reference: `packages/ui/src/components/table-properties/drawer-button.tsx`.
+2. **The toolbar Properties button MUST clear the deep-link.** Otherwise the next plain "Properties" click re-opens onto whatever panel the previous deep-link set:
+
+   ```tsx
+   onClick={() => {
+     setSheetInitialPanel?.(null)
+     setSheetOpen(true)
+   }}
+   ```
+
+3. **Deep-link callsites MUST set panel + open in the same batched setState call.** Two setters in one callback land in one render, so the drawer mounts with `initialPanel` already populated — no panel-flash:
+
+   ```tsx
+   setSheetInitialPanel("conditional-rules")
+   setSheetOpen(true)
+   ```
+
+4. **From inside a Radix DropdownMenu, queue the action into `onCloseAutoFocus`.** Opening the non-modal Sheet synchronously from `DropdownMenuItem.onSelect` races with the menu close cycle. Use the `columnMenuPendingActionRef` pattern in `packages/ui/src/components/data-table/index.tsx` (or copy it) so the drawer opens after focus has returned to the trigger.
+
+### MUST NOT
+
+- Don't introduce a second source of truth for "which panel" — `sheetInitialPanel` is the only deep-link channel. The drawer's internal `sheetPanel` state stays internal.
+- Don't call `setSheetInitialPanel` from a non-deep-link callsite (e.g. a generic "open Properties" toolbar button). Leave it `null` for index opens.
+
+## View-type tile grid is uniformly square
+
+The drawer's "View type" tile grid (and the Export drawer's "File format" grid) renders through `SelectionTileGrid` with `interaction="button"` + `labelPlacement="inside"`. The shared `selectionTileClassNames` utility now applies **`aspect-square`** so every tile is the same shape regardless of how many tiles populate the last row of a `grid-cols-N` track. Two-word labels (e.g. "List & details") wrap inside the square because `leading-tight` keeps line height compact.
+
+When you compose your own tile-style picker, **prefer the shared `SelectionTileGrid`** (or `selectionTileClassNames` directly) instead of inventing flex/grid wrappers — that's the only way to keep the squares uniform across the system.
+
+## MUST NOT (overall)
+
+- Mount **`TablePropertiesDrawer`** on a multi-view list page **without** **`currentView`** when the active view is known from the tab.
+- Omit **`onViewChange`** if the product shows the **view type** control inside Properties (otherwise tiles cannot update the tab).
+
+## See also
+
+- **`./AGENTS.md` §4.2**, **§13** checklist
+- **`.cursor/rules/exxat-list-page-connected-views.mdc`**

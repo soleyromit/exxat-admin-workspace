@@ -21,7 +21,7 @@ import {
   BreadcrumbLink,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { AppSidebar } from '@/components/app-sidebar'
 import { PRODUCTS } from '@/lib/products'
 import { ILLUSTRATIONS } from '@/lib/illustrations'

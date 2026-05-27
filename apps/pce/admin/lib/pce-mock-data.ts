@@ -39,6 +39,7 @@ export interface PceOpenTextResponse {
 export interface PceTemplate {
   id: string
   name: string
+  description?: string
   sections: TemplateSection[]
   status: 'active' | 'draft'
   questionCount: number

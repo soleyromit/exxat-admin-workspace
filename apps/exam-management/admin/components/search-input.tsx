@@ -25,7 +25,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   InputGroup, InputGroupAddon, InputGroupInput, Button,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import {
   loadRecentlyViewed, clearRecentlyViewed,
   type RecentlyViewedItem,

@@ -1,9 +1,8 @@
-@import '../../../exxat-ds/packages/ui/src/theme.css';
+@import '@exxatdesignux/ui/globals.css';
 @import "tailwindcss";
 @source './**/*.{ts,tsx}';
 @source '../components/**/*.{ts,tsx}';
 @source '../lib/**/*.{ts,tsx}';
-@source '../../../exxat-ds/packages/ui/src/**/*.{ts,tsx}';
 
 /*
   shadcn/tailwind.css custom variants — inlined because shadcn is not hoisted
