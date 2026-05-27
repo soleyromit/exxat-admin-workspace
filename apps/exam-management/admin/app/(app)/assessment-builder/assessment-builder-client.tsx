@@ -457,14 +457,16 @@ export default function AssessmentBuilderClient() {
 
     const pValues: number[] = []
     const pbisValues: number[] = []
+    const discriminationValues: number[] = []
 
     questions.forEach(aq => {
       const q = qMap[aq.questionId]
       if (q?.pValue != null) pValues.push(q.pValue)
       if (q?.pbis != null) pbisValues.push(q.pbis)
+      if (q?.discriminationIndex != null) discriminationValues.push(q.discriminationIndex)
     })
 
-    if (pValues.length === 0 && pbisValues.length === 0) return null
+    if (pValues.length === 0 && pbisValues.length === 0 && discriminationValues.length === 0) return null
 
     const avg = (arr: number[]) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null
 
@@ -477,9 +479,10 @@ export default function AssessmentBuilderClient() {
     return {
       avgPValue: avg(pValues),
       avgPbis: avg(pbisValues),
+      avgDiscriminationIndex: avg(discriminationValues),
       upper27avg,
       lower27avg,
-      hasData: pValues.length > 0 || pbisValues.length > 0,
+      hasData: pValues.length > 0 || pbisValues.length > 0 || discriminationValues.length > 0,
     }
   }, [activeAsmt])
 
@@ -506,6 +509,9 @@ export default function AssessmentBuilderClient() {
       }
       if (q.pValue != null && (q.pValue < 0.15 || q.pValue > 0.9)) {
         newFlags.push({ type: 'extreme-difficulty', questionId: aq.questionId, pValue: q.pValue })
+      }
+      if (q.discriminationIndex != null && q.discriminationIndex < 0.1) {
+        newFlags.push({ type: 'near-zero-discrimination', questionId: aq.questionId, discriminationIndex: q.discriminationIndex })
       }
     })
 
@@ -2074,6 +2080,10 @@ export default function AssessmentBuilderClient() {
         gradingConfig={
           activeAsmt?.questions.find(aq => aq.questionId === detailQuestionId)?.gradingConfig
         }
+        assessmentNegativeMarking={activeAsmt ? {
+          enabled: activeAsmt.settings.negativeMarking,
+          fraction: activeAsmt.settings.negativeMarkingFraction,
+        } : undefined}
         onGradingConfigChange={(patch) => {
           if (!detailQuestionId) return
           setActiveAsmt(prev => prev ? {
@@ -3581,6 +3591,7 @@ function MetricsPanel({
   psychoMetrics: {
     avgPValue: number | null
     avgPbis: number | null
+    avgDiscriminationIndex: number | null
     upper27avg: number | null
     lower27avg: number | null
     hasData: boolean
@@ -3670,6 +3681,19 @@ function MetricsPanel({
                   }}
                 >
                   {psychoMetrics.avgPbis.toFixed(2)}
+                </span>
+              </div>
+            )}
+            {psychoMetrics.avgDiscriminationIndex != null && (
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-muted-foreground">Avg discrimination</span>
+                <span
+                  className="text-[11px] tabular-nums font-medium"
+                  style={{
+                    color: psychoMetrics.avgDiscriminationIndex >= 0.3 ? 'var(--chart-2)' : 'var(--chart-4)'
+                  }}
+                >
+                  {psychoMetrics.avgDiscriminationIndex.toFixed(2)}
                 </span>
               </div>
             )}

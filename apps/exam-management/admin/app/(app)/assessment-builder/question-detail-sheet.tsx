@@ -1218,10 +1218,12 @@ function GradingRulesSection({
   question,
   config,
   onChange,
+  assessmentNegativeMarking,
 }: {
   question: Question
   config: QuestionGradingConfig
   onChange: (patch: Partial<QuestionGradingConfig>) => void
+  assessmentNegativeMarking?: { enabled: boolean; fraction: number }
 }) {
   const type = question.type
 
@@ -1242,33 +1244,43 @@ function GradingRulesSection({
         </label>
       )}
 
-      {/* Distractor locking — MCQ, MSQ */}
+      {/* Negative marking override — MCQ and MSQ only */}
       {['MCQ', 'MSQ'].includes(type) && (
         <div>
-          <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 6, margin: '0 0 6px' }}>Pin options to bottom (distractor lock)</p>
+          <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 6, margin: '0 0 6px' }}>Negative marking</p>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {['D', 'E', 'None of the above', 'All of the above'].map(key => {
-              const locked = config.distractorLockKeys?.includes(key) ?? false
+            {([
+              [null, 'Inherit default'],
+              [0, 'Off'],
+              [0.25, '−0.25'],
+              [0.33, '−0.33'],
+              [0.5, '−0.5'],
+            ] as const).map(([val, label]) => {
+              const current = config.negativeMarkingWeight === undefined ? null : config.negativeMarkingWeight
+              const isSelected = current === val
               return (
                 <button
-                  key={key}
+                  key={String(val)}
                   type="button"
-                  aria-pressed={locked}
-                  onClick={() => onChange({
-                    distractorLockKeys: locked
-                      ? (config.distractorLockKeys ?? []).filter(k => k !== key)
-                      : [...(config.distractorLockKeys ?? []), key],
-                  })}
+                  aria-pressed={isSelected}
+                  onClick={() => onChange({ negativeMarkingWeight: val })}
                   style={{
-                    fontSize: 12, padding: '3px 10px', borderRadius: 20, cursor: 'pointer', fontFamily: 'inherit',
-                    border: `1px solid ${locked ? 'var(--brand-color)' : 'var(--border)'}`,
-                    background: locked ? 'var(--brand-tint)' : 'transparent',
-                    color: locked ? 'var(--brand-color)' : 'var(--muted-foreground)',
+                    fontSize: 12, padding: '4px 10px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
+                    border: `1px solid ${isSelected ? 'var(--brand-color)' : 'var(--border)'}`,
+                    background: isSelected ? 'var(--brand-tint)' : 'transparent',
+                    color: isSelected ? 'var(--brand-color)' : 'var(--muted-foreground)',
                   }}
-                >{key}</button>
+                >{label}</button>
               )
             })}
           </div>
+          {(config.negativeMarkingWeight === null || config.negativeMarkingWeight === undefined) && assessmentNegativeMarking && (
+            <p style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 4 }}>
+              {assessmentNegativeMarking.enabled
+                ? `Assessment default: deduct −${assessmentNegativeMarking.fraction} per wrong answer`
+                : 'Assessment default: off'}
+            </p>
+          )}
         </div>
       )}
 
@@ -1432,6 +1444,7 @@ export function QuestionDetailSheet({
   onEdit,
   gradingConfig,
   onGradingConfigChange,
+  assessmentNegativeMarking,
 }: {
   questionId: string | null
   questions: Question[]
@@ -1440,6 +1453,7 @@ export function QuestionDetailSheet({
   onEdit: (id: string) => void
   gradingConfig?: QuestionGradingConfig
   onGradingConfigChange?: (patch: Partial<QuestionGradingConfig>) => void
+  assessmentNegativeMarking?: { enabled: boolean; fraction: number }
 }) {
   const question = questions.find(q => q.id === (questionId ?? ''))
   const [activeTab, setActiveTab] = useState<DetailTab>('details')
@@ -1629,6 +1643,7 @@ export function QuestionDetailSheet({
                 question={question}
                 config={gradingConfig ?? {}}
                 onChange={onGradingConfigChange}
+                assessmentNegativeMarking={assessmentNegativeMarking}
               />
             </div>
           </>
