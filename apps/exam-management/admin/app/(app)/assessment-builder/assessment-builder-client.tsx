@@ -354,7 +354,8 @@ export default function AssessmentBuilderClient() {
     [activeAsmt?.sections, activeAsmt?.questions],
   )
 
-  const [activeStep, setActiveStep] = useState<1 | 2 | 3>(1)
+  // Skip Step 1 (Details) when arriving from the canvas — metadata already captured there
+  const [activeStep, setActiveStep] = useState<1 | 2 | 3>(urlDraftId ? 2 : 1)
 
   // Change 2: HealthPanel is hidden by default; toggled via icon button
   const [showHealth, setShowHealth] = useState(false)
