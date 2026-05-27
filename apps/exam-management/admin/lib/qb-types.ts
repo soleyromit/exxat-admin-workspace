@@ -162,6 +162,9 @@ export interface AssessmentSettings {
   // Pre-exam
   instructionsText: string
   requireAcknowledgment: boolean
+  policyText: string              // ethics/honor code shown before exam
+  attestationText: string         // text student must check "I agree" to
+  techCheck: { audio: boolean; video: boolean; wifi: boolean; os: boolean }
   // Workflow
   status: AssessmentStatus
   reviewRequest: AssessmentReviewRequest | null
@@ -178,6 +181,7 @@ export interface AssessmentSection {
   facultyId?: string
   collaboratorId?: string         // second instructor who can view/edit this section
   prereadText?: string            // NEW: case-study preread block
+  instructions?: string           // procedural instructions shown before section starts
   questionIds: string[]
   contentAreaIds?: string[]       // content areas this section targets (folder IDs)
   randomize?: boolean             // shuffle questions within this section independently
@@ -216,6 +220,9 @@ export function defaultAssessmentSettings(type: AssessmentType = 'Exam'): Assess
     timezone: 'America/New_York',
     instructionsText: '',
     requireAcknowledgment: false,
+    policyText: '',
+    attestationText: '',
+    techCheck: { audio: false, video: false, wifi: false, os: false },
     status: 'draft',
     reviewRequest: null,
     graded: true,
