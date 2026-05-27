@@ -1170,6 +1170,8 @@ export function QBSidebar() {
   // Inactive section collapsed by default — toggle to expand.
   // To revert to flat list: remove this state + the grouping render below.
   const [inactiveExpanded, setInactiveExpanded] = useState(false)
+  const [pinnedExpanded, setPinnedExpanded] = useState(true)
+  const [qbExpanded, setQbExpanded] = useState(true)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -1218,6 +1220,8 @@ export function QBSidebar() {
 
   const isAllSelected = navView === 'all'
   const isMySelected = navView === 'my'
+
+  const pinnedFolders = visibleFolders.filter(f => pinnedFolderIds.has(f.id))
 
   // Filter root course folders by search (used for normal grouped tree when not deep-searching)
   const filteredRoots = sidebarSearch.trim()
@@ -1380,55 +1384,107 @@ export function QBSidebar() {
         {navItem(isMySelected, 'fa-user', 'My Questions', myQCount, () => setNavView('my'))}
       </div>
 
+      {/* ── Pinned section ── */}
+      {pinnedFolders.length > 0 && (
+        <div style={{ flexShrink: 0 }}>
+          {/* Section header */}
+          <button
+            type="button"
+            onClick={() => setPinnedExpanded(v => !v)}
+            aria-expanded={pinnedExpanded}
+            style={{ display: 'flex', alignItems: 'center', gap: 4, width: '100%', padding: '0 12px', height: 24, background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            <i
+              className={`fa-light ${pinnedExpanded ? 'fa-chevron-down' : 'fa-chevron-right'} text-muted-foreground`}
+              aria-hidden="true"
+              style={{ fontSize: 9, width: 10, flexShrink: 0 }}
+            />
+            <span className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
+              Pinned
+            </span>
+          </button>
+          {/* Pinned folder rows — flat, with parent path subtitle */}
+          {pinnedExpanded && (
+            <div style={{ paddingBottom: 4 }}>
+              {pinnedFolders.map(f => (
+                <FolderRow
+                  key={f.id}
+                  node={f}
+                  depth={0}
+                  isAdmin={isAdmin}
+                  subtitle={getFolderShortPath(f.id) || undefined}
+                  fullSubtitle={getFolderFullPath(f.id) || undefined}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Question Bank label + search — fixed, never scrolls ── */}
       {SEARCH_VARIANT === 'input' ? (
         <div style={{ flexShrink: 0, padding: '4px 8px 4px' }}>
-          <div style={{ padding: '0 4px 3px' }}>
+          {/* Section header */}
+          <button
+            type="button"
+            onClick={() => setQbExpanded(v => !v)}
+            aria-expanded={qbExpanded}
+            style={{ display: 'flex', alignItems: 'center', gap: 4, width: '100%', padding: '0 4px 3px', background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            <i
+              className={`fa-light ${qbExpanded ? 'fa-chevron-down' : 'fa-chevron-right'} text-muted-foreground`}
+              aria-hidden="true"
+              style={{ fontSize: 9, width: 10, flexShrink: 0 }}
+            />
             <span className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
               Question Bank
             </span>
-          </div>
-          {/* Subtle sidebar search — same scale as nav items */}
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <i
-              className="fa-light fa-magnifying-glass text-muted-foreground"
-              aria-hidden="true"
-              style={{ position: 'absolute', left: 8, fontSize: 11, pointerEvents: 'none', zIndex: 1 }}
-            />
-            <Input
-              placeholder="Search folders…"
-              value={sidebarSearch}
-              onChange={e => setSidebarSearch(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Escape') setSidebarSearch('') }}
-              aria-label="Search folders"
-              style={{
-                height: 28,
-                paddingLeft: 26,
-                paddingRight: sidebarSearch ? 28 : 8,
-                fontSize: 12,
-                backgroundColor: 'var(--muted)',
-                border: '1px solid transparent',
-                borderRadius: 5,
-              }}
-            />
-            {sidebarSearch && (
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                aria-label="Clear search"
-                onClick={() => setSidebarSearch('')}
-                style={{ position: 'absolute', right: 2, width: 22, height: 22 }}
-              >
-                <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 10 }} />
-              </Button>
-            )}
-          </div>
-          {isSearching && (
-            <div style={{ padding: '3px 4px 0' }}>
-              <span className="text-[10px] text-muted-foreground">
-                {flatSearchResults.length} result{flatSearchResults.length !== 1 ? 's' : ''}
-              </span>
-            </div>
+          </button>
+          {/* Search + result count — hidden when section is collapsed */}
+          {qbExpanded && (
+            <>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <i
+                  className="fa-light fa-magnifying-glass text-muted-foreground"
+                  aria-hidden="true"
+                  style={{ position: 'absolute', left: 8, fontSize: 11, pointerEvents: 'none', zIndex: 1 }}
+                />
+                <Input
+                  placeholder="Search folders…"
+                  value={sidebarSearch}
+                  onChange={e => setSidebarSearch(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Escape') setSidebarSearch('') }}
+                  aria-label="Search folders"
+                  style={{
+                    height: 28,
+                    paddingLeft: 26,
+                    paddingRight: sidebarSearch ? 28 : 8,
+                    fontSize: 12,
+                    backgroundColor: 'var(--muted)',
+                    border: '1px solid transparent',
+                    borderRadius: 5,
+                  }}
+                />
+                {sidebarSearch && (
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    aria-label="Clear search"
+                    onClick={() => setSidebarSearch('')}
+                    style={{ position: 'absolute', right: 2, width: 22, height: 22 }}
+                  >
+                    <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 10 }} />
+                  </Button>
+                )}
+              </div>
+              {isSearching && (
+                <div style={{ padding: '3px 4px 0' }}>
+                  <span className="text-[10px] text-muted-foreground">
+                    {flatSearchResults.length} result{flatSearchResults.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              )}
+            </>
           )}
         </div>
       ) : (
@@ -1448,7 +1504,7 @@ export function QBSidebar() {
       {/* Tree — at normal zoom: own scroll container (flex:1); at 400% zoom: flows into aside scroll */}
       <div style={isHighZoom
         ? { flexShrink: 0, overflowX: 'hidden', paddingTop: 2, paddingBottom: 8 }
-        : { flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: 2, paddingBottom: 8 }
+        : { flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: 2, paddingBottom: 8, display: qbExpanded ? undefined : 'none' }
       }>
 
         {/* Command variant search results */}
