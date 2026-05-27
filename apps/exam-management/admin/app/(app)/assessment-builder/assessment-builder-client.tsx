@@ -1071,7 +1071,6 @@ export default function AssessmentBuilderClient() {
                 const isReady = fillPct >= 80
                 const facIds = sec.facultyIds?.length ? sec.facultyIds : sec.facultyId ? [sec.facultyId] : []
                 const sectionFaculty = facultyListRows.filter(f => facIds.includes(f.id))
-                const AVATAR_COLORS = ['#7c6bbf', '#3b7abf', '#4e9a6b', '#bf5b3b', '#b87c3b']
                 return (
                   <div key={sec.id}>
                     <button
@@ -1095,41 +1094,19 @@ export default function AssessmentBuilderClient() {
                         <span className="text-xs text-muted-foreground" style={{ flexShrink: 0 }}>{sec.questionIds.length}/{sec.questionTarget ?? 20}</span>
                       )}
                     </button>
-                    {/* Faculty row — multi-faculty stacked avatars */}
+                    {/* Faculty row — compact text label */}
                     {sectionFaculty.length > 0 ? (
                       <button
                         type="button"
                         onClick={() => setAssignSheetSectionId(sec.id)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '0 12px 4px 22px', background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', fontFamily: 'inherit' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '0 12px 5px 22px', background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', fontFamily: 'inherit' }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                          {sectionFaculty.slice(0, 3).map((fac, fi) => {
-                            const ini = fac.fullName.split(' ').filter(Boolean).map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
-                            const col = ASSIGN_AVATAR_COLORS[fac.id] ?? AVATAR_COLORS[fi % AVATAR_COLORS.length]
-                            return (
-                              <div key={fac.id} title={fac.fullName} style={{
-                                width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
-                                background: col, display: 'flex', alignItems: 'center',
-                                justifyContent: 'center', fontSize: 9, fontWeight: 700, color: '#fff',
-                                border: '1.5px solid var(--background)',
-                                marginRight: fi < Math.min(sectionFaculty.length, 3) - 1 ? -5 : 0,
-                              }}>{ini}</div>
-                            )
-                          })}
-                          {sectionFaculty.length > 3 && (
-                            <div style={{ width: 16, height: 16, borderRadius: '50%', background: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: 'var(--muted-foreground)', fontWeight: 600, border: '1.5px solid var(--background)', marginLeft: -5 }}>
-                              +{sectionFaculty.length - 3}
-                            </div>
-                          )}
-                        </div>
+                        <i className="fa-light fa-user" aria-hidden="true" style={{ fontSize: 10, color: 'var(--muted-foreground)', flexShrink: 0 }} />
                         <span style={{ fontSize: 11, color: 'var(--muted-foreground)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {sectionFaculty.length === 1 ? sectionFaculty[0].fullName.split(' ').slice(-1)[0] : `${sectionFaculty.length} faculty`}
+                          {sectionFaculty.length === 1
+                            ? sectionFaculty[0].fullName.split(' ').slice(-1)[0]
+                            : `${sectionFaculty[0].fullName.split(' ').slice(-1)[0]} +${sectionFaculty.length - 1}`}
                         </span>
-                        {sec.questionTarget != null && (
-                          <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
-                            {sec.questionIds.length}<span style={{ opacity: 0.5 }}>/{sec.questionTarget}</span>
-                          </span>
-                        )}
                       </button>
                     ) : (
                       <button
@@ -1166,49 +1143,41 @@ export default function AssessmentBuilderClient() {
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               {activeSection ? (
                 <>
-                  {/* Section header bar (40px, brand-tinted bg) */}
+                  {/* Section header bar */}
                   <div style={{
-                    display: 'flex', alignItems: 'center', gap: 8, padding: '0 14px', height: 40,
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px', height: 40,
                     borderBottom: '1px solid var(--border)', flexShrink: 0,
-                    background: 'color-mix(in srgb, var(--brand-color) 5%, var(--background))',
+                    background: 'var(--card)',
                   }}>
-                    <span className="text-sm font-semibold text-foreground truncate flex-1">
+                    <span className="text-sm font-semibold text-foreground" style={{ flexShrink: 0 }}>
                       {activeAsmt.sections.findIndex(s => s.id === activeSection.id) + 1}. {activeSection.title}
                     </span>
-                    {/* Faculty avatars — from real section assignment */}
+                    {/* Faculty — compact inline text label */}
                     {(() => {
                       const facIds = activeSection.facultyIds?.length ? activeSection.facultyIds : activeSection.facultyId ? [activeSection.facultyId] : []
                       const headerFaculty = facultyListRows.filter(f => facIds.includes(f.id))
                       if (headerFaculty.length === 0) return null
-                      const FALLBACK_COLORS = ['#7c6bbf', '#3b7abf', '#bf5b3b']
+                      const label = headerFaculty.length === 1
+                        ? headerFaculty[0].fullName
+                        : `${headerFaculty[0].fullName.split(' ').slice(-1)[0]} +${headerFaculty.length - 1}`
                       return (
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                          {headerFaculty.slice(0, 4).map((fac, i) => {
-                            const initials = fac.fullName.split(' ').filter(Boolean).map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
-                            const color = ASSIGN_AVATAR_COLORS[fac.id] ?? FALLBACK_COLORS[i % FALLBACK_COLORS.length]
-                            return (
-                              <div key={fac.id} title={fac.fullName} style={{
-                                width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-                                background: color, display: 'flex', alignItems: 'center',
-                                justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#fff',
-                                border: '2px solid var(--background)',
-                                marginRight: i < Math.min(headerFaculty.length, 4) - 1 ? -6 : 0,
-                              }}>
-                                {initials}
-                              </div>
-                            )
-                          })}
-                        </div>
+                        <span style={{ fontSize: 12, color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                          <span style={{ color: 'var(--border)' }}>·</span>
+                          <i className="fa-light fa-user" aria-hidden="true" style={{ fontSize: 11 }} />
+                          {label}
+                        </span>
                       )
                     })()}
-                    {/* Ready / count badge */}
+                    <div style={{ flex: 1 }} />
+                    {/* Q count / ready */}
                     {sectionFillPct(activeSection) >= 80 ? (
-                      <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 4, background: 'color-mix(in srgb, var(--chart-2) 12%, white)', color: 'var(--chart-2)', fontWeight: 600 }}>
+                      <span style={{ fontSize: 12, color: 'var(--chart-2)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <i className="fa-solid fa-circle-check" aria-hidden="true" style={{ fontSize: 11 }} />
                         Ready
                       </span>
                     ) : (
-                      <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 4, background: 'var(--muted)', color: 'var(--muted-foreground)' }}>
-                        {activeSectionQuestions.length} Q
+                      <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
+                        {activeSectionQuestions.length}{activeSection.questionTarget ? `/${activeSection.questionTarget}` : ''} Q
                       </span>
                     )}
                     {/* Section analysis icon */}
@@ -1229,8 +1198,22 @@ export default function AssessmentBuilderClient() {
                   <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
 
                     {activeSectionQuestions.length === 0 ? (
-                      <div style={{ padding: '32px 14px', textAlign: 'center' }}>
-                        <p className="text-sm text-muted-foreground">No questions in this section yet.</p>
+                      <div style={{ padding: '48px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                        <i className="fa-light fa-circle-question text-muted-foreground" aria-hidden="true" style={{ fontSize: 28 }} />
+                        <p className="text-sm font-medium text-foreground">No questions yet</p>
+                        <p className="text-xs text-muted-foreground" style={{ textAlign: 'center', maxWidth: 260 }}>
+                          Add questions from the question bank or let Leo generate them based on this section&apos;s topic.
+                        </p>
+                        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                          <Button size="sm" variant="outline" onClick={() => setPickerOpen(true)} className="gap-1.5">
+                            <i className="fa-light fa-database" aria-hidden="true" />
+                            Question Bank
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setAiPromptOpen(true)} className="gap-1.5">
+                            <i className="fa-light fa-sparkles" aria-hidden="true" />
+                            Ask Leo
+                          </Button>
+                        </div>
                       </div>
                     ) : (
                       <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
