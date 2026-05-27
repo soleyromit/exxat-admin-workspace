@@ -38,7 +38,7 @@ TEMPLATE_PATH = REPO_ROOT / "docs" / "foundations" / "admin-globals-template.css
 
 # Each marker is a substring that must appear in the admin app's globals.css.
 REQUIRED_MARKERS: list[tuple[str, str]] = [
-    ("theme-import",    "@exxatdesignux/ui/globals.css"),
+    ("theme-import",    "@exxatdesignux/ui/src/globals.css"),
     ("tailwind-import", '@import "tailwindcss"'),
     ("tabs-fix-comment", "DS Tabs fix"),
     ("tabs-fix-horizontal-selector", '[data-slot="tabs"][data-orientation="horizontal"]'),
