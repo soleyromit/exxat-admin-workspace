@@ -1,61 +1,10 @@
 'use client'
 import React, { useState, useEffect } from 'react'
-import { Sheet, SheetContent, SheetTitle, Button } from '@exxat/ds/packages/ui/src'
+import { Sheet, SheetContent, SheetClose, SheetTitle, Button, Collapsible, CollapsibleTrigger, CollapsibleContent, Separator, ToggleSwitch, Card } from '@exxat/ds/packages/ui/src'
 import type { Question, QuestionVersionEntry, QuestionCollaborator, QuestionGradingConfig, ReferenceMaterial, DigitalToolsConfig } from '@/lib/qb-types'
 import { MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
 
-type DetailTab = 'details' | 'stats' | 'versions' | 'collaborators'
-
-// ─── Helper: PBI chip ────────────────────────────────────────────────────────
-
-function PbiChip({ pbis }: { pbis: number | null | undefined }) {
-  if (pbis === null || pbis === undefined) {
-    return (
-      <span style={{
-        display: 'inline-flex', alignItems: 'center', gap: 4,
-        padding: '2px 8px', borderRadius: 999,
-        background: 'var(--muted)', color: 'var(--muted-foreground)',
-        fontSize: 12, fontWeight: 500,
-      }}>
-        Manual grading
-      </span>
-    )
-  }
-  const isLow = pbis < 0.20
-  return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 4,
-      padding: '2px 8px', borderRadius: 999,
-      background: 'var(--muted)',
-      color: isLow ? 'var(--qb-pbi-low-color)' : 'var(--qb-pbi-good-color)',
-      fontSize: 12, fontWeight: 500,
-    }}>
-      <span style={{
-        width: 6, height: 6, borderRadius: '50%',
-        background: isLow ? 'var(--chart-4)' : 'var(--chart-2)',
-        flexShrink: 0,
-      }} />
-      {isLow && <span aria-hidden="true">⚠</span>}
-      {' '}Pt. bi-serial {pbis.toFixed(2)}
-    </span>
-  )
-}
-
-// ─── Helper: Footer chip ─────────────────────────────────────────────────────
-
-function FooterChip({ children, warn }: { children: React.ReactNode; warn?: boolean }) {
-  return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 3,
-      padding: '2px 7px', borderRadius: 999,
-      background: 'var(--muted)',
-      color: warn ? 'var(--qb-pbi-low-color)' : 'var(--muted-foreground)',
-      fontSize: 12, fontWeight: 500,
-    }}>
-      {children}
-    </span>
-  )
-}
+type DetailTab = 'details' | 'config' | 'stats' | 'versions' | 'collaborators'
 
 // ─── Helper: Eyebrow label ───────────────────────────────────────────────────
 
@@ -234,7 +183,7 @@ function OrderingPreview({ question }: { question: Question }) {
               flexShrink: 0, width: 24, height: 24, borderRadius: '50%',
               background: 'var(--chart-2)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 12, fontWeight: 700, color: '#fff',
+              fontSize: 12, fontWeight: 700, color: 'var(--primary-foreground)',
             }}>
               {idx + 1}
             </span>
@@ -277,7 +226,7 @@ function MatchingPreview({ question }: { question: Question }) {
                 width: 28, flexShrink: 0,
                 background: 'var(--chart-2)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 12, fontWeight: 700, color: '#fff',
+                fontSize: 12, fontWeight: 700, color: 'var(--primary-foreground)',
               }}>
                 {opt.key}
               </div>
@@ -469,7 +418,7 @@ function MSQPreview({ question }: { question: Question }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               marginTop: 1,
             }}>
-              {opt.isCorrect && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, color: '#fff' }} />}
+              {opt.isCorrect && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, color: 'var(--primary-foreground)' }} />}
             </span>
             <div style={{ flex: 1 }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-foreground)', marginRight: 6 }}>{opt.key}.</span>
@@ -517,7 +466,7 @@ function TrueFalsePreview({ question }: { question: Question }) {
               background: opt.isCorrect ? 'var(--chart-2)' : 'transparent',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              {opt.isCorrect && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, color: '#fff' }} />}
+              {opt.isCorrect && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, color: 'var(--primary-foreground)' }} />}
             </span>
             <span style={{
               fontSize: 18, fontWeight: 700,
@@ -1060,10 +1009,20 @@ function VersionsTab({
   viewingVersion: number
   onView: (v: number) => void
 }) {
+  if (versionHistory.length === 0) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 8 }}>
+        <i className="fa-light fa-clock-rotate-left" aria-hidden="true" style={{ fontSize: 28, color: 'var(--muted-foreground)' }} />
+        <p style={{ fontSize: 13, color: 'var(--muted-foreground)', margin: 0 }}>No version history yet</p>
+        <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: 0 }}>Edits to this question will create new versions.</p>
+      </div>
+    )
+  }
+
   return (
     <div style={{ overflowY: 'auto', height: '100%' }}>
       <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 14, lineHeight: 1.5 }}>
-        Any version can be used independently. Editing creates a new version.
+        Any version can be previewed here. Editing always creates a new version.
       </p>
       <div style={{ position: 'relative' }}>
         {/* Timeline line */}
@@ -1160,6 +1119,16 @@ function CollaboratorsTab({ collaborators }: { collaborators: QuestionCollaborat
     view:  { bg: 'var(--muted)', color: 'var(--muted-foreground)' },
   }
 
+  if (collaborators.length === 0) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 8 }}>
+        <i className="fa-light fa-users" aria-hidden="true" style={{ fontSize: 28, color: 'var(--muted-foreground)' }} />
+        <p style={{ fontSize: 13, color: 'var(--muted-foreground)', margin: 0 }}>No collaborators</p>
+        <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: 0 }}>Access is managed at the folder level.</p>
+      </div>
+    )
+  }
+
   return (
     <div style={{ overflowY: 'auto', height: '100%' }}>
       <Eyebrow>People with access</Eyebrow>
@@ -1212,6 +1181,47 @@ function CollaboratorsTab({ collaborators }: { collaborators: QuestionCollaborat
   )
 }
 
+// ─── SettingRow — icon + label + description + optional inline or below control ─
+
+function SettingRow({
+  icon,
+  label,
+  description,
+  inlineControl,
+  children,
+}: {
+  icon: string
+  label: string
+  description: string
+  inlineControl?: React.ReactNode
+  children?: React.ReactNode
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+        <div style={{
+          width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+          background: 'var(--muted)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          marginTop: 1,
+        }}>
+          <i className={`fa-light ${icon}`} aria-hidden="true" style={{ fontSize: 14, color: 'var(--muted-foreground)' }} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)', lineHeight: 1.3 }}>{label}</div>
+          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 2, lineHeight: 1.4 }}>{description}</div>
+        </div>
+        {inlineControl && (
+          <div style={{ flexShrink: 0, marginTop: 2 }}>{inlineControl}</div>
+        )}
+      </div>
+      {children && (
+        <div style={{ marginLeft: 42 }}>{children}</div>
+      )}
+    </div>
+  )
+}
+
 // ─── Grading rules section ────────────────────────────────────────────────────
 
 function GradingRulesSection({
@@ -1227,129 +1237,133 @@ function GradingRulesSection({
 }) {
   const type = question.type
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <p style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', marginBottom: 4, margin: 0 }}>Grading rules</p>
+  const chipStyle = (active: boolean): React.CSSProperties => ({
+    fontSize: 12, padding: '4px 10px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
+    border: `1px solid ${active ? 'var(--brand-color)' : 'var(--border)'}`,
+    background: active ? 'var(--brand-tint)' : 'transparent',
+    color: active ? 'var(--brand-color)' : 'var(--muted-foreground)',
+  })
+  const focusRing = {
+    onFocus: (e: React.FocusEvent<HTMLButtonElement>) => { e.currentTarget.style.outline = '2px solid var(--ring)'; e.currentTarget.style.outlineOffset = '2px' },
+    onBlur:  (e: React.FocusEvent<HTMLButtonElement>) => { e.currentTarget.style.outline = 'none'; e.currentTarget.style.outlineOffset = '0' },
+  }
 
-      {/* Randomize options — MCQ, MSQ, True/False, Ordering, Extended Matching */}
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Randomize options */}
       {['MCQ', 'MSQ', 'True/False', 'Ordering', 'Extended Matching'].includes(type) && (
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
-          <input
-            type="checkbox"
-            checked={config.randomizeOptions ?? false}
-            onChange={e => onChange({ randomizeOptions: e.target.checked })}
-            aria-label="Randomize option order per student"
-          />
-          <span style={{ color: 'var(--foreground)' }}>Randomize options per student</span>
-        </label>
+        <SettingRow
+          icon="fa-shuffle"
+          label="Randomize answer order"
+          description="Each student sees the options in a different random order."
+          inlineControl={
+            <ToggleSwitch
+              checked={config.randomizeOptions ?? false}
+              onChange={v => onChange({ randomizeOptions: v })}
+            />
+          }
+        />
       )}
 
-      {/* Negative marking override — MCQ and MSQ only */}
+      {/* Negative marking */}
       {['MCQ', 'MSQ'].includes(type) && (
-        <div>
-          <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 6, margin: '0 0 6px' }}>Negative marking</p>
+        <SettingRow
+          icon="fa-circle-minus"
+          label="Negative marking"
+          description="Deduct points for each wrong answer. Override the assessment-level setting per question."
+        >
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {([
-              [null, 'Inherit default'],
-              [0, 'Off'],
-              [0.25, '−0.25'],
-              [0.33, '−0.33'],
-              [0.5, '−0.5'],
+              [null,  'Inherit'],
+              [0,     'Off'],
+              [0.25,  '−¼'],
+              [0.33,  '−⅓'],
+              [0.5,   '−½'],
             ] as const).map(([val, label]) => {
               const current = config.negativeMarkingWeight === undefined ? null : config.negativeMarkingWeight
               const isSelected = current === val
               return (
-                <button
-                  key={String(val)}
-                  type="button"
-                  aria-pressed={isSelected}
+                <button key={String(val)} type="button" aria-pressed={isSelected}
                   onClick={() => onChange({ negativeMarkingWeight: val })}
-                  onFocus={e => { e.currentTarget.style.outline = '2px solid var(--ring)'; e.currentTarget.style.outlineOffset = '2px' }}
-                  onBlur={e => { e.currentTarget.style.outline = 'none'; e.currentTarget.style.outlineOffset = '0' }}
-                  style={{
-                    fontSize: 12, padding: '4px 10px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
-                    border: `1px solid ${isSelected ? 'var(--brand-color)' : 'var(--border)'}`,
-                    background: isSelected ? 'var(--brand-tint)' : 'transparent',
-                    color: isSelected ? 'var(--brand-color)' : 'var(--muted-foreground)',
-                  }}
+                  style={chipStyle(isSelected)} {...focusRing}
                 >{label}</button>
               )
             })}
           </div>
           {(config.negativeMarkingWeight === null || config.negativeMarkingWeight === undefined) && assessmentNegativeMarking && (
-            <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>
+            <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '4px 0 0' }}>
               {assessmentNegativeMarking.enabled
                 ? `Assessment default: deduct −${assessmentNegativeMarking.fraction} per wrong answer`
                 : 'Assessment default: off'}
             </p>
           )}
-        </div>
+        </SettingRow>
       )}
 
       {/* MSQ scoring mode */}
       {type === 'MSQ' && (
-        <div>
-          <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 6, margin: '0 0 6px' }}>Scoring mode</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <SettingRow
+          icon="fa-chart-bar"
+          label="MSQ scoring mode"
+          description="How partial credit is calculated when students select multiple answers."
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             {([
-              ['standard', 'Standard — full credit for exact match'],
-              ['all-or-nothing', 'All-or-nothing'],
-              ['partial-additive', 'Partial — additive (points per correct option)'],
+              ['standard',             'Standard — full credit for exact match'],
+              ['all-or-nothing',       'All-or-nothing'],
+              ['partial-additive',     'Partial — additive (points per correct option)'],
               ['partial-proportional', 'Partial — proportional'],
-              ['right-minus-wrong', 'Right minus wrong'],
+              ['right-minus-wrong',    'Right minus wrong'],
             ] as const).map(([val, label]) => (
               <label key={val} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, cursor: 'pointer' }}>
                 <input
-                  type="radio"
-                  name={`msq-mode-${question.id}`}
-                  value={val}
+                  type="radio" name={`msq-mode-${question.id}`} value={val}
                   checked={(config.msqMode ?? 'standard') === val}
                   onChange={() => onChange({ msqMode: val })}
                   aria-label={label}
+                  style={{ accentColor: 'var(--brand-color)' }}
                 />
                 <span style={{ color: 'var(--foreground)' }}>{label}</span>
               </label>
             ))}
           </div>
-        </div>
+        </SettingRow>
       )}
 
       {/* Fill blank / Short Answer */}
       {['Fill blank', 'Short Answer'].includes(type) && (
         <>
-          <div>
-            <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 6, margin: '0 0 6px' }}>Match mode</p>
+          <SettingRow
+            icon="fa-spell-check"
+            label="Answer matching"
+            description="Choose how strictly the student's response must match the correct answer."
+          >
             <div style={{ display: 'flex', gap: 6 }}>
-              {(['exact', 'contains'] as const).map(mode => (
-                <button
-                  key={mode}
-                  type="button"
-                  aria-pressed={(config.fillBlankMatchMode ?? 'exact') === mode}
-                  onClick={() => onChange({ fillBlankMatchMode: mode })}
-                  style={{
-                    flex: 1, fontSize: 12, padding: '5px 0', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
-                    border: `1px solid ${(config.fillBlankMatchMode ?? 'exact') === mode ? 'var(--brand-color)' : 'var(--border)'}`,
-                    background: (config.fillBlankMatchMode ?? 'exact') === mode ? 'var(--brand-tint)' : 'transparent',
-                    color: (config.fillBlankMatchMode ?? 'exact') === mode ? 'var(--brand-color)' : 'var(--muted-foreground)',
-                  }}
-                >{mode === 'exact' ? 'Exact match' : 'Contains'}</button>
-              ))}
+              {(['exact', 'contains'] as const).map(mode => {
+                const active = (config.fillBlankMatchMode ?? 'exact') === mode
+                return (
+                  <button key={mode} type="button" aria-pressed={active}
+                    onClick={() => onChange({ fillBlankMatchMode: mode })}
+                    style={{ ...chipStyle(active), flex: 1, padding: '5px 0' }} {...focusRing}
+                  >{mode === 'exact' ? 'Exact match' : 'Contains'}</button>
+                )
+              })}
             </div>
-          </div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+              <ToggleSwitch
+                checked={config.fillBlankCaseSensitive ?? false}
+                onChange={v => onChange({ fillBlankCaseSensitive: v })}
+              />
+              <span style={{ fontSize: 13, color: 'var(--foreground)' }}>Case sensitive</span>
+            </div>
+          </SettingRow>
+          <SettingRow
+            icon="fa-input-text"
+            label="Alternate accepted spellings"
+            description="Additional correct spellings or phrasings — graded the same as the primary answer."
+          >
             <input
-              type="checkbox"
-              checked={config.fillBlankCaseSensitive ?? false}
-              onChange={e => onChange({ fillBlankCaseSensitive: e.target.checked })}
-              aria-label="Case sensitive matching"
-            />
-            <span style={{ color: 'var(--foreground)' }}>Case sensitive</span>
-          </label>
-          <div>
-            <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 4, margin: '0 0 4px' }}>Alternate accepted spellings</p>
-            <input
-              type="text"
-              aria-label="Add alternate accepted answer"
+              type="text" aria-label="Add alternate accepted answer"
               placeholder="Type and press Enter to add…"
               style={{ width: '100%', fontSize: 13, padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
               onFocus={e => { e.currentTarget.style.borderColor = 'var(--ring)'; e.currentTarget.style.boxShadow = '0 0 0 2px var(--ring)' }}
@@ -1369,67 +1383,108 @@ function GradingRulesSection({
               {(config.alternateAcceptedAnswers ?? []).map(ans => (
                 <span key={ans} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '2px 8px', borderRadius: 20, border: '1px solid var(--border)', color: 'var(--foreground)', background: 'var(--muted)' }}>
                   {ans}
-                  <button type="button" aria-label={`Remove ${ans}`} onClick={() => onChange({ alternateAcceptedAnswers: (config.alternateAcceptedAnswers ?? []).filter(a => a !== ans) })} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 0, lineHeight: 1, fontFamily: 'inherit' }}>
+                  <button type="button" aria-label={`Remove ${ans}`}
+                    onClick={() => onChange({ alternateAcceptedAnswers: (config.alternateAcceptedAnswers ?? []).filter(a => a !== ans) })}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 0, lineHeight: 1, fontFamily: 'inherit' }}
+                  >
                     <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 10 }} />
                   </button>
                 </span>
               ))}
             </div>
-          </div>
+          </SettingRow>
         </>
       )}
 
       {/* Matching */}
       {type === 'Matching' && (
         <>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
-            <input type="checkbox" checked={config.matchPartialCredit ?? false} onChange={e => onChange({ matchPartialCredit: e.target.checked })} aria-label="Partial credit per matched pair" />
-            <span style={{ color: 'var(--foreground)' }}>Partial credit per correctly matched pair</span>
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
-            <input type="checkbox" checked={config.matchExtraDistractors ?? false} onChange={e => onChange({ matchExtraDistractors: e.target.checked })} aria-label="Include extra distractors" />
-            <span style={{ color: 'var(--foreground)' }}>Include extra distractors (more answers than prompts)</span>
-          </label>
+          <SettingRow
+            icon="fa-link"
+            label="Partial credit per pair"
+            description="Award points for each correctly matched pair instead of requiring all pairs correct."
+            inlineControl={
+              <ToggleSwitch
+                checked={config.matchPartialCredit ?? false}
+                onChange={v => onChange({ matchPartialCredit: v })}
+              />
+            }
+          />
+          <SettingRow
+            icon="fa-list-plus"
+            label="Extra distractors"
+            description="Add more answer options than prompts to prevent process-of-elimination."
+            inlineControl={
+              <ToggleSwitch
+                checked={config.matchExtraDistractors ?? false}
+                onChange={v => onChange({ matchExtraDistractors: v })}
+              />
+            }
+          />
         </>
       )}
 
       {/* Hotspot */}
       {type === 'Hotspot' && (
         <>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
-            <input type="checkbox" checked={config.hotspotMultipleAllowed ?? false} onChange={e => onChange({ hotspotMultipleAllowed: e.target.checked })} aria-label="Allow multiple hotspot selections" />
-            <span style={{ color: 'var(--foreground)' }}>Allow multiple hotspot areas</span>
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
-            <input type="checkbox" checked={config.hotspotPartialCredit ?? false} onChange={e => onChange({ hotspotPartialCredit: e.target.checked })} aria-label="Partial credit per hotspot area" />
-            <span style={{ color: 'var(--foreground)' }}>Partial credit per correct area</span>
-          </label>
+          <SettingRow
+            icon="fa-crosshairs"
+            label="Multiple hotspot areas"
+            description="Allow students to select more than one area on the image."
+            inlineControl={
+              <ToggleSwitch
+                checked={config.hotspotMultipleAllowed ?? false}
+                onChange={v => onChange({ hotspotMultipleAllowed: v })}
+              />
+            }
+          />
+          <SettingRow
+            icon="fa-star-half"
+            label="Partial credit per area"
+            description="Award points for each correct area selected instead of requiring all areas."
+            inlineControl={
+              <ToggleSwitch
+                checked={config.hotspotPartialCredit ?? false}
+                onChange={v => onChange({ hotspotPartialCredit: v })}
+              />
+            }
+          />
         </>
       )}
 
       {/* Essay */}
       {type === 'Essay' && (
         <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <label style={{ fontSize: 12, color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>Word limit</label>
-            <input
-              type="number"
-              min={10}
-              max={5000}
-              value={config.essayWordLimit ?? ''}
-              onChange={e => onChange({ essayWordLimit: e.target.value ? parseInt(e.target.value) : null })}
-              placeholder="None"
-              aria-label="Essay word limit"
-              style={{ width: 80, fontSize: 13, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', fontFamily: 'inherit' }}
-              onFocus={e => { e.currentTarget.style.borderColor = 'var(--ring)'; e.currentTarget.style.boxShadow = '0 0 0 2px var(--ring)' }}
-              onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
-            />
-            <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>words</span>
-          </div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
-            <input type="checkbox" checked={config.essayBlindGrading ?? false} onChange={e => onChange({ essayBlindGrading: e.target.checked })} aria-label="Enable blind grading for this essay" />
-            <span style={{ color: 'var(--foreground)' }}>Blind grading (hide student name during grading)</span>
-          </label>
+          <SettingRow
+            icon="fa-align-left"
+            label="Word limit"
+            description="Stop students from submitting a response over a set word count."
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="number" min={10} max={5000}
+                value={config.essayWordLimit ?? ''}
+                onChange={e => onChange({ essayWordLimit: e.target.value ? parseInt(e.target.value) : null })}
+                placeholder="None"
+                aria-label="Essay word limit"
+                style={{ width: 80, fontSize: 13, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', fontFamily: 'inherit' }}
+                onFocus={e => { e.currentTarget.style.borderColor = 'var(--ring)'; e.currentTarget.style.boxShadow = '0 0 0 2px var(--ring)' }}
+                onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
+              />
+              <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>words</span>
+            </div>
+          </SettingRow>
+          <SettingRow
+            icon="fa-eye-slash"
+            label="Blind grading"
+            description="Hide the student's name during manual grading to reduce bias."
+            inlineControl={
+              <ToggleSwitch
+                checked={config.essayBlindGrading ?? false}
+                onChange={v => onChange({ essayBlindGrading: v })}
+              />
+            }
+          />
         </>
       )}
     </div>
@@ -1455,77 +1510,154 @@ function QuestionToolsSection({
   })
   const focusRing = {
     onFocus: (e: React.FocusEvent<HTMLButtonElement>) => { e.currentTarget.style.outline = '2px solid var(--ring)'; e.currentTarget.style.outlineOffset = '2px' },
-    onBlur: (e: React.FocusEvent<HTMLButtonElement>) => { e.currentTarget.style.outline = 'none'; e.currentTarget.style.outlineOffset = '0' },
+    onBlur:  (e: React.FocusEvent<HTMLButtonElement>) => { e.currentTarget.style.outline = 'none'; e.currentTarget.style.outlineOffset = '0' },
   }
 
   const calcOptions: Array<['none' | 'basic' | 'scientific' | undefined, string]> = [
-    [undefined, 'Inherit'],
-    ['none', 'Off'],
-    ['basic', 'Basic'],
-    ['scientific', 'Scientific'],
+    [undefined, 'Inherit'], ['none', 'Off'], ['basic', 'Basic'], ['scientific', 'Scientific'],
+  ]
+  const highlightOptions: Array<[boolean | null | undefined, string]> = [
+    [undefined, 'Inherit'], [true, 'On'], [false, 'Off'],
+  ]
+  const elimOptions: Array<[boolean | null | undefined, string]> = [
+    [undefined, 'Inherit'], [true, 'On'], [false, 'Off'],
   ]
 
-  const highlightOptions: Array<[boolean | null | undefined, string]> = [
-    [undefined, 'Inherit'],
-    [true, 'On'],
-    [false, 'Off'],
-  ]
+  const showElimPreview = config.answerEliminationOverride === true ||
+    (config.answerEliminationOverride === undefined && assessmentDigitalTools?.answerElimination === true)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <p style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', margin: 0 }}>Tools</p>
-
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Calculator */}
-      <div>
-        <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '0 0 6px' }}>Calculator</p>
+      <SettingRow
+        icon="fa-calculator"
+        label="Calculator"
+        description="Override which calculator (if any) the student can access during this question."
+      >
         <div style={{ display: 'flex', gap: 6 }}>
           {calcOptions.map(([val, label]) => {
             const active = config.calculatorOverride === val
             return (
-              <button key={label} type="button" aria-pressed={active} onClick={() => onChange({ calculatorOverride: val })} style={chipStyle(active)} {...focusRing}>
-                {label}
-              </button>
+              <button key={label} type="button" aria-pressed={active}
+                onClick={() => onChange({ calculatorOverride: val })}
+                style={chipStyle(active)} {...focusRing}>{label}</button>
             )
           })}
         </div>
         {config.calculatorOverride === undefined && assessmentDigitalTools && (
-          <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>
+          <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '4px 0 0' }}>
             Assessment default: {assessmentDigitalTools.calculator === 'none' ? 'off' : assessmentDigitalTools.calculator}
           </p>
         )}
-      </div>
+      </SettingRow>
 
       {/* Text highlighting */}
-      <div>
-        <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '0 0 6px' }}>Text highlighting</p>
+      <SettingRow
+        icon="fa-highlighter"
+        label="Text highlighting"
+        description="Students can select and highlight passage text while reading the question stem."
+      >
         <div style={{ display: 'flex', gap: 6 }}>
           {highlightOptions.map(([val, label]) => {
-            const current = config.textHighlightOverride === undefined ? undefined : config.textHighlightOverride
-            const active = current === val
+            const active = (config.textHighlightOverride === undefined ? undefined : config.textHighlightOverride) === val
             return (
-              <button key={label} type="button" aria-pressed={active} onClick={() => onChange({ textHighlightOverride: val === undefined ? undefined : val })} style={chipStyle(active)} {...focusRing}>
-                {label}
-              </button>
+              <button key={label} type="button" aria-pressed={active}
+                onClick={() => onChange({ textHighlightOverride: val === undefined ? undefined : val })}
+                style={chipStyle(active)} {...focusRing}>{label}</button>
             )
           })}
         </div>
         {config.textHighlightOverride === undefined && assessmentDigitalTools && (
-          <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 4 }}>
+          <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '4px 0 0' }}>
             Assessment default: {assessmentDigitalTools.textHighlight ? 'on' : 'off'}
           </p>
         )}
-      </div>
+      </SettingRow>
+
+      {/* Answer elimination */}
+      <SettingRow
+        icon="fa-strikethrough"
+        label="Answer elimination"
+        description="Students can cross out options they want to rule out — without committing to a selection."
+      >
+        <div style={{ display: 'flex', gap: 6 }}>
+          {elimOptions.map(([val, label]) => {
+            const active = config.answerEliminationOverride === val
+            return (
+              <button key={label} type="button" aria-pressed={active}
+                onClick={() => onChange({ answerEliminationOverride: val })}
+                style={chipStyle(active)} {...focusRing}>{label}</button>
+            )
+          })}
+        </div>
+        {config.answerEliminationOverride === undefined && assessmentDigitalTools && (
+          <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '4px 0 0' }}>
+            Assessment default: {assessmentDigitalTools.answerElimination ? 'on' : 'off'}
+          </p>
+        )}
+        {/* Visual preview — student-side view of crossed-out option */}
+        <div style={{ marginTop: 10 }}>
+          <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '0 0 5px', fontStyle: 'italic' }}>
+            {showElimPreview ? 'Student view with elimination on:' : 'Student view with elimination off:'}
+          </p>
+          <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', background: 'var(--background)' }}>
+            {/* Option A — untouched */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderBottom: '1px solid var(--border)' }}>
+              <span style={{
+                width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                border: '2px solid var(--border)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 11, fontWeight: 700, color: 'var(--muted-foreground)',
+              }}>A</span>
+              <span style={{ fontSize: 12, color: 'var(--foreground)' }}>Ceftriaxone</span>
+            </div>
+            {/* Option B — eliminated (strike through) */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px',
+              borderBottom: '1px solid var(--border)',
+              opacity: showElimPreview ? 0.45 : 1,
+            }}>
+              <span style={{
+                width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                border: '2px solid var(--border)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 11, fontWeight: 700, color: 'var(--muted-foreground)',
+              }}>B</span>
+              <span style={{
+                fontSize: 12, color: 'var(--foreground)', flex: 1,
+                textDecoration: showElimPreview ? 'line-through' : 'none',
+              }}>Tramadol</span>
+              {showElimPreview && (
+                <i className="fa-light fa-strikethrough" aria-hidden="true"
+                  style={{ fontSize: 11, color: 'var(--muted-foreground)' }} />
+              )}
+            </div>
+            {/* Option C — untouched */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px' }}>
+              <span style={{
+                width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                border: '2px solid var(--border)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 11, fontWeight: 700, color: 'var(--muted-foreground)',
+              }}>C</span>
+              <span style={{ fontSize: 12, color: 'var(--foreground)' }}>Vancomycin</span>
+            </div>
+          </div>
+        </div>
+      </SettingRow>
 
       {/* On-screen keyboard */}
-      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
-        <input
-          type="checkbox"
-          checked={config.onScreenKeyboard ?? false}
-          onChange={e => onChange({ onScreenKeyboard: e.target.checked })}
-          aria-label="Enable on-screen keyboard for this question"
-        />
-        <span style={{ color: 'var(--foreground)' }}>On-screen keyboard</span>
-      </label>
+      <SettingRow
+        icon="fa-keyboard"
+        label="On-screen keyboard"
+        description="Show a virtual keyboard for text-input questions — useful for tablet and accessibility use."
+        inlineControl={
+          <ToggleSwitch
+            checked={config.onScreenKeyboard ?? false}
+            onChange={v => onChange({ onScreenKeyboard: v })}
+          />
+        }
+      />
     </div>
   )
 }
@@ -1570,33 +1702,46 @@ function ReferencesSection({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <p style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', margin: 0 }}>References</p>
+      <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: 0 }}>Attach materials students can open during this question — formularies, diagrams, guides.</p>
 
-      {/* Existing references */}
-      {refs.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {refs.map(ref => (
-            <div key={ref.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--muted)' }}>
-              <i className="fa-light fa-link" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)', flexShrink: 0 }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 13, color: 'var(--foreground)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ref.label}</p>
-                <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ref.url}</p>
-              </div>
-              <button
-                type="button"
-                aria-label={`Remove reference ${ref.label}`}
-                onClick={() => removeRef(ref.id)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 2, flexShrink: 0, fontFamily: 'inherit' }}
-              >
-                <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 13 }} />
-              </button>
+      {/* Reference list — empty state + items */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {refs.length === 0 ? (
+          <div style={{
+            border: '1px dashed var(--border)', borderRadius: 8, padding: '16px 12px',
+            display: 'flex', alignItems: 'center', gap: 10, color: 'var(--muted-foreground)',
+          }}>
+            <i className="fa-light fa-file-lines" aria-hidden="true" style={{ fontSize: 16, flexShrink: 0 }} />
+            <span style={{ fontSize: 13 }}>No references added yet. Use the form below to attach one or more materials.</span>
+          </div>
+        ) : refs.map(ref => (
+          <div key={ref.id} style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 8,
+            background: 'var(--card)',
+          }}>
+            <i className="fa-light fa-paperclip" aria-hidden="true" style={{ fontSize: 13, color: 'var(--muted-foreground)', flexShrink: 0 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ref.label}</p>
+              <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ref.url}</p>
             </div>
-          ))}
-        </div>
-      )}
+            <button
+              type="button"
+              aria-label={`Remove reference ${ref.label}`}
+              onClick={() => removeRef(ref.id)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 4, flexShrink: 0, fontFamily: 'inherit', lineHeight: 1 }}
+              onFocus={e => { e.currentTarget.style.outline = '2px solid var(--ring)'; e.currentTarget.style.outlineOffset = '2px' }}
+              onBlur={e => { e.currentTarget.style.outline = 'none' }}
+            >
+              <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 13 }} />
+            </button>
+          </div>
+        ))}
+      </div>
 
       {/* Add reference form */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+      <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6, background: 'var(--muted)' }}>
+        <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)', margin: 0 }}>Add a reference</p>
         <input
           type="text"
           placeholder="Label (e.g. Drug reference table)"
@@ -1607,10 +1752,10 @@ function ReferencesSection({
           onFocus={e => { e.currentTarget.style.borderColor = 'var(--ring)'; e.currentTarget.style.boxShadow = '0 0 0 2px var(--ring)' }}
           onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
         />
-        <div style={{ display: 'flex', gap: 5 }}>
+        <div style={{ display: 'flex', gap: 6 }}>
           <input
             type="url"
-            placeholder="URL"
+            placeholder="https://…"
             value={url}
             onChange={e => setUrl(e.target.value)}
             aria-label="Reference URL"
@@ -1625,8 +1770,8 @@ function ReferencesSection({
             onClick={addRef}
             disabled={!label.trim() || !url.trim()}
             style={{
-              padding: '5px 12px', fontSize: 12, borderRadius: 6, border: 'none', cursor: 'pointer',
-              fontFamily: 'inherit', background: 'var(--brand-color)', color: 'var(--background)', fontWeight: 600,
+              padding: '5px 14px', fontSize: 12, borderRadius: 6, border: 'none', cursor: 'pointer',
+              fontFamily: 'inherit', background: 'var(--brand-color)', color: 'var(--primary-foreground)', fontWeight: 600,
               opacity: (!label.trim() || !url.trim()) ? 0.4 : 1,
             }}
           >
@@ -1634,6 +1779,111 @@ function ReferencesSection({
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ─── Tab: Config — collapsible accordion sections ─────────────────────────────
+
+function ConfigAccordionSection({
+  icon,
+  label,
+  defaultOpen = true,
+  children,
+}: {
+  icon: string
+  label: string
+  defaultOpen?: boolean
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = React.useState(defaultOpen)
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <Card className="gap-0 py-0 rounded-xl">
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            aria-expanded={open}
+            className="w-full flex items-center gap-2.5 px-4 py-3 text-left bg-transparent border-0 cursor-pointer rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 hover:bg-muted/40 transition-colors"
+          >
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-muted">
+              <i className={`fa-light ${icon}`} aria-hidden="true" style={{ fontSize: 13, color: 'var(--muted-foreground)' }} />
+            </div>
+            <span className="flex-1 text-sm font-semibold text-foreground">{label}</span>
+            <i
+              className={`fa-light ${open ? 'fa-chevron-up' : 'fa-chevron-down'}`}
+              aria-hidden="true"
+              style={{ fontSize: 12, color: 'var(--muted-foreground)' }}
+            />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <Separator />
+          <div className="px-4 py-4">
+            {children}
+          </div>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
+  )
+}
+
+function ConfigTab({
+  question,
+  config,
+  onChange,
+  assessmentNegativeMarking,
+  assessmentDigitalTools,
+  bonus,
+  onBonusChange,
+}: {
+  question: Question
+  config: QuestionGradingConfig
+  onChange: (patch: Partial<QuestionGradingConfig>) => void
+  assessmentNegativeMarking?: { enabled: boolean; fraction: number }
+  assessmentDigitalTools?: DigitalToolsConfig
+  bonus?: boolean
+  onBonusChange?: (v: boolean) => void
+}) {
+  return (
+    <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {onBonusChange !== undefined && (
+        <ConfigAccordionSection icon="fa-star" label="Bonus" defaultOpen>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '2px 0' }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)' }}>Mark as bonus question</div>
+              <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 2 }}>
+                Points awarded but not counted against the total marks denominator.
+              </div>
+            </div>
+            <ToggleSwitch
+              checked={bonus ?? false}
+              onChange={onBonusChange}
+            />
+          </div>
+        </ConfigAccordionSection>
+      )}
+      <ConfigAccordionSection icon="fa-scale-balanced" label="Grading rules" defaultOpen>
+        <GradingRulesSection
+          question={question}
+          config={config}
+          onChange={onChange}
+          assessmentNegativeMarking={assessmentNegativeMarking}
+        />
+      </ConfigAccordionSection>
+      <ConfigAccordionSection icon="fa-sliders" label="Tools" defaultOpen>
+        <QuestionToolsSection
+          config={config}
+          onChange={onChange}
+          assessmentDigitalTools={assessmentDigitalTools}
+        />
+      </ConfigAccordionSection>
+      <ConfigAccordionSection icon="fa-paperclip" label="References" defaultOpen={false}>
+        <ReferencesSection
+          config={config}
+          onChange={onChange}
+        />
+      </ConfigAccordionSection>
     </div>
   )
 }
@@ -1650,6 +1900,8 @@ export function QuestionDetailSheet({
   onGradingConfigChange,
   assessmentNegativeMarking,
   assessmentDigitalTools,
+  bonus,
+  onBonusChange,
 }: {
   questionId: string | null
   questions: Question[]
@@ -1660,6 +1912,8 @@ export function QuestionDetailSheet({
   onGradingConfigChange?: (patch: Partial<QuestionGradingConfig>) => void
   assessmentNegativeMarking?: { enabled: boolean; fraction: number }
   assessmentDigitalTools?: DigitalToolsConfig
+  bonus?: boolean
+  onBonusChange?: (v: boolean) => void
 }) {
   const question = questions.find(q => q.id === (questionId ?? ''))
   const [activeTab, setActiveTab] = useState<DetailTab>('details')
@@ -1679,6 +1933,7 @@ export function QuestionDetailSheet({
 
   const tabs: Array<{ id: DetailTab; label: string; badge?: string | number; warn?: boolean }> = [
     { id: 'details',       label: 'Details' },
+    ...(onGradingConfigChange ? [{ id: 'config' as const, label: 'Config' }] : []),
     { id: 'stats',         label: 'Stats', warn: pbisLow },
     { id: 'versions',      label: 'Versions', badge: versionHistory.length > 0 ? versionHistory.length : undefined },
     { id: 'collaborators', label: 'Collaborators', badge: collaborators.length > 0 ? collaborators.length : undefined },
@@ -1688,6 +1943,7 @@ export function QuestionDetailSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
+        showCloseButton={false}
         style={{
           width: '82vw', maxWidth: 960,
           display: 'flex', flexDirection: 'column',
@@ -1697,13 +1953,21 @@ export function QuestionDetailSheet({
         {/* Visually-hidden title satisfies Radix DialogContent accessibility requirement */}
         <SheetTitle className="sr-only">{question.title}</SheetTitle>
 
-        {/* ── Header (52px) ─────────────────────────────────────────────── */}
+        {/* ── Header ────────────────────────────────────────────────────── */}
         <div style={{
           height: 52, flexShrink: 0,
           display: 'flex', alignItems: 'center', gap: 10,
-          padding: '0 16px', borderBottom: '1px solid var(--border)',
+          padding: '0 12px 0 16px', borderBottom: '1px solid var(--border)',
           background: 'var(--card)',
         }}>
+          {/* Type badge */}
+          <span style={{
+            fontSize: 12, fontWeight: 600, padding: '2px 8px', borderRadius: 999,
+            background: 'var(--muted)', color: 'var(--muted-foreground)',
+            flexShrink: 0, whiteSpace: 'nowrap',
+          }}>
+            {question.type}
+          </span>
           {/* Title */}
           <span
             className="text-sm font-semibold text-foreground truncate"
@@ -1712,52 +1976,12 @@ export function QuestionDetailSheet({
           >
             {question.title}
           </span>
-
-          {/* Version selector — only if multiple versions */}
-          {versionHistory.length > 1 && (
-            <select
-              value={displayVersion}
-              onChange={e => setViewingVersion(Number(e.target.value))}
-              aria-label="Select version"
-              style={{
-                fontSize: 12, padding: '2px 6px', borderRadius: 6,
-                border: '1px solid var(--border)',
-                background: 'var(--background)', color: 'var(--foreground)',
-                cursor: 'pointer', flexShrink: 0,
-              }}
-            >
-              {versionHistory.map(v => (
-                <option key={v.version} value={v.version}>
-                  Version {v.version}{v.isOriginal ? ' (Original)' : ''}
-                </option>
-              ))}
-            </select>
-          )}
-
-          {/* PBI chip */}
-          <PbiChip pbis={question.pbis} />
-
-          {/* Edit button */}
-          <Button
-            size="sm"
-            onClick={() => { onEdit(question.id); onOpenChange(false) }}
-            className="gap-1.5"
-            style={{ flexShrink: 0 }}
-          >
-            <i className="fa-light fa-pen" aria-hidden="true" />
-            Edit question
-          </Button>
-
-          {/* Close button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-            aria-label="Close detail panel"
-            style={{ minWidth: 44, minHeight: 44, flexShrink: 0 }}
-          >
-            <i className="fa-light fa-xmark" aria-hidden="true" />
-          </Button>
+          {/* Close — single, DS-native */}
+          <SheetClose asChild>
+            <Button variant="ghost" size="icon-sm" aria-label="Close panel" style={{ flexShrink: 0 }}>
+              <i className="fa-light fa-xmark" aria-hidden="true" />
+            </Button>
+          </SheetClose>
         </div>
 
         {/* ── Tab bar ────────────────────────────────────────────────────── */}
@@ -1820,7 +2044,7 @@ export function QuestionDetailSheet({
           role="tabpanel"
           id={`panel-${activeTab}`}
           aria-labelledby={`tab-${activeTab}`}
-          style={{ flex: 1, overflow: 'hidden', padding: '16px 20px' }}
+          style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: '16px 20px' }}
         >
           {activeTab === 'details' && (
             <DetailsTab question={question} />
@@ -1838,72 +2062,38 @@ export function QuestionDetailSheet({
           {activeTab === 'collaborators' && (
             <CollaboratorsTab collaborators={collaborators} />
           )}
+          {activeTab === 'config' && onGradingConfigChange && (
+            <ConfigTab
+              question={question}
+              config={gradingConfig ?? {}}
+              onChange={onGradingConfigChange}
+              assessmentNegativeMarking={assessmentNegativeMarking}
+              assessmentDigitalTools={assessmentDigitalTools}
+              bonus={bonus}
+              onBonusChange={onBonusChange}
+            />
+          )}
         </div>
 
-        {/* ── Grading rules (type-conditional) ─────────────────────────── */}
-        {onGradingConfigChange && (
-          <>
-            <div style={{ height: 1, background: 'var(--border)', margin: '0 20px' }} />
-            <div style={{ padding: '14px 20px', overflowY: 'auto', maxHeight: 260, flexShrink: 0 }}>
-              <GradingRulesSection
-                question={question}
-                config={gradingConfig ?? {}}
-                onChange={onGradingConfigChange}
-                assessmentNegativeMarking={assessmentNegativeMarking}
-              />
-            </div>
-            <div style={{ height: 1, background: 'var(--border)', margin: '0 20px' }} />
-            <div style={{ padding: '14px 20px', overflowY: 'auto', maxHeight: 280, flexShrink: 0 }}>
-              <QuestionToolsSection
-                config={gradingConfig ?? {}}
-                onChange={onGradingConfigChange}
-                assessmentDigitalTools={assessmentDigitalTools}
-              />
-            </div>
-            <div style={{ height: 1, background: 'var(--border)', margin: '0 20px' }} />
-            <div style={{ padding: '14px 20px', overflowY: 'auto', maxHeight: 260, flexShrink: 0 }}>
-              <ReferencesSection
-                config={gradingConfig ?? {}}
-                onChange={onGradingConfigChange}
-              />
-            </div>
-          </>
-        )}
-
-        {/* ── Footer (50px) ─────────────────────────────────────────────── */}
+        {/* ── Footer ────────────────────────────────────────────────────── */}
         <div style={{
           height: 50, flexShrink: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
           padding: '0 16px', borderTop: '1px solid var(--border)',
-          background: 'var(--card)',
+          background: 'var(--card)', gap: 8,
         }}>
-          {/* Left: chips */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <FooterChip>Viewing v{displayVersion}</FooterChip>
-            {pbisLow && (
-              <FooterChip warn>
-                <i className="fa-light fa-triangle-exclamation" aria-hidden="true" />
-                {' '}Low PBI
-              </FooterChip>
-            )}
-            {question.layout && (
-              <FooterChip>{question.layout}</FooterChip>
-            )}
-          </div>
-          {/* Right: actions */}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button variant="outline" size="sm" disabled>
-              Remove from section
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => { onEdit(question.id); onOpenChange(false) }}
-              className="gap-1.5"
-            >
-              <i className="fa-light fa-pen" aria-hidden="true" />
-              Edit question
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" className="gap-1.5">
+            <i className="fa-light fa-circle-minus" aria-hidden="true" />
+            Remove from section
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => { onEdit(question.id); onOpenChange(false) }}
+            className="gap-1.5"
+          >
+            <i className="fa-light fa-pen" aria-hidden="true" />
+            Edit question
+          </Button>
         </div>
       </SheetContent>
     </Sheet>

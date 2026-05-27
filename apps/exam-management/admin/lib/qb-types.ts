@@ -150,6 +150,7 @@ export interface QuestionGradingConfig {
   // Per-question tool overrides
   calculatorOverride?: 'none' | 'basic' | 'scientific'  // undefined = inherit assessment default
   textHighlightOverride?: boolean | null                 // null/undefined = inherit; true = force on; false = force off
+  answerEliminationOverride?: boolean | null             // null/undefined = inherit; true = force on; false = force off
   onScreenKeyboard?: boolean
   referenceMaterials?: ReferenceMaterial[]
 }
@@ -183,6 +184,7 @@ export interface AssessmentReviewRequest {
 export interface DigitalToolsConfig {
   calculator: 'none' | 'basic' | 'scientific'
   textHighlight: boolean
+  answerElimination: boolean              // students can cross out / eliminate answer options
   scratchpad: boolean
   scratchpadFeedback: boolean             // allow faculty to review student scratchpad notes
   allowCopyPaste: boolean
@@ -333,6 +335,7 @@ export function defaultAssessmentSettings(type: AssessmentType = 'Exam'): Assess
     digitalTools: {
       calculator: 'none',
       textHighlight: true,
+      answerElimination: false,
       scratchpad: false,
       scratchpadFeedback: false,
       allowCopyPaste: false,

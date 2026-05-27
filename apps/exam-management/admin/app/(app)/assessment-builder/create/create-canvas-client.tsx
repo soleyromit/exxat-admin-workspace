@@ -3,11 +3,11 @@ import React, { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button, LocalBanner } from '@exxat/ds/packages/ui/src'
 import { useAssessmentDrafts } from '@/lib/assessment-draft-store'
-import { mockCourses, mockCourseOfferings, mockAssessments } from '@/lib/qb-mock-data'
+import { mockCourses, mockCourseOfferings, mockAssessments, MOCK_QB_FOLDERS } from '@/lib/qb-mock-data'
 import type { AssessmentType } from '@/lib/qb-types'
 import { facultyListRows } from '@/lib/faculty-mock-data'
 
-type QuickStart = 'blank' | 'copy' | 'qb'
+type QuickStart = 'blank' | 'copy' | 'qb' | 'pdf'
 
 function getFacultyInitial(fullName: string): string {
   const parts = fullName.trim().split(' ')
@@ -43,17 +43,13 @@ export default function CreateCanvasClient() {
   const [prompt, setPrompt]                 = useState(EXAMPLE_PROMPT)
   const [nameError, setNameError]           = useState('')
   const [copyPickerOpen, setCopyPickerOpen] = useState(false)
+  const [qbPickerOpen, setQbPickerOpen] = useState(false)
+  const [selectedQbFolderIds, setSelectedQbFolderIds] = useState<string[]>([])
+  const [pdfPickerOpen, setPdfPickerOpen] = useState(false)
 
-  // T2-A: primary intent
-  const [primaryIntent, setPrimaryIntent] = useState('')
-
-  // T2-B: blueprint targets
-  const [targetDiff, setTargetDiff] = useState<{ Easy: string; Medium: string; Hard: string }>({ Easy: '', Medium: '', Hard: '' })
-  const [targetType, setTargetType] = useState<{ MCQ: string; MSQ: string; Essay: string }>({ MCQ: '', MSQ: '', Essay: '' })
-  const [blueprintTargetsOpen, setBlueprintTargetsOpen] = useState(false)
-
-  // T2-C: syllabus upload
-  const [syllabusFile, setSyllabusFile] = useState<File | null>(null)
+  // T2-A/B/C retained for sessionStorage persistence — not shown in canvas body
+  const [primaryIntent] = useState('')
+  const [syllabusFile] = useState<File | null>(null)
 
   // Auto-fill name + date from prompt when those fields are still empty
   React.useEffect(() => {
@@ -70,9 +66,16 @@ export default function CreateCanvasClient() {
       return
     }
     setNameError('')
-    // "Copy last year's" — must pick a source first
     if (mode === 'copy' && !sourceId) {
       setCopyPickerOpen(true)
+      return
+    }
+    if (mode === 'qb' && !sourceId) {
+      setQbPickerOpen(true)
+      return
+    }
+    if (mode === 'pdf' && !sourceId) {
+      setPdfPickerOpen(true)
       return
     }
     const draft = addDraft({
@@ -87,17 +90,11 @@ export default function CreateCanvasClient() {
     if (prompt.trim()) {
       try { sessionStorage.setItem(`asmt-creation-prompt-${draft.id}`, prompt.trim()) } catch {}
     }
-    // T2-D: persist new PRD fields alongside the prompt
     try {
       const prdMeta = {
         primaryIntent: primaryIntent.trim() || undefined,
-        targetDiffDistribution: (targetDiff.Easy || targetDiff.Medium || targetDiff.Hard)
-          ? { Easy: parseInt(targetDiff.Easy) || 0, Medium: parseInt(targetDiff.Medium) || 0, Hard: parseInt(targetDiff.Hard) || 0 }
-          : undefined,
-        targetTypeDistribution: (targetType.MCQ || targetType.MSQ || targetType.Essay)
-          ? { MCQ: parseInt(targetType.MCQ) || 0, MSQ: parseInt(targetType.MSQ) || 0, Essay: parseInt(targetType.Essay) || 0 }
-          : undefined,
         syllabusUrl: syllabusFile ? URL.createObjectURL(syllabusFile) : undefined,
+        qbFolderIds: mode === 'qb' && sourceId ? sourceId.split(',') : undefined,
       }
       sessionStorage.setItem(`asmt-creation-prd-${draft.id}`, JSON.stringify(prdMeta))
     } catch { /* quota error — non-fatal */ }
@@ -107,7 +104,9 @@ export default function CreateCanvasClient() {
   }
 
   // All assessments for this course — source candidates for "Copy last year's"
-  const courseAssessments = mockAssessments.filter(a => a.courseId === courseId)
+  // Fall back to all mock assessments when courseId doesn't match (demo/no-course context)
+  const filteredByCourse = mockAssessments.filter(a => a.courseId === courseId)
+  const courseAssessments = filteredByCourse.length > 0 ? filteredByCourse : mockAssessments
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
@@ -116,16 +115,6 @@ export default function CreateCanvasClient() {
         offering={offering}
         name={name}
         onNameChange={v => { setName(v); if (nameError) setNameError('') }}
-        type={type}
-        onTypeChange={setType}
-        date={date}
-        onDateChange={setDate}
-        duration={duration}
-        onDurationChange={setDuration}
-        collaboratorIds={collaboratorIds}
-        onCollaboratorToggle={id => setCollaboratorIds(prev =>
-          prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-        )}
         onDiscard={() => router.back()}
       />
       {nameError && (
@@ -137,19 +126,9 @@ export default function CreateCanvasClient() {
         prompt={prompt}
         onPromptChange={setPrompt}
         onSubmit={handleSubmit}
-        primaryIntent={primaryIntent}
-        onPrimaryIntentChange={setPrimaryIntent}
-        targetDiff={targetDiff}
-        onTargetDiffChange={setTargetDiff}
-        targetType={targetType}
-        onTargetTypeChange={setTargetType}
-        blueprintTargetsOpen={blueprintTargetsOpen}
-        onBlueprintTargetsToggle={() => setBlueprintTargetsOpen(o => !o)}
-        syllabusFile={syllabusFile}
-        onSyllabusFileChange={setSyllabusFile}
       />
 
-      {/* Copy source picker — shown when user clicks "Copy last year's" */}
+      {/* Copy source picker */}
       {copyPickerOpen && (
         <div
           role="dialog"
@@ -158,38 +137,91 @@ export default function CreateCanvasClient() {
           style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.18)' }}
           onClick={e => { if (e.target === e.currentTarget) setCopyPickerOpen(false) }}
         >
-          <div style={{ background: 'var(--background)', border: '1px solid var(--border)', borderRadius: 12, width: 420, maxHeight: '60vh', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 32px rgba(0,0,0,0.14)', overflow: 'hidden' }}>
+          <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, width: 460, maxHeight: '65vh', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 32px rgba(0,0,0,0.14)', overflow: 'hidden' }}>
             <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 14, fontWeight: 600, flex: 1, color: 'var(--foreground)' }}>Copy from a previous assessment</span>
+              <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <i className="fa-light fa-copy" aria-hidden="true" style={{ fontSize: 14, color: 'var(--brand-color)' }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)' }}>Copy a previous assessment</div>
+                <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>Questions and structure will be duplicated as a new draft</div>
+              </div>
               <Button variant="ghost" size="sm" onClick={() => setCopyPickerOpen(false)} aria-label="Close">
                 <i className="fa-light fa-xmark" aria-hidden="true" />
               </Button>
             </div>
             <div style={{ overflowY: 'auto', flex: 1 }}>
               {courseAssessments.length === 0 ? (
-                <p style={{ fontSize: 13, color: 'var(--muted-foreground)', padding: '20px 16px', textAlign: 'center' }}>
+                <p style={{ fontSize: 13, color: 'var(--muted-foreground)', padding: '24px 16px', textAlign: 'center' }}>
                   No previous assessments found for this course.
                 </p>
-              ) : courseAssessments.map(a => (
-                <button
-                  key={a.id}
-                  type="button"
-                  onClick={() => {
-                    setCopyPickerOpen(false)
-                    handleSubmit('copy', a.id)
-                  }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', fontFamily: 'inherit' }}
-                >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)', marginBottom: 2 }}>{a.title}</div>
-                    <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{a.questionCount} questions · {a.durationMinutes} min</div>
-                  </div>
-                  <i className="fa-light fa-copy" aria-hidden="true" style={{ color: 'var(--brand-color)', fontSize: 14 }} />
-                </button>
-              ))}
+              ) : courseAssessments.map(a => {
+                const total = (a.diffDistribution.Easy ?? 0) + (a.diffDistribution.Medium ?? 0) + (a.diffDistribution.Hard ?? 0)
+                const pct = (n: number) => total > 0 ? `${Math.round((n / total) * 100)}%` : '0%'
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => { setCopyPickerOpen(false); handleSubmit('copy', a.id) }}
+                    style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '12px 16px', width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', fontFamily: 'inherit' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 3 }}>{a.title}</div>
+                        <div style={{ display: 'flex', gap: 10, fontSize: 12, color: 'var(--muted-foreground)' }}>
+                          <span><i className="fa-light fa-circle-question" aria-hidden="true" style={{ marginRight: 4 }} />{a.questionCount} questions</span>
+                          <span><i className="fa-light fa-clock" aria-hidden="true" style={{ marginRight: 4 }} />{a.durationMinutes} min</span>
+                        </div>
+                      </div>
+                      <div style={{ padding: '3px 8px', borderRadius: 4, border: '1px solid var(--border)', fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0 }}>
+                        Copy
+                      </div>
+                    </div>
+                    {/* Difficulty bar */}
+                    {total > 0 && (
+                      <div style={{ display: 'flex', height: 4, borderRadius: 2, overflow: 'hidden', gap: 1 }}>
+                        <div style={{ width: pct(a.diffDistribution.Easy), background: 'var(--chart-2)', borderRadius: 2 }} title={`Easy: ${a.diffDistribution.Easy}`} />
+                        <div style={{ width: pct(a.diffDistribution.Medium), background: 'var(--chart-4)', borderRadius: 2 }} title={`Medium: ${a.diffDistribution.Medium}`} />
+                        <div style={{ width: pct(a.diffDistribution.Hard), background: 'var(--chart-1)', borderRadius: 2 }} title={`Hard: ${a.diffDistribution.Hard}`} />
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', gap: 8, fontSize: 11, color: 'var(--muted-foreground)' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--chart-2)', display: 'inline-block' }} />Easy {a.diffDistribution.Easy}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--chart-4)', display: 'inline-block' }} />Med {a.diffDistribution.Medium}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--chart-1)', display: 'inline-block' }} />Hard {a.diffDistribution.Hard}</span>
+                    </div>
+                  </button>
+                )
+              })}
             </div>
           </div>
         </div>
+      )}
+
+      {/* QB folder picker — shown when user clicks "Build from QB" */}
+      {qbPickerOpen && (
+        <QbFolderPicker
+          courseId={courseId}
+          selectedIds={selectedQbFolderIds}
+          onToggle={id => setSelectedQbFolderIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
+          onClose={() => { setQbPickerOpen(false); setSelectedQbFolderIds([]) }}
+          onBuild={() => {
+            setQbPickerOpen(false)
+            const sourceId = selectedQbFolderIds.join(',') || undefined
+            setSelectedQbFolderIds([])
+            handleSubmit('qb', sourceId)
+          }}
+        />
+      )}
+
+      {pdfPickerOpen && (
+        <PdfImportPicker
+          onClose={() => setPdfPickerOpen(false)}
+          onBuild={file => {
+            setPdfPickerOpen(false)
+            handleSubmit('pdf', file.name)
+          }}
+        />
       )}
     </div>
   )
@@ -236,33 +268,14 @@ function ChipPopover({ label, children }: { label: string; children: React.React
 }
 
 function CanvasHeader({
-  course, offering: _offering, name, onNameChange, type, onTypeChange,
-  date, onDateChange, duration, onDurationChange,
-  collaboratorIds, onCollaboratorToggle, onDiscard,
+  course, offering: _offering, name, onNameChange, onDiscard,
 }: {
   course: ReturnType<typeof mockCourses.find>
   offering: ReturnType<typeof mockCourseOfferings.find>
   name: string
   onNameChange: (v: string) => void
-  type: AssessmentType
-  onTypeChange: (v: AssessmentType) => void
-  date: string
-  onDateChange: (v: string) => void
-  duration: number
-  onDurationChange: (v: number) => void
-  collaboratorIds: string[]
-  onCollaboratorToggle: (id: string) => void
   onDiscard: () => void
 }) {
-  const [collabOpen, setCollabOpen] = useState(false)
-  const [collabSearch, setCollabSearch] = useState('')
-
-  const filteredFaculty = facultyListRows.filter(f =>
-    f.status === 'active' &&
-    f.fullName.toLowerCase().includes(collabSearch.toLowerCase())
-  )
-
-  const selectedFaculty = facultyListRows.filter(f => collaboratorIds.includes(f.id))
 
   return (
     <div style={{
@@ -296,166 +309,6 @@ function CanvasHeader({
         }}
       />
 
-      {/* Type chip */}
-      <ChipPopover label={type}>
-        {ASSESSMENT_TYPES.map(t => (
-          <div
-            key={t}
-            role="menuitem"
-            onClick={() => onTypeChange(t)}
-            style={{
-              padding: '6px 10px', fontSize: 13, cursor: 'pointer', borderRadius: 6,
-              background: type === t ? 'var(--muted)' : 'transparent',
-              fontWeight: type === t ? 600 : 400,
-            }}
-          >
-            {t}
-          </div>
-        ))}
-      </ChipPopover>
-
-      {/* Date chip */}
-      <ChipPopover label={date ? new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Date'}>
-        <label style={{ fontSize: 12, color: 'var(--muted-foreground)', display: 'block', marginBottom: 4 }}>
-          Assessment date
-          <input
-            type="date"
-            value={date}
-            onChange={e => onDateChange(e.target.value)}
-            style={{ display: 'block', fontSize: 13, border: '1px solid var(--border)', borderRadius: 6, padding: '4px 8px', fontFamily: 'inherit', width: '100%', marginTop: 4 }}
-          />
-        </label>
-      </ChipPopover>
-
-      {/* Duration chip */}
-      <ChipPopover label={`${duration} min`}>
-        <label style={{ fontSize: 12, color: 'var(--muted-foreground)', display: 'block', marginBottom: 4 }}>
-          Duration (minutes)
-          <input
-            type="number"
-            min={5}
-            step={5}
-            value={duration}
-            onChange={e => onDurationChange(Math.max(5, Number(e.target.value)))}
-            style={{ display: 'block', fontSize: 13, border: '1px solid var(--border)', borderRadius: 6, padding: '4px 8px', fontFamily: 'inherit', width: 100, marginTop: 4 }}
-          />
-        </label>
-      </ChipPopover>
-
-      {/* Collaborator avatar row + picker */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 8, paddingLeft: 8, borderLeft: '1px solid var(--border)' }}>
-        {/* Selected avatars */}
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          {selectedFaculty.slice(0, 5).map((f, i) => (
-            <div
-              key={f.id}
-              title={f.fullName}
-              style={{
-                width: 24, height: 24, borderRadius: '50%',
-                background: AVATAR_COLORS[i % AVATAR_COLORS.length],
-                border: '2px solid var(--background)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 11, fontWeight: 700, color: 'var(--background)',
-                marginRight: i < selectedFaculty.length - 1 ? -6 : 0,
-                zIndex: 5 - i, position: 'relative',
-              }}
-            >
-              {getFacultyInitial(f.fullName)}
-            </div>
-          ))}
-          {selectedFaculty.length > 5 && (
-            <div
-              title={`${selectedFaculty.length - 5} more collaborator${selectedFaculty.length - 5 > 1 ? 's' : ''}`}
-              style={{
-              width: 24, height: 24, borderRadius: '50%',
-              background: 'var(--muted)', border: '2px solid var(--background)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 11, color: 'var(--muted-foreground)', position: 'relative', zIndex: 0,
-            }}>
-              +{selectedFaculty.length - 5}
-            </div>
-          )}
-        </div>
-
-        {/* Add collaborator button + popover */}
-        <div style={{ position: 'relative', marginLeft: 4 }}>
-          <button
-            type="button"
-            onClick={() => setCollabOpen(o => !o)}
-            aria-label="Add collaborator"
-            aria-expanded={collabOpen}
-            style={{
-              width: 24, height: 24, borderRadius: '50%',
-              border: '1.5px dashed var(--border)', background: 'transparent',
-              color: 'var(--muted-foreground)', fontSize: 14,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-          >+</button>
-
-          {collabOpen && (
-            <>
-              <div
-                style={{ position: 'fixed', inset: 0, zIndex: 49 }}
-                onClick={() => { setCollabOpen(false); setCollabSearch('') }}
-              />
-              <div style={{
-                position: 'absolute', top: '100%', left: 0, marginTop: 6,
-                background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 10,
-                boxShadow: '0 4px 16px rgba(0,0,0,0.10)', zIndex: 50, width: 260, overflow: 'hidden',
-              }}>
-                <div style={{ padding: '10px 12px 6px' }}>
-                  <input
-                    autoFocus
-                    value={collabSearch}
-                    onChange={e => setCollabSearch(e.target.value)}
-                    placeholder="Search faculty…"
-                    aria-label="Search faculty"
-                    style={{
-                      width: '100%', fontSize: 13, border: '1px solid var(--border)',
-                      borderRadius: 6, padding: '5px 8px', fontFamily: 'inherit', outline: 'none',
-                    }}
-                  />
-                </div>
-                <div role="menu" style={{ maxHeight: 200, overflowY: 'auto' }}>
-                  {filteredFaculty.length === 0 ? (
-                    <div style={{ padding: '10px 12px', fontSize: 13, color: 'var(--muted-foreground)' }}>No faculty found</div>
-                  ) : filteredFaculty.map((f, i) => {
-                    const isSelected = collaboratorIds.includes(f.id)
-                    return (
-                      <div
-                        key={f.id}
-                        role="menuitem"
-                        onClick={() => onCollaboratorToggle(f.id)}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 10,
-                          padding: '8px 12px', cursor: 'pointer',
-                          background: isSelected ? 'var(--muted)' : 'transparent',
-                        }}
-                      >
-                        <div style={{
-                          width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-                          background: AVATAR_COLORS[i % AVATAR_COLORS.length],
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 11, fontWeight: 700, color: 'var(--background)',
-                        }}>
-                          {getFacultyInitial(f.fullName)}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: isSelected ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.fullName}</div>
-                          <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{f.rank}</div>
-                        </div>
-                        {isSelected && <i className="fa-light fa-check" aria-hidden="true" style={{ color: 'var(--brand-color)', fontSize: 12 }} />}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
       {/* Right actions */}
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ fontSize: 12, color: 'var(--muted-foreground)', background: 'var(--muted)', padding: '2px 9px', borderRadius: 4, border: '1px solid var(--border)' }}>Draft</span>
@@ -465,12 +318,251 @@ function CanvasHeader({
   )
 }
 
+// ─── PDF Import Picker ───────────────────────────────────────────────────────
+
+function PdfImportPicker({
+  onClose, onBuild,
+}: {
+  onClose: () => void
+  onBuild: (file: File) => void
+}) {
+  const [file, setFile] = useState<File | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+  const accept = (f: File | undefined) => {
+    if (f && f.type === 'application/pdf') setFile(f)
+  }
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Build from PDF"
+      style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.18)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, width: 460, display: 'flex', flexDirection: 'column', boxShadow: '0 8px 32px rgba(0,0,0,0.14)', overflow: 'hidden' }}>
+
+        {/* Header */}
+        <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <i className="fa-light fa-file-pdf" aria-hidden="true" style={{ fontSize: 15, color: 'var(--brand-color)' }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)' }}>Build from a PDF</div>
+            <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>Upload a previous exam, syllabus, or question list</div>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close">
+            <i className="fa-light fa-xmark" aria-hidden="true" />
+          </Button>
+        </div>
+
+        {/* Drop zone / file selected */}
+        {!file ? (
+          <div
+            onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={e => { e.preventDefault(); setIsDragging(false); accept(e.dataTransfer.files[0]) }}
+            onClick={() => fileInputRef.current?.click()}
+            style={{
+              margin: '16px',
+              border: `2px dashed ${isDragging ? 'var(--brand-color)' : 'var(--border)'}`,
+              borderRadius: 10, padding: '32px 24px',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+              cursor: 'pointer',
+              background: isDragging ? 'var(--brand-tint)' : 'var(--muted)',
+              transition: 'border-color 0.15s, background 0.15s',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--background)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <i className="fa-light fa-arrow-up-from-bracket" aria-hidden="true" style={{ fontSize: 18, color: 'var(--brand-color)' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)', marginBottom: 3 }}>Drop a PDF here</div>
+              <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>or click to browse · PDF only</div>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,application/pdf"
+              aria-label="Select PDF file"
+              style={{ display: 'none' }}
+              onChange={e => accept(e.target.files?.[0])}
+            />
+          </div>
+        ) : (
+          <div style={{ margin: '16px', padding: '12px 14px', border: '1px solid var(--border)', borderRadius: 10, background: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <i className="fa-light fa-file-pdf" aria-hidden="true" style={{ fontSize: 22, color: 'var(--brand-color)', flexShrink: 0 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</div>
+              <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 2 }}>{(file.size / 1024).toFixed(0)} KB · PDF</div>
+            </div>
+            <button type="button" onClick={() => setFile(null)} aria-label="Remove file" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 4, fontFamily: 'inherit' }}>
+              <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 14 }} />
+            </button>
+          </div>
+        )}
+
+        {/* What AI will extract */}
+        <div style={{ padding: '0 16px 14px' }}>
+          <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted-foreground)', margin: '0 0 8px' }}>AI will extract:</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            {['Section structure and topics', 'Question stems and answer choices', 'Instructions, timing, and preread notes'].map((item, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--muted-foreground)' }}>
+                <i className="fa-light fa-check" aria-hidden="true" style={{ fontSize: 10, color: 'var(--chart-2)', flexShrink: 0 }} />
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end', background: 'var(--card)' }}>
+          <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+          <Button size="sm" onClick={() => { if (file) onBuild(file) }} disabled={!file}>
+            <i className="fa-light fa-arrow-right" aria-hidden="true" />
+            Build from PDF
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── QB Folder Picker ─────────────────────────────────────────────────────────
+
+function QbFolderPicker({
+  courseId, selectedIds, onToggle, onClose, onBuild,
+}: {
+  courseId: string
+  selectedIds: string[]
+  onToggle: (id: string) => void
+  onClose: () => void
+  onBuild: () => void
+}) {
+  // Find the QB root folder for this course — fall back to first course in demo context
+  const course = mockCourses.find(c => c.id === courseId) ?? mockCourses[0]
+  const rootFolderId = course?.questionBankFolderId
+  const rootFolder = MOCK_QB_FOLDERS.find(f => f.id === rootFolderId)
+  // Content areas = direct children of the QB root
+  const contentAreas = MOCK_QB_FOLDERS.filter(f => f.parentId === rootFolderId)
+  const totalSelected = selectedIds.reduce((sum, id) => {
+    const folder = MOCK_QB_FOLDERS.find(f => f.id === id)
+    return sum + (folder?.count ?? 0)
+  }, 0)
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Build from Question Bank"
+      style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.18)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, width: 480, maxHeight: '70vh', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 32px rgba(0,0,0,0.14)', overflow: 'hidden' }}>
+        {/* Header */}
+        <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <i className="fa-light fa-database" aria-hidden="true" style={{ fontSize: 14, color: 'var(--brand-color)' }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)' }}>Build from Question Bank</div>
+            <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
+              {rootFolder?.name ?? 'Question Bank'} · {rootFolder?.count ?? 0} total questions
+            </div>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close">
+            <i className="fa-light fa-xmark" aria-hidden="true" />
+          </Button>
+        </div>
+
+        {/* Instruction */}
+        <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--muted)' }}>
+          <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: 0 }}>
+            Select content areas to include. Questions will be available in the builder — you choose which ones to add.
+          </p>
+        </div>
+
+        {/* Content area list */}
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          {contentAreas.length === 0 ? (
+            <p style={{ fontSize: 13, color: 'var(--muted-foreground)', padding: '24px 16px', textAlign: 'center' }}>
+              No content areas found for this course.
+            </p>
+          ) : contentAreas.map(folder => {
+            const isSelected = selectedIds.includes(folder.id)
+            return (
+              <button
+                key={folder.id}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => onToggle(folder.id)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px',
+                  width: '100%', textAlign: 'left', background: isSelected ? 'var(--brand-tint)' : 'none',
+                  border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                {/* Checkbox indicator */}
+                <div style={{
+                  width: 18, height: 18, borderRadius: 4, flexShrink: 0,
+                  border: isSelected ? 'none' : '1.5px solid var(--border)',
+                  background: isSelected ? 'var(--brand-color)' : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {isSelected && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, color: 'var(--primary-foreground)' }} />}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: isSelected ? 600 : 400, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {folder.name}
+                  </div>
+                  {folder.isPrivateSpace && (
+                    <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+                      <i className="fa-light fa-lock" aria-hidden="true" style={{ marginRight: 3 }} />
+                      Private space
+                    </div>
+                  )}
+                </div>
+                <div style={{
+                  fontSize: 12, fontWeight: 500,
+                  color: isSelected ? 'var(--brand-color)' : 'var(--muted-foreground)',
+                  flexShrink: 0,
+                }}>
+                  {folder.count} Q
+                </div>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, background: 'var(--card)' }}>
+          <div style={{ flex: 1, fontSize: 12, color: 'var(--muted-foreground)' }}>
+            {selectedIds.length > 0
+              ? <><span style={{ fontWeight: 600, color: 'var(--foreground)' }}>{selectedIds.length}</span> area{selectedIds.length !== 1 ? 's' : ''} · <span style={{ fontWeight: 600, color: 'var(--foreground)' }}>{totalSelected}</span> questions</>
+              : 'Select at least one content area'
+            }
+          </div>
+          <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+          <Button size="sm" onClick={onBuild} disabled={selectedIds.length === 0}>
+            <i className="fa-light fa-arrow-right" aria-hidden="true" />
+            Build assessment
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── CanvasBody ───────────────────────────────────────────────────────────────
 
-const QUICK_STARTS: { id: QuickStart; label: string }[] = [
-  { id: 'blank', label: 'Blank start' },
-  { id: 'copy',  label: "Copy last year's" },
-  { id: 'qb',   label: 'Build from QB' },
+const QUICK_STARTS: { id: QuickStart; label: string; icon: string }[] = [
+  { id: 'blank', label: 'Blank start',     icon: 'fa-file-plus' },
+  { id: 'copy',  label: "Copy last year's", icon: 'fa-copy' },
+  { id: 'qb',   label: 'From QB',          icon: 'fa-database' },
+  { id: 'pdf',  label: 'Import PDF',       icon: 'fa-file-pdf' },
 ]
 
 // ─── Prompt parser ────────────────────────────────────────────────────────────
@@ -523,29 +615,11 @@ Pre-exam setup:
 
 function CanvasBody({
   prompt, onPromptChange, onSubmit,
-  primaryIntent, onPrimaryIntentChange,
-  targetDiff, onTargetDiffChange,
-  targetType, onTargetTypeChange,
-  blueprintTargetsOpen, onBlueprintTargetsToggle,
-  syllabusFile, onSyllabusFileChange,
 }: {
   prompt: string
   onPromptChange: (v: string) => void
   onSubmit: (mode: QuickStart) => void
-  primaryIntent: string
-  onPrimaryIntentChange: (v: string) => void
-  targetDiff: { Easy: string; Medium: string; Hard: string }
-  onTargetDiffChange: (v: { Easy: string; Medium: string; Hard: string }) => void
-  targetType: { MCQ: string; MSQ: string; Essay: string }
-  onTargetTypeChange: (v: { MCQ: string; MSQ: string; Essay: string }) => void
-  blueprintTargetsOpen: boolean
-  onBlueprintTargetsToggle: () => void
-  syllabusFile: File | null
-  onSyllabusFileChange: (f: File | null) => void
 }) {
-  const diffSum = (parseInt(targetDiff.Easy) || 0) + (parseInt(targetDiff.Medium) || 0) + (parseInt(targetDiff.Hard) || 0)
-  const typeSum = (parseInt(targetType.MCQ) || 0) + (parseInt(targetType.MSQ) || 0) + (parseInt(targetType.Essay) || 0)
-
   return (
     <div style={{
       flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -563,28 +637,8 @@ function CanvasBody({
           What should this look like?
         </h2>
         <p style={{ fontSize: 13, color: 'var(--muted-foreground)', margin: '0 0 20px', lineHeight: 1.5 }}>
-          Describe sections, topics, faculty, timing.<br />Or pick a starting point below.
+          Describe sections, topics, faculty, and timing — or choose a starting point below.
         </p>
-
-        {/* T2-A: Primary intent field */}
-        <div style={{ marginBottom: 12, textAlign: 'left' }}>
-          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)', display: 'block', marginBottom: 4 }}>
-            What is this exam evaluating?
-            <span style={{ fontWeight: 400, color: 'var(--muted-foreground)', marginLeft: 6 }}>(optional)</span>
-          </label>
-          <textarea
-            aria-label="Primary exam intent"
-            value={primaryIntent}
-            onChange={e => onPrimaryIntentChange(e.target.value.slice(0, 280))}
-            placeholder="e.g. Evaluating foundational knowledge of cardiovascular pharmacology"
-            rows={2}
-            maxLength={280}
-            style={{ width: '100%', fontSize: 13, lineHeight: 1.5, padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
-            onFocus={e => { e.currentTarget.style.borderColor = 'var(--ring)'; e.currentTarget.style.boxShadow = '0 0 0 2px var(--ring)' }}
-            onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
-          />
-          <p role="status" aria-live="polite" style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 3, textAlign: 'right' }}>{primaryIntent.length}/280</p>
-        </div>
 
         {/* Prompt box */}
         <div style={{
@@ -595,21 +649,41 @@ function CanvasBody({
           <textarea
             value={prompt}
             onChange={e => onPromptChange(e.target.value)}
-            placeholder='e.g. "3 sections, 20 Q each — Cardiovascular Pharm, Renal, Clinical Application. Assign Mehra, Patel, Kim. 90 min, proctored, tech check on."'
-            rows={10}
+            placeholder='e.g. "3 sections, 20 Q each — Cardiovascular Pharm, Renal, Clinical Application. Assign Dr. Mehra, Patel, Kim. 90 min, proctored, tech check on."'
+            rows={12}
             aria-label="Describe assessment structure"
             style={{
               width: '100%', fontSize: 13, color: 'var(--foreground)',
-              padding: '13px 16px 8px', lineHeight: 1.55,
+              padding: '14px 16px 10px', lineHeight: 1.6,
               border: 'none', outline: 'none', resize: 'none',
               background: 'transparent', fontFamily: 'inherit',
               boxSizing: 'border-box',
             }}
           />
+          {/* Footer: quick-start actions + submit */}
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
+            display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px',
             borderTop: '1px solid var(--border)', background: 'var(--muted)',
           }}>
+            {/* Quick-start pills — left */}
+            {QUICK_STARTS.map(qs => (
+              <button
+                key={qs.id}
+                type="button"
+                onClick={() => onSubmit(qs.id)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  fontSize: 12, padding: '4px 11px', borderRadius: 20,
+                  border: '1px solid var(--border)', background: 'var(--background)',
+                  color: 'var(--foreground)', cursor: 'pointer', fontFamily: 'inherit',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <i className={`fa-light ${qs.icon}`} aria-hidden="true" style={{ fontSize: 11, color: 'var(--muted-foreground)' }} />
+                {qs.label}
+              </button>
+            ))}
+            {/* Submit — right */}
             <button
               type="button"
               onClick={() => onSubmit('blank')}
@@ -617,119 +691,12 @@ function CanvasBody({
               style={{
                 marginLeft: 'auto', width: 30, height: 30, borderRadius: 8,
                 background: 'var(--foreground)', border: 'none', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               }}
             >
               <svg viewBox="0 0 16 16" fill="white" width="13" height="13" aria-hidden="true"><path d="M14.5 8L2 14l2.5-6L2 2z"/></svg>
             </button>
           </div>
-        </div>
-
-        {/* T2-B: Blueprint targets (collapsible) */}
-        <div style={{ marginTop: 12, textAlign: 'left' }}>
-          <button
-            type="button"
-            onClick={onBlueprintTargetsToggle}
-            aria-expanded={blueprintTargetsOpen}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', fontSize: 12, padding: '2px 0', fontFamily: 'inherit' }}
-          >
-            <i className={`fa-light ${blueprintTargetsOpen ? 'fa-chevron-down' : 'fa-chevron-right'}`} aria-hidden="true" style={{ fontSize: 10 }} />
-            Blueprint targets
-          </button>
-
-          {blueprintTargetsOpen && (
-            <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {/* Difficulty row */}
-              <div>
-                <p style={{ fontSize: 11, color: 'var(--muted-foreground)', marginBottom: 4 }}>Difficulty</p>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {(['Easy', 'Medium', 'Hard'] as const).map(diff => (
-                    <div key={diff} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)' }}>
-                      <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{diff}</span>
-                      <input
-                        type="number"
-                        min={0}
-                        max={100}
-                        value={targetDiff[diff]}
-                        onChange={e => onTargetDiffChange({ ...targetDiff, [diff]: e.target.value })}
-                        aria-label={`Target ${diff} percentage`}
-                        style={{ width: 40, fontSize: 12, border: 'none', background: 'transparent', outline: 'none', color: 'var(--foreground)', fontFamily: 'inherit', textAlign: 'right' }}
-                      />
-                      <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>%</span>
-                    </div>
-                  ))}
-                </div>
-                {diffSum > 100 && (
-                  <p style={{ fontSize: 11, color: 'var(--destructive)', marginTop: 4 }}>Sum exceeds 100%</p>
-                )}
-              </div>
-
-              {/* Type row */}
-              <div>
-                <p style={{ fontSize: 11, color: 'var(--muted-foreground)', marginBottom: 4 }}>Question type</p>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {(['MCQ', 'MSQ', 'Essay'] as const).map(qt => (
-                    <div key={qt} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)' }}>
-                      <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{qt}</span>
-                      <input
-                        type="number"
-                        min={0}
-                        max={100}
-                        value={targetType[qt]}
-                        onChange={e => onTargetTypeChange({ ...targetType, [qt]: e.target.value })}
-                        aria-label={`Target ${qt} percentage`}
-                        style={{ width: 40, fontSize: 12, border: 'none', background: 'transparent', outline: 'none', color: 'var(--foreground)', fontFamily: 'inherit', textAlign: 'right' }}
-                      />
-                      <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>%</span>
-                    </div>
-                  ))}
-                </div>
-                {typeSum > 100 && (
-                  <p style={{ fontSize: 11, color: 'var(--destructive)', marginTop: 4 }}>Sum exceeds 100%</p>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* T2-C: Syllabus upload */}
-        <div style={{ marginTop: 8, textAlign: 'left' }}>
-          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)', display: 'block', marginBottom: 4 }}>
-            Attach syllabus <span style={{ fontWeight: 400, color: 'var(--muted-foreground)' }}>(optional, PDF)</span>
-          </label>
-          {syllabusFile ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--muted)' }}>
-              <i className="fa-light fa-file-pdf" aria-hidden="true" style={{ color: 'var(--brand-color)', fontSize: 14 }} />
-              <span style={{ fontSize: 12, color: 'var(--foreground)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{syllabusFile.name}</span>
-              <button type="button" onClick={() => onSyllabusFileChange(null)} aria-label="Remove syllabus" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 2, fontFamily: 'inherit' }}>
-                <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 12 }} />
-              </button>
-            </div>
-          ) : (
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', border: '1px dashed var(--border)', borderRadius: 6, cursor: 'pointer', color: 'var(--muted-foreground)', fontSize: 12 }}>
-              <i className="fa-light fa-arrow-up-from-bracket" aria-hidden="true" />
-              <span>Click to upload PDF</span>
-              <input type="file" accept=".pdf" aria-label="Upload syllabus PDF" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) onSyllabusFileChange(f) }} />
-            </label>
-          )}
-        </div>
-
-        {/* Quick-start chips */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16, flexWrap: 'wrap' }}>
-          {QUICK_STARTS.map(qs => (
-            <button
-              key={qs.id}
-              type="button"
-              onClick={() => onSubmit(qs.id)}
-              style={{
-                fontSize: 12, padding: '5px 14px', borderRadius: 20,
-                border: '1px solid var(--border)', background: 'var(--background)',
-                cursor: 'pointer', fontFamily: 'inherit', color: 'var(--foreground)',
-              }}
-            >
-              {qs.label}
-            </button>
-          ))}
         </div>
       </div>
     </div>

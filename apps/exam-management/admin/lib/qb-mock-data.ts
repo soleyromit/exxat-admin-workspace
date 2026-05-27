@@ -156,6 +156,22 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     folder: 'phar101-antibiotics', folderPath: 'PHAR101 QB / Antibiotics & Antimicrobials',
     tags: ['MRSA', 'resistance', 'beta-lactam'], usage: 0, pbis: null, pbisDir: null,
     creator: 'persona-chen', lastEditedBy: 'persona-chen', usedInSections: [],
+    layout: 'stacked' as const,
+    stemText: 'A 52-year-old patient is admitted with a wound infection that fails to improve on nafcillin. Blood cultures return positive for Staphylococcus aureus with reported methicillin resistance. Which of the following best explains the primary mechanism of resistance in MRSA?',
+    options: [
+      { key: 'A', text: 'Production of PBP2a (mecA-encoded), an altered penicillin-binding protein with low beta-lactam affinity', isCorrect: true, rationaleAuthor: 'Dr. S. Chen', rationale: 'MRSA acquires the mecA gene encoding PBP2a, which has dramatically reduced affinity for all beta-lactams including methicillin. Transpeptidase function is preserved via PBP2a, bypassing the drug target entirely — true target alteration.' },
+      { key: 'B', text: 'Overexpression of efflux pumps (MexAB-OprM) that actively expel beta-lactam molecules', isCorrect: false, rationale: 'MexAB-OprM efflux is primarily a Pseudomonas aeruginosa resistance mechanism. MRSA does not rely significantly on efflux for beta-lactam resistance — mecA target alteration is the dominant mechanism.' },
+      { key: 'C', text: 'Inducible beta-lactamase production that hydrolyzes the beta-lactam ring before it can bind PBP', isCorrect: false, rationale: 'Beta-lactamase (blaZ) does exist in some S. aureus, but it does not explain MRSA-level resistance. Beta-lactamase-stable drugs like nafcillin overcome this. MRSA resistance is mecA-mediated, not blaZ-mediated.' },
+      { key: 'D', text: 'Loss of outer membrane porin channels preventing beta-lactam entry into the bacterial cell', isCorrect: false, rationale: 'Porin loss is a gram-negative resistance strategy (e.g., Klebsiella, Pseudomonas). Gram-positive organisms like S. aureus lack an outer membrane, so porin-based exclusion is mechanistically impossible.' },
+    ],
+    correctness: 61,
+    avgTimeSeconds: 108,
+    totalAttempts: 0,
+    optionDistribution: [],
+    versionHistory: [
+      { version: 1, modifiedBy: 'Dr. S. Chen', date: '2026-03-15', isOriginal: true, changes: [], usedInAssessments: [] },
+    ],
+    collaborators: [{ personaId: 'persona-chen', role: 'owner' as const }],
   },
   {
     id: 'q-003', code: 'PH-ANT-003', version: 2, age: '1 year',
@@ -249,6 +265,28 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     discriminationIndex: 0.32,
     creator: 'persona-admin', lastEditedBy: 'persona-admin',
     usedInSections: ['Midterm 2024'],
+    layout: 'stacked' as const,
+    stemText: 'A 67-year-old patient with hypertension and known bilateral renal artery stenosis presents for medication review. Her current regimen includes amlodipine 10 mg and hydrochlorothiazide 25 mg. Which of the following antihypertensive classes should be specifically avoided in this patient?',
+    options: [
+      { key: 'A', text: 'ACE inhibitors (e.g., lisinopril)', isCorrect: true, rationaleAuthor: 'Dr. Admin', rationale: 'ACE inhibitors — and ARBs — are contraindicated in bilateral renal artery stenosis. Both kidneys rely on angiotensin II to maintain efferent arteriolar tone and glomerular filtration pressure. Blocking angiotensin II drops GFR precipitously, causing acute kidney injury. This is a high-yield contraindication.' },
+      { key: 'B', text: 'Dihydropyridine calcium channel blockers (e.g., amlodipine)', isCorrect: false, rationale: 'Calcium channel blockers are safe and commonly used in bilateral renal artery stenosis. They reduce peripheral vascular resistance without affecting the renin-angiotensin system, so they do not precipitate the AKI seen with ACE inhibitors.' },
+      { key: 'C', text: 'Thiazide diuretics (e.g., hydrochlorothiazide)', isCorrect: false, rationale: 'Thiazides are generally safe in bilateral renal artery stenosis, though efficacy may be reduced in advanced renal insufficiency (eGFR < 30). They do not block the angiotensin II-dependent GFR preservation mechanism.' },
+      { key: 'D', text: 'Beta-blockers (e.g., metoprolol)', isCorrect: false, rationale: 'Beta-blockers reduce renin secretion (via β1 blockade) and are appropriate in bilateral renal artery stenosis. They do not cause the acute efferent arteriolar vasodilation that leads to GFR collapse seen with ACE inhibitors.' },
+    ],
+    correctness: 74,
+    avgTimeSeconds: 72,
+    totalAttempts: 312,
+    optionDistribution: [
+      { key: 'A', count: 231 },
+      { key: 'B', count: 34 },
+      { key: 'C', count: 29 },
+      { key: 'D', count: 18 },
+    ],
+    versionHistory: [
+      { version: 2, modifiedBy: 'Dr. Admin', date: '2025-11-20', changes: ['Expanded clinical stem with patient context; added distractor rationales'], usedInAssessments: ['Midterm 2024'] },
+      { version: 1, modifiedBy: 'Dr. Admin', date: '2025-06-01', isOriginal: true, changes: [], usedInAssessments: [] },
+    ],
+    collaborators: [{ personaId: 'persona-admin', role: 'owner' as const }, { personaId: 'persona-patel', role: 'edit' as const }],
   },
   {
     id: 'q-007', code: 'PH-CV-002', version: 2, age: '5 months',
@@ -299,6 +337,21 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     folder: 'phar101-cardio', folderPath: 'PHAR101 QB / Cardiovascular Drugs',
     tags: ['GLP-1', 'pharmacokinetics', 'diabetes'], usage: 0, pbis: null, pbisDir: null,
     creator: 'persona-chen', lastEditedBy: 'persona-chen', usedInSections: [],
+    layout: 'stacked' as const,
+    stemText: 'A 72-year-old patient with type 2 diabetes (HbA1c 9.2%) and stage 3b CKD (eGFR 32 mL/min) is being evaluated for GLP-1 receptor agonist therapy. Which of the following statements best describes the pharmacokinetic considerations for GLP-1 agonists in this patient?',
+    options: [
+      { key: 'A', text: 'Semaglutide requires significant dose reduction in moderate CKD because it is primarily eliminated renally via glomerular filtration', isCorrect: false, rationale: 'Incorrect. Semaglutide is primarily metabolized by proteolysis, not renal excretion. Clinical data show no clinically meaningful difference in exposure across renal function stages, including ESRD, making dose adjustment unnecessary.' },
+      { key: 'B', text: 'GLP-1 agonists as a class are contraindicated when eGFR falls below 45 mL/min due to accumulation risk', isCorrect: false, rationale: 'This statement incorrectly generalizes across a heterogeneous drug class. Semaglutide is approved without renal dosing restrictions; exenatide (immediate-release) should be avoided below eGFR 30. Class-level contraindication does not apply.' },
+      { key: 'C', text: 'Longer-acting agents like once-weekly semaglutide have similar pharmacokinetic profiles in CKD patients versus those with normal renal function, requiring no dose adjustment', isCorrect: true, rationaleAuthor: 'Dr. S. Chen', rationale: 'Semaglutide undergoes proteolytic degradation with small peptide fragments excreted renally. Phase 3 data in patients with severe CKD (including ESRD) showed no clinically significant difference in exposure. FDA label does not require renal dose adjustment for semaglutide.' },
+      { key: 'D', text: 'All GLP-1 agonists carry equivalent risk of worsening acute kidney injury due to reduced renal perfusion from GI-mediated volume depletion', isCorrect: false, rationale: 'While GI side effects (nausea, vomiting, diarrhea) can cause dehydration and theoretically reduce renal perfusion, the cardiovascular outcome trials (SUSTAIN, LEADER) showed either neutral or protective renal effects for semaglutide and liraglutide. Blanket "equivalent risk" is not supported.' },
+    ],
+    correctness: null,
+    avgTimeSeconds: null,
+    totalAttempts: 0,
+    versionHistory: [
+      { version: 1, modifiedBy: 'Dr. S. Chen', date: '2026-04-28', isOriginal: true, changes: [], usedInAssessments: [] },
+    ],
+    collaborators: [{ personaId: 'persona-chen', role: 'owner' as const }],
   },
   {
     id: 'q-019', code: 'PH-CNS-001', version: 1, age: '3 weeks',
@@ -307,6 +360,22 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     folder: 'phar101-cns', folderPath: 'PHAR101 QB / CNS & Psychotropics',
     tags: ['psychosis', 'treatment-algorithm'], usage: 0, pbis: null, pbisDir: null,
     creator: 'persona-chen', lastEditedBy: 'persona-chen', usedInSections: [],
+    layout: 'stacked' as const,
+    stemText: 'A 22-year-old male is brought to the emergency department by his family after a 3-week history of increasingly disorganized speech, auditory hallucinations, and social withdrawal. He has no prior psychiatric history, denies substance use, and medical workup is unremarkable. Design a pharmacological treatment algorithm for this first-episode psychosis, addressing agent selection, dosing rationale, monitoring parameters, and criteria for treatment response at 6 weeks.',
+    minWordCount: 400,
+    rubric: [
+      { criterion: 'Appropriate antipsychotic selection (atypical preferred, named agent with rationale)', points: 3 },
+      { criterion: 'Starting dose, titration strategy, and rationale for low-dose initiation in first episode', points: 3 },
+      { criterion: 'Monitoring plan: EPS, metabolic panel, prolactin, QTc — frequency specified', points: 2 },
+      { criterion: 'Defines response criteria (≥20–50% symptom reduction on validated scale) and timeline', points: 2 },
+    ],
+    correctness: null,
+    avgTimeSeconds: null,
+    totalAttempts: 0,
+    versionHistory: [
+      { version: 1, modifiedBy: 'Dr. S. Chen', date: '2026-05-06', isOriginal: true, changes: [], usedInAssessments: [] },
+    ],
+    collaborators: [{ personaId: 'persona-chen', role: 'owner' as const }],
   },
   {
     id: 'q-020', code: 'PH-CNS-002', version: 1, age: '5 days',
@@ -315,6 +384,21 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     folder: 'phar101-cns', folderPath: 'PHAR101 QB / CNS & Psychotropics',
     tags: ['antipsychotics', 'EPS', 'receptor'], usage: 0, pbis: null, pbisDir: null,
     creator: 'persona-thompson', lastEditedBy: 'persona-thompson', usedInSections: [],
+    layout: 'stacked' as const,
+    stemText: 'A patient on haloperidol develops acute dystonia on day 2 of treatment. His treatment is changed to quetiapine without recurrence. Which of the following best explains the lower risk of extrapyramidal side effects (EPS) with second-generation antipsychotics compared to first-generation agents?',
+    options: [
+      { key: 'A', text: 'Second-generation antipsychotics have lower overall CNS penetration, reducing nigrostriatal D2 receptor blockade', isCorrect: false, rationale: 'SGAs penetrate the CNS effectively — many have high lipophilicity. The difference is not overall penetration but regional receptor binding selectivity and the ratio of D2 to serotonin 5-HT2A blockade.' },
+      { key: 'B', text: 'They preferentially bind limbic over striatal D2 receptors, reducing nigrostriatal motor pathway blockade', isCorrect: false, rationale: 'Limbic selectivity is partially true for some agents but is not the primary explanation for the reduced EPS. The dominant pharmacological explanation is the concurrent 5-HT2A antagonism, which modulates dopamine release in the striatum.' },
+      { key: 'C', text: 'Concurrent 5-HT2A antagonism increases dopamine release in the nigrostriatal pathway, attenuating D2 blockade-induced EPS', isCorrect: true, rationaleAuthor: 'Dr. R. Thompson', rationale: '5-HT2A receptors on nigrostriatal dopaminergic neurons inhibit dopamine release. Blocking 5-HT2A disinhibits dopamine release in the striatum, partially counteracting D2 antagonism. This preserves motor function while maintaining antipsychotic efficacy. This is the core pharmacological rationale for the SGA EPS advantage.' },
+      { key: 'D', text: 'They act as partial agonists at D2 receptors rather than full antagonists, allowing residual dopaminergic tone', isCorrect: false, rationale: 'Partial D2 agonism is specific to aripiprazole and brexpiprazole — not a class-wide property of SGAs. Quetiapine, olanzapine, and risperidone are D2 antagonists. The partial agonist mechanism does contribute to low EPS for aripiprazole specifically, but is not the explanation for the class difference.' },
+    ],
+    correctness: null,
+    avgTimeSeconds: null,
+    totalAttempts: 0,
+    versionHistory: [
+      { version: 1, modifiedBy: 'Dr. R. Thompson', date: '2026-05-22', isOriginal: true, changes: [], usedInAssessments: [] },
+    ],
+    collaborators: [{ personaId: 'persona-thompson', role: 'owner' as const }],
   },
   {
     id: 'q-021', code: 'SK-EL-001', version: 1, age: '2 days',
@@ -323,6 +407,22 @@ export const MOCK_QB_QUESTIONS: Question[] = [
     folder: 'skel101-elbow', folderPath: 'SKEL101 QB / Elbow & Forearm',
     tags: ['UCL', 'elbow', 'throwing'], usage: 0, pbis: null, pbisDir: null,
     creator: 'persona-kim', lastEditedBy: 'persona-kim', usedInSections: [],
+    layout: 'stacked' as const,
+    stemText: 'Describe the biomechanical forces acting on the anterior bundle of the ulnar collateral ligament (UCL) during the late cocking and acceleration phases of overhead throwing. In your response, explain the valgus stress mechanism, the role of the flexor-pronator mass as a dynamic stabilizer, and the clinical consequence of chronic repetitive loading in overhead athletes.',
+    minWordCount: 250,
+    rubric: [
+      { criterion: 'Accurately describes valgus torque at the medial elbow during late cocking (peak valgus stress phase)', points: 3 },
+      { criterion: 'Explains flexor-pronator mass co-contraction as a secondary stabilizer reducing UCL load', points: 2 },
+      { criterion: 'Links repetitive micro-trauma to progressive UCL attenuation and eventual partial/complete tear', points: 2 },
+      { criterion: 'Uses appropriate biomechanical and anatomical terminology throughout', points: 1 },
+    ],
+    correctness: null,
+    avgTimeSeconds: null,
+    totalAttempts: 0,
+    versionHistory: [
+      { version: 1, modifiedBy: 'Dr. M. Kim', date: '2026-05-25', isOriginal: true, changes: [], usedInAssessments: [] },
+    ],
+    collaborators: [{ personaId: 'persona-kim', role: 'owner' as const }],
   },
   {
     id: 'q-008', code: 'BI-MEM-001', version: 5, age: '2 years',
@@ -1014,14 +1114,14 @@ export const mockCourseOfferings: CourseOffering[] = [
 ]
 
 export const mockAssessments: Assessment[] = [
-  { id: 'asmt-001', courseId: 'course-phar101', offeringId: 'offering-phar101-f25', title: 'Midterm Exam',  questionCount: 40, diffDistribution: { Easy: 10, Medium: 20, Hard: 10 }, durationMinutes: 90  },
-  { id: 'asmt-002', courseId: 'course-phar101', offeringId: 'offering-phar101-f25', title: 'Final Exam',   questionCount: 60, diffDistribution: { Easy: 15, Medium: 25, Hard: 20 }, durationMinutes: 150 },
-  { id: 'asmt-003', courseId: 'course-biol201', offeringId: 'offering-biol201-f25', title: 'Unit 1 Quiz',  questionCount: 20, diffDistribution: { Easy: 8,  Medium: 8,  Hard: 4  }, durationMinutes: 30  },
+  { id: 'asmt-001', courseId: 'course-phar101', offeringId: 'offering-phar101-f25', title: 'Cardiovascular & Renal Pharmacology Midterm', questionCount: 40, diffDistribution: { Easy: 10, Medium: 20, Hard: 10 }, durationMinutes: 90  },
+  { id: 'asmt-002', courseId: 'course-phar101', offeringId: 'offering-phar101-f25', title: 'Pharmacology I — Comprehensive Final',          questionCount: 60, diffDistribution: { Easy: 15, Medium: 25, Hard: 20 }, durationMinutes: 150 },
+  { id: 'asmt-003', courseId: 'course-biol201', offeringId: 'offering-biol201-f25', title: 'Cell Membrane & Transport Quiz',                 questionCount: 20, diffDistribution: { Easy: 8,  Medium: 8,  Hard: 4  }, durationMinutes: 30  },
   // Previous-term assessments (Spring 2025) — used as copy sources in the Create Assessment modal
-  { id: 'asmt-004', courseId: 'course-phar101', offeringId: 'offering-phar101-sp25', title: 'Midterm 1 — Spring 2025',      questionCount: 42, diffDistribution: { Easy: 12, Medium: 22, Hard: 8  }, durationMinutes: 90  },
-  { id: 'asmt-005', courseId: 'course-phar101', offeringId: 'offering-phar101-sp25', title: 'Final Exam — Spring 2025',      questionCount: 58, diffDistribution: { Easy: 14, Medium: 26, Hard: 18 }, durationMinutes: 150 },
-  { id: 'asmt-006', courseId: 'course-biol201', offeringId: 'offering-biol201-sp25', title: 'Midterm — Spring 2025',         questionCount: 35, diffDistribution: { Easy: 10, Medium: 18, Hard: 7  }, durationMinutes: 75  },
-  { id: 'asmt-007', courseId: 'course-biol201', offeringId: 'offering-biol201-sp25', title: 'Lab Practical — Spring 2025',   questionCount: 25, diffDistribution: { Easy: 5,  Medium: 12, Hard: 8  }, durationMinutes: 45  },
+  { id: 'asmt-004', courseId: 'course-phar101', offeringId: 'offering-phar101-sp25', title: 'ANS & Cardiovascular Drugs Midterm — Sp 2025',  questionCount: 42, diffDistribution: { Easy: 12, Medium: 22, Hard: 8  }, durationMinutes: 90  },
+  { id: 'asmt-005', courseId: 'course-phar101', offeringId: 'offering-phar101-sp25', title: 'Pharmacology I Final — Sp 2025',                questionCount: 58, diffDistribution: { Easy: 14, Medium: 26, Hard: 18 }, durationMinutes: 150 },
+  { id: 'asmt-006', courseId: 'course-biol201', offeringId: 'offering-biol201-sp25', title: 'Genetics & Cell Division Midterm — Sp 2025',    questionCount: 35, diffDistribution: { Easy: 10, Medium: 18, Hard: 7  }, durationMinutes: 75  },
+  { id: 'asmt-007', courseId: 'course-biol201', offeringId: 'offering-biol201-sp25', title: 'Cell Biology Lab Practical — Sp 2025',          questionCount: 25, diffDistribution: { Easy: 5,  Medium: 12, Hard: 8  }, durationMinutes: 45  },
 ]
 
 // ─── Health flag helpers ──────────────────────────────────────────────────────

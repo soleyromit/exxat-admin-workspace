@@ -10,7 +10,10 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
   Checkbox,
   LocalBanner,
+  Skeleton,
   useSidebar,
+  Avatar, AvatarFallback, AvatarGroup,
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@exxat/ds/packages/ui/src'
 import { mockCourses, mockCourseOfferings, mockAssessments, MOCK_QB_QUESTIONS, MOCK_QB_FOLDERS } from '@/lib/qb-mock-data'
 import { PERSONAS } from '@/lib/personas'
@@ -135,7 +138,7 @@ export default function AssessmentBuilderClient() {
   // builder lands ready instead of empty.
   const urlCourseId = searchParams?.get('courseId') ?? null
   const urlDraftId = searchParams?.get('draftId') ?? null
-  const urlMode = (searchParams?.get('mode') ?? null) as 'blank' | 'qb' | 'copy' | null
+  const urlMode = (searchParams?.get('mode') ?? null) as 'blank' | 'qb' | 'copy' | 'pdf' | null
   const urlSourceId = searchParams?.get('sourceId') ?? null
 
   const initialCourseId = urlCourseId ?? mockCourses[0]?.id ?? ''
@@ -745,75 +748,118 @@ export default function AssessmentBuilderClient() {
     return Math.min(100, Math.round((sec.questionIds.length / target) * 100))
   }
 
-  // ── Scene 2: AI building animation ─────────────────────────────────────────
+  // ── Scene 2: AI building skeleton ──────────────────────────────────────────
   if (builderState === 'building') {
     const buildingTitle = localDrafts.find(d => d.id === urlDraftId)?.title ?? 'New Assessment'
     const buildingPrompt = (() => { try { return sessionStorage.getItem(`asmt-creation-prompt-${urlDraftId}`) ?? '' } catch { return '' } })()
     const previewSections = parseSectionsFromPrompt(buildingPrompt)
+    const sectionList = previewSections.length > 0 ? previewSections : ['Section 1', 'Section 2', 'Section 3']
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
         <h1 className="sr-only">Building assessment</h1>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', padding: '0 16px', height: 52, borderBottom: '1px solid var(--border)', background: 'var(--card)', flexShrink: 0, gap: 8 }}>
-          <span className="text-xs text-muted-foreground">← {currentCourse?.code ?? 'Back'}</span>
-          <span style={{ color: 'var(--border)', fontSize: 14 }}>/</span>
+
+        {/* Header skeleton */}
+        <div style={{ display: 'flex', alignItems: 'center', padding: '0 16px', height: 52, borderBottom: '1px solid var(--border)', background: 'var(--card)', flexShrink: 0, gap: 10 }}>
+          <Skeleton className="h-4 w-14" />
+          <span style={{ color: 'var(--border)' }}>/</span>
           <span className="text-sm font-semibold text-foreground">{buildingTitle}</span>
-          <div style={{ marginLeft: 'auto' }}>
-            <Badge variant="secondary" style={{ fontSize: 12 }}>Building…</Badge>
+          <div style={{ display: 'flex', gap: 6, marginLeft: 8 }}>
+            <Skeleton className="h-6 w-14 rounded-full" />
+            <Skeleton className="h-6 w-20 rounded-full" />
+            <Skeleton className="h-6 w-16 rounded-full" />
+          </div>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <Skeleton className="h-5 w-16" />
+            <Skeleton className="h-7 w-20 rounded-md" />
+            <Skeleton className="h-7 w-24 rounded-md" />
           </div>
         </div>
+
         {/* Progress bar */}
-        <div style={{ height: 3, background: 'var(--muted)' }}>
-          <div style={{ height: '100%', background: 'var(--brand-color)', width: '60%', transition: 'width 2s ease' }} />
+        <div style={{ height: 2, background: 'var(--muted)', flexShrink: 0 }}>
+          <div style={{ height: '100%', background: 'var(--brand-color)', width: '60%', transition: 'width 2.5s ease' }} />
         </div>
+
+        {/* Tab bar skeleton */}
+        <div style={{ height: 40, borderBottom: '1px solid var(--border)', background: 'var(--card)', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 2, padding: '0 16px' }}>
+          {[10, 16, 16].map((w, i) => (
+            <div key={i} style={{ height: 28, display: 'flex', alignItems: 'center', padding: '0 14px', borderRadius: 6, background: i === 0 ? 'var(--muted)' : 'transparent' }}>
+              <Skeleton className={`h-3.5 w-${w}`} />
+            </div>
+          ))}
+        </div>
+
         {/* Body */}
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-          {/* Sections sidebar */}
-          <div style={{ width: 196, borderRight: '1px solid var(--border)', background: 'var(--sidebar)', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '10px 12px 6px' }}>
-              <span className="text-xs font-bold uppercase tracking-[0.07em] text-muted-foreground">Sections</span>
+
+          {/* Sections sidebar — full skeleton */}
+          <div style={{ width: 220, borderRight: '1px solid var(--border)', background: 'var(--sidebar)', flexShrink: 0, display: 'flex', flexDirection: 'column', padding: '10px 0' }}>
+            <div style={{ padding: '0 12px 8px' }}>
+              <Skeleton className="h-3 w-14" />
             </div>
-            {previewSections.map((name, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 12px', borderLeft: `3px solid ${i === 0 ? 'var(--brand-color)' : 'transparent'}`, background: i === 0 ? 'var(--background)' : 'none' }}>
+            {(['w-32', 'w-28', 'w-24'] as const).map((w, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px',
+                borderLeft: `2px solid ${i === 0 ? 'var(--brand-color)' : 'transparent'}`,
+                background: i === 0 ? 'var(--background)' : 'transparent',
+              }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: i === 0 ? 'var(--brand-color)' : 'var(--border)', flexShrink: 0 }} />
-                <span className="text-xs font-medium text-foreground truncate flex-1">{i + 1}. {name}</span>
-                <span className="text-xs text-muted-foreground">0 Q</span>
+                <Skeleton className={`h-3 flex-1 ${w}`} />
+                <Skeleton className="h-3 w-5" />
               </div>
             ))}
           </div>
-          {/* Building center — shows original prompt + AI status */}
+
+          {/* Center — product-analogy skeleton */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            {/* Original prompt — always visible so user knows what's being built */}
-            {buildingPrompt && (
-              <div style={{
-                padding: '10px 16px 8px', borderBottom: '1px solid var(--border)',
-                background: 'var(--card)', flexShrink: 0,
-              }}>
-                <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', marginBottom: 6 }}>
-                  Your prompt
-                </div>
-                <pre style={{
-                  fontSize: 12, lineHeight: 1.6, color: 'var(--foreground)',
-                  whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0,
-                  fontFamily: 'inherit', maxHeight: 120, overflowY: 'auto',
-                }}>
-                  {buildingPrompt}
-                </pre>
-              </div>
-            )}
-            <div style={{ height: 40, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', padding: '0 14px', gap: 8, background: 'color-mix(in srgb, var(--brand-color) 5%, var(--background))' }}>
-              <span className="text-sm font-semibold text-foreground flex-1">1. {previewSections[0] ?? 'Section 1'}</span>
-              <span className="text-xs text-muted-foreground">Building…</span>
+
+            {/* Generating status bar */}
+            <div style={{ padding: '7px 14px', borderBottom: '1px solid var(--border)', background: 'var(--brand-tint)', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--brand-color)', flexShrink: 0, animation: 'pulse 1.5s ease-in-out infinite' }} />
+              <span style={{ fontSize: 12, color: 'var(--foreground)', fontWeight: 500 }}>
+                {urlMode === 'pdf' ? 'Parsing PDF and generating structure…' : 'Generating your assessment…'}
+              </span>
+              <Skeleton className="h-3 w-32 ml-auto" />
             </div>
-            <div style={{ padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {[
-                'Pulling questions from QB…',
-                'Checking difficulty distribution…',
-                `Assigning to ${currentCourse?.code ?? 'faculty'}…`,
-              ].map((msg, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', fontSize: 12, color: 'var(--muted-foreground)', background: 'var(--muted)', borderRadius: 6, opacity: 1 - i * 0.3 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--brand-color)', flexShrink: 0 }} />
-                  {msg}
+
+            {/* Toolbar skeleton */}
+            <div style={{ height: 48, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px', flexShrink: 0 }}>
+              <Skeleton className="h-8 w-52 rounded-md" />
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+                <Skeleton className="h-8 w-20 rounded-md" />
+                <Skeleton className="h-8 w-28 rounded-md" />
+                <Skeleton className="size-8 rounded-md" />
+              </div>
+            </div>
+
+            {/* Table header skeleton */}
+            <div style={{ height: 34, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, padding: '0 12px', background: 'var(--muted)', flexShrink: 0 }}>
+              <Skeleton className="size-3.5" />
+              <Skeleton className="h-3 w-28" />
+              <Skeleton className="h-3 w-12 ml-auto" />
+              <Skeleton className="h-3 w-14" />
+              <Skeleton className="h-3 w-12" />
+            </div>
+
+            {/* Question rows skeleton */}
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
+                  borderBottom: '1px solid var(--border)',
+                  opacity: Math.max(0.25, 1 - i * 0.07),
+                }}>
+                  <Skeleton className="size-3.5" />
+                  <Skeleton className="size-6 rounded" />
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <Skeleton className="h-3.5" style={{ width: `${52 + (i * 7) % 32}%` }} />
+                    {i % 3 === 0 && <Skeleton className="h-2.5 w-1/3" />}
+                  </div>
+                  <div style={{ display: 'flex', gap: 5 }}>
+                    <Skeleton className="h-5 w-10 rounded-full" />
+                    <Skeleton className="h-5 w-14 rounded-full" />
+                    <Skeleton className="h-5 w-12 rounded-full" />
+                  </div>
                 </div>
               ))}
             </div>
@@ -860,18 +906,6 @@ export default function AssessmentBuilderClient() {
             width: 200, padding: '0 2px',
           }}
         />
-        <Button variant="outline" size="sm" style={{ height: 26 }}>
-          {activeAsmt?.settings?.type ?? 'Exam'}
-        </Button>
-        <Button variant="outline" size="sm" style={{ height: 26 }}>
-          {activeAsmt?.settings?.openDate
-            ? new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date(activeAsmt.settings.openDate))
-            : 'No date'}
-        </Button>
-        <Button variant="outline" size="sm" style={{ height: 26 }}>
-          {activeAsmt?.durationMinutes ? `${activeAsmt.durationMinutes} min` : '90 min'}
-        </Button>
-
         {/* Right */}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
           <Badge variant="secondary" style={{ fontSize: 12 }}>Draft</Badge>
@@ -1239,7 +1273,6 @@ export default function AssessmentBuilderClient() {
                         onClick={() => setAssignSheetSectionId(sec.id)}
                         style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '0 12px 5px 22px', background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', fontFamily: 'inherit' }}
                       >
-                        <i className="fa-light fa-user" aria-hidden="true" style={{ fontSize: 10, color: 'var(--muted-foreground)', flexShrink: 0 }} />
                         <span style={{ fontSize: 12, color: 'var(--muted-foreground)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {sectionFaculty.length === 1
                             ? sectionFaculty[0].fullName.split(' ').slice(-1)[0]
@@ -1277,6 +1310,21 @@ export default function AssessmentBuilderClient() {
 
           {/* Center: section workspace — QB picker is now a Dialog */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+
+            {/* PDF import banner */}
+            {urlMode === 'pdf' && (
+              <div
+                className="flex items-center gap-3 px-4 py-2 text-xs shrink-0"
+                style={{ background: 'var(--brand-tint)', borderBottom: '1px solid var(--border)' }}
+              >
+                <i className="fa-light fa-file-pdf shrink-0" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
+                <span className="text-foreground">
+                  Built from PDF{urlSourceId ? `: ${decodeURIComponent(urlSourceId)}` : ''}.
+                  Review and adjust — edit stems, swap options, or add from QB.
+                </span>
+              </div>
+            )}
+
             {/* ── Section Workspace view ── */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               {activeSection ? (
@@ -1449,7 +1497,6 @@ export default function AssessmentBuilderClient() {
                           <col style={{ width: 50 }} />{/* PBI */}
                           <col style={{ width: 48 }} />{/* By */}
                           <col style={{ width: 48 }} />{/* Pts */}
-                          <col style={{ width: 44 }} />{/* Bonus */}
                           <col style={{ width: 32 }} />{/* Pin */}
                         </colgroup>
                         <thead>
@@ -1469,7 +1516,7 @@ export default function AssessmentBuilderClient() {
                                 style={{ cursor: 'pointer' }}
                               />
                             </th>
-                            {(['#', 'Question', 'Type', 'Diff.', 'Bloom\'s', 'PBI', 'By', 'Pts', 'Bonus', ''] as const).map((label, i) => (
+                            {(['#', 'Question', 'Type', 'Diff.', 'Bloom\'s', 'PBI', 'By', 'Pts', ''] as const).map((label, i) => (
                               <th key={i} scope="col" style={{
                                 padding: i === 0 ? '5px 4px' : '5px 8px',
                                 fontSize: 12, fontWeight: 600,
@@ -1596,7 +1643,7 @@ export default function AssessmentBuilderClient() {
                                 {/* PBI */}
                                 <td style={{ padding: '8px 8px', verticalAlign: 'middle', textAlign: 'right' }}>
                                   {q.pbis !== null ? (
-                                    <span style={{ fontSize: 12, fontWeight: 600, color: pbiLow ? 'var(--qb-pbi-low-color, var(--chart-4))' : 'var(--chart-2)', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                                       {pbiLow && <i className="fa-light fa-triangle-exclamation" aria-hidden="true" />}
                                       {q.pbis.toFixed(2)}
                                     </span>
@@ -1605,31 +1652,32 @@ export default function AssessmentBuilderClient() {
                                   )}
                                 </td>
 
-                                {/* By — creator + editor avatars */}
+                                {/* By — creator + editor avatars (DS AvatarGroup, neutral) */}
                                 <td style={{ padding: '8px 6px', verticalAlign: 'middle', textAlign: 'right' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                                    {creatorPersona && (
-                                      <div title={`Created by ${creatorPersona.name}`} style={{
-                                        width: 20, height: 20, borderRadius: '50%',
-                                        background: creatorPersona.color,
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        fontSize: 12, fontWeight: 700, color: 'var(--background)', flexShrink: 0,
-                                      }}>
-                                        {creatorPersona.initials}
-                                      </div>
-                                    )}
-                                    {editorPersona && (
-                                      <div title={`Last edited by ${editorPersona.name}`} style={{
-                                        width: 20, height: 20, borderRadius: '50%',
-                                        background: editorPersona.color,
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        fontSize: 12, fontWeight: 700, color: 'var(--background)', flexShrink: 0,
-                                        marginLeft: -6, border: '1.5px solid var(--background)',
-                                      }}>
-                                        {editorPersona.initials}
-                                      </div>
-                                    )}
-                                  </div>
+                                  <TooltipProvider>
+                                    <AvatarGroup className="justify-end">
+                                      {creatorPersona && (
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Avatar size="sm">
+                                              <AvatarFallback>{creatorPersona.initials}</AvatarFallback>
+                                            </Avatar>
+                                          </TooltipTrigger>
+                                          <TooltipContent>Created by {creatorPersona.name}</TooltipContent>
+                                        </Tooltip>
+                                      )}
+                                      {editorPersona && (
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Avatar size="sm">
+                                              <AvatarFallback>{editorPersona.initials}</AvatarFallback>
+                                            </Avatar>
+                                          </TooltipTrigger>
+                                          <TooltipContent>Edited by {editorPersona.name}</TooltipContent>
+                                        </Tooltip>
+                                      )}
+                                    </AvatarGroup>
+                                  </TooltipProvider>
                                 </td>
 
                                 {/* Pts — editable point value */}
@@ -1651,26 +1699,6 @@ export default function AssessmentBuilderClient() {
                                       outline: 'none', padding: '0 4px',
                                     }}
                                   />
-                                </td>
-
-                                {/* Bonus toggle */}
-                                <td style={{ padding: '4px 6px', verticalAlign: 'middle', textAlign: 'right' }}>
-                                  <button
-                                    type="button"
-                                    aria-label={aq.bonus ? `Remove bonus flag from ${q.title}` : `Mark ${q.title} as bonus`}
-                                    title={aq.bonus ? 'Bonus — points awarded but not counted against total' : 'Mark as bonus question'}
-                                    onClick={e => { e.stopPropagation(); updateQuestionBonus(q.id, !aq.bonus) }}
-                                    style={{
-                                      background: aq.bonus ? 'color-mix(in srgb, var(--chart-4) 12%, var(--background))' : 'none',
-                                      border: `1px solid ${aq.bonus ? 'var(--chart-4)' : 'transparent'}`,
-                                      borderRadius: 4, padding: '2px 5px', cursor: 'pointer',
-                                      color: aq.bonus ? 'var(--chart-4)' : 'var(--muted-foreground)',
-                                      fontSize: 12, fontWeight: 700, fontFamily: 'inherit',
-                                      opacity: aq.bonus ? 1 : 0.35,
-                                    }}
-                                  >
-                                    B+
-                                  </button>
                                 </td>
 
                                 {/* Pin */}
@@ -2106,6 +2134,11 @@ export default function AssessmentBuilderClient() {
             ),
           } : prev)
         }}
+        bonus={activeAsmt?.questions.find(aq => aq.questionId === detailQuestionId)?.bonus}
+        onBonusChange={(v) => {
+          if (!detailQuestionId) return
+          updateQuestionBonus(detailQuestionId, v)
+        }}
       />
       <SectionAssignSheet
         open={assignSheetSectionId !== null}
@@ -2433,14 +2466,11 @@ function ABQuestionPicker({
         <span className="text-xs text-muted-foreground">· {selectedIds.size} questions selected</span>
       </div>
 
-      {/* Copy mode banner — shown when arriving via "Copy from previous" */}
+      {/* Copy mode banner */}
       {isCopyMode && activeAsmt.questions.length > 0 && (
         <div
           className="flex items-center gap-3 px-4 py-2.5 text-xs shrink-0"
-          style={{
-            backgroundColor: 'var(--brand-tint)',
-            borderBottom: '1px solid var(--border)',
-          }}
+          style={{ backgroundColor: 'var(--brand-tint)', borderBottom: '1px solid var(--border)' }}
         >
           <i className="fa-light fa-copy shrink-0" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
           <span className="text-foreground">
@@ -2449,6 +2479,7 @@ function ABQuestionPicker({
           </span>
         </div>
       )}
+
 
       {/* Source bar — Vishaka: questions can come from multiple places. Make
           the source explicit and switchable, default to this course's QB. */}
@@ -2664,7 +2695,7 @@ function ABQuestionPicker({
                   <TableCell className="text-xs text-muted-foreground">
                     {(q.usage ?? 0) > 0 ? `${q.usage}×` : '—'}
                   </TableCell>
-                  <TableCell className="text-xs font-mono" style={{ color: (q.pbis !== null && q.pbis < 0.2) ? 'var(--chart-4)' : 'var(--muted-foreground)' }}>
+                  <TableCell className="text-xs font-mono text-foreground">
                     {q.pbis !== null ? (
                       <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                         {q.pbis < 0.2 && <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 9 }} />}
@@ -5288,7 +5319,7 @@ function AssessmentSettingsSheet({
               <p className="text-xs text-muted-foreground mb-1.5">Calculator</p>
               <div className="flex gap-2">
                 {(['none', 'basic', 'scientific'] as const).map(opt => {
-                  const tools = local.digitalTools ?? { calculator: 'none' as const, textHighlight: true, scratchpad: false, scratchpadFeedback: false, allowCopyPaste: false, warningAlarmMinutes: 5, spellCheck: false, findReplace: false }
+                  const tools = local.digitalTools ?? { calculator: 'none' as const, textHighlight: true, answerElimination: false, scratchpad: false, scratchpadFeedback: false, allowCopyPaste: false, warningAlarmMinutes: 5, spellCheck: false, findReplace: false }
                   return (
                     <button
                       key={opt}
@@ -5313,13 +5344,14 @@ function AssessmentSettingsSheet({
             {/* Tool toggles */}
             {([
               { key: 'textHighlight' as const,      label: 'Text highlight',           desc: 'Students can highlight text in questions.' },
+              { key: 'answerElimination' as const,   label: 'Answer elimination',       desc: 'Students can strike out options they want to eliminate.' },
               { key: 'scratchpad' as const,          label: 'Notes / scratchpad',       desc: 'Digital scratchpad for rough work.' },
               { key: 'scratchpadFeedback' as const,  label: 'Allow scratchpad feedback', desc: 'Faculty can review student scratchpad notes.' },
               { key: 'allowCopyPaste' as const,      label: 'Allow copy/paste',         desc: 'Permit clipboard operations during the exam.' },
               { key: 'spellCheck' as const,          label: 'Spell check (essay)',      desc: 'Enable spell checking for essay responses.' },
               { key: 'findReplace' as const,         label: 'Find & replace (essay)',   desc: 'Enable find & replace for essay responses.' },
             ] as const).map(({ key, label, desc }) => {
-              const tools = local.digitalTools ?? { calculator: 'none' as const, textHighlight: true, scratchpad: false, scratchpadFeedback: false, allowCopyPaste: false, warningAlarmMinutes: 5, spellCheck: false, findReplace: false }
+              const tools = local.digitalTools ?? { calculator: 'none' as const, textHighlight: true, answerElimination: false, scratchpad: false, scratchpadFeedback: false, allowCopyPaste: false, warningAlarmMinutes: 5, spellCheck: false, findReplace: false }
               return (
                 <div key={key} className="flex items-center justify-between gap-4">
                   <div className="min-w-0">
@@ -5355,7 +5387,7 @@ function AssessmentSettingsSheet({
                   value={local.digitalTools?.warningAlarmMinutes ?? 0}
                   onChange={e => {
                     const v = parseInt(e.target.value)
-                    const tools = local.digitalTools ?? { calculator: 'none' as const, textHighlight: true, scratchpad: false, scratchpadFeedback: false, allowCopyPaste: false, warningAlarmMinutes: 5, spellCheck: false, findReplace: false }
+                    const tools = local.digitalTools ?? { calculator: 'none' as const, textHighlight: true, answerElimination: false, scratchpad: false, scratchpadFeedback: false, allowCopyPaste: false, warningAlarmMinutes: 5, spellCheck: false, findReplace: false }
                     setLocal(prev => ({ ...prev, digitalTools: { ...(prev.digitalTools ?? tools), warningAlarmMinutes: isNaN(v) || v === 0 ? null : v } }))
                   }}
                   style={{ width: 50, height: 30, textAlign: 'center', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', padding: '0 4px' }}
@@ -5908,7 +5940,7 @@ function QBCommandPicker({ selectedIds, onToggle, activeSection, activeAsmt, onC
               )}
               {/* PBI */}
               {q.pbis !== null && (
-                <span className="text-xs font-semibold" style={{ color: pbiLow ? 'var(--chart-4)' : 'var(--chart-2)', flexShrink: 0 }}>
+                <span className="text-xs font-semibold text-foreground" style={{ flexShrink: 0 }}>
                   {pbiLow && <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ marginRight: 2 }} />}
                   {q.pbis.toFixed(2)}
                 </span>
