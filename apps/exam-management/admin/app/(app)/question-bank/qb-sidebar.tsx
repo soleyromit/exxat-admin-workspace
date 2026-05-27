@@ -742,12 +742,16 @@ function FolderRow({
   isAdmin,
   subtitle,
   fullSubtitle,
+  overrideIsExpanded,
+  overrideOnToggle,
 }: {
   node: FolderNode
   depth: number
   isAdmin: boolean
   subtitle?: string
   fullSubtitle?: string
+  overrideIsExpanded?: boolean
+  overrideOnToggle?: () => void
 }) {
   const {
     selectedFolderId, setSelectedFolderId,
@@ -839,7 +843,8 @@ function FolderRow({
   }, [dialogActive])
 
   const isSelected = selectedFolderId === node.id
-  const isExpanded = expandedFolderIds.has(node.id)
+  const isExpanded = overrideIsExpanded !== undefined ? overrideIsExpanded : expandedFolderIds.has(node.id)
+  const effectiveToggle = overrideOnToggle ?? (() => toggleFolder(node.id))
   const isDragOver = dragOverFolderId === node.id
   const hasChildren = folders.some(f => f.parentId === node.id)
   const icon = getFolderIcon(node, isExpanded, isSelected)
@@ -890,7 +895,7 @@ function FolderRow({
         onClick={() => {
           if (!isRenaming) {
             setSelectedFolderId(node.id)
-            if (hasChildren) toggleFolder(node.id)
+            if (hasChildren) effectiveToggle()
           }
         }}
         draggable={isAdmin && !isRenaming}
@@ -936,8 +941,8 @@ function FolderRow({
         }}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedFolderId(node.id) }
-          if (e.key === 'ArrowRight' && hasChildren && !isExpanded) { e.preventDefault(); toggleFolder(node.id) }
-          if (e.key === 'ArrowLeft' && isExpanded) { e.preventDefault(); toggleFolder(node.id) }
+          if (e.key === 'ArrowRight' && hasChildren && !isExpanded) { e.preventDefault(); effectiveToggle() }
+          if (e.key === 'ArrowLeft' && isExpanded) { e.preventDefault(); effectiveToggle() }
           if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
             e.preventDefault()
             const items = Array.from(document.querySelectorAll<HTMLElement>('[role="treeitem"]'))
@@ -962,7 +967,7 @@ function FolderRow({
           size="icon-xs"
           onClick={(e) => {
             e.stopPropagation()
-            if (hasChildren) toggleFolder(node.id)
+            if (hasChildren) effectiveToggle()
           }}
           aria-label={isExpanded ? 'Collapse' : 'Expand'}
           style={{
@@ -1117,22 +1122,40 @@ function FolderTree({
   parentId,
   depth,
   isAdmin,
+  overrideExpandedIds,
+  overrideOnToggle,
 }: {
   nodes: FolderNode[]
   parentId: string | null
   depth: number
   isAdmin: boolean
+  overrideExpandedIds?: Set<string>
+  overrideOnToggle?: (id: string) => void
 }) {
   const { expandedFolderIds } = useQB()
+  const effectiveExpandedIds = overrideExpandedIds ?? expandedFolderIds
   const children = nodes.filter(n => n.parentId === parentId)
 
   return (
     <>
       {children.map(node => (
         <div key={node.id}>
-          <FolderRow node={node} depth={depth} isAdmin={isAdmin} />
-          {expandedFolderIds.has(node.id) && (
-            <FolderTree nodes={nodes} parentId={node.id} depth={depth + 1} isAdmin={isAdmin} />
+          <FolderRow
+            node={node}
+            depth={depth}
+            isAdmin={isAdmin}
+            overrideIsExpanded={overrideExpandedIds ? overrideExpandedIds.has(node.id) : undefined}
+            overrideOnToggle={overrideOnToggle ? () => overrideOnToggle(node.id) : undefined}
+          />
+          {effectiveExpandedIds.has(node.id) && (
+            <FolderTree
+              nodes={nodes}
+              parentId={node.id}
+              depth={depth + 1}
+              isAdmin={isAdmin}
+              overrideExpandedIds={overrideExpandedIds}
+              overrideOnToggle={overrideOnToggle}
+            />
           )}
         </div>
       ))}
@@ -1172,6 +1195,14 @@ export function QBSidebar() {
   const [inactiveExpanded, setInactiveExpanded] = useState(false)
   const [pinnedExpanded, setPinnedExpanded] = useState(true)
   const [qbExpanded, setQbExpanded] = useState(true)
+  const [pinnedExpandedIds, setPinnedExpandedIds] = useState<Set<string>>(new Set())
+  function togglePinnedFolder(id: string) {
+    setPinnedExpandedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -1403,18 +1434,31 @@ export function QBSidebar() {
               Pinned
             </span>
           </button>
-          {/* Pinned folder rows — flat, with parent path subtitle */}
+          {/* Pinned folder rows — independent expand state, does not affect QB tree */}
           {pinnedExpanded && (
             <div style={{ paddingBottom: 4 }}>
               {pinnedFolders.map(f => (
-                <FolderRow
-                  key={f.id}
-                  node={f}
-                  depth={0}
-                  isAdmin={isAdmin}
-                  subtitle={getFolderShortPath(f.id) || undefined}
-                  fullSubtitle={getFolderFullPath(f.id) || undefined}
-                />
+                <div key={f.id}>
+                  <FolderRow
+                    node={f}
+                    depth={0}
+                    isAdmin={isAdmin}
+                    subtitle={getFolderShortPath(f.id) || undefined}
+                    fullSubtitle={getFolderFullPath(f.id) || undefined}
+                    overrideIsExpanded={pinnedExpandedIds.has(f.id)}
+                    overrideOnToggle={() => togglePinnedFolder(f.id)}
+                  />
+                  {pinnedExpandedIds.has(f.id) && (
+                    <FolderTree
+                      nodes={visibleFolders}
+                      parentId={f.id}
+                      depth={1}
+                      isAdmin={isAdmin}
+                      overrideExpandedIds={pinnedExpandedIds}
+                      overrideOnToggle={togglePinnedFolder}
+                    />
+                  )}
+                </div>
               ))}
             </div>
           )}
