@@ -1,7 +1,7 @@
 'use client'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useQB } from './qb-state'
-import type { FolderNode } from '@/lib/qb-types'
+import type { FolderNode, AccessRole } from '@/lib/qb-types'
 import {
   Button, Tip, Checkbox,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
@@ -12,7 +12,7 @@ import {
   Command, CommandInput, CommandList, CommandGroup, CommandItem, CommandEmpty,
   useSidebar,
 } from '@exxat/ds/packages/ui/src'
-import { mockCourses, mockCourseOfferings } from '@/lib/qb-mock-data'
+import { mockCourses, mockCourseOfferings, MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
 import { toast } from 'sonner'
 
 const QB_TOAST_DURATION = 5000
@@ -487,6 +487,205 @@ export function MoveFolderDialog({ node, open, onClose }: { node: FolderNode; op
   )
 }
 
+// ── Manage Shell Access Dialog ─────────────────────────────────────────────────
+export function ManageShellAccessDialog({ node, open, onClose }: {
+  node: FolderNode
+  open: boolean
+  onClose: () => void
+}) {
+  const { currentPersona, personas, addShellCollaborator, removeShellCollaborator, updateShellCollaboratorRole, folders } = useQB()
+  const [addPersonaId, setAddPersonaId] = useState('')
+  const [addRole, setAddRole] = useState<AccessRole>('edit')
+  const [addOpen, setAddOpen] = useState(false)
+
+  // Re-read node from live state so the list updates in real time
+  const liveNode = folders.find(f => f.id === node.id) ?? node
+  const collaboratorIds = liveNode.collaborators ?? []
+  const roles = liveNode.collaboratorRoles ?? {}
+
+  const adminPersonas = personas.filter(p => p.role === 'exam_admin')
+  const collaboratorPersonas = personas.filter(p =>
+    collaboratorIds.includes(p.id) && p.role !== 'exam_admin'
+  )
+  const addablePersonas = personas.filter(p =>
+    !collaboratorIds.includes(p.id) && p.role !== 'exam_admin'
+  )
+
+  const canManage = currentPersona.role === 'exam_admin' || collaboratorIds.includes(currentPersona.id)
+
+  function courseName(n: FolderNode) {
+    const code = n.name.match(/^([A-Z0-9]+)/)?.[1]
+    return code ? `${code} · Question Bank` : n.name
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Manage Access</DialogTitle>
+          <DialogDescription className="text-xs" style={{ marginTop: 2 }}>
+            {courseName(liveNode)}
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* Current access list */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground" style={{ marginBottom: 4 }}>
+            People with access
+          </p>
+
+          {/* Exam admins — always owner, not removable */}
+          {adminPersonas.map(p => (
+            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0' }}>
+              <div style={{ width: 30, height: 30, borderRadius: '50%', backgroundColor: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <span className="text-[10px] font-bold text-muted-foreground">{p.initials}</span>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="text-sm font-medium text-foreground" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
+                <div className="text-xs text-muted-foreground">Exam Admin</div>
+              </div>
+              <span className="text-xs text-muted-foreground" style={{ flexShrink: 0 }}>Owner</span>
+            </div>
+          ))}
+
+          {/* Shell collaborators */}
+          {collaboratorPersonas.map(p => {
+            const role: AccessRole = roles[p.id] ?? 'edit'
+            return (
+              <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0' }}>
+                <div style={{ width: 30, height: 30, borderRadius: '50%', backgroundColor: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span className="text-[10px] font-bold text-muted-foreground">{p.initials}</span>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="text-sm font-medium text-foreground" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
+                  <div className="text-xs text-muted-foreground">{p.role === 'course_director' ? 'Course Director' : 'Instructor'}</div>
+                </div>
+                {/* Role toggle */}
+                {canManage ? (
+                  <div style={{ display: 'flex', borderRadius: 6, border: '1px solid var(--border)', overflow: 'hidden', flexShrink: 0 }}>
+                    {(['view', 'edit'] as AccessRole[]).map(r => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => updateShellCollaboratorRole(liveNode.id, p.id, r)}
+                        style={{
+                          padding: '3px 8px', fontSize: 11, fontWeight: 500, border: 'none', cursor: 'pointer',
+                          backgroundColor: role === r ? 'var(--foreground)' : 'transparent',
+                          color: role === r ? 'var(--background)' : 'var(--muted-foreground)',
+                          transition: 'background 120ms',
+                        }}
+                      >
+                        {r === 'view' ? 'View' : 'Edit'}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-xs text-muted-foreground" style={{ flexShrink: 0 }}>
+                    {role === 'view' ? 'View' : 'Edit'}
+                  </span>
+                )}
+                {canManage && (
+                  <Button
+                    variant="ghost" size="icon-xs"
+                    aria-label={`Remove ${p.name}`}
+                    onClick={() => removeShellCollaborator(liveNode.id, p.id)}
+                    style={{ flexShrink: 0, color: 'var(--muted-foreground)' }}
+                  >
+                    <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 12 }} />
+                  </Button>
+                )}
+              </div>
+            )
+          })}
+
+          {collaboratorPersonas.length === 0 && (
+            <p className="text-xs text-muted-foreground" style={{ padding: '4px 0' }}>
+              No collaborators added yet.
+            </p>
+          )}
+        </div>
+
+        {/* Add people — only for admins and existing collaborators */}
+        {canManage && addablePersonas.length > 0 && (
+          <>
+            <div style={{ height: 1, backgroundColor: 'var(--border)', margin: '4px 0' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
+                Add people
+              </p>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                {/* Person picker */}
+                <div style={{ flex: 1, position: 'relative' }}>
+                  <DropdownMenu open={addOpen} onOpenChange={setAddOpen} modal={false}>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline" size="sm"
+                        style={{ width: '100%', justifyContent: 'space-between', fontWeight: 400 }}
+                      >
+                        <span className="text-sm" style={{ color: addPersonaId ? 'var(--foreground)' : 'var(--muted-foreground)' }}>
+                          {addPersonaId
+                            ? (addablePersonas.find(p => p.id === addPersonaId)?.name ?? 'Select person')
+                            : 'Select person'}
+                        </span>
+                        <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 10 }} />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-52">
+                      {addablePersonas.map(p => (
+                        <DropdownMenuItem key={p.id} onClick={() => { setAddPersonaId(p.id); setAddOpen(false) }}>
+                          <span>{p.name}</span>
+                          <span className="ml-auto text-xs text-muted-foreground">
+                            {p.role === 'course_director' ? 'Director' : 'Instructor'}
+                          </span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                {/* Role toggle for new person */}
+                <div style={{ display: 'flex', borderRadius: 6, border: '1px solid var(--border)', overflow: 'hidden', flexShrink: 0 }}>
+                  {(['view', 'edit'] as AccessRole[]).map(r => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setAddRole(r)}
+                      style={{
+                        padding: '5px 8px', fontSize: 11, fontWeight: 500, border: 'none', cursor: 'pointer',
+                        backgroundColor: addRole === r ? 'var(--foreground)' : 'transparent',
+                        color: addRole === r ? 'var(--background)' : 'var(--muted-foreground)',
+                        transition: 'background 120ms',
+                      }}
+                    >
+                      {r === 'view' ? 'View' : 'Edit'}
+                    </button>
+                  ))}
+                </div>
+                <Button
+                  variant="default" size="sm"
+                  disabled={!addPersonaId}
+                  style={{ flexShrink: 0 }}
+                  onClick={() => {
+                    if (!addPersonaId) return
+                    addShellCollaborator(liveNode.id, addPersonaId, addRole)
+                    setAddPersonaId('')
+                    setAddRole('edit')
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" size="sm" onClick={onClose}>Done</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function FolderContextMenu({
   node,
   isAdmin,
@@ -494,6 +693,7 @@ export function FolderContextMenu({
   onAddSubfolder,
   onMove,
   onDelete,
+  onManageAccess,
   onOpenChange,
   alwaysVisible = false,
 }: {
@@ -503,11 +703,14 @@ export function FolderContextMenu({
   onAddSubfolder: () => void
   onMove: () => void
   onDelete: () => void
+  onManageAccess?: () => void
   onOpenChange?: (open: boolean) => void
   alwaysVisible?: boolean
 }) {
-  const { pinnedFolderIds, toggleFolderPin } = useQB()
+  const { pinnedFolderIds, toggleFolderPin, currentPersona } = useQB()
   const isPinned = pinnedFolderIds.has(node.id)
+  const isShellCollaborator = (node.collaborators ?? []).includes(currentPersona.id)
+  const canManageAccess = node.isCourse && (isAdmin || isShellCollaborator)
 
   return (
     <DropdownMenu modal={false} onOpenChange={onOpenChange}>
@@ -533,6 +736,12 @@ export function FolderContextMenu({
           <i className="fa-light fa-folder-plus" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
           New Subfolder
         </DropdownMenuItem>
+        {canManageAccess && onManageAccess && (
+          <DropdownMenuItem onClick={() => onManageAccess()}>
+            <i className="fa-light fa-user-plus" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+            Manage access
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => onRename()}>
           <i className="fa-light fa-pen" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
@@ -764,6 +973,7 @@ function FolderRow({
   const [showingInlineCreate, setShowingInlineCreate] = useState(false)
   const [moveFolderDialogOpen, setMoveFolderDialogOpen] = useState(false)
   const [deleteFolderDialogOpen, setDeleteFolderDialogOpen] = useState(false)
+  const [manageAccessOpen, setManageAccessOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
 
@@ -1065,6 +1275,7 @@ function FolderRow({
                 onAddSubfolder={() => setShowingInlineCreate(true)}
                 onMove={() => setMoveFolderDialogOpen(true)}
                 onDelete={() => setDeleteFolderDialogOpen(true)}
+                onManageAccess={() => setManageAccessOpen(true)}
               />
             </div>
           )}
@@ -1093,6 +1304,13 @@ function FolderRow({
           node={node}
           open={deleteFolderDialogOpen}
           onClose={() => setDeleteFolderDialogOpen(false)}
+        />
+      )}
+      {manageAccessOpen && node.isCourse && (
+        <ManageShellAccessDialog
+          node={node}
+          open={manageAccessOpen}
+          onClose={() => setManageAccessOpen(false)}
         />
       )}
     </div>

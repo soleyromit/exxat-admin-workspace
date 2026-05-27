@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react'
-import type { FolderNode, Question, Persona, ColumnId } from '@/lib/qb-types'
+import type { FolderNode, Question, Persona, ColumnId, AccessRole } from '@/lib/qb-types'
 import { MOCK_QB_FOLDERS, MOCK_QB_QUESTIONS } from '@/lib/qb-mock-data'
 import { PERSONAS as GLOBAL_PERSONAS, type Persona as GlobalPersona } from '@/lib/personas'
 import { useFacultySession } from '@/lib/faculty-session'
@@ -47,6 +47,9 @@ interface QBState {
   moveFolder: (id: string, newParentId: string) => void
   setFolderIcon: (id: string, icon: string) => void
   setFolderPrivacy: (id: string, isPrivate: boolean) => void
+  addShellCollaborator: (folderId: string, personaId: string, role: AccessRole) => void
+  removeShellCollaborator: (folderId: string, personaId: string) => void
+  updateShellCollaboratorRole: (folderId: string, personaId: string, role: AccessRole) => void
 
   sidebarSearch: string
   setSidebarSearch: (v: string) => void
@@ -316,6 +319,32 @@ export function QBProvider({ children }: { children: ReactNode }) {
     setFolders(prev => prev.map(f => f.id === id ? { ...f, icon } : f))
   }, [])
 
+  const addShellCollaborator = useCallback((folderId: string, personaId: string, role: AccessRole) => {
+    setFolders(prev => prev.map(f => {
+      if (f.id !== folderId) return f
+      const collaborators = [...new Set([...(f.collaborators ?? []), personaId])]
+      const collaboratorRoles = { ...(f.collaboratorRoles ?? {}), [personaId]: role }
+      return { ...f, collaborators, collaboratorRoles }
+    }))
+  }, [])
+
+  const removeShellCollaborator = useCallback((folderId: string, personaId: string) => {
+    setFolders(prev => prev.map(f => {
+      if (f.id !== folderId) return f
+      const collaborators = (f.collaborators ?? []).filter(id => id !== personaId)
+      const collaboratorRoles = { ...(f.collaboratorRoles ?? {}) }
+      delete collaboratorRoles[personaId]
+      return { ...f, collaborators, collaboratorRoles }
+    }))
+  }, [])
+
+  const updateShellCollaboratorRole = useCallback((folderId: string, personaId: string, role: AccessRole) => {
+    setFolders(prev => prev.map(f => {
+      if (f.id !== folderId) return f
+      return { ...f, collaboratorRoles: { ...(f.collaboratorRoles ?? {}), [personaId]: role } }
+    }))
+  }, [])
+
   const setFolderPrivacy = useCallback((id: string, isPrivate: boolean) => {
     setFolders(prev => prev.map(f => {
       if (f.id !== id) return f
@@ -496,6 +525,7 @@ export function QBProvider({ children }: { children: ReactNode }) {
     selectedFolderId, setSelectedFolderId,
     expandedFolderIds, toggleFolder,
     folders, createFolder, renameFolder, deleteFolder, restoreFolders, moveFolder, setFolderIcon, setFolderPrivacy,
+    addShellCollaborator, removeShellCollaborator, updateShellCollaboratorRole,
     sidebarSearch, setSidebarSearch,
     highlightedFolderId, setHighlightedFolderId, navigateToFolder,
     myQuestionsOnly, setMyQuestionsOnly,

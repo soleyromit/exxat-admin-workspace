@@ -8,7 +8,7 @@ import {
   Tooltip, TooltipTrigger, TooltipContent,
 } from '@exxat/ds/packages/ui/src'
 import { MOCK_QB_PERSONAS } from '@/lib/qb-mock-data'
-import { FolderContextMenu, MoveFolderDialog, DeleteFolderDialog } from './qb-sidebar'
+import { FolderContextMenu, MoveFolderDialog, DeleteFolderDialog, ManageShellAccessDialog } from './qb-sidebar'
 
 import type { FolderNode } from '@/lib/qb-types'
 
@@ -113,6 +113,7 @@ export function QBTitle() {
   const [renameName, setRenameName] = useState('')
   const [moveFolderDialogOpen, setMoveFolderDialogOpen] = useState(false)
   const [deleteFolderDialogOpen, setDeleteFolderDialogOpen] = useState(false)
+  const [manageAccessOpen, setManageAccessOpen] = useState(false)
   const renameRef = useRef<HTMLInputElement>(null)
 
   function folderCount(folderId: string): number {
@@ -187,6 +188,7 @@ export function QBTitle() {
                 onAddSubfolder={() => {/* no-op: use sidebar to add subfolders */}}
                 onMove={() => setMoveFolderDialogOpen(true)}
                 onDelete={() => setDeleteFolderDialogOpen(true)}
+                onManageAccess={() => setManageAccessOpen(true)}
               />
             ) : (
               /* Placeholder keeps the slot width identical — icon-xs button is 24px */
@@ -227,6 +229,13 @@ export function QBTitle() {
             open={deleteFolderDialogOpen}
             onClose={() => setDeleteFolderDialogOpen(false)}
           />
+          {selectedFolder.isCourse && (
+            <ManageShellAccessDialog
+              node={selectedFolder}
+              open={manageAccessOpen}
+              onClose={() => setManageAccessOpen(false)}
+            />
+          )}
         </>
       )}
     </div>
