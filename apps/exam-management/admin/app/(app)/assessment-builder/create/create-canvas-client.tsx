@@ -7,7 +7,7 @@ import { mockCourses, mockCourseOfferings } from '@/lib/qb-mock-data'
 import type { AssessmentType } from '@/lib/qb-types'
 import { facultyListRows } from '@/lib/faculty-mock-data'
 
-type QuickStart = 'blank' | 'copy' | 'pdf' | 'blueprint'
+type QuickStart = 'blank' | 'copy' | 'qb'
 
 function getFacultyInitial(fullName: string): string {
   const parts = fullName.trim().split(' ')
@@ -371,10 +371,9 @@ function CanvasHeader({
 // ─── CanvasBody ───────────────────────────────────────────────────────────────
 
 const QUICK_STARTS: { id: QuickStart; label: string }[] = [
-  { id: 'blank',     label: 'Blank start' },
-  { id: 'copy',      label: "Copy last year's" },
-  { id: 'pdf',       label: 'Import PDF' },
-  { id: 'blueprint', label: 'Use blueprint' },
+  { id: 'blank', label: 'Blank start' },
+  { id: 'copy',  label: "Copy last year's" },
+  { id: 'qb',   label: 'Build from QB' },
 ]
 
 function CanvasBody({
