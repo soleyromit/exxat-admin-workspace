@@ -40,7 +40,7 @@ export default function CreateCanvasClient() {
   const [date, setDate]                     = useState('')
   const [duration, setDuration]             = useState(90)
   const [collaboratorIds, setCollaboratorIds] = useState<string[]>([])
-  const [prompt, setPrompt]                 = useState('')
+  const [prompt, setPrompt]                 = useState(EXAMPLE_PROMPT)
   const [nameError, setNameError]           = useState('')
 
   // Auto-fill name + date from prompt when those fields are still empty
@@ -470,7 +470,7 @@ function CanvasBody({
             value={prompt}
             onChange={e => onPromptChange(e.target.value)}
             placeholder='e.g. "3 sections, 20 Q each — Cardiovascular Pharm, Renal, Clinical Application. Assign Mehra, Patel, Kim. 90 min, proctored, tech check on."'
-            rows={prompt.includes('\n') ? 10 : 3}
+            rows={10}
             aria-label="Describe assessment structure"
             style={{
               width: '100%', fontSize: 13, color: 'var(--foreground)',
@@ -484,13 +484,6 @@ function CanvasBody({
             display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
             borderTop: '1px solid var(--border)', background: 'var(--muted)',
           }}>
-            <button
-              type="button"
-              onClick={() => onPromptChange(EXAMPLE_PROMPT)}
-              style={{ fontSize: 12, padding: '3px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--background)', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--foreground)' }}
-            >
-              ✦ Try an example
-            </button>
             <button
               type="button"
               onClick={() => onSubmit('blank')}
