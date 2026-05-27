@@ -7,7 +7,8 @@ const nextConfig: NextConfig = {
   webpack(config) {
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@exxat/ds': path.resolve(__dirname, '../../../exxat-ds'),
+      '@exxat/ds':      path.resolve(__dirname, '../../../exxat-ds'),
+      '@exxat/student': path.resolve(__dirname, '../../../studentUX/src'),
     }
     return config
   },
