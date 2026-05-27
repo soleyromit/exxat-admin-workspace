@@ -43,6 +43,15 @@ export default function CreateCanvasClient() {
   const [prompt, setPrompt]                 = useState('')
   const [nameError, setNameError]           = useState('')
 
+  // Auto-fill name + date from prompt when those fields are still empty
+  React.useEffect(() => {
+    if (!prompt.trim()) return
+    const parsed = parsePrompt(prompt)
+    if (parsed.name && !name) setName(parsed.name)
+    if (parsed.date && !date) setDate(parsed.date)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prompt])
+
   function handleSubmit(mode: QuickStart = 'blank') {
     if (!name.trim()) {
       setNameError('Assessment name is required.')
@@ -376,7 +385,37 @@ const QUICK_STARTS: { id: QuickStart; label: string }[] = [
   { id: 'qb',   label: 'Build from QB' },
 ]
 
-const EXAMPLE_PROMPT = `Cardiology Midterm · Exam · 90 min · password required · randomize questions
+// ─── Prompt parser ────────────────────────────────────────────────────────────
+
+function parsePrompt(text: string): { name?: string; date?: string } {
+  const result: { name?: string; date?: string } = {}
+
+  // Name: first segment of first line, before · | , or newline
+  const firstSegment = text.split('\n')[0].split(/[·|,]/)[0].trim()
+  if (firstSegment.length > 2 && firstSegment.length < 80) result.name = firstSegment
+
+  // Date: ISO (2026-06-12) or "Month Day [Year]" (June 12, 2026 / Jun 12)
+  const isoMatch = text.match(/\b(\d{4}-\d{2}-\d{2})\b/)
+  if (isoMatch) { result.date = isoMatch[1]; return result }
+
+  const MONTHS: Record<string, number> = {
+    jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
+    jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
+  }
+  const mdy = text.match(/\b(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s*(\d{4}))?/i)
+  if (mdy) {
+    const m = MONTHS[mdy[1].toLowerCase().slice(0, 3)]
+    const d = parseInt(mdy[2])
+    const y = mdy[3] ? parseInt(mdy[3]) : new Date().getFullYear()
+    if (m) result.date = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+  }
+
+  return result
+}
+
+// ─── Example prompt ───────────────────────────────────────────────────────────
+
+const EXAMPLE_PROMPT = `Cardiology Midterm · Exam · 90 min · June 12 · password required · randomize questions
 
 3 sections:
 1. Cardiovascular Pharm — 20 Q, assign Dr. Mehra
