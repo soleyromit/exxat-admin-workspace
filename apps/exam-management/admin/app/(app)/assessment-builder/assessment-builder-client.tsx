@@ -6042,7 +6042,7 @@ function SectionAssignSheet({
                   background: isSelected ? 'var(--brand-color)' : 'transparent', flexShrink: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  {isSelected && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, color: '#fff' }} />}
+                  {isSelected && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, color: 'var(--background)' }} />}
                 </div>
               </button>
             )
