@@ -758,34 +758,120 @@ export default function AssessmentBuilderClient() {
 
       {/* ── Setup tab ─────────────────────────────────────────────────────── */}
       {activeTab === 'setup' && (
-        <div style={{ flex: 1, overflow: 'auto', padding: '32px 40px' }}>
+        <div style={{ flex: 1, overflow: 'auto' }}>
           {activeAsmt ? (
-            <div style={{ maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 20 }}>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-1">Assessment</p>
-                <p className="text-2xl font-semibold text-foreground" style={{ letterSpacing: '-0.02em' }}>{activeAsmt.title}</p>
-                <p className="text-sm text-muted-foreground mt-1">{courseLabel}</p>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
+            <div style={{ maxWidth: 600, padding: '24px 32px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+
+              {/* Metadata strip — inline label-value pairs, no large cards */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px 32px', paddingBottom: 20, borderBottom: '1px solid var(--border)' }}>
                 {[
                   { label: 'Type',      value: activeAsmt.settings?.type ?? 'Exam' },
                   { label: 'Duration',  value: `${activeAsmt.durationMinutes ?? 90} min` },
-                  { label: 'Sections',  value: String(activeAsmt.sections.length) },
-                  { label: 'Questions', value: String(activeAsmt.questions.length) },
+                  {
+                    label: 'Date',
+                    value: activeAsmt.settings?.openDate
+                      ? new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(activeAsmt.settings.openDate))
+                      : '—',
+                  },
+                  { label: 'Questions', value: `${activeAsmt.questions.length} across ${activeAsmt.sections.length} section${activeAsmt.sections.length !== 1 ? 's' : ''}` },
                 ].map(({ label, value }) => (
-                  <div key={label} style={{ padding: '12px 14px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--card)' }}>
-                    <p className="text-xs text-muted-foreground mb-1">{label}</p>
-                    <p className="text-sm font-semibold text-foreground">{value}</p>
+                  <div key={label}>
+                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', marginBottom: 3 }}>{label}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)' }}>{value}</div>
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-muted-foreground">
-                This was set up on the canvas. Use the header chips above to edit title, type, date, or duration inline.
-              </p>
-              <Button variant="outline" size="sm" onClick={() => setActiveTab('build')} className="gap-1.5 self-start">
+
+              {/* Sections — scannable rows with fill bar + faculty */}
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', marginBottom: 10 }}>
+                  Sections
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {activeAsmt.sections.length === 0 ? (
+                    <p style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>No sections yet — go to Build to add them.</p>
+                  ) : activeAsmt.sections.map((sec, idx) => {
+                    const fillPct = sectionFillPct(sec)
+                    const isReady = fillPct >= 80
+                    const faculty = sec.facultyId ? facultyListRows.find(f => f.id === sec.facultyId) : null
+                    const initials = faculty ? faculty.fullName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() : null
+                    const AVATAR_COLORS_SETUP = ['#7c6bbf', '#3b7abf', '#4e9a6b', '#bf5b3b', '#b87c3b']
+                    const avatarColor = AVATAR_COLORS_SETUP[idx % AVATAR_COLORS_SETUP.length]
+                    return (
+                      <div key={sec.id} style={{
+                        display: 'flex', alignItems: 'center', gap: 12,
+                        padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 8,
+                        background: 'var(--card)',
+                      }}>
+                        {/* Section number */}
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-foreground)', minWidth: 20, flexShrink: 0 }}>§{idx + 1}</span>
+                        {/* Section name */}
+                        <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sec.title}</span>
+                        {/* Fill bar + count */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                          <div style={{ width: 60, height: 3, borderRadius: 2, background: 'var(--border)' }}>
+                            <div style={{ width: `${fillPct}%`, height: '100%', borderRadius: 2, background: isReady ? 'var(--chart-2)' : 'var(--brand-color)' }} />
+                          </div>
+                          <span style={{ fontSize: 12, color: 'var(--muted-foreground)', minWidth: 32 }}>{sec.questionIds.length} Q</span>
+                        </div>
+                        {/* Faculty or assign link */}
+                        {faculty ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+                            <div style={{ width: 20, height: 20, borderRadius: '50%', background: avatarColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, color: '#fff' }}>
+                              {initials}
+                            </div>
+                            <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{faculty.fullName.split(' ').slice(-1)[0]}</span>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setAssignSheetSectionId(sec.id)}
+                            style={{ fontSize: 12, color: 'var(--brand-color)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}
+                          >
+                            ＋ Assign
+                          </button>
+                        )}
+                        {/* Ready check */}
+                        {isReady && (
+                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--chart-2)', flexShrink: 0 }}>✓</span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Settings summary — tags + quick link to open settings sheet */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)' }}>Settings</div>
+                  <button
+                    type="button"
+                    onClick={() => setSettingsOpen(true)}
+                    style={{ fontSize: 12, color: 'var(--brand-color)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+                  >
+                    Edit →
+                  </button>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {[
+                    activeAsmt.settings?.randomize ? 'Randomized order' : 'Fixed order',
+                    activeAsmt.settings?.passwordRequired ? 'Password required' : 'No password',
+                    activeAsmt.settings?.showRationaleAfter ? 'Shows rationale' : 'No rationale',
+                  ].map(label => (
+                    <span key={label} style={{ fontSize: 12, padding: '3px 10px', borderRadius: 20, background: 'var(--muted)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}>
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* CTA */}
+              <Button size="sm" onClick={() => setActiveTab('build')} className="gap-1.5 self-start">
                 Continue to Build
                 <i className="fa-light fa-arrow-right" aria-hidden="true" />
               </Button>
+
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 12 }}>
