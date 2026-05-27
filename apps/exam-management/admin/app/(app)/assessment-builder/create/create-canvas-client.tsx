@@ -558,11 +558,6 @@ function QbFolderPicker({
 
 // ─── CanvasBody ───────────────────────────────────────────────────────────────
 
-const QUICK_STARTS: { id: QuickStart; label: string; icon: string }[] = [
-  { id: 'blank', label: 'Build new',       icon: 'fa-file-plus' },
-  { id: 'copy',  label: 'Copy existing',   icon: 'fa-copy' },
-]
-
 // ─── Prompt parser ────────────────────────────────────────────────────────────
 
 function parsePrompt(text: string): { name?: string; date?: string } {
@@ -611,6 +606,25 @@ Pre-exam setup:
 - Attestation: "I affirm I will complete this exam independently and without unauthorized assistance."
 - Tech check: audio + camera`
 
+const CANVAS_CARDS: {
+  id: QuickStart; icon: string; title: string; description: string; cta: string
+}[] = [
+  {
+    id: 'blank',
+    icon: 'fa-file-plus',
+    title: 'Build new assessment',
+    description: 'Start from a blank slate. Add sections, assign faculty, and fill questions from the QB, a PDF, or scratch inside the builder.',
+    cta: 'Start building',
+  },
+  {
+    id: 'copy',
+    icon: 'fa-copy',
+    title: 'Copy existing assessment',
+    description: 'Duplicate a previous assessment as a starting point. Keep, swap, or add questions — QB, PDF, and manual methods all work inside.',
+    cta: 'Browse assessments',
+  },
+]
+
 function CanvasBody({
   prompt, onPromptChange, onSubmit,
 }: {
@@ -618,6 +632,8 @@ function CanvasBody({
   onPromptChange: (v: string) => void
   onSubmit: (mode: QuickStart) => void
 }) {
+  const [hoveredCard, setHoveredCard] = useState<QuickStart | null>(null)
+
   return (
     <div style={{
       flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -628,19 +644,91 @@ function CanvasBody({
         'oklch(0.985 0.01 343)',
       ].join(', '),
       overflow: 'auto',
-      padding: '32px 16px',
+      padding: '40px 24px',
     }}>
-      <div style={{ width: 520, textAlign: 'center' }}>
-        <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em', margin: '0 0 6px', color: 'var(--foreground)' }}>
-          What should this look like?
-        </h2>
-        <p style={{ fontSize: 13, color: 'var(--muted-foreground)', margin: '0 0 20px', lineHeight: 1.5 }}>
-          Describe sections, topics, faculty, and timing — or choose a starting point below.
-        </p>
+      <div style={{ width: 580, display: 'flex', flexDirection: 'column', gap: 0 }}>
 
-        {/* Prompt box */}
+        {/* Heading */}
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em', margin: '0 0 6px', color: 'var(--foreground)' }}>
+            How do you want to build this?
+          </h2>
+          <p style={{ fontSize: 13, color: 'var(--muted-foreground)', margin: 0, lineHeight: 1.5 }}>
+            You can mix question sources once you're inside — QB, PDF, or create from scratch.
+          </p>
+        </div>
+
+        {/* Choice cards */}
+        <div style={{ display: 'flex', gap: 12, marginBottom: 28 }}>
+          {CANVAS_CARDS.map(card => {
+            const isHovered = hoveredCard === card.id
+            return (
+              <button
+                key={card.id}
+                type="button"
+                onClick={() => onSubmit(card.id)}
+                onMouseEnter={() => setHoveredCard(card.id)}
+                onMouseLeave={() => setHoveredCard(null)}
+                style={{
+                  flex: 1, textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
+                  background: isHovered ? 'var(--brand-tint)' : 'var(--background)',
+                  border: `1.5px solid ${isHovered ? 'var(--brand-color)' : 'var(--border)'}`,
+                  borderRadius: 14, padding: '20px 20px 16px',
+                  display: 'flex', flexDirection: 'column', gap: 10,
+                  transition: 'border-color 0.15s, background 0.15s',
+                }}
+              >
+                {/* Icon */}
+                <div style={{
+                  width: 36, height: 36, borderRadius: 9,
+                  background: isHovered ? 'var(--brand-color)' : 'var(--muted)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0, transition: 'background 0.15s',
+                }}>
+                  <i
+                    className={`fa-light ${card.icon}`}
+                    aria-hidden="true"
+                    style={{ fontSize: 16, color: isHovered ? 'var(--background)' : 'var(--muted-foreground)' }}
+                  />
+                </div>
+
+                {/* Text */}
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--foreground)', marginBottom: 5 }}>
+                    {card.title}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
+                    {card.description}
+                  </div>
+                </div>
+
+                {/* CTA row */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  fontSize: 12, fontWeight: 600,
+                  color: isHovered ? 'var(--brand-color)' : 'var(--muted-foreground)',
+                  transition: 'color 0.15s',
+                }}>
+                  {card.cta}
+                  <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 11 }} />
+                </div>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Divider */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+          <span style={{ fontSize: 11, color: 'var(--muted-foreground)', fontWeight: 500, whiteSpace: 'nowrap' }}>
+            or describe structure with AI
+          </span>
+          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+        </div>
+
+        {/* AI prompt box */}
         <div style={{
-          border: '1.5px solid var(--foreground)', borderRadius: 12,
+          border: '1px solid var(--border)', borderRadius: 12,
           background: 'var(--background)', overflow: 'hidden',
           textAlign: 'left',
         }}>
@@ -648,54 +736,35 @@ function CanvasBody({
             value={prompt}
             onChange={e => onPromptChange(e.target.value)}
             placeholder='e.g. "3 sections, 20 Q each — Cardiovascular Pharm, Renal, Clinical Application. Assign Dr. Mehra, Patel, Kim. 90 min, proctored, tech check on."'
-            rows={12}
+            rows={7}
             aria-label="Describe assessment structure"
             style={{
               width: '100%', fontSize: 13, color: 'var(--foreground)',
-              padding: '14px 16px 10px', lineHeight: 1.6,
+              padding: '12px 14px 8px', lineHeight: 1.6,
               border: 'none', outline: 'none', resize: 'none',
               background: 'transparent', fontFamily: 'inherit',
               boxSizing: 'border-box',
             }}
           />
-          {/* Footer: quick-start actions + submit */}
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px',
-            borderTop: '1px solid var(--border)', background: 'var(--muted)',
+            display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+            padding: '6px 10px', borderTop: '1px solid var(--border)', background: 'var(--muted)',
           }}>
-            {/* Quick-start pills — left */}
-            {QUICK_STARTS.map(qs => (
-              <button
-                key={qs.id}
-                type="button"
-                onClick={() => onSubmit(qs.id)}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 5,
-                  fontSize: 12, padding: '4px 11px', borderRadius: 20,
-                  border: '1px solid var(--border)', background: 'var(--background)',
-                  color: 'var(--foreground)', cursor: 'pointer', fontFamily: 'inherit',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                <i className={`fa-light ${qs.icon}`} aria-hidden="true" style={{ fontSize: 11, color: 'var(--muted-foreground)' }} />
-                {qs.label}
-              </button>
-            ))}
-            {/* Submit — right */}
             <button
               type="button"
               onClick={() => onSubmit('blank')}
-              aria-label="Submit prompt"
+              aria-label="Build from prompt"
               style={{
-                marginLeft: 'auto', width: 30, height: 30, borderRadius: 8,
+                width: 30, height: 30, borderRadius: 8,
                 background: 'var(--foreground)', border: 'none', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
             >
               <svg viewBox="0 0 16 16" fill="white" width="13" height="13" aria-hidden="true"><path d="M14.5 8L2 14l2.5-6L2 2z"/></svg>
             </button>
           </div>
         </div>
+
       </div>
     </div>
   )
