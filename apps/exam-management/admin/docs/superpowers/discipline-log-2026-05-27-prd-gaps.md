@@ -75,6 +75,27 @@
 **Root cause:** T2 agent wrote avatar circles with `color: '#fff'` for initials text.
 **Fix:** Changed both instances to `color: 'var(--background)'` (correct for text over colored avatar background in light/dark mode).
 
+## Gate 3 Fixes — T2/T3/T4 Implementation (compliance + verification pass)
+
+### 16. `text-[11px]` in new MetricsPanel Avg discrimination row (T3)
+**Pattern violated:** `feedback_ds_typography_color_discipline.md` — text-xs (12px) is the minimum; no sub-12px exceptions.
+**Root cause:** T3 agent copied the pre-existing `text-[11px]` pattern used in all other MetricsPanel rows.
+**Fix:** Changed all 8 `text-[11px]` spans in the Psychometrics section (Avg difficulty, Avg pt-biserial, Avg discrimination, Top/bottom 27%) to `text-xs`. Fixed the entire section, not just the new row.
+
+### 17. Missing focus ring on negative marking chip buttons (T4)
+**Pattern violated:** WCAG 2.4.7 — keyboard users must see focus position.
+**Root cause:** T4 agent used raw `<button>` with inline style and no focus-visible handler.
+**Fix:** Added `onFocus`/`onBlur` handlers applying `outline: 2px solid var(--ring)` / `outlineOffset: 2px` to each chip button — matching the pattern from Fill blank match mode buttons already in this file.
+
+### 18. Context label `fontSize: 11` in GradingRulesSection (T4)
+**Pattern violated:** Same 12px minimum rule.
+**Root cause:** T4 agent used `fontSize: 11` on the "Assessment default: …" helper text below the chips.
+**Fix:** Changed to `fontSize: 12`.
+
+### 19. `forcedTimerTransition` defaulted to `true` (T2)
+**Root cause:** T1 types agent set `forcedTimerTransition: true` in `defaultAssessmentSettings()`. Auto-advancing students and auto-submitting unanswered questions is a coercive default not backed by a Granola decision. `forwardOnlySections` and `requireAnswerForSectionAdvance` both default to `false` — this was inconsistent.
+**Fix:** Changed to `forcedTimerTransition: false` to match conservative defaults.
+
 ## Deferred (Pre-existing, Out of Scope for This PR)
 
 - `fontSize: 9` / `text-[9px]` at lines 1360, 1366, 1436, 1446, 2750, 3341 — below 12px WCAG floor. Pre-existing throughout builder; tracked in open-wcag-items.
@@ -90,3 +111,7 @@
 - `#fff` in assessment-builder-client.tsx (COLLAB_COLORS array, stepper, breadcrumbs) — pre-existing; requires broad sweep.
 - Distractor lock / match mode buttons in GradingRulesSection use raw `<button>` — pre-existing workspace pattern; toggle semantics correct (`aria-pressed`), focus ring is an open debt item.
 - Curve method buttons in regrading tab use raw `<button>` — same as above; `aria-pressed` correct, focus ring deferred.
+- `role="switch"` toggle buttons in settings sheet have no focus-visible ring (T2) — pre-existing pattern for ALL toggles (requireAnswer, backwardNavigationAllowed, secureMode, etc.) in this file; fixing only the 3 new ones would be inconsistent with the 15+ existing ones.
+- Chip button touch targets at ~26px height (T4) — below WCAG 2.5.5 44px minimum. Pre-existing: fill blank match mode buttons in same file use identical sizing (`padding: 5px 0`). Primarily desktop-use context.
+- `uppercase tracking-wider` at MetricsPanel section header (line ~3331) — pre-existing, inside the component T3 extended but not in new lines.
+- `text-[11px]` at flag icon `fontSize: 11` (line 1558, question row health icon) — pre-existing in all flag icons throughout the file.
