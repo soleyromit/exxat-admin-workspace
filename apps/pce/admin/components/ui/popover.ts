@@ -1,1 +1,1 @@
-export * from "@exxatdesignux/ui/components/ui/popover"
+export * from "@exxatdesignux/ui/components/popover"

@@ -160,6 +160,7 @@ export interface AssessmentQuestion {
   order: number
   points: number   // point value for this question; 0 until explicitly set
   bonus: boolean   // bonus questions award points but don't count against totalMarks
+  provenance?: 'qb' | 'pdf' | 'ai' | 'manual' | 'copied'
   gradingConfig?: QuestionGradingConfig  // per-question grading overrides
 }
 

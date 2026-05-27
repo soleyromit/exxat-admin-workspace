@@ -1,1 +1,1 @@
-export * from "@exxatdesignux/ui/components/ui/collapsible"
+export * from "@exxatdesignux/ui/components/collapsible"

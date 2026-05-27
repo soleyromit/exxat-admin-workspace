@@ -35,8 +35,12 @@ RESET='\033[0m'
 echo "↳ pre-commit (workspace audits + digest)"
 echo
 
-# 1. Architecture audit — wiring must be intact
+# 1. Architecture audit — auto-fix skill frontmatter, then block on remaining gaps
 printf "  [1/6] architecture-audit ... "
+python3 scripts/architecture-audit.py --fix > /tmp/pre-commit-arch-fix.log 2>&1
+if grep -q "\[fix\] patched" /tmp/pre-commit-arch-fix.log 2>/dev/null; then
+  git add -u .claude/skills/ 2>/dev/null || true
+fi
 if python3 scripts/architecture-audit.py --strict > /tmp/pre-commit-arch.log 2>&1; then
   printf "${GREEN}pass${RESET}\n"
 else

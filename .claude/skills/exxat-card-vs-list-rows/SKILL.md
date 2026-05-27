@@ -1,8 +1,8 @@
 ---
 name: exxat-card-vs-list-rows
-description: Exxat DS — choose card grids, DataTable, or simple list rows for a surface. Use when deciding between card walls, hub DataTable, or medium vertical lists.
-user-invocable: true
+description: Exxat DS — cards vs rows vs lists. Use when choosing card grids, DataTable, or simple list rows for a surface.
 ---
+
 # Exxat DS — cards vs rows vs lists
 
 Use when choosing **card grids**, **`DataTable`**, or **simple list rows** for a surface.

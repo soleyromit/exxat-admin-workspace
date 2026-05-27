@@ -1,1 +1,1 @@
-export * from "@exxatdesignux/ui/components/ui/tooltip"
+export * from "@exxatdesignux/ui/components/tooltip"

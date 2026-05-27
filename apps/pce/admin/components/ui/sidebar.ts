@@ -1,1 +1,1 @@
-export * from "@exxatdesignux/ui/components/ui/sidebar"
+export * from "@exxatdesignux/ui/components/sidebar"

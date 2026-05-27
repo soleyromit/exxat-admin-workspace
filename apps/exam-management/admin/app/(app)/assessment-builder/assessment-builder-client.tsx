@@ -17,7 +17,7 @@ import {
 } from '@exxatdesignux/ui'
 import { mockCourses, mockCourseOfferings, mockAssessments, MOCK_QB_QUESTIONS, MOCK_QB_FOLDERS } from '@/lib/qb-mock-data'
 import { PERSONAS } from '@/lib/personas'
-import type { AssessmentDraft, AssessmentQuestion, AssessmentSection, Question, QType, QDiff, AssessmentReviewRequest, AssessmentStatus, FolderNode } from '@/lib/qb-types'
+import type { AssessmentDraft, AssessmentQuestion, AssessmentSection, Question, QType, QDiff, AssessmentReviewRequest, AssessmentStatus, FolderNode, Assessment } from '@/lib/qb-types'
 import { defaultAssessmentSettings } from '@/lib/qb-types'
 import { courseObjectives, facultyListRows, type CourseObjective } from '@/lib/faculty-mock-data'
 import { useFacultySession } from '@/lib/faculty-session'
@@ -227,7 +227,18 @@ export default function AssessmentBuilderClient() {
     const sourceQuestions = MOCK_QB_QUESTIONS
       .filter(q => q.folder.startsWith(sourceCode))
       .slice(0, source.questionCount)
-      .map((q, i): AssessmentQuestion => ({ questionId: q.id, order: i + 1, points: 0, bonus: false }))
+      .map((q, i): AssessmentQuestion => ({ questionId: q.id, order: i + 1, points: 0, bonus: false, provenance: 'copied' as const }))
+
+    const copyHealthFlags: import('@/lib/qb-types').QuestionHealthFlag[] = sourceQuestions.flatMap(aq => {
+      const q = MOCK_QB_QUESTIONS.find(mq => mq.id === aq.questionId)
+      if (!q) return []
+      const flags: import('@/lib/qb-types').QuestionHealthFlag[] = []
+      if (q.pbis !== null && q.pbis < 0.2) flags.push({ type: 'poor-pbis', questionId: q.id, pbis: q.pbis })
+      if (q.options && q.options.every(o => !o.rationale || o.rationale.trim() === '')) {
+        flags.push({ type: 'missing-rationale', questionId: q.id })
+      }
+      return flags
+    })
 
     const targetOfferingId = urlCourseId
       ? (mockCourseOfferings.find(o => o.courseId === source.courseId)?.id ?? source.offeringId)
@@ -242,7 +253,7 @@ export default function AssessmentBuilderClient() {
       durationMinutes: source.durationMinutes,
       sections: [],
       settings: defaultAssessmentSettings('Exam'),
-      healthFlags: [],
+      healthFlags: copyHealthFlags,
     })
     setCourseId(source.courseId)
   }, [urlMode, urlSourceId]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -292,7 +303,7 @@ export default function AssessmentBuilderClient() {
     })
   }
 
-  function toggleQuestion(questionId: string) {
+  function toggleQuestion(questionId: string, provenance?: AssessmentQuestion['provenance']) {
     if (!activeAsmt) return
     setActiveAsmt(prev => {
       if (!prev) return prev
@@ -314,7 +325,7 @@ export default function AssessmentBuilderClient() {
         : prev.sections
       return {
         ...prev,
-        questions: [...prev.questions, { questionId, order: prev.questions.length + 1, points: 0, bonus: false }],
+        questions: [...prev.questions, { questionId, order: prev.questions.length + 1, points: 0, bonus: false, provenance: provenance ?? 'qb' }],
         sections: nextSections,
       }
     })
@@ -533,7 +544,7 @@ export default function AssessmentBuilderClient() {
   // Tab-based navigation replacing the old step wizard
   const [activeTab, setActiveTab] = useState<'setup' | 'build' | 'review'>('build')
   const [pickerOpen, setPickerOpen] = useState(false)
-  const [pickerMethod, setPickerMethod] = useState<'qb' | 'pdf' | 'manual'>('qb')
+  const [pickerMethod, setPickerMethod] = useState<'qb' | 'pdf' | 'manual' | 'ai'>('qb')
   const [assignSheetSectionId, setAssignSheetSectionId] = useState<string | null>(null)
 
   // Legacy — kept for dead-code components that reference it
@@ -868,6 +879,23 @@ export default function AssessmentBuilderClient() {
         </div>
       </div>
     )
+  }
+
+  // Creation mode chooser — shown when no draft/source is loaded yet
+  if (builderState === 'idle' && activeAsmt === null && !urlDraftId) {
+    return <CreationModeChooser
+      courseId={courseId}
+      assessments={assessments}
+      onSelectCopy={(sourceId) => {
+        router.push(`/assessment-builder?mode=copy&sourceId=${sourceId}&courseId=${courseId}`)
+      }}
+      onSelectMode={(mode) => {
+        if (mode === 'qb') { setPickerOpen(true); setPickerMethod('qb'); setBuilderState('ready'); setActiveAsmt({ id: `asmt-new-${Date.now()}`, title: 'New Assessment', courseId, offeringId, questions: [], sections: [], durationMinutes: 90, settings: defaultAssessmentSettings('Exam'), healthFlags: [] }) }
+        if (mode === 'pdf') { setPickerOpen(true); setPickerMethod('pdf'); setBuilderState('ready'); setActiveAsmt({ id: `asmt-new-${Date.now()}`, title: 'New Assessment', courseId, offeringId, questions: [], sections: [], durationMinutes: 90, settings: defaultAssessmentSettings('Exam'), healthFlags: [] }) }
+        if (mode === 'ai') { setAiOpen(true); setBuilderState('ready'); setActiveAsmt({ id: `asmt-new-${Date.now()}`, title: 'New Assessment', courseId, offeringId, questions: [], sections: [], durationMinutes: 90, settings: defaultAssessmentSettings('Exam'), healthFlags: [] }) }
+      }}
+      onBack={() => router.push('/courses')}
+    />
   }
 
   return (
@@ -1604,6 +1632,24 @@ export default function AssessmentBuilderClient() {
                                 {/* Question title */}
                                 <td style={{ padding: '8px 8px', verticalAlign: 'middle' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                                    {/* Provenance badge */}
+                                    {(() => {
+                                      const prov = aq.provenance
+                                      if (!prov || prov === 'qb') return null
+                                      const provenanceMap: Record<string, { icon: string; title: string; color: string }> = {
+                                        pdf:    { icon: 'fa-file-lines',    title: 'Imported from PDF',      color: 'var(--chart-3)' },
+                                        ai:     { icon: 'fa-sparkles',      title: 'AI-generated',           color: 'var(--brand-color)' },
+                                        manual: { icon: 'fa-pen-to-square', title: 'Written from scratch',   color: 'var(--muted-foreground)' },
+                                        copied: { icon: 'fa-copy',          title: 'Copied from prior exam', color: 'var(--chart-4)' },
+                                      }
+                                      const p = provenanceMap[prov]
+                                      if (!p) return null
+                                      return (
+                                        <span title={p.title} style={{ flexShrink: 0 }}>
+                                          <i className={`fa-light ${p.icon}`} aria-hidden="true" style={{ fontSize: 10, color: p.color }} />
+                                        </span>
+                                      )
+                                    })()}
                                     <span
                                       role="button"
                                       tabIndex={0}
@@ -5789,19 +5835,20 @@ function PreExamBlock({
 
 const ADD_METHODS = [
   { id: 'qb'     as const, icon: 'fa-database',      label: 'Question Bank' },
+  { id: 'ai'     as const, icon: 'fa-sparkles',       label: 'AI-assisted'   },
   { id: 'pdf'    as const, icon: 'fa-file-pdf',       label: 'Import PDF'    },
   { id: 'manual' as const, icon: 'fa-pen-to-square',  label: 'From scratch'  },
 ]
 
 function AddQuestionsModal({ initialMethod, selectedIds, onToggle, activeSection, activeAsmt, onClose }: {
-  initialMethod: 'qb' | 'pdf' | 'manual'
+  initialMethod: 'qb' | 'pdf' | 'manual' | 'ai'
   selectedIds: Set<string>
-  onToggle: (id: string) => void
+  onToggle: (id: string, provenance?: AssessmentQuestion['provenance']) => void
   activeSection: AssessmentSection | null
   activeAsmt: AssessmentDraft | null
   onClose: () => void
 }) {
-  const [method, setMethod] = React.useState<'qb' | 'pdf' | 'manual'>(initialMethod)
+  const [method, setMethod] = React.useState<'qb' | 'pdf' | 'manual' | 'ai'>(initialMethod)
 
   // QB state
   const [searchQuery, setSearchQuery] = React.useState('')
@@ -5811,8 +5858,14 @@ function AddQuestionsModal({ initialMethod, selectedIds, onToggle, activeSection
   const [pdfFile, setPdfFile] = React.useState<File | null>(null)
   const [pdfParsing, setPdfParsing] = React.useState(false)
   const [pdfExtracted, setPdfExtracted] = React.useState<Question[]>([])
+  const [pdfShowMatching, setPdfShowMatching] = React.useState(false)
   const pdfInputRef = React.useRef<HTMLInputElement>(null)
   const [pdfDragging, setPdfDragging] = React.useState(false)
+
+  // AI state
+  const [aiPrompt, setAiPrompt] = React.useState('')
+  const [aiGenerating, setAiGenerating] = React.useState(false)
+  const [aiResults, setAiResults] = React.useState<Question[]>([])
 
   // Manual state
   const [stem, setStem] = React.useState('')
@@ -5841,7 +5894,11 @@ function AddQuestionsModal({ initialMethod, selectedIds, onToggle, activeSection
     if (!f) return
     setPdfFile(f)
     setPdfParsing(true)
-    setTimeout(() => { setPdfExtracted(MOCK_PDF_EXTRACTED); setPdfParsing(false) }, 1800)
+    setTimeout(() => {
+      setPdfExtracted(MOCK_PDF_EXTRACTED)
+      setPdfShowMatching(true)
+      setPdfParsing(false)
+    }, 1800)
   }
 
   const manualValid = stem.trim().length > 0 && correctIdx !== null && opts[correctIdx]?.trim().length > 0

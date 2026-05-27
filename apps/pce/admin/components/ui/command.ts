@@ -1,1 +1,1 @@
-export * from "@exxatdesignux/ui/components/ui/command"
+export * from "@exxatdesignux/ui/components/command"

@@ -1,8 +1,8 @@
 ---
 name: exxat-drawer-vs-dialog
-description: Exxat DS — drawer vs dialog. Choose Radix Dialog / AlertDialog vs floating Sheet panels vs route for a flow. Use when deciding between sheet, dialog, or page navigation.
-user-invocable: true
+description: Exxat DS — drawer vs dialog. Use when choosing Radix Dialog / AlertDialog vs floating Sheet panels vs route for a flow.
 ---
+
 # Exxat DS — drawer vs dialog
 
 Use when choosing **Radix `Dialog` / `AlertDialog`** vs **floating `Sheet` panels** vs **route** for a flow.

@@ -1,1 +1,1 @@
-export * from "@exxatdesignux/ui/components/ui/dropdown-menu"
+export * from "@exxatdesignux/ui/components/dropdown-menu"

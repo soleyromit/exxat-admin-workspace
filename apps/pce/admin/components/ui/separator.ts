@@ -1,1 +1,1 @@
-export * from "@exxatdesignux/ui/components/ui/separator"
+export * from "@exxatdesignux/ui/components/separator"
