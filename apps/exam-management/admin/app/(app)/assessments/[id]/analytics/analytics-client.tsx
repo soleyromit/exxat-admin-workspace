@@ -241,15 +241,15 @@ export default function AnalyticsClient({ assessmentId }: { assessmentId: string
                             <tr key={item.order} style={{ borderBottom: '1px solid var(--border)', background: isInvalidated || isDiscarded ? 'var(--muted)' : undefined }}>
                               <td style={{ padding: '8px 12px', color: 'var(--muted-foreground)', fontVariantNumeric: 'tabular-nums' }}>{item.order}</td>
                               <td style={{ padding: '8px 12px', color: 'var(--foreground)' }}>
-                                <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--muted-foreground)', marginRight: 8 }}>{item.code}</span>
+                                <span style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--muted-foreground)', marginRight: 8 }}>{item.code}</span>
                                 <span style={{ textDecoration: isDiscarded ? 'line-through' : undefined }}>{item.title.length > 60 ? item.title.slice(0, 60) + '…' : item.title}</span>
                               </td>
                               <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                                {isInvalidated && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'var(--muted)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}>Full credit</span>}
-                                {isDiscarded && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'var(--muted)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}>Excluded</span>}
-                                {hasCorrectedKey && !isInvalidated && !isDiscarded && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'var(--brand-tint)', color: 'var(--brand-color)', border: '1px solid var(--ring)' }}>Key: {hasCorrectedKey}</span>}
-                                {hasAdditionalKeys && !isInvalidated && !isDiscarded && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'var(--brand-tint)', color: 'var(--brand-color)', border: '1px solid var(--ring)', marginLeft: 4 }}>+{additionalKeys[item.order].length} key{additionalKeys[item.order].length > 1 ? 's' : ''}</span>}
-                                {!isInvalidated && !isDiscarded && !hasCorrectedKey && !hasAdditionalKeys && <span style={{ color: 'var(--muted-foreground)', fontSize: 11 }}>—</span>}
+                                {isInvalidated && <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 20, background: 'var(--muted)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}>Full credit</span>}
+                                {isDiscarded && <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 20, background: 'var(--muted)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' }}>Excluded</span>}
+                                {hasCorrectedKey && !isInvalidated && !isDiscarded && <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 20, background: 'var(--brand-tint)', color: 'var(--brand-color)', border: '1px solid var(--ring)' }}>Key: {hasCorrectedKey}</span>}
+                                {hasAdditionalKeys && !isInvalidated && !isDiscarded && <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 20, background: 'var(--brand-tint)', color: 'var(--brand-color)', border: '1px solid var(--ring)', marginLeft: 4 }}>+{additionalKeys[item.order].length} key{additionalKeys[item.order].length > 1 ? 's' : ''}</span>}
+                                {!isInvalidated && !isDiscarded && !hasCorrectedKey && !hasAdditionalKeys && <span style={{ color: 'var(--muted-foreground)', fontSize: 12 }}>—</span>}
                               </td>
                               <td style={{ padding: '8px 12px', textAlign: 'right' }}>
                                 <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -265,7 +265,7 @@ export default function AnalyticsClient({ assessmentId }: { assessmentId: string
                                           setPendingNote('')
                                         }
                                       }}
-                                      style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit', border: `1px solid ${isInvalidated ? 'var(--brand-color)' : 'var(--border)'}`, background: isInvalidated ? 'var(--brand-tint)' : 'transparent', color: isInvalidated ? 'var(--brand-color)' : 'var(--muted-foreground)' }}
+                                      style={{ fontSize: 12, padding: '3px 8px', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit', border: `1px solid ${isInvalidated ? 'var(--brand-color)' : 'var(--border)'}`, background: isInvalidated ? 'var(--brand-tint)' : 'transparent', color: isInvalidated ? 'var(--brand-color)' : 'var(--muted-foreground)' }}
                                     >{isInvalidated ? 'Undo' : 'Invalidate'}</button>
                                   )}
                                   {!isInvalidated && (
@@ -280,7 +280,7 @@ export default function AnalyticsClient({ assessmentId }: { assessmentId: string
                                           setPendingNote('')
                                         }
                                       }}
-                                      style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit', border: `1px solid ${isDiscarded ? 'var(--border)' : 'var(--border)'}`, background: isDiscarded ? 'var(--muted)' : 'transparent', color: 'var(--muted-foreground)' }}
+                                      style={{ fontSize: 12, padding: '3px 8px', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit', border: `1px solid ${isDiscarded ? 'var(--border)' : 'var(--border)'}`, background: isDiscarded ? 'var(--muted)' : 'transparent', color: 'var(--muted-foreground)' }}
                                     >{isDiscarded ? 'Undo discard' : 'Discard'}</button>
                                   )}
                                   {!isInvalidated && !isDiscarded && (
@@ -295,7 +295,7 @@ export default function AnalyticsClient({ assessmentId }: { assessmentId: string
                                           setPendingNote('')
                                         }
                                       }}
-                                      style={{ fontSize: 11, padding: '3px 6px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)', color: 'var(--foreground)', cursor: 'pointer', fontFamily: 'inherit', height: 26 }}
+                                      style={{ fontSize: 12, padding: '3px 6px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)', color: 'var(--foreground)', cursor: 'pointer', fontFamily: 'inherit', height: 26 }}
                                     >
                                       <option value="">Fix key…</option>
                                       {['A', 'B', 'C', 'D', 'E'].map(k => <option key={k} value={k}>{k}</option>)}
@@ -396,7 +396,7 @@ export default function AnalyticsClient({ assessmentId }: { assessmentId: string
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ fontSize: 13, color: 'var(--foreground)', fontWeight: 500 }}>{entry.action}</p>
                             {entry.note && <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 2 }}>Note: {entry.note}</p>}
-                            <p style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 2 }}>
+                            <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 2 }}>
                               {new Date(entry.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                             </p>
                           </div>
@@ -615,7 +615,7 @@ function OverviewView({
                     <Badge
                       variant="secondary"
                       className="rounded font-mono"
-                      style={{ fontSize: 11, padding: '1px 7px' }}
+                      style={{ padding: '1px 7px' }}
                     >
                       {count} of {total}
                     </Badge>
@@ -651,7 +651,6 @@ function OverviewView({
                     variant="secondary"
                     className="rounded font-mono"
                     style={{
-                      fontSize: 10,
                       padding: '0px 5px',
                       background: `color-mix(in oklch, var(${chartVar}) 18%, var(--background))`,
                       color: `var(${chartVar})`,

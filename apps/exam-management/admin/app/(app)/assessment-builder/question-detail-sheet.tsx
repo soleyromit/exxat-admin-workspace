@@ -108,7 +108,7 @@ function MCQStackedPreview({ question }: { question: Question }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <StemBlock>{stemText}</StemBlock>
-      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 2 }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 2 }}>
         Select one answer
       </div>
       {question.options?.map(opt => (
@@ -125,8 +125,8 @@ function MCQStackedPreview({ question }: { question: Question }) {
               border: `2px solid ${opt.isCorrect ? 'var(--chart-2)' : 'var(--border)'}`,
               background: opt.isCorrect ? 'var(--chart-2)' : 'transparent',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 11, fontWeight: 700,
-              color: opt.isCorrect ? '#fff' : 'var(--muted-foreground)',
+              fontSize: 12, fontWeight: 700,
+              color: opt.isCorrect ? 'var(--background)' : 'var(--muted-foreground)',
               marginTop: 1,
             }}>
               {opt.key}
@@ -167,7 +167,7 @@ function MCQSplitPreview({ question }: { question: Question }) {
             border: '1px solid color-mix(in srgb, var(--chart-2) 25%, var(--background))',
             borderRadius: 8, padding: 12,
           }}>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--chart-2)', marginBottom: 5 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--chart-2)', marginBottom: 5 }}>
               Rationale{correctOption.rationaleAuthor ? ` — ${correctOption.rationaleAuthor}` : ''}
             </div>
             <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--foreground)', margin: 0 }}>{correctOption.rationale}</p>
@@ -176,7 +176,7 @@ function MCQSplitPreview({ question }: { question: Question }) {
       </div>
       {/* Right: options + distractor rationale */}
       <div style={{ width: '44%', flexShrink: 0, overflowY: 'auto' }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 6 }}>Select one answer</div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 6 }}>Select one answer</div>
         {question.options?.map(opt => (
           <div key={opt.key} style={{ marginBottom: 6 }}>
             <div style={{
@@ -191,8 +191,8 @@ function MCQSplitPreview({ question }: { question: Question }) {
                 border: `2px solid ${opt.isCorrect ? 'var(--chart-2)' : 'var(--border)'}`,
                 background: opt.isCorrect ? 'var(--chart-2)' : 'transparent',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 10, fontWeight: 700,
-                color: opt.isCorrect ? '#fff' : 'var(--muted-foreground)',
+                fontSize: 12, fontWeight: 700,
+                color: opt.isCorrect ? 'var(--background)' : 'var(--muted-foreground)',
                 marginTop: 1,
               }}>
                 {opt.key}
@@ -200,7 +200,7 @@ function MCQSplitPreview({ question }: { question: Question }) {
               <div style={{ flex: 1 }}>
                 <p style={{ fontSize: 12, lineHeight: 1.4, color: 'var(--foreground)', margin: 0 }}>{opt.text}</p>
                 {opt.isCorrect && (
-                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--chart-2)', display: 'block', marginTop: 2 }}>✓ Correct</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--chart-2)', display: 'block', marginTop: 2 }}>✓ Correct</span>
                 )}
               </div>
             </div>
@@ -220,7 +220,7 @@ function OrderingPreview({ question }: { question: Question }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <StemBlock>{stemText}</StemBlock>
-      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 2 }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 2 }}>
         Correct sequence
       </div>
       {question.options?.map((opt, idx) => (
@@ -257,8 +257,8 @@ function MatchingPreview({ question }: { question: Question }) {
       <StemBlock>{stemText}</StemBlock>
       {/* Column headers */}
       <div style={{ display: 'flex', gap: 2, marginBottom: 2 }}>
-        <div style={{ flex: 1, fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Drug / Prompt</div>
-        <div style={{ flex: 2, fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Correct match</div>
+        <div style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Drug / Prompt</div>
+        <div style={{ flex: 2, fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Correct match</div>
       </div>
       {question.options?.map(opt => {
         // Split "Drug → Match" on first →
@@ -338,7 +338,7 @@ function FillBlankPreview({ question }: { question: Question }) {
       </div>
       {answers.length > 0 && (
         <>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Correct answers</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Correct answers</div>
           {answers.map((ans, i) => (
             <div key={ans.key} style={{ marginBottom: 2 }}>
               <div style={{
@@ -346,7 +346,7 @@ function FillBlankPreview({ question }: { question: Question }) {
                 border: '1px solid var(--chart-2)', borderRadius: 7, padding: '8px 10px',
                 background: 'oklch(0.97 0.025 160)',
               }}>
-                <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: 'var(--chart-2)', minWidth: 24 }}>
+                <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 700, color: 'var(--chart-2)', minWidth: 24 }}>
                   #{i + 1}
                 </span>
                 <p style={{ fontSize: 13, color: 'var(--foreground)', margin: 0, flex: 1 }}>{ans.text}</p>
@@ -389,7 +389,7 @@ function EssayPreview({ question }: { question: Question }) {
           border: '1px solid color-mix(in srgb, var(--chart-2) 22%, var(--background))',
           borderRadius: 8, padding: 13,
         }}>
-          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--chart-2)', marginBottom: 8 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--chart-2)', marginBottom: 8 }}>
             Scoring rubric
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
@@ -431,7 +431,7 @@ function HotspotPreview({ question }: { question: Question }) {
           border: '2px solid var(--chart-2)',
           background: 'oklch(0.97 0.025 160)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 11, fontWeight: 700, color: 'var(--chart-2)',
+          fontSize: 12, fontWeight: 700, color: 'var(--chart-2)',
         }}>
           ✓
         </div>
@@ -450,7 +450,7 @@ function MSQPreview({ question }: { question: Question }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <StemBlock>{stemText}</StemBlock>
-      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 2 }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 2 }}>
         Select all that apply — {correctCount} correct answer{correctCount !== 1 ? 's' : ''}
       </div>
       {question.options?.map(opt => (
@@ -472,7 +472,7 @@ function MSQPreview({ question }: { question: Question }) {
               {opt.isCorrect && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, color: '#fff' }} />}
             </span>
             <div style={{ flex: 1 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted-foreground)', marginRight: 6 }}>{opt.key}.</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-foreground)', marginRight: 6 }}>{opt.key}.</span>
               <span style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--foreground)' }}>{opt.text}</span>
               {opt.isCorrect && (
                 <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--chart-2)', display: 'block', marginTop: 3 }}>✓ Correct</span>
@@ -498,7 +498,7 @@ function TrueFalsePreview({ question }: { question: Question }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <StemBlock>{stemText}</StemBlock>
-      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 2 }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 2 }}>
         Select one — True or False
       </div>
       <div style={{ display: 'flex', gap: 10 }}>
@@ -564,14 +564,14 @@ function ShortAnswerPreview({ question }: { question: Question }) {
       {/* Expected keywords/phrases */}
       {question.options && question.options.length > 0 && (
         <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: 12 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 8 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 8 }}>
             Expected keywords / acceptable phrases
           </div>
           {question.options.map((opt, i) => (
             <div key={opt.key} style={{ marginBottom: i < (question.options?.length ?? 0) - 1 ? 8 : 0 }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                 <span style={{
-                  flexShrink: 0, fontSize: 11, fontWeight: 700, color: 'var(--chart-2)',
+                  flexShrink: 0, fontSize: 12, fontWeight: 700, color: 'var(--chart-2)',
                   minWidth: 20, paddingTop: 1,
                 }}>
                   {opt.key}.
@@ -594,7 +594,7 @@ function ShortAnswerPreview({ question }: { question: Question }) {
           border: '1px solid color-mix(in srgb, var(--chart-2) 22%, var(--background))',
           borderRadius: 8, padding: 13,
         }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--chart-2)', marginBottom: 8 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--chart-2)', marginBottom: 8 }}>
             Scoring rubric — {question.rubric.reduce((s, r) => s + r.points, 0)} pts total
           </div>
           {question.rubric.map((r, i) => (
@@ -623,7 +623,7 @@ function ExtendedMatchingPreview({ question }: { question: Question }) {
       {/* Option pool */}
       {pool.length > 0 && (
         <div style={{ background: 'var(--muted)', borderRadius: 8, padding: 12 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 8 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 8 }}>
             Option list — select from these for each question below
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '4px 16px' }}>
@@ -637,7 +637,7 @@ function ExtendedMatchingPreview({ question }: { question: Question }) {
         </div>
       )}
       {/* Sub-questions */}
-      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', marginTop: 2 }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', marginTop: 2 }}>
         Questions — choose one option per stem
       </div>
       {question.options?.map((opt, idx) => {
@@ -654,7 +654,7 @@ function ExtendedMatchingPreview({ question }: { question: Question }) {
                 flexShrink: 0, width: 22, height: 22, borderRadius: '50%',
                 background: 'var(--muted)', border: '1px solid var(--border)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 11, fontWeight: 700, color: 'var(--muted-foreground)',
+                fontSize: 12, fontWeight: 700, color: 'var(--muted-foreground)',
                 marginTop: 1,
               }}>
                 {idx + 1}
@@ -663,7 +663,7 @@ function ExtendedMatchingPreview({ question }: { question: Question }) {
                 <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--foreground)', margin: 0 }}>{opt.text}</p>
                 {correctPoolItem && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
-                    <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>Correct answer:</span>
+                    <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>Correct answer:</span>
                     <span style={{
                       fontSize: 12, fontWeight: 700, padding: '1px 8px', borderRadius: 4,
                       background: 'oklch(0.97 0.025 160)', color: 'var(--chart-2)',
@@ -1229,7 +1229,7 @@ function GradingRulesSection({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', marginBottom: 4, margin: 0 }}>Grading rules</p>
+      <p style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)', marginBottom: 4, margin: 0 }}>Grading rules</p>
 
       {/* Randomize options — MCQ, MSQ, True/False, Ordering, Extended Matching */}
       {['MCQ', 'MSQ', 'True/False', 'Ordering', 'Extended Matching'].includes(type) && (
