@@ -90,6 +90,19 @@ Source: weekly Granola audit (meeting `f59cfbe4` cross-reference pass 5)
 |---|---|---|---|---|---|
 | T67 | Questions tab — wire up in course-detail hub | Admin / Faculty | Course detail (`courses/[id]`) | P1 | ✅ Applied 2026-05-25. `QuestionsTab` component existed and was complete but not imported or rendered. Now wired as the second tab between Assessments and Students. Fulfills D_EM24 (course-hub level) — filtered question list with p-biserial, difficulty, Bloom's, and flagged-item toggle scoped to the course's QB folder. |
 
+## Phase 1 design tasks — added 2026-05-27
+
+Source: `docs/research/meetings/2026-05-27-exam-management-status-offline-faculty-access.md` (Granola `943b9e4a`) + `docs/research/meetings/2026-05-27-assessment-creation-entry-points-question-selection.md` (Granola `693723b8`)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T68 | Faculty access levels: alignment document | Admin / Faculty | Pre-design doc | P0 (blocker) | Romit + PMs + Vishaka must produce roles document before designing access-control screens. 4 tiers: Full / Read-only / Add-own / Section contributor (Phase 2). D_EM48. |
+| ~~T51~~ | ~~Assessment creation entry modal — 4-option flow~~ | ~~Admin / Faculty~~ | ~~Assessment builder~~ | ~~CANCELLED~~ | Decision reversed 2026-05-27. Entry stays at 2 options (blank/copy per D_EM55). All other methods (AI, QB, PDF) go inside builder. Current modal is correct. |
+| T69 | Offline mode: update T58 status → Q1 deliverable | Admin / Faculty / Student | Pre-exam flow | P1 | T58 said "Phase 1 confirmed." REVISED: offline download mode is Q1 2027, not December 2026. December launch is browser-only with preload safety net. D_EM45 supersedes §5.35. |
+| T70 | Respondus lockdown browser integration research | Eng | Pre-exam flow | P1 | Engineering research task. Explore Respondus (or equivalent) integration as the lockdown browser solution. Building own desktop client explicitly ruled out. D_EM46. |
+| T71 | Point-biserial number in assessment builder | Admin / Faculty | Assessment builder | P1 | Show p-bis as a plain number in the question picker column during build. Red if negative. Future: flag bottom-20th-percentile by threshold. D_EM58. DESIGN-REVIEW — requires builder UI change. |
+| T72 | Assessment summary screen before publish | Admin / Faculty | Assessment builder | P1 | NEW PAGE NEEDED. Pre-publish summary between Stage 2 (Build) and Stage 3 (Publish): total questions, expected completion time, psychometric summary (p-bis range, difficulty distribution, Bloom's coverage), questions missing rationale. D_EM61. DESIGN-REVIEW. |
+
 ## Research / blockers (R1–R10 from audit)
 
 | # | Item | Owner | Deadline |
