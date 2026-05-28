@@ -266,6 +266,7 @@ export default function AssessmentBuilderClient() {
 
   const offerings = mockCourseOfferings.filter(o => o.courseId === courseId)
   const assessments = mockAssessments.filter(a => a.courseId === courseId && a.offeringId === offeringId)
+  const allCourseAssessments = mockAssessments.filter(a => a.courseId === courseId)
 
   const currentCourse   = mockCourses.find(c => c.id === courseId)
   const currentOffering = mockCourseOfferings.find(o => o.id === offeringId)
@@ -885,9 +886,26 @@ export default function AssessmentBuilderClient() {
   if (builderState === 'idle' && activeAsmt === null && !urlDraftId) {
     return <CreationModeChooser
       courseId={courseId}
-      assessments={assessments}
-      onSelectCopy={(sourceId: string) => {
-        router.push(`/assessment-builder?mode=copy&sourceId=${sourceId}&courseId=${courseId}`)
+      assessments={allCourseAssessments}
+      onCopyWithQuestions={(source: Assessment, questionIds: string[]) => {
+        const srcCode = (mockCourses.find(c => c.id === source.courseId)?.code ?? '').toLowerCase()
+        const pool = MOCK_QB_QUESTIONS.filter(q => q.folder.startsWith(srcCode)).slice(0, source.questionCount)
+        const chosen = questionIds.length > 0 ? pool.filter(q => questionIds.includes(q.id)) : pool
+        const asmtQs = chosen.map((q, i): AssessmentQuestion => ({
+          questionId: q.id, order: i + 1, points: 0, bonus: false, provenance: 'copied' as const,
+        }))
+        setActiveAsmt({
+          id: `asmt-copy-${source.id}`,
+          title: `${source.title} (copy)`,
+          courseId: source.courseId,
+          offeringId: offeringId,
+          questions: asmtQs,
+          sections: [],
+          durationMinutes: source.durationMinutes,
+          settings: defaultAssessmentSettings('Exam'),
+          healthFlags: [],
+        })
+        setBuilderState('ready')
       }}
       onSelectMode={(mode: 'qb' | 'pdf' | 'ai') => {
         if (mode === 'qb') { setPickerOpen(true); setPickerMethod('qb'); setBuilderState('ready'); setActiveAsmt({ id: `asmt-new-${Date.now()}`, title: 'New Assessment', courseId, offeringId, questions: [], sections: [], durationMinutes: 90, settings: defaultAssessmentSettings('Exam'), healthFlags: [] }) }
@@ -5831,109 +5849,387 @@ function PreExamBlock({
 
 // ── Creation Mode Chooser ────────────────────────────────────────────────────
 
-function CreationModeChooser({ courseId: _courseId, assessments, onSelectCopy, onSelectMode, onBack }: {
+function DiffMiniBar({ dist }: { dist: Record<string, number> }) {
+  const easy = dist['Easy'] ?? 0
+  const med  = dist['Medium'] ?? 0
+  const hard = dist['Hard'] ?? 0
+  const total = easy + med + hard
+  if (total === 0) return <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>—</span>
+  return (
+    <div style={{ display: 'flex', gap: 2, alignItems: 'center', height: 7, width: 56 }}>
+      <div style={{ height: '100%', flex: easy / total, background: 'var(--chart-2)', borderRadius: 2 }} />
+      <div style={{ height: '100%', flex: med  / total, background: 'var(--chart-3)', borderRadius: 2 }} />
+      <div style={{ height: '100%', flex: hard / total, background: 'var(--chart-1)', borderRadius: 2 }} />
+    </div>
+  )
+}
+
+function CreationModeChooser({ courseId: _courseId, assessments, onCopyWithQuestions, onSelectMode, onBack }: {
   courseId: string
   assessments: Assessment[]
-  onSelectCopy: (sourceId: string) => void
+  onCopyWithQuestions: (source: Assessment, questionIds: string[]) => void
   onSelectMode: (mode: 'qb' | 'pdf' | 'ai') => void
   onBack: () => void
 }) {
-  const [showCopyList, setShowCopyList] = React.useState(false)
-  const sortedAssessments = [...assessments].sort((a, b) => b.id.localeCompare(a.id)).slice(0, 8)
+  const [view, setView] = React.useState<'paths' | 'copy-picker' | 'question-picker'>('paths')
+  const [pickerAsmt, setPickerAsmt] = React.useState<Assessment | null>(null)
+  const [selectedQids, setSelectedQids] = React.useState<Set<string>>(new Set())
+  const [previewQid, setPreviewQid] = React.useState<string | null>(null)
 
-  const PATHS = [
-    { id: 'copy' as const, icon: 'fa-copy',         label: 'Copy from prior',  desc: 'Start from a previous exam, then adjust questions and settings.' },
-    { id: 'ai'   as const, icon: 'fa-sparkles',      label: 'AI-assisted',      desc: 'Describe what you need; Leo selects matching questions from your bank.' },
-    { id: 'pdf'  as const, icon: 'fa-file-lines',    label: 'Import document',  desc: 'Upload a PDF or doc. Leo extracts questions and matches them to your bank.' },
-    { id: 'qb'   as const, icon: 'fa-database',      label: 'Build from QB',    desc: 'Browse and hand-pick questions from your question bank.' },
+  const sortedAssessments = [...assessments].sort((a, b) => b.id.localeCompare(a.id))
+
+  const SECONDARY_PATHS = [
+    { id: 'ai'  as const, icon: 'fa-sparkles',  label: 'AI-assisted',   desc: 'Describe what you need; Leo picks matching questions.' },
+    { id: 'pdf' as const, icon: 'fa-file-lines', label: 'Import doc',    desc: 'Upload a PDF; Leo extracts and matches questions.' },
+    { id: 'qb'  as const, icon: 'fa-database',   label: 'Build from QB', desc: 'Browse and hand-pick from your question bank.' },
   ] as const
 
+  function getAsmtQuestions(asmt: Assessment): Question[] {
+    const sourceCode = (mockCourses.find(c => c.id === asmt.courseId)?.code ?? '').toLowerCase()
+    return MOCK_QB_QUESTIONS
+      .filter(q => q.folder.startsWith(sourceCode))
+      .slice(0, asmt.questionCount)
+  }
+
+  // ── Question-picker view ──────────────────────────────────────────────────────
+  if (view === 'question-picker' && pickerAsmt) {
+    const questions = getAsmtQuestions(pickerAsmt)
+    const previewQ = previewQid ? questions.find(q => q.id === previewQid) ?? null : null
+    const allSelected = questions.length > 0 && questions.every(q => selectedQids.has(q.id))
+
+    function toggleSelectAll() {
+      if (allSelected) {
+        setSelectedQids(new Set())
+      } else {
+        setSelectedQids(new Set(questions.map(q => q.id)))
+      }
+    }
+
+    function toggleQid(id: string) {
+      setSelectedQids(prev => {
+        const next = new Set(prev)
+        if (next.has(id)) { next.delete(id) } else { next.add(id) }
+        return next
+      })
+    }
+
+    const diffColor = (d: string) =>
+      d === 'Easy' ? 'var(--chart-2)' : d === 'Medium' ? 'var(--chart-3)' : 'var(--chart-1)'
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: 'var(--background)' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', padding: '0 20px', height: 52, borderBottom: '1px solid var(--border)', background: 'var(--card)', flexShrink: 0, gap: 10 }}>
+          <Button variant="ghost" size="sm" onClick={() => setView('copy-picker')} style={{ gap: 6, color: 'var(--muted-foreground)', paddingInline: 8 }}>
+            <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 12 }} />
+            Copy from prior exam
+          </Button>
+          <span style={{ color: 'var(--border)', fontSize: 14 }}>/</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--foreground)' }}>{pickerAsmt.title}</span>
+        </div>
+
+        {/* Two-panel body */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden' }}>
+          {/* Left panel — question list */}
+          <div style={{ flex: '1 1 0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            {/* Toolbar */}
+            <div style={{ height: 44, borderBottom: '1px solid var(--border)', background: 'var(--card)', flexShrink: 0, padding: '0 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Button variant="ghost" size="sm" onClick={toggleSelectAll} style={{ paddingInline: 8 }}>
+                {allSelected ? 'Deselect all' : 'Select all'}
+              </Button>
+              <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--muted-foreground)' }}>
+                {selectedQids.size} of {questions.length} selected
+              </span>
+            </div>
+
+            {/* Scrollable question list */}
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {questions.length === 0 ? (
+                <div style={{ padding: '40px 16px', textAlign: 'center', fontSize: 13, color: 'var(--muted-foreground)' }}>
+                  No questions found for this assessment.
+                </div>
+              ) : questions.map(q => {
+                const isSelected = selectedQids.has(q.id)
+                const isPreviewed = previewQid === q.id
+                return (
+                  <div
+                    key={q.id}
+                    style={{
+                      display: 'flex', flexDirection: 'row', gap: 10, alignItems: 'flex-start',
+                      padding: '10px 16px', borderBottom: '1px solid var(--border)',
+                      background: isPreviewed ? 'var(--muted)' : 'transparent',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => setPreviewQid(q.id)}
+                  >
+                    {/* Checkbox — stopPropagation so row click still sets preview */}
+                    <div onClick={(e) => e.stopPropagation()} style={{ paddingTop: 2, flexShrink: 0 }}>
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleQid(q.id)}
+                        aria-label={`Select question ${q.code}`}
+                      />
+                    </div>
+
+                    {/* Middle — code + badges + stem */}
+                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 10, color: 'var(--muted-foreground)', background: 'var(--muted)', padding: '1px 6px', borderRadius: 3, fontFamily: 'monospace' }}>
+                          {q.code}
+                        </span>
+                        <Badge variant="secondary" style={{ fontSize: 10, padding: '0 5px', height: 18 }}>{q.type}</Badge>
+                        <Badge variant="outline" style={{ fontSize: 10, padding: '0 5px', height: 18, color: diffColor(q.difficulty), borderColor: diffColor(q.difficulty) }}>{q.difficulty}</Badge>
+                      </div>
+                      <div style={{
+                        fontSize: 13, lineHeight: 1.4, color: 'var(--foreground)',
+                        overflow: 'hidden', display: '-webkit-box',
+                        WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                      }}>
+                        {q.stemText ?? q.title}
+                      </div>
+                    </div>
+
+                    {/* Right — PBI + usage */}
+                    <div style={{ flexShrink: 0, textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>PBI {q.pbis != null ? q.pbis.toFixed(2) : '—'}</span>
+                      <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{q.usage}× used</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Right panel — question preview */}
+          {previewQ && (
+            <div style={{ width: 300, flexShrink: 0, borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              {/* Panel header */}
+              <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--card)', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 10, color: 'var(--muted-foreground)', background: 'var(--muted)', padding: '1px 6px', borderRadius: 3, fontFamily: 'monospace' }}>
+                    {previewQ.code}
+                  </span>
+                  <Badge variant="secondary" style={{ fontSize: 10, padding: '0 5px', height: 18 }}>{previewQ.type}</Badge>
+                  <Badge variant="outline" style={{ fontSize: 10, padding: '0 5px', height: 18, color: diffColor(previewQ.difficulty), borderColor: diffColor(previewQ.difficulty) }}>{previewQ.difficulty}</Badge>
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+                  Usage {previewQ.usage}× · PBI {previewQ.pbis != null ? previewQ.pbis.toFixed(2) : '—'} · {previewQ.blooms}
+                </div>
+              </div>
+
+              {/* Panel body */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <p style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--foreground)', margin: 0 }}>
+                  {previewQ.stemText ?? previewQ.title}
+                </p>
+                {previewQ.options && previewQ.options.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {previewQ.options.map(opt => (
+                      <div
+                        key={opt.key}
+                        style={{
+                          padding: '8px 10px', borderRadius: 6, fontSize: 12, lineHeight: 1.5,
+                          background: opt.isCorrect ? 'var(--brand-tint)' : 'var(--muted)',
+                          border: `1px solid ${opt.isCorrect ? 'var(--brand-color)' : 'transparent'}`,
+                        }}
+                      >
+                        {opt.key}. {opt.text}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderTop: '1px solid var(--border)', background: 'var(--card)', flexShrink: 0 }}>
+          <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{selectedQids.size} questions selected</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Button variant="outline" size="default" onClick={() => setView('copy-picker')}>Cancel</Button>
+            <Button
+              variant="default"
+              size="default"
+              disabled={selectedQids.size === 0}
+              onClick={() => onCopyWithQuestions(pickerAsmt!, [...selectedQids])}
+            >
+              Add {selectedQids.size} question{selectedQids.size !== 1 ? 's' : ''} to my exam
+              <i className="fa-light fa-arrow-right" aria-hidden="true" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Copy-picker view ─────────────────────────────────────────────────────────
+  if (view === 'copy-picker') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: 'var(--background)' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', padding: '0 20px', height: 52, borderBottom: '1px solid var(--border)', background: 'var(--card)', flexShrink: 0, gap: 10 }}>
+          <Button variant="ghost" size="sm" onClick={() => setView('paths')} style={{ gap: 6, color: 'var(--muted-foreground)', paddingInline: 8 }}>
+            <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 12 }} />
+            New Assessment
+          </Button>
+          <span style={{ color: 'var(--border)', fontSize: 14 }}>/</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--foreground)' }}>Copy from prior exam</span>
+        </div>
+
+        {/* Card grid body */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
+          {sortedAssessments.length === 0 ? (
+            <div style={{ padding: '40px 16px', textAlign: 'center', fontSize: 13, color: 'var(--muted-foreground)' }}>
+              No prior assessments found for this course.
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+              {sortedAssessments.map(a => {
+                const offering = mockCourseOfferings.find(o => o.id === a.offeringId)
+                const easy  = a.diffDistribution['Easy']   ?? 0
+                const med   = a.diffDistribution['Medium'] ?? 0
+                const hard  = a.diffDistribution['Hard']   ?? 0
+                const total = easy + med + hard
+                const pct   = (n: number) => total > 0 ? Math.round(n / total * 100) : 0
+
+                return (
+                  <div
+                    key={a.id}
+                    style={{
+                      background: 'var(--card)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 12,
+                      padding: 16,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 10,
+                    }}
+                  >
+                    {/* Top row: term pill + duration */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{
+                        fontSize: 11, color: 'var(--muted-foreground)',
+                        background: 'var(--muted)', padding: '2px 8px', borderRadius: 20,
+                      }}>
+                        {offering?.semester ?? '—'}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{a.durationMinutes} min</span>
+                    </div>
+
+                    {/* Title */}
+                    <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.4, color: 'var(--foreground)' }}>
+                      {a.title}
+                    </div>
+
+                    {/* Stats */}
+                    <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
+                      {a.questionCount} questions
+                    </div>
+
+                    {/* Difficulty bar */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <div style={{ display: 'flex', height: 6, borderRadius: 3, overflow: 'hidden' }}>
+                        <div style={{ flex: easy / (total || 1), background: 'var(--chart-2)' }} />
+                        <div style={{ flex: med  / (total || 1), background: 'var(--chart-3)' }} />
+                        <div style={{ flex: hard / (total || 1), background: 'var(--chart-1)' }} />
+                      </div>
+                      <div style={{ fontSize: 10, color: 'var(--muted-foreground)', display: 'flex', gap: 8 }}>
+                        <span>E {pct(easy)}%</span>
+                        <span>M {pct(med)}%</span>
+                        <span>H {pct(hard)}%</span>
+                      </div>
+                    </div>
+
+                    {/* CTA */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const qs = getAsmtQuestions(a)
+                        setPickerAsmt(a)
+                        setSelectedQids(new Set(qs.map(q => q.id)))
+                        setPreviewQid(null)
+                        setView('question-picker')
+                      }}
+                      style={{ justifyContent: 'space-between', paddingInline: 8, marginTop: 2 }}
+                    >
+                      Preview questions
+                      <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 12 }} />
+                    </Button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ── Paths view ────────────────────────────────────────────────────────────────
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: 'var(--background)' }}>
-      {/* Minimal header */}
+      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', padding: '0 20px', height: 52, borderBottom: '1px solid var(--border)', background: 'var(--card)', flexShrink: 0, gap: 10 }}>
-        <button type="button" onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--muted-foreground)', fontFamily: 'inherit', padding: '4px 8px', borderRadius: 6 }}>
+        <Button variant="ghost" size="sm" onClick={onBack} style={{ gap: 6, color: 'var(--muted-foreground)', paddingInline: 8 }}>
           <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 12 }} />
           Courses
-        </button>
+        </Button>
         <span style={{ color: 'var(--border)', fontSize: 14 }}>/</span>
         <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--foreground)' }}>New Assessment</span>
       </div>
 
       {/* Centered content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', gap: 32, overflowY: 'auto' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', gap: 28, overflowY: 'auto' }}>
         <div style={{ textAlign: 'center' }}>
           <p style={{ fontSize: 20, fontWeight: 700, color: 'var(--foreground)', marginBottom: 6 }}>How would you like to start?</p>
-          <p style={{ fontSize: 14, color: 'var(--muted-foreground)' }}>You can use any combination of methods once you&apos;re inside the builder.</p>
+          <p style={{ fontSize: 14, color: 'var(--muted-foreground)' }}>You can mix any method once you&apos;re inside the builder.</p>
         </div>
 
-        {/* 4 path cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, width: '100%', maxWidth: 580 }}>
-          {PATHS.map(path => (
-            <button
-              key={path.id}
-              type="button"
-              onClick={() => {
-                if (path.id === 'copy') setShowCopyList(v => !v)
-                else onSelectMode(path.id)
-              }}
-              style={{
-                textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
-                background: showCopyList && path.id === 'copy' ? 'var(--brand-tint)' : 'var(--card)',
-                border: showCopyList && path.id === 'copy' ? '1.5px solid var(--brand-color)' : '1px solid var(--border)',
-                borderRadius: 10, padding: '18px 18px 16px',
-                display: 'flex', flexDirection: 'column', gap: 10,
-                transition: 'border-color 0.15s, background 0.15s',
-              }}
-            >
-              <div style={{ width: 34, height: 34, borderRadius: 8, background: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <i className={`fa-light ${path.icon}`} aria-hidden="true" style={{ fontSize: 14, color: 'var(--brand-color)' }} />
+        <div style={{ width: '100%', maxWidth: 580, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {/* Primary — copy from prior */}
+          <Button
+            variant="outline"
+            size="default"
+            onClick={() => setView('copy-picker')}
+            style={{ width: '100%', height: 'auto', textAlign: 'left', padding: '18px 20px', borderRadius: 10, borderColor: 'var(--brand-color)', background: 'var(--brand-tint)' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%' }}>
+              <div style={{ width: 38, height: 38, borderRadius: 9, background: 'var(--brand-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <i className="fa-light fa-copy" aria-hidden="true" style={{ fontSize: 16, color: 'white' }} />
               </div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 3 }}>{path.label}</div>
-                <div style={{ fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1.5 }}>{path.desc}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--foreground)', marginBottom: 2 }}>Copy from prior exam</div>
+                <div style={{ fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1.5, fontWeight: 400 }}>Duplicate a previous exam, then swap questions and settings for this term.</div>
               </div>
-              {path.id === 'copy' && <div style={{ fontSize: 11, color: 'var(--brand-color)', fontWeight: 600, marginTop: 2 }}>{showCopyList ? 'Hide list ↑' : 'See recent exams →'}</div>}
-            </button>
-          ))}
-        </div>
-
-        {/* Copy list — expands below the cards */}
-        {showCopyList && (
-          <div style={{ width: '100%', maxWidth: 580, border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden', background: 'var(--card)' }}>
-            <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Recent assessments
+              <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 15, color: 'var(--brand-color)', flexShrink: 0 }} />
             </div>
-            {sortedAssessments.length === 0 && (
-              <div style={{ padding: '24px 16px', textAlign: 'center', fontSize: 13, color: 'var(--muted-foreground)' }}>No prior assessments found for this course.</div>
-            )}
-            {sortedAssessments.map(a => (
-              <button
-                key={a.id}
-                type="button"
-                onClick={() => onSelectCopy(a.id)}
-                style={{
-                  width: '100%', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
-                  background: 'none', border: 'none', borderBottom: '1px solid var(--border)',
-                  padding: '11px 16px', display: 'flex', alignItems: 'center', gap: 12,
-                  transition: 'background 0.1s',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--muted)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+          </Button>
+
+          {/* Secondary — 3-col grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            {SECONDARY_PATHS.map(path => (
+              <Button
+                key={path.id}
+                variant="outline"
+                size="default"
+                onClick={() => onSelectMode(path.id)}
+                style={{ height: 'auto', textAlign: 'left', padding: '14px 14px 12px', borderRadius: 10 }}
               >
-                <i className="fa-light fa-file-lines" aria-hidden="true" style={{ fontSize: 14, color: 'var(--muted-foreground)', flexShrink: 0 }} />
-                <span style={{ flex: 1, fontSize: 13, color: 'var(--foreground)', fontWeight: 500 }}>{a.title}</span>
-                <span style={{ fontSize: 12, color: 'var(--muted-foreground)', flexShrink: 0 }}>{a.questionCount} questions</span>
-                <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)', flexShrink: 0 }} />
-              </button>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8, width: '100%' }}>
+                  <div style={{ width: 30, height: 30, borderRadius: 7, background: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <i className={`fa-light ${path.icon}`} aria-hidden="true" style={{ fontSize: 13, color: 'var(--brand-color)' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)', marginBottom: 2 }}>{path.label}</div>
+                    <div style={{ fontSize: 11, color: 'var(--muted-foreground)', lineHeight: 1.5, fontWeight: 400 }}>{path.desc}</div>
+                  </div>
+                </div>
+              </Button>
             ))}
-            {assessments.length > 8 && (
-              <div style={{ padding: '10px 16px', fontSize: 12, color: 'var(--muted-foreground)', textAlign: 'center', cursor: 'pointer' }}>
-                Show older assessments…
-              </div>
-            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   )
