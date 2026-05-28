@@ -8,6 +8,11 @@ import {
   LocalBanner,
   Avatar,
   AvatarFallback,
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
 } from '@exxatdesignux/ui'
 import {
   MOCK_MASTER_COURSES,
@@ -25,6 +30,7 @@ interface StepDistributionProps {
   selectedTerm: ProgramTerm
   publishedTemplates: import('@/lib/pce-mock-data').PceTemplate[]
   templateAssignments: Record<string, string>
+  programName?: string
   onToggleOffering: (id: string) => void
   onSelectAll: () => void
   onDeselectAll: () => void
@@ -60,6 +66,7 @@ export function StepDistribution({
   selectedTerm,
   publishedTemplates,
   templateAssignments,
+  programName,
   onToggleOffering,
   onSelectAll,
   onDeselectAll,
@@ -68,6 +75,7 @@ export function StepDistribution({
   onNext,
 }: StepDistributionProps) {
   const [search, setSearch] = useState('')
+  const [cohortFilter, setCohortFilter] = useState<string>('all')
   const [rosterOffering, setRosterOffering] = useState<CourseOffering | null>(null)
   const [rosterOpen, setRosterOpen] = useState(false)
 
@@ -76,7 +84,13 @@ export function StepDistribution({
     setRosterOpen(true)
   }
 
+  const cohortOptions = Array.from(
+    new Set(offeringsForTerm.map(o => o.cohort).filter(Boolean))
+  ).sort()
+
   const filteredOfferings = offeringsForTerm.filter(offering => {
+    const matchesCohort = cohortFilter === 'all' || offering.cohort === cohortFilter
+    if (!matchesCohort) return false
     if (!search.trim()) return true
     const course = MOCK_MASTER_COURSES.find(c => c.id === offering.masterCourseId)
     const q = search.toLowerCase()
@@ -93,12 +107,9 @@ export function StepDistribution({
     <div className="flex flex-col gap-5" style={{ maxWidth: 680 }}>
       {/* Header */}
       <div className="flex flex-col gap-1">
-        <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
-          Step 2 of 5
-        </p>
-        <h2 className="text-lg font-semibold">Courses &amp; access</h2>
+        <h1 className="text-xl font-semibold">Courses &amp; access</h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-          {selectedTerm.name} · {selectedTerm.academicYear}
+          {selectedTerm.name} · {selectedTerm.academicYear}{programName ? ` · ${programName}` : ''}
         </p>
       </div>
 
@@ -117,6 +128,19 @@ export function StepDistribution({
           Deselect all
         </Button>
         <div className="flex-1" />
+        {cohortOptions.length > 1 && (
+          <Select value={cohortFilter} onValueChange={setCohortFilter}>
+            <SelectTrigger className="h-8 text-xs" style={{ minWidth: 140 }} aria-label="Filter by cohort">
+              <SelectValue placeholder="All cohorts" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All cohorts</SelectItem>
+              {cohortOptions.map(c => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         <div
           className="flex items-center gap-2 rounded-md"
           style={{
@@ -216,6 +240,21 @@ export function StepDistribution({
                         </span>
                       </div>
                     </div>
+
+                    {/* Template status */}
+                    <span className="text-xs shrink-0" style={{ minWidth: 80, textAlign: 'right' }}>
+                      {templateAssignments[offering.id]
+                        ? (() => {
+                            const t = publishedTemplates.find(t => t.id === templateAssignments[offering.id])
+                            return t ? (
+                              <span title={t.name} style={{ color: 'var(--foreground)' }}>
+                                {t.name.length > 16 ? t.name.slice(0, 14) + '…' : t.name}
+                              </span>
+                            ) : null
+                          })()
+                        : <span style={{ color: 'var(--muted-foreground)', opacity: 0.6 }}>No template</span>
+                      }
+                    </span>
 
                     {/* Manage button */}
                     {MOCK_COURSE_ENROLLMENTS[offering.id] && (

@@ -26,7 +26,7 @@ export function StepReportAccess({
         <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
           Step 5 of 5
         </p>
-        <h2 className="text-lg font-semibold">Report access</h2>
+        <h1 className="text-lg font-semibold">Report access</h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
           Choose who can view results once you release them. You can change this after pushing.
         </p>

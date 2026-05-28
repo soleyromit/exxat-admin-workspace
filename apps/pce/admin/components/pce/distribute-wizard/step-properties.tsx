@@ -9,15 +9,17 @@ import {
   SelectValue,
   Textarea,
 } from '@exxatdesignux/ui'
-import { MOCK_PROGRAM_TERMS } from '@/lib/pce-mock-data'
+import { MOCK_PROGRAM_TERMS, MOCK_PROGRAMS } from '@/lib/pce-mock-data'
 
 export type SurveyVisibility = 'program' | 'admin_only'
 
 interface StepPropertiesProps {
   surveyMode: 'course_evaluation' | 'general'
+  programId: string
   termId: string
   description: string
   visibility: SurveyVisibility
+  onProgramChange: (v: string) => void
   onTermChange: (v: string) => void
   onDescriptionChange: (v: string) => void
   onVisibilityChange: (v: SurveyVisibility) => void
@@ -46,9 +48,11 @@ const VISIBILITY_OPTIONS: Array<{
 
 export function StepProperties({
   surveyMode,
+  programId,
   termId,
   description,
   visibility,
+  onProgramChange,
   onTermChange,
   onDescriptionChange,
   onVisibilityChange,
@@ -58,21 +62,37 @@ export function StepProperties({
   const selectedTerm = allTerms.find(t => t.id === termId) ?? null
   const academicYear = selectedTerm?.academicYear ?? ''
   const isCE = surveyMode === 'course_evaluation'
-  const canContinue = isCE ? !!termId : true
+  const canContinue = isCE ? !!programId && !!termId : !!programId
 
   return (
     <div className="flex flex-col gap-6" style={{ maxWidth: 600 }}>
       {/* Header */}
       <div className="flex flex-col gap-1">
-        <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
-          Step 1 of 5
-        </p>
-        <h2 className="text-lg font-semibold">Properties</h2>
+        <h1 className="text-xl font-semibold">Properties</h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
           {isCE
             ? 'Define the term and scope for this course evaluation cycle.'
             : 'Define the scope for this survey.'}
         </p>
+      </div>
+
+      {/* Program — required for all modes */}
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="program-select" className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
+          Program <span style={{ color: 'var(--destructive)' }}>*</span>
+        </label>
+        <Select value={programId} onValueChange={onProgramChange}>
+          <SelectTrigger id="program-select" aria-label="Select program">
+            <SelectValue placeholder="Choose a program…" />
+          </SelectTrigger>
+          <SelectContent>
+            {MOCK_PROGRAMS.map(p => (
+              <SelectItem key={p.id} value={p.id}>
+                {p.name} ({p.code})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Term — CE only */}

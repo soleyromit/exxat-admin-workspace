@@ -74,7 +74,7 @@ export function StepCommunication({
         <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
           Step 4 of 5
         </p>
-        <h2 className="text-lg font-semibold">Communication</h2>
+        <h1 className="text-lg font-semibold">Communication</h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
           Set the survey window and configure invitation emails.
         </p>

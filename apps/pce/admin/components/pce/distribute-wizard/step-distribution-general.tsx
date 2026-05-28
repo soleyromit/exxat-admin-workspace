@@ -50,7 +50,7 @@ export function StepDistributionGeneral({ onBack, onNext }: StepDistributionGene
       {/* Header */}
       <div className="flex flex-col gap-1">
         <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>Step 2 of 4</p>
-        <h2 className="text-lg font-semibold">Distribution</h2>
+        <h1 className="text-lg font-semibold">Distribution</h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
           Choose who receives this survey. Search the program directory, invite by email, or share a public link.
         </p>

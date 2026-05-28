@@ -46,10 +46,10 @@ export function StepSuccess({
 
       {/* Heading */}
       <div className="flex flex-col gap-2">
-        <h2 className="text-xl font-semibold">
+        <h1 className="text-xl font-semibold">
           {selectedOfferings.length} survey{selectedOfferings.length !== 1 ? 's' : ''} pushed
           {' '}for {selectedTerm.name}
-        </h2>
+        </h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
           {openLabel
             ? `Opens ${openLabel}. Students will receive an invitation email on that date.`

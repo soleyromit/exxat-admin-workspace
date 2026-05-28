@@ -15,6 +15,7 @@ import { StepDistributionGeneral } from '@/components/pce/distribute-wizard/step
 import {
   MOCK_PROGRAM_TERMS,
   MOCK_COURSE_OFFERINGS,
+  MOCK_PROGRAMS,
   type SurveyType,
 } from '@/lib/pce-mock-data'
 
@@ -40,6 +41,7 @@ export default function PushSurveyPage() {
   const [surveyType, setSurveyType] = useState<SurveyType>(
     surveyMode === 'general' ? 'programmatic' : 'course_evaluation'
   )
+  const [programId, setProgramId] = useState('')
   const [termId, setTermId] = useState('')
   const [surveyDescription, setSurveyDescription] = useState('')
   const [surveyVisibility, setSurveyVisibility] = useState<SurveyVisibility>('program')
@@ -66,6 +68,7 @@ export default function PushSurveyPage() {
 
   // ── Derived values ─────────────────────────────────────────────────────────
 
+  const programName = MOCK_PROGRAMS.find(p => p.id === programId)?.name
   const selectedTerm = MOCK_PROGRAM_TERMS.find(t => t.id === termId) ?? null
   const academicYear = selectedTerm?.academicYear ?? ''
 
@@ -85,6 +88,13 @@ export default function PushSurveyPage() {
     selectedOfferings.every(o => !!templateAssignments[o.id])
 
   // ── Handlers ───────────────────────────────────────────────────────────────
+
+  function handleProgramChange(v: string) {
+    setProgramId(v)
+    setTermId('')
+    setExcludedIds(new Set())
+    setTemplateAssignments({})
+  }
 
   function handleTermChange(v: string) {
     setTermId(v)
@@ -170,6 +180,7 @@ export default function PushSurveyPage() {
   function handleReset() {
     setStep(1)
     setSurveyType(surveyMode === 'general' ? 'programmatic' : 'course_evaluation')
+    setProgramId('')
     setTermId('')
     setSurveyDescription('')
     setSurveyVisibility('program')
@@ -214,7 +225,7 @@ export default function PushSurveyPage() {
           aria-hidden="true"
           style={{ color: 'var(--muted-foreground)' }}
         />
-        <span className="text-sm font-semibold flex-1">Push surveys</span>
+        <span className="text-sm font-semibold flex-1">Set up surveys</span>
       </header>
 
       {/* Two-panel body */}
@@ -233,9 +244,11 @@ export default function PushSurveyPage() {
           {step === 1 && (
             <StepProperties
               surveyMode={surveyMode}
+              programId={programId}
               termId={termId}
               description={surveyDescription}
               visibility={surveyVisibility}
+              onProgramChange={handleProgramChange}
               onTermChange={handleTermChange}
               onDescriptionChange={setSurveyDescription}
               onVisibilityChange={setSurveyVisibility}
@@ -258,6 +271,7 @@ export default function PushSurveyPage() {
               selectedTerm={selectedTerm}
               publishedTemplates={publishedTemplates}
               templateAssignments={templateAssignments}
+              programName={programName}
               onToggleOffering={handleToggleOffering}
               onSelectAll={handleSelectAll}
               onDeselectAll={handleDeselectAll}

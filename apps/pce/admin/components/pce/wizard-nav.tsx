@@ -22,12 +22,6 @@ export function WizardNav({ currentStep, completedUpTo, onStepClick }: WizardNav
       className="flex flex-col shrink-0 border-r border-border"
       style={{ width: 220, background: 'var(--muted)', padding: '24px 12px' }}
     >
-      <p
-        className="text-xs font-semibold mb-4"
-        style={{ color: 'var(--muted-foreground)', paddingInline: 8 }}
-      >
-        Steps
-      </p>
       <nav className="flex flex-col gap-1" aria-label="Wizard steps">
         {STEPS.map(({ n, label }) => {
           const isCompleted = n <= completedUpTo
