@@ -1,5 +1,18 @@
 @import '@exxatdesignux/ui/globals.css';
 
+/* Explicit @source paths so Tailwind v4 scans both the DS dist and this app's
+   own files regardless of where this CSS file sits in the directory tree.
+   Required per template-vite canonical — without these the @source "../dist"
+   in the DS globals.css resolves against the wrong base and sidebar/shell
+   Tailwind classes are not emitted (unstyled-shell regression). */
+@source "../node_modules/@exxatdesignux/ui/dist";
+@source "../components";
+@source "../contexts";
+@source "../hooks";
+@source "../lib";
+@source "../stores";
+@source "./";
+
 /* ── DS Tabs fix — DS sets data-orientation="horizontal" but its Tailwind
    classes look for `data-horizontal` (a non-existent attribute). That breaks
    both the column layout and the line-variant active underline. Mirror the
