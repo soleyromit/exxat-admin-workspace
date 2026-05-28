@@ -8,12 +8,12 @@ import {
   ToggleGroup, ToggleGroupItem,
   LocalBanner, Card, CardHeader, CardTitle, CardDescription, CardContent,
   Badge,
-  SidebarTrigger, Separator,
 } from '@exxatdesignux/ui'
+import { SiteHeader } from '@/components/site-header'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
-import { KeyMetrics } from '@/components/key-metrics'
-import type { MetricItem } from '@/components/key-metrics'
+import { KeyMetrics } from '@exxatdesignux/ui'
+import type { MetricItem } from '@exxatdesignux/ui'
 import { usePce } from '@/components/pce/pce-state'
 import { TrendSparkline } from '@/components/pce/trend-sparkline'
 import { AiInsightCard } from '@/components/pce/ai-insight-card'
@@ -420,9 +420,8 @@ export default function AnalyticsPage() {
 
   return (
     <>
-      <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
-        <SidebarTrigger className="-ms-1" />
-        <Separator orientation="vertical" className="h-4" />
+      <SiteHeader title="Analytics" />
+      <div className="flex items-center gap-3 border-b border-border shrink-0" style={{ padding: '14px 28px 14px' }}>
         <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Analytics</h1>
 
         {/* View axis toggle (D4): Term ↔ Cohort. Faculty is one click down (D5) */}
@@ -461,7 +460,7 @@ export default function AnalyticsPage() {
           <i className="fa-light fa-arrow-down-to-line" aria-hidden="true" />
           Export
         </Button>
-      </header>
+      </div>
 
       <div className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
         {!hasData ? (

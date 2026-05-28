@@ -10,18 +10,18 @@
  */
 
 import Link from 'next/link'
-import { Button, SidebarTrigger, Separator } from '@exxatdesignux/ui'
+import { Button } from '@exxatdesignux/ui'
+import { SiteHeader } from '@/components/site-header'
 
 export default function ProgrammaticSurveysPage() {
   return (
     <>
-      <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
-        <SidebarTrigger className="-ms-1" />
-        <Separator orientation="vertical" className="h-4" />
+      <SiteHeader title="Programmatic Surveys" />
+      <div className="flex items-center gap-3 border-b border-border shrink-0" style={{ padding: '14px 28px 14px' }}>
         <Link href="/" className="text-sm text-muted-foreground">Course Evaluation and Surveys</Link>
         <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
         <h1 className="text-sm font-semibold flex-1 truncate">Programmatic Surveys</h1>
-      </header>
+      </div>
 
       <div className="flex-1 overflow-auto" style={{ padding: '28px 28px 28px' }}>
         <div className="flex flex-col items-center justify-center gap-4 py-20 text-center max-w-md mx-auto">

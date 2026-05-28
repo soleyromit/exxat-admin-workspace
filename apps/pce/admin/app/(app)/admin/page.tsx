@@ -10,9 +10,9 @@
 
 import Link from 'next/link'
 import {
-  SidebarTrigger, Separator,
   Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent,
 } from '@exxatdesignux/ui'
+import { SiteHeader } from '@/components/site-header'
 
 interface EntityTile {
   key: string
@@ -142,13 +142,7 @@ function EntityCard({ entity }: { entity: EntityTile }) {
 export default function AdminLandingPage() {
   return (
     <>
-      <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
-        <SidebarTrigger className="-ms-1" />
-        <Separator orientation="vertical" className="h-4" />
-        <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>
-          Admin · Setup
-        </h1>
-      </header>
+      <SiteHeader title="Admin · Setup" />
 
       <div className="flex-1 overflow-auto" style={{ padding: '28px 28px 28px' }}>
         <div className="max-w-5xl flex flex-col gap-5">

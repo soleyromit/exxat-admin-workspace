@@ -17,6 +17,7 @@ export interface PceTemplateSection {
   id: string
   subjectKey: SubjectKey
   title: string  // admin-customizable display name
+  description?: string
   questions: TemplateQuestion[]
   order: number
 }
@@ -60,7 +61,8 @@ export interface PceTemplate {
 export interface TemplateQuestion {
   id: string
   text: string
-  answerType: 'likert' | 'free_text'
+  answerType: 'likert' | 'free_text' | 'single_choice' | 'multiple_choice'
+  choices?: string[]
   /** 0-based position within its section */
   order: number
 }

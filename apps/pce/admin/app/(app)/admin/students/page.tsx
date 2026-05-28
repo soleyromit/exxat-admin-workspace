@@ -24,8 +24,8 @@ import {
   Field, FieldLabel, FieldGroup, FieldDescription, FieldError,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Badge, Avatar, AvatarFallback, LocalBanner,
-  SidebarTrigger, Separator,
 } from '@exxatdesignux/ui'
+import { SiteHeader } from '@/components/site-header'
 import {
   MOCK_STUDENTS, MOCK_COHORTS, MOCK_LMS_ENABLED,
   type Student,
@@ -277,13 +277,12 @@ export default function StudentsPage() {
 
   return (
     <>
-      <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
-        <SidebarTrigger className="-ms-1" />
-        <Separator orientation="vertical" className="h-4" />
+      <SiteHeader title="Students" />
+      <div className="flex items-center gap-3 border-b border-border shrink-0" style={{ padding: '14px 28px 14px' }}>
         <Link href="/admin" className="text-sm text-muted-foreground">Admin</Link>
         <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
         <h1 className="text-sm font-semibold flex-1 truncate">Students</h1>
-      </header>
+      </div>
 
       <div className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
         <div className="max-w-6xl flex flex-col gap-4">

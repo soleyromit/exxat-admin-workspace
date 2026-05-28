@@ -1,7 +1,8 @@
 'use client'
 
 import { useParams } from 'next/navigation'
-import { Button, Separator, SidebarTrigger, Badge } from '@exxatdesignux/ui'
+import { Button, Badge } from '@exxatdesignux/ui'
+import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { SectionScoreStrip } from '@/components/pce/section-score-strip'
 import { AiInsightCard } from '@/components/pce/ai-insight-card'
@@ -156,12 +157,11 @@ export default function FacultyResultsPage() {
   return (
     <>
       {/* ── Header ── */}
-      <header
-        className="flex items-center gap-2 border-b border-border shrink-0"
-        style={{ padding: '18px 28px 14px' }}
+      <SiteHeader title={`${survey.courseCode} — ${survey.courseName}`} />
+      <div
+        className="flex items-center gap-3 border-b border-border shrink-0"
+        style={{ padding: '14px 28px 14px' }}
       >
-        <SidebarTrigger className="-ms-1" />
-        <Separator orientation="vertical" className="h-4" />
         <Link href="/my-surveys" className="text-sm text-muted-foreground hover:text-foreground">
           My Surveys
         </Link>
@@ -183,7 +183,7 @@ export default function FacultyResultsPage() {
             {survey.term}
           </Badge>
         )}
-      </header>
+      </div>
 
       <div className="flex-1 overflow-auto" tabIndex={0} style={{ padding: '20px 28px 32px' }}>
         {!isReleased ? (

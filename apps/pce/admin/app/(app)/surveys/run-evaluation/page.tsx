@@ -5,11 +5,11 @@ import Link from 'next/link'
 import {
   Button,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  SidebarTrigger, Separator,
   Sheet, SheetContent, SheetHeader, SheetTitle,
   Tabs, TabsList, TabsTrigger, TabsContent,
   DatePickerField,
 } from '@exxatdesignux/ui'
+import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import {
   MOCK_PROGRAM_TERMS,
@@ -202,12 +202,8 @@ export default function RunEvaluationPage() {
   return (
     <>
       {/* Header */}
-      <header
-        className="flex items-center gap-2 border-b border-border shrink-0"
-        style={{ padding: '18px 28px 14px' }}
-      >
-        <SidebarTrigger className="-ms-1" />
-        <Separator orientation="vertical" className="h-4" />
+      <SiteHeader title="Run Evaluation" />
+      <div className="flex items-center gap-3 border-b border-border shrink-0" style={{ padding: '14px 28px 14px' }}>
         <nav className="flex items-center gap-1.5 text-sm" aria-label="Breadcrumb">
           <Link href="/surveys" className="text-muted-foreground hover:text-foreground transition-colors">
             Surveys
@@ -215,7 +211,7 @@ export default function RunEvaluationPage() {
           <i className="fa-light fa-chevron-right" aria-hidden="true" style={{ fontSize: 10, color: 'var(--muted-foreground)' }} />
           <span className="font-medium" style={{ color: 'var(--foreground)' }}>Run Evaluation</span>
         </nav>
-      </header>
+      </div>
 
       <div className="flex-1 overflow-auto" style={{ paddingBlock: 28, paddingInline: 28 }}>
         <div style={{ maxWidth: 720 }}>

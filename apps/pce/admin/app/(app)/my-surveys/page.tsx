@@ -5,8 +5,9 @@ import { useSearchParams } from 'next/navigation'
 import {
   Button,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  SidebarTrigger, Separator, Skeleton,
+  Skeleton,
 } from '@exxatdesignux/ui'
+import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { BulletGauge } from '@/components/pce/bullet-gauge'
@@ -145,9 +146,8 @@ function MySurveysContent() {
 
   return (
     <>
-      <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
-        <SidebarTrigger className="-ms-1" />
-        <Separator orientation="vertical" className="h-4" />
+      <SiteHeader title={filterParam === 'released' ? 'Results' : 'My Surveys'} />
+      <div className="flex items-center gap-3 border-b border-border shrink-0" style={{ padding: '14px 28px 14px' }}>
         <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>
           {filterParam === 'released' ? 'Results' : 'My Surveys'}
         </h1>
@@ -159,7 +159,7 @@ function MySurveysContent() {
             {MOCK_TERMS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
           </SelectContent>
         </Select>
-      </header>
+      </div>
 
       <div className="flex-1 overflow-auto" style={{ paddingBlock: 16, paddingInline: 0 }}>
         {rows.length === 0 ? (
@@ -194,10 +194,10 @@ function MySurveysContent() {
 function MySurveysSkeleton() {
   return (
     <>
-      <header className="flex items-center gap-2 px-4 py-3 border-b border-border shrink-0">
-        <Skeleton className="h-7 w-7" />
+      <SiteHeader title="My Surveys" />
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border shrink-0">
         <Skeleton className="h-4 w-24" />
-      </header>
+      </div>
       <div className="flex-1 overflow-auto p-4">
         <div className="flex flex-col gap-2">
           {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}

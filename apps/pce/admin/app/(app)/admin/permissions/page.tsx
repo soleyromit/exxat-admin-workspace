@@ -26,8 +26,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
   Field, FieldLabel, FieldGroup, FieldDescription,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  SidebarTrigger, Separator,
 } from '@exxatdesignux/ui'
+import { SiteHeader } from '@/components/site-header'
 import {
   MOCK_ROLE_ASSIGNMENTS, MOCK_FACULTY, MOCK_COURSE_OFFERINGS, MOCK_MASTER_COURSES, MOCK_PROGRAM_TERMS,
   ROLE_LABELS, ROLE_DESCRIPTIONS,
@@ -121,13 +121,12 @@ export default function PermissionsPage() {
 
   return (
     <>
-      <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
-        <SidebarTrigger className="-ms-1" />
-        <Separator orientation="vertical" className="h-4" />
+      <SiteHeader title="Permissions" />
+      <div className="flex items-center gap-3 border-b border-border shrink-0" style={{ padding: '14px 28px 14px' }}>
         <Link href="/admin" className="text-sm text-muted-foreground">Admin</Link>
         <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
         <h1 className="text-sm font-semibold flex-1 truncate">Permissions</h1>
-      </header>
+      </div>
 
       <div className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
         <div className="max-w-5xl flex flex-col gap-4">

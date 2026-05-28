@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Separator, SidebarTrigger } from '@exxatdesignux/ui'
+import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { WizardNav } from '@/components/pce/wizard-nav'
 import { StepProperties, type SurveyVisibility } from '@/components/pce/distribute-wizard/step-properties'
@@ -220,12 +220,8 @@ export default function PushSurveyPage() {
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
       {/* Header */}
-      <header
-        className="flex items-center gap-2 border-b border-border shrink-0"
-        style={{ padding: '18px 28px 14px' }}
-      >
-        <SidebarTrigger className="-ms-1" />
-        <Separator orientation="vertical" className="h-4" />
+      <SiteHeader title="Set up surveys" />
+      <div className="flex items-center gap-3 border-b border-border shrink-0" style={{ padding: '14px 28px 14px' }}>
         <Link href="/surveys" className="text-sm text-muted-foreground hover:underline">
           Surveys
         </Link>
@@ -235,7 +231,7 @@ export default function PushSurveyPage() {
           style={{ color: 'var(--muted-foreground)' }}
         />
         <span className="text-sm font-semibold flex-1">Set up surveys</span>
-      </header>
+      </div>
 
       {/* Two-panel body */}
       <div className="flex flex-1 overflow-hidden">
@@ -278,15 +274,9 @@ export default function PushSurveyPage() {
               selectedOfferings={selectedOfferings}
               excludedIds={excludedIds}
               selectedTerm={selectedTerm}
-              publishedTemplates={publishedTemplates}
-              templateAssignments={templateAssignments}
               programName={programName}
               onToggleOffering={handleToggleOffering}
-              onSelectAll={handleSelectAll}
-              onDeselectAll={handleDeselectAll}
-              onTemplateChange={(offeringId, tmplId) =>
-                setTemplateAssignments(p => ({ ...p, [offeringId]: tmplId }))
-              }
+              onSetExcluded={setExcludedIds}
               onBack={() => setStep(1)}
               onNext={() => setStep(3)}
             />

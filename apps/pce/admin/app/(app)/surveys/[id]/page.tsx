@@ -3,9 +3,10 @@
 import { useState, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import {
-  Button, Separator, SidebarTrigger, Avatar, AvatarFallback, Badge,
+  Button, Avatar, AvatarFallback, Badge,
   Tabs, TabsList, TabsTrigger, TabsContent,
 } from '@exxatdesignux/ui'
+import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { BulletGauge } from '@/components/pce/bullet-gauge'
@@ -203,12 +204,11 @@ export default function SurveyDetailPage() {
   return (
     <>
       {/* ── Header ── */}
-      <header
+      <SiteHeader title={`${survey.courseCode} — ${survey.courseName}`} />
+      <div
         className="flex items-center gap-2 border-b border-border shrink-0"
-        style={{ padding: '18px 28px 14px' }}
+        style={{ padding: '14px 28px 14px' }}
       >
-        <SidebarTrigger className="-ms-1" />
-        <Separator orientation="vertical" className="h-4" />
         <Link href="/surveys" className="text-sm text-muted-foreground hover:text-foreground">
           Surveys
         </Link>
@@ -253,7 +253,7 @@ export default function SurveyDetailPage() {
             </Button>
           )}
         </div>
-      </header>
+      </div>
 
       {/* ── Flagged responses alert banner ── */}
       {isPendingReview && flaggedCount > 0 && (

@@ -7,9 +7,10 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Tooltip, TooltipTrigger, TooltipContent,
-  SidebarTrigger, Separator, Avatar, AvatarFallback,
+  Avatar, AvatarFallback,
   LocalBanner,
 } from '@exxatdesignux/ui'
+import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { BulletGauge } from '@/components/pce/bullet-gauge'
@@ -309,9 +310,8 @@ export default function SurveysPage() {
 
   return (
     <>
-      <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
-        <SidebarTrigger className="-ms-1" />
-        <Separator orientation="vertical" className="h-4" />
+      <SiteHeader title="Surveys" />
+      <div className="flex items-center gap-3 border-b border-border shrink-0" style={{ padding: '14px 28px 14px' }}>
         <h1 className="text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Surveys</h1>
         <span
           className="text-xs font-medium rounded-full shrink-0"
@@ -330,7 +330,7 @@ export default function SurveysPage() {
             {surveyMode === 'course_evaluation' ? 'Set up surveys' : 'Push general survey'}
           </Link>
         </Button>
-      </header>
+      </div>
 
       {showRunBanner && activeTerm && (
         <div style={{ paddingInline: 28, paddingTop: 12, paddingBottom: 4 }}>

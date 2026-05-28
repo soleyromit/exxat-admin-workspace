@@ -17,8 +17,8 @@
 import Link from 'next/link'
 import {
   Badge,
-  SidebarTrigger, Separator,
 } from '@exxatdesignux/ui'
+import { SiteHeader } from '@/components/site-header'
 import { MOCK_ASSESSMENT_TYPES } from '@/lib/pce-mock-data'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
@@ -78,13 +78,12 @@ export default function AssessmentTypesPage() {
 
   return (
     <>
-      <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
-        <SidebarTrigger className="-ms-1" />
-        <Separator orientation="vertical" className="h-4" />
+      <SiteHeader title="Assessment Types" />
+      <div className="flex items-center gap-3 border-b border-border shrink-0" style={{ padding: '14px 28px 14px' }}>
         <Link href="/admin" className="text-sm text-muted-foreground">Admin</Link>
         <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
         <h1 className="text-sm font-semibold flex-1 truncate">Assessment Types</h1>
-      </header>
+      </div>
 
       <div className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
         <div className="max-w-5xl flex flex-col gap-4">

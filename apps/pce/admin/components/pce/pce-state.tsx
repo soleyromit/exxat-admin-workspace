@@ -60,11 +60,11 @@ interface PceState {
   // Template section actions
   addTemplateSection: (templateId: string, section: Omit<PceTemplateSection, 'id' | 'order'>) => void
   removeTemplateSection: (templateId: string, sectionId: string) => void
-  updateTemplateSection: (templateId: string, sectionId: string, patch: Partial<Pick<PceTemplateSection, 'title' | 'subjectKey'>>) => void
+  updateTemplateSection: (templateId: string, sectionId: string, patch: Partial<Pick<PceTemplateSection, 'title' | 'subjectKey' | 'description'>>) => void
   reorderTemplateSections: (templateId: string, fromIndex: number, toIndex: number) => void
   // Section question actions (for dynamic sections)
-  addSectionQuestion: (templateId: string, sectionId: string, text: string, answerType: 'likert' | 'free_text') => void
-  updateSectionQuestion: (templateId: string, sectionId: string, questionId: string, patch: Pick<TemplateQuestion, 'text' | 'answerType'>) => void
+  addSectionQuestion: (templateId: string, sectionId: string, text: string, answerType: TemplateQuestion['answerType'], choices?: string[], id?: string) => void
+  updateSectionQuestion: (templateId: string, sectionId: string, questionId: string, patch: Partial<Pick<TemplateQuestion, 'text' | 'answerType' | 'choices'>>) => void
   deleteSectionQuestion: (templateId: string, sectionId: string, questionId: string) => void
   reorderSectionQuestions: (templateId: string, sectionId: string, from: number, to: number) => void
   // Wizard actions
@@ -283,7 +283,7 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
   const updateTemplateSection = useCallback((
     templateId: string,
     sectionId: string,
-    patch: Partial<Pick<PceTemplateSection, 'title' | 'subjectKey'>>
+    patch: Partial<Pick<PceTemplateSection, 'title' | 'subjectKey' | 'description'>>
   ) => {
     setTemplates(ts => ts.map(t => {
       if (t.id !== templateId) return t
@@ -314,16 +314,19 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
     templateId: string,
     sectionId: string,
     text: string,
-    answerType: 'likert' | 'free_text'
+    answerType: TemplateQuestion['answerType'],
+    choices?: string[],
+    id?: string
   ) => {
     setTemplates(ts => ts.map(t => {
       if (t.id !== templateId) return t
       const sections = (t.templateSections ?? []).map(s => {
         if (s.id !== sectionId) return s
         const newQ: TemplateQuestion = {
-          id: `q-${Date.now()}`,
+          id: id ?? `q-${Date.now()}`,
           text,
           answerType,
+          choices,
           order: s.questions.length,
         }
         return { ...s, questions: [...s.questions, newQ] }
@@ -336,7 +339,7 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
     templateId: string,
     sectionId: string,
     questionId: string,
-    patch: Pick<TemplateQuestion, 'text' | 'answerType'>
+    patch: Partial<Pick<TemplateQuestion, 'text' | 'answerType' | 'choices'>>
   ) => {
     setTemplates(ts => ts.map(t => {
       if (t.id !== templateId) return t

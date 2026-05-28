@@ -2,11 +2,12 @@
 
 import { useState } from 'react'
 import {
-  Button, LocalBanner, SidebarTrigger, Separator,
+  Button, LocalBanner,
   SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton,
   Badge,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@exxatdesignux/ui'
+import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { BulletGauge } from '@/components/pce/bullet-gauge'
 import { MOCK_OPEN_TEXT_RESPONSES } from '@/lib/pce-mock-data'
@@ -64,12 +65,8 @@ export default function ModerationPage() {
     <div className="flex flex-col h-full overflow-hidden">
 
       {/* ── Page header ── */}
-      <header
-        className="flex items-center gap-2 border-b border-border shrink-0"
-        style={{ padding: '18px 28px 14px' }}
-      >
-        <SidebarTrigger className="-ms-1" />
-        <Separator orientation="vertical" className="h-4" />
+      <SiteHeader title="Review &amp; Moderation" />
+      <div className="flex items-center gap-3 border-b border-border shrink-0" style={{ padding: '14px 28px 14px' }}>
         <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>
           Review &amp; Moderation
         </h1>
@@ -78,7 +75,7 @@ export default function ModerationPage() {
             {pending.length} survey{pending.length !== 1 ? 's' : ''} pending
           </span>
         )}
-      </header>
+      </div>
 
       {/* ── Two-panel body ── */}
       <div className="flex flex-1 overflow-hidden">
