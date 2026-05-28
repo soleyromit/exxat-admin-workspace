@@ -283,7 +283,7 @@ function SecondaryNav({ items }: { items: NavSecondaryItem[] }) {
 // ─── AppSidebar ───────────────────────────────────────────────────────────────
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user, toggleRole } = usePce()
+  const { user, toggleRole, surveyMode, setSurveyMode } = usePce()
   const [appearanceOpen, setAppearanceOpen] = React.useState(false)
   const navItems = user.role === "admin" ? NAV_ADMIN : NAV_FACULTY
 
@@ -353,6 +353,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SecondaryNav items={NAV_SECONDARY} />
             <NavUser
               user={navUser}
+              surveyMode={surveyMode}
+              onSurveyModeChange={setSurveyMode}
               extraMenuItems={
                 <>
                   <DropdownMenuSeparator />

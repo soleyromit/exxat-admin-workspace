@@ -312,11 +312,22 @@ export default function SurveysPage() {
       <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
-        <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Surveys</h1>
+        <h1 className="text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Surveys</h1>
+        <span
+          className="text-xs font-medium rounded-full shrink-0"
+          style={{
+            padding: '2px 10px',
+            background: surveyMode === 'course_evaluation' ? 'var(--brand-tint)' : 'var(--muted)',
+            color: surveyMode === 'course_evaluation' ? 'var(--brand-color)' : 'var(--muted-foreground)',
+          }}
+        >
+          {surveyMode === 'course_evaluation' ? 'Course Evaluations' : 'General Surveys'}
+        </span>
+        <div className="flex-1" />
         <Button variant="default" size="sm" asChild>
           <Link href="/surveys/push">
             <i className="fa-light fa-paper-plane" aria-hidden="true" style={{ fontSize: 12 }} />
-            Push survey
+            {surveyMode === 'course_evaluation' ? 'Set up surveys' : 'Push general survey'}
           </Link>
         </Button>
       </header>

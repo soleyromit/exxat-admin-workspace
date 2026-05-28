@@ -63,6 +63,28 @@ export default function TemplatesPage() {
     lastModified: t.lastModified,
   }))
 
+  const courseTypeColumn: ColumnDef<TemplateRow> = {
+    key: 'courseType',
+    label: 'Course type',
+    sortable: true,
+    width: 140,
+    cell: (row) => {
+      const ct = row.template.courseType
+      if (!ct || ct === 'any') return <span className="text-sm text-muted-foreground">Any</span>
+      return (
+        <span
+          className="text-xs font-medium rounded px-1.5 py-0.5"
+          style={{
+            background: ct === 'didactic' ? 'var(--brand-tint)' : 'var(--muted)',
+            color: ct === 'didactic' ? 'var(--brand-color)' : 'var(--muted-foreground)',
+          }}
+        >
+          {ct === 'didactic' ? 'Didactic' : 'Clinical'}
+        </span>
+      )
+    },
+  }
+
   const columns: ColumnDef<TemplateRow>[] = [
     {
       key: 'name',
@@ -79,6 +101,7 @@ export default function TemplatesPage() {
         </Link>
       ),
     },
+    ...(surveyMode === 'course_evaluation' ? [courseTypeColumn] : []),
     {
       key: 'questionCount',
       label: 'Questions',
@@ -144,10 +167,21 @@ export default function TemplatesPage() {
       <header className="flex items-center gap-2 border-b border-border shrink-0" style={{ padding: '18px 28px 14px' }}>
         <SidebarTrigger className="-ms-1" />
         <Separator orientation="vertical" className="h-4" />
-        <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Templates</h1>
+        <h1 className="text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Templates</h1>
+        <span
+          className="text-xs font-medium rounded-full shrink-0"
+          style={{
+            padding: '2px 10px',
+            background: surveyMode === 'course_evaluation' ? 'var(--brand-tint)' : 'var(--muted)',
+            color: surveyMode === 'course_evaluation' ? 'var(--brand-color)' : 'var(--muted-foreground)',
+          }}
+        >
+          {surveyMode === 'course_evaluation' ? 'Course Evaluations' : 'General Surveys'}
+        </span>
+        <div className="flex-1" />
         <Button variant="default" size="sm" onClick={handleNewTemplate}>
           <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
-          New Template
+          {surveyMode === 'course_evaluation' ? 'New Template' : 'New General Template'}
         </Button>
       </header>
 

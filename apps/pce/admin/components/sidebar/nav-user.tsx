@@ -28,6 +28,8 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -47,6 +49,8 @@ import { cn } from "@/lib/utils"
 
 export function NavUser({
   user,
+  surveyMode,
+  onSurveyModeChange,
   extraMenuItems,
 }: {
   user: {
@@ -54,6 +58,8 @@ export function NavUser({
     email: string
     avatar: string
   }
+  surveyMode?: 'course_evaluation' | 'general'
+  onSurveyModeChange?: (mode: 'course_evaluation' | 'general') => void
   extraMenuItems?: React.ReactNode
 }) {
   const { isMobile, state }               = useSidebar()
@@ -177,6 +183,26 @@ export function NavUser({
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
+
+            {surveyMode !== undefined && onSurveyModeChange && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground px-2 py-1.5">
+                  Survey mode
+                </DropdownMenuLabel>
+                <DropdownMenuRadioGroup
+                  value={surveyMode}
+                  onValueChange={(v) => onSurveyModeChange(v as 'course_evaluation' | 'general')}
+                >
+                  <DropdownMenuRadioItem value="course_evaluation">
+                    Course Evaluations
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="general">
+                    General Surveys
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </>
+            )}
 
             {extraMenuItems}
 
