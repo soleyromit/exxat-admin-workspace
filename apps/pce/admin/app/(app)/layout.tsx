@@ -33,7 +33,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <PceProvider>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
         <ProductProvider>
           <ProductRouteSync />
           <ProductSwitchOverlay />
