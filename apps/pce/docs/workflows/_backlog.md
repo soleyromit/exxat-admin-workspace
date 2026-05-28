@@ -84,6 +84,17 @@ Source: `docs/research/meetings/2026-05-26-survey-design-templates-push-workflow
 | T44 | Answer type selector: use dropdown for extensibility | Admin | Template editor | P1 | Replace fixed Likert/Free-text buttons with a dropdown that can accommodate 3rd and 4th answer types (Phase 1 will have them). D_PCE18. DESIGN-REVIEW — check `templates/[id]/page.tsx`. |
 | T45 | "Created by" column: hidden by default, user-configurable | Admin | Survey landing | P2 | Column exists in the landing table but hidden by default. Admin can enable via column visibility controls. Supports hierarchical admin team use case. D_PCE16, D_PCE20. |
 
+## Phase 1 design tasks — added 2026-05-28
+
+Source: `docs/research/meetings/2026-05-28-pce-dashboard-navigation-distribution-flow.md` (Granola `666c9e88`)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T46 | Admin landing: term-driven KPI dashboard | Admin | Course eval landing | P1 | NEW PAGE NEEDED. Term + academic year picker → KPI widget (% of courses with evaluation) + master survey list. "All" filter for cross-term view. D_PCE24. |
+| T47 | Analytics: semester / faculty / course entry points | Admin | Analytics | P1 | Three analytics entry points. Faculty entry groups faculty-eval AND course-eval for courses they taught. Question analytics = Phase 2. DESIGN-REVIEW — major. D_PCE25, D_PCE26. |
+| T48 | Step-zero: Leo audit screen | Admin | Course eval pre-launch | P1 | NEW PAGE NEEDED. Pre-term audit with "Use Leo" (not "Run with AI"). No program dropdown. Pre-populates courses missing faculty. Admin can exclude placeholder courses. D_PCE27. |
+| T49 | 5-step push survey flow | Admin | Survey distribution | P1 | DESIGN-REVIEW — structural rearchitecture. Replaces current 3-step flow: Properties → Scope → Design/Templates (default tag auto-assign) → Communication (standard + custom email only) → Review. D_PCE28–D_PCE30. |
+
 ## Phase 1 — killed / superseded (updated 2026-05-26)
 
 | # | Decision | Reason | Source |

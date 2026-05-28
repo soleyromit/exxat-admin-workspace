@@ -42,7 +42,7 @@ const STATUS_CONFIG: Record<SurveyStatus, { label: string; variant: BadgeVariant
     dot: 'var(--pce-status-pending-fg)',
   },
   released: {
-    label: 'Released',
+    label: 'Shared with Faculty',
     variant: 'secondary',
     bg: 'var(--pce-status-released-bg)',
     fg: 'var(--pce-status-released-fg)',
