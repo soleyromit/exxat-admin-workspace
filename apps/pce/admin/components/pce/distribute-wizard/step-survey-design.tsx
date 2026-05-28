@@ -65,9 +65,6 @@ export function StepSurveyDesign({
     <div className="flex flex-col gap-5" style={{ maxWidth: 680 }}>
       {/* Header */}
       <div className="flex flex-col gap-1">
-        <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
-          Step 3 of 5
-        </p>
         <h1 className="text-lg font-semibold">Survey design</h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
           Assign a template to each course.

@@ -12,6 +12,7 @@ import { StepCommunication } from '@/components/pce/distribute-wizard/step-commu
 import { StepReportAccess } from '@/components/pce/distribute-wizard/step-report-access'
 import { StepSuccess } from '@/components/pce/distribute-wizard/step-success'
 import { StepDistributionGeneral } from '@/components/pce/distribute-wizard/step-distribution-general'
+import { StepSurveyDesignGeneral } from '@/components/pce/distribute-wizard/step-survey-design-general'
 import {
   MOCK_PROGRAM_TERMS,
   MOCK_COURSE_OFFERINGS,
@@ -51,6 +52,7 @@ export default function PushSurveyPage() {
 
   // Step 3 — Survey Design
   const [templateAssignments, setTemplateAssignments] = useState<Record<string, string>>({})
+  const [generalTemplateId, setGeneralTemplateId] = useState<string>('')
 
   // Step 4 — Communication
   const [openDate, setOpenDate] = useState<Date | undefined>()
@@ -81,7 +83,13 @@ export default function PushSurveyPage() {
   )
 
   const selectedOfferings = offeringsForTerm.filter(o => !excludedIds.has(o.id))
-  const publishedTemplates = templates.filter(t => t.status === 'active')
+  const publishedTemplates = templates.filter(t =>
+    t.status === 'active' && (
+      surveyMode === 'general'
+        ? t.surveyType === 'programmatic'
+        : (!t.surveyType || t.surveyType === 'course_evaluation')
+    )
+  )
 
   const allAssigned =
     selectedOfferings.length > 0 &&
@@ -186,6 +194,7 @@ export default function PushSurveyPage() {
     setSurveyVisibility('program')
     setExcludedIds(new Set())
     setTemplateAssignments({})
+    setGeneralTemplateId('')
     setOpenDate(undefined)
     setCloseDate(undefined)
     setEmailSubject('Your course evaluation for {{course_name}} is now open')
@@ -283,7 +292,17 @@ export default function PushSurveyPage() {
             />
           )}
 
-          {step === 3 && (
+          {step === 3 && surveyMode === 'general' && (
+            <StepSurveyDesignGeneral
+              publishedTemplates={publishedTemplates}
+              selectedTemplateId={generalTemplateId}
+              onTemplateChange={setGeneralTemplateId}
+              onBack={() => setStep(2)}
+              onNext={() => setStep(4)}
+            />
+          )}
+
+          {step === 3 && surveyMode !== 'general' && (
             <StepSurveyDesign
               selectedOfferings={selectedOfferings}
               publishedTemplates={publishedTemplates}
