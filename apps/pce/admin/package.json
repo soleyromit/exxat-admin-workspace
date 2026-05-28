@@ -7,10 +7,11 @@
     "build": "next build",
     "start": "next start --port 3005",
     "typecheck": "tsc --noEmit",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postinstall": "exxat-ui sync-extras --quiet || true"
   },
   "dependencies": {
-    "@exxatdesignux/ui": "^0.6.14",
+    "@exxatdesignux/ui": "^0.6.17",
     "clsx": "^2.1.1",
     "motion": "^12.40.0",
     "next": "^15.3.1",
