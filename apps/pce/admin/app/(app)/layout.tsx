@@ -15,6 +15,7 @@ import { SystemBannerSlot } from "@/components/system-banner-slot"
 import { CommandMenu } from "@/components/command-menu"
 import { CommandMenuProvider } from "@/contexts/command-menu-context"
 import { SidebarShell, SecondaryPanel, SecondaryPanelProvider } from "@/components/sidebar"
+import { SidebarInset } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { buildCommandMenuConfig } from "@/lib/command-menu-config"
 import { PCE_COMMAND_MENU_DATA_GROUPS } from "@/lib/pce-command-menu"
@@ -54,7 +55,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                             <SecondaryPanelProvider>
                               <AppSidebar variant="inset" />
                               <SecondaryPanel />
-                              {children}
+                              <SidebarInset>
+                                {children}
+                              </SidebarInset>
                             </SecondaryPanelProvider>
                             <AskLeoSidebar />
                           </div>

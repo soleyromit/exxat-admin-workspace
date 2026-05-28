@@ -17,13 +17,19 @@ Run from repo root:
 
 What this checks (each is a required marker — case-sensitive substring):
 
-  1. `@import '.../theme.css'`         — DS theme CSS
-  2. `@import "tailwindcss"`           — Tailwind base
+  1. `@import '.../theme.css'` OR `@exxatdesignux/ui/globals.css`  — DS theme CSS
+  2. `@import "tailwindcss"` OR `@exxatdesignux/ui/globals.css`    — Tailwind base
   3. `DS Tabs fix`                     — comment marker for Tabs fix
   4. `[data-slot="tabs"][data-orientation="horizontal"]`  — fix selector
   5. `[data-slot="tabs-list"][data-variant="line"]`       — line-variant fix
   6. `--sidebar:` or `--sidebar :`     — sidebar token
   7. `--dt-row-hover`                  — datatable tokens
+
+Notes:
+  - Apps using `@exxatdesignux/ui/globals.css` (new DS npm package) satisfy
+    theme-import and tailwind-import automatically since the DS globals
+    bundles both tailwindcss and @source "../dist" for the dist classes.
+  - Apps using the old `exxat-ds` submodule path also remain valid.
 """
 from __future__ import annotations
 
@@ -36,15 +42,18 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE_PATH = REPO_ROOT / "docs" / "foundations" / "admin-globals-template.css"
 
-# Each marker is a substring that must appear in the admin app's globals.css.
-REQUIRED_MARKERS: list[tuple[str, str]] = [
-    ("theme-import",    "exxat-ds/packages/ui/src/theme.css"),
-    ("tailwind-import", '@import "tailwindcss"'),
-    ("tabs-fix-comment", "DS Tabs fix"),
-    ("tabs-fix-horizontal-selector", '[data-slot="tabs"][data-orientation="horizontal"]'),
-    ("tabs-fix-line-variant",        '[data-slot="tabs-list"][data-variant="line"]'),
-    ("sidebar-token",   "--sidebar:"),
-    ("datatable-token", "--dt-row-hover"),
+# Each marker is a tuple of (id, list_of_acceptable_substrings).
+# A marker passes if ANY of its acceptable substrings appears in the file.
+# Use multiple alternatives when an old and new pattern both satisfy the requirement.
+NEW_DS_GLOBALS = "@exxatdesignux/ui/globals.css"
+REQUIRED_MARKERS: list[tuple[str, list[str]]] = [
+    ("theme-import",    ["exxat-ds/packages/ui/src/theme.css", NEW_DS_GLOBALS]),
+    ("tailwind-import", ['@import "tailwindcss"', NEW_DS_GLOBALS]),
+    ("tabs-fix-comment", ["DS Tabs fix"]),
+    ("tabs-fix-horizontal-selector", ['[data-slot="tabs"][data-orientation="horizontal"]']),
+    ("tabs-fix-line-variant",        ['[data-slot="tabs-list"][data-variant="line"]']),
+    ("sidebar-token",   ["--sidebar:"]),
+    ("datatable-token", ["--dt-row-hover"]),
 ]
 
 
@@ -75,13 +84,18 @@ def audit_one(globals_css: Path, report: Report) -> bool:
     rel = str(globals_css.relative_to(REPO_ROOT))
     app = rel.split("/")[1]
     report.apps_checked += 1
-    missing = [(mid, snippet) for mid, snippet in REQUIRED_MARKERS if snippet not in text]
+    missing = [
+        (mid, alternatives)
+        for mid, alternatives in REQUIRED_MARKERS
+        if not any(alt in text for alt in alternatives)
+    ]
     if not missing:
         report.apps_clean += 1
         return True
-    for mid, snippet in missing:
+    for mid, alternatives in missing:
+        first = alternatives[0]
         report.gaps.append(Gap(app, mid,
-            f"missing required marker: `{snippet[:60]}{'...' if len(snippet) > 60 else ''}`"))
+            f"missing required marker: `{first[:60]}{'...' if len(first) > 60 else ''}`"))
     return False
 
 
