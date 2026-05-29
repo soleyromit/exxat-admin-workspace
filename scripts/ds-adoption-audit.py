@@ -128,6 +128,18 @@ DOCUMENTED_HAND_ROLLS = {
     # Documented as a legitimate hand-roll in docs/governance/ds-adoption.md →
     # DataTable row.
     "app/(app)/assessment-builder/assessment-builder-client.tsx",
+    # pce: distribute-wizard — three Sheet-embedded tables where the full DataTable
+    # organism would conflict with the sheet layout / pinned footer.
+    # email-list-sheet: editable roster (add/remove rows inline); DataTable's
+    #   sort/resize chrome conflicts with the fixed-width sheet layout.
+    # exxat-prism-sheet: student picker; DataTable's bulk-actions bar conflicts
+    #   with the Sheet's pinned footer CTA ("Add N students").
+    # step-report-access: role × student access matrix (cross-tab); DataTable
+    #   has no matrix-column model.
+    # All three documented in docs/governance/ds-adoption.md → PCE section.
+    "components/pce/distribute-wizard/email-list-sheet.tsx",
+    "components/pce/distribute-wizard/exxat-prism-sheet.tsx",
+    "components/pce/distribute-wizard/step-report-access.tsx",
 }
 
 # Pre-existing organism-name-collision files we're grandfathering as of

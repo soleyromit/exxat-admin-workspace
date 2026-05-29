@@ -1,17 +1,22 @@
 /**
- * PRE-EXAM FLOW — 5-step setup before entering the exam engine
+ * PRE-EXAM FLOW — 4-step setup before entering the exam engine
  *
  * Per Aarti + Darshan (Granola sessions) + Vishaka (May 14):
  *   Step 0: Password — faculty-announced class password (second-level auth)
- *   Step 1: System Check — browser, connectivity, storage
- *   Step 2: Instructions & Academic Integrity — exam-specific + e-signature
- *   Step 3: Accommodation Confirmation — confirm what's applied before starting
- *   Step 4: Ready — exam summary + "Start Exam" CTA
+ *   Step 1: Instructions & Academic Integrity — exam-specific + e-signature
+ *   Step 2: Accommodation Confirmation — confirm what's applied before starting
+ *   Step 3: Ready — exam summary + "Start Exam" CTA
+ *
+ * System check runs silently in the background (useEffect on mount).
+ * If it detects issues, a dismissible warning strip appears — it does NOT
+ * block the student from proceeding.
  *
  * Lockdown browser enforcement is deferred to Q4 2026 (vendor evaluation:
- * Respondus vs HonorLock). Step 1 shows it as informational only.
+ * Respondus vs HonorLock).
  *
  * Audio/video pre-check (Darshan's item) is shown as pending/TBD.
+ *
+ * NOTE: SystemCheck component is kept as dead code for Phase 2 reference.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -32,7 +37,6 @@ const t = {
 
 const STEPS = [
   { id: 'password',      label: 'Enter Password',        icon: 'fa-lock' },
-  { id: 'system',        label: 'System Check',          icon: 'fa-display-code' },
   { id: 'instructions',  label: 'Instructions',          icon: 'fa-file-lines' },
   { id: 'accommodation', label: 'Accommodations',        icon: 'fa-universal-access' },
   { id: 'ready',         label: 'Ready to Start',        icon: 'fa-circle-check' },
@@ -148,7 +152,7 @@ function StepIndicator({ current }: { current: number }) {
                 }
               </div>
               <span style={{
-                fontSize: 11, fontWeight: active ? 700 : 500,
+                fontSize: 12, fontWeight: active ? 700 : 500,
                 color: active ? t.brand : done ? t.brand : t.fgMuted,
                 textAlign: 'center', lineHeight: 1.3, maxWidth: 72,
               }}>
@@ -165,8 +169,12 @@ function StepIndicator({ current }: { current: number }) {
   );
 }
 
-// ─── Step 1: System Check ─────────────────────────────────────────────────────
-function SystemCheck({ onNext }: { onNext: () => void }) {
+// ─── Step 1: System Check (Phase 2 reference — not used in active flow) ──────
+// Kept as dead code. The checks it performed are now handled silently via the
+// background useEffect in PreExamFlow. Re-activate in Phase 2 if explicit
+// system-check UX is required.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function SystemCheck({ onNext }: { onNext: () => void }) {
   const [checks, setChecks] = useState({
     browser: false,
     connection: false,
@@ -315,7 +323,7 @@ function Instructions({ exam, onNext }: { exam: Assessment; onNext: () => void }
       {/* Faculty Instructions */}
       <div style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: t.fg, textTransform: 'uppercase', letterSpacing: 0.5, margin: 0 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: t.fg, margin: 0 }}>
             Faculty Instructions
           </p>
           <Badge variant="secondary" className="text-xs">From your instructor</Badge>
@@ -345,7 +353,7 @@ function Instructions({ exam, onNext }: { exam: Assessment; onNext: () => void }
       {/* Exxat Platform Instructions */}
       <div style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: t.fg, textTransform: 'uppercase', letterSpacing: 0.5, margin: 0 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: t.fg, margin: 0 }}>
             Exxat Platform Instructions
           </p>
           <Badge variant="secondary" className="text-xs">Academic Integrity</Badge>
@@ -513,7 +521,7 @@ function ReadyToStart({ exam, onStart }: { exam: Assessment; onStart: () => void
         background: t.muted, border: `1px solid ${t.border}`,
         borderRadius: 12, padding: 20, marginBottom: 28, textAlign: 'left',
       }}>
-        <p style={{ fontSize: 13, fontWeight: 700, color: t.fgMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 14 }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: t.fgMuted, marginBottom: 14 }}>
           Exam Summary
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -526,7 +534,7 @@ function ReadyToStart({ exam, onStart }: { exam: Assessment; onStart: () => void
             { label: 'Results', value: exam.isHighStakes ? 'Available after faculty review' : 'Available immediately after submission' },
           ].map(item => (
             <div key={item.label}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: t.fgMuted, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 2 }}>{item.label}</p>
+              <p style={{ fontSize: 12, fontWeight: 700, color: t.fgMuted, marginBottom: 2 }}>{item.label}</p>
               <p style={{ fontSize: 13, color: t.fg, fontWeight: 500 }}>{item.value}</p>
             </div>
           ))}
@@ -555,6 +563,18 @@ export function PreExamFlow() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
+  const [compatWarning, setCompatWarning] = useState<string | null>(null);
+
+  // Background system check — runs silently on mount.
+  // Does NOT block the student; a dismissible strip appears only on failure.
+  // For the prototype, all checks always pass.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      // Prototype: always pass — set to a non-null string to test the warning strip
+      setCompatWarning(null);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const exam = MOCK_ASSESSMENTS.find(a => a.id === id);
 
@@ -571,14 +591,31 @@ export function PreExamFlow() {
     );
   }
 
-  // Skip accommodation step if no accommodation on record
+  // Skip accommodation step (step 2) if no accommodation on record
   const hasAccommodation = Boolean(exam.accommodation);
 
+  // Step mapping (4 steps, 0-indexed):
+  //   0 → ExamPassword
+  //   1 → Instructions
+  //   2 → AccommodationConfirmation  (skipped → 3 if no accommodation)
+  //   3 → ReadyToStart
+
   const handleNext = () => {
-    if (step === 2 && !hasAccommodation) {
-      setStep(4); // skip accommodation
+    if (step === 1 && !hasAccommodation) {
+      setStep(3); // skip accommodation
     } else {
       setStep(s => s + 1);
+    }
+  };
+
+  // Back navigation: going back from step 3 when no accommodation skips step 2
+  const handleBack = () => {
+    if (step === 0) {
+      navigate('/');
+    } else if (step === 3 && !hasAccommodation) {
+      setStep(1); // skip back over accommodation
+    } else {
+      setStep(s => s - 1);
     }
   };
 
@@ -595,7 +632,7 @@ export function PreExamFlow() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => step === 0 ? navigate('/') : setStep(s => s - 1)}
+          onClick={handleBack}
           className="h-auto py-1 px-2 text-xs"
           style={{ color: t.fgMuted }}
         >
@@ -608,11 +645,35 @@ export function PreExamFlow() {
       <div style={{ maxWidth: 580, margin: '0 auto', padding: '36px 24px 60px' }}>
         <StepIndicator current={step} />
 
+        {/* Background compat warning strip — dismissible, does not block */}
+        {compatWarning && (
+          <div
+            role="alert"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              background: 'var(--muted)', border: '1px solid var(--border)', color: 'var(--foreground)',
+              borderRadius: 8, padding: '10px 14px', marginBottom: 20,
+              fontSize: 13, lineHeight: 1.4,
+            }}
+          >
+            <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ flexShrink: 0, fontSize: 15 }} />
+            <span style={{ flex: 1 }}>{compatWarning}</span>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCompatWarning(null)}
+              aria-label="Dismiss compatibility warning"
+              style={{ flexShrink: 0, color: 'var(--foreground)' }}
+            >
+              <i className="fa-light fa-xmark" aria-hidden="true" />
+            </Button>
+          </div>
+        )}
+
         {step === 0 && <ExamPassword onNext={() => setStep(1)} />}
-        {step === 1 && <SystemCheck onNext={() => setStep(2)} />}
-        {step === 2 && <Instructions exam={exam} onNext={handleNext} />}
-        {step === 3 && <AccommodationConfirmation exam={exam} onNext={() => setStep(4)} />}
-        {step === 4 && <ReadyToStart exam={exam} onStart={handleStart} />}
+        {step === 1 && <Instructions exam={exam} onNext={handleNext} />}
+        {step === 2 && <AccommodationConfirmation exam={exam} onNext={() => setStep(3)} />}
+        {step === 3 && <ReadyToStart exam={exam} onStart={handleStart} />}
       </div>
     </div>
   );

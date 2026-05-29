@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Button } from '@exxat/ds/packages/ui/src';
 import { questions } from './data/questions';
-import { MOCK_ASSESSMENTS } from './data/assessments';
+import { MOCK_ASSESSMENTS, ExamSection } from './data/assessments';
 import { useTimer } from './hooks/useTimer';
 import { useZoom } from './hooks/useZoom';
 import { ExamToolbar } from './components/ExamToolbar';
@@ -38,6 +39,108 @@ const MCQ_TYPES = new Set([
 'cross-out',
 'chart']
 );
+// ─── Section boundary helpers ─────────────────────────────────────────────────
+
+function getSectionBoundaries(sections: ExamSection[]): Array<{
+  section: ExamSection;
+  sectionNumber: number;  // 1-based
+  start: number;          // question index (0-based)
+  end: number;
+}> {
+  let cumulative = 0;
+  return sections.map((s, i) => {
+    const boundary = { section: s, sectionNumber: i + 1, start: cumulative, end: cumulative + s.questionCount - 1 };
+    cumulative += s.questionCount;
+    return boundary;
+  });
+}
+
+// ─── Section start screen (overlay) ──────────────────────────────────────────
+function SectionStartScreen({
+  section,
+  sectionNumber,
+  totalSections,
+  questionStart,
+  questionEnd,
+  onBegin,
+}: {
+  section: ExamSection;
+  sectionNumber: number;
+  totalSections: number;
+  questionStart: number;
+  questionEnd: number;
+  onBegin: () => void;
+}) {
+  const beginRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    beginRef.current?.focus();
+  }, []);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="section-start-title"
+      style={{
+        position: 'fixed', inset: 0, zIndex: 200,
+        background: 'var(--background)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexDirection: 'column', padding: '40px 24px',
+      }}
+    >
+      <div style={{ maxWidth: 520, width: '100%', textAlign: 'center' }}>
+        {/* Section label */}
+        <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', letterSpacing: 0.5, marginBottom: 12 }}>
+          Section {sectionNumber} of {totalSections}
+        </p>
+
+        {/* Section icon */}
+        <div style={{
+          width: 64, height: 64, borderRadius: '50%',
+          background: 'var(--muted)', border: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          margin: '0 auto 20px',
+        }}>
+          <i className="fa-light fa-layer-group" aria-hidden="true" style={{ fontSize: 26, color: 'var(--brand-color)' }} />
+        </div>
+
+        {/* Title */}
+        <h2 id="section-start-title" style={{ fontSize: 26, fontWeight: 700, color: 'var(--foreground)', marginBottom: 8, lineHeight: 1.2 }}>
+          {section.title}
+        </h2>
+
+        {/* Question range */}
+        <p style={{ fontSize: 14, color: 'var(--muted-foreground)', marginBottom: 28 }}>
+          Questions {questionStart}–{questionEnd} · {section.questionCount} questions
+        </p>
+
+        {/* Instructions */}
+        {section.instructions && (
+          <div style={{
+            textAlign: 'left',
+            background: 'var(--card)', border: '1px solid var(--border)',
+            borderRadius: 12, padding: '16px 20px', marginBottom: 32,
+          }}>
+            <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-foreground)', marginBottom: 8 }}>
+              Section Instructions
+            </p>
+            <p style={{ fontSize: 14, color: 'var(--foreground)', lineHeight: 1.7 }}>
+              {section.instructions}
+            </p>
+          </div>
+        )}
+
+        {/* CTA */}
+        <Button ref={beginRef} size="lg" onClick={onBegin} className="w-full">
+          Begin Section {sectionNumber}
+          <i className="fa-light fa-arrow-right" aria-hidden="true" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ─── App ──────────────────────────────────────────────────────────────────────
 export function App() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -63,6 +166,8 @@ export function App() {
   const [showAccessibility, setShowAccessibility] = useState(false);
   const [showGlobalRef, setShowGlobalRef] = useState(false);
   const [showSubmitReview, setShowSubmitReview] = useState(false);
+  const [showSectionStart, setShowSectionStart] = useState(false);
+  const [pendingNavigateIndex, setPendingNavigateIndex] = useState<number | null>(null);
   const [voiceNarrator, setVoiceNarrator] = useState(false);
   const [colorBlindMode, setColorBlindMode] = useState<
     'none' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'achromatopsia'>(
@@ -88,6 +193,21 @@ export function App() {
     if (!needsCalculator && showCalculator) setShowCalculator(false);
     if (!needsKeyboard && showKeyboard) setShowKeyboard(false);
   }, [currentIndex, needsCalculator, needsKeyboard]);
+  const handleNavigate = useCallback((index: number) => {
+    const sections = assessment?.sections;
+    if (sections?.length && index > currentIndex) {
+      const boundaries = getSectionBoundaries(sections);
+      const currentBoundary = boundaries.find(b => currentIndex >= b.start && currentIndex <= b.end);
+      const targetBoundary = boundaries.find(b => index >= b.start && index <= b.end);
+      if (targetBoundary && currentBoundary && targetBoundary.sectionNumber !== currentBoundary.sectionNumber) {
+        setPendingNavigateIndex(index);
+        setShowSectionStart(true);
+        return;
+      }
+    }
+    setCurrentIndex(index);
+    setHighestReachedIndex(prev => Math.max(prev, index));
+  }, [currentIndex, assessment?.sections]);
   const handleSelectAnswer = useCallback((questionId: number, answer: any) => {
     setAnswers((prev) => ({
       ...prev,
@@ -97,16 +217,20 @@ export function App() {
       const idx = questions.findIndex(q => q.id === questionId);
       if (idx !== -1 && idx < questions.length - 1) {
         setTimeout(() => {
-          setCurrentIndex(idx + 1);
-          setHighestReachedIndex(prev => Math.max(prev, idx + 1));
+          handleNavigate(idx + 1);
         }, 350);
       }
     }
-  }, [assessment?.autoAdvance, questions]);
-  const handleNavigate = useCallback((index: number) => {
-    setCurrentIndex(index);
-    setHighestReachedIndex(prev => Math.max(prev, index));
-  }, []);
+  }, [assessment?.autoAdvance, questions, handleNavigate]);
+
+  const handleBeginSection = useCallback(() => {
+    if (pendingNavigateIndex !== null) {
+      setCurrentIndex(pendingNavigateIndex);
+      setHighestReachedIndex(prev => Math.max(prev, pendingNavigateIndex!));
+      setPendingNavigateIndex(null);
+    }
+    setShowSectionStart(false);
+  }, [pendingNavigateIndex]);
   const handleToggleFlag = useCallback(() => {
     setFlagged((prev) => {
       const next = new Set(prev);
@@ -183,6 +307,22 @@ export function App() {
   answers]
   );
   return (
+    <>
+    {showSectionStart && assessment?.sections && pendingNavigateIndex !== null && (() => {
+      const boundaries = getSectionBoundaries(assessment.sections);
+      const boundary = boundaries.find(b => pendingNavigateIndex >= b.start && pendingNavigateIndex <= b.end);
+      if (!boundary) return null;
+      return (
+        <SectionStartScreen
+          section={boundary.section}
+          sectionNumber={boundary.sectionNumber}
+          totalSections={assessment.sections.length}
+          questionStart={boundary.start + 1}
+          questionEnd={boundary.end + 1}
+          onBegin={handleBeginSection}
+        />
+      );
+    })()}
     <div
       className={`h-screen w-full flex flex-col overflow-hidden transition-colors duration-300 theme-${theme}`}
       style={{
@@ -377,6 +517,8 @@ export function App() {
           onClose={() => setShowSubmitReview(false)}
           onConfirmSubmit={handleConfirmSubmit} />
       )}
-    </div>);
+    </div>
+    </>
+  );
 
 }

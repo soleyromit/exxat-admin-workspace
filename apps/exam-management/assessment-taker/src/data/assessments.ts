@@ -42,6 +42,7 @@ export interface ContentArea {
 export interface ExamSection {
   id: string;
   title: string;
+  instructions?: string;
   questionCount: number;
   timeLimitMinutes: number;
   contentAreas: string[];       // ContentArea IDs
@@ -127,6 +128,32 @@ export const MOCK_ASSESSMENTS: Assessment[] = [
       { id: 'ca-a02', name: 'Musculoskeletal', questionCount: 22, weight: 29 },
       { id: 'ca-a03', name: 'Cardiovascular', questionCount: 18, weight: 24 },
       { id: 'ca-a04', name: 'Endocrine', questionCount: 10, weight: 14 },
+    ],
+    sections: [
+      {
+        id: 'sec-1',
+        title: 'Nervous System',
+        instructions: 'Questions in this section focus on the central and peripheral nervous system, neural signaling, and sensory pathways. All questions are single-best-answer MCQ. No reference materials are permitted.',
+        questionCount: 25,
+        timeLimitMinutes: 36,
+        contentAreas: ['ca-a01'],
+      },
+      {
+        id: 'sec-2',
+        title: 'Musculoskeletal & Cardiovascular',
+        instructions: 'This section covers muscle mechanics, joint structure, and cardiovascular physiology. Some questions include clinical vignettes. Reference chart is available via the toolbar.',
+        questionCount: 40,
+        timeLimitMinutes: 58,
+        contentAreas: ['ca-a02', 'ca-a03'],
+      },
+      {
+        id: 'sec-3',
+        title: 'Endocrine System',
+        instructions: 'Final section. Covers hormonal regulation, feedback loops, and endocrine pathologies. This is the most challenging section — allocate time accordingly.',
+        questionCount: 10,
+        timeLimitMinutes: 16,
+        contentAreas: ['ca-a04'],
+      },
     ],
     reviewShowsCorrectAnswers: false,
     reviewShowsRationale: false,
