@@ -61,6 +61,29 @@ What this audit looks for in product code (apps/<product>/<role>/):
      See docs/governance/component-state-catalog.md for the canonical state
      matrix and docs/patterns/admin/state-coverage.md for prescriptions.
 
+  8. DS migration coverage (added 2026-05-29). Detects vendored or hand-rolled
+     components whose canonical DS equivalents are now available from
+     @exxatdesignux/ui. All WARN — migration targets, not blocking violations.
+
+       - vendored-datatable           : components/data-table/ dir exists and
+                                        content goes beyond index.tsx importing
+                                        from the DS package. Migrate to DS.
+       - vendored-keymetrics          : components/key-metrics/ dir exists
+                                        without a DS-import-only index.tsx.
+       - vendored-table-properties    : components/table-properties/ dir exists.
+       - hand-rolled-status-badge     : custom component whose name contains
+                                        StatusBadge / SurveyStatusBadge /
+                                        AssessmentStatusBadge / StatusDot with
+                                        rounded+text-xs+status-word className
+                                        and no StatusBadge import from DS.
+       - missing-list-page-template   : page.tsx imports local DataTable but
+                                        not ListPageTemplate from DS.
+       - hand-rolled-export-drawer    : Sheet/Dialog/Drawer with export-related
+                                        names and no ExportDrawer DS import.
+
+  9. FERPA data-flow (added 2026-05-17). Flags files that handle both a
+     student identifier AND response/answer text in the same component.
+
 Run from repo root:
 
     python3 scripts/ds-adoption-audit.py
@@ -913,6 +936,245 @@ def scan_file_for_ferpa_data_coexistence(rel: str, text: str) -> list[Gap]:
         ),
     )]
 
+# ── DS migration coverage scanners (added 2026-05-29) ───────────────────────
+# These are WARN-only: they identify vendored / hand-rolled components that
+# can now be replaced by canonical exports from @exxatdesignux/ui. They are
+# migration guides, not blocking violations.
+
+# Signals used by scanner B (hand-rolled status badge).
+_HAND_ROLLED_BADGE_NAME_RE = re.compile(
+    r"(?:function|const|class)\s+\w*(?:StatusBadge|SurveyStatusBadge|"
+    r"AssessmentStatusBadge|StatusDot)\w*\s*(?:[=(:<]|=>)",
+    re.IGNORECASE,
+)
+_BADGE_CLASS_SIGNAL_RE = re.compile(
+    r'className=["\'\`][^"\'\`]*'
+    r'(?=.*\brounded(?:-(?:sm|md|lg|xl|2xl|full))?\b)'
+    r'(?=.*\btext-xs\b)'
+    r'(?=.*\b(?:draft|active|published|closed|pending|released)\b)'
+    r'[^"\'\`]*["\'\`]',
+    re.IGNORECASE,
+)
+_STATUS_BADGE_IMPORT_RE = re.compile(
+    r"import\s*\{[^}]*\bStatusBadge\b[^}]*\}\s*from\s*['\"]@exxatdesignux/ui['\"]"
+)
+
+# Signals used by scanner D (hand-rolled export drawer).
+_EXPORT_DRAWER_IMPORT_RE = re.compile(
+    r"import\s*\{[^}]*\bExportDrawer\b[^}]*\}\s*from\s*['\"]@exxatdesignux/ui['\"]"
+)
+_EXPORT_KEYWORD_RE = re.compile(
+    r"\b(?:export|download|csv|xlsx|Export|Download|CSV|XLSX)\b"
+)
+_SHEET_DIALOG_DRAWER_RE = re.compile(r"<\s*(?:Sheet|Dialog|Drawer)\b")
+
+# Signals used by scanner C (missing ListPageTemplate).
+_LOCAL_DATATABLE_IMPORT_RE = re.compile(
+    r"import\s*\{[^}]*\bDataTable\b[^}]*\}\s*from\s*['\"]@/components/data-table['\"]"
+)
+_LIST_PAGE_TEMPLATE_IMPORT_RE = re.compile(
+    r"import\s*\{[^}]*\bListPageTemplate\b[^}]*\}\s*from\s*['\"]@exxatdesignux/ui['\"]"
+)
+
+
+def scan_dir_for_vendored_ds_component(
+    product: str, role: str, root: Path
+) -> list[Gap]:
+    """Directory-level check — detects vendored copies of components that
+    @exxatdesignux/ui now exports directly.
+
+    Called once per product (outside the per-file loop). Checks three well-known
+    vendored component directories. Emits WARN rather than BLOCK — these are
+    migration targets, not new violations.
+    """
+    def _is_vendored(comp_dir: Path) -> bool:
+        """Return True if the directory looks like a vendored component rather
+        than a thin re-export wrapper."""
+        if not comp_dir.is_dir():
+            return False
+        tsx_files = list(comp_dir.glob("*.tsx")) + list(comp_dir.glob("*.ts"))
+        if not tsx_files:
+            return False
+        # If there is more than one *.tsx / *.ts file, it's definitely vendored.
+        if len(tsx_files) > 1:
+            return True
+        # Single index.tsx — check whether it imports from @exxatdesignux/ui
+        index = comp_dir / "index.tsx"
+        if not index.exists():
+            index = comp_dir / "index.ts"
+        if not index.exists():
+            return True  # Single non-index file = vendored
+        try:
+            text = index.read_text(encoding="utf-8")
+        except Exception:
+            return True
+        # If the single file re-exports from the DS package, it's a thin wrapper
+        # (i.e., already migrated). Otherwise it's still vendored.
+        if re.search(r"from\s*['\"]@exxatdesignux/ui['\"]", text):
+            return False
+        return True
+
+    gaps: list[Gap] = []
+    prefix = f"apps/{product}/{role}/"
+
+    checks = [
+        (
+            root / "components" / "data-table",
+            "vendored-datatable",
+            "DataTable is vendored locally; @exxatdesignux/ui now exports DataTable "
+            "directly — migrate to reduce drift. "
+            "See docs/governance/ds-adoption.md → DataTable row.",
+        ),
+        (
+            root / "components" / "key-metrics",
+            "vendored-keymetrics",
+            "KeyMetrics is vendored locally; @exxatdesignux/ui now exports KeyMetrics "
+            "directly — migrate to reduce drift. "
+            "See docs/governance/ds-adoption.md → KeyMetrics row.",
+        ),
+        (
+            root / "components" / "table-properties",
+            "vendored-table-properties",
+            "table-properties is vendored locally; @exxatdesignux/ui now exports "
+            "TablePropertiesDrawer directly — migrate to reduce drift. "
+            "See docs/governance/ds-adoption.md → TablePropertiesDrawer row.",
+        ),
+    ]
+
+    for comp_dir, rule, message in checks:
+        if not _is_vendored(comp_dir):
+            continue
+        rel = prefix + str(comp_dir.relative_to(root))
+        gaps.append(Gap(
+            severity="warn",
+            rule=rule,
+            file=rel,
+            line=None,
+            message=message,
+        ))
+
+    return gaps
+
+
+def scan_file_for_hand_rolled_status_badge(rel: str, text: str) -> list[Gap]:
+    """Detect custom status badge components that should use StatusBadge from DS.
+
+    Signals (any of these triggers the check):
+      - Component/function name contains StatusBadge, SurveyStatusBadge,
+        AssessmentStatusBadge, or StatusDot
+      - className with rounded + text-xs + a status word (draft, active, etc.)
+
+    Only flagged when StatusBadge is NOT already imported from @exxatdesignux/ui.
+    Severity: WARN — migration guide.
+    """
+    if rel in DOCUMENTED_HAND_ROLLS:
+        return []
+    # Check if StatusBadge is already imported from DS
+    if _STATUS_BADGE_IMPORT_RE.search(text):
+        return []
+    # Look for either signal
+    name_match = _HAND_ROLLED_BADGE_NAME_RE.search(text)
+    class_match = _BADGE_CLASS_SIGNAL_RE.search(text)
+    m = name_match or class_match
+    if not m:
+        return []
+    line_no = text[: m.start()].count("\n") + 1
+    return [Gap(
+        severity="warn",
+        rule="hand-rolled-status-badge",
+        file=rel,
+        line=line_no,
+        message=(
+            "Custom status badge detected; StatusBadge from @exxatdesignux/ui "
+            "covers this pattern (variants: pill / dot, sizes: xs / sm / md). "
+            "Replace with: import { StatusBadge } from '@exxatdesignux/ui'. "
+            "See docs/governance/ds-adoption.md → StatusBadge row."
+        ),
+    )]
+
+
+def scan_file_for_missing_list_page_template(rel: str, text: str) -> list[Gap]:
+    """Detect list pages that use a local DataTable without ListPageTemplate.
+
+    Signals (all must be true):
+      - File is a Next.js page file (has 'app/' in path, ends with page.tsx)
+      - Imports DataTable from @/components/data-table
+      - Does NOT import ListPageTemplate from @exxatdesignux/ui
+      - File has at least 50 lines
+
+    Severity: WARN — ListPageTemplate provides toolbar + view-switching and
+    reduces boilerplate, but existing pages can migrate incrementally.
+    """
+    if rel in DOCUMENTED_HAND_ROLLS:
+        return []
+    # Only page files
+    if "app/" not in rel or not rel.endswith("page.tsx"):
+        return []
+    # Only files that use local DataTable
+    if not _LOCAL_DATATABLE_IMPORT_RE.search(text):
+        return []
+    # Already using ListPageTemplate
+    if _LIST_PAGE_TEMPLATE_IMPORT_RE.search(text):
+        return []
+    # Minimum size — very short pages are probably not list pages
+    if text.count("\n") < 49:
+        return []
+    # Cite the DataTable import line
+    m = _LOCAL_DATATABLE_IMPORT_RE.search(text)
+    line_no = text[: m.start()].count("\n") + 1 if m else 1
+    return [Gap(
+        severity="warn",
+        rule="missing-list-page-template",
+        file=rel,
+        line=line_no,
+        message=(
+            "Page imports local DataTable without ListPageTemplate; "
+            "consider @exxatdesignux/ui ListPageTemplate for built-in toolbar, "
+            "view-switching, and URL-synced filter/sort state. "
+            "import { ListPageTemplate } from '@exxatdesignux/ui'. "
+            "See docs/governance/ds-adoption.md → ListPageTemplate row."
+        ),
+    )]
+
+
+def scan_file_for_hand_rolled_export_drawer(rel: str, text: str) -> list[Gap]:
+    """Detect hand-rolled export/download UI that should use ExportDrawer from DS.
+
+    Signals (all must be true):
+      - File contains <Sheet, <Dialog, or <Drawer JSX
+      - File references export/download/csv/xlsx keywords in component or JSX context
+      - ExportDrawer is NOT already imported from @exxatdesignux/ui
+
+    Severity: WARN — migration guide.
+    """
+    if rel in DOCUMENTED_HAND_ROLLS:
+        return []
+    # Already using DS ExportDrawer
+    if _EXPORT_DRAWER_IMPORT_RE.search(text):
+        return []
+    # Must have a sheet/dialog/drawer
+    sheet_match = _SHEET_DIALOG_DRAWER_RE.search(text)
+    if not sheet_match:
+        return []
+    # Must have export/download/csv/xlsx keywords
+    if not _EXPORT_KEYWORD_RE.search(text):
+        return []
+    line_no = text[: sheet_match.start()].count("\n") + 1
+    return [Gap(
+        severity="warn",
+        rule="hand-rolled-export-drawer",
+        file=rel,
+        line=line_no,
+        message=(
+            "Custom export/download sheet detected; ExportDrawer from "
+            "@exxatdesignux/ui covers this pattern (file format selector, "
+            "column picker, async progress). "
+            "import { ExportDrawer } from '@exxatdesignux/ui'. "
+            "See docs/governance/ds-adoption.md → ExportDrawer row."
+        ),
+    )]
+
+
 def scan_filename_for_ds_organism(rel: str) -> list[Gap]:
     """Flag a custom file whose stem matches a DS organism in the registry."""
     if rel in ALLOWED_ORGANISM_PATHS:
@@ -988,6 +1250,11 @@ def iter_source_files(root: Path):
 
 def audit_product(product: str, role: str, root: Path) -> ProductReport:
     report = ProductReport(product=product, role=role)
+
+    # Scanner A — directory-level vendored-component check (once per product).
+    for g in scan_dir_for_vendored_ds_component(product, role, root):
+        report.gaps.append(g)
+
     for path, rel in iter_source_files(root):
         report.pages_scanned += 1
         try:
@@ -1017,6 +1284,10 @@ def audit_product(product: str, role: str, root: Path) -> ProductReport:
             scan_file_for_aria_combobox_required,
             scan_file_for_nested_main_landmark,
             scan_file_for_color_mix_contrast_risk,
+            # DS migration coverage (WARN) — added 2026-05-29.
+            scan_file_for_hand_rolled_status_badge,
+            scan_file_for_missing_list_page_template,
+            scan_file_for_hand_rolled_export_drawer,
         ):
             for g in fn(short_rel, text):
                 g.file = rel

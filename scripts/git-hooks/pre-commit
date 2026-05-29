@@ -35,6 +35,27 @@ RESET='\033[0m'
 echo "↳ pre-commit (workspace audits + digest)"
 echo
 
+# 0. DS snapshot regen — silent step; skip gracefully if package not installed
+printf "  [0/6] ds-snapshot regen  ... "
+if python3 scripts/regen-ds-snapshot.py > /tmp/pre-commit-ds-snapshot.log 2>&1; then
+  # Stage the snapshot if it changed (so the updated snapshot rides in the commit)
+  if ! git diff --quiet docs/watch/ds-snapshot.json 2>/dev/null; then
+    git add docs/watch/ds-snapshot.json
+    printf "${GREEN}refreshed${RESET} (staged docs/watch/ds-snapshot.json)\n"
+  else
+    printf "${GREEN}pass${RESET}\n"
+  fi
+else
+  exit_code=$?
+  if [ "$exit_code" = "2" ]; then
+    # Exit code 2 = package not installed; skip without blocking
+    printf "${YELLOW}skip${RESET} (@exxatdesignux/ui not installed — run pnpm install)\n"
+  else
+    # Unexpected error — warn but do not block the commit
+    printf "${YELLOW}warn${RESET} (regen failed — see /tmp/pre-commit-ds-snapshot.log)\n"
+  fi
+fi
+
 # 1. Architecture audit — auto-fix skill frontmatter, then block on remaining gaps
 printf "  [1/6] architecture-audit ... "
 python3 scripts/architecture-audit.py --fix > /tmp/pre-commit-arch-fix.log 2>&1
