@@ -882,6 +882,62 @@ Source: `docs/research/meetings/2026-05-27-assessment-creation-entry-points-ques
 
 Nipun confirmed match-the-following is included in the Phase 1 question types list. Design needs to cover this type when building question-editor screens.
 
+### 5.54 Assessment setup, timers, upload formats, and AI scope (2026-05-28)
+
+Source: `docs/research/meetings/2026-05-28-assessment-setup-ai-automation.md` (Granola `925fa644`)
+
+**Section back-navigation: no restriction.** Free navigation between exam sections. No ExamSoft-style lock. If a configurable setting is ever added, default = allow. D_EM62.
+
+**Section-level timer → Phase 2.** Used almost exclusively in licensure standardized exams; not a typical midterm/final need. D_EM63.
+
+**Question-level timer (visible config) → Phase 2. Background tracking = Phase 1 from day one.** System silently logs time-per-question (render → navigate-away). No visible per-question timer shown to students. D_EM64.
+
+**Document upload: PDF AND Word (.doc/.docx).** Faculty create questions in Word; they only print to PDF. Both formats must be accepted in question import. D_EM66.
+
+**Assessment setup: comprehensive single-page view.** All setup items on one view. Do not split config before/after question selection. Use ExamSoft setup page as a starting reference (not to copy — to exceed). D_EM67.
+
+**Question tagging to standards/competencies = Phase 1 must-have** (reconfirms T10). Direct question→standard/competency mapping is ExamSoft parity. D_EM68.
+
+**Curricular assessment loop (via LMS/Prism course-objective mapping) → post-launch.** Prerequisite data not reliably available. Does not block D_EM68 (direct tagging). D_EM69.
+
+**AI features for assessment creation = post-launch nice-to-haves.** Phase 1 ceiling = basic keyword/tag-based AI question search from QB. D_EM70.
+
+### 5.55 Design priority order and QB pinning issue (2026-05-28)
+
+Source: `docs/research/meetings/2026-05-28-design-priorities-bandwidth.md` (Granola `9781e589`)
+
+**Design priority order:** (1) Question Bank cleanup → (2) Student experience → (3) PCE template structure → (4) Assessment workflow. D_EM71.
+
+**QB pinning feature — UX incorrectly designed.** Nipun: "from the information hierarchy UX perspective, made wrongly." Needs redesign or removal. Do NOT build additional pin UI. Nipun to provide direction. Implementation in `qb-sidebar.tsx:513–535`. D_EM72. Design task T76.
+
+**Assessment design review with Aarti (May 29) cancelled.** Next review: Wednesday with Aarti, focused on assessment workflow. D_EM73.
+
+---
+
+## 6.13 PCE — Navigation structure, moderation placement, and survey list redesign (2026-05-28)
+
+Source: `apps/pce/docs/research/meetings/2026-05-28-survey-template-moderation-monil.md` (Granola `81beffd7`)
+
+### Navigation: two separate top-level entries (D_PCE33)
+
+Post Course Evaluation and Programmatic Survey are **two separate top-level left nav entries** — not tabs, not merged. "Tabs are your day to day action capabilities. Tabs are not products. On the sidebar." — Monil. Both share sub-sections: surveys list, templates. Analytics = deferred (Monil hasn't started product thinking). Setup = PCE only.
+
+### Moderation: removed from sidebar nav (D_PCE34)
+
+"Ideally, it should be removed because subset. It is not an action that user takes every day." — Monil. **APPLIED:** removed 'Review & Moderation' from ADMIN_NAV in `app-sidebar.tsx`. Replaced by: (1) attention banner above surveys table when pending_review surveys exist, (2) "Review & Release" action on pending_review rows in Action column (T52 — DESIGN-REVIEW).
+
+### Survey list: no horizontal grouping; status filter instead (D_PCE35)
+
+"We don't need this. There is already a status column. We just have to add a filter, status filter." — Monil. **APPLIED:** removed `defaultGroupBy="status"` + `groupLabels` + `groupOrder` from DataTable in `surveys/page.tsx`. Added status filter Select dropdown. Added pending-review attention banner above the table.
+
+### Survey table: Action column (D_PCE36)
+
+New "Action" column with role-appropriate CTAs: preview / pending result / review & release. Merges details + deadline into one column. **DESIGN-REVIEW** — T52.
+
+### Report access step: cross-table (D_PCE37, D_PCE38)
+
+In the create-survey flow, a report access step shows which roles can see which roles' responses. Cross-table: left column = roles being evaluated (Instructor, Course Coordinator), right columns = viewer roles (Instructor, Coordinator, Program Admin, Program Director, Department Chair). Placement: inside create-survey flow for now; may move to Settings later. **DESIGN-REVIEW** — T53.
+
 ---
 
 ## Appendix — source meetings
@@ -906,6 +962,9 @@ Nipun confirmed match-the-following is included in the Phase 1 question types li
 | 2026-05-22 13:23 | Assessment question design — AI features, scoring, and workflow | `1ce6d16e` | Aarti + Vishaka + Romit |
 | 2026-05-27 07:29 | Exam management — assessment creation, faculty access, and offline mode | `943b9e4a` | Aarti + Vishal + Nipun + Romit |
 | 2026-05-27 05:57 | Assessment creation — entry points, question selection, and setup workflow | `693723b8` | Aarti + Vishaka + Nipun + Romit |
+| 2026-05-28 10:04 | Design priorities and bandwidth planning — question bank, student experience, and assessment | `9781e589` | Nipun + Vishal + Romit |
+| 2026-05-28 10:33 | Assessment setup and AI automation features for exam management | `925fa644` | Nipun + Vishal + Romit |
+| 2026-05-28 09:30 | Survey and template design — layout, moderation, and report access with Monil | `81beffd7` | Monil + Romit |
 
 Per-meeting raw notes at `apps/exam-management/docs/research/meetings/` and `apps/pce/docs/research/meetings/`.
 
@@ -917,4 +976,3 @@ Per-meeting raw notes at `apps/exam-management/docs/research/meetings/` and `app
 - Mark superseded decisions explicitly; don't delete.
 - When an ADR is drafted from a decision here, link to it.
 - Keep section §3 (phasing) updated as launch dates shift.
-- The meeting log at the bottom is the canonical source — this doc is the curated synthesis.
