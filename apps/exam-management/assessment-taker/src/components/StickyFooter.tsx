@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Tooltip } from './Tooltip';
 import { Button as DSButton } from '@exxat/ds/packages/ui/src';
 import { Question } from '../data/questions';
+import type { ExamSection } from '../data/assessments';
 import { QuestionJumpPopover } from './QuestionJumpPopover';
 
 interface StickyFooterProps {
@@ -14,6 +15,18 @@ interface StickyFooterProps {
   questions: Question[];
   answeredSet: Set<number>;
   flaggedSet: Set<number>;
+  sections?: ExamSection[];
+}
+
+function getCurrentSection(sections: ExamSection[], index: number) {
+  let cum = 0;
+  for (let i = 0; i < sections.length; i++) {
+    if (index < cum + sections[i].questionCount) {
+      return { title: sections[i].title, number: i + 1, total: sections.length };
+    }
+    cum += sections[i].questionCount;
+  }
+  return null;
 }
 export function StickyFooter({
   currentIndex,
@@ -24,7 +37,9 @@ export function StickyFooter({
   questions,
   answeredSet,
   flaggedSet,
+  sections,
 }: StickyFooterProps) {
+  const currentSection = sections?.length ? getCurrentSection(sections, currentIndex) : null;
   const [showNavigator, setShowNavigator] = useState(false);
 
   return (
@@ -49,8 +64,8 @@ export function StickyFooter({
         <span className="hidden sm:inline">Previous</span>
       </DSButton>
 
-      {/* Center: Q pill → opens question list upward */}
-      <div className="relative flex items-center">
+      {/* Center: Q pill + section label → opens question list upward */}
+      <div className="relative flex flex-col items-center gap-0.5">
         <Tooltip content="View all questions and jump to any" position="top">
           <DSButton
             variant="outline"
@@ -82,6 +97,17 @@ export function StickyFooter({
           </DSButton>
         </Tooltip>
 
+        {/* Current section indicator */}
+        {currentSection && (
+          <span
+            className="truncate max-w-[180px]"
+            style={{ fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1, pointerEvents: 'none' }}
+            aria-label={`Section ${currentSection.number} of ${currentSection.total}: ${currentSection.title}`}
+          >
+            §{currentSection.number} · {currentSection.title}
+          </span>
+        )}
+
         <QuestionJumpPopover
           questions={questions}
           currentIndex={currentIndex}
@@ -90,17 +116,18 @@ export function StickyFooter({
           onNavigate={onNavigate}
           isOpen={showNavigator}
           onClose={() => setShowNavigator(false)}
+          sections={sections}
         />
       </div>
 
-      {/* Right: Flag + Next */}
+      {/* Right: Mark for review + Next */}
       <div className="flex items-center gap-2">
-        <Tooltip content="Flag this question for review (F)" position="top">
+        <Tooltip content="Mark for review (F)" position="top">
           <DSButton
             variant="outline"
             size="lg"
             onClick={onToggleFlag}
-            aria-label={isFlaggedCurrent ? 'Unflag Question' : 'Flag Question'}
+            aria-label={isFlaggedCurrent ? 'Remove mark' : 'Mark for review'}
             style={
               isFlaggedCurrent
                 ? { backgroundColor: 'var(--state-flagged-bg)', borderColor: 'var(--state-flagged-border)', color: 'var(--state-flagged-text)' }
@@ -108,7 +135,7 @@ export function StickyFooter({
             }
           >
             <i className={`${isFlaggedCurrent ? 'fa-solid' : 'fa-light'} fa-flag`} aria-hidden="true" style={{ fontSize: 16 }} />
-            <span className="hidden sm:inline">{isFlaggedCurrent ? 'Flagged' : 'Flag'}</span>
+            <span className="hidden sm:inline">{isFlaggedCurrent ? 'Marked' : 'Mark'}</span>
           </DSButton>
         </Tooltip>
 

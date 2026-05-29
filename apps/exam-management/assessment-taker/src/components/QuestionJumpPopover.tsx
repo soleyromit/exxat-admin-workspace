@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Question } from '../data/questions';
+import type { ExamSection } from '../data/assessments';
+
 export interface QuestionJumpPopoverProps {
   questions: Question[];
   currentIndex: number;
@@ -8,6 +10,19 @@ export interface QuestionJumpPopoverProps {
   onNavigate: (index: number) => void;
   isOpen: boolean;
   onClose: () => void;
+  sections?: ExamSection[];
+}
+
+function buildSectionMap(sections: ExamSection[]): Map<number, { title: string; number: number }> {
+  const map = new Map<number, { title: string; number: number }>();
+  let cum = 0;
+  sections.forEach((s, i) => {
+    for (let q = cum; q < cum + s.questionCount; q++) {
+      map.set(q, { title: s.title, number: i + 1 });
+    }
+    cum += s.questionCount;
+  });
+  return map;
 }
 interface GroupedQuestion {
   index: number;
@@ -20,8 +35,10 @@ export function QuestionJumpPopover({
   flaggedSet,
   onNavigate,
   isOpen,
-  onClose
+  onClose,
+  sections,
 }: QuestionJumpPopoverProps) {
+  const sectionMap = sections?.length ? buildSectionMap(sections) : null;
   const ref = useRef<HTMLDivElement>(null);
   const [collapsedSections, setCollapsedSections] = useState<
     Record<string, boolean>>(
@@ -111,7 +128,8 @@ export function QuestionJumpPopover({
             renderIcon={() =>
             <i className="fa-solid fa-flag" aria-hidden="true" style={{ fontSize: 13, color: 'var(--state-flagged-text)' }} />
 
-            } />
+            }
+            sectionMap={sectionMap} />
           
             <div
             className="w-full"
@@ -139,7 +157,8 @@ export function QuestionJumpPopover({
           renderIcon={() =>
           <i className="fa-light fa-circle" aria-hidden="true" style={{ fontSize: 14, color: 'var(--muted-foreground)' }} />
 
-          } />
+          }
+          sectionMap={sectionMap} />
         
 
         <div
@@ -166,7 +185,8 @@ export function QuestionJumpPopover({
           renderIcon={() =>
           <i className="fa-solid fa-circle-check" aria-hidden="true" style={{ fontSize: 14, color: 'var(--state-answered-text)' }} />
 
-          } />
+          }
+          sectionMap={sectionMap} />
         
       </div>
     </div>);
@@ -186,6 +206,7 @@ interface SectionGroupProps {
   badgeColor: string;
   badgeBg: string;
   renderIcon: () => React.ReactNode;
+  sectionMap?: Map<number, { title: string; number: number }> | null;
 }
 function SectionGroup({
   title,
@@ -199,7 +220,8 @@ function SectionGroup({
   truncate,
   badgeColor,
   badgeBg,
-  renderIcon
+  renderIcon,
+  sectionMap,
 }: SectionGroupProps) {
   return (
     <div>
@@ -267,16 +289,29 @@ function SectionGroup({
                   <span
                 className="font-bold text-xs w-6 text-center flex-shrink-0"
                 style={{ color: 'var(--foreground)' }}>
-                
                     {i + 1}
                   </span>
+
+                  {/* Section badge */}
+                  {sectionMap?.has(i) && (
+                    <span
+                      className="flex-shrink-0 text-xs font-medium px-1.5 py-0.5 rounded"
+                      style={{
+                        fontSize: 12,
+                        color: 'var(--muted-foreground)',
+                        backgroundColor: 'var(--muted)',
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      §{sectionMap.get(i)!.number}
+                    </span>
+                  )}
 
                   {/* Question text preview */}
                   <span
                 className="text-[13px] leading-snug flex-1 truncate"
                 style={{ color: 'var(--foreground)' }}>
-
-                    {truncate(q.text, 58)}
+                    {truncate(q.text, 48)}
                   </span>
 
                   {/* Status icon */}

@@ -414,7 +414,8 @@ export function App() {
         onExit={handleExit}
         hasGlobalRef={(assessment?.referenceMaterials?.length ?? 0) > 0}
         isGlobalRefOpen={showGlobalRef}
-        onToggleGlobalRef={() => setShowGlobalRef(v => !v)} />
+        onToggleGlobalRef={() => setShowGlobalRef(v => !v)}
+        sections={assessment?.sections} />
       
 
       <div className="relative flex-1 overflow-hidden flex flex-col">
@@ -499,7 +500,8 @@ export function App() {
         onToggleFlag={handleToggleFlag}
         questions={questions}
         answeredSet={answeredIndices}
-        flaggedSet={flagged} />
+        flaggedSet={flagged}
+        sections={assessment?.sections} />
 
       <GlobalReferencePanel
         isOpen={showGlobalRef}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { SettingsPanel } from './SettingsPanel';
 import { Tooltip } from './Tooltip';
 import { Button as DSButton } from '@exxat/ds/packages/ui/src';
+import type { ExamSection } from '../data/assessments';
 export interface ExamToolbarProps {
   timerFormatted: string;
   /** Aarti May 14: "assessment name has to be part of the header. It cannot not be part of the header." */
@@ -40,6 +41,7 @@ export interface ExamToolbarProps {
   hasGlobalRef?: boolean;
   onToggleGlobalRef?: () => void;
   isGlobalRefOpen?: boolean;
+  sections?: ExamSection[];
 }
 export function ExamToolbar({
   timerFormatted,
@@ -65,6 +67,7 @@ export function ExamToolbar({
   hasGlobalRef,
   onToggleGlobalRef,
   isGlobalRefOpen,
+  sections,
 }: ExamToolbarProps) {
   const [showSettings, setShowSettings] = useState(false);
   const progressPercent =
@@ -229,23 +232,40 @@ export function ExamToolbar({
         </div>
       </div>
 
-      {/* Progress bar */}
-      <div
-        style={{
-          width: '100%',
-          height: '3px',
-          backgroundColor: 'var(--border)'
-        }}>
-        
+      {/* Progress bar with section markers */}
+      <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--border)', position: 'relative' }}>
+        {/* Filled progress */}
         <div
           className="transition-all duration-300"
           style={{
+            position: 'absolute', top: 0, left: 0,
             height: '100%',
             width: `${progressPercent}%`,
             backgroundColor: 'var(--exam-accent)',
-            borderRadius: '0 2px 2px 0'
-          }} />
-        
+            borderRadius: '0 2px 2px 0',
+          }}
+        />
+        {/* Section boundary ticks — white notches at each section boundary */}
+        {sections && (() => {
+          let cum = 0;
+          return sections.slice(0, -1).map((s) => {
+            cum += s.questionCount;
+            const pct = Math.min(99, (cum / totalQuestions) * 100);
+            return (
+              <div
+                key={s.id}
+                aria-hidden="true"
+                style={{
+                  position: 'absolute', top: 0, bottom: 0,
+                  width: 2, left: `${pct}%`,
+                  backgroundColor: 'var(--card)',
+                  transform: 'translateX(-50%)',
+                  zIndex: 1,
+                }}
+              />
+            );
+          });
+        })()}
       </div>
     </header>);
 

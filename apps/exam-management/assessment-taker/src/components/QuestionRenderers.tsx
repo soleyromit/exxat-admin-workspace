@@ -254,10 +254,6 @@ export function CheckboxRenderer({
                 letter={SHORTCUT_KEYS[idx]}
                 isSelected={isSelected && !isCrossed} />
 
-              {isSelected && !isCrossed ?
-              <i className="fa-solid fa-square-check" aria-hidden="true" style={{ fontSize: 24, color: 'var(--foreground)' }} /> :
-              <i className="fa-light fa-square" aria-hidden="true" style={{ fontSize: 24, color: 'var(--border)' }} />
-              }
               <span
                 className={`text-[1em] flex-1 ${isCrossed ? 'line-through' : ''}`}
                 style={{
