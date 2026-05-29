@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
   SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
-  SidebarSeparator, Avatar, AvatarFallback, Badge,
+  SidebarSeparator, Avatar, AvatarFallback,
   DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
@@ -143,12 +143,11 @@ function UserFooter() {
 }
 
 const ADMIN_NAV = [
-  { key: 'templates',   title: 'Templates',            href: '/templates',   icon: 'fa-rectangle-list' },
-  { key: 'surveys',     title: 'Surveys',               href: '/surveys',     icon: 'fa-paper-plane'    },
-  { key: 'moderation',  title: 'Review & Moderation',   href: '/moderation',  icon: 'fa-shield-check'   },
-  { key: 'analytics',   title: 'Analytics',             href: '/analytics',   icon: 'fa-chart-mixed'    },
+  { key: 'templates',   title: 'Templates',   href: '/templates',   icon: 'fa-rectangle-list' },
+  { key: 'surveys',     title: 'Surveys',     href: '/surveys',     icon: 'fa-paper-plane'    },
+  { key: 'analytics',   title: 'Analytics',   href: '/analytics',   icon: 'fa-chart-mixed'    },
   // Setup section — workspace ADR-001 program-level master entities (UC-19).
-  { key: 'admin',       title: 'Setup',                href: '/admin',       icon: 'fa-gear-complex'   },
+  { key: 'admin',       title: 'Setup',       href: '/admin',       icon: 'fa-gear-complex'   },
 ]
 
 const FACULTY_NAV = [
@@ -163,10 +162,9 @@ const FOOTER_NAV = [
 
 export function AppSidebar() {
   const pathname = usePathname()
-  const { user, surveys } = usePce()
+  const { user } = usePce()
   const { setOpen: setPaletteOpen } = useCommandPalette()
   const navItems = user.role === 'admin' ? ADMIN_NAV : FACULTY_NAV
-  const pendingCount = surveys.filter(s => s.status === 'pending_review').length
 
   return (
     <Sidebar variant="inset" collapsible="icon">
@@ -220,14 +218,6 @@ export function AppSidebar() {
                             />
                           </span>
                           <span className="flex-1">{item.title}</span>
-                          {item.key === 'moderation' && pendingCount > 0 && (
-                            <Badge
-                              variant="default"
-                              className="rounded-full h-5 min-w-5 px-1.5 ms-auto tabular-nums text-[10px]"
-                            >
-                              {pendingCount}
-                            </Badge>
-                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

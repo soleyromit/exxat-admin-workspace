@@ -20,12 +20,8 @@ import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 import Link from 'next/link'
 
-/* Group order + display labels for the status column. Drives DataTable's
-   group-row dividers when defaultGroupBy="status". Aarti's directive: active
-   buckets first, closed at the bottom. */
-const GROUP_ORDER: SurveyStatus[] = ['pending_review', 'collecting', 'active', 'draft', 'released', 'closed']
-const GROUP_LABELS: Record<SurveyStatus, string> = {
-  pending_review: 'Needs Action',
+const STATUS_LABELS: Record<SurveyStatus, string> = {
+  pending_review: 'Needs Review',
   collecting:     'Collecting',
   active:         'Active',
   draft:          'Draft',
@@ -65,9 +61,13 @@ export default function SurveysPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [closeSurvey, setCloseSurvey] = useState<PceSurvey | null>(null)
   const [termFilter, setTermFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState<SurveyStatus | 'all'>('all')
+
+  const pendingReviewCount = surveys.filter(s => s.status === 'pending_review').length
 
   const filtered = surveys.filter(s => {
     if (termFilter !== 'all' && s.term !== termFilter) return false
+    if (statusFilter !== 'all' && s.status !== statusFilter) return false
     return true
   })
 
@@ -196,8 +196,20 @@ export default function SurveysPage() {
         <PushedBanner />
       </Suspense>
 
-      {/* Term filter sits outside the table because it isn't a column. The
-          DataTable toolbar (search + filter pills + properties) renders below. */}
+      {pendingReviewCount > 0 && statusFilter !== 'pending_review' && (
+        <div style={{ paddingInline: 28, paddingTop: 12 }}>
+          <LocalBanner
+            variant="warning"
+            action={{
+              label: `Show ${pendingReviewCount} survey${pendingReviewCount !== 1 ? 's' : ''}`,
+              onClick: () => setStatusFilter('pending_review'),
+            }}
+          >
+            {pendingReviewCount} course evaluation{pendingReviewCount !== 1 ? 's' : ''} need{pendingReviewCount === 1 ? 's' : ''} your review before results can be shared with faculty.
+          </LocalBanner>
+        </div>
+      )}
+
       <div className="flex items-center gap-2 py-2 border-b border-border shrink-0 flex-wrap" style={{ paddingInline: 28 }}>
         <Select value={termFilter} onValueChange={setTermFilter}>
           <SelectTrigger className="h-8 w-36 text-sm" aria-label="Filter by term">
@@ -208,13 +220,24 @@ export default function SurveysPage() {
             {MOCK_TERMS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as SurveyStatus | 'all')}>
+          <SelectTrigger className="h-8 w-44 text-sm" aria-label="Filter by status">
+            <SelectValue placeholder="All statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            {(Object.keys(STATUS_LABELS) as SurveyStatus[]).map(s => (
+              <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="flex-1 overflow-auto" style={{ paddingBlock: 16, paddingInline: 0 }}>
         {rows.length === 0 ? (
           <EmptySurveys
             onCreate={() => setCreateOpen(true)}
-            hasFilters={termFilter !== 'all'}
+            hasFilters={termFilter !== 'all' || statusFilter !== 'all'}
           />
         ) : (
           <DataTable<SurveyRow>
@@ -223,9 +246,6 @@ export default function SurveysPage() {
             getRowId={(row) => row.id}
             selectable
             searchable
-            defaultGroupBy="status"
-            groupLabels={GROUP_LABELS}
-            groupOrder={GROUP_ORDER}
             onRowClick={(row) => {
               window.location.href = `/surveys/${row.survey.id}`
             }}

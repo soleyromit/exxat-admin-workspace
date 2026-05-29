@@ -103,6 +103,17 @@ Source: `docs/research/meetings/2026-05-27-exam-management-status-offline-facult
 | T71 | Point-biserial number in assessment builder | Admin / Faculty | Assessment builder | P1 | Show p-bis as a plain number in the question picker column during build. Red if negative. Future: flag bottom-20th-percentile by threshold. D_EM58. DESIGN-REVIEW — requires builder UI change. |
 | T72 | Assessment summary screen before publish | Admin / Faculty | Assessment builder | P1 | NEW PAGE NEEDED. Pre-publish summary between Stage 2 (Build) and Stage 3 (Publish): total questions, expected completion time, psychometric summary (p-bis range, difficulty distribution, Bloom's coverage), questions missing rationale. D_EM61. DESIGN-REVIEW. |
 
+## Phase 1 design tasks — added 2026-05-28
+
+Source: `docs/research/meetings/2026-05-28-assessment-setup-ai-automation.md` (Granola `925fa644`) + `docs/research/meetings/2026-05-28-design-priorities-bandwidth.md` (Granola `9781e589`)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T73 | Assessment setup: comprehensive single-page config view | Admin / Faculty | Assessment builder | P1 | All setup items visible together on one view. Do not split config before/after question selection. Reference ExamSoft setup page as baseline. D_EM67. DESIGN-REVIEW — structural. |
+| T74 | Document upload: accept PDF AND Word (.doc/.docx) | Admin / Faculty | Question import / assessment creation | P1 | Current design shows PDF only. Must update upload `accept` attribute when component is built. D_EM66. |
+| T75 | Confirm no section back-navigation lock exists | Admin / Faculty / Student | Assessment taker | P1 | Default = allow free navigation between sections. If configurable setting added in future, default must be "allow." D_EM62. |
+| T76 | QB pinning feature — UX review (remove or redesign) | Admin / Faculty | Question bank sidebar | P1 — DESIGN-REVIEW | Pinning implemented in `qb-sidebar.tsx:513–535`. Nipun says "from the information hierarchy UX perspective, made wrongly." Do NOT remove without Nipun direction. Do NOT build additional pin UI. Nipun to provide decision. D_EM72. |
+
 ## Research / blockers (R1–R10 from audit)
 
 | # | Item | Owner | Deadline |

@@ -95,6 +95,18 @@ Source: `docs/research/meetings/2026-05-28-pce-dashboard-navigation-distribution
 | T48 | Step-zero: Leo audit screen | Admin | Course eval pre-launch | P1 | NEW PAGE NEEDED. Pre-term audit with "Use Leo" (not "Run with AI"). No program dropdown. Pre-populates courses missing faculty. Admin can exclude placeholder courses. D_PCE27. |
 | T49 | 5-step push survey flow | Admin | Survey distribution | P1 | DESIGN-REVIEW — structural rearchitecture. Replaces current 3-step flow: Properties → Scope → Design/Templates (default tag auto-assign) → Communication (standard + custom email only) → Review. D_PCE28–D_PCE30. |
 
+## Phase 1 design tasks — added 2026-05-28 (Monil survey/moderation call)
+
+Source: `docs/research/meetings/2026-05-28-survey-template-moderation-monil.md` (Granola `81beffd7`)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T50 | Remove moderation from left nav; integrate into survey list | Admin | Sidebar + surveys | P1 — ✅ APPLIED | Removed 'Review & Moderation' from ADMIN_NAV in `app-sidebar.tsx`. D_PCE34. |
+| T51 | Survey list: remove horizontal grouping; add status filter + pending-review banner | Admin | Surveys landing | P1 — ✅ APPLIED | Removed `defaultGroupBy="status"`, added status filter Select + attention banner for pending_review surveys. D_PCE35. |
+| T52 | Survey table: Action column with role-appropriate CTAs | Admin | Surveys landing | P1 — DESIGN-REVIEW | New column: preview / pending result / review & release CTAs per survey status. Replaces kebab-only row actions. D_PCE36. |
+| T53 | Report access step in create survey flow | Admin | Push survey (step N) | P1 — DESIGN-REVIEW | Cross-table: left = roles evaluated (Instructor, Course Coordinator), right = who can see responses (Instructor, Coordinator, Program Admin, Program Director, Department Chair). D_PCE37, D_PCE38. |
+| T54 | PCE nav: add Programmatic Survey as top-level nav entry | Admin | Sidebar | P1 — DESIGN-REVIEW | Two top-level entries: Post Course Evaluation + Programmatic Survey. Both share sub-nav: surveys, templates. Analytics = skip for now. Setup = PCE only. D_PCE33. Structural — needs Romit design direction. |
+
 ## Phase 1 — killed / superseded (updated 2026-05-26)
 
 | # | Decision | Reason | Source |
