@@ -1,12 +1,73 @@
-Workflow  Workflow / Month   May   Jun  LMS Integration  Dashboad / Analytics  Course Offering  Manage Question Bank  Create & Publish  Assessments  Student Experience   1) In Assessment  2) Secure Browser Vendor Research  1) Pre Assessment  Exam Grading  Administrative Reports  Exa  Phase 1: The Foundation  1) Assessment creation 2) Assessment distribution 3) AI assisted assessment creation 4) Assessment Administration  1) Course level Question Bank 2) All and my quesitons 3) Folder organization - course level w/t access control 4) Question creation flow (w/t AI) 5) Question Versioning > Question import (w/t AI) > Folder organization - course level w/t access control > Question Category and Tagging (manual)
-Jul   Aug   Sep  1) Question Level Metrics  2) Rubric assignment  1) Auto mapping categories and  tagging with course measures   Cohere  1) Post Assessment  1) Auto grading workflow (for limited  question types)  2) Basic Assessment Level Report  1) Advanced grading workflow  (Regrading & Curve Modification)  2) Advanced Assessment Level  Report  Phase 2: Readiness for Cohere  Exam Management — Phase-wise Roadmap by Workflow  undation  on ent creation tration  1) Collaborative grading workflow
-Oct   Nov   Dec  1) User Roles and  Collaborative Assessment  Creation (including review)  1) User Roles and  Collaborative Assessment  Creation (including review)  1) Secure Browser Integration   1) Refinements after Beta  testing.  1) Refinements after Beta  testing.  1) Miscellaneous Reports  2) AI Report Experiments  1) Miscellaneous Reports  2) AI Report Experiments  Workflow  Phase 3: Miscellaneous Features and Beta Testing  grading workflow
-Other  1) transmit grades back to LMS  1) Advanced question level metrics  nd Beta Testing
-Project Status | Exam Management  Release  Nipun, Vishal  Category  Release Item   Stakeholder  Allignment  Create and Manage Question Bank   Question Bank  My questions & all questions   Question Bank  Assessment Creation   Assessment  Assessment Distribution   Assessment  In Assessment Experience   Student  Course Offering Perspective  Question creation (Manual & AI)   Question Bank   Alignment Points  Question import (examsoft and other tools)   Question Bank  Question Tagging / Import   Question Bank  Dashboard  Setup - Logo, LMS integration, RBAC, Import Courses  Base entities - Faculty, Students
-Requirements  Finalization   ETA   Design UI/UX Readiness   ETA   Engineering  Grooming  Completed   In Progress (final review)   Completed  Completed   In Progress (final review)   Completed  In Progress   20-May   Initial Prototyping  In Progress   20-May   Initial Prototyping  In Progress   20-May   In Progress (first draft)  In Progress   27-May   Initial Prototyping  In Progress   In Progress  In Progress
-In progress  Requirement Readiness
-User Story  #   Development   QA   QA Env Status   UAT Env  Status  Prod Env  Status  Verbiage  Review  In Progress   Yet to Start   Not Yet   Not Yet   Not Yet  In Progress   Yet to Start   Not Yet   Not Yet   Not Yet  In Progress  Engineering Readiness   Environment Status
-Demo  with  Yash  Help  Doc  Needed?  Help  Doc  Status  Training  Video  Needed?  Training  Video  Status  Pendo  Guide  Needed?  Pendo  Guide  Status  Feature  Walkthro  ugh to  Divya  Date of  Walkthro  ugh  Yes   Yes   Yes   -  Yes   Yes   Yes   -  Release Readiness
-Overall  Comme  nts
+Project Status | Exam Management  Release Item   Business
+Manage Question Bank   ✅   Aligned
+Assessment Creation & Distribution   🟡   Review Pending
+In Assessment Experience   🟡   Review Pending
+Course Offering Perspective   🟡   Review Pending
+Question Creation
+Question Import
+Question Tagging
+Dashboard
+Setup - Logo, LMS integration, RBAC, Import Courses
+Base entities - Faculty, Students
+Legend   Icon  Not Started   ⚪  In Progress   🟡  On Track / Done   🟢✅  Blocked / Critical   🔴  Delayed / Deprioritized   ⚫
+
+Design   Engineering
+Requirement   Prototype
+✅   Completed   Not required   🟡   In Progress   ✅   Groomed
+🟡   In Review   |   May   22   🟡   In Progress
+🟡   In Review   |   May   20   In Progress (first draft)
+🟡   In Review   |   May   20   Wireframes   ⚪   Not Started
+🟡   In Progress
+🟡   In Progress
+
+Requirement Readiness
+In progress
+
+Workflow  Workflow / Month   May   Jun
+LMS Integration
+Dashboad / Analytics
+Course Offering
+Manage Question Bank
+Create & Publish Assessments
+Student Experience   1) In Assessment 2) Secure Browser Vendor Research
+1) Pre Assessment
+Exam Grading
+Administrative Reports
+Exa  Phase 1: The Foundation
+1) Assessment creation 2) Assessment distribution 3) AI assisted assessment creation 4) Assessment Administration
+1) Course level Question Bank 2) All and my quesitons 3) Folder organization - course level w/t access control 4) Question creation flow (w/t AI) 5) Question Versioning > Question import (w/t AI) > Folder organization - course level w/t access control > Question Category and Tagging (manual)
+
+Jul   Aug   Sep
+1) Question Level Metrics
+2) Rubric assignment
+1) Auto mapping categories and tagging with course measures   Cohere
+1) Post Assessment
+1) Auto grading workflow (for limited question types) 2) Basic Assessment Level Report
+1) Advanced grading workflow (Regrading & Curve Modification) 2) Advanced Assessment Level Report
+Phase 2: Readiness for Cohere
+Exam Management — Phase-wise Roadmap by Workflow
+1) Collaborative grading workflow
+
+Oct   Nov   Dec
+1) User Roles and Collaborative Assessment Creation (including review)
+1) User Roles and Collaborative Assessment Creation (including review)
+1) Secure Browser Integration
+1) Refinements after Beta testing.
+1) Refinements after Beta testing.
+1) Miscellaneous Reports 2) AI Report Experiments
+1) Miscellaneous Reports 2) AI Report Experiments
+Workflow  Phase 3: Miscellaneous Features and Beta Testing
+
+2027
+1) transmit grades back to LMS
+1) Advanced question level metrics
+AI-Assisted Blueprint Creation
+1) Offline exam taking
+
 Business Case   Business Case
-Date   Items   Duration  June   2 days   Final Review:  QB  AI Question Creation  Student Experience (In Assessment)  Scoping:  Overall Student Experience  Exam Grading  Versioning  September  October  December   Mid
+Date   Items   Duration
+June   2 days   Final Review: QB AI Question Creation Student Experience (In Assessment)
+Scoping: Overall Student Experience Exam Grading Versioning
+September
+October
+December   Mid

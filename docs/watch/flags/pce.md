@@ -62,3 +62,35 @@ First snapshot taken for PCE PRD — Monil Pokar — no diff applied. Next run w
 
 **Why flagged:** CLEAR — dependency scope broadened from "SIS/course roster" to "SIS/LMS". Risk text simplified. This suggests the dependency is now understood to encompass the full LMS integration, not just roster data.
 **Suggested action:** No code change. Confirm with Darshan/engineering whether LMS integration is in scope for Phase 1 or remains a Phase 2 blocker.
+
+---
+
+## 2026-05-30 — Flagged: PCE PRD — Monil Pokar (2 changes)
+
+### Flag 1 — New Section 13 "Feedback on Designs" added with open questions
+**Changed text (before):** *(section did not exist)*
+**Changed text (after):**
+> 13a. General Layout
+> 1. How are we going to position both the survey types: Course Evaluations and Other General Surveys. Suggestion is to have separate entry points
+> 2. Current side bar lists the journey of a survey. Moderation can be a captured as a part of survey status within the survey master list
+> 3. Need to create separate view for Course Evaluation and Other General Surveys to show the list of surveys (Done, refer point 1)
+> 13b. Create Template
+> 1. In question design, as discussed, we will be using our current FAAS UI so try to design the subject addition outside of FAAS, as we have control over subject assignment step.
+> 13c. Create Surveys *(empty)*
+
+**Why flagged:** AMBIGUOUS — contains open design questions (item 1 "How are we going to position…?"), in-progress notes, and partially answered items. Section 13a item 2 suggests moving Moderation out of the sidebar into survey status — this has layout implications for `app-sidebar.tsx` and the moderation route. Section 13b item 1 confirms FAAS UI is used for question design, constraining the template builder scope.
+**Suggested action:** Review with Monil: (1) Is the sidebar "journey" layout being replaced by a status-based master list view? If yes, the sidebar nav structure needs to change. (2) Confirm the FAAS UI constraint for question creation is still current — this affects whether a new question builder UI is in scope.
+
+---
+
+### Flag 2 — Wizard Step 2 renamed from "Distribute Survey" to "Create Survey"; step 2 substep renamed "Distribution" → "Scope/Courses"
+**Changed text (before):**
+> Step 2 — Distribute Survey
+> 1. Properties/Details 2. Distribution 3. Survey Design 4. Communication 5. Report Access
+
+**Changed text (after):**
+> Step 2 — Create Survey
+> 1. Properties/Details 2. Scope/Courses 3. Survey Design 4. Communication (newly added) 5. Report Access (newly added)
+
+**Why flagged:** CLEAR rename — the section heading and wizard step label changed. The existing code already uses "Create Survey" terminology (CreateSurveySheet component, /surveys/push route) so no code change was needed. The wizard substep 2 changed from "Distribution" to "Scope/Courses" — when the full wizard is built, use "Scope/Courses" as the tab label for step 2.
+**Suggested action:** When building the push-survey wizard at /surveys/push, label the second step "Scope/Courses" (not "Distribution"). Communication and Report Access are now confirmed as added steps (steps 4 and 5).

@@ -349,6 +349,42 @@
       "source": "Course evaluation and survey design — base entities, template workflow, and ETAs transcript — May 19, 2026; Post-course evaluation template — workflow, role-based access, and distribution setup with Monel transcript — May 19, 2026"
     },
     {
+      "id": "2026-05-30-pce-001",
+      "date": "2026-05-30",
+      "product": "pce",
+      "type": "prd-change",
+      "title": "PCE survey status labels updated to match PRD formal status table",
+      "what": "Updated 4 status labels across 3 files to match the new formal 'Status of a Survey' table added to PCE PRD §4: active→'Scheduled', collecting→'Live', pending_review→'Closed, Pending Review', released→'Closed, Results Available'.",
+      "why": "PCE PRD §4 now formally defines the survey lifecycle with specific status labels. The prior labels (Active, Collecting, Pending Review, Shared with Faculty) were informal and inconsistent with the PRD-defined terminology.",
+      "source": "PCE PRD §4 Key User Flows — Status of a Survey table (Monil Pokar, updated 12 May 2026)",
+      "severity": null,
+      "files": [
+        "apps/pce/admin/components/pce/pce-badges.tsx",
+        "apps/pce/admin/app/(app)/surveys/page.tsx",
+        "apps/pce/admin/app/(app)/my-surveys/page.tsx"
+      ]
+    },
+    {
+      "id": "2026-05-30-pce-flagged-001",
+      "date": "2026-05-30",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD — New Section 13 'Feedback on Designs' with open layout questions",
+      "what": "New section added with open design questions about CE vs General Survey positioning, sidebar navigation structure (moderation may move into survey status), and FAAS UI constraint for question creation.",
+      "why": "AMBIGUOUS — contains open questions ('?') and partially resolved items. Sidebar restructure implied but not confirmed.",
+      "source": "PCE PRD §13 Feedback on Designs"
+    },
+    {
+      "id": "2026-05-30-pce-flagged-002",
+      "date": "2026-05-30",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD — Wizard Step 2 renamed 'Create Survey'; substep 2 renamed 'Scope/Courses'",
+      "what": "Section heading changed from 'Distribute Survey' to 'Create Survey'. Wizard substep 2 changed from 'Distribution' to 'Scope/Courses'. Communication and Report Access steps marked as '(newly added)'.",
+      "why": "CLEAR rename — no code change needed (code already uses CreateSurvey terminology). Step label to use when building wizard.",
+      "source": "PCE PRD §4.2 Step 2 — Create Survey"
+    },
+    {
       "id": "2026-05-25-granola-intake-exam-001",
       "date": "2026-05-25",
       "product": "exam-management",
