@@ -23,11 +23,11 @@ const FACULTY_ID = 'f1'
    into 'collecting' for grouping purposes. */
 const GROUP_ORDER: SurveyStatus[] = ['collecting', 'active', 'released', 'closed', 'pending_review', 'draft']
 const GROUP_LABELS: Record<SurveyStatus, string> = {
-  pending_review: 'Pending review',
-  collecting:     'Collecting',
-  active:         'Active',
+  pending_review: 'Closed, Pending Review',
+  collecting:     'Live',
+  active:         'Scheduled',
   draft:          'Draft',
-  released:       'Results',
+  released:       'Closed, Results Available',
   closed:         'Past surveys',
 }
 

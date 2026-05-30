@@ -21,11 +21,11 @@ import type { ColumnDef } from '@/components/data-table/types'
 import Link from 'next/link'
 
 const STATUS_LABELS: Record<SurveyStatus, string> = {
-  pending_review: 'Needs Review',
-  collecting:     'Collecting',
-  active:         'Active',
+  pending_review: 'Closed, Pending Review',
+  collecting:     'Live',
+  active:         'Scheduled',
   draft:          'Draft',
-  released:       'Shared with Faculty',
+  released:       'Closed, Results Available',
   closed:         'Closed',
 }
 
