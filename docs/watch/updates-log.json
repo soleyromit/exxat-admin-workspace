@@ -385,6 +385,46 @@
       "source": "PCE PRD §4.2 Step 2 — Create Survey"
     },
     {
+      "id": "2026-05-31-pce-flagged-001",
+      "date": "2026-05-31",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD — Template Creation step order changed: name/description now before course type",
+      "what": "Template Creation wizard step order reversed: name/description input now comes first, course type (Didactic/Clinical) second. Previously course type was the first field.",
+      "why": "CLEAR UX reorder — affects field ordering in the template creation wizard when built.",
+      "source": "PCE PRD §4 Key User Flows — Step 1 Template Creation"
+    },
+    {
+      "id": "2026-05-31-pce-flagged-002",
+      "date": "2026-05-31",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD — Shared Platform Architecture: concrete capability list replaced by external doc placeholder",
+      "what": "The 4-item list (Survey type, Template engine, Distribution engine, Analytics foundation) was removed from PRD body and replaced with a link/placeholder labelled 'Shared Capabilties - PCE and Gen Surveys'.",
+      "why": "AMBIGUOUS — architectural detail no longer visible in PRD text. Likely moved to a separate architecture document. Implications for whether PCE and General Surveys share APIs/DB tables are unclear.",
+      "source": "PCE PRD §5 Shared Platform Architecture"
+    },
+    {
+      "id": "2026-05-31-pce-flagged-003",
+      "date": "2026-05-31",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD — User Stories table: Results Review and Longitudinal Insights merged into single Analytics row",
+      "what": "Two faculty-facing user story rows ('Results Review' and 'Longitudinal Insights') were removed and replaced with a single 'Analytics' row. Linked document also renamed from 'US-Push Survey' to 'US-Create Survey'.",
+      "why": "CLEAR informational change. No code action needed.",
+      "source": "PCE PRD §5 User Stories"
+    },
+    {
+      "id": "2026-05-31-exam-flagged-001",
+      "date": "2026-05-31",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "Exam Roadmap — Excel columns restructured: 'Requirement Readiness' removed, 'Product/QA/UAT/Release' columns added",
+      "what": "The Excel tracker now shows Product, QA/UAT, and Release column headers where 'Requirement Readiness / In progress' previously appeared. No feature status values changed. New columns appear unpopulated.",
+      "why": "AMBIGUOUS — structural pipeline change in Nipun's tracker. New columns likely represent QA and release stages not previously tracked.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)"
+    },
+    {
       "id": "2026-05-25-granola-intake-exam-001",
       "date": "2026-05-25",
       "product": "exam-management",
