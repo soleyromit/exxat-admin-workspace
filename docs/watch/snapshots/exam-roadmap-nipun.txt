@@ -20,9 +20,8 @@ Requirement   Prototype
 🟡   In Progress
 🟡   In Progress
 
-Requirement Readiness
-In progress
-
+Product
+QA/UAT   Release
 Workflow  Workflow / Month   May   Jun
 LMS Integration
 Dashboad / Analytics
@@ -66,8 +65,14 @@ AI-Assisted Blueprint Creation
 
 Business Case   Business Case
 Date   Items   Duration
-June   2 days   Final Review: QB AI Question Creation Student Experience (In Assessment)
-Scoping: Overall Student Experience Exam Grading Versioning
+June   2 days   Final Review:
+QB
+AI Question Creation
+Student Experience (In Assessment)
+Scoping:
+Overall Student Experience
+Exam Grading
+Versioning
 September
 October
 December   Mid
