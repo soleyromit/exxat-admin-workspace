@@ -94,3 +94,51 @@ First snapshot taken for PCE PRD — Monil Pokar — no diff applied. Next run w
 
 **Why flagged:** CLEAR rename — the section heading and wizard step label changed. The existing code already uses "Create Survey" terminology (CreateSurveySheet component, /surveys/push route) so no code change was needed. The wizard substep 2 changed from "Distribution" to "Scope/Courses" — when the full wizard is built, use "Scope/Courses" as the tab label for step 2.
 **Suggested action:** When building the push-survey wizard at /surveys/push, label the second step "Scope/Courses" (not "Distribution"). Communication and Report Access are now confirmed as added steps (steps 4 and 5).
+
+---
+
+## 2026-05-31 — Flagged: PCE PRD — Monil Pokar (3 changes)
+
+### Flag 1 — Template Creation step order changed: name/description now before course type
+**Changed text (before):**
+> •   User selects Course type: Didactic or Clinical (optional)
+> •   User gives the template a name and optional description
+
+**Changed text (after):**
+> •   User gives the template a name and optional description
+> •   User selects Course type: Didactic or Clinical (optional)
+
+**Why flagged:** CLEAR UX reorder — the template creation wizard now collects name/description first, then course type (Didactic/Clinical). No template creation wizard code exists yet in the PCE app.
+**Suggested action:** When building the template creation wizard, put name/description input as the first field and course type selector as the second.
+
+---
+
+### Flag 2 — Shared Platform Architecture: concrete capability list replaced by external doc placeholder
+**Changed text (before):**
+> Shared Platform Architecture (Between PCE and General Surveys)
+> 1. Survey type
+> 2. Template engine
+> 3. Distribution engine
+> 4. Analytics foundation
+
+**Changed text (after):**
+> 5. Shared Platform Architecture (Between PCE and General Surveys)
+> Shared Capabilties - PCE and Gen Surveys
+
+**Why flagged:** AMBIGUOUS — the 4-item concrete capability list has been removed and replaced with what appears to be a link or embedded diagram placeholder ("Shared Capabilties - PCE and Gen Surveys"). The architectural detail is no longer visible in the PRD text extraction.
+**Suggested action:** Ask Monil for the "Shared Capabilities" document/diagram. Does the shared architecture still include Survey type, Template engine, Distribution engine, and Analytics foundation? Confirm whether these represent shared DB tables/APIs or just conceptual modules — this affects whether PCE and General Surveys can share a codebase.
+
+---
+
+### Flag 3 — User Stories table: "Results Review" and "Longitudinal Insights" rows merged into "Analytics"
+**Changed text (before):**
+> Distribute Survey | US - Push Survey - Course Evaluation.docx | Admin
+> Results Review | Faculty
+> Longitudinal Insights | Faculty
+
+**Changed text (after):**
+> Distribute Survey | US - Create Survey - Course Evaluation.docx | Admin
+> Analytics | Faculty
+
+**Why flagged:** CLEAR — two separate faculty-facing user story rows ("Results Review" and "Longitudinal Insights") were consolidated into a single "Analytics" row. The linked distribute-survey user story document was also renamed to "US-Create Survey".
+**Suggested action:** No code change needed. When building analytics views, reference the consolidated "Analytics" user story (not separate per-survey and longitudinal stories). The linked US document name confirms the rename to "Create Survey" flow.

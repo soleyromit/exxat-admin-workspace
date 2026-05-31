@@ -61,3 +61,19 @@ First snapshot taken for Roadmap-Exam-Management — no diff applied. Next run w
 
 **Why flagged:** AMBIGUOUS — a new stakeholder alignment tracking column appeared. "Alignment Points" is listed for Question Creation, suggesting there may be open alignment gaps.
 **Suggested action:** Ask Nipun what "Alignment Points" means for Question Creation — are there stakeholder disagreements or open decisions blocking finalisation?
+
+---
+
+## 2026-05-31 — Flagged: Exam Mgmt Roadmap — Nipun (1 change)
+
+### Flag 1 — Excel columns restructured: "Requirement Readiness" removed; "Product", "QA/UAT", "Release" columns added
+**Changed text (before):**
+> Requirement Readiness
+> In progress
+
+**Changed text (after):**
+> Product
+> QA/UAT   Release
+
+**Why flagged:** AMBIGUOUS — the Excel tracker now shows three new column headers (Product, QA/UAT, Release) where "Requirement Readiness" previously appeared. No feature status values changed (Manage Question Bank = ✅ Aligned, all others = Review Pending or In Progress). The new columns appear to be empty/unpopulated for all features.
+**Suggested action:** Ask Nipun what the "Product", "QA/UAT", and "Release" columns track. If they represent new pipeline stages, consider whether BUILD-STATUS.md should be extended to track QA and release readiness separately from design/engineering readiness.
