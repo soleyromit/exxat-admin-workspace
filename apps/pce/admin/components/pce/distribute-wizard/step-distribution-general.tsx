@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import {
   Button, Badge,
+  Input, InputGroup, InputGroupAddon,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
 } from '@exxatdesignux/ui'
 import { ExxatPrismSheet, type PrismRecipient } from './exxat-prism-sheet'
@@ -40,8 +41,9 @@ export function StepDistributionGeneral({ onBack, onNext }: StepDistributionGene
   const [anonymousGenerated, setAnonymousGenerated] = useState(false)
   const [linkCopied, setLinkCopied]           = useState(false)
 
-  const [emailSubject, setEmailSubject] = useState(DEFAULT_SUBJECT)
-  const [emailBody, setEmailBody]       = useState(DEFAULT_BODY)
+  const [emailSubject, setEmailSubject]   = useState(DEFAULT_SUBJECT)
+  const [emailBody, setEmailBody]         = useState(DEFAULT_BODY)
+  const [senderName, setSenderName]       = useState('Exxat Surveys')
 
   const [search, setSearch]       = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
@@ -187,25 +189,17 @@ export function StepDistributionGeneral({ onBack, onNext }: StepDistributionGene
             className="flex items-center gap-2 shrink-0 border-b border-border"
             style={{ padding: '9px 14px' }}
           >
-            <div
-              className="flex items-center gap-2 flex-1 rounded-md"
-              style={{ padding: '5px 10px', border: '1px solid var(--border-control-35)', background: 'var(--background)' }}
-            >
-              <i
-                className="fa-light fa-magnifying-glass text-xs shrink-0"
-                aria-hidden="true"
-                style={{ color: 'var(--muted-foreground)' }}
-              />
-              <input
-                type="text"
+            <InputGroup className="flex-1">
+              <Input
                 placeholder="Search by name or email..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="bg-transparent text-sm outline-none flex-1"
-                style={{ color: 'var(--foreground)' }}
                 aria-label="Search recipients"
               />
-            </div>
+              <InputGroupAddon align="inline-end">
+                <i className="fa-light fa-magnifying-glass" aria-hidden="true" />
+              </InputGroupAddon>
+            </InputGroup>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger style={{ width: 130, height: 34, fontSize: 13 }} aria-label="Filter by type">
                 <SelectValue />
@@ -302,7 +296,8 @@ export function StepDistributionGeneral({ onBack, onNext }: StepDistributionGene
         onOpenChange={setTemplateOpen}
         subject={emailSubject}
         body={emailBody}
-        onSave={(s, b) => { setEmailSubject(s); setEmailBody(b); setTemplateOpen(false) }}
+        senderName={senderName}
+        onSave={(s, b, sender) => { setEmailSubject(s); setEmailBody(b); setSenderName(sender); setTemplateOpen(false) }}
       />
     </div>
   )

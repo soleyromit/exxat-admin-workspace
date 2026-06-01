@@ -189,11 +189,11 @@ export function QuestionNavPanel({
   // ── Tooltip badge label ───────────────────────────────────────────────────────
   function badgeLabel(status: TileStatus, sectionLabel: string): string {
     switch (status) {
-      case 'flagged':          return '⚑ Flagged for review';
-      case 'current-flagged':  return '● Viewing now · ⚑ Flagged';
+      case 'flagged':          return 'Bookmarked';
+      case 'current-flagged':  return '● Viewing now · Bookmarked';
       case 'answered':         return '✓ Answered';
       case 'current':          return '● Viewing now';
-      case 'locked':           return `🔒 Locked · ${sectionLabel}`;
+      case 'locked':           return `Locked · ${sectionLabel}`;
       default:                 return '○ Not answered';
     }
   }
@@ -219,7 +219,8 @@ export function QuestionNavPanel({
     const status = getTileStatus(index);
     const isFocused = focusedTileIndex === index;
     const label = `Question ${index + 1}, ${
-      status === 'current-flagged' ? 'current question, flagged for review' :
+      status === 'current-flagged' ? 'current question, bookmarked' :
+      status === 'flagged' ? 'bookmarked' :
       status === 'current' ? 'current question' : status
     }`;
     return (
@@ -361,7 +362,7 @@ export function QuestionNavPanel({
 
         {/* Body — scrollable */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px 0 12px' }}>
-          {renderGroup('Flagged', '⚑', flaggedGroup)}
+          {renderGroup('Bookmarked', null, flaggedGroup)}
           {renderGroup('Unanswered', null, unansweredGroup)}
           {renderGroup('Answered', null, answeredGroup)}
         </div>

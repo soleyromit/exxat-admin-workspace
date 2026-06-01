@@ -42,7 +42,7 @@ GitHub **`ExxatDesign/Exxat-DS-Workspace`** → `docs/exxat-ds/agent-context/`.
 2. **Persona** must match an existing archetype — do not invent personas in consumer apps.
 
 3. **Custom products** use **suffix URL slugs** (`/assessment/dashboard`), not `/custom/*`.
-   Persistence lives in `customProducts[]` via `@exxatdesignux/ui/product-framework`.
+   Persistence lives in `customProducts[]` via `@exxatdesignux/product-framework`.
 
 ## See also
 

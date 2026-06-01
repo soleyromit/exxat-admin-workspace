@@ -2,12 +2,12 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react'
 import {
-  Avatar,
-  AvatarFallback,
+  Badge,
   Button,
   Card,
   CardContent,
   DatePickerField,
+  FieldLegend,
   Input,
   LocalBanner,
 } from '@exxatdesignux/ui'
@@ -20,7 +20,7 @@ const MOCK_LINK = 'https://survey.exxat.com/s/b9xkp4mr'
 const REMINDER_DAY_OPTIONS = [1, 2, 3, 5, 7, 14]
 
 export type Reminder = { id: string; daysBefore: number }
-type EmailContact = { id: string; email: string }
+type EmailContact = { id: string; firstName: string; lastName: string; email: string }
 
 // ── Prism icon mark ───────────────────────────────────────────────────────────
 function PrismIconMark({ size = 32 }: { size?: number }) {
@@ -44,71 +44,28 @@ function PrismIconMark({ size = 32 }: { size?: number }) {
   )
 }
 
-// ── Avatar stack ──────────────────────────────────────────────────────────────
-function AvatarStack({ label, items }: { label: string; items: { id: string; name: string }[] }) {
-  const MAX = 5
-  const visible = items.slice(0, MAX)
-  const overflow = items.length - MAX
-  return (
-    <div className="flex items-center gap-2.5">
-      <span className="text-xs" style={{ color: 'var(--muted-foreground)', minWidth: 88 }}>{label}</span>
-      <div className="flex items-center" aria-hidden="true">
-        {visible.map((item, i) => {
-          const initials = item.name.split(' ').filter(Boolean).map(p => p[0]).slice(0, 2).join('').toUpperCase()
-          return (
-            <Avatar key={item.id} style={{ width: 26, height: 26, marginLeft: i === 0 ? 0 : -8, border: '2px solid var(--card)', position: 'relative', zIndex: MAX - i, flexShrink: 0 }}>
-              <AvatarFallback className="text-xs" style={{ background: 'var(--border)', color: 'var(--foreground)' }}>
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-          )
-        })}
-      </div>
-      {overflow > 0 && (
-        <span className="text-xs" style={{ color: 'var(--muted-foreground)', marginLeft: 4 }}>+{overflow} more</span>
-      )}
-    </div>
-  )
-}
 
-// ── Email chip — used inside the tag-input area ───────────────────────────────
-function EmailChip({ email, onRemove }: { email: string; onRemove: () => void }) {
-  const local = email.split('@')[0] ?? ''
-  const initials = local.split(/[._\-+]/).filter(Boolean).map(p => p[0]?.toUpperCase() ?? '').slice(0, 2).join('') || email[0]?.toUpperCase() || '?'
+// ── Email chip — DS Badge + close button ──────────────────────────────────────
+function EmailChip({ contact, onRemove }: { contact: EmailContact; onRemove: () => void }) {
+  const displayName = [contact.firstName, contact.lastName].filter(Boolean).join(' ') || contact.email
   return (
-    <div
-      className="inline-flex items-center gap-1 rounded-full border border-border shrink-0"
-      style={{ padding: '3px 7px 3px 4px', background: 'var(--background)' }}
-      title={email}
-    >
-      <Avatar style={{ width: 18, height: 18, flexShrink: 0 }}>
-        <AvatarFallback style={{ fontSize: 10, background: 'var(--border)', color: 'var(--foreground)' }}>
-          {initials}
-        </AvatarFallback>
-      </Avatar>
-      <span className="text-xs truncate" style={{ maxWidth: 160 }}>{email}</span>
+    <Badge variant="secondary" className="gap-1 pr-1" title={contact.email}>
+      <span className="truncate" style={{ maxWidth: 160 }}>{displayName}</span>
       <button
         type="button"
-        aria-label={`Remove ${email}`}
+        aria-label={`Remove ${displayName}`}
         onClick={onRemove}
         className="inline-flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        style={{ width: 14, height: 14, marginLeft: 2 }}
+        style={{ width: 14, height: 14, flexShrink: 0 }}
       >
         <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 9 }} />
       </button>
-    </div>
+    </Badge>
   )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
-      {children}
-    </p>
-  )
-}
 
 interface StepCommunicationProps {
   selectedOfferings: CourseOffering[]
@@ -176,31 +133,35 @@ export function StepCommunication({
     return parts.join(', ') + (isAutoPopulated ? ' from selected courses' : ' selected')
   }, [prismRecipients, prismStudents, prismFaculty, prismOther, isAutoPopulated])
 
-  // ── Email chip-input state ────────────────────────────────────────────────
+  // ── Email contact state ───────────────────────────────────────────────────
   const [emailContacts, setEmailContacts] = useState<EmailContact[]>([
-    { id: 'ec-1', email: 'mwebb@northgeneral.org' },
-    { id: 'ec-2', email: 'p.osei@clinicalsites.edu' },
-    { id: 'ec-3', email: 'jt@riverdale-medical.com' },
+    { id: 'ec-1', firstName: 'Morgan', lastName: 'Webb', email: 'mwebb@northgeneral.org' },
+    { id: 'ec-2', firstName: 'Prince', lastName: 'Osei', email: 'p.osei@clinicalsites.edu' },
+    { id: 'ec-3', firstName: 'Jamie', lastName: 'Torres', email: 'jt@riverdale-medical.com' },
   ])
-  const [emailDraft, setEmailDraft] = useState('')
-  const emailInputRef = useRef<HTMLInputElement>(null)
+  const [addingContact, setAddingContact] = useState(false)
+  const [draftFirst, setDraftFirst] = useState('')
+  const [draftLast, setDraftLast] = useState('')
+  const [draftEmail, setDraftEmail] = useState('')
+  const firstNameRef = useRef<HTMLInputElement>(null)
 
-  function commitEmailDraft() {
-    const email = emailDraft.trim().replace(/,$/, '').toLowerCase()
-    if (!email) return
-    // Basic format guard — not a full RFC validator
+  function handleAddContact() {
+    const email = draftEmail.trim().toLowerCase()
     if (!email.includes('@') || !email.includes('.')) return
     if (!emailContacts.some(c => c.email === email)) {
-      setEmailContacts(prev => [...prev, { id: `ec-${Date.now()}`, email }])
+      setEmailContacts(prev => [...prev, {
+        id: `ec-${Date.now()}`,
+        firstName: draftFirst.trim(),
+        lastName: draftLast.trim(),
+        email,
+      }])
     }
-    setEmailDraft('')
+    setDraftFirst(''); setDraftLast(''); setDraftEmail('')
+    setAddingContact(false)
   }
 
-  function handleEmailKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); commitEmailDraft() }
-    if (e.key === 'Backspace' && !emailDraft && emailContacts.length > 0) {
-      setEmailContacts(prev => prev.slice(0, -1))
-    }
+  function handleContactFormKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Escape') { setAddingContact(false); setDraftFirst(''); setDraftLast(''); setDraftEmail('') }
   }
 
   // ── Other state ───────────────────────────────────────────────────────────
@@ -222,7 +183,7 @@ export function StepCommunication({
   }
 
   const totalRecipientCount = prismRecipients.length + emailContacts.length + (anonymousGenerated ? 1 : 0)
-  const rowBase: React.CSSProperties = { padding: '12px 16px' }
+  const sectionPad: React.CSSProperties = { padding: '14px 16px' }
 
   return (
     <div className="flex flex-col gap-6" style={{ maxWidth: 600 }}>
@@ -243,129 +204,159 @@ export function StepCommunication({
 
       {/* ── Recipients ───────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-3">
-        <SectionLabel>Recipients ({totalRecipientCount})</SectionLabel>
+        <FieldLegend variant="label">Recipients ({totalRecipientCount})</FieldLegend>
 
         <Card className="overflow-hidden shadow-none">
           <CardContent className="flex flex-col p-0">
 
-          {/* Prism row */}
-          <div className="flex flex-col" style={{ borderBottom: '1px solid var(--border)' }}>
-            <div className="flex items-center gap-3" style={rowBase}>
-              <div className="shrink-0 flex items-center justify-center" style={{ width: 32, height: 32 }}>
+          {/* Prism */}
+          <div style={{ ...sectionPad, borderBottom: '1px solid var(--border)' }}>
+            <div className="flex items-center gap-3">
+              <div className="shrink-0" style={{ width: 32, height: 32 }}>
                 <PrismIconMark size={32} />
               </div>
-              <div className="flex flex-col gap-0 flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold">Via Exxat Prism</p>
-                <p className="text-xs truncate" style={{ color: 'var(--muted-foreground)' }}>{prismDescription}</p>
+                <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>{prismDescription}</p>
               </div>
               {prismRecipients.length > 0 ? (
                 <Button variant="outline" size="sm" className="shrink-0" onClick={() => setPrismOpen(true)}>Edit</Button>
               ) : (
                 <Button variant="outline" size="sm" className="shrink-0" onClick={() => setPrismOpen(true)}>
                   <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 11 }} />
-                  Select Recipients
+                  Select
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Additional Email */}
+          <div style={{ ...sectionPad, borderBottom: '1px solid var(--border)' }}>
+            <div className="flex items-center gap-3">
+              <div className="shrink-0 flex items-center justify-center rounded-lg" style={{ width: 32, height: 32, background: 'var(--muted)' }}>
+                <i className="fa-light fa-envelope" aria-hidden="true" style={{ fontSize: 14, color: 'var(--muted-foreground)' }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold">Additional Email</p>
+                <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                  {emailContacts.length > 0
+                    ? `${emailContacts.length} external contact${emailContacts.length !== 1 ? 's' : ''}`
+                    : 'Invite external recipients by email.'}
+                </p>
+              </div>
+              {!addingContact && (
+                <Button
+                  type="button" variant="outline" size="sm" className="shrink-0"
+                  onClick={() => { setAddingContact(true); setTimeout(() => firstNameRef.current?.focus(), 10) }}
+                >
+                  <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 11 }} />
+                  Add
                 </Button>
               )}
             </div>
 
-            {prismRecipients.length > 0 && (
-              <div className="flex flex-col gap-2.5" style={{ padding: '10px 16px 14px', borderTop: '1px solid var(--border)' }}>
-                {prismStudents.length > 0 && <AvatarStack label={`Students · ${prismStudents.length}${isAutoPopulated ? ' · auto' : ''}`} items={prismStudents} />}
-                {prismFaculty.length > 0  && <AvatarStack label={`Faculty · ${prismFaculty.length}`} items={prismFaculty} />}
-                {prismOther.length > 0    && <AvatarStack label={`Other · ${prismOther.length}`} items={prismOther} />}
+            {emailContacts.length > 0 && (
+              <div className="flex flex-wrap gap-1.5" style={{ marginTop: 10 }}>
+                {emailContacts.map(c => (
+                  <EmailChip key={c.id} contact={c} onRemove={() => setEmailContacts(prev => prev.filter(x => x.id !== c.id))} />
+                ))}
+              </div>
+            )}
+
+            {addingContact && (
+              <div
+                className="grid items-center gap-1.5"
+                style={{ marginTop: 10, gridTemplateColumns: '1fr 1fr 2fr auto auto' }}
+                onKeyDown={handleContactFormKeyDown}
+              >
+                <Input
+                  ref={firstNameRef}
+                  type="text"
+                  placeholder="First name"
+                  value={draftFirst}
+                  onChange={e => setDraftFirst(e.target.value)}
+                  className="min-w-0"
+                  aria-label="First name"
+                />
+                <Input
+                  type="text"
+                  placeholder="Last name"
+                  value={draftLast}
+                  onChange={e => setDraftLast(e.target.value)}
+                  className="min-w-0"
+                  aria-label="Last name"
+                />
+                <Input
+                  type="email"
+                  placeholder="Email address"
+                  value={draftEmail}
+                  onChange={e => setDraftEmail(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddContact() } }}
+                  className="min-w-0"
+                  aria-label="Email address"
+                />
+                <Button type="button" variant="default" size="sm" disabled={!draftEmail.includes('@')} onClick={handleAddContact}>Add</Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => { setAddingContact(false); setDraftFirst(''); setDraftLast(''); setDraftEmail('') }}>Cancel</Button>
               </div>
             )}
           </div>
 
-          {/* Additional Email — chip tag input */}
-          <div className="flex flex-col" style={{ borderBottom: '1px solid var(--border)' }}>
-            <div className="flex items-center gap-3" style={rowBase}>
+          {/* Anonymous Link */}
+          <div style={sectionPad}>
+            <div className="flex items-center gap-3">
               <div className="shrink-0 flex items-center justify-center rounded-lg" style={{ width: 32, height: 32, background: 'var(--muted)' }}>
-                <i className="fa-light fa-envelope" aria-hidden="true" style={{ fontSize: 14, color: 'var(--muted-foreground)' }} />
+                <i className="fa-light fa-globe" aria-hidden="true" style={{ fontSize: 14, color: 'var(--muted-foreground)' }} />
               </div>
-              <div className="flex flex-col gap-0 flex-1 min-w-0">
-                <p className="text-sm font-semibold">Additional Email</p>
-                <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                  {emailContacts.length > 0
-                    ? `${emailContacts.length} external contact${emailContacts.length !== 1 ? 's' : ''}`
-                    : 'Invite external recipients by email address.'}
-                </p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold">Anonymous Link</p>
+                <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Open link for distribution via email or social.</p>
               </div>
+              {anonymousGenerated ? (
+                <Button variant="link" size="sm" className="text-destructive shrink-0 px-0" onClick={() => setAnonymousGenerated(false)}>Revoke</Button>
+              ) : (
+                <Button variant="outline" size="sm" className="shrink-0" onClick={() => setAnonymousGenerated(true)}>Generate Link</Button>
+              )}
             </div>
 
-            {/* Tag-input area — chips + inline input in one flowing field */}
-            <div
-              className="flex flex-wrap items-center gap-1.5 cursor-text"
-              style={{ padding: '8px 16px 12px', borderTop: '1px solid var(--border)' }}
-              onClick={() => emailInputRef.current?.focus()}
-            >
-              {emailContacts.map(c => (
-                <EmailChip
-                  key={c.id}
-                  email={c.email}
-                  onRemove={() => setEmailContacts(prev => prev.filter(x => x.id !== c.id))}
-                />
-              ))}
-              <input
-                ref={emailInputRef}
-                type="email"
-                placeholder={emailContacts.length === 0 ? 'Type an email and press Enter…' : 'Add another…'}
-                value={emailDraft}
-                onChange={e => setEmailDraft(e.target.value)}
-                onKeyDown={handleEmailKeyDown}
-                onBlur={commitEmailDraft}
-                className="outline-none bg-transparent min-w-40 flex-1 placeholder:text-muted-foreground"
-                style={{ height: 28, fontSize: 13 }}
-                aria-label="Add email address"
-              />
-            </div>
-          </div>
-
-          {/* Anonymous Link row */}
-          <div className="flex items-center gap-3" style={rowBase}>
-            <div className="shrink-0 flex items-center justify-center rounded-lg" style={{ width: 32, height: 32, background: 'var(--muted)' }}>
-              <i className="fa-light fa-globe" aria-hidden="true" style={{ fontSize: 14, color: 'var(--muted-foreground)' }} />
-            </div>
-            <div className="flex flex-col gap-0 flex-1 min-w-0">
-              <p className="text-sm font-semibold">Anonymous Link</p>
-              <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Open link for distribution via email or social.</p>
-            </div>
-            {anonymousGenerated ? (
-              <div className="flex items-center gap-1.5 shrink-0">
-                <code className="text-xs rounded" style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '2px 6px', background: 'var(--muted)', color: 'var(--muted-foreground)', display: 'block' }} title={MOCK_LINK}>
+            {anonymousGenerated && (
+              <div className="flex items-center gap-2" style={{ marginTop: 10, paddingLeft: 44 }}>
+                <code
+                  className="text-sm flex-1 rounded"
+                  style={{ padding: '5px 10px', background: 'var(--muted)', color: 'var(--muted-foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                  title={MOCK_LINK}
+                >
                   {MOCK_LINK}
                 </code>
-                <Button variant="ghost" size="icon-sm" onClick={handleCopyLink} aria-label="Copy public link">
-                  <i className={`fa-light fa-${linkCopied ? 'check' : 'copy'}`} aria-hidden="true" style={{ fontSize: 12, color: linkCopied ? 'var(--chart-2)' : undefined }} />
+                <Button variant="ghost" size="icon" onClick={handleCopyLink} aria-label="Copy public link">
+                  <i className={`fa-light fa-${linkCopied ? 'check' : 'copy'}`} aria-hidden="true" style={{ fontSize: 16, color: linkCopied ? 'var(--chart-2)' : undefined }} />
                 </Button>
-                <Button variant="ghost" size="sm" className="text-xs font-normal shrink-0" style={{ color: 'var(--destructive)' }} onClick={() => setAnonymousGenerated(false)}>Revoke</Button>
+                {linkCopied && (
+                  <span className="text-sm font-medium" style={{ color: 'var(--chart-2)', whiteSpace: 'nowrap' }}>Copied!</span>
+                )}
               </div>
-            ) : (
-              <Button variant="outline" size="sm" className="shrink-0" onClick={() => setAnonymousGenerated(true)}>Generate Link</Button>
             )}
           </div>
+
           </CardContent>
         </Card>
       </div>
 
-      <div className="border-t border-border" />
-
       {/* ── Survey window ─────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-3">
-        <SectionLabel>Survey window</SectionLabel>
+        <FieldLegend variant="label">Survey window</FieldLegend>
         <Card className="shadow-none">
           <CardContent className="flex flex-col gap-4" style={{ padding: 16 }}>
           <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
             <div className="flex flex-col gap-1.5">
-              <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>Opens on <span style={{ color: 'var(--destructive)' }}>*</span></p>
+              <p className="text-sm font-medium">Opens on <span style={{ color: 'var(--destructive)' }}>*</span></p>
               <DatePickerField value={openDate} onChange={onOpenDateChange} />
             </div>
             <div className="flex flex-col gap-1.5">
-              <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>Closes on <span style={{ color: 'var(--destructive)' }}>*</span></p>
+              <p className="text-sm font-medium">Closes on <span style={{ color: 'var(--destructive)' }}>*</span></p>
               <DatePickerField value={closeDate} onChange={onCloseDateChange} />
             </div>
             <div className="flex flex-col gap-1.5">
-              <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>Results released <span className="font-normal">(optional)</span></p>
+              <p className="text-sm font-medium">Results released <span className="font-normal">(optional)</span></p>
               <DatePickerField value={releaseDate} onChange={onReleaseDateChange} />
             </div>
           </div>
@@ -374,15 +365,13 @@ export function StepCommunication({
         </Card>
       </div>
 
-      <div className="border-t border-border" />
-
       {/* ── Email notifications ───────────────────────────────────────────── */}
       <div className="flex flex-col gap-3">
-        <SectionLabel>Email notifications</SectionLabel>
+        <FieldLegend variant="label">Email notifications</FieldLegend>
 
         <Card className="overflow-hidden shadow-none">
           <CardContent className="flex flex-col p-0">
-          <div className="flex items-center gap-3" style={rowBase}>
+          <div className="flex items-center gap-3" style={sectionPad}>
             <div className="shrink-0 flex items-center justify-center rounded-lg" style={{ width: 32, height: 32, background: 'var(--muted)' }}>
               <i className="fa-light fa-envelope-open-text" aria-hidden="true" style={{ fontSize: 14, color: 'var(--muted-foreground)' }} />
             </div>
@@ -399,7 +388,7 @@ export function StepCommunication({
 
         {/* Reminder day-toggle chips */}
         <div className="flex flex-col gap-2">
-          <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
+          <p className="text-sm font-medium">
             Reminders <span className="font-normal">(to non-respondents only)</span>
           </p>
           <div className="flex flex-wrap gap-1.5" role="group" aria-label="Reminder days before close">

@@ -3,6 +3,7 @@
 import {
   Button,
   Checkbox,
+  Input,
   Select,
   SelectTrigger,
   SelectContent,
@@ -86,20 +87,11 @@ export function StepProperties({
         <label htmlFor="survey-title" className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
           Survey title <span style={{ color: 'var(--destructive)' }}>*</span>
         </label>
-        <input
+        <Input
           id="survey-title"
-          type="text"
           value={surveyTitle}
           onChange={e => onSurveyTitleChange(e.target.value)}
           placeholder="e.g. Fall 2026 Course Evaluations"
-          className="w-full rounded-md text-sm"
-          style={{
-            padding: '7px 10px',
-            border: '1px solid var(--border-control-35)',
-            background: 'var(--card)',
-            color: 'var(--foreground)',
-            outline: 'none',
-          }}
           aria-label="Survey title"
           maxLength={120}
         />
@@ -183,14 +175,11 @@ export function StepProperties({
                     onVisibilityChange(opt.value)
                   }
                 }}
-                className="flex items-start gap-3 cursor-pointer rounded-xl flex-1"
+                className="flex items-start gap-3 cursor-pointer rounded-xl flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                 style={{
-                  padding: isSelected ? '14px 16px' : '15px 17px',
-                  border: isSelected
-                    ? '2px solid var(--brand-color)'
-                    : '1px solid var(--border)',
+                  padding: '14px 16px',
+                  border: `2px solid ${isSelected ? 'var(--ring)' : 'var(--border)'}`,
                   background: 'var(--card)',
-                  outline: 'none',
                 }}
               >
                 <i

@@ -1,4 +1,4 @@
-/** Shim — re-exports accent-color helpers from `@exxatdesignux/ui/product-framework`. */
+/** Shim — re-exports accent-color helpers from `@exxatdesignux/product-framework`. */
 
 export {
   BRAND_ACCENT_CHROMA,
@@ -8,4 +8,4 @@ export {
   isPaletteAnchorColor,
   normalizeBrandAccentColor,
   parseOklchHue,
-} from "@exxatdesignux/ui/product-framework"
+} from "@exxatdesignux/product-framework"

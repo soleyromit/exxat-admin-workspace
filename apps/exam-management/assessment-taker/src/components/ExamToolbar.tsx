@@ -53,6 +53,7 @@ export interface ExamToolbarProps {
   onToggleGlobalRef?: () => void;
   isGlobalRefOpen?: boolean;
   sections?: ExamSection[];
+  onShowKeyboardShortcuts?: () => void;
 }
 export function ExamToolbar({
   timerFormatted,
@@ -78,6 +79,7 @@ export function ExamToolbar({
   onToggleGlobalRef,
   isGlobalRefOpen,
   sections,
+  onShowKeyboardShortcuts,
 }: ExamToolbarProps) {
   const [showSettings, setShowSettings] = useState(false);
   const progressPercent =
@@ -199,18 +201,30 @@ export function ExamToolbar({
             </Tooltip>
           )}
 
-          {/* Submit — always visible */}
-          <Tooltip content="Submit your exam for grading" position="bottom">
-            <DSButton
-              variant="default"
-              size="sm"
-              onClick={onSubmit}
-              aria-label="Submit exam"
-              className="ml-1 shrink-0 font-bold"
-            >
-              Submit
-            </DSButton>
-          </Tooltip>
+          {onShowKeyboardShortcuts && (
+            <Tooltip content="Keyboard shortcuts" position="bottom">
+              <DSButton
+                variant="ghost"
+                size="icon-sm"
+                onClick={onShowKeyboardShortcuts}
+                aria-label="View keyboard shortcuts"
+                style={{ color: 'var(--muted-foreground)' }}
+              >
+                <i className="fa-regular fa-keyboard" aria-hidden="true" style={{ fontSize: 16 }} />
+              </DSButton>
+            </Tooltip>
+          )}
+
+          {/* Submit — outline so it doesn't compete with Next in the footer */}
+          <DSButton
+            variant="outline"
+            size="sm"
+            onClick={onSubmit}
+            aria-label="Submit exam"
+            className="ml-1 shrink-0"
+          >
+            Submit
+          </DSButton>
 
           {/* Settings — last in order */}
           <div className="relative">

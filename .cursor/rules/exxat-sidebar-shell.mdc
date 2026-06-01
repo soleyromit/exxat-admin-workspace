@@ -25,7 +25,7 @@ Customer / legacy app **screenshots** may show **what links exist** — not **ho
 ## MUST — DS sidebar chrome
 
 1. **Shell:** **`AppSidebar`** + **`SidebarMenuButton`** / **`SidebarGroup`** / **`SidebarGroupLabel`** from **`@exxatdesignux/ui`** (or app shims). Reference: **`components/sidebar/app-sidebar.tsx`**, **`AGENTS.md` §9.1**, **`exxat-ds-skill` §3.1–§3.2**.
-2. **Typography:** Row labels **`text-sidebar-foreground`** (default from `SidebarMenuButton`). Section headings **`SidebarGroupLabel`** + **`text-sidebar-section-label`** — not rainbow section body text.
+2. **Typography:** Row labels **`text-sidebar-foreground`** (default from `SidebarMenuButton`). Section headings **`SidebarGroupLabel`** + **`text-sidebar-section-label`** — not rainbow section body text. Nav labels **wrap** — use **`SidebarNavLabel`**; **MUST NOT** **`truncate`** primary or secondary sidebar copy (**`exxat-sidebar-nav-labels.mdc`**).
 3. **Active state:** Pass **`isActive`** into **`SidebarMenuButton`** only. Expanded rail: **one** active row (`data-active` → background pill + ring from DS). Collapsible parent stays **neutral** when a child is active. Icon rail: parent icon may light up when any child is active.
 4. **Icons:** **`fa-light`** idle / **`fa-solid`** active on the **icon** only — do **not** recolor the label per module.
 5. **Nav data:** Add or extend **`lib/mock/navigation.tsx`** (or a file it imports). **MUST NOT** paste a full legacy sidebar component from a customer repo into **`apps/web`**.

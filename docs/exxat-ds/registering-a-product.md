@@ -1,6 +1,6 @@
 # Registering a product (customer apps)
 
-> **Public API:** `@exxatdesignux/ui/product-framework`
+> **Public API:** `@exxatdesignux/product-framework`
 > — `defineProduct()`, `registerProducts()`, `listRegisteredProducts()`,
 > `getRegisteredProduct()`, `getRegisteredProductBySlug()`.
 >
@@ -27,7 +27,7 @@ A registered product gets:
 
 ```ts
 // app/products/exxat-survey.ts
-import { defineProduct } from "@exxatdesignux/ui/product-framework"
+import { defineProduct } from "@exxatdesignux/product-framework"
 
 export const exxatSurveyProduct = defineProduct({
   id: "exxat-survey",
@@ -85,7 +85,7 @@ shape is a no-op; re-registering with a different shape throws).
 
 ```tsx
 // app/main.tsx — entry point
-import { registerProducts } from "@exxatdesignux/ui/product-framework"
+import { registerProducts } from "@exxatdesignux/product-framework"
 import { exxatSurveyProduct } from "./products/exxat-survey"
 import { onboardingProduct } from "./products/onboarding"
 
@@ -150,7 +150,7 @@ or `usePersistedState()` should namespace its key with the product slug
 so different products never share a localStorage slot:
 
 ```tsx
-import { productPersistKey } from "@exxatdesignux/ui/product-framework"
+import { productPersistKey } from "@exxatdesignux/product-framework"
 
 <HubTable persistKey={productPersistKey(productId, "responses")} />
 // → "survey:responses" when productId === "exxat-survey"

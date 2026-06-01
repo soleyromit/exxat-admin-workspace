@@ -281,6 +281,25 @@
       "files": ["docs/BUILD-STATUS.md"]
     },
     {
+      "id": "2026-06-01-pce-corr-001",
+      "date": "2026-06-01",
+      "product": "pce",
+      "type": "claude-correction",
+      "title": "Wrong: raw <input outline:none> written and not caught until visual review",
+      "what": "Multiple raw <input> elements with outline:none or outline-none written across distribute-wizard files (step-properties, email-list-sheet, email-template-sheet, exxat-prism-sheet, step-distribution-general, step-survey-design-general). WCAG 2.4.7 (Focus Visible) violations reached visual review instead of being caught at pre-task declaration.",
+      "why": "Pre-task declaration (WCAG issues static read) not run before writing files. Pattern is: write code → ship → visual-review catches violation → fix. Correct pattern: audit file for violations before any edit → list in pre-task block → fix or justify inline.",
+      "source": "Romit (session correction)",
+      "severity": null,
+      "files": [
+        "admin/components/pce/distribute-wizard/step-properties.tsx",
+        "admin/components/pce/distribute-wizard/email-list-sheet.tsx",
+        "admin/components/pce/distribute-wizard/email-template-sheet.tsx",
+        "admin/components/pce/distribute-wizard/exxat-prism-sheet.tsx",
+        "admin/components/pce/distribute-wizard/step-distribution-general.tsx",
+        "admin/components/pce/distribute-wizard/step-survey-design-general.tsx"
+      ]
+    },
+    {
       "id": "2026-05-17-workspace-010",
       "date": "2026-05-17",
       "product": "workspace",

@@ -8,7 +8,7 @@ import { WizardNav } from '@/components/pce/wizard-nav'
 import { StepProperties, type SurveyVisibility } from '@/components/pce/distribute-wizard/step-properties'
 import { StepDistribution } from '@/components/pce/distribute-wizard/step-distribution'
 import { StepSurveyDesign } from '@/components/pce/distribute-wizard/step-survey-design'
-import { StepCommunication } from '@/components/pce/distribute-wizard/step-communication'
+import { StepCommunication, type Reminder } from '@/components/pce/distribute-wizard/step-communication'
 import { StepReportAccess, DEFAULT_REPORT_ACCESS, type ReportAccess } from '@/components/pce/distribute-wizard/step-report-access'
 import { StepSuccess } from '@/components/pce/distribute-wizard/step-success'
 import { StepDistributionGeneral } from '@/components/pce/distribute-wizard/step-distribution-general'
@@ -69,8 +69,7 @@ function PushSurveyInner() {
     'Your course evaluation for {{course_name}} is now open'
   )
   const [emailBody, setEmailBody] = useState(DEFAULT_EMAIL_BODY)
-  const [reminderEnabled, setReminderEnabled] = useState(false)
-  const [reminderDaysBefore, setReminderDaysBefore] = useState(3)
+  const [reminders, setReminders] = useState<Reminder[]>([])
 
   // Step 5 — Report Access
   const [reportAccess, setReportAccess] = useState<ReportAccess>(DEFAULT_REPORT_ACCESS)
@@ -176,8 +175,8 @@ function PushSurveyInner() {
       closeDate: closeYmd,
       emailSubject,
       emailBody,
-      reminderEnabled,
-      reminderDaysBefore,
+      reminderEnabled: reminders.length > 0,
+      reminderDaysBefore: reminders[0]?.daysBefore ?? 3,
       reportAccess: Object.fromEntries(
         Object.entries(reportAccess).map(([k, v]) => [k, Array.from(v)])
       ),
@@ -202,8 +201,7 @@ function PushSurveyInner() {
     setSenderName('Exxat Surveys')
     setEmailSubject('Your course evaluation for {{course_name}} is now open')
     setEmailBody(DEFAULT_EMAIL_BODY)
-    setReminderEnabled(false)
-    setReminderDaysBefore(3)
+    setReminders([])
     setReportAccess(DEFAULT_REPORT_ACCESS)
   }
 
@@ -313,16 +311,14 @@ function PushSurveyInner() {
               senderName={senderName}
               emailSubject={emailSubject}
               emailBody={emailBody}
-              reminderEnabled={reminderEnabled}
-              reminderDaysBefore={reminderDaysBefore}
+              reminders={reminders}
               onOpenDateChange={setOpenDate}
               onCloseDateChange={setCloseDate}
               onReleaseDateChange={setReleaseDate}
               onSenderNameChange={setSenderName}
               onEmailSubjectChange={setEmailSubject}
               onEmailBodyChange={setEmailBody}
-              onReminderEnabledChange={setReminderEnabled}
-              onReminderDaysChange={setReminderDaysBefore}
+              onRemindersChange={setReminders}
               onBack={() => setStep(3)}
               onNext={() => setStep(5)}
             />

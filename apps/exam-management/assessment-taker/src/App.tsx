@@ -14,8 +14,8 @@ import { QuestionNavigatorPopover } from './components/QuestionNavigatorPopover'
 import { AccessibilityPanel } from './components/AccessibilityPanel';
 import { GlobalReferencePanel } from './components/GlobalReferencePanel';
 import { SubmitReviewOverlay } from './components/SubmitReviewOverlay';
+import { KeyboardShortcutModal } from './components/KeyboardShortcutModal';
 import { StickyFooter } from './components/StickyFooter';
-import { QuestionNavPanel } from './components/QuestionNavPanel';
 // Question types that benefit from a calculator
 const CALCULATOR_TYPES = new Set([
 'table',
@@ -163,8 +163,8 @@ export function App() {
   const [showSidebar, setShowSidebar] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(false);
-  const [showNavigator, setShowNavigator] = useState(false);
   const [showNavPanel, setShowNavPanel] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const [showAccessibility, setShowAccessibility] = useState(false);
   const [showGlobalRef, setShowGlobalRef] = useState(false);
   const [showSubmitReview, setShowSubmitReview] = useState(false);
@@ -178,6 +178,16 @@ export function App() {
   const [theme, setTheme] = useState<'light' | 'dark' | 'high-contrast'>(
     'light'
   );
+  // Sync DS dark-mode class on <html> so DS tokens (--background, --card, etc.) update
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark' || theme === 'high-contrast') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    return () => root.classList.remove('dark');
+  }, [theme]);
   const { formatted: timerFormatted, totalSeconds } = useTimer(7200);
   const isLastFiveMinutes = totalSeconds <= 300;
   const { zoomPercent, zoomIn, zoomOut, announcement } = useZoom();
@@ -402,7 +412,8 @@ export function App() {
         hasGlobalRef={(assessment?.referenceMaterials?.length ?? 0) > 0}
         isGlobalRefOpen={showGlobalRef}
         onToggleGlobalRef={() => setShowGlobalRef(v => !v)}
-        sections={assessment?.sections} />
+        sections={assessment?.sections}
+        onShowKeyboardShortcuts={() => setShowShortcuts(true)} />
       
 
       <div className="relative flex-1 overflow-hidden flex flex-col">
@@ -424,17 +435,6 @@ export function App() {
           );
         })()}
 
-        <QuestionNavigatorPopover
-          questions={questions}
-          currentIndex={currentIndex}
-          highestReachedIndex={highestReachedIndex}
-          answeredSet={answeredIndices}
-          flaggedSet={flagged}
-          onNavigate={handleNavigate}
-          isOpen={showNavigator}
-          onClose={() => setShowNavigator(false)} />
-        
-
         <AccessibilityPanel
           isOpen={showAccessibility}
           onClose={() => setShowAccessibility(false)}
@@ -444,19 +444,6 @@ export function App() {
         
 
         <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
-          {showNavPanel && (
-            <QuestionNavPanel
-              questions={questions}
-              currentIndex={currentIndex}
-              answeredSet={answeredIndices}
-              flaggedSet={flagged}
-              sections={assessment?.sections}
-              highestReachedIndex={highestReachedIndex}
-              onNavigate={handleNavigate}
-              onClose={() => setShowNavPanel(false)}
-            />
-          )}
-
           <main
             id="main-content"
             className="flex-1 overflow-hidden flex flex-col p-4 md:p-6 pb-24"
@@ -479,7 +466,9 @@ export function App() {
               voiceNarrator={voiceNarrator}
               allowComments={allowComments}
               comment={comments[currentQuestion.id]}
-              onCommentChange={handleCommentChange} />
+              onCommentChange={handleCommentChange}
+              isFlagged={flagged.has(currentIndex)}
+              onToggleFlag={handleToggleFlag} />
 
           </main>
         </div>
@@ -509,6 +498,17 @@ export function App() {
 
       }
 
+      <QuestionNavigatorPopover
+        questions={questions}
+        currentIndex={currentIndex}
+        highestReachedIndex={highestReachedIndex}
+        answeredSet={answeredIndices}
+        flaggedSet={flagged}
+        sections={assessment?.sections}
+        onNavigate={handleNavigate}
+        isOpen={showNavPanel}
+        onClose={() => setShowNavPanel(false)} />
+
       {/* Vishaka May 14: "bottom panel is getting lost — that is my primary way to act.
            I have to reorient to the right-hand corner to go next." StickyFooter provides
            bottom navigation so students never need to look at the toolbar to advance. */}
@@ -516,12 +516,7 @@ export function App() {
         currentIndex={currentIndex}
         totalQuestions={questions.length}
         onNavigate={handleNavigate}
-        isFlaggedCurrent={flagged.has(currentIndex)}
-        onToggleFlag={handleToggleFlag}
-        questions={questions}
-        answeredSet={answeredIndices}
         flaggedSet={flagged}
-        sections={assessment?.sections}
         showNavPanel={showNavPanel}
         onToggleNavPanel={() => setShowNavPanel(v => !v)} />
 
@@ -542,6 +537,7 @@ export function App() {
           onConfirmSubmit={handleConfirmSubmit} />
       )}
     </div>
+      <KeyboardShortcutModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
     </>
   );
 

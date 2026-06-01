@@ -12,7 +12,7 @@ const STEPS = [
   { n: 1, label: 'Properties' },
   { n: 2, label: 'Distribution' },
   { n: 3, label: 'Design' },
-  { n: 4, label: 'Communicate' },
+  { n: 4, label: 'Communication' },
   { n: 5, label: 'Report access' },
 ]
 
@@ -56,12 +56,11 @@ export function WizardNav({ currentStep, completedUpTo, onStepClick }: WizardNav
                 className="justify-start gap-2 w-full font-normal cursor-default"
                 aria-current="step"
               >
-                <span
-                  className="shrink-0 rounded-full flex items-center justify-center"
-                  style={{ width: 16, height: 16, background: 'var(--brand-color)', flexShrink: 0 }}
-                >
-                  <span className="rounded-full" style={{ width: 6, height: 6, background: 'var(--card)' }} />
-                </span>
+                <i
+                  className="fa-solid fa-circle-dot shrink-0"
+                  aria-hidden="true"
+                  style={{ fontSize: 13, width: 16, color: 'var(--brand-color)' }}
+                />
                 <span className="font-semibold">{label}</span>
               </Button>
             )
@@ -78,8 +77,8 @@ export function WizardNav({ currentStep, completedUpTo, onStepClick }: WizardNav
               aria-disabled="true"
             >
               <span
-                className="text-xs font-semibold shrink-0 text-center"
-                style={{ width: 16, color: 'var(--muted-foreground)' }}
+                className="text-xs font-semibold shrink-0 flex items-center justify-center rounded-full"
+                style={{ width: 18, height: 18, background: 'var(--muted)', color: 'var(--muted-foreground)' }}
               >
                 {n}
               </span>

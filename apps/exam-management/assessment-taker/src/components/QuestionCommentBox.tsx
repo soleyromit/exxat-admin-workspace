@@ -16,10 +16,11 @@ export interface QuestionCommentBoxProps {
   questionId: number;
   initialComment?: string;
   onSave?: (questionId: number, comment: string) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export function QuestionCommentBox({ questionId, initialComment = '', onSave }: QuestionCommentBoxProps) {
-  const [open, setOpen] = useState(Boolean(initialComment));
+export function QuestionCommentBox({ questionId, initialComment = '', onSave, isOpen, onClose }: QuestionCommentBoxProps) {
   const [text, setText] = useState(initialComment);
   const [saved, setSaved] = useState(false);
 
@@ -29,21 +30,7 @@ export function QuestionCommentBox({ questionId, initialComment = '', onSave }: 
     setTimeout(() => setSaved(false), 1500);
   };
 
-  if (!open) {
-    return (
-      <div className="mt-6 flex justify-end">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setOpen(true)}
-          aria-label="Flag this question for faculty review"
-        >
-          <i className="fa-light fa-flag" aria-hidden="true" />
-          Flag this question
-        </Button>
-      </div>
-    );
-  }
+  if (!isOpen) return null;
 
   return (
     <div
@@ -57,21 +44,21 @@ export function QuestionCommentBox({ questionId, initialComment = '', onSave }: 
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2">
           <i
-            className="fa-light fa-flag"
+            className="fa-light fa-triangle-exclamation"
             aria-hidden="true"
             style={{ color: 'var(--state-warning-darkest)', fontSize: 14 }}
           />
           <p
-            className="text-xs font-bold uppercase tracking-wider"
+            className="text-xs font-bold"
             style={{ color: 'var(--state-warning-darkest)' }}
           >
-            Flag question for faculty review
+            Report issue to faculty
           </p>
         </div>
         <Button
           variant="ghost"
           size="icon-sm"
-          onClick={() => setOpen(false)}
+          onClick={onClose}
           aria-label="Close comment box"
         >
           <i className="fa-light fa-xmark" aria-hidden="true" />

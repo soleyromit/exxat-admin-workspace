@@ -34,7 +34,7 @@ import type { Product } from "@/contexts/product-context"
 import { useAppStore, type CustomProductBrand, getActiveCustomProductBrand } from "@/stores/app-store"
 import { customProductBrandConfig } from "@/lib/product-brand"
 
-export type ExxatProductLogoVariant = "default" | "mutedSuffix"
+export type ExxatProductLogoVariant = "default" | "mutedSuffix" | "sidebar"
 
 export interface ExxatProductLogoProps {
   product: Product
@@ -189,7 +189,7 @@ function ExxatLogoBase({
 export function ExxatProductLogo({
   product,
   className,
-  variant: _variant = "default",
+  variant = "default",
   previewCustomBrand,
 }: ExxatProductLogoProps) {
   const activeCustomProductBrand = useAppStore(s => getActiveCustomProductBrand(s))
@@ -197,6 +197,26 @@ export function ExxatProductLogo({
   const effectiveCustomBrand = previewCustomBrand ?? activeCustomProductBrand
   const config = brandForProduct(product, effectiveCustomBrand, productBrandColors)
   const suffixColor = config.wordmarkColor ?? config.brandColor
+  const sidebarLockup = resolveSidebarLockup(config.suffix)
+
+  if (variant === "sidebar" && sidebarLockup !== "full") {
+    return (
+      <span
+        aria-hidden="true"
+        data-product-logo
+        data-product-logo-variant="sidebar"
+        data-product-id={config.id}
+        data-lockup={sidebarLockup}
+        className={cn(
+          "flex min-w-0 flex-1 items-center gap-2 text-base leading-none",
+          className,
+        )}
+      >
+        <ProductMark config={config} className="size-8 shrink-0" />
+        <SidebarSuffix suffix={config.suffix} suffixColor={suffixColor} lockup={sidebarLockup} />
+      </span>
+    )
+  }
 
   return (
     <span
@@ -208,11 +228,7 @@ export function ExxatProductLogo({
         className,
       )}
     >
-      {config.compactLogo ? (
-        <ProductMark config={config} className="size-7" />
-      ) : (
-        <ExxatLogoBase config={config} style={{ height: 28, width: "auto" }} />
-      )}
+      <ExxatLogoBase config={config} style={{ height: 28, width: "auto" }} />
 
       {/* HTML suffix — IvyPresto Text SemiBold per Figma brand spec. */}
       <span
@@ -225,6 +241,53 @@ export function ExxatProductLogo({
       >
         {config.suffix}
       </span>
+    </span>
+  )
+}
+
+type SidebarLockup = "full" | "suffix" | "stacked"
+
+function resolveSidebarLockup(suffix: string): SidebarLockup {
+  const words = suffix.trim().split(/\s+/)
+  if (words.length === 2 && suffix.length > 10) return "stacked"
+  if (suffix.length > 8) return "suffix"
+  return "full"
+}
+
+function SidebarSuffix({
+  suffix,
+  suffixColor,
+  lockup,
+}: {
+  suffix: string
+  suffixColor: string
+  lockup: Exclude<SidebarLockup, "full">
+}) {
+  const words = suffix.trim().split(/\s+/)
+  const suffixFontFamily = "var(--font-heading), 'ivypresto-text', Georgia, serif"
+  const suffixTypeClasses =
+    "text-[1.55em] font-semibold tracking-[-0.03em] leading-none"
+
+  if (lockup === "stacked" && words.length === 2) {
+    return (
+      <span
+        data-product-wordmark-suffix
+        className="flex min-w-0 flex-col whitespace-nowrap font-semibold leading-[1.05] tracking-[-0.03em]"
+        style={{ fontFamily: suffixFontFamily, color: suffixColor }}
+      >
+        <span className="text-base">{words[0]}</span>
+        <span className="text-[1.55em]">{words[1]}</span>
+      </span>
+    )
+  }
+
+  return (
+    <span
+      data-product-wordmark-suffix
+      className={cn("min-w-0 whitespace-nowrap", suffixTypeClasses)}
+      style={{ fontFamily: suffixFontFamily, color: suffixColor }}
+    >
+      {suffix}
     </span>
   )
 }
@@ -295,11 +358,7 @@ export function ExxatProductWordmarkEditor({
         className,
       )}
     >
-      {config.compactLogo ? (
-        <ProductMark config={config} className="size-7 shrink-0" />
-      ) : (
-        <ExxatLogoBase config={config} className="shrink-0" style={{ height: 28, width: "auto" }} />
-      )}
+      <ExxatLogoBase config={config} className="shrink-0" style={{ height: 28, width: "auto" }} />
       <span
         id={suffixId}
         ref={suffixRef}

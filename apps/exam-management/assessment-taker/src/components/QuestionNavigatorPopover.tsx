@@ -1,30 +1,33 @@
-import { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Question } from '../data/questions';
+import { ExamSection } from '../data/assessments';
+
 export interface QuestionNavigatorPopoverProps {
   questions: Question[];
   currentIndex: number;
-  /** Aarti May 14: "skipped = questions up to the highest point reached, not answered"
-   *  Used to filter the Skipped tab — not all unanswered, only those before current progress. */
   highestReachedIndex: number;
   answeredSet: Set<number>;
   flaggedSet: Set<number>;
+  sections?: ExamSection[];
   onNavigate: (index: number) => void;
   isOpen: boolean;
   onClose: () => void;
 }
-type FilterTab = 'all' | 'skipped' | 'flagged' | 'answered';
+
 export function QuestionNavigatorPopover({
   questions,
   currentIndex,
   highestReachedIndex,
   answeredSet,
   flaggedSet,
+  sections,
   onNavigate,
   isOpen,
-  onClose
+  onClose,
 }: QuestionNavigatorPopoverProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
+
+  // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) onClose();
@@ -32,121 +35,225 @@ export function QuestionNavigatorPopover({
     if (isOpen) document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [isOpen, onClose]);
-  if (!isOpen) return null;
-  // Skipped = unanswered questions up to the furthest point reached (Aarti May 14)
-  const skippedCount = questions.filter((_, i) => i <= highestReachedIndex && !answeredSet.has(i)).length;
-  const filteredQuestions = questions.map((q, i) => ({
-    q,
-    i
-  })).filter(({
-    i
-  }) => {
-    if (activeFilter === 'skipped') return i <= highestReachedIndex && !answeredSet.has(i);
-    if (activeFilter === 'flagged') return flaggedSet.has(i);
-    if (activeFilter === 'answered') return answeredSet.has(i);
-    return true;
-  });
-  return <div ref={ref} className="absolute top-full right-0 mt-2 z-50 animate-pop-in flex flex-col" style={{
-    width: '400px',
-    maxHeight: '80vh',
-    backgroundColor: 'var(--card)',
-    border: '1px solid var(--border)',
-    borderRadius: '16px',
-    boxShadow: '0 12px 40px rgba(0,0,0,0.12)'
-  }}>
-      <div className="p-4 border-b" style={{
-      borderColor: 'var(--border)'
-    }}>
-        <h3 className="font-bold text-sm mb-3" style={{
-        color: 'var(--foreground)'
-      }}>
-          Question Navigator
-        </h3>
 
-        <div className="flex gap-2 bg-slate-100 p-1 rounded-lg">
-          <FilterButton label="All" count={questions.length} active={activeFilter === 'all'} onClick={() => setActiveFilter('all')} />
-          <FilterButton label="Skipped" count={skippedCount} active={activeFilter === 'skipped'} onClick={() => setActiveFilter('skipped')} />
-          <FilterButton label="Flagged" count={flaggedSet.size} active={activeFilter === 'flagged'} onClick={() => setActiveFilter('flagged')} />
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    if (isOpen) document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  function getTileStatus(index: number): 'current' | 'bookmarked' | 'current-bookmarked' | 'answered' | 'unanswered' | 'locked' {
+    // Locked = belongs to a section beyond current progress
+    if (sections?.length) {
+      let cum = 0;
+      let questionSection = 0;
+      let highestSection = 0;
+      for (let i = 0; i < sections.length; i++) {
+        if (index < cum + sections[i].questionCount) questionSection = i;
+        if (highestReachedIndex < cum + sections[i].questionCount) { highestSection = i; break; }
+        cum += sections[i].questionCount;
+      }
+      if (questionSection > highestSection) return 'locked';
+    }
+    const isCurrent = index === currentIndex;
+    const isBookmarked = flaggedSet.has(index);
+    if (isCurrent && isBookmarked) return 'current-bookmarked';
+    if (isCurrent) return 'current';
+    if (isBookmarked) return 'bookmarked';
+    if (answeredSet.has(index)) return 'answered';
+    return 'unanswered';
+  }
+
+  function tileStyle(status: ReturnType<typeof getTileStatus>): React.CSSProperties {
+    const base: React.CSSProperties = {
+      width: 34, height: 34, borderRadius: 6,
+      fontSize: 12, fontWeight: 700,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      cursor: 'pointer', flexShrink: 0,
+      border: '2px solid transparent',
+      transition: 'opacity 80ms',
+      position: 'relative',
+    };
+    switch (status) {
+      case 'current':
+        return { ...base, background: 'var(--brand-color)', color: 'var(--brand-foreground)', boxShadow: '0 0 0 3px var(--brand-tint)' };
+      case 'current-bookmarked':
+        return { ...base, background: 'var(--state-flagged-bg)', color: 'var(--state-flagged-text)', border: '2px solid var(--brand-color)', boxShadow: '0 0 0 3px var(--brand-tint)' };
+      case 'bookmarked':
+        return { ...base, background: 'var(--state-flagged-bg)', color: 'var(--state-flagged-text)' };
+      case 'answered':
+        return { ...base, background: 'var(--state-answered-bg)', color: 'var(--state-answered-text)' };
+      case 'locked':
+        return { ...base, background: 'var(--muted)', color: 'var(--muted-foreground)', opacity: 0.35, cursor: 'not-allowed' };
+      default: // unanswered
+        return { ...base, background: 'var(--muted)', color: 'var(--muted-foreground)', border: '2px solid var(--border)' };
+    }
+  }
+
+  // Build ordered list: bookmarked first, then all others in numeric order
+  const bookmarkedIndices = questions.map((_, i) => i).filter(i => flaggedSet.has(i) && i !== currentIndex && getTileStatus(i) !== 'locked');
+  // Include current if bookmarked in the bookmarked group
+  if (flaggedSet.has(currentIndex)) bookmarkedIndices.unshift(currentIndex);
+  const bookmarkedSet = new Set(bookmarkedIndices);
+  const otherIndices = questions.map((_, i) => i).filter(i => !bookmarkedSet.has(i));
+
+  const bookmarkedCount = flaggedSet.size;
+  const answeredCount = answeredSet.size;
+  const unansweredCount = questions.length - answeredCount;
+
+  return (
+    <>
+      {/* Backdrop — semi-transparent to indicate modal context */}
+      <div
+        style={{
+          position: 'fixed', inset: 0, zIndex: 49,
+          backgroundColor: 'rgba(0,0,0,0.25)',
+        }}
+        aria-hidden="true"
+        onClick={onClose}
+      />
+      {/* Popover — centered, above footer */}
+      <div
+        ref={ref}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Question navigator"
+        style={{
+          position: 'fixed',
+          bottom: 80,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 'min(520px, calc(100vw - 32px))',
+          maxHeight: '65vh',
+          zIndex: 50,
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: 'var(--card)',
+          border: '1px solid var(--border)',
+          borderRadius: 16,
+          boxShadow: '0 20px 60px rgba(0,0,0,0.20)',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '12px 16px',
+          borderBottom: '1px solid var(--border)',
+          flexShrink: 0,
+        }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--foreground)', flex: 1 }}>
+            Questions
+          </span>
+          {/* Inline stats */}
+          <span style={{ fontSize: 12, color: 'var(--state-answered-text)', fontWeight: 600 }}>
+            {answeredCount} answered
+          </span>
+          {bookmarkedCount > 0 && (
+            <span style={{ fontSize: 12, color: 'var(--state-flagged-text)', fontWeight: 600 }}>
+              · {bookmarkedCount} bookmarked
+            </span>
+          )}
+          <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
+            · {unansweredCount} left
+          </span>
+          <button
+            onClick={onClose}
+            aria-label="Close question navigator"
+            style={{
+              width: 28, height: 28, borderRadius: 6,
+              background: 'transparent', border: 'none',
+              cursor: 'pointer', display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              fontSize: 14, color: 'var(--muted-foreground)',
+              marginLeft: 4,
+            }}
+          >
+            <i className="fa-regular fa-xmark" aria-hidden="true" />
+          </button>
+        </div>
+
+        {/* Grid body */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px 16px' }}>
+          {/* Bookmarked group — only shown if any exist */}
+          {bookmarkedIndices.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{
+                fontSize: 11, fontWeight: 700, color: 'var(--state-flagged-text)',
+                marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4,
+              }}>
+                <i className="fa-regular fa-bookmark" aria-hidden="true" style={{ fontSize: 11 }} />
+                Bookmarked
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                {bookmarkedIndices.map(i => {
+                  const status = getTileStatus(i);
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => { onNavigate(i); onClose(); }}
+                      aria-label={`Question ${i + 1}, bookmarked`}
+                      aria-current={i === currentIndex ? 'true' : undefined}
+                      style={tileStyle(status)}
+                    >
+                      {i + 1}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* All other questions — unified grid, numeric order */}
+          {bookmarkedIndices.length > 0 && otherIndices.length > 0 && (
+            <div style={{ height: 1, backgroundColor: 'var(--border)', marginBottom: 12 }} />
+          )}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, 34px)', gap: 4 }}>
+            {otherIndices.map(i => {
+              const status = getTileStatus(i);
+              const isLocked = status === 'locked';
+              return (
+                <button
+                  key={i}
+                  onClick={() => { if (!isLocked) { onNavigate(i); onClose(); } }}
+                  disabled={isLocked}
+                  aria-label={`Question ${i + 1}${answeredSet.has(i) ? ', answered' : ', not answered'}${i === currentIndex ? ', current' : ''}`}
+                  aria-current={i === currentIndex ? 'true' : undefined}
+                  style={tileStyle(status)}
+                >
+                  {i + 1}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Footer legend */}
+        <div style={{
+          display: 'flex', gap: 16, padding: '10px 16px',
+          borderTop: '1px solid var(--border)',
+          flexShrink: 0, flexWrap: 'wrap',
+        }}>
+          {[
+            { bg: 'var(--brand-color)', label: 'Current' },
+            { bg: 'var(--state-answered-bg)', border: 'var(--state-answered-border)', label: 'Answered' },
+            { bg: 'var(--state-flagged-bg)', label: 'Bookmarked' },
+            { bg: 'var(--muted)', border: 'var(--border)', label: 'Unanswered' },
+          ].map(({ bg, border, label }) => (
+            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <div style={{
+                width: 12, height: 12, borderRadius: 3,
+                backgroundColor: bg,
+                border: border ? `1.5px solid ${border}` : undefined,
+              }} />
+              <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{label}</span>
+            </div>
+          ))}
         </div>
       </div>
-
-      <div className="p-4 overflow-y-auto flex-1">
-        {filteredQuestions.length === 0 ? <div className="text-center py-8 text-slate-500 text-sm">
-            No questions match this filter.
-          </div> : <div className="grid grid-cols-5 gap-2">
-            {filteredQuestions.map(({
-          q,
-          i
-        }) => {
-          const isCurrent = i === currentIndex;
-          const isAnswered = answeredSet.has(i);
-          const isFlagged = flaggedSet.has(i);
-          let bg: string = 'var(--card)';
-          let border: string = 'var(--border)';
-          let color: string = 'var(--muted-foreground)';
-          if (isCurrent) {
-            bg = 'var(--exam-accent)';
-            border = 'var(--exam-accent)';
-            color = 'var(--primary-foreground)';
-          } else if (isFlagged) {
-            bg = 'var(--state-flagged-bg)';
-            border = 'var(--state-flagged-border)';
-            color = 'var(--state-flagged-text)';
-          } else if (isAnswered) {
-            bg = 'var(--state-answered-bg)';
-            border = 'var(--state-answered-border)';
-            color = 'var(--state-answered-text)';
-          }
-          return <button key={i} onClick={() => {
-            onNavigate(i);
-            onClose();
-          }} className="h-10 rounded-lg font-semibold text-sm transition-all hover:opacity-80 exam-focus relative" style={{
-            backgroundColor: bg,
-            border: `2px solid ${border}`,
-            color
-          }}>
-                  {i + 1}
-                  {q.required && !isAnswered && !isCurrent && <span className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white" style={{
-              backgroundColor: 'var(--semantic-error-dot)'
-            }} />}
-                </button>;
-        })}
-          </div>}
-      </div>
-
-      <div className="p-3 border-t bg-slate-50 rounded-b-[16px] flex justify-between items-center text-xs" style={{
-      borderColor: 'var(--border)'
-    }}>
-        <LegendItem color="var(--exam-accent)" label="Current" />
-        <LegendItem color="var(--state-answered-border)" label="Answered" />
-        <LegendItem color="var(--state-flagged-border)" label="Flagged" />
-        <LegendItem color="var(--semantic-error-dot)" label="Required" isDot />
-      </div>
-    </div>;
-}
-function FilterButton({
-  label,
-  count,
-  active,
-  onClick
-}: {label: string;count: number;active: boolean;onClick: () => void;}) {
-  return <button onClick={onClick} className={`flex-1 py-1.5 px-2 rounded-md text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 ${active ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}>
-      {label}
-      <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${active ? 'bg-slate-100' : 'bg-slate-200'}`}>
-        {count}
-      </span>
-    </button>;
-}
-function LegendItem({
-  color,
-  label,
-  isDot
-}: {color: string;label: string;isDot?: boolean;}) {
-  return <div className="flex items-center gap-1.5 text-slate-600">
-      <div className={`${isDot ? 'w-2 h-2 rounded-full' : 'w-3 h-3 rounded-sm border-2'}`} style={{
-      backgroundColor: isDot ? color : 'transparent',
-      borderColor: color
-    }} />
-      <span>{label}</span>
-    </div>;
+    </>
+  );
 }

@@ -93,6 +93,11 @@
   --pce-status-released-fg:       oklch(0.28 0.12 155);
   --pce-status-released-border:   oklch(0.72 0.12 155);
 
+  --pce-status-active-bg:         oklch(0.957 0.024 342);
+  --pce-status-active-fg:         oklch(0.42 0.24 342);
+  --pce-status-scheduled-bg:      oklch(0.974 0.014 342);
+  --pce-status-scheduled-fg:      oklch(0.42 0.24 342);
+
   --pce-locked-bg:                color-mix(in oklch, var(--muted) 40%, var(--background));
 
   --pce-impact-bg:                color-mix(in oklch, var(--destructive) 8%, var(--background));

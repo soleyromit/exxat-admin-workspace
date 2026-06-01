@@ -137,6 +137,8 @@ export interface SplitQuestionViewProps {
   allowComments?: boolean;
   comment?: string;
   onCommentChange?: (questionId: number, comment: string) => void;
+  isFlagged?: boolean;
+  onToggleFlag?: () => void;
 }
 export function SplitQuestionView({
   question,
@@ -154,15 +156,19 @@ export function SplitQuestionView({
   allowComments = false,
   comment = '',
   onCommentChange,
+  isFlagged = false,
+  onToggleFlag,
 }: SplitQuestionViewProps) {
   const [activeTab, setActiveTab] = useState(0);
   const [pdfLoaded, setPdfLoaded] = useState(false);
   const [pdfError, setPdfError] = useState(false);
+  const [showReport, setShowReport] = useState(false);
   const pdfTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
     setActiveTab(0);
     setPdfLoaded(false);
     setPdfError(false);
+    setShowReport(false);
   }, [question.id]);
   // PDF load detection: if iframe hasn't signaled load after 5s, show fallback
   useEffect(() => {
@@ -214,39 +220,93 @@ export function SplitQuestionView({
   question.type === 'chart';
   const renderQuestionStem = () =>
   <div className="mb-[1.5em]">
-      <div className="flex items-center gap-3 mb-[0.75em]">
+      {/* Single row: number · title (flex-1, wraps) · icons */}
+      <div className="flex items-start gap-2 mb-[0.75em]">
         <span
-        className="font-bold text-[1.125em]"
-        style={{
-          color: 'var(--foreground)'
-        }}>
-        
-          Question {questionIndex + 1}
+          className="font-bold text-[1.125em] shrink-0"
+          style={{ color: 'var(--foreground)', marginTop: '0.1em' }}
+        >
+          {questionIndex + 1}.
         </span>
+
+        <h2
+          className="text-[1.125em] font-semibold leading-relaxed flex-1 transition-colors"
+          style={{
+            color: 'var(--foreground)',
+            cursor: voiceNarrator ? 'pointer' : undefined,
+            borderRadius: '8px',
+            padding: voiceNarrator ? '0.15em 0.4em' : undefined,
+            margin: voiceNarrator ? '-0.15em -0.4em' : undefined,
+          }}
+          onMouseEnter={(e) => {
+            if (voiceNarrator) {
+              (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--exam-accent-light)';
+              speak(question.text);
+            }
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.backgroundColor = '';
+            stopSpeaking();
+          }}
+        >
+          {question.text}
+        </h2>
+
+        {/* Tool icons — right-aligned, top-anchored */}
+        <div className="flex items-center gap-0.5 shrink-0">
+          {needsCalculator && (
+            <div style={{ position: 'relative' }}>
+              <Tooltip content="Calculator" position="left">
+                <DSButton
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={onToggleCalculator}
+                  aria-label="Toggle calculator"
+                  style={showCalculator ? { backgroundColor: 'var(--muted)', color: 'var(--foreground)' } : { color: 'var(--foreground)' }}
+                >
+                  <i className="fa-regular fa-calculator" aria-hidden="true" style={{ fontSize: 15 }} />
+                </DSButton>
+              </Tooltip>
+              {showCalculator && (
+                <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, zIndex: 50 }}>
+                  <CalculatorPopover isOpen={true} onClose={onToggleCalculator || (() => {})} />
+                </div>
+              )}
+            </div>
+          )}
+
+          {needsKeyboard && (
+            <Tooltip content="On-screen keyboard" position="left">
+              <DSButton
+                variant="ghost"
+                size="icon-sm"
+                onClick={onToggleKeyboard}
+                aria-label="Toggle on-screen keyboard"
+                style={showKeyboard ? { backgroundColor: 'var(--muted)', color: 'var(--foreground)' } : { color: 'var(--foreground)' }}
+              >
+                <i className="fa-regular fa-keyboard" aria-hidden="true" style={{ fontSize: 15 }} />
+              </DSButton>
+            </Tooltip>
+          )}
+
+          {onToggleFlag && (
+            <Tooltip content={isFlagged ? 'Remove bookmark' : 'Bookmark'} position="left">
+              <DSButton
+                variant="ghost"
+                size="icon-sm"
+                onClick={onToggleFlag}
+                aria-label={isFlagged ? 'Remove bookmark from this question' : 'Bookmark this question'}
+                style={isFlagged ? {
+                  backgroundColor: 'var(--state-flagged-bg)',
+                  color: 'var(--state-flagged-text)',
+                } : { color: 'var(--muted-foreground)' }}
+              >
+                <i className={`${isFlagged ? 'fa-solid' : 'fa-regular'} fa-bookmark`} aria-hidden="true" style={{ fontSize: 15 }} />
+              </DSButton>
+            </Tooltip>
+          )}
+        </div>
       </div>
-      <h2
-      className="text-[1.25em] font-semibold leading-relaxed transition-colors"
-      style={{
-        color: 'var(--foreground)',
-        cursor: voiceNarrator ? 'pointer' : undefined,
-        borderRadius: '8px',
-        padding: voiceNarrator ? '0.25em 0.5em' : undefined,
-        margin: voiceNarrator ? '-0.25em -0.5em' : undefined
-      }}
-      onMouseEnter={(e) => {
-        if (voiceNarrator) {
-          ;(e.currentTarget as HTMLElement).style.backgroundColor =
-          'var(--exam-accent-light)';
-          speak(question.text);
-        }
-      }}
-      onMouseLeave={(e) => {
-        ;(e.currentTarget as HTMLElement).style.backgroundColor = '';
-        stopSpeaking();
-      }}>
-      
-        {question.text}
-      </h2>
     </div>;
 
   /**
@@ -648,54 +708,6 @@ export function SplitQuestionView({
         return <p>Unsupported question type.</p>;
     }
   };
-  const renderToolbar = () => {
-    return (
-      <div
-        className="flex items-center gap-2 mt-4 pt-3 shrink-0"
-        style={{
-          borderTop: '1px solid var(--border)'
-        }}>
-        
-        {/* Tools on the left */}
-        {needsCalculator &&
-        <div className="relative">
-            <Tooltip content="Open the on-screen calculator" position="top">
-              <DSButton
-                variant="outline"
-                size="sm"
-                onClick={onToggleCalculator}
-                aria-label="Toggle Calculator"
-                style={showCalculator ? { backgroundColor: 'var(--muted)', borderColor: 'var(--foreground)', color: 'var(--foreground)' } : undefined}
-              >
-                <i className="fa-light fa-calculator" aria-hidden="true" style={{ fontSize: 14 }} />
-                Calculator
-              </DSButton>
-            </Tooltip>
-            {showCalculator && needsCalculator &&
-          <div className="absolute bottom-full mb-2 left-0 z-50">
-                <CalculatorPopover isOpen={true} onClose={onToggleCalculator || (() => {})} />
-              </div>
-          }
-          </div>
-        }
-        {needsKeyboard &&
-        <Tooltip content="Open the virtual keyboard" position="top">
-            <DSButton
-              variant="outline"
-              size="sm"
-              onClick={onToggleKeyboard}
-              aria-label="Toggle Virtual Keyboard"
-              style={showKeyboard ? { backgroundColor: 'var(--muted)', borderColor: 'var(--foreground)', color: 'var(--foreground)' } : undefined}
-            >
-              <i className="fa-light fa-keyboard" aria-hidden="true" style={{ fontSize: 14 }} />
-              Keyboard
-            </DSButton>
-          </Tooltip>
-        }
-
-      </div>);
-
-  };
   const renderInlineTools = () => {
     return (
       <>
@@ -735,13 +747,26 @@ export function SplitQuestionView({
               </h3>
               {renderInteractive()}
             </div>
-            {renderToolbar()}
             {renderInlineTools()}
+            {allowComments && !showReport && (
+              <DSButton
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowReport(true)}
+                aria-label="Report an issue with this question"
+                style={{ marginTop: 8, color: 'var(--muted-foreground)', alignSelf: 'flex-start' }}
+              >
+                <i className="fa-regular fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 12 }} />
+                Report an issue
+              </DSButton>
+            )}
             {allowComments && (
               <QuestionCommentBox
                 questionId={question.id}
                 initialComment={comment}
                 onSave={onCommentChange}
+                isOpen={showReport}
+                onClose={() => setShowReport(false)}
               />
             )}
           </div>
@@ -753,7 +778,7 @@ export function SplitQuestionView({
             borderColor: 'var(--border)',
             backgroundColor: 'var(--card)'
           }}>
-            <p className="text-[0.75em] font-bold uppercase tracking-wider" style={{ color: 'var(--muted-foreground)' }}>
+            <p className="text-[0.75em] font-bold" style={{ color: 'var(--muted-foreground)' }}>
               Reference Material
             </p>
             {renderMediaOrContext()}
@@ -770,13 +795,26 @@ export function SplitQuestionView({
 
             {renderQuestionStem()}
             {renderInteractive()}
-            {renderToolbar()}
             {renderInlineTools()}
+            {allowComments && !showReport && (
+              <DSButton
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowReport(true)}
+                aria-label="Report an issue with this question"
+                style={{ marginTop: 8, color: 'var(--muted-foreground)', alignSelf: 'flex-start' }}
+              >
+                <i className="fa-regular fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 12 }} />
+                Report an issue
+              </DSButton>
+            )}
             {allowComments && (
               <QuestionCommentBox
                 questionId={question.id}
                 initialComment={comment}
                 onSave={onCommentChange}
+                isOpen={showReport}
+                onClose={() => setShowReport(false)}
               />
             )}
           </div>

@@ -3,7 +3,7 @@
 > Where it lives: the framework moved into the package on **`@exxatdesignux/ui@0.6.0`**.
 >
 > - Store, routing helpers, palette, brand registry, **product registry**
->   (`defineProduct`, `registerProducts`) → **`@exxatdesignux/ui/product-framework`**
+>   (`defineProduct`, `registerProducts`) → **`@exxatdesignux/product-framework`**
 > - Routing-aware React shell (`<ProductProvider>`, `<ProductRootGate>`,
 >   `<DefaultProductRedirect>`, `<ProductRouteSync>`, `useProduct`,
 >   `useProductSwitch`, `useProductDashboardHref`) →

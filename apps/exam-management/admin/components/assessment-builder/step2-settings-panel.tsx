@@ -58,25 +58,16 @@ export function Step2SettingsPanel({ settings, onPatch, onClose }: Props) {
         }}
       >
         {/* Left: back to Health button */}
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={onClose}
           aria-label="Back to health panel"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '2px 4px',
-            borderRadius: 4,
-            color: 'var(--muted-foreground)',
-            fontSize: 12,
-          }}
+          style={{ color: 'var(--muted-foreground)', fontSize: 12, gap: 4 }}
         >
           <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 12 }} />
           Health
-        </button>
+        </Button>
 
         {/* Center: gear icon + label */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'center' }}>
@@ -85,25 +76,15 @@ export function Step2SettingsPanel({ settings, onPatch, onClose }: Props) {
         </div>
 
         {/* Right: close button */}
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={onClose}
           aria-label="Close settings panel"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '2px 4px',
-            borderRadius: 4,
-            color: 'var(--muted-foreground)',
-            width: 24,
-            height: 24,
-          }}
+          style={{ color: 'var(--muted-foreground)', width: 24, height: 24 }}
         >
           <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 13 }} />
-        </button>
+        </Button>
       </div>
 
       {/* Scrollable body */}

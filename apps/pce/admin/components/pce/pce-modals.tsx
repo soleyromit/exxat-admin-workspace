@@ -103,7 +103,7 @@ export function CreateTemplateSheet({ open, onOpenChange, template }: CreateTemp
 
           <div className="flex flex-col gap-3">
             <Label>Sections</Label>
-            <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
+            <div className="flex flex-col gap-2 rounded-md bg-muted p-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Checkbox checked disabled aria-label="Course Content (required section, cannot be unchecked)" />

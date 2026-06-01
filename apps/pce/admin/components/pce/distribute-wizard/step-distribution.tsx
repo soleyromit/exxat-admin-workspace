@@ -4,6 +4,7 @@ import { useState } from 'react'
 import {
   Badge,
   Button,
+  Card,
   Checkbox,
   Input,
   InputGroup,
@@ -46,21 +47,9 @@ interface StepDistributionProps {
 }
 
 function CourseTypeBadge({ type }: { type: 'didactic' | 'clinical' }) {
-  const isDidactic = type === 'didactic'
   return (
-    <Badge
-      variant="secondary"
-      className="rounded shrink-0"
-      style={{
-        fontSize: 12,
-        fontWeight: 500,
-        paddingInline: 6,
-        paddingBlock: 2,
-        backgroundColor: isDidactic ? 'var(--brand-tint)' : 'var(--muted)',
-        color: isDidactic ? 'var(--brand-color)' : 'var(--muted-foreground)',
-      }}
-    >
-      {isDidactic ? 'Didactic' : 'Clinical'}
+    <Badge variant="secondary" className="rounded shrink-0">
+      {type === 'didactic' ? 'Didactic' : 'Clinical'}
     </Badge>
   )
 }
@@ -191,10 +180,7 @@ export function StepDistribution({
             />
           )}
 
-          <div
-            className="flex flex-col rounded-xl border border-border overflow-hidden"
-            style={{ background: 'var(--card)' }}
-          >
+          <Card className="flex flex-col overflow-hidden shadow-none">
             {/* Toolbar */}
             <div
               className="flex items-center gap-2 flex-wrap"
@@ -345,7 +331,7 @@ export function StepDistribution({
                 })
               )}
             </div>
-          </div>
+          </Card>
         </div>
       )}
 

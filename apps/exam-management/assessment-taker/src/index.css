@@ -96,9 +96,6 @@
   --highlight-shadow: color-mix(in oklch, var(--foreground) 12%, transparent);
   --crossout-text:    var(--muted-foreground);
   --crossout-opacity: 0.45;
-
-  /* Calculator display — neutral charcoal · zero-chroma color-mix */
-  --calc-display-bg: color-mix(in oklch, var(--foreground) 92%, var(--background));
 }
 
 /* Sidebar token — admin DS provides .theme-prism / .theme-rose definitions
@@ -122,27 +119,37 @@
   --highlight-bg-end: #713F12;
   --highlight-text:   #FEF9C3;
   --highlight-shadow: rgba(202, 138, 4, 0.3);
-  --crossout-text:    #64748B;
+  /* #888888 was 4.1:1 on dark bg — WCAG AA fail. var(--muted-foreground) in
+     dark resolves to oklch(0.72) ≈ 6.3:1. */
+  --crossout-text:    var(--muted-foreground);
   --crossout-opacity: 0.55;
 }
 
 /* ─── High contrast theme ─────────────────────────────────────────────────── */
+/* Builds on DS .dark base tokens. Overrides exam state tokens with neon values
+   that meet WCAG AA on near-black backgrounds (contrast ratios in comments). */
 .theme-high-contrast {
+  /* Answered: #00FF00 on #003300 → 10.6:1 ✓ */
   --state-answered-bg: #003300;
   --state-answered-border: #00FF00;
   --state-answered-text: #00FF00;
+  /* Bookmarked: #FFCC00 on #332200 → 8.1:1 ✓ */
   --state-flagged-bg: #332200;
   --state-flagged-border: #FFCC00;
   --state-flagged-text: #FFCC00;
+  /* Progress bar + accent elements */
   --exam-accent: #00FFFF;
   --exam-accent-hover: #00CCCC;
   --exam-accent-light: #003333;
   --exam-accent-border: #00FFFF;
+  /* Highlight tool */
   --highlight-bg:     #FFFF00;
   --highlight-bg-end: #FFFF00;
   --highlight-text:   #000000;
   --highlight-shadow: rgba(255, 255, 0, 0.6);
-  --crossout-text:    #888888;
+  /* Crossout: oklch(0.82) ≈ #D0D0D0 → ~12:1 on near-black bg ✓
+     (was #888888 = 4.1:1 — WCAG AA fail) */
+  --crossout-text:    oklch(0.82 0 0);
   --crossout-opacity: 0.7;
 }
 

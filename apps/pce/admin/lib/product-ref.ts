@@ -1,4 +1,4 @@
-/** Shim — re-exports product-ref helpers from `@exxatdesignux/ui/product-framework`. */
+/** Shim — re-exports product-ref helpers from `@exxatdesignux/product-framework`. */
 
 export {
   adjustHiddenProductsAfterCustomRemoval,
@@ -10,4 +10,4 @@ export {
   productRefsEqual,
   startupDashboardPath,
   type ProductRef,
-} from "@exxatdesignux/ui/product-framework"
+} from "@exxatdesignux/product-framework"

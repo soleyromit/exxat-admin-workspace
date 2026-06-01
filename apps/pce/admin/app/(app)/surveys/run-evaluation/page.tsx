@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import {
   Button,
+  Card,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Sheet, SheetContent, SheetHeader, SheetTitle,
   Tabs, TabsList, TabsTrigger, TabsContent,
@@ -759,10 +760,7 @@ function FixFacultyTab({
 
   return (
     <div className="flex flex-col gap-4">
-      <div
-        className="rounded-lg border border-border p-4 flex flex-col gap-2"
-        style={{ background: 'var(--muted)' }}
-      >
+      <div className="rounded-md bg-muted p-4 flex flex-col gap-2">
         <p className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
           No faculty assigned to this course offering.
         </p>
@@ -790,10 +788,7 @@ function FixStudentsTab({ offering }: { offering: CourseOffering }) {
   return (
     <div className="flex flex-col gap-3">
       {/* Summary row */}
-      <div
-        className="flex items-center gap-3 rounded-lg border border-border"
-        style={{ padding: '12px 14px', background: 'var(--card)' }}
-      >
+      <Card className="flex items-center gap-3 px-[14px] py-3 shadow-none">
         <i
           className="fa-light fa-users"
           aria-hidden="true"
@@ -811,14 +806,11 @@ function FixStudentsTab({ offering }: { offering: CourseOffering }) {
           <i className="fa-light fa-list-ul" aria-hidden="true" style={{ fontSize: 12 }} />
           Manage roster
         </Button>
-      </div>
+      </Card>
 
       {/* Student preview list */}
       {enrolledStudents.length > 0 && (
-        <div
-          className="flex flex-col rounded-lg border border-border overflow-hidden"
-          style={{ background: 'var(--card)' }}
-        >
+        <Card className="flex flex-col overflow-hidden shadow-none">
           {enrolledStudents.map((student, i) => (
             <div
               key={student.id}
@@ -857,7 +849,7 @@ function FixStudentsTab({ offering }: { offering: CourseOffering }) {
               </p>
             </div>
           )}
-        </div>
+        </Card>
       )}
 
       <CourseManagementSheet
@@ -874,10 +866,7 @@ function FixTemplateTab({ activeTemplateName }: { activeTemplateName: string | n
     return (
       <div className="flex flex-col gap-2">
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Auto-assigned template</p>
-        <div
-          className="flex items-center gap-2 rounded-lg border border-border"
-          style={{ padding: '10px 14px', background: 'var(--card)' }}
-        >
+        <Card className="flex items-center gap-2 px-[14px] py-[10px] shadow-none">
           <i
             className="fa-light fa-file-lines"
             aria-hidden="true"
@@ -886,7 +875,7 @@ function FixTemplateTab({ activeTemplateName }: { activeTemplateName: string | n
           <span className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
             {activeTemplateName}
           </span>
-        </div>
+        </Card>
       </div>
     )
   }

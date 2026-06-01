@@ -1,4 +1,4 @@
-/** Shim — re-exports brand registry helpers from `@exxatdesignux/ui/product-framework`. */
+/** Shim — re-exports brand registry helpers from `@exxatdesignux/product-framework`. */
 
 export {
   EXXAT_ONE_SCHOOLS_BRAND,
@@ -14,4 +14,4 @@ export {
   productBrandLabel,
   registerProductBrand,
   type ProductBrandConfig,
-} from "@exxatdesignux/ui/product-framework"
+} from "@exxatdesignux/product-framework"

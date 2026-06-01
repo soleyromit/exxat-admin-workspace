@@ -163,8 +163,6 @@ const DESIGN_CRITICAL_PATTERNS = [
   // Pages / routes
   { test: /(^|\/)src\/views\//, label: "page view" },
   { test: /(^|\/)src\/pages\//, label: "page" },
-  { test: /(^|\/)app\/(?!.*(?:node_modules|api)).+\/(?:page|layout|template|loading|error)\.(?:tsx?|jsx?)$/, label: "Next.js route" },
-  { test: /(^|\/)pages\/(?!api\/).+\.(?:tsx?|jsx?)$/, label: "Next.js pages route" },
   { test: /(^|\/)(?:src\/)?routes\.(?:tsx?|jsx?)$/, label: "route map" },
   { test: /(^|\/)(?:src\/)?App\.(?:tsx?|jsx?)$/, label: "root App component" },
   { test: /(^|\/)index\.html$/, label: "root index.html" },

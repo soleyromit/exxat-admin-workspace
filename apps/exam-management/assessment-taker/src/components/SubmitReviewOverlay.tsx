@@ -29,26 +29,25 @@ export function SubmitReviewOverlay({
   onConfirmSubmit,
 }: SubmitReviewOverlayProps) {
   const answeredCount = answeredSet.size;
-  const flaggedCount = flaggedSet.size;
-  const skippedCount = Array.from({ length: highestReachedIndex + 1 }, (_, i) => i)
-    .filter(i => !answeredSet.has(i)).length;
+  const bookmarkedCount = flaggedSet.size;
   const unansweredCount = questions.length - answeredCount;
 
-  function getCellStatus(index: number): 'answered' | 'flagged' | 'skipped' | 'unreached' {
+  function getCellStatus(index: number): 'answered' | 'bookmarked' | 'skipped' | 'unreached' {
     const isAnswered = answeredSet.has(index);
-    const isFlagged = flaggedSet.has(index);
-    if (isAnswered && isFlagged) return 'flagged';
+    if (isAnswered && flaggedSet.has(index)) return 'bookmarked';
     if (isAnswered) return 'answered';
     if (index <= highestReachedIndex) return 'skipped';
     return 'unreached';
   }
 
   const STATUS = {
-    answered:  { bg: 'var(--state-success-bg)',  border: 'var(--state-success-accent)',  text: 'var(--state-success-dark)',     label: 'Answered' },
-    flagged:   { bg: 'var(--state-warning-bg)',   border: 'var(--state-warning-border)',  text: 'var(--state-warning-darkest)',  label: 'Flagged' },
-    skipped:   { bg: 'var(--muted)',              border: 'var(--border)',                text: 'var(--muted-foreground)',       label: 'Skipped' },
-    unreached: { bg: 'var(--background)',         border: 'var(--border)',                text: 'var(--muted-foreground)',       label: 'Not reached' },
+    answered:  { bg: 'var(--state-answered-bg)',  border: 'var(--state-answered-border)', text: 'var(--state-answered-text)',    label: 'Answered' },
+    bookmarked:{ bg: 'var(--state-flagged-bg)',   border: 'var(--state-flagged-border)',  text: 'var(--state-flagged-text)',    label: 'Bookmarked' },
+    skipped:   { bg: 'var(--muted)',              border: 'var(--border)',                text: 'var(--muted-foreground)',      label: 'Skipped' },
+    unreached: { bg: 'var(--card)',               border: 'var(--border)',                text: 'var(--muted-foreground)',      label: 'Not reached' },
   };
+
+  const hasUnanswered = unansweredCount > 0;
 
   return (
     <div
@@ -71,7 +70,7 @@ export function SubmitReviewOverlay({
           backgroundColor: 'var(--card)',
           border: '1px solid var(--border)',
           borderRadius: 16,
-          maxWidth: 560,
+          maxWidth: 540,
           width: '100%',
           maxHeight: '90vh',
           display: 'flex',
@@ -88,63 +87,83 @@ export function SubmitReviewOverlay({
           alignItems: 'flex-start',
           justifyContent: 'space-between',
           gap: 12,
+          flexShrink: 0,
         }}>
           <div>
             <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--foreground)', marginBottom: 4 }}>
               Ready to submit?
             </h2>
             <p style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>
-              Review your progress before submitting. Click any question to go back to it.
+              Click any question to go back to it.
             </p>
           </div>
           <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Go back to exam">
-            <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 16 }} />
+            <i className="fa-regular fa-xmark" aria-hidden="true" style={{ fontSize: 16 }} />
           </Button>
         </div>
 
-        {/* Stats row */}
+        {/* Summary strip — 3 inline stats, no tinted boxes */}
         <div style={{
           display: 'flex',
-          gap: 0,
+          gap: 20,
+          padding: '12px 24px',
           borderBottom: '1px solid var(--border)',
           flexShrink: 0,
+          flexWrap: 'wrap',
+          alignItems: 'center',
         }}>
-          {[
-            { count: answeredCount,    label: 'Answered',    color: 'var(--state-success-dark)',    bg: 'var(--state-success-bg)',  icon: 'fa-circle-check' },
-            { count: flaggedCount,     label: 'Flagged',     color: 'var(--state-warning-darkest)', bg: 'var(--state-warning-bg)',  icon: 'fa-flag' },
-            { count: skippedCount,     label: 'Skipped',     color: 'var(--foreground)',             bg: 'var(--muted)',             icon: 'fa-forward' },
-            { count: unansweredCount,  label: 'Unanswered',  color: 'var(--muted-foreground)',       bg: 'var(--background)',        icon: 'fa-circle-dashed' },
-          ].map(({ count, label, color, bg, icon }) => (
-            <div
-              key={label}
-              style={{
-                flex: 1,
-                textAlign: 'center',
-                padding: '12px 8px',
-                backgroundColor: bg,
-                borderRight: '1px solid var(--border)',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, marginBottom: 2 }}>
-                <i className={`fa-light ${icon}`} aria-hidden="true" style={{ fontSize: 12, color }} />
-                <span style={{ fontSize: 20, fontWeight: 700, color }}>{count}</span>
-              </div>
-              <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{label}</span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
+            <i className="fa-regular fa-circle-check" aria-hidden="true"
+              style={{ fontSize: 13, color: 'var(--state-answered-text)' }} />
+            <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--state-answered-text)', lineHeight: 1 }}>
+              {answeredCount}
+            </span>
+            <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>answered</span>
+          </div>
+
+          {bookmarkedCount > 0 && (
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
+              <i className="fa-regular fa-bookmark" aria-hidden="true"
+                style={{ fontSize: 13, color: 'var(--state-flagged-text)' }} />
+              <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--state-flagged-text)', lineHeight: 1 }}>
+                {bookmarkedCount}
+              </span>
+              <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>bookmarked</span>
             </div>
-          ))}
+          )}
+
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, marginLeft: 'auto' }}>
+            {hasUnanswered && (
+              <>
+                <i className="fa-regular fa-circle-exclamation" aria-hidden="true"
+                  style={{ fontSize: 13, color: 'var(--semantic-error-text, var(--muted-foreground))' }} />
+                <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--foreground)', lineHeight: 1 }}>
+                  {unansweredCount}
+                </span>
+                <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>unanswered</span>
+              </>
+            )}
+            {!hasUnanswered && (
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--state-answered-text)' }}>
+                <i className="fa-regular fa-party-horn" aria-hidden="true" style={{ marginRight: 4 }} />
+                All questions answered
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Question grid */}
         <div style={{ overflowY: 'auto', padding: '16px 24px', flex: 1 }}>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(44px, 1fr))',
-            gap: 6,
+            gridTemplateColumns: 'repeat(10, 1fr)',
+            gap: 4,
           }}>
             {questions.map((_, index) => {
               const status = getCellStatus(index);
               const s = STATUS[status];
               const isClickable = status !== 'unreached';
+              const isBookmarked = flaggedSet.has(index);
               return (
                 <button
                   key={index}
@@ -155,35 +174,35 @@ export function SubmitReviewOverlay({
                     }
                   }}
                   disabled={!isClickable}
-                  aria-label={`Question ${index + 1} — ${s.label}${isClickable ? ', click to go back' : ''}`}
+                  aria-label={`Question ${index + 1} — ${s.label}${isClickable ? ', click to return' : ''}`}
                   style={{
-                    height: 44,
-                    borderRadius: 8,
-                    border: `1.5px solid ${s.border}`,
+                    aspectRatio: '1',
+                    borderRadius: 6,
+                    border: `1px solid ${s.border}`,
                     backgroundColor: s.bg,
                     color: s.text,
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: 600,
                     cursor: isClickable ? 'pointer' : 'default',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    transition: 'opacity 100ms',
-                    opacity: status === 'unreached' ? 0.45 : 1,
+                    transition: 'opacity 80ms',
+                    opacity: status === 'unreached' ? 0.35 : 1,
                     position: 'relative',
                   }}
                 >
                   {index + 1}
-                  {flaggedSet.has(index) && (
+                  {isBookmarked && (
                     <i
-                      className="fa-solid fa-flag"
+                      className="fa-solid fa-bookmark"
                       aria-hidden="true"
                       style={{
                         position: 'absolute',
-                        top: 3,
-                        right: 4,
-                        fontSize: 8,
-                        color: 'var(--state-warning-darkest)',
+                        top: 2,
+                        right: 3,
+                        fontSize: 7,
+                        color: 'var(--state-flagged-text)',
                       }}
                     />
                   )}
@@ -191,40 +210,24 @@ export function SubmitReviewOverlay({
               );
             })}
           </div>
-
-          {/* Legend */}
-          <div style={{ display: 'flex', gap: 16, marginTop: 16, flexWrap: 'wrap' }}>
-            {Object.entries(STATUS).map(([key, s]) => (
-              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                <div style={{
-                  width: 14, height: 14, borderRadius: 4,
-                  backgroundColor: s.bg,
-                  border: `1.5px solid ${s.border}`,
-                }} />
-                <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{s.label}</span>
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Footer */}
         <div style={{
-          padding: '16px 24px',
+          padding: '14px 24px',
           borderTop: '1px solid var(--border)',
           display: 'flex',
           gap: 10,
-          justifyContent: 'flex-end',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexShrink: 0,
         }}>
-          <Button variant="outline" size="lg" onClick={onClose}>
-            <i className="fa-light fa-arrow-left" aria-hidden="true" />
-            Go back to exam
+          <Button variant="ghost" onClick={onClose}>
+            <i className="fa-regular fa-arrow-left" aria-hidden="true" />
+            Cancel
           </Button>
-          <Button
-            size="lg"
-            onClick={onConfirmSubmit}
-            style={{ backgroundColor: 'var(--brand-color)', color: 'var(--brand-foreground)' }}
-          >
-            <i className="fa-light fa-paper-plane" aria-hidden="true" />
+          <Button variant="default" onClick={onConfirmSubmit}>
+            <i className="fa-regular fa-paper-plane" aria-hidden="true" />
             Submit exam
           </Button>
         </div>

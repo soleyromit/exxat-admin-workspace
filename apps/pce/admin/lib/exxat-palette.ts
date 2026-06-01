@@ -1,1 +1,1 @@
-export * from "@exxatdesignux/ui/product-framework"
+export * from "@exxatdesignux/product-framework"

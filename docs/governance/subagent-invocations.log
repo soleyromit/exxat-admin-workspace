@@ -18,3 +18,5 @@
 # parent_id columns populate when Claude Code's 2.1.139 OTEL plumbing
 # exposes them in hook payloads (verify on first SubagentStop fire).
 
+2026-06-01T15:13:32+00:00	claude-updates-watcher	manual	a5acae86e79884b4c		0	completed	0
+2026-06-01T15:17:06+00:00	unknown	manual	acf0f0c01377b6d71		0	completed	0

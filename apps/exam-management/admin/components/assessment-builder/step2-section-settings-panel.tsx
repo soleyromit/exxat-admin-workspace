@@ -319,7 +319,7 @@ export function Step2SectionSettingsPanel({ section, faculty, onPatch, onClose }
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
               {(section.preReadDocuments ?? []).map((doc, i) => (
                 <div
-                  key={i}
+                  key={`${doc.name}::${doc.url}`}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -367,26 +367,18 @@ export function Step2SectionSettingsPanel({ section, faculty, onPatch, onClose }
           {/* Add pre-read form */}
           {addingPreRead ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <input
+              <Input
                 type="text"
                 placeholder="Document name"
                 aria-label="Pre-read document name"
                 value={newPreReadName}
                 onChange={e => setNewPreReadName(e.target.value)}
                 style={{
-                  width: '100%',
                   height: 28,
                   fontSize: 12,
-                  padding: '0 8px',
-                  border: '1px solid var(--border)',
-                  borderRadius: 6,
-                  background: 'var(--background)',
-                  color: 'var(--foreground)',
-                  fontFamily: 'inherit',
-                  outline: 'none',
                 }}
               />
-              <input
+              <Input
                 type="url"
                 placeholder="https://…"
                 aria-label="Pre-read document URL"
@@ -397,16 +389,8 @@ export function Step2SectionSettingsPanel({ section, faculty, onPatch, onClose }
                   if (e.key === 'Escape') handleCancelPreRead()
                 }}
                 style={{
-                  width: '100%',
                   height: 28,
                   fontSize: 12,
-                  padding: '0 8px',
-                  border: '1px solid var(--border)',
-                  borderRadius: 6,
-                  background: 'var(--background)',
-                  color: 'var(--foreground)',
-                  fontFamily: 'inherit',
-                  outline: 'none',
                 }}
               />
               <div style={{ display: 'flex', gap: 6 }}>

@@ -115,7 +115,7 @@ export function CalculatorPopover({
         <div
           className="flex justify-between items-center p-3 border-b"
           style={{
-            backgroundColor: 'var(--muted)',
+            backgroundColor: 'var(--card)',
             borderColor: 'var(--border)'
           }}>
           
@@ -135,14 +135,14 @@ export function CalculatorPopover({
         <div
           className="p-4"
           style={{
-            backgroundColor: 'var(--muted)'
+            backgroundColor: 'var(--card)'
           }}>
           
           <div
             className="w-full p-3 text-right font-mono text-3xl rounded-lg mb-4 overflow-hidden"
             style={{
-              backgroundColor: 'var(--calc-display-bg, #1E293B)',
-              color: 'var(--primary-foreground)'
+              backgroundColor: 'var(--foreground)',
+              color: 'var(--background)'
             }}>
             
             {display}

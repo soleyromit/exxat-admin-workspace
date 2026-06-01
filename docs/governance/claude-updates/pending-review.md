@@ -1,6 +1,4 @@
 # Pending review
 
-> Last reviewed: 2026-05-12T02:53:27+00:00 — no changes to review.
-> Run `python3 scripts/claude-updates-watch.py` to re-check upstream sources.
-
-No changes detected since last review.
+> Last cleared: 2026-06-01T15:06:12.569445+00:00 — batch reviewed by `claude-updates-watcher`.
+> No changes detected. Run `python3 scripts/claude-updates-watch.py` to re-fetch upstream changelogs.

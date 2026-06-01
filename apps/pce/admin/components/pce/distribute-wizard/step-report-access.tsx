@@ -76,10 +76,7 @@ export function StepReportAccess({
     <div className="flex flex-col gap-6" style={{ maxWidth: 600 }}>
       {/* Step header */}
       <div className="flex flex-col gap-1">
-        <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
-          Step 5 of 5
-        </p>
-        <h1 className="text-lg font-semibold">Report access</h1>
+        <h1 className="text-xl font-semibold">Report access</h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
           Choose which roles can view aggregate results for each evaluated subject.
         </p>
@@ -95,7 +92,7 @@ export function StepReportAccess({
               style={{ background: 'var(--dt-header-bg)' }}
             >
               <TableHead
-                className="h-9 px-3 text-xs font-medium tracking-wide border-b border-border"
+                className="h-9 px-3 text-xs font-medium border-b border-border"
                 style={{ color: 'var(--muted-foreground)' }}
               >
                 Role
@@ -103,7 +100,7 @@ export function StepReportAccess({
               {SUBJECTS.map(s => (
                 <TableHead
                   key={s.key}
-                  className="h-9 px-3 text-xs font-medium tracking-wide border-b border-border text-center whitespace-normal"
+                  className="h-9 px-3 text-xs font-medium border-b border-border text-center whitespace-normal"
                   style={{ width: 112, color: 'var(--foreground)' }}
                 >
                   {s.label}
@@ -119,7 +116,7 @@ export function StepReportAccess({
               style={{ background: 'var(--dt-header-bg)' }}
             >
               <TableCell
-                className="h-9 px-3 text-xs font-medium tracking-wide border-b border-border"
+                className="h-9 px-3 text-xs font-medium border-b border-border"
                 style={{ color: 'var(--muted-foreground)' }}
               >
                 Select all

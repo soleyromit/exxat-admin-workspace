@@ -132,23 +132,22 @@ export const tokens = {
     accentMid:    'var(--exam-accent-mid)'
   },
 
-  // ─── Calculator — neutral grey via zero-chroma color-mix
-  // (--foreground and --background both have chroma 0, so the mix is
-  // guaranteed hue-neutral under any theme).
+  // ─── Calculator — all DS tokens, no color-mix
   calc: {
-    displayBg: 'var(--calc-display-bg)',
-    numBtn:    'var(--background)',
+    displayBg: 'var(--foreground)',
+    displayText: 'var(--background)',
+    numBtn:    'var(--card)',
     numBorder: 'var(--border)',
     numText:   'var(--foreground)',
-    opBtn:     'color-mix(in oklch, var(--foreground) 4%, var(--background))',
+    opBtn:     'var(--muted)',
     opBorder:  'var(--border)',
-    opText:    'color-mix(in oklch, var(--foreground) 75%, var(--background))',
+    opText:    'var(--muted-foreground)',
     sciBtn:    'var(--exam-accent-light)',
     sciBorder: 'var(--exam-accent-border)',
     sciText:   'var(--exam-accent-hover)',
     equalBtn:  'var(--brand-color)',
     equalHover:'var(--brand-color-dark)',
-    headerBg:  'color-mix(in oklch, var(--foreground) 3%, var(--background))'
+    headerBg:  'var(--card)'
   }
 } as const;
 

@@ -1,18 +1,11 @@
 import { Tooltip } from './Tooltip';
 import { Button as DSButton } from '@exxat/ds/packages/ui/src';
-import { Question } from '../data/questions';
-import type { ExamSection } from '../data/assessments';
 
 interface StickyFooterProps {
   currentIndex: number;
   totalQuestions: number;
   onNavigate: (index: number) => void;
-  isFlaggedCurrent: boolean;
-  onToggleFlag: () => void;
-  questions: Question[];
-  answeredSet: Set<number>;
   flaggedSet: Set<number>;
-  sections?: ExamSection[];
   showNavPanel: boolean;
   onToggleNavPanel: () => void;
 }
@@ -21,8 +14,6 @@ export function StickyFooter({
   currentIndex,
   totalQuestions,
   onNavigate,
-  isFlaggedCurrent,
-  onToggleFlag,
   flaggedSet,
   showNavPanel,
   onToggleNavPanel,
@@ -81,36 +72,17 @@ export function StickyFooter({
         </DSButton>
       </Tooltip>
 
-      {/* Right: Mark for review + Next */}
-      <div className="flex items-center gap-2">
-        <Tooltip content="Mark for review (F)" position="top">
-          <DSButton
-            variant="outline"
-            size="lg"
-            onClick={onToggleFlag}
-            aria-label={isFlaggedCurrent ? 'Remove mark' : 'Mark for review'}
-            style={
-              isFlaggedCurrent
-                ? { backgroundColor: 'var(--state-flagged-bg)', borderColor: 'var(--state-flagged-border)', color: 'var(--state-flagged-text)' }
-                : undefined
-            }
-          >
-            <i className={`${isFlaggedCurrent ? 'fa-solid' : 'fa-light'} fa-flag`} aria-hidden="true" style={{ fontSize: 16 }} />
-            <span className="hidden sm:inline">{isFlaggedCurrent ? 'Marked' : 'Mark'}</span>
-          </DSButton>
-        </Tooltip>
-
-        <DSButton
-          variant="default"
-          size="lg"
-          onClick={() => currentIndex < totalQuestions - 1 && onNavigate(currentIndex + 1)}
-          disabled={currentIndex === totalQuestions - 1}
-          aria-label="Next question"
-        >
-          <span className="hidden sm:inline">Next</span>
-          <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 16 }} />
-        </DSButton>
-      </div>
+      {/* Right: Next */}
+      <DSButton
+        variant="default"
+        size="lg"
+        onClick={() => currentIndex < totalQuestions - 1 && onNavigate(currentIndex + 1)}
+        disabled={currentIndex === totalQuestions - 1}
+        aria-label="Next question"
+      >
+        <span className="hidden sm:inline">Next</span>
+        <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 16 }} />
+      </DSButton>
     </div>
   );
 }

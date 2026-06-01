@@ -34,6 +34,7 @@
 |---|---|---|---|
 | 2026-05-12 | baseline | PARTIAL | ADOPT-1 applied in reduced scope (SubagentStop → subagent-invocations.log wiring; OTEL env block deferred); ADOPT-2 NOT-APPLICABLE (local CLI schema rejects `args:`); ADOPT-3 DEFERRED (PostToolUse soft-rules risk dead-link-audit anti-pattern). Architect open Q #3 closes via the hook wiring. |
 | 2026-05-12 | v2140 | ACCEPTED | ADOPT-1: remove `general-purpose` workaround in check-claude-updates.md + check-ds-updates.md — use `claude-updates-watcher` / `ds-updates-watcher` directly now that 2.1.140 resolves subagent_type case- and separator-insensitively. All 10 other 2.1.140 changes are bug fixes with no architectural relevance (SKIP/ALREADY-HAVE). ADOPT-2 (hook args:) remains NOT-APPLICABLE (2.1.140 doesn't close the validator gap). |
+| 2026-06-01 | v2154-2157 | PROPOSED | ADOPT-1: add `reloadSkills: true` + `sessionTitle` to session-start.py (TS SDK 0.3.152); ADOPT-2: wire `OTEL_LOG_TOOL_DETAILS=1` env flag in settings.json (CC 2.1.157); ADOPT-3: document concurrent PreToolUse hook dispatch in pre-tool-use.py + exxat-brief-gate.mjs (Python SDK 0.2.82). Skills auto-load ALREADY-HAVE; 3 items DEFERRED (MessageDisplay, hook args:, /goal). |
 
 ## How to enable the weekly auto-run
 

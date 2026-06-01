@@ -23,8 +23,8 @@ const STATUS_CONFIG: Record<SurveyStatus, { label: string; variant: BadgeVariant
   active: {
     label: 'Active',
     variant: 'default',
-    bg: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
-    fg: 'var(--brand-color-dark)',
+    bg: 'var(--pce-status-active-bg)',
+    fg: 'var(--pce-status-active-fg)',
     dot: 'var(--brand-color)',
   },
   collecting: {
@@ -51,8 +51,8 @@ const STATUS_CONFIG: Record<SurveyStatus, { label: string; variant: BadgeVariant
   scheduled: {
     label: 'Scheduled',
     variant: 'outline',
-    bg: 'color-mix(in oklch, var(--brand-color) 6%, var(--background))',
-    fg: 'var(--brand-color-dark)',
+    bg: 'var(--pce-status-scheduled-bg)',
+    fg: 'var(--pce-status-scheduled-fg)',
     dot: 'var(--brand-color)',
   },
   closed: {

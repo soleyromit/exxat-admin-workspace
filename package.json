@@ -2,6 +2,6 @@
   "name": "exxat-admin-workspace",
   "private": true,
   "scripts": {
-    "postinstall": "npx --package=@exxatdesignux/ui@latest exxat-ui sync-extras"
+    "postinstall": "npx --package=@exxatdesignux/ui@latest exxat-ui sync-extras && exxat-ui upgrade --quiet || true"
   }
 }
