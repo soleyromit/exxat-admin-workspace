@@ -1,7 +1,7 @@
 ---
 name: exxat-ds
 description: >
-  Complete rules, patterns, and architecture guide for the Exxat DS Next.js design system.
+  Complete rules, patterns, and architecture guide for the Exxat DS Vite + React design system.
   Use this skill whenever working on any feature, page, component, or nav item in the Exxat DS
   codebase — including adding sidebar items, creating list pages, building data tables,
   wiring navigation, writing accessible UI, handling dates, adding tooltips, using icons,
@@ -18,8 +18,8 @@ description: >
 
 ## 1. Project Overview
 
-- **Stack:** Next.js 16 (App Router), React, TypeScript, Tailwind CSS, shadcn/ui primitives, Font Awesome icons
-- **App root:** `apps/web/app/(app)/` — route group that wraps all authenticated pages
+- **Stack:** Vite + React + react-router-dom, TypeScript, Tailwind CSS, shadcn/ui primitives, Font Awesome icons
+- **App root:** `apps/web/src/views/` — route modules wired in `src/App.tsx`
 - **Single source of truth:** `apps/web/AGENTS.md` for full prose explanations; this skill is the actionable summary
 - **Companion skills (narrow topics):** `exxat-fontawesome-icons`, `exxat-mono-ids`, `exxat-primary-nav-secondary-panel`, `exxat-centralized-list-dataset`, `exxat-list-page-view-shells`, `exxat-dedicated-search-surfaces`, `exxat-accessibility`, `exxat-board-cards`, `exxat-collaboration-access` — live under `.cursor/skills/`; vetted copies ship with **`@exxatdesignux/ui`** in `consumer-extras/cursor-skills/` after **`pnpm --filter @exxatdesignux/ui vendor:consumer-extras`**.
 - **Library folder-scoped header (rule + doc):** **`.cursor/rules/exxat-library-hub-header.mdc`** and **`docs/library-hub-header-pattern.md`** — pair with **`exxat-primary-nav-secondary-panel`** when URL **`scope=folder`** drives the hub title.
@@ -85,7 +85,7 @@ To add a primary nav item, append to `NAV_PRIMARY`:
 
 ### 3.1 Application sidebar shell (`app-sidebar.tsx`)
 
-**Data:** `lib/mock/navigation.tsx` also holds **`NAV_SCHOOLS`**, **`NAV_USER`**, and related defaults. School marks use **`logoDevUrl()`** from **`lib/logo-dev.ts`** (publishable token; optional **`NEXT_PUBLIC_LOGO_DEV_TOKEN`**).
+**Data:** `lib/mock/navigation.tsx` also holds **`NAV_SCHOOLS`**, **`NAV_USER`**, and related defaults. School marks use **`logoDevUrl()`** from **`lib/logo-dev.ts`** (publishable token; optional **`VITE_LOGO_DEV_TOKEN`**).
 
 | Concern | Pattern |
 |--------|---------|
@@ -95,6 +95,7 @@ To add a primary nav item, append to `NAV_PRIMARY`:
 | **Team switcher trigger** | **`SidebarMenuButton` `size="lg"`** uses **`h-12`** + **`overflow-hidden`**, which **clips** a second line (program). When the sidebar is **expanded** or **mobile**, add **`h-auto min-h-12`** and **`overflow-x-clip overflow-y-visible`**. On **icon rail**, hide label rows with **`group-data-[collapsible=icon]:hidden`** (tooltip still exposes the full string). Icon mode defaults **`size-8` + `p-2`** (~16px inner) **clips** school logos — override **`!size-9`**, **`!p-0`**, **`overflow-visible`**. Omit header **chevrons** next to logos if they look like stray chrome. |
 | **Motion / Animate UI** | [Animate UI](https://animate-ui.com/docs) — open **copy-first** animated components (Motion + Tailwind). This repo uses **`motion/react`** + **`lib/motion-ui.ts`** presets; pull more animations from their registry into `components/` when needed. |
 | **Nav items with children** | See **§3.2** below for the full parent ↔ children pattern (collapsible vs popover, active-state rules, chevron + slide animation, reduced motion). |
+| **Nav row labels** | **`SidebarNavLabel`** on every primary / secondary sidebar row; labels **wrap** (**`whitespace-normal`**, **`break-words`**, **`h-auto`**) — **MUST NOT** **`truncate`** nav copy. Icon rail hides labels; **`tooltip`** exposes the full string. See **`exxat-sidebar-nav-labels.mdc`**. |
 | **Profile (mock)** | **`stockPortraitUrl()`** from **`lib/stock-portrait.ts`**; **`AvatarImage`** **`referrerPolicy="no-referrer"`** for external URLs. |
 
 **Reference:** `components/app-sidebar.tsx`, `components/nav-user.tsx`, `components/product-switcher.tsx`.
@@ -864,7 +865,7 @@ Copy and complete for every list/table/hub page:
 
 - [ ] Page shell: `SidebarInset` → `SiteHeader` → `<main id="main-content" tabIndex={-1}>` → `@container/main div`
 - [ ] Sidebar item added to `lib/mock/navigation.tsx` with light/solid icon pair
-- [ ] **Shell sidebar:** Product header uses **`ExxatProductLogo`**; school **`logoDevUrl`** + **`lib/logo-dev`**; team switcher menu **`!w-max`** (not trigger-width-only); expanded switcher **`h-auto min-h-12`** so school + program lines are not clipped; no **`CollapsibleTrigger` → `SidebarMenuButton` with `tooltip` prop**; child nav uses **popover** on icon rail per **§3.1**
+- [ ] **Shell sidebar:** Product header uses **`ExxatProductLogo`**; school **`logoDevUrl`** + **`lib/logo-dev`**; team switcher menu **`!w-max`** (not trigger-width-only); expanded switcher **`h-auto min-h-12`** so school + program lines are not clipped; nav labels use **`SidebarNavLabel`** (wrap, no **`truncate`**) — **`exxat-sidebar-nav-labels.mdc`**; no **`CollapsibleTrigger` → `SidebarMenuButton` with `tooltip` prop**; child nav uses **popover** on icon rail per **§3.1**
 - [ ] Hub pages: `ListPageTemplate` + `DataTable` + `useTableState` + `TablePropertiesDrawer`
 - [ ] Board view: `ListPageBoardCard` shell + `ListHubStatusBadge` + `list-status-badges` when applicable (`apps/web/AGENTS.md` §4.4)
 - [ ] New primary hubs: not placeholder-only — full template + data + views (`apps/web/AGENTS.md` §4.1)

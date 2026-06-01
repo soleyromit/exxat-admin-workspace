@@ -1,8 +1,8 @@
 {
   "generated": "2026-06-01",
   "source": "@exxatdesignux/ui",
-  "version": "0.6.17",
-  "componentCount": 498,
+  "version": "0.6.30",
+  "componentCount": 466,
   "components": {
     "ALL_DATA_LIST_VIEW_TYPES": {
       "importPath": "@exxatdesignux/ui",
@@ -143,22 +143,6 @@
     "AvatarVerified": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
-    },
-    "BRAND_ACCENT_CHROMA": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
-    "BRAND_ACCENT_LIGHTNESS": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
-    "BRAND_HUE_GRADIENT": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
-    "BUILDER_DEV_SYNC_PATH": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
     },
     "Badge": {
       "importPath": "@exxatdesignux/ui",
@@ -383,6 +367,10 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "ColorScheme": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "ColumnDef": {
       "importPath": "@exxatdesignux/ui",
       "category": "organisms"
@@ -515,10 +503,6 @@
       "importPath": "@exxatdesignux/ui",
       "category": "data_views"
     },
-    "CustomProductBrand": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
     "DATA_LIST_SURFACE_VIEW_TYPES": {
       "importPath": "@exxatdesignux/ui",
       "category": "data_views"
@@ -539,10 +523,6 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
-    "DEFAULT_CUSTOM_PRODUCT_BRAND": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "primitives"
-    },
     "DEFAULT_DATA_LIST_DISPLAY_OPTIONS": {
       "importPath": "@exxatdesignux/ui",
       "category": "data_views"
@@ -550,10 +530,6 @@
     "DEFAULT_DEBOUNCE_MS": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
-    },
-    "DEFAULT_SHIPPED_CATALOG_URL": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
     },
     "DROPDOWN_MENU_CONTENT_SURFACE_CLASS": {
       "importPath": "@exxatdesignux/ui",
@@ -788,34 +764,6 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
-    "EXXAT_ONE_SCHOOLS_BRAND": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
-    "EXXAT_ONE_SITES_BRAND": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
-    "EXXAT_PALETTE_BY_FAMILY": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "primitives"
-    },
-    "EXXAT_PALETTE_FAMILIES": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "primitives"
-    },
-    "EXXAT_PALETTE_SHADES": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "primitives"
-    },
-    "EXXAT_PALETTE_SWATCHES": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "primitives"
-    },
-    "EXXAT_PRISM_BRAND": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
     "EXXAT_STORAGE_PREFIX": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
@@ -827,22 +775,6 @@
     "ExportDrawerProps": {
       "importPath": "@exxatdesignux/ui",
       "category": "organisms"
-    },
-    "ExxatPaletteFamilyId": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
-    "ExxatPaletteJson": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
-    "ExxatPaletteSwatch": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
-    "ExxatPaletteSwatchData": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
     },
     "FULL_HUB_SUPPORTED_VIEWS": {
       "importPath": "@exxatdesignux/ui",
@@ -1431,39 +1363,11 @@
       "importPath": "@exxatdesignux/ui",
       "category": "framework"
     },
-    "ProductBrandConfig": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
-    "ProductCodegenFile": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
-    "ProductCodegenResult": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
-    "ProductDefinition": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
-    "ProductDefinitionInput": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
-    "ProductNavLink": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
     "ProductProvider": {
       "importPath": "@exxatdesignux/ui",
       "category": "framework"
     },
     "ProductProviderProps": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
-    "ProductRef": {
       "importPath": "@exxatdesignux/ui",
       "category": "framework"
     },
@@ -1476,14 +1380,6 @@
       "category": "framework"
     },
     "ProductRouteSync": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
-    "ProductScope": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
-    "RESERVED_PRODUCT_ROOT_SEGMENTS": {
       "importPath": "@exxatdesignux/ui",
       "category": "framework"
     },
@@ -1519,17 +1415,13 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
-    "ResolvedProductRoute": {
+    "ResolvedColorScheme": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
     "RowHeight": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
-    },
-    "SHIPPED_CATALOG_FILE_VERSION": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
     },
     "ScrollArea": {
       "importPath": "@exxatdesignux/ui",
@@ -1639,14 +1531,6 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
-    "ShippedProductDataSlice": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "primitives"
-    },
-    "ShippedTenantCatalogFile": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "primitives"
-    },
     "Shortcut": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
@@ -1665,6 +1549,14 @@
       ]
     },
     "SidebarContent": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SidebarDrillIn": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SidebarDrillInProps": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -1736,6 +1628,10 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "SidebarNavLabel": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "SidebarProvider": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
@@ -1799,22 +1695,6 @@
     "SystemBannerProps": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
-    },
-    "TENANT_PRODUCT_SHELL_HUBS": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
-    "TENANT_PRODUCT_SHELL_HUB_SEGMENTS": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
-    "TENANT_STORE_KEY": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
-    "TENANT_STORE_VERSION": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
     },
     "Table": {
       "importPath": "@exxatdesignux/ui",
@@ -1892,23 +1772,19 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
-    "TenantProductDataBag": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
-    "TenantProductRecord": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
-    "TenantStore": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "framework"
-    },
     "TextSizePreference": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
     "Textarea": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "ThemeProvider": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "ThemeProviderProps": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -1919,10 +1795,6 @@
         "label",
         "side"
       ]
-    },
-    "Toaster": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "primitives"
     },
     "Toggle": {
       "importPath": "@exxatdesignux/ui",
@@ -2014,10 +1886,6 @@
       "category": "primitives"
     },
     "useAltKeyLabel": {
-      "importPath": "@exxatdesignux/ui",
-      "category": "hooks"
-    },
-    "useAppStore": {
       "importPath": "@exxatdesignux/ui",
       "category": "hooks"
     },
@@ -2134,6 +2002,10 @@
       "category": "hooks"
     },
     "useTenantProductData": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "hooks"
+    },
+    "useTheme": {
       "importPath": "@exxatdesignux/ui",
       "category": "hooks"
     }
