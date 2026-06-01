@@ -43,6 +43,8 @@ Three groups, in priority order:
 - Font: `12px`, `font-weight: 700`
 - Gap: `4px` between tiles, `flex-wrap: wrap`
 - **Current tile**: `var(--brand-color)` fill + white text + `0 0 0 3px var(--brand-tint)` ring
+- **Answered tile**: transparent fill, `2px solid var(--border)` stroke, `var(--muted-foreground)` text — number readable, no green fill
+- **Locked tile**: diagonal stripe fill (`repeating-linear-gradient(45deg, var(--muted) 0 3px, var(--border) 3px 5px)`), `var(--muted-foreground)` text, `cursor: not-allowed` — number visible above stripes, no lock icon overlapping the number
 - **Focus ring**: `exam-focus` class — `0 0 0 3px var(--brand-tint)` on `:focus-visible`
 - **Keyboard**: roving tabindex within each group, `ArrowRight/Left/Up/Down` navigation, `Enter`/`Space` to navigate, `Escape` to close panel
 
@@ -124,12 +126,15 @@ QuestionNavPanel (new)
 | Group title | `var(--muted-foreground)` |
 | Flagged tile bg | `var(--state-flagged-bg)` |
 | Flagged tile text | `var(--state-flagged-text)` |
-| Answered tile bg | `var(--state-answered-bg)` |
-| Answered tile text | `var(--state-answered-text)` |
+| Answered tile bg | `transparent` |
+| Answered tile border | `var(--border)` 2px solid |
+| Answered tile text | `var(--muted-foreground)` |
 | Current tile bg | `var(--brand-color)` |
 | Current tile text | `#fff` |
 | Unanswered tile bg | `var(--muted)` |
 | Unanswered tile text | `var(--muted-foreground)` |
+| Locked tile bg | `repeating-linear-gradient(45deg, var(--muted) 0 3px, var(--border) 3px 5px)` |
+| Locked tile text | `var(--muted-foreground)` |
 | Focus ring | `var(--brand-tint)` |
 | Tooltip bg | `var(--foreground)` |
 | Tooltip text | `var(--background)` |
