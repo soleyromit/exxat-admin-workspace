@@ -15,7 +15,7 @@ export interface QuestionNavPanelProps {
   onClose: () => void;
 }
 
-type TileStatus = 'current' | 'flagged' | 'answered' | 'unanswered' | 'locked';
+type TileStatus = 'current' | 'flagged' | 'current-flagged' | 'answered' | 'unanswered' | 'locked';
 
 interface TipState {
   visible: boolean;
@@ -71,6 +71,7 @@ export function QuestionNavPanel({
   // ── Tile status ───────────────────────────────────────────────────────────────
   const getTileStatus = useCallback((index: number): TileStatus => {
     if (isLocked(index)) return 'locked';
+    if (index === currentIndex && flaggedSet.has(index)) return 'current-flagged';
     if (index === currentIndex) return 'current';
     if (flaggedSet.has(index)) return 'flagged';
     if (answeredSet.has(index)) return 'answered';
@@ -140,6 +141,9 @@ export function QuestionNavPanel({
     switch (status) {
       case 'current':
         return { ...base, background: 'var(--brand-color)', color: '#fff', boxShadow: '0 0 0 3px var(--brand-tint)', border: '2px solid transparent' };
+      case 'current-flagged':
+        // Flagged amber fill + brand ring — signals both "viewing now" and "marked for review"
+        return { ...base, background: 'var(--state-flagged-bg)', color: 'var(--state-flagged-text)', boxShadow: '0 0 0 3px var(--brand-tint)', border: '2px solid var(--brand-color)' };
       case 'flagged':
         return { ...base, background: 'var(--state-flagged-bg)', color: 'var(--state-flagged-text)', border: '2px solid transparent' };
       case 'answered':
@@ -184,11 +188,12 @@ export function QuestionNavPanel({
   // ── Tooltip badge label ───────────────────────────────────────────────────────
   function badgeLabel(status: TileStatus, sectionLabel: string): string {
     switch (status) {
-      case 'flagged':  return '⚑ Flagged for review';
-      case 'answered': return '✓ Answered';
-      case 'current':  return '● Viewing now';
-      case 'locked':   return `🔒 Locked · ${sectionLabel}`;
-      default:         return '○ Not answered';
+      case 'flagged':          return '⚑ Flagged for review';
+      case 'current-flagged':  return '● Viewing now · ⚑ Flagged';
+      case 'answered':         return '✓ Answered';
+      case 'current':          return '● Viewing now';
+      case 'locked':           return `🔒 Locked · ${sectionLabel}`;
+      default:                 return '○ Not answered';
     }
   }
 
@@ -199,11 +204,12 @@ export function QuestionNavPanel({
       borderRadius: 4, padding: '2px 6px', marginTop: 4,
     };
     switch (status) {
-      case 'flagged':  return { ...base, background: 'var(--state-flagged-bg)', color: 'var(--state-flagged-text)' };
-      case 'answered': return { ...base, background: 'var(--muted)', color: 'var(--foreground)' };
-      case 'current':  return { ...base, background: 'var(--brand-color)', color: '#fff' };
-      case 'locked':   return { ...base, background: 'var(--muted)', color: 'var(--muted-foreground)' };
-      default:         return { ...base, background: 'var(--muted)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' };
+      case 'flagged':         return { ...base, background: 'var(--state-flagged-bg)', color: 'var(--state-flagged-text)' };
+      case 'current-flagged': return { ...base, background: 'var(--state-flagged-bg)', color: 'var(--state-flagged-text)' };
+      case 'answered':        return { ...base, background: 'var(--muted)', color: 'var(--foreground)' };
+      case 'current':         return { ...base, background: 'var(--brand-color)', color: '#fff' };
+      case 'locked':          return { ...base, background: 'var(--muted)', color: 'var(--muted-foreground)' };
+      default:                return { ...base, background: 'var(--muted)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' };
     }
   }
 
@@ -211,7 +217,10 @@ export function QuestionNavPanel({
   function renderTile(index: number, group: number[]) {
     const status = getTileStatus(index);
     const isFocused = focusedTileIndex === index;
-    const label = `Question ${index + 1}, ${status === 'current' ? 'current question' : status}`;
+    const label = `Question ${index + 1}, ${
+      status === 'current-flagged' ? 'current question, flagged for review' :
+      status === 'current' ? 'current question' : status
+    }`;
     return (
       <button
         key={index}
