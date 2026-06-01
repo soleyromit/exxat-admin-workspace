@@ -251,6 +251,19 @@ export interface AssessmentSettings {
   // Audience
   publishToAll: boolean
   studentGroupIds: string[]
+  // New — P1 settings panel
+  isHighStakes: boolean                                                    // results held until faculty review
+  passingScore: number | null                                              // percentage threshold — FACULTY-FACING ONLY; pass/fail label never shown to students
+  allowComments: boolean                                                   // per-question comment/flag box during exam
+  referenceMaterials: { name: string; url: string }[]                      // global PDFs in exam toolbar
+  warnOnBlankQuestion: boolean                                             // warn when leaving a question unanswered
+  submitButtonVisibility: 'always' | 'after-viewing-all' | 'after-answering-all'
+  scoreDisplay: 'raw' | 'raw-and-percent' | 'scaled'                      // what score students see post-exam; never includes pass/fail
+  preReadDocuments: { name: string; url: string }[]                        // assessment-level pre-reads in exam toolbar
+  // New — P2 (data model ready; UI deferred)
+  reviewShowsCorrectAnswers: boolean
+  reviewSessionStart: string | null
+  reviewSessionEnd: string | null
 }
 
 export interface AssessmentSection {
@@ -270,6 +283,9 @@ export interface AssessmentSection {
   prereadTimerMinutes?: number | null
   excludePrereadFromDuration?: boolean
   sectionWarningAlarmMinutes?: number | null
+  fillTarget?: { type: 'count' | 'points'; value: number } | null         // coordinator sets section fill target
+  dueDate?: string | null                                                  // ISO date — when faculty must fill this section
+  preReadDocuments?: { name: string; url: string }[]                       // section-level pre-reads during this section
 }
 
 export type QuestionHealthFlag =
@@ -355,6 +371,17 @@ export function defaultAssessmentSettings(type: AssessmentType = 'Exam'): Assess
     openableDate: null,
     publishToAll: true,
     studentGroupIds: [],
+    isHighStakes: false,
+    passingScore: null,
+    allowComments: false,
+    referenceMaterials: [],
+    warnOnBlankQuestion: false,
+    submitButtonVisibility: 'always',
+    scoreDisplay: 'raw-and-percent',
+    preReadDocuments: [],
+    reviewShowsCorrectAnswers: false,
+    reviewSessionStart: null,
+    reviewSessionEnd: null,
   }
 }
 
