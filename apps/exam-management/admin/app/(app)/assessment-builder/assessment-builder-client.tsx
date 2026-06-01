@@ -17,7 +17,7 @@ import {
 } from '@exxatdesignux/ui'
 import { mockCourses, mockCourseOfferings, mockAssessments, MOCK_QB_QUESTIONS, MOCK_QB_FOLDERS } from '@/lib/qb-mock-data'
 import { PERSONAS } from '@/lib/personas'
-import type { AssessmentDraft, AssessmentQuestion, AssessmentSection, Question, QType, QDiff, AssessmentReviewRequest, AssessmentStatus, FolderNode, Assessment } from '@/lib/qb-types'
+import type { AssessmentDraft, AssessmentQuestion, AssessmentSection, Question, QType, QDiff, AssessmentReviewRequest, AssessmentStatus, FolderNode, Assessment, AssessmentSettings } from '@/lib/qb-types'
 import { defaultAssessmentSettings } from '@/lib/qb-types'
 import { courseObjectives, facultyListRows, type CourseObjective } from '@/lib/faculty-mock-data'
 import { useFacultySession } from '@/lib/faculty-session'
@@ -1952,26 +1952,30 @@ export default function AssessmentBuilderClient() {
             {rightPanelMode === 'settings' && (
               <Step2SettingsPanel
                 settings={activeAsmt.settings}
-                onPatch={(patch: Partial<import('@/lib/qb-types').AssessmentSettings>) => setActiveAsmt(prev => prev ? { ...prev, settings: { ...prev.settings, ...patch } } : prev)}
+                onPatch={(patch: Partial<AssessmentSettings>) => setActiveAsmt(prev => prev ? { ...prev, settings: { ...prev.settings, ...patch } } : prev)}
                 onClose={() => setRightPanelMode('health')}
               />
             )}
-            {rightPanelMode === 'section' && activeSectionId && (
-              <Step2SectionSettingsPanel
-                section={activeAsmt.sections.find(s => s.id === activeSectionId)!}
-                faculty={facultyListRows}
-                onPatch={(patch: Partial<import('@/lib/qb-types').AssessmentSection>) => setActiveAsmt(prev => {
-                  if (!prev) return prev
-                  return {
-                    ...prev,
-                    sections: prev.sections.map(s =>
-                      s.id === activeSectionId ? { ...s, ...patch } : s
-                    ),
-                  }
-                })}
-                onClose={() => setRightPanelMode('health')}
-              />
-            )}
+            {rightPanelMode === 'section' && activeSectionId && (() => {
+              const currentSection = activeAsmt.sections.find(s => s.id === activeSectionId)!
+              return (
+                <Step2SectionSettingsPanel
+                  section={currentSection}
+                  faculty={facultyListRows}
+                  onPatch={(patch: Partial<AssessmentSection>) => setActiveAsmt(prev => {
+                    if (!prev) return prev
+                    const targetId = currentSection.id
+                    return {
+                      ...prev,
+                      sections: prev.sections.map(s =>
+                        s.id === targetId ? { ...s, ...patch } : s
+                      ),
+                    }
+                  })}
+                  onClose={() => setRightPanelMode('health')}
+                />
+              )
+            })()}
           </div>
         </div>
       )}
