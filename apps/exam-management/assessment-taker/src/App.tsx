@@ -444,6 +444,19 @@ export function App() {
         
 
         <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
+          {showNavPanel && (
+            <QuestionNavPanel
+              questions={questions}
+              currentIndex={currentIndex}
+              answeredSet={answeredIndices}
+              flaggedSet={flagged}
+              sections={assessment?.sections}
+              highestReachedIndex={highestReachedIndex}
+              onNavigate={handleNavigate}
+              onClose={() => setShowNavPanel(false)}
+            />
+          )}
+
           <main
             id="main-content"
             className="flex-1 overflow-hidden flex flex-col p-4 md:p-6 pb-24"
@@ -469,19 +482,6 @@ export function App() {
               onCommentChange={handleCommentChange} />
 
           </main>
-
-          {showNavPanel && (
-            <QuestionNavPanel
-              questions={questions}
-              currentIndex={currentIndex}
-              answeredSet={answeredIndices}
-              flaggedSet={flagged}
-              sections={assessment?.sections}
-              highestReachedIndex={highestReachedIndex}
-              onNavigate={handleNavigate}
-              onClose={() => setShowNavPanel(false)}
-            />
-          )}
         </div>
       </div>
 

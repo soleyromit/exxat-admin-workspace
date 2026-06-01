@@ -116,7 +116,7 @@ export function QuestionNavPanel({
       const rect = tile.getBoundingClientRect();
       const tipH = tipRef.current?.offsetHeight ?? 80;
       // Always to the left of the tile — panel is on the right edge, so this points into content area
-      const left = Math.max(8, rect.left - TIP_WIDTH - TIP_GAP);
+      const left = Math.min(rect.right + TIP_GAP, window.innerWidth - TIP_WIDTH - 8);
       // Vertically centered with the tile, clamped to viewport
       const top = Math.max(8, Math.min(rect.top + rect.height / 2 - tipH / 2, window.innerHeight - tipH - 8));
       setTip(prev => ({ ...prev, left, top }));
@@ -308,10 +308,10 @@ export function QuestionNavPanel({
       </div>
       <div style={{
         position: 'absolute',
-        right: -6, top: '50%', transform: 'translateY(-50%)',
+        left: -6, top: '50%', transform: 'translateY(-50%)',
         width: 6, height: 10,
         background: 'var(--foreground)',
-        clipPath: 'polygon(0 0, 100% 50%, 0 100%)',
+        clipPath: 'polygon(100% 0, 0 50%, 100% 100%)',
       }} />
     </div>,
     document.body
@@ -326,7 +326,7 @@ export function QuestionNavPanel({
         style={{
           width: 192, flexShrink: 0,
           background: 'var(--card)',
-          borderLeft: '1px solid var(--border)',
+          borderRight: '1px solid var(--border)',
           display: 'flex', flexDirection: 'column',
         }}
       >
