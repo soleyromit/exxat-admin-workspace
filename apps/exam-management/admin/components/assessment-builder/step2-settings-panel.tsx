@@ -295,7 +295,7 @@ export function Step2SettingsPanel({ settings, onPatch, onClose }: Props) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               {settings.referenceMaterials.map((doc, i) => (
                 <div
-                  key={i}
+                  key={doc.name + doc.url}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -309,23 +309,15 @@ export function Step2SettingsPanel({ settings, onPatch, onClose }: Props) {
                   <span style={{ fontSize: 12, color: 'var(--foreground)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {doc.name || doc.url}
                   </span>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => removeRef(i)}
                     aria-label={`Remove ${doc.name || 'reference material'}`}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: 2,
-                      borderRadius: 3,
-                      color: 'var(--muted-foreground)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      flexShrink: 0,
-                    }}
+                    style={{ color: 'var(--muted-foreground)', width: 20, height: 20, flexShrink: 0 }}
                   >
                     <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 12 }} />
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>
@@ -384,7 +376,7 @@ export function Step2SettingsPanel({ settings, onPatch, onClose }: Props) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               {settings.preReadDocuments.map((doc, i) => (
                 <div
-                  key={i}
+                  key={doc.name + doc.url}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -398,23 +390,15 @@ export function Step2SettingsPanel({ settings, onPatch, onClose }: Props) {
                   <span style={{ fontSize: 12, color: 'var(--foreground)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {doc.name || doc.url}
                   </span>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => removePreRead(i)}
                     aria-label={`Remove ${doc.name || 'pre-read document'}`}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: 2,
-                      borderRadius: 3,
-                      color: 'var(--muted-foreground)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      flexShrink: 0,
-                    }}
+                    style={{ color: 'var(--muted-foreground)', width: 20, height: 20, flexShrink: 0 }}
                   >
                     <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 12 }} />
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>
