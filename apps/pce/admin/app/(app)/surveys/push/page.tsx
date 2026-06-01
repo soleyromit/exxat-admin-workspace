@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import Link from 'next/link'
+import { useState, useMemo, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { WizardNav } from '@/components/pce/wizard-nav'
@@ -9,16 +9,18 @@ import { StepProperties, type SurveyVisibility } from '@/components/pce/distribu
 import { StepDistribution } from '@/components/pce/distribute-wizard/step-distribution'
 import { StepSurveyDesign } from '@/components/pce/distribute-wizard/step-survey-design'
 import { StepCommunication } from '@/components/pce/distribute-wizard/step-communication'
-import { StepReportAccess } from '@/components/pce/distribute-wizard/step-report-access'
+import { StepReportAccess, DEFAULT_REPORT_ACCESS, type ReportAccess } from '@/components/pce/distribute-wizard/step-report-access'
 import { StepSuccess } from '@/components/pce/distribute-wizard/step-success'
 import { StepDistributionGeneral } from '@/components/pce/distribute-wizard/step-distribution-general'
 import { StepSurveyDesignGeneral } from '@/components/pce/distribute-wizard/step-survey-design-general'
 import {
   MOCK_PROGRAM_TERMS,
   MOCK_COURSE_OFFERINGS,
-  MOCK_PROGRAMS,
   type SurveyType,
 } from '@/lib/pce-mock-data'
+
+const LATEST_TERM_ID = [...MOCK_PROGRAM_TERMS]
+  .sort((a, b) => b.startDate.localeCompare(a.startDate))[0]?.id ?? ''
 
 type WizardStep = 1 | 2 | 3 | 4 | 5 | 'success'
 
@@ -33,8 +35,11 @@ Your evaluation for {{course_name}} is open until {{close_date}}. Your responses
 
 Take the survey: {{survey_link}}`
 
-export default function PushSurveyPage() {
-  const { templates, pushSurveyBatch, surveyMode } = usePce()
+function PushSurveyInner() {
+  const { templates, pushSurveyBatch } = usePce()
+  const params = useSearchParams()
+  const surveyMode: 'course_evaluation' | 'general' =
+    params.get('mode') === 'programmatic' ? 'general' : 'course_evaluation'
 
   const [step, setStep] = useState<WizardStep>(1)
 
@@ -42,8 +47,9 @@ export default function PushSurveyPage() {
   const [surveyType, setSurveyType] = useState<SurveyType>(
     surveyMode === 'general' ? 'programmatic' : 'course_evaluation'
   )
-  const [programId, setProgramId] = useState('')
-  const [termId, setTermId] = useState('')
+  const [surveyTitle, setSurveyTitle] = useState('')
+  const [keepAnonymous, setKeepAnonymous] = useState(false)
+  const [termId, setTermId] = useState(LATEST_TERM_ID)
   const [surveyDescription, setSurveyDescription] = useState('')
   const [surveyVisibility, setSurveyVisibility] = useState<SurveyVisibility>('program')
 
@@ -57,6 +63,8 @@ export default function PushSurveyPage() {
   // Step 4 — Communication
   const [openDate, setOpenDate] = useState<Date | undefined>()
   const [closeDate, setCloseDate] = useState<Date | undefined>()
+  const [releaseDate, setReleaseDate] = useState<Date | undefined>()
+  const [senderName, setSenderName] = useState('Exxat Surveys')
   const [emailSubject, setEmailSubject] = useState(
     'Your course evaluation for {{course_name}} is now open'
   )
@@ -65,12 +73,10 @@ export default function PushSurveyPage() {
   const [reminderDaysBefore, setReminderDaysBefore] = useState(3)
 
   // Step 5 — Report Access
-  const [instructorAccess, setInstructorAccess] = useState(true)
-  const [coordinatorAccess, setCoordinatorAccess] = useState(true)
+  const [reportAccess, setReportAccess] = useState<ReportAccess>(DEFAULT_REPORT_ACCESS)
 
   // ── Derived values ─────────────────────────────────────────────────────────
 
-  const programName = MOCK_PROGRAMS.find(p => p.id === programId)?.name
   const selectedTerm = MOCK_PROGRAM_TERMS.find(t => t.id === termId) ?? null
   const academicYear = selectedTerm?.academicYear ?? ''
 
@@ -96,13 +102,6 @@ export default function PushSurveyPage() {
     selectedOfferings.every(o => !!templateAssignments[o.id])
 
   // ── Handlers ───────────────────────────────────────────────────────────────
-
-  function handleProgramChange(v: string) {
-    setProgramId(v)
-    setTermId('')
-    setExcludedIds(new Set())
-    setTemplateAssignments({})
-  }
 
   function handleTermChange(v: string) {
     setTermId(v)
@@ -179,8 +178,9 @@ export default function PushSurveyPage() {
       emailBody,
       reminderEnabled,
       reminderDaysBefore,
-      instructorAccess,
-      coordinatorAccess,
+      reportAccess: Object.fromEntries(
+        Object.entries(reportAccess).map(([k, v]) => [k, Array.from(v)])
+      ),
     })
     setStep('success')
   }
@@ -188,8 +188,9 @@ export default function PushSurveyPage() {
   function handleReset() {
     setStep(1)
     setSurveyType(surveyMode === 'general' ? 'programmatic' : 'course_evaluation')
-    setProgramId('')
-    setTermId('')
+    setSurveyTitle('')
+    setKeepAnonymous(false)
+    setTermId(LATEST_TERM_ID)
     setSurveyDescription('')
     setSurveyVisibility('program')
     setExcludedIds(new Set())
@@ -197,12 +198,13 @@ export default function PushSurveyPage() {
     setGeneralTemplateId('')
     setOpenDate(undefined)
     setCloseDate(undefined)
+    setReleaseDate(undefined)
+    setSenderName('Exxat Surveys')
     setEmailSubject('Your course evaluation for {{course_name}} is now open')
     setEmailBody(DEFAULT_EMAIL_BODY)
     setReminderEnabled(false)
     setReminderDaysBefore(3)
-    setInstructorAccess(true)
-    setCoordinatorAccess(true)
+    setReportAccess(DEFAULT_REPORT_ACCESS)
   }
 
   function handleStepNavClick(n: number) {
@@ -219,19 +221,10 @@ export default function PushSurveyPage() {
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
-      {/* Header */}
-      <SiteHeader title="Set up surveys" />
-      <div className="flex items-center gap-3 border-b border-border shrink-0" style={{ padding: '14px 28px 14px' }}>
-        <Link href="/surveys" className="text-sm text-muted-foreground hover:underline">
-          Surveys
-        </Link>
-        <i
-          className="fa-light fa-chevron-right text-xs"
-          aria-hidden="true"
-          style={{ color: 'var(--muted-foreground)' }}
-        />
-        <span className="text-sm font-semibold flex-1">Set up surveys</span>
-      </div>
+      <SiteHeader
+        breadcrumbs={[{ label: 'Surveys', href: '/surveys' }]}
+        title="Set up surveys"
+      />
 
       {/* Two-panel body */}
       <div className="flex flex-1 overflow-hidden">
@@ -249,11 +242,13 @@ export default function PushSurveyPage() {
           {step === 1 && (
             <StepProperties
               surveyMode={surveyMode}
-              programId={programId}
+              surveyTitle={surveyTitle}
+              keepAnonymous={keepAnonymous}
               termId={termId}
               description={surveyDescription}
               visibility={surveyVisibility}
-              onProgramChange={handleProgramChange}
+              onSurveyTitleChange={setSurveyTitle}
+              onKeepAnonymousChange={setKeepAnonymous}
               onTermChange={handleTermChange}
               onDescriptionChange={setSurveyDescription}
               onVisibilityChange={setSurveyVisibility}
@@ -274,9 +269,11 @@ export default function PushSurveyPage() {
               selectedOfferings={selectedOfferings}
               excludedIds={excludedIds}
               selectedTerm={selectedTerm}
-              programName={programName}
+              openDate={openDate}
+              closeDate={closeDate}
               onToggleOffering={handleToggleOffering}
               onSetExcluded={setExcludedIds}
+              onApplyDatesToAll={(open, close) => { setOpenDate(open); setCloseDate(close) }}
               onBack={() => setStep(1)}
               onNext={() => setStep(3)}
             />
@@ -308,14 +305,19 @@ export default function PushSurveyPage() {
 
           {step === 4 && (
             <StepCommunication
+              selectedOfferings={selectedOfferings}
               openDate={openDate}
               closeDate={closeDate}
+              releaseDate={releaseDate}
+              senderName={senderName}
               emailSubject={emailSubject}
               emailBody={emailBody}
               reminderEnabled={reminderEnabled}
               reminderDaysBefore={reminderDaysBefore}
               onOpenDateChange={setOpenDate}
               onCloseDateChange={setCloseDate}
+              onReleaseDateChange={setReleaseDate}
+              onSenderNameChange={setSenderName}
               onEmailSubjectChange={setEmailSubject}
               onEmailBodyChange={setEmailBody}
               onReminderEnabledChange={setReminderEnabled}
@@ -327,10 +329,8 @@ export default function PushSurveyPage() {
 
           {step === 5 && (
             <StepReportAccess
-              instructorAccess={instructorAccess}
-              coordinatorAccess={coordinatorAccess}
-              onInstructorAccessChange={setInstructorAccess}
-              onCoordinatorAccessChange={setCoordinatorAccess}
+              reportAccess={reportAccess}
+              onReportAccessChange={setReportAccess}
               onBack={() => setStep(4)}
               onPush={handlePush}
             />
@@ -348,5 +348,13 @@ export default function PushSurveyPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function PushSurveyPage() {
+  return (
+    <Suspense>
+      <PushSurveyInner />
+    </Suspense>
   )
 }

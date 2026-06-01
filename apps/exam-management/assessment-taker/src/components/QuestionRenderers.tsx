@@ -579,16 +579,12 @@ export function FillBlankRenderer({
               className="exam-select py-[0.3em] pl-[0.6em] rounded-md border-2 text-[0.8em] font-semibold align-middle"
               style={{
                 borderColor: answers[blankId] ?
-                'var(--exam-accent)' :
+                'var(--brand-color)' :
                 'var(--border)',
-                color: answers[blankId] ?
-                'var(--exam-accent)' :
-                'var(--muted-foreground)',
-                backgroundColor: answers[blankId] ?
-                'var(--exam-accent-light)' :
-                'var(--card)',
+                color: 'var(--foreground)',
+                backgroundColor: 'var(--card)',
                 boxShadow: answers[blankId] ?
-                '0 0 0 2px var(--exam-accent-light)' :
+                '0 0 0 2px var(--brand-tint)' :
                 '0 1px 2px var(--shadow-card)',
                 minWidth: '9em',
                 margin: '0 0.3em',
@@ -655,16 +651,12 @@ export function MatchingRenderer({
           className="exam-select flex-1 py-[0.65em] pl-[0.85em] rounded-lg border-2 text-[0.9375em]"
           style={{
             borderColor: answers[pair.left] ?
-            'var(--exam-accent)' :
+            'var(--brand-color)' :
             'var(--border)',
-            backgroundColor: answers[pair.left] ?
-            'var(--exam-accent-light)' :
-            'var(--card)',
-            color: answers[pair.left] ?
-            'var(--exam-accent)' :
-            'var(--muted-foreground)',
+            backgroundColor: 'var(--card)',
+            color: 'var(--foreground)',
             boxShadow: answers[pair.left] ?
-            '0 0 0 3px var(--exam-accent-light)' :
+            '0 0 0 3px var(--brand-tint)' :
             '0 1px 2px var(--shadow-card)'
           }}
           aria-label={`Match "${pair.left}" with the correct option`}

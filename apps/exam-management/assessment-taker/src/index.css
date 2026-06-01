@@ -335,16 +335,16 @@ html body [data-slot="sidebar-menu-button"][data-state="open"] {
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 .exam-select:hover {
-  border-color: var(--exam-accent-mid) !important;
+  border-color: var(--brand-color) !important;
   background-color: var(--card);
 }
 .exam-select:focus {
   outline: none;
-  border-color: var(--exam-accent) !important;
-  box-shadow: 0 0 0 3px var(--exam-accent-light);
+  border-color: var(--brand-color) !important;
+  box-shadow: 0 0 0 3px var(--brand-tint);
 }
 .exam-select option { padding: 8px 12px; background-color: var(--card); color: var(--foreground); }
-.exam-select option:checked { background-color: var(--exam-accent-light); color: var(--exam-accent); }
+.exam-select option:checked { background-color: var(--brand-tint); color: var(--foreground); }
 .exam-select option:disabled { color: var(--muted-foreground); }
 .theme-dark .exam-select,
 .theme-high-contrast .exam-select {

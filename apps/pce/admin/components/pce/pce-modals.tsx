@@ -545,7 +545,7 @@ export function ReleaseSheet({ open, onOpenChange, survey }: ReleaseSheetProps) 
           {/* Summary preview — Card slot composition (DS-adoption registry §Card) */}
           <Card size="sm">
             <CardHeader>
-              <CardDescription className="uppercase tracking-wide text-[11px]">
+              <CardDescription className="text-xs font-medium">
                 Summary Preview
               </CardDescription>
               <CardTitle className="text-base font-semibold">

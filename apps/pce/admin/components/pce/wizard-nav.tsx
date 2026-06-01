@@ -20,13 +20,12 @@ export function WizardNav({ currentStep, completedUpTo, onStepClick }: WizardNav
   return (
     <aside
       className="flex flex-col shrink-0 border-r border-border"
-      style={{ width: 220, background: 'var(--muted)', padding: '24px 12px' }}
+      style={{ width: 220, background: 'var(--background)', padding: '24px 12px' }}
     >
-      <nav className="flex flex-col gap-1" aria-label="Wizard steps">
+      <nav className="flex flex-col gap-0.5" aria-label="Wizard steps">
         {STEPS.map(({ n, label }) => {
           const isCompleted = n <= completedUpTo
           const isCurrent = n === currentStep
-          const isFuture = n > currentStep
 
           if (isCompleted) {
             return (
@@ -34,7 +33,7 @@ export function WizardNav({ currentStep, completedUpTo, onStepClick }: WizardNav
                 key={n}
                 variant="ghost"
                 size="sm"
-                className="justify-start gap-2 font-normal"
+                className="justify-start gap-2 w-full font-normal"
                 onClick={() => onStepClick(n)}
                 aria-label={`Go to step ${n}: ${label}`}
               >
@@ -43,50 +42,39 @@ export function WizardNav({ currentStep, completedUpTo, onStepClick }: WizardNav
                   aria-hidden="true"
                   style={{ color: 'var(--brand-color)', width: 16 }}
                 />
-                <span style={{ color: 'var(--foreground)' }}>{label}</span>
+                <span>{label}</span>
               </Button>
             )
           }
 
           if (isCurrent) {
             return (
-              <div
+              <Button
                 key={n}
-                className="flex items-center gap-2 rounded-md"
-                style={{
-                  padding: '6px 12px',
-                  background: 'var(--card)',
-                  border: '1px solid var(--border)',
-                }}
+                variant="secondary"
+                size="sm"
+                className="justify-start gap-2 w-full font-normal cursor-default"
                 aria-current="step"
               >
                 <span
                   className="shrink-0 rounded-full flex items-center justify-center"
-                  style={{
-                    width: 16,
-                    height: 16,
-                    background: 'var(--brand-color)',
-                    flexShrink: 0,
-                  }}
+                  style={{ width: 16, height: 16, background: 'var(--brand-color)', flexShrink: 0 }}
                 >
-                  <span
-                    className="rounded-full"
-                    style={{ width: 6, height: 6, background: 'var(--card)' }}
-                  />
+                  <span className="rounded-full" style={{ width: 6, height: 6, background: 'var(--card)' }} />
                 </span>
-                <span className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-                  {label}
-                </span>
-              </div>
+                <span className="font-semibold">{label}</span>
+              </Button>
             )
           }
 
           // future
           return (
-            <div
+            <Button
               key={n}
-              className="flex items-center gap-2"
-              style={{ padding: '6px 12px', opacity: 0.5 }}
+              variant="ghost"
+              size="sm"
+              className="justify-start gap-2 w-full font-normal"
+              disabled
               aria-disabled="true"
             >
               <span
@@ -95,10 +83,8 @@ export function WizardNav({ currentStep, completedUpTo, onStepClick }: WizardNav
               >
                 {n}
               </span>
-              <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                {label}
-              </span>
-            </div>
+              <span>{label}</span>
+            </Button>
           )
         })}
       </nav>

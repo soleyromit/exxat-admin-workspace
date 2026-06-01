@@ -1,0 +1,95 @@
+---
+description: Exxat DS — follow AGENTS.md; DataTable, ListPageTemplate, primary hubs, export, Kbd
+alwaysApply: true
+appliesTo: [universal]
+---
+
+# Exxat DS — AI handbook (binding)
+
+**App location:** `./` in this **pnpm monorepo**. The legacy single-folder layout (`exxat-ds/`) was migrated in 2026-05; the path no longer exists. Shared design system lives at `packages/ui/` (`@exxatdesignux/ui`).
+
+**Read `AGENTS.md`:** `./AGENTS.md` from the monorepo root, or `./AGENTS.md` when the workspace is the `./` folder only (same file).
+
+Before implementing or reviewing **list / table / board / dashboard / data-heavy** pages, read **AGENTS.md** (rule precedence, MUST/MUST NOT, file references, §4.1–§4.8, **§6.4** page vs drawer, **§6.5** no toast, §7.1 command palette, §13 checklist). **Before** adding **new shared UI** not covered by existing **`components/`** patterns, read **`exxat-reuse-before-custom.mdc`**.
+
+## Top of stack — read FIRST on any design task
+
+**`.cursor/skills/exxat-senior-ux/SKILL.md`** is the persona every other rule and skill is downstream of. It defines the **five-step protocol** (Discovery → Research → Synthesis → Build → Audit), the **brief format**, and the **push-back triggers**. Pair with:
+
+- **`.cursor/rules/exxat-ux-discovery-protocol.mdc`** — brief-before-code gate + question bank per surface type. **`alwaysApply: true`** — fires on every design task automatically.
+- **`.cursor/rules/exxat-no-image-pixel-copy.mdc`** — **`alwaysApply: true`** — uploaded images = **IA only**; **MUST NOT** "match the screenshot" or invoke generic aesthetic skills (`frontend-design`) to reproduce pixels. When both fire, **Exxat DS mapping wins**.
+- **`.cursor/rules/exxat-ux-principles.mdc`** — 20 principles (P1–P20) split into **always-follow (P1–P8)** and **default-follow with stated reason (P9–P20)**. Every deviation MUST be named in the design brief.
+- **`docs/exxat-ds/modern-saas-patterns.md`** — the 12 modern SaaS patterns (M1–M12) the DS works against; cite by `(Mx)` codes.
+- **`docs/exxat-ds/jobs/`** — canonical references per **job-to-be-done** (start with `record-detail.md`). If no job doc matches, write one.
+
+**Internal-only (this monorepo, not yet vendored to consumer apps):**
+
+- **`.cursor/rules/exxat-product-context.mdc`** — Exxat is not a generic SaaS. Every brief declares **Product** (runtime `ProductSwitcher` id), **Scope** (`school > program` for Prism / One — Schools; `brand > site > location` for One — Sites; `school > batch > student` for STEPS), and **Persona** (heading from `personas.md`). **`alwaysApply: true`**.
+- **`.cursor/skills/exxat-domain-context/SKILL.md`** — auto-loads on Exxat-domain prompts. Persona quick-reference, product → scope → persona map, RBAC framework, compliance terminology, industry pressure summary.
+- **`docs/exxat-ds/agent-context/`** — `domain.md` (CEMS forces, four products, regulatory landscape), `personas.md` (five archetypes with JTBD + UI behavior), `expert-agent.md` (Tier-3 nav trees + RBAC table). Source of truth for the rule and skill above.
+
+### Brief-before-code is a CHECKPOINT, not a preamble
+
+On any task that **decides what a surface should be** — including *new* pages **and** *rebuilds / redesigns / replacements of existing pages* — the protocol is:
+
+1. **Post the brief in chat. END THE TURN with "Ready to build — confirm or edit."**
+2. **Wait for the user's next message.** Silence is not consent until the next user reply arrives.
+3. **Only then** call code-mutating tools.
+
+Treat **"rebuild X"**, **"redesign X"**, **"replace what we have"**, **"make a new version of X"**, **"from scratch"**, and **"instead of what we currently have"** identically to "create new X" — all of them make a design decision, all of them require the brief checkpoint. The only exempt edits are trivial ones (copy tweaks, single-class restyles, bug fixes, dep bumps, ESLint passes, adding a column to an existing `HubTable` without changing IA).
+
+If your next tool call would be `write_file` / `str_replace` / `create_file` and you have not posted a brief + received user confirmation, **you are violating the protocol**. Stop, post the brief, end the turn.
+
+**Reviewing existing work?** Load **`.cursor/skills/exxat-ux-audit/SKILL.md`** instead. It runs an EXISTING surface (route / file / component / customer-app path / screenshot) through the same P1–P20 / M1–M12 rubric and outputs a **Blocker / Issue / Nit** findings report with code citations, a fix plan, and an offer to auto-apply text-only Blocker fixes. Triggers: "audit X", "review the X page", "is this following DS?", "what's wrong with this screen", "do a UX review", or a route URL with a symptom.
+
+## Non‑negotiables (if anything conflicts, open AGENTS.md §12–§13)
+
+1. **Product data lists** → `DataTable` + search + shared filters + `TablePropertiesDrawer` — not raw `<table>` / ui `Table` alone / ad-hoc grids. With **`ListPageTemplate`** view tabs, pass **`currentView`** + **`onViewChange`** into **`TablePropertiesDrawer`** (**`AGENTS.md` §4.2**, **`.cursor/rules/exxat-table-properties-drawer.mdc`**).
+2. **Main `DataTable` surface** → wrapped in **`ListPageTemplate`** (view tabs). All tab view types share **`useTableState`**; list/board/dashboard read **`tableState.rows`**. Reference: `PlacementsClient`, `TeamClient`, `TeamTable`, `ComplianceClient`.
+3. **Do not double-indent** the toolbar/table — avoid extra `px`/`mx` wrappers around `DataTable` when it already applies horizontal inset.
+4. **Primary hub + large/complex data** → same composition as Placements/Team: `ListPageTemplate` + metrics/export pattern as in `PlacementsClient` / `TeamClient`, not `PageHeader`-only. **Do not** ship empty or "replace later" placeholder pages for nav-linked hubs (**`AGENTS.md` §4.1**).
+5. **Exportable pages** → filled primary CTA; **⋯** menu with Export → `ExportDrawer` pattern (see `PlacementsPageHeader`).
+6. **Keyboard hints** → `.cursor/rules/exxat-kbd-shortcuts.mdc`; pair hints with behavior.
+7. **Accessibility** → `.cursor/rules/exxat-accessibility.mdc` + **`./AGENTS.md` §8** + `.cursor/skills/exxat-accessibility/SKILL.md`.
+8. **Data view dashboard charts** → **`./AGENTS.md` §4.3** + **`.cursor/rules/exxat-dashboard-view-charts.mdc`** (centralized storage, `chart-keyboard-selection`, `ChartFigure`).
+9. **Board (kanban) cards** → **`./AGENTS.md` §4.4** + **`exxat-board-cards.mdc`** + **`.cursor/skills/exxat-board-cards/SKILL.md`** (`ListPageBoardCard`, **`ListHubStatusBadge`** + **`lib/list-status-badges.ts`**, primitives).
+10. **List-page view shells** (folder / panel / centered non-table bodies) → **`./AGENTS.md` §4.5** + **`exxat-list-page-view-shells.mdc`** + **`.cursor/skills/exxat-list-page-view-shells/SKILL.md`** (`ListPageViewFrame`, **`components/data-views/`**).
+11. **Centralized hub dataset + presentation** — **`./AGENTS.md` §4.1** / **§4.5** + **`.cursor/rules/exxat-centralized-list-dataset.mdc`** + **`.cursor/skills/exxat-centralized-list-dataset/SKILL.md`** — one **`useTableState`** row bag for **all** views + **`TablePropertiesDrawer`**; **`ListPageViewFrame`** + **`data-views/`** for shared chrome; **no** parallel mock arrays per **`DataListViewType`**.
+12. **Font Awesome (product icons)** — **`.cursor/rules/exxat-fontawesome-icons.mdc`** — Kit in **`app/layout.tsx`**, **`fa-light` / `fa-solid`**, subset audit, **`aria-hidden`** on decorative **`<i>`**; pair with **`exxat-accessibility.mdc`** for icon-only controls.
+13. **Monospace system IDs** — **`./AGENTS.md` §1 (item 9)** + **`.cursor/rules/exxat-mono-ids.mdc`** + **`.cursor/skills/exxat-mono-ids/SKILL.md`** — **`font-mono tabular-nums`** on question/record keys; mono **only** the ID token in mixed lines.
+14. **Primary nav → secondary panel** (Library) — **`./AGENTS.md` §4.6** + **`.cursor/rules/exxat-primary-nav-secondary-panel.mdc`** — **`secondaryPanel`** + **`PANELS`** + **`useAutoPanel`**; **`--secondary-panel-bg`** brand elevation (**`docs/exxat-ds/shell-surface-elevation-pattern.md`**); **folder URL scope** → **`exxat-library-hub-header.mdc`** + **`docs/exxat-ds/library-hub-header-pattern.md`**.
+15. **Collaboration & access** (shared hubs) — **`./AGENTS.md` §4.7** + **`.cursor/rules/exxat-collaboration-access.mdc`** + **`.cursor/skills/exxat-collaboration-access/SKILL.md`** — face rail, **`InviteCollaboratorsDrawer`**, **`lib/collaborator-access.ts`**.
+16. **Dedicated search** (landing vs results, `DedicatedSearch*`) — **`./AGENTS.md` §4.8** + **`.cursor/rules/exxat-dedicated-search-surfaces.mdc`** + **`.cursor/skills/exxat-dedicated-search-surfaces/SKILL.md`**.
+17. **No toast** → **`./AGENTS.md` §6.5** + **`exxat-no-toast.mdc`** — do not use **`toast()`** / Sonner / snackbars for product messaging; use banners, inline status, or dialogs.
+18. **KPI trend polarity** (`KeyMetrics`, `*-kpi.ts`, chart mini-metrics) — **`docs/kpi-trend-pattern.md`** + **`.cursor/rules/exxat-kpi-trends.mdc`** + **`.cursor/skills/exxat-kpi-trends/SKILL.md`** — **`trend`** follows the data; set **`trendPolarity`** when “up” is not good news (e.g. defect counts, **low PBI flags**).
+19. **Drawer vs dialog** (same-route overlays) — **`docs/drawer-vs-dialog-pattern.md`** + **`.cursor/rules/exxat-drawer-vs-dialog.mdc`** + **`.cursor/skills/exxat-drawer-vs-dialog/SKILL.md`** — drawers preserve hub context; dialogs for **blocking** short confirms.
+20. **Cards vs table rows** — **`docs/card-vs-rows-pattern.md`** + **`.cursor/rules/exxat-card-vs-list-rows.mdc`** + **`.cursor/skills/exxat-card-vs-list-rows/SKILL.md`** — **`DataTable`** for dense comparable hubs; cards for kanban / visual browse (**`ListPageBoardCard`**).
+21. **KPI strip max four** — **`docs/kpi-strip-max-four-pattern.md`** + **`.cursor/rules/exxat-kpi-max-four.mdc`** + **`.cursor/skills/exxat-kpi-max-four/SKILL.md`** — **≤ 4** `MetricItem` per primary **`KeyMetrics`** strip / Data-tab key-metrics card (**`KEY_METRICS_KPI_COUNT_MAX`**).
+22. **KPI flat band** — **`docs/kpi-flat-band-pattern.md`** + **`.cursor/rules/exxat-kpi-flat-band.mdc`** + **`.cursor/skills/exxat-kpi-flat-band/SKILL.md`** — **`variant="flat"`**: transparent cells, OKLCH brand glow only, border hairlines (no grey panel).
+23. **Reuse before custom** — **`exxat-reuse-before-custom.mdc`** — compose from **`components/`** + **`AGENTS.md` §9**; **ask the user** before new shared primitives or bespoke widgets unless the task already approved greenfield.
+24. **Token discipline** — **`docs/token-taxonomy.md`** + **`.cursor/rules/exxat-token-discipline.mdc`** + **`packages/ui/tokens/hooks-index.json`** (163 tokens · 36 namespaces) — no hex literals in app code; no deprecated tokens; **prefer Exxat L0** (`--exxat-color-*`, `--exxat-radius-*`, `--exxat-spacing-*`) for new code (taxonomy §2.0 · rollout `docs/migrations/0002-exxat-token-namespace.md`); legacy L1 shadcn names stay as aliases. ESLint enforces via `exxat-ds/no-hex-color` + `exxat-ds/no-deprecated-tokens` in **`@exxatdesignux/eslint-plugin`** (workspace: **`packages/eslint-plugin-exxat-ds/`**).
+25. **No SLDS leakage** — **`.cursor/rules/exxat-no-slds-leakage.mdc`** — no `slds-*` classes, no `<lightning-*>` markup, no SLDS token names, no synthetic-shadow assumptions. ESLint catches via `exxat-ds/no-slds-classes` + `exxat-ds/no-lightning-elements` (from **`@exxatdesignux/eslint-plugin`**).
+26. **Blueprints + selection guide** — **`docs/exxat-ds/blueprints/`** + **`docs/exxat-ds/component-selection-guide.md`** — framework-agnostic specs + decision tree across the whole DS. Start there before composing a new hub.
+27. **Migrations** — **`docs/exxat-ds/migrations/`** — every deprecation gets a numbered entry (`NNNN-<slug>.md`). Token deprecations surface in `tokens/hooks-index.json` as `deprecated: true` and are lint-flagged.
+28. **Hub supported views (Add view parity)** — **`exxat-hub-supported-views.mdc`** + **`docs/exxat-ds/hub-supported-views-pattern.md`** — **`FULL_HUB_SUPPORTED_VIEWS`** (seven views, same as Library); sync **`ListPageTemplate`** + **`HubTable`**; real renderers per view; **`LibraryTable`** for **`LibraryItem`** catalogs; **`tokens-hub-auxiliary-views.tsx`** for tokens.
+29. **No Vaul** — **`exxat-no-vaul.mdc`** — side panels = **`Sheet`** only; remove **`vaul`** from consumer apps on **`@exxatdesignux/ui@0.5.3+`**.
+30. **Tabs chrome** — **`exxat-tabs-chrome.mdc`** — hub views = **`ListPageTemplate`** toolbar (`w-max`); record tabs = **`TabsList`** `w-fit`, never full-width stretch.
+31. **Page header actions** — **`exxat-page-header-actions.mdc`** + **`docs/exxat-ds/blueprints/page-header.md`** — filled primary + outline overflow; no hand-built grey buttons.
+32. **Table row preview** — **`exxat-table-row-preview.mdc`** — **`HoverCard`** + DS badges/cells; no bespoke popover cards.
+33. **Sidebar shell** — **`exxat-sidebar-shell.mdc`** + **`AGENTS.md` §9.1** — legacy screenshots = **IA only** (labels/routes); **MUST NOT** copy per-section colors or fork **`app-sidebar.tsx`** styling; use **`SidebarMenuButton`** + **`lib/nav-active`**.
+34. **Uploaded images** — **`exxat-no-image-pixel-copy.mdc`** (always apply) — screenshots/mockups = **intent + IA only**; **MUST** map to blueprints + reference hubs; **MUST NOT** pixel-copy colors, chrome, or bespoke stacks; **MUST NOT** say/plan "match the screenshot" or use **`frontend-design`** to mimic uploads — load **`exxat-senior-ux`** and post brief first.
+35. **Persisted UI state** — **`docs/persisted-state-pattern.md`** + **`.cursor/rules/exxat-persisted-state.mdc`** + **`docs/migrations/0004-persisted-state-lift.md`** — every hub uses **`<HubTable persistKey>`** / **`<ListPageTemplate persistKey>`** for table/page lifecycle persistence; every other "remember on reload" piece uses **`usePersistedState`** from **`@exxatdesignux/ui/lib/persisted-state`**; **MUST NOT** call `localStorage` directly. Distinct `persistKey` per consumer of a shared table (`"library"`, `"library:search"`, `"tokens"`, `"columns-showcase"`).
+
+## Also read
+
+- **`docs/exxat-ds/data-views-pattern.md`** — architecture narrative for list hubs. Includes **Page vs drawer** (§6.4 in `AGENTS.md`), **board UI** (§4.4), and **KPI trend polarity** → **`docs/exxat-ds/kpi-trend-pattern.md`**.
+- **`docs/exxat-ds/command-menu-pattern.md`** — global ⌘K palette (search + quick AI vs Ask Leo).
+- **`docs/exxat-ds/token-taxonomy.md`** — naming + deprecation policy for every CSS custom property the DS ships (semantic shadcn + brand / chip / chart / interactive / sidebar / control / radius / shadow / transition families).
+- **`docs/exxat-ds/component-selection-guide.md`** — top-of-funnel decision tree for picking the right composition.
+- **`docs/exxat-ds/blueprints/`** — framework-agnostic specs (start: `page-header.md`, `data-table.md`).
+- **`docs/exxat-ds/migrations/`** — token rename + removal history.
+- **`packages/ui/tokens/hooks-index.json`** — machine-readable token index (regenerate via `pnpm --filter @exxatdesignux/ui tokens:index`).
+- `.cursor/rules/exxat-data-tables.mdc`, **`exxat-hub-supported-views.mdc`**, **`exxat-no-vaul.mdc`**, **`exxat-tabs-chrome.mdc`**, **`exxat-page-header-actions.mdc`**, **`exxat-table-row-preview.mdc`**, `exxat-list-page-connected-views.mdc`, **`exxat-centralized-list-dataset.mdc`**, **`exxat-list-page-view-shells.mdc`**, **`exxat-fontawesome-icons.mdc`**, **`exxat-mono-ids.mdc`**, **`exxat-nav-single-active.mdc`** (one active sidebar/secondary link — `nav-active` helpers), **`exxat-primary-nav-secondary-panel.mdc`**, **`exxat-library-hub-header.mdc`**, **`exxat-collaboration-access.mdc`**, **`exxat-dedicated-search-surfaces.mdc`**, **`exxat-kpi-trends.mdc`**, **`exxat-kpi-flat-band.mdc`**, **`exxat-drawer-vs-dialog.mdc`**, **`exxat-card-vs-list-rows.mdc`**, **`exxat-kpi-max-four.mdc`**, **`exxat-persisted-state.mdc`**, **`exxat-reuse-before-custom.mdc`**, `exxat-table-properties-drawer.mdc`, **`exxat-board-cards.mdc`**, **`exxat-page-vs-drawer.mdc`**, **`exxat-no-toast.mdc`**, **`exxat-command-menu.mdc`**, `exxat-kbd-shortcuts.mdc`, `exxat-accessibility.mdc` at repo root; **`.cursor/rules/exxat-dashboard-view-charts.mdc`** for Data tab charts.
+- **`docs/exxat-ds/kpi-flat-band-pattern.md`**, **`docs/exxat-ds/shell-surface-elevation-pattern.md`** — flat KPI strip + sidebar/secondary/page OKLCH stack.
+- **`docs/exxat-ds/library-hub-header-pattern.md`** — folder-scoped library header **Customize folder**.
+- **`docs/exxat-ds/collaboration-access-pattern.md`** — shared hub face rail + invite sheet.

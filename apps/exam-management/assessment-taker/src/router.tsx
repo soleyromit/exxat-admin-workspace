@@ -23,7 +23,6 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { NavShell } from './components/NavShell';
 import { AssessmentDashboard } from './pages/AssessmentDashboard';
-import { PreExamFlow } from './pages/PreExamFlow';
 import { PostExam } from './pages/PostExam';
 import { ExamResults } from './pages/ExamResults';
 import { CompetencyDashboard } from './pages/CompetencyDashboard';
@@ -40,14 +39,6 @@ const router = createBrowserRouter([
     element: (
       <NavShell>
         <AssessmentDashboard />
-      </NavShell>
-    ),
-  },
-  {
-    path: '/exam/:id/setup',
-    element: (
-      <NavShell title="Pre-Exam Setup">
-        <PreExamFlow />
       </NavShell>
     ),
   },

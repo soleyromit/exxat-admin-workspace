@@ -159,7 +159,7 @@ function ActionCard({ exam, onNavigate }: { exam: Assessment; onNavigate: (path:
         )}
         <Button
           size="lg"
-          onClick={() => onNavigate(isInProgress ? `/exam/${exam.id}/take` : `/exam/${exam.id}/setup`)}
+          onClick={() => onNavigate(`/exam/${exam.id}/take`)}
           aria-label={isInProgress ? `Continue ${exam.title}` : `Start ${exam.title}`}
         >
           {isInProgress ? 'Continue Exam' : 'Start Exam'}

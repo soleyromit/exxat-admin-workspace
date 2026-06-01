@@ -80,32 +80,50 @@ export const NAV_QUICK_ACTIONS: NavSecondaryItem[] = [
 
 export const NAV_ADMIN: NavLinkItem[] = [
   {
-    key: "surveys",
-    title: "Surveys",
-    url: "/surveys",
-    icon:       <i className="fa-light fa-paper-plane" aria-hidden="true" />,
-    iconActive: <i className="fa-solid fa-paper-plane" aria-hidden="true" />,
+    key: "course-evaluation",
+    title: "Course Evaluation",
+    url: "#",
+    icon:       <i className="fa-light fa-star" aria-hidden="true" />,
+    iconActive: <i className="fa-solid fa-star" aria-hidden="true" />,
+    children: [
+      {
+        key: "ce-surveys",
+        title: "Forms",
+        url: "/surveys",
+        icon:       <i className="fa-light fa-paper-plane" aria-hidden="true" />,
+        iconActive: <i className="fa-solid fa-paper-plane" aria-hidden="true" />,
+      },
+      {
+        key: "ce-templates",
+        title: "Templates",
+        url: "/templates",
+        icon:       <i className="fa-light fa-rectangle-list" aria-hidden="true" />,
+        iconActive: <i className="fa-solid fa-rectangle-list" aria-hidden="true" />,
+      },
+    ],
   },
   {
-    key: "templates",
-    title: "Templates",
-    url: "/templates",
-    icon:       <i className="fa-light fa-rectangle-list" aria-hidden="true" />,
-    iconActive: <i className="fa-solid fa-rectangle-list" aria-hidden="true" />,
-  },
-  {
-    key: "moderation",
-    title: "Moderation",
-    url: "/moderation",
-    icon:       <i className="fa-light fa-shield-check" aria-hidden="true" />,
-    iconActive: <i className="fa-solid fa-shield-check" aria-hidden="true" />,
-  },
-  {
-    key: "analytics",
-    title: "Analytics",
-    url: "/analytics",
-    icon:       <i className="fa-light fa-chart-mixed" aria-hidden="true" />,
-    iconActive: <i className="fa-solid fa-chart-mixed" aria-hidden="true" />,
+    key: "programmatic-surveys",
+    title: "Programmatic Surveys",
+    url: "#",
+    icon:       <i className="fa-light fa-chart-network" aria-hidden="true" />,
+    iconActive: <i className="fa-solid fa-chart-network" aria-hidden="true" />,
+    children: [
+      {
+        key: "ps-surveys",
+        title: "Forms",
+        url: "/surveys/programmatic",
+        icon:       <i className="fa-light fa-paper-plane" aria-hidden="true" />,
+        iconActive: <i className="fa-solid fa-paper-plane" aria-hidden="true" />,
+      },
+      {
+        key: "ps-templates",
+        title: "Templates",
+        url: "/templates/programmatic",
+        icon:       <i className="fa-light fa-rectangle-list" aria-hidden="true" />,
+        iconActive: <i className="fa-solid fa-rectangle-list" aria-hidden="true" />,
+      },
+    ],
   },
   {
     key: "setup",
@@ -132,7 +150,7 @@ export const NAV_ADMIN: NavLinkItem[] = [
 export const NAV_FACULTY: NavLinkItem[] = [
   {
     key: "my-surveys",
-    title: "My Surveys",
+    title: "My Forms",
     url: "/my-surveys",
     icon:       <i className="fa-light fa-paper-plane" aria-hidden="true" />,
     iconActive: <i className="fa-solid fa-paper-plane" aria-hidden="true" />,

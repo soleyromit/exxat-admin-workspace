@@ -41,6 +41,8 @@ export interface ColumnDef<TData> {
     options?: { value: string; label: string }[]
     operators?: FilterOperator[]
   }
+  /** When true, the column is excluded from the rendered table but remains available in the filter dropdown */
+  hidden?: boolean
 }
 
 export interface CellContext<TData> {

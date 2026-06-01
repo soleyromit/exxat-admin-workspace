@@ -4,12 +4,14 @@ interface TooltipProps {
   children: React.ReactElement;
   position?: 'top' | 'bottom' | 'left' | 'right';
   delay?: number;
+  disabled?: boolean;
 }
 export function Tooltip({
   content,
   children,
   position = 'bottom',
-  delay = 400
+  delay = 400,
+  disabled = false,
 }: TooltipProps) {
   const [visible, setVisible] = useState(false);
   const [coords, setCoords] = useState({
@@ -19,6 +21,7 @@ export function Tooltip({
   const triggerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const show = () => {
+    if (disabled) return;
     timeoutRef.current = setTimeout(() => {
       setVisible(true);
     }, delay);

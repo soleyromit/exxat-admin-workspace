@@ -100,10 +100,10 @@ function EntityCard({ entity }: { entity: EntityTile }) {
       <CardHeader>
         <CardAction>
           {entity.status === 'phase-2' && (
-            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Soon</span>
+            <span className="text-[10px] font-medium text-muted-foreground">Soon</span>
           )}
           {entity.status === 'shared' && (
-            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Shared</span>
+            <span className="text-[10px] font-medium text-muted-foreground">Shared</span>
           )}
           {isClickable && (
             <i

@@ -42,12 +42,15 @@ export interface SiteHeaderProps {
    * Prefer when the page `<h1>` carries the current title (e.g. New question composer).
    */
   back?: SiteHeaderBackLink
+  /** Optional content rendered to the right of the breadcrumb/back link — e.g. document-level action controls. */
+  actions?: React.ReactNode
 }
 
 export function SiteHeader({
   title = "Dashboard",
   breadcrumbs,
   back,
+  actions,
 }: SiteHeaderProps) {
   const mod = useModKeyLabel()
   const [isStuck, setIsStuck] = React.useState(false)
@@ -109,14 +112,19 @@ export function SiteHeader({
         />
 
         {back ? (
-          <PageBreadcrumbBack {...back} className="min-w-0 flex-1" />
+          <PageBreadcrumbBack {...back} className={actions ? "shrink-0" : "min-w-0 flex-1"} />
         ) : (
           <PageBreadcrumbTrail
             variant="header"
             items={breadcrumbs}
             currentPage={title}
-            className="flex-1"
+            className={actions ? undefined : "flex-1"}
           />
+        )}
+        {actions && (
+          <div className="flex flex-1 items-center gap-2 min-w-0 pe-2">
+            {actions}
+          </div>
         )}
       </div>
     </header>

@@ -3,6 +3,17 @@ import { SettingsPanel } from './SettingsPanel';
 import { Tooltip } from './Tooltip';
 import { Button as DSButton } from '@exxat/ds/packages/ui/src';
 import type { ExamSection } from '../data/assessments';
+
+function getCurrentSection(sections: ExamSection[], index: number) {
+  let cum = 0;
+  for (let i = 0; i < sections.length; i++) {
+    if (index < cum + sections[i].questionCount) {
+      return { title: sections[i].title, number: i + 1 };
+    }
+    cum += sections[i].questionCount;
+  }
+  return null;
+}
 export interface ExamToolbarProps {
   timerFormatted: string;
   /** Aarti May 14: "assessment name has to be part of the header. It cannot not be part of the header." */
@@ -46,7 +57,6 @@ export interface ExamToolbarProps {
 export function ExamToolbar({
   timerFormatted,
   assessmentTitle,
-  courseLabel,
   totalQuestions,
   currentIndex,
   zoomPercent,
@@ -72,6 +82,7 @@ export function ExamToolbar({
   const [showSettings, setShowSettings] = useState(false);
   const progressPercent =
   totalQuestions > 0 ? (currentIndex + 1) / totalQuestions * 100 : 0;
+  const currentSection = sections?.length ? getCurrentSection(sections, currentIndex) : null;
   return (
     <header
       className="border-b flex flex-col shrink-0 z-40 relative transition-colors"
@@ -94,18 +105,25 @@ export function ExamToolbar({
               backgroundColor: 'var(--border)'
             }} />
           
-          {/* Aarti May 14: both course name AND assessment name must be in the header */}
           <div className="flex flex-col min-w-0">
-            {courseLabel && (
-              <span className="text-[11px] truncate" style={{ color: 'var(--muted-foreground)', lineHeight: 1.2 }}>
-                {courseLabel}
-              </span>
+            <Tooltip content={assessmentTitle ?? 'Assessment'} position="bottom">
+              <h1
+                className="font-bold text-sm truncate"
+                style={{ color: 'var(--foreground)', lineHeight: 1.3 }}>
+                {assessmentTitle ?? 'Assessment'}
+              </h1>
+            </Tooltip>
+            {currentSection && (
+              <Tooltip content={`Section ${currentSection.number} · ${currentSection.title}`} position="bottom">
+                <span
+                  className="text-[11px] truncate"
+                  style={{ color: 'var(--muted-foreground)', lineHeight: 1.2 }}
+                  aria-label={`Current section: ${currentSection.title}`}
+                >
+                  Section {currentSection.number} · {currentSection.title}
+                </span>
+              </Tooltip>
             )}
-            <h1
-              className="font-bold text-sm truncate max-w-[240px]"
-              style={{ color: 'var(--foreground)', lineHeight: 1.3 }}>
-              {assessmentTitle ?? 'Assessment'}
-            </h1>
           </div>
 
         </div>

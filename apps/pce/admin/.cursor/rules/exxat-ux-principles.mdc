@@ -1,0 +1,187 @@
+---
+description: Exxat DS UX principles — what to follow, when to break, why
+alwaysApply: true
+appliesTo: [universal]
+---
+
+# Exxat DS — UX principles (and when to break them)
+
+Principles are the senior designer's spine. They make most decisions cheap.
+**Break deliberately, not accidentally** — and say so in the design brief
+(`exxat-ux-discovery-protocol.mdc`). If you can't write the deviation reason
+in one sentence, you shouldn't be breaking the principle.
+
+Each principle below has: **what it says**, **why**, **when to break**, and
+the **anti-pattern**.
+
+---
+
+## Always-follow (P1–P8) — no exceptions
+
+### P1. Way back is obvious, and exactly once
+Breadcrumb in `SiteHeader` OR explicit back affordance — **never both**.
+- **Why:** Two paths back create cognitive overhead and a redundant UI.
+- **When to break:** Never.
+- **Anti-pattern:** Breadcrumb "Dashboard › Students › Jordan Lee" + a
+  separate "Back to roster" button in the body.
+- **Reference:** `exxat-breadcrumbs-no-back.mdc`.
+
+### P2. One H1 per page; no duplicated identity
+The record name appears in exactly one carrier — typically `PageHeader.title`
++ ancestors-only breadcrumb. Not also as an `<h1>` in the body.
+- **Why:** Screen readers and scan-reading rely on a single page title.
+- **When to break:** Never.
+- **Anti-pattern:** Name in breadcrumb leaf + `PageHeader title` + body `<h1>`.
+
+### P3. One primary action per surface
+Exactly one filled `Button`; everything else `outline` / `ghost` / `link`.
+- **Why:** Two primaries = no primary.
+- **When to break:** Never. Symmetric pairs ("Approve" + "Reject") are both
+  *outline* — neither is the styled "primary".
+- **Anti-pattern:** Two filled buttons in the header.
+
+### P4. Don't pixel-copy
+Extract IA from screenshots and competitor references; never copy chrome,
+colors, or bespoke widgets.
+- **Why:** Pixels carry decisions made in another product's context.
+- **When to break:** Never.
+- **Reference:** `exxat-no-image-pixel-copy.mdc`.
+
+### P5. Every list / detail / action ships empty + error + loading
+- **Why:** Real users hit all three; afterthoughts ship as bugs.
+- **When to break:** Never.
+- **Anti-pattern:** "Loading…" text and no skeleton; missing 404 / empty.
+
+### P6. Keyboard parity
+Every mouse action has a keyboard equivalent; focus is always visible.
+- **Why:** Power users, motor-disabled users, screen-reader users all rely
+  on this.
+- **When to break:** Never.
+- **Reference:** `exxat-kbd-shortcuts.mdc`, `exxat-accessibility.mdc`.
+
+### P7. WCAG 2.1 AA minimum
+Contrast ≥ 4.5:1 (text) / ≥ 3:1 (UI), targets ≥ 24×24, labels on icon-only.
+- **Why:** Floor for shipping. Not negotiable.
+- **When to break:** Never.
+- **Reference:** `exxat-accessibility.mdc`.
+
+### P8. Reuse before invent
+Compose from DS primitives first. New shared primitives require user approval
+after a real, repeated need (≥ 2 use cases).
+- **Why:** Forked stacks divide the team; the DS is the vocabulary.
+- **When to break:** Never silently. Ask the user.
+- **Reference:** `exxat-reuse-before-custom.mdc`.
+
+---
+
+## Default-follow (P9–P20) — break only with stated reason
+
+### P9. Clarity over cleverness
+Direct labels, recognizable patterns. "Save" beats "Persist". "Send" beats
+"Beam".
+- **Why:** Decisions cost less when the label states the action.
+- **Break when:** Intentional brand voice in low-stakes surfaces (onboarding
+  celebration, marketing splash). Never in core flows.
+- **Anti-pattern:** "Materialize this configuration" instead of "Save".
+
+### P10. Recognition over recall
+Surface what the user needs; don't make them remember.
+- **Why:** Working memory is the most expensive resource on a screen.
+- **Break when:** Daily power users where keyboard shortcuts replace visible
+  chrome (Cron, Linear, Raycast). Provide a discoverable hint.
+- **Anti-pattern:** Hiding a frequent action behind a chord with no UI.
+
+### P11. One job per surface
+A screen optimizes for one primary user decision.
+- **Why:** Splits attention, splits metrics, splits design quality.
+- **Break when:** Workspace surfaces (Notion-style pages, Linear-style issue
+  views) deliberately compose multiple jobs. Even then, one job is **primary**.
+- **Anti-pattern:** Settings page that also includes a dashboard.
+
+### P12. Progressive disclosure
+Show core first; depth on demand (popovers, sheets, expand).
+- **Why:** Most users do the common thing most of the time.
+- **Break when:** Compliance / legal / audit surfaces where everything must
+  be visible.
+- **Anti-pattern:** 30-field form on first load with no grouping.
+
+### P13. Status visible without scroll
+Status signals that drive decisions (compliance, errors, urgency) appear
+above the fold.
+- **Why:** Status hidden = ignored.
+- **Break when:** Privacy / discretion contexts (e.g. HR records where peer
+  visibility is undesirable).
+- **Anti-pattern:** Compliance status on tab #3 of a record detail.
+
+### P14. Density follows frequency
+Daily power users get compact / dense; occasional users get cozy / spacious.
+- **Why:** Different audiences scan differently.
+- **Break when:** Accessibility (low-vision, motor) mandates generous
+  spacing. Offer a density toggle if both audiences share a surface.
+- **Anti-pattern:** Sparse table for a coordinator viewing 200 students/day.
+
+### P15. Inline editing where data is read
+Modern SaaS (Notion, Linear, Airtable) edits in place. Don't bounce users
+to a form for a single-field change.
+- **Why:** Mode-switch friction kills throughput.
+- **Break when:** Bulk operations, multi-field validation, audit-logged
+  fields, destructive edits — use a focused form / drawer.
+- **Anti-pattern:** "Edit" page just to change a phone number.
+
+### P16. Optimistic UI for low-risk actions
+Favorite, archive, status flip, reorder — feel instant; reconcile on error.
+- **Why:** Speed of feedback is a quality signal.
+- **Break when:** Financial / irreversible / regulated actions — show progress
+  and confirmation.
+- **Anti-pattern:** Spinner overlay for a star-favorite toggle.
+
+### P17. Search is global and fast
+`⌘K` opens command + search; everything addressable is searchable.
+- **Why:** Modern users navigate by typing.
+- **Break when:** Never for modern SaaS at this scale.
+- **Reference:** `exxat-command-menu.mdc`.
+
+### P18. Content first, chrome last
+Data is the star. Sidebars collapse to icons. Headers stay ~48–56px.
+Surfaces are generous.
+- **Why:** Chrome competes with the work.
+- **Break when:** Heavily configurable admin consoles where chrome **is** the
+  content. Prefer collapsing over crowding.
+- **Anti-pattern:** Purple gradient hero bar above a data table.
+
+### P19. Type carries hierarchy
+Weight, size, color do the heavy lifting before borders, boxes, or color
+tints.
+- **Why:** Ornament dates fast; type ages well.
+- **Break when:** Status surfaces where color is encoding meaning (chips,
+  alerts).
+- **Anti-pattern:** Every value wrapped in a tinted card.
+
+### P20. AI is a sidecar, not the primary path
+Ask Leo / inline AI — opt-in, contextual, cancellable. Never auto-runs on a
+record. Never the only way to do something.
+- **Why:** AI is a feature; the core product must work without it.
+- **Break when:** Surfaces explicitly built around AI (e.g. an AI-only
+  composer). Even then, expose the deterministic path.
+- **Reference:** `exxat-command-menu.mdc` (⌘K vs ⌘⌥K split).
+
+---
+
+## How to declare a deviation
+
+In the design brief, list the broken principle + the reason on one line:
+
+```
+Deviations: P14 (density) — broke "follows frequency" because the primary
+            user here is occasional but the same surface also serves daily
+            admins; resolved with a density toggle, default cozy.
+```
+
+If the reason doesn't fit on one line, the deviation isn't justified yet.
+
+## See also
+
+- `.cursor/skills/exxat-senior-ux/SKILL.md` — the persona
+- `.cursor/rules/exxat-ux-discovery-protocol.mdc` — gating + brief
+- `docs/exxat-ds/modern-saas-patterns.md` — the modern canon (M1–M12)
+- All `exxat-*.mdc` rules — concrete enforcement per pattern

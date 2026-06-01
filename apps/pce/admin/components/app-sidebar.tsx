@@ -203,16 +203,17 @@ function PrimaryNav({ items }: { items: NavLinkItem[] }) {
       {items.map(item => {
         const active = isNavActive(pathname, item.url)
         if (item.children?.length) {
+          const childActive = item.children.some(c => isNavActive(pathname, c.url))
           return (
             <Collapsible
               key={item.key}
-              defaultOpen={active}
+              defaultOpen={active || childActive}
               asChild
               className="group/collapsible"
             >
               <SidebarMenuItem>
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton isActive={active} tooltip={item.title}>
+                  <SidebarMenuButton isActive={active || childActive} tooltip={item.title}>
                     {active ? (item.iconActive ?? item.icon) : item.icon}
                     <span className="flex-1">{item.title}</span>
                     <i
@@ -223,19 +224,23 @@ function PrimaryNav({ items }: { items: NavLinkItem[] }) {
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <SidebarMenuSub>
-                    {item.children.map(child => (
-                      <SidebarMenuSubItem key={child.key}>
-                        <SidebarMenuSubButton
-                          asChild
-                          isActive={isNavActive(pathname, child.url)}
-                        >
-                          <a href={child.url}>
-                            {child.icon}
-                            <span>{child.title}</span>
-                          </a>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    ))}
+                    {item.children.map(child => {
+                      const childIsActive = pathname === child.url.split('?')[0]
+                      return (
+                        <SidebarMenuSubItem key={child.key}>
+                          <SidebarMenuSubButton
+                            asChild
+                            isActive={childIsActive}
+                            className="data-[active]:bg-sidebar-accent data-[active]:text-sidebar-accent-foreground data-[active]:shadow-none data-[active]:ring-0 data-[active]:font-medium"
+                          >
+                            <a href={child.url}>
+                              {childIsActive ? (child.iconActive ?? child.icon) : child.icon}
+                              <span>{child.title}</span>
+                            </a>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      )
+                    })}
                   </SidebarMenuSub>
                 </CollapsibleContent>
               </SidebarMenuItem>
@@ -283,7 +288,7 @@ function SecondaryNav({ items }: { items: NavSecondaryItem[] }) {
 // ─── AppSidebar ───────────────────────────────────────────────────────────────
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user, toggleRole, surveyMode, setSurveyMode } = usePce()
+  const { user, toggleRole } = usePce()
   const [appearanceOpen, setAppearanceOpen] = React.useState(false)
   const navItems = user.role === "admin" ? NAV_ADMIN : NAV_FACULTY
 
@@ -305,6 +310,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   size="lg"
                   className="sidebar-brand-btn"
                   tooltip="Exxat Prism"
+                  aria-label="Exxat Prism — go to dashboard"
                 >
                   <motion.div
                     key="prism-logo"
@@ -353,8 +359,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SecondaryNav items={NAV_SECONDARY} />
             <NavUser
               user={navUser}
-              surveyMode={surveyMode}
-              onSurveyModeChange={setSurveyMode}
               extraMenuItems={
                 <>
                   <DropdownMenuSeparator />

@@ -2,9 +2,12 @@
 
 import { useState } from 'react'
 import {
-  Button,
   Badge,
+  Button,
   Checkbox,
+  Input,
+  InputGroup,
+  InputGroupAddon,
   LocalBanner,
   Avatar,
   AvatarFallback,
@@ -13,6 +16,7 @@ import {
   SelectContent,
   SelectItem,
   SelectValue,
+  ViewSegmentedControl,
 } from '@exxatdesignux/ui'
 import {
   MOCK_MASTER_COURSES,
@@ -21,9 +25,10 @@ import {
   type CourseOffering,
   type ProgramTerm,
 } from '@/lib/pce-mock-data'
-import { CourseManagementSheet } from '@/components/pce/course-management-sheet'
+import { CourseManagementDialog } from '@/components/pce/course-management-dialog'
+import { usePce } from '@/components/pce/pce-state'
 
-type ScopeMode = 'all' | 'didactic' | 'clinical' | 'custom'
+type TypeTab = 'all' | 'didactic' | 'clinical'
 
 interface StepDistributionProps {
   offeringsForTerm: CourseOffering[]
@@ -31,8 +36,11 @@ interface StepDistributionProps {
   excludedIds: Set<string>
   selectedTerm: ProgramTerm
   programName?: string
+  openDate?: Date
+  closeDate?: Date
   onToggleOffering: (id: string) => void
   onSetExcluded: (ids: Set<string>) => void
+  onApplyDatesToAll?: (open: Date | undefined, close: Date | undefined) => void
   onBack: () => void
   onNext: () => void
 }
@@ -57,127 +65,58 @@ function CourseTypeBadge({ type }: { type: 'didactic' | 'clinical' }) {
   )
 }
 
-// A single scope-selector card (radio-style)
-function ScopeCard({
-  selected,
-  title,
-  description,
-  count,
-  countLabel,
-  onClick,
-}: {
-  selected: boolean
-  title: string
-  description: string
-  count?: number
-  countLabel?: string
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={selected}
-      className="w-full flex items-center gap-4 text-left transition-colors"
-      style={{
-        padding: '14px 16px',
-        border: `1px solid ${selected ? 'var(--border)' : 'var(--border)'}`,
-        borderRadius: 'var(--radius)',
-        background: selected ? 'var(--card)' : 'transparent',
-        cursor: 'pointer',
-      }}
-      onClick={onClick}
-    >
-      {/* Radio indicator */}
-      <div
-        className="shrink-0 flex items-center justify-center rounded-full"
-        style={{
-          width: 16,
-          height: 16,
-          border: `2px solid ${selected ? 'var(--brand-color)' : 'var(--border-control-35)'}`,
-          background: selected ? 'var(--brand-color)' : 'transparent',
-          transition: 'background 120ms, border-color 120ms',
-        }}
-      >
-        {selected && (
-          <div
-            className="rounded-full"
-            style={{ width: 5, height: 5, background: 'var(--background)' }}
-          />
-        )}
-      </div>
-
-      {/* Text */}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold">{title}</p>
-        <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>{description}</p>
-      </div>
-
-      {/* Count */}
-      {count !== undefined && (
-        <Badge
-          variant="secondary"
-          className="rounded shrink-0"
-          style={{
-            fontSize: 12,
-            fontWeight: 500,
-            paddingInline: 8,
-            backgroundColor: selected ? 'var(--muted)' : 'transparent',
-            color: 'var(--muted-foreground)',
-            border: '1px solid var(--border)',
-          }}
-        >
-          {count} {countLabel ?? (count === 1 ? 'course' : 'courses')}
-        </Badge>
-      )}
-    </button>
-  )
-}
-
 export function StepDistribution({
   offeringsForTerm,
   selectedOfferings,
   excludedIds,
   selectedTerm,
   programName,
+  openDate,
+  closeDate,
   onToggleOffering,
   onSetExcluded,
+  onApplyDatesToAll,
   onBack,
   onNext,
 }: StepDistributionProps) {
-  const [scopeMode, setScopeMode] = useState<ScopeMode>('all')
+  const { surveys } = usePce()
+  const [typeTab, setTypeTab] = useState<TypeTab>('all')
   const [search, setSearch] = useState('')
   const [cohortFilter, setCohortFilter] = useState<string>('all')
-  const [rosterOffering, setRosterOffering] = useState<CourseOffering | null>(null)
-  const [rosterOpen, setRosterOpen] = useState(false)
+  const [manageOffering, setManageOffering] = useState<CourseOffering | null>(null)
+  const [manageOpen, setManageOpen] = useState(false)
+
+  // Duplicate CE survey check
+  const existingCourseCodes = new Set(
+    surveys
+      .filter(s =>
+        s.surveyType === 'course_evaluation' &&
+        s.term === selectedTerm.name &&
+        (s.status === 'active' || s.status === 'collecting' || s.status === 'scheduled')
+      )
+      .map(s => s.courseCode)
+  )
+  const duplicateOfferings = selectedOfferings.filter(o => {
+    const course = MOCK_MASTER_COURSES.find(c => c.id === o.masterCourseId)
+    return course && existingCourseCodes.has(course.code)
+  })
 
   const didacticOfferings = offeringsForTerm.filter(o => o.courseType === 'didactic')
   const clinicalOfferings = offeringsForTerm.filter(o => o.courseType === 'clinical')
-  const hasDidactic = didacticOfferings.length > 0
-  const hasClinical = clinicalOfferings.length > 0
-  const hasBothTypes = hasDidactic && hasClinical
-
-  function applyScope(mode: ScopeMode) {
-    setScopeMode(mode)
-    if (mode === 'all') {
-      onSetExcluded(new Set())
-    } else if (mode === 'didactic') {
-      onSetExcluded(new Set(clinicalOfferings.map(o => o.id)))
-    } else if (mode === 'clinical') {
-      onSetExcluded(new Set(didacticOfferings.map(o => o.id)))
-    } else {
-      // custom — start with all selected
-      onSetExcluded(new Set())
-    }
-  }
+  const hasBothTypes = didacticOfferings.length > 0 && clinicalOfferings.length > 0
 
   const cohortOptions = Array.from(
     new Set(offeringsForTerm.map(o => o.cohort).filter(Boolean))
   ).sort()
 
-  const filteredOfferings = offeringsForTerm.filter(offering => {
-    const matchesCohort = cohortFilter === 'all' || offering.cohort === cohortFilter
-    if (!matchesCohort) return false
+  const tabFiltered = offeringsForTerm.filter(o => {
+    if (typeTab === 'didactic') return o.courseType === 'didactic'
+    if (typeTab === 'clinical') return o.courseType === 'clinical'
+    return true
+  })
+
+  const filteredOfferings = tabFiltered.filter(offering => {
+    if (cohortFilter !== 'all' && offering.cohort !== cohortFilter) return false
     if (!search.trim()) return true
     const course = MOCK_MASTER_COURSES.find(c => c.id === offering.masterCourseId)
     const q = search.toLowerCase()
@@ -187,11 +126,31 @@ export function StepDistribution({
     )
   })
 
+  // Header checkbox state (over visible rows only)
+  const visibleSelectedCount = filteredOfferings.filter(o => !excludedIds.has(o.id)).length
+  const allVisibleSelected = filteredOfferings.length > 0 && visibleSelectedCount === filteredOfferings.length
+  const someVisibleSelected = visibleSelectedCount > 0 && !allVisibleSelected
+
+  function handleHeaderCheckbox() {
+    const next = new Set(excludedIds)
+    if (allVisibleSelected) {
+      filteredOfferings.forEach(o => next.add(o.id))
+    } else {
+      filteredOfferings.forEach(o => next.delete(o.id))
+    }
+    onSetExcluded(next)
+  }
+
   const noneSelected = selectedOfferings.length === 0
-  const canContinue = !noneSelected
+
+  const typeOptions = [
+    { value: 'all' as const, label: `All (${offeringsForTerm.length})` },
+    { value: 'didactic' as const, label: `Didactic (${didacticOfferings.length})` },
+    { value: 'clinical' as const, label: `Clinical (${clinicalOfferings.length})` },
+  ] as const
 
   return (
-    <div className="flex flex-col gap-6" style={{ maxWidth: 600 }}>
+    <div className="flex flex-col gap-5" style={{ maxWidth: 640 }}>
 
       {/* Header */}
       <div className="flex flex-col gap-1">
@@ -201,118 +160,91 @@ export function StepDistribution({
         </p>
       </div>
 
-      {/* Scope cards */}
-      <div
-        role="radiogroup"
-        aria-label="Course scope"
-        className="flex flex-col gap-2"
-      >
-        <ScopeCard
-          selected={scopeMode === 'all'}
-          title="All courses"
-          description="Every active course offering this term"
-          count={offeringsForTerm.length}
-          onClick={() => applyScope('all')}
-        />
+      {/* Warnings */}
+      {duplicateOfferings.length > 0 && (
+        <LocalBanner variant="warning">
+          {duplicateOfferings.length === 1
+            ? `${MOCK_MASTER_COURSES.find(c => c.id === duplicateOfferings[0].masterCourseId)?.code} already has an active survey this term.`
+            : `${duplicateOfferings.length} selected courses already have active surveys this term.`
+          }{' '}Pushing will create additional survey instances.
+        </LocalBanner>
+      )}
+      {noneSelected && (
+        <LocalBanner variant="warning">
+          At least one course must be selected to continue.
+        </LocalBanner>
+      )}
 
-        {hasBothTypes && (
-          <>
-            <ScopeCard
-              selected={scopeMode === 'didactic'}
-              title="Didactic courses only"
-              description="Clinical-tagged offerings excluded"
-              count={didacticOfferings.length}
-              onClick={() => applyScope('didactic')}
+      {/* Type filter + table */}
+      {offeringsForTerm.length === 0 ? (
+        <p className="text-sm py-8 text-center" style={{ color: 'var(--muted-foreground)' }}>
+          No active course offerings for this term.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {hasBothTypes && (
+            <ViewSegmentedControl
+              value={typeTab}
+              onValueChange={v => setTypeTab(v as TypeTab)}
+              options={typeOptions}
+              aria-label="Filter courses by type"
             />
-            <ScopeCard
-              selected={scopeMode === 'clinical'}
-              title="Clinical courses only"
-              description="Didactic-tagged offerings excluded"
-              count={clinicalOfferings.length}
-              onClick={() => applyScope('clinical')}
-            />
-          </>
-        )}
-
-        <ScopeCard
-          selected={scopeMode === 'custom'}
-          title="Custom selection"
-          description="Choose exactly which courses to include"
-          onClick={() => applyScope('custom')}
-        />
-      </div>
-
-      {/* Custom expansion — only when Custom selected */}
-      {scopeMode === 'custom' && (
-        <div className="flex flex-col gap-3">
-
-          {noneSelected && (
-            <LocalBanner variant="warning">
-              At least one course must be selected to continue.
-            </LocalBanner>
           )}
 
-          {/* Toolbar */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="outline" size="sm" onClick={() => onSetExcluded(new Set())}>
-              Select all
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => onSetExcluded(new Set(offeringsForTerm.map(o => o.id)))}>
-              Deselect all
-            </Button>
-            <div className="flex-1" />
-            {cohortOptions.length > 1 && (
-              <Select value={cohortFilter} onValueChange={setCohortFilter}>
-                <SelectTrigger className="h-8 text-xs" style={{ minWidth: 140 }} aria-label="Filter by cohort">
-                  <SelectValue placeholder="All cohorts" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All cohorts</SelectItem>
-                  {cohortOptions.map(c => (
-                    <SelectItem key={c} value={c!}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+          <div
+            className="flex flex-col rounded-xl border border-border overflow-hidden"
+            style={{ background: 'var(--card)' }}
+          >
+            {/* Toolbar */}
             <div
-              className="flex items-center gap-2 rounded-md"
+              className="flex items-center gap-2 flex-wrap"
               style={{
-                padding: '5px 10px',
-                border: '1px solid var(--border-control-35)',
-                background: 'var(--card)',
-                minWidth: 180,
+                padding: '8px 12px',
+                borderBottom: '1px solid var(--border)',
+                background: 'var(--muted)',
               }}
             >
-              <i
-                className="fa-light fa-magnifying-glass text-xs shrink-0"
-                aria-hidden="true"
-                style={{ color: 'var(--muted-foreground)' }}
+              <Checkbox
+                checked={allVisibleSelected ? true : someVisibleSelected ? 'indeterminate' : false}
+                onCheckedChange={handleHeaderCheckbox}
+                aria-label="Select or deselect all visible courses"
               />
-              <input
-                type="text"
-                placeholder="Search courses…"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="bg-transparent text-sm outline-none flex-1"
-                style={{ color: 'var(--foreground)' }}
-                aria-label="Search courses"
-              />
+              <span className="text-xs tabular-nums" style={{ color: 'var(--muted-foreground)' }}>
+                {selectedOfferings.length} of {offeringsForTerm.length} selected
+              </span>
+              <div className="flex-1" />
+              {cohortOptions.length > 1 && (
+                <Select value={cohortFilter} onValueChange={setCohortFilter}>
+                  <SelectTrigger className="h-8 text-xs" style={{ minWidth: 130 }} aria-label="Filter by cohort">
+                    <SelectValue placeholder="All cohorts" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All cohorts</SelectItem>
+                    {cohortOptions.map(c => (
+                      <SelectItem key={c} value={c!}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <InputGroup className="h-8" style={{ minWidth: 180, maxWidth: 220 }}>
+                <Input
+                  placeholder="Search courses…"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  aria-label="Search courses"
+                  className="text-xs"
+                />
+                <InputGroupAddon align="inline-end">
+                  <i className="fa-light fa-magnifying-glass" aria-hidden="true" />
+                </InputGroupAddon>
+              </InputGroup>
             </div>
-          </div>
 
-          {/* Course list */}
-          {offeringsForTerm.length === 0 ? (
-            <p className="text-sm py-6 text-center" style={{ color: 'var(--muted-foreground)' }}>
-              No active course offerings for this term.
-            </p>
-          ) : (
-            <div
-              className="flex flex-col rounded-xl border border-border overflow-hidden"
-              style={{ background: 'var(--card)' }}
-            >
+            {/* Rows — scrollable */}
+            <div style={{ maxHeight: 320, overflowY: 'auto' }}>
               {filteredOfferings.length === 0 ? (
-                <p className="text-sm py-6 text-center" style={{ color: 'var(--muted-foreground)' }}>
-                  No courses match your search.
+                <p className="text-sm py-8 text-center" style={{ color: 'var(--muted-foreground)' }}>
+                  No courses match your filters.
                 </p>
               ) : (
                 filteredOfferings.map((offering, i) => {
@@ -327,7 +259,7 @@ export function StepDistribution({
                       <label
                         className="flex items-center gap-3 cursor-pointer"
                         style={{
-                          padding: '10px 14px',
+                          padding: '10px 12px',
                           borderBottom: isLast && !isUnassigned ? 'none' : '1px solid var(--border)',
                           background: checked ? 'var(--card)' : 'var(--muted)',
                         }}
@@ -368,6 +300,7 @@ export function StepDistribution({
                               <span style={{ color: 'var(--chart-4)' }}>Unassigned faculty</span>
                             )}
                             {' '}· {offering.enrolledCount} enrolled
+                            {offering.cohort && <> · {offering.cohort}</>}
                           </span>
                         </div>
 
@@ -375,7 +308,11 @@ export function StepDistribution({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={e => { e.preventDefault(); setRosterOffering(offering); setRosterOpen(true) }}
+                            onClick={e => {
+                              e.preventDefault()
+                              setManageOffering(offering)
+                              setManageOpen(true)
+                            }}
                             aria-label={`Manage ${course?.code}`}
                           >
                             <i className="fa-light fa-sliders" aria-hidden="true" style={{ fontSize: 12 }} />
@@ -388,7 +325,7 @@ export function StepDistribution({
                         <div
                           className="flex items-start gap-2"
                           style={{
-                            padding: '6px 14px 8px 52px',
+                            padding: '6px 12px 8px 52px',
                             background: 'var(--muted)',
                             borderBottom: isLast ? 'none' : '1px solid var(--border)',
                           }}
@@ -408,14 +345,9 @@ export function StepDistribution({
                 })
               )}
             </div>
-          )}
+          </div>
         </div>
       )}
-
-      {/* Summary */}
-      <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-        {selectedOfferings.length} of {offeringsForTerm.length} course{offeringsForTerm.length !== 1 ? 's' : ''} selected
-      </p>
 
       {/* Nav */}
       <div className="border-t border-border pt-4 flex items-center justify-between">
@@ -423,16 +355,19 @@ export function StepDistribution({
           <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 12 }} />
           Back
         </Button>
-        <Button variant="default" size="sm" disabled={!canContinue} onClick={onNext}>
+        <Button variant="default" size="sm" disabled={noneSelected} onClick={onNext}>
           Continue
           <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 12 }} />
         </Button>
       </div>
 
-      <CourseManagementSheet
-        offering={rosterOffering}
-        open={rosterOpen}
-        onOpenChange={setRosterOpen}
+      <CourseManagementDialog
+        offering={manageOffering}
+        open={manageOpen}
+        onOpenChange={setManageOpen}
+        globalOpenDate={openDate}
+        globalCloseDate={closeDate}
+        onApplyDatesToAll={onApplyDatesToAll}
       />
     </div>
   )

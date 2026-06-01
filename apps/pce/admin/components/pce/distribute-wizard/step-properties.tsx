@@ -2,6 +2,7 @@
 
 import {
   Button,
+  Checkbox,
   Select,
   SelectTrigger,
   SelectContent,
@@ -9,17 +10,19 @@ import {
   SelectValue,
   Textarea,
 } from '@exxatdesignux/ui'
-import { MOCK_PROGRAM_TERMS, MOCK_PROGRAMS } from '@/lib/pce-mock-data'
+import { MOCK_PROGRAM_TERMS } from '@/lib/pce-mock-data'
 
 export type SurveyVisibility = 'program' | 'admin_only'
 
 interface StepPropertiesProps {
   surveyMode: 'course_evaluation' | 'general'
-  programId: string
+  surveyTitle: string
+  keepAnonymous: boolean
   termId: string
   description: string
   visibility: SurveyVisibility
-  onProgramChange: (v: string) => void
+  onSurveyTitleChange: (v: string) => void
+  onKeepAnonymousChange: (v: boolean) => void
   onTermChange: (v: string) => void
   onDescriptionChange: (v: string) => void
   onVisibilityChange: (v: SurveyVisibility) => void
@@ -48,11 +51,13 @@ const VISIBILITY_OPTIONS: Array<{
 
 export function StepProperties({
   surveyMode,
-  programId,
+  surveyTitle,
+  keepAnonymous,
   termId,
   description,
   visibility,
-  onProgramChange,
+  onSurveyTitleChange,
+  onKeepAnonymousChange,
   onTermChange,
   onDescriptionChange,
   onVisibilityChange,
@@ -62,7 +67,7 @@ export function StepProperties({
   const selectedTerm = allTerms.find(t => t.id === termId) ?? null
   const academicYear = selectedTerm?.academicYear ?? ''
   const isCE = surveyMode === 'course_evaluation'
-  const canContinue = isCE ? !!programId && !!termId : !!programId
+  const canContinue = isCE ? !!surveyTitle.trim() && !!termId : !!surveyTitle.trim()
 
   return (
     <div className="flex flex-col gap-6" style={{ maxWidth: 600 }}>
@@ -76,54 +81,60 @@ export function StepProperties({
         </p>
       </div>
 
-      {/* Program — required for all modes */}
+      {/* Survey title */}
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="program-select" className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
-          Program <span style={{ color: 'var(--destructive)' }}>*</span>
+        <label htmlFor="survey-title" className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
+          Survey title <span style={{ color: 'var(--destructive)' }}>*</span>
         </label>
-        <Select value={programId} onValueChange={onProgramChange}>
-          <SelectTrigger id="program-select" aria-label="Select program">
-            <SelectValue placeholder="Choose a program…" />
-          </SelectTrigger>
-          <SelectContent>
-            {MOCK_PROGRAMS.map(p => (
-              <SelectItem key={p.id} value={p.id}>
-                {p.name} ({p.code})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <input
+          id="survey-title"
+          type="text"
+          value={surveyTitle}
+          onChange={e => onSurveyTitleChange(e.target.value)}
+          placeholder="e.g. Fall 2026 Course Evaluations"
+          className="w-full rounded-md text-sm"
+          style={{
+            padding: '7px 10px',
+            border: '1px solid var(--border-control-35)',
+            background: 'var(--card)',
+            color: 'var(--foreground)',
+            outline: 'none',
+          }}
+          aria-label="Survey title"
+          maxLength={120}
+        />
       </div>
 
       {/* Term — CE only */}
       {isCE && (
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="term-select" className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
-            Term <span style={{ color: 'var(--destructive)' }}>*</span>
-          </label>
-          <Select value={termId} onValueChange={onTermChange}>
-            <SelectTrigger id="term-select" aria-label="Select term">
-              <SelectValue placeholder="Choose a term…" />
-            </SelectTrigger>
-            <SelectContent>
-              {allTerms.map(t => (
-                <SelectItem key={t.id} value={t.id}>
-                  {t.name} · {t.academicYear}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+        <>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="term-select" className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
+              Term <span style={{ color: 'var(--destructive)' }}>*</span>
+            </label>
+            <Select value={termId} onValueChange={onTermChange}>
+              <SelectTrigger id="term-select" aria-label="Select term">
+                <SelectValue placeholder="Choose a term…" />
+              </SelectTrigger>
+              <SelectContent>
+                {allTerms.map(t => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.name} · {t.academicYear}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-      {/* Academic year (derived, read-only) — CE only */}
-      {isCE && academicYear && (
-        <div className="flex flex-col gap-1">
-          <p className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
-            Academic year
-          </p>
-          <p className="text-sm">{academicYear}</p>
-        </div>
+          {academicYear && (
+            <div className="flex flex-col gap-1">
+              <p className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
+                Academic year
+              </p>
+              <p className="text-sm">{academicYear}</p>
+            </div>
+          )}
+        </>
       )}
 
       {/* Description */}
@@ -197,6 +208,30 @@ export function StepProperties({
             )
           })}
         </div>
+      </div>
+
+      {/* Keep responses anonymous */}
+      <div className="flex flex-col gap-2">
+        <p className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
+          Response settings
+        </p>
+        <label
+          className="flex items-start gap-3 cursor-pointer rounded-xl border border-border"
+          style={{ padding: '14px 16px', background: 'var(--card)' }}
+        >
+          <Checkbox
+            checked={keepAnonymous}
+            onCheckedChange={v => onKeepAnonymousChange(!!v)}
+            aria-label="Keep responses anonymous"
+            className="mt-0.5"
+          />
+          <div className="flex flex-col gap-0.5">
+            <p className="text-sm font-semibold">Keep responses anonymous</p>
+            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+              Respondent identities will never be linked to their answers. Instructors see aggregate results only.
+            </p>
+          </div>
+        </label>
       </div>
 
       {/* Divider + actions */}

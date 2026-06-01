@@ -373,7 +373,7 @@ export function useTableState<TData extends Record<string, unknown>>(
     return [...leftPinned, ...free, ...rightPinned]
       .map(k => columns.find(c => c.key === k))
       .filter((c): c is ColumnDef<TData> => !!c)
-      .filter(c => !hiddenCols.has(c.key))
+      .filter(c => !hiddenCols.has(c.key) && !c.hidden)
   }, [colOrder, colPins, hiddenCols, columns])
 
   // ── Column actions ────────────────────────────────────────────────────────

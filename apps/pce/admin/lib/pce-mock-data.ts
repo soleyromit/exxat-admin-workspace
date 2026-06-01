@@ -420,13 +420,15 @@ const INSTRUCTORS: Record<string, PceInstructor> = {
   chen:     { id: 'f2', name: 'Dr. Kevin Chen',     initials: 'KC', role: 'guest'   },
   williams: { id: 'f3', name: 'Dr. Maria Williams', initials: 'MW', role: 'primary' },
   kim:      { id: 'f4', name: 'Dr. James Kim',      initials: 'JK', role: 'primary' },
+  gomez:    { id: 'f5', name: 'Dr. Rachel Gomez',   initials: 'RG', role: 'primary' },
+  hassan:   { id: 'f6', name: 'Dr. Omar Hassan',    initials: 'OH', role: 'primary' },
 }
 
 export const MOCK_SURVEYS: PceSurvey[] = [
   {
     id: 's1',
-    courseCode: 'BIO 201',
-    courseName: 'Cellular Biology',
+    courseCode: 'DPT-501',
+    courseName: 'Human Anatomy & Kinesiology',
     term: 'Spring 2026',
     cohort: 'Class of 2027',
     courseType: 'didactic',
@@ -449,8 +451,8 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   },
   {
     id: 's2',
-    courseCode: 'NURS 310',
-    courseName: 'Advanced Patient Care',
+    courseCode: 'DPT-601',
+    courseName: 'Clinical Practicum I',
     term: 'Spring 2026',
     cohort: 'Class of 2026',
     courseType: 'clinical',
@@ -473,8 +475,8 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   },
   {
     id: 's3',
-    courseCode: 'MED 410',
-    courseName: 'Clinical Pharmacology',
+    courseCode: 'DPT-602',
+    courseName: 'Clinical Practicum II',
     term: 'Spring 2026',
     cohort: 'Class of 2026',
     courseType: 'clinical',
@@ -499,8 +501,8 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   },
   {
     id: 's4',
-    courseCode: 'PHYS 101',
-    courseName: 'Medical Physics',
+    courseCode: 'DPT-504',
+    courseName: 'Neuroanatomy',
     term: 'Fall 2025',
     cohort: 'Class of 2028',
     courseType: 'didactic',
@@ -526,8 +528,8 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   },
   {
     id: 's5',
-    courseCode: 'NURS 210',
-    courseName: 'Fundamentals of Nursing',
+    courseCode: 'DPT-502',
+    courseName: 'Physiology & Pathophysiology',
     term: 'Spring 2026',
     cohort: 'Class of 2028',
     courseType: 'didactic',
@@ -550,8 +552,8 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   },
   {
     id: 's6',
-    courseCode: 'CHEM 401',
-    courseName: 'Advanced Biochemistry',
+    courseCode: 'DPT-520',
+    courseName: 'Neurological Physical Therapy',
     term: 'Summer 2026',
     cohort: 'Class of 2027',
     courseType: 'didactic',
@@ -570,8 +572,8 @@ export const MOCK_SURVEYS: PceSurvey[] = [
   },
   {
     id: 's7',
-    courseCode: 'BIO 301',
-    courseName: 'Molecular Genetics',
+    courseCode: 'DPT-511',
+    courseName: 'Musculoskeletal Physical Therapy II',
     term: 'Spring 2026',
     cohort: 'Class of 2027',
     courseType: 'didactic',
@@ -739,14 +741,26 @@ export interface ProgramTerm {
 }
 
 export const MOCK_MASTER_COURSES: MasterCourse[] = [
-  { id: 'mc1', code: 'BIO 201',   name: 'Cellular Biology',         department: 'Biological Sciences', status: 'active',   lastEdited: '2026-04-12', editedBy: 'Dr. Thompson' },
-  { id: 'mc2', code: 'NURS 310',  name: 'Advanced Patient Care',    department: 'Nursing',             status: 'active',   lastEdited: '2026-03-22', editedBy: 'Dr. Thompson' },
-  { id: 'mc3', code: 'MED 410',   name: 'Clinical Pharmacology',    department: 'Medicine',            status: 'active',   lastEdited: '2026-02-08', editedBy: 'Dr. Thompson' },
-  { id: 'mc4', code: 'PHYS 101',  name: 'Medical Physics',          department: 'Foundations',         status: 'active',   lastEdited: '2025-11-30', editedBy: 'Dr. Thompson' },
-  { id: 'mc5', code: 'NURS 210',  name: 'Fundamentals of Nursing',  department: 'Nursing',             status: 'active',   lastEdited: '2026-01-15', editedBy: 'Dr. Thompson' },
-  { id: 'mc6', code: 'MED 101',   name: 'Introduction to Medicine', department: 'Medicine',            status: 'active',   lastEdited: '2026-01-15', editedBy: 'Dr. Thompson' },
-  { id: 'mc7', code: 'BIO 301',   name: 'Molecular Genetics',       department: 'Biological Sciences', status: 'active',   lastEdited: '2026-04-20', editedBy: 'Dr. Thompson' },
-  { id: 'mc8', code: 'PHARM 210', name: 'Pharmacotherapy I',        department: 'Pharmacy',            status: 'inactive', lastEdited: '2024-08-01', editedBy: 'Dr. Thompson' },
+  // Year 1 — Foundations (Didactic)
+  { id: 'mc1',  code: 'DPT-501', name: 'Human Anatomy & Kinesiology',      department: 'Core Sciences',    status: 'active',   lastEdited: '2026-04-12', editedBy: 'Dr. Chen'     },
+  { id: 'mc2',  code: 'DPT-502', name: 'Physiology & Pathophysiology',      department: 'Core Sciences',    status: 'active',   lastEdited: '2026-03-22', editedBy: 'Dr. Williams' },
+  { id: 'mc3',  code: 'DPT-503', name: 'Biomechanics',                      department: 'Core Sciences',    status: 'active',   lastEdited: '2026-02-08', editedBy: 'Dr. Kim'      },
+  { id: 'mc4',  code: 'DPT-504', name: 'Neuroanatomy',                      department: 'Core Sciences',    status: 'active',   lastEdited: '2025-11-30', editedBy: 'Dr. Kim'      },
+  { id: 'mc5',  code: 'DPT-505', name: 'Pharmacology for Physical Therapists', department: 'Clinical Sciences', status: 'active', lastEdited: '2026-01-15', editedBy: 'Dr. Gomez'  },
+  // Year 2 — Clinical Sciences (Didactic)
+  { id: 'mc6',  code: 'DPT-510', name: 'Musculoskeletal Physical Therapy I',   department: 'Physical Therapy', status: 'active', lastEdited: '2026-01-20', editedBy: 'Dr. Patel'   },
+  { id: 'mc7',  code: 'DPT-511', name: 'Musculoskeletal Physical Therapy II',  department: 'Physical Therapy', status: 'active', lastEdited: '2026-04-20', editedBy: 'Dr. Patel'   },
+  { id: 'mc8',  code: 'DPT-520', name: 'Neurological Physical Therapy',        department: 'Physical Therapy', status: 'active', lastEdited: '2026-03-05', editedBy: 'Dr. Williams' },
+  { id: 'mc9',  code: 'DPT-530', name: 'Cardiopulmonary Physical Therapy',     department: 'Physical Therapy', status: 'active', lastEdited: '2026-02-18', editedBy: 'Dr. Kim'      },
+  { id: 'mc10', code: 'DPT-540', name: 'Differential Diagnosis',               department: 'Clinical Sciences', status: 'active', lastEdited: '2026-01-10', editedBy: 'Dr. Hassan'  },
+  { id: 'mc11', code: 'DPT-550', name: 'Evidence-Based Practice & Research',   department: 'Research',         status: 'active', lastEdited: '2026-03-28', editedBy: 'Dr. Williams' },
+  // Specialty Electives (Didactic)
+  { id: 'mc12', code: 'DPT-611', name: 'Pediatric Physical Therapy',           department: 'Physical Therapy', status: 'active', lastEdited: '2026-01-08', editedBy: 'Dr. Gomez'   },
+  { id: 'mc13', code: 'DPT-612', name: 'Geriatric Physical Therapy',           department: 'Physical Therapy', status: 'active', lastEdited: '2026-02-14', editedBy: 'Dr. Hassan'  },
+  // Clinical Education (Clinical)
+  { id: 'mc14', code: 'DPT-601', name: 'Clinical Practicum I',                 department: 'Clinical Education', status: 'active', lastEdited: '2026-04-01', editedBy: 'Dr. Patel'  },
+  { id: 'mc15', code: 'DPT-602', name: 'Clinical Practicum II',                department: 'Clinical Education', status: 'active', lastEdited: '2026-04-01', editedBy: 'Dr. Hassan' },
+  { id: 'mc16', code: 'DPT-603', name: 'Clinical Practicum III (Full-Time)',   department: 'Clinical Education', status: 'active', lastEdited: '2025-12-10', editedBy: 'Dr. Patel'  },
 ]
 
 export const MOCK_PROGRAM_TERMS: ProgramTerm[] = [
@@ -988,26 +1002,53 @@ export const MOCK_STANDARDS: Standard[] = [
 ]
 
 export const MOCK_COURSE_OFFERINGS: CourseOffering[] = [
-  { id: 'co1', masterCourseId: 'mc1', termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f2', collaboratorIds: ['f1'], enrolledCount: 50, status: 'active',    courseType: 'didactic'  },
-  { id: 'co2', masterCourseId: 'mc2', termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f3', collaboratorIds: ['f1'], enrolledCount: 50, status: 'active',    courseType: 'clinical'  },
-  { id: 'co3', masterCourseId: 'mc3', termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 50, status: 'completed',  courseType: 'clinical'  },
-  { id: 'co4', masterCourseId: 'mc4', termId: 'pt2', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 50, status: 'archived'   },
-  { id: 'co5', masterCourseId: 'mc5', termId: 'pt1', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 30, status: 'active',    courseType: 'didactic'  },
-  { id: 'co6', masterCourseId: 'mc6', termId: 'pt1', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 10, status: 'active',    courseType: 'didactic'  },
-  { id: 'co7', masterCourseId: 'mc7', termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f2', collaboratorIds: [],     enrolledCount: 35, status: 'planned',   courseType: 'didactic'  },
-  { id: 'co8', masterCourseId: 'mc1', termId: 'pt5', cohort: 'Class of 2028', primaryFacultyId: 'f2', collaboratorIds: ['f1'], enrolledCount: 50, status: 'planned',   courseType: 'didactic'  },
+  // ── Spring 2026 (pt1) ─────────────────────────────────────────────────────
+  { id: 'co1',  masterCourseId: 'mc1',  termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f2', collaboratorIds: ['f1'], enrolledCount: 50, status: 'active',    courseType: 'didactic' },
+  { id: 'co2',  masterCourseId: 'mc14', termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f1', collaboratorIds: ['f6'], enrolledCount: 48, status: 'active',    courseType: 'clinical' },
+  { id: 'co3',  masterCourseId: 'mc15', termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 46, status: 'completed', courseType: 'clinical' },
+  { id: 'co4',  masterCourseId: 'mc4',  termId: 'pt2', cohort: 'Class of 2027', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 52, status: 'archived',  courseType: 'didactic' },
+  { id: 'co5',  masterCourseId: 'mc2',  termId: 'pt1', cohort: 'Class of 2028', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 44, status: 'active',    courseType: 'didactic' },
+  { id: 'co6',  masterCourseId: 'mc6',  termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f1', collaboratorIds: ['f2'], enrolledCount: 50, status: 'active',    courseType: 'didactic' },
+  { id: 'co7',  masterCourseId: 'mc7',  termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f2', collaboratorIds: [],     enrolledCount: 50, status: 'active',    courseType: 'didactic' },
+  { id: 'co8',  masterCourseId: 'mc8',  termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 48, status: 'active',    courseType: 'didactic' },
+
+  // ── Fall 2026 (pt5) — full term ──────────────────────────────────────────
+  // Year 1 (Class of 2029) — Foundations
+  { id: 'co9',  masterCourseId: 'mc1',  termId: 'pt5', cohort: 'Class of 2029', primaryFacultyId: 'f2', collaboratorIds: ['f1'], enrolledCount: 48, status: 'active',    courseType: 'didactic' },
+  { id: 'co10', masterCourseId: 'mc2',  termId: 'pt5', cohort: 'Class of 2029', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 48, status: 'active',    courseType: 'didactic' },
+  { id: 'co11', masterCourseId: 'mc3',  termId: 'pt5', cohort: 'Class of 2029', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 46, status: 'active',    courseType: 'didactic' },
+  { id: 'co12', masterCourseId: 'mc5',  termId: 'pt5', cohort: 'Class of 2029', primaryFacultyId: 'f5', collaboratorIds: [],     enrolledCount: 48, status: 'active',    courseType: 'didactic' },
+  // Year 2 (Class of 2028) — Clinical Sciences
+  { id: 'co13', masterCourseId: 'mc6',  termId: 'pt5', cohort: 'Class of 2028', primaryFacultyId: 'f1', collaboratorIds: ['f2'], enrolledCount: 44, status: 'active',    courseType: 'didactic' },
+  { id: 'co14', masterCourseId: 'mc8',  termId: 'pt5', cohort: 'Class of 2028', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 44, status: 'active',    courseType: 'didactic' },
+  { id: 'co15', masterCourseId: 'mc9',  termId: 'pt5', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 42, status: 'active',    courseType: 'didactic' },
+  { id: 'co16', masterCourseId: 'mc12', termId: 'pt5', cohort: 'Class of 2028', primaryFacultyId: '',   collaboratorIds: [],     enrolledCount: 40, status: 'active',    courseType: 'didactic' },
+  // Year 3 (Class of 2027) — Clinical Practicums
+  { id: 'co17', masterCourseId: 'mc14', termId: 'pt5', cohort: 'Class of 2027', primaryFacultyId: 'f1', collaboratorIds: ['f6'], enrolledCount: 14, status: 'active',    courseType: 'clinical' },
+  { id: 'co18', masterCourseId: 'mc15', termId: 'pt5', cohort: 'Class of 2027', primaryFacultyId: 'f6', collaboratorIds: [],     enrolledCount: 16, status: 'active',    courseType: 'clinical' },
+  { id: 'co19', masterCourseId: 'mc11', termId: 'pt5', cohort: 'Class of 2027', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 44, status: 'active',    courseType: 'didactic' },
 ]
 
 // Maps CourseOffering ID → enrolled Student IDs visible in this demo.
 // The real system enrolledCount may be higher — shown as "X of N enrolled in demo".
 export const MOCK_COURSE_ENROLLMENTS: Record<string, string[]> = {
-  co1: ['st6', 'st7', 'st8', 'st9'],
-  co2: ['st1', 'st2', 'st3', 'st4'],
-  co3: ['st1', 'st2', 'st3', 'st4'],
-  co5: ['st11', 'st12', 'st13', 'st14', 'st15'],
-  co6: ['st11', 'st12', 'st13'],
-  co7: ['st6', 'st7', 'st8', 'st9'],
-  co8: ['st11', 'st12', 'st13', 'st14', 'st15'],
+  // Spring 2026 (pt1)
+  co1: ['st6', 'st7', 'st8', 'st9'],                  // DPT-501, Class of 2027
+  co2: ['st1', 'st2', 'st3', 'st4'],                  // DPT-601, Class of 2026
+  co3: ['st1', 'st2', 'st3', 'st4'],                  // DPT-602, Class of 2026
+  co5: ['st11', 'st12', 'st13', 'st14', 'st15'],      // DPT-502, Class of 2028
+  co6: ['st6', 'st7', 'st8', 'st9'],                  // DPT-510, Class of 2027
+  co7: ['st6', 'st7', 'st8', 'st9'],                  // DPT-511, Class of 2027
+  co8: ['st1', 'st2', 'st3', 'st4'],                  // DPT-520, Class of 2026
+  // Fall 2026 (pt5) — Year 2, Class of 2028
+  co13: ['st11', 'st12', 'st13', 'st14', 'st15'],     // DPT-510
+  co14: ['st11', 'st12', 'st13', 'st14'],             // DPT-520
+  co15: ['st11', 'st12', 'st13'],                     // DPT-530
+  co16: ['st11', 'st12', 'st13', 'st14'],             // DPT-611 (unassigned faculty demo)
+  // Fall 2026 (pt5) — Year 3, Class of 2027
+  co17: ['st6', 'st7', 'st8'],                        // DPT-601
+  co18: ['st6', 'st7', 'st8', 'st9'],                 // DPT-602
+  co19: ['st6', 'st7', 'st8', 'st9'],                 // DPT-550
 }
 
 export const SECTION_LABELS: Record<TemplateSection, string> = {

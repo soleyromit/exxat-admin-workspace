@@ -2,15 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
   Button,
   Input,
   Label,
-  Separator,
 } from '@exxatdesignux/ui'
 import { MOCK_SUBJECTS } from '@/lib/pce-mock-data'
 import type { SubjectKey, PceSubject } from '@/lib/pce-mock-data'
@@ -18,7 +17,6 @@ import type { SubjectKey, PceSubject } from '@/lib/pce-mock-data'
 interface SubjectPickerSheetProps {
   open: boolean
   onOpenChange: (v: boolean) => void
-  /** Subject keys already used in this template — shown as disabled */
   existingSubjectKeys: SubjectKey[]
   onConfirm: (subjectKey: SubjectKey, title: string) => void
 }
@@ -33,7 +31,6 @@ export function SubjectPickerSheet({
   const [titleInput, setTitleInput] = useState('')
   const [search, setSearch] = useState('')
 
-  // Reset state when sheet opens
   useEffect(() => {
     if (open) {
       setSelected(null)
@@ -42,7 +39,6 @@ export function SubjectPickerSheet({
     }
   }, [open])
 
-  // Pre-fill title when subject is selected
   function handleSelect(subject: PceSubject) {
     setSelected(subject.key)
     setTitleInput(subject.label)
@@ -69,44 +65,35 @@ export function SubjectPickerSheet({
   const programSubjects = filteredSubjects.filter(s => !s.isGeneral)
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" style={{ width: 480, maxWidth: '100vw' }}>
-        <SheetHeader>
-          <SheetTitle>Add section</SheetTitle>
-        </SheetHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="sm:max-w-lg flex flex-col gap-0 p-0"
+        style={{ maxHeight: '80vh' }}
+      >
+        {/* ── Fixed header ── */}
+        <DialogHeader className="shrink-0 px-5 pt-5 pb-3">
+          <DialogTitle>Add section</DialogTitle>
+          <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
+            Choose what this section will evaluate.
+          </p>
+          <Input
+            autoFocus
+            placeholder="Search subjects…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="mt-3 h-8 text-sm"
+          />
+        </DialogHeader>
 
-        <div className="flex flex-col gap-4 overflow-y-auto flex-1 px-4">
-          {/* Subject selection */}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="subject-search">
-              Subject <span style={{ color: 'var(--destructive)' }}>*</span>
-            </Label>
-            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-              What entity will this section evaluate?
-            </p>
-
-            {/* Search */}
-            <div className="relative mt-1">
-              <Input
-                id="subject-search"
-                placeholder="Search subjects…"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* General group */}
+        {/* ── Scrollable subject list ── */}
+        <div className="flex-1 overflow-y-auto px-5 py-2 space-y-4" style={{ minHeight: 0 }}>
           {generalSubjects.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <p
-                className="text-xs font-semibold tracking-wide uppercase"
-                style={{ color: 'var(--muted-foreground)' }}
-              >
+            <div className="flex flex-col gap-1.5">
+              <p className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
                 General
               </p>
               {generalSubjects.map(subject => (
-                <SubjectCard
+                <SubjectRow
                   key={subject.key}
                   subject={subject}
                   isSelected={selected === subject.key}
@@ -117,17 +104,13 @@ export function SubjectPickerSheet({
             </div>
           )}
 
-          {/* From Your Program group */}
           {programSubjects.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <p
-                className="text-xs font-semibold tracking-wide uppercase"
-                style={{ color: 'var(--muted-foreground)' }}
-              >
+            <div className="flex flex-col gap-1.5">
+              <p className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
                 From your program
               </p>
               {programSubjects.map(subject => (
-                <SubjectCard
+                <SubjectRow
                   key={subject.key}
                   subject={subject}
                   isSelected={selected === subject.key}
@@ -139,53 +122,53 @@ export function SubjectPickerSheet({
           )}
 
           {filteredSubjects.length === 0 && (
-            <p className="text-sm text-center py-6" style={{ color: 'var(--muted-foreground)' }}>
+            <p className="text-sm text-center py-8" style={{ color: 'var(--muted-foreground)' }}>
               No subjects match your search.
             </p>
           )}
+        </div>
 
-          {/* Section title override */}
-          <div className="flex flex-col gap-1.5 mt-2">
-            <Label htmlFor="section-title">Section title <span className="text-xs font-normal" style={{ color: 'var(--muted-foreground)' }}>(optional)</span></Label>
+        {/* ── Fixed footer: title + actions ── */}
+        <div className="shrink-0 border-t border-border px-5 pt-4 pb-2">
+          <div className="mb-4">
+            <Label htmlFor="section-title" className="text-xs font-medium mb-1.5 block"
+                   style={{ color: 'var(--muted-foreground)' }}>
+              Section title
+              <span className="ml-1 font-normal" style={{ color: 'var(--muted-foreground)' }}>
+                (optional)
+              </span>
+            </Label>
             <Input
               id="section-title"
-              placeholder={`e.g. "Faculty Evaluation"`}
+              placeholder={selected ? 'Customise the section name…' : 'Select a subject first'}
               value={titleInput}
               onChange={e => setTitleInput(e.target.value)}
               disabled={!selected}
+              className="h-8 text-sm"
             />
           </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button variant="default" size="sm" disabled={!selected} onClick={handleConfirm}>
+              Add section
+            </Button>
+          </DialogFooter>
         </div>
-
-        <Separator />
-
-        <SheetFooter className="flex flex-row items-center justify-between gap-2">
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            variant="default"
-            size="sm"
-            disabled={!selected}
-            onClick={handleConfirm}
-          >
-            Add section
-            <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   )
 }
 
-interface SubjectCardProps {
+interface SubjectRowProps {
   subject: PceSubject
   isSelected: boolean
   isDisabled: boolean
   onSelect: () => void
 }
 
-function SubjectCard({ subject, isSelected, isDisabled, onSelect }: SubjectCardProps) {
+function SubjectRow({ subject, isSelected, isDisabled, onSelect }: SubjectRowProps) {
   return (
     <div
       role="radio"
@@ -194,29 +177,20 @@ function SubjectCard({ subject, isSelected, isDisabled, onSelect }: SubjectCardP
       tabIndex={isDisabled ? -1 : 0}
       onClick={isDisabled ? undefined : onSelect}
       onKeyDown={isDisabled ? undefined : (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          onSelect()
-        }
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect() }
       }}
-      className="flex items-start justify-between gap-3 rounded-lg border p-3 transition-colors"
+      className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 transition-colors"
       style={{
         borderColor: isSelected ? 'var(--brand-color)' : 'var(--border)',
-        backgroundColor: isSelected
-          ? 'var(--brand-tint)'
-          : isDisabled
-          ? 'var(--muted)'
-          : 'var(--card)',
+        background: isSelected ? 'var(--brand-tint)' : isDisabled ? 'var(--muted)' : 'var(--card)',
         opacity: isDisabled ? 0.5 : 1,
         pointerEvents: isDisabled ? 'none' : 'auto',
         cursor: isDisabled ? 'default' : 'pointer',
       }}
     >
-      <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-        <p
-          className="text-sm font-medium leading-tight"
-          style={{ color: isSelected ? 'var(--brand-color)' : 'var(--foreground)' }}
-        >
+      <div className="flex flex-col gap-0.5 min-w-0">
+        <p className="text-sm font-medium leading-tight"
+           style={{ color: isSelected ? 'var(--brand-color)' : 'var(--foreground)' }}>
           {subject.label}
         </p>
         {subject.description && (
@@ -224,44 +198,25 @@ function SubjectCard({ subject, isSelected, isDisabled, onSelect }: SubjectCardP
             {subject.description}
           </p>
         )}
-        {/* Zero prismCount warning */}
         {!subject.isGeneral && subject.prismCount === 0 && !isDisabled && (
           <p className="text-xs mt-0.5" style={{ color: 'var(--chart-4)' }}>
-            No {subject.label.toLowerCase()}s assigned yet. Will auto-suppress.
+            No {subject.label.toLowerCase()}s assigned yet — will auto-suppress.
           </p>
         )}
       </div>
 
       <div className="shrink-0 text-right">
         {isDisabled ? (
-          <span
-            className="text-xs font-medium"
-            style={{ color: 'var(--muted-foreground)' }}
-          >
-            Already added
-          </span>
+          <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Already added</span>
         ) : subject.isGeneral ? (
-          <span
-            className="inline-flex items-center rounded text-xs px-2 py-0.5 font-medium"
-            style={{
-              backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
-              color: 'var(--brand-color)',
-            }}
-          >
+          <span className="inline-flex items-center rounded text-xs px-2 py-0.5 font-medium"
+                style={{ background: 'var(--brand-tint)', color: 'var(--brand-color)' }}>
             Always visible
           </span>
         ) : subject.prismCount === 0 ? (
-          <span
-            className="text-xs font-medium"
-            style={{ color: 'var(--chart-4)' }}
-          >
-            0 in Prism
-          </span>
+          <span className="text-xs" style={{ color: 'var(--chart-4)' }}>0 in Prism</span>
         ) : (
-          <span
-            className="text-xs"
-            style={{ color: 'var(--muted-foreground)' }}
-          >
+          <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
             {subject.prismCount} in Prism
           </span>
         )}

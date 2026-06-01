@@ -34,8 +34,7 @@ export interface PushWizardConfig {
   emailBody: string
   reminderEnabled: boolean
   reminderDaysBefore: number
-  instructorAccess: boolean
-  coordinatorAccess: boolean
+  reportAccess: Record<string, string[]>
 }
 
 interface PceState {
@@ -71,9 +70,6 @@ interface PceState {
   pushSurveyBatch: (config: PushWizardConfig) => void
   // Moderation action
   enableResults: (surveyId: string) => void
-  // Survey mode toggle
-  surveyMode: 'course_evaluation' | 'general'
-  setSurveyMode: (mode: 'course_evaluation' | 'general') => void
 }
 
 const PceContext = createContext<PceState | null>(null)
@@ -83,8 +79,6 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
   const [surveys, setSurveys] = useState<PceSurvey[]>(MOCK_SURVEYS)
   const [templates, setTemplates] = useState<PceTemplate[]>(MOCK_TEMPLATES)
   const [hiddenComments, setHiddenComments] = useState<Record<string, number[]>>({})
-  const [surveyMode, setSurveyMode] = useState<'course_evaluation' | 'general'>('course_evaluation')
-
   const toggleRole = useCallback(() => {
     setUser(u => ({ ...u, role: u.role === 'admin' ? 'faculty' : 'admin' }))
   }, [])
@@ -451,7 +445,6 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
       addSectionQuestion, updateSectionQuestion, deleteSectionQuestion, reorderSectionQuestions,
       pushSurveyBatch,
       enableResults,
-      surveyMode, setSurveyMode,
     }}>
       {children}
     </PceContext.Provider>

@@ -185,8 +185,10 @@ export default function RunEvaluationPage() {
       emailBody: 'Dear Student, your evaluation is now available. Please complete it before the deadline.',
       reminderEnabled: false,
       reminderDaysBefore: 3,
-      instructorAccess: true,
-      coordinatorAccess: true,
+      reportAccess: {
+        course_instructor: ['subject_faculty', 'program_director', 'department_chair'],
+        course_coordinator: ['subject_faculty', 'program_director', 'department_chair'],
+      },
     })
     setPhase('success')
   }

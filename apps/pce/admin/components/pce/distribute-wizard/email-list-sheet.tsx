@@ -51,7 +51,7 @@ export function EmailListSheet({ open, onOpenChange, contacts, onCommit }: Email
         <SheetHeader className="flex flex-row items-center gap-3 shrink-0 border-b border-border" style={{ padding: '14px 20px' }}>
           <SheetTitle className="flex-1 text-base font-semibold">Email List</SheetTitle>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
+            <Button variant="ghost" size="sm">
               <i className="fa-light fa-arrow-up-from-bracket" aria-hidden="true" style={{ fontSize: 12 }} />
               Upload CSV
             </Button>

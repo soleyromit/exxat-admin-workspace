@@ -6,7 +6,9 @@ import {
   AvatarFallback,
   Badge,
   Button,
+  DatePickerField,
   Input,
+  LocalBanner,
   Sheet,
   SheetContent,
   SheetHeader,
@@ -29,18 +31,33 @@ interface CourseManagementSheetProps {
   offering: CourseOffering | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  globalOpenDate?: Date
+  globalCloseDate?: Date
+  onApplyDatesToAll?: (open: Date | undefined, close: Date | undefined) => void
 }
 
 export function CourseManagementSheet({
   offering,
   open,
   onOpenChange,
+  globalOpenDate,
+  globalCloseDate,
+  onApplyDatesToAll,
 }: CourseManagementSheetProps) {
   const [facultySearch, setFacultySearch] = useState('')
   const [addedFacultyIds, setAddedFacultyIds] = useState<Set<string>>(new Set())
   const [removedCollaboratorIds, setRemovedCollaboratorIds] = useState<Set<string>>(new Set())
   const [studentSearch, setStudentSearch] = useState('')
   const [excludedStudentIds, setExcludedStudentIds] = useState<Set<string>>(new Set())
+  const [courseOpenDate, setCourseOpenDate] = useState<Date | undefined>(globalOpenDate)
+  const [courseCloseDate, setCourseCloseDate] = useState<Date | undefined>(globalCloseDate)
+  const [applyToAllDone, setApplyToAllDone] = useState(false)
+
+  function handleApplyToAll() {
+    onApplyDatesToAll?.(courseOpenDate, courseCloseDate)
+    setApplyToAllDone(true)
+    setTimeout(() => setApplyToAllDone(false), 2500)
+  }
 
   if (!offering) return null
 
@@ -128,6 +145,9 @@ export function CourseManagementSheet({
             </TabsTrigger>
             <TabsTrigger value="students" className="gap-1.5">
               Students {countChip(includedCount)}
+            </TabsTrigger>
+            <TabsTrigger value="dates">
+              Dates
             </TabsTrigger>
           </TabsList>
 
@@ -290,6 +310,49 @@ export function CourseManagementSheet({
             )}
 
             {/* Padding at scroll bottom */}
+            <div style={{ height: 16 }} />
+          </TabsContent>
+
+          {/* ── Dates tab ───────────────────────────────────────────────────── */}
+          <TabsContent value="dates" className="flex-1 overflow-y-auto" style={{ padding: '16px 20px 0' }}>
+            <p className="text-xs mb-4" style={{ color: 'var(--muted-foreground)' }}>
+              Override survey open and close dates for this course only, or apply to all courses in this cycle.
+            </p>
+
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
+                  Opens on
+                </label>
+                <DatePickerField value={courseOpenDate} onChange={setCourseOpenDate} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
+                  Closes on
+                </label>
+                <DatePickerField value={courseCloseDate} onChange={setCourseCloseDate} />
+              </div>
+
+              <div className="border-t border-border pt-4 flex flex-col gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={handleApplyToAll}
+                  disabled={!courseOpenDate && !courseCloseDate}
+                >
+                  <i className="fa-light fa-arrow-right-to-bracket" aria-hidden="true" style={{ fontSize: 11 }} />
+                  Apply dates to all courses
+                </Button>
+                {applyToAllDone && (
+                  <p className="text-xs text-center" style={{ color: 'var(--chart-2)' }}>
+                    <i className="fa-light fa-circle-check mr-1" aria-hidden="true" />
+                    Applied to all courses.
+                  </p>
+                )}
+              </div>
+            </div>
+
             <div style={{ height: 16 }} />
           </TabsContent>
         </Tabs>
