@@ -42,7 +42,8 @@ TRIGGERS: list[tuple[str, str]] = [
 
     # Design intent (priority 4) — broader noun set covers real prompt shapes
     # like "design the question navigator", not just "design a new screen"
-    (r"\b(design|build|create|add|wire(\s+up)?)\s+(a|an|the)?\s*(new\s+)?(\w+\s+)?(screen|page|view|dashboard|component|feature|flow|navigator|panel|widget|sidebar|toolbar|header|footer|modal|drawer|menu|tabs?|table|form|button|card|chart|graph|layout|UI|interface)\b", "intent:design"),
+    # (\w+\s+){0,3} allows up to 3 words before the noun (e.g. "course overview page")
+    (r"\b(design|build|create|add|wire(\s+up)?)\s+(a|an|the)?\s*(new\s+)?(\w+\s+){0,3}(screen|page|view|dashboard|component|feature|flow|navigator|panel|widget|sidebar|toolbar|header|footer|modal|drawer|menu|tabs?|table|form|button|card|chart|graph|layout|UI|interface)\b", "intent:design"),
     (r"\b(redesign|refactor|rework|polish|improve|tighten)\s+(this|the|that)\b", "intent:redesign"),
 
     # DS reference lazy-load (priority 4.5) — when prompt suggests UI/DS work,
@@ -54,6 +55,15 @@ TRIGGERS: list[tuple[str, str]] = [
 
     # Library refs (priority 5)
     (r"\b(React|Next\.?js|Tailwind|Recharts|Radix|shadcn|TanStack|Framer|Zod|Zustand|Vercel AI SDK)\b", "lib:context7"),
+
+    # Pre-task declaration (Pattern J, priority 5.5) — fires on any direct UI edit intent
+    # not already covered by intent:design / intent:redesign
+    (r"\b(fix|update|edit|change|tweak)\s+(the\s+|this\s+|that\s+)?(\w+\s+)?(page|component|screen|file|layout|header|table|form|drawer|dialog|sheet|sidebar|modal|card|tab|nav)\b", "precheck:pre-task-declaration"),
+
+    # DS sweep (priority 5.6) — auto-suggest when user describes DS/WCAG gaps or asks to audit
+    (r"\b(audit|sweep|upgrade|migrate|check)\s+(all\s+|the\s+|every\s+)?(\w+\s+)?(pages?|components?|app|DS|design system|adoption)\b", "sweep:ds-check"),
+    (r"\b(DS|design system).{0,30}(not (being )?followed|gap|violation|adoption|issue|isn.?t (being )?followed)\b", "sweep:ds-check"),
+    (r"\b(not following|not being followed|doesn.?t follow|missing|forgot(ten)?)\s+(the\s+)?(DS|design system|WCAG|accessibility)\b", "sweep:ds-check"),
 
     # Code work (priority 6)
     (r"\b(fix|debug|broken|why is(n'?t)?|not working|throws?|crashes?)\b", "work:debug"),
@@ -101,6 +111,8 @@ ACTION_DESCRIPTIONS: dict[str, str] = {
     "rule:cite-and-surface": "User cited a workspace rule (DS-NNN / A11Y-NNN / VIZ-NNN / CONTENT-NNN / INTAKE-NNN). Read the rule's text from /DESIGN.md §4 and surface it in your response so the user knows you understand which rule binds. If they're proposing an override, route to intake:override.",
     "intake:research-insight": "Invoke the research-intake skill (.claude/skills/research-intake/SKILL.md) with action=insight — saves raw insight to apps/<product>/docs/research/insights/, extracts ADR-worthy decisions + persona updates + glossary candidates. Confirm-before-write each artifact.",
     "intake:research-theme": "Invoke the research-intake skill with action=theme — saves to research/insights/themes/, captures supporting quote count + sample quotes + implications.",
+    "precheck:pre-task-declaration": "REQUIRED before any code. Read the target file(s) first, then output: File: <path> | Current DS violations: <list or none> | Hand-rolled with DS equivalent: <list or none> | WCAG issues (static read): <list or none>. No code until this block is written. See CLAUDE.md pre-task section and verification-discipline.md Pattern J.",
+    "sweep:ds-check": "Run the ds-sweep skill (.claude/skills/ds-sweep/SKILL.md) for the active product before making changes. Output the prioritized backlog (CRITICAL / HIGH / MEDIUM / LOW). Ask which items to fix first. See .claude/skills/ds-sweep/SKILL.md for the full protocol.",
 }
 
 
@@ -332,6 +344,12 @@ def main() -> None:
     if ("intent:design" in seen or "intent:redesign" in seen) and "lazy:ds-reference" not in seen:
         matches.append("lazy:ds-reference")
         seen.add("lazy:ds-reference")
+
+    # Coupled: design/redesign/direct-edit intent → pre-task declaration required.
+    # Pattern J: read the file and declare current violations before writing any code.
+    if ("intent:design" in seen or "intent:redesign" in seen or "precheck:pre-task-declaration" in seen) and "precheck:pre-task-declaration" not in seen:
+        matches.append("precheck:pre-task-declaration")
+        seen.add("precheck:pre-task-declaration")
 
     freshness = _registry_freshness_block()
     cascade = _cascade_check(prompt)
