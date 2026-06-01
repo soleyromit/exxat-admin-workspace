@@ -30,7 +30,7 @@ export function StepSuccess({
       role="status"
       aria-live="polite"
       className="flex flex-col items-center gap-8 py-16 text-center"
-      style={{ maxWidth: 480, marginInline: 'auto' }}
+      style={{ maxWidth: 560, marginInline: 'auto' }}
     >
       {/* Icon */}
       <div
@@ -52,30 +52,38 @@ export function StepSuccess({
         </h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
           {openLabel
-            ? `Opens ${openLabel}. Students will receive an invitation email on that date.`
-            : 'Students will receive an invitation email on the open date.'}
+            ? `Opens ${openLabel}. Invitation emails will be sent to configured recipients on that date.`
+            : 'Invitation emails will be sent to configured recipients on the open date.'}
         </p>
       </div>
 
-      {/* Course code pills */}
-      <div className="flex flex-wrap gap-1.5 justify-center">
-        {selectedOfferings.map(offering => {
-          const course = MOCK_MASTER_COURSES.find(c => c.id === offering.masterCourseId)
-          return (
-            <span
-              key={offering.id}
-              className="rounded-full text-xs font-medium"
-              style={{
-                padding: '3px 10px',
-                background: 'var(--muted)',
-                color: 'var(--muted-foreground)',
-                border: '1px solid var(--border)',
-              }}
-            >
-              {course?.code ?? offering.id}
-            </span>
-          )
-        })}
+      {/* Course table */}
+      <div
+        className="w-full rounded-md"
+        style={{ border: '1px solid var(--border)', maxHeight: 220, overflowY: 'auto', overflowX: 'hidden' }}
+      >
+        <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+          <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+            <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--muted)' }}>
+              <th className="text-left font-medium px-3 py-2" style={{ color: 'var(--muted-foreground)', width: '20%', whiteSpace: 'nowrap' }}>Code</th>
+              <th className="text-left font-medium px-3 py-2" style={{ color: 'var(--muted-foreground)' }}>Course name</th>
+            </tr>
+          </thead>
+          <tbody>
+            {selectedOfferings.map((offering, i) => {
+              const course = MOCK_MASTER_COURSES.find(c => c.id === offering.masterCourseId)
+              return (
+                <tr
+                  key={offering.id}
+                  style={{ borderTop: i > 0 ? '1px solid var(--border)' : undefined }}
+                >
+                  <td className="text-left px-3 py-2 font-medium" style={{ whiteSpace: 'nowrap' }}>{course?.code ?? offering.id}</td>
+                  <td className="text-left px-3 py-2" style={{ color: 'var(--muted-foreground)' }}>{course?.name ?? '—'}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
 
       {/* Actions */}

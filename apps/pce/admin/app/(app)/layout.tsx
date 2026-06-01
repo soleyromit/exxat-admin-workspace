@@ -2,7 +2,7 @@ import * as React from "react"
 import { cookies } from "next/headers"
 import { ThemeProvider } from "@/components/theme-provider"
 import { ProductProvider } from "@/contexts/product-context"
-import { ProductRouteSync } from "@/contexts/product-route-sync"
+import { ProductRouteSyncClient } from "@/components/product-route-sync-client"
 import { ProductSwitchOverlay } from "@/components/product-switch-overlay"
 import { ThemeColorSync } from "@/components/theme-color-sync"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -35,7 +35,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <PceProvider>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
         <ProductProvider>
-          <ProductRouteSync />
+          <ProductRouteSyncClient />
           <ProductSwitchOverlay />
           <ThemeColorSync />
           <TooltipProvider delayDuration={300}>

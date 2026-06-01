@@ -1940,7 +1940,7 @@ export default function AssessmentBuilderClient() {
 
           {/* Right panel — 3 states: health / settings / section */}
           <div style={{ width: 280, minWidth: 280, borderLeft: '1px solid var(--border)', flexShrink: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            {(rightPanelMode === 'health' || (rightPanelMode === 'section' && !activeSectionId)) && (
+            {(rightPanelMode === 'health' || (rightPanelMode === 'section' && (!activeSectionId || !activeAsmt.sections.find(s => s.id === activeSectionId)))) && (
               <HealthPanel
                 activeAsmt={activeAsmt}
                 objectives={courseObjectives.filter(o => o.courseId === activeAsmt.courseId)}
@@ -1957,7 +1957,8 @@ export default function AssessmentBuilderClient() {
               />
             )}
             {rightPanelMode === 'section' && activeSectionId && (() => {
-              const currentSection = activeAsmt.sections.find(s => s.id === activeSectionId)!
+              const currentSection = activeAsmt.sections.find(s => s.id === activeSectionId)
+              if (!currentSection) return null
               return (
                 <Step2SectionSettingsPanel
                   section={currentSection}
