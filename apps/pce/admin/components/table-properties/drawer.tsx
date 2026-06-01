@@ -639,7 +639,7 @@ function FilterCard({
                           checked ? "bg-primary border-primary text-primary-foreground" : "border-input bg-background"
                         )}
                       >
-                        {checked && <i className="fa-solid fa-check text-current" style={{ fontSize: "7px" }} />}
+                        {checked && <i className="fa-solid fa-check text-current" style={{ fontSize: "7px" }} aria-hidden="true" />}
                       </span>
                       <span className="text-foreground">{opt.label}</span>
                     </div>

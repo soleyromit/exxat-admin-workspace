@@ -257,6 +257,7 @@ export default function TemplateEditorPage() {
         title={t.name}
         actions={headerActions}
       />
+      <h1 className="sr-only">{t.name}</h1>
 
       {saved && (
         <div style={{ paddingInline: 24, paddingTop: 10 }}>

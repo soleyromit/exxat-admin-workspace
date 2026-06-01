@@ -143,6 +143,7 @@ export default function AdminLandingPage() {
   return (
     <>
       <SiteHeader title="Admin · Setup" />
+      <h1 className="sr-only">Admin Setup</h1>
 
       <div className="flex-1 overflow-auto" style={{ padding: '28px 28px 28px' }}>
         <div className="max-w-5xl flex flex-col gap-5">

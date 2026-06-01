@@ -205,6 +205,7 @@ export default function RunEvaluationPage() {
     <>
       {/* Header */}
       <SiteHeader title="Run Evaluation" />
+      <h1 className="sr-only">Run Evaluation</h1>
       <div className="flex items-center gap-3 border-b border-border shrink-0" style={{ padding: '14px 28px 14px' }}>
         <nav className="flex items-center gap-1.5 text-sm" aria-label="Breadcrumb">
           <Link href="/surveys" className="text-muted-foreground hover:text-foreground transition-colors">

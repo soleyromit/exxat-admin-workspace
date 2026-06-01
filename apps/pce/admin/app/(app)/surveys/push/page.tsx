@@ -225,6 +225,7 @@ function PushSurveyInner() {
         breadcrumbs={[{ label: 'Surveys', href: '/surveys' }]}
         title="Set up surveys"
       />
+      <h1 className="sr-only">Set up surveys</h1>
 
       {/* Two-panel body */}
       <div className="flex flex-1 overflow-hidden">
