@@ -1,5 +1,5 @@
 // src/components/QuestionNavPanel.tsx
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { Question } from '../data/questions';
 import { ExamSection } from '../data/assessments';
@@ -77,10 +77,17 @@ export function QuestionNavPanel({
     return 'unanswered';
   }, [isLocked, currentIndex, flaggedSet, answeredSet]);
 
-  // ── Groups — flat across all sections ────────────────────────────────────────
-  const flaggedGroup    = questions.map((_, i) => i).filter(i => !isLocked(i) && flaggedSet.has(i));
-  const unansweredGroup = questions.map((_, i) => i).filter(i => isLocked(i) || (!flaggedSet.has(i) && !answeredSet.has(i)));
-  const answeredGroup   = questions.map((_, i) => i).filter(i => !isLocked(i) && !flaggedSet.has(i) && answeredSet.has(i));
+  // ── Groups — flat across all sections (single pass) ─────────────────────────
+  const { flaggedGroup, unansweredGroup, answeredGroup } = useMemo(() => {
+    const flagged: number[] = [], unanswered: number[] = [], answered: number[] = [];
+    questions.forEach((_, i) => {
+      if (isLocked(i))          { unanswered.push(i); return; }
+      if (flaggedSet.has(i))    { flagged.push(i);    return; }
+      if (answeredSet.has(i))   { answered.push(i);   return; }
+      unanswered.push(i);
+    });
+    return { flaggedGroup: flagged, unansweredGroup: unanswered, answeredGroup: answered };
+  }, [questions, flaggedSet, answeredSet, isLocked]);
 
   // ── Keyboard: Escape closes ───────────────────────────────────────────────────
   useEffect(() => {
@@ -91,8 +98,11 @@ export function QuestionNavPanel({
     return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
 
+  // Sync roving focus when current question changes externally
+  useEffect(() => { setFocusedTileIndex(currentIndex); }, [currentIndex]);
+
   // ── Tooltip helpers ───────────────────────────────────────────────────────────
-  function showTip(tile: HTMLButtonElement, index: number) {
+  const showTip = useCallback((tile: HTMLButtonElement, index: number) => {
     clearTimeout(hideTimer.current);
     const status = getTileStatus(index);
     const sectionLabel =
@@ -109,11 +119,11 @@ export function QuestionNavPanel({
       const top = rect.top - tipH - TIP_GAP;
       setTip(prev => ({ ...prev, left, top }));
     });
-  }
+  }, [getTileStatus, sections, questions]);
 
-  function hideTip() {
+  const hideTip = useCallback(() => {
     hideTimer.current = setTimeout(() => setTip(prev => ({ ...prev, visible: false })), 80);
-  }
+  }, []);
 
   useEffect(() => () => clearTimeout(hideTimer.current), []);
 
@@ -141,7 +151,7 @@ export function QuestionNavPanel({
           border: '2px solid var(--border)',
           color: 'var(--muted-foreground)',
           cursor: 'not-allowed',
-          opacity: 0.7,
+          opacity: 0.4,
         };
       default: // unanswered
         return { ...base, background: 'var(--muted)', color: 'var(--muted-foreground)', border: '2px solid transparent' };
@@ -184,16 +194,16 @@ export function QuestionNavPanel({
 
   function badgeStyle(status: TileStatus): React.CSSProperties {
     const base: React.CSSProperties = {
-      fontSize: 11, fontWeight: 700,
+      fontSize: 12, fontWeight: 700,
       display: 'inline-flex', alignItems: 'center', gap: 3,
       borderRadius: 4, padding: '2px 6px', marginTop: 4,
     };
     switch (status) {
-      case 'flagged':  return { ...base, background: '#451a03', color: '#fde68a' };
-      case 'answered': return { ...base, background: '#14532d', color: '#86efac' };
-      case 'current':  return { ...base, background: '#4c0519', color: '#fda4af' };
-      case 'locked':   return { ...base, background: '#1e293b', color: '#64748b' };
-      default:         return { ...base, background: '#1e293b', color: '#94a3b8', border: '1px solid #334155' };
+      case 'flagged':  return { ...base, background: 'var(--state-flagged-bg)', color: 'var(--state-flagged-text)' };
+      case 'answered': return { ...base, background: 'var(--muted)', color: 'var(--foreground)' };
+      case 'current':  return { ...base, background: 'var(--brand-color)', color: '#fff' };
+      case 'locked':   return { ...base, background: 'var(--muted)', color: 'var(--muted-foreground)' };
+      default:         return { ...base, background: 'var(--muted)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' };
     }
   }
 
@@ -209,6 +219,7 @@ export function QuestionNavPanel({
         tabIndex={isFocused ? 0 : -1}
         aria-label={label}
         aria-disabled={status === 'locked' ? true : undefined}
+        disabled={status === 'locked'}
         className="exam-focus"
         style={tileStyle(status)}
         onClick={() => { if (!isLocked(index)) onNavigate(index); }}
@@ -230,7 +241,7 @@ export function QuestionNavPanel({
     group: number[],
   ) {
     if (group.length === 0) return null;
-    const groupId = `nav-group-${title.toLowerCase()}`;
+    const groupId = `nav-group-${title.replace(/\s+/g, '-').toLowerCase()}`;
     return (
       <div role="group" aria-labelledby={groupId} style={{ marginBottom: 14 }}>
         <div
@@ -275,7 +286,7 @@ export function QuestionNavPanel({
         fontSize: 12, lineHeight: 1.45,
         boxShadow: '0 6px 20px rgba(0,0,0,0.22)',
       }}>
-        <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--muted-foreground)', marginBottom: 4 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--background)', opacity: 0.65, marginBottom: 4 }}>
           {tip.status === 'current'
             ? `Question ${tip.qnum} — Current`
             : tip.sectionLabel && tip.status === 'locked'
@@ -300,7 +311,6 @@ export function QuestionNavPanel({
       {tooltip}
       <nav
         aria-label="Question navigator"
-        role="complementary"
         style={{
           width: 192, flexShrink: 0,
           background: 'var(--card)',
