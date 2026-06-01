@@ -1,0 +1,349 @@
+// src/components/QuestionNavPanel.tsx
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import ReactDOM from 'react-dom';
+import { Question } from '../data/questions';
+import { ExamSection } from '../data/assessments';
+
+export interface QuestionNavPanelProps {
+  questions: Question[];
+  currentIndex: number;
+  answeredSet: Set<number>;
+  flaggedSet: Set<number>;
+  sections?: ExamSection[];
+  highestReachedIndex: number;
+  onNavigate: (index: number) => void;
+  onClose: () => void;
+}
+
+type TileStatus = 'current' | 'flagged' | 'answered' | 'unanswered' | 'locked';
+
+interface TipState {
+  visible: boolean;
+  left: number;
+  top: number;
+  qnum: number;
+  title: string;
+  status: TileStatus;
+  sectionLabel: string;
+}
+
+const TIP_WIDTH = 200;
+const TIP_GAP = 8;
+
+function getSectionIndex(sections: ExamSection[], index: number): number {
+  let cum = 0;
+  for (let i = 0; i < sections.length; i++) {
+    cum += sections[i].questionCount;
+    if (index < cum) return i;
+  }
+  return sections.length - 1;
+}
+
+function truncate(text: string, max = 120): string {
+  return text.length > max ? text.slice(0, max).trimEnd() + '…' : text;
+}
+
+export function QuestionNavPanel({
+  questions,
+  currentIndex,
+  answeredSet,
+  flaggedSet,
+  sections,
+  highestReachedIndex,
+  onNavigate,
+  onClose,
+}: QuestionNavPanelProps) {
+  const [focusedTileIndex, setFocusedTileIndex] = useState(currentIndex);
+  const [tip, setTip] = useState<TipState>({
+    visible: false, left: 0, top: 0,
+    qnum: 0, title: '', status: 'unanswered', sectionLabel: '',
+  });
+  const tileRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
+  const tipRef = useRef<HTMLDivElement>(null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // ── Locked detection ─────────────────────────────────────────────────────────
+  const isLocked = useCallback((index: number): boolean => {
+    if (!sections?.length) return false;
+    return getSectionIndex(sections, index) > getSectionIndex(sections, highestReachedIndex);
+  }, [sections, highestReachedIndex]);
+
+  // ── Tile status ───────────────────────────────────────────────────────────────
+  const getTileStatus = useCallback((index: number): TileStatus => {
+    if (isLocked(index)) return 'locked';
+    if (index === currentIndex) return 'current';
+    if (flaggedSet.has(index)) return 'flagged';
+    if (answeredSet.has(index)) return 'answered';
+    return 'unanswered';
+  }, [isLocked, currentIndex, flaggedSet, answeredSet]);
+
+  // ── Groups — flat across all sections ────────────────────────────────────────
+  const flaggedGroup    = questions.map((_, i) => i).filter(i => !isLocked(i) && flaggedSet.has(i));
+  const unansweredGroup = questions.map((_, i) => i).filter(i => isLocked(i) || (!flaggedSet.has(i) && !answeredSet.has(i)));
+  const answeredGroup   = questions.map((_, i) => i).filter(i => !isLocked(i) && !flaggedSet.has(i) && answeredSet.has(i));
+
+  // ── Keyboard: Escape closes ───────────────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  // ── Tooltip helpers ───────────────────────────────────────────────────────────
+  function showTip(tile: HTMLButtonElement, index: number) {
+    clearTimeout(hideTimer.current);
+    const status = getTileStatus(index);
+    const sectionLabel =
+      sections?.length
+        ? `Section ${getSectionIndex(sections, index) + 1}`
+        : '';
+    // Position: needs two-pass (show offscreen first to measure height)
+    setTip({ visible: true, left: -9999, top: -9999, qnum: index + 1, title: truncate(questions[index].text), status, sectionLabel });
+    requestAnimationFrame(() => {
+      const rect = tile.getBoundingClientRect();
+      const tipH = tipRef.current?.offsetHeight ?? 72;
+      let left = rect.left + rect.width / 2 - TIP_WIDTH / 2;
+      left = Math.max(8, Math.min(left, window.innerWidth - TIP_WIDTH - 8));
+      const top = rect.top - tipH - TIP_GAP;
+      setTip(prev => ({ ...prev, left, top }));
+    });
+  }
+
+  function hideTip() {
+    hideTimer.current = setTimeout(() => setTip(prev => ({ ...prev, visible: false })), 80);
+  }
+
+  useEffect(() => () => clearTimeout(hideTimer.current), []);
+
+  // ── Tile style ────────────────────────────────────────────────────────────────
+  function tileStyle(status: TileStatus): React.CSSProperties {
+    const base: React.CSSProperties = {
+      width: 28, height: 28, borderRadius: 6,
+      fontSize: 12, fontWeight: 700,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      cursor: 'pointer', flexShrink: 0,
+      transition: 'transform 0.1s',
+      userSelect: 'none',
+    };
+    switch (status) {
+      case 'current':
+        return { ...base, background: 'var(--brand-color)', color: '#fff', boxShadow: '0 0 0 3px var(--brand-tint)', border: '2px solid transparent' };
+      case 'flagged':
+        return { ...base, background: 'var(--state-flagged-bg)', color: 'var(--state-flagged-text)', border: '2px solid transparent' };
+      case 'answered':
+        return { ...base, background: 'transparent', border: '2px solid var(--border)', color: 'var(--muted-foreground)' };
+      case 'locked':
+        return {
+          ...base,
+          background: 'repeating-linear-gradient(45deg, var(--muted) 0px 3px, var(--border) 3px 5px)',
+          border: '2px solid var(--border)',
+          color: 'var(--muted-foreground)',
+          cursor: 'not-allowed',
+          opacity: 0.7,
+        };
+      default: // unanswered
+        return { ...base, background: 'var(--muted)', color: 'var(--muted-foreground)', border: '2px solid transparent' };
+    }
+  }
+
+  // ── Arrow-key nav within a group ──────────────────────────────────────────────
+  function handleGroupKeyDown(e: React.KeyboardEvent, group: number[], index: number) {
+    const pos = group.indexOf(index);
+    if (pos === -1) return;
+    let next: number | undefined;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      next = group[pos + 1];
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      next = group[pos - 1];
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (!isLocked(index)) onNavigate(index);
+      return;
+    } else {
+      return;
+    }
+    if (next !== undefined) {
+      e.preventDefault();
+      setFocusedTileIndex(next);
+      tileRefs.current.get(next)?.focus();
+    }
+  }
+
+  // ── Tooltip badge label ───────────────────────────────────────────────────────
+  function badgeLabel(status: TileStatus, sectionLabel: string): string {
+    switch (status) {
+      case 'flagged':  return '⚑ Flagged for review';
+      case 'answered': return '✓ Answered';
+      case 'current':  return '● Viewing now';
+      case 'locked':   return `🔒 Locked · ${sectionLabel}`;
+      default:         return '○ Not answered';
+    }
+  }
+
+  function badgeStyle(status: TileStatus): React.CSSProperties {
+    const base: React.CSSProperties = {
+      fontSize: 11, fontWeight: 700,
+      display: 'inline-flex', alignItems: 'center', gap: 3,
+      borderRadius: 4, padding: '2px 6px', marginTop: 4,
+    };
+    switch (status) {
+      case 'flagged':  return { ...base, background: '#451a03', color: '#fde68a' };
+      case 'answered': return { ...base, background: '#14532d', color: '#86efac' };
+      case 'current':  return { ...base, background: '#4c0519', color: '#fda4af' };
+      case 'locked':   return { ...base, background: '#1e293b', color: '#64748b' };
+      default:         return { ...base, background: '#1e293b', color: '#94a3b8', border: '1px solid #334155' };
+    }
+  }
+
+  // ── Render tile ───────────────────────────────────────────────────────────────
+  function renderTile(index: number, group: number[]) {
+    const status = getTileStatus(index);
+    const isFocused = focusedTileIndex === index;
+    const label = `Question ${index + 1}, ${status === 'current' ? 'current question' : status}`;
+    return (
+      <button
+        key={index}
+        ref={el => { if (el) tileRefs.current.set(index, el); else tileRefs.current.delete(index); }}
+        tabIndex={isFocused ? 0 : -1}
+        aria-label={label}
+        aria-disabled={status === 'locked' ? true : undefined}
+        className="exam-focus"
+        style={tileStyle(status)}
+        onClick={() => { if (!isLocked(index)) onNavigate(index); }}
+        onFocus={() => setFocusedTileIndex(index)}
+        onMouseEnter={e => showTip(e.currentTarget, index)}
+        onMouseLeave={hideTip}
+        onBlur={hideTip}
+        onKeyDown={e => handleGroupKeyDown(e, group, index)}
+      >
+        {index + 1}
+      </button>
+    );
+  }
+
+  // ── Render group ──────────────────────────────────────────────────────────────
+  function renderGroup(
+    title: string,
+    icon: string | null,
+    group: number[],
+  ) {
+    if (group.length === 0) return null;
+    const groupId = `nav-group-${title.toLowerCase()}`;
+    return (
+      <div role="group" aria-labelledby={groupId} style={{ marginBottom: 14 }}>
+        <div
+          id={groupId}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '0 12px 6px',
+          }}
+        >
+          {icon && <span aria-hidden="true" style={{ fontSize: 11 }}>{icon}</span>}
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-foreground)' }}>{title}</span>
+          <span style={{
+            marginLeft: 'auto', fontSize: 11, fontWeight: 600,
+            color: 'var(--muted-foreground)',
+            background: 'var(--muted)', borderRadius: 10, padding: '1px 6px',
+          }}>{group.length}</span>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '0 12px' }}>
+          {group.map(i => renderTile(i, group))}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Portal tooltip ────────────────────────────────────────────────────────────
+  const tooltip = tip.visible ? ReactDOM.createPortal(
+    <div
+      ref={tipRef}
+      style={{
+        position: 'fixed',
+        left: tip.left,
+        top: tip.top,
+        width: TIP_WIDTH,
+        zIndex: 9999,
+        pointerEvents: 'none',
+      }}
+    >
+      <div style={{
+        background: 'var(--foreground)',
+        color: 'var(--background)',
+        borderRadius: 8, padding: '9px 11px',
+        fontSize: 12, lineHeight: 1.45,
+        boxShadow: '0 6px 20px rgba(0,0,0,0.22)',
+      }}>
+        <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--muted-foreground)', marginBottom: 4 }}>
+          {tip.status === 'current'
+            ? `Question ${tip.qnum} — Current`
+            : tip.sectionLabel && tip.status === 'locked'
+            ? `Question ${tip.qnum} · ${tip.sectionLabel}`
+            : `Question ${tip.qnum}`}
+        </div>
+        <div style={{ fontWeight: 500, marginBottom: 4 }}>{tip.title}</div>
+        <div style={badgeStyle(tip.status)}>{badgeLabel(tip.status, tip.sectionLabel)}</div>
+      </div>
+      <div style={{
+        width: 8, height: 5, margin: '0 auto',
+        background: 'var(--foreground)',
+        clipPath: 'polygon(0 0, 100% 0, 50% 100%)',
+      }} />
+    </div>,
+    document.body
+  ) : null;
+
+  // ── Panel ─────────────────────────────────────────────────────────────────────
+  return (
+    <>
+      {tooltip}
+      <nav
+        aria-label="Question navigator"
+        role="complementary"
+        style={{
+          width: 192, flexShrink: 0,
+          background: 'var(--card)',
+          borderLeft: '1px solid var(--border)',
+          display: 'flex', flexDirection: 'column',
+        }}
+      >
+        {/* Header */}
+        <div style={{
+          height: 44, background: 'var(--muted)',
+          borderBottom: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center',
+          padding: '0 12px', gap: 8, flexShrink: 0,
+        }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--foreground)', flex: 1 }}>
+            Questions
+          </span>
+          <span style={{ fontSize: 11, color: 'var(--muted-foreground)', fontWeight: 500 }}>
+            {currentIndex + 1} / {questions.length}
+          </span>
+          <button
+            onClick={onClose}
+            aria-label="Close question navigator"
+            className="exam-focus"
+            style={{
+              width: 24, height: 24, borderRadius: 6,
+              background: 'transparent', border: 'none',
+              cursor: 'pointer', display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              fontSize: 12, color: 'var(--muted-foreground)',
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Body — scrollable */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 0 12px' }}>
+          {renderGroup('Flagged', '⚑', flaggedGroup)}
+          {renderGroup('Unanswered', null, unansweredGroup)}
+          {renderGroup('Answered', null, answeredGroup)}
+        </div>
+      </nav>
+    </>
+  );
+}
