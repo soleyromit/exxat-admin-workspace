@@ -1256,8 +1256,6 @@ export default function AssessmentBuilderClient() {
                 </div>
               ) : activeAsmt.sections.map((sec, idx) => {
                 const isActive = sec.id === activeSectionId
-                const fillPct = sectionFillPct(sec)
-                const isReady = fillPct >= 80
                 const facIds = sec.facultyIds?.length ? sec.facultyIds : sec.facultyId ? [sec.facultyId] : []
                 const sectionFaculty = facultyListRows.filter(f => facIds.includes(f.id))
                 return (
