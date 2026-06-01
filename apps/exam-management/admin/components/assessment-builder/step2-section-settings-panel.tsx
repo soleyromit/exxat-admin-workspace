@@ -116,7 +116,7 @@ export function Step2SectionSettingsPanel({ section, faculty, onPatch, onClose }
         {/* ── 1. FILL TARGET ── */}
         <div style={{ padding: '12px 16px' }}>
           <p
-            className="text-[10px] font-semibold text-muted-foreground mb-2"
+            className="text-xs font-semibold text-muted-foreground mb-2"
             style={{ letterSpacing: '0.06em' }}
           >
             FILL TARGET
@@ -195,7 +195,7 @@ export function Step2SectionSettingsPanel({ section, faculty, onPatch, onClose }
 
           {/* Fill progress text */}
           <p
-            className="text-[11px]"
+            className="text-xs"
             style={{ color: fillTextColor }}
           >
             {filled} of {target}{' '}
@@ -211,7 +211,7 @@ export function Step2SectionSettingsPanel({ section, faculty, onPatch, onClose }
             {/* Due date */}
             <div>
               <p
-                className="text-[10px] font-semibold text-muted-foreground mb-1.5"
+                className="text-xs font-semibold text-muted-foreground mb-1.5"
                 style={{ letterSpacing: '0.06em' }}
               >
                 DUE DATE
@@ -239,7 +239,7 @@ export function Step2SectionSettingsPanel({ section, faculty, onPatch, onClose }
             {/* Assigned to */}
             <div>
               <p
-                className="text-[10px] font-semibold text-muted-foreground mb-1.5"
+                className="text-xs font-semibold text-muted-foreground mb-1.5"
                 style={{ letterSpacing: '0.06em' }}
               >
                 ASSIGNED TO
@@ -272,12 +272,12 @@ export function Step2SectionSettingsPanel({ section, faculty, onPatch, onClose }
         {/* ── 3. STUDENT INSTRUCTIONS ── */}
         <div style={{ padding: '12px 16px' }}>
           <p
-            className="text-[10px] font-semibold text-muted-foreground mb-1"
+            className="text-xs font-semibold text-muted-foreground mb-1"
             style={{ letterSpacing: '0.06em' }}
           >
             STUDENT INSTRUCTIONS
           </p>
-          <p className="text-[11px] text-muted-foreground mb-2">
+          <p className="text-xs text-muted-foreground mb-2">
             Shown to student before Q1 of this section
           </p>
           <textarea
@@ -305,12 +305,12 @@ export function Step2SectionSettingsPanel({ section, faculty, onPatch, onClose }
         {/* ── 4. PRE-READS ── */}
         <div style={{ padding: '12px 16px' }}>
           <p
-            className="text-[10px] font-semibold text-muted-foreground mb-1"
+            className="text-xs font-semibold text-muted-foreground mb-1"
             style={{ letterSpacing: '0.06em' }}
           >
             PRE-READS
           </p>
-          <p className="text-[11px] text-muted-foreground mb-2">
+          <p className="text-xs text-muted-foreground mb-2">
             Shown in exam sidebar during this section
           </p>
 
@@ -429,15 +429,16 @@ export function Step2SectionSettingsPanel({ section, faculty, onPatch, onClose }
               </div>
             </div>
           ) : (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => setAddingPreRead(true)}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground h-auto p-0"
             >
               <i className="fa-light fa-plus" aria-hidden="true" />
               Add pre-read document
-            </button>
+            </Button>
           )}
         </div>
       </div>
