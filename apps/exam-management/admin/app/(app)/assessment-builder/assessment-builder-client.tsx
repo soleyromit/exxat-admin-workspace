@@ -1293,7 +1293,7 @@ export default function AssessmentBuilderClient() {
                                   : isStarted ? 'var(--ring)' : 'var(--border)'}`,
                                 borderRadius: 10,
                                 padding: '1px 6px',
-                                fontSize: 10,
+                                fontSize: 12,
                                 color: isComplete ? 'var(--chart-2)' : isStarted ? 'var(--brand-color)' : 'var(--muted-foreground)',
                                 flexShrink: 0,
                                 whiteSpace: 'nowrap',
