@@ -716,12 +716,13 @@ function ABQuestionPicker({
               <TableHead style={{ width: 80 }}>Difficulty</TableHead>
               <TableHead style={{ width: 100 }}>Type</TableHead>
               <TableHead style={{ width: 60 }}>Usage</TableHead>
+              <TableHead style={{ width: 64 }}>P-bis</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredQuestions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-sm text-muted-foreground" style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <TableCell colSpan={6} className="text-sm text-muted-foreground" style={{ textAlign: 'center', padding: '40px 20px' }}>
                   No questions match this view
                 </TableCell>
               </TableRow>
@@ -769,6 +770,9 @@ function ABQuestionPicker({
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {(q.usage ?? 0) > 0 ? `${q.usage}×` : '—'}
+                  </TableCell>
+                  <TableCell className="text-xs font-semibold" style={{ color: q.pbis !== null && q.pbis < 0 ? 'var(--destructive)' : 'var(--muted-foreground)' }}>
+                    {q.pbis !== null ? q.pbis.toFixed(2) : '—'}
                   </TableCell>
                 </TableRow>
               )
