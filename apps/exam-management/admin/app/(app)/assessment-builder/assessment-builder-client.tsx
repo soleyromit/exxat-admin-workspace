@@ -29,6 +29,8 @@ import {
 } from '@/lib/question-editor-types'
 import { SectionsOutline } from '@/components/assessment-builder/step2-sections-outline'
 import { HealthPanel } from '@/components/assessment-builder/step2-health-panel'
+import { Step2SettingsPanel } from '@/components/assessment-builder/step2-settings-panel'
+import { Step2SectionSettingsPanel } from '@/components/assessment-builder/step2-section-settings-panel'
 import { GradingTray } from '@/components/assessment-builder/step2-grading-tray'
 import { GradingSettingsPanel } from '@/components/assessment-builder/step2-grading-settings-panel'
 import {
@@ -569,6 +571,7 @@ export default function AssessmentBuilderClient() {
   const [aiBuilding, setAiBuilding] = useState(false)
 
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [rightPanelMode, setRightPanelMode] = useState<'health' | 'settings' | 'section'>('health')
   const [sendForReviewOpen, setSendForReviewOpen] = useState(false)
   const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<string>>(new Set())
 
@@ -961,7 +964,7 @@ export default function AssessmentBuilderClient() {
             variant="ghost"
             size="sm"
             aria-label="Assessment settings"
-            onClick={() => setSettingsOpen(true)}
+            onClick={() => setRightPanelMode(prev => prev === 'settings' ? 'health' : 'settings')}
           >
             <i className="fa-light fa-gear" aria-hidden="true" />
           </Button>
@@ -1263,7 +1266,11 @@ export default function AssessmentBuilderClient() {
                     <div style={{ display: 'flex', alignItems: 'center', background: isActive ? 'var(--background)' : 'none', borderLeft: `3px solid ${isActive ? 'var(--brand-color)' : 'transparent'}` }}>
                       <button
                         type="button"
-                        onClick={() => { setActiveSectionId(sec.id); setPickerOpen(false) }}
+                        onClick={() => {
+                          setActiveSectionId(sec.id)
+                          setPickerOpen(false)
+                          setRightPanelMode('section')
+                        }}
                         style={{
                           display: 'flex', alignItems: 'center', gap: 7,
                           padding: '7px 4px 7px 12px', flex: 1, minWidth: 0, textAlign: 'left',
@@ -1306,8 +1313,11 @@ export default function AssessmentBuilderClient() {
                       {/* Section settings icon */}
                       <button
                         type="button"
-                        aria-label={`Section settings for ${sec.title}`}
-                        onClick={() => setAssignSheetSectionId(sec.id)}
+                        aria-label={`Open settings for ${sec.title}`}
+                        onClick={() => {
+                          setActiveSectionId(sec.id)
+                          setRightPanelMode('section')
+                        }}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 4px', color: 'var(--muted-foreground)', flexShrink: 0, lineHeight: 1 }}
                       >
                         <i className="fa-light fa-sliders" aria-hidden="true" style={{ fontSize: 12 }} />
@@ -1431,7 +1441,10 @@ export default function AssessmentBuilderClient() {
                       </span>
                     ) : (
                       <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
-                        {activeSectionQuestions.length}{activeSection.questionTarget ? `/${activeSection.questionTarget}` : ''} Q
+                        {activeSectionQuestions.length}{(() => {
+                          const target = activeSection.fillTarget?.value ?? activeSection.questionTarget
+                          return target ? `/${target}` : ''
+                        })()} Q
                       </span>
                     )}
                     {/* Section analysis icon */}
@@ -1925,15 +1938,41 @@ export default function AssessmentBuilderClient() {
             )}
           </div>
 
-          <MetricsPanel
-            distribution={distribution}
-            timeMetrics={timeMetrics}
-            overtimeMetrics={overtimeMetrics}
-            durationMinutes={activeAsmt.durationMinutes}
-            bloomsMetrics={bloomsMetrics}
-            totalScore={totalScore}
-            psychoMetrics={psychoMetrics}
-          />
+          {/* Right panel — 3 states: health / settings / section */}
+          <div style={{ width: 280, minWidth: 280, borderLeft: '1px solid var(--border)', flexShrink: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            {(rightPanelMode === 'health' || (rightPanelMode === 'section' && !activeSectionId)) && (
+              <HealthPanel
+                activeAsmt={activeAsmt}
+                objectives={courseObjectives.filter(o => o.courseId === activeAsmt.courseId)}
+                timeMetrics={timeMetrics}
+                distribution={distribution}
+                bloomsMetrics={bloomsMetrics}
+              />
+            )}
+            {rightPanelMode === 'settings' && (
+              <Step2SettingsPanel
+                settings={activeAsmt.settings}
+                onPatch={(patch: Partial<import('@/lib/qb-types').AssessmentSettings>) => setActiveAsmt(prev => prev ? { ...prev, settings: { ...prev.settings, ...patch } } : prev)}
+                onClose={() => setRightPanelMode('health')}
+              />
+            )}
+            {rightPanelMode === 'section' && activeSectionId && (
+              <Step2SectionSettingsPanel
+                section={activeAsmt.sections.find(s => s.id === activeSectionId)!}
+                faculty={facultyListRows}
+                onPatch={(patch: Partial<import('@/lib/qb-types').AssessmentSection>) => setActiveAsmt(prev => {
+                  if (!prev) return prev
+                  return {
+                    ...prev,
+                    sections: prev.sections.map(s =>
+                      s.id === activeSectionId ? { ...s, ...patch } : s
+                    ),
+                  }
+                })}
+                onClose={() => setRightPanelMode('health')}
+              />
+            )}
+          </div>
         </div>
       )}
 
