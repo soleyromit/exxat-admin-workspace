@@ -757,7 +757,7 @@ export default function AssessmentBuilderClient() {
 
   // Section status: Ready if fill ≥ 80% of some target, else Drafting
   function sectionFillPct(sec: AssessmentSection): number {
-    const target = sec.questionTarget ?? 20
+    const target = sec.fillTarget?.value ?? sec.questionTarget ?? 20
     return Math.min(100, Math.round((sec.questionIds.length / target) * 100))
   }
 
@@ -1276,11 +1276,34 @@ export default function AssessmentBuilderClient() {
                         <span className="text-xs font-medium text-foreground" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {idx + 1}. {sec.title}
                         </span>
-                        {isReady ? (
-                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--chart-2)', flexShrink: 0 }}>✓</span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground" style={{ flexShrink: 0 }}>{sec.questionIds.length}/{sec.questionTarget ?? 20}</span>
-                        )}
+                        {(() => {
+                          const filled = sec.questionIds.length
+                          const target = sec.fillTarget?.value ?? sec.questionTarget ?? 20
+                          const isComplete = filled >= target
+                          const isStarted = filled > 0
+                          return (
+                            <span
+                              aria-label={`${filled} of ${target} questions filled`}
+                              style={{
+                                background: isComplete
+                                  ? 'color-mix(in srgb, var(--chart-2) 15%, var(--background))'
+                                  : isStarted ? 'var(--brand-tint)' : 'var(--muted)',
+                                border: `1px solid ${isComplete
+                                  ? 'color-mix(in srgb, var(--chart-2) 40%, var(--background))'
+                                  : isStarted ? 'var(--ring)' : 'var(--border)'}`,
+                                borderRadius: 10,
+                                padding: '1px 6px',
+                                fontSize: 10,
+                                color: isComplete ? 'var(--chart-2)' : isStarted ? 'var(--brand-color)' : 'var(--muted-foreground)',
+                                flexShrink: 0,
+                                whiteSpace: 'nowrap',
+                                fontWeight: 500,
+                              }}
+                            >
+                              {isComplete ? `✓ ${filled}` : `${filled}`} / {target} Q
+                            </span>
+                          )
+                        })()}
                       </button>
                       {/* Section settings icon */}
                       <button
