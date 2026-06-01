@@ -25,7 +25,7 @@ const STATUS_LABELS: Record<SurveyStatus, string> = {
   collecting:     'Live',
   active:         'Scheduled',
   draft:          'Draft',
-  released:       'Closed, Results Available',
+  released:       'Results Released to Faculty',
   closed:         'Closed',
 }
 
