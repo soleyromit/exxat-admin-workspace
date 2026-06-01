@@ -1,6 +1,6 @@
 ---
 name: ds-adoption-reviewer
-description: Use BEFORE writing any new component file under apps/<product>/<role>/components/, and before building any feature that renders tabular data, KPI cards, charts, drawers, command palettes, or other organism-level UI. The agent reads the canonical DS library (docs/governance/ds-adoption.md + the exxat-ds submodule + the localhost:4000 library viewer if the parent supplies a URL) and the proposed spec, then returns one of three verdicts — IMPORT / VENDOR / HAND-ROLL with justification. Reserve for component-introduction decisions; not for prop tweaks or styling-only changes.
+description: Use BEFORE writing any new component file under apps/<product>/<role>/components/, and before building any feature that renders tabular data, KPI cards, charts, drawers, command palettes, or other organism-level UI. The agent reads the canonical DS library (docs/governance/ds-adoption.md + @exxatdesignux/ui dist types + docs/governance/ds-component-examples.md + the localhost:4000 library viewer if a URL is supplied) and the proposed spec, then returns one of three verdicts — IMPORT / VENDOR / HAND-ROLL with justification. Reserve for component-introduction decisions; not for prop tweaks or styling-only changes.
 tools: Read, Bash, Grep, Glob, WebFetch
 disallowedTools: Edit, Write, NotebookEdit
 isolation: worktree
@@ -18,11 +18,11 @@ For a proposed component or feature:
 
 1. **Parse the parent's request** to identify the intent (what UI does this build? table, drawer, KPI strip, chart, navigation, etc.).
 2. **Read the registry** at `docs/governance/ds-adoption.md` — the canonical mapping of intent → DS organism → adoption strategy.
-3. **Cross-check the submodule** at `exxat-ds/packages/ui/src/index.ts` (published) and `exxat-ds/apps/web/components/` (full source) for what's available.
+3. **Cross-check the DS package** — read `docs/governance/ds-component-examples.md` first for canonical usage + NEVER rules, then the `.d.ts` type definition at `apps/<product>/<role>/node_modules/@exxatdesignux/ui/dist/components/<name>/<name>.d.ts` for the full prop API.
 4. **Cross-check sister products** (`apps/exam-management/admin/`, `apps/pce/admin/`, etc.) for prior adoption patterns. If a sister product already uses the organism (or already hand-rolled it), surface that — the parent should align.
 5. **Return one verdict**:
-   - `IMPORT` — the DS exports this; the parent imports and uses, no copy.
-   - `VENDOR` — the source is in the submodule but unpublished; the parent copies into product `components/<organism>/`, rewrites `@/` imports per recipe.
+   - `IMPORT` — the DS exports this from `@exxatdesignux/ui`; the parent imports and uses, no copy.
+   - `VENDOR` — exists in a sister product's `components/` as a product-specific extension; the parent copies and adapts.
    - `HAND-ROLL` — genuinely product-specific or no DS equivalent; parent builds, AND must add file to "Documented hand-rolls" in the registry with justification.
 
 ## Inputs you expect from the parent
@@ -40,7 +40,7 @@ If any of these are missing, ask the parent for the one missing fact ONLY (don't
 
 ### 1. Plan (one line, do not skip)
 
-Echo back: "Reviewing adoption for: <intent>. Target: <product/role>. Will check registry → submodule → sister-product adoption."
+Echo back: "Reviewing adoption for: <intent>. Target: <product/role>. Will check registry → ds-component-examples → @exxatdesignux/ui type defs → sister-product adoption."
 
 ### 2. Read the registry
 
@@ -50,17 +50,39 @@ Read: docs/governance/ds-adoption.md
 
 Find the section matching the intent (Atoms / Molecules / Organisms / Visualization). Identify the candidate DS organism (or note "no match").
 
-### 3. Verify submodule reality
+### 3. Verify DS package reality
 
+The canonical DS is now **`@exxatdesignux/ui`** (npm package, v0.6.17+). Do NOT read `exxat-ds/` for component availability — that submodule is a legacy reference only.
+
+**Step 3a — Canonical examples (highest fidelity, read first):**
 ```
-Read: exxat-ds/packages/ui/src/index.ts             — what's published
-Glob: exxat-ds/apps/web/components/**/*.tsx         — what's in source
+Read: docs/governance/ds-component-examples.md
 ```
+This is the source-of-truth for correct JSX usage: required props, variants, common mistakes, and NEVER rules for each organism. Always cite the relevant section in your verdict.
+
+**Step 3b — Type definitions (for prop API detail):**
+```
+Glob: apps/<product>/<role>/node_modules/@exxatdesignux/ui/dist/components/<name>/<name>.d.ts
+```
+Use the PCE or EM node_modules (whichever product is in scope). These `.d.ts` files are the definitive prop API. If a prop isn't in the type definition, it doesn't exist — don't invent it.
+
+Example paths (adapt per product):
+```
+apps/pce/admin/node_modules/@exxatdesignux/ui/dist/components/button/button.d.ts
+apps/pce/admin/node_modules/@exxatdesignux/ui/dist/components/data-table/data-table.d.ts
+apps/exam-management/admin/node_modules/@exxatdesignux/ui/dist/components/key-metrics/key-metrics.d.ts
+```
+
+**Step 3c — Library viewer (best-effort, only if parent supplied a URL):**
+```
+WebFetch: http://localhost:4000/library/<component-id>
+```
+If the dev server is running, fetch the live rendered demo. If it fails (ECONNREFUSED), skip and note "library viewer not available — using type defs + canonical examples."
 
 For a candidate organism:
-- Confirm the file path matches the registry.
-- Note line count (the registry's claim must match within ~10%).
-- If the registry says "VENDOR" but the file isn't in the submodule, **escalate** — the registry is wrong OR upstream removed it.
+- Confirm the component is exported from `@exxatdesignux/ui` (check the canonical examples doc first; if missing, check dist/index.d.ts).
+- Note what props are required vs optional from the type definition.
+- If the registry says "VENDOR" but the component isn't in the npm package exports, confirm via the type defs and flag if the registry is stale.
 
 ### 4. Cross-check sister products
 
@@ -78,46 +100,46 @@ Return ONE of these structured responses:
 ```
 ## Verdict: IMPORT
 
-**Use:** `import { <Name> } from '@exxat/ds/packages/ui/src'`
-**Library demo:** `/library/<id>` (or n/a if not in the library viewer)
+**Use:** `import { <Name> } from '@exxatdesignux/ui'`
+**CSS:** Confirm root layout imports `@import '@exxatdesignux/ui/globals.css'` (only needs to be once per product)
+**Library demo:** `http://localhost:4000/library/<id>` (or n/a if server not running)
+**Canonical example:** `docs/governance/ds-component-examples.md § <ComponentName>` — cite the exact usage pattern
 **Reference implementation in workspace:** `<file:line>` (or "no prior use yet")
 
-**What to use:** <list of variants/slots/props that match the intent>
-**What NOT to do:** <common failure mode for this organism — e.g., "don't use bare Card as a styled div">
+**What to use:** <list of variants/slots/props that match the intent — derived from .d.ts type defs>
+**What NOT to do:** <common failure mode — cite the NEVER section from ds-component-examples.md>
 
 **Verification:**
-- registry: line N
-- submodule: <file>:<N lines>  ✓
-- sister products: <list>
+- canonical examples: docs/governance/ds-component-examples.md § <Name>  ✓
+- type def: apps/<product>/<role>/node_modules/@exxatdesignux/ui/dist/components/<name>/<name>.d.ts  ✓
+- sister products: <list of existing correct imports>
 ```
 
 #### VENDOR
 ```
 ## Verdict: VENDOR
 
-**Source:** `exxat-ds/apps/web/components/<organism>/` (N files, ~M lines)
+**Source:** `apps/pce/admin/components/<organism>/` or `apps/exam-management/admin/components/<organism>/`
 **Destination:** `apps/<product>/<role>/components/<organism>/`
-**Why vendor (not import):** unpublished in `packages/ui/src/` — see registry row.
+**Why vendor (not import):** product-specific extension of an @exxatdesignux/ui base — see registry row.
 
 **Vendor recipe:**
-1. `cp -r exxat-ds/apps/web/components/<organism>/ apps/<product>/<role>/components/<organism>/`
+1. Copy from the reference vendor (PCE or EM — whichever has the cleanest implementation)
 2. Rewrite imports:
-   - `@/components/ui/*` → `@exxat/ds/packages/ui/src`
-   - `@/lib/utils, @/lib/date-filter, @/hooks/use-mod-key-label` → `@exxat/ds/packages/ui/src`
-   - `@/components/table-properties/*` → keep, also vendor the types file
-   - `@/lib/editable-target, @/lib/row-height` → vendor into `apps/<product>/<role>/lib/`
-3. Use sed (one-shot) or per-file Edit.
-4. Run `pnpm typecheck` — must be clean.
-5. After vendor lands, this commit is reusable across pages in this product.
+   - DS primitives: `@exxatdesignux/ui`
+   - Shared lib utils: `@/lib/utils`
+   - Product-specific extensions: rename/remove as needed
+3. Run `pnpm typecheck` — must be clean.
+4. After vendor lands, this commit is reusable across pages in this product.
 
-**Reference vendor in workspace:** `apps/pce/admin/components/data-table/` (vendored 2026-05-11, includes 3 extensions: defaultGroupBy, groupLabels, groupOrder).
+**Reference vendor in workspace:** `apps/pce/admin/components/data-table/` (includes defaultGroupBy, groupLabels, groupOrder extensions)
 
 **After vendor: usage pattern**
-<short JSX example>
+<short JSX example matching docs/governance/ds-component-examples.md pattern>
 
 **Verification:**
-- registry: line N
-- submodule: <file>:<N lines>  ✓
+- canonical base: docs/governance/ds-component-examples.md § <Name>  ✓
+- source vendor: <file>  ✓
 - sister products: <list>
 ```
 

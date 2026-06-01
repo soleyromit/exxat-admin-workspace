@@ -100,6 +100,22 @@ TRIGGERS: list[tuple[str, str]] = [
     (r"\[(P\d+|Faculty\s+\d+|Participant\s+\d+)\]", "intake:research-insight"),
 ]
 
+def _detect_product(prompt: str) -> str | None:
+    """Detect the active product from prompt keywords.
+
+    Returns 'pce', 'exam-management', 'portal', or None.
+    Used by the coupling section to inject the right ui-patterns lazy-load.
+    """
+    p = prompt.lower()
+    if re.search(r"\b(pce|clinical experience|preceptor|logbook|apps/pce)\b", p):
+        return "pce"
+    if re.search(r"\b(exam.?management|question bank|\bqb\b|assessment builder|assessment taker|apps/exam.?management)\b", p):
+        return "exam-management"
+    if re.search(r"\bapps/portal\b|\b(portal (page|app|admin|product|screen|component))\b", p):
+        return "portal"
+    return None
+
+
 ACTION_DESCRIPTIONS: dict[str, str] = {
     "ds-profile-switch:student": "Load docs/foundations/ds-profiles/student.md and announce the switch (imports, fonts, templates, tone, a11y emphasis update)",
     "ds-profile-switch:admin": "Load docs/foundations/ds-profiles/admin.md and announce the switch",
@@ -124,6 +140,8 @@ ACTION_DESCRIPTIONS: dict[str, str] = {
     "precheck:pre-task-declaration": "REQUIRED before any code. Read the target file(s) first, then output: File: <path> | Current DS violations: <list or none> | Hand-rolled with DS equivalent: <list or none> | WCAG issues (static read): <list or none>. No code until this block is written. See CLAUDE.md pre-task section and verification-discipline.md Pattern J.",
     "sweep:ds-check": "Run the ds-sweep skill (.claude/skills/ds-sweep/SKILL.md) for the active product before making changes. Output the prioritized backlog (CRITICAL / HIGH / MEDIUM / LOW). Ask which items to fix first. See .claude/skills/ds-sweep/SKILL.md for the full protocol.",
     "self:pattern-recognition": "A frustration or recurrence signal was detected. BEFORE responding to the task, do all four: (1) Read /Users/romitsoley/.claude/projects/-Users-romitsoley-Work/memory/MEMORY.md — identify the 2-3 entries most relevant to this complaint and quote them. (2) Read docs/governance/verification-discipline.md discipline log — identify the matching pattern (A-J) and most recent entry for it. (3) State in one sentence: what recurring failure this represents and why it keeps happening structurally. (4) Write a new `feedback` memory entry or update an existing one — then propose one concrete architecture change (rule, hook trigger, or audit) that prevents this from recurring. Only THEN respond to the actual task. Do not skip any of these four steps.",
+    "lazy:ui-patterns-pce": "REQUIRED before any PCE JSX. Read apps/pce/docs/patterns/pce-ui-patterns.md — PCE-specific component patterns, supervisor/student flows, survey patterns, and banned anti-patterns. Do not write a single line of PCE UI code without reading this first.",
+    "lazy:ui-patterns-exam-management": "REQUIRED before any exam-management JSX. Read apps/exam-management/docs/patterns/ui-patterns.md — EM-specific component patterns, assessment/QB flows, and banned anti-patterns. Do not write a single line of EM UI code without reading this first.",
 }
 
 
@@ -361,6 +379,18 @@ def main() -> None:
     if ("intent:design" in seen or "intent:redesign" in seen or "precheck:pre-task-declaration" in seen) and "precheck:pre-task-declaration" not in seen:
         matches.append("precheck:pre-task-declaration")
         seen.add("precheck:pre-task-declaration")
+
+    # Coupled: design/edit intent + product detected → inject per-product ui-patterns lazy-load.
+    # Each product has banned patterns, component choices, and flows not in the global DS reference.
+    # Without this, Claude writes generic DS code that violates PCE/EM-specific patterns.
+    if "intent:design" in seen or "intent:redesign" in seen or "precheck:pre-task-declaration" in seen:
+        product = _detect_product(prompt)
+        if product == "pce" and "lazy:ui-patterns-pce" not in seen:
+            matches.append("lazy:ui-patterns-pce")
+            seen.add("lazy:ui-patterns-pce")
+        elif product == "exam-management" and "lazy:ui-patterns-exam-management" not in seen:
+            matches.append("lazy:ui-patterns-exam-management")
+            seen.add("lazy:ui-patterns-exam-management")
 
     freshness = _registry_freshness_block()
     cascade = _cascade_check(prompt)
