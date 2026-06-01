@@ -245,8 +245,8 @@ export function Step2SectionSettingsPanel({ section, faculty, onPatch, onClose }
                 ASSIGNED TO
               </p>
               <Select
-                value={section.facultyId ?? ''}
-                onValueChange={(v) => onPatch({ facultyId: v || undefined })}
+                value={section.facultyId ?? 'unassigned'}
+                onValueChange={(v) => onPatch({ facultyId: v === 'unassigned' ? undefined : v })}
               >
                 <SelectTrigger
                   aria-label="Assign section to faculty"
@@ -255,7 +255,7 @@ export function Step2SectionSettingsPanel({ section, faculty, onPatch, onClose }
                   <SelectValue placeholder="Unassigned" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Unassigned</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
                   {faculty.map(f => (
                     <SelectItem key={f.id} value={f.id}>
                       {f.fullName}
