@@ -107,6 +107,17 @@ Source: `docs/research/meetings/2026-05-28-survey-template-moderation-monil.md` 
 | T53 | Report access step in create survey flow | Admin | Push survey (step N) | P1 — DESIGN-REVIEW | Cross-table: left = roles evaluated (Instructor, Course Coordinator), right = who can see responses (Instructor, Coordinator, Program Admin, Program Director, Department Chair). D_PCE37, D_PCE38. |
 | T54 | PCE nav: add Programmatic Survey as top-level nav entry | Admin | Sidebar | P1 — DESIGN-REVIEW | Two top-level entries: Post Course Evaluation + Programmatic Survey. Both share sub-nav: surveys, templates. Analytics = skip for now. Setup = PCE only. D_PCE33. Structural — needs Romit design direction. |
 
+## Phase 1 design tasks — added 2026-06-01
+
+Source: `apps/pce/admin/app/(app)/surveys/page.tsx` (applied from Granola `666c9e88`) · `apps/exam-management/docs/research/meetings/2026-05-27-design-system-adoption-himanshu.md` (Granola `ae66b50f`)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T55 | Released status label: admin vs. faculty language | Admin | Survey landing | P1 — ✅ APPLIED | Changed `released` status label from "Closed, Results Available" → "Results Released to Faculty" in `surveys/page.tsx:29`. Faculty language ("Results Available") should not appear in admin view. D_PCE (Meeting 4 directive). |
+| T56 | Define product brand color for PCE | Design | DS / theming | P2 | Leadership decision: each product has its own color (Prism=pink, ExactOne=indigo). PCE color is TBD. Pick token, apply to product theme. D_DS01. |
+
+---
+
 ## Phase 1 — killed / superseded (updated 2026-05-26)
 
 | # | Decision | Reason | Source |
