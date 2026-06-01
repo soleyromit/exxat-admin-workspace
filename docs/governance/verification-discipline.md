@@ -143,6 +143,32 @@ verification-reviewer: [paste literal first line]
 
 "I ran compliance-reviewer" with no output = Pattern I violation. Paste the verdict or it didn't happen.
 
+### Pattern K — Proactive self-questioning before every task (added 2026-06-01)
+
+**What I do wrong:** Wait for Romit to be frustrated before recognizing a recurring pattern. The correction happens reactively — Romit says "you keep forgetting X", I add a rule, it works for one session, then the next session starts fresh and the cycle repeats.
+
+**Real example (2026-06-01):** Romit: "I always think Claude should ask questions to itself and build intelligent architecture solutions without me saying anything. You should be able to recognize feedback patterns before you decide to compact the conversation." Root cause: no self-briefing step. Each session starts cold with no active check against known failure patterns.
+
+**The fix — at the start of every session AND before every non-trivial task:**
+
+Ask yourself these three questions from memory, not from what's in the current prompt:
+
+```
+1. What have I repeatedly failed on for this type of work?
+   → Read MEMORY.md: find 2-3 feedback entries relevant to task type.
+   
+2. What does the discipline log say I most recently skipped?
+   → Read verification-discipline.md bottom of discipline log: last 3 entries.
+   
+3. Am I about to repeat a known mistake?
+   → Cross-reference question 1+2 against the current task.
+   → If yes: state it at the top of the response before proceeding.
+```
+
+If any of these surfaces a known failure: **declare it first, unprompted**. Don't wait for Romit to say "you keep doing X". Say it yourself: "I know I tend to skip pre-task declaration on PCE pages — doing it now."
+
+**The frustration trigger:** The `user-prompt-submit.py` hook detects frustration signals ("you keep", "you always", "again", "I keep having to tell you") and fires `self:pattern-recognition` — forcing this protocol before the response.
+
 ### Pattern J — Pre-task state declaration (added 2026-06-01)
 
 **What I do wrong:** Start editing a file without declaring what's currently in it. Result: hallucination about "what was there before", claiming to fix things that were already correct, or missing existing violations entirely.
@@ -185,6 +211,8 @@ If you cannot produce an artifact for a bullet, delete the bullet. No bullet wit
 
 | Trigger | Patterns to check |
 |---|---|
+| Start of any session | **K** — self-briefing: read MEMORY.md + discipline log before first task |
+| Romit expresses frustration / says "again" / "you keep" | **K** — pattern recognition + memory write + architecture proposal |
 | I'm about to touch any file | **J** — pre-task state declaration first |
 | I'm about to type "clean" or "passes" | A |
 | I just fixed a bug Romit flagged | B |
@@ -232,6 +260,7 @@ Track each time I get caught skipping a check. Pattern frequency reveals which o
 | 2026-06-01 | Romit | I | "Claude forgets WCAG, doesn't do proper visual review, doesn't execute what it recognizes." Root cause: subagents claimed in text without pasting literal output. No evidence block. Fix: Pattern I (evidence-required) added to verification-discipline.md + CLAUDE.md Gate 2 step 9 — paste literal subagent verdict or it didn't happen. |
 | 2026-06-01 | Romit | J | "Claude doesn't do a good job analysing old pages and upgrading to new DS." Root cause: editing files without first declaring what violations exist in them. No pre-task anchor = no accountability for what was there before. Fix: Pattern J (pre-task state declaration) added + CLAUDE.md pre-task block before Gate 1. |
 | 2026-06-01 | Romit | B | DS adoption not consistent across old pages — violations fixed in one place but not swept across all siblings. Root cause: Pattern B not enforced structurally. Fix: `/ds-sweep` skill created — systematic per-product backlog before any new work begins on a product. |
+| 2026-06-01 | Romit | K | "Claude should ask questions to itself and build intelligent architecture without me saying anything. You should recognize feedback patterns before compacting conversation." Root cause: no self-briefing at session start. Each session started cold. Corrections only happened after Romit expressed frustration. Fix: Pattern K added — self-briefing required at session start + frustration-signal hook fires `self:pattern-recognition` action automatically. |
 
 When you (Romit) catch me again, append a row. The goal is the table shrinking over time.
 

@@ -23,6 +23,16 @@ except ImportError:
 # Subset for v0.1. Full canonical map: docs/triggers.md
 # Tuple shape: (regex_pattern, action_id)
 TRIGGERS: list[tuple[str, str]] = [
+    # Frustration / pattern-recurrence detection (priority 0 — highest)
+    # Fires BEFORE any other action so self-reflection happens first.
+    # Signals: "you keep", "you always", "you forgot", "again", "I keep having to",
+    # "you never", "you tend to", "every time", "you still", "frustrated"
+    (r"\b(you (keep|always|never|still|tend to|forget|forgot|don.?t remember))\b", "self:pattern-recognition"),
+    (r"\b(i (keep|always) hav(e|ing) to (tell|remind|ask|repeat|say))\b", "self:pattern-recognition"),
+    (r"\b(again|every time|each time|same (issue|problem|mistake)|you should (know|remember|have known))\b", "self:pattern-recognition"),
+    (r"\b(frustrat(ed|ing)|annoying|why do you|i told you|you (missed|skipped|ignored))\b", "self:pattern-recognition"),
+    (r"\b(without me (saying|asking|telling)|i (can.?t|shouldn.?t have to) (remember|tell|remind|ask))\b", "self:pattern-recognition"),
+
     # DS profile switch (priority 1)
     (r"\b(switch to|moving to|now (the )?)?student( app)?\b", "ds-profile-switch:student"),
     (r"\b(switch to|moving to|now (the )?)?admin( app)?\b", "ds-profile-switch:admin"),
@@ -113,6 +123,7 @@ ACTION_DESCRIPTIONS: dict[str, str] = {
     "intake:research-theme": "Invoke the research-intake skill with action=theme — saves to research/insights/themes/, captures supporting quote count + sample quotes + implications.",
     "precheck:pre-task-declaration": "REQUIRED before any code. Read the target file(s) first, then output: File: <path> | Current DS violations: <list or none> | Hand-rolled with DS equivalent: <list or none> | WCAG issues (static read): <list or none>. No code until this block is written. See CLAUDE.md pre-task section and verification-discipline.md Pattern J.",
     "sweep:ds-check": "Run the ds-sweep skill (.claude/skills/ds-sweep/SKILL.md) for the active product before making changes. Output the prioritized backlog (CRITICAL / HIGH / MEDIUM / LOW). Ask which items to fix first. See .claude/skills/ds-sweep/SKILL.md for the full protocol.",
+    "self:pattern-recognition": "A frustration or recurrence signal was detected. BEFORE responding to the task, do all four: (1) Read /Users/romitsoley/.claude/projects/-Users-romitsoley-Work/memory/MEMORY.md — identify the 2-3 entries most relevant to this complaint and quote them. (2) Read docs/governance/verification-discipline.md discipline log — identify the matching pattern (A-J) and most recent entry for it. (3) State in one sentence: what recurring failure this represents and why it keeps happening structurally. (4) Write a new `feedback` memory entry or update an existing one — then propose one concrete architecture change (rule, hook trigger, or audit) that prevents this from recurring. Only THEN respond to the actual task. Do not skip any of these four steps.",
 }
 
 

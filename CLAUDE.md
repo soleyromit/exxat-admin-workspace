@@ -2,6 +2,20 @@
 
 > Loaded every message. **Full rules + config:** `docs/CLAUDE-RULES.md` (lazy). **DS APIs:** `docs/CLAUDE-DS-REFERENCE.md` (lazy — read before any UI code).
 
+## Session Start — Self-Briefing (run before every task)
+
+Before doing anything, ask yourself these questions and answer them from memory:
+
+1. **What have I repeatedly failed on for this type of work?**
+   Read `MEMORY.md` — surface the top 2 feedback entries relevant to the task.
+2. **What does the discipline log say I keep skipping?**
+   Check `docs/governance/verification-discipline.md` — which patterns (A-J) are most recent?
+3. **What did Romit correct me on last time we worked on this product?**
+   Check `MEMORY.md` for project + feedback entries for this product.
+
+If any of these surface a recurring failure: state it explicitly at the top of the response.
+Do not wait for Romit to remind you. Surface it yourself first.
+
 ## Identity
 Romit Soley (Product Designer II, Exxat). Main branch = Himanshu Suthar (Engineering). Never merge to main without Himanshu review.
 
