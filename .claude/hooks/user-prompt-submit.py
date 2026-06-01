@@ -103,7 +103,8 @@ TRIGGERS: list[tuple[str, str]] = [
 def _detect_product(prompt: str) -> str | None:
     """Detect the active product from prompt keywords.
 
-    Returns 'pce', 'exam-management', 'portal', or None.
+    Returns one of: 'pce', 'exam-management', 'portal', 'learning-contracts',
+    'patient-log', 'skills-checklist', or None.
     Used by the coupling section to inject the right ui-patterns lazy-load.
     """
     p = prompt.lower()
@@ -111,6 +112,12 @@ def _detect_product(prompt: str) -> str | None:
         return "pce"
     if re.search(r"\b(exam.?management|question bank|\bqb\b|assessment builder|assessment taker|apps/exam.?management)\b", p):
         return "exam-management"
+    if re.search(r"\b(learning.?contracts?|apps/learning.?contracts?)\b", p):
+        return "learning-contracts"
+    if re.search(r"\b(patient.?log|patient encounter|apps/patient.?log)\b", p):
+        return "patient-log"
+    if re.search(r"\b(skills?.?checklist|competency checklist|apps/skills.?checklist)\b", p):
+        return "skills-checklist"
     if re.search(r"\bapps/portal\b|\b(portal (page|app|admin|product|screen|component))\b", p):
         return "portal"
     return None
@@ -142,6 +149,10 @@ ACTION_DESCRIPTIONS: dict[str, str] = {
     "self:pattern-recognition": "A frustration or recurrence signal was detected. BEFORE responding to the task, do all four: (1) Read /Users/romitsoley/.claude/projects/-Users-romitsoley-Work/memory/MEMORY.md — identify the 2-3 entries most relevant to this complaint and quote them. (2) Read docs/governance/verification-discipline.md discipline log — identify the matching pattern (A-J) and most recent entry for it. (3) State in one sentence: what recurring failure this represents and why it keeps happening structurally. (4) Write a new `feedback` memory entry or update an existing one — then propose one concrete architecture change (rule, hook trigger, or audit) that prevents this from recurring. Only THEN respond to the actual task. Do not skip any of these four steps.",
     "lazy:ui-patterns-pce": "REQUIRED before any PCE JSX. Read apps/pce/docs/patterns/pce-ui-patterns.md — PCE-specific component patterns, supervisor/student flows, survey patterns, and banned anti-patterns. Do not write a single line of PCE UI code without reading this first.",
     "lazy:ui-patterns-exam-management": "REQUIRED before any exam-management JSX. Read apps/exam-management/docs/patterns/ui-patterns.md — EM-specific component patterns, assessment/QB flows, and banned anti-patterns. Do not write a single line of EM UI code without reading this first.",
+    "lazy:ui-patterns-portal": "REQUIRED before any Portal JSX. Read apps/portal/docs/patterns/ui-patterns.md — Portal component patterns and banned anti-patterns. Do not write Portal UI code without reading this first.",
+    "lazy:ui-patterns-learning-contracts": "REQUIRED before any Learning Contracts JSX. Read apps/learning-contracts/docs/patterns/ui-patterns.md — pre-scaffolding rules and DS import requirements. Apply even before the first line of code exists.",
+    "lazy:ui-patterns-patient-log": "REQUIRED before any Patient Log JSX. Read apps/patient-log/docs/patterns/ui-patterns.md — pre-scaffolding rules, HIPAA note, and DS import requirements.",
+    "lazy:ui-patterns-skills-checklist": "REQUIRED before any Skills Checklist JSX. Read apps/skills-checklist/docs/patterns/ui-patterns.md — pre-scaffolding rules, viz rules (no raw progress bars), and DS import requirements.",
 }
 
 
@@ -385,12 +396,19 @@ def main() -> None:
     # Without this, Claude writes generic DS code that violates PCE/EM-specific patterns.
     if "intent:design" in seen or "intent:redesign" in seen or "precheck:pre-task-declaration" in seen:
         product = _detect_product(prompt)
-        if product == "pce" and "lazy:ui-patterns-pce" not in seen:
-            matches.append("lazy:ui-patterns-pce")
-            seen.add("lazy:ui-patterns-pce")
-        elif product == "exam-management" and "lazy:ui-patterns-exam-management" not in seen:
-            matches.append("lazy:ui-patterns-exam-management")
-            seen.add("lazy:ui-patterns-exam-management")
+        product_action_map = {
+            "pce": "lazy:ui-patterns-pce",
+            "exam-management": "lazy:ui-patterns-exam-management",
+            "portal": "lazy:ui-patterns-portal",
+            "learning-contracts": "lazy:ui-patterns-learning-contracts",
+            "patient-log": "lazy:ui-patterns-patient-log",
+            "skills-checklist": "lazy:ui-patterns-skills-checklist",
+        }
+        if product and product in product_action_map:
+            action = product_action_map[product]
+            if action not in seen:
+                matches.append(action)
+                seen.add(action)
 
     freshness = _registry_freshness_block()
     cascade = _cascade_check(prompt)
