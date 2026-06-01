@@ -15,6 +15,7 @@ import { AccessibilityPanel } from './components/AccessibilityPanel';
 import { GlobalReferencePanel } from './components/GlobalReferencePanel';
 import { SubmitReviewOverlay } from './components/SubmitReviewOverlay';
 import { StickyFooter } from './components/StickyFooter';
+import { QuestionNavPanel } from './components/QuestionNavPanel';
 // Question types that benefit from a calculator
 const CALCULATOR_TYPES = new Set([
 'table',
@@ -163,10 +164,11 @@ export function App() {
   const [showCalculator, setShowCalculator] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [showNavigator, setShowNavigator] = useState(false);
+  const [showNavPanel, setShowNavPanel] = useState(false);
   const [showAccessibility, setShowAccessibility] = useState(false);
   const [showGlobalRef, setShowGlobalRef] = useState(false);
   const [showSubmitReview, setShowSubmitReview] = useState(false);
-  const [showSectionStart, setShowSectionStart] = useState(false);
+  const [showSectionStart, setShowSectionStart] = useState(() => Boolean(assessment?.sections?.length));
   const [pendingNavigateIndex, setPendingNavigateIndex] = useState<number | null>(null);
   const [voiceNarrator, setVoiceNarrator] = useState(false);
   const [colorBlindMode, setColorBlindMode] = useState<
@@ -308,9 +310,11 @@ export function App() {
   );
   return (
     <>
-    {showSectionStart && assessment?.sections && pendingNavigateIndex !== null && (() => {
+    {showSectionStart && assessment?.sections?.length && (() => {
       const boundaries = getSectionBoundaries(assessment.sections);
-      const boundary = boundaries.find(b => pendingNavigateIndex >= b.start && pendingNavigateIndex <= b.end);
+      const boundary = pendingNavigateIndex !== null
+        ? boundaries.find(b => pendingNavigateIndex >= b.start && pendingNavigateIndex <= b.end)
+        : boundaries[0];
       if (!boundary) return null;
       return (
         <SectionStartScreen
@@ -438,31 +442,46 @@ export function App() {
           zoomOut={zoomOut} />
         
 
-        <main
-          id="main-content"
-          className="flex-1 overflow-hidden flex flex-col p-4 md:p-6 pb-24"
-          role="main"
-          aria-label={`Question ${currentIndex + 1} of ${questions.length}`}>
-          
-          <SplitQuestionView
-            key={currentIndex}
-            question={currentQuestion}
-            questionIndex={currentIndex}
-            selectedAnswer={answers[currentQuestion.id]}
-            onSelectAnswer={handleSelectAnswer}
-            zoomPercent={zoomPercent}
-            showCalculator={showCalculator}
-            showKeyboard={showKeyboard}
-            onToggleCalculator={() => setShowCalculator(!showCalculator)}
-            onToggleKeyboard={() => setShowKeyboard(!showKeyboard)}
-            needsCalculator={needsCalculator}
-            needsKeyboard={needsKeyboard}
-            voiceNarrator={voiceNarrator}
-            allowComments={allowComments}
-            comment={comments[currentQuestion.id]}
-            onCommentChange={handleCommentChange} />
+        <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
+          <main
+            id="main-content"
+            className="flex-1 overflow-hidden flex flex-col p-4 md:p-6 pb-24"
+            role="main"
+            aria-label={`Question ${currentIndex + 1} of ${questions.length}`}>
 
-        </main>
+            <SplitQuestionView
+              key={currentIndex}
+              question={currentQuestion}
+              questionIndex={currentIndex}
+              selectedAnswer={answers[currentQuestion.id]}
+              onSelectAnswer={handleSelectAnswer}
+              zoomPercent={zoomPercent}
+              showCalculator={showCalculator}
+              showKeyboard={showKeyboard}
+              onToggleCalculator={() => setShowCalculator(!showCalculator)}
+              onToggleKeyboard={() => setShowKeyboard(!showKeyboard)}
+              needsCalculator={needsCalculator}
+              needsKeyboard={needsKeyboard}
+              voiceNarrator={voiceNarrator}
+              allowComments={allowComments}
+              comment={comments[currentQuestion.id]}
+              onCommentChange={handleCommentChange} />
+
+          </main>
+
+          {showNavPanel && (
+            <QuestionNavPanel
+              questions={questions}
+              currentIndex={currentIndex}
+              answeredSet={answeredIndices}
+              flaggedSet={flagged}
+              sections={assessment?.sections}
+              highestReachedIndex={highestReachedIndex}
+              onNavigate={handleNavigate}
+              onClose={() => setShowNavPanel(false)}
+            />
+          )}
+        </div>
       </div>
 
       <SidebarDrawer
@@ -501,7 +520,9 @@ export function App() {
         questions={questions}
         answeredSet={answeredIndices}
         flaggedSet={flagged}
-        sections={assessment?.sections} />
+        sections={assessment?.sections}
+        showNavPanel={showNavPanel}
+        onToggleNavPanel={() => setShowNavPanel(v => !v)} />
 
       <GlobalReferencePanel
         isOpen={showGlobalRef}
