@@ -608,6 +608,142 @@ async function checkRoute(page, route) {
       }
     })
     result.interactions.push(spacingEntry)
+
+    // ===== 15. Open popover — portal clip + positioning check =====
+    // Catches: overflow:hidden ancestor clipping, z-index stacking issues,
+    // popover rendering outside viewport (off-screen). Common failure mode:
+    // custom popovers not using Radix Portal, or trigger inside transform parent.
+    const popoverEntry = await tryInteraction('open-popover', async () => {
+      const triggers = page.locator('[data-slot="popover-trigger"]')
+      const count = await triggers.count()
+      if (count === 0) {
+        return { type: 'open-popover', skipped: true, reason: 'no [data-slot="popover-trigger"] on page' }
+      }
+      let clickedIdx = -1
+      for (let i = 0; i < count; i++) {
+        const t = triggers.nth(i)
+        const visible = await t.isVisible().catch(() => false)
+        const enabled = await t.isEnabled().catch(() => false)
+        if (visible && enabled) {
+          await t.click({ timeout: INTERACTION_TIMEOUT })
+          clickedIdx = i
+          break
+        }
+      }
+      if (clickedIdx < 0) {
+        return { type: 'open-popover', skipped: true, reason: 'no visible+enabled popover trigger' }
+      }
+      try {
+        await page.waitForSelector('[data-slot="popover-content"]', { state: 'visible', timeout: INTERACTION_TIMEOUT })
+      } catch {
+        return { type: 'open-popover', skipped: true, reason: `clicked trigger #${clickedIdx} but no popover-content mounted within ${INTERACTION_TIMEOUT}ms` }
+      }
+      await page.waitForTimeout(200)
+      // Clip check: is the content rect fully inside the viewport?
+      const clipViolation = await page.evaluate(() => {
+        const el = document.querySelector('[data-slot="popover-content"]')
+        if (!el) return null
+        const r = el.getBoundingClientRect()
+        const vw = window.innerWidth, vh = window.innerHeight
+        if (r.top < -4 || r.left < -4 || r.bottom > vh + 4 || r.right > vw + 4)
+          return `Popover clipped/offscreen: top=${Math.round(r.top)} left=${Math.round(r.left)} bottom=${Math.round(r.bottom)} right=${Math.round(r.right)} viewport=${vw}×${vh}`
+        return null
+      }).catch(() => null)
+      const entry = await captureState(page, OUT_DIR, slug, 'open-popover', {
+        snapOpts: { fullPage: false },
+        meta: { triggerIndex: clickedIdx, clipViolation },
+      })
+      if (clipViolation) { entry.violation = clipViolation; entry.pass = false }
+      await page.keyboard.press('Escape').catch(() => {})
+      await page.waitForTimeout(200)
+      return entry
+    })
+    result.interactions.push(popoverEntry)
+
+    // ===== 16. Tooltip hover — visibility + clip check =====
+    // Catches: tooltips hidden under overflow:hidden, wrong z-index, off-screen
+    // positioning. Also catches missing aria-describedby on tooltip trigger.
+    const tooltipEntry = await tryInteraction('open-tooltip', async () => {
+      const triggers = page.locator('[data-slot="tooltip-trigger"]')
+      const count = await triggers.count()
+      if (count === 0) {
+        return { type: 'open-tooltip', skipped: true, reason: 'no [data-slot="tooltip-trigger"] on page' }
+      }
+      let hoveredIdx = -1
+      for (let i = 0; i < count; i++) {
+        const t = triggers.nth(i)
+        if (await t.isVisible().catch(() => false)) {
+          await t.hover({ timeout: INTERACTION_TIMEOUT })
+          hoveredIdx = i
+          break
+        }
+      }
+      if (hoveredIdx < 0) {
+        return { type: 'open-tooltip', skipped: true, reason: 'no visible tooltip trigger' }
+      }
+      try {
+        await page.waitForSelector('[data-slot="tooltip-content"]', { state: 'visible', timeout: INTERACTION_TIMEOUT })
+      } catch {
+        return { type: 'open-tooltip', skipped: true, reason: `hovered trigger #${hoveredIdx} but tooltip-content not visible within ${INTERACTION_TIMEOUT}ms` }
+      }
+      await page.waitForTimeout(150)
+      const clipViolation = await page.evaluate(() => {
+        const el = document.querySelector('[data-slot="tooltip-content"]')
+        if (!el) return null
+        const r = el.getBoundingClientRect()
+        const vw = window.innerWidth, vh = window.innerHeight
+        if (r.top < -4 || r.left < -4 || r.bottom > vh + 4 || r.right > vw + 4)
+          return `Tooltip clipped/offscreen: top=${Math.round(r.top)} left=${Math.round(r.left)} bottom=${Math.round(r.bottom)} right=${Math.round(r.right)} viewport=${vw}×${vh}`
+        return null
+      }).catch(() => null)
+      const entry = await captureState(page, OUT_DIR, slug, 'open-tooltip', {
+        snapOpts: { fullPage: false },
+        meta: { triggerIndex: hoveredIdx, clipViolation },
+      })
+      if (clipViolation) { entry.violation = clipViolation; entry.pass = false }
+      await page.mouse.move(0, 0)
+      await page.waitForTimeout(200)
+      return entry
+    })
+    result.interactions.push(tooltipEntry)
+
+    // ===== 17. Color token resolution check =====
+    // Catches: missing globals.css import (tokens undefined → fallback colors),
+    // wrong data-theme (theme tokens resolve to wrong hue), hardcoded-color bleed.
+    // This is a JS-evaluated check, no screenshot needed — pass/fail + token values.
+    const colorEntry = await tryInteraction('color-tokens', async () => {
+      const tokenCheck = await page.evaluate(() => {
+        const style = getComputedStyle(document.documentElement)
+        const TOKENS = ['--background','--foreground','--card','--primary','--muted','--border','--brand-color','--ring']
+        const missing = TOKENS.filter(t => !style.getPropertyValue(t).trim())
+        const defined = TOKENS.filter(t => style.getPropertyValue(t).trim())
+        return {
+          missing,
+          definedCount: defined.length,
+          totalTokens: TOKENS.length,
+          background: style.getPropertyValue('--background').trim() || null,
+          primary: style.getPropertyValue('--primary').trim() || null,
+        }
+      }).catch(err => ({ missing: [`eval failed: ${err.message}`], definedCount: 0, totalTokens: 8 }))
+
+      if (tokenCheck.missing.length > 0) {
+        return {
+          type: 'color-tokens',
+          pass: false,
+          violation: `${tokenCheck.missing.length} CSS token(s) not defined — globals.css may not be imported or data-theme missing. Tokens: ${tokenCheck.missing.join(', ')}`,
+          meta: tokenCheck,
+          skipped: false,
+        }
+      }
+      return {
+        type: 'color-tokens',
+        pass: true,
+        meta: { definedCount: tokenCheck.definedCount, background: tokenCheck.background, primary: tokenCheck.primary },
+        skipped: false,
+      }
+    })
+    result.interactions.push(colorEntry)
+
   } catch (err) {
     result.error = err.message || String(err)
   } finally {

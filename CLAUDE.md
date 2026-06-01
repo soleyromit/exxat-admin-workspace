@@ -78,6 +78,10 @@ Anchors the session. Prevents hallucination about what existed before the edit.
 7. **Spawn `Explore` to grep-verify every claimed change exists** (Pattern G — never claim done from memory)
 8. For every mistake found: write a discipline log entry AND either fix it now or write a rule preventing recurrence (Pattern H — no text-only self-reflections)
 9. **Evidence block on every done claim** — state: axe-core path or "not run — no dev server", DS import `file:line` per new component, grep result. Saying "it passes" without evidence = Pattern I violation.
+10. **Two-tier verdict (Pattern L — never say GREENLIGHT alone):**
+    - `GREENLIGHT (static)` — code analysis only; browser NOT opened
+    - `GREENLIGHT (runtime)` — interactions.mjs ran, popover/tooltip/color-tokens states passed
+    Always list what was NOT verified: popover clip, color token rendering, hover/focus states, z-index stacking.
 
 ## Key tokens (80% of UI work — full table in `docs/CLAUDE-DS-REFERENCE.md`)
 `--background` `--foreground` `--card` `--muted` `--muted-foreground` `--border` `--border-control-35` `--brand-color` `--brand-tint` `--primary` `--destructive` `--ring` `--radius` `--control-height`

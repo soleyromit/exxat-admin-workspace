@@ -143,6 +143,45 @@ verification-reviewer: [paste literal first line]
 
 "I ran compliance-reviewer" with no output = Pattern I violation. Paste the verdict or it didn't happen.
 
+### Pattern L — No overconfident verdicts: explicit NOT-verified list required (added 2026-06-01)
+
+**What I do wrong:** Say "GREENLIGHT" or "passes visual review" based on static code analysis alone — without actually running a browser, without testing popover open state, without checking color rendering. The verdict sounds like a browser test when it's actually a grep.
+
+**Real example (2026-06-01):** Romit: "I see you giving confident verdicts but you miss key elements — popovers getting cut off, hidden content, color mismatch even though you have DS guidelines, files, code." Root cause: GREENLIGHT verdict implied browser verification when only static code was checked.
+
+**Specific gaps this pattern catches:**
+- Popover / tooltip / dropdown cut off by `overflow: hidden` ancestor — invisible to static grep
+- Color token mismatch — `--primary` used correctly in code but renders wrong if globals.css not loaded
+- z-index stacking — portal components hidden behind another layer
+- Floating content off-screen — trigger at edge of viewport, content positions outside
+
+**The fix — every visual or compliance verdict must include a NOT-verified section:**
+
+```
+## Verdict: GREENLIGHT (static analysis only)
+
+Verified:
+✅ No raw <button> — grep: 0 hits
+✅ DS imports correct — Button, DataTable from @exxatdesignux/ui (file.tsx:2-3)
+✅ aria-hidden on all FA icons — grep: 3 found, all present
+✅ No hardcoded hex — grep: 0 hits
+
+NOT verified (requires dev server + browser):
+⚠ Popover clip — overflow ancestors not runtime-tested
+⚠ Color rendering — tokens defined in code, not checked in browser
+⚠ z-index stacking — portaled content z-index not runtime-verified
+⚠ Hover/focus states — not interacted with in browser
+```
+
+Calling it "GREENLIGHT" without the NOT-verified section is a Pattern L violation.
+Calling it "GREENLIGHT — visual review complete" when no browser was opened is a hard block.
+
+**Two verdict tiers:**
+- `GREENLIGHT (static)` — code analysis passed; browser not opened
+- `GREENLIGHT (runtime)` — Playwright interactions.mjs ran and passed; browser verified
+
+Never use `GREENLIGHT` alone. Always specify which tier.
+
 ### Pattern K — Proactive self-questioning before every task (added 2026-06-01)
 
 **What I do wrong:** Wait for Romit to be frustrated before recognizing a recurring pattern. The correction happens reactively — Romit says "you keep forgetting X", I add a rule, it works for one session, then the next session starts fresh and the cycle repeats.

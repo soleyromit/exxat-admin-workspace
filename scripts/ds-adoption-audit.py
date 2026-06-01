@@ -1175,6 +1175,115 @@ def scan_file_for_hand_rolled_export_drawer(rel: str, text: str) -> list[Gap]:
     )]
 
 
+_OVERFLOW_HIDDEN_RE = re.compile(r'\boverflow-hidden\b|["\']\s*overflow\s*:\s*hidden', re.IGNORECASE)
+_POPOVER_TOOLTIP_TRIGGER_RE = re.compile(
+    r'data-slot=["\'](?:popover|tooltip|select|combobox)-trigger["\']'
+    r'|<PopoverTrigger|<TooltipTrigger|<SelectTrigger',
+    re.IGNORECASE,
+)
+_GLOBALS_CSS_IMPORT_RE = re.compile(
+    r'@import\s+["\'].*(?:globals|@exxatdesignux/ui).*\.css["\']'
+    r'|import\s+["\'].*globals\.css["\']',
+    re.IGNORECASE,
+)
+
+
+def scan_file_for_overflow_hidden_with_floating(rel: str, text: str) -> list[Gap]:
+    """WARN: detect overflow-hidden on a container that also contains a popover
+    / tooltip / select trigger in the same file.
+
+    Popovers using Radix Portal are safe (content portals to body), but custom
+    or non-portal variants get clipped. This rule flags co-presence to prompt
+    manual review — a false positive rate is expected.
+
+    Added 2026-06-01 after Romit reported popovers being cut off in produced UI.
+    """
+    if not _OVERFLOW_HIDDEN_RE.search(text):
+        return []
+    if not _POPOVER_TOOLTIP_TRIGGER_RE.search(text):
+        return []
+    # Only flag if the overflow-hidden and trigger appear on different lines
+    # (same-line = inline style on the trigger itself, unlikely to clip)
+    overflow_lines = {i + 1 for i, ln in enumerate(text.splitlines()) if _OVERFLOW_HIDDEN_RE.search(ln)}
+    trigger_lines  = {i + 1 for i, ln in enumerate(text.splitlines()) if _POPOVER_TOOLTIP_TRIGGER_RE.search(ln)}
+    if overflow_lines == trigger_lines:
+        return []
+    first_overflow = min(overflow_lines)
+    return [Gap(
+        severity="warn",
+        rule="overflow-hidden-with-floating",
+        file=rel,
+        line=first_overflow,
+        message=(
+            "overflow-hidden detected in same file as a popover/tooltip/select trigger. "
+            "If the trigger is inside the overflow container AND not using Radix Portal, "
+            "the floating content will be clipped. Verify: open the floating element in the "
+            "browser and check getBoundingClientRect() is fully inside the viewport. "
+            "Radix Portal components (PopoverContent, TooltipContent, DropdownMenuContent) "
+            "are safe; custom absolute-positioned floats are not."
+        ),
+    )]
+
+
+def scan_file_for_missing_globals_css(rel: str, text: str) -> list[Gap]:
+    """WARN: admin layout.tsx / globals.css files that don't import DS globals.
+
+    If globals.css is not imported, CSS tokens (--background, --primary, etc.)
+    are undefined → all DS component colors fall back to browser defaults →
+    color mismatch. This is the #1 cause of "wrong color" bugs.
+
+    Added 2026-06-01 after Romit reported color mismatches in produced UI.
+    """
+    # Only check layout files and global CSS entry points
+    basename = Path(rel).name
+    if basename not in {"layout.tsx", "globals.css", "layout.ts"}:
+        return []
+    # layout.tsx must import globals.css — only check ROOT layout (app/layout.tsx),
+    # not nested group layouts like app/(app)/layout.tsx which inherit from root.
+    if basename in {"layout.tsx", "layout.ts"}:
+        # Skip nested route-group layouts (path contains a segment like (app), (admin), etc.)
+        # Root layout path: apps/<product>/<role>/app/layout.tsx
+        # Nested layout path: apps/<product>/<role>/app/(group)/layout.tsx
+        parts = Path(rel).parts
+        app_idx = next((i for i, p in enumerate(parts) if p == "app"), None)
+        if app_idx is None:
+            return []
+        segments_after_app = parts[app_idx + 1 :]
+        # If there's a route-group segment (surrounded by parens) before layout.tsx, skip
+        if any(s.startswith("(") and s.endswith(")") for s in segments_after_app[:-1]):
+            return []
+        has_css_import = bool(re.search(r'import\s+["\']\..*globals\.css["\']', text))
+        if not has_css_import:
+            return [Gap(
+                severity="warn",
+                rule="layout-missing-globals-css",
+                file=rel,
+                line=1,
+                message=(
+                    "layout.tsx does not import globals.css. "
+                    "Without this, @exxatdesignux/ui CSS tokens (--background, --primary, "
+                    "--card, --border, etc.) are undefined — all DS colors fall back to "
+                    "browser defaults, causing color mismatch across the entire app. "
+                    "Add: import './globals.css' (or the correct relative path)."
+                ),
+            )]
+    # globals.css must @import the DS package CSS
+    if basename == "globals.css":
+        if not _GLOBALS_CSS_IMPORT_RE.search(text):
+            return [Gap(
+                severity="warn",
+                rule="globals-css-missing-ds-import",
+                file=rel,
+                line=1,
+                message=(
+                    "globals.css does not @import '@exxatdesignux/ui/globals.css' "
+                    "(or equivalent). DS tokens will not be defined. "
+                    "Add: @import '@exxatdesignux/ui/globals.css'; as the first line."
+                ),
+            )]
+    return []
+
+
 def scan_filename_for_ds_organism(rel: str) -> list[Gap]:
     """Flag a custom file whose stem matches a DS organism in the registry."""
     if rel in ALLOWED_ORGANISM_PATHS:
@@ -1288,6 +1397,10 @@ def audit_product(product: str, role: str, root: Path) -> ProductReport:
             scan_file_for_hand_rolled_status_badge,
             scan_file_for_missing_list_page_template,
             scan_file_for_hand_rolled_export_drawer,
+            # Visual rendering safety (WARN) — added 2026-06-01.
+            # Catches overflow-clipped popovers + missing globals.css (color mismatch).
+            scan_file_for_overflow_hidden_with_floating,
+            scan_file_for_missing_globals_css,
         ):
             for g in fn(short_rel, text):
                 g.file = rel
