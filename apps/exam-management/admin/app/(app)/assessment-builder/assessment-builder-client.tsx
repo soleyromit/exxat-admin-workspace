@@ -3316,24 +3316,52 @@ function ReviewStep({
           <div className="rounded-xl border border-border bg-card p-5">
             <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-3">Sections</p>
             <div className="flex flex-col divide-y divide-border">
-              {activeAsmt.sections.map((section, idx) => (
-                <div key={section.id} className="flex items-center justify-between py-2.5">
-                  <p className="text-sm text-foreground">
-                    <span className="text-muted-foreground mr-2">{idx + 1}.</span>
-                    {section.title}
-                  </p>
-                  <div className="flex items-center gap-3">
-                    {s.graded && (
-                      <span className="text-xs text-muted-foreground tabular-nums">
-                        {sectionSubtotals.get(section.id) ?? 0} pts
-                      </span>
-                    )}
-                    <Badge variant="secondary" className="rounded text-xs">
-                      {section.questionIds.length} Q
-                    </Badge>
+              {activeAsmt.sections.map((section, idx) => {
+                const filled = section.questionIds.length
+                const target = section.fillTarget?.value ?? section.questionTarget
+                const isComplete = target != null ? filled >= target : true
+                const isStarted = filled > 0
+                return (
+                  <div key={section.id} className="flex items-center justify-between py-2.5">
+                    <div>
+                      <p className="text-sm text-foreground">
+                        <span className="text-muted-foreground mr-2">{idx + 1}.</span>
+                        {section.title}
+                      </p>
+                      {target != null && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {filled} / {target} {section.fillTarget?.type === 'points' ? 'pts' : 'Q'}
+                          {!isComplete && (
+                            <span
+                              style={{ color: 'var(--muted-foreground)', marginLeft: 4 }}
+                              aria-label={isStarted ? 'not complete' : 'not started'}
+                            >
+                              · ⚠ {isStarted ? 'not complete' : 'not started'}
+                            </span>
+                          )}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {s.graded && (
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                          {sectionSubtotals.get(section.id) ?? 0} pts
+                        </span>
+                      )}
+                      <Badge
+                        variant="secondary"
+                        className="rounded text-xs"
+                        style={isComplete && target != null ? {
+                          background: 'color-mix(in srgb, var(--chart-2) 15%, var(--background))',
+                          color: 'var(--chart-2)',
+                        } : undefined}
+                      >
+                        {section.questionIds.length} Q
+                      </Badge>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}
