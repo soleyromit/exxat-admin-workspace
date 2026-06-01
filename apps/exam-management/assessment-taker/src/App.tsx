@@ -84,7 +84,7 @@ function SectionStartScreen({
       aria-modal="true"
       aria-labelledby="section-start-title"
       style={{
-        position: 'fixed', inset: 0, zIndex: 200,
+        position: 'absolute', inset: 0, zIndex: 200,
         background: 'var(--background)', display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexDirection: 'column', padding: '40px 24px',
       }}
@@ -310,23 +310,6 @@ export function App() {
   );
   return (
     <>
-    {showSectionStart && assessment?.sections?.length && (() => {
-      const boundaries = getSectionBoundaries(assessment.sections);
-      const boundary = pendingNavigateIndex !== null
-        ? boundaries.find(b => pendingNavigateIndex >= b.start && pendingNavigateIndex <= b.end)
-        : boundaries[0];
-      if (!boundary) return null;
-      return (
-        <SectionStartScreen
-          section={boundary.section}
-          sectionNumber={boundary.sectionNumber}
-          totalSections={assessment.sections.length}
-          questionStart={boundary.start + 1}
-          questionEnd={boundary.end + 1}
-          onBegin={handleBeginSection}
-        />
-      );
-    })()}
     <div
       className={`h-screen w-full flex flex-col overflow-hidden transition-colors duration-300 theme-${theme}`}
       style={{
@@ -423,6 +406,24 @@ export function App() {
       
 
       <div className="relative flex-1 overflow-hidden flex flex-col">
+        {showSectionStart && assessment?.sections?.length && (() => {
+          const boundaries = getSectionBoundaries(assessment.sections);
+          const boundary = pendingNavigateIndex !== null
+            ? boundaries.find(b => pendingNavigateIndex >= b.start && pendingNavigateIndex <= b.end)
+            : boundaries[0];
+          if (!boundary) return null;
+          return (
+            <SectionStartScreen
+              section={boundary.section}
+              sectionNumber={boundary.sectionNumber}
+              totalSections={assessment.sections.length}
+              questionStart={boundary.start + 1}
+              questionEnd={boundary.end + 1}
+              onBegin={handleBeginSection}
+            />
+          );
+        })()}
+
         <QuestionNavigatorPopover
           questions={questions}
           currentIndex={currentIndex}
