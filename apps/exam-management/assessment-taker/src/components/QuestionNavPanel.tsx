@@ -27,8 +27,8 @@ interface TipState {
   sectionLabel: string;
 }
 
-const TIP_WIDTH = 200;
-const TIP_GAP = 8;
+const TIP_WIDTH = 240;
+const TIP_GAP = 10;
 
 function getSectionIndex(sections: ExamSection[], index: number): number {
   let cum = 0;
@@ -110,14 +110,15 @@ export function QuestionNavPanel({
       sections?.length
         ? `Section ${getSectionIndex(sections, index) + 1}`
         : '';
-    // Position: needs two-pass (show offscreen first to measure height)
+    // Two-pass: render offscreen to measure height, then position to the left of the tile
     setTip({ visible: true, left: -9999, top: -9999, qnum: index + 1, title: truncate(questions[index].text), status, sectionLabel });
     requestAnimationFrame(() => {
       const rect = tile.getBoundingClientRect();
-      const tipH = tipRef.current?.offsetHeight ?? 72;
-      let left = rect.left + rect.width / 2 - TIP_WIDTH / 2;
-      left = Math.max(8, Math.min(left, window.innerWidth - TIP_WIDTH - 8));
-      const top = rect.top - tipH - TIP_GAP;
+      const tipH = tipRef.current?.offsetHeight ?? 80;
+      // Always to the left of the tile — panel is on the right edge, so this points into content area
+      const left = Math.max(8, rect.left - TIP_WIDTH - TIP_GAP);
+      // Vertically centered with the tile, clamped to viewport
+      const top = Math.max(8, Math.min(rect.top + rect.height / 2 - tipH / 2, window.innerHeight - tipH - 8));
       setTip(prev => ({ ...prev, left, top }));
     });
   }, [getTileStatus, sections, questions]);
@@ -306,9 +307,11 @@ export function QuestionNavPanel({
         <div style={badgeStyle(tip.status)}>{badgeLabel(tip.status, tip.sectionLabel)}</div>
       </div>
       <div style={{
-        width: 8, height: 5, margin: '0 auto',
+        position: 'absolute',
+        right: -6, top: '50%', transform: 'translateY(-50%)',
+        width: 6, height: 10,
         background: 'var(--foreground)',
-        clipPath: 'polygon(0 0, 100% 0, 50% 100%)',
+        clipPath: 'polygon(0 0, 100% 50%, 0 100%)',
       }} />
     </div>,
     document.body
