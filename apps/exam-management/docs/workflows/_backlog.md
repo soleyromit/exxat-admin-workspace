@@ -100,7 +100,7 @@ Source: `docs/research/meetings/2026-05-27-exam-management-status-offline-facult
 | ~~T51~~ | ~~Assessment creation entry modal — 4-option flow~~ | ~~Admin / Faculty~~ | ~~Assessment builder~~ | ~~CANCELLED~~ | Decision reversed 2026-05-27. Entry stays at 2 options (blank/copy per D_EM55). All other methods (AI, QB, PDF) go inside builder. Current modal is correct. |
 | T69 | Offline mode: update T58 status → Q1 deliverable | Admin / Faculty / Student | Pre-exam flow | P1 | T58 said "Phase 1 confirmed." REVISED: offline download mode is Q1 2027, not December 2026. December launch is browser-only with preload safety net. D_EM45 supersedes §5.35. |
 | T70 | Respondus lockdown browser integration research | Eng | Pre-exam flow | P1 | Engineering research task. Explore Respondus (or equivalent) integration as the lockdown browser solution. Building own desktop client explicitly ruled out. D_EM46. |
-| T71 | Point-biserial number in assessment builder | Admin / Faculty | Assessment builder | P1 | Show p-bis as a plain number in the question picker column during build. Red if negative. Future: flag bottom-20th-percentile by threshold. D_EM58. DESIGN-REVIEW — requires builder UI change. |
+| T71 | Point-biserial number in assessment builder | Admin / Faculty | Assessment builder | P1 — ✅ APPLIED | Added P-bis column to question picker in `assessment-builder-client.tsx`. Shows value as number; red (`var(--destructive)`) if negative; `—` if null. D_EM58. |
 | T72 | Assessment summary screen before publish | Admin / Faculty | Assessment builder | P1 | NEW PAGE NEEDED. Pre-publish summary between Stage 2 (Build) and Stage 3 (Publish): total questions, expected completion time, psychometric summary (p-bis range, difficulty distribution, Bloom's coverage), questions missing rationale. D_EM61. DESIGN-REVIEW. |
 
 ## Phase 1 design tasks — added 2026-05-28
@@ -113,6 +113,16 @@ Source: `docs/research/meetings/2026-05-28-assessment-setup-ai-automation.md` (G
 | T74 | Document upload: accept PDF AND Word (.doc/.docx) | Admin / Faculty | Question import / assessment creation | P1 | Current design shows PDF only. Must update upload `accept` attribute when component is built. D_EM66. |
 | T75 | Confirm no section back-navigation lock exists | Admin / Faculty / Student | Assessment taker | P1 | Default = allow free navigation between sections. If configurable setting added in future, default must be "allow." D_EM62. |
 | T76 | QB pinning feature — UX review (remove or redesign) | Admin / Faculty | Question bank sidebar | P1 — DESIGN-REVIEW | Pinning implemented in `qb-sidebar.tsx:513–535`. Nipun says "from the information hierarchy UX perspective, made wrongly." Do NOT remove without Nipun direction. Do NOT build additional pin UI. Nipun to provide decision. D_EM72. |
+
+## Phase 1 design tasks — added 2026-06-01
+
+Source: `docs/research/meetings/2026-05-27-design-system-adoption-himanshu.md` (Granola `ae66b50f`)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T77 | Define product brand color for exam-management | Design | DS / theming | P2 | Leadership decision: each product has its own color (Prism=pink, ExactOne=indigo). exam-management color is TBD. Pick token, apply to product theme. D_DS01. |
+
+---
 
 ## Research / blockers (R1–R10 from audit)
 
