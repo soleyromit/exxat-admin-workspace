@@ -38,6 +38,16 @@ No `package.json` at monorepo root — `pnpm --filter` does NOT work from there.
 
 ## Sequential Design Protocol (non-negotiable — full spec: `docs/governance/design-review-protocol.md`)
 
+**Pre-task declaration (BEFORE touching any file — no exceptions):**
+Write this block before any code:
+```
+File: <path>
+Current DS violations: <list or "none found">
+Hand-rolled with DS equivalent: <list or "none">
+WCAG issues (static read): <list or "none found">
+```
+Anchors the session. Prevents hallucination about what existed before the edit.
+
 **Gate 1 — Before writing any JSX:**
 1. `query_granola_meetings` for the entity/feature → pull raw transcript if hits found → extract decisions, scope constraints, UX directives
 2. Read per-product `ui-patterns.md` + `docs/governance/design-anti-patterns.md` + `docs/governance/component-consistency.md`
@@ -47,12 +57,13 @@ No `package.json` at monorepo root — `pnpm --filter` does NOT work from there.
 **Gate 2 — After any UI-touching change, before claiming done:**
 1. Self-review against 10-point component-consistency checklist (`component-consistency.md §10`)
 2. Transcript alignment — cross-check implementation against Gate 1 Granola decisions (✅ match / ⚠ assumption / ❌ contradiction)
-3. Spawn `compliance-reviewer` — WCAG 2.1 AA + FERPA + HIPAA. NEEDS-MORE blocks done claim.
-4. Spawn `state-review` for any new list/form/async page. NEEDS-MORE blocks done claim.
-5. Spawn `verification-reviewer`. NEEDS-MORE blocks done claim.
+3. Spawn `compliance-reviewer` — **paste its literal GREENLIGHT/NEEDS-MORE verdict**. "I spawned it" without output = not run.
+4. Spawn `state-review` for any list/form/async page — **paste literal verdict**.
+5. Spawn `verification-reviewer` — **paste literal verdict**.
 6. Grep changed files for banned patterns: `uppercase tracking-wide`, `py-20 text-center`, `color-mix(in oklch`
 7. **Spawn `Explore` to grep-verify every claimed change exists** (Pattern G — never claim done from memory)
 8. For every mistake found: write a discipline log entry AND either fix it now or write a rule preventing recurrence (Pattern H — no text-only self-reflections)
+9. **Evidence block on every done claim** — state: axe-core path or "not run — no dev server", DS import `file:line` per new component, grep result. Saying "it passes" without evidence = Pattern I violation.
 
 ## Key tokens (80% of UI work — full table in `docs/CLAUDE-DS-REFERENCE.md`)
 `--background` `--foreground` `--card` `--muted` `--muted-foreground` `--border` `--border-control-35` `--brand-color` `--brand-tint` `--primary` `--destructive` `--ring` `--radius` `--control-height`

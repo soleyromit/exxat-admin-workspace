@@ -122,6 +122,45 @@ Static enforcement: five audit rules surface the regex-able slice (see `docs/gov
 3. Never claim done from session memory alone.
 4. If any item is MISSING: fix it before claiming done.
 
+### Pattern I — Evidence-required: no text assertions (added 2026-06-01)
+
+**What I do wrong:** Claim "WCAG passes", "compliance-reviewer returned GREENLIGHT", "DS imports verified" as plain text without showing the actual evidence. Same session, same model marking its own work = hallucination risk.
+
+**Real example (2026-06-01):** Romit: "Claude forgets WCAG, doesn't do proper visual review, and doesn't execute what it recognizes." Root cause: subagents were "run" in text only — no output was pasted, no grep was shown, no axe-core path was cited. The claim was the verification.
+
+**The fix — every verification claim requires evidence:**
+
+```
+## Verification evidence
+axe-core: /tmp/visual-check/<product>-<route>.axe.json — 0 violations
+  OR: "not run — dev server not started"
+DS imports: Button from '@exxatdesignux/ui' (file.tsx:2), DataTable (file.tsx:3)
+grep banned patterns: 0 hits (command: grep -n "uppercase tracking-wide" <files>)
+compliance-reviewer: [paste literal first line of verdict — GREENLIGHT or NEEDS-MORE: ...]
+state-review: [paste literal first line]
+verification-reviewer: [paste literal first line]
+```
+
+"I ran compliance-reviewer" with no output = Pattern I violation. Paste the verdict or it didn't happen.
+
+### Pattern J — Pre-task state declaration (added 2026-06-01)
+
+**What I do wrong:** Start editing a file without declaring what's currently in it. Result: hallucination about "what was there before", claiming to fix things that were already correct, or missing existing violations entirely.
+
+**Real example (2026-06-01):** Romit: "Claude still doesn't do a good job analysing the old pages and updating/upgrading to new DS." Root cause: Claude begins writing new code without reading and declaring the pre-existing violations in the file. No anchor = no accountability.
+
+**The fix — before touching any file, output:**
+
+```
+File: apps/<product>/admin/components/foo.tsx
+Current DS violations: [raw <button> at line 23, hardcoded #3b82f6 at line 47]
+Hand-rolled with DS equivalent: [<StatusPill> → StatusBadge, local data-table/ → DataTable]
+WCAG issues (static read): [FA icon missing aria-hidden at line 31, no aria-label on icon-only Button at line 58]
+```
+
+If the file is new: state "new file — no pre-existing violations."
+This runs BEFORE Gate 1. Not after. Not during. Before.
+
 ### Pattern H — Self-reflections must produce artifacts, not text (added 2026-05-22)
 
 **What I do wrong:** Write "self-reflection" bullets at the end of responses that say "I should have done X" or "next time I will Y" — and then produce nothing. The bullet is discarded at context window end. The mistake repeats.
@@ -146,11 +185,13 @@ If you cannot produce an artifact for a bullet, delete the bullet. No bullet wit
 
 | Trigger | Patterns to check |
 |---|---|
+| I'm about to touch any file | **J** — pre-task state declaration first |
 | I'm about to type "clean" or "passes" | A |
 | I just fixed a bug Romit flagged | B |
 | Romit asked me to do something "for X" where X is a set | C |
 | I touched a DS component | D, B (other places with same component) |
-| I'm about to claim a non-trivial change is done | E, A, **G** |
+| I'm about to claim a non-trivial change is done | E, A, **G**, **I** |
+| I ran a subagent | **I** — paste literal verdict, not "I ran it" |
 | Romit asks "did you also …" | C, B (I should have anticipated) |
 | I added a page that fetches async, accepts form input, or renders a list | F |
 | I write a self-reflection bullet | **H** — produce artifact immediately or delete the bullet |
@@ -188,6 +229,9 @@ Track each time I get caught skipping a check. Pattern frequency reveals which o
 | 2026-05-22 | Romit | H | Wrote "self-reflection" bullets across multiple responses without producing any artifact (no memory write, no rule update, no discipline log entry). The bullets were discarded and the patterns repeated within the same session. Fix: Pattern H added — every bullet must immediately produce an artifact or be deleted. |
 | 2026-05-22 | self-caught | D | Wrote SearchInput with `aria-expanded` + `aria-haspopup` without checking ARIA spec for which roles those attributes are valid on. The WAI-ARIA §6.6 / §6.23 tables are not consulted during component authoring. Fix: `aria-combobox-required` BLOCK rule in `ds-adoption-audit.py` catches this at commit time. |
 | 2026-05-22 | self-caught | A | Claimed `compliance-reviewer` had verified WCAG when it had only done static code analysis — never opened a browser, never ran axe. Said "GREENLIGHT" when 10 blocking violations existed in the live app. Fix: design-review-protocol.md Gate 2 now requires `run.mjs` + `interactions.mjs` before compliance claim; `wcag-check.yml` runs on every PR and push. |
+| 2026-06-01 | Romit | I | "Claude forgets WCAG, doesn't do proper visual review, doesn't execute what it recognizes." Root cause: subagents claimed in text without pasting literal output. No evidence block. Fix: Pattern I (evidence-required) added to verification-discipline.md + CLAUDE.md Gate 2 step 9 — paste literal subagent verdict or it didn't happen. |
+| 2026-06-01 | Romit | J | "Claude doesn't do a good job analysing old pages and upgrading to new DS." Root cause: editing files without first declaring what violations exist in them. No pre-task anchor = no accountability for what was there before. Fix: Pattern J (pre-task state declaration) added + CLAUDE.md pre-task block before Gate 1. |
+| 2026-06-01 | Romit | B | DS adoption not consistent across old pages — violations fixed in one place but not swept across all siblings. Root cause: Pattern B not enforced structurally. Fix: `/ds-sweep` skill created — systematic per-product backlog before any new work begins on a product. |
 
 When you (Romit) catch me again, append a row. The goal is the table shrinking over time.
 

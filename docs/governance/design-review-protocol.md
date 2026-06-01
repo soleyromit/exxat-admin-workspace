@@ -6,6 +6,23 @@
 
 ---
 
+## Pre-task declaration (BEFORE Gate 1 — required for every file touch)
+
+Before writing a single character of code, output this block:
+
+```
+File: <path>
+Current DS violations: [list each — raw button, hardcoded color, etc. — or "none found"]
+Hand-rolled with DS equivalent: [e.g. local DataTable copy → import from @exxatdesignux/ui]
+WCAG issues (static read): [missing aria-hidden, aria-label gaps, etc. — or "none found"]
+```
+
+**Why this exists (Pattern J — 2026-06-01):** Starting edits without anchoring to the current file state causes hallucination about what was there before, misses existing violations, and makes "done" claims unverifiable. This block is the anchor.
+
+If the file is new: write `new file — no pre-existing violations`.
+
+---
+
 ## Gate 1 — Pre-Design Context Pull (BEFORE writing any JSX)
 
 Run ALL of these before writing a single line of component code.
@@ -98,6 +115,8 @@ Transcript alignment:
 ```
 
 ### 2c. WCAG 2.1 AA compliance — visual-check runner + `compliance-reviewer`
+
+> **Pattern I (2026-06-01):** Paste the subagent's literal first line of output — "GREENLIGHT" or "NEEDS-MORE: [first violation]". Claiming "I ran compliance-reviewer" without pasting output = not run.
 
 **Step 1 — Run the visual-check tools** (requires dev server at the product's port):
 
