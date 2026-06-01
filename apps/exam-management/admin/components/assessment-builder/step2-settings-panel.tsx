@@ -60,7 +60,7 @@ export function Step2SettingsPanel({ settings, onPatch, onClose }: Props) {
         {/* Left: back to Health button */}
         <button
           onClick={onClose}
-          aria-label="Back to Health panel"
+          aria-label="Back to health panel"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -74,7 +74,7 @@ export function Step2SettingsPanel({ settings, onPatch, onClose }: Props) {
             fontSize: 12,
           }}
         >
-          <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 11 }} />
+          <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 12 }} />
           Health
         </button>
 
@@ -324,7 +324,7 @@ export function Step2SettingsPanel({ settings, onPatch, onClose }: Props) {
                     background: 'var(--muted)',
                   }}
                 >
-                  <i className="fa-light fa-file-pdf" aria-hidden="true" style={{ fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0 }} />
+                  <i className="fa-light fa-file-pdf" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)', flexShrink: 0 }} />
                   <span style={{ fontSize: 12, color: 'var(--foreground)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {doc.name || doc.url}
                   </span>
@@ -343,7 +343,7 @@ export function Step2SettingsPanel({ settings, onPatch, onClose }: Props) {
                       flexShrink: 0,
                     }}
                   >
-                    <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 11 }} />
+                    <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 12 }} />
                   </button>
                 </div>
               ))}
@@ -385,7 +385,7 @@ export function Step2SettingsPanel({ settings, onPatch, onClose }: Props) {
               onClick={() => setAddingRef(true)}
               style={{ height: 28, fontSize: 12, justifyContent: 'flex-start', paddingLeft: 4 }}
             >
-              <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 11, marginRight: 4 }} />
+              <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12, marginRight: 4 }} />
               Add PDF
             </Button>
           )}
@@ -413,7 +413,7 @@ export function Step2SettingsPanel({ settings, onPatch, onClose }: Props) {
                     background: 'var(--muted)',
                   }}
                 >
-                  <i className="fa-light fa-book-open" aria-hidden="true" style={{ fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0 }} />
+                  <i className="fa-light fa-book-open" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)', flexShrink: 0 }} />
                   <span style={{ fontSize: 12, color: 'var(--foreground)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {doc.name || doc.url}
                   </span>
@@ -432,7 +432,7 @@ export function Step2SettingsPanel({ settings, onPatch, onClose }: Props) {
                       flexShrink: 0,
                     }}
                   >
-                    <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 11 }} />
+                    <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 12 }} />
                   </button>
                 </div>
               ))}
@@ -474,7 +474,7 @@ export function Step2SettingsPanel({ settings, onPatch, onClose }: Props) {
               onClick={() => setAddingPreRead(true)}
               style={{ height: 28, fontSize: 12, justifyContent: 'flex-start', paddingLeft: 4 }}
             >
-              <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 11, marginRight: 4 }} />
+              <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12, marginRight: 4 }} />
               Add pre-read document
             </Button>
           )}
@@ -494,11 +494,9 @@ function Section({ label, children }: { label: string; children: React.ReactNode
     <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
       <p
         style={{
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: '0.06em',
+          fontSize: 12,
+          fontWeight: 500,
           color: 'var(--muted-foreground)',
-          textTransform: 'uppercase',
           margin: 0,
         }}
       >
@@ -529,7 +527,7 @@ function ToggleRow({ id, label, description, checked, onCheckedChange }: ToggleR
           {label}
         </Label>
         {description && (
-          <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: '2px 0 0', lineHeight: 1.4 }}>
+          <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: '2px 0 0', lineHeight: 1.4 }}>
             {description}
           </p>
         )}
