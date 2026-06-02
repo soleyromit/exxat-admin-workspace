@@ -58,28 +58,23 @@ export function SettingsPanel({
 }: SettingsPanelProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [confirming, setConfirming] = useState(false);
+  const [selectOpen, setSelectOpen] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) setConfirming(false);
+    if (!isOpen) { setConfirming(false); setSelectOpen(false); }
   }, [isOpen]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
+      if (selectOpen) return;
       const target = event.target as Element;
       if (ref.current && !ref.current.contains(target)) {
-        // Radix Select renders its listbox in a portal outside ref.
-        // Detect it via popper wrapper attr OR WAI-ARIA roles (version-independent).
-        if (
-          target.closest('[data-radix-popper-content-wrapper]') ||
-          target.closest('[role="listbox"]') ||
-          target.closest('[role="option"]')
-        ) return;
         onClose();
       }
     }
     if (isOpen) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, selectOpen]);
 
   if (!isOpen) return null;
 
@@ -312,6 +307,7 @@ export function SettingsPanel({
           <Select
             value={colorBlindMode}
             onValueChange={(v) => onColorBlindModeChange?.(v as ColorBlindMode)}
+            onOpenChange={setSelectOpen}
           >
             <SelectTrigger
               size="sm"
