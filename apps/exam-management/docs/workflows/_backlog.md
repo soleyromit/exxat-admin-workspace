@@ -122,6 +122,18 @@ Source: `docs/research/meetings/2026-05-27-design-system-adoption-himanshu.md` (
 |---|---|---|---|---|---|
 | T77 | Define product brand color for exam-management | Design | DS / theming | P2 | Leadership decision: each product has its own color (Prism=pink, ExactOne=indigo). exam-management color is TBD. Pick token, apply to product theme. D_DS01. |
 
+## Phase 1 design tasks — added 2026-06-02
+
+Source: `docs/research/meetings/2026-06-01-exam-taker-navigation-rohit.md` (Granola `caaae283`)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T78 | Question nav panel: surface only flagged questions; answered count shown as summary chip at top | Student | Assessment taker | P1 — DESIGN-REVIEW | Rohit (2026-06-01): "Only flagged can be surfaced here because after I answer a lot of questions, I don't need the answered questions. I only need the flagged ones." Extends and aligns with T35 (QuestionNavigatorPopover → QuestionJumpPopover direction). D_AT02. |
+| T79 | Question navigation: move to LEFT panel to minimize cursor movement | Student | Assessment taker | P1 — DESIGN-REVIEW | Rohit (2026-06-01): "I don't want the student's cursor to move across too much. Always surface the questions on the left." USMLE/GRE/GMAT reference. Major layout change — full panel rearchitecture. D_AT03. |
+| T80 | Keyboard shortcuts modal: expose all exam shortcuts via a button-triggered modal | Student | Assessment taker | P1 — DESIGN-REVIEW | Rohit: "put a button or some sort of element. Once you click that, you'll open a model where you show all the common shortcuts." Required for full keyboard-only accessibility (students with no mouse). D_AT08. |
+| T81 | "Flag" vocabulary split: "Bookmark" (personal) + "Report an issue" (faculty review) — separate icons, separate flows | Student | Assessment taker | P1 — DESIGN-REVIEW | Rohit agreed with Romit's proposal. Current code uses single "Flag" concept. Requires separate UX flows + new data model for each. D_AT05. |
+| T82 | "Report an issue" button: de-emphasize — move into settings gear panel or bottom non-primary area | Student | Assessment taker | P1 — DESIGN-REVIEW | Rohit: "put it inside the settings button at the top or somewhere at the bottom where it doesn't take much attention." D_AT06. |
+
 ---
 
 ## Research / blockers (R1–R10 from audit)
