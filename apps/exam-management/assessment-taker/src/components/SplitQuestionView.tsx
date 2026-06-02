@@ -358,21 +358,22 @@ export function SplitQuestionView({
         {/* Reference + Bookmark buttons — right-aligned, top-anchored */}
         <div className="flex items-center gap-0.5 shrink-0">
           {question.references?.length ? (
-            <Tooltip content={showRefPanel ? 'Close reference' : 'View reference material'} position="bottom">
-              <DSButton
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => setShowRefPanel(v => !v)}
-                aria-label={showRefPanel ? 'Close reference material' : 'Open reference material'}
-                aria-expanded={showRefPanel}
-                style={showRefPanel ? {
-                  backgroundColor: 'var(--exam-accent-light)',
-                  color: 'var(--exam-accent)',
-                } : { color: 'var(--muted-foreground)' }}
-              >
-                <i className="fa-light fa-book-open" aria-hidden="true" style={{ fontSize: '1em' }} />
-              </DSButton>
-            </Tooltip>
+            <DSButton
+              variant="outline"
+              size="sm"
+              onClick={() => setShowRefPanel(v => !v)}
+              aria-label={showRefPanel ? 'Close reference material' : 'Open reference material'}
+              aria-expanded={showRefPanel}
+              className="shrink-0"
+              style={showRefPanel ? {
+                backgroundColor: 'var(--exam-accent-light)',
+                borderColor: 'var(--exam-accent)',
+                color: 'var(--exam-accent)',
+              } : undefined}
+            >
+              <i className="fa-light fa-file-lines" aria-hidden="true" style={{ fontSize: 13 }} />
+              Reference
+            </DSButton>
           ) : null}
           {onToggleFlag && (
             <Tooltip content={isFlagged ? 'Remove bookmark' : 'Bookmark'} position="bottom">
