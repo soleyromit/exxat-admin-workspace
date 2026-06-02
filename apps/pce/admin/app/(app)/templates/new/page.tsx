@@ -176,7 +176,9 @@ function NewTemplateInner() {
                     return (
                       <div
                         key={tmpl.id}
-                        className="flex items-center gap-4 cursor-pointer transition-colors"
+                        role="button"
+                        tabIndex={0}
+                        className="flex items-center gap-4 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                         style={{
                           padding: '14px 20px',
                           paddingLeft: selected ? 18 : 20,
@@ -185,6 +187,7 @@ function NewTemplateInner() {
                           borderLeft: selected ? '2px solid var(--brand-color)' : '2px solid transparent',
                         }}
                         onClick={() => setCopyFromId(tmpl.id)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCopyFromId(tmpl.id) } }}
                       >
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{tmpl.name}</p>

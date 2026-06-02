@@ -653,13 +653,18 @@ function InteractiveIcon({ sz, reduced }: { sz: SZ; reduced: boolean }) {
   return (
     <span
       ref={rootRef}
+      role="button"
+      tabIndex={0}
+      aria-label="Ask Leo"
       className={cn(
         "relative inline-flex items-center justify-center shrink-0 cursor-pointer select-none",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-full",
         sz.root,
       )}
       onMouseDown={onDown}
       onMouseUp={onUp}
       onClick={onClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } }}
     >
       {/* Breathing aura — subtle background presence */}
       <motion.span

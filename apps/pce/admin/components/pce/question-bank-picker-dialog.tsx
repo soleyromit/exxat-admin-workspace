@@ -99,13 +99,13 @@ export function QuestionBankPickerDialog({
         style={{ maxHeight: '80vh' }}
       >
         <DialogHeader className="shrink-0 px-5 pt-5 pb-3">
-          <DialogTitle>Question bank</DialogTitle>
+          <DialogTitle>Templates</DialogTitle>
           <p className="text-xs mt-1" style={{ color: 'var(--muted-foreground)' }}>
             Select one or more questions to add to this section.
           </p>
           <Input
             autoFocus
-            placeholder="Search questions…"
+            placeholder="Search templates…"
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="mt-3 h-8 text-sm"

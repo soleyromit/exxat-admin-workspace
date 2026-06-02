@@ -38,7 +38,7 @@ import type { FilterFieldDef } from '@/components/table-properties/types'
 
 const STATUSES = ['enrolled', 'graduated', 'withdrawn', 'on-leave'] as const
 
-function statusBadgeVariant(s: Student['enrollmentStatus']): 'secondary' | 'outline' | 'destructive' {
+function enrollmentBadgeVariant(s: Student['enrollmentStatus']): 'secondary' | 'outline' | 'destructive' {
   if (s === 'enrolled') return 'secondary'
   if (s === 'graduated') return 'outline'
   if (s === 'on-leave') return 'outline'
@@ -202,7 +202,7 @@ export default function StudentsPage() {
       sortable: true,
       width: 120,
       cell: (row) => (
-        <Badge variant={statusBadgeVariant(row.enrollmentStatus)} className="capitalize">
+        <Badge variant={enrollmentBadgeVariant(row.enrollmentStatus)} className="capitalize">
           {row.enrollmentStatus.replace('-', ' ')}
         </Badge>
       ),
@@ -278,7 +278,7 @@ export default function StudentsPage() {
   return (
     <>
       <SiteHeader title="Students" />
-      <div className="flex items-center gap-3 border-b border-border shrink-0" style={{ padding: '14px 28px 14px' }}>
+      <div className="flex items-center gap-3 shrink-0" style={{ padding: '14px 28px 14px' }}>
         <Link href="/admin" className="text-sm text-muted-foreground">Admin</Link>
         <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
         <h1 className="text-sm font-semibold flex-1 truncate">Students</h1>

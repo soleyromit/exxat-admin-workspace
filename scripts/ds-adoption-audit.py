@@ -163,6 +163,24 @@ DOCUMENTED_HAND_ROLLS = {
     "components/pce/distribute-wizard/email-list-sheet.tsx",
     "components/pce/distribute-wizard/exxat-prism-sheet.tsx",
     "components/pce/distribute-wizard/step-report-access.tsx",
+    # pce: vendored DataTable has PCE-specific extensions (defaultGroupBy,
+    # groupLabels, groupOrder) not yet in the DS export. Intentional until
+    # the DS DataTable supports grouped row presets.
+    "components/data-table",
+    # pce admin: list pages use vendored DataTable (see above). ListPageTemplate
+    # migration deferred until DataTable vendoring is resolved.
+    "app/(app)/admin/faculty/page.tsx",
+    "app/(app)/admin/offerings/page.tsx",
+    "app/(app)/admin/terms/page.tsx",
+    "app/(app)/admin/accommodations/page.tsx",
+    "app/(app)/admin/students/page.tsx",
+    "app/(app)/admin/courses/page.tsx",
+    "app/(app)/admin/competencies/page.tsx",
+    "app/(app)/admin/content-areas/page.tsx",
+    "app/(app)/admin/assessment-types/page.tsx",
+    "app/(app)/admin/standards/page.tsx",
+    "app/(app)/admin/permissions/page.tsx",
+    "app/(app)/my-surveys/page.tsx",
 }
 
 # Pre-existing organism-name-collision files we're grandfathering as of
@@ -964,7 +982,10 @@ _EXPORT_DRAWER_IMPORT_RE = re.compile(
     r"import\s*\{[^}]*\bExportDrawer\b[^}]*\}\s*from\s*['\"]@exxatdesignux/ui['\"]"
 )
 _EXPORT_KEYWORD_RE = re.compile(
-    r"\b(?:export|download|csv|xlsx|Export|Download|CSV|XLSX)\b"
+    # lowercase `export` omitted — matches ES module `export default/function` syntax
+    # and produces false positives on every TSX file that has a Sheet/Dialog.
+    # Only uppercase `Export` (the UI label) and file-format keywords are checked.
+    r"\b(?:download|csv|xlsx|Export|Download|CSV|XLSX)\b"
 )
 _SHEET_DIALOG_DRAWER_RE = re.compile(r"<\s*(?:Sheet|Dialog|Drawer)\b")
 
@@ -1044,7 +1065,10 @@ def scan_dir_for_vendored_ds_component(
     for comp_dir, rule, message in checks:
         if not _is_vendored(comp_dir):
             continue
-        rel = prefix + str(comp_dir.relative_to(root))
+        short_comp_rel = str(comp_dir.relative_to(root))
+        if short_comp_rel in DOCUMENTED_HAND_ROLLS:
+            continue
+        rel = prefix + short_comp_rel
         gaps.append(Gap(
             severity="warn",
             rule=rule,
@@ -1464,6 +1488,18 @@ def main():
     )
     ap.add_argument("--product", help="Scope to one product (e.g., pce, exam-management).")
     ap.add_argument("--json", action="store_true", help="Machine-readable JSON output.")
+    ap.add_argument(
+        "--touched-files",
+        metavar="FILES",
+        help=(
+            "Newline-or-space-separated list of repo-relative paths staged for commit. "
+            "Restricts output to only these files and promotes migration WARN rules "
+            "(raw-html-button, hand-rolled-export-drawer, color-mix-contrast-risk, "
+            "vendored-datatable, missing-list-page-template, card-shape-masquerade, "
+            "hand-rolled-status-badge) to BLOCK — the touch-gate. "
+            "Combine with --strict to exit 1 on any promoted violation."
+        ),
+    )
     args = ap.parse_args()
 
     products = discover_products()
@@ -1471,6 +1507,64 @@ def main():
         products = [p for p in products if p[0] == args.product]
 
     reports = [audit_product(prod, role, root) for prod, role, root in products]
+
+    # ── Touch-gate filter ────────────────────────────────────────────────────
+    # When --touched-files is given (called from pre-commit with staged paths),
+    # restrict the report to those files and promote migration WARNs to BLOCK.
+    if args.touched_files:
+        raw_paths = args.touched_files.replace("\n", " ").split()
+        touched_abs: set[Path] = {
+            (REPO_ROOT / p.strip()).resolve() for p in raw_paths if p.strip()
+        }
+
+        # Rules promoted WARN → BLOCK when the containing file is staged.
+        # These are "migration targets" — the touch forces the migration.
+        TOUCH_PROMOTE_RULES = {
+            "raw-html-button",
+            "hand-rolled-export-drawer",
+            "color-mix-contrast-risk",
+            "vendored-datatable",
+            "missing-list-page-template",
+            "card-shape-masquerade",
+            "hand-rolled-status-badge",
+        }
+
+        filtered: list[ProductReport] = []
+        for r in reports:
+            promoted_gaps: list[Gap] = []
+            for g in r.gaps:
+                gap_abs = (REPO_ROOT / g.file).resolve()
+                # Directory-level gaps (vendored-datatable) hit if any staged file
+                # lives inside the flagged directory.
+                in_touched = gap_abs in touched_abs or any(
+                    str(t).startswith(str(gap_abs)) or gap_abs == t
+                    for t in touched_abs
+                )
+                if not in_touched:
+                    continue
+                if g.severity == "warn" and g.rule in TOUCH_PROMOTE_RULES:
+                    g = Gap(
+                        severity="block",
+                        rule=g.rule,
+                        file=g.file,
+                        line=g.line,
+                        message=g.message + " [promoted: touch-gate]",
+                    )
+                promoted_gaps.append(g)
+            if promoted_gaps:
+                rpt = ProductReport(
+                    product=r.product,
+                    role=r.role,
+                    pages_scanned=r.pages_scanned,
+                )
+                rpt.gaps = promoted_gaps
+                filtered.append(rpt)
+        reports = filtered
+
+        if not reports:
+            if not args.json:
+                print("DS touch-gate: clean — no DS violations in staged files.")
+            sys.exit(0)
 
     if args.json:
         data = [

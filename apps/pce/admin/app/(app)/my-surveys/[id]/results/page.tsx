@@ -159,7 +159,7 @@ export default function FacultyResultsPage() {
       {/* ── Header ── */}
       <SiteHeader title={`${survey.courseCode} — ${survey.courseName}`} />
       <div
-        className="flex items-center gap-3 border-b border-border shrink-0"
+        className="flex items-center gap-3 shrink-0"
         style={{ padding: '14px 28px 14px' }}
       >
         <Link href="/my-surveys" className="text-sm text-muted-foreground hover:text-foreground">

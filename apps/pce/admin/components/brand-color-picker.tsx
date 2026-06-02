@@ -317,8 +317,9 @@ export function BrandColorPicker({
             )
             return (
               <Tip key={`${swatch.family}-${swatch.shade}`} label={tipBody}>
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="sm"
                   role="option"
                   aria-selected={selected}
                   aria-label={
@@ -328,10 +329,10 @@ export function BrandColorPicker({
                   }
                   onClick={() => handleSelectSwatch(swatch)}
                   className={cn(
-                    "group relative flex flex-col items-center gap-1 rounded-md px-1 py-1.5",
-                    "transition-transform hover:scale-[1.03]",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-popover",
-                    selected && "bg-accent/40",
+                    "group relative flex flex-col items-center gap-1 rounded-md px-1 py-1.5 h-auto",
+                    "transition-transform hover:scale-[1.03] hover:bg-transparent",
+                    "focus-visible:ring-offset-2 focus-visible:ring-offset-popover",
+                    selected && "bg-accent/40 hover:bg-accent/40",
                   )}
                 >
                   <span
@@ -373,7 +374,7 @@ export function BrandColorPicker({
                   >
                     {swatch.familyLabel}
                   </span>
-                </button>
+                </Button>
               </Tip>
             )
           })}

@@ -88,7 +88,7 @@ export const NAV_ADMIN: NavLinkItem[] = [
     children: [
       {
         key: "ce-surveys",
-        title: "Forms",
+        title: "Evaluations",
         url: "/surveys",
         icon:       <i className="fa-light fa-paper-plane" aria-hidden="true" />,
         iconActive: <i className="fa-solid fa-paper-plane" aria-hidden="true" />,
@@ -111,7 +111,7 @@ export const NAV_ADMIN: NavLinkItem[] = [
     children: [
       {
         key: "ps-surveys",
-        title: "Forms",
+        title: "Surveys",
         url: "/surveys/programmatic",
         icon:       <i className="fa-light fa-paper-plane" aria-hidden="true" />,
         iconActive: <i className="fa-solid fa-paper-plane" aria-hidden="true" />,

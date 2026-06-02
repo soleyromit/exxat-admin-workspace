@@ -347,8 +347,8 @@ export default function TemplateEditorPage() {
                             />
                             <AddQuestionMethod
                               icon="fa-database"
-                              label="Add from question bank"
-                              description="Reuse questions already in your library"
+                              label="Add from templates"
+                              description="Reuse questions from an existing template"
                               onClick={() => handleAddFromQB(sec.id)}
                             />
                             <AddQuestionMethod
@@ -366,8 +366,10 @@ export default function TemplateEditorPage() {
                           return (
                             <div
                               key={q.id}
+                              role="button"
+                              tabIndex={0}
                               draggable
-                              className="flex items-start gap-3 group cursor-pointer transition-colors"
+                              className="flex items-start gap-3 group cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                               style={{
                                 padding: '10px 16px',
                                 paddingLeft: isSelected ? 14 : 16,
@@ -378,6 +380,7 @@ export default function TemplateEditorPage() {
                                   : '2px solid transparent',
                               }}
                               onClick={() => setSelectedQuestion({ sectionId: sec.id, questionId: q.id })}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedQuestion({ sectionId: sec.id, questionId: q.id }) } }}
                               onDragStart={() => handleQDragStart(sec.id, qIndex)}
                               onDragOver={e => handleQDragOver(e, sec.id, qIndex)}
                               onDragEnd={handleQDragEnd}
@@ -460,7 +463,7 @@ export default function TemplateEditorPage() {
                             onClick={() => handleAddFromQB(sec.id)}
                           >
                             <i className="fa-light fa-database text-xs" aria-hidden="true" />
-                            Question bank
+                            Templates
                           </Button>
                           <Button
                             variant="ghost" size="sm" className="text-muted-foreground"

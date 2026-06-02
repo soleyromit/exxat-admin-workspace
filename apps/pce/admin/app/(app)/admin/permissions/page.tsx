@@ -122,7 +122,7 @@ export default function PermissionsPage() {
   return (
     <>
       <SiteHeader title="Permissions" />
-      <div className="flex items-center gap-3 border-b border-border shrink-0" style={{ padding: '14px 28px 14px' }}>
+      <div className="flex items-center gap-3 shrink-0" style={{ padding: '14px 28px 14px' }}>
         <Link href="/admin" className="text-sm text-muted-foreground">Admin</Link>
         <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
         <h1 className="text-sm font-semibold flex-1 truncate">Permissions</h1>

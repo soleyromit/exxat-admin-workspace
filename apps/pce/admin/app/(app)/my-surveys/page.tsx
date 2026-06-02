@@ -147,7 +147,7 @@ function MySurveysContent() {
   return (
     <>
       <SiteHeader title={filterParam === 'released' ? 'Results' : 'My Surveys'} />
-      <div className="flex items-center gap-3 border-b border-border shrink-0" style={{ padding: '14px 28px 14px' }}>
+      <div className="flex items-center gap-3 shrink-0" style={{ padding: '14px 28px 14px' }}>
         <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>
           {filterParam === 'released' ? 'Results' : 'My Surveys'}
         </h1>
@@ -179,11 +179,7 @@ function MySurveysContent() {
                 window.location.href = `/my-surveys/${row.survey.id}/results`
               }
             }}
-            toolbarSlot={(state) => (
-              <span className="text-xs text-muted-foreground">
-                {state.rows.length} survey{state.rows.length !== 1 ? 's' : ''}
-              </span>
-            )}
+            toolbarSlot={() => null}
           />
         )}
       </div>

@@ -4,6 +4,7 @@ import React, { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   Button,
+  PageHeader,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
   Tooltip, TooltipTrigger, TooltipContent,
   Avatar, AvatarFallback,
@@ -86,7 +87,7 @@ function PushedBanner() {
   return (
     <div style={{ paddingInline: 28, paddingTop: 12 }}>
       <LocalBanner variant="success">
-        Form pushed successfully. It is now collecting responses.
+        Survey pushed successfully. It is now collecting responses.
       </LocalBanner>
     </div>
   )
@@ -98,9 +99,9 @@ export function SurveysHub({ mode }: { mode: 'course_evaluation' | 'general' }) 
   const [closeSurvey, setCloseSurvey] = useState<PceSurvey | null>(null)
 
   const isGeneral = mode === 'general'
-  const title = isGeneral ? 'Programmatic Surveys' : 'Forms'
+  const title = isGeneral ? 'Programmatic Surveys' : 'Evaluations'
   const pushHref = isGeneral ? '/surveys/push?mode=programmatic' : '/surveys/push'
-  const pushLabel = isGeneral ? 'Push form' : 'Set up forms'
+  const pushLabel = isGeneral ? 'Push surveys' : 'Push Evaluations'
 
   const activeTerm = MOCK_PROGRAM_TERMS.find(t => t.status === 'active') ?? null
   const activeTermOfferings = activeTerm
@@ -169,7 +170,7 @@ export function SurveysHub({ mode }: { mode: 'course_evaluation' | 'general' }) 
     termColumn,
     {
       key: 'courseCode',
-      label: 'Form title',
+      label: 'Survey title',
       sortable: true,
       width: 320,
       filter: { type: 'text', icon: 'fa-paper-plane' },
@@ -316,19 +317,28 @@ export function SurveysHub({ mode }: { mode: 'course_evaluation' | 'general' }) 
     },
   ]
 
+  const surveyCount = modeFiltered.length
+  const subtitle = isGeneral
+    ? `${surveyCount} ${surveyCount === 1 ? 'survey' : 'surveys'}`
+    : `${surveyCount} ${surveyCount === 1 ? 'evaluation' : 'evaluations'}`
+
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
       <SiteHeader title={title} />
-      <div className="flex items-center gap-3 border-b border-border shrink-0" style={{ padding: '14px 28px 14px' }}>
-        <h1 className="text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>{title}</h1>
-        <div className="flex-1" />
-        <Button variant="default" size="sm" asChild>
-          <Link href={pushHref}>
-            <i className="fa-light fa-paper-plane" aria-hidden="true" style={{ fontSize: 12 }} />
-            {pushLabel}
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        title={title}
+        subtitle={subtitle}
+        actions={
+          <div className="flex items-center gap-2" role="group" aria-label="Survey actions">
+            <Button size="lg" asChild>
+              <Link href={pushHref}>
+                <i className="fa-light fa-paper-plane" aria-hidden="true" />
+                {pushLabel}
+              </Link>
+            </Button>
+          </div>
+        }
+      />
 
       {showRunBanner && activeTerm && (
         <div style={{ paddingInline: 28, paddingTop: 12, paddingBottom: 4 }}>
@@ -373,14 +383,14 @@ export function SurveysHub({ mode }: { mode: 'course_evaluation' | 'general' }) 
           ? Math.round(withResponses.reduce((sum, s) => sum + s.responseRate, 0) / withResponses.length)
           : null
         const metrics: MetricItem[] = [
-          { id: 'total',     label: 'Total forms',      value: modeFiltered.length, delta: '', trend: 'neutral' },
+          { id: 'total',     label: isGeneral ? 'Total surveys' : 'Total evaluations', value: modeFiltered.length, delta: '', trend: 'neutral' },
           { id: 'live',      label: 'Live now',         value: live,               delta: '', trend: 'neutral' },
           { id: 'review',    label: 'Needs review',     value: needsAction,        delta: needsAction > 0 ? String(needsAction) : '', trend: needsAction > 0 ? 'up' : 'neutral', trendPolarity: 'lower_is_better' },
           { id: 'threshold', label: 'Below threshold',  value: belowThreshold,     delta: '', trend: 'neutral' },
           { id: 'rate',      label: 'Avg response rate', value: avgRate !== null ? `${avgRate}%` : '—', delta: '', trend: 'neutral' },
         ]
         return (
-          <div className="border-b border-border shrink-0 [&_*]:!border-e-0" style={{ paddingInline: 28, paddingBlock: 4 }}>
+          <div className="shrink-0 [&_*]:!border-e-0" style={{ paddingInline: 28, paddingBlock: 4 }}>
             <KeyMetrics variant="flat" showHeader={false} metricsSingleRow metrics={metrics} />
           </div>
         )
@@ -425,7 +435,7 @@ function RowActions({ survey, onClose }: { survey: PceSurvey; onClose: () => voi
         <Button
           variant="ghost"
           size="icon-sm"
-          aria-label="Form actions"
+          aria-label="Survey actions"
           onClick={(e) => e.stopPropagation()}
         >
           <i className="fa-regular fa-ellipsis" aria-hidden="true" />
@@ -472,7 +482,7 @@ function RowActions({ survey, onClose }: { survey: PceSurvey; onClose: () => voi
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onClick={onClose}>
               <i className="fa-light fa-xmark" aria-hidden="true" />
-              Close Form
+              Close Survey
             </DropdownMenuItem>
           </>
         )}
@@ -495,20 +505,20 @@ function EmptySurveys({
       <i className="fa-light fa-paper-plane text-muted-foreground" aria-hidden="true" style={{ fontSize: 40 }} />
       <div className="flex flex-col gap-1">
         <p className="text-sm font-medium">
-          {hasFilters ? 'No forms match these filters' : isGeneral ? 'No programmatic forms yet' : 'No forms yet'}
+          {hasFilters ? (isGeneral ? 'No surveys match these filters' : 'No evaluations match these filters') : isGeneral ? 'No programmatic surveys yet' : 'No evaluations yet'}
         </p>
         <p className="text-sm text-muted-foreground" style={{ maxWidth: 320 }}>
           {hasFilters
             ? 'Try adjusting your filters.'
             : isGeneral
-            ? 'Push a programmatic form to alumni, preceptors, or external reviewers.'
-            : 'Create a form from a template to start collecting responses.'}
+            ? 'Push a programmatic survey to alumni, preceptors, or external reviewers.'
+            : 'Create an evaluation from a template to start collecting responses.'}
         </p>
       </div>
       {!hasFilters && (
         <Button variant="default" size="sm" onClick={onCreate}>
           <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
-          Create Form
+          Create Survey
         </Button>
       )}
     </div>

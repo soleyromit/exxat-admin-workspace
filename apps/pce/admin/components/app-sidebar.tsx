@@ -10,7 +10,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuBadge,
@@ -19,14 +18,24 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-  SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { Separator } from "@/components/ui/separator"
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import {
   DropdownMenuItem,
   DropdownMenuSeparator,
@@ -70,10 +79,20 @@ import {
 
 // ─── Active-link helper ───────────────────────────────────────────────────────
 
-function isNavActive(pathname: string, url: string): boolean {
+function isNavActive(pathname: string, url: string, allNavUrls?: string[]): boolean {
   const base = url.split("?")[0]
   if (!base || base === "#") return false
-  return pathname === base || pathname.startsWith(base + "/")
+  if (pathname === base) return true
+  if (pathname.startsWith(base + "/")) {
+    // If another known nav URL is a more-specific match for this pathname,
+    // defer to that item (prevents /surveys matching /surveys/programmatic).
+    if (allNavUrls?.some(other => {
+      const o = other.split("?")[0]
+      return o !== base && o.startsWith(base + "/") && (pathname === o || pathname.startsWith(o + "/"))
+    })) return false
+    return true
+  }
+  return false
 }
 
 // ─── TeamSwitcher ─────────────────────────────────────────────────────────────
@@ -155,13 +174,13 @@ function TeamSwitcher() {
 
 // ─── QuickActions ─────────────────────────────────────────────────────────────
 
-function QuickActions({ items }: { items: NavSecondaryItem[] }) {
+function QuickActionItems({ items }: { items: NavSecondaryItem[] }) {
   const { toggle: toggleAskLeo } = useAskLeo()
   const mod = useModKeyLabel()
   const alt = useAltKeyLabel()
 
   return (
-    <SidebarMenu>
+    <>
       {items.map(item => (
         <SidebarMenuItem key={item.key}>
           <SidebarMenuButton
@@ -189,65 +208,158 @@ function QuickActions({ items }: { items: NavSecondaryItem[] }) {
           </SidebarMenuButton>
         </SidebarMenuItem>
       ))}
-    </SidebarMenu>
+    </>
+  )
+}
+
+// ─── CollapsibleNavItem ───────────────────────────────────────────────────────
+
+function CollapsibleNavItem({ item, pathname, allNavUrls }: { item: NavLinkItem; pathname: string; allNavUrls?: string[] }) {
+  const { state, isMobile } = useSidebar()
+  const isAnyChildActive = item.children?.some(c => isNavActive(pathname, c.url, allNavUrls)) ?? false
+  const parentActive = isAnyChildActive || isNavActive(pathname, item.url, allNavUrls)
+
+  const [open, setOpen] = React.useState(isAnyChildActive)
+  const [flyoutOpen, setFlyoutOpen] = React.useState(false)
+  const flyoutTitleId = React.useId()
+
+  // Defer tree swap until sidebar CSS width transition (200ms) finishes to
+  // avoid blocking the main thread at the start of the animation.
+  const targetIconRail = state === "collapsed" && !isMobile
+  const [iconRailCollapsed, setIconRailCollapsed] = React.useState(targetIconRail)
+  React.useEffect(() => {
+    if (!targetIconRail) {
+      setIconRailCollapsed(false)
+      return
+    }
+    const t = setTimeout(() => setIconRailCollapsed(true), 220)
+    return () => clearTimeout(t)
+  }, [targetIconRail])
+
+  // Sync open state with active child on navigation
+  React.useEffect(() => { setOpen(isAnyChildActive) }, [pathname, isAnyChildActive])
+  React.useEffect(() => { setFlyoutOpen(false) }, [pathname])
+
+  if (!item.children?.length) return null
+
+  const triggerIcon = (iconRailCollapsed ? isAnyChildActive : parentActive) && item.iconActive
+    ? item.iconActive
+    : item.icon
+
+  // Icon rail: show Popover flyout instead of hidden inline sub-list
+  if (iconRailCollapsed) {
+    return (
+      <SidebarMenuItem>
+        <Popover open={flyoutOpen} onOpenChange={setFlyoutOpen}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <PopoverTrigger asChild>
+                <SidebarMenuButton isActive={isAnyChildActive}>
+                  <span className="size-4 shrink-0 flex items-center justify-center" aria-hidden="true">
+                    {triggerIcon}
+                  </span>
+                  <span className="sr-only">{item.title}</span>
+                </SidebarMenuButton>
+              </PopoverTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="right" align="center">{item.title}</TooltipContent>
+          </Tooltip>
+          <PopoverContent className="w-56 p-1" side="right" align="start" sideOffset={8} aria-labelledby={flyoutTitleId}>
+            <h2 id={flyoutTitleId} className="sr-only">{item.title}</h2>
+            <ul className="flex flex-col gap-0.5" role="list">
+              {item.children.map(child => {
+                const childActive = isNavActive(pathname, child.url, allNavUrls)
+                return (
+                  <li key={child.key}>
+                    <a
+                      href={child.url}
+                      onClick={() => setFlyoutOpen(false)}
+                      aria-current={childActive ? "page" : undefined}
+                      className={[
+                        "flex min-h-8 w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none ring-ring",
+                        "text-popover-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-2",
+                        childActive ? "bg-accent font-medium text-accent-foreground" : "",
+                      ].join(" ")}
+                    >
+                      <span className="size-4 shrink-0 inline-flex items-center justify-center" aria-hidden="true">
+                        {childActive && child.iconActive ? child.iconActive : child.icon}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate">{child.title}</span>
+                    </a>
+                  </li>
+                )
+              })}
+            </ul>
+          </PopoverContent>
+        </Popover>
+      </SidebarMenuItem>
+    )
+  }
+
+  // Expanded: inline collapsible with animated sub-list
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} asChild>
+      <SidebarMenuItem className="group/collapsible">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <CollapsibleTrigger asChild>
+              <SidebarMenuButton isActive={parentActive}>
+                <span className="size-4 shrink-0 flex items-center justify-center" aria-hidden="true">
+                  {triggerIcon}
+                </span>
+                <span>{item.title}</span>
+                <i
+                  className="fa-light fa-chevron-right ms-auto text-xs text-current transition-transform duration-200 ease-out group-data-[state=open]/collapsible:rotate-90 motion-reduce:transition-none"
+                  aria-hidden="true"
+                />
+              </SidebarMenuButton>
+            </CollapsibleTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="right" align="center" hidden={state !== "collapsed" || isMobile}>
+            {item.title}
+          </TooltipContent>
+        </Tooltip>
+        <CollapsibleContent className="overflow-hidden group-data-[collapsible=icon]:hidden data-[state=open]:[animation:collapsible-down_200ms_ease-out] data-[state=closed]:[animation:collapsible-up_200ms_ease-out] motion-reduce:animate-none">
+          <SidebarMenuSub>
+            {item.children.map(child => {
+              const childActive = isNavActive(pathname, child.url, allNavUrls)
+              return (
+                <SidebarMenuSubItem key={child.key}>
+                  <SidebarMenuSubButton asChild isActive={childActive}>
+                    <a href={child.url} aria-current={childActive ? "page" : undefined}>
+                      <span className="size-4 shrink-0 inline-flex items-center justify-center" aria-hidden="true">
+                        {childActive && child.iconActive ? child.iconActive : child.icon}
+                      </span>
+                      <span>{child.title}</span>
+                    </a>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              )
+            })}
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuItem>
+    </Collapsible>
   )
 }
 
 // ─── PrimaryNav ───────────────────────────────────────────────────────────────
 
-function PrimaryNav({ items }: { items: NavLinkItem[] }) {
+function PrimaryNavItems({ items }: { items: NavLinkItem[] }) {
   const pathname = usePathname()
+  const allNavUrls = React.useMemo(
+    () => items.flatMap(item => item.children?.map(c => c.url.split("?")[0]) ?? [item.url.split("?")[0]]),
+    [items]
+  )
 
   return (
-    <SidebarMenu>
+    <>
       {items.map(item => {
-        const active = isNavActive(pathname, item.url)
         if (item.children?.length) {
-          const childActive = item.children.some(c => isNavActive(pathname, c.url))
-          return (
-            <Collapsible
-              key={item.key}
-              defaultOpen={active || childActive}
-              asChild
-              className="group/collapsible"
-            >
-              <SidebarMenuItem>
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuButton isActive={active || childActive} tooltip={item.title}>
-                    {active ? (item.iconActive ?? item.icon) : item.icon}
-                    <span className="flex-1">{item.title}</span>
-                    <i
-                      className="fa-light fa-chevron-right ms-auto text-[10px] transition-transform group-data-[state=open]/collapsible:rotate-90"
-                      aria-hidden="true"
-                    />
-                  </SidebarMenuButton>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <SidebarMenuSub>
-                    {item.children.map(child => {
-                      const childIsActive = pathname === child.url.split('?')[0]
-                      return (
-                        <SidebarMenuSubItem key={child.key}>
-                          <SidebarMenuSubButton
-                            asChild
-                            isActive={childIsActive}
-                            className="data-[active]:bg-sidebar-accent data-[active]:text-sidebar-accent-foreground data-[active]:shadow-none data-[active]:ring-0 data-[active]:font-medium"
-                          >
-                            <a href={child.url}>
-                              {childIsActive ? (child.iconActive ?? child.icon) : child.icon}
-                              <span>{child.title}</span>
-                            </a>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      )
-                    })}
-                  </SidebarMenuSub>
-                </CollapsibleContent>
-              </SidebarMenuItem>
-            </Collapsible>
-          )
+          return <CollapsibleNavItem key={item.key} item={item} pathname={pathname} allNavUrls={allNavUrls} />
         }
 
+        const active = isNavActive(pathname, item.url)
         return (
           <SidebarMenuItem key={item.key}>
             <SidebarMenuButton asChild isActive={active} tooltip={item.title}>
@@ -262,15 +374,15 @@ function PrimaryNav({ items }: { items: NavLinkItem[] }) {
           </SidebarMenuItem>
         )
       })}
-    </SidebarMenu>
+    </>
   )
 }
 
 // ─── SecondaryNav ─────────────────────────────────────────────────────────────
 
-function SecondaryNav({ items }: { items: NavSecondaryItem[] }) {
+function SecondaryNavItems({ items }: { items: NavSecondaryItem[] }) {
   return (
-    <SidebarMenu>
+    <>
       {items.map(item => (
         <SidebarMenuItem key={item.key}>
           <SidebarMenuButton asChild tooltip={item.title}>
@@ -281,7 +393,7 @@ function SecondaryNav({ items }: { items: NavSecondaryItem[] }) {
           </SidebarMenuButton>
         </SidebarMenuItem>
       ))}
-    </SidebarMenu>
+    </>
   )
 }
 
@@ -303,60 +415,58 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <Sidebar variant="inset" collapsible="icon" {...props}>
         <nav aria-label="Application" className="flex min-h-0 flex-1 flex-col">
 
-          <SidebarHeader className="pb-0">
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  size="lg"
-                  className="sidebar-brand-btn"
-                  tooltip="Exxat Prism"
-                  aria-label="Exxat Prism — go to dashboard"
-                >
-                  <motion.div
-                    key="prism-logo"
-                    initial="hidden"
-                    animate="visible"
-                    variants={{
-                      hidden: { opacity: 0 },
-                      visible: { opacity: 1, transition: motionHeaderEnter },
-                    }}
-                  >
-                    <ExxatProductLogo product="exxat-prism" />
-                  </motion.div>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarHeader>
-
-          <div className="px-2 pb-1">
-            <TeamSwitcher />
-          </div>
-
-          <SidebarSeparator />
-
           <SidebarContent className="gap-0">
-            <SidebarGroup className="py-2">
-              <SidebarGroupContent>
-                <QuickActions items={NAV_QUICK_ACTIONS} />
-              </SidebarGroupContent>
-            </SidebarGroup>
+            <SidebarHeader className="border-b border-sidebar-border pb-2">
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    size="lg"
+                    className="sidebar-brand-btn"
+                    tooltip="Exxat Prism"
+                    aria-label="Exxat Prism — go to dashboard"
+                  >
+                    <motion.div
+                      key="prism-logo"
+                      initial="hidden"
+                      animate="visible"
+                      variants={{
+                        hidden: { opacity: 0 },
+                        visible: { opacity: 1, transition: motionHeaderEnter },
+                      }}
+                    >
+                      <ExxatProductLogo product="exxat-prism" />
+                    </motion.div>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+              <div className="flex w-full justify-center px-2">
+                <Separator
+                  orientation="horizontal"
+                  decorative
+                  className="my-1.5 h-px w-full max-w-none shrink-0 bg-sidebar-border group-data-[collapsible=icon]:w-8"
+                />
+              </div>
+              <TeamSwitcher />
+            </SidebarHeader>
 
-            <SidebarSeparator />
-
-            <SidebarGroup className="py-2">
-              <SidebarGroupLabel>
-                {user.role === "admin" ? "Navigation" : "My workspace"}
-              </SidebarGroupLabel>
+            <SidebarGroup className="py-2" role="group" aria-label="Primary">
               <SidebarGroupContent>
-                <PrimaryNav items={navItems} />
+                <SidebarMenu className="gap-0.5">
+                  <QuickActionItems items={NAV_QUICK_ACTIONS} />
+                  <PrimaryNavItems items={navItems} />
+                </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>
 
-          <SidebarSeparator />
-
-          <SidebarFooter className="pt-1 pb-2">
-            <SecondaryNav items={NAV_SECONDARY} />
+          <SidebarFooter className="mt-auto border-t border-sidebar-border bg-sidebar">
+            <SidebarGroup className="py-2" role="group" aria-label="Utilities">
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-0.5">
+                  <SecondaryNavItems items={NAV_SECONDARY} />
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
             <NavUser
               user={navUser}
               extraMenuItems={

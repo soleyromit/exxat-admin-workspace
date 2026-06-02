@@ -428,7 +428,7 @@ export function DataTableToolbar<TData extends Record<string, unknown>>({
   const {
     search, setSearch, searchOpen, setSearchOpen, searchRef,
     activeFilters, setActiveFilters, openFilterId,
-    filterBarVisible, setFilterBarVisible,
+    filterBarVisible,
     addFilter, updateFilter, removeFilter,
   } = state
 
@@ -572,54 +572,6 @@ export function DataTableToolbar<TData extends Record<string, unknown>>({
         {showQueryControls && filterableCols.length > 0 && (
           <>
             <div className="h-4 w-px bg-border/70" aria-hidden="true" />
-            {/* TooltipProvider lives at app root — inner is vestigial.
-                Per actions-overlays.md depth audit. */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                  {activeFilters.length > 0 ? (
-                    <button type="button"
-                      aria-label={filterBarVisible ? "Hide filters" : "Show filters"}
-                      onClick={() => setFilterBarVisible(v => !v)}
-                      className={cn(
-                        "inline-flex items-center gap-1 size-8 justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                        filterBarVisible
-                          ? "bg-accent text-accent-foreground hover:bg-accent/90"
-                          : "text-muted-foreground hover:text-interactive-hover-foreground hover:bg-interactive-hover",
-                      )}
-                    >
-                      <i className="fa-light fa-filter text-[13px]" aria-hidden="true" />
-                      <span className="text-xs font-semibold tabular-nums">{activeFilters.length}</span>
-                    </button>
-                  ) : (
-                    // modal={false} — axe aria-hidden-focus fix (2026-05-11)
-                    <DropdownMenu modal={false}>
-                      <DropdownMenuTrigger asChild>
-                        <button type="button" aria-label="Add filter"
-                          onClick={() => setFilterBarVisible(true)}
-                          className="inline-flex items-center justify-center size-8 rounded-md text-muted-foreground hover:text-interactive-hover-foreground hover:bg-interactive-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                          <i className="fa-light fa-filter text-[13px]" aria-hidden="true" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuLabel className="text-xs">Filter by field</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {filterableCols.map(c => (
-                          <DropdownMenuItem key={c.key} onClick={() => addFilter(c.key)}>
-                            {c.filter?.icon && <i className={`fa-light ${c.filter.icon}`} aria-hidden="true" />}
-                            {c.label}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                {activeFilters.length > 0
-                  ? (filterBarVisible ? "Hide filters" : "Show filters")
-                  : "Filter"}
-              </TooltipContent>
-            </Tooltip>
           </>
         )}
 

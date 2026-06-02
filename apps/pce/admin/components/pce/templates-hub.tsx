@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Button,
+  PageHeader,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
@@ -31,7 +32,7 @@ export function TemplatesHub({ mode }: { mode: 'course_evaluation' | 'general' }
   const [deleteTemplate, setDeleteTemplate] = useState<PceTemplate | null>(null)
 
   const isGeneral = mode === 'general'
-  const title = isGeneral ? 'Programmatic Templates' : 'Templates'
+  const title = 'Templates'
   const badgeLabel = 'Programmatic Surveys'
   const newTemplateHref = isGeneral ? '/templates/new?mode=programmatic' : '/templates/new'
   const newTemplateLabel = isGeneral ? 'New Template' : 'New Template'
@@ -113,7 +114,7 @@ export function TemplatesHub({ mode }: { mode: 'course_evaluation' | 'general' }
         row.template.usedBySurveyCount > 0 ? (
           <Button variant="link" size="sm" className="h-auto p-0 text-sm font-normal text-muted-foreground hover:text-foreground">
             <span className="font-medium text-foreground">{row.template.usedBySurveyCount}</span>
-            &nbsp;{row.template.usedBySurveyCount === 1 ? 'form' : 'forms'}
+            &nbsp;{row.template.usedBySurveyCount === 1 ? 'survey' : 'surveys'}
             <i className="fa-light fa-arrow-up-right-from-square ms-1 text-xs" aria-hidden="true" />
           </Button>
         ) : (
@@ -150,25 +151,23 @@ export function TemplatesHub({ mode }: { mode: 'course_evaluation' | 'general' }
     },
   ]
 
+  const subtitle = `${rows.length} ${rows.length === 1 ? 'template' : 'templates'}`
+
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
       <SiteHeader title={title} />
-      <div className="flex items-center gap-3 border-b border-border shrink-0" style={{ padding: '14px 28px 14px' }}>
-        <h1 className="text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>{title}</h1>
-        {isGeneral && (
-          <span
-            className="text-xs font-medium rounded-full shrink-0"
-            style={{ padding: '2px 10px', background: 'var(--muted)', color: 'var(--muted-foreground)' }}
-          >
-            {badgeLabel}
-          </span>
-        )}
-        <div className="flex-1" />
-        <Button variant="default" size="sm" onClick={() => router.push(newTemplateHref)}>
-          <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
-          {newTemplateLabel}
-        </Button>
-      </div>
+      <PageHeader
+        title={title}
+        subtitle={subtitle}
+        actions={
+          <div className="flex items-center gap-2" role="group" aria-label="Template actions">
+            <Button size="lg" onClick={() => router.push(newTemplateHref)}>
+              <i className="fa-light fa-plus" aria-hidden="true" />
+              {newTemplateLabel}
+            </Button>
+          </div>
+        }
+      />
 
       <div className="flex-1 overflow-auto" style={{ paddingBlock: 16, paddingInline: 0 }}>
         {rows.length === 0 ? (
@@ -183,11 +182,7 @@ export function TemplatesHub({ mode }: { mode: 'course_evaluation' | 'general' }
             onRowClick={(row) => {
               window.location.href = `/templates/${row.template.id}`
             }}
-            toolbarSlot={(state) => (
-              <span className="text-xs text-muted-foreground">
-                {state.rows.length} template{state.rows.length !== 1 ? 's' : ''}
-              </span>
-            )}
+            toolbarSlot={() => null}
           />
         )}
       </div>
@@ -249,7 +244,7 @@ function EmptyState({ onCreate, isGeneral }: { onCreate: () => void; isGeneral: 
         <p className="text-sm text-muted-foreground" style={{ maxWidth: 320 }}>
           {isGeneral
             ? 'Create a template for alumni outcomes, preceptor satisfaction, or other program-level surveys.'
-            : 'Create a template to start distributing post course evaluations.'}
+            : 'Create a template to start distributing evaluations.'}
         </p>
       </div>
       <Button variant="default" size="sm" onClick={onCreate}>

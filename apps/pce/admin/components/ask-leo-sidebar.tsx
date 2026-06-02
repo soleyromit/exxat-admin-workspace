@@ -11,7 +11,6 @@ import { usePathname } from "@/lib/next-compat"
 import { AnimatePresence, motion } from "motion/react"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage, AvatarLeoAssistant } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { AskLeoComposer } from "@/components/ask-leo-composer"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
@@ -322,14 +321,15 @@ export function AskLeoSidebar() {
           </div>
           <Tooltip>
             <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              <Button
+                variant="ghost"
+                size="icon"
                 aria-label="Close Ask Leo"
+                onClick={() => setOpen(false)}
+                className="shrink-0 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
               >
                 <i className="fa-light fa-xmark text-xs" aria-hidden="true" />
-              </button>
+              </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="flex max-w-xs flex-wrap items-center gap-1.5 text-xs">
               <span>Close Ask Leo</span>
@@ -370,19 +370,14 @@ export function AskLeoSidebar() {
                       className="max-w-full list-none [animation:leo-chip-in_420ms_cubic-bezier(0.22,1,0.36,1)_both]"
                       style={{ animationDelay: `${i * 70}ms` }}
                     >
-                      <Badge
-                        asChild
+                      <Button
+                        type="button"
                         variant="outline"
-                        className="h-auto min-h-8 max-w-full items-stretch whitespace-normal rounded-4xl border-border/90 bg-card px-0 py-0 font-normal text-card-foreground shadow-sm transition-transform duration-150 hover:-translate-y-0.5 dark:border-border dark:bg-card"
+                        onClick={() => appendUserTurn(q)}
+                        className="h-auto min-h-8 w-full max-w-full whitespace-normal rounded-4xl border-border/90 bg-card px-3 py-2 text-start text-xs font-normal leading-snug text-card-foreground shadow-sm transition-colors transition-transform duration-150 hover:-translate-y-0.5 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground dark:border-border dark:bg-card dark:hover:bg-sidebar-accent/40"
                       >
-                        <button
-                          type="button"
-                          onClick={() => appendUserTurn(q)}
-                          className="inline-flex min-h-8 w-full max-w-full cursor-pointer text-start text-xs leading-snug transition-colors hover:bg-sidebar-accent/70 hover:text-sidebar-foreground dark:hover:bg-sidebar-accent/40"
-                        >
-                          <span className="line-clamp-4 px-3 py-2">{q}</span>
-                        </button>
-                      </Badge>
+                        <span className="line-clamp-4">{q}</span>
+                      </Button>
                     </li>
                   ))}
                 </ul>

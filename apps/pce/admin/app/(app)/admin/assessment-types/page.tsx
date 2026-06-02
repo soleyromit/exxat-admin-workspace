@@ -79,7 +79,7 @@ export default function AssessmentTypesPage() {
   return (
     <>
       <SiteHeader title="Assessment Types" />
-      <div className="flex items-center gap-3 border-b border-border shrink-0" style={{ padding: '14px 28px 14px' }}>
+      <div className="flex items-center gap-3 shrink-0" style={{ padding: '14px 28px 14px' }}>
         <Link href="/admin" className="text-sm text-muted-foreground">Admin</Link>
         <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
         <h1 className="text-sm font-semibold flex-1 truncate">Assessment Types</h1>
@@ -104,11 +104,7 @@ export default function AssessmentTypesPage() {
                 <p className="text-xs text-muted-foreground">Clear the search to see the full inventory.</p>
               </div>
             }
-            toolbarSlot={(state) => (
-              <span className="text-xs text-muted-foreground">
-                {state.rows.length} assessment type{state.rows.length !== 1 ? 's' : ''}
-              </span>
-            )}
+            toolbarSlot={() => null}
           />
 
           <p className="text-xs text-muted-foreground">

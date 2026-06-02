@@ -162,21 +162,22 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
           style={{ paddingInline: 20 }}
         >
           {(['student', 'faculty', 'personnel'] as Persona[]).map(t => (
-            <button
+            <Button
               key={t}
-              type="button"
+              variant="ghost"
+              size="sm"
               role="tab"
               aria-selected={tab === t}
               onClick={() => handleTabChange(t)}
               className={cn(
-                'px-3 py-2.5 text-sm border-b-2 -mb-px transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset capitalize',
+                'rounded-none px-3 py-2.5 text-sm border-b-2 -mb-px transition-colors focus-visible:ring-inset capitalize h-auto',
                 tab === t
                   ? 'border-foreground text-foreground font-medium'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-transparent'
               )}
             >
               {t === 'student' ? 'Students' : t === 'faculty' ? 'Faculty' : 'Personnel'}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -229,14 +230,15 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
             )}
 
             {hasActiveFilters && (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={resetFilters}
-                className="text-xs rounded px-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                style={{ color: 'var(--muted-foreground)' }}
+                className="h-auto px-1 py-0.5 text-xs text-muted-foreground"
               >
                 Reset
-              </button>
+              </Button>
             )}
 
             <div className="flex-1" />
@@ -273,25 +275,28 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
                   aria-label="Search recipients"
                 />
                 {search && (
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon-sm"
                     aria-label="Clear search"
                     onClick={() => setSearch('')}
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 size-6 text-muted-foreground hover:text-foreground"
                   >
                     <i className="fa-light fa-xmark text-xs" aria-hidden="true" />
-                  </button>
+                  </Button>
                 )}
               </div>
             ) : (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon-sm"
                 aria-label="Search recipients"
                 onClick={() => { setSearchOpen(true); setTimeout(() => searchRef.current?.focus(), 10) }}
-                className="inline-flex items-center justify-center size-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <i className="fa-light fa-magnifying-glass text-[13px]" aria-hidden="true" />
-              </button>
+              </Button>
             )}
           </div>
 

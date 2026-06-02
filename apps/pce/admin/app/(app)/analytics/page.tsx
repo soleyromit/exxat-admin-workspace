@@ -421,7 +421,7 @@ export default function AnalyticsPage() {
   return (
     <>
       <SiteHeader title="Analytics" />
-      <div className="flex items-center gap-3 border-b border-border shrink-0" style={{ padding: '14px 28px 14px' }}>
+      <div className="flex items-center gap-3 shrink-0" style={{ padding: '14px 28px 14px' }}>
         <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Analytics</h1>
 
         {/* View axis toggle (D4): Term ↔ Cohort. Faculty is one click down (D5) */}

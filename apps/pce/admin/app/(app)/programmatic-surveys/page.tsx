@@ -17,7 +17,7 @@ export default function ProgrammaticSurveysPage() {
   return (
     <>
       <SiteHeader title="Programmatic Surveys" />
-      <div className="flex items-center gap-3 border-b border-border shrink-0" style={{ padding: '14px 28px 14px' }}>
+      <div className="flex items-center gap-3 shrink-0" style={{ padding: '14px 28px 14px' }}>
         <Link href="/" className="text-sm text-muted-foreground">Course Evaluation and Surveys</Link>
         <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
         <h1 className="text-sm font-semibold flex-1 truncate">Programmatic Surveys</h1>

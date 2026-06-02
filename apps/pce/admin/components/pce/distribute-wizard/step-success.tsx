@@ -60,6 +60,8 @@ export function StepSuccess({
       {/* Course table */}
       <div
         className="w-full rounded-md"
+        tabIndex={0}
+        aria-label="Pushed courses"
         style={{ border: '1px solid var(--border)', maxHeight: 220, overflowY: 'auto', overflowX: 'hidden' }}
       >
         <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>

@@ -105,6 +105,11 @@
 }
 
 /* ── App sidebar — flat nav style ─────────────────────────────────────────── */
+/* npm 0.6.30 uses min-h-7/h-auto (28px); DS monorepo uses h-8 (32px). Match monorepo. */
+[data-sidebar="menu-button"]:not([data-size="lg"]) {
+  height: 2rem;
+  min-height: 2rem;
+}
 [data-sidebar="menu-button"] {
   background-color: transparent;
   box-shadow: none;

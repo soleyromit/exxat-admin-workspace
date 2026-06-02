@@ -16,7 +16,7 @@ const ADMIN_ENTITY_ROUTES = [
 ]
 
 const PAGE_ROUTES = [
-  { id: "page-surveys",    label: "Forms",      href: "/surveys",    icon: "fa-light fa-paper-plane" },
+  { id: "page-surveys",    label: "Surveys",    href: "/surveys",    icon: "fa-light fa-paper-plane" },
   { id: "page-templates",  label: "Templates",  href: "/templates",  icon: "fa-light fa-rectangle-list" },
   { id: "page-moderation", label: "Moderation", href: "/moderation", icon: "fa-light fa-shield-check" },
   { id: "page-analytics",  label: "Analytics",  href: "/analytics",  icon: "fa-light fa-chart-mixed" },
@@ -27,7 +27,7 @@ const PAGE_ROUTES = [
 export const PCE_COMMAND_MENU_DATA_GROUPS: CommandMenuGroup[] = [
   {
     id: "surveys",
-    heading: "Forms",
+    heading: "Surveys",
     searchOnly: true,
     items: MOCK_SURVEYS.map(s => ({
       id: `survey-${s.id}`,

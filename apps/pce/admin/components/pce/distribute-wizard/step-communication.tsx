@@ -51,15 +51,16 @@ function EmailChip({ contact, onRemove }: { contact: EmailContact; onRemove: () 
   return (
     <Badge variant="secondary" className="gap-1 pr-1" title={contact.email}>
       <span className="truncate" style={{ maxWidth: 160 }}>{displayName}</span>
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="icon-sm"
         aria-label={`Remove ${displayName}`}
         onClick={onRemove}
-        className="inline-flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        style={{ width: 14, height: 14, flexShrink: 0 }}
+        className="rounded-full text-muted-foreground hover:text-foreground shrink-0"
+        style={{ width: 14, height: 14 }}
       >
-        <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 9 }} />
-      </button>
+        <i className="fa-light fa-xmark text-[9px]" aria-hidden="true" />
+      </Button>
     </Badge>
   )
 }
@@ -395,15 +396,17 @@ export function StepCommunication({
             {REMINDER_DAY_OPTIONS.map(day => {
               const active = reminders.some(r => r.daysBefore === day)
               return (
-                <button
+                <Button
                   key={day}
                   type="button"
+                  variant="outline"
+                  size="sm"
                   aria-pressed={active}
                   onClick={() => {
                     if (active) onRemindersChange(reminders.filter(r => r.daysBefore !== day))
                     else        onRemindersChange([...reminders, { id: `r-${day}`, daysBefore: day }])
                   }}
-                  className="inline-flex items-center gap-1.5 rounded-full text-xs border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="rounded-full text-xs"
                   style={{
                     padding: '5px 12px',
                     background: active ? 'var(--foreground)' : 'var(--background)',
@@ -413,7 +416,7 @@ export function StepCommunication({
                 >
                   {active && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 9 }} />}
                   {day} day{day !== 1 ? 's' : ''}
-                </button>
+                </Button>
               )
             })}
           </div>
