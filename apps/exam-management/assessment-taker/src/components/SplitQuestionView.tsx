@@ -214,16 +214,6 @@ export function SplitQuestionView({
   question.type === 'chart';
   const renderQuestionStem = () =>
   <div className="mb-[1.5em]">
-      <div className="flex items-center gap-3 mb-[0.75em]">
-        <span
-        className="font-bold text-[1.125em]"
-        style={{
-          color: 'var(--foreground)'
-        }}>
-        
-          Question {questionIndex + 1}
-        </span>
-      </div>
       <h2
       className="text-[1.25em] font-semibold leading-relaxed transition-colors"
       style={{
@@ -244,8 +234,8 @@ export function SplitQuestionView({
         ;(e.currentTarget as HTMLElement).style.backgroundColor = '';
         stopSpeaking();
       }}>
-      
-        {question.text}
+
+        {questionIndex + 1}. {question.text}
       </h2>
     </div>;
 
