@@ -23,6 +23,7 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { NavShell } from './components/NavShell';
 import { AssessmentDashboard } from './pages/AssessmentDashboard';
+import { PreExamFlow } from './pages/PreExamFlow';
 import { PostExam } from './pages/PostExam';
 import { ExamResults } from './pages/ExamResults';
 import { CompetencyDashboard } from './pages/CompetencyDashboard';
@@ -41,6 +42,11 @@ const router = createBrowserRouter([
         <AssessmentDashboard />
       </NavShell>
     ),
+  },
+  {
+    // Pre-exam flow: password → instructions → accommodations → ready
+    path: '/exam/:id/setup',
+    element: <PreExamFlow />,
   },
   {
     // Exam engine: no NavShell — full-screen lockdown experience
