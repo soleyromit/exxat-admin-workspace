@@ -45,12 +45,12 @@ function institutionalRole(p: Persona): { label: string; tone: 'brand' | 'info' 
    tones hit 4.5:1+ on every theme. */
 function roleBadgeStyle(tone: 'brand' | 'info' | 'neutral') {
   if (tone === 'brand') return {
-    backgroundColor: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))',
+    backgroundColor: 'var(--brand-tint)',
     color: 'var(--brand-color-dark)',
   }
   if (tone === 'info') return {
-    backgroundColor: 'color-mix(in oklch, var(--chart-1) 12%, var(--background))',
-    color: 'color-mix(in oklch, var(--chart-1) 60%, var(--foreground))',
+    backgroundColor: 'var(--muted)',
+    color: 'var(--chart-1)',
   }
   return {
     backgroundColor: 'var(--muted)',
@@ -131,8 +131,8 @@ export function PersonaSwitcher() {
               <AvatarFallback
                 className="text-[10px] font-bold"
                 style={{
-                  backgroundColor: 'color-mix(in oklch, var(--foreground) 8%, var(--background))',
-                  color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))',
+                  backgroundColor: 'var(--muted)',
+                  color: 'var(--muted-foreground)',
                 }}
               >
                 {p.initials}
@@ -212,7 +212,7 @@ export function PersonaSwitcher() {
                 className="flex size-7 items-center justify-center rounded shrink-0"
                 style={{
                   backgroundColor: isActive
-                    ? 'color-mix(in oklch, var(--brand-color) 12%, var(--background))'
+                    ? 'var(--brand-tint)'
                     : 'var(--muted)',
                   color: isActive ? 'var(--brand-color)' : 'var(--muted-foreground)',
                 }}

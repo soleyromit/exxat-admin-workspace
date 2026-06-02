@@ -272,6 +272,7 @@ export function AskLeoSidebar() {
       // hydration — see commentary in NestedSecondaryPanelShell. Suppression
       // is scoped to this element's own attributes only.
       suppressHydrationWarning
+      // overflow-hidden safe — floating uses Radix Portal
       className={cn(
         "flex flex-col overflow-hidden",
         isMobile

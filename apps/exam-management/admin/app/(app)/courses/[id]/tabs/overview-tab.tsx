@@ -347,13 +347,13 @@ function ActivityTimeline({
 }
 
 function describeEvent(r: AssessmentReview) {
-  if (r.state === 'results-published') return { label: 'Results published', icon: 'fa-eye', bg: 'color-mix(in oklch, var(--chart-2) 14%, var(--background))', fg: 'var(--chart-2)' }
-  if (r.state === 'in-progress') return { label: 'Ongoing', icon: 'fa-play', bg: 'color-mix(in oklch, var(--chart-1) 14%, var(--background))', fg: 'var(--chart-1)' }
-  if (r.state === 'submitted') return { label: 'All students submitted', icon: 'fa-check-double', bg: 'color-mix(in oklch, var(--chart-2) 14%, var(--background))', fg: 'var(--chart-2)' }
-  if (r.state === 'published') return { label: 'Published', icon: 'fa-bullhorn', bg: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))', fg: 'var(--brand-color)' }
-  if (r.state === 'approved') return { label: 'Approved by chair', icon: 'fa-check-circle', bg: 'color-mix(in oklch, var(--chart-2) 14%, var(--background))', fg: 'var(--chart-2)' }
-  if (r.state === 'changes-requested') return { label: 'Chair requested changes', icon: 'fa-arrows-rotate', bg: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', fg: 'var(--chart-4)' }
-  if (r.state === 'pending-chair') return { label: 'Sent for chair review', icon: 'fa-hourglass-half', bg: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', fg: 'var(--chart-4)' }
+  if (r.state === 'results-published') return { label: 'Results published', icon: 'fa-eye', bg: 'var(--muted)', fg: 'var(--chart-2)' }
+  if (r.state === 'in-progress') return { label: 'Ongoing', icon: 'fa-play', bg: 'var(--brand-tint)', fg: 'var(--chart-1)' }
+  if (r.state === 'submitted') return { label: 'All students submitted', icon: 'fa-check-double', bg: 'var(--muted)', fg: 'var(--chart-2)' }
+  if (r.state === 'published') return { label: 'Published', icon: 'fa-bullhorn', bg: 'var(--brand-tint)', fg: 'var(--brand-color)' }
+  if (r.state === 'approved') return { label: 'Approved by chair', icon: 'fa-check-circle', bg: 'var(--muted)', fg: 'var(--chart-2)' }
+  if (r.state === 'changes-requested') return { label: 'Chair requested changes', icon: 'fa-arrows-rotate', bg: 'var(--muted)', fg: 'var(--chart-4)' }
+  if (r.state === 'pending-chair') return { label: 'Sent for chair review', icon: 'fa-hourglass-half', bg: 'var(--muted)', fg: 'var(--chart-4)' }
   return { label: 'Draft saved', icon: 'fa-file-pen', bg: 'var(--muted)', fg: 'var(--muted-foreground)' }
 }
 
@@ -431,7 +431,7 @@ function CourseChatToggleSection({ courseId }: { courseId: string }) {
               className="rounded font-mono text-[9px] uppercase tracking-wider"
               style={{
                 backgroundColor: effective
-                  ? 'color-mix(in oklch, var(--chart-2) 14%, var(--background))'
+                  ? 'var(--muted)'
                   : 'var(--muted)',
                 color: effective ? 'var(--chart-2)' : 'var(--muted-foreground)',
               }}

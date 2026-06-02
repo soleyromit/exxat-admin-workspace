@@ -333,7 +333,7 @@ function FilterPillBase<TData>({
                       checked ? "bg-primary border-primary text-primary-foreground" : "border-input bg-background"
                     )}
                   >
-                    {checked && <i className="fa-solid fa-check text-current" style={{ fontSize: "8px" }} />}
+                    {checked && <i className="fa-solid fa-check text-current text-[8px]" aria-hidden="true" />}
                   </span>
                   {renderOptionValue
                     ? renderOptionValue(filter.fieldKey, opt.value)

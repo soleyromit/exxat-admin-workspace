@@ -53,7 +53,7 @@ TRIGGERS: list[tuple[str, str]] = [
     # Design intent (priority 4) — broader noun set covers real prompt shapes
     # like "design the question navigator", not just "design a new screen"
     # (\w+\s+){0,3} allows up to 3 words before the noun (e.g. "course overview page")
-    (r"\b(design|build|create|add|wire(\s+up)?)\s+(a|an|the)?\s*(new\s+)?(\w+\s+){0,3}(screen|page|view|dashboard|component|feature|flow|navigator|panel|widget|sidebar|toolbar|header|footer|modal|drawer|menu|tabs?|table|form|button|card|chart|graph|layout|UI|interface)\b", "intent:design"),
+    (r"\b(design|build|create|add|wire(\s+up)?)\s+(a|an|the)?\s*(new\s+)?(?:[\w.\-]+\s+){0,3}(screen|page|view|dashboard|component|feature|flow|step|wizard|section|navigator|panel|widget|sidebar|toolbar|header|footer|modal|drawer|menu|tabs?|table|form|button|card|chart|graph|layout|UI|interface)\b", "intent:design"),
     (r"\b(redesign|refactor|rework|polish|improve|tighten)\s+(this|the|that)\b", "intent:redesign"),
 
     # DS reference lazy-load (priority 4.5) — when prompt suggests UI/DS work,
@@ -67,8 +67,10 @@ TRIGGERS: list[tuple[str, str]] = [
     (r"\b(React|Next\.?js|Tailwind|Recharts|Radix|shadcn|TanStack|Framer|Zod|Zustand|Vercel AI SDK)\b", "lib:context7"),
 
     # Pre-task declaration (Pattern J, priority 5.5) — fires on any direct UI edit intent
-    # not already covered by intent:design / intent:redesign
-    (r"\b(fix|update|edit|change|tweak)\s+(the\s+|this\s+|that\s+)?(\w+\s+)?(page|component|screen|file|layout|header|table|form|drawer|dialog|sheet|sidebar|modal|card|tab|nav)\b", "precheck:pre-task-declaration"),
+    # not already covered by intent:design / intent:redesign.
+    # (\w+\s+){0,4} allows up to 4 words before the noun so "fix the distribute wizard
+    # step-communication component" and "update the ExamToolbar component" both match.
+    (r"\b(fix|update|edit|change|tweak)\s+(the\s+|this\s+|that\s+)?(?:[\w.\-]+\s+){0,4}(page|component|screen|file|layout|header|table|form|drawer|dialog|sheet|sidebar|modal|card|tab|nav)\b", "precheck:pre-task-declaration"),
 
     # DS sweep (priority 5.6) — auto-suggest when user describes DS/WCAG gaps or asks to audit
     (r"\b(audit|sweep|upgrade|migrate|check)\s+(all\s+|the\s+|every\s+)?(\w+\s+)?(pages?|components?|app|DS|design system|adoption)\b", "sweep:ds-check"),
@@ -101,17 +103,39 @@ TRIGGERS: list[tuple[str, str]] = [
 ]
 
 def _detect_product(prompt: str) -> str | None:
-    """Detect the active product from prompt keywords.
+    """Detect the active product from prompt keywords or component/file names.
 
     Returns one of: 'pce', 'exam-management', 'portal', 'learning-contracts',
     'patient-log', 'skills-checklist', or None.
     Used by the coupling section to inject the right ui-patterns lazy-load.
     """
     p = prompt.lower()
+
+    # PCE — explicit terms + PCE-specific component/file names
     if re.search(r"\b(pce|clinical experience|preceptor|logbook|apps/pce)\b", p):
         return "pce"
+    if re.search(
+        r"\b(distribute.?wizard|step.?communication|step.?distribution|step.?properties|"
+        r"step.?report.?access|step.?survey.?design|email.?list.?sheet|email.?template.?sheet|"
+        r"exxat.?prism|surveys.?hub|templates.?hub|pce.?modal|pce.?badge|wizard.?nav|"
+        r"ai.?insight.?card|run.?evaluation|moderation|my.?surveys)\b",
+        p,
+    ):
+        return "pce"
+
+    # Exam Management — explicit terms + EM-specific component/file names
     if re.search(r"\b(exam.?management|question bank|\bqb\b|assessment builder|assessment taker|apps/exam.?management)\b", p):
         return "exam-management"
+    if re.search(
+        r"\b(examtoolbar|exam.?toolbar|question.?nav|questionnavpanel|calculatorpopover|"
+        r"calculator.?popover|stickyfooter|sticky.?footer|splitquestionview|split.?question.?view|"
+        r"submitreviewoverlay|submit.?review.?overlay|questioncommentbox|question.?comment.?box|"
+        r"sidebardrawi?er?|global.?reference.?panel|live.?monitor|assessment.?landing|"
+        r"qb.?sidebar|qb.?table|qb.?modal|question.?detail.?sheet|course.?offering)\b",
+        p,
+    ):
+        return "exam-management"
+
     if re.search(r"\b(learning.?contracts?|apps/learning.?contracts?)\b", p):
         return "learning-contracts"
     if re.search(r"\b(patient.?log|patient encounter|apps/patient.?log)\b", p):
@@ -133,7 +157,7 @@ ACTION_DESCRIPTIONS: dict[str, str] = {
     "intake:transcript-paste": "Invoke the intake skill with action=transcript-paste — saves transcript, extracts decisions + glossary candidates + persona refs, confirms each before write",
     "ref:figma-mcp": "Run mcp__claude_ai_Figma__get_design_context with parsed fileKey + nodeId before generating UI",
     "ref:magicpatterns-mcp": "Run mcp__claude_ai_Magic_Patterns__read_artifact_files to load the referenced prototype",
-    "intent:design": "Invoke superpowers:brainstorming first; check Mobbin search_screens; check Granola for relevant meetings; only then generate UI via frontend-design",
+    "intent:design": "Invoke superpowers:brainstorming first; check Mobbin search_screens; check Granola for relevant meetings; spawn ds-adoption-reviewer (Agent subagent_type=ds-adoption-reviewer) before creating any new component file to verify DS coverage; only then generate UI via frontend-design",
     "intent:redesign": "Invoke superpowers:brainstorming and frontend-design before changing visuals",
     "lazy:ds-reference": "Read docs/CLAUDE-DS-REFERENCE.md before generating any UI code, importing DS components, or using DS tokens beyond the ~15 in CLAUDE.md §6. The full token tables, component APIs, theme system, and font setup live there (~8K tokens). Don't guess token names — verify against the reference.",
     "lib:context7": "Run mcp__plugin_context7_context7__resolve-library-id then query-docs for current API; do not generate from memory",
@@ -392,6 +416,7 @@ def main() -> None:
         seen.add("precheck:pre-task-declaration")
 
     # Coupled: design/edit intent + product detected → inject per-product ui-patterns lazy-load.
+    # Fires on design, redesign, AND direct edit/update prompts (precheck trigger).
     # Each product has banned patterns, component choices, and flows not in the global DS reference.
     # Without this, Claude writes generic DS code that violates PCE/EM-specific patterns.
     if "intent:design" in seen or "intent:redesign" in seen or "precheck:pre-task-declaration" in seen:

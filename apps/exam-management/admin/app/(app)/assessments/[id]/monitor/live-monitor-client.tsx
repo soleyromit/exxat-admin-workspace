@@ -27,6 +27,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
   Textarea,
   FieldError,
+  StatusBadge,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
@@ -105,12 +106,12 @@ export default function LiveMonitorClient({ assessmentId }: { assessmentId: stri
               <span
                 className="flex size-12 items-center justify-center rounded-full mx-auto"
                 style={{
-                  background: 'color-mix(in oklch, var(--chart-4) 12%, var(--background))',
+                  background: 'var(--muted)',
                   color: 'var(--chart-4)',
                 }}
                 aria-hidden="true"
               >
-                <i className="fa-light fa-shield-keyhole" style={{ fontSize: 22 }} />
+                <i className="fa-light fa-shield-keyhole text-[22px]" aria-hidden="true" />
               </span>
               <CardTitle className="font-heading text-base font-semibold text-foreground">
                 Course Coordinators only
@@ -556,10 +557,10 @@ function StudentRow({ s }: { s: LiveMonitorStudent }) {
 // bodies and fail color-contrast at small text sizes — see visual-check axe
 // output on /assessments/<id>/monitor.
 const STATUS_PALETTE: Record<LiveMonitorStudent['status'], { bg: string; fg: string }> = {
-  'in-progress': { bg: 'color-mix(in oklch, var(--chart-1) 14%, var(--background))', fg: 'color-mix(in oklch, var(--chart-1) 50%, var(--foreground))' },
-  'submitted':   { bg: 'color-mix(in oklch, var(--chart-2) 14%, var(--background))', fg: 'color-mix(in oklch, var(--chart-2) 50%, var(--foreground))' },
-  'not-started': { bg: 'var(--muted)', fg: 'var(--foreground)' },
-  'paused':      { bg: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', fg: 'color-mix(in oklch, var(--chart-4) 55%, var(--foreground))' },
+  'in-progress': { bg: 'var(--brand-tint)', fg: 'var(--brand-color)' },
+  'submitted':   { bg: 'var(--muted)',       fg: 'var(--chart-2)' },
+  'not-started': { bg: 'var(--muted)',       fg: 'var(--foreground)' },
+  'paused':      { bg: 'var(--muted)',       fg: 'var(--chart-4)' },
 }
 
 function StatusDot({ status }: { status: LiveMonitorStudent['status'] }) {
@@ -607,7 +608,7 @@ function FlaggedQuestionsPanel({
             Flagged questions
           </h2>
           {unactionedCount > 0 ? (
-            <Badge variant="secondary" className="rounded text-[10px]" style={{ background: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', color: 'var(--chart-4)' }}>
+            <Badge variant="secondary" className="rounded text-[10px]" style={{ background: 'var(--muted)', color: 'var(--chart-4)' }}>
               {unactionedCount}
             </Badge>
           ) : (
@@ -639,7 +640,7 @@ function FlaggedQuestionsPanel({
                   <Badge
                     variant="secondary"
                     className="rounded text-[10px]"
-                    style={{ background: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', color: 'var(--chart-4)' }}
+                    style={{ background: 'var(--muted)', color: 'var(--chart-4)' }}
                   >
                     {fq.count} {fq.count === 1 ? 'student' : 'students'} flagged
                   </Badge>
@@ -649,7 +650,7 @@ function FlaggedQuestionsPanel({
                       className="rounded text-[10px]"
                       style={
                         status === 'acknowledged'
-                          ? { backgroundColor: 'color-mix(in oklch, var(--chart-1) 14%, var(--background))', color: 'var(--chart-1)' }
+                          ? { backgroundColor: 'var(--brand-tint)', color: 'var(--chart-1)' }
                           : { backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }
                       }
                     >
@@ -717,7 +718,7 @@ function FlaggedCommentsQueue({
             Flagged questions
           </h2>
           {unactionedCount > 0 ? (
-            <Badge variant="secondary" className="rounded text-[10px]" style={{ background: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', color: 'var(--chart-4)' }}>
+            <Badge variant="secondary" className="rounded text-[10px]" style={{ background: 'var(--muted)', color: 'var(--chart-4)' }}>
               {unactionedCount}
             </Badge>
           ) : (
@@ -748,8 +749,8 @@ function FlaggedCommentsQueue({
                 <AvatarFallback
                   className="rounded-full text-[10px] font-bold"
                   style={{
-                    background: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))',
-                    color: 'color-mix(in oklch, var(--chart-4) 55%, var(--foreground))',
+                    background: 'var(--muted)',
+                    color: 'var(--chart-4)',
                   }}
                 >
                   {s?.initials ?? '??'}
@@ -774,7 +775,7 @@ function FlaggedCommentsQueue({
                     className="rounded"
                     style={
                       status === 'acknowledged'
-                        ? { backgroundColor: 'color-mix(in oklch, var(--chart-1) 14%, var(--background))', color: 'var(--chart-1)' }
+                        ? { backgroundColor: 'var(--brand-tint)', color: 'var(--chart-1)' }
                         : { backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }
                     }
                   >

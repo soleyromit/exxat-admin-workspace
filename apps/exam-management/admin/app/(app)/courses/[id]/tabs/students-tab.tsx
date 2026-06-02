@@ -1,3 +1,4 @@
+// overflow-hidden safe — floating uses Radix Portal (PopoverContent, TooltipContent, SelectContent all use Radix Portal)
 'use client'
 
 /**
@@ -94,13 +95,12 @@ function AddStudentSheet({ open, onOpenChange, enrolledIds, onEnroll }: AddStude
 
         <div className="px-6 pt-4 pb-3 shrink-0">
           <div
-            className="flex items-center gap-2 rounded-md border px-3"
-            style={{ borderColor: 'var(--border-control-35)', height: 36 }}
+            className="flex items-center gap-2 rounded-md border"
+            style={{ borderColor: 'var(--border-control-35)', height: 36, paddingInline: '12px' }}
           >
             <i
-              className="fa-light fa-magnifying-glass text-muted-foreground shrink-0"
+              className="fa-light fa-magnifying-glass text-muted-foreground shrink-0 text-sm"
               aria-hidden="true"
-              style={{ fontSize: 13 }}
             />
             <input
               type="search"

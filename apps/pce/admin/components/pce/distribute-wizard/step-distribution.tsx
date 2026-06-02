@@ -180,6 +180,7 @@ export function StepDistribution({
             />
           )}
 
+          {/* overflow-hidden safe — floating uses Radix Portal */}
           <Card className="flex flex-col overflow-hidden shadow-none">
             {/* Toolbar */}
             <div

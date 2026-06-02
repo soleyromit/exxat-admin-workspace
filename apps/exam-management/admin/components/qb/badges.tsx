@@ -1,4 +1,4 @@
-import { Badge } from '@exxatdesignux/ui'
+import { Badge, StatusBadge } from '@exxatdesignux/ui'
 import type { QStatus, QType, QDiff, QBlooms } from '@/lib/qb-types'
 
 // ── Status Badge — pill + colored border + icon ───────────────────────────────
@@ -8,7 +8,7 @@ const STATUS_MAP: Record<QStatus, { bg: string; fg: string; border: string; icon
   'Archived': { bg: 'var(--qb-status-archived-bg)', fg: 'var(--qb-status-archived-fg)', border: 'var(--qb-status-archived-fg)',  icon: 'fa-box-archive'  },
 }
 
-export function StatusBadge({ status }: { status: QStatus }) {
+export function QBStatusBadge({ status }: { status: QStatus }) {
   const s = STATUS_MAP[status]
   if (!s) return null
   return (

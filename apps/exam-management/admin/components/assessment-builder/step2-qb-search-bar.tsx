@@ -1,5 +1,7 @@
 'use client'
 
+import { Button } from '@exxatdesignux/ui'
+
 export interface QbFilter {
   key: 'difficulty' | 'type' | 'blooms'
   label: string
@@ -36,14 +38,9 @@ export function QbSearchBar({
           }}
         />
         {value && (
-          <button
-            type="button"
-            onClick={() => onChange('')}
-            aria-label="Clear search"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 0, display: 'flex' }}
-          >
-            <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 12 }} />
-          </button>
+          <Button variant="ghost" size="icon-xs" aria-label="Clear search" onClick={() => onChange('')} className="h-auto w-auto p-0 text-muted-foreground">
+            <i className="fa-light fa-xmark text-xs" aria-hidden="true" />
+          </Button>
         )}
         <span aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)', background: 'var(--muted)', padding: '2px 6px', borderRadius: 4, flexShrink: 0 }}>↵</span>
       </div>
@@ -62,14 +59,9 @@ export function QbSearchBar({
               }}
             >
               {f.label}
-              <button
-                type="button"
-                onClick={() => onRemoveFilter(f.key, f.label)}
-                aria-label={`Remove ${f.label} filter`}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 0, lineHeight: 1, fontSize: 13 }}
-              >
-                <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 11 }} />
-              </button>
+              <Button variant="ghost" size="icon-xs" aria-label={`Remove ${f.label} filter`} onClick={() => onRemoveFilter(f.key, f.label)} className="h-auto w-auto p-0 text-muted-foreground">
+                <i className="fa-light fa-xmark text-[11px]" aria-hidden="true" />
+              </Button>
             </span>
           ))}
         </div>

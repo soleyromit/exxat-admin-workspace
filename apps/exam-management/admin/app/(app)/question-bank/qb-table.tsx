@@ -1,9 +1,10 @@
+// overflow-hidden safe — floating uses Radix Portal (PopoverContent, TooltipContent, SelectContent all use Radix Portal)
 'use client'
 import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { useQB } from './qb-state'
-import { StatusBadge, DiffBadge, PBisCell, BloomsBadge } from '@/components/qb/badges'
+import { QBStatusBadge, DiffBadge, PBisCell, BloomsBadge } from '@/components/qb/badges'
 import { QBToggle } from '@/components/qb/toggle'
 import {
   Button, Badge, Checkbox, Input,
@@ -73,12 +74,15 @@ function showQBToast({
     description: folderName && onLinkClick ? (
       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <i className="fa-solid fa-folder" aria-hidden="true" style={{ fontSize: 9, color: 'var(--qb-toast-muted)' }} />
-        <button
+        <Button
+          variant="ghost"
+          size="xs"
           onClick={e => { e.stopPropagation(); onLinkClick(); toast.dismiss(toastId) }}
-          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--qb-toast-link)', textDecoration: 'underline', textUnderlineOffset: 2, fontSize: 'inherit', fontFamily: 'inherit' }}
+          className="p-0 h-auto underline underline-offset-2"
+          style={{ color: 'var(--qb-toast-link)', fontFamily: 'inherit', fontSize: 'inherit' }}
         >
           {folderName}
-        </button>
+        </Button>
       </span>
     ) : undefined,
     action: undoFn ? { label: 'Undo', onClick: undoFn } : undefined,
@@ -649,10 +653,10 @@ function DeleteQuestionDialog({ question, open, onClose }: { question: Question;
           <div className="flex items-start gap-3">
             <span
               className="flex size-9 shrink-0 items-center justify-center rounded-full mt-0.5"
-              style={{ backgroundColor: 'color-mix(in oklch, var(--destructive) 10%, var(--background))', color: 'var(--destructive)' }}
+              style={{ backgroundColor: 'var(--muted)', color: 'var(--destructive)' }}
               aria-hidden="true"
             >
-              <i className="fa-light fa-trash-can" style={{ fontSize: 16 }} />
+              <i className="fa-light fa-trash-can text-base" aria-hidden="true" />
             </span>
             <div className="flex-1 min-w-0">
               <DialogTitle className="text-base">Delete question?</DialogTitle>
@@ -820,17 +824,13 @@ function LocationCell({ question }: { question: Question }) {
               }
 
               return (
-                <button
-                  key={i}
-                  onClick={e => { e.stopPropagation(); if (target) navigateToFolder(target.id) }}
-                  className="flex items-center gap-2 text-left w-full rounded px-2 py-1.5 hover:bg-accent transition-colors"
-                >
-                  <i className={`fa-${target?.isPrivateSpace ? 'solid fa-lock' : 'light fa-folder'} text-muted-foreground shrink-0`} aria-hidden="true" style={{ fontSize: 12 }} />
+                <Button key={i} variant="ghost" size="sm" onClick={e => { e.stopPropagation(); if (target) navigateToFolder(target.id) }} className="flex items-center gap-2 text-left w-full rounded px-2 py-1.5 h-auto justify-start hover:bg-accent transition-colors">
+                  <i className={`fa-${target?.isPrivateSpace ? 'solid fa-lock' : 'light fa-folder'} text-muted-foreground shrink-0 text-xs`} aria-hidden="true" />
                   <div style={{ minWidth: 0 }}>
                     <p className="text-sm font-medium text-foreground truncate">{name}</p>
                     <p className="text-[10px] text-muted-foreground truncate">{loc.folderPath}</p>
                   </div>
-                </button>
+                </Button>
               )
             })}
           </div>
@@ -1551,7 +1551,7 @@ function FilterPropertiesSheet({
                           setBookmarkOnly(v => !v)
                         }
                       }}
-                      style={{ background: 'color-mix(in oklch, var(--brand-color) 6%, var(--background))' }}
+                      style={{ background: 'var(--brand-tint)' }}
                     >
                       <div className="flex items-center gap-2.5 px-3 py-2.5">
                         <span aria-hidden="true" className="inline-flex items-center justify-center shrink-0 rounded-[3px] border transition-colors"
@@ -2027,9 +2027,9 @@ function QuestionDetailSheet({ question, open, onClose, onMove }: { question: Qu
         <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              <StatusBadge status={question.status} />
+              <QBStatusBadge status={question.status} />
               {question.tags.includes('private') && (
-                <Badge variant="secondary" className="rounded text-[10px]" style={{ backgroundColor: 'color-mix(in oklch, var(--qb-private) 12%, var(--background))', color: 'var(--qb-private)' }}>
+                <Badge variant="secondary" className="rounded text-[10px]" style={{ backgroundColor: 'var(--muted)', color: 'var(--qb-private)' }}>
                   <i className="fa-solid fa-lock-keyhole" aria-hidden="true" style={{ fontSize: 8, marginRight: 3 }} />Private
                 </Badge>
               )}
@@ -3139,7 +3139,7 @@ export function QBTable() {
                   {shown.map((p, i) => (
                     <Tip key={p.id} label={p.name}>
                       <Avatar style={{ width: 22, height: 22, marginLeft: i === 0 ? 0 : -6, border: '2px solid var(--background)', borderRadius: '50%', zIndex: shown.length - i, position: 'relative', flexShrink: 0 }}>
-                        <AvatarFallback className="text-[8px] font-bold" style={{ backgroundColor: 'color-mix(in oklch, var(--foreground) 8%, var(--background))', color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))' }}>
+                        <AvatarFallback className="text-[8px] font-bold" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
                           {p.initials}
                         </AvatarFallback>
                       </Avatar>
@@ -3278,7 +3278,7 @@ export function QBTable() {
               style={bookmarkOnly ? {
                 borderColor: 'var(--chart-4)',
                 color: 'var(--chart-4)',
-                backgroundColor: 'color-mix(in oklch, var(--chart-4) 10%, var(--background))',
+                backgroundColor: 'var(--muted)',
               } : {}}
             >
               <i
@@ -3296,7 +3296,7 @@ export function QBTable() {
               aria-label="My questions"
               aria-pressed={myQuestionsOnly}
               onClick={() => setMyQuestionsOnly(!myQuestionsOnly)}
-              style={myQuestionsOnly ? { borderColor: 'var(--brand-color)', color: 'var(--brand-color)', backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' } : {}}
+              style={myQuestionsOnly ? { borderColor: 'var(--brand-color)', color: 'var(--brand-color)', backgroundColor: 'var(--brand-tint)' } : {}}
             >
               <i className="fa-light fa-user" aria-hidden="true" style={{ fontSize: 13 }} />
             </Button>
@@ -3342,7 +3342,7 @@ export function QBTable() {
           /* ── Truly empty: admin empty folder vs faculty no-access ── */
           isExamAdmin ? (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 32px', gap: 20 }}>
-              <div style={{ position: 'relative', width: 80, height: 80, borderRadius: '50%', backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ position: 'relative', width: 80, height: 80, borderRadius: '50%', backgroundColor: 'var(--brand-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <i className="fa-light fa-rectangle-list" aria-hidden="true" style={{ fontSize: 28, color: 'var(--brand-color)', opacity: 0.85 }} />
                 <span style={{ position: 'absolute', top: 5, right: 5, width: 22, height: 22, borderRadius: '50%', backgroundColor: 'var(--background)', border: '1.5px solid var(--brand-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 9, color: 'var(--brand-color)' }} />
@@ -3371,7 +3371,7 @@ export function QBTable() {
           ) : (
             /* ── Faculty: no questions in this folder ── */
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 32px', gap: 20 }}>
-              <div style={{ width: 80, height: 80, borderRadius: '50%', backgroundColor: 'color-mix(in oklch, var(--muted-foreground) 8%, var(--background))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ width: 80, height: 80, borderRadius: '50%', backgroundColor: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <i className="fa-light fa-books" aria-hidden="true" style={{ fontSize: 28, color: 'var(--muted-foreground)', opacity: 0.6 }} />
               </div>
               <div style={{ textAlign: 'center', maxWidth: 340 }}>
@@ -3383,7 +3383,7 @@ export function QBTable() {
                 </p>
               </div>
               <Button variant="ghost" size="sm"
-                style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, var(--background))', color: 'var(--brand-color)', gap: 5 }}>
+                style={{ backgroundColor: 'var(--brand-tint)', color: 'var(--brand-color)', gap: 5 }}>
                 <i className="fa-light fa-envelope" aria-hidden="true" style={{ fontSize: 11 }} />
                 Contact your admin
               </Button>
@@ -3420,7 +3420,7 @@ export function QBTable() {
             return (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 32px', gap: 24 }}>
                 {/* Illustration */}
-                <div style={{ position: 'relative', width: 72, height: 72, borderRadius: '50%', backgroundColor: 'color-mix(in oklch, var(--muted-foreground) 8%, var(--background))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ position: 'relative', width: 72, height: 72, borderRadius: '50%', backgroundColor: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <i className="fa-light fa-sliders" aria-hidden="true" style={{ fontSize: 26, color: 'var(--muted-foreground)', opacity: 0.6 }} />
                   <span style={{ position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: '50%', backgroundColor: 'var(--background)', border: '1.5px solid var(--muted-foreground)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 8, color: 'var(--muted-foreground)' }} />
@@ -3669,9 +3669,9 @@ export function QBTable() {
                                           className="rounded shrink-0 text-[9px] font-semibold"
                                           style={{
                                             padding: '1px 5px',
-                                            backgroundColor: 'color-mix(in oklch, var(--qb-private) 12%, var(--background))',
+                                            backgroundColor: 'var(--muted)',
                                             color: 'var(--qb-private)',
-                                            border: '1px solid color-mix(in oklch, var(--qb-private) 25%, var(--background))',
+                                            border: '1px solid var(--border)',
                                           }}
                                         >
                                           <i className="fa-solid fa-lock-keyhole" aria-hidden="true" style={{ fontSize: 7 }} /> Private
@@ -3699,7 +3699,7 @@ export function QBTable() {
                           case 'status':
                             return (
                               <TableCell key="status" className={`${TD} w-28`} style={pinnedStyle('status', pinnedCols, pinnedRightCols)}>
-                                <StatusBadge status={q.status} />
+                                <QBStatusBadge status={q.status} />
                               </TableCell>
                             )
                           case 'type':

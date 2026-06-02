@@ -35,8 +35,8 @@ export function RequestEditAccessModal({ questionTitle, open, onOpenChange }: {
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <i className="fa-light fa-lock-keyhole-open" aria-hidden="true" style={{ fontSize: 16, color: 'var(--brand-color)' }} />
+            <div style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: 'var(--brand-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <i className="fa-light fa-lock-keyhole-open text-base" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
             </div>
             <div>
               <DialogTitle>Request Edit Access</DialogTitle>
@@ -51,7 +51,7 @@ export function RequestEditAccessModal({ questionTitle, open, onOpenChange }: {
           ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '16px 0', textAlign: 'center' }}>
               <div style={{ width: 44, height: 44, borderRadius: '50%', backgroundColor: 'var(--qb-status-saved-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <i className="fa-light fa-circle-check" aria-hidden="true" style={{ fontSize: 22, color: 'var(--qb-status-saved-fg)' }} />
+                <i className="fa-light fa-circle-check text-[22px]" aria-hidden="true" style={{ color: 'var(--qb-status-saved-fg)' }} />
               </div>
               <div>
                 <div className="text-sm font-semibold">Request sent</div>

@@ -513,7 +513,7 @@ function EmptyCellWithPopover({ objTitle, asmtTitle }: { objTitle: string; asmtT
           className="w-full h-9 rounded-md flex items-center justify-center cursor-help"
           style={{
             backgroundColor: 'var(--muted)',
-            backgroundImage: 'repeating-linear-gradient(135deg, transparent 0, transparent 4px, color-mix(in oklch, var(--muted-foreground) 18%, transparent) 4px, color-mix(in oklch, var(--muted-foreground) 18%, transparent) 5px)',
+            backgroundImage: 'repeating-linear-gradient(135deg, transparent 0, transparent 4px, var(--muted) 4px, var(--muted) 5px)',
           }}
           aria-label={`${objTitle} not tested in ${asmtTitle}`}
         >
@@ -965,7 +965,7 @@ function LegendDot({
           aria-hidden="true"
           style={{
             backgroundColor: 'var(--muted)',
-            backgroundImage: 'repeating-linear-gradient(135deg, transparent 0, transparent 2px, color-mix(in oklch, var(--muted-foreground) 25%, transparent) 2px, color-mix(in oklch, var(--muted-foreground) 25%, transparent) 3px)',
+            backgroundImage: 'repeating-linear-gradient(135deg, transparent 0, transparent 2px, var(--muted) 2px, var(--muted) 3px)',
           }}
         />
         <span>{label}</span>

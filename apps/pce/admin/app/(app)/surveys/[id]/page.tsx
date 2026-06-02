@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import {
   Button, Avatar, AvatarFallback, Badge,
+  Card, CardContent,
   Tabs, TabsList, TabsTrigger, TabsContent,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
@@ -116,10 +117,12 @@ const LEGACY_SECTION_MAP: Record<string, string> = {
 // ── KPI card shell ────────────────────────────────────────────────────────────
 function KpiCard({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="border border-border rounded-lg p-4 flex flex-col gap-3 bg-card">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      {children}
-    </div>
+    <Card>
+      <CardContent className="pt-4 flex flex-col gap-3">
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        {children}
+      </CardContent>
+    </Card>
   )
 }
 

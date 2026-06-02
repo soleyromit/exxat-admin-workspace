@@ -54,7 +54,7 @@ interface AssignedFacultyRow extends Record<string, unknown> {
 
 const ROLE_CONFIG: Record<FacultyRole, { bg: string; fg: string }> = {
   'Course Coordinator': {
-    bg: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+    bg: 'var(--brand-tint)',
     fg: 'var(--brand-color)',
   },
   Instructor: {
@@ -101,7 +101,7 @@ function buildColumns(
               <AvatarFallback
                 className="text-xs font-bold"
                 style={{
-                  backgroundColor: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))',
+                  backgroundColor: 'var(--brand-tint)',
                   color: 'var(--brand-color)',
                 }}
               >
@@ -273,13 +273,12 @@ function AddFacultySheet({ open, onOpenChange, assignedIds, onAdd }: AddFacultyS
         {/* Search */}
         <div className="px-6 pt-4 pb-3 shrink-0">
           <div
-            className="flex items-center gap-2 rounded-md border px-3"
-            style={{ borderColor: 'var(--border-control-35)', height: 36 }}
+            className="flex items-center gap-2 rounded-md border"
+            style={{ borderColor: 'var(--border-control-35)', height: 36, paddingInline: '12px' }}
           >
             <i
-              className="fa-light fa-magnifying-glass text-muted-foreground shrink-0"
+              className="fa-light fa-magnifying-glass text-muted-foreground shrink-0 text-sm"
               aria-hidden="true"
-              style={{ fontSize: 13 }}
             />
             <input
               type="search"
@@ -325,7 +324,7 @@ function AddFacultySheet({ open, onOpenChange, assignedIds, onAdd }: AddFacultyS
                       <AvatarFallback
                         className="text-xs font-bold"
                         style={{
-                          backgroundColor: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))',
+                          backgroundColor: 'var(--brand-tint)',
                           color: 'var(--brand-color)',
                         }}
                       >

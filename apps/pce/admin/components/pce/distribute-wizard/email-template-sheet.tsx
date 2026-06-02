@@ -259,6 +259,7 @@ export function EmailTemplateSheet({ open, onOpenChange, subject, body, senderNa
             {/* Preview */}
             <div className="flex flex-col gap-2">
               <p className="text-sm font-semibold">Preview</p>
+              {/* overflow-hidden safe — floating uses Radix Portal */}
               <div
                 className="flex-1 rounded-md border border-border overflow-hidden"
                 style={{ background: 'var(--background)', minHeight: 340 }}

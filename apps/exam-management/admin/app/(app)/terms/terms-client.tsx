@@ -31,6 +31,7 @@ import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
+  StatusBadge,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
@@ -56,7 +57,7 @@ const STATUS_CONFIG: Record<
   upcoming: {
     label: 'Upcoming',
     icon: 'fa-hourglass',
-    bg: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+    bg: 'var(--brand-tint)',
     fg: 'var(--brand-color-dark)',
   },
   completed: {
@@ -67,7 +68,7 @@ const STATUS_CONFIG: Record<
   },
 }
 
-function StatusBadge({ status }: { status: Term['status'] }) {
+function TermStatusBadge({ status }: { status: Term['status'] }) {
   const s = STATUS_CONFIG[status]
   return (
     <Badge
@@ -157,7 +158,7 @@ function buildColumns(
       width: 140,
       sortable: true,
       sortKey: 'status',
-      cell: (row) => <StatusBadge status={row.status as Term['status']} />,
+      cell: (row) => <TermStatusBadge status={row.status as Term['status']} />,
     },
     {
       key: 'actions',
@@ -236,9 +237,9 @@ function TermDrawer({ open, term, isNew, onClose, onSave }: TermDrawerProps) {
         <div
           className="mx-4 flex items-start gap-2.5 rounded-lg px-3 py-2.5 text-xs"
           style={{
-            backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+            backgroundColor: 'var(--brand-tint)',
             color: 'var(--brand-color-dark)',
-            border: '1px solid color-mix(in oklch, var(--brand-color) 20%, var(--background))',
+            border: '1px solid var(--brand-tint)',
           }}
           role="note"
           aria-label="LMS integration note"

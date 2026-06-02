@@ -155,7 +155,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
           variant="secondary"
           className="rounded-full gap-1.5 text-xs shrink-0"
           style={{
-            backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+            backgroundColor: 'var(--brand-tint)',
             color: 'var(--brand-color)',
           }}
         >

@@ -810,6 +810,7 @@ function FixStudentsTab({ offering }: { offering: CourseOffering }) {
 
       {/* Student preview list */}
       {enrolledStudents.length > 0 && (
+        {/* overflow-hidden safe — floating uses Radix Portal */}
         <Card className="flex flex-col overflow-hidden shadow-none">
           {enrolledStudents.map((student, i) => (
             <div

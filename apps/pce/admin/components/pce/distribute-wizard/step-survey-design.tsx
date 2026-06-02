@@ -152,6 +152,7 @@ export function StepSurveyDesign({
                   open={isOpen}
                   onOpenChange={() => toggleGroup(type)}
                 >
+                  {/* overflow-hidden safe — floating uses Radix Portal */}
                   <Card role="listitem" className="flex flex-col overflow-hidden shadow-none">
                     {/* Group header — always visible */}
                     <div

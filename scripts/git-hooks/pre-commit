@@ -2,13 +2,16 @@
 # Workspace pre-commit hook. Tracked under scripts/git-hooks/ and
 # symlinked into .git/hooks/pre-commit by scripts/install-hooks.sh.
 #
-# Runs in ~3-5 seconds. Two hard gates + one soft warn + digest regen:
+# Runs in ~5-8 seconds. Gates + soft warns + digest regen:
 #
 #   1. architecture-audit --strict   (BLOCK on wiring errors)
 #   2. backlink-audit --strict       (BLOCK on missing citations)
-#   3. staleness-check                (WARN only — informational)
-#   4. generate-digest                (refreshes docs/digest/latest.md
-#                                      and stages it into this commit)
+#   3. staleness-check               (WARN only)
+#   4. ds-globals-audit              (BLOCK — globals.css conformance)
+#   4d. ds-adoption-audit            (BLOCK — organism name collisions)
+#   4e. ds-adoption touch-gate       (BLOCK — migration WARNs in staged files)
+#   5. practices-audit staleness     (WARN only)
+#   6. generate-digest
 #
 # Bypass:  git commit --no-verify   (use sparingly)
 
@@ -157,7 +160,33 @@ else
   exit 1
 fi
 
-# 4e. Context budget audit — WARN only (agent prompts + CLAUDE.md lazy-load discipline)
+# 4e. DS adoption touch-gate — BLOCK on migration-target WARNs in staged files
+#
+# For every .tsx/.ts file staged under apps/, promotes these WARN rules to BLOCK:
+#   raw-html-button, hand-rolled-export-drawer, color-mix-contrast-risk,
+#   vendored-datatable, missing-list-page-template, card-shape-masquerade,
+#   hand-rolled-status-badge.
+#
+# Existing violations in UN-staged files are not checked here — they're tracked
+# in the per-product ds-sweep-*.md backlogs. Staging a file forces migration.
+# Skip the gate with: git commit --no-verify  (use sparingly).
+printf "       ds-touch-gate      ... "
+staged_tsx=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(tsx|ts)$' | grep '^apps/' || true)
+if [ -z "$staged_tsx" ]; then
+  printf "${GREEN}skip${RESET} (no staged app .tsx/.ts)\n"
+else
+  if python3 scripts/ds-adoption-audit.py --touched-files "$staged_tsx" --strict > /tmp/pre-commit-ds-touch.log 2>&1; then
+    printf "${GREEN}pass${RESET}\n"
+  else
+    printf "${RED}FAIL${RESET} — staged file has DS migration violation\n\n"
+    cat /tmp/pre-commit-ds-touch.log
+    echo
+    echo "Fix the violations above before committing, or bypass with: git commit --no-verify"
+    exit 1
+  fi
+fi
+
+# 4f. Context budget audit — WARN only (agent prompts + CLAUDE.md lazy-load discipline)
 printf "       context-budget    ... "
 if python3 scripts/context-budget-audit.py > /tmp/pre-commit-context.log 2>&1; then
   result=$(cat /tmp/pre-commit-context.log)

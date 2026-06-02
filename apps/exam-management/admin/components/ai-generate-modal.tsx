@@ -286,63 +286,27 @@ function SetupView({
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-foreground">Questions</span>
             <div className="flex items-center gap-0.5 border border-border rounded-md overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setCount(Math.max(1, count - 1))}
-                aria-label="Decrease question count"
-                style={{ padding: '2px 8px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', fontSize: 14 }}
-              >−</button>
+              <Button variant="ghost" size="xs" onClick={() => setCount(Math.max(1, count - 1))} aria-label="Decrease question count" className="px-2 text-muted-foreground text-sm h-auto py-0.5">−</Button>
               <span className="text-xs font-semibold text-foreground px-1 min-w-[20px] text-center">{count}</span>
-              <button
-                type="button"
-                onClick={() => setCount(Math.min(10, count + 1))}
-                aria-label="Increase question count"
-                style={{ padding: '2px 8px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', fontSize: 14 }}
-              >+</button>
+              <Button variant="ghost" size="xs" onClick={() => setCount(Math.min(10, count + 1))} aria-label="Increase question count" className="px-2 text-muted-foreground text-sm h-auto py-0.5">+</Button>
             </div>
           </div>
 
           {/* Difficulty quick chips */}
           <div className="flex items-center gap-1">
             {(['Mixed', 'Easy', 'Medium', 'Hard'] as const).map(d => (
-              <button
-                key={d}
-                type="button"
-                onClick={() => setDifficultyMix(d)}
-                aria-pressed={difficultyMix === d}
-                className="text-xs px-2 py-0.5 rounded-full border transition-colors"
-                style={{
-                  background: difficultyMix === d ? 'var(--muted)' : 'transparent',
-                  borderColor: difficultyMix === d ? 'var(--foreground)' : 'var(--border)',
-                  color: difficultyMix === d ? 'var(--foreground)' : 'var(--muted-foreground)',
-                  fontWeight: difficultyMix === d ? 600 : 400,
-                  cursor: 'pointer',
-                }}
-              >
+              <Button key={d} variant={difficultyMix === d ? 'outline' : 'ghost'} size="xs" onClick={() => setDifficultyMix(d)} aria-pressed={difficultyMix === d} className={`rounded-full text-xs px-2 py-0.5 h-auto transition-colors ${difficultyMix === d ? 'font-semibold text-foreground' : 'font-normal text-muted-foreground'}`} style={difficultyMix === d ? { borderColor: 'var(--foreground)', background: 'var(--muted)' } : {}}>
                 {d}
-              </button>
+              </Button>
             ))}
           </div>
 
           {/* Bloom quick chips — just a few key ones */}
           <div className="flex items-center gap-1">
             {(['Mixed', 'Apply', 'Analyze', 'Evaluate'] as const).map(b => (
-              <button
-                key={b}
-                type="button"
-                onClick={() => setBloomMix(b as Bloom | 'Mixed')}
-                aria-pressed={bloomMix === b}
-                className="text-xs px-2 py-0.5 rounded-full border transition-colors"
-                style={{
-                  background: bloomMix === b ? 'var(--muted)' : 'transparent',
-                  borderColor: bloomMix === b ? 'var(--foreground)' : 'var(--border)',
-                  color: bloomMix === b ? 'var(--foreground)' : 'var(--muted-foreground)',
-                  fontWeight: bloomMix === b ? 600 : 400,
-                  cursor: 'pointer',
-                }}
-              >
+              <Button key={b} variant={bloomMix === b ? 'outline' : 'ghost'} size="xs" onClick={() => setBloomMix(b as Bloom | 'Mixed')} aria-pressed={bloomMix === b} className={`rounded-full text-xs px-2 py-0.5 h-auto transition-colors ${bloomMix === b ? 'font-semibold text-foreground' : 'font-normal text-muted-foreground'}`} style={bloomMix === b ? { borderColor: 'var(--foreground)', background: 'var(--muted)' } : {}}>
                 {b}
-              </button>
+              </Button>
             ))}
           </div>
         </div>

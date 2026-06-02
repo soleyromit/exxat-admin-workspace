@@ -881,12 +881,11 @@ export function SettingsAppearanceCard({
                 })}
                 {productAuthoringEnabled ? (
                 <div>
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     className={cn(
-                      "flex w-full items-center gap-3 px-3 py-2 text-left transition",
-                      "hover:bg-interactive-hover/20",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      "flex h-auto w-full items-center gap-3 px-3 py-2 text-left justify-start",
                     )}
                     aria-expanded={productEditorOpen}
                     onClick={() => {
@@ -916,7 +915,7 @@ export function SettingsAppearanceCard({
                         )}
                         aria-hidden="true"
                       />
-                    </button>
+                    </Button>
                     {productEditorOpen ? (
                       <div
                         className="border-t p-4 transition-[background-color,border-color] duration-200"

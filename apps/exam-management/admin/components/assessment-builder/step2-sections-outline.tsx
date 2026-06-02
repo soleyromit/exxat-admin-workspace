@@ -51,15 +51,9 @@ export function SectionsOutline({
       <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <p className="text-xs font-semibold text-foreground">{activeAsmt.questions.length} questions</p>
         {activeSectionId && (
-          <button
-            type="button"
-            onClick={() => onSetActiveSection(null)}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-            aria-label="Clear active section"
-          >
+          <Button variant="ghost" size="icon-xs" aria-label="Clear active section" onClick={() => onSetActiveSection(null)} className="text-muted-foreground hover:text-foreground h-auto w-auto p-0">
             <i className="fa-light fa-xmark" aria-hidden="true" />
-          </button>
+          </Button>
         )}
       </div>
 
@@ -91,15 +85,10 @@ export function SectionsOutline({
                 <Button variant="ghost" size="sm" onClick={() => { setShowAddForm(false); setNewTitle('') }} className="h-6 px-2 text-xs">✕</Button>
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={() => setShowAddForm(true)}
-                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}
-              >
+              <Button variant="ghost" size="xs" onClick={() => setShowAddForm(true)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-0 h-auto py-0.5">
                 <i className="fa-light fa-plus" aria-hidden="true" />
                 Add section
-              </button>
+              </Button>
             )}
           </div>
         )}
@@ -180,11 +169,11 @@ function SectionGroup({
       {/* Section header */}
       <div className="flex items-center gap-1 w-full px-3 py-1.5">
         {/* Collapse trigger */}
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => setCollapsed(c => !c)}
-          className="flex items-center gap-1.5 flex-1 text-left min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded"
-          style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+          className="flex items-center gap-1.5 flex-1 text-left min-w-0 rounded h-auto py-0 px-0 justify-start"
         >
           <i
             className={`fa-light ${collapsed ? 'fa-chevron-right' : 'fa-chevron-down'}`}
@@ -198,19 +187,19 @@ function SectionGroup({
             <div style={{ display: 'flex', flexDirection: 'row', gap: 3, flexShrink: 0 }}>
               {section.instructions && (
                 <span
-                  style={{ width: 6, height: 6, borderRadius: '50%', background: '#bfdbfe', display: 'inline-block' }}
+                  className="inline-block size-1.5 rounded-full bg-[var(--chart-1)] opacity-50"
                   title="Has section instructions"
                 />
               )}
               {section.prereadText && (
                 <span
-                  style={{ width: 6, height: 6, borderRadius: '50%', background: '#ddd6fe', display: 'inline-block' }}
+                  className="inline-block size-1.5 rounded-full bg-[var(--brand-color)] opacity-40"
                   title="Has preread / case vignette"
                 />
               )}
             </div>
           )}
-        </button>
+        </Button>
 
         {/* Faculty + collaborator chips */}
         <div className="flex items-center gap-1 shrink-0">
@@ -257,21 +246,17 @@ function SectionGroup({
 
       {/* "Add questions" targeting button */}
       <div style={{ paddingLeft: 24, paddingRight: 12, paddingBottom: 4 }}>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="xs"
           onClick={onSetActive}
-          className="text-xs transition-colors flex items-center gap-1"
-          style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: isActive ? 'var(--foreground)' : 'var(--muted-foreground)',
-            fontWeight: isActive ? 600 : 400,
-          }}
+          className={`text-xs transition-colors flex items-center gap-1 h-auto py-0.5 px-0 ${isActive ? 'font-semibold text-foreground' : 'font-normal text-muted-foreground'}`}
           aria-pressed={isActive}
           aria-label={isActive ? `Stop adding to ${section.title}` : `Add questions to ${section.title}`}
         >
-          <i className={`fa-light ${isActive ? 'fa-arrow-right-to-bracket' : 'fa-plus'}`} aria-hidden="true" style={{ fontSize: 10 }} />
+          <i className={`fa-light ${isActive ? 'fa-arrow-right-to-bracket' : 'fa-plus'} text-[10px]`} aria-hidden="true" />
           {isActive ? 'Adding here' : 'Add questions'}
-        </button>
+        </Button>
       </div>
 
       {/* Questions in section */}
@@ -292,7 +277,7 @@ function SectionGroup({
       {isActive && (
         <div style={{ padding: '8px 12px 10px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div style={{ position: 'relative' }}>
-            <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 3, borderRadius: '3px 0 0 3px', background: '#bfdbfe' }} />
+            <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 3, borderRadius: '3px 0 0 3px', background: 'var(--chart-1)', opacity: 0.4 }} />
             <textarea
               aria-label={`Instructions for section ${section.title}`}
               value={section.instructions ?? ''}
@@ -309,7 +294,7 @@ function SectionGroup({
             />
           </div>
           <div style={{ position: 'relative' }}>
-            <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 3, borderRadius: '3px 0 0 3px', background: '#ddd6fe' }} />
+            <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 3, borderRadius: '3px 0 0 3px', background: 'var(--brand-color)', opacity: 0.3 }} />
             <textarea
               aria-label={`Preread for section ${section.title}`}
               value={section.prereadText ?? ''}

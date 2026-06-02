@@ -1,3 +1,4 @@
+// overflow-hidden safe — floating uses Radix Portal (PopoverContent, TooltipContent, SelectContent all use Radix Portal)
 'use client'
 
 /**
@@ -18,11 +19,13 @@ import { useEntryPoint } from '@/lib/use-entry-point'
 import {
   Tabs, TabsList, TabsTrigger, TabsContent,
   Button, Badge,
+  Card, CardContent,
   InputGroup, InputGroupAddon, InputGroupInput,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   ViewSegmentedControl,
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
   Input, Label, Separator, Textarea,
+  StatusBadge,
 } from '@exxatdesignux/ui'
 import { RowActions } from '@/components/data-table/row-actions'
 import { SearchInput } from '@/components/search-input'
@@ -79,7 +82,7 @@ const TERM_STATUS_CONFIG: Record<
   upcoming: {
     label: 'Upcoming',
     icon: 'fa-hourglass',
-    bg: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+    bg: 'var(--brand-tint)',
     fg: 'var(--brand-color-dark)',
   },
   completed: {
@@ -98,7 +101,7 @@ function TermStatusBadge({ status }: { status: Term['status'] }) {
       className="rounded-full px-3 py-1 gap-1.5 font-semibold whitespace-nowrap"
       style={{ backgroundColor: s.bg, color: s.fg }}
     >
-      <i className={`fa-light ${s.icon}`} aria-hidden="true" style={{ fontSize: 11 }} />
+      <i className={`fa-light ${s.icon} text-[11px]`} aria-hidden="true" />
       {s.label}
     </Badge>
   )
@@ -148,7 +151,7 @@ function buildTermColumns(onEdit: (t: TermTableRow) => void): ColumnDef<TermTabl
           aria-label={`Edit ${row.label as string}`}
           onClick={(e) => { e.stopPropagation(); onEdit(row) }}
         >
-          <i className="fa-light fa-pen" aria-hidden="true" style={{ fontSize: 13 }} />
+          <i className="fa-light fa-pen text-[13px]" aria-hidden="true" />
         </Button>
       ),
     },
@@ -185,13 +188,13 @@ function TermDrawer({ open, term, isNew, onClose, onSave }: TermDrawerProps) {
         <div
           className="mx-4 flex items-start gap-2.5 rounded-lg px-3 py-2.5 text-xs"
           style={{
-            backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+            backgroundColor: 'var(--brand-tint)',
             color: 'var(--brand-color-dark)',
-            border: '1px solid color-mix(in oklch, var(--brand-color) 20%, var(--background))',
+            border: '1px solid var(--brand-tint)',
           }}
           role="note"
         >
-          <i className="fa-light fa-circle-info mt-0.5 shrink-0" aria-hidden="true" style={{ fontSize: 13 }} />
+          <i className="fa-light fa-circle-info mt-0.5 shrink-0 text-[13px]" aria-hidden="true" />
           <span>When Canvas integration is active, terms are imported automatically and fields are locked.</span>
         </div>
 
@@ -407,7 +410,7 @@ function StubSection({ icon, title, description }: { icon: string; title: string
         className="flex size-8 shrink-0 items-center justify-center rounded-md mt-0.5"
         style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}
       >
-        <i className={`fa-light ${icon}`} aria-hidden="true" style={{ fontSize: 14 }} />
+        <i className={`fa-light ${icon} text-sm`} aria-hidden="true" />
       </span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground">{title}</p>
@@ -428,7 +431,7 @@ type MasterCourseRow = MasterCourse & Record<string, unknown>
 
 const CATALOG_TYPE_STYLES: Record<MasterCourse['type'], { bg: string; fg: string }> = {
   Core: {
-    bg: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+    bg: 'var(--brand-tint)',
     fg: 'var(--brand-color-dark)',
   },
   Elective: { bg: 'var(--muted)', fg: 'var(--muted-foreground)' },
@@ -497,7 +500,7 @@ function buildCatalogColumns(onEdit: (c: MasterCourse) => void): ColumnDef<Maste
           aria-label={`Edit ${row.courseName as string}`}
           onClick={(e) => { e.stopPropagation(); onEdit(row as unknown as MasterCourse) }}
         >
-          <i className="fa-light fa-pen" aria-hidden="true" style={{ fontSize: 13 }} />
+          <i className="fa-light fa-pen text-[13px]" aria-hidden="true" />
         </Button>
       ),
     },
@@ -547,19 +550,17 @@ function CourseCatalogTab() {
     <>
       {/* Info banner */}
       <div className="px-6 pt-4 pb-2 shrink-0">
-        <div
-          className="rounded-lg border border-border flex items-start gap-2.5 px-3 py-2.5 text-[13px]"
-          style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 6%, var(--background))' }}
-          role="note"
-        >
-          <i className="fa-light fa-circle-info mt-0.5 shrink-0" aria-hidden="true"
-            style={{ color: 'var(--brand-color)', fontSize: 14 }} />
+        <Card role="note" style={{ backgroundColor: 'var(--brand-tint)' }}>
+          <CardContent className="flex items-start gap-2.5 px-3 py-2.5 text-[13px]">
+          <i className="fa-light fa-circle-info mt-0.5 shrink-0 text-sm" aria-hidden="true"
+            style={{ color: 'var(--brand-color)' }} />
           <span style={{ color: 'var(--muted-foreground)' }}>
             When a course offering is created from this catalog, a{' '}
-            <strong style={{ color: 'var(--foreground)', fontWeight: 500 }}>Question Bank shell</strong>{' '}
+            <strong className="text-foreground font-medium">Question Bank shell</strong>{' '}
             is automatically generated with the same name.
           </span>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="flex items-center justify-between gap-3 px-6 pb-2 shrink-0 flex-wrap">
@@ -706,13 +707,13 @@ function AddOfferingSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
         <div
           className="mx-4 flex items-start gap-2.5 rounded-lg px-3 py-2.5 text-xs"
           style={{
-            backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+            backgroundColor: 'var(--brand-tint)',
             color: 'var(--brand-color-dark)',
-            border: '1px solid color-mix(in oklch, var(--brand-color) 20%, var(--background))',
+            border: '1px solid var(--brand-tint)',
           }}
           role="note"
         >
-          <i className="fa-light fa-circle-info mt-0.5 shrink-0" aria-hidden="true" style={{ fontSize: 13 }} />
+          <i className="fa-light fa-circle-info mt-0.5 shrink-0 text-[13px]" aria-hidden="true" />
           <span>
             When Canvas integration is active, course offerings are created automatically from your Canvas courses. Canvas Course ID and SIS Course ID are populated from the LTI context.
           </span>
@@ -882,7 +883,7 @@ const OFFERING_STATUS_CONFIG: Record<
   completed: { label: 'Completed', bg: 'var(--muted)', fg: 'var(--muted-foreground)' },
   upcoming: {
     label: 'Upcoming',
-    bg: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+    bg: 'var(--brand-tint)',
     fg: 'var(--brand-color-dark)',
   },
 }
@@ -1255,7 +1256,7 @@ function CourseListView({ courses }: { courses: CourseSummary[] }) {
                   <span className={`inline-block size-1.5 rounded-full ${isActive ? 'bg-chart-2' : 'bg-muted-foreground'}`} />
                   {isActive ? 'Active' : 'Past'}
                 </span>
-                <i className="fa-light fa-chevron-right text-muted-foreground" aria-hidden="true" style={{ fontSize: 11 }} />
+                <i className="fa-light fa-chevron-right text-muted-foreground text-[11px]" aria-hidden="true" />
               </Link>
             </li>
           )

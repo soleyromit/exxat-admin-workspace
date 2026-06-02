@@ -319,6 +319,7 @@ function CollapsibleNavItem({ item, pathname, allNavUrls }: { item: NavLinkItem;
             {item.title}
           </TooltipContent>
         </Tooltip>
+        {/* overflow-hidden safe — floating uses Radix Portal */}
         <CollapsibleContent className="overflow-hidden group-data-[collapsible=icon]:hidden data-[state=open]:[animation:collapsible-down_200ms_ease-out] data-[state=closed]:[animation:collapsible-up_200ms_ease-out] motion-reduce:animate-none">
           <SidebarMenuSub>
             {item.children.map(child => {

@@ -254,8 +254,9 @@ export default function AnalyticsClient({ assessmentId }: { assessmentId: string
                               <td style={{ padding: '8px 12px', textAlign: 'right' }}>
                                 <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
                                   {!isDiscarded && (
-                                    <button
-                                      type="button"
+                                    <Button
+                                      variant={isInvalidated ? 'outline' : 'ghost'}
+                                      size="xs"
                                       aria-pressed={isInvalidated}
                                       aria-label={`${isInvalidated ? 'Undo invalidate' : 'Invalidate'} question ${item.order}`}
                                       onClick={() => {
@@ -265,12 +266,13 @@ export default function AnalyticsClient({ assessmentId }: { assessmentId: string
                                           setPendingNote('')
                                         }
                                       }}
-                                      style={{ fontSize: 12, padding: '3px 8px', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit', border: `1px solid ${isInvalidated ? 'var(--brand-color)' : 'var(--border)'}`, background: isInvalidated ? 'var(--brand-tint)' : 'transparent', color: isInvalidated ? 'var(--brand-color)' : 'var(--muted-foreground)' }}
-                                    >{isInvalidated ? 'Undo' : 'Invalidate'}</button>
+                                      style={isInvalidated ? { borderColor: 'var(--brand-color)', color: 'var(--brand-color)', background: 'var(--brand-tint)' } : undefined}
+                                    >{isInvalidated ? 'Undo' : 'Invalidate'}</Button>
                                   )}
                                   {!isInvalidated && (
-                                    <button
-                                      type="button"
+                                    <Button
+                                      variant="ghost"
+                                      size="xs"
                                       aria-pressed={isDiscarded}
                                       aria-label={`${isDiscarded ? 'Undo discard' : 'Discard'} question ${item.order}`}
                                       onClick={() => {
@@ -280,8 +282,8 @@ export default function AnalyticsClient({ assessmentId }: { assessmentId: string
                                           setPendingNote('')
                                         }
                                       }}
-                                      style={{ fontSize: 12, padding: '3px 8px', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit', border: `1px solid ${isDiscarded ? 'var(--border)' : 'var(--border)'}`, background: isDiscarded ? 'var(--muted)' : 'transparent', color: 'var(--muted-foreground)' }}
-                                    >{isDiscarded ? 'Undo discard' : 'Discard'}</button>
+                                      style={isDiscarded ? { background: 'var(--muted)' } : undefined}
+                                    >{isDiscarded ? 'Undo discard' : 'Discard'}</Button>
                                   )}
                                   {!isInvalidated && !isDiscarded && (
                                     <select
@@ -322,13 +324,7 @@ export default function AnalyticsClient({ assessmentId }: { assessmentId: string
                       {(['flat', 'percentage', 'top-100'] as const).map((val) => {
                         const label = val === 'flat' ? 'Flat ±pts' : val === 'percentage' ? '% curve' : 'Top score = 100%'
                         return (
-                          <button
-                            key={val}
-                            type="button"
-                            aria-pressed={curveMethod === val}
-                            onClick={() => setCurveMethod(val)}
-                            style={{ flex: 1, fontSize: 12, padding: '6px 0', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit', border: `1px solid ${curveMethod === val ? 'var(--brand-color)' : 'var(--border)'}`, background: curveMethod === val ? 'var(--brand-tint)' : 'transparent', color: curveMethod === val ? 'var(--brand-color)' : 'var(--muted-foreground)' }}
-                          >{label}</button>
+                          <Button key={val} variant={curveMethod === val ? 'outline' : 'ghost'} size="xs" aria-pressed={curveMethod === val} onClick={() => setCurveMethod(val)} style={{ flex: 1, ...(curveMethod === val ? { borderColor: 'var(--brand-color)', background: 'var(--brand-tint)', color: 'var(--brand-color)' } : { color: 'var(--muted-foreground)' }) }}>{label}</Button>
                         )
                       })}
                     </div>
@@ -353,18 +349,7 @@ export default function AnalyticsClient({ assessmentId }: { assessmentId: string
                         Curve applied: {curveAppliedMethod}
                       </p>
                     )}
-                    <button
-                      type="button"
-                      disabled={curveMethod !== 'top-100' && curveValue.trim() === ''}
-                      onClick={() => {
-                        const desc = curveMethod === 'top-100' ? 'Top score = 100%' : `${curveMethod === 'flat' ? 'Flat' : 'Percentage'} curve: ${curveValue}`
-                        setCurveApplied(true)
-                        setCurveAppliedMethod(desc)
-                        setAuditLog(prev => [...prev, { timestamp: new Date().toISOString(), action: `Grade curve applied: ${desc}`, note: pendingNote }])
-                        setPendingNote('')
-                      }}
-                      style={{ alignSelf: 'flex-start', fontSize: 13, fontWeight: 600, padding: '8px 16px', borderRadius: 8, border: '1px solid var(--brand-color)', background: 'var(--brand-color)', color: 'var(--background)', cursor: curveMethod !== 'top-100' && curveValue.trim() === '' ? 'not-allowed' : 'pointer', opacity: curveMethod !== 'top-100' && curveValue.trim() === '' ? 0.5 : 1, fontFamily: 'inherit' }}
-                    >Apply curve</button>
+                    <Button variant="default" size="sm" disabled={curveMethod !== 'top-100' && curveValue.trim() === ''} onClick={() => { const desc = curveMethod === 'top-100' ? 'Top score = 100%' : `${curveMethod === 'flat' ? 'Flat' : 'Percentage'} curve: ${curveValue}`; setCurveApplied(true); setCurveAppliedMethod(desc); setAuditLog(prev => [...prev, { timestamp: new Date().toISOString(), action: `Grade curve applied: ${desc}`, note: pendingNote }]); setPendingNote('') }} className="self-start">Apply curve</Button>
                   </div>
                 </div>
 
@@ -552,8 +537,8 @@ function OverviewView({
         <section
           className="rounded-xl border p-5"
           style={{
-            background: 'color-mix(in oklch, var(--chart-4) 7%, var(--background))',
-            borderColor: 'color-mix(in oklch, var(--chart-4) 28%, var(--border))',
+            background: 'var(--muted)',
+            borderColor: 'var(--border)',
           }}
         >
           <div className="flex items-start gap-4">
@@ -642,8 +627,8 @@ function OverviewView({
                   key={level}
                   className="flex items-center gap-1.5 rounded-full px-3 py-1"
                   style={{
-                    background: `color-mix(in oklch, var(${chartVar}) 12%, var(--background))`,
-                    border: `1px solid color-mix(in oklch, var(${chartVar}) 28%, transparent)`,
+                    background: `var(--muted)`,
+                    border: `1px solid var(--border)`,
                   }}
                 >
                   <span className="text-xs font-medium" style={{ color: `var(${chartVar})` }}>{level}</span>
@@ -652,7 +637,7 @@ function OverviewView({
                     className="rounded font-mono"
                     style={{
                       padding: '0px 5px',
-                      background: `color-mix(in oklch, var(${chartVar}) 18%, var(--background))`,
+                      background: `var(--muted)`,
                       color: `var(${chartVar})`,
                     }}
                   >
@@ -673,10 +658,10 @@ function OverviewView({
 const Kpi = KpiTile
 
 const TONE: Record<'brand' | 'info' | 'warning' | 'success' | 'neutral', { bg: string; fg: string }> = {
-  brand:   { bg: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))', fg: 'var(--brand-color-dark)' },
-  info:    { bg: 'color-mix(in oklch, var(--chart-1) 12%, var(--background))',     fg: 'var(--chart-1)' },
-  warning: { bg: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))',     fg: 'var(--chart-4)' },
-  success: { bg: 'color-mix(in oklch, var(--chart-2) 12%, var(--background))',     fg: 'var(--chart-2)' },
+  brand:   { bg: 'var(--brand-tint)', fg: 'var(--brand-color-dark)' },
+  info:    { bg: 'var(--muted)',     fg: 'var(--chart-1)' },
+  warning: { bg: 'var(--muted)',     fg: 'var(--chart-4)' },
+  success: { bg: 'var(--muted)',     fg: 'var(--chart-2)' },
   neutral: { bg: 'var(--muted)',                                                    fg: 'var(--muted-foreground)' },
 }
 
@@ -789,7 +774,7 @@ function ItemRow({ item }: { item: Item }) {
         gridTemplateColumns: '40px minmax(0, 2fr) 100px 130px 80px',
         borderColor: 'var(--border)',
         background: item.negativeDiscriminator
-          ? 'color-mix(in oklch, var(--chart-4) 5%, var(--background))'
+          ? 'var(--muted)'
           : undefined,
       }}
     >
@@ -804,9 +789,9 @@ function ItemRow({ item }: { item: Item }) {
               variant="secondary"
               className="rounded text-[10px] uppercase tracking-wider font-bold gap-1"
               style={{
-                background: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))',
+                background: 'var(--muted)',
                 color: 'var(--chart-4)',
-                border: '1px solid color-mix(in oklch, var(--chart-4) 26%, transparent)',
+                border: '1px solid var(--border)',
               }}
             >
               <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 9 }} />
@@ -851,9 +836,9 @@ function ItemRow({ item }: { item: Item }) {
 
 function DiffMini({ difficulty }: { difficulty: 'Easy' | 'Medium' | 'Hard' }) {
   const palette: Record<'Easy' | 'Medium' | 'Hard', { bg: string; fg: string }> = {
-    Easy:   { bg: 'color-mix(in oklch, var(--chart-2) 12%, var(--background))', fg: 'var(--chart-2)' },
-    Medium: { bg: 'color-mix(in oklch, var(--chart-1) 12%, var(--background))', fg: 'var(--chart-1)' },
-    Hard:   { bg: 'color-mix(in oklch, var(--chart-4) 12%, var(--background))', fg: 'var(--chart-4)' },
+    Easy:   { bg: 'var(--muted)', fg: 'var(--chart-2)' },
+    Medium: { bg: 'var(--muted)', fg: 'var(--chart-1)' },
+    Hard:   { bg: 'var(--muted)', fg: 'var(--chart-4)' },
   }
   const p = palette[difficulty]
   return (
@@ -906,12 +891,12 @@ function FilterChip({
       className={`rounded-full text-xs font-medium h-auto ${small ? 'px-2.5 py-0.5' : 'px-3 py-1'}`}
       style={{
         background: active
-          ? tonePalette?.bg ?? 'color-mix(in oklch, var(--brand-color) 12%, var(--background))'
+          ? tonePalette?.bg ?? 'var(--brand-tint)'
           : 'var(--muted)',
         color: active
           ? tonePalette?.fg ?? 'var(--brand-color-dark)'
           : 'var(--foreground)',
-        border: `1px solid ${active ? (tonePalette?.fg ?? 'color-mix(in oklch, var(--brand-color) 24%, transparent)') : 'transparent'}`,
+        border: `1px solid ${active ? (tonePalette?.fg ?? 'var(--brand-tint)') : 'transparent'}`,
       }}
       aria-pressed={active}
     >
@@ -1037,7 +1022,7 @@ function CurveView({ scoreDist, items }: { scoreDist: ScoreDist; items: Item[] }
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-xs font-bold text-muted-foreground">Q{item.order}</span>
                       {item.negativeDiscriminator && (
-                        <Badge variant="secondary" className="rounded text-[10px] uppercase font-bold gap-1" style={{ background: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', color: 'var(--chart-4)' }}>
+                        <Badge variant="secondary" className="rounded text-[10px] uppercase font-bold gap-1" style={{ background: 'var(--muted)', color: 'var(--chart-4)' }}>
                           <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 9 }} />
                           Negative
                         </Badge>

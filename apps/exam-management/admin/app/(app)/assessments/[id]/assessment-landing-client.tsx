@@ -510,7 +510,7 @@ function SendToChairDialog({
                   onClick={() => toggle(r.id)}
                   aria-pressed={isSelected}
                   className="flex items-center justify-start gap-3 h-auto w-full rounded-md px-2 py-2 text-start whitespace-normal"
-                  style={isSelected ? { backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' } : {}}
+                  style={isSelected ? { backgroundColor: 'var(--brand-tint)' } : {}}
                 >
                   <Checkbox checked={isSelected} aria-hidden="true" tabIndex={-1} className="pointer-events-none" />
                   <Avatar className="size-8 shrink-0">
@@ -521,8 +521,8 @@ function SendToChairDialog({
                     <AvatarFallback
                       className="text-[10px] font-bold"
                       style={{
-                        background: 'color-mix(in oklch, var(--foreground) 8%, var(--background))',
-                        color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))',
+                        background: 'var(--muted)',
+                        color: 'var(--muted-foreground)',
                       }}
                     >
                       {r.initials}
@@ -536,7 +536,7 @@ function SendToChairDialog({
                           variant="secondary"
                           className="rounded font-mono text-[9px] uppercase tracking-wider"
                           style={{
-                            backgroundColor: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))',
+                            backgroundColor: 'var(--brand-tint)',
                             color: 'var(--brand-color-dark)',
                           }}
                         >
@@ -643,10 +643,12 @@ function SchedulePublishSheet({
         <div className="flex flex-col gap-5 overflow-y-auto px-4 pb-2">
 
           {/* Assessment context */}
-          <div className="rounded-lg border border-border bg-muted/30 px-4 py-3">
-            <p className="text-sm font-semibold text-foreground">{assessmentTitle}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">{courseName} · {enrolledCount} students enrolled</p>
-          </div>
+          <Card className="bg-muted/30">
+            <CardContent className="px-4 py-3">
+              <p className="text-sm font-semibold text-foreground">{assessmentTitle}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{courseName} · {enrolledCount} students enrolled</p>
+            </CardContent>
+          </Card>
 
           {/* ── Download window ── */}
           <section>
@@ -754,7 +756,8 @@ function SchedulePublishSheet({
           {/* ── Email preview ── */}
           <section>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Announcement Email Preview</p>
-            <div className="rounded-lg border border-border bg-muted/30 px-4 py-4 text-xs text-foreground leading-relaxed space-y-2">
+            <Card className="bg-muted/30">
+              <CardContent className="px-4 py-4 text-xs text-foreground leading-relaxed space-y-2">
               <p><span className="font-medium">From:</span> Exam Management (noreply@exams.exxat.com)</p>
               <p><span className="font-medium">Subject:</span> {assessmentTitle} is now ready to download</p>
               <Separator className="my-2" />
@@ -768,7 +771,8 @@ function SchedulePublishSheet({
                 <p><span className="font-medium">Exam date:</span> {examDate} at {examTime}</p>
               )}
               <p className="mt-2 text-muted-foreground">Download before arriving in class. You will need the exam on your device — it cannot be downloaded in the classroom.</p>
-            </div>
+              </CardContent>
+            </Card>
           </section>
         </div>
 

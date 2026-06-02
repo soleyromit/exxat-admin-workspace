@@ -323,6 +323,7 @@ export function SurveysHub({ mode }: { mode: 'course_evaluation' | 'general' }) 
     : `${surveyCount} ${surveyCount === 1 ? 'evaluation' : 'evaluations'}`
 
   return (
+    // overflow-hidden safe — floating uses Radix Portal
     <div className="flex flex-col flex-1 overflow-hidden">
       <SiteHeader title={title} />
       <PageHeader

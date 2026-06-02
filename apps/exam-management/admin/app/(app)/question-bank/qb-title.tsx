@@ -40,16 +40,17 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           aria-label={`${personas.length} collaborators`}
-          style={{ display: 'inline-flex', alignItems: 'center', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+          className="inline-flex items-center p-0 h-auto"
         >
           {shown.map((p, i) => (
             <Tooltip key={p.id}>
               <TooltipTrigger asChild>
                 <Avatar style={{ width: 28, height: 28, marginLeft: i === 0 ? 0 : -6, border: '2px solid var(--background)', borderRadius: '50%', zIndex: shown.length - i, position: 'relative' }}>
-                  <AvatarFallback className="text-[10px] font-bold" style={{ backgroundColor: 'color-mix(in oklch, var(--foreground) 8%, var(--background))', color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))' }}>
+                  <AvatarFallback className="text-[10px] font-bold" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
                     {p.initials}
                   </AvatarFallback>
                 </Avatar>
@@ -73,7 +74,7 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
               </TooltipContent>
             </Tooltip>
           )}
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-60 p-3">
         <div className="text-xs font-bold uppercase tracking-[0.07em] text-muted-foreground" style={{ marginBottom: 8 }}>
@@ -83,7 +84,7 @@ function CollaboratorAvatars({ collaboratorIds }: { collaboratorIds: string[] })
           {personas.map((p, i) => (
             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Avatar style={{ width: 28, height: 28, flexShrink: 0 }}>
-                <AvatarFallback className="text-[10px] font-bold" style={{ backgroundColor: 'color-mix(in oklch, var(--foreground) 8%, var(--background))', color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))' }}>
+                <AvatarFallback className="text-[10px] font-bold" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
                   {p.initials}
                 </AvatarFallback>
               </Avatar>

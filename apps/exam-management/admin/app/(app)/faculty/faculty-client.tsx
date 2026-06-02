@@ -120,7 +120,7 @@ function buildFacultyColumns(isPrism: boolean): ColumnDef<FacultyTableRow>[] {
           <Badge
             variant="secondary"
             className="rounded font-mono text-[11px] px-2"
-            style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', color: 'var(--brand-color)' }}
+            style={{ backgroundColor: 'var(--brand-tint)', color: 'var(--brand-color)' }}
           >
             {count}
           </Badge>
@@ -200,9 +200,9 @@ function AddFacultySheet({ open, onOpenChange }: { open: boolean; onOpenChange: 
         <div
           className="mx-4 flex items-start gap-2.5 rounded-lg px-3 py-2.5 text-xs"
           style={{
-            backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+            backgroundColor: 'var(--brand-tint)',
             color: 'var(--brand-color-dark)',
-            border: '1px solid color-mix(in oklch, var(--brand-color) 20%, var(--background))',
+            border: '1px solid var(--brand-tint)',
           }}
           role="note"
         >
@@ -390,7 +390,7 @@ export default function FacultyClient() {
                   variant="secondary"
                   className="rounded-full gap-1.5 text-xs"
                   style={{
-                    backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+                    backgroundColor: 'var(--brand-tint)',
                     color: 'var(--brand-color)',
                   }}
                 >

@@ -33,6 +33,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   Label,
+  Card, CardContent,
 } from '@exxatdesignux/ui'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
@@ -48,7 +49,7 @@ function StandingBadge({ status, label }: { status: string; label: string }) {
   const style =
     status === 'good-standing'   ? { bg: 'var(--qb-status-saved-bg)',  fg: 'var(--qb-status-saved-fg)' } :
     status === 'needs-attention' ? { bg: 'var(--standing-warning-bg)', fg: 'var(--standing-warning-fg)' } :
-                                   { bg: 'color-mix(in oklch, var(--destructive) 10%, var(--background))', fg: 'var(--destructive)' }
+                                   { bg: 'var(--muted)', fg: 'var(--destructive)' }
   return (
     <Badge
       variant="secondary"
@@ -154,8 +155,8 @@ function OverviewTab({ student, isPrism, isAdmin, onViewCourses }: {
           <div
             className="rounded-xl px-4 py-3 flex items-center gap-3"
             style={{
-              backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, var(--background))',
-              border: '1px solid color-mix(in oklch, var(--brand-color) 15%, var(--background))',
+              backgroundColor: 'var(--brand-tint)',
+              border: '1px solid var(--brand-tint)',
             }}
           >
             <i className="fa-light fa-star shrink-0" aria-hidden="true"
@@ -289,7 +290,7 @@ function OverviewTab({ student, isPrism, isAdmin, onViewCourses }: {
               {activeInterventions.map(iv => (
                 <div key={iv.id} className="flex gap-3">
                   <div className="flex size-8 shrink-0 items-center justify-center rounded-lg mt-0.5"
-                    style={{ backgroundColor: 'color-mix(in oklch, var(--chart-4) 12%, var(--background))' }}>
+                    style={{ backgroundColor: 'var(--muted)' }}>
                     <i className="fa-light fa-flag" aria-hidden="true" style={{ fontSize: 13, color: 'var(--chart-4)' }} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -401,10 +402,10 @@ function OverviewTab({ student, isPrism, isAdmin, onViewCourses }: {
 
         {/* Full Prism profile fallback — Aarti: "put a link, open in a new tab" */}
         {isPrism && (
-          <div className="rounded-xl border border-border p-4 flex items-start gap-3"
-            style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 4%, var(--background))' }}>
-            <i className="fa-light fa-arrow-up-right-from-square mt-0.5" aria-hidden="true"
-              style={{ fontSize: 13, color: 'var(--brand-color)', flexShrink: 0 }} />
+          <Card style={{ backgroundColor: 'var(--brand-tint)' }}>
+            <CardContent className="flex items-start gap-3 p-4">
+            <i className="fa-light fa-arrow-up-right-from-square mt-0.5 text-sm shrink-0" aria-hidden="true"
+              style={{ color: 'var(--brand-color)' }} />
             <div>
               <p className="text-sm font-medium text-foreground">Full student profile</p>
               <p className="text-xs text-muted-foreground mt-0.5">
@@ -419,10 +420,11 @@ function OverviewTab({ student, isPrism, isAdmin, onViewCourses }: {
                 style={{ color: 'var(--brand-color)' }}
               >
                 View in Prism
-                <i className="fa-light fa-arrow-up-right-from-square" aria-hidden="true" style={{ fontSize: 10 }} />
+                <i className="fa-light fa-arrow-up-right-from-square text-[10px]" aria-hidden="true" />
               </a>
             </div>
-          </div>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>
@@ -433,7 +435,7 @@ function OverviewTab({ student, isPrism, isAdmin, onViewCourses }: {
 
 const COURSE_STATUS_CONFIG = {
   completed:     { label: 'Completed',   icon: 'fa-circle-check', bg: 'var(--qb-status-saved-bg)',  fg: 'var(--qb-status-saved-fg)' },
-  'in-progress': { label: 'In Progress', icon: 'fa-spinner',      bg: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', fg: 'var(--brand-color)' },
+  'in-progress': { label: 'In Progress', icon: 'fa-spinner',      bg: 'var(--brand-tint)', fg: 'var(--brand-color)' },
   upcoming:      { label: 'Upcoming',    icon: 'fa-clock',        bg: 'var(--muted)',               fg: 'var(--muted-foreground)' },
 }
 
@@ -604,15 +606,14 @@ function CoursesTab({ student, onEnrolled }: { student: ExtendedStudent; onEnrol
               {sortedTerms.map(term => {
                 const isActive = activeTerm === term
                 return (
-                  <button
+                  <Button
                     key={term}
-                    type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setActiveTerm(term)}
-                    className="w-full flex items-center justify-between rounded-md px-3 py-2 text-sm text-left transition-colors"
+                    className="w-full flex items-center justify-between rounded-md px-3 py-2 text-sm text-left transition-colors h-auto"
                     style={{
-                      backgroundColor: isActive
-                        ? 'color-mix(in oklch, var(--brand-color) 10%, var(--background))'
-                        : 'transparent',
+                      backgroundColor: isActive ? 'var(--brand-tint)' : 'transparent',
                       color: isActive ? 'var(--foreground)' : 'var(--muted-foreground)',
                       fontWeight: isActive ? 500 : 400,
                     }}
@@ -625,7 +626,7 @@ function CoursesTab({ student, onEnrolled }: { student: ExtendedStudent; onEnrol
                     >
                       {byTerm[term].length}
                     </Badge>
-                  </button>
+                  </Button>
                 )
               })}
             </nav>
@@ -728,7 +729,7 @@ function AssessmentsTab({ student }: { student: ExtendedStudent }) {
         ].map(m => (
           <div key={m.label} className="rounded-xl border border-border bg-card px-4 py-4 flex items-center gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-lg"
-              style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))' }}>
+              style={{ backgroundColor: 'var(--brand-tint)' }}>
               <i className={`fa-light ${m.icon}`} aria-hidden="true" style={{ fontSize: 15, color: 'var(--brand-color)' }} />
             </div>
             <div>
@@ -995,7 +996,7 @@ export default function StudentDetailClient({ studentId }: { studentId: string }
               <AvatarFallback
                 className="text-base font-bold"
                 style={{
-                  backgroundColor: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))',
+                  backgroundColor: 'var(--brand-tint)',
                   color: 'var(--brand-color)',
                 }}
               >

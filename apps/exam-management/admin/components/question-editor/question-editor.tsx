@@ -1,3 +1,4 @@
+// overflow-hidden safe — floating uses Radix Portal (PopoverContent, TooltipContent, SelectContent all use Radix Portal)
 'use client'
 
 /**
@@ -26,6 +27,7 @@ import {
   Checkbox,
   Tooltip, TooltipTrigger, TooltipContent,
   LocalBanner,
+  StatusBadge,
 } from '@exxatdesignux/ui'
 import { QBToggle } from '@/components/qb/toggle'
 import {
@@ -1659,7 +1661,7 @@ function ToggleSwitchRow({
 
 function StateBadge({ state }: { state: QuestionDraft['state'] }) {
   const meta = state === 'draft' ? { label: 'Draft', icon: 'fa-hourglass',    bg: 'var(--muted)',         fg: 'var(--muted-foreground)' }
-                                 : { label: 'Saved', icon: 'fa-circle-check', bg: 'color-mix(in oklch, var(--chart-2) 14%, var(--background))', fg: 'var(--chart-2)' }
+                                 : { label: 'Saved', icon: 'fa-circle-check', bg: 'var(--muted)', fg: 'var(--chart-2)' }
   return (
     <Badge variant="secondary" className="rounded text-xs gap-1" style={{ backgroundColor: meta.bg, color: meta.fg }}>
       <i className={`fa-light ${meta.icon}`} aria-hidden="true" style={{ fontSize: 12 }} />
@@ -1670,8 +1672,8 @@ function StateBadge({ state }: { state: QuestionDraft['state'] }) {
 
 function ConfidenceBadge({ level }: { level: 'high' | 'low' }) {
   const meta = level === 'high'
-    ? { label: 'High confidence', bg: 'color-mix(in oklch, var(--chart-2) 14%, var(--background))', fg: 'var(--chart-2)' }
-    : { label: 'Low confidence',  bg: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', fg: 'var(--chart-4)' }
+    ? { label: 'High confidence', bg: 'var(--muted)', fg: 'var(--chart-2)' }
+    : { label: 'Low confidence',  bg: 'var(--muted)', fg: 'var(--chart-4)' }
   return (
     <Badge variant="secondary" className="rounded text-xs" style={{ backgroundColor: meta.bg, color: meta.fg }}>
       {meta.label}

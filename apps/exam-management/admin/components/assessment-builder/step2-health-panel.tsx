@@ -36,9 +36,9 @@ export function HealthPanel({ activeAsmt, objectives, timeMetrics, distribution,
     : 'poor'
 
   const healthColor = health === 'good'
-    ? 'color-mix(in oklch, var(--brand-color) 70%, transparent)'
+    ? 'var(--brand-tint)'
     : health === 'warn'
-    ? 'color-mix(in oklch, var(--foreground) 40%, oklch(80% 0.15 80))'
+    ? 'var(--chart-4)'
     : 'var(--muted-foreground)'
 
   const healthLabel = health === 'good' ? 'Good' : health === 'warn' ? 'Needs attention' : 'Review required'
@@ -73,7 +73,7 @@ export function HealthPanel({ activeAsmt, objectives, timeMetrics, distribution,
             <div style={{
               height: '100%',
               width: `${Math.min(110, pctTime)}%`,
-              background: pctTime > 105 ? 'color-mix(in oklch, var(--foreground) 40%, oklch(80% 0.15 80))' : 'var(--brand-color)',
+              background: pctTime > 105 ? 'var(--chart-4)' : 'var(--brand-color)',
               borderRadius: 2,
             }} />
           </div>
@@ -97,7 +97,7 @@ export function HealthPanel({ activeAsmt, objectives, timeMetrics, distribution,
               <div key={b.level} className="flex items-center gap-2 mb-1">
                 <span className="text-[10px] text-muted-foreground" style={{ width: 70 }}>{b.level}</span>
                 <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'var(--muted)', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${b.pct}%`, background: 'color-mix(in oklch, var(--brand-color) 60%, var(--muted-foreground))', borderRadius: 2 }} />
+                  <div style={{ height: '100%', width: `${b.pct}%`, background: 'var(--brand-color)', borderRadius: 2 }} />
                 </div>
                 <span className="text-[10px] font-semibold text-foreground tabular-nums" style={{ width: 16 }}>{b.count}</span>
               </div>
@@ -131,13 +131,13 @@ export function HealthPanel({ activeAsmt, objectives, timeMetrics, distribution,
             <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Flags</p>
             {missingRationaleCount > 0 && (
               <p className="text-[11px] text-muted-foreground mb-1">
-                <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ color: 'color-mix(in oklch, var(--foreground) 40%, oklch(80% 0.15 80))' }} />
+                <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ color: 'var(--chart-4)' }} />
                 {' '}{missingRationaleCount} missing rationale
               </p>
             )}
             {poorPbisCount > 0 && (
               <p className="text-[11px] text-muted-foreground">
-                <i className="fa-light fa-chart-line-down" aria-hidden="true" style={{ color: 'color-mix(in oklch, var(--foreground) 40%, oklch(80% 0.15 80))' }} />
+                <i className="fa-light fa-chart-line-down" aria-hidden="true" style={{ color: 'var(--chart-4)' }} />
                 {' '}{poorPbisCount} low point-biserial
               </p>
             )}

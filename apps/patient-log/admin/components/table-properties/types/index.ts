@@ -1,39 +1,34 @@
 "use client"
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Shared types for table-properties components
+// table-properties types — re-exported from @exxatdesignux/ui
+//
+// Migrated from vendored types.ts per docs/governance/ds-adoption.md.
+// Product-specific constants (FILTER_FIELDS, COLUMNS) kept here; shared types
+// come from the DS package.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type FilterOperator = "is" | "is_not" | "contains" | "not_contains"
+export type {
+  FilterOperator,
+  FilterFieldDef,
+  ActiveFilter,
+  SortRule,
+  ColDef,
+  ConditionalRule,
+} from '@exxatdesignux/ui'
 
-export interface FilterFieldDef {
-  key: string
-  label: string
-  icon: string
-  type: "select" | "text" | "date"
-  operators: FilterOperator[]
-  /** Select options, or for `date` fields used by conditional rules (exact row strings). */
-  options?: { value: string; label: string }[]
-}
+export {
+  OPERATOR_LABELS,
+  RULE_COLORS,
+} from '@exxatdesignux/ui'
 
-export interface ActiveFilter {
-  id: string
-  fieldKey: string
-  operator: FilterOperator
-  values: string[]
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// Product-specific field list (Patient Log placements)
+// ─────────────────────────────────────────────────────────────────────────────
 
-export interface SortRule {
-  id: string
-  fieldKey: string
-  direction: "asc" | "desc"
-}
+import type { FilterFieldDef } from '@exxatdesignux/ui'
 
-export const OPERATOR_LABELS: Record<FilterOperator, string> = {
-  is: "is", is_not: "is not", contains: "contains", not_contains: "does not contain",
-}
-
-/** Default filter field list (placement table uses column-derived defs via `filterFields` prop). */
+/** Default filter field list for the patient-log placement table. */
 export const FILTER_FIELDS: FilterFieldDef[] = [
   { key: "student",    label: "Student",    icon: "fa-user",      type: "text", operators: ["contains", "not_contains"] },
   {
@@ -72,39 +67,11 @@ export const FILTER_FIELDS: FilterFieldDef[] = [
   { key: "supervisor", label: "Supervisor", icon: "fa-user-tie",  type: "text", operators: ["contains", "not_contains"] },
 ]
 
+// ─────────────────────────────────────────────────────────────────────────────
 // Column definitions — shared with drawer
-export interface ColDef {
-  key: string
-  label: string
-  sortable: boolean
-  sortKey?: string
-  minWidth: number
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Conditional formatting rules
 // ─────────────────────────────────────────────────────────────────────────────
 
-export interface ConditionalRule {
-  id: string
-  /** Column key to evaluate */
-  fieldKey: string
-  operator: FilterOperator
-  /** Selected option values (select) or text (single entry) when operator needs values */
-  values: string[]
-  /** Resolved CSS background color string */
-  bgColor: string
-}
-
-/** Predefined palette for conditional rule backgrounds */
-export const RULE_COLORS: { name: string; bg: string }[] = [
-  { name: "Green",  bg: "var(--conditional-rule-green)" },
-  { name: "Yellow", bg: "var(--conditional-rule-yellow)" },
-  { name: "Blue",   bg: "var(--conditional-rule-blue)" },
-  { name: "Red",    bg: "var(--conditional-rule-red)" },
-  { name: "Purple", bg: "var(--conditional-rule-purple)" },
-  { name: "Orange", bg: "var(--conditional-rule-orange)" },
-]
+import type { ColDef } from '@exxatdesignux/ui'
 
 export const COLUMNS: ColDef[] = [
   { key: "select",     label: "",            sortable: false, minWidth: 40  },

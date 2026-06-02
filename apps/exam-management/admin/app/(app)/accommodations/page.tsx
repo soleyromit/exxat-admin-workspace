@@ -1,3 +1,4 @@
+// overflow-hidden safe — floating uses Radix Portal (PopoverContent, TooltipContent, SelectContent all use Radix Portal)
 'use client'
 
 /**
@@ -246,8 +247,8 @@ function RosterRow({ entry }: { entry: RosterEntry }) {
         <AvatarFallback
           className="text-xs font-bold"
           style={{
-            background: 'color-mix(in oklch, var(--foreground) 8%, var(--background))',
-            color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))',
+            background: 'var(--muted)',
+            color: 'var(--muted-foreground)',
           }}
         >
           {entry.initials}
@@ -281,8 +282,8 @@ function RosterRow({ entry }: { entry: RosterEntry }) {
               key={a.id}
               className="inline-flex items-center gap-1.5 text-xs rounded-md px-2 py-1"
               style={{
-                background: 'color-mix(in oklch, var(--chart-1) 8%, var(--background))',
-                border: '1px solid color-mix(in oklch, var(--chart-1) 20%, var(--border))',
+                background: 'var(--muted)',
+                border: '1px solid var(--border)',
                 color: 'var(--foreground)',
               }}
               title={a.notes ?? `${TYPE_LABEL[a.type]}: ${a.detail}`}

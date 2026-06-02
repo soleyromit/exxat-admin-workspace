@@ -215,9 +215,9 @@ function AddStudentSheet({ open, onOpenChange }: { open: boolean; onOpenChange: 
         <div
           className="mx-4 flex items-start gap-2.5 rounded-lg px-3 py-2.5 text-xs"
           style={{
-            backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+            backgroundColor: 'var(--brand-tint)',
             color: 'var(--brand-color-dark)',
-            border: '1px solid color-mix(in oklch, var(--brand-color) 20%, var(--background))',
+            border: '1px solid var(--brand-tint)',
           }}
           role="note"
         >
@@ -391,7 +391,7 @@ export default function StudentsClient() {
                   variant="secondary"
                   className="rounded-full gap-1.5 text-xs"
                   style={{
-                    backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+                    backgroundColor: 'var(--brand-tint)',
                     color: 'var(--brand-color)',
                   }}
                 >

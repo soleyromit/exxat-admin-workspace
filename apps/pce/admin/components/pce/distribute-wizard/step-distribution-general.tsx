@@ -170,6 +170,7 @@ export function StepDistributionGeneral({ onBack, onNext }: StepDistributionGene
         </div>
 
         {/* Right — selected recipients panel */}
+        {/* overflow-hidden safe — floating uses Radix Portal */}
         <div
           className="flex flex-col flex-1 rounded-xl border border-border overflow-hidden"
           style={{ background: 'var(--card)' }}

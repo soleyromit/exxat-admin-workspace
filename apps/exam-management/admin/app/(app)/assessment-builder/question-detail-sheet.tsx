@@ -112,8 +112,8 @@ function MCQSplitPreview({ question }: { question: Question }) {
         </div>
         {correctOption?.rationale && (
           <div style={{
-            background: 'color-mix(in srgb, var(--chart-2) 7%, var(--background))',
-            border: '1px solid color-mix(in srgb, var(--chart-2) 25%, var(--background))',
+            background: 'var(--muted)',
+            border: '1px solid var(--border)',
             borderRadius: 8, padding: 12,
           }}>
             <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--chart-2)', marginBottom: 5 }}>
@@ -231,7 +231,7 @@ function MatchingPreview({ question }: { question: Question }) {
                 {opt.key}
               </div>
               {/* Prompt */}
-              <div style={{ flex: 1, padding: '7px 8px', borderRight: '1px solid color-mix(in srgb, var(--chart-2) 30%, transparent)' }}>
+              <div style={{ flex: 1, padding: '7px 8px', borderRight: '1px solid var(--border)' }}>
                 <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)' }}>{prompt}</span>
               </div>
               {/* Arrow */}
@@ -334,8 +334,8 @@ function EssayPreview({ question }: { question: Question }) {
       {/* Rubric */}
       {question.rubric && question.rubric.length > 0 && (
         <div style={{
-          background: 'color-mix(in srgb, var(--chart-2) 6%, var(--background))',
-          border: '1px solid color-mix(in srgb, var(--chart-2) 22%, var(--background))',
+          background: 'var(--muted)',
+          border: '1px solid var(--border)',
           borderRadius: 8, padding: 13,
         }}>
           <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--chart-2)', marginBottom: 8 }}>
@@ -343,7 +343,7 @@ function EssayPreview({ question }: { question: Question }) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             {question.rubric.map((r, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, paddingBottom: 5, borderBottom: `1px solid color-mix(in srgb, var(--chart-2) 15%, var(--background))` }}>
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, paddingBottom: 5, borderBottom: `1px solid var(--border)` }}>
                 <span style={{ fontSize: 12, color: 'var(--foreground)', flex: 1, lineHeight: 1.4 }}>{r.criterion}</span>
                 <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-foreground)', flexShrink: 0 }}>{r.points} pt{r.points !== 1 ? 's' : ''}</span>
               </div>
@@ -539,8 +539,8 @@ function ShortAnswerPreview({ question }: { question: Question }) {
       {/* Rubric */}
       {question.rubric && question.rubric.length > 0 && (
         <div style={{
-          background: 'color-mix(in srgb, var(--chart-2) 6%, var(--background))',
-          border: '1px solid color-mix(in srgb, var(--chart-2) 22%, var(--background))',
+          background: 'var(--muted)',
+          border: '1px solid var(--border)',
           borderRadius: 8, padding: 13,
         }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--chart-2)', marginBottom: 8 }}>
@@ -550,7 +550,7 @@ function ShortAnswerPreview({ question }: { question: Question }) {
             <div key={i} style={{
               display: 'flex', justifyContent: 'space-between', gap: 8,
               paddingBottom: 5, marginBottom: 5,
-              borderBottom: i < (question.rubric?.length ?? 0) - 1 ? `1px solid color-mix(in srgb, var(--chart-2) 15%, var(--background))` : 'none',
+              borderBottom: i < (question.rubric?.length ?? 0) - 1 ? `1px solid var(--border)` : 'none',
             }}>
               <span style={{ fontSize: 12, color: 'var(--foreground)', flex: 1, lineHeight: 1.4 }}>{r.criterion}</span>
               <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-foreground)', flexShrink: 0 }}>{r.points} pt{r.points !== 1 ? 's' : ''}</span>
@@ -1283,10 +1283,10 @@ function GradingRulesSection({
               const current = config.negativeMarkingWeight === undefined ? null : config.negativeMarkingWeight
               const isSelected = current === val
               return (
-                <button key={String(val)} type="button" aria-pressed={isSelected}
+                <Button key={String(val)} variant={isSelected ? 'outline' : 'ghost'} size="xs" aria-pressed={isSelected}
                   onClick={() => onChange({ negativeMarkingWeight: val })}
-                  style={chipStyle(isSelected)} {...focusRing}
-                >{label}</button>
+                  style={isSelected ? { borderColor: 'var(--brand-color)', background: 'var(--brand-tint)', color: 'var(--brand-color)' } : { color: 'var(--muted-foreground)' }}
+                >{label}</Button>
               )
             })}
           </div>
@@ -1342,10 +1342,10 @@ function GradingRulesSection({
               {(['exact', 'contains'] as const).map(mode => {
                 const active = (config.fillBlankMatchMode ?? 'exact') === mode
                 return (
-                  <button key={mode} type="button" aria-pressed={active}
+                  <Button key={mode} variant={active ? 'outline' : 'ghost'} size="xs" aria-pressed={active}
                     onClick={() => onChange({ fillBlankMatchMode: mode })}
-                    style={{ ...chipStyle(active), flex: 1, padding: '5px 0' }} {...focusRing}
-                  >{mode === 'exact' ? 'Exact match' : 'Contains'}</button>
+                    style={{ flex: 1, ...(active ? { borderColor: 'var(--brand-color)', background: 'var(--brand-tint)', color: 'var(--brand-color)' } : { color: 'var(--muted-foreground)' }) }}
+                  >{mode === 'exact' ? 'Exact match' : 'Contains'}</Button>
                 )
               })}
             </div>
@@ -1383,12 +1383,12 @@ function GradingRulesSection({
               {(config.alternateAcceptedAnswers ?? []).map(ans => (
                 <span key={ans} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '2px 8px', borderRadius: 20, border: '1px solid var(--border)', color: 'var(--foreground)', background: 'var(--muted)' }}>
                   {ans}
-                  <button type="button" aria-label={`Remove ${ans}`}
+                  <Button variant="ghost" size="icon-xs" aria-label={`Remove ${ans}`}
                     onClick={() => onChange({ alternateAcceptedAnswers: (config.alternateAcceptedAnswers ?? []).filter(a => a !== ans) })}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 0, lineHeight: 1, fontFamily: 'inherit' }}
+                    className="h-auto w-auto p-0 text-muted-foreground"
                   >
-                    <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 10 }} />
-                  </button>
+                    <i className="fa-light fa-xmark text-[10px]" aria-hidden="true" />
+                  </Button>
                 </span>
               ))}
             </div>
@@ -1538,9 +1538,9 @@ function QuestionToolsSection({
           {calcOptions.map(([val, label]) => {
             const active = config.calculatorOverride === val
             return (
-              <button key={label} type="button" aria-pressed={active}
+              <Button key={label} variant={active ? 'outline' : 'ghost'} size="xs" aria-pressed={active}
                 onClick={() => onChange({ calculatorOverride: val })}
-                style={chipStyle(active)} {...focusRing}>{label}</button>
+                style={active ? { borderColor: 'var(--brand-color)', background: 'var(--brand-tint)', color: 'var(--brand-color)' } : { color: 'var(--muted-foreground)' }}>{label}</Button>
             )
           })}
         </div>
@@ -1561,9 +1561,9 @@ function QuestionToolsSection({
           {highlightOptions.map(([val, label]) => {
             const active = (config.textHighlightOverride === undefined ? undefined : config.textHighlightOverride) === val
             return (
-              <button key={label} type="button" aria-pressed={active}
+              <Button key={label} variant={active ? 'outline' : 'ghost'} size="xs" aria-pressed={active}
                 onClick={() => onChange({ textHighlightOverride: val === undefined ? undefined : val })}
-                style={chipStyle(active)} {...focusRing}>{label}</button>
+                style={active ? { borderColor: 'var(--brand-color)', background: 'var(--brand-tint)', color: 'var(--brand-color)' } : { color: 'var(--muted-foreground)' }}>{label}</Button>
             )
           })}
         </div>
@@ -1584,9 +1584,9 @@ function QuestionToolsSection({
           {elimOptions.map(([val, label]) => {
             const active = config.answerEliminationOverride === val
             return (
-              <button key={label} type="button" aria-pressed={active}
+              <Button key={label} variant={active ? 'outline' : 'ghost'} size="xs" aria-pressed={active}
                 onClick={() => onChange({ answerEliminationOverride: val })}
-                style={chipStyle(active)} {...focusRing}>{label}</button>
+                style={active ? { borderColor: 'var(--brand-color)', background: 'var(--brand-tint)', color: 'var(--brand-color)' } : { color: 'var(--muted-foreground)' }}>{label}</Button>
             )
           })}
         </div>
@@ -1725,16 +1725,15 @@ function ReferencesSection({
               <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ref.label}</p>
               <p style={{ fontSize: 12, color: 'var(--muted-foreground)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ref.url}</p>
             </div>
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-sm"
               aria-label={`Remove reference ${ref.label}`}
               onClick={() => removeRef(ref.id)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 4, flexShrink: 0, fontFamily: 'inherit', lineHeight: 1 }}
-              onFocus={e => { e.currentTarget.style.outline = '2px solid var(--ring)'; e.currentTarget.style.outlineOffset = '2px' }}
-              onBlur={e => { e.currentTarget.style.outline = 'none' }}
+              className="shrink-0 text-muted-foreground"
             >
-              <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 13 }} />
-            </button>
+              <i className="fa-light fa-xmark" aria-hidden="true" />
+            </Button>
           </div>
         ))}
       </div>
@@ -1764,19 +1763,15 @@ function ReferencesSection({
             onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addRef() } }}
           />
-          <button
-            type="button"
+          <Button
+            variant="default"
+            size="sm"
             aria-label="Add reference"
             onClick={addRef}
             disabled={!label.trim() || !url.trim()}
-            style={{
-              padding: '5px 14px', fontSize: 12, borderRadius: 6, border: 'none', cursor: 'pointer',
-              fontFamily: 'inherit', background: 'var(--brand-color)', color: 'var(--primary-foreground)', fontWeight: 600,
-              opacity: (!label.trim() || !url.trim()) ? 0.4 : 1,
-            }}
           >
             Add
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -1801,21 +1796,21 @@ function ConfigAccordionSection({
     <Collapsible open={open} onOpenChange={setOpen}>
       <Card className="gap-0 py-0 rounded-xl">
         <CollapsibleTrigger asChild>
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             aria-expanded={open}
-            className="w-full flex items-center gap-2.5 px-4 py-3 text-left bg-transparent border-0 cursor-pointer rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 hover:bg-muted/40 transition-colors"
+            className="w-full flex items-center gap-2.5 px-4 py-3 text-left rounded-xl h-auto justify-start hover:bg-muted/40"
           >
             <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-muted">
               <i className={`fa-light ${icon}`} aria-hidden="true" style={{ fontSize: 13, color: 'var(--muted-foreground)' }} />
             </div>
             <span className="flex-1 text-sm font-semibold text-foreground">{label}</span>
             <i
-              className={`fa-light ${open ? 'fa-chevron-up' : 'fa-chevron-down'}`}
+              className={`fa-light ${open ? 'fa-chevron-up' : 'fa-chevron-down'} text-xs text-muted-foreground`}
               aria-hidden="true"
-              style={{ fontSize: 12, color: 'var(--muted-foreground)' }}
             />
-          </button>
+          </Button>
         </CollapsibleTrigger>
         <CollapsibleContent>
           <Separator />
@@ -1996,45 +1991,31 @@ export function QuestionDetailSheet({
           {tabs.map(tab => {
             const isActive = activeTab === tab.id
             return (
-              <button
+              <Button
                 key={tab.id}
+                variant="ghost"
+                size="sm"
                 role="tab"
                 id={`tab-${tab.id}`}
                 aria-controls={`panel-${tab.id}`}
                 aria-selected={isActive}
                 onClick={() => setActiveTab(tab.id)}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 5,
-                  padding: '0 14px', height: 38,
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  fontSize: 13,
-                  fontWeight: isActive ? 500 : 400,
-                  color: isActive ? 'var(--foreground)' : 'var(--muted-foreground)',
-                  borderBottom: isActive ? '2px solid var(--foreground)' : '2px solid transparent',
-                  marginBottom: -1,
-                  whiteSpace: 'nowrap',
-                }}
+                className={`inline-flex items-center gap-1 px-3.5 h-[38px] text-sm rounded-none border-b-2 whitespace-nowrap -mb-px ${isActive ? 'font-medium text-foreground border-foreground' : 'font-normal text-muted-foreground border-transparent'}`}
+                style={{ background: 'none' }}
               >
                 {tab.label}
                 {tab.warn && (
                   <>
-                    <i className="fa-solid fa-triangle-exclamation" aria-hidden="true"
-                      style={{ fontSize: 11, color: 'var(--chart-4)' }} />
-                    <span style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', borderWidth: 0 }}>
-                      (has warning)
-                    </span>
+                    <i className="fa-solid fa-triangle-exclamation text-[11px]" aria-hidden="true" style={{ color: 'var(--chart-4)' }} />
+                    <span className="sr-only">(has warning)</span>
                   </>
                 )}
                 {tab.badge !== undefined && (
-                  <span style={{
-                    fontSize: 12, fontWeight: 700, lineHeight: 1,
-                    padding: '1px 5px', borderRadius: 999,
-                    background: 'var(--muted)', color: 'var(--muted-foreground)',
-                  }}>
+                  <span className="text-xs font-bold leading-none px-1 py-px rounded-full bg-muted text-muted-foreground">
                     {tab.badge}
                   </span>
                 )}
-              </button>
+              </Button>
             )
           })}
         </div>

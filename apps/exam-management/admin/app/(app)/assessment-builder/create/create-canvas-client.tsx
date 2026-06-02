@@ -159,11 +159,12 @@ export default function CreateCanvasClient() {
                 const total = (a.diffDistribution.Easy ?? 0) + (a.diffDistribution.Medium ?? 0) + (a.diffDistribution.Hard ?? 0)
                 const pct = (n: number) => total > 0 ? `${Math.round((n / total) * 100)}%` : '0%'
                 return (
-                  <button
+                  <Button
                     key={a.id}
-                    type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => { setCopyPickerOpen(false); handleSubmit('copy', a.id) }}
-                    style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '12px 16px', width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', fontFamily: 'inherit' }}
+                    className="flex flex-col gap-1.5 w-full text-left items-start h-auto py-3 px-4 rounded-none border-b border-border"
                   >
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -190,7 +191,7 @@ export default function CreateCanvasClient() {
                       <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--chart-4)', display: 'inline-block' }} />Med {a.diffDistribution.Medium}</span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--chart-1)', display: 'inline-block' }} />Hard {a.diffDistribution.Hard}</span>
                     </div>
-                  </button>
+                  </Button>
                 )
               })}
             </div>
@@ -235,20 +236,10 @@ function ChipPopover({ label, children }: { label: string; children: React.React
   const [open, setOpen] = useState(false)
   return (
     <div style={{ position: 'relative' }}>
-      <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        style={{
-          display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12,
-          padding: '3px 10px', borderRadius: 20,
-          border: '1px solid var(--border)', background: 'var(--muted)',
-          color: 'var(--foreground)', cursor: 'pointer', fontFamily: 'inherit',
-          whiteSpace: 'nowrap',
-        }}
-      >
+      <Button variant="outline" size="xs" onClick={() => setOpen(o => !o)} className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs whitespace-nowrap bg-muted text-foreground">
         {label}
-        <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 10, color: 'var(--muted-foreground)' }} />
-      </button>
+        <i className="fa-light fa-chevron-down text-[10px] text-muted-foreground" aria-hidden="true" />
+      </Button>
       {open && (
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 49 }} onClick={() => setOpen(false)} />
@@ -284,14 +275,10 @@ function CanvasHeader({
       background: 'var(--card)',
     }}>
       {/* Back */}
-      <button
-        type="button"
-        onClick={onDiscard}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', fontSize: 12, fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 4 }}
-      >
-        <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 11 }} />
+      <Button variant="ghost" size="xs" onClick={onDiscard} className="flex items-center gap-1 text-xs text-muted-foreground h-auto px-0">
+        <i className="fa-light fa-arrow-left text-[11px]" aria-hidden="true" />
         {course?.code ?? 'Back'}
-      </button>
+      </Button>
       <span style={{ color: 'var(--border)', margin: '0 2px' }}>/</span>
 
       {/* Assessment name — inline editable */}
@@ -399,9 +386,9 @@ function PdfImportPicker({
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</div>
               <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 2 }}>{(file.size / 1024).toFixed(0)} KB · PDF</div>
             </div>
-            <button type="button" onClick={() => setFile(null)} aria-label="Remove file" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 4, fontFamily: 'inherit' }}>
-              <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 14 }} />
-            </button>
+            <Button variant="ghost" size="icon-sm" aria-label="Remove file" onClick={() => setFile(null)} className="text-muted-foreground">
+              <i className="fa-light fa-xmark text-sm" aria-hidden="true" />
+            </Button>
           </div>
         )}
 
@@ -494,17 +481,7 @@ function QbFolderPicker({
           ) : contentAreas.map(folder => {
             const isSelected = selectedIds.includes(folder.id)
             return (
-              <button
-                key={folder.id}
-                type="button"
-                aria-pressed={isSelected}
-                onClick={() => onToggle(folder.id)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px',
-                  width: '100%', textAlign: 'left', background: isSelected ? 'var(--brand-tint)' : 'none',
-                  border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', fontFamily: 'inherit',
-                }}
-              >
+              <Button key={folder.id} variant="ghost" size="sm" aria-pressed={isSelected} onClick={() => onToggle(folder.id)} className="flex items-center gap-3 w-full text-left h-auto py-[11px] px-4 justify-start rounded-none border-b border-border" style={{ background: isSelected ? 'var(--brand-tint)' : undefined }}>
                 {/* Checkbox indicator */}
                 <div style={{
                   width: 18, height: 18, borderRadius: 4, flexShrink: 0,
@@ -532,7 +509,7 @@ function QbFolderPicker({
                 }}>
                   {folder.count} Q
                 </div>
-              </button>
+              </Button>
             )
           })}
         </div>
@@ -663,18 +640,17 @@ function CanvasBody({
           {CANVAS_CARDS.map(card => {
             const isHovered = hoveredCard === card.id
             return (
-              <button
+              <Button
                 key={card.id}
-                type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => onSubmit(card.id)}
                 onMouseEnter={() => setHoveredCard(card.id)}
                 onMouseLeave={() => setHoveredCard(null)}
+                className="flex-1 text-left h-auto rounded-[14px] flex-col items-start gap-2.5 py-5 px-5"
                 style={{
-                  flex: 1, textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
                   background: isHovered ? 'var(--brand-tint)' : 'var(--background)',
-                  border: `1.5px solid ${isHovered ? 'var(--brand-color)' : 'var(--border)'}`,
-                  borderRadius: 14, padding: '20px 20px 16px',
-                  display: 'flex', flexDirection: 'column', gap: 10,
+                  borderColor: isHovered ? 'var(--brand-color)' : 'var(--border)',
                   transition: 'border-color 0.15s, background 0.15s',
                 }}
               >
@@ -710,9 +686,9 @@ function CanvasBody({
                   transition: 'color 0.15s',
                 }}>
                   {card.cta}
-                  <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 11 }} />
+                  <i className="fa-light fa-arrow-right text-[11px]" aria-hidden="true" />
                 </div>
-              </button>
+              </Button>
             )
           })}
         </div>
@@ -750,18 +726,9 @@ function CanvasBody({
             display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
             padding: '6px 10px', borderTop: '1px solid var(--border)', background: 'var(--muted)',
           }}>
-            <button
-              type="button"
-              onClick={() => onSubmit('blank')}
-              aria-label="Build from prompt"
-              style={{
-                width: 30, height: 30, borderRadius: 8,
-                background: 'var(--foreground)', border: 'none', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
-            >
-              <svg viewBox="0 0 16 16" fill="white" width="13" height="13" aria-hidden="true"><path d="M14.5 8L2 14l2.5-6L2 2z"/></svg>
-            </button>
+            <Button variant="default" size="icon-sm" aria-label="Build from prompt" onClick={() => onSubmit('blank')} className="size-[30px] rounded-lg">
+              <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13" aria-hidden="true"><path d="M14.5 8L2 14l2.5-6L2 2z"/></svg>
+            </Button>
           </div>
         </div>
 

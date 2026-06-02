@@ -1,3 +1,4 @@
+// overflow-hidden safe — floating uses Radix Portal (PopoverContent, TooltipContent, SelectContent all use Radix Portal)
 "use client"
 
 /**
@@ -411,7 +412,7 @@ function InsightBadge({
       )}
       aria-hidden="true"
     >
-      <i className={`fa-light ${styles.icon}`} />
+      <i className={`fa-light ${styles.icon}`} aria-hidden="true" />
     </span>
   )
 }

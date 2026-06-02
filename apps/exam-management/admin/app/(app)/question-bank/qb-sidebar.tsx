@@ -1,3 +1,4 @@
+// overflow-hidden safe — floating uses Radix Portal (PopoverContent, TooltipContent, SelectContent all use Radix Portal)
 'use client'
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useQB } from './qb-state'
@@ -135,7 +136,7 @@ export function DeleteFolderDialog({
               style={{
                 backgroundColor: hasImpact
                   ? 'var(--standing-warning-bg)'
-                  : 'color-mix(in oklch, var(--destructive) 10%, var(--background))',
+                  : 'var(--muted)',
                 color: hasImpact ? 'var(--standing-warning-fg)' : 'var(--destructive)',
               }}
               aria-hidden="true"
@@ -543,34 +544,30 @@ export function ManageShellAccessDialog({ node, open, onClose }: {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <Popover open={searchOpen} onOpenChange={setSearchOpen}>
               <PopoverTrigger asChild>
-                <button
-                  type="button"
+                <Button
+                  variant="outline"
+                  size="sm"
                   role="combobox"
                   aria-expanded={searchOpen}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    width: '100%', padding: '7px 10px',
-                    border: '1px solid var(--border-control-35)',
-                    borderRadius: 'var(--radius)',
-                    background: 'var(--background)',
-                    cursor: 'pointer', textAlign: 'left',
-                  }}
+                  className="flex items-center gap-2 w-full justify-start h-9 px-2.5 text-left"
+                  style={{ borderColor: 'var(--border-control-35)' }}
                 >
-                  <i className="fa-light fa-magnifying-glass" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)', flexShrink: 0 }} />
-                  <span className="text-sm" style={{ color: selectedPerson ? 'var(--foreground)' : 'var(--muted-foreground)', flex: 1 }}>
+                  <i className="fa-light fa-magnifying-glass text-xs text-muted-foreground shrink-0" aria-hidden="true" />
+                  <span className="text-sm flex-1" style={{ color: selectedPerson ? 'var(--foreground)' : 'var(--muted-foreground)' }}>
                     {selectedPerson ? selectedPerson.name : 'Search people to add…'}
                   </span>
                   {selectedPerson && (
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
                       aria-label="Clear selection"
                       onClick={e => { e.stopPropagation(); setAddPersonaId(''); setSearchQuery('') }}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: 0, display: 'flex', alignItems: 'center' }}
+                      className="h-auto w-auto p-0 text-muted-foreground"
                     >
-                      <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 11 }} />
-                    </button>
+                      <i className="fa-light fa-xmark text-[11px]" aria-hidden="true" />
+                    </Button>
                   )}
-                </button>
+                </Button>
               </PopoverTrigger>
               <PopoverContent align="start" style={{ padding: 0, width: 'var(--radix-popover-trigger-width)' }}>
                 <Command>
@@ -1144,7 +1141,7 @@ function FolderRow({
           backgroundColor: isSelected
             ? 'var(--qb-folder-selected-bg)'
             : isDragOver
-            ? `color-mix(in oklch, var(--brand-color) 15%, var(--background))`
+            ? 'var(--brand-tint)'
             : isRowHovered
             ? 'var(--interactive-hover)'
             : 'transparent',
@@ -1640,12 +1637,7 @@ export function QBSidebar() {
       {pinnedFolders.length > 0 && (
         <div style={{ flexShrink: 0 }}>
           {/* Section header */}
-          <button
-            type="button"
-            onClick={() => setPinnedExpanded(v => !v)}
-            aria-expanded={pinnedExpanded}
-            style={{ display: 'flex', alignItems: 'center', gap: 4, width: '100%', padding: '0 12px', height: 24, background: 'none', border: 'none', cursor: 'pointer' }}
-          >
+          <Button variant="ghost" size="sm" onClick={() => setPinnedExpanded(v => !v)} aria-expanded={pinnedExpanded} className="flex items-center gap-1 w-full px-3 h-6 justify-start rounded-none">
             <i
               className={`fa-light ${pinnedExpanded ? 'fa-chevron-down' : 'fa-chevron-right'} text-muted-foreground`}
               aria-hidden="true"
@@ -1654,7 +1646,7 @@ export function QBSidebar() {
             <span className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
               Pinned
             </span>
-          </button>
+          </Button>
           {/* Pinned folder rows — independent expand state, does not affect QB tree */}
           {pinnedExpanded && (
             <div style={{ paddingBottom: 4 }}>
@@ -1690,21 +1682,10 @@ export function QBSidebar() {
       {SEARCH_VARIANT === 'input' ? (
         <div style={{ flexShrink: 0, padding: '4px 8px 4px' }}>
           {/* Section header */}
-          <button
-            type="button"
-            onClick={() => setQbExpanded(v => !v)}
-            aria-expanded={qbExpanded}
-            style={{ display: 'flex', alignItems: 'center', gap: 4, width: '100%', padding: '0 4px 3px', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            <i
-              className={`fa-light ${qbExpanded ? 'fa-chevron-down' : 'fa-chevron-right'} text-muted-foreground`}
-              aria-hidden="true"
-              style={{ fontSize: 9, width: 10, flexShrink: 0 }}
-            />
-            <span className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">
-              Question Bank
-            </span>
-          </button>
+          <Button variant="ghost" size="sm" onClick={() => setQbExpanded(v => !v)} aria-expanded={qbExpanded} className="flex items-center gap-1 w-full px-1 pb-0.5 h-auto justify-start rounded-none">
+            <i className={`fa-light ${qbExpanded ? 'fa-chevron-down' : 'fa-chevron-right'} text-muted-foreground text-[9px] shrink-0`} style={{ width: 10 }} aria-hidden="true" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground">Question Bank</span>
+          </Button>
           {/* Search + result count — hidden when section is collapsed */}
           {qbExpanded && (
             <>
@@ -1856,7 +1837,7 @@ export function QBSidebar() {
           {!isAdmin && accessibleFolderIds.size === 0 && (
             <div style={{ padding: '20px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
               {/* Illustration */}
-              <div style={{ position: 'relative', width: 64, height: 64, borderRadius: '50%', backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ position: 'relative', width: 64, height: 64, borderRadius: '50%', backgroundColor: 'var(--brand-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <i className="fa-light fa-lock-keyhole" aria-hidden="true" style={{ fontSize: 22, color: 'var(--brand-color)' }} />
                 <span style={{ position: 'absolute', top: 4, right: 4, width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)', border: '1.5px solid var(--brand-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 8, color: 'var(--brand-color)' }} />

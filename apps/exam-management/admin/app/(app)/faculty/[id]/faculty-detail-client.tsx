@@ -25,6 +25,8 @@ import {
   Separator,
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
   SheetFooter,
+  StatusBadge,
+  Card, CardContent,
 } from '@exxatdesignux/ui'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
@@ -56,18 +58,18 @@ const MOCK_PENDING_REVIEWS_BY_FACULTY: Record<string, { id: string; title: strin
 // ── Status configs ────────────────────────────────────────────────────────────
 
 const COURSE_STATUS_CONFIG = {
-  active:    { label: 'Active',    icon: 'fa-circle-dot',   bg: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', fg: 'var(--brand-color)' },
+  active:    { label: 'Active',    icon: 'fa-circle-dot',   bg: 'var(--brand-tint)', fg: 'var(--brand-color)' },
   completed: { label: 'Completed', icon: 'fa-circle-check', bg: 'var(--qb-status-saved-bg)',  fg: 'var(--qb-status-saved-fg)' },
   upcoming:  { label: 'Upcoming',  icon: 'fa-clock',        bg: 'var(--muted)',               fg: 'var(--muted-foreground)' },
 }
 
 const ASSESSMENT_STATUS_CONFIG: Record<string, { bg: string; fg: string }> = {
   'Draft':            { bg: 'var(--muted)',               fg: 'var(--muted-foreground)' },
-  'Pending Review':   { bg: 'color-mix(in oklch, var(--chart-4) 12%, var(--background))', fg: 'var(--chart-4)' },
-  'Changes Requested':{ bg: 'color-mix(in oklch, var(--destructive) 10%, var(--background))', fg: 'var(--destructive)' },
+  'Pending Review':   { bg: 'var(--muted)', fg: 'var(--chart-4)' },
+  'Changes Requested':{ bg: 'var(--muted)', fg: 'var(--destructive)' },
   'Approved':         { bg: 'var(--qb-status-saved-bg)',  fg: 'var(--qb-status-saved-fg)' },
-  'In Progress':      { bg: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', fg: 'var(--brand-color)' },
-  'Results Published':{ bg: 'color-mix(in oklch, var(--chart-2) 12%, var(--background))', fg: 'var(--chart-2)' },
+  'In Progress':      { bg: 'var(--brand-tint)', fg: 'var(--brand-color)' },
+  'Results Published':{ bg: 'var(--muted)', fg: 'var(--chart-2)' },
 }
 
 function assessmentStatusStyle(status: string): { bg: string; fg: string } {
@@ -97,7 +99,7 @@ function ProfileTab({ faculty, isPrism }: { faculty: ExtendedFaculty; isPrism: b
           >
             <div
               className="flex size-9 shrink-0 items-center justify-center rounded-lg"
-              style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))' }}
+              style={{ backgroundColor: 'var(--brand-tint)' }}
             >
               <i
                 className={`fa-light ${stat.icon}`}
@@ -173,10 +175,8 @@ function ProfileTab({ faculty, isPrism }: { faculty: ExtendedFaculty; isPrism: b
       {/* Right column — Prism link */}
       {isPrism && (
         <div className="flex flex-col gap-5">
-          <div
-            className="rounded-xl border border-border p-4 flex items-start gap-3"
-            style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 4%, var(--background))' }}
-          >
+          <Card className="flex items-start gap-3" style={{ backgroundColor: 'var(--brand-tint)' }}>
+            <CardContent className="flex items-start gap-3 p-4">
             <i
               className="fa-light fa-arrow-up-right-from-square mt-0.5"
               aria-hidden="true"
@@ -198,7 +198,8 @@ function ProfileTab({ faculty, isPrism }: { faculty: ExtendedFaculty; isPrism: b
                 <i className="fa-light fa-arrow-up-right-from-square" aria-hidden="true" style={{ fontSize: 10 }} />
               </a>
             </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>
@@ -305,7 +306,7 @@ function buildCourseColumns(onRemove: (id: string) => void): ColumnDef<CourseRow
 // ── Add Course Sheet ──────────────────────────────────────────────────────────
 
 const OFFERING_STATUS_CONFIG = {
-  ongoing:   { label: 'Ongoing',   bg: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', fg: 'var(--brand-color)' },
+  ongoing:   { label: 'Ongoing',   bg: 'var(--brand-tint)', fg: 'var(--brand-color)' },
   completed: { label: 'Completed', bg: 'var(--qb-status-saved-bg)', fg: 'var(--qb-status-saved-fg)' },
   upcoming:  { label: 'Upcoming',  bg: 'var(--muted)',               fg: 'var(--muted-foreground)' },
 }
@@ -380,13 +381,12 @@ function AddCourseSheet({ open, onOpenChange, assignedCodes, onAdd }: AddCourseS
         {/* Search */}
         <div className="px-6 pt-4 pb-3 shrink-0">
           <div
-            className="flex items-center gap-2 rounded-md border px-3"
-            style={{ borderColor: 'var(--border-control-35)', height: 36 }}
+            className="flex items-center gap-2 rounded-md border"
+            style={{ borderColor: 'var(--border-control-35)', height: 36, paddingInline: '12px' }}
           >
             <i
-              className="fa-light fa-magnifying-glass text-muted-foreground shrink-0"
+              className="fa-light fa-magnifying-glass text-muted-foreground shrink-0 text-sm"
               aria-hidden="true"
-              style={{ fontSize: 13 }}
             />
             <input
               type="search"
@@ -693,7 +693,7 @@ function AssessmentsTab({ faculty }: { faculty: ExtendedFaculty }) {
               variant="secondary"
               className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center"
               style={{
-                backgroundColor: 'color-mix(in oklch, var(--chart-4) 12%, var(--background))',
+                backgroundColor: 'var(--muted)',
                 color: 'var(--chart-4)',
               }}
             >
@@ -705,7 +705,7 @@ function AssessmentsTab({ faculty }: { faculty: ExtendedFaculty }) {
               <div key={review.id} className="flex items-start gap-3">
                 <div
                   className="flex size-8 shrink-0 items-center justify-center rounded-lg mt-0.5"
-                  style={{ backgroundColor: 'color-mix(in oklch, var(--chart-4) 12%, var(--background))' }}
+                  style={{ backgroundColor: 'var(--muted)' }}
                 >
                   <i className="fa-light fa-clipboard-check" aria-hidden="true" style={{ fontSize: 13, color: 'var(--chart-4)' }} />
                 </div>
@@ -773,7 +773,7 @@ function AssessmentsTab({ faculty }: { faculty: ExtendedFaculty }) {
               >
                 <span
                   className="flex size-8 shrink-0 items-center justify-center rounded-md"
-                  style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))' }}
+                  style={{ backgroundColor: 'var(--brand-tint)' }}
                 >
                   <i className="fa-light fa-folder" aria-hidden="true" style={{ fontSize: 13, color: 'var(--brand-color)' }} />
                 </span>
@@ -797,7 +797,7 @@ function AssessmentsTab({ faculty }: { faculty: ExtendedFaculty }) {
 
 // ── Status badge (header) ─────────────────────────────────────────────────────
 
-function StatusBadge({ status }: { status: 'active' | 'inactive' }) {
+function FacultyStatusBadge({ status }: { status: 'active' | 'inactive' }) {
   const style = status === 'active'
     ? { bg: 'var(--qb-status-saved-bg)', fg: 'var(--qb-status-saved-fg)', label: 'Active' }
     : { bg: 'var(--muted)', fg: 'var(--muted-foreground)', label: 'Inactive' }
@@ -884,7 +884,7 @@ export default function FacultyDetailClient({ facultyId }: { facultyId: string }
               <AvatarFallback
                 className="text-base font-bold"
                 style={{
-                  backgroundColor: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))',
+                  backgroundColor: 'var(--brand-tint)',
                   color: 'var(--brand-color)',
                 }}
               >
@@ -900,7 +900,7 @@ export default function FacultyDetailClient({ facultyId }: { facultyId: string }
                 >
                   {faculty.fullName}
                 </h1>
-                <StatusBadge status={faculty.status} />
+                <FacultyStatusBadge status={faculty.status} />
               </div>
               <div className="flex items-center gap-3 mt-1 flex-wrap text-sm text-muted-foreground">
                 <span className="font-mono text-xs">{faculty.facultyId}</span>

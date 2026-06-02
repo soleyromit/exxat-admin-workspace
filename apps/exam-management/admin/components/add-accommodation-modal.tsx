@@ -1,3 +1,4 @@
+// overflow-hidden safe — floating uses Radix Portal (PopoverContent, TooltipContent, SelectContent all use Radix Portal)
 'use client'
 
 /**
@@ -244,8 +245,8 @@ export function AddAccommodationModal({
                           <div
                             className="flex size-7 items-center justify-center rounded-full shrink-0 text-[10px] font-bold"
                             style={{
-                              background: 'color-mix(in oklch, var(--foreground) 8%, var(--background))',
-                              color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))',
+                              background: 'var(--muted)',
+                              color: 'var(--muted-foreground)',
                             }}
                           >
                             {s.initials}
@@ -260,8 +261,8 @@ export function AddAccommodationModal({
                             <span
                               className="text-[10px] uppercase tracking-wider font-semibold rounded px-1.5 py-0.5"
                               style={{
-                                backgroundColor: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))',
-                                color: 'color-mix(in oklch, var(--chart-4) 80%, var(--foreground))',
+                                backgroundColor: 'var(--muted)',
+                                color: 'var(--chart-4)',
                               }}
                             >
                               ⚠ {existing} existing

@@ -59,7 +59,18 @@ jobs:
             echo "em=true" >> $GITHUB_OUTPUT
             exit 0
           fi
-          CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+          # Use github.event.before for push events — more reliable than HEAD~1
+          # which fails (exit 128) on the first push to a branch (no parent) or
+          # on shallow clones where the base commit isn't fetched.
+          BASE_SHA="${{ github.event.before }}"
+          HEAD_SHA="${{ github.sha }}"
+          # Null SHA means this is the first push to a new branch — treat all as changed.
+          if [[ -z "$BASE_SHA" || "$BASE_SHA" == "0000000000000000000000000000000000000000" ]]; then
+            echo "pce=true" >> $GITHUB_OUTPUT
+            echo "em=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" 2>/dev/null || git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
           PCE=$(echo "$CHANGED" | grep -q "^apps/pce/admin" && echo "true" || echo "false")
           EM=$(echo "$CHANGED" | grep -q "^apps/exam-management/admin" && echo "true" || echo "false")
           TOOLS=$(echo "$CHANGED" | grep -q "^tools/visual-check" && echo "true" || echo "false")
@@ -90,7 +101,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '24'
 
       - name: Install visual-check + Playwright
         run: |
@@ -104,16 +115,22 @@ jobs:
         run: sleep 90
 
       - name: Verify target URL is reachable
+        id: verify
         run: |
           echo "Checking $TARGET_URL ..."
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$TARGET_URL" --max-time 15)
-          if [[ "$STATUS" != "200" && "$STATUS" != "301" && "$STATUS" != "302" ]]; then
-            echo "::warning::Target URL returned HTTP $STATUS — skipping WCAG check"
-            exit 0
+          # Follow redirects (-L) to get the final HTTP status, so 307→200 passes.
+          # A 307 without -L means the deployment is behind auth or not yet live.
+          STATUS=$(curl -sL -o /dev/null -w "%{http_code}" "$TARGET_URL" --max-time 20)
+          if [[ "$STATUS" == "200" ]]; then
+            echo "url_ok=true" >> $GITHUB_OUTPUT
+            echo "URL reachable (HTTP $STATUS)"
+          else
+            echo "url_ok=false" >> $GITHUB_OUTPUT
+            echo "::warning::Target URL returned HTTP $STATUS after following redirects — skipping WCAG check"
           fi
-          echo "URL reachable (HTTP $STATUS)"
 
       - name: Run static WCAG scan (all routes, default state)
+        if: steps.verify.outputs.url_ok == 'true'
         env:
           BASE_URL: ${{ env.TARGET_URL }}
           VISUAL_CHECK_OUT_DIR: ${{ env.VISUAL_CHECK_OUT_DIR }}
@@ -122,6 +139,7 @@ jobs:
           node tools/visual-check/run.mjs 2>&1
 
       - name: Run interaction WCAG scan (12 states per route)
+        if: steps.verify.outputs.url_ok == 'true'
         env:
           BASE_URL: ${{ env.TARGET_URL }}
           VISUAL_CHECK_OUT_DIR: ${{ env.VISUAL_CHECK_OUT_DIR }}
@@ -130,6 +148,7 @@ jobs:
 
       - name: Generate markdown report
         id: report
+        if: steps.verify.outputs.url_ok == 'true'
         run: |
           node tools/visual-check/summarize.mjs \
             --dir $VISUAL_CHECK_OUT_DIR \
@@ -137,8 +156,7 @@ jobs:
             >> $GITHUB_STEP_SUMMARY || true
 
           CRITICAL=$(node tools/visual-check/summarize.mjs \
-            --dir $VISUAL_CHECK_OUT_DIR --product pce-admin --count-critical 2>/dev/null \
-            ; echo "${PIPESTATUS[0]:-0}")
+            --dir $VISUAL_CHECK_OUT_DIR --product pce-admin --count-critical 2>/dev/null || echo "0")
           echo "critical_count=$CRITICAL" >> $GITHUB_OUTPUT
 
       - name: Post Teams card
@@ -161,7 +179,7 @@ jobs:
           retention-days: 14
 
       - name: Fail on critical/serious violations
-        if: steps.report.outputs.critical_count > 0
+        if: steps.verify.outputs.url_ok == 'true' && steps.report.outputs.critical_count > 0
         run: |
           echo "::error::${{ steps.report.outputs.critical_count }} critical/serious WCAG violations found in PCE Admin. See step summary and artifacts."
           exit 1
@@ -188,7 +206,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '24'
 
       - name: Install visual-check + Playwright
         run: |
@@ -201,14 +219,19 @@ jobs:
         run: sleep 90
 
       - name: Verify target URL is reachable
+        id: verify
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$TARGET_URL" --max-time 15)
-          if [[ "$STATUS" != "200" && "$STATUS" != "301" && "$STATUS" != "302" ]]; then
-            echo "::warning::Target URL returned HTTP $STATUS — skipping WCAG check"
-            exit 0
+          STATUS=$(curl -sL -o /dev/null -w "%{http_code}" "$TARGET_URL" --max-time 20)
+          if [[ "$STATUS" == "200" ]]; then
+            echo "url_ok=true" >> $GITHUB_OUTPUT
+            echo "URL reachable (HTTP $STATUS)"
+          else
+            echo "url_ok=false" >> $GITHUB_OUTPUT
+            echo "::warning::Target URL returned HTTP $STATUS after following redirects — skipping WCAG check"
           fi
 
       - name: Run static WCAG scan
+        if: steps.verify.outputs.url_ok == 'true'
         env:
           BASE_URL: ${{ env.TARGET_URL }}
           VISUAL_CHECK_OUT_DIR: ${{ env.VISUAL_CHECK_OUT_DIR }}
@@ -217,6 +240,7 @@ jobs:
           node tools/visual-check/run.mjs /students /faculty /courses /terms /question-bank 2>&1
 
       - name: Run interaction WCAG scan
+        if: steps.verify.outputs.url_ok == 'true'
         env:
           BASE_URL: ${{ env.TARGET_URL }}
           VISUAL_CHECK_OUT_DIR: ${{ env.VISUAL_CHECK_OUT_DIR }}
@@ -225,6 +249,7 @@ jobs:
 
       - name: Generate markdown report
         id: report
+        if: steps.verify.outputs.url_ok == 'true'
         run: |
           node tools/visual-check/summarize.mjs \
             --dir $VISUAL_CHECK_OUT_DIR \
@@ -232,8 +257,7 @@ jobs:
             >> $GITHUB_STEP_SUMMARY || true
 
           CRITICAL=$(node tools/visual-check/summarize.mjs \
-            --dir $VISUAL_CHECK_OUT_DIR --product em-admin --count-critical 2>/dev/null \
-            ; echo "${PIPESTATUS[0]:-0}")
+            --dir $VISUAL_CHECK_OUT_DIR --product em-admin --count-critical 2>/dev/null || echo "0")
           echo "critical_count=$CRITICAL" >> $GITHUB_OUTPUT
 
       - name: Post Teams card
@@ -256,7 +280,7 @@ jobs:
           retention-days: 14
 
       - name: Fail on critical/serious violations
-        if: steps.report.outputs.critical_count > 0
+        if: steps.verify.outputs.url_ok == 'true' && steps.report.outputs.critical_count > 0
         run: |
           echo "::error::${{ steps.report.outputs.critical_count }} critical/serious WCAG violations found in Exam Management Admin. See step summary and artifacts."
           exit 1

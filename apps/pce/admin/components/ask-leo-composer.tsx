@@ -159,6 +159,7 @@ export const AskLeoComposer = React.forwardRef<HTMLTextAreaElement, AskLeoCompos
             <input ref={fileInputRef} type="file" multiple className="sr-only" onChange={() => {}} />
           ) : null}
 
+          {/* overflow-hidden safe — floating uses Radix Portal */}
           <div
             className={cn(
               "min-w-0 w-full cursor-text overflow-hidden border border-[color:var(--control-border)] bg-card transition-[border-radius,padding] duration-200 ease-out",

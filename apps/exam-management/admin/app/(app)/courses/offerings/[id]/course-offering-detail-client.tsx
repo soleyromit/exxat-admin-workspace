@@ -1,3 +1,4 @@
+// overflow-hidden safe — floating uses Radix Portal (PopoverContent, TooltipContent, SelectContent all use Radix Portal)
 'use client'
 
 /**
@@ -24,6 +25,7 @@ import { useEntryPoint } from '@/lib/use-entry-point'
 import { recordView } from '@/lib/recently-viewed'
 import {
   Button, Badge, Avatar, AvatarFallback,
+  Card, CardContent,
   Tabs, TabsList, TabsTrigger, TabsContent,
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -66,19 +68,19 @@ function nameInitials(name: string): string {
 const OFFERING_STATUS: Record<string, { label: string; bg: string; fg: string }> = {
   ongoing:   { label: 'Ongoing',   bg: 'var(--qb-status-saved-bg)', fg: 'var(--qb-status-saved-fg)' },
   completed: { label: 'Completed', bg: 'var(--muted)',               fg: 'var(--muted-foreground)' },
-  upcoming:  { label: 'Upcoming',  bg: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', fg: 'var(--brand-color-dark)' },
+  upcoming:  { label: 'Upcoming',  bg: 'var(--brand-tint)', fg: 'var(--brand-color-dark)' },
 }
 
 const ASSESSMENT_STATUS: Record<string, { bg: string; fg: string }> = {
   Published: { bg: 'var(--qb-status-saved-bg)', fg: 'var(--qb-status-saved-fg)' },
   Draft:     { bg: 'var(--muted)',               fg: 'var(--muted-foreground)' },
-  Upcoming:  { bg: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', fg: 'var(--brand-color-dark)' },
+  Upcoming:  { bg: 'var(--brand-tint)', fg: 'var(--brand-color-dark)' },
 }
 
 const STUDENT_STATUS: Record<string, { label: string; bg: string; fg: string }> = {
   enrolled:  { label: 'Enrolled',  bg: 'var(--qb-status-saved-bg)', fg: 'var(--qb-status-saved-fg)' },
   completed: { label: 'Completed', bg: 'var(--muted)',               fg: 'var(--muted-foreground)' },
-  withdrawn: { label: 'Withdrawn', bg: 'color-mix(in oklch, var(--destructive) 10%, var(--background))', fg: 'var(--destructive)' },
+  withdrawn: { label: 'Withdrawn', bg: 'var(--muted)', fg: 'var(--destructive)' },
 }
 
 // ── Enroll Student Sheet ──────────────────────────────────────────────────────
@@ -131,9 +133,9 @@ function EnrollStudentSheet({
         </SheetHeader>
 
         <div className="px-6 pt-4 pb-3 shrink-0">
-          <div className="flex items-center gap-2 rounded-md border px-3"
-            style={{ borderColor: 'var(--border-control-35)', height: 36 }}>
-            <i className="fa-light fa-magnifying-glass text-muted-foreground shrink-0" aria-hidden="true" style={{ fontSize: 13 }} />
+          <div className="flex items-center gap-2 rounded-md border"
+            style={{ borderColor: 'var(--border-control-35)', height: 36, paddingInline: '12px' }}>
+            <i className="fa-light fa-magnifying-glass text-muted-foreground shrink-0 text-[13px]" aria-hidden="true" />
             <input
               type="search"
               placeholder="Search by name, student ID, or cohort…"
@@ -252,9 +254,9 @@ function AssignFacultySheet({
         </SheetHeader>
 
         <div className="px-6 pt-4 pb-3 shrink-0">
-          <div className="flex items-center gap-2 rounded-md border px-3"
-            style={{ borderColor: 'var(--border-control-35)', height: 36 }}>
-            <i className="fa-light fa-magnifying-glass text-muted-foreground shrink-0" aria-hidden="true" style={{ fontSize: 13 }} />
+          <div className="flex items-center gap-2 rounded-md border"
+            style={{ borderColor: 'var(--border-control-35)', height: 36, paddingInline: '12px' }}>
+            <i className="fa-light fa-magnifying-glass text-muted-foreground shrink-0 text-[13px]" aria-hidden="true" />
             <input
               type="search"
               placeholder="Search faculty…"
@@ -288,7 +290,7 @@ function AssignFacultySheet({
                     <Avatar style={{ width: 36, height: 36, flexShrink: 0 }}>
                       <AvatarFallback className="text-xs font-bold"
                         style={{
-                          backgroundColor: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))',
+                          backgroundColor: 'var(--brand-tint)',
                           color: 'var(--brand-color)',
                         }}>
                         {initials}
@@ -404,24 +406,23 @@ function CreateAssessmentModal({
           <div className="flex flex-col gap-3 pt-1">
             <div className="flex flex-col gap-2" role="radiogroup" aria-label="Assessment creation mode">
               {MODES.map(m => (
-                <button
+                <Button
                   key={m.id}
-                  type="button"
+                  variant="outline"
+                  size="sm"
                   role="radio"
                   aria-checked={mode === m.id}
                   onClick={() => setMode(m.id)}
-                  className="flex items-start gap-4 rounded-xl border p-4 text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                  className="flex items-start gap-4 rounded-xl p-4 text-left h-auto justify-start"
                   style={{
-                    borderColor: mode === m.id ? 'color-mix(in oklch, var(--brand-color) 55%, transparent)' : 'var(--border)',
-                    background: mode === m.id ? 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' : 'var(--card)',
+                    borderColor: mode === m.id ? 'var(--brand-color)' : 'var(--border)',
+                    background: mode === m.id ? 'var(--brand-tint)' : 'var(--card)',
                   }}
                 >
                   <div
                     className="flex size-10 shrink-0 items-center justify-center rounded-lg"
                     style={{
-                      backgroundColor: mode === m.id
-                        ? 'color-mix(in oklch, var(--brand-color) 15%, var(--background))'
-                        : 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+                      backgroundColor: 'var(--brand-tint)',
                       color: 'var(--brand-color)',
                     }}
                   >
@@ -434,7 +435,7 @@ function CreateAssessmentModal({
                   {mode === m.id && (
                     <i className="fa-light fa-circle-check text-sm mt-1 shrink-0" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
                   )}
-                </button>
+                </Button>
               ))}
             </div>
             <div className="flex items-center justify-end gap-2 pt-1">
@@ -449,29 +450,28 @@ function CreateAssessmentModal({
 
         {step === 'pick-source' && (
           <div className="flex flex-col gap-3 pt-1">
-            <button
-              type="button"
-              onClick={() => setStep('pick-mode')}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors self-start"
-            >
+            <Button variant="ghost" size="xs" onClick={() => setStep('pick-mode')} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors self-start h-auto px-0">
               <i className="fa-light fa-arrow-left" aria-hidden="true" />
               Back
-            </button>
+            </Button>
             <p className="text-sm font-medium text-foreground">Select a previous assessment to copy from:</p>
             {prevAssessments.length === 0 ? (
-              <div className="rounded-xl border border-border bg-muted/30 p-5 text-center">
+              <Card className="bg-muted/30 text-center">
+                <CardContent className="py-5">
                 <p className="text-sm text-muted-foreground">No previous assessments found for this course.</p>
                 <Button variant="outline" size="sm" className="mt-3" onClick={() => { setMode('blank'); setStep('pick-mode') }}>
                   Start from scratch instead
                 </Button>
-              </div>
+                </CardContent>
+              </Card>
             ) : (
               prevAssessments.map(a => (
-                <button
+                <Button
                   key={a.id}
-                  type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={() => handleSource(a.id)}
-                  className="flex items-center gap-4 rounded-xl border border-border p-4 text-left transition-colors hover:bg-muted/30"
+                  className="flex items-center gap-4 rounded-xl p-4 text-left h-auto justify-start w-full hover:bg-muted/30"
                 >
                   <div
                     className="flex size-9 shrink-0 items-center justify-center rounded-lg"
@@ -486,7 +486,7 @@ function CreateAssessmentModal({
                     </p>
                   </div>
                   <i className="fa-light fa-arrow-right text-xs text-muted-foreground shrink-0" aria-hidden="true" />
-                </button>
+                </Button>
               ))
             )}
           </div>
@@ -511,9 +511,9 @@ function buildAssessmentColumns(onNewAssessment: () => void): ColumnDef<Assessme
       cell: (row) => (
         <div className="flex items-center gap-2.5">
           <div className="flex size-7 shrink-0 items-center justify-center rounded-md"
-            style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))' }}>
-            <i className="fa-light fa-clipboard-list" aria-hidden="true"
-              style={{ fontSize: 12, color: 'var(--brand-color)' }} />
+            style={{ backgroundColor: 'var(--brand-tint)' }}>
+            <i className="fa-light fa-clipboard-list text-[12px]" aria-hidden="true"
+              style={{ color: 'var(--brand-color)' }} />
           </div>
           <span className="text-sm font-medium text-foreground truncate">{row.title as string}</span>
         </div>
@@ -722,7 +722,7 @@ function StudentsTab({ localStudents, onOpenEnroll, onNavigateStudent }: {
               variant="secondary"
               className="rounded-full gap-1.5 text-xs"
               style={{
-                backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+                backgroundColor: 'var(--brand-tint)',
                 color: 'var(--brand-color)',
               }}
             >
@@ -803,14 +803,9 @@ function AccommodationsTab({ offering, onNavigateStudent }: {
           return (
             <li key={acc.id} className="flex items-center gap-4 px-5 py-4">
               <div className="flex-1 min-w-0">
-                <button
-                  type="button"
-                  onClick={() => onNavigateStudent(acc.studentId)}
-                  className="text-sm font-medium hover:underline text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:rounded"
-                  style={{ color: 'var(--brand-color)' }}
-                >
+                <Button variant="ghost" size="sm" onClick={() => onNavigateStudent(acc.studentId)} className="text-sm font-medium hover:underline text-left h-auto p-0 justify-start" style={{ color: 'var(--brand-color)' }}>
                   {studentName}
-                </button>
+                </Button>
                 <p className="text-[11px] text-muted-foreground mt-0.5">{acc.detail}</p>
               </div>
               <Badge
@@ -851,7 +846,7 @@ const assignedFacultyColumns: ColumnDef<AssignedFacultyRow>[] = [
           <Avatar className="shrink-0" style={{ width: 32, height: 32 }} aria-hidden="true">
             <AvatarFallback className="text-[11px] font-bold"
               style={{
-                backgroundColor: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))',
+                backgroundColor: 'var(--brand-tint)',
                 color: 'var(--brand-color)',
               }}>
               {initials}
@@ -871,7 +866,7 @@ const assignedFacultyColumns: ColumnDef<AssignedFacultyRow>[] = [
     cell: (row) => (
       <Badge variant="secondary" className="rounded text-[11px] font-medium"
         style={row.role === 'Course Coordinator'
-          ? { backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', color: 'var(--brand-color)' }
+          ? { backgroundColor: 'var(--brand-tint)', color: 'var(--brand-color)' }
           : { backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
         {row.role as string}
       </Badge>
@@ -930,7 +925,7 @@ function FacultyTab({ localFaculty, onOpenAssign, onNavigateFaculty }: {
               variant="secondary"
               className="rounded-full gap-1.5 text-xs"
               style={{
-                backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+                backgroundColor: 'var(--brand-tint)',
                 color: 'var(--brand-color)',
               }}
             >
@@ -1002,7 +997,7 @@ function OverviewTab({ offering, isPrism }: { offering: ExtendedCourseOffering; 
               ].map(m => (
                 <div key={m.label} className="flex flex-col items-center gap-1 rounded-lg border border-border p-3 text-center"
                   style={{ backgroundColor: 'var(--muted)' }}>
-                  <i className={`fa-light ${m.icon} text-muted-foreground`} aria-hidden="true" style={{ fontSize: 16 }} />
+                  <i className={`fa-light ${m.icon} text-muted-foreground text-base`} aria-hidden="true" />
                   <p className="text-xl font-bold text-foreground tabular-nums leading-none mt-1">{m.value}</p>
                   <p className="text-[11px] text-muted-foreground">{m.label}</p>
                 </div>
@@ -1039,8 +1034,8 @@ function OverviewTab({ offering, isPrism }: { offering: ExtendedCourseOffering; 
           ))}
         </section>
 
-        <div className="rounded-xl border border-border p-4 flex items-start gap-3"
-          style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 4%, var(--background))' }}>
+        <Card style={{ backgroundColor: 'var(--brand-tint)' }}>
+          <CardContent className="flex items-start gap-3 p-4">
           <i className="fa-light fa-books text-sm mt-0.5 shrink-0" aria-hidden="true"
             style={{ color: 'var(--brand-color)' }} />
           <div>
@@ -1055,13 +1050,14 @@ function OverviewTab({ offering, isPrism }: { offering: ExtendedCourseOffering; 
               <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
             </a>
           </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {isPrism && (
-          <div className="rounded-xl border border-border p-4 flex items-start gap-3"
-            style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 4%, var(--background))' }}>
-            <i className="fa-light fa-arrow-up-right-from-square mt-0.5 shrink-0" aria-hidden="true"
-              style={{ fontSize: 13, color: 'var(--brand-color)' }} />
+          <Card style={{ backgroundColor: 'var(--brand-tint)' }}>
+            <CardContent className="flex items-start gap-3 p-4">
+            <i className="fa-light fa-arrow-up-right-from-square mt-0.5 shrink-0 text-[13px]" aria-hidden="true"
+              style={{ color: 'var(--brand-color)' }} />
             <div>
               <p className="text-sm font-medium text-foreground">Full course view in Prism</p>
               <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
@@ -1071,10 +1067,11 @@ function OverviewTab({ offering, isPrism }: { offering: ExtendedCourseOffering; 
                 className="inline-flex items-center gap-1.5 text-xs font-medium mt-2 no-underline hover:underline"
                 style={{ color: 'var(--brand-color)' }}>
                 View in Prism
-                <i className="fa-light fa-arrow-up-right-from-square" aria-hidden="true" style={{ fontSize: 10 }} />
+                <i className="fa-light fa-arrow-up-right-from-square text-[10px]" aria-hidden="true" />
               </a>
             </div>
-          </div>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>
@@ -1102,8 +1099,8 @@ function ResourcesTab({ offering }: { offering: ExtendedCourseOffering }) {
           <li key={i} className="flex items-center gap-3 px-5 py-3.5 hover:bg-muted/30 transition-colors">
             <span className="flex size-8 shrink-0 items-center justify-center rounded-md"
               style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
-              <i className={`fa-light ${res.type === 'PDF' ? 'fa-file-pdf' : res.type === 'Video' ? 'fa-play' : 'fa-link'}`}
-                aria-hidden="true" style={{ fontSize: 13 }} />
+              <i className={`fa-light ${res.type === 'PDF' ? 'fa-file-pdf' : res.type === 'Video' ? 'fa-play' : 'fa-link'} text-[13px]`}
+                aria-hidden="true" />
             </span>
             <p className="text-sm font-medium text-foreground flex-1 truncate">{res.title}</p>
             <Badge variant="secondary" className="rounded text-[11px] shrink-0"
@@ -1113,7 +1110,7 @@ function ResourcesTab({ offering }: { offering: ExtendedCourseOffering }) {
             {res.url && (
               <Button variant="ghost" size="icon-sm" aria-label={`Open ${res.title}`}
                 onClick={() => window.open(res.url, '_blank', 'noopener,noreferrer')}>
-                <i className="fa-light fa-arrow-up-right-from-square" aria-hidden="true" style={{ fontSize: 12 }} />
+                <i className="fa-light fa-arrow-up-right-from-square text-[12px]" aria-hidden="true" />
               </Button>
             )}
           </li>
@@ -1150,9 +1147,10 @@ function QuestionBankTab({ courseId }: { courseId: string }) {
   return (
     <div className="flex flex-col gap-4">
       {/* Summary card */}
-      <div className="rounded-xl border border-border bg-card p-4 flex items-start gap-4">
+      <Card>
+      <CardContent className="p-4 flex items-start gap-4">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-lg"
-          style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', color: 'var(--brand-color)' }}>
+          style={{ backgroundColor: 'var(--brand-tint)', color: 'var(--brand-color)' }}>
           <i className="fa-light fa-books text-base" aria-hidden="true" />
         </div>
         <div className="flex-1 min-w-0">
@@ -1190,7 +1188,8 @@ function QuestionBankTab({ courseId }: { courseId: string }) {
           Open QB
           <i className="fa-light fa-arrow-up-right-from-square text-xs" aria-hidden="true" />
         </a>
-      </div>
+      </CardContent>
+      </Card>
 
       {/* Folder list */}
       {childFolders.length > 0 && (
@@ -1294,7 +1293,7 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
                   variant="secondary"
                   className="rounded-full gap-1.5 text-xs"
                   style={{
-                    backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+                    backgroundColor: 'var(--brand-tint)',
                     color: 'var(--brand-color)',
                   }}
                 >

@@ -71,6 +71,7 @@ export function NavUser({
         "data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground",
         "h-auto min-h-12 items-center py-2 !overflow-visible",
         "group-data-[collapsible=icon]:!size-9 group-data-[collapsible=icon]:!h-9 group-data-[collapsible=icon]:!min-h-0 group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg",
+        /* overflow-hidden safe — floating uses Radix Portal */
         /* Icon rail: clip overflow and hide chrome that sat in the gutter (ellipsis was bleeding past the rail). */
         "group-data-[collapsible=icon]:!overflow-hidden",
         "[&>span:last-child]:!overflow-visible [&>span:last-child]:!whitespace-normal [&>span:last-child]:text-clip",

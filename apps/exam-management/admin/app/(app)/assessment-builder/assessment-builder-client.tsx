@@ -989,31 +989,30 @@ export default function AssessmentBuilderClient() {
           const isActive = activeTab === tab.id
           const isDone = tab.done && !isActive
           return (
-            <button
+            <Button
               key={tab.id}
-              type="button"
+              variant="ghost"
+              size="sm"
               role="tab"
               aria-selected={isActive}
               onClick={() => { setActiveTab(tab.id); if (tab.id !== 'build') setPickerOpen(false) }}
+              className={`flex items-center gap-1.5 px-3.5 text-xs whitespace-nowrap rounded-none h-full border-b-2 ${isActive ? 'font-semibold text-foreground border-foreground' : isDone ? 'font-medium border-transparent' : 'font-medium border-transparent'}`}
               style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '0 14px', fontSize: 12, fontWeight: isActive ? 600 : 500,
+                background: 'none',
                 color: isActive ? 'var(--foreground)' : isDone ? 'var(--chart-2)' : 'var(--muted-foreground)',
-                background: 'none', border: 'none',
-                borderBottom: isActive ? '2px solid var(--foreground)' : '2px solid transparent',
-                cursor: 'pointer', whiteSpace: 'nowrap',
               }}
             >
-              <span style={{
-                width: 18, height: 18, borderRadius: '50%', fontSize: 12, fontWeight: 700,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                background: isActive ? 'var(--foreground)' : isDone ? 'var(--chart-2)' : 'var(--muted)',
-                color: isActive || isDone ? 'var(--background)' : 'var(--muted-foreground)',
-              }}>
+              <span
+                className={`flex size-[18px] shrink-0 items-center justify-center rounded-full text-xs font-bold`}
+                style={{
+                  background: isActive ? 'var(--foreground)' : isDone ? 'var(--chart-2)' : 'var(--muted)',
+                  color: isActive || isDone ? 'var(--background)' : 'var(--muted-foreground)',
+                }}
+              >
                 {isDone ? '✓' : tab.num}
               </span>
               {tab.label}
-            </button>
+            </Button>
           )
         })}
         {/* Question count — right side of tab bar */}
@@ -1061,7 +1060,7 @@ export default function AssessmentBuilderClient() {
                           padding: '6px 14px', borderRadius: 7, fontSize: 12, fontWeight: 500,
                           border: '1px solid',
                           borderColor: activeAsmt.settings?.type === t ? 'var(--brand-color)' : 'var(--border)',
-                          background: activeAsmt.settings?.type === t ? 'color-mix(in srgb, var(--brand-color) 8%, var(--background))' : 'var(--background)',
+                          background: activeAsmt.settings?.type === t ? 'var(--brand-tint)' : 'var(--background)',
                           color: activeAsmt.settings?.type === t ? 'var(--brand-color)' : 'var(--muted-foreground)',
                           cursor: 'pointer', fontFamily: 'inherit',
                         }}
@@ -1133,7 +1132,7 @@ export default function AssessmentBuilderClient() {
                     const fac = facultyListRows.find(f => f.id === facId)
                     if (!fac) return null
                     const initials = fac.fullName.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase()
-                    const COLLAB_COLORS = ['#7c6bbf', '#3b7abf', '#4e9a6b', '#bf5b3b', '#b87c3b']
+                    const COLLAB_COLORS = ['var(--brand-color)', 'var(--chart-1)', 'var(--chart-2)', 'var(--chart-4)', 'var(--chart-5)']
                     const color = COLLAB_COLORS[idx % COLLAB_COLORS.length]
                     return (
                       <div key={facId} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -1291,10 +1290,10 @@ export default function AssessmentBuilderClient() {
                               aria-label={`${filled} of ${target} questions filled`}
                               style={{
                                 background: isComplete
-                                  ? 'color-mix(in srgb, var(--chart-2) 15%, var(--background))'
+                                  ? 'var(--muted)'
                                   : isStarted ? 'var(--brand-tint)' : 'var(--muted)',
                                 border: `1px solid ${isComplete
-                                  ? 'color-mix(in srgb, var(--chart-2) 40%, var(--background))'
+                                  ? 'var(--muted)'
                                   : isStarted ? 'var(--ring)' : 'var(--border)'}`,
                                 borderRadius: 10,
                                 padding: '1px 6px',
@@ -1639,10 +1638,10 @@ export default function AssessmentBuilderClient() {
                               <tr
                                 key={q.id}
                                 style={{
-                                  borderBottom: '1px solid color-mix(in srgb, var(--border) 45%, transparent)',
+                                  borderBottom: '1px solid var(--border)',
                                   background: lastMovedId === q.id
-                                    ? 'color-mix(in srgb, var(--brand-color) 10%, var(--background))'
-                                    : isPinned ? 'color-mix(in srgb, var(--chart-2) 4%, var(--background))' : undefined,
+                                    ? 'var(--brand-tint)'
+                                    : isPinned ? 'var(--muted)' : undefined,
                                   transition: 'background 0.6s ease',
                                 }}
                               >
@@ -3353,7 +3352,7 @@ function ReviewStep({
                         variant="secondary"
                         className="rounded text-xs"
                         style={isComplete && target != null ? {
-                          background: 'color-mix(in srgb, var(--chart-2) 15%, var(--background))',
+                          background: 'var(--muted)',
                           color: 'var(--chart-2)',
                         } : undefined}
                       >
@@ -6423,7 +6422,7 @@ function AddQuestionsModal({ initialMethod, selectedIds, onToggle, activeSection
         <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
           <span style={{ fontSize: 14, fontWeight: 600, flex: 1, color: 'var(--foreground)' }}>Add questions</span>
           {activeSection && (
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--brand-color)', background: 'color-mix(in srgb, var(--brand-color) 10%, var(--background))', border: '1px solid color-mix(in srgb, var(--brand-color) 25%, var(--background))', padding: '2px 8px', borderRadius: 20 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--brand-color)', background: 'var(--brand-tint)', border: '1px solid var(--brand-color)', padding: '2px 8px', borderRadius: 20 }}>
               → {sectionLabel}
             </span>
           )}
@@ -7178,8 +7177,8 @@ function SectionAnalysisSheet({ open, onOpenChange, section, sectionIndex, quest
                     {lowPbiQuestions.map(q => (
                       <div key={q.id} style={{
                         display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 6,
-                        background: 'color-mix(in srgb, var(--chart-5) 6%, var(--background))',
-                        border: '1px solid color-mix(in srgb, var(--chart-5) 20%, transparent)',
+                        background: 'var(--muted)',
+                        border: '1px solid var(--border)',
                       }}>
                         <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 10, color: 'var(--chart-5)', flexShrink: 0 }} />
                         <span style={{ fontSize: 12, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--foreground)' }}>
