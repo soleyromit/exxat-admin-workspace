@@ -256,7 +256,7 @@ export function SplitQuestionView({
         <div className="flex items-center gap-0.5 shrink-0">
           {needsCalculator && (
             <div style={{ position: 'relative' }}>
-              <Tooltip content="Calculator" position="left">
+              <Tooltip content="Calculator" position="bottom">
                 <DSButton
                   variant="ghost"
                   size="icon-sm"
@@ -276,7 +276,7 @@ export function SplitQuestionView({
           )}
 
           {needsKeyboard && (
-            <Tooltip content="On-screen keyboard" position="left">
+            <Tooltip content="On-screen keyboard" position="bottom">
               <DSButton
                 variant="ghost"
                 size="icon-sm"
@@ -290,7 +290,7 @@ export function SplitQuestionView({
           )}
 
           {onToggleFlag && (
-            <Tooltip content={isFlagged ? 'Remove bookmark' : 'Bookmark'} position="left">
+            <Tooltip content={isFlagged ? 'Remove bookmark' : 'Bookmark'} position="bottom">
               <DSButton
                 variant="ghost"
                 size="icon-sm"

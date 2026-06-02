@@ -1,67 +1,34 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
+import {
+  Tooltip as DSTooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@exxat/ds/packages/ui/src';
 
 interface TooltipProps {
   content: string;
   children: React.ReactElement;
   position?: 'top' | 'bottom' | 'left' | 'right';
-  delay?: number;
   disabled?: boolean;
+  /** Delay before tooltip appears (ms). Default 400. */
+  delay?: number;
 }
 
 export function Tooltip({
   content,
   children,
   position = 'bottom',
-  delay = 400,
   disabled = false,
+  delay = 400,
 }: TooltipProps) {
-  const [visible, setVisible] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-  const show = () => {
-    if (disabled) return;
-    timeoutRef.current = setTimeout(() => setVisible(true), delay);
-  };
-  const hide = () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    setVisible(false);
-  };
-
-  useEffect(() => () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); }, []);
-
-  const popupStyle = (): React.CSSProperties => {
-    const GAP = 6;
-    switch (position) {
-      case 'top':    return { position: 'absolute', bottom: `calc(100% + ${GAP}px)`, left: '50%', transform: 'translateX(-50%)', zIndex: 9999 };
-      case 'bottom': return { position: 'absolute', top: `calc(100% + ${GAP}px)`,    left: '50%', transform: 'translateX(-50%)', zIndex: 9999 };
-      case 'left':   return { position: 'absolute', right: `calc(100% + ${GAP}px)`,  top: '50%',  transform: 'translateY(-50%)', zIndex: 9999 };
-      case 'right':  return { position: 'absolute', left: `calc(100% + ${GAP}px)`,   top: '50%',  transform: 'translateY(-50%)', zIndex: 9999 };
-    }
-  };
-
+  if (disabled) return children;
   return (
-    <div
-      className="inline-flex relative"
-      onMouseEnter={show}
-      onMouseLeave={hide}
-      onFocus={show}
-      onBlur={hide}
-    >
-      {children}
-      {visible && (
-        <div className="pointer-events-none" style={popupStyle()}>
-          <div
-            className="px-2 py-1 rounded text-xs font-medium whitespace-nowrap"
-            style={{
-              backgroundColor: 'var(--foreground)',
-              color: 'var(--background)',
-              animation: 'tooltip-in 0.12s ease-out',
-            }}
-          >
-            {content}
-          </div>
-        </div>
-      )}
-    </div>
+    <TooltipProvider delayDuration={delay}>
+      <DSTooltip>
+        <TooltipTrigger asChild>{children}</TooltipTrigger>
+        <TooltipContent side={position}>{content}</TooltipContent>
+      </DSTooltip>
+    </TooltipProvider>
   );
 }
