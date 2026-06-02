@@ -355,45 +355,62 @@ export function SplitQuestionView({
           {question.text}
         </h2>
 
-        {/* Reference + Bookmark buttons — right-aligned, top-anchored */}
-        <div className="flex items-center gap-0.5 shrink-0">
-          {question.references?.length ? (
+        {/* Bookmark — right-aligned, top-anchored */}
+        {onToggleFlag && (
+          <Tooltip content={isFlagged ? 'Remove bookmark' : 'Bookmark'} position="bottom">
             <DSButton
-              variant="outline"
-              size="sm"
-              onClick={() => setShowRefPanel(v => !v)}
-              aria-label={showRefPanel ? 'Close reference material' : 'Open reference material'}
-              aria-expanded={showRefPanel}
-              className="shrink-0"
-              style={showRefPanel ? {
-                backgroundColor: 'var(--exam-accent-light)',
-                borderColor: 'var(--exam-accent)',
-                color: 'var(--exam-accent)',
-              } : undefined}
+              variant="ghost"
+              size="icon-sm"
+              onClick={onToggleFlag}
+              aria-label={isFlagged ? 'Remove bookmark from this question' : 'Bookmark this question'}
+              style={isFlagged ? {
+                backgroundColor: 'var(--state-flagged-bg)',
+                color: 'var(--state-flagged-text)',
+              } : { color: 'var(--muted-foreground)' }}
             >
-              <i className="fa-light fa-file-lines" aria-hidden="true" style={{ fontSize: 13 }} />
-              Reference
+              <i className={`${isFlagged ? 'fa-solid' : 'fa-regular'} fa-bookmark`} aria-hidden="true" style={{ fontSize: '1em' }} />
             </DSButton>
-          ) : null}
-          {onToggleFlag && (
-            <Tooltip content={isFlagged ? 'Remove bookmark' : 'Bookmark'} position="bottom">
-              <DSButton
-                variant="ghost"
-                size="icon-sm"
-                onClick={onToggleFlag}
-                aria-label={isFlagged ? 'Remove bookmark from this question' : 'Bookmark this question'}
-                style={isFlagged ? {
-                  backgroundColor: 'var(--state-flagged-bg)',
-                  color: 'var(--state-flagged-text)',
-                } : { color: 'var(--muted-foreground)' }}
-              >
-                <i className={`${isFlagged ? 'fa-solid' : 'fa-regular'} fa-bookmark`} aria-hidden="true" style={{ fontSize: '1em' }} />
-              </DSButton>
-            </Tooltip>
-          )}
-        </div>
+          </Tooltip>
+        )}
       </div>
     </div>;
+
+  const renderReferenceBar = () => {
+    if (!question.references?.length) return null;
+    const label = question.references.length > 1
+      ? `${question.references.length} Reference Documents`
+      : question.references[0].label;
+    return (
+      <button
+        onClick={() => setShowRefPanel(v => !v)}
+        aria-label={showRefPanel ? 'Hide reference material' : 'View reference material'}
+        aria-expanded={showRefPanel}
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '10px 14px',
+          borderRadius: 10,
+          border: `1px solid ${showRefPanel ? 'var(--exam-accent)' : 'var(--border)'}`,
+          backgroundColor: showRefPanel ? 'var(--exam-accent-light)' : 'var(--muted)',
+          color: showRefPanel ? 'var(--exam-accent)' : 'var(--muted-foreground)',
+          cursor: 'pointer',
+          fontSize: '0.875em',
+          fontWeight: 600,
+          textAlign: 'left',
+        }}
+      >
+        <i className="fa-light fa-file-lines" aria-hidden="true" style={{ fontSize: '1em', flexShrink: 0 }} />
+        <span style={{ flex: 1 }}>{label}</span>
+        <i
+          className={`fa-light fa-chevron-${showRefPanel ? 'up' : 'right'}`}
+          aria-hidden="true"
+          style={{ fontSize: '0.75em', flexShrink: 0 }}
+        />
+      </button>
+    );
+  };
 
   /**
    * Renders ONLY the media/context portion — NO answer choices.
@@ -820,6 +837,7 @@ export function SplitQuestionView({
           <div className="w-1/2 min-h-0 overflow-y-auto rounded-2xl border shadow-sm p-[2em] flex flex-col gap-4"
             style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
             {renderQuestionStem()}
+            {renderReferenceBar()}
             <div>
               <h3
                 className="font-semibold text-[1em] mb-4"
@@ -861,6 +879,7 @@ export function SplitQuestionView({
             backgroundColor: 'var(--card)'
           }}>
             {renderQuestionStem()}
+            {renderReferenceBar()}
             {renderInteractive()}
             {renderInlineTools()}
             {allowComments && (
