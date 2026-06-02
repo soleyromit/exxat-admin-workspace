@@ -46,6 +46,7 @@ Open **only** these files. Skip everything else unless one of these files cites 
 | **Theme / token tweak** | `apps/web/app/globals.css`, `packages/ui/tokens/hooks-index.json` | All pattern docs |
 | **Status chip color/icon** | `apps/web/lib/list-status-badges.ts` | Accessibility rule (already covered by the map) |
 | **Bug fix** | `rg` for the symbol, read only the matching file | Everything else |
+| **Overflowing tab / breadcrumb row** | `horizontal-scroll-controls.tsx` + `horizontal-scroll-region.tsx`, `exxat-horizontal-scroll.mdc` | Full `tabs.tsx` / `list-page.tsx` unless editing them |
 | **Architectural change** (only when the user explicitly says so) | `AGENTS.md`, `HANDBOOK.md` | — |
 
 **Heuristic.** If a file is over 25 KB and you're not modifying that exact file,
@@ -65,10 +66,12 @@ Answer **yes / no / N/A** to each. A **no** means re-plan; you'll save a regener
 5. **No toasts for product feedback?** — use `LocalBanner` / `SystemBanner` / inline status. Toasts are reserved for build-tool messages.
 6. **Seven views + real bodies?** — `FULL_HUB_SUPPORTED_VIEWS` on **`ListPageTemplate`** + **`HubTable`** (sync both); every allowed view has a renderer; list uses **`ListPageBoardCard`** — not `["table"]` / `PRIMARY_HUB_SUPPORTED_VIEWS` / empty `renderers={}`.
 7. **Sheet only (no Vaul)?** — side panels use **`Sheet`**; **`vaul`** must not be in `package.json`.
-8. **Header + tabs + table preview?** — **`PageHeader`** + DS **`Button`** variants for actions; hub views via **`ListPageTemplate`** (not full-width tabs); record tabs **`TabsList`** `w-fit`; row preview via **`HoverCard`** + shared cells — not custom popovers.
+8. **Header + tabs + table preview?** — **`PageHeader`** + DS **`Button`** variants for actions; hub views via **`ListPageTemplate`** (not full-width tabs); record tabs **`TabsList`** `w-fit` + **`TabsListScrollRegion`** when overflowing; row preview via **`HoverCard`** + shared cells — not custom popovers.
 9. **Uploaded image ≠ spec?** — If the user attached a screenshot/mockup: extract **IA only** (labels, routes, fields); map to **`component-selection-guide`** + a **reference hub**; **MUST NOT** pixel-copy or plan "match the screenshot"; **MUST NOT** use **`frontend-design`** to mimic the upload — **`exxat-no-image-pixel-copy.mdc`** + **`exxat-senior-ux`** win.
+10. **Horizontal scroll on tabs/crumbs?** — **`HorizontalScrollRegion`** / **`HorizontalScrollControls`** with **`controlsLayout="group-end"`** — not bespoke flanking chevrons per surface.
+11. **Hub view tabs persist on reload?** — **`ListPageTemplate persistKey`** only in **uncontrolled** mode — no **`tabs` + `onTabsChange`** if persistence matters.
 
-If all nine are **yes**, generate. If any is **no**, either narrow the requirements
+If all eleven are **yes**, generate. If any is **no**, either narrow the requirements
 with **one** clarifying question or fix the gap silently and note it in your response.
 
 ---
@@ -94,6 +97,7 @@ When the user says "X", reach for "Y". Save the search.
 | board, kanban | `ListPageBoardCard`, `ListPageBoardTemplate` | `@/components/data-views/list-page-board-card` |
 | icon | FA `<i class="fa-light fa-{name}" aria-hidden />` | (Kit script in `app/layout.tsx`) |
 | keyboard shortcut hint | `Kbd variant="bare"` inside buttons; `tile` in tooltips | `@/components/ui/kbd` |
+| horizontal scroll, tab overflow, breadcrumb scroll | `HorizontalScrollRegion`, `HorizontalScrollControls`, `useHorizontalScrollAffordances` | `@/components/ui/horizontal-scroll-region`, `@/components/ui/horizontal-scroll-controls` |
 | toggle, switch | `ToggleSwitch` | `@/components/ui/toggle-switch` |
 
 ### Table cell renderers (ALL importable — do NOT re-implement)

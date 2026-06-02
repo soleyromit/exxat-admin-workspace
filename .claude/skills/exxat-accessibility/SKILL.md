@@ -280,3 +280,15 @@ When fixing, re-run **axe** or your preferred checker on the **Placements** page
 - **Chart region:** Product charts that support arrow-key exploration use **`ChartFigure`** (`role="application"`, focus ring on the chart container, click-or-Tab to focus per `charts-overview`).
 - **Selected datum:** Prefer **visible** feedback that matches the **`/dashboard` gallery** — Recharts **`activeBar`** + **`activeIndex`** for bars, **`activeShape`** + **`activeIndex`** for pies — via **`@/lib/chart-keyboard-selection`**. Avoid relying on **opacity-only** dimming as the only “selected” indicator; pair with ring/stroke so focus is perceivable (WCAG **2.4.7 Focus Visible** where applicable).
 - **Tables under charts:** **`ChartDataTable`** (`sr-only`) provides an equivalent programmatic structure for screen-reader users.
+
+## Pre-ship gate (MUST before merge)
+
+Complete **`apps/web/docs/accessibility-ship-checklist.md`** for every new or materially changed surface. Minimum:
+
+1. One **`<h1>`** in `<main>` only — panels/popovers use **`h2`**.
+2. **Case C** on all icon-only buttons — **`aria-label` + `Tip`**.
+3. **Format hints** — persistent **`FormDescription`**, not placeholder-only.
+4. **Four theme modes** — light, dark, **`data-contrast="high"`** light + dark when touching chrome/tokens/forms.
+5. **axe** on `<main>` — zero WCAG 2.x AA violations on the affected route.
+
+Pair with **`AGENTS.md` §13** accessibility line and **`.cursor/rules/exxat-accessibility.mdc`** ship gate.
