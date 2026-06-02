@@ -65,7 +65,15 @@ export function SettingsPanel({
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
+      const target = event.target as Element;
+      if (ref.current && !ref.current.contains(target)) {
+        // Radix Select renders its listbox in a portal outside ref.
+        // Detect it via popper wrapper attr OR WAI-ARIA roles (version-independent).
+        if (
+          target.closest('[data-radix-popper-content-wrapper]') ||
+          target.closest('[role="listbox"]') ||
+          target.closest('[role="option"]')
+        ) return;
         onClose();
       }
     }
