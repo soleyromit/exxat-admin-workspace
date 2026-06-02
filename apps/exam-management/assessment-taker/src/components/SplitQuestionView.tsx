@@ -454,7 +454,7 @@ export function SplitQuestionView({
         className="rounded-xl overflow-hidden border flex flex-col"
         style={{
           borderColor: 'var(--border)',
-          backgroundColor: '#000000',
+          backgroundColor: 'black',
           minHeight: '280px'
         }}>
         

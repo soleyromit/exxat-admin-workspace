@@ -108,7 +108,7 @@ export function SettingsPanel({
 
         {/* Progress summary */}
         <div className="px-4 pt-4 pb-3 flex flex-col gap-1" style={{ borderBottom: '1px solid var(--border)' }}>
-          <p className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--muted-foreground)' }}>
+          <p className="text-xs font-semibold mb-2" style={{ color: 'var(--muted-foreground)' }}>
             Your progress
           </p>
 
@@ -128,14 +128,14 @@ export function SettingsPanel({
           {/* Unanswered */}
           <div className="flex items-center justify-between py-1.5">
             <div className="flex items-center gap-2.5">
-              <span style={{ width: 18, textAlign: 'center' as const, color: unansweredCount > 0 ? 'var(--semantic-error-text, #c0392b)' : 'var(--muted-foreground)' }}>
+              <span style={{ width: 18, textAlign: 'center' as const, color: unansweredCount > 0 ? 'var(--destructive)' : 'var(--muted-foreground)' }}>
                 <i className="fa-regular fa-circle" aria-hidden="true" style={{ fontSize: 13 }} />
               </span>
               <span className="text-[13px] font-medium" style={{ color: 'var(--foreground)' }}>Unanswered</span>
             </div>
             <span
               className="text-[13px] font-semibold tabular-nums"
-              style={{ color: unansweredCount > 0 ? 'var(--semantic-error-text, #c0392b)' : 'var(--muted-foreground)' }}
+              style={{ color: unansweredCount > 0 ? 'var(--destructive)' : 'var(--muted-foreground)' }}
             >
               {unansweredCount}
             </span>
@@ -248,7 +248,7 @@ export function SettingsPanel({
             <button
               key={value}
               onClick={() => onThemeChange(value)}
-              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[11px] font-semibold transition-colors"
+              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold transition-colors"
               style={
                 theme === value
                   ? {
@@ -282,7 +282,7 @@ export function SettingsPanel({
             style={{ backgroundColor: 'var(--muted)', border: '1px solid var(--border)', padding: 2 }}
           >
             <DSButton variant="ghost" size="icon-xs" onClick={zoomOut} aria-label="Decrease text size">
-              <i className="fa-light fa-minus" aria-hidden="true" style={{ fontSize: 11 }} />
+              <i className="fa-light fa-minus" aria-hidden="true" style={{ fontSize: 12 }} />
             </DSButton>
             <span
               className="text-[12px] font-mono font-semibold w-10 text-center"
@@ -291,7 +291,7 @@ export function SettingsPanel({
               {zoomPercent}%
             </span>
             <DSButton variant="ghost" size="icon-xs" onClick={zoomIn} aria-label="Increase text size">
-              <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 11 }} />
+              <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
             </DSButton>
           </div>
         </div>
@@ -440,7 +440,7 @@ function Row({
         </span>
       </div>
       {chevron && (
-        <i className="fa-light fa-chevron-right" aria-hidden="true" style={{ fontSize: 11, color: 'var(--muted-foreground)' }} />
+        <i className="fa-light fa-chevron-right" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)' }} />
       )}
     </button>
   );

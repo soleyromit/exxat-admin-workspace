@@ -140,7 +140,7 @@ export function CalculatorPopover({ isOpen, onClose, inline = false }: Calculato
               <button
                 key={m}
                 onClick={() => setMode(m)}
-                className="px-2 py-0.5 rounded text-[11px] font-semibold transition-colors"
+                className="px-2 py-0.5 rounded text-xs font-semibold transition-colors"
                 style={
                   mode === m
                     ? { backgroundColor: 'var(--card)', color: 'var(--foreground)' }

@@ -429,19 +429,19 @@ function LibrarySection({ items }: { items: LibraryItem[] }) {
           <span
             className="flex size-10 items-center justify-center rounded-lg shrink-0"
             style={{
-              background: `color-mix(in oklch, ${TYPE_TONE[item.type]} 12%, var(--background))`,
+              background: 'var(--muted)',
               color: TYPE_TONE[item.type],
             }}
             aria-hidden="true"
           >
-            <i className={`fa-light ${TYPE_ICON[item.type]}`} style={{ fontSize: 16 }} />
+            <i className={`fa-light ${TYPE_ICON[item.type]}`} aria-hidden="true" style={{ fontSize: 16 }} />
           </span>
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-semibold text-foreground leading-snug">{item.title}</h3>
-            <p className="text-[11px] text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               {item.course} · {item.author}
             </p>
-            <p className="text-[10px] text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               {item.pages ? `${item.pages} pages` : item.duration}
             </p>
           </div>

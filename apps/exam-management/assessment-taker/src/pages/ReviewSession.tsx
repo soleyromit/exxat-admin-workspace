@@ -138,7 +138,7 @@ export function ReviewSession() {
             <p className="text-xs font-semibold leading-tight" style={{ color: t.fg }}>
               Lockdown Review Session
             </p>
-            <p style={{ fontSize: 11, color: t.fgMuted }}>
+            <p style={{ fontSize: 12, color: t.fgMuted }}>
               Copy, screenshot, and right-click are disabled · {exam?.title}
             </p>
           </div>
@@ -180,7 +180,7 @@ export function ReviewSession() {
             }}
           >
             <p
-              className="text-xs font-bold uppercase tracking-wider mb-2"
+              className="text-xs font-bold mb-2"
               style={{ color: t.fgMuted }}
             >
               Question {currentIndex + 1}
@@ -220,7 +220,7 @@ export function ReviewSession() {
                 style={{ color: t.fgMuted, fontSize: 18, marginTop: 2 }}
               />
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: t.fgMuted }}>
+                <p className="text-xs font-semibold mb-1.5" style={{ color: t.fgMuted }}>
                   Rationale
                 </p>
                 <p style={{ fontSize: 14, color: t.fg, lineHeight: 1.6 }}>{getRationale(question)}</p>
@@ -311,7 +311,7 @@ function ReviewQuestionBody({
                   width: 22, height: 22, borderRadius: '50%',
                   background: t.muted, color: t.fgMuted,
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 11, fontWeight: 700, flexShrink: 0, marginTop: 1,
+                  fontSize: 12, fontWeight: 700, flexShrink: 0, marginTop: 1,
                 }}>
                   {String.fromCharCode(65 + idx)}
                 </span>
@@ -385,7 +385,7 @@ function ReviewQuestionBody({
             }}>
               {s}
               {isCorrectS && (
-                <span style={{ marginLeft: 10, fontSize: 11, color: t.fgMuted, fontWeight: 600 }}>
+                <span style={{ marginLeft: 10, fontSize: 12, color: t.fgMuted, fontWeight: 600 }}>
                   <i className="fa-light fa-check me-1" aria-hidden="true" />Correct highlight
                 </span>
               )}

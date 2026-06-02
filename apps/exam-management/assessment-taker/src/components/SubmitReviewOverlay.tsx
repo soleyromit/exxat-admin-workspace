@@ -201,7 +201,7 @@ export function SubmitReviewOverlay({
                         position: 'absolute',
                         top: 2,
                         right: 3,
-                        fontSize: 7,
+                        fontSize: 12,
                         color: 'var(--state-flagged-text)',
                       }}
                     />

@@ -209,7 +209,7 @@ function SummaryTile({
         <i className={`fa-light ${icon}`} aria-hidden="true" style={{ fontSize: 14 }} />
       </span>
       <div className="flex flex-col leading-tight">
-        <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{label}</span>
+        <span className="text-xs font-semibold text-muted-foreground">{label}</span>
         <span className="text-base font-bold tabular-nums" style={{ color: valueColor ?? 'var(--foreground)' }}>{value}</span>
       </div>
     </div>
@@ -243,7 +243,7 @@ function PastRow({
         aria-hidden="true"
       >
         <span className="text-base font-bold tabular-nums leading-none">{a.score}</span>
-        <span className="text-[8px] uppercase tracking-wider font-bold mt-0.5">pct</span>
+        <span className="text-xs font-bold mt-0.5">pct</span>
       </div>
 
       {/* Title + course */}
@@ -252,7 +252,7 @@ function PastRow({
           <p className="text-sm font-semibold text-foreground truncate font-heading">{a.title}</p>
           <Badge
             variant="secondary"
-            className="rounded font-mono text-[9px] uppercase tracking-wider"
+            className="rounded font-mono text-xs"
             style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}
           >
             {TYPE_LABELS[a.type]}
@@ -282,11 +282,11 @@ function PastRow({
       <div className="hidden md:flex flex-col items-end gap-0.5 shrink-0 w-32">
         <span className="text-xs font-medium" style={{ color: t.fg }}>{t.label}</span>
         <span
-          className="text-[11px] font-mono tabular-nums"
+          className="text-xs font-mono tabular-nums"
           style={{ color: deltaPositive ? 'var(--state-success-dark)' : 'var(--state-error-text-dark)' }}
           title={`Cohort median: ${a.cohortMedian}%`}
         >
-          <i className={`fa-light ${deltaPositive ? 'fa-arrow-up' : 'fa-arrow-down'} me-1`} aria-hidden="true" style={{ fontSize: 9 }} />
+          <i className={`fa-light ${deltaPositive ? 'fa-arrow-up' : 'fa-arrow-down'} me-1`} aria-hidden="true" style={{ fontSize: 12 }} />
           {deltaPositive ? '+' : ''}{delta} vs cohort
         </span>
       </div>
