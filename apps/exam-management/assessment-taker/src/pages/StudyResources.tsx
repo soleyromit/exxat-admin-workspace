@@ -151,10 +151,10 @@ export function StudyResources() {
             className="rounded-full gap-1.5"
             style={{
               backgroundColor: 'var(--brand-tint)',
-              color: 'var(--brand-color)',
+              color: 'var(--brand-dark)',
             }}
           >
-            <i className="fa-duotone fa-solid fa-sparkles" aria-hidden="true" style={{ fontSize: 11 }} />
+            <i className="fa-duotone fa-solid fa-sparkles" aria-hidden="true" style={{ fontSize: 12 }} />
             Personalized for you
           </Badge>
         </header>
@@ -259,7 +259,7 @@ function RecommendedCard({ item }: { item: RecommendedItem }) {
         </span>
       </div>
 
-      <h3 className="text-sm font-semibold text-foreground leading-snug font-heading">{item.title}</h3>
+      <h2 className="text-sm font-semibold text-foreground leading-snug font-heading">{item.title}</h2>
 
       <p className="text-xs text-muted-foreground leading-relaxed">{item.reason}</p>
 
@@ -339,7 +339,7 @@ function FacultyPackRow({ pack }: { pack: FacultyPack }) {
         </Avatar>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-sm font-semibold text-foreground font-heading">{pack.title}</h3>
+            <h2 className="text-sm font-semibold text-foreground font-heading">{pack.title}</h2>
             <Badge variant="secondary" className="rounded font-mono text-[9px] uppercase tracking-wider"
               style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
               {pack.course}
@@ -437,7 +437,7 @@ function LibrarySection({ items }: { items: LibraryItem[] }) {
             <i className={`fa-light ${TYPE_ICON[item.type]}`} aria-hidden="true" style={{ fontSize: 16 }} />
           </span>
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold text-foreground leading-snug">{item.title}</h3>
+            <h2 className="text-sm font-semibold text-foreground leading-snug">{item.title}</h2>
             <p className="text-xs text-muted-foreground mt-1">
               {item.course} · {item.author}
             </p>

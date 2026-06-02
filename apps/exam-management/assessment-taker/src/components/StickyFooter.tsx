@@ -33,7 +33,7 @@ export function StickyFooter({
       </DSButton>
 
       <span style={{ fontSize: 13, color: 'var(--muted-foreground)', fontWeight: 500 }}>
-        Q {currentIndex + 1} <span style={{ opacity: 0.5 }}>of {totalQuestions}</span>
+        Q {currentIndex + 1} <span style={{ color: 'var(--muted-foreground)' }}>of {totalQuestions}</span>
       </span>
 
       <DSButton

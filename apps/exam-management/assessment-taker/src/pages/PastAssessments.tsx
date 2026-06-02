@@ -51,10 +51,10 @@ const TYPE_LABELS: Record<PastEntry['type'], string> = {
 }
 
 function tone(score: number) {
-  if (score >= 80) return { fg: 'var(--state-success-dark)',     bg: 'var(--state-success-bg-soft)',  label: 'Strong'      }
-  if (score >= 70) return { fg: 'var(--state-info-blue-dark)',   bg: 'var(--state-info-blue-bg)',     label: 'On track'    }
-  if (score >= 60) return { fg: 'var(--state-warning-dark)',     bg: 'var(--state-warning-bg-soft)',  label: 'Needs work'  }
-  return                 { fg: 'var(--state-error-text-dark)',   bg: 'var(--state-error-bg-soft)',    label: 'At risk'     }
+  if (score >= 80) return { fg: 'var(--foreground)', circleFg: 'var(--state-success-dark)',   bg: 'var(--state-success-bg-soft)',  label: 'Strong',    labelFg: 'var(--state-success-dark)'    }
+  if (score >= 70) return { fg: 'var(--foreground)', circleFg: 'var(--state-info-blue-dark)', bg: 'var(--state-info-blue-bg)',     label: 'On track',  labelFg: 'var(--state-info-blue-dark)'  }
+  if (score >= 60) return { fg: 'var(--foreground)', circleFg: 'var(--state-warning-dark)',   bg: 'var(--state-warning-bg-soft)',  label: 'Needs work', labelFg: 'var(--state-warning-dark)'   }
+  return                 { fg: 'var(--foreground)',  circleFg: 'var(--state-error-text-dark)', bg: 'var(--state-error-bg-soft)',   label: 'At risk',   labelFg: 'var(--state-error-text-dark)' }
 }
 
 export function PastAssessments() {
@@ -140,7 +140,7 @@ export function PastAssessments() {
           </InputGroup>
 
           <Select value={courseFilter} onValueChange={setCourseFilter}>
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-[200px]" aria-label="Filter by course">
               <i className="fa-light fa-graduation-cap me-2" aria-hidden="true" />
               <SelectValue />
             </SelectTrigger>
@@ -153,7 +153,7 @@ export function PastAssessments() {
           </Select>
 
           <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[180px]" aria-label="Sort order">
               <i className="fa-light fa-arrow-down-wide-short me-2" aria-hidden="true" />
               <SelectValue />
             </SelectTrigger>
@@ -237,7 +237,7 @@ function PastRow({
         className="flex flex-col items-center justify-center size-14 rounded-full shrink-0 border-2"
         style={{
           background: t.bg,
-          borderColor: t.fg,
+          borderColor: t.circleFg,
           color: t.fg,
         }}
         aria-hidden="true"
@@ -280,7 +280,7 @@ function PastRow({
 
       {/* Cohort delta + tier label */}
       <div className="hidden md:flex flex-col items-end gap-0.5 shrink-0 w-32">
-        <span className="text-xs font-medium" style={{ color: t.fg }}>{t.label}</span>
+        <span className="text-xs font-medium" style={{ color: t.labelFg }}>{t.label}</span>
         <span
           className="text-xs font-mono tabular-nums"
           style={{ color: deltaPositive ? 'var(--state-success-dark)' : 'var(--state-error-text-dark)' }}

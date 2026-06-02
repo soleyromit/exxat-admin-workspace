@@ -334,11 +334,11 @@ function SystemNotificationsSection() {
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 }}>
                 <span style={{ fontSize: 11, color: t.fgMuted }}>{relativeDate(n.sentAt)}</span>
                 <span style={{
-                  fontSize: 10, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
-                  color: t.fgMuted, opacity: 0.7,
+                  fontSize: 12, fontWeight: 600,
+                  color: t.fgMuted,
                   display: 'flex', alignItems: 'center', gap: 3,
                 }}>
-                  <i className="fa-light fa-envelope" aria-hidden="true" style={{ fontSize: 9 }} />
+                  <i className="fa-light fa-envelope" aria-hidden="true" style={{ fontSize: 12 }} />
                   Email
                 </span>
               </div>

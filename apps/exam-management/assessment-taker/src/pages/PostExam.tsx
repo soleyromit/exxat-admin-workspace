@@ -67,7 +67,7 @@ export function PostExam() {
           <h1 className="font-heading" style={{ fontSize: 26, fontWeight: 700, color: 'var(--state-success-dark)', marginBottom: 8 }}>
             Uploading your responses…
           </h1>
-          <p style={{ fontSize: 14, color: 'var(--state-success-dark)', marginBottom: 28, opacity: 0.8 }}>
+          <p style={{ fontSize: 14, color: 'var(--state-success-dark)', marginBottom: 28 }}>
             Please do not close this window.
           </p>
           <div style={{ width: '100%', height: 8, borderRadius: 99, background: 'rgba(0,0,0,0.1)' }}>
@@ -78,7 +78,7 @@ export function PostExam() {
               transition: 'width 0.25s ease',
             }} />
           </div>
-          <p style={{ fontSize: 13, color: 'var(--state-success-dark)', marginTop: 12, opacity: 0.7 }}>
+          <p style={{ fontSize: 13, color: 'var(--state-success-dark)', marginTop: 12 }}>
             {uploadProgress}% uploaded
           </p>
         </div>

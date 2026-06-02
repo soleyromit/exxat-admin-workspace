@@ -56,7 +56,7 @@ function CourseCard({ course }: { course: CourseCompetency }) {
             <p style={{ fontSize: 12, fontWeight: 700, color: t.fgMuted, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4 }}>
               {course.courseCode}
             </p>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: t.fg }}>{course.courseName}</h3>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: t.fg }}>{course.courseName}</h2>
           </div>
           {haData ? (
             <div style={{ textAlign: 'right' }}>

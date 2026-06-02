@@ -318,12 +318,9 @@ function PrimaryNav() {
                 <span>{item.label}</span>
                 {item.badge && (
                   <Badge
-                    className="ms-auto rounded-full text-[10px] font-semibold gap-0 px-2 group-data-collapsible-icon:hidden"
-                    style={{
-                      backgroundColor: 'var(--brand-color)',
-                      color: 'var(--brand-foreground)',
-                      border: 'none',
-                    }}
+                    variant="outline"
+                    className="ms-auto rounded-full text-xs font-semibold gap-0 px-2 group-data-collapsible-icon:hidden"
+                    style={{ color: 'var(--brand-dark)', borderColor: 'var(--brand-dark)' }}
                   >
                     {item.badge}
                   </Badge>
@@ -358,12 +355,9 @@ function DocumentsNav() {
                 <span>{item.label}</span>
                 {item.badge?.tone === 'beta' && (
                   <Badge
-                    className="ms-auto rounded-full text-[10px] font-semibold px-2 group-data-collapsible-icon:hidden"
-                    style={{
-                      backgroundColor: 'color-mix(in oklch, var(--chart-4) 25%, var(--background))',
-                      color: 'var(--chart-4)',
-                      border: 'none',
-                    }}
+                    variant="outline"
+                    className="ms-auto rounded-full text-xs font-semibold px-2 group-data-collapsible-icon:hidden"
+                    style={{ color: 'var(--muted-foreground)', borderColor: 'var(--border)' }}
                   >
                     {item.badge.text}
                   </Badge>
