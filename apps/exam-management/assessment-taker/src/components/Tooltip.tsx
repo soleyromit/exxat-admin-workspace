@@ -51,11 +51,10 @@ export function Tooltip({
       {visible && (
         <div className="pointer-events-none" style={popupStyle()}>
           <div
-            className="px-3 py-1.5 rounded-md text-xs font-medium max-w-[240px] text-center leading-snug shadow-md border whitespace-nowrap"
+            className="px-2 py-1 rounded text-xs font-medium whitespace-nowrap"
             style={{
-              backgroundColor: 'var(--card)',
-              color: 'var(--foreground)',
-              borderColor: 'var(--border)',
+              backgroundColor: 'var(--foreground)',
+              color: 'var(--background)',
               animation: 'tooltip-in 0.12s ease-out',
             }}
           >
