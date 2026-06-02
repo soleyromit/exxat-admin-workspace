@@ -84,7 +84,7 @@ function SectionStartScreen({
       aria-modal="true"
       aria-labelledby="section-start-title"
       style={{
-        position: 'absolute', inset: 0, zIndex: 200,
+        position: 'fixed', inset: 0, zIndex: 30,
         background: 'var(--background)', display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexDirection: 'column', padding: '40px 24px',
       }}

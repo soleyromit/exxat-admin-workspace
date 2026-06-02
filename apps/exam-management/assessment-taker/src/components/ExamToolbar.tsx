@@ -210,7 +210,7 @@ export function ExamToolbar({
                 aria-label="View keyboard shortcuts"
                 style={{ color: 'var(--muted-foreground)' }}
               >
-                <i className="fa-regular fa-keyboard" aria-hidden="true" style={{ fontSize: 16 }} />
+                <i className="fa-regular fa-command" aria-hidden="true" style={{ fontSize: 16 }} />
               </DSButton>
             </Tooltip>
           )}
