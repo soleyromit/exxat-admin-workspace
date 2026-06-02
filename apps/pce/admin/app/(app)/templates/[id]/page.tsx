@@ -250,7 +250,7 @@ export default function TemplateEditorPage() {
   )
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div className="flex flex-col flex-1 overflow-hidden">{/* overflow-hidden safe — floating uses Radix Portal */}
 
       <SiteHeader
         breadcrumbs={[{ label: 'Templates', href: '/templates' }]}
