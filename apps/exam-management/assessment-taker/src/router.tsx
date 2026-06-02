@@ -20,10 +20,9 @@
  * persistent navigation, notifications, and profile access.
  */
 
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import { NavShell } from './components/NavShell';
 import { AssessmentDashboard } from './pages/AssessmentDashboard';
-import { PreExamFlow } from './pages/PreExamFlow';
 import { PostExam } from './pages/PostExam';
 import { ExamResults } from './pages/ExamResults';
 import { CompetencyDashboard } from './pages/CompetencyDashboard';
@@ -44,9 +43,8 @@ const router = createBrowserRouter([
     ),
   },
   {
-    // Pre-exam flow: password → instructions → accommodations → ready
     path: '/exam/:id/setup',
-    element: <PreExamFlow />,
+    element: <Navigate to="../take" replace />,
   },
   {
     // Exam engine: no NavShell — full-screen lockdown experience
