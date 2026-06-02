@@ -102,48 +102,31 @@ function ImagePanel({ src, alt }: {src: string;alt: string;}) {
     </div>);
 
 }
-// ─── Per-question reference panel ────────────────────────────────────────────
+// ─── Per-question reference panel (embedded in split layout) ─────────────────
 function QuestionReferencePanel({
   references,
-  onClose,
 }: {
   references: NonNullable<Question['references']>;
-  onClose: () => void;
 }) {
   const [activeIdx, setActiveIdx] = useState(0);
   const current = references[activeIdx];
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        top: 57,        // just below the 56px toolbar
-        right: 0,
-        bottom: 56,     // just above the sticky footer
-        width: 'min(380px, 42vw)',
-        zIndex: 30,
-        backgroundColor: 'var(--card)',
-        borderLeft: '1px solid var(--border)',
-        boxShadow: '-6px 0 24px rgba(0,0,0,0.08)',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
+      className="flex-1 min-h-0 overflow-hidden rounded-2xl border shadow-sm flex flex-col"
+      style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}
       role="complementary"
       aria-label="Question reference material"
     >
       {/* Header */}
       <div
         style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '10px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0,
+          padding: '10px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0,
         }}
       >
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)' }}>
+        <p className="text-[0.75em] font-bold" style={{ color: 'var(--muted-foreground)' }}>
           Reference Material
-        </span>
-        <DSButton variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close reference panel">
-          <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 15 }} />
-        </DSButton>
+        </p>
       </div>
 
       {/* Tabs — only when multiple references */}
@@ -174,7 +157,7 @@ function QuestionReferencePanel({
       )}
 
       {/* Content */}
-      <div style={{ flex: 1, overflow: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ flex: 1, overflow: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0 }}>
         {references.length === 1 && (
           <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)' }}>
             {current.label}
@@ -186,6 +169,11 @@ function QuestionReferencePanel({
             src={current.url}
             alt={current.label}
             style={{ width: '100%', height: 'auto', borderRadius: 8, border: '1px solid var(--border)', display: 'block' }}
+          />
+        ) : current.type === 'html' ? (
+          <div
+            dangerouslySetInnerHTML={{ __html: current.url }}
+            style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--foreground)' }}
           />
         ) : (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, minHeight: 0 }}>
@@ -266,7 +254,6 @@ export function SplitQuestionView({
   const [activeTab, setActiveTab] = useState(0);
   const [pdfLoaded, setPdfLoaded] = useState(false);
   const [pdfError, setPdfError] = useState(false);
-  const [showRefPanel, setShowRefPanel] = useState(false);
   const pdfTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
     setActiveTab(0);
@@ -312,7 +299,9 @@ export function SplitQuestionView({
       window.speechSynthesis.cancel();
     }
   };
+  const hasRef = (question.references?.length ?? 0) > 0;
   const hasMedia =
+  hasRef ||
   question.imageUrl ||
   question.videoUrl ||
   question.audioUrl ||
@@ -375,42 +364,6 @@ export function SplitQuestionView({
       </div>
     </div>;
 
-  const renderReferenceBar = () => {
-    if (!question.references?.length) return null;
-    const label = question.references.length > 1
-      ? `${question.references.length} Reference Documents`
-      : question.references[0].label;
-    return (
-      <button
-        onClick={() => setShowRefPanel(v => !v)}
-        aria-label={showRefPanel ? 'Hide reference material' : 'View reference material'}
-        aria-expanded={showRefPanel}
-        style={{
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: '10px 14px',
-          borderRadius: 10,
-          border: `1px solid ${showRefPanel ? 'var(--exam-accent)' : 'var(--border)'}`,
-          backgroundColor: showRefPanel ? 'var(--exam-accent-light)' : 'var(--muted)',
-          color: showRefPanel ? 'var(--exam-accent)' : 'var(--muted-foreground)',
-          cursor: 'pointer',
-          fontSize: '0.875em',
-          fontWeight: 600,
-          textAlign: 'left',
-        }}
-      >
-        <i className="fa-light fa-file-lines" aria-hidden="true" style={{ fontSize: '1em', flexShrink: 0 }} />
-        <span style={{ flex: 1 }}>{label}</span>
-        <i
-          className={`fa-light fa-chevron-${showRefPanel ? 'up' : 'right'}`}
-          aria-hidden="true"
-          style={{ fontSize: '0.75em', flexShrink: 0 }}
-        />
-      </button>
-    );
-  };
 
   /**
    * Renders ONLY the media/context portion — NO answer choices.
@@ -833,11 +786,10 @@ export function SplitQuestionView({
       
       {hasMedia ?
       <div className="flex-1 min-h-0 flex gap-6 overflow-hidden flex-row">
-          {/* LEFT card */}
+          {/* LEFT card — question stem + answers */}
           <div className="w-1/2 min-h-0 overflow-y-auto rounded-2xl border shadow-sm p-[2em] flex flex-col gap-4"
             style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
             {renderQuestionStem()}
-            {renderReferenceBar()}
             <div>
               <h3
                 className="font-semibold text-[1em] mb-4"
@@ -849,16 +801,20 @@ export function SplitQuestionView({
             {renderInlineTools()}
           </div>
 
-          {/* RIGHT card + report below */}
+          {/* RIGHT column — reference panel (if references) or primary media */}
           <div className="w-1/2 min-h-0 flex flex-col gap-3">
-            <div
-              className="flex-1 min-h-0 overflow-y-auto rounded-2xl border shadow-sm p-[2em] flex flex-col gap-4"
-              style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
-              <p className="text-[0.75em] font-bold" style={{ color: 'var(--muted-foreground)' }}>
-                Reference Material
-              </p>
-              {renderMediaOrContext()}
-            </div>
+            {hasRef ? (
+              <QuestionReferencePanel references={question.references!} />
+            ) : (
+              <div
+                className="flex-1 min-h-0 overflow-y-auto rounded-2xl border shadow-sm p-[2em] flex flex-col gap-4"
+                style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
+                <p className="text-[0.75em] font-bold" style={{ color: 'var(--muted-foreground)' }}>
+                  Reference Material
+                </p>
+                {renderMediaOrContext()}
+              </div>
+            )}
             {allowComments && (
               <QuestionCommentBox
                 questionId={question.id}
@@ -879,7 +835,6 @@ export function SplitQuestionView({
             backgroundColor: 'var(--card)'
           }}>
             {renderQuestionStem()}
-            {renderReferenceBar()}
             {renderInteractive()}
             {renderInlineTools()}
             {allowComments && (
@@ -894,13 +849,6 @@ export function SplitQuestionView({
           </div>
         </div>
       }
-
-      {showRefPanel && question.references?.length ? (
-        <QuestionReferencePanel
-          references={question.references}
-          onClose={() => setShowRefPanel(false)}
-        />
-      ) : null}
     </div>);
 
 }
