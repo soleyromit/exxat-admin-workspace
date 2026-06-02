@@ -77,3 +77,32 @@ First snapshot taken for Roadmap-Exam-Management — no diff applied. Next run w
 
 **Why flagged:** AMBIGUOUS — the Excel tracker now shows three new column headers (Product, QA/UAT, Release) where "Requirement Readiness" previously appeared. No feature status values changed (Manage Question Bank = ✅ Aligned, all others = Review Pending or In Progress). The new columns appear to be empty/unpopulated for all features.
 **Suggested action:** Ask Nipun what the "Product", "QA/UAT", and "Release" columns track. If they represent new pipeline stages, consider whether BUILD-STATUS.md should be extended to track QA and release readiness separately from design/engineering readiness.
+
+---
+
+## 2026-06-02 — Flagged: Exam Mgmt Roadmap — Nipun (2 changes)
+
+### Flag 1 — Business alignment confirmed for Assessment Creation & Distribution and In Assessment Experience
+**Changed text (before):**
+> Assessment Creation & Distribution | 🟡 Review Pending (Business)
+> In Assessment Experience | 🟡 Review Pending (Business)
+
+**Changed text (after):**
+> Assessment Creation & Distribution | ✅ Aligned (Business)
+> In Assessment Experience | ✅ Aligned (Business)
+
+**Why flagged:** CLEAR — both features now have confirmed business alignment (stakeholders signed off). Requirements also moved to Done for both features. Does not change BUILD-STATUS feature status (still In Progress — engineering not complete). Step 7b mapping does not apply to "Aligned" values.
+**Suggested action:** Informational. Engineering can proceed on these two features without further business alignment reviews.
+
+---
+
+### Flag 2 — In Assessment Experience engineering blocked; 15th June delivery targets added
+**Changed text (before):** *(no delivery dates or blocking status in prior Excel snapshot)*
+**Changed text (after):**
+> In Assessment Experience: Design 🟡 In Progress (3rd June Delivery), Engineering 🔴 Blocked
+> Comment: "In assessment experience partially complete. To continue on 4th June post design unblock"
+> Assessment Creation & Distribution: Comment: "🟡 Refinements + Product is providing UX fixes for this — 15th June Delivery"
+> Manage Question Bank: QA Comment: "🟢 15th June Delivery"
+
+**Why flagged:** CLEAR — In Assessment Experience engineering is 🔴 Blocked, awaiting design unblock by 4th June. 15th June is the delivery target for both QB (QA complete) and Assessment Creation & Distribution. No BUILD-STATUS feature statuses changed (no step 7b mapping match), but the blocking status is an urgent signal.
+**Suggested action:** If Romit owns the In Assessment Experience design, check what design asset is blocking engineering and prioritize its delivery by 4th June. The 15th June target is 13 days away — confirm whether Assessment Creation & Distribution design refinements are complete or need input.

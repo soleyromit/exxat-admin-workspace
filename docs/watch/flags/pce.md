@@ -126,7 +126,7 @@ First snapshot taken for PCE PRD — Monil Pokar — no diff applied. Next run w
 > Shared Capabilties - PCE and Gen Surveys
 
 **Why flagged:** AMBIGUOUS — the 4-item concrete capability list has been removed and replaced with what appears to be a link or embedded diagram placeholder ("Shared Capabilties - PCE and Gen Surveys"). The architectural detail is no longer visible in the PRD text extraction.
-**Suggested action:** Ask Monil for the "Shared Capabilities" document/diagram. Does the shared architecture still include Survey type, Template engine, Distribution engine, and Analytics foundation? Confirm whether these represent shared DB tables/APIs or just conceptual modules — this affects whether PCE and General Surveys can share a codebase.
+**Suggested action:** Ask Monil for the "Shared Capabilities" document/diagram. Does the shared architecture still include Survey type, Template engine, Distribution engine, and Analytics foundation? Confirm whether these represent shared DB Tables/APIs or just conceptual modules — this affects whether PCE and General Surveys can share a codebase.
 
 ---
 
@@ -142,3 +142,43 @@ First snapshot taken for PCE PRD — Monil Pokar — no diff applied. Next run w
 
 **Why flagged:** CLEAR — two separate faculty-facing user story rows ("Results Review" and "Longitudinal Insights") were consolidated into a single "Analytics" row. The linked distribute-survey user story document was also renamed to "US-Create Survey".
 **Suggested action:** No code change needed. When building analytics views, reference the consolidated "Analytics" user story (not separate per-survey and longitudinal stories). The linked US document name confirms the rename to "Create Survey" flow.
+
+---
+
+## 2026-06-02 — Flagged: PCE PRD — Monil Pokar (4 changes)
+
+### Flag 1 — Key Product Decision 2: PRISM dependency sub-bullets added (AMBIGUOUS)
+**Changed text (before):** "Semester (Term + Academic Year), start date, end date and Course offerings (courseID, Course Name, Term, Academic Year) must be created in PRISM to enable CE distribution."
+**Changed text (after):** Same, plus new sub-bullets:
+> a. Dependency on availability of course offerings in PRISM - base
+> b. This will not work for schools that don't have term and course data in PRISM. They need to add the data in PRISM to run CE distribution
+
+**Why flagged:** Contains "Dependency on" — AMBIGUOUS. Sub-bullet b reveals a scope limitation: CE distribution is blocked for schools that haven't imported term and course data into Prism. No manual fallback path is defined for Phase 1.
+**Suggested action:** Confirm with Monil whether a manual data-entry path is planned for Phase 1 for schools without Prism course data, or if CE is Prism-only. This affects the onboarding strategy for non-Prism clients.
+
+---
+
+### Flag 2 — Flow 2b: Entire new "AI Native / Run Evaluation" flow added
+**Changed text (before):** *(section did not exist)*
+**Changed text (after):** New section — Flow 2b — Distribute Survey (AI Native / Run Evaluation): Admin receives an email at start of academic calendar, lands on Run Evaluation page, selects chips (Term | AY | Program), clicks "Run Audit", an AI agent panel (Leo) scans courses and flags issues one by one, presents a pre-filled survey window for confirmation, surfaces course tiles with Ready/Fix status badges, Push Surveys button activates with shimmer only when all conditions met.
+
+**Why flagged:** Major new feature section with significant UX scope — includes AI agent (Leo) with animated orb, scan-message animation, shimmer button, and conditional course tile states. Non-functional scope addition → no code action applied. This may supersede or complement the previously confirmed 5-step wizard (Flow 2a).
+**Suggested action:** Review with Monil — is Flow 2b the primary distribute-survey flow for Phase 1, or an alternate path alongside the 5-step wizard? If Flow 2b is the primary path, the stepper-based wizard design from earlier PRD iterations may be replaced by this AI-native audit interface.
+
+---
+
+### Flag 3 — Step 3: Instructor section renders per instructor count
+**Changed text (before):** "Survey renders one section at a time (Subject: Course Content, Instructor, Course Coordinator)"
+**Changed text (after):** Same, plus "The Instructor section will render for number of Instructor in the course"
+
+**Why flagged:** CLEAR behavioral clarification — if a course has 2 instructors, the Instructor section renders twice (once per instructor). Non-functional → no code action applied.
+**Suggested action:** When building the student survey form (apps/pce/student/), ensure the Instructor section is repeated N times based on the instructor count from the course offering. Confirm with Monil the section title pattern when N > 1 (e.g., "Instructor 1", "Instructor 2" or instructor name as label).
+
+---
+
+### Flag 4 — Step 3: Submitted surveys remain visible to students in Submitted state
+**Changed text (before):** "Once submitted, the survey moves to submitted state"
+**Changed text (after):** "Once submitted, the survey moves to submitted state. The survey with Submitted state will also be shown"
+
+**Why flagged:** CLEAR behavioral addition — submitted surveys remain visible to students (in a Submitted state) rather than disappearing from the student portal after submission. Student-facing display change.
+**Suggested action:** When building apps/pce/student/, show submitted surveys with a Submitted status badge in the student's survey list. Confirm with Monil whether students see submission timestamp or just the Submitted label.

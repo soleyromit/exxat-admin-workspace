@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-05-25",
+  "lastUpdated": "2026-06-02",
   "decisions": [
     {
       "id": "pce-decision-001",
@@ -299,6 +299,16 @@
       "source": "Question bank design — move/copy options, design system alignment, and setup entities transcript — May 20, 2026",
       "sourceType": "transcript",
       "date": "2026-05-20",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-018",
+      "product": "pce",
+      "text": "FAAS UI will be used as-is for question creation in the PCE template builder. The trade-off is user experience — FAAS UI follows the old design system while CE is built on the new design system.",
+      "stakeholder": "Monil Pokar",
+      "source": "PCE PRD §12 Dependencies and Risks — FAAS UI",
+      "sourceType": "prd",
+      "date": "2026-06-02",
       "status": "confirmed"
     }
   ]

@@ -432,6 +432,87 @@
       "title": "Granola intake — 13 new Exam Management decisions from May 19–22 transcripts",
       "what": "Extracted 13 confirmed Exam Management design decisions from four transcripts (Assessment creation workflows and question bank design — May 19; Question bank design — move/copy options — May 20; Assessment PRD — accessibility standards, offline exam download, and parity with ExamSoft — May 21; Assessment question design — AI features, scoring, and workflow — May 22). Decisions cover: offline exam download in scope, question bank at base course level, question-level review deferred 1+ year, no standalone assessments in phase 1 UI, three roles (Admin/Coordinator/Collaborator), review separate from results access, assignments deprioritized, AI tagging always runs with manual override precedence, rationale stored at QB level, option position randomization as ExamSoft parity, 4 assessment creation methods (copy/AI/import/manual), phase 1 accessibility targets (200% zoom, text-to-speech, dyslexic font, high contrast), and point-by-serial as text not bar. Added as exam-decision-001 through exam-decision-013.",
       "source": "Assessment creation workflows and question bank design transcript — May 19, 2026; Question bank design — move/copy options, design system alignment, and setup entities transcript — May 20, 2026; Assessment PRD — accessibility standards, offline exam download, and parity with ExamSoft transcript — May 21, 2026; Assessment question design — AI features, scoring, and workflow transcript — May 22, 2026"
+    },
+    {
+      "id": "2026-06-02-pce-flagged-001",
+      "date": "2026-06-02",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD — Key Product Decision 2: PRISM dependency sub-bullets added (AMBIGUOUS)",
+      "what": "Decision 2 gained two sub-bullets: (a) Dependency on availability of course offerings in PRISM-base; (b) This will not work for schools that don't have term and course data in PRISM.",
+      "why": "Contains 'Dependency on' — AMBIGUOUS. Reveals that CE distribution is blocked for non-Prism schools. No fallback path defined.",
+      "source": "PCE PRD §2 Key Product Decisions #2",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-02-pce-flagged-002",
+      "date": "2026-06-02",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD — New Flow 2b: AI Native / Run Evaluation flow added",
+      "what": "Entire new section describing an AI-native evaluate distribution flow: admin email trigger, Run Evaluation page, Leo agent panel with animated orb, per-course audit (flags missing faculty/students/dates), survey window confirmation, course tiles with Ready/Fix states, conditional Push Surveys activation.",
+      "why": "Major new feature scope. Non-functional scope addition — no code action applied. May supersede or complement the 5-step wizard (Flow 2a) previously flagged.",
+      "source": "PCE PRD §4 Key User Flows — Flow 2b",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-02-pce-flagged-003",
+      "date": "2026-06-02",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD — Step 3: Instructor section renders per instructor count",
+      "what": "Step 3 Response Collection clarified: the Instructor section renders N times based on the number of instructors assigned to the course.",
+      "why": "CLEAR behavioral clarification — non-functional. No code action applied.",
+      "source": "PCE PRD §4 Key User Flows — Step 3 Response Collection",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-02-pce-flagged-004",
+      "date": "2026-06-02",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD — Step 3: Submitted surveys remain visible to students in Submitted state",
+      "what": "Step 3 clarified: after submission, the survey remains visible to the student with Submitted state shown (not hidden/removed from student portal).",
+      "why": "CLEAR behavioral addition. Student-facing display change — no code action applied (student app not yet built).",
+      "source": "PCE PRD §4 Key User Flows — Step 3 Response Collection",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-02-pce-decision-001",
+      "date": "2026-06-02",
+      "product": "pce",
+      "type": "decision-extracted",
+      "title": "PCE PRD — Decision extracted: FAAS UI used as-is for template question creation (pce-decision-018)",
+      "what": "New decision: FAAS UI will be used as-is for question creation in the template builder. The trade-off is user experience — FAAS UI follows the old design system while CE is built on the new design system.",
+      "source": "PCE PRD §12 Dependencies and Risks — FAAS UI row"
+    },
+    {
+      "id": "2026-06-02-exam-management-build-status-001",
+      "date": "2026-06-02",
+      "product": "exam-management",
+      "type": "prd-change",
+      "title": "BUILD-STATUS last updated date bumped to 2026-06-02",
+      "what": "No feature statuses changed in this run (no step 7b mapping match — Excel uses Aligned/Review Pending in Business column, not Completed/In Progress). Last updated date updated to today.",
+      "why": "Nipun's roadmap Excel synced — business alignment confirmed for Assessment Creation & Distribution and In Assessment Experience. Engineering blocked on In Assessment Experience (flagged separately).",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
+      "severity": null,
+      "files": ["docs/BUILD-STATUS.md"]
+    },
+    {
+      "id": "2026-06-02-exam-flagged-001",
+      "date": "2026-06-02",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "Exam Roadmap — Business alignment confirmed for 2 features; In Assessment Experience engineering blocked",
+      "what": "Assessment Creation & Distribution and In Assessment Experience business alignment changed from Review Pending to Aligned. In Assessment Experience engineering now shows 🔴 Blocked (comment: 'To continue on 4th June post design unblock'). 15th June delivery targets added for QB (QA) and Assessment Creation & Distribution.",
+      "why": "CLEAR alignment update. Blocking status on In Assessment Experience is an urgent signal. No BUILD-STATUS feature status changes (no step 7b mapping match).",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
+      "severity": null,
+      "files": []
     }
   ]
 }
