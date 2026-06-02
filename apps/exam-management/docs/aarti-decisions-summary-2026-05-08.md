@@ -7,7 +7,7 @@
 > **Status:** living document. Update as new meetings audit through the intake skill.
 
 **Maintainer:** Romit Soley (Designer II)
-**Last revision:** 2026-05-09
+**Last revision:** 2026-06-02
 
 ---
 
@@ -914,6 +914,29 @@ Source: `docs/research/meetings/2026-05-28-design-priorities-bandwidth.md` (Gran
 
 ---
 
+### 5.56 Assessment taker — question label format, navigation panel, and accessibility (2026-06-01)
+
+Source: `docs/research/meetings/2026-06-01-exam-taker-navigation-rohit.md` (Granola `caaae283`)  
+Participants: Romit + Rohit. Design review before dev handoff. Nipun + Vishal to review next day.
+
+**Question label format: remove "Question N" prefix.** Rohit: *"The word question is redundant because we know everything is a question. You can simply put it as seven dot [stem]."* **APPLIED:** `SplitQuestionView.tsx` — removed separate `<span>Question {N}</span>` heading, merged to `{N}. {stem}` inline in the `<h2>`. D_AT01.
+
+**Navigation panel: surface only flagged questions.** Rohit: *"Only flagged can be surfaced here. After I answer a lot of questions, I don't need the answered questions. I only need the flagged ones."* Answered count shown as summary chip at top; not listed individually. DESIGN-REVIEW — T78, extends T35. D_AT02.
+
+**Navigation position: move to LEFT.** Rohit: *"I don't want the student's cursor to move across too much. Always surface the questions on the left."* References USMLE/GRE/GMAT layout. Major layout change — T79. D_AT03.
+
+**Keyboard shortcuts: must support full mouse-free navigation (WCAG accessibility).** Rohit: *"Somebody who has an accessibility issue... should be able to completely use the exam without any mouse."* All shortcuts exposed via a button-triggered modal. T80. D_AT08.
+
+**"Flag" vocabulary split: Bookmark + Report an issue.** Romit proposed, Rohit agreed. "Flag" is ambiguous — currently serves two separate student intents. Two distinct flows needed. T81. D_AT05.
+
+**"Report an issue" button: de-emphasize.** Rohit: *"Flagging a question for faculty's review is not something you come across regularly. Put it inside the settings button or somewhere at the bottom."* T82. D_AT06.
+
+**Audio/video support: NOT Phase 1.** Rohit: *"We are actually not supporting audio in the first phase. Because that is still not a common thing that people ask."* Already noted in `PreExamFlow.tsx` comment. D_AT07.
+
+**DS accessibility gaps: Himanshu nudge.** Color blindness simulation, voice narrator, calculator/keyboard not covered in current DS. Rohit to raise with Himanshu. Action item only — no code change. D_AT10.
+
+---
+
 ## 6.13 PCE — Navigation structure, moderation placement, and survey list redesign (2026-05-28)
 
 Source: `apps/pce/docs/research/meetings/2026-05-28-survey-template-moderation-monil.md` (Granola `81beffd7`)
@@ -965,6 +988,7 @@ In the create-survey flow, a report access step shows which roles can see which 
 | 2026-05-28 10:04 | Design priorities and bandwidth planning — question bank, student experience, and assessment | `9781e589` | Nipun + Vishal + Romit |
 | 2026-05-28 10:33 | Assessment setup and AI automation features for exam management | `925fa644` | Nipun + Vishal + Romit |
 | 2026-05-28 09:30 | Survey and template design — layout, moderation, and report access with Monil | `81beffd7` | Monil + Romit |
+| 2026-06-01 10:16 | Exam taker design review — navigation, question layout, and accessibility with Rohit | `caaae283` | Rohit + Romit |
 
 Per-meeting raw notes at `apps/exam-management/docs/research/meetings/` and `apps/pce/docs/research/meetings/`.
 
