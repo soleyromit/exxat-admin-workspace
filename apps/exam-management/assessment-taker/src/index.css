@@ -25,10 +25,10 @@
   /* Shadow tokens — sized for exam-card depth */
   --shadow-card:  rgba(0, 0, 0, 0.06);
   --shadow-heavy: rgba(0, 0, 0, 0.15);
-  --shadow-brand: color-mix(in oklch, var(--brand-color) 30%, transparent);
+  --shadow-brand: color-mix(in srgb, var(--brand-color) 30%, transparent);
 
   /* Avatar initials — derived from brand */
-  --avatar-initials-bg: color-mix(in oklch, var(--brand-color) 14%, var(--background));
+  --avatar-initials-bg: color-mix(in srgb, var(--brand-color) 14%, var(--background));
   --avatar-initials-fg: var(--brand-color-dark);
 
   /* ─── Exam state tokens · derived from DS chart palette ────────────────────
@@ -43,57 +43,57 @@
      ────────────────────────────────────────────────────────────────────── */
 
   /* Exam state — answered / flagged / current */
-  --state-answered-bg:     color-mix(in oklch, var(--chart-2) 14%, var(--background));
-  --state-answered-border: color-mix(in oklch, var(--chart-2) 50%, var(--background));
-  --state-answered-text:   color-mix(in oklch, var(--chart-2) 80%, var(--foreground));
-  --state-flagged-bg:      color-mix(in oklch, var(--chart-4) 18%, var(--background));
-  --state-flagged-border:  color-mix(in oklch, var(--chart-4) 60%, var(--background));
-  --state-flagged-text:    color-mix(in oklch, var(--chart-4) 80%, var(--foreground));
+  --state-answered-bg:     color-mix(in srgb, var(--chart-2) 14%, var(--background));
+  --state-answered-border: color-mix(in srgb, var(--chart-2) 50%, var(--background));
+  --state-answered-text:   color-mix(in srgb, var(--chart-2) 80%, var(--foreground));
+  --state-flagged-bg:      color-mix(in srgb, var(--chart-4) 18%, var(--background));
+  --state-flagged-border:  color-mix(in srgb, var(--chart-4) 60%, var(--background));
+  --state-flagged-text:    color-mix(in srgb, var(--chart-4) 80%, var(--foreground));
 
   /* Exam-accent · maps to DS chart-1 (indigo) — kept distinct from brand
      so the question chrome stays neutral while brand stays for primary CTAs. */
   --exam-accent:        var(--chart-1);
-  --exam-accent-hover:  color-mix(in oklch, var(--chart-1) 90%, var(--foreground));
-  --exam-accent-light:  color-mix(in oklch, var(--chart-1) 8%, var(--background));
-  --exam-accent-border: color-mix(in oklch, var(--chart-1) 35%, var(--background));
-  --exam-accent-mid:    color-mix(in oklch, var(--chart-1) 75%, var(--background));
+  --exam-accent-hover:  color-mix(in srgb, var(--chart-1) 90%, var(--foreground));
+  --exam-accent-light:  color-mix(in srgb, var(--chart-1) 8%, var(--background));
+  --exam-accent-border: color-mix(in srgb, var(--chart-1) 35%, var(--background));
+  --exam-accent-mid:    color-mix(in srgb, var(--chart-1) 75%, var(--background));
 
   /* Status / banner palettes */
   --state-success-text:     var(--chart-2);
-  --state-success-bg:       color-mix(in oklch, var(--chart-2) 8%, var(--background));
-  --state-success-accent:   color-mix(in oklch, var(--chart-2) 50%, var(--background));
-  --state-success-bg-soft:  color-mix(in oklch, var(--chart-2) 14%, var(--background));
-  --state-success-dark:     color-mix(in oklch, var(--chart-2) 80%, var(--foreground));
+  --state-success-bg:       color-mix(in srgb, var(--chart-2) 8%, var(--background));
+  --state-success-accent:   color-mix(in srgb, var(--chart-2) 50%, var(--background));
+  --state-success-bg-soft:  color-mix(in srgb, var(--chart-2) 14%, var(--background));
+  --state-success-dark:     color-mix(in srgb, var(--chart-2) 80%, var(--foreground));
   --state-warning-text:     var(--chart-4);
-  --state-warning-bg:       color-mix(in oklch, var(--chart-4) 8%, var(--background));
-  --state-warning-accent:   color-mix(in oklch, var(--chart-4) 50%, var(--background));
-  --state-warning-bg-soft:  color-mix(in oklch, var(--chart-4) 18%, var(--background));
-  --state-warning-border:   color-mix(in oklch, var(--chart-4) 30%, var(--background));
-  --state-warning-dark:     color-mix(in oklch, var(--chart-4) 90%, var(--foreground));
-  --state-warning-darkest:  color-mix(in oklch, var(--chart-4) 80%, var(--foreground));
+  --state-warning-bg:       color-mix(in srgb, var(--chart-4) 8%, var(--background));
+  --state-warning-accent:   color-mix(in srgb, var(--chart-4) 50%, var(--background));
+  --state-warning-bg-soft:  color-mix(in srgb, var(--chart-4) 18%, var(--background));
+  --state-warning-border:   color-mix(in srgb, var(--chart-4) 30%, var(--background));
+  --state-warning-dark:     color-mix(in srgb, var(--chart-4) 90%, var(--foreground));
+  --state-warning-darkest:  color-mix(in srgb, var(--chart-4) 80%, var(--foreground));
   --state-info-blue-dark:   var(--chart-1);
-  --state-info-blue-bg:     color-mix(in oklch, var(--chart-1) 8%, var(--background));
-  --state-info-blue-border: color-mix(in oklch, var(--chart-1) 35%, var(--background));
-  --state-info-blue-mid:    color-mix(in oklch, var(--chart-1) 75%, var(--background));
+  --state-info-blue-bg:     color-mix(in srgb, var(--chart-1) 8%, var(--background));
+  --state-info-blue-border: color-mix(in srgb, var(--chart-1) 35%, var(--background));
+  --state-info-blue-mid:    color-mix(in srgb, var(--chart-1) 75%, var(--background));
   /* Error → chart-5 (orange) per Aarti's no-red rule (memory:
      project_exam_aarti_decisions). Reserve --destructive for true
      destructive confirmations only. */
   --state-error-accent:     var(--chart-5);
-  --state-error-text-dark:  color-mix(in oklch, var(--chart-5) 90%, var(--foreground));
-  --state-error-bg-soft:    color-mix(in oklch, var(--chart-5) 8%, var(--background));
-  --state-error-border-soft:color-mix(in oklch, var(--chart-5) 30%, var(--background));
-  --state-bar-fail:         color-mix(in oklch, var(--chart-5) 60%, var(--background));
+  --state-error-text-dark:  color-mix(in srgb, var(--chart-5) 90%, var(--foreground));
+  --state-error-bg-soft:    color-mix(in srgb, var(--chart-5) 8%, var(--background));
+  --state-error-border-soft:color-mix(in srgb, var(--chart-5) 30%, var(--background));
+  --state-bar-fail:         color-mix(in srgb, var(--chart-5) 60%, var(--background));
 
   /* Required-field pill — same family as flagged/warning */
-  --required-text:   color-mix(in oklch, var(--chart-4) 80%, var(--foreground));
-  --required-bg:     color-mix(in oklch, var(--chart-4) 8%, var(--background));
-  --required-border: color-mix(in oklch, var(--chart-4) 30%, var(--background));
+  --required-text:   color-mix(in srgb, var(--chart-4) 80%, var(--foreground));
+  --required-bg:     color-mix(in srgb, var(--chart-4) 8%, var(--background));
+  --required-border: color-mix(in srgb, var(--chart-4) 30%, var(--background));
 
   /* Highlight / cross-out (exam annotation tools) — neutral: no chart color injection */
-  --highlight-bg:     color-mix(in oklch, var(--foreground) 8%, var(--background));
-  --highlight-bg-end: color-mix(in oklch, var(--foreground) 12%, var(--background));
+  --highlight-bg:     color-mix(in srgb, var(--foreground) 8%, var(--background));
+  --highlight-bg-end: color-mix(in srgb, var(--foreground) 12%, var(--background));
   --highlight-text:   var(--foreground);
-  --highlight-shadow: color-mix(in oklch, var(--foreground) 12%, transparent);
+  --highlight-shadow: color-mix(in srgb, var(--foreground) 12%, transparent);
   --crossout-text:    var(--muted-foreground);
   --crossout-opacity: 0.45;
 }
@@ -316,9 +316,9 @@ html body [data-slot="sidebar-menu-button"][data-state="open"] {
 
 /* ─── Mic pulse ring (rose-tinted) ───────────────────────────────────────── */
 @keyframes pulse-ring {
-  0%   { box-shadow: 0 0 0 0   color-mix(in oklch, var(--brand-color) 50%, transparent); }
-  70%  { box-shadow: 0 0 0 8px color-mix(in oklch, var(--brand-color)  0%, transparent); }
-  100% { box-shadow: 0 0 0 0   color-mix(in oklch, var(--brand-color)  0%, transparent); }
+  0%   { box-shadow: 0 0 0 0   color-mix(in srgb, var(--brand-color) 50%, transparent); }
+  70%  { box-shadow: 0 0 0 8px color-mix(in srgb, var(--brand-color)  0%, transparent); }
+  100% { box-shadow: 0 0 0 0   color-mix(in srgb, var(--brand-color)  0%, transparent); }
 }
 .mic-pulse-ring { animation: pulse-ring 1.5s ease-out infinite; }
 

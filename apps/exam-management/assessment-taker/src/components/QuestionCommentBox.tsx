@@ -65,7 +65,7 @@ export function QuestionCommentBox({ questionId, initialComment = '', onSave, is
         </Button>
       </div>
 
-      <p className="text-xs mb-3" style={{ color: 'var(--state-warning-dark)' }}>
+      <p className="text-xs mb-3" style={{ color: 'var(--foreground)' }}>
         Describe the issue (typo, ambiguous wording, suspected error). Faculty will review post-exam — you will not receive a real-time response.
       </p>
 
@@ -96,6 +96,7 @@ export function QuestionCommentBox({ questionId, initialComment = '', onSave, is
           )}
         </span>
         <Button
+          variant="default"
           size="sm"
           onClick={handleSave}
           disabled={text.trim().length === 0}
