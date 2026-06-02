@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+
 interface TooltipProps {
   content: string;
   children: React.ReactElement;
@@ -6,6 +7,7 @@ interface TooltipProps {
   delay?: number;
   disabled?: boolean;
 }
+
 export function Tooltip({
   content,
   children,
@@ -14,104 +16,53 @@ export function Tooltip({
   disabled = false,
 }: TooltipProps) {
   const [visible, setVisible] = useState(false);
-  const [coords, setCoords] = useState({
-    x: 0,
-    y: 0
-  });
-  const triggerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
   const show = () => {
     if (disabled) return;
-    timeoutRef.current = setTimeout(() => {
-      setVisible(true);
-    }, delay);
+    timeoutRef.current = setTimeout(() => setVisible(true), delay);
   };
   const hide = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setVisible(false);
   };
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, []);
-  useEffect(() => {
-    if (visible && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      switch (position) {
-        case 'top':
-          setCoords({
-            x: rect.left + rect.width / 2,
-            y: rect.top - 8
-          });
-          break;
-        case 'bottom':
-          setCoords({
-            x: rect.left + rect.width / 2,
-            y: rect.bottom + 8
-          });
-          break;
-        case 'left':
-          setCoords({
-            x: rect.left - 8,
-            y: rect.top + rect.height / 2
-          });
-          break;
-        case 'right':
-          setCoords({
-            x: rect.right + 8,
-            y: rect.top + rect.height / 2
-          });
-          break;
-      }
-    }
-  }, [visible, position]);
-  const getTransformOrigin = () => {
+
+  useEffect(() => () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); }, []);
+
+  const popupStyle = (): React.CSSProperties => {
+    const GAP = 6;
     switch (position) {
-      case 'top':
-        return 'translateX(-50%) translateY(-100%)';
-      case 'bottom':
-        return 'translateX(-50%)';
-      case 'left':
-        return 'translateX(-100%) translateY(-50%)';
-      case 'right':
-        return 'translateY(-50%)';
+      case 'top':    return { position: 'absolute', bottom: `calc(100% + ${GAP}px)`, left: '50%', transform: 'translateX(-50%)', zIndex: 9999 };
+      case 'bottom': return { position: 'absolute', top: `calc(100% + ${GAP}px)`,    left: '50%', transform: 'translateX(-50%)', zIndex: 9999 };
+      case 'left':   return { position: 'absolute', right: `calc(100% + ${GAP}px)`,  top: '50%',  transform: 'translateY(-50%)', zIndex: 9999 };
+      case 'right':  return { position: 'absolute', left: `calc(100% + ${GAP}px)`,   top: '50%',  transform: 'translateY(-50%)', zIndex: 9999 };
     }
   };
+
   return (
     <div
-      ref={triggerRef}
-      className="inline-flex"
+      className="inline-flex relative"
       onMouseEnter={show}
       onMouseLeave={hide}
       onFocus={show}
-      onBlur={hide}>
-      
+      onBlur={hide}
+    >
       {children}
-      {visible &&
-      <div
-        className="fixed z-[9999] pointer-events-none"
-        style={{
-          left: coords.x,
-          top: coords.y,
-          transform: getTransformOrigin()
-        }}>
-        
+      {visible && (
+        <div className="pointer-events-none" style={popupStyle()}>
           <div
-          className="px-3 py-2 rounded-lg text-xs font-medium max-w-[240px] text-center leading-snug shadow-lg border backdrop-blur-sm"
-          style={{
-            backgroundColor: 'var(--card)',
-            color: 'var(--foreground)',
-            borderColor: 'var(--border)',
-            boxShadow:
-            '0 4px 16px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08)',
-            animation: 'tooltip-in 0.15s ease-out'
-          }}>
-          
+            className="px-3 py-1.5 rounded-md text-xs font-medium max-w-[240px] text-center leading-snug shadow-md border whitespace-nowrap"
+            style={{
+              backgroundColor: 'var(--card)',
+              color: 'var(--foreground)',
+              borderColor: 'var(--border)',
+              animation: 'tooltip-in 0.12s ease-out',
+            }}
+          >
             {content}
           </div>
         </div>
-      }
-    </div>);
-
+      )}
+    </div>
+  );
 }
