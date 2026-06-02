@@ -99,7 +99,7 @@ export function SurveysHub({ mode }: { mode: 'course_evaluation' | 'general' }) 
   const [closeSurvey, setCloseSurvey] = useState<PceSurvey | null>(null)
 
   const isGeneral = mode === 'general'
-  const title = isGeneral ? 'Programmatic Surveys' : 'Evaluations'
+  const title = isGeneral ? 'Surveys' : 'Evaluations'
   const pushHref = isGeneral ? '/surveys/push?mode=programmatic' : '/surveys/push'
   const pushLabel = isGeneral ? 'Push surveys' : 'Push Evaluations'
 
