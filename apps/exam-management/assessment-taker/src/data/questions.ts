@@ -33,6 +33,9 @@ export interface Question {
   audioUrl?: string;
   pdfUrl?: string;
 
+  // Per-question supplementary reference material (image or PDF)
+  references?: Array<{ url: string; type: 'image' | 'pdf'; label: string }>;
+
   // Caption for media (audio, video, chart)
   caption?: string;
 
@@ -89,7 +92,14 @@ export const questions: Question[] = [
   type: 'mcq',
   options: ['Chest pain', 'Skin rash', 'Hearing loss', 'Blurred vision'],
   points: 5,
-  required: true
+  required: true,
+  references: [
+    {
+      url: 'https://images.unsplash.com/photo-1559757175-5700dde675bc?w=900&q=80',
+      type: 'image',
+      label: 'ECG Strip',
+    },
+  ],
 },
 {
   id: 2,
@@ -101,9 +111,20 @@ export const questions: Question[] = [
   'Atenolol',
   'Amlodipine',
   'Propranolol'],
-
   points: 10,
-  required: true
+  required: true,
+  references: [
+    {
+      url: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=900&q=80',
+      type: 'image',
+      label: 'Drug Reference Chart',
+    },
+    {
+      url: 'https://www.w3.org/WAI/WCAG21/wcag21.pdf',
+      type: 'pdf',
+      label: 'Pharmacology Guide',
+    },
+  ],
 },
 {
   id: 3,

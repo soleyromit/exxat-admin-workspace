@@ -102,6 +102,117 @@ function ImagePanel({ src, alt }: {src: string;alt: string;}) {
     </div>);
 
 }
+// ─── Per-question reference panel ────────────────────────────────────────────
+function QuestionReferencePanel({
+  references,
+  onClose,
+}: {
+  references: NonNullable<Question['references']>;
+  onClose: () => void;
+}) {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const current = references[activeIdx];
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 57,        // just below the 56px toolbar
+        right: 0,
+        bottom: 56,     // just above the sticky footer
+        width: 'min(380px, 42vw)',
+        zIndex: 30,
+        backgroundColor: 'var(--card)',
+        borderLeft: '1px solid var(--border)',
+        boxShadow: '-6px 0 24px rgba(0,0,0,0.08)',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+      role="complementary"
+      aria-label="Question reference material"
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '10px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0,
+        }}
+      >
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)' }}>
+          Reference Material
+        </span>
+        <DSButton variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close reference panel">
+          <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 15 }} />
+        </DSButton>
+      </div>
+
+      {/* Tabs — only when multiple references */}
+      {references.length > 1 && (
+        <div
+          style={{
+            display: 'flex', flexShrink: 0,
+            backgroundColor: 'var(--muted)', borderBottom: '1px solid var(--border)',
+          }}
+        >
+          {references.map((ref, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveIdx(i)}
+              style={{
+                padding: '8px 14px', fontSize: 12, fontWeight: activeIdx === i ? 700 : 500,
+                color: activeIdx === i ? 'var(--foreground)' : 'var(--muted-foreground)',
+                borderBottom: activeIdx === i ? '2px solid var(--foreground)' : '2px solid transparent',
+                backgroundColor: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap',
+              }}
+              role="tab"
+              aria-selected={activeIdx === i}
+            >
+              {ref.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Content */}
+      <div style={{ flex: 1, overflow: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {references.length === 1 && (
+          <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)' }}>
+            {current.label}
+          </p>
+        )}
+
+        {current.type === 'image' ? (
+          <img
+            src={current.url}
+            alt={current.label}
+            style={{ width: '100%', height: 'auto', borderRadius: 8, border: '1px solid var(--border)', display: 'block' }}
+          />
+        ) : (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, minHeight: 0 }}>
+            <iframe
+              src={current.url}
+              title={current.label}
+              style={{ flex: 1, border: 'none', borderRadius: 8, minHeight: 360, width: '100%' }}
+            />
+            <a
+              href={current.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontSize: 12, color: 'var(--exam-accent)', textDecoration: 'none',
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+              }}
+            >
+              <i className="fa-light fa-arrow-up-right-from-square" aria-hidden="true" style={{ fontSize: 11 }} />
+              Open in new tab
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 import {
   RadioMCQRenderer,
   CheckboxRenderer,
@@ -155,6 +266,7 @@ export function SplitQuestionView({
   const [activeTab, setActiveTab] = useState(0);
   const [pdfLoaded, setPdfLoaded] = useState(false);
   const [pdfError, setPdfError] = useState(false);
+  const [showRefPanel, setShowRefPanel] = useState(false);
   const pdfTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
     setActiveTab(0);
@@ -243,8 +355,25 @@ export function SplitQuestionView({
           {question.text}
         </h2>
 
-        {/* Bookmark icon — right-aligned, top-anchored */}
+        {/* Reference + Bookmark buttons — right-aligned, top-anchored */}
         <div className="flex items-center gap-0.5 shrink-0">
+          {question.references?.length ? (
+            <Tooltip content={showRefPanel ? 'Close reference' : 'View reference material'} position="bottom">
+              <DSButton
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setShowRefPanel(v => !v)}
+                aria-label={showRefPanel ? 'Close reference material' : 'Open reference material'}
+                aria-expanded={showRefPanel}
+                style={showRefPanel ? {
+                  backgroundColor: 'var(--exam-accent-light)',
+                  color: 'var(--exam-accent)',
+                } : { color: 'var(--muted-foreground)' }}
+              >
+                <i className="fa-light fa-book-open" aria-hidden="true" style={{ fontSize: '1em' }} />
+              </DSButton>
+            </Tooltip>
+          ) : null}
           {onToggleFlag && (
             <Tooltip content={isFlagged ? 'Remove bookmark' : 'Bookmark'} position="bottom">
               <DSButton
@@ -745,6 +874,13 @@ export function SplitQuestionView({
           </div>
         </div>
       }
+
+      {showRefPanel && question.references?.length ? (
+        <QuestionReferencePanel
+          references={question.references}
+          onClose={() => setShowRefPanel(false)}
+        />
+      ) : null}
     </div>);
 
 }
