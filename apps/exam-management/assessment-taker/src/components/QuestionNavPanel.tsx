@@ -141,7 +141,7 @@ export function QuestionNavPanel({
     };
     switch (status) {
       case 'current':
-        return { ...base, background: 'var(--brand-color)', color: '#fff', boxShadow: '0 0 0 3px var(--brand-tint)', border: '2px solid transparent' };
+        return { ...base, background: 'var(--brand-color)', color: 'var(--background)', boxShadow: '0 0 0 3px var(--brand-tint)', border: '2px solid transparent' };
       case 'current-flagged':
         // Flagged amber fill + brand ring — signals both "viewing now" and "marked for review"
         return { ...base, background: 'var(--state-flagged-bg)', color: 'var(--state-flagged-text)', boxShadow: '0 0 0 3px var(--brand-tint)', border: '2px solid var(--brand-color)' };
@@ -208,7 +208,7 @@ export function QuestionNavPanel({
       case 'flagged':         return { ...base, background: 'var(--state-flagged-bg)', color: 'var(--state-flagged-text)' };
       case 'current-flagged': return { ...base, background: 'var(--state-flagged-bg)', color: 'var(--state-flagged-text)' };
       case 'answered':        return { ...base, background: 'var(--muted)', color: 'var(--foreground)' };
-      case 'current':         return { ...base, background: 'var(--brand-color)', color: '#fff' };
+      case 'current':         return { ...base, background: 'var(--brand-color)', color: 'var(--background)' };
       case 'locked':          return { ...base, background: 'var(--muted)', color: 'var(--muted-foreground)' };
       default:                return { ...base, background: 'var(--muted)', color: 'var(--muted-foreground)', border: '1px solid var(--border)' };
     }

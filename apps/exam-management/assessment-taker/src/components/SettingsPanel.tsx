@@ -1,15 +1,16 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Button as DSButton,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
-  Kbd as DSKbd,
 } from '@exxat/ds/packages/ui/src';
+
 export type ColorBlindMode =
-'none' |
-'protanopia' |
-'deuteranopia' |
-'tritanopia' |
-'achromatopsia';
+  | 'none'
+  | 'protanopia'
+  | 'deuteranopia'
+  | 'tritanopia'
+  | 'achromatopsia';
+
 export interface SettingsPanelProps {
   isOpen: boolean;
   onClose: () => void;
@@ -27,7 +28,13 @@ export interface SettingsPanelProps {
   colorBlindMode?: ColorBlindMode;
   onColorBlindModeChange?: (mode: ColorBlindMode) => void;
   onExit?: () => void;
+  onShowKeyboardShortcuts?: () => void;
+  onReportIssue?: () => void;
+  totalQuestions?: number;
+  answeredCount?: number;
+  flaggedCount?: number;
 }
+
 export function SettingsPanel({
   isOpen,
   onClose,
@@ -43,9 +50,19 @@ export function SettingsPanel({
   onSubmit,
   colorBlindMode = 'none',
   onColorBlindModeChange,
-  onExit: _onExit
+  onShowKeyboardShortcuts,
+  onReportIssue,
+  totalQuestions = 0,
+  answeredCount = 0,
+  flaggedCount = 0,
 }: SettingsPanelProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const [confirming, setConfirming] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) setConfirming(false);
+  }, [isOpen]);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (ref.current && !ref.current.contains(event.target as Node)) {
@@ -55,191 +72,234 @@ export function SettingsPanel({
     if (isOpen) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, onClose]);
+
   if (!isOpen) return null;
+
+  if (confirming) {
+    const unansweredCount = totalQuestions - answeredCount;
+    const allAnswered = unansweredCount === 0;
+
+    return (
+      <div
+        ref={ref}
+        className="absolute top-full right-0 mt-2 w-[300px] rounded-xl shadow-lg z-50 animate-pop-in overflow-hidden"
+        style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }}
+      >
+        {/* Header */}
+        <div
+          className="flex items-center gap-2 px-4 h-11"
+          style={{ borderBottom: '1px solid var(--border)' }}
+        >
+          <button
+            onClick={() => setConfirming(false)}
+            className="flex items-center justify-center w-7 h-7 rounded-md transition-colors hover:bg-[var(--muted)]"
+            aria-label="Back to settings"
+            style={{ color: 'var(--muted-foreground)' }}
+          >
+            <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 13 }} />
+          </button>
+          <span className="text-[13px] font-semibold" style={{ color: 'var(--foreground)' }}>
+            Submit Exam
+          </span>
+        </div>
+
+        {/* Progress summary */}
+        <div className="px-4 pt-4 pb-3 flex flex-col gap-1" style={{ borderBottom: '1px solid var(--border)' }}>
+          <p className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--muted-foreground)' }}>
+            Your progress
+          </p>
+
+          {/* Answered */}
+          <div className="flex items-center justify-between py-1.5">
+            <div className="flex items-center gap-2.5">
+              <span style={{ width: 18, textAlign: 'center' as const, color: 'var(--brand-color)' }}>
+                <i className="fa-solid fa-circle-check" aria-hidden="true" style={{ fontSize: 13 }} />
+              </span>
+              <span className="text-[13px] font-medium" style={{ color: 'var(--foreground)' }}>Answered</span>
+            </div>
+            <span className="text-[13px] font-semibold tabular-nums" style={{ color: 'var(--foreground)' }}>
+              {answeredCount} <span className="font-normal" style={{ color: 'var(--muted-foreground)' }}>/ {totalQuestions}</span>
+            </span>
+          </div>
+
+          {/* Unanswered */}
+          <div className="flex items-center justify-between py-1.5">
+            <div className="flex items-center gap-2.5">
+              <span style={{ width: 18, textAlign: 'center' as const, color: unansweredCount > 0 ? 'var(--semantic-error-text, #c0392b)' : 'var(--muted-foreground)' }}>
+                <i className="fa-regular fa-circle" aria-hidden="true" style={{ fontSize: 13 }} />
+              </span>
+              <span className="text-[13px] font-medium" style={{ color: 'var(--foreground)' }}>Unanswered</span>
+            </div>
+            <span
+              className="text-[13px] font-semibold tabular-nums"
+              style={{ color: unansweredCount > 0 ? 'var(--semantic-error-text, #c0392b)' : 'var(--muted-foreground)' }}
+            >
+              {unansweredCount}
+            </span>
+          </div>
+
+          {/* Bookmarked */}
+          {flaggedCount > 0 && (
+            <div className="flex items-center justify-between py-1.5">
+              <div className="flex items-center gap-2.5">
+                <span style={{ width: 18, textAlign: 'center' as const, color: 'var(--state-flagged-text)' }}>
+                  <i className="fa-solid fa-bookmark" aria-hidden="true" style={{ fontSize: 12 }} />
+                </span>
+                <span className="text-[13px] font-medium" style={{ color: 'var(--foreground)' }}>Bookmarked</span>
+              </div>
+              <span className="text-[13px] font-semibold tabular-nums" style={{ color: 'var(--state-flagged-text)' }}>
+                {flaggedCount}
+              </span>
+            </div>
+          )}
+
+          {/* Progress bar */}
+          <div
+            className="mt-2 rounded-full overflow-hidden"
+            style={{ height: 4, backgroundColor: 'var(--border)' }}
+            aria-hidden="true"
+          >
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: totalQuestions > 0 ? `${(answeredCount / totalQuestions) * 100}%` : '0%',
+                backgroundColor: allAnswered ? 'var(--brand-color)' : 'var(--brand-color)',
+                opacity: allAnswered ? 1 : 0.7,
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Warning + actions */}
+        <div className="px-4 py-4 flex flex-col gap-3">
+          {!allAnswered && (
+            <p className="text-[12px] leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
+              You have <strong style={{ color: 'var(--foreground)' }}>{unansweredCount} unanswered</strong> question{unansweredCount !== 1 ? 's' : ''}. Submitting now will leave them blank.
+            </p>
+          )}
+          {allAnswered && (
+            <p className="text-[12px] leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
+              All questions answered. You won't be able to change your answers after submission.
+            </p>
+          )}
+          <div className="flex gap-2">
+            <DSButton variant="outline" size="sm" className="flex-1" onClick={() => setConfirming(false)}>
+              Cancel
+            </DSButton>
+            <DSButton
+              variant="default"
+              size="sm"
+              className="flex-1 font-semibold"
+              style={{
+                backgroundColor: 'var(--brand-color)',
+                color: 'var(--brand-foreground)',
+                borderColor: 'var(--brand-color)',
+              }}
+              onClick={() => { onClose(); onSubmit(); }}
+            >
+              Yes, Submit
+            </DSButton>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={ref}
-      className="absolute top-full right-0 mt-2 w-[300px] rounded-xl shadow-lg py-2 z-50 animate-pop-in"
-      style={{
-        backgroundColor: 'var(--card)',
-        color: 'var(--foreground)',
-        border: '1px solid var(--border)'
-      }}>
-      
-      {/* Theme Section */}
+      className="absolute top-full right-0 mt-2 w-[300px] rounded-xl shadow-lg z-50 animate-pop-in overflow-hidden"
+      style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }}
+    >
+      {/* Header */}
       <div
-        className="px-4 py-3"
-        style={{
-          borderBottom: '1px solid var(--border)'
-        }}>
-        
-        <div
-          className="text-xs font-semibold mb-3 uppercase tracking-wider"
-          style={{
-            color: 'var(--muted-foreground)'
-          }}>
-          
-          Theme
-        </div>
-        <div
-          className="flex rounded-lg p-1"
-          style={{
-            backgroundColor: 'var(--muted)',
-            border: '1px solid var(--border)'
-          }}>
-          
-          <ThemeButton
-            active={theme === 'light'}
-            onClick={() => onThemeChange('light')}
-            icon={<i className="fa-light fa-sun" aria-hidden="true" style={{ fontSize: 14 }} />}
-            label="Light" />
-
-          <ThemeButton
-            active={theme === 'dark'}
-            onClick={() => onThemeChange('dark')}
-            icon={<i className="fa-light fa-moon" aria-hidden="true" style={{ fontSize: 14 }} />}
-            label="Dark" />
-
-          <ThemeButton
-            active={theme === 'high-contrast'}
-            onClick={() => onThemeChange('high-contrast')}
-            icon={<i className="fa-light fa-circle-half-stroke" aria-hidden="true" style={{ fontSize: 14 }} />}
-            label="Contrast" />
-          
-        </div>
+        className="flex items-center justify-between px-4 h-11"
+        style={{ borderBottom: '1px solid var(--border)' }}
+      >
+        <span className="text-[13px] font-semibold" style={{ color: 'var(--foreground)' }}>
+          Settings
+        </span>
+        <button
+          onClick={onClose}
+          className="flex items-center justify-center w-7 h-7 rounded-md transition-colors hover:bg-[var(--muted)]"
+          aria-label="Close settings"
+          style={{ color: 'var(--muted-foreground)' }}
+        >
+          <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 14 }} />
+        </button>
       </div>
 
-      {/* Tools Section */}
-      <div
-        style={{
-          borderBottom: '1px solid var(--border)'
-        }}>
-        
-        <SettingsItem
-          icon={<i className="fa-light fa-calculator" aria-hidden="true" style={{ fontSize: 17 }} />}
-          label="Calculator"
-          onClick={() => {
-            onToggleCalculator();
-            onClose();
-          }} />
-
-        <SettingsItem
-          icon={<i className="fa-light fa-keyboard" aria-hidden="true" style={{ fontSize: 17 }} />}
-          label="Virtual Keyboard"
-          onClick={() => {
-            onToggleKeyboard();
-            onClose();
-          }} />
-        
+      {/* Theme */}
+      <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
         <div
-          className="px-4 py-2.5 flex items-center justify-between transition-colors hover:bg-[var(--muted)] cursor-pointer"
-          onClick={onToggleVoiceNarrator}>
-          
-          <div
-            className="flex items-center gap-3 text-[13px] font-medium"
-            style={{
-              color: 'var(--foreground)'
-            }}>
-            
-            <i className="fa-light fa-volume" aria-hidden="true" style={{ fontSize: 17, color: 'var(--muted-foreground)' }} />
-            
-            <span>Voice Narrator</span>
-          </div>
-          <div
-            className="w-8 h-4 rounded-full relative transition-colors"
-            style={{
-              backgroundColor: voiceNarrator ?
-              'var(--exam-accent)' :
-              'var(--border)'
-            }}>
-            
-            <div
-              className="absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform"
-              style={{
-                left: voiceNarrator ? '18px' : '2px'
-              }} />
-            
-          </div>
-        </div>
-      </div>
-
-      {/* Accessibility Section */}
-      <div
-        className="px-4 py-3"
-        style={{
-          borderBottom: '1px solid var(--border)'
-        }}>
-        
-        <div
-          className="text-xs font-semibold mb-3 uppercase tracking-wider"
-          style={{
-            color: 'var(--muted-foreground)'
-          }}>
-          
-          Accessibility
-        </div>
-
-        {/* Zoom Control */}
-        <div
-          className="flex items-center justify-between py-2.5 transition-colors"
-          style={{
-            cursor: 'default'
-          }}>
-          
-          <div className="flex items-center gap-3 text-[13px] font-medium">
-            <i className="fa-light fa-magnifying-glass-plus" aria-hidden="true" style={{ fontSize: 17, color: 'var(--muted-foreground)' }} />
-            
-            <span>Text Size</span>
-          </div>
-          <div
-            className="flex items-center gap-1 rounded-md p-0.5"
-            style={{
-              backgroundColor: 'var(--muted)',
-              border: '1px solid var(--border)'
-            }}>
-            <DSButton
-              variant="ghost"
-              size="icon-xs"
-              onClick={zoomOut}
-              aria-label="Zoom out"
-              title="Decrease text size"
+          className="flex rounded-lg p-[3px]"
+          style={{ backgroundColor: 'var(--muted)', border: '1px solid var(--border)' }}
+        >
+          {(
+            [
+              { value: 'light', icon: 'fa-sun', label: 'Light' },
+              { value: 'dark', icon: 'fa-moon', label: 'Dark' },
+              { value: 'high-contrast', icon: 'fa-circle-half-stroke', label: 'Contrast' },
+            ] as const
+          ).map(({ value, icon, label }) => (
+            <button
+              key={value}
+              onClick={() => onThemeChange(value)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[11px] font-semibold transition-colors"
+              style={
+                theme === value
+                  ? {
+                      backgroundColor: 'var(--brand-color)',
+                      color: 'var(--brand-foreground)',
+                    }
+                  : { color: 'var(--muted-foreground)' }
+              }
+              aria-pressed={theme === value}
+              aria-label={`${label} theme`}
             >
-              <i className="fa-light fa-magnifying-glass-minus" aria-hidden="true" style={{ fontSize: 13 }} />
+              <i className={`fa-light ${icon}`} aria-hidden="true" style={{ fontSize: 13 }} />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Display — text size + color vision */}
+      <div style={{ borderBottom: '1px solid var(--border)' }}>
+        {/* Text size */}
+        <div className="flex items-center justify-between px-4 h-11">
+          <div className="flex items-center gap-3">
+            <i className="fa-light fa-text-size" aria-hidden="true" style={{ fontSize: 15, color: 'var(--muted-foreground)', width: 18, textAlign: 'center' }} />
+            <span className="text-[13px] font-medium" style={{ color: 'var(--foreground)' }}>
+              Text Size
+            </span>
+          </div>
+          <div
+            className="flex items-center gap-0.5 rounded-md"
+            style={{ backgroundColor: 'var(--muted)', border: '1px solid var(--border)', padding: 2 }}
+          >
+            <DSButton variant="ghost" size="icon-xs" onClick={zoomOut} aria-label="Decrease text size">
+              <i className="fa-light fa-minus" aria-hidden="true" style={{ fontSize: 11 }} />
             </DSButton>
             <span
-              className="text-xs font-mono w-11 text-center font-semibold"
+              className="text-[12px] font-mono font-semibold w-10 text-center"
               style={{ color: 'var(--foreground)' }}
             >
               {zoomPercent}%
             </span>
-            <DSButton
-              variant="ghost"
-              size="icon-xs"
-              onClick={zoomIn}
-              aria-label="Zoom in"
-              title="Increase text size"
-            >
-              <i className="fa-light fa-magnifying-glass-plus" aria-hidden="true" style={{ fontSize: 13 }} />
+            <DSButton variant="ghost" size="icon-xs" onClick={zoomIn} aria-label="Increase text size">
+              <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 11 }} />
             </DSButton>
           </div>
         </div>
 
-        {/* Color Vision Mode */}
-        <div
-          className="py-2.5 flex items-center justify-between"
-          style={{
-            cursor: 'default'
-          }}>
-          
-          <div
-            className="flex items-center gap-3 text-[13px] font-medium"
-            style={{
-              color: 'var(--foreground)'
-            }}>
-            
-            <i className="fa-light fa-eye" aria-hidden="true" style={{ fontSize: 17, color: 'var(--muted-foreground)' }} />
-            
-            <span>Color Vision</span>
+        {/* Color vision */}
+        <div className="flex items-center justify-between px-4 h-11">
+          <div className="flex items-center gap-3">
+            <i className="fa-light fa-eye" aria-hidden="true" style={{ fontSize: 15, color: 'var(--muted-foreground)', width: 18, textAlign: 'center' }} />
+            <span className="text-[13px] font-medium" style={{ color: 'var(--foreground)' }}>
+              Color Vision
+            </span>
           </div>
           <Select
             value={colorBlindMode}
@@ -247,7 +307,7 @@ export function SettingsPanel({
           >
             <SelectTrigger
               size="sm"
-              className="w-[140px] text-[13px] font-medium"
+              className="w-[120px] text-[12px]"
               aria-label="Select color vision mode"
             >
               <SelectValue />
@@ -263,201 +323,121 @@ export function SettingsPanel({
         </div>
       </div>
 
-      {/* Keyboard Shortcuts */}
-      <div
-        className="px-4 py-3"
-        style={{
-          borderBottom: '1px solid var(--border)'
-        }}>
-        
-        <div
-          className="text-xs font-semibold mb-3 uppercase tracking-wider"
-          style={{
-            color: 'var(--muted-foreground)'
-          }}>
-          
-          Keyboard Shortcuts
-        </div>
-        <div className="flex flex-col gap-2">
-          <ShortcutRow keys={['A', 'B', 'C', 'D']} label="Select answer" />
-          <ShortcutRow keys={['←', '→']} label="Navigate questions" />
-          <ShortcutRow keys={['Enter']} label="Next question" />
-          <ShortcutRow keys={['Z']} label="Flag question" />
-        </div>
+      {/* Tools */}
+      <div style={{ borderBottom: '1px solid var(--border)' }}>
+        <Row
+          icon={<i className="fa-light fa-calculator" aria-hidden="true" style={{ fontSize: 15 }} />}
+          label="Calculator"
+          onClick={() => { onToggleCalculator(); onClose(); }}
+        />
+        <Row
+          icon={<i className="fa-light fa-keyboard" aria-hidden="true" style={{ fontSize: 15 }} />}
+          label="Virtual Keyboard"
+          onClick={() => { onToggleKeyboard(); onClose(); }}
+        />
+        {/* Voice Narrator with toggle */}
+        <button
+          className="w-full flex items-center justify-between px-4 h-11 transition-colors hover:bg-[var(--muted)]"
+          onClick={onToggleVoiceNarrator}
+          role="switch"
+          aria-checked={voiceNarrator}
+          aria-label="Voice Narrator"
+        >
+          <div className="flex items-center gap-3">
+            <span style={{ color: 'var(--muted-foreground)', width: 18, textAlign: 'center' }}>
+              <i className="fa-light fa-volume" aria-hidden="true" style={{ fontSize: 15 }} />
+            </span>
+            <span className="text-[13px] font-medium" style={{ color: 'var(--foreground)' }}>
+              Voice Narrator
+            </span>
+          </div>
+          {/* Toggle pill */}
+          <div
+            className="relative flex-shrink-0 rounded-full transition-colors"
+            style={{
+              width: 32,
+              height: 18,
+              backgroundColor: voiceNarrator ? 'var(--brand-color)' : 'var(--border)',
+            }}
+          >
+            <div
+              className="absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white transition-transform"
+              style={{ left: voiceNarrator ? 16 : 2 }}
+            />
+          </div>
+        </button>
       </div>
 
-      {/* Submit Exam */}
+      {/* Keyboard shortcuts + Report */}
+      {(onShowKeyboardShortcuts || onReportIssue) && (
+        <div style={{ borderBottom: '1px solid var(--border)' }}>
+          {onShowKeyboardShortcuts && (
+            <Row
+              icon={<i className="fa-light fa-key" aria-hidden="true" style={{ fontSize: 15 }} />}
+              label="Keyboard Shortcuts"
+              onClick={() => { onShowKeyboardShortcuts(); onClose(); }}
+              chevron
+            />
+          )}
+          {onReportIssue && (
+            <Row
+              icon={<i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 15 }} />}
+              label="Report an issue"
+              onClick={() => { onReportIssue(); onClose(); }}
+              chevron
+            />
+          )}
+        </div>
+      )}
+
+      {/* Submit */}
       <div className="px-4 py-3">
-        <SubmitButton onSubmit={onSubmit} onClose={onClose} />
+        <DSButton
+          variant="default"
+          size="default"
+          className="w-full font-semibold"
+          style={{
+            backgroundColor: 'var(--brand-color)',
+            color: 'var(--brand-foreground)',
+            borderColor: 'var(--brand-color)',
+          }}
+          onClick={() => setConfirming(true)}
+        >
+          <i className="fa-light fa-paper-plane" aria-hidden="true" style={{ fontSize: 14 }} />
+          Submit Exam
+        </DSButton>
       </div>
-    </div>);
-
+    </div>
+  );
 }
-function ThemeButton({
-  active,
-  onClick,
-  icon,
-  label
 
-
-
-
-
-}: {active: boolean;onClick: () => void;icon: React.ReactNode;label: string;}) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[11px] font-semibold transition-colors"
-      style={{
-        backgroundColor: active ? 'var(--brand-color)' : 'transparent',
-        color: active ? 'var(--brand-foreground)' : 'var(--muted-foreground)',
-        boxShadow: active ? '0 1px 2px var(--shadow-card, rgba(0,0,0,0.15))' : 'none'
-      }}
-      onMouseEnter={(e) => {
-        if (!active)
-        (e.currentTarget as HTMLElement).style.backgroundColor =
-        'var(--muted)';
-      }}
-      onMouseLeave={(e) => {
-        if (!active)
-        (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-      }}>
-      
-      {icon}
-      {label}
-    </button>);
-
-}
-function SettingsItem({
+function Row({
   icon,
   label,
   onClick,
-  shortcut
-
-
-
-
-
-}: {icon: React.ReactNode;label: string;onClick: () => void;shortcut?: string;}) {
+  chevron = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  chevron?: boolean;
+}) {
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center justify-between px-4 py-2.5 transition-colors text-[13px] font-medium"
-      style={{
-        color: 'var(--foreground)'
-      }}
-      onMouseEnter={(e) => {
-        ;(e.currentTarget as HTMLElement).style.backgroundColor =
-        'var(--muted)';
-      }}
-      onMouseLeave={(e) => {
-        ;(e.currentTarget as HTMLElement).style.backgroundColor = '';
-      }}>
-      
+      className="w-full flex items-center justify-between px-4 h-11 transition-colors hover:bg-[var(--muted)] text-left"
+    >
       <div className="flex items-center gap-3">
-        <span
-          style={{
-            color: 'var(--muted-foreground)'
-          }}>
-          
+        <span style={{ color: 'var(--muted-foreground)', width: 18, textAlign: 'center' as const }}>
           {icon}
         </span>
-        <span>{label}</span>
-      </div>
-      {shortcut &&
-      <span
-        className="text-[10px] font-mono"
-        style={{
-          color: 'var(--muted-foreground)'
-        }}>
-        
-          {shortcut}
+        <span className="text-[13px] font-medium" style={{ color: 'var(--foreground)' }}>
+          {label}
         </span>
-      }
-    </button>);
-
-}
-function SubmitButton({
-  onSubmit,
-  onClose,
-}: {
-  onSubmit: () => void;
-  onClose: () => void;
-}) {
-  const [confirming, setConfirming] = useState(false);
-
-  if (confirming) {
-    return (
-      <div className="flex flex-col gap-1.5">
-        <p
-          className="text-[10px] font-medium leading-tight"
-          style={{ color: 'var(--foreground)' }}
-        >
-          Submit exam? You cannot change answers after submission.
-        </p>
-        <div className="flex gap-1.5">
-          <DSButton
-            variant="default"
-            size="sm"
-            className="flex-1 font-bold"
-            style={{
-              backgroundColor: 'var(--brand-color)',
-              color: 'var(--brand-foreground)',
-              borderColor: 'var(--brand-color)',
-            }}
-            onClick={() => {
-              onClose();
-              onSubmit();
-            }}
-          >
-            Yes, Submit
-          </DSButton>
-          <DSButton
-            variant="outline"
-            size="sm"
-            className="flex-1"
-            onClick={() => setConfirming(false)}
-          >
-            Cancel
-          </DSButton>
-        </div>
       </div>
-    );
-  }
-
-  return (
-    <DSButton
-      variant="default"
-      size="default"
-      className="w-full font-bold shadow-sm"
-      style={{
-        backgroundColor: 'var(--brand-color)',
-        color: 'var(--brand-foreground)',
-        borderColor: 'var(--brand-color)',
-      }}
-      onClick={() => setConfirming(true)}
-    >
-      <i className="fa-light fa-paper-plane" aria-hidden="true" style={{ fontSize: 16 }} />
-      Submit Exam
-    </DSButton>
+      {chevron && (
+        <i className="fa-light fa-chevron-right" aria-hidden="true" style={{ fontSize: 11, color: 'var(--muted-foreground)' }} />
+      )}
+    </button>
   );
-}
-function ShortcutRow({ keys, label }: {keys: string[];label: string;}) {
-  return (
-    <div className="flex items-center justify-between py-0.5">
-      <span
-        className="text-[10px]"
-        style={{
-          color: 'var(--muted-foreground)'
-        }}>
-        
-        {label}
-      </span>
-      <div className="flex gap-0.5">
-        {keys.map((k, i) => (
-          <DSKbd key={i}>{k}</DSKbd>
-        ))}
-      </div>
-    </div>);
-
 }

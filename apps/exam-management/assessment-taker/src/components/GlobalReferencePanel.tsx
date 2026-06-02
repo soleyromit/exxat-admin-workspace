@@ -68,7 +68,7 @@ export function GlobalReferencePanel({ isOpen, onClose, materials }: GlobalRefer
           >
             <div style={{
               width: 36, height: 36, borderRadius: 8, flexShrink: 0,
-              background: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+              background: 'var(--brand-tint)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <i className="fa-light fa-file-pdf" aria-hidden="true" style={{ color: 'var(--brand-color)', fontSize: 16 }} />

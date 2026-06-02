@@ -67,7 +67,7 @@ function ImagePanel({ src, alt }: {src: string;alt: string;}) {
           color: 'var(--muted-foreground)'
         }}>
         
-          <i className="fa-light fa-image-slash" aria-hidden="true" style={{ fontSize: 40 }} />
+          <i className="fa-light fa-image-slash" aria-hidden="true" style={{ fontSize: '2.5em' }} />
           <span className="text-sm">
             Image could not be loaded
           </span>
@@ -81,7 +81,7 @@ function ImagePanel({ src, alt }: {src: string;alt: string;}) {
             color: 'var(--muted-foreground)'
           }}>
           
-              <i className="fa-light fa-spinner-third fa-spin" aria-hidden="true" style={{ fontSize: 24 }} />
+              <i className="fa-light fa-spinner-third fa-spin" aria-hidden="true" style={{ fontSize: '1.5em' }} />
               <span className="text-sm">Loading image…</span>
             </div>
         }
@@ -115,7 +115,6 @@ import {
   WordHighlightRenderer,
   ChartRenderer } from
 './QuestionRenderers';
-import { CalculatorPopover } from './CalculatorPopover';
 import { VirtualKeyboard } from './VirtualKeyboard';
 export interface SplitQuestionViewProps {
   question: Question;
@@ -123,20 +122,15 @@ export interface SplitQuestionViewProps {
   selectedAnswer: any;
   onSelectAnswer: (questionId: number, answer: any) => void;
   zoomPercent: number;
-  showCalculator?: boolean;
   showKeyboard?: boolean;
-  onToggleCalculator?: () => void;
   onToggleKeyboard?: () => void;
-  needsCalculator?: boolean;
   needsKeyboard?: boolean;
   voiceNarrator?: boolean;
-  /**
-   * Aarti-mandated: per-question comment/flag box. Driven by
-   * Assessment.allowComments at the institution/course level.
-   */
   allowComments?: boolean;
   comment?: string;
   onCommentChange?: (questionId: number, comment: string) => void;
+  showReport?: boolean;
+  onCloseReport?: () => void;
   isFlagged?: boolean;
   onToggleFlag?: () => void;
 }
@@ -146,29 +140,26 @@ export function SplitQuestionView({
   selectedAnswer,
   onSelectAnswer,
   zoomPercent,
-  showCalculator = false,
   showKeyboard = false,
-  onToggleCalculator,
   onToggleKeyboard,
-  needsCalculator = false,
   needsKeyboard = false,
   voiceNarrator = false,
   allowComments = false,
   comment = '',
   onCommentChange,
+  showReport = false,
+  onCloseReport,
   isFlagged = false,
   onToggleFlag,
 }: SplitQuestionViewProps) {
   const [activeTab, setActiveTab] = useState(0);
   const [pdfLoaded, setPdfLoaded] = useState(false);
   const [pdfError, setPdfError] = useState(false);
-  const [showReport, setShowReport] = useState(false);
   const pdfTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
     setActiveTab(0);
     setPdfLoaded(false);
     setPdfError(false);
-    setShowReport(false);
   }, [question.id]);
   // PDF load detection: if iframe hasn't signaled load after 5s, show fallback
   useEffect(() => {
@@ -252,43 +243,8 @@ export function SplitQuestionView({
           {question.text}
         </h2>
 
-        {/* Tool icons — right-aligned, top-anchored */}
+        {/* Bookmark icon — right-aligned, top-anchored */}
         <div className="flex items-center gap-0.5 shrink-0">
-          {needsCalculator && (
-            <div style={{ position: 'relative' }}>
-              <Tooltip content="Calculator" position="bottom">
-                <DSButton
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={onToggleCalculator}
-                  aria-label="Toggle calculator"
-                  style={showCalculator ? { backgroundColor: 'var(--muted)', color: 'var(--foreground)' } : { color: 'var(--foreground)' }}
-                >
-                  <i className="fa-regular fa-calculator" aria-hidden="true" style={{ fontSize: 15 }} />
-                </DSButton>
-              </Tooltip>
-              {showCalculator && (
-                <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, zIndex: 50 }}>
-                  <CalculatorPopover isOpen={true} onClose={onToggleCalculator || (() => {})} />
-                </div>
-              )}
-            </div>
-          )}
-
-          {needsKeyboard && (
-            <Tooltip content="On-screen keyboard" position="bottom">
-              <DSButton
-                variant="ghost"
-                size="icon-sm"
-                onClick={onToggleKeyboard}
-                aria-label="Toggle on-screen keyboard"
-                style={showKeyboard ? { backgroundColor: 'var(--muted)', color: 'var(--foreground)' } : { color: 'var(--foreground)' }}
-              >
-                <i className="fa-regular fa-keyboard" aria-hidden="true" style={{ fontSize: 15 }} />
-              </DSButton>
-            </Tooltip>
-          )}
-
           {onToggleFlag && (
             <Tooltip content={isFlagged ? 'Remove bookmark' : 'Bookmark'} position="bottom">
               <DSButton
@@ -301,7 +257,7 @@ export function SplitQuestionView({
                   color: 'var(--state-flagged-text)',
                 } : { color: 'var(--muted-foreground)' }}
               >
-                <i className={`${isFlagged ? 'fa-solid' : 'fa-regular'} fa-bookmark`} aria-hidden="true" style={{ fontSize: 15 }} />
+                <i className={`${isFlagged ? 'fa-solid' : 'fa-regular'} fa-bookmark`} aria-hidden="true" style={{ fontSize: '1em' }} />
               </DSButton>
             </Tooltip>
           )}
@@ -530,7 +486,7 @@ export function SplitQuestionView({
               backgroundColor: 'var(--exam-accent-light)'
             }}>
             
-                <i className="fa-light fa-file-lines" aria-hidden="true" style={{ fontSize: 32, color: 'var(--exam-accent)' }} />
+                <i className="fa-light fa-file-lines" aria-hidden="true" style={{ fontSize: '2em', color: 'var(--exam-accent)' }} />
             
               </div>
               <div className="text-center">
@@ -560,7 +516,7 @@ export function SplitQuestionView({
                 color: 'var(--exam-accent-text)'
               }}>
               
-                  <i className="fa-light fa-file-lines" aria-hidden="true" style={{ fontSize: 16 }} />
+                  <i className="fa-light fa-file-lines" aria-hidden="true" style={{ fontSize: '1em' }} />
                   Open PDF in New Tab
                 </a>
               </div>
@@ -574,7 +530,7 @@ export function SplitQuestionView({
             backgroundColor: 'var(--muted)'
           }}>
           
-            <i className="fa-light fa-file-lines" aria-hidden="true" style={{ fontSize: 14, color: 'var(--muted-foreground)' }} />
+            <i className="fa-light fa-file-lines" aria-hidden="true" style={{ fontSize: '0.875em', color: 'var(--muted-foreground)' }} />
           
             <a
             href={question.pdfUrl}
@@ -730,91 +686,60 @@ export function SplitQuestionView({
       
       {hasMedia ?
       <div className="flex-1 min-h-0 flex gap-6 overflow-hidden flex-row">
-          {/* LEFT: Question Stem + Answer Options (primary action) */}
-          <div
-          className="w-1/2 min-h-0 overflow-y-auto rounded-2xl border shadow-sm p-[2em] flex flex-col gap-4"
-          style={{
-            borderColor: 'var(--border)',
-            backgroundColor: 'var(--card)'
-          }}>
-
+          {/* LEFT card */}
+          <div className="w-1/2 min-h-0 overflow-y-auto rounded-2xl border shadow-sm p-[2em] flex flex-col gap-4"
+            style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
             {renderQuestionStem()}
             <div>
               <h3
-              className="font-semibold text-[1em] mb-4"
-              style={{ color: 'var(--muted-foreground)' }}>
+                className="font-semibold text-[1em] mb-4"
+                style={{ color: 'var(--muted-foreground)' }}>
                 Select your answer:
               </h3>
               {renderInteractive()}
             </div>
             {renderInlineTools()}
-            {allowComments && !showReport && (
-              <DSButton
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowReport(true)}
-                aria-label="Report an issue with this question"
-                style={{ marginTop: 8, color: 'var(--muted-foreground)', alignSelf: 'flex-start' }}
-              >
-                <i className="fa-regular fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 12 }} />
-                Report an issue
-              </DSButton>
-            )}
+          </div>
+
+          {/* RIGHT card + report below */}
+          <div className="w-1/2 min-h-0 flex flex-col gap-3">
+            <div
+              className="flex-1 min-h-0 overflow-y-auto rounded-2xl border shadow-sm p-[2em] flex flex-col gap-4"
+              style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
+              <p className="text-[0.75em] font-bold" style={{ color: 'var(--muted-foreground)' }}>
+                Reference Material
+              </p>
+              {renderMediaOrContext()}
+            </div>
             {allowComments && (
               <QuestionCommentBox
                 questionId={question.id}
                 initialComment={comment}
                 onSave={onCommentChange}
                 isOpen={showReport}
-                onClose={() => setShowReport(false)}
+                onClose={onCloseReport || (() => {})}
               />
             )}
-          </div>
-
-          {/* RIGHT: Reference material / context only */}
-          <div
-          className="w-1/2 min-h-0 overflow-y-auto rounded-2xl border shadow-sm p-[2em] flex flex-col gap-4"
-          style={{
-            borderColor: 'var(--border)',
-            backgroundColor: 'var(--card)'
-          }}>
-            <p className="text-[0.75em] font-bold" style={{ color: 'var(--muted-foreground)' }}>
-              Reference Material
-            </p>
-            {renderMediaOrContext()}
           </div>
         </div> :
 
       <div className="flex-1 min-h-0 overflow-y-auto">
           <div
-          className="max-w-4xl mx-auto rounded-2xl p-[2em] shadow-sm border flex flex-col"
+          className="max-w-4xl mx-auto rounded-2xl p-[2em] shadow-sm border flex flex-col gap-4"
           style={{
             borderColor: 'var(--border)',
             backgroundColor: 'var(--card)'
           }}>
-
             {renderQuestionStem()}
             {renderInteractive()}
             {renderInlineTools()}
-            {allowComments && !showReport && (
-              <DSButton
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowReport(true)}
-                aria-label="Report an issue with this question"
-                style={{ marginTop: 8, color: 'var(--muted-foreground)', alignSelf: 'flex-start' }}
-              >
-                <i className="fa-regular fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 12 }} />
-                Report an issue
-              </DSButton>
-            )}
             {allowComments && (
               <QuestionCommentBox
                 questionId={question.id}
                 initialComment={comment}
                 onSave={onCommentChange}
                 isOpen={showReport}
-                onClose={() => setShowReport(false)}
+                onClose={onCloseReport || (() => {})}
               />
             )}
           </div>

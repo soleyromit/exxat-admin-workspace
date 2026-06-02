@@ -150,7 +150,7 @@ export function StudyResources() {
             variant="secondary"
             className="rounded-full gap-1.5"
             style={{
-              backgroundColor: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))',
+              backgroundColor: 'var(--brand-tint)',
               color: 'var(--brand-color)',
             }}
           >
@@ -245,7 +245,7 @@ function RecommendedCard({ item }: { item: RecommendedItem }) {
           className="rounded-full gap-1.5"
           style={
             item.source === 'ai'
-              ? { backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', color: 'var(--brand-color)' }
+              ? { backgroundColor: 'var(--brand-tint)', color: 'var(--brand-color)' }
               : item.source === 'faculty'
                 ? { backgroundColor: 'color-mix(in oklch, var(--chart-1) 12%, var(--background))', color: 'var(--chart-1)' }
                 : { backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }

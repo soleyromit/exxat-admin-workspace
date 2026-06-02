@@ -202,7 +202,7 @@ function SummaryTile({
       <span
         className="flex size-9 shrink-0 items-center justify-center rounded-lg"
         style={{
-          background: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+          background: 'var(--brand-tint)',
           color: 'var(--brand-color)',
         }}
       >

@@ -171,9 +171,9 @@ export function Calculator({
 
 
 
-  }: {label: string;type: keyof typeof btnStyle;onClick: () => void;}) => <button onClick={onClick} className={btnStyle[type].className} style={btnStyle[type].style}>
+  }: {label: string;type: keyof typeof btnStyle;onClick: () => void;}) => <DSButton variant="ghost" size="sm" onClick={onClick} className={btnStyle[type].className} style={btnStyle[type].style}>
       {label}
-    </button>;
+    </DSButton>;
   return (
     // Figma layer: "Calculator"
     // ⚠️ Fixed positioned — document as floating overlay in Figma
@@ -200,13 +200,13 @@ export function Calculator({
         }}>
           {(['standard', 'scientific'] as CalcMode[]).map((m) =>
           // Figma layer: "ModeBtn/{m}" (variant: active | default)
-          <button key={m} onClick={() => setMode(m)} className="font-semibold text-xs rounded-md transition-colors" style={{
+          <DSButton key={m} variant="outline" size="sm" onClick={() => setMode(m)} className="font-semibold text-xs rounded-md transition-colors" style={{
             padding: '4px 12px',
             backgroundColor: mode === m ? tokens.calc.equalBtn : 'transparent',
             color: mode === m ? tokens.text.inverse : tokens.text.subtle
           }}>
               {m.charAt(0).toUpperCase() + m.slice(1)}
-            </button>)}
+            </DSButton>)}
         </div>
         {/* Figma layer: "CloseButton" */}
         <DSButton variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close calculator">

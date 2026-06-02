@@ -25,7 +25,7 @@ export function PlaceholderPage({ icon, title, blurb, bullets, cta }: Placeholde
             <span
               className="flex size-12 items-center justify-center rounded-xl"
               style={{
-                backgroundColor: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))',
+                backgroundColor: 'var(--brand-tint)',
                 color: 'var(--brand-color)',
               }}
             >

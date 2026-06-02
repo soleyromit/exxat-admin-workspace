@@ -10,7 +10,6 @@ import { SplitQuestionView } from './components/SplitQuestionView';
 import { SidebarDrawer } from './components/SidebarDrawer';
 import { VirtualKeyboard } from './components/VirtualKeyboard';
 import { CalculatorPopover } from './components/CalculatorPopover';
-import { QuestionNavigatorPopover } from './components/QuestionNavigatorPopover';
 import { AccessibilityPanel } from './components/AccessibilityPanel';
 import { GlobalReferencePanel } from './components/GlobalReferencePanel';
 import { SubmitReviewOverlay } from './components/SubmitReviewOverlay';
@@ -160,10 +159,10 @@ export function App() {
     setComments(prev => ({ ...prev, [questionId]: text }));
   }, []);
   // UI States
+  const [showReport, setShowReport] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(false);
-  const [showNavPanel, setShowNavPanel] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showAccessibility, setShowAccessibility] = useState(false);
   const [showGlobalRef, setShowGlobalRef] = useState(false);
@@ -200,10 +199,11 @@ export function App() {
   // Contextual tool relevance
   const needsCalculator = CALCULATOR_TYPES.has(currentQuestion.type);
   const needsKeyboard = KEYBOARD_TYPES.has(currentQuestion.type);
-  // Reset inline tools when switching to a question that doesn't need them
+  // Reset inline tools and report state when switching questions
   useEffect(() => {
     if (!needsCalculator && showCalculator) setShowCalculator(false);
     if (!needsKeyboard && showKeyboard) setShowKeyboard(false);
+    setShowReport(false);
   }, [currentIndex, needsCalculator, needsKeyboard]);
   const handleNavigate = useCallback((index: number) => {
     const sections = assessment?.sections;
@@ -413,7 +413,12 @@ export function App() {
         isGlobalRefOpen={showGlobalRef}
         onToggleGlobalRef={() => setShowGlobalRef(v => !v)}
         sections={assessment?.sections}
-        onShowKeyboardShortcuts={() => setShowShortcuts(true)} />
+        onShowKeyboardShortcuts={() => setShowShortcuts(true)}
+        onToggleNav={() => setShowSidebar(v => !v)}
+        isNavOpen={showSidebar}
+        onReportIssue={allowComments ? () => setShowReport(true) : undefined}
+        answeredCount={answeredIndices.size}
+        flaggedCount={flagged.size} />
       
 
       <div className="relative flex-1 overflow-hidden flex flex-col">
@@ -444,6 +449,17 @@ export function App() {
         
 
         <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
+          {showSidebar && (
+            <SidebarDrawer
+              onClose={() => setShowSidebar(false)}
+              questions={questions}
+              currentIndex={currentIndex}
+              highestReachedIndex={highestReachedIndex}
+              answeredSet={answeredIndices}
+              flaggedSet={flagged}
+              sections={assessment?.sections}
+              onNavigate={handleNavigate} />
+          )}
           <main
             id="main-content"
             className="flex-1 overflow-hidden flex flex-col p-4 md:p-6 pb-24"
@@ -457,31 +473,21 @@ export function App() {
               selectedAnswer={answers[currentQuestion.id]}
               onSelectAnswer={handleSelectAnswer}
               zoomPercent={zoomPercent}
-              showCalculator={showCalculator}
               showKeyboard={showKeyboard}
-              onToggleCalculator={() => setShowCalculator(!showCalculator)}
               onToggleKeyboard={() => setShowKeyboard(!showKeyboard)}
-              needsCalculator={needsCalculator}
               needsKeyboard={needsKeyboard}
               voiceNarrator={voiceNarrator}
               allowComments={allowComments}
               comment={comments[currentQuestion.id]}
               onCommentChange={handleCommentChange}
+              showReport={showReport}
+              onCloseReport={() => setShowReport(false)}
               isFlagged={flagged.has(currentIndex)}
               onToggleFlag={handleToggleFlag} />
 
           </main>
         </div>
       </div>
-
-      <SidebarDrawer
-        isOpen={showSidebar}
-        onClose={() => setShowSidebar(false)}
-        questions={questions}
-        currentIndex={currentIndex}
-        answeredSet={answeredIndices}
-        flaggedSet={flagged}
-        onNavigate={handleNavigate} />
       
 
       {/* Fallback floating tools — only shown when NOT inline (i.e., question doesn't need them but user toggled from settings) */}
@@ -491,23 +497,12 @@ export function App() {
         onClose={() => setShowKeyboard(false)} />
 
       }
-      {showCalculator && !needsCalculator &&
+      {showCalculator &&
       <CalculatorPopover
         isOpen={showCalculator}
         onClose={() => setShowCalculator(false)} />
 
       }
-
-      <QuestionNavigatorPopover
-        questions={questions}
-        currentIndex={currentIndex}
-        highestReachedIndex={highestReachedIndex}
-        answeredSet={answeredIndices}
-        flaggedSet={flagged}
-        sections={assessment?.sections}
-        onNavigate={handleNavigate}
-        isOpen={showNavPanel}
-        onClose={() => setShowNavPanel(false)} />
 
       {/* Vishaka May 14: "bottom panel is getting lost — that is my primary way to act.
            I have to reorient to the right-hand corner to go next." StickyFooter provides
@@ -515,10 +510,7 @@ export function App() {
       <StickyFooter
         currentIndex={currentIndex}
         totalQuestions={questions.length}
-        onNavigate={handleNavigate}
-        flaggedSet={flagged}
-        showNavPanel={showNavPanel}
-        onToggleNavPanel={() => setShowNavPanel(v => !v)} />
+        onNavigate={handleNavigate} />
 
       <GlobalReferencePanel
         isOpen={showGlobalRef}

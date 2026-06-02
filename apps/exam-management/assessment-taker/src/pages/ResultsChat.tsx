@@ -127,7 +127,7 @@ export function ResultsChat() {
           variant="secondary"
           className="rounded-full gap-1.5"
           style={{
-            backgroundColor: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))',
+            backgroundColor: 'var(--brand-tint)',
             color: 'var(--brand-color)',
           }}
         >

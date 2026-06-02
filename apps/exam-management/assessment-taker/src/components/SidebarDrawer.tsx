@@ -1,304 +1,243 @@
-import React, { useEffect, useRef } from 'react';
-import { tokens } from '../tokens/design-tokens';
+import React, { useEffect } from 'react';
 import { Question } from '../data/questions';
+import { ExamSection } from '../data/assessments';
 import { Button as DSButton } from '@exxat/ds/packages/ui/src';
+
 export interface SidebarDrawerProps {
-  isOpen: boolean;
   onClose: () => void;
-  showQuestionNavInHamburger?: boolean;
   questions: Question[];
   currentIndex: number;
+  highestReachedIndex: number;
   answeredSet: Set<number>;
   flaggedSet: Set<number>;
+  sections?: ExamSection[];
   onNavigate: (index: number) => void;
 }
+
 export function SidebarDrawer({
-  isOpen,
   onClose,
   questions,
   currentIndex,
+  highestReachedIndex,
   answeredSet,
   flaggedSet,
-  onNavigate
+  sections,
+  onNavigate,
 }: SidebarDrawerProps) {
-  const drawerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    if (isOpen) {
-      document.addEventListener('keydown', handler);
-      drawerRef.current?.focus();
-    }
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [isOpen, onClose]);
-  if (!isOpen) return null;
-  return (
-    <div className="fixed inset-0 z-[100] flex">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 transition-opacity"
-        style={{
-          backgroundColor: tokens.surface.overlay
-        }}
-        onClick={onClose}
-        aria-hidden="true" />
-      
+  }, [onClose]);
 
-      {/* Drawer */}
-      <div
-        ref={drawerRef}
-        tabIndex={-1}
-        className="relative w-full max-w-sm h-full shadow-2xl flex flex-col animate-slide-in-left outline-none transition-colors"
-        style={{
-          backgroundColor: 'var(--card)'
-        }}
-        role="dialog"
-        aria-label="Exam Information">
-        
-        <div
-          className="flex items-center justify-between p-5 border-b"
-          style={{
-            borderColor: 'var(--border)'
-          }}>
-          
-          <div className="flex items-center gap-3">
-            <img
-              src="/exxat_header_logo.svg"
-              alt="Exxat"
-              className="h-6" />
-            
-            <div
-              className="w-px h-5"
-              style={{
-                backgroundColor: tokens.border.default
-              }} />
-            
-            <span
-              className="font-semibold text-xs px-2 py-0.5 rounded-full"
-              style={{
-                color: 'var(--exam-accent)',
-                backgroundColor: 'var(--exam-accent-light)',
-                border: '1px solid var(--exam-accent-border)'
-              }}>
-              
-              Attempt #1
-            </span>
-          </div>
-          <DSButton variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close sidebar">
-            <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 18 }} />
-          </DSButton>
-        </div>
+  const bookmarkedIndices = questions.map((_, i) => i).filter(i => flaggedSet.has(i));
+  const bookmarkedIdxSet = new Set(bookmarkedIndices);
+  const otherIndices = questions.map((_, i) => i).filter(i => !bookmarkedIdxSet.has(i));
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-8">
-          <div>
-            <h2
-              className="font-bold text-xl mb-1"
-              style={{
-                color: 'var(--foreground)'
-              }}>
-              
-              Introduction to Pathology
-            </h2>
-            <p
-              className="text-sm"
-              style={{
-                color: 'var(--muted-foreground)'
-              }}>
-              
-              Midterm Examination • Fall 2026
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <StatCard
-              icon={<i className="fa-light fa-file-lines" aria-hidden="true" style={{ fontSize: 16 }} />}
-              label="Questions"
-              value={`${questions.length} Total`}
-              color="var(--exam-accent)"
-              bg="var(--exam-accent-light)" />
-
-            <StatCard
-              icon={<i className="fa-light fa-clock" aria-hidden="true" style={{ fontSize: 16 }} />}
-              label="Time Limit"
-              value="60 Mins"
-              color="var(--state-warning-text)"
-              bg="var(--state-warning-bg)" />
-
-            <StatCard
-              icon={<i className="fa-light fa-circle-check" aria-hidden="true" style={{ fontSize: 16 }} />}
-              label="Passing"
-              value="70%"
-              color="var(--state-success-text)"
-              bg="var(--state-success-bg)" />
-
-            <StatCard
-              icon={<i className="fa-light fa-bolt" aria-hidden="true" style={{ fontSize: 16 }} />}
-              label="Difficulty"
-              value="Medium"
-              color="var(--state-info-text)"
-              bg="var(--state-info-bg)" />
-            
-          </div>
-
-          <div>
-            <h3
-              className="font-bold text-xs uppercase tracking-wider mb-3"
-              style={{
-                color: 'var(--foreground)'
-              }}>
-              
-              Instructions
-            </h3>
-            <div
-              className="rounded-lg p-4"
-              style={{
-                backgroundColor: 'var(--exam-accent-light)',
-                border: '1px solid var(--exam-accent-border)'
-              }}>
-              
-              <ul className="space-y-2">
-                <InstructionItem text="Read each question carefully before attempting." />
-                <InstructionItem text="You can flag questions for review and return to them later." />
-                <InstructionItem text="Use keyboard shortcuts A-D to quickly select answers." />
-                <InstructionItem text="Required questions are marked with a red indicator." />
-              </ul>
-            </div>
-          </div>
-
-          {/* Question Navigator — always shown */}
-          <div>
-            <h3
-              className="font-bold text-xs uppercase tracking-wider mb-3"
-              style={{
-                color: 'var(--foreground)'
-              }}>
-              
-              Question Navigator
-            </h3>
-            <div className="grid grid-cols-5 gap-2">
-              {questions.map((q, i) => {
-                const isCurrent = i === currentIndex;
-                const isAnswered = answeredSet.has(i);
-                const isFlagged = flaggedSet.has(i);
-                let bg = 'var(--card)';
-                let border = 'var(--border)';
-                let color = 'var(--muted-foreground)';
-                if (isCurrent) {
-                  bg = 'var(--exam-accent)';
-                  border = 'var(--exam-accent)';
-                  color = 'var(--primary-foreground)';
-                } else if (isFlagged) {
-                  bg = 'var(--state-flagged-bg)';
-                  border = 'var(--state-flagged-border)';
-                  color = 'var(--state-flagged-text)';
-                } else if (isAnswered) {
-                  bg = 'var(--state-answered-bg)';
-                  border = 'var(--state-answered-border)';
-                  color = 'var(--state-answered-text)';
-                }
-                return (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      onNavigate(i);
-                      onClose();
-                    }}
-                    className="h-10 rounded-lg font-semibold text-sm transition-all hover:opacity-80 exam-focus relative flex items-center justify-center"
-                    style={{
-                      backgroundColor: bg,
-                      border: `1px solid ${border}`,
-                      color
-                    }}>
-                    
-                    {i + 1}
-                    {q.required && !isAnswered && !isCurrent &&
-                    <span
-                      className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2"
-                      style={{
-                        backgroundColor: 'var(--semantic-error-dot)',
-                        borderColor: 'var(--card)'
-                      }} />
-
-                    }
-                  </button>);
-
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>);
-
-}
-function StatCard({
-  icon,
-  label,
-  value,
-  color,
-  bg
-
-
-
-
-
-
-}: {icon: React.ReactNode;label: string;value: string;color: string;bg: string;}) {
   return (
     <div
-      className="p-3 rounded-xl border"
+      role="complementary"
+      aria-label="Question navigator"
+      className="animate-slide-in-left"
       style={{
-        borderColor: 'var(--border)',
-        backgroundColor: 'var(--card)'
+        width: 240,
+        flexShrink: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        borderRight: '1px solid var(--border)',
+        backgroundColor: 'var(--card)',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 6,
+        padding: '12px 10px 12px 14px',
+        borderBottom: '1px solid var(--border)',
+        flexShrink: 0,
       }}>
-      
-      <div className="flex items-center gap-2 mb-1">
-        <div
-          className="w-6 h-6 rounded-md flex items-center justify-center"
-          style={{
-            backgroundColor: bg,
-            color
-          }}>
-          
-          {icon}
-        </div>
-        <span
-          className="text-xs font-medium"
-          style={{
-            color: 'var(--muted-foreground)'
-          }}>
-          
-          {label}
+        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--foreground)', flex: 1 }}>
+          Questions
         </span>
+        <span style={{ fontSize: 12, color: 'var(--muted-foreground)', fontWeight: 500 }}>
+          {answeredSet.size}<span style={{ opacity: 0.5 }}>/{questions.length}</span>
+        </span>
+        {flaggedSet.size > 0 && (
+          <span style={{ fontSize: 12, color: 'var(--muted-foreground)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 3 }}>
+            · <i className="fa-solid fa-bookmark" aria-hidden="true" style={{ fontSize: 10 }} />{flaggedSet.size}
+          </span>
+        )}
+        <DSButton
+          variant="ghost"
+          size="icon-sm"
+          onClick={onClose}
+          aria-label="Close question navigator"
+          style={{ color: 'var(--muted-foreground)', flexShrink: 0 }}
+        >
+          <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 14 }} />
+        </DSButton>
       </div>
-      <p
-        className="font-bold text-sm"
-        style={{
-          color: 'var(--foreground)'
-        }}>
-        
-        {value}
-      </p>
-    </div>);
 
-}
-function InstructionItem({ text }: {text: string;}) {
-  return (
-    <li
-      className="flex items-start gap-2 text-sm"
-      style={{
-        color: 'var(--muted-foreground)'
+      {/* Scrollable grid area */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '14px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+        {/* Bookmarked group */}
+        {bookmarkedIndices.length > 0 && (
+          <div>
+            <div style={{
+              fontSize: 11, fontWeight: 600,
+              color: 'var(--muted-foreground)',
+              marginBottom: 8,
+              display: 'flex', alignItems: 'center', gap: 4,
+              textTransform: 'uppercase', letterSpacing: '0.04em',
+            }}>
+              <i className="fa-solid fa-bookmark" aria-hidden="true" style={{ fontSize: 9 }} />
+              Bookmarked
+            </div>
+            <TileGrid>
+              {bookmarkedIndices.map(i => (
+                <Tile
+                  key={i}
+                  index={i}
+                  status={getTileStatus(i, currentIndex, highestReachedIndex, flaggedSet, answeredSet, sections)}
+                  onNavigate={onNavigate}
+                />
+              ))}
+            </TileGrid>
+          </div>
+        )}
+
+        {/* Divider */}
+        {bookmarkedIndices.length > 0 && otherIndices.length > 0 && (
+          <div style={{ height: 1, backgroundColor: 'var(--border)', marginBlock: -4 }} />
+        )}
+
+        {/* All others — answered + unanswered combined */}
+        {otherIndices.length > 0 && (
+          <TileGrid>
+            {otherIndices.map(i => (
+              <Tile
+                key={i}
+                index={i}
+                status={getTileStatus(i, currentIndex, highestReachedIndex, flaggedSet, answeredSet, sections)}
+                onNavigate={onNavigate}
+              />
+            ))}
+          </TileGrid>
+        )}
+      </div>
+
+      {/* Legend */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 8px',
+        padding: '10px 14px',
+        borderTop: '1px solid var(--border)',
+        flexShrink: 0,
       }}>
-      
-      <span
-        className="text-[10px]"
-        style={{
-          color: 'var(--exam-accent)',
-          marginTop: '5px'
-        }}>
-        ●
-      </span>
-      {text}
-    </li>);
+        {([
+          { swatch: 'filled', bg: 'var(--brand-color)', label: 'Current' },
+          { swatch: 'filled', bg: 'var(--foreground)', label: 'Answered' },
+          { swatch: 'border', borderColor: 'var(--state-flagged-text)', label: 'Bookmarked' },
+          { swatch: 'border', borderColor: 'var(--border)', label: 'Unanswered' },
+        ] as { swatch: 'filled' | 'border'; bg?: string; borderColor?: string; label: string }[]).map(({ swatch, bg, borderColor, label }) => (
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{
+              width: 10, height: 10, borderRadius: 2, flexShrink: 0,
+              backgroundColor: swatch === 'filled' ? bg : 'transparent',
+              border: swatch === 'border' ? `1.5px solid ${borderColor}` : undefined,
+            }} />
+            <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
+type TileStatus = 'current' | 'current-bookmarked' | 'bookmarked' | 'answered' | 'unanswered' | 'locked';
+
+function getTileStatus(
+  index: number,
+  currentIndex: number,
+  highestReachedIndex: number,
+  flaggedSet: Set<number>,
+  answeredSet: Set<number>,
+  sections?: ExamSection[],
+): TileStatus {
+  if (sections?.length) {
+    let cum = 0;
+    let questionSection = 0;
+    let highestSection = 0;
+    for (let i = 0; i < sections.length; i++) {
+      if (index < cum + sections[i].questionCount) questionSection = i;
+      if (highestReachedIndex < cum + sections[i].questionCount) { highestSection = i; break; }
+      cum += sections[i].questionCount;
+    }
+    if (questionSection > highestSection) return 'locked';
+  }
+  const isCurrent = index === currentIndex;
+  const isBookmarked = flaggedSet.has(index);
+  if (isCurrent && isBookmarked) return 'current-bookmarked';
+  if (isCurrent) return 'current';
+  if (isBookmarked) return 'bookmarked';
+  if (answeredSet.has(index)) return 'answered';
+  return 'unanswered';
+}
+
+function tileStyle(status: TileStatus): React.CSSProperties {
+  const base: React.CSSProperties = {
+    width: 36, height: 36, borderRadius: 7,
+    fontSize: 12, fontWeight: 600,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    cursor: 'pointer', flexShrink: 0,
+    border: '1.5px solid transparent',
+    transition: 'opacity 80ms',
+    background: 'none',
+    padding: 0,
+  };
+  switch (status) {
+    case 'current':
+      return { ...base, background: 'var(--brand-color)', color: 'var(--brand-foreground)', border: '1.5px solid transparent' };
+    case 'current-bookmarked':
+      return { ...base, background: 'var(--brand-color)', color: 'var(--brand-foreground)', border: '1.5px solid var(--state-flagged-text)' };
+    case 'bookmarked':
+      return { ...base, background: 'transparent', color: 'var(--state-flagged-text)', border: '1.5px solid var(--state-flagged-text)' };
+    case 'answered':
+      return { ...base, background: 'var(--foreground)', color: 'var(--background)', border: '1.5px solid transparent' };
+    case 'locked':
+      return { ...base, background: 'transparent', color: 'var(--muted-foreground)', border: '1.5px solid var(--border)', opacity: 0.35, cursor: 'not-allowed' };
+    default: // unanswered
+      return { ...base, background: 'transparent', color: 'var(--muted-foreground)', border: '1.5px solid var(--border)' };
+  }
+}
+
+function TileGrid({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, 36px)', gap: 6 }}>
+      {children}
+    </div>
+  );
+}
+
+function Tile({
+  index,
+  status,
+  onNavigate,
+}: {
+  index: number;
+  status: TileStatus;
+  onNavigate: (i: number) => void;
+}) {
+  const isLocked = status === 'locked';
+  return (
+    <button
+      onClick={() => { if (!isLocked) onNavigate(index); }}
+      disabled={isLocked}
+      aria-label={`Question ${index + 1}`}
+      aria-current={status === 'current' || status === 'current-bookmarked' ? 'true' : undefined}
+      style={tileStyle(status)}
+    >
+      {index + 1}
+    </button>
+  );
 }

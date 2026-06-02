@@ -54,6 +54,11 @@ export interface ExamToolbarProps {
   isGlobalRefOpen?: boolean;
   sections?: ExamSection[];
   onShowKeyboardShortcuts?: () => void;
+  onToggleNav?: () => void;
+  isNavOpen?: boolean;
+  onReportIssue?: () => void;
+  answeredCount?: number;
+  flaggedCount?: number;
 }
 export function ExamToolbar({
   timerFormatted,
@@ -80,6 +85,11 @@ export function ExamToolbar({
   isGlobalRefOpen,
   sections,
   onShowKeyboardShortcuts,
+  onToggleNav,
+  isNavOpen,
+  onReportIssue,
+  answeredCount,
+  flaggedCount,
 }: ExamToolbarProps) {
   const [showSettings, setShowSettings] = useState(false);
   const progressPercent =
@@ -94,18 +104,32 @@ export function ExamToolbar({
       }}>
       
       <div className="h-14 flex items-center justify-between px-4">
-        {/* Left: Logo, Title, Quick Jump */}
-        <div className="flex items-center gap-4 flex-1 min-w-0">
+        {/* Left: Logo, separator, Questions toggle, Title */}
+        <div className="flex items-center gap-3 flex-1 min-w-0">
           <img
-            src="/exxat_header_logo.svg"
-            alt="Exxat Logo"
-            className="h-5 hidden sm:block shrink-0" />
-          
+            src="/exxat-logo.svg"
+            alt="Exxat"
+            className="hidden sm:block shrink-0"
+            style={{ height: '1.5em' }} />
+
           <div
             className="w-px h-5 hidden sm:block shrink-0"
-            style={{
-              backgroundColor: 'var(--border)'
-            }} />
+            style={{ backgroundColor: 'var(--border)' }} />
+
+          {onToggleNav && (
+            <Tooltip content="Question navigator" position="bottom">
+              <DSButton
+                variant="ghost"
+                size="icon-sm"
+                onClick={onToggleNav}
+                aria-label={isNavOpen ? 'Close question navigator' : 'Open question navigator'}
+                aria-expanded={isNavOpen}
+              >
+                <i className="fa-light fa-sidebar" aria-hidden="true" />
+                <span className="sr-only">Toggle question navigator</span>
+              </DSButton>
+            </Tooltip>
+          )}
           
           <div className="flex flex-col min-w-0">
             <Tooltip content={assessmentTitle ?? 'Assessment'} position="bottom">
@@ -188,7 +212,7 @@ export function ExamToolbar({
                 style={
                   isGlobalRefOpen
                     ? {
-                        backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, var(--background))',
+                        backgroundColor: 'var(--brand-tint)',
                         borderColor: 'var(--brand-color)',
                         color: 'var(--brand-color)',
                       }
@@ -200,31 +224,6 @@ export function ExamToolbar({
               </DSButton>
             </Tooltip>
           )}
-
-          {onShowKeyboardShortcuts && (
-            <Tooltip content="Keyboard shortcuts" position="bottom">
-              <DSButton
-                variant="ghost"
-                size="icon-sm"
-                onClick={onShowKeyboardShortcuts}
-                aria-label="View keyboard shortcuts"
-                style={{ color: 'var(--muted-foreground)' }}
-              >
-                <i className="fa-regular fa-command" aria-hidden="true" style={{ fontSize: 16 }} />
-              </DSButton>
-            </Tooltip>
-          )}
-
-          {/* Submit — outline so it doesn't compete with Next in the footer */}
-          <DSButton
-            variant="outline"
-            size="sm"
-            onClick={onSubmit}
-            aria-label="Submit exam"
-            className="ml-1 shrink-0"
-          >
-            Submit
-          </DSButton>
 
           {/* Settings — last in order */}
           <div className="relative">
@@ -258,7 +257,12 @@ export function ExamToolbar({
               onSubmit={onSubmit}
               colorBlindMode={colorBlindMode}
               onColorBlindModeChange={onColorBlindModeChange}
-              onExit={onExit} />
+              onExit={onExit}
+              onShowKeyboardShortcuts={onShowKeyboardShortcuts}
+              onReportIssue={onReportIssue}
+              totalQuestions={totalQuestions}
+              answeredCount={answeredCount}
+              flaggedCount={flaggedCount} />
             
           </div>
         </div>

@@ -89,11 +89,11 @@
   --required-bg:     color-mix(in srgb, var(--chart-4) 8%, var(--background));
   --required-border: color-mix(in srgb, var(--chart-4) 30%, var(--background));
 
-  /* Highlight / cross-out (exam annotation tools) — neutral: no chart color injection */
-  --highlight-bg:     color-mix(in srgb, var(--foreground) 8%, var(--background));
-  --highlight-bg-end: color-mix(in srgb, var(--foreground) 12%, var(--background));
-  --highlight-text:   var(--foreground);
-  --highlight-shadow: color-mix(in srgb, var(--foreground) 12%, transparent);
+  /* Highlight / cross-out (exam annotation tools) */
+  --highlight-bg:     #FEF08A;
+  --highlight-bg-end: #FDE047;
+  --highlight-text:   #713F12;
+  --highlight-shadow: rgba(253, 224, 71, 0.4);
   --crossout-text:    var(--muted-foreground);
   --crossout-opacity: 0.45;
 }
