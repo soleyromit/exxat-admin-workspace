@@ -48,9 +48,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { requestOpenCommandMenu } from "@/components/command-menu"
-import { useAskLeo } from "@/components/ask-leo-sidebar"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
-import { useAltKeyLabel, useModKeyLabel } from "@/hooks/use-mod-key-label"
+import { useModKeyLabel } from "@/hooks/use-mod-key-label"
 import { ExxatProductLogo } from "@/components/exxat-product-logo"
 import { NavUser } from "@/components/sidebar/nav-user"
 import { motionHeaderEnter } from "@/lib/motion-ui"
@@ -175,9 +174,7 @@ function TeamSwitcher() {
 // ─── QuickActions ─────────────────────────────────────────────────────────────
 
 function QuickActionItems({ items }: { items: NavSecondaryItem[] }) {
-  const { toggle: toggleAskLeo } = useAskLeo()
   const mod = useModKeyLabel()
-  const alt = useAltKeyLabel()
 
   return (
     <>
@@ -185,20 +182,12 @@ function QuickActionItems({ items }: { items: NavSecondaryItem[] }) {
         <SidebarMenuItem key={item.key}>
           <SidebarMenuButton
             onClick={() => {
-              if (item.opensAskLeo) toggleAskLeo()
-              else if (item.opensCommandMenu) requestOpenCommandMenu()
+              if (item.opensCommandMenu) requestOpenCommandMenu()
             }}
             tooltip={item.title}
           >
             {item.icon}
             <span className="flex-1">{item.title}</span>
-            {item.opensAskLeo && (
-              <KbdGroup className="ms-auto group-data-collapsible-icon:hidden">
-                <Kbd>{mod}</Kbd>
-                <Kbd>{alt}</Kbd>
-                <Kbd>K</Kbd>
-              </KbdGroup>
-            )}
             {item.opensCommandMenu && (
               <KbdGroup className="ms-auto group-data-collapsible-icon:hidden">
                 <Kbd>{mod}</Kbd>

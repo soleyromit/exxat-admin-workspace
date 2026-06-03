@@ -22,7 +22,6 @@ export interface NavSecondaryItem {
   icon: React.ReactNode
   iconActive?: React.ReactNode
   opensCommandMenu?: boolean
-  opensAskLeo?: boolean
 }
 
 export interface NavProgram { id: string; name: string }
@@ -62,13 +61,6 @@ export const NAV_SCHOOL_DEFAULT = NAV_SCHOOLS[0]
 export const NAV_PROGRAM_DEFAULT = NAV_SCHOOLS[0].programs[0]
 
 export const NAV_QUICK_ACTIONS: NavSecondaryItem[] = [
-  {
-    key: "ask-leo",
-    title: "Ask Leo",
-    url: "#",
-    icon: <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" />,
-    opensAskLeo: true,
-  },
   {
     key: "search",
     title: "Search",
