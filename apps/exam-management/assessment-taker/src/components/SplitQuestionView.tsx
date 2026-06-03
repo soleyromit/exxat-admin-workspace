@@ -105,82 +105,91 @@ function ImagePanel({ src, alt }: {src: string;alt: string;}) {
 // ─── Per-question reference panel (embedded in split layout) ─────────────────
 function QuestionReferencePanel({
   references,
+  zoomPercent,
 }: {
   references: NonNullable<Question['references']>;
+  zoomPercent: number;
 }) {
   const [activeIdx, setActiveIdx] = useState(0);
   const current = references[activeIdx];
 
   return (
     <div
-      className="flex-1 min-h-0 overflow-hidden rounded-2xl border shadow-sm flex flex-col"
+      className="flex-1 min-h-0 overflow-auto rounded-2xl border shadow-sm flex flex-col"
       style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}
       role="complementary"
       aria-label="Question reference material"
     >
-      {/* Tabs — only when multiple references; scrollable so extra tabs never clip */}
-      {references.length > 1 && (
-        <div
-          role="tablist"
-          style={{
-            display: 'flex', flexShrink: 0, overflowX: 'auto',
-            borderBottom: '1px solid var(--border)',
-            scrollbarWidth: 'none',
-          }}
-        >
-          {references.map((ref, i) => (
-            <button
-              key={i}
-              onClick={() => setActiveIdx(i)}
-              style={{
-                padding: '10px 16px', fontSize: 13, fontWeight: activeIdx === i ? 600 : 400,
-                color: activeIdx === i ? 'var(--foreground)' : 'var(--muted-foreground)',
-                borderBottom: activeIdx === i ? '2px solid var(--foreground)' : '2px solid transparent',
-                backgroundColor: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
-              }}
-              role="tab"
-              aria-selected={activeIdx === i}
-            >
-              {ref.label}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Zoom wrapper — scales tabs + content uniformly */}
+      <div style={{ zoom: zoomPercent / 100, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
 
-      {/* Content */}
-      <div style={{ flex: 1, overflow: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0 }}>
-        {current.type === 'image' ? (
-          <img
-            src={current.url}
-            alt={current.label}
-            style={{ width: '100%', height: 'auto', borderRadius: 8, border: '1px solid var(--border)', display: 'block' }}
-          />
-        ) : current.type === 'html' ? (
+        {/* Tabs — only when multiple references; scrollable so extra tabs never clip */}
+        {references.length > 1 && (
           <div
-            dangerouslySetInnerHTML={{ __html: current.url }}
-            style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--foreground)' }}
-          />
-        ) : (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, minHeight: 0 }}>
-            <iframe
-              src={current.url}
-              title={current.label}
-              style={{ flex: 1, border: 'none', borderRadius: 8, minHeight: 360, width: '100%' }}
-            />
-            <a
-              href={current.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                fontSize: 12, color: 'var(--exam-accent)', textDecoration: 'none',
-                display: 'inline-flex', alignItems: 'center', gap: 5,
-              }}
-            >
-              <i className="fa-light fa-arrow-up-right-from-square" aria-hidden="true" style={{ fontSize: 11 }} />
-              Open in new tab
-            </a>
+            role="tablist"
+            style={{
+              display: 'flex', flexShrink: 0, overflowX: 'auto',
+              backgroundColor: 'var(--muted)',
+              borderBottom: '1px solid var(--border)',
+              scrollbarWidth: 'none',
+            }}
+          >
+            {references.map((ref, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveIdx(i)}
+                style={{
+                  padding: '0.625em 1em', fontSize: '0.875em', fontWeight: 600,
+                  color: activeIdx === i ? 'var(--foreground)' : 'var(--muted-foreground)',
+                  borderBottom: activeIdx === i ? '2px solid var(--foreground)' : '2px solid transparent',
+                  backgroundColor: activeIdx === i ? 'var(--card)' : 'transparent',
+                  cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, marginBottom: '-1px',
+                }}
+                role="tab"
+                aria-selected={activeIdx === i}
+              >
+                {ref.label}
+              </button>
+            ))}
           </div>
         )}
+
+        {/* Content */}
+        <div style={{ flex: 1, overflow: 'auto', padding: '1em', display: 'flex', flexDirection: 'column', gap: '0.625em', minHeight: 0 }}>
+          {current.type === 'image' ? (
+            <img
+              src={current.url}
+              alt={current.label}
+              style={{ width: '100%', height: 'auto', borderRadius: 8, border: '1px solid var(--border)', display: 'block' }}
+            />
+          ) : current.type === 'html' ? (
+            <div
+              dangerouslySetInnerHTML={{ __html: current.url }}
+              style={{ lineHeight: 1.7, color: 'var(--foreground)' }}
+            />
+          ) : (
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5em', minHeight: 0 }}>
+              <iframe
+                src={current.url}
+                title={current.label}
+                style={{ flex: 1, border: 'none', borderRadius: 8, minHeight: 360, width: '100%' }}
+              />
+              <a
+                href={current.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontSize: '0.75em', color: 'var(--exam-accent)', textDecoration: 'none',
+                  display: 'inline-flex', alignItems: 'center', gap: '0.3em',
+                }}
+              >
+                <i className="fa-light fa-arrow-up-right-from-square" aria-hidden="true" />
+                Open in new tab
+              </a>
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );
@@ -730,38 +739,39 @@ export function SplitQuestionView({
 
   };
   return (
-    <div
-      className="w-full flex-1 min-h-0 animate-card-enter flex flex-col overflow-hidden"
-      style={{
-        fontSize: `${zoomPercent}%`
-      }}>
-      
+    <div className="w-full flex-1 min-h-0 animate-card-enter flex flex-col overflow-hidden">
+
       {hasMedia ?
       <div className="flex-1 min-h-0 flex gap-6 overflow-hidden flex-col md:flex-row">
+
           {/* LEFT card — question stem + answers */}
-          <div className="md:w-1/2 min-h-0 overflow-y-auto rounded-2xl border shadow-sm p-[2em] flex flex-col gap-4"
+          <div className="md:w-1/2 min-h-0 overflow-y-auto rounded-2xl border shadow-sm"
             style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
-            {renderQuestionStem()}
-            <div>
-              <h3
-                className="font-semibold text-[1em] mb-4"
-                style={{ color: 'var(--muted-foreground)' }}>
-                Select your answer:
-              </h3>
-              {renderInteractive()}
+            <div style={{ zoom: zoomPercent / 100, padding: '2em', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {renderQuestionStem()}
+              <div>
+                <h3
+                  className="font-semibold text-sm mb-4"
+                  style={{ color: 'var(--muted-foreground)' }}>
+                  Select your answer:
+                </h3>
+                {renderInteractive()}
+              </div>
+              {renderInlineTools()}
             </div>
-            {renderInlineTools()}
           </div>
 
-          {/* RIGHT column — reference panel (if references) or primary media */}
+          {/* RIGHT column — reference panel or primary media */}
           <div className="md:w-1/2 min-h-[320px] md:min-h-0 flex flex-col gap-3">
             {hasRef ? (
-              <QuestionReferencePanel references={question.references!} />
+              <QuestionReferencePanel references={question.references!} zoomPercent={zoomPercent} />
             ) : (
               <div
-                className="flex-1 min-h-0 overflow-y-auto rounded-2xl border shadow-sm p-[2em] flex flex-col gap-4"
+                className="flex-1 min-h-0 overflow-y-auto rounded-2xl border shadow-sm"
                 style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
-                {renderMediaOrContext()}
+                <div style={{ zoom: zoomPercent / 100, padding: '2em', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {renderMediaOrContext()}
+                </div>
               </div>
             )}
             {allowComments && (
@@ -778,23 +788,22 @@ export function SplitQuestionView({
 
       <div className="flex-1 min-h-0 overflow-y-auto">
           <div
-          className="max-w-4xl mx-auto rounded-2xl p-[2em] shadow-sm border flex flex-col gap-4"
-          style={{
-            borderColor: 'var(--border)',
-            backgroundColor: 'var(--card)'
-          }}>
-            {renderQuestionStem()}
-            {renderInteractive()}
-            {renderInlineTools()}
-            {allowComments && (
-              <QuestionCommentBox
-                questionId={question.id}
-                initialComment={comment}
-                onSave={onCommentChange}
-                isOpen={showReport}
-                onClose={onCloseReport || (() => {})}
-              />
-            )}
+            className="max-w-4xl mx-auto rounded-2xl shadow-sm border"
+            style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
+            <div style={{ zoom: zoomPercent / 100, padding: '2em', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {renderQuestionStem()}
+              {renderInteractive()}
+              {renderInlineTools()}
+              {allowComments && (
+                <QuestionCommentBox
+                  questionId={question.id}
+                  initialComment={comment}
+                  onSave={onCommentChange}
+                  isOpen={showReport}
+                  onClose={onCloseReport || (() => {})}
+                />
+              )}
+            </div>
           </div>
         </div>
       }
