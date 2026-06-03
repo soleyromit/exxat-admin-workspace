@@ -1,53 +1,9 @@
-import React, { useCallback, useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Question } from '../data/questions';
 import { Tooltip } from './Tooltip';
 import { QuestionCommentBox } from './QuestionCommentBox';
-import { Button as DSButton, Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@exxat/ds/packages/ui/src';
-function TabScrollContainer({
-  children,
-  style
+import { Button as DSButton, Table, TableHeader, TableHead, TableBody, TableRow, TableCell, Tabs, TabsList, TabsTrigger, TabsContent } from '@exxat/ds/packages/ui/src';
 
-
-
-}: {children: React.ReactNode;style?: React.CSSProperties;}) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [fadeLeft, setFadeLeft] = useState(false);
-  const [fadeRight, setFadeRight] = useState(false);
-  const updateFades = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setFadeLeft(el.scrollLeft > 4);
-    setFadeRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
-  }, []);
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    updateFades();
-    el.addEventListener('scroll', updateFades, {
-      passive: true
-    });
-    const ro = new ResizeObserver(updateFades);
-    ro.observe(el);
-    return () => {
-      el.removeEventListener('scroll', updateFades);
-      ro.disconnect();
-    };
-  }, [updateFades]);
-  return (
-    <div
-      className={`tab-scroll-container shrink-0 ${fadeLeft ? 'fade-left' : ''} ${fadeRight ? 'fade-right' : ''}`}
-      style={style}>
-      
-      <div
-        ref={scrollRef}
-        className="tab-scroll-hide flex overflow-x-auto"
-        role="tablist">
-        
-        {children}
-      </div>
-    </div>);
-
-}
 function ImagePanel({ src, alt }: {src: string;alt: string;}) {
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -110,8 +66,46 @@ function QuestionReferencePanel({
   references: NonNullable<Question['references']>;
   zoomPercent: number;
 }) {
-  const [activeIdx, setActiveIdx] = useState(0);
-  const current = references[activeIdx];
+  const renderRef = (ref: NonNullable<Question['references']>[0]) => {
+    if (ref.type === 'image') {
+      return (
+        <img
+          src={ref.url}
+          alt={ref.label}
+          style={{ width: '100%', height: 'auto', borderRadius: 8, border: '1px solid var(--border)', display: 'block' }}
+        />
+      );
+    }
+    if (ref.type === 'html') {
+      return (
+        <div
+          dangerouslySetInnerHTML={{ __html: ref.url }}
+          style={{ lineHeight: 1.7, color: 'var(--foreground)' }}
+        />
+      );
+    }
+    return (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5em', minHeight: 0 }}>
+        <iframe
+          src={ref.url}
+          title={ref.label}
+          style={{ flex: 1, border: 'none', borderRadius: 8, minHeight: 360, width: '100%' }}
+        />
+        <a
+          href={ref.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            fontSize: '0.75em', color: 'var(--exam-accent)', textDecoration: 'none',
+            display: 'inline-flex', alignItems: 'center', gap: '0.3em',
+          }}
+        >
+          <i className="fa-light fa-arrow-up-right-from-square" aria-hidden="true" />
+          Open in new tab
+        </a>
+      </div>
+    );
+  };
 
   return (
     <div
@@ -120,76 +114,39 @@ function QuestionReferencePanel({
       role="complementary"
       aria-label="Question reference material"
     >
-      {/* Zoom wrapper — scales tabs + content uniformly */}
       <div style={{ zoom: zoomPercent / 100, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-
-        {/* Tabs — only when multiple references; scrollable so extra tabs never clip */}
-        {references.length > 1 && (
-          <div
-            role="tablist"
-            style={{
-              display: 'flex', flexShrink: 0, overflowX: 'auto',
-              backgroundColor: 'var(--muted)',
-              borderBottom: '1px solid var(--border)',
-              scrollbarWidth: 'none',
-            }}
-          >
+        {references.length > 1 ? (
+          <Tabs defaultValue="0" className="flex-col flex-1 min-h-0 gap-0">
+            <TabsList
+              variant="line"
+              className="w-full justify-start bg-muted border-b border-border rounded-none p-0 h-auto overflow-x-auto flex-nowrap gap-0"
+              style={{ scrollbarWidth: 'none' } as React.CSSProperties}
+            >
+              {references.map((ref, i) => (
+                <TabsTrigger
+                  key={i}
+                  value={String(i)}
+                  className="rounded-none h-auto px-4 py-2.5 text-sm font-semibold flex-none"
+                >
+                  {ref.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
             {references.map((ref, i) => (
-              <button
+              <TabsContent
                 key={i}
-                onClick={() => setActiveIdx(i)}
-                style={{
-                  padding: '0.625em 1em', fontSize: '0.875em', fontWeight: 600,
-                  color: activeIdx === i ? 'var(--foreground)' : 'var(--muted-foreground)',
-                  borderBottom: activeIdx === i ? '2px solid var(--foreground)' : '2px solid transparent',
-                  backgroundColor: activeIdx === i ? 'var(--card)' : 'transparent',
-                  cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, marginBottom: '-1px',
-                }}
-                role="tab"
-                aria-selected={activeIdx === i}
+                value={String(i)}
+                className="flex-1 overflow-auto p-[1em] flex flex-col gap-[0.625em] min-h-0 mt-0"
               >
-                {ref.label}
-              </button>
+                {renderRef(ref)}
+              </TabsContent>
             ))}
+          </Tabs>
+        ) : (
+          <div style={{ flex: 1, overflow: 'auto', padding: '1em', display: 'flex', flexDirection: 'column', gap: '0.625em', minHeight: 0 }}>
+            {renderRef(references[0])}
           </div>
         )}
-
-        {/* Content */}
-        <div style={{ flex: 1, overflow: 'auto', padding: '1em', display: 'flex', flexDirection: 'column', gap: '0.625em', minHeight: 0 }}>
-          {current.type === 'image' ? (
-            <img
-              src={current.url}
-              alt={current.label}
-              style={{ width: '100%', height: 'auto', borderRadius: 8, border: '1px solid var(--border)', display: 'block' }}
-            />
-          ) : current.type === 'html' ? (
-            <div
-              dangerouslySetInnerHTML={{ __html: current.url }}
-              style={{ lineHeight: 1.7, color: 'var(--foreground)' }}
-            />
-          ) : (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5em', minHeight: 0 }}>
-              <iframe
-                src={current.url}
-                title={current.label}
-                style={{ flex: 1, border: 'none', borderRadius: 8, minHeight: 360, width: '100%' }}
-              />
-              <a
-                href={current.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  fontSize: '0.75em', color: 'var(--exam-accent)', textDecoration: 'none',
-                  display: 'inline-flex', alignItems: 'center', gap: '0.3em',
-                }}
-              >
-                <i className="fa-light fa-arrow-up-right-from-square" aria-hidden="true" />
-                Open in new tab
-              </a>
-            </div>
-          )}
-        </div>
-
       </div>
     </div>
   );
@@ -245,12 +202,10 @@ export function SplitQuestionView({
   isFlagged = false,
   onToggleFlag,
 }: SplitQuestionViewProps) {
-  const [activeTab, setActiveTab] = useState(0);
   const [pdfLoaded, setPdfLoaded] = useState(false);
   const [pdfError, setPdfError] = useState(false);
   const pdfTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
-    setActiveTab(0);
     setPdfLoaded(false);
     setPdfError(false);
   }, [question.id]);
@@ -366,77 +321,48 @@ export function SplitQuestionView({
   const renderMediaOrContext = () => {
     let content = null;
     if (question.type === 'case-study' && question.tabs) {
-      content =
-      <div
-        className="rounded-xl border overflow-hidden flex flex-col"
-        style={{
-          borderColor: 'var(--border)',
-          backgroundColor: 'var(--card)',
-          minHeight: '300px'
-        }}>
-        
-          {/* Tab bar — hidden scrollbar with gradient fade masks */}
-          <TabScrollContainer
-          style={{
-            backgroundColor: 'var(--muted)',
-            borderBottom: '1px solid var(--border)'
-          }}>
-          
-            {question.tabs.map((t, i) => {
-            const isActive = activeTab === i;
-            return (
-              <button
+      content = (
+        <Tabs
+          defaultValue="0"
+          className="rounded-xl border overflow-hidden gap-0"
+          style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)', minHeight: '300px' }}
+        >
+          <TabsList
+            variant="line"
+            className="w-full justify-start bg-muted border-b border-border rounded-none p-0 h-auto overflow-x-auto flex-nowrap gap-0"
+            style={{ scrollbarWidth: 'none' } as React.CSSProperties}
+          >
+            {question.tabs.map((t, i) => (
+              <TabsTrigger
                 key={i}
-                onClick={() => setActiveTab(i)}
-                className="relative px-4 py-2.5 text-[0.875em] font-semibold transition-colors whitespace-nowrap shrink-0"
-                style={{
-                  color: isActive ? 'var(--foreground)' : 'var(--muted-foreground)',
-                  backgroundColor: isActive ? 'var(--card)' : 'transparent',
-                  borderBottom: isActive ? '2px solid var(--foreground)' : '2px solid transparent',
-                  marginBottom: '-1px',
-                  cursor: 'pointer'
-                }}
-                role="tab"
-                aria-selected={isActive}
-                aria-label={`View ${t.title} tab`}>
-                
-                  {t.title}
-                </button>);
-
-          })}
-          </TabScrollContainer>
-          {/* Tab content */}
-          <div
-          className="p-[1.5em] space-y-[1em] overflow-y-auto flex-1"
-          role="tabpanel">
-          
-            {question.tabs[activeTab]?.content.map((p, i) =>
-          <p
-            key={i}
-            className="text-[0.875em] leading-relaxed"
-            style={{
-              color: 'var(--muted-foreground)'
-            }}>
-            
-                {p}
-              </p>
-          )}
-          </div>
-          {/* Show image if case study also has an image */}
-          {question.imageUrl &&
-        <div
-          className="p-[1em] border-t"
-          style={{
-            borderColor: 'var(--border)'
-          }}>
-          
-              <ImagePanel
-            src={question.imageUrl}
-            alt="Case study reference image" />
-          
+                value={String(i)}
+                className="rounded-none h-auto px-4 py-2.5 text-sm font-semibold flex-none"
+                aria-label={`View ${t.title} tab`}
+              >
+                {t.title}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {question.tabs.map((tab, i) => (
+            <TabsContent
+              key={i}
+              value={String(i)}
+              className="flex-1 p-[1.5em] overflow-y-auto space-y-[1em] mt-0"
+            >
+              {tab.content.map((p, j) => (
+                <p key={j} className="text-[0.875em] leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
+                  {p}
+                </p>
+              ))}
+            </TabsContent>
+          ))}
+          {question.imageUrl && (
+            <div className="p-[1em] border-t" style={{ borderColor: 'var(--border)' }}>
+              <ImagePanel src={question.imageUrl} alt="Case study reference image" />
             </div>
-        }
-        </div>;
+          )}
+        </Tabs>
+      );
 
     } else if (question.imageUrl) {
       content =
