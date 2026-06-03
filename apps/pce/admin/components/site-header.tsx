@@ -26,7 +26,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Button } from "@exxatdesignux/ui"
 import { useModKeyLabel } from "@/hooks/use-mod-key-label"
+import { useAskLeo, AskLeoShortcutKbds } from "@/components/ask-leo-sidebar"
 import { cn } from "@/lib/utils"
 
 export type BreadcrumbItem = PageBreadcrumbTrailItem
@@ -53,6 +55,7 @@ export function SiteHeader({
   actions,
 }: SiteHeaderProps) {
   const mod = useModKeyLabel()
+  const { toggle: toggleAskLeo } = useAskLeo()
   const [isStuck, setIsStuck] = React.useState(false)
 
   React.useEffect(() => {
@@ -121,11 +124,27 @@ export function SiteHeader({
             className={actions ? undefined : "flex-1"}
           />
         )}
-        {actions && (
-          <div className="flex flex-1 items-center gap-2 min-w-0 pe-2">
-            {actions}
-          </div>
-        )}
+        <div className="flex flex-1 items-center justify-end gap-2 min-w-0 pe-2">
+          {actions}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 shrink-0 text-xs gap-1.5 px-2"
+                aria-label="Ask Leo"
+                onClick={toggleAskLeo}
+              >
+                <i className="fa-duotone fa-solid fa-star-christmas text-xs text-brand" aria-hidden="true" />
+                Ask Leo
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="flex flex-wrap items-center gap-1.5">
+              <span>Ask Leo</span>
+              <AskLeoShortcutKbds />
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </div>
     </header>
     </div>
