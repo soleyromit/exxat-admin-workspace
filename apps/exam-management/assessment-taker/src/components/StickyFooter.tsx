@@ -1,4 +1,4 @@
-import { Button as DSButton } from '@exxat/ds/packages/ui/src';
+import { Button as DSButton } from '@exxatdesignux/ui';
 
 interface StickyFooterProps {
   currentIndex: number;

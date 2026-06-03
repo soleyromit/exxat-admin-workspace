@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Question } from '../data/questions';
 import { ExamSection } from '../data/assessments';
-import { Button as DSButton } from '@exxat/ds/packages/ui/src';
+import { Button as DSButton } from '@exxatdesignux/ui';
 
 export interface SidebarDrawerProps {
   onClose: () => void;
@@ -38,13 +38,13 @@ export function SidebarDrawer({
     <div
       role="complementary"
       aria-label="Question navigator"
-      className="animate-slide-in-left"
+      className="animate-slide-in-right"
       style={{
         width: 240,
         flexShrink: 0,
         display: 'flex',
         flexDirection: 'column',
-        borderRight: '1px solid var(--border)',
+        borderLeft: '1px solid var(--border)',
         backgroundColor: 'var(--card)',
         overflow: 'hidden',
       }}
@@ -85,7 +85,7 @@ export function SidebarDrawer({
         {bookmarkedIndices.length > 0 && (
           <div>
             <div style={{
-              fontSize: 11, fontWeight: 600,
+              fontSize: 12, fontWeight: 600,
               color: 'var(--muted-foreground)',
               marginBottom: 8,
               display: 'flex', alignItems: 'center', gap: 4,
@@ -146,7 +146,7 @@ export function SidebarDrawer({
               backgroundColor: swatch === 'filled' ? bg : 'transparent',
               border: swatch === 'border' ? `1.5px solid ${borderColor}` : undefined,
             }} />
-            <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{label}</span>
+            <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{label}</span>
           </div>
         ))}
       </div>

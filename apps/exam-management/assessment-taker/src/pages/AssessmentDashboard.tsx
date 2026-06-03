@@ -18,7 +18,7 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button } from '@exxat/ds/packages/ui/src';
+import { Badge, Button } from '@exxatdesignux/ui';
 import {
   MOCK_ASSESSMENTS,
   Assessment,
@@ -47,7 +47,7 @@ const t = {
 
 // ─── Section label style ──────────────────────────────────────────────────────
 const sectionLabelStyle: React.CSSProperties = {
-  fontSize: 11,
+  fontSize: 12,
   fontWeight: 700,
   color: t.fgMuted,
   textTransform: 'uppercase',
@@ -116,7 +116,7 @@ function ActionCard({ exam, onNavigate }: { exam: Assessment; onNavigate: (path:
     >
       {/* Left column */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: 11, color: t.fgMuted, marginBottom: 3 }}>
+        <p style={{ fontSize: 12, color: t.fgMuted, marginBottom: 3 }}>
           {exam.courseCode} · {exam.courseName}
         </p>
         <p style={{ fontSize: 15, fontWeight: 700, color: t.fg, marginBottom: 6 }}>
@@ -149,7 +149,7 @@ function ActionCard({ exam, onNavigate }: { exam: Assessment; onNavigate: (path:
             aria-label={`Time remaining: ${formatCountdown(countdown)}`}
             style={{ textAlign: 'right' }}
           >
-            <p style={{ fontSize: 10, fontWeight: 600, color: isWarning ? t.destructive : t.fgMuted, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 2 }}>
+            <p style={{ fontSize: 12, fontWeight: 600, color: isWarning ? t.destructive : t.fgMuted, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 2 }}>
               Time Left
             </p>
             <p style={{ fontSize: 20, fontWeight: 700, color: isWarning ? t.destructive : t.brand, letterSpacing: 1 }}>
@@ -159,7 +159,7 @@ function ActionCard({ exam, onNavigate }: { exam: Assessment; onNavigate: (path:
         )}
         <Button
           size="lg"
-          onClick={() => onNavigate(`/exam/${exam.id}/take`)}
+          onClick={() => onNavigate(`/exam/${exam.id}/setup`)}
           aria-label={isInProgress ? `Continue ${exam.title}` : `Start ${exam.title}`}
         >
           {isInProgress ? 'Continue Exam' : 'Start Exam'}
@@ -220,7 +220,7 @@ function ResultRow({ exam, onView }: { exam: Assessment; onView: () => void }) {
     }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontSize: 13, fontWeight: 600, color: t.fg, marginBottom: 2 }}>{exam.title}</p>
-        <p style={{ fontSize: 11, color: t.fgMuted }}>{exam.courseCode} · {date}</p>
+        <p style={{ fontSize: 12, color: t.fgMuted }}>{exam.courseCode} · {date}</p>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         <StatusBadge status={exam.status} />
@@ -273,7 +273,7 @@ function SystemNotificationsSection() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <h2
           id="sys-notif-heading"
-          style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: t.fgMuted }}
+          style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: t.fgMuted }}
         >
           System Messages
         </h2>
@@ -332,7 +332,7 @@ function SystemNotificationsSection() {
 
               {/* Date + channel */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 }}>
-                <span style={{ fontSize: 11, color: t.fgMuted }}>{relativeDate(n.sentAt)}</span>
+                <span style={{ fontSize: 12, color: t.fgMuted }}>{relativeDate(n.sentAt)}</span>
                 <span style={{
                   fontSize: 12, fontWeight: 600,
                   color: t.fgMuted,
@@ -411,7 +411,7 @@ export function AssessmentDashboard() {
               <p style={sectionLabelStyle}>Results</p>
               {termOrder.map(term => (
                 <div key={term} style={{ marginBottom: 16 }}>
-                  <p style={{ fontSize: 11, fontWeight: 600, color: t.fgMuted, marginBottom: 0 }}>{term}</p>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: t.fgMuted, marginBottom: 0 }}>{term}</p>
                   <div style={{ borderTop: `1px solid ${t.border}` }}>
                     {grouped[term].map(e => (
                       <ResultRow key={e.id} exam={e} onView={() => navigate(`/exam/${e.id}/results`)} />

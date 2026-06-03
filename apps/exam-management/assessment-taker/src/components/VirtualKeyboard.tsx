@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button as DSButton } from '@exxat/ds/packages/ui/src';
+import { Button as DSButton } from '@exxatdesignux/ui';
 export interface VirtualKeyboardProps {
   isOpen: boolean;
   onClose: () => void;
@@ -192,7 +192,7 @@ export function VirtualKeyboard({
             {isMac ? 'macOS' : 'Windows'} Keyboard
             {capsLock &&
             <span
-              className="text-[10px] px-1.5 py-0.5 rounded font-bold"
+              className="text-xs px-1.5 py-0.5 rounded font-bold"
               style={{
                 backgroundColor: 'var(--exam-accent-light)',
                 color: 'var(--exam-accent)'

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { SettingsPanel } from './SettingsPanel';
 import { Tooltip } from './Tooltip';
-import { Button as DSButton } from '@exxat/ds/packages/ui/src';
+import { Button as DSButton } from '@exxatdesignux/ui';
 import type { ExamSection } from '../data/assessments';
 
 function getCurrentSection(sections: ExamSection[], index: number) {
@@ -57,8 +57,6 @@ export interface ExamToolbarProps {
   onToggleNav?: () => void;
   isNavOpen?: boolean;
   onReportIssue?: () => void;
-  answeredCount?: number;
-  flaggedCount?: number;
 }
 export function ExamToolbar({
   timerFormatted,
@@ -88,8 +86,6 @@ export function ExamToolbar({
   onToggleNav,
   isNavOpen,
   onReportIssue,
-  answeredCount,
-  flaggedCount,
 }: ExamToolbarProps) {
   const [showSettings, setShowSettings] = useState(false);
   const progressPercent =
@@ -259,10 +255,7 @@ export function ExamToolbar({
               onColorBlindModeChange={onColorBlindModeChange}
               onExit={onExit}
               onShowKeyboardShortcuts={onShowKeyboardShortcuts}
-              onReportIssue={onReportIssue}
-              totalQuestions={totalQuestions}
-              answeredCount={answeredCount}
-              flaggedCount={flaggedCount} />
+              onReportIssue={onReportIssue} />
             
           </div>
         </div>

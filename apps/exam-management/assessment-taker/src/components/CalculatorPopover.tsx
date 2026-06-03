@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button as DSButton } from '@exxat/ds/packages/ui/src';
+import { Button as DSButton } from '@exxatdesignux/ui';
 
 export interface CalculatorPopoverProps {
   isOpen: boolean;

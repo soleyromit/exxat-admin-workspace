@@ -18,7 +18,7 @@
  */
 
 import React from 'react'
-import { Button as DSButton } from '@exxat/ds/packages/ui/src'
+import { Button as DSButton } from '@exxatdesignux/ui'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 export type ButtonSize    = 'sm' | 'md' | 'lg'

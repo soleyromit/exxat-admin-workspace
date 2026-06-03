@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { tokens } from '../tokens/design-tokens';
-import { Button as DSButton, ToggleSwitch } from '@exxat/ds/packages/ui/src';
+import { Button as DSButton, ToggleSwitch } from '@exxatdesignux/ui';
 
 export interface AccessibilityPanelProps {
   isOpen: boolean;

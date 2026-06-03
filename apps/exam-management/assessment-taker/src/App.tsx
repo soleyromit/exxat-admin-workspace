@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button } from '@exxat/ds/packages/ui/src';
+import { Button } from '@exxatdesignux/ui';
 import { questions } from './data/questions';
 import { MOCK_ASSESSMENTS, ExamSection } from './data/assessments';
 import { useTimer } from './hooks/useTimer';
@@ -257,8 +257,19 @@ export function App() {
   }, []);
 
   const handleConfirmSubmit = useCallback(() => {
+    // Save responses before navigating; PostExam page clears this after display
+    const key = `exam-response-${id ?? 'demo'}`;
+    try {
+      localStorage.setItem(key, JSON.stringify({
+        assessmentId: id ?? 'demo',
+        answers,
+        submittedAt: new Date().toISOString(),
+      }));
+    } catch {
+      // Continue even if localStorage is unavailable
+    }
     navigate(`/exam/${id ?? 'demo'}/submitted`);
-  }, [navigate, id]);
+  }, [navigate, id, answers]);
   const handleExit = useCallback(() => {
     navigate('/');
   }, [navigate]);
@@ -416,9 +427,7 @@ export function App() {
         onShowKeyboardShortcuts={() => setShowShortcuts(true)}
         onToggleNav={() => setShowSidebar(v => !v)}
         isNavOpen={showSidebar}
-        onReportIssue={allowComments ? () => setShowReport(true) : undefined}
-        answeredCount={answeredIndices.size}
-        flaggedCount={flagged.size} />
+        onReportIssue={allowComments ? () => setShowReport(true) : undefined} />
       
 
       <div className="relative flex-1 overflow-hidden flex flex-col">
@@ -449,17 +458,6 @@ export function App() {
         
 
         <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
-          {showSidebar && (
-            <SidebarDrawer
-              onClose={() => setShowSidebar(false)}
-              questions={questions}
-              currentIndex={currentIndex}
-              highestReachedIndex={highestReachedIndex}
-              answeredSet={answeredIndices}
-              flaggedSet={flagged}
-              sections={assessment?.sections}
-              onNavigate={handleNavigate} />
-          )}
           <main
             id="main-content"
             className="flex-1 overflow-hidden flex flex-col p-4 md:p-6 pb-24"
@@ -486,6 +484,17 @@ export function App() {
               onToggleFlag={handleToggleFlag} />
 
           </main>
+          {showSidebar && (
+            <SidebarDrawer
+              onClose={() => setShowSidebar(false)}
+              questions={questions}
+              currentIndex={currentIndex}
+              highestReachedIndex={highestReachedIndex}
+              answeredSet={answeredIndices}
+              flaggedSet={flagged}
+              sections={assessment?.sections}
+              onNavigate={handleNavigate} />
+          )}
         </div>
       </div>
       
@@ -506,11 +515,14 @@ export function App() {
 
       {/* Vishaka May 14: "bottom panel is getting lost — that is my primary way to act.
            I have to reorient to the right-hand corner to go next." StickyFooter provides
-           bottom navigation so students never need to look at the toolbar to advance. */}
-      <StickyFooter
-        currentIndex={currentIndex}
-        totalQuestions={questions.length}
-        onNavigate={handleNavigate} />
+           bottom navigation so students never need to look at the toolbar to advance.
+           Hidden on section-start screens where navigation controls are in the overlay. */}
+      {!showSectionStart && (
+        <StickyFooter
+          currentIndex={currentIndex}
+          totalQuestions={questions.length}
+          onNavigate={handleNavigate} />
+      )}
 
       <GlobalReferencePanel
         isOpen={showGlobalRef}

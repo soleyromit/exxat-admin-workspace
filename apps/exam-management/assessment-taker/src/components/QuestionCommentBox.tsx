@@ -10,7 +10,7 @@
  */
 
 import { useState } from 'react';
-import { Button, Textarea } from '@exxat/ds/packages/ui/src';
+import { Button, Textarea } from '@exxatdesignux/ui';
 
 export interface QuestionCommentBoxProps {
   questionId: number;

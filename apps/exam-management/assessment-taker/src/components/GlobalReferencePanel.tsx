@@ -9,7 +9,7 @@
  * exam-wide material (formula sheets, reference tables) accessible at any question.
  */
 
-import { Button } from '@exxat/ds/packages/ui/src';
+import { Button } from '@exxatdesignux/ui';
 
 interface GlobalReferencePanelProps {
   isOpen: boolean;
@@ -77,7 +77,7 @@ export function GlobalReferencePanel({ isOpen, onClose, materials }: GlobalRefer
               <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 2 }}>
                 {material}
               </p>
-              <p style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+              <p style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
                 Available for all questions in this exam
               </p>
             </div>
@@ -94,7 +94,7 @@ export function GlobalReferencePanel({ isOpen, onClose, materials }: GlobalRefer
       </div>
 
       <div style={{ padding: '8px 16px 12px', borderTop: '1px solid var(--border)' }}>
-        <p style={{ fontSize: 11, color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: 5 }}>
+        <p style={{ fontSize: 12, color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: 5 }}>
           <i className="fa-light fa-circle-info" aria-hidden="true" />
           These materials are available throughout the exam.
         </p>

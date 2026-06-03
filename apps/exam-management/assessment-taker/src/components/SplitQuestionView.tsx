@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Question } from '../data/questions';
 import { Tooltip } from './Tooltip';
 import { QuestionCommentBox } from './QuestionCommentBox';
-import { Button as DSButton, Table, TableHeader, TableHead, TableBody, TableRow, TableCell, Tabs, TabsList, TabsTrigger, TabsContent } from '@exxat/ds/packages/ui/src';
+import { Button as DSButton, Table, TableHeader, TableHead, TableBody, TableRow, TableCell, Tabs, TabsList, TabsTrigger, TabsContent } from '@exxatdesignux/ui';
 
 function ImagePanel({ src, alt }: {src: string;alt: string;}) {
   const [error, setError] = useState(false);
@@ -58,6 +58,106 @@ function ImagePanel({ src, alt }: {src: string;alt: string;}) {
     </div>);
 
 }
+function buildPharmacologyPdf(): Blob {
+  type Line = { text: string; bold?: boolean; size: number; indent?: number };
+  const lines: Line[] = [
+    { text: 'Beta-Adrenergic Antagonists -- Pharmacology Reference', bold: true, size: 14 },
+    { text: '', size: 11 },
+    { text: 'Compiled for NCLEX-RN / USMLE Step 1 review. For exam use only.', size: 11 },
+    { text: '', size: 11 },
+    { text: 'MECHANISM OF ACTION', bold: true, size: 11 },
+    { text: 'Beta-blockers competitively antagonize catecholamines', size: 11 },
+    { text: '(epinephrine, norepinephrine) at beta-adrenergic receptors,', size: 11 },
+    { text: 'reducing heart rate, contractility, and AV conduction velocity.', size: 11 },
+    { text: 'beta1-selective agents preferentially target cardiac receptors.', size: 11 },
+    { text: '', size: 11 },
+    { text: 'KEY CLINICAL INDICATIONS', bold: true, size: 11 },
+    { text: '- Hypertension (first-line for young patients with tachycardia)', size: 11, indent: 10 },
+    { text: '- Angina pectoris (reduces O2 demand by lowering HR and contractility)', size: 11, indent: 10 },
+    { text: '- Post-MI cardioprotection (reduces reinfarction risk)', size: 11, indent: 10 },
+    { text: '- Heart failure with reduced EF (metoprolol, carvedilol, bisoprolol)', size: 11, indent: 10 },
+    { text: '- Atrial fibrillation / flutter (ventricular rate control)', size: 11, indent: 10 },
+    { text: '- Essential tremor, performance anxiety (propranolol)', size: 11, indent: 10 },
+    { text: '', size: 11 },
+    { text: 'ABSOLUTE CONTRAINDICATIONS', bold: true, size: 11 },
+    { text: '- Cardiogenic shock', size: 11, indent: 10 },
+    { text: '- Decompensated heart failure', size: 11, indent: 10 },
+    { text: '- 2nd/3rd-degree AV block (without pacemaker)', size: 11, indent: 10 },
+    { text: '- Severe bradycardia (< 50 bpm)', size: 11, indent: 10 },
+    { text: '', size: 11 },
+    { text: 'NOTABLE ADVERSE EFFECTS', bold: true, size: 11 },
+    { text: '- Bradycardia, hypotension', size: 11, indent: 10 },
+    { text: '- Fatigue, cold extremities (peripheral vasoconstriction)', size: 11, indent: 10 },
+    { text: '- Masking of hypoglycemia symptoms in diabetics', size: 11, indent: 10 },
+    { text: '- Bronchoconstriction (non-selective -- avoid in asthma/COPD)', size: 11, indent: 10 },
+    { text: '- Rebound hypertension on abrupt withdrawal', size: 11, indent: 10 },
+  ];
+
+  const streamParts: string[] = [];
+  let y = 740;
+  for (const { text, bold, size, indent = 0 } of lines) {
+    if (!text) { y -= 10; continue; }
+    const safe = text.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+    streamParts.push(`BT ${bold ? '/FB' : '/F1'} ${size} Tf ${40 + indent} ${y} Td (${safe}) Tj ET`);
+    y -= size + (bold ? 9 : 5);
+  }
+  const stream = streamParts.join('\n');
+
+  let body = '%PDF-1.4\n';
+  const offsets: number[] = [];
+
+  const addObj = (n: number, dict: string, streamContent?: string) => {
+    offsets.push(body.length);
+    if (streamContent !== undefined) {
+      body += `${n} 0 obj\n<< /Length ${streamContent.length} >>\nstream\n${streamContent}\nendstream\nendobj\n`;
+    } else {
+      body += `${n} 0 obj\n${dict}\nendobj\n`;
+    }
+  };
+
+  addObj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+  addObj(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+  addObj(3, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /FB 6 0 R >> >> >>');
+  addObj(4, '', stream);
+  addObj(5, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+  addObj(6, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+
+  const xrefPos = body.length;
+  let xref = `xref\n0 ${offsets.length + 1}\n0000000000 65535 f \n`;
+  for (const off of offsets) {
+    xref += `${String(off).padStart(10, '0')} 00000 n \n`;
+  }
+  xref += `trailer\n<< /Size ${offsets.length + 1} /Root 1 0 R >>\nstartxref\n${xrefPos}\n%%EOF`;
+
+  return new Blob([body + xref], { type: 'application/pdf' });
+}
+
+function PdfRefPanel(_props: { url: string; label: string }) {
+  const [src, setSrc] = useState('');
+
+  useEffect(() => {
+    const blob = buildPharmacologyPdf();
+    const url = URL.createObjectURL(blob);
+    setSrc(url);
+    return () => URL.revokeObjectURL(url);
+  }, []);
+
+  if (!src) return (
+    <div className="flex-1 flex items-center justify-center">
+      <i className="fa-light fa-spinner-third fa-spin" aria-hidden="true" style={{ fontSize: 24, color: 'var(--muted-foreground)' }} />
+    </div>
+  );
+
+  return (
+    <embed
+      src={src}
+      type="application/pdf"
+      className="flex-1 w-full"
+      style={{ border: 'none', minHeight: 340, display: 'block' }}
+    />
+  );
+}
+
 // ─── Per-question reference panel (embedded in split layout) ─────────────────
 function QuestionReferencePanel({
   references,
@@ -76,13 +176,49 @@ function QuestionReferencePanel({
         />
       );
     }
+    if (ref.type === 'table') {
+      return (
+        <div className="flex flex-col gap-3">
+          {ref.title && (
+            <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>{ref.title}</p>
+          )}
+          <div className="rounded-lg border border-border overflow-hidden">
+            <Table className="border-separate border-spacing-0">
+              <TableHeader>
+                <TableRow>
+                  {ref.headers.map((h, i) => (
+                    <TableHead key={i} className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg whitespace-normal">{h}</TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {ref.rows.map((row, i) => (
+                  <TableRow key={i}>
+                    {row.map((cell, j) => (
+                      <TableCell key={j} className="px-3 py-2.5 whitespace-normal align-top">{cell}</TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          {ref.note && (
+            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>{ref.note}</p>
+          )}
+        </div>
+      );
+    }
     if (ref.type === 'html') {
       return (
         <div
+          className="ref-html-content"
           dangerouslySetInnerHTML={{ __html: ref.url }}
           style={{ lineHeight: 1.7, color: 'var(--foreground)' }}
         />
       );
+    }
+    if (ref.type === 'pdf') {
+      return <PdfRefPanel url={ref.url} label={ref.label} />;
     }
     return (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5em', minHeight: 0 }}>
@@ -107,27 +243,37 @@ function QuestionReferencePanel({
     );
   };
 
+  const typeIcon = (type: string) => {
+    switch (type) {
+      case 'image': return 'fa-image';
+      case 'table': return 'fa-table';
+      case 'pdf':   return 'fa-file-lines';
+      case 'html':  return 'fa-code';
+      default:      return 'fa-globe';
+    }
+  };
+
   return (
     <div
-      className="flex-1 min-h-0 overflow-auto rounded-2xl border shadow-sm flex flex-col"
+      className="flex-1 min-h-0 flex flex-col rounded-2xl border shadow-sm overflow-hidden"
       style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}
       role="complementary"
       aria-label="Question reference material"
     >
       <div style={{ zoom: zoomPercent / 100, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         {references.length > 1 ? (
-          <Tabs defaultValue="0" className="flex-col flex-1 min-h-0 gap-0">
+          <Tabs defaultValue="0" className="flex flex-col flex-1 min-h-0 gap-0">
             <TabsList
               variant="line"
-              className="w-full justify-start bg-muted border-b border-border rounded-none p-0 h-auto overflow-x-auto flex-nowrap gap-0"
-              style={{ scrollbarWidth: 'none' } as React.CSSProperties}
+              className="w-full justify-start bg-transparent rounded-none px-[2em] pt-[2em] pb-0 h-auto flex-nowrap gap-0"
             >
               {references.map((ref, i) => (
                 <TabsTrigger
                   key={i}
                   value={String(i)}
-                  className="rounded-none h-auto px-4 py-2.5 text-sm font-semibold flex-none"
+                  className="rounded-none h-auto px-0 me-[1.5em] py-2.5 text-sm font-semibold flex-none gap-1.5"
                 >
+                  <i className={`fa-light ${typeIcon(ref.type)} fa-fw`} aria-hidden="true" />
                   {ref.label}
                 </TabsTrigger>
               ))}
@@ -136,14 +282,14 @@ function QuestionReferencePanel({
               <TabsContent
                 key={i}
                 value={String(i)}
-                className="flex-1 overflow-auto p-[1em] flex flex-col gap-[0.625em] min-h-0 mt-0"
+                className="flex-1 overflow-auto p-[2em] flex flex-col gap-[0.625em] min-h-0 mt-0"
               >
                 {renderRef(ref)}
               </TabsContent>
             ))}
           </Tabs>
         ) : (
-          <div style={{ flex: 1, overflow: 'auto', padding: '1em', display: 'flex', flexDirection: 'column', gap: '0.625em', minHeight: 0 }}>
+          <div style={{ flex: 1, overflow: 'auto', padding: '2em', display: 'flex', flexDirection: 'column', gap: '0.625em', minHeight: 0 }}>
             {renderRef(references[0])}
           </div>
         )}
@@ -260,9 +406,9 @@ export function SplitQuestionView({
   question.type === 'passage' ||
   question.type === 'chart';
   const renderQuestionStem = () =>
-  <div className="mb-[1.5em]">
+  <div>
       {/* Single row: number · title (flex-1, wraps) · icons */}
-      <div className="flex items-start gap-2 mb-[0.75em]">
+      <div className="flex items-start gap-2">
         <span
           className="font-bold text-[1.125em] shrink-0"
           style={{ color: 'var(--foreground)', marginTop: '0.1em' }}
@@ -324,19 +470,18 @@ export function SplitQuestionView({
       content = (
         <Tabs
           defaultValue="0"
-          className="flex flex-col rounded-xl border overflow-hidden gap-0"
-          style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)', minHeight: '300px' }}
+          className="flex flex-col overflow-hidden gap-0"
+          style={{ minHeight: '300px' }}
         >
           <TabsList
             variant="line"
-            className="w-full justify-start bg-muted border-b border-border rounded-none p-0 h-auto overflow-x-auto flex-nowrap gap-0"
-            style={{ scrollbarWidth: 'none' } as React.CSSProperties}
+            className="w-full justify-start bg-transparent rounded-none px-[2em] pt-[2em] pb-0 h-auto flex-nowrap gap-0"
           >
             {question.tabs.map((t, i) => (
               <TabsTrigger
                 key={i}
                 value={String(i)}
-                className="rounded-none h-auto px-4 py-2.5 text-sm font-semibold flex-none"
+                className="rounded-none h-auto px-0 me-[1.5em] py-2.5 text-sm font-semibold flex-none"
                 aria-label={`View ${t.title} tab`}
               >
                 {t.title}
@@ -347,10 +492,10 @@ export function SplitQuestionView({
             <TabsContent
               key={i}
               value={String(i)}
-              className="flex-1 p-[1.5em] overflow-y-auto space-y-[1em] mt-0"
+              className="flex-1 p-[2em] overflow-y-auto space-y-[1em] mt-0"
             >
               {tab.content.map((p, j) => (
-                <p key={j} className="text-[0.875em] leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
+                <p key={j} className="text-[0.875em] leading-relaxed" style={{ color: 'var(--foreground)' }}>
                   {p}
                 </p>
               ))}
@@ -410,12 +555,12 @@ export function SplitQuestionView({
     } else if (question.type === 'table' && question.tableData) {
       // Render ONLY the table — no answer choices
       content =
-        <div className="rounded-xl border overflow-hidden" style={{ borderColor: 'var(--border)' }}>
-          <Table>
-            <TableHeader style={{ backgroundColor: 'var(--muted)' }}>
+        <div className="rounded-lg border border-border overflow-hidden">
+          <Table className="border-separate border-spacing-0">
+            <TableHeader>
               <TableRow>
                 {question.tableData.headers.map((h, i) => (
-                  <TableHead key={i}>{h}</TableHead>
+                  <TableHead key={i} className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg">{h}</TableHead>
                 ))}
               </TableRow>
             </TableHeader>
@@ -423,7 +568,7 @@ export function SplitQuestionView({
               {question.tableData.rows.map((row, i) => (
                 <TableRow key={i}>
                   {row.map((cell, j) => (
-                    <TableCell key={j}>{cell}</TableCell>
+                    <TableCell key={j} className="px-3 py-2.5">{cell}</TableCell>
                   ))}
                 </TableRow>
               ))}
@@ -541,10 +686,10 @@ export function SplitQuestionView({
         style={{
           borderColor: 'var(--border)',
           backgroundColor: 'var(--muted)',
-          color: 'var(--muted-foreground)',
+          color: 'var(--foreground)',
           maxHeight: '500px'
         }}>
-        
+
           {question.passageText}
         </div>;
 
@@ -566,7 +711,7 @@ export function SplitQuestionView({
           style={{
             backgroundColor: 'var(--muted)',
             borderColor: 'var(--border)',
-            color: 'var(--muted-foreground)'
+            color: 'var(--foreground)'
           }}>
           
             <strong>Caption:</strong> {question.caption}
@@ -578,7 +723,7 @@ export function SplitQuestionView({
           style={{
             backgroundColor: 'var(--muted)',
             borderColor: 'var(--border)',
-            color: 'var(--muted-foreground)'
+            color: 'var(--foreground)'
           }}>
           
             <strong>Caption:</strong> {question.chartData.caption}
@@ -695,9 +840,16 @@ export function SplitQuestionView({
               <div
                 className="flex-1 min-h-0 overflow-y-auto rounded-2xl border shadow-sm"
                 style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
-                <div style={{ zoom: zoomPercent / 100, padding: '2em', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {renderMediaOrContext()}
-                </div>
+                {question.type === 'case-study' ? (
+                  /* Case-study manages its own padding like the reference panel — no outer padding wrapper */
+                  <div style={{ zoom: zoomPercent / 100, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+                    {renderMediaOrContext()}
+                  </div>
+                ) : (
+                  <div style={{ zoom: zoomPercent / 100, padding: '2em', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {renderMediaOrContext()}
+                  </div>
+                )}
               </div>
             )}
             {allowComments && (

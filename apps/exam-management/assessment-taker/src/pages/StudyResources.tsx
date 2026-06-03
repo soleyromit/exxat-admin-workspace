@@ -17,7 +17,7 @@ import {
   Badge, Button,
   InputGroup, InputGroupAddon, InputGroupInput,
   Tabs, TabsList, TabsTrigger, TabsContent,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 
 // ─── Mock data ──────────────────────────────────────────────────────────────
 

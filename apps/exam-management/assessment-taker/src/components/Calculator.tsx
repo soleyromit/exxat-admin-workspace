@@ -35,7 +35,7 @@ import { useState } from 'react';
  *   All values from tokens.calc.* in design-tokens.ts
  */
 import { tokens } from '../tokens/design-tokens';
-import { Button as DSButton } from '@exxat/ds/packages/ui/src';
+import { Button as DSButton } from '@exxatdesignux/ui';
 export interface CalculatorProps {
   onClose: () => void;
 }

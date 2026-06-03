@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Button } from '@exxat/ds/packages/ui/src';
+import { Button } from '@exxatdesignux/ui';
 
 interface KeyboardShortcutModalProps {
   isOpen: boolean;
@@ -82,7 +82,7 @@ export function KeyboardShortcutModal({ isOpen, onClose }: KeyboardShortcutModal
                       border: '1px solid var(--border)',
                       backgroundColor: 'var(--muted)',
                       color: 'var(--foreground)',
-                      fontSize: 11, fontWeight: 700,
+                      fontSize: 12, fontWeight: 700,
                       fontFamily: 'monospace',
                     }}
                   >

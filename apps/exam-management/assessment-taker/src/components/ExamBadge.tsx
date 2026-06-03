@@ -5,7 +5,7 @@
  * bg/fg/dot color props continue to compile but the hardcoded colors are
  * dropped — all badges render with the DS secondary variant.
  */
-import { Badge } from '@exxat/ds/packages/ui/src';
+import { Badge } from '@exxatdesignux/ui';
 import { ReactNode } from 'react';
 
 export interface ExamBadgeProps {

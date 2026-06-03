@@ -1,14 +1,58 @@
 /* ─── Exxat-DS foundation (Tailwind v4) ──────────────────────────────────────
-   Loads the admin DS theme tokens (--background, --foreground, --primary,
-   --brand-color, --brand-tint*, --sidebar*, etc.) plus the @theme inline
-   bridge that surfaces them as Tailwind v4 utility classes.
+   Imports the compiled @exxatdesignux/ui globals: Tailwind base, DS theme
+   tokens, @source paths for the package's own dist, and @theme bridge.
    ────────────────────────────────────────────────────────────────────────── */
-@import '../../../../exxat-ds/packages/ui/src/theme.css';
-@import 'tailwindcss';
+@import '@exxatdesignux/ui/globals.css';
 
-/* Scan Exxat-DS source so its classes (bg-primary, text-foreground, etc.)
-   are picked up when DS components are imported into this app. */
-@source '../../../../exxat-ds/packages/ui/src/**/*.{ts,tsx}';
+/*
+  DS custom variants — required for DS Tailwind classes (data-active:,
+  data-horizontal:, data-open:, etc.) to fire correctly when compiled by
+  this product's own Tailwind.
+
+  Canonical source: shadcn@4.2.0/dist/tailwind.css — inlined because the
+  package is not hoisted in pnpm's virtual store. Reference copy lives at
+  apps/portal/app/globals.css. All products must keep these in sync.
+
+  Without this block:
+  · data-horizontal:flex-col   never fires → Tabs renders as horizontal flex
+  · group-data-horizontal/tabs never fires → active-tab underline invisible
+  · data-active: (built-in)    matches ANY value (incl. "false") → wrong states
+*/
+@custom-variant data-open {
+  &:where([data-state="open"]) { @slot; }
+}
+@custom-variant data-closed {
+  &:where([data-state="closed"]) { @slot; }
+}
+@custom-variant data-checked {
+  &:where([data-state="checked"]) { @slot; }
+}
+@custom-variant data-unchecked {
+  &:where([data-state="unchecked"]) { @slot; }
+}
+@custom-variant data-selected {
+  &:where([data-state="selected"]),
+  &:where([data-selected]:not([data-selected="false"])) { @slot; }
+}
+@custom-variant data-disabled {
+  &:where([data-disabled]:not([data-disabled="false"])) { @slot; }
+}
+@custom-variant data-active {
+  &:where([data-state="active"]),
+  &:where([data-active]:not([data-active="false"])) { @slot; }
+}
+@custom-variant data-horizontal {
+  &:where([data-orientation="horizontal"]) { @slot; }
+}
+@custom-variant data-vertical {
+  &:where([data-orientation="vertical"]) { @slot; }
+}
+
+/* ─── DS token gaps — missing from the submodule's theme.css scale ────────── */
+@theme inline {
+  /* rounded-4xl used by DS Badge for pill shape; DS theme only defines up to 3xl */
+  --radius-4xl: 9999px;
+}
 
 /* ─── App-local tokens (no DS equivalent) ─────────────────────────────────── */
 :root {
@@ -153,45 +197,50 @@
   --crossout-opacity: 0.7;
 }
 
-/* ─── Sidebar polish — match Prism reference (flat items, soft active fill) ──
-   The DS SidebarMenuButton CVA in Tailwind v4 ends up matching `data-active:`
-   utilities for any data-active value (including "false") in this app's
-   compile environment, plus Radix DropdownMenu sets data-state on triggers.
-   Force every row truly flat except the one with data-active="true". */
-html body [data-slot="sidebar-menu-button"]:not([data-active="true"]) {
-  background-color: transparent !important;
-  background-image: none !important;
-  box-shadow: none !important;
-  --tw-shadow: 0 0 #0000 !important;
-  --tw-shadow-colored: 0 0 #0000 !important;
-  --tw-ring-shadow: 0 0 #0000 !important;
-  --tw-ring-offset-shadow: 0 0 #0000 !important;
-  --tw-ring-color: transparent !important;
-  --tw-ring-width: 0 !important;
-  border-color: transparent !important;
-  font-weight: 500 !important;
-  color: var(--sidebar-foreground) !important;
+/* ─── DS Button — default variant hover ───────────────────────────────────────
+   The DS Button CVA `default` variant defines hover only for anchor elements
+   ([a]:hover:bg-primary/80). For regular <button> elements, the DS compiled
+   package provides hover via its own @layer base styles. Since we import DS
+   as source (not the compiled package), we must supply that rule here. */
+[data-slot="button"][data-variant="default"]:hover:not(:disabled) {
+  background-color: color-mix(in oklch, var(--primary) 85%, var(--foreground));
 }
-html body [data-slot="sidebar-menu-button"]:not([data-active="true"]):hover {
-  background-color: var(--sidebar-accent) !important;
-  color: var(--sidebar-accent-foreground) !important;
+
+/* ─── Reference panel HTML content ───────────────────────────────────────────
+   Questions with type:'html' references render via dangerouslySetInnerHTML.
+   DS Table components can't be used for HTML string content, so we match
+   raw <table> elements to DS Table visual output (ds/table.tsx pattern):
+   border-b on rows, no cell borders, h-10 header, p-2 cells, text-sm. */
+.ref-html-content table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem; /* text-sm — matches DS Table */
 }
-html body [data-slot="sidebar-menu-button"][data-active="true"] {
-  background-color: var(--sidebar-accent) !important;
-  background-image: none !important;
-  color: var(--sidebar-accent-foreground) !important;
-  box-shadow: none !important;
-  --tw-shadow: 0 0 #0000 !important;
-  --tw-ring-shadow: 0 0 #0000 !important;
-  --tw-ring-offset-shadow: 0 0 #0000 !important;
-  --tw-ring-color: transparent !important;
-  --tw-ring-width: 0 !important;
-  border-color: transparent !important;
-  font-weight: 600 !important;
+.ref-html-content thead tr {
+  border-bottom: 1px solid var(--border);
 }
-html body [data-slot="sidebar-menu-button"][data-state="open"] {
-  background-color: var(--sidebar-accent) !important;
-  color: var(--sidebar-accent-foreground) !important;
+.ref-html-content th {
+  background: var(--muted);
+  color: var(--foreground);
+  font-weight: 500;
+  font-size: 0.75rem; /* 12px minimum — WCAG A11Y */
+  padding: 8px 12px;
+  text-align: left;
+  vertical-align: middle;
+}
+.ref-html-content tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background-color 150ms;
+}
+.ref-html-content tbody tr:last-child {
+  border-bottom: none;
+}
+.ref-html-content td {
+  padding: 8px 12px;
+  vertical-align: middle;
+}
+.ref-html-content tbody tr:hover {
+  background-color: var(--muted);
 }
 
 /* ─── Typography ─────────────────────────────────────────────────────────── */
@@ -279,6 +328,12 @@ html body [data-slot="sidebar-menu-button"][data-state="open"] {
   to   { transform: translateX(0); }
 }
 .animate-slide-in-left { animation: slide-in-left 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+.animate-slide-in-right { animation: slide-in-right 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
 @keyframes slide-up {
   from { transform: translateY(100%); }

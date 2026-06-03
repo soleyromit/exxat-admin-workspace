@@ -6,7 +6,7 @@
  */
 
 import { Link } from 'react-router-dom';
-import { Button, Card, CardContent } from '@exxat/ds/packages/ui/src';
+import { Button, Card, CardContent } from '@exxatdesignux/ui';
 
 interface PlaceholderProps {
   icon: string;

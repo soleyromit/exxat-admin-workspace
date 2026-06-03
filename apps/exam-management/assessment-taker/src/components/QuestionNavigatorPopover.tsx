@@ -182,7 +182,7 @@ export function QuestionNavigatorPopover({
           {bookmarkedIndices.length > 0 && (
             <div style={{ marginBottom: 12 }}>
               <div style={{
-                fontSize: 11, fontWeight: 700, color: 'var(--state-flagged-text)',
+                fontSize: 12, fontWeight: 700, color: 'var(--state-flagged-text)',
                 marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4,
               }}>
                 <i className="fa-regular fa-bookmark" aria-hidden="true" style={{ fontSize: 11 }} />
@@ -249,7 +249,7 @@ export function QuestionNavigatorPopover({
                 backgroundColor: bg,
                 border: border ? `1.5px solid ${border}` : undefined,
               }} />
-              <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{label}</span>
+              <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{label}</span>
             </div>
           ))}
         </div>

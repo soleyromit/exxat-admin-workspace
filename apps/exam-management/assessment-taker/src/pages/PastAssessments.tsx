@@ -15,7 +15,7 @@ import {
   Badge, Button,
   InputGroup, InputGroupAddon, InputGroupInput,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 
 // ─── Mock past-assessment dataset (richer than dashboard's small set) ───────
 type PastEntry = {

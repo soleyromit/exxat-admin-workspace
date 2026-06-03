@@ -42,7 +42,7 @@
  */
 import { Button } from './Button';
 import { tokens } from '../tokens/design-tokens';
-import { Button as DSButton } from '@exxat/ds/packages/ui/src';
+import { Button as DSButton } from '@exxatdesignux/ui';
 export interface ExamInfoOverlayProps {
   onClose: () => void;
 }

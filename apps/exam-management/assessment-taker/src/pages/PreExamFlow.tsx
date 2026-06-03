@@ -13,34 +13,69 @@
  *
  * Lockdown browser enforcement is deferred to Q4 2026 (vendor evaluation:
  * Respondus vs HonorLock).
- *
- * Audio/video pre-check (Darshan's item) is shown as pending/TBD.
- *
- * NOTE: SystemCheck component is kept as dead code for Phase 2 reference.
  */
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Badge, Button, Input } from '@exxat/ds/packages/ui/src';
+import { Badge, Button, Checkbox, Input } from '@exxatdesignux/ui';
 import { MOCK_ASSESSMENTS, getEffectiveDuration, formatDuration, Assessment } from '../data/assessments';
 
-const t = {
-  bg: 'var(--background)',
-  card: 'var(--card)',
-  muted: 'var(--muted)',
-  brand: 'var(--brand-color)',
-  fg: 'var(--foreground)',
-  fgMuted: 'var(--muted-foreground)',
-  border: 'var(--border)',
-  borderControl: 'var(--border)',
-};
-
 const STEPS = [
-  { id: 'password',      label: 'Enter Password',        icon: 'fa-lock' },
-  { id: 'instructions',  label: 'Instructions',          icon: 'fa-file-lines' },
-  { id: 'accommodation', label: 'Accommodations',        icon: 'fa-universal-access' },
-  { id: 'ready',         label: 'Ready to Start',        icon: 'fa-circle-check' },
+  { id: 'password',      label: 'Enter Password',  icon: 'fa-lock' },
+  { id: 'instructions',  label: 'Instructions',    icon: 'fa-file-lines' },
+  { id: 'accommodation', label: 'Accommodations',  icon: 'fa-universal-access' },
+  { id: 'ready',         label: 'Ready to Start',  icon: 'fa-circle-check' },
 ];
+
+// ─── Step indicator ───────────────────────────────────────────────────────────
+function StepIndicator({ current }: { current: number }) {
+  return (
+    <nav aria-label="Pre-exam steps" className="flex items-center gap-0 mb-9">
+      {STEPS.map((step, i) => {
+        const done = i < current;
+        const active = i === current;
+        return (
+          <React.Fragment key={step.id}>
+            <div className="flex flex-col items-center gap-1.5" style={{ minWidth: 80 }}>
+              <div
+                aria-current={active ? 'step' : undefined}
+                className="flex items-center justify-center w-9 h-9 rounded-full font-bold transition-all duration-200"
+                style={{
+                  background: done || active ? 'var(--brand-color)' : 'var(--muted)',
+                  color: done || active ? 'var(--brand-foreground)' : 'var(--muted-foreground)',
+                  fontSize: done ? 14 : 13,
+                  border: active ? '2px solid var(--brand-color)' : 'none',
+                }}
+              >
+                {done
+                  ? <i className="fa-solid fa-check" aria-hidden="true" />
+                  : <i className={`fa-light ${step.icon}`} aria-hidden="true" />
+                }
+              </div>
+              <span
+                className="text-center leading-tight"
+                style={{
+                  fontSize: 12,
+                  fontWeight: active ? 700 : 500,
+                  color: active || done ? 'var(--brand-color)' : 'var(--muted-foreground)',
+                  maxWidth: 72,
+                }}
+              >
+                {step.label}
+              </span>
+            </div>
+            {i < STEPS.length - 1 && (
+              <div
+                className="flex-1 h-0.5 mb-5 transition-colors duration-300"
+                style={{ background: i < current ? 'var(--brand-color)' : 'var(--border)' }}
+              />
+            )}
+          </React.Fragment>
+        );
+      })}
+    </nav>
+  );
+}
 
 // ─── Step 0: Password ────────────────────────────────────────────────────────
 function ExamPassword({ onNext }: { onNext: () => void }) {
@@ -48,7 +83,6 @@ function ExamPassword({ onNext }: { onNext: () => void }) {
   const [error, setError] = useState(false);
   const [checking, setChecking] = useState(false);
 
-  // Mock password for prototype — real implementation validates against server
   const MOCK_PASSWORD = 'EXAM2026';
 
   function handleSubmit() {
@@ -66,26 +100,22 @@ function ExamPassword({ onNext }: { onNext: () => void }) {
 
   return (
     <div>
-      <h2 style={{ fontSize: 22, fontWeight: 700, color: t.fg, marginBottom: 6, lineHeight: 1.2 }}>
+      <h2 className="text-xl font-bold mb-1.5 leading-tight" style={{ color: 'var(--foreground)' }}>
         Enter Exam Password
       </h2>
-      <p style={{ fontSize: 14, color: t.fgMuted, marginBottom: 28 }}>
+      <p className="text-sm mb-7" style={{ color: 'var(--muted-foreground)' }}>
         Your faculty will display or announce the password when the exam begins. This confirms you are taking the exam at the scheduled time and location.
       </p>
 
-      <div style={{
-        background: t.muted, border: `1px solid ${t.border}`,
-        borderRadius: 10, padding: '14px 18px', marginBottom: 24,
-        display: 'flex', alignItems: 'center', gap: 10,
-      }}>
-        <i className="fa-light fa-circle-info" aria-hidden="true" style={{ color: t.brand, fontSize: 16, flexShrink: 0 }} />
-        <p style={{ fontSize: 13, color: t.fg }}>
+      <div className="flex items-center gap-2.5 rounded-xl px-4 py-3.5 mb-6 border" style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}>
+        <i className="fa-light fa-circle-info fa-fw shrink-0" aria-hidden="true" style={{ color: 'var(--brand-color)', fontSize: 16 }} />
+        <p className="text-sm" style={{ color: 'var(--foreground)' }}>
           The password is given verbally in class — do not share it with anyone who is not present.
         </p>
       </div>
 
-      <div style={{ marginBottom: 24 }}>
-        <label htmlFor="exam-password" style={{ fontSize: 13, fontWeight: 600, color: t.fg, display: 'block', marginBottom: 6 }}>
+      <div className="mb-6">
+        <label htmlFor="exam-password" className="block text-sm font-semibold mb-1.5" style={{ color: 'var(--foreground)' }}>
           Exam Password
         </label>
         <Input
@@ -102,20 +132,14 @@ function ExamPassword({ onNext }: { onNext: () => void }) {
           className="w-full"
         />
         {error && (
-          <p id="pw-error" role="alert" style={{ fontSize: 13, color: 'var(--destructive)', marginTop: 6 }}>
-            <i className="fa-light fa-circle-xmark" aria-hidden="true" style={{ marginRight: 5 }} />
+          <p id="pw-error" role="alert" className="flex items-center gap-1.5 text-sm mt-1.5" style={{ color: 'var(--destructive)' }}>
+            <i className="fa-light fa-circle-xmark" aria-hidden="true" />
             Incorrect password. Ask your faculty to confirm.
           </p>
         )}
       </div>
 
-      <Button
-        size="lg"
-        onClick={handleSubmit}
-        disabled={!password || checking}
-        className="w-full"
-        aria-disabled={!password || checking}
-      >
+      <Button size="lg" onClick={handleSubmit} disabled={!password || checking} className="w-full">
         <i className={`fa-light ${checking ? 'fa-spinner-third fa-spin' : 'fa-arrow-right'}`} aria-hidden="true" />
         {checking ? 'Verifying…' : 'Continue'}
       </Button>
@@ -123,224 +147,52 @@ function ExamPassword({ onNext }: { onNext: () => void }) {
   );
 }
 
-// ─── Step indicator ───────────────────────────────────────────────────────────
-function StepIndicator({ current }: { current: number }) {
-  return (
-    <nav aria-label="Pre-exam steps" style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 36 }}>
-      {STEPS.map((step, i) => {
-        const done = i < current;
-        const active = i === current;
-        return (
-          <React.Fragment key={step.id}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 80 }}>
-              <div
-                aria-current={active ? 'step' : undefined}
-                style={{
-                  width: 36, height: 36, borderRadius: '50%',
-                  background: done || active ? t.brand : t.muted,
-                  color: done || active ? 'var(--primary-foreground)' : t.fgMuted,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: done ? 14 : 13,
-                  fontWeight: 700,
-                  border: active ? `2px solid ${t.brand}` : 'none',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                {done
-                  ? <i className="fa-solid fa-check" aria-hidden="true" />
-                  : <i className={`fa-light ${step.icon}`} aria-hidden="true" />
-                }
-              </div>
-              <span style={{
-                fontSize: 12, fontWeight: active ? 700 : 500,
-                color: active ? t.brand : done ? t.brand : t.fgMuted,
-                textAlign: 'center', lineHeight: 1.3, maxWidth: 72,
-              }}>
-                {step.label}
-              </span>
-            </div>
-            {i < STEPS.length - 1 && (
-              <div style={{ flex: 1, height: 2, background: i < current ? t.brand : t.border, marginBottom: 20, transition: 'background 0.3s ease' }} />
-            )}
-          </React.Fragment>
-        );
-      })}
-    </nav>
-  );
-}
-
-// ─── Step 1: System Check (Phase 2 reference — not used in active flow) ──────
-// Kept as dead code. The checks it performed are now handled silently via the
-// background useEffect in PreExamFlow. Re-activate in Phase 2 if explicit
-// system-check UX is required.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function SystemCheck({ onNext }: { onNext: () => void }) {
-  const [checks, setChecks] = useState({
-    browser: false,
-    connection: false,
-    storage: false,
-  });
-
-  useEffect(() => {
-    // Simulate progressive checks
-    setTimeout(() => setChecks(c => ({ ...c, browser: true })), 600);
-    setTimeout(() => setChecks(c => ({ ...c, connection: true })), 1200);
-    setTimeout(() => setChecks(c => ({ ...c, storage: true })), 1800);
-  }, []);
-
-  const allPassed = Object.values(checks).every(Boolean);
-
-  const checkItems = [
-    {
-      key: 'browser' as const,
-      label: 'Browser Compatibility',
-      detail: 'Chrome 120+ / Edge 118+ / Firefox 121+ detected',
-      icon: 'fa-browser',
-    },
-    {
-      key: 'connection' as const,
-      label: 'Internet Connection',
-      detail: 'Connected · Signal strength: Strong',
-      icon: 'fa-wifi',
-    },
-    {
-      key: 'storage' as const,
-      label: 'Available Storage',
-      detail: '4.2 GB free — sufficient for exam session',
-      icon: 'fa-hard-drive',
-    },
-  ];
-
-  return (
-    <div>
-      <h2 style={{ fontSize: 22, fontWeight: 700, color: t.fg, marginBottom: 6, lineHeight: 1.2 }}>System Check</h2>
-      <p style={{ fontSize: 14, color: t.fgMuted, marginBottom: 28 }}>
-        We're verifying your setup before the exam begins. This takes a few seconds.
-      </p>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
-        {checkItems.map(item => (
-          <div key={item.key} style={{
-            display: 'flex', alignItems: 'center', gap: 16,
-            padding: '14px 18px', borderRadius: 10,
-            background: t.muted,
-            border: `1px solid ${t.border}`,
-            transition: 'all 0.3s ease',
-          }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: '50%',
-              background: t.card,
-              border: `1.5px solid ${t.border}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}>
-              {checks[item.key]
-                ? <i className="fa-solid fa-check" aria-hidden="true" style={{ color: t.fg, fontSize: 14 }} />
-                : <i className={`fa-light ${item.icon}`} aria-hidden="true" style={{ color: t.fgMuted, fontSize: 14, animation: 'spin 1s linear infinite' }} />
-              }
-            </div>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 14, fontWeight: 600, color: t.fg }}>{item.label}</p>
-              <p style={{ fontSize: 13, color: t.fgMuted }}>
-                {checks[item.key] ? item.detail : 'Checking…'}
-              </p>
-            </div>
-            <Badge variant="secondary" className="rounded-full text-xs font-semibold">
-              {checks[item.key] ? 'Passed' : '…'}
-            </Badge>
-          </div>
-        ))}
-
-        {/* Lockdown browser — deferred / informational */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 16,
-          padding: '14px 18px', borderRadius: 10,
-          background: t.muted, border: `1px solid ${t.border}`,
-        }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: '50%',
-            background: t.card, border: `1.5px solid ${t.border}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          }}>
-            <i className="fa-light fa-lock-open" aria-hidden="true" style={{ color: t.fgMuted, fontSize: 14 }} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: t.fg }}>Lockdown Browser</p>
-            <p style={{ fontSize: 13, color: t.fgMuted }}>
-              Not required for this exam
-            </p>
-          </div>
-          <Badge variant="secondary" className="rounded-full text-xs font-semibold">
-            Not Required
-          </Badge>
-        </div>
-      </div>
-
-      <Button
-        size="lg"
-        onClick={onNext}
-        disabled={!allPassed}
-        className="w-full"
-        aria-disabled={!allPassed}
-      >
-        <i className="fa-light fa-arrow-right" aria-hidden="true" />
-        {allPassed ? 'Continue to Instructions' : 'Running checks…'}
-      </Button>
-    </div>
-  );
-}
-
-// ─── Step 2: Instructions ─────────────────────────────────────────────────────
+// ─── Step 1: Instructions ─────────────────────────────────────────────────────
 function Instructions({ exam, onNext }: { exam: Assessment; onNext: () => void }) {
   const [attested, setAttested] = React.useState(false);
 
   return (
     <div>
-      <h2 style={{ fontSize: 22, fontWeight: 700, color: t.fg, marginBottom: 6, lineHeight: 1.2 }}>Instructions</h2>
-      <p style={{ fontSize: 14, color: t.fgMuted, marginBottom: 24 }}>
+      <h2 className="text-xl font-bold mb-1.5 leading-tight" style={{ color: 'var(--foreground)' }}>
+        Instructions
+      </h2>
+      <p className="text-sm mb-6" style={{ color: 'var(--muted-foreground)' }}>
         Read the following carefully before you begin.
       </p>
 
       {/* Exam summary strip */}
-      <div style={{
-        background: t.muted, border: `1px solid ${t.border}`,
-        borderRadius: 10, padding: 16, marginBottom: 20,
-        display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12,
-      }}>
+      <div className="grid grid-cols-3 gap-3 rounded-xl p-4 mb-5 border" style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}>
         {[
-          { icon: 'fa-list-check', label: 'Questions', value: `${exam.questionCount}` },
-          { icon: 'fa-clock', label: 'Time Allowed', value: formatDuration(getEffectiveDuration(exam)) },
+          { icon: 'fa-list-check', label: 'Questions',    value: `${exam.questionCount}` },
+          { icon: 'fa-clock',      label: 'Time Allowed', value: formatDuration(getEffectiveDuration(exam)) },
           { icon: 'fa-shield-check', label: 'Passing Score', value: `${exam.passingScore}%` },
         ].map(item => (
-          <div key={item.label} style={{ textAlign: 'center' }}>
-            <i className={`fa-light ${item.icon}`} aria-hidden="true" style={{ color: t.fgMuted, fontSize: 18, marginBottom: 4, display: 'block' }} />
-            <p style={{ fontSize: 18, fontWeight: 800, color: t.fg }}>{item.value}</p>
-            <p style={{ fontSize: 12, color: t.fgMuted }}>{item.label}</p>
+          <div key={item.label} className="text-center">
+            <i className={`fa-light ${item.icon} fa-fw block mb-1`} aria-hidden="true" style={{ color: 'var(--muted-foreground)', fontSize: 18 }} />
+            <p className="text-lg font-extrabold" style={{ color: 'var(--foreground)' }}>{item.value}</p>
+            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>{item.label}</p>
           </div>
         ))}
       </div>
 
       {/* Faculty Instructions */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: t.fg, margin: 0 }}>
-            Faculty Instructions
-          </p>
+      <div className="mb-5">
+        <div className="flex items-center gap-2 mb-2">
+          <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>Faculty Instructions</p>
           <Badge variant="secondary" className="text-xs">From your instructor</Badge>
         </div>
-        <div style={{
-          background: t.card, border: `1px solid ${t.border}`,
-          borderRadius: 10, padding: 16, fontSize: 14, color: t.fg,
-          lineHeight: 1.7, maxHeight: 160, overflowY: 'auto',
-        }}>
+        <div
+          className="rounded-xl p-4 text-sm border overflow-y-auto"
+          style={{ background: 'var(--card)', borderColor: 'var(--border)', color: 'var(--foreground)', lineHeight: 1.7, maxHeight: 160 }}
+        >
           {exam.instructions || 'No specific instructions provided for this exam.'}
           {exam.referenceMaterials && exam.referenceMaterials.length > 0 && (
-            <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${t.border}` }}>
-              <p style={{ fontWeight: 600, marginBottom: 6 }}>Reference Materials Available:</p>
-              <ul style={{ paddingLeft: 18, margin: 0 }}>
+            <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
+              <p className="font-semibold mb-1.5">Reference Materials Available:</p>
+              <ul className="ps-4 m-0 space-y-1">
                 {exam.referenceMaterials.map(m => (
-                  <li key={m} style={{ marginBottom: 4 }}>
-                    <i className="fa-light fa-file-pdf" aria-hidden="true" style={{ color: t.fgMuted, marginRight: 6 }} />
+                  <li key={m}>
+                    <i className="fa-light fa-file-pdf fa-fw me-1.5" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
                     {m}
                   </li>
                 ))}
@@ -350,19 +202,16 @@ function Instructions({ exam, onNext }: { exam: Assessment; onNext: () => void }
         </div>
       </div>
 
-      {/* Exxat Platform Instructions */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: t.fg, margin: 0 }}>
-            Exxat Platform Instructions
-          </p>
+      {/* Academic Integrity */}
+      <div className="mb-5">
+        <div className="flex items-center gap-2 mb-2">
+          <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>Exxat Platform Instructions</p>
           <Badge variant="secondary" className="text-xs">Academic Integrity</Badge>
         </div>
-        <div style={{
-          background: t.card, border: `1px solid ${t.border}`,
-          borderRadius: 10, padding: 16, fontSize: 13, color: t.fgMuted,
-          lineHeight: 1.7, maxHeight: 120, overflowY: 'auto',
-        }}>
+        <div
+          className="rounded-xl p-4 text-sm border overflow-y-auto"
+          style={{ background: 'var(--card)', borderColor: 'var(--border)', color: 'var(--muted-foreground)', lineHeight: 1.7, maxHeight: 120 }}
+        >
           By starting this exam, you confirm that you will complete all questions independently without the assistance of any unauthorized resources, other students, or external parties. You understand that any form of academic dishonesty may result in a failing grade, academic probation, or dismissal from the program in accordance with your institution's code of conduct.
         </div>
       </div>
@@ -370,32 +219,25 @@ function Instructions({ exam, onNext }: { exam: Assessment; onNext: () => void }
       {/* Attestation — optional, does not gate Continue */}
       <label
         htmlFor="attestation"
-        style={{
-          display: 'flex', alignItems: 'flex-start', gap: 12,
-          padding: '14px 16px', borderRadius: 10, marginBottom: 24, cursor: 'pointer',
-          background: t.muted,
-          border: `1px solid ${t.border}`,
-          transition: 'all 0.2s ease',
-        }}
+        className="flex items-start gap-3 rounded-xl p-4 mb-6 cursor-pointer border"
+        style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}
       >
-        <input
+        <Checkbox
           id="attestation"
-          type="checkbox"
           checked={attested}
-          onChange={e => setAttested(e.target.checked)}
-          style={{ marginTop: 2, width: 16, height: 16, accentColor: 'var(--brand-color)', cursor: 'pointer', flexShrink: 0 }}
-          aria-label="I have read and understood the instructions"
+          onCheckedChange={v => setAttested(Boolean(v))}
+          className="mt-0.5 shrink-0"
         />
-        <div style={{ flex: 1 }}>
-          <p style={{ fontSize: 14, fontWeight: 600, color: t.fg, margin: 0, marginBottom: 2 }}>
+        <div className="flex-1">
+          <p className="text-sm font-semibold mb-0.5" style={{ color: 'var(--foreground)' }}>
             I have read and understood all instructions
           </p>
-          <p style={{ fontSize: 12, color: t.fgMuted, margin: 0 }}>
+          <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
             Optional — you can proceed without checking this.
           </p>
         </div>
         {attested && (
-          <i className="fa-solid fa-circle-check" aria-hidden="true" style={{ color: t.fg, fontSize: 18, flexShrink: 0, marginTop: 1 }} />
+          <i className="fa-solid fa-circle-check shrink-0 mt-0.5" aria-hidden="true" style={{ color: 'var(--foreground)', fontSize: 18 }} />
         )}
       </label>
 
@@ -407,20 +249,22 @@ function Instructions({ exam, onNext }: { exam: Assessment; onNext: () => void }
   );
 }
 
-// ─── Step 3: Accommodation Confirmation ──────────────────────────────────────
+// ─── Step 2: Accommodation Confirmation ──────────────────────────────────────
 function AccommodationConfirmation({ exam, onNext }: { exam: Assessment; onNext: () => void }) {
   const acc = exam.accommodation;
   const effectiveMins = getEffectiveDuration(exam);
 
   return (
     <div>
-      <h2 style={{ fontSize: 22, fontWeight: 700, color: t.fg, marginBottom: 6, lineHeight: 1.2 }}>Accommodation Confirmation</h2>
-      <p style={{ fontSize: 14, color: t.fgMuted, marginBottom: 24 }}>
+      <h2 className="text-xl font-bold mb-1.5 leading-tight" style={{ color: 'var(--foreground)' }}>
+        Accommodation Confirmation
+      </h2>
+      <p className="text-sm mb-6" style={{ color: 'var(--muted-foreground)' }}>
         Review your approved accommodations before the exam begins. If anything is incorrect, contact Student Services — do not start the exam.
       </p>
 
       {acc ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
+        <div className="flex flex-col gap-3 mb-6">
           {[
             acc.timeMultiplier > 1 && {
               icon: 'fa-clock',
@@ -438,45 +282,29 @@ function AccommodationConfirmation({ exam, onNext }: { exam: Assessment; onNext:
               value: acc.additionalNotes ?? 'Scheduled breaks during the exam',
             },
           ].filter(Boolean).map((item: any) => (
-            <div key={item.label} style={{
-              display: 'flex', alignItems: 'flex-start', gap: 14,
-              padding: '14px 18px', borderRadius: 10,
-              background: t.muted, border: `1px solid ${t.border}`,
-            }}>
-              <div style={{
-                width: 36, height: 36, borderRadius: 10,
-                background: t.card, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              }}>
-                <i className={`fa-light ${item.icon}`} aria-hidden="true" style={{ color: t.fgMuted, fontSize: 16 }} />
+            <div key={item.label} className="flex items-start gap-3.5 rounded-xl px-4 py-3.5 border" style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}>
+              <div className="flex items-center justify-center w-9 h-9 rounded-lg shrink-0 border" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+                <i className={`fa-light ${item.icon} fa-fw`} aria-hidden="true" style={{ color: 'var(--muted-foreground)', fontSize: 16 }} />
               </div>
               <div>
-                <p style={{ fontSize: 14, fontWeight: 700, color: t.fg, marginBottom: 2 }}>{item.label}</p>
-                <p style={{ fontSize: 13, color: t.fg }}>{item.value}</p>
+                <p className="text-sm font-bold mb-0.5" style={{ color: 'var(--foreground)' }}>{item.label}</p>
+                <p className="text-sm" style={{ color: 'var(--foreground)' }}>{item.value}</p>
               </div>
             </div>
           ))}
 
-          {/* Approver attribution */}
-          <div style={{
-            padding: '12px 16px', borderRadius: 8,
-            background: t.muted, border: `1px solid ${t.border}`,
-            display: 'flex', alignItems: 'center', gap: 8,
-          }}>
-            <i className="fa-light fa-circle-info" aria-hidden="true" style={{ color: t.fgMuted }} />
-            <p style={{ fontSize: 13, color: t.fgMuted }}>
-              Accommodations approved by <strong style={{ color: t.fg }}>{acc.approvedBy}</strong>. Faculty cannot modify accommodations.
+          <div className="flex items-center gap-2 rounded-lg px-4 py-3 border" style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}>
+            <i className="fa-light fa-circle-info fa-fw shrink-0" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
+            <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+              Accommodations approved by <strong style={{ color: 'var(--foreground)' }}>{acc.approvedBy}</strong>. Faculty cannot modify accommodations.
             </p>
           </div>
         </div>
       ) : (
-        <div style={{
-          padding: '24px', borderRadius: 12,
-          background: t.muted, border: `1px solid ${t.border}`,
-          textAlign: 'center', marginBottom: 24,
-        }}>
-          <i className="fa-light fa-universal-access" aria-hidden="true" style={{ fontSize: 32, color: t.fgMuted, marginBottom: 8, display: 'block' }} />
-          <p style={{ fontSize: 14, fontWeight: 600, color: t.fg, marginBottom: 4 }}>No accommodations on record</p>
-          <p style={{ fontSize: 13, color: t.fgMuted }}>
+        <div className="rounded-xl p-6 text-center mb-6 border" style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}>
+          <i className="fa-light fa-universal-access fa-fw block mb-2" aria-hidden="true" style={{ fontSize: 32, color: 'var(--muted-foreground)' }} />
+          <p className="text-sm font-semibold mb-1" style={{ color: 'var(--foreground)' }}>No accommodations on record</p>
+          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
             If you have an approved accommodation that isn't showing, contact Student Services before starting.
           </p>
         </div>
@@ -484,9 +312,10 @@ function AccommodationConfirmation({ exam, onNext }: { exam: Assessment; onNext:
 
       <a
         href="mailto:studentservices@exxat.edu"
-        style={{ display: 'block', textAlign: 'center', fontSize: 13, color: t.brand, marginBottom: 20, textDecoration: 'none' }}
+        className="block text-center text-sm mb-5 no-underline"
+        style={{ color: 'var(--brand-color)' }}
       >
-        <i className="fa-light fa-envelope" aria-hidden="true" style={{ marginRight: 5 }} />
+        <i className="fa-light fa-envelope fa-fw me-1" aria-hidden="true" />
         Contact Student Services if accommodations are incorrect
       </a>
 
@@ -498,60 +327,48 @@ function AccommodationConfirmation({ exam, onNext }: { exam: Assessment; onNext:
   );
 }
 
-// ─── Step 4: Ready ────────────────────────────────────────────────────────────
+// ─── Step 3: Ready ────────────────────────────────────────────────────────────
 function ReadyToStart({ exam, onStart }: { exam: Assessment; onStart: () => void }) {
   return (
-    <div style={{ textAlign: 'center' }}>
-      <div style={{
-        width: 72, height: 72, borderRadius: '50%',
-        background: t.muted, border: `1px solid ${t.border}`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        margin: '0 auto 20px',
-      }}>
-        <i className="fa-solid fa-circle-check" aria-hidden="true" style={{ color: t.fg, fontSize: 32 }} />
+    <div className="text-center">
+      <div
+        className="flex items-center justify-center w-18 h-18 rounded-full mx-auto mb-5 border"
+        style={{ width: 72, height: 72, background: 'var(--muted)', borderColor: 'var(--border)' }}
+      >
+        <i className="fa-solid fa-circle-check" aria-hidden="true" style={{ color: 'var(--foreground)', fontSize: 32 }} />
       </div>
 
-      <h2 style={{ fontSize: 26, fontWeight: 700, color: t.fg, marginBottom: 8, lineHeight: 1.2 }}>You're Ready</h2>
-      <p style={{ fontSize: 14, color: t.fgMuted, marginBottom: 28 }}>
+      <h2 className="text-2xl font-bold mb-2 leading-tight" style={{ color: 'var(--foreground)' }}>You're Ready</h2>
+      <p className="text-sm mb-7" style={{ color: 'var(--muted-foreground)' }}>
         All checks passed. Your exam is ready to begin. The timer starts when you click Start.
       </p>
 
-      {/* Final summary */}
-      <div style={{
-        background: t.muted, border: `1px solid ${t.border}`,
-        borderRadius: 12, padding: 20, marginBottom: 28, textAlign: 'left',
-      }}>
-        <p style={{ fontSize: 12, fontWeight: 700, color: t.fgMuted, marginBottom: 14 }}>
-          Exam Summary
-        </p>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      <div className="rounded-xl p-5 mb-7 text-left border" style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}>
+        <p className="text-xs font-bold mb-3.5" style={{ color: 'var(--muted-foreground)' }}>Exam Summary</p>
+        <div className="grid grid-cols-2 gap-2.5">
           {[
-            { label: 'Exam', value: exam.title },
-            { label: 'Course', value: `${exam.courseCode} · ${exam.courseName}` },
-            { label: 'Questions', value: `${exam.questionCount}` },
+            { label: 'Exam',         value: exam.title },
+            { label: 'Course',       value: `${exam.courseCode} · ${exam.courseName}` },
+            { label: 'Questions',    value: `${exam.questionCount}` },
             { label: 'Time Allowed', value: formatDuration(getEffectiveDuration(exam)) },
             { label: 'Passing Score', value: `${exam.passingScore}%` },
-            { label: 'Results', value: exam.isHighStakes ? 'Available after faculty review' : 'Available immediately after submission' },
+            { label: 'Results',      value: exam.isHighStakes ? 'Available after faculty review' : 'Available immediately after submission' },
           ].map(item => (
             <div key={item.label}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: t.fgMuted, marginBottom: 2 }}>{item.label}</p>
-              <p style={{ fontSize: 13, color: t.fg, fontWeight: 500 }}>{item.value}</p>
+              <p className="text-xs font-bold mb-0.5" style={{ color: 'var(--muted-foreground)' }}>{item.label}</p>
+              <p className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>{item.value}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <Button
-        size="lg"
-        onClick={onStart}
-        className="w-full font-extrabold"
-      >
+      <Button size="lg" onClick={onStart} className="w-full font-extrabold">
         <i className="fa-solid fa-play" aria-hidden="true" />
         Start Exam — Timer Begins Now
       </Button>
 
-      <p style={{ fontSize: 12, color: t.fgMuted, marginTop: 12 }}>
-        <i className="fa-light fa-circle-info" aria-hidden="true" style={{ marginRight: 4 }} />
+      <p className="text-xs mt-3" style={{ color: 'var(--muted-foreground)' }}>
+        <i className="fa-light fa-circle-info fa-fw me-1" aria-hidden="true" />
         Once started, the exam session cannot be paused.
       </p>
     </div>
@@ -567,11 +384,9 @@ export function PreExamFlow() {
 
   // Background system check — runs silently on mount.
   // Does NOT block the student; a dismissible strip appears only on failure.
-  // For the prototype, all checks always pass.
   useEffect(() => {
     const timer = setTimeout(() => {
-      // Prototype: always pass — set to a non-null string to test the warning strip
-      setCompatWarning(null);
+      setCompatWarning(null); // Prototype: always pass
     }, 1500);
     return () => clearTimeout(timer);
   }, []);
@@ -580,40 +395,33 @@ export function PreExamFlow() {
 
   if (!exam) {
     return (
-      <div style={{ minHeight: '100vh', background: t.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ fontSize: 18, color: t.fg }}>Assessment not found.</p>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="mt-4" style={{ color: t.brand }}>
-            ← Back to Dashboard
+      <div className="flex items-center justify-center min-h-full" style={{ background: 'var(--background)' }}>
+        <div className="text-center">
+          <p className="text-lg mb-4" style={{ color: 'var(--foreground)' }}>Assessment not found.</p>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} style={{ color: 'var(--brand-color)' }}>
+            <i className="fa-light fa-arrow-left" aria-hidden="true" />
+            Back to Dashboard
           </Button>
         </div>
       </div>
     );
   }
 
-  // Skip accommodation step (step 2) if no accommodation on record
   const hasAccommodation = Boolean(exam.accommodation);
-
-  // Step mapping (4 steps, 0-indexed):
-  //   0 → ExamPassword
-  //   1 → Instructions
-  //   2 → AccommodationConfirmation  (skipped → 3 if no accommodation)
-  //   3 → ReadyToStart
 
   const handleNext = () => {
     if (step === 1 && !hasAccommodation) {
-      setStep(3); // skip accommodation
+      setStep(3);
     } else {
       setStep(s => s + 1);
     }
   };
 
-  // Back navigation: going back from step 3 when no accommodation skips step 2
   const handleBack = () => {
     if (step === 0) {
       navigate('/');
     } else if (step === 3 && !hasAccommodation) {
-      setStep(1); // skip back over accommodation
+      setStep(1);
     } else {
       setStep(s => s - 1);
     }
@@ -622,42 +430,28 @@ export function PreExamFlow() {
   const handleStart = () => navigate(`/exam/${id}/take`);
 
   return (
-    <div style={{ background: t.bg, fontFamily: 'Inter, system-ui, sans-serif', minHeight: '100%' }}>
+    <div className="min-h-full" style={{ background: 'var(--background)' }}>
       {/* Step breadcrumb bar */}
-      <div style={{
-        background: t.card, borderBottom: `1px solid ${t.border}`,
-        padding: '0 24px', height: 44,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      }}>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleBack}
-          className="h-auto py-1 px-2 text-xs"
-          style={{ color: t.fgMuted }}
-        >
+      <div className="flex items-center justify-between px-6 h-11 border-b" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+        <Button variant="ghost" size="sm" onClick={handleBack} style={{ color: 'var(--muted-foreground)' }}>
           <i className="fa-light fa-arrow-left" aria-hidden="true" />
           {step === 0 ? 'Back to Dashboard' : 'Previous Step'}
         </Button>
-        <span style={{ fontSize: 13, color: t.fgMuted }}>Step {step + 1} of {STEPS.length}</span>
+        <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Step {step + 1} of {STEPS.length}</span>
       </div>
 
-      <div style={{ maxWidth: 580, margin: '0 auto', padding: '36px 24px 60px' }}>
+      <div className="max-w-xl mx-auto px-6 py-9 pb-16">
         <StepIndicator current={step} />
 
         {/* Background compat warning strip — dismissible, does not block */}
         {compatWarning && (
           <div
             role="alert"
-            style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              background: 'var(--muted)', border: '1px solid var(--border)', color: 'var(--foreground)',
-              borderRadius: 8, padding: '10px 14px', marginBottom: 20,
-              fontSize: 13, lineHeight: 1.4,
-            }}
+            className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 mb-5 text-sm border"
+            style={{ background: 'var(--muted)', borderColor: 'var(--border)', color: 'var(--foreground)', lineHeight: 1.4 }}
           >
-            <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ flexShrink: 0, fontSize: 15 }} />
-            <span style={{ flex: 1 }}>{compatWarning}</span>
+            <i className="fa-light fa-triangle-exclamation fa-fw shrink-0" aria-hidden="true" style={{ fontSize: 15 }} />
+            <span className="flex-1">{compatWarning}</span>
             <Button
               variant="ghost"
               size="icon"

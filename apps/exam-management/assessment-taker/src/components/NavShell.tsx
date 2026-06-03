@@ -25,7 +25,7 @@ import {
   TooltipProvider,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
   Tooltip, TooltipTrigger, TooltipContent,
-} from '@exxat/ds/packages/ui/src';
+} from '@exxatdesignux/ui';
 import { CommandPalette } from './CommandPalette';
 
 const MOCK_NOTIFICATIONS = [
@@ -102,7 +102,7 @@ export function NavShell({ children, title }: NavShellProps) {
 
   return (
     <TooltipProvider>
-      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+      {paletteOpen && <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />}
       <SidebarProvider className="h-svh">
         <Sidebar variant="inset" collapsible="icon">
           {/* ─── Brand wordmark ───────────────────────────────────────── */}
@@ -157,13 +157,13 @@ export function NavShell({ children, title }: NavShellProps) {
 
         <SidebarInset className="flex flex-col overflow-hidden">
           <TopBar title={title} entryPoint={entryPoint} />
-          <main
+          <div
             id="main-content"
             tabIndex={-1}
             className="flex-1 overflow-y-auto outline-none"
           >
             {children}
-          </main>
+          </div>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>

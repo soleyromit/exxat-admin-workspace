@@ -4,7 +4,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@exxat/ds/packages/ui/src';
+} from '@exxatdesignux/ui';
 
 interface TooltipProps {
   content: string;

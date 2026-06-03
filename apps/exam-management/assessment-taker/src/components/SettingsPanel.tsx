@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Button as DSButton,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
-} from '@exxat/ds/packages/ui/src';
+} from '@exxatdesignux/ui';
 
 export type ColorBlindMode =
   | 'none'
@@ -30,9 +30,6 @@ export interface SettingsPanelProps {
   onExit?: () => void;
   onShowKeyboardShortcuts?: () => void;
   onReportIssue?: () => void;
-  totalQuestions?: number;
-  answeredCount?: number;
-  flaggedCount?: number;
 }
 
 export function SettingsPanel({
@@ -52,16 +49,12 @@ export function SettingsPanel({
   onColorBlindModeChange,
   onShowKeyboardShortcuts,
   onReportIssue,
-  totalQuestions = 0,
-  answeredCount = 0,
-  flaggedCount = 0,
 }: SettingsPanelProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const [confirming, setConfirming] = useState(false);
   const [selectOpen, setSelectOpen] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) { setConfirming(false); setSelectOpen(false); }
+    if (!isOpen) { setSelectOpen(false); }
   }, [isOpen]);
 
   useEffect(() => {
@@ -77,136 +70,6 @@ export function SettingsPanel({
   }, [isOpen, onClose, selectOpen]);
 
   if (!isOpen) return null;
-
-  if (confirming) {
-    const unansweredCount = totalQuestions - answeredCount;
-    const allAnswered = unansweredCount === 0;
-
-    return (
-      <div
-        ref={ref}
-        className="absolute top-full right-0 mt-2 w-[300px] rounded-xl shadow-lg z-50 animate-pop-in overflow-hidden"
-        style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }}
-      >
-        {/* Header */}
-        <div
-          className="flex items-center gap-2 px-4 h-11"
-          style={{ borderBottom: '1px solid var(--border)' }}
-        >
-          <button
-            onClick={() => setConfirming(false)}
-            className="flex items-center justify-center w-7 h-7 rounded-md transition-colors hover:bg-[var(--muted)]"
-            aria-label="Back to settings"
-            style={{ color: 'var(--muted-foreground)' }}
-          >
-            <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 13 }} />
-          </button>
-          <span className="text-[13px] font-semibold" style={{ color: 'var(--foreground)' }}>
-            Submit Exam
-          </span>
-        </div>
-
-        {/* Progress summary */}
-        <div className="px-4 pt-4 pb-3 flex flex-col gap-1" style={{ borderBottom: '1px solid var(--border)' }}>
-          <p className="text-xs font-semibold mb-2" style={{ color: 'var(--muted-foreground)' }}>
-            Your progress
-          </p>
-
-          {/* Answered */}
-          <div className="flex items-center justify-between py-1.5">
-            <div className="flex items-center gap-2.5">
-              <span style={{ width: 18, textAlign: 'center' as const, color: 'var(--brand-color)' }}>
-                <i className="fa-solid fa-circle-check" aria-hidden="true" style={{ fontSize: 13 }} />
-              </span>
-              <span className="text-[13px] font-medium" style={{ color: 'var(--foreground)' }}>Answered</span>
-            </div>
-            <span className="text-[13px] font-semibold tabular-nums" style={{ color: 'var(--foreground)' }}>
-              {answeredCount} <span className="font-normal" style={{ color: 'var(--muted-foreground)' }}>/ {totalQuestions}</span>
-            </span>
-          </div>
-
-          {/* Unanswered */}
-          <div className="flex items-center justify-between py-1.5">
-            <div className="flex items-center gap-2.5">
-              <span style={{ width: 18, textAlign: 'center' as const, color: unansweredCount > 0 ? 'var(--destructive)' : 'var(--muted-foreground)' }}>
-                <i className="fa-regular fa-circle" aria-hidden="true" style={{ fontSize: 13 }} />
-              </span>
-              <span className="text-[13px] font-medium" style={{ color: 'var(--foreground)' }}>Unanswered</span>
-            </div>
-            <span
-              className="text-[13px] font-semibold tabular-nums"
-              style={{ color: unansweredCount > 0 ? 'var(--destructive)' : 'var(--muted-foreground)' }}
-            >
-              {unansweredCount}
-            </span>
-          </div>
-
-          {/* Bookmarked */}
-          {flaggedCount > 0 && (
-            <div className="flex items-center justify-between py-1.5">
-              <div className="flex items-center gap-2.5">
-                <span style={{ width: 18, textAlign: 'center' as const, color: 'var(--state-flagged-text)' }}>
-                  <i className="fa-solid fa-bookmark" aria-hidden="true" style={{ fontSize: 12 }} />
-                </span>
-                <span className="text-[13px] font-medium" style={{ color: 'var(--foreground)' }}>Bookmarked</span>
-              </div>
-              <span className="text-[13px] font-semibold tabular-nums" style={{ color: 'var(--state-flagged-text)' }}>
-                {flaggedCount}
-              </span>
-            </div>
-          )}
-
-          {/* Progress bar */}
-          <div
-            className="mt-2 rounded-full overflow-hidden"
-            style={{ height: 4, backgroundColor: 'var(--border)' }}
-            aria-hidden="true"
-          >
-            <div
-              className="h-full rounded-full transition-all"
-              style={{
-                width: totalQuestions > 0 ? `${(answeredCount / totalQuestions) * 100}%` : '0%',
-                backgroundColor: allAnswered ? 'var(--brand-color)' : 'var(--brand-color)',
-                opacity: allAnswered ? 1 : 0.7,
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Warning + actions */}
-        <div className="px-4 py-4 flex flex-col gap-3">
-          {!allAnswered && (
-            <p className="text-[12px] leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
-              You have <strong style={{ color: 'var(--foreground)' }}>{unansweredCount} unanswered</strong> question{unansweredCount !== 1 ? 's' : ''}. Submitting now will leave them blank.
-            </p>
-          )}
-          {allAnswered && (
-            <p className="text-[12px] leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
-              All questions answered. You won't be able to change your answers after submission.
-            </p>
-          )}
-          <div className="flex gap-2">
-            <DSButton variant="outline" size="sm" className="flex-1" onClick={() => setConfirming(false)}>
-              Cancel
-            </DSButton>
-            <DSButton
-              variant="default"
-              size="sm"
-              className="flex-1 font-semibold"
-              style={{
-                backgroundColor: 'var(--brand-color)',
-                color: 'var(--brand-foreground)',
-                borderColor: 'var(--brand-color)',
-              }}
-              onClick={() => { onClose(); onSubmit(); }}
-            >
-              Yes, Submit
-            </DSButton>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div
@@ -405,7 +268,7 @@ export function SettingsPanel({
             color: 'var(--brand-foreground)',
             borderColor: 'var(--brand-color)',
           }}
-          onClick={() => setConfirming(true)}
+          onClick={() => { onClose(); onSubmit(); }}
         >
           <i className="fa-light fa-paper-plane" aria-hidden="true" style={{ fontSize: 14 }} />
           Submit Exam

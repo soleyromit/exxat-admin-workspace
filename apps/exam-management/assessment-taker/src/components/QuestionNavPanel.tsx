@@ -262,10 +262,10 @@ export function QuestionNavPanel({
             padding: '0 12px 6px',
           }}
         >
-          {icon && <span aria-hidden="true" style={{ fontSize: 11 }}>{icon}</span>}
+          {icon && <span aria-hidden="true" style={{ fontSize: 12 }}>{icon}</span>}
           <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-foreground)' }}>{title}</span>
           <span style={{
-            marginLeft: 'auto', fontSize: 11, fontWeight: 600,
+            marginLeft: 'auto', fontSize: 12, fontWeight: 600,
             color: 'var(--muted-foreground)',
             background: 'var(--muted)', borderRadius: 10, padding: '1px 6px',
           }}>{group.length}</span>
@@ -341,7 +341,7 @@ export function QuestionNavPanel({
           <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--foreground)', flex: 1 }}>
             Questions
           </span>
-          <span style={{ fontSize: 11, color: 'var(--muted-foreground)', fontWeight: 500 }}>
+          <span style={{ fontSize: 12, color: 'var(--muted-foreground)', fontWeight: 500 }}>
             {currentIndex + 1} / {questions.length}
           </span>
           <button

@@ -10,7 +10,7 @@
  */
 
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, Tabs, TabsList, TabsTrigger, TabsContent } from '@exxat/ds/packages/ui/src';
+import { Button, Tabs, TabsList, TabsTrigger, TabsContent } from '@exxatdesignux/ui';
 import { ExamBadge } from '../components/ExamBadge';
 import { MOCK_ASSESSMENTS, ContentArea } from '../data/assessments';
 
@@ -143,7 +143,7 @@ export function ExamResults() {
                     background: t.muted, borderRadius: 10, padding: '10px 12px', textAlign: 'center',
                   }}>
                     <p style={{ fontSize: 20, fontWeight: 700, color: t.fg }}>{item.value}</p>
-                    <p style={{ fontSize: 11, color: t.fgMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.3 }}>{item.label}</p>
+                    <p style={{ fontSize: 12, color: t.fgMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.3 }}>{item.label}</p>
                   </div>
                 ))}
               </div>
@@ -167,7 +167,7 @@ export function ExamResults() {
                 <i className="fa-light fa-calendar-check" aria-hidden="true" />
                 Enter review
                 {exam?.reviewSessionEnd && (
-                  <span style={{ fontSize: 11, opacity: 0.8, fontWeight: 400 }}>
+                  <span style={{ fontSize: 12, opacity: 0.8, fontWeight: 400 }}>
                     · closes {exam.reviewSessionEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </span>
                 )}
@@ -266,7 +266,7 @@ export function ExamResults() {
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
                   <p style={{ fontSize: 13, fontWeight: 600, color: t.fg }}>Performance by Content Area</p>
-                  <span style={{ fontSize: 11, color: t.fgMuted }}>
+                  <span style={{ fontSize: 12, color: t.fgMuted }}>
                     Marker shows the {passing}% passing threshold
                   </span>
                 </div>

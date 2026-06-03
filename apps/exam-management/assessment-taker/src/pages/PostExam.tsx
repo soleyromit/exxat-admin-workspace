@@ -10,7 +10,7 @@
 
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { Button } from '@exxat/ds/packages/ui/src';
+import { Button } from '@exxatdesignux/ui';
 import { MOCK_ASSESSMENTS } from '../data/assessments';
 
 const t = {
@@ -42,9 +42,13 @@ export function PostExam() {
         return p + 20;
       });
     }, 240);
-    const done = setTimeout(() => setUploadStage('uploaded'), 1500);
+    const done = setTimeout(() => {
+      // Clear saved responses from localStorage after successful "upload"
+      try { localStorage.removeItem(`exam-response-${id ?? 'demo'}`); } catch { /* ignore */ }
+      setUploadStage('uploaded');
+    }, 1500);
     return () => { clearInterval(interval); clearTimeout(done); };
-  }, []);
+  }, [id]);
 
   // For demo: default to the results_pending exam
   const exam = MOCK_ASSESSMENTS.find(a => a.id === id) ?? MOCK_ASSESSMENTS.find(a => a.status === 'results_pending')!;

@@ -33,8 +33,11 @@ export interface Question {
   audioUrl?: string;
   pdfUrl?: string;
 
-  // Per-question supplementary reference material (image, pdf, or inline html)
-  references?: Array<{ url: string; type: 'image' | 'pdf' | 'html'; label: string }>;
+  // Per-question supplementary reference material
+  references?: Array<
+    | { type: 'image' | 'pdf' | 'html'; label: string; url: string }
+    | { type: 'table'; label: string; title?: string; headers: string[]; rows: string[][]; note?: string }
+  >;
 
   // Caption for media (audio, video, chart)
   caption?: string;
@@ -115,14 +118,27 @@ export const questions: Question[] = [
   required: true,
   references: [
     {
+      type: 'table',
+      label: 'Beta-Blocker Classes',
+      title: 'Beta-blocker selectivity and clinical use',
+      headers: ['Drug', 'Selectivity', 'Primary Use'],
+      rows: [
+        ['Metoprolol', 'β1-selective', 'HTN, angina, HF'],
+        ['Atenolol', 'β1-selective', 'HTN, post-MI'],
+        ['Propranolol', 'Non-selective', 'HTN, migraines, tremor'],
+        ['Carvedilol', 'Non-selective + α1', 'HF, HTN'],
+      ],
+      note: 'ISA = intrinsic sympathomimetic activity; HF = heart failure',
+    },
+    {
       url: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=900&q=80',
       type: 'image',
       label: 'Drug Reference Chart',
     },
     {
-      url: 'https://www.w3.org/WAI/WCAG21/wcag21.pdf',
       type: 'pdf',
       label: 'Pharmacology Guide',
+      url: '',
     },
   ],
 },
@@ -191,29 +207,18 @@ export const questions: Question[] = [
   required: true,
   references: [
     {
-      type: 'html',
+      type: 'table',
       label: 'RAAS Pathway',
-      url: `<div style="font-size:13px;line-height:1.7;color:var(--foreground)">
-        <p style="font-weight:700;font-size:14px;margin:0 0 12px">Renin–Angiotensin–Aldosterone System</p>
-        <table style="width:100%;border-collapse:collapse;font-size:12px">
-          <thead>
-            <tr style="background:var(--muted)">
-              <th style="padding:8px 10px;border:1px solid var(--border);text-align:left">Step</th>
-              <th style="padding:8px 10px;border:1px solid var(--border);text-align:left">Agent</th>
-              <th style="padding:8px 10px;border:1px solid var(--border);text-align:left">Site of action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td style="padding:8px 10px;border:1px solid var(--border)">1</td><td style="padding:8px 10px;border:1px solid var(--border)">Renin</td><td style="padding:8px 10px;border:1px solid var(--border)">Released from juxtaglomerular cells (kidney)</td></tr>
-            <tr style="background:var(--muted)"><td style="padding:8px 10px;border:1px solid var(--border)">2</td><td style="padding:8px 10px;border:1px solid var(--border)">Angiotensin I</td><td style="padding:8px 10px;border:1px solid var(--border)">Angiotensinogen → Angiotensin I (liver)</td></tr>
-            <tr><td style="padding:8px 10px;border:1px solid var(--border)">3</td><td style="padding:8px 10px;border:1px solid var(--border)">ACE</td><td style="padding:8px 10px;border:1px solid var(--border)">Converts Ang I → Ang II (lung endothelium)</td></tr>
-            <tr style="background:var(--muted)"><td style="padding:8px 10px;border:1px solid var(--border)">4</td><td style="padding:8px 10px;border:1px solid var(--border)">Angiotensin II</td><td style="padding:8px 10px;border:1px solid var(--border)">Vasoconstriction; stimulates aldosterone release</td></tr>
-            <tr><td style="padding:8px 10px;border:1px solid var(--border)">5</td><td style="padding:8px 10px;border:1px solid var(--border)">Aldosterone</td><td style="padding:8px 10px;border:1px solid var(--border)">Na⁺ reabsorption &amp; K⁺ secretion (adrenal cortex → kidney)</td></tr>
-          </tbody>
-        </table>
-        <p style="margin:14px 0 6px;font-weight:600;font-size:12px">Key mnemonic</p>
-        <p style="margin:0;color:var(--muted-foreground);font-size:12px"><strong>R</strong>enin → <strong>A</strong>ngiotensin I → <strong>A</strong>ngiotensin II → <strong>A</strong>ldosterone (RAA ladder)</p>
-      </div>`,
+      title: 'Renin–Angiotensin–Aldosterone System',
+      headers: ['Step', 'Agent', 'Site of action'],
+      rows: [
+        ['1', 'Renin', 'Released from juxtaglomerular cells (kidney)'],
+        ['2', 'Angiotensin I', 'Angiotensinogen → Angiotensin I (liver)'],
+        ['3', 'ACE', 'Converts Ang I → Ang II (lung endothelium)'],
+        ['4', 'Angiotensin II', 'Vasoconstriction; stimulates aldosterone release'],
+        ['5', 'Aldosterone', 'Na⁺ reabsorption & K⁺ secretion (adrenal cortex → kidney)'],
+      ],
+      note: 'Key mnemonic: Renin → Angiotensin I → Angiotensin II → Aldosterone (RAA ladder)',
     },
   ],
 },
@@ -282,29 +287,19 @@ export const questions: Question[] = [
       url: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=900&q=80',
     },
     {
-      type: 'html',
+      type: 'table',
       label: 'Hypo vs Hyper',
-      url: `<div style="font-size:13px;line-height:1.7;color:var(--foreground)">
-        <p style="font-weight:700;font-size:14px;margin:0 0 12px">Hypothyroidism vs Hyperthyroidism</p>
-        <table style="width:100%;border-collapse:collapse;font-size:12px">
-          <thead>
-            <tr style="background:var(--muted)">
-              <th style="padding:8px 10px;border:1px solid var(--border);text-align:left">Feature</th>
-              <th style="padding:8px 10px;border:1px solid var(--border);text-align:left">Hypothyroid ↓</th>
-              <th style="padding:8px 10px;border:1px solid var(--border);text-align:left">Hyperthyroid ↑</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td style="padding:8px 10px;border:1px solid var(--border)">Weight</td><td style="padding:8px 10px;border:1px solid var(--border)">Gain</td><td style="padding:8px 10px;border:1px solid var(--border)">Loss</td></tr>
-            <tr style="background:var(--muted)"><td style="padding:8px 10px;border:1px solid var(--border)">Heart rate</td><td style="padding:8px 10px;border:1px solid var(--border)">Bradycardia</td><td style="padding:8px 10px;border:1px solid var(--border)">Tachycardia</td></tr>
-            <tr><td style="padding:8px 10px;border:1px solid var(--border)">Temperature</td><td style="padding:8px 10px;border:1px solid var(--border)">Cold intolerance</td><td style="padding:8px 10px;border:1px solid var(--border)">Heat intolerance</td></tr>
-            <tr style="background:var(--muted)"><td style="padding:8px 10px;border:1px solid var(--border)">Bowel</td><td style="padding:8px 10px;border:1px solid var(--border)">Constipation</td><td style="padding:8px 10px;border:1px solid var(--border)">Diarrhea</td></tr>
-            <tr><td style="padding:8px 10px;border:1px solid var(--border)">Skin/hair</td><td style="padding:8px 10px;border:1px solid var(--border)">Dry, coarse, hair loss</td><td style="padding:8px 10px;border:1px solid var(--border)">Moist, fine hair</td></tr>
-            <tr style="background:var(--muted)"><td style="padding:8px 10px;border:1px solid var(--border)">Reflexes</td><td style="padding:8px 10px;border:1px solid var(--border)">Slow (delayed relaxation)</td><td style="padding:8px 10px;border:1px solid var(--border)">Hyperreflexia, tremor</td></tr>
-            <tr><td style="padding:8px 10px;border:1px solid var(--border)">Mood</td><td style="padding:8px 10px;border:1px solid var(--border)">Depression, fatigue</td><td style="padding:8px 10px;border:1px solid var(--border)">Anxiety, irritability</td></tr>
-          </tbody>
-        </table>
-      </div>`,
+      title: 'Hypothyroidism vs Hyperthyroidism',
+      headers: ['Feature', 'Hypothyroid ↓', 'Hyperthyroid ↑'],
+      rows: [
+        ['Weight', 'Gain', 'Loss'],
+        ['Heart rate', 'Bradycardia', 'Tachycardia'],
+        ['Temperature', 'Cold intolerance', 'Heat intolerance'],
+        ['Bowel', 'Constipation', 'Diarrhea'],
+        ['Skin/hair', 'Dry, coarse, hair loss', 'Moist, fine hair'],
+        ['Reflexes', 'Slow (delayed relaxation)', 'Hyperreflexia, tremor'],
+        ['Mood', 'Depression, fatigue', 'Anxiety, irritability'],
+      ],
     },
   ],
 },
