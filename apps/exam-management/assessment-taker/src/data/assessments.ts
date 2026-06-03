@@ -48,6 +48,33 @@ export interface ExamSection {
   contentAreas: string[];       // ContentArea IDs
 }
 
+// ─── Assessment-level reference materials ────────────────────────────────────
+// Vishaka May 14: "Some formulas the instructor wants to upload which can be
+// for multiple questions... always available. Just like the calculator."
+
+export type AssessmentRefType = 'formula' | 'table' | 'text';
+
+export interface FormulaEntry {
+  name: string;
+  formula: string;       // Unicode math string, e.g. "Vd = Dose / C₀"
+  variables: string;     // Plain-text definition of each variable
+}
+
+export interface AssessmentReference {
+  id: string;
+  label: string;
+  icon: string;          // FA icon class, e.g. "fa-function"
+  type: AssessmentRefType;
+  // type: 'formula'
+  formulas?: FormulaEntry[];
+  // type: 'table'
+  headers?: string[];
+  rows?: string[][];
+  note?: string;
+  // type: 'text'
+  paragraphs?: string[];
+}
+
 export interface Assessment {
   id: string;
   title: string;
@@ -70,7 +97,7 @@ export interface Assessment {
   sections?: ExamSection[];     // Section-based (architecture deferred to 2027)
   instructions: string;
   allowComments: boolean;       // Per-question comment/flag box for error reporting
-  referenceMaterials?: string[];
+  assessmentReferences?: AssessmentReference[];
 
   // Accommodations (from student services, not faculty)
   accommodation?: Accommodation;
@@ -157,6 +184,111 @@ export const MOCK_ASSESSMENTS: Assessment[] = [
     ],
     reviewShowsCorrectAnswers: false,
     reviewShowsRationale: false,
+    assessmentReferences: [
+      {
+        id: 'ref-pk',
+        label: 'Pharmacokinetic Formulas',
+        icon: 'fa-function',
+        type: 'formula',
+        formulas: [
+          {
+            name: 'Volume of Distribution',
+            formula: 'Vd = Dose / C₀',
+            variables: 'Dose = administered dose (mg); C₀ = initial plasma concentration (mg/L)',
+          },
+          {
+            name: 'Clearance',
+            formula: 'Cl = k × Vd',
+            variables: 'k = elimination rate constant (hr⁻¹); Vd = volume of distribution (L)',
+          },
+          {
+            name: 'Half-Life',
+            formula: 't½ = 0.693 / k',
+            variables: 'k = elimination rate constant (hr⁻¹)',
+          },
+          {
+            name: 'Steady-State Concentration',
+            formula: 'Css = (F × D) / (Cl × τ)',
+            variables: 'F = bioavailability (0–1); D = dose (mg); Cl = clearance (L/hr); τ = dosing interval (hr)',
+          },
+          {
+            name: 'Loading Dose',
+            formula: 'LD = Css × Vd / F',
+            variables: 'Css = target steady-state concentration; Vd = volume of distribution; F = bioavailability',
+          },
+          {
+            name: 'Bioavailability',
+            formula: 'F = AUCpo / AUCiv × (DIV / DPO)',
+            variables: 'AUCpo = area under curve (oral); AUCiv = area under curve (IV); D = dose',
+          },
+        ],
+      },
+      {
+        id: 'ref-dose',
+        label: 'Dosage Calculations',
+        icon: 'fa-calculator',
+        type: 'formula',
+        formulas: [
+          {
+            name: 'Weight-Based Dose',
+            formula: 'Dose (mg) = Weight (kg) × Dose (mg/kg)',
+            variables: 'Weight in kg; prescribed dose in mg/kg',
+          },
+          {
+            name: 'IV Flow Rate',
+            formula: 'Rate (mL/hr) = Volume (mL) / Time (hr)',
+            variables: 'Total volume to infuse divided by infusion duration in hours',
+          },
+          {
+            name: 'Drop Rate',
+            formula: 'gtts/min = (Volume × Drop Factor) / Time (min)',
+            variables: 'Drop factor: macrodrip = 10, 15, or 20 gtts/mL; microdrip = 60 gtts/mL',
+          },
+          {
+            name: 'Creatinine Clearance (Cockcroft-Gault)',
+            formula: 'CrCl = [(140 − age) × weight] / (72 × SCr)',
+            variables: 'Age in years; weight in kg; SCr = serum creatinine (mg/dL). Multiply by 0.85 for female patients.',
+          },
+          {
+            name: 'Body Surface Area (Mosteller)',
+            formula: 'BSA (m²) = √[(height × weight) / 3600]',
+            variables: 'Height in cm; weight in kg',
+          },
+        ],
+      },
+      {
+        id: 'ref-labs',
+        label: 'Reference Lab Values',
+        icon: 'fa-flask-vial',
+        type: 'table',
+        headers: ['Test', 'Normal Range', 'Unit'],
+        rows: [
+          ['Sodium (Na⁺)', '135 – 145', 'mEq/L'],
+          ['Potassium (K⁺)', '3.5 – 5.0', 'mEq/L'],
+          ['Chloride (Cl⁻)', '96 – 106', 'mEq/L'],
+          ['Bicarbonate (HCO₃⁻)', '22 – 29', 'mEq/L'],
+          ['BUN', '7 – 20', 'mg/dL'],
+          ['Creatinine', '0.6 – 1.2', 'mg/dL'],
+          ['Glucose (fasting)', '70 – 99', 'mg/dL'],
+          ['WBC', '4.5 – 11.0', '×10³/μL'],
+          ['Hemoglobin (M)', '14.0 – 18.0', 'g/dL'],
+          ['Hemoglobin (F)', '12.0 – 16.0', 'g/dL'],
+          ['Platelets', '150 – 400', '×10³/μL'],
+          ['ALT', '7 – 56', 'U/L'],
+          ['AST', '10 – 40', 'U/L'],
+          ['Total Bilirubin', '0.1 – 1.2', 'mg/dL'],
+          ['Albumin', '3.5 – 5.0', 'g/dL'],
+          ['Calcium (Ca²⁺)', '8.5 – 10.5', 'mg/dL'],
+          ['Phosphate', '2.5 – 4.5', 'mg/dL'],
+          ['Magnesium', '1.7 – 2.2', 'mg/dL'],
+          ['pH (arterial)', '7.35 – 7.45', '—'],
+          ['PaO₂', '80 – 100', 'mmHg'],
+          ['PaCO₂', '35 – 45', 'mmHg'],
+          ['SpO₂', '≥ 95', '%'],
+        ],
+        note: 'Ranges are reference values for adults. Clinical interpretation must account for patient age, sex, and clinical context.',
+      },
+    ],
   },
 
   // ── Upcoming #1 — high-stakes + accommodation, 2 days out ───────────────

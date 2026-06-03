@@ -1,104 +1,167 @@
+'use client';
+
 /**
- * GlobalReferencePanel — formula/reference sheet accessible throughout the exam.
+ * GlobalReferencePanel — assessment-level reference sheet accessible throughout the exam.
  *
  * Vishaka May 14: "Some formulas the instructor wants to upload which can be for
  * multiple questions... always available. Just like the calculator — open the resource
  * document. It is behind a click."
  *
- * Per-question reference material still shows in the split panel. This panel is for
- * exam-wide material (formula sheets, reference tables) accessible at any question.
+ * Rendered as an inline flex sibling of <main> (not a floating overlay) so the student
+ * sees questions on the left and references on the right simultaneously.
+ * Multiple references are stacked vertically, all expanded — scroll to see all.
  */
 
-import { Button } from '@exxatdesignux/ui';
+import { Button, Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@exxatdesignux/ui';
+import type { AssessmentReference } from '../data/assessments';
 
 interface GlobalReferencePanelProps {
-  isOpen: boolean;
   onClose: () => void;
-  materials: string[];
+  refs: AssessmentReference[];
 }
 
-export function GlobalReferencePanel({ isOpen, onClose, materials }: GlobalReferencePanelProps) {
-  if (!isOpen || materials.length === 0) return null;
+export function GlobalReferencePanel({ onClose, refs }: GlobalReferencePanelProps) {
+  if (refs.length === 0) return null;
 
   return (
-    <div
-      role="complementary"
+    <aside
       aria-label="Exam reference materials"
-      style={{
-        position: 'fixed',
-        top: 72,
-        right: 16,
-        width: 320,
-        zIndex: 45,
-        backgroundColor: 'var(--card)',
-        border: '1px solid var(--border)',
-        borderRadius: 12,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-        overflow: 'hidden',
-      }}
+      className="flex flex-col border-l border-border flex-shrink-0 overflow-hidden"
+      style={{ width: 340, background: 'var(--card)' }}
     >
-      {/* Header */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '12px 16px',
-        borderBottom: '1px solid var(--border)',
-        background: 'var(--muted)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <i className="fa-light fa-file-lines" aria-hidden="true" style={{ color: 'var(--brand-color)', fontSize: 14 }} />
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--foreground)' }}>
-            Reference Materials
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <div
+        className="flex items-center justify-between flex-shrink-0 px-4 py-3 border-b border-border"
+        style={{ background: 'var(--muted)' }}
+      >
+        <div className="flex items-center gap-2">
+          <i className="fa-light fa-book-open fa-fw" aria-hidden="true" style={{ color: 'var(--brand-color)', fontSize: 14 }} />
+          <span className="text-sm font-semibold text-foreground">Exam References</span>
+          <span
+            className="text-xs font-medium tabular-nums px-1.5 py-0.5 rounded-full"
+            style={{ background: 'var(--brand-tint)', color: 'var(--brand-color)' }}
+          >
+            {refs.length}
           </span>
         </div>
-        <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close reference panel">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={onClose}
+          aria-label="Close reference panel"
+        >
           <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 14 }} />
         </Button>
       </div>
 
-      {/* Materials list */}
-      <div style={{ padding: '8px 0' }}>
-        {materials.map((material, i) => (
-          <div
-            key={i}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              padding: '12px 16px',
-              borderBottom: i < materials.length - 1 ? '1px solid var(--border)' : undefined,
-            }}
-          >
-            <div style={{
-              width: 36, height: 36, borderRadius: 8, flexShrink: 0,
-              background: 'var(--brand-tint)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <i className="fa-light fa-file-pdf" aria-hidden="true" style={{ color: 'var(--brand-color)', fontSize: 16 }} />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 2 }}>
-                {material}
-              </p>
-              <p style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
-                Available for all questions in this exam
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label={`Open ${material}`}
-              style={{ color: 'var(--brand-color)', flexShrink: 0 }}
-            >
-              <i className="fa-light fa-arrow-up-right-from-square" aria-hidden="true" style={{ fontSize: 13 }} />
-            </Button>
-          </div>
+      {/* ── Reference sections — all expanded, scroll to see all ────────── */}
+      <div className="flex-1 overflow-y-auto">
+        {refs.map((ref, i) => (
+          <RefSection key={ref.id} ref_={ref} isLast={i === refs.length - 1} />
         ))}
       </div>
+    </aside>
+  );
+}
 
-      <div style={{ padding: '8px 16px 12px', borderTop: '1px solid var(--border)' }}>
-        <p style={{ fontSize: 12, color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: 5 }}>
-          <i className="fa-light fa-circle-info" aria-hidden="true" />
-          These materials are available throughout the exam.
-        </p>
+// ─── Section wrapper ──────────────────────────────────────────────────────────
+function RefSection({ ref_, isLast }: { ref_: AssessmentReference; isLast: boolean }) {
+  return (
+    <section className={isLast ? '' : 'border-b border-border'}>
+      {/* Section header */}
+      <div
+        className="flex items-center gap-2 px-4 py-2.5 sticky top-0 z-10 border-b border-border"
+        style={{ background: 'var(--muted)' }}
+      >
+        <i className={`fa-light ${ref_.icon} fa-fw`} aria-hidden="true" style={{ color: 'var(--brand-color)', fontSize: 13 }} />
+        <span className="text-xs font-semibold text-foreground tracking-wide">{ref_.label}</span>
       </div>
+
+      {/* Section content */}
+      <div className="px-4 py-3">
+        {ref_.type === 'formula' && ref_.formulas && (
+          <FormulaBlock formulas={ref_.formulas} />
+        )}
+        {ref_.type === 'table' && ref_.headers && ref_.rows && (
+          <TableBlock headers={ref_.headers} rows={ref_.rows} note={ref_.note} />
+        )}
+        {ref_.type === 'text' && ref_.paragraphs && (
+          <TextBlock paragraphs={ref_.paragraphs} />
+        )}
+      </div>
+    </section>
+  );
+}
+
+// ─── Formula block ────────────────────────────────────────────────────────────
+function FormulaBlock({ formulas }: { formulas: NonNullable<AssessmentReference['formulas']> }) {
+  return (
+    <div className="flex flex-col gap-3">
+      {formulas.map((f, i) => (
+        <div key={i} className="flex flex-col gap-1">
+          <p className="text-xs font-semibold text-muted-foreground tracking-wide uppercase">{f.name}</p>
+          <div
+            className="rounded-md px-3 py-2 font-mono text-sm text-foreground"
+            style={{ background: 'var(--muted)', border: '1px solid var(--border)' }}
+          >
+            {f.formula}
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">{f.variables}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Table block ─────────────────────────────────────────────────────────────
+function TableBlock({ headers, rows, note }: {
+  headers: string[];
+  rows: string[][];
+  note?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="rounded-lg border border-border overflow-hidden">
+        <Table className="border-separate border-spacing-0">
+          <TableHeader>
+            <TableRow>
+              {headers.map((h, i) => (
+                <TableHead key={i} className="h-8 px-2.5 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg whitespace-nowrap">
+                  {h}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row, i) => (
+              <TableRow key={i}>
+                {row.map((cell, j) => (
+                  <TableCell key={j} className="px-2.5 py-1.5 text-xs">
+                    {cell}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      {note && (
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          <i className="fa-light fa-circle-info me-1" aria-hidden="true" />
+          {note}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── Text block ───────────────────────────────────────────────────────────────
+function TextBlock({ paragraphs }: { paragraphs: string[] }) {
+  return (
+    <div className="flex flex-col gap-2">
+      {paragraphs.map((p, i) => (
+        <p key={i} className="text-sm text-foreground leading-relaxed">{p}</p>
+      ))}
     </div>
   );
 }

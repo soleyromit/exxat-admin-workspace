@@ -420,7 +420,7 @@ export function App() {
         colorBlindMode={colorBlindMode}
         onColorBlindModeChange={setColorBlindMode}
         onExit={handleExit}
-        hasGlobalRef={(assessment?.referenceMaterials?.length ?? 0) > 0}
+        hasGlobalRef={(assessment?.assessmentReferences?.length ?? 0) > 0}
         isGlobalRefOpen={showGlobalRef}
         onToggleGlobalRef={() => setShowGlobalRef(v => !v)}
         sections={assessment?.sections}
@@ -484,6 +484,11 @@ export function App() {
               onToggleFlag={handleToggleFlag} />
 
           </main>
+          {showGlobalRef && (assessment?.assessmentReferences?.length ?? 0) > 0 && (
+            <GlobalReferencePanel
+              refs={assessment!.assessmentReferences!}
+              onClose={() => setShowGlobalRef(false)} />
+          )}
           {showSidebar && (
             <SidebarDrawer
               onClose={() => setShowSidebar(false)}
@@ -524,10 +529,6 @@ export function App() {
           onNavigate={handleNavigate} />
       )}
 
-      <GlobalReferencePanel
-        isOpen={showGlobalRef}
-        onClose={() => setShowGlobalRef(false)}
-        materials={assessment?.referenceMaterials ?? []} />
 
       {showSubmitReview && (
         <SubmitReviewOverlay
