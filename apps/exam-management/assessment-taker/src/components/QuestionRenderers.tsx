@@ -7,7 +7,7 @@ import React, {
 'react';
 import { Question } from '../data/questions';
 import { useSpeechToText } from '../hooks/useSpeechToText';
-import { Button as DSButton, Textarea as DSTextarea } from '@exxat/ds/packages/ui/src';
+import { Button as DSButton, Textarea as DSTextarea, Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@exxat/ds/packages/ui/src';
 const SHORTCUT_KEYS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 interface RendererProps {
   question: Question;
@@ -827,52 +827,24 @@ export function TableRenderer({
           borderColor: 'var(--border)'
         }}>
         
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr
-              style={{
-                backgroundColor: 'var(--muted)'
-              }}>
-              
-              {question.tableData?.headers.map((h, i) =>
-              <th
-                key={i}
-                className="p-[1em] font-bold text-[0.875em] border-b"
-                style={{
-                  color: 'var(--foreground)',
-                  borderColor: 'var(--border)'
-                }}>
-                
-                  {h}
-                </th>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {question.tableData?.rows.map((row, i) =>
-            <tr
-              key={i}
-              className="border-b last:border-0"
-              style={{
-                borderColor: 'var(--border)',
-                backgroundColor: 'var(--card)'
-              }}>
-              
-                {row.map((cell, j) =>
-              <td
-                key={j}
-                className="p-[1em] text-[0.875em]"
-                style={{
-                  color: 'var(--muted-foreground)'
-                }}>
-                
-                    {cell}
-                  </td>
-              )}
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <Table>
+          <TableHeader style={{ backgroundColor: 'var(--muted)' }}>
+            <TableRow>
+              {question.tableData?.headers.map((h, i) => (
+                <TableHead key={i}>{h}</TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {question.tableData?.rows.map((row, i) => (
+              <TableRow key={i}>
+                {row.map((cell, j) => (
+                  <TableCell key={j}>{cell}</TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
       <RadioMCQRenderer
         question={question}

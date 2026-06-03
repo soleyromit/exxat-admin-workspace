@@ -15,7 +15,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button } from '@exxat/ds/packages/ui/src';
+import { Button, Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@exxat/ds/packages/ui/src';
 import { ExamBadge } from '../components/ExamBadge';
 import { questions } from '../data/questions';
 import { MOCK_ASSESSMENTS } from '../data/assessments';
@@ -472,25 +472,25 @@ function ReviewQuestionBody({
   // Table: render the table as-is — no answer key in mock
   if (question.type === 'table' && question.tableData) {
     return (
-      <div style={{ overflowX: 'auto', border: `1px solid ${t.border}`, borderRadius: 10 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-          <thead>
-            <tr style={{ background: t.muted }}>
+      <div style={{ border: `1px solid ${t.border}`, borderRadius: 10, overflow: 'hidden' }}>
+        <Table>
+          <TableHeader style={{ background: t.muted }}>
+            <TableRow>
               {question.tableData.headers.map((h, i) => (
-                <th key={i} style={{ padding: '10px 14px', textAlign: 'left', color: t.fg, fontWeight: 600, borderBottom: `1px solid ${t.border}` }}>{h}</th>
+                <TableHead key={i}>{h}</TableHead>
               ))}
-            </tr>
-          </thead>
-          <tbody>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {question.tableData.rows.map((row, r) => (
-              <tr key={r}>
+              <TableRow key={r}>
                 {row.map((cell, c) => (
-                  <td key={c} style={{ padding: '10px 14px', color: t.fg, borderBottom: `1px solid ${t.border}` }}>{cell}</td>
+                  <TableCell key={c}>{cell}</TableCell>
                 ))}
-              </tr>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     );
   }
