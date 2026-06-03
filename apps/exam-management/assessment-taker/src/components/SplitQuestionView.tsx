@@ -118,13 +118,14 @@ function QuestionReferencePanel({
       role="complementary"
       aria-label="Question reference material"
     >
-      {/* Tabs — only when multiple references */}
+      {/* Tabs — only when multiple references; scrollable so extra tabs never clip */}
       {references.length > 1 && (
         <div
           role="tablist"
           style={{
-            display: 'flex', flexShrink: 0,
+            display: 'flex', flexShrink: 0, overflowX: 'auto',
             borderBottom: '1px solid var(--border)',
+            scrollbarWidth: 'none',
           }}
         >
           {references.map((ref, i) => (
@@ -135,7 +136,7 @@ function QuestionReferencePanel({
                 padding: '10px 16px', fontSize: 13, fontWeight: activeIdx === i ? 600 : 400,
                 color: activeIdx === i ? 'var(--foreground)' : 'var(--muted-foreground)',
                 borderBottom: activeIdx === i ? '2px solid var(--foreground)' : '2px solid transparent',
-                backgroundColor: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap',
+                backgroundColor: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
               }}
               role="tab"
               aria-selected={activeIdx === i}
@@ -736,9 +737,9 @@ export function SplitQuestionView({
       }}>
       
       {hasMedia ?
-      <div className="flex-1 min-h-0 flex gap-6 overflow-hidden flex-row">
+      <div className="flex-1 min-h-0 flex gap-6 overflow-hidden flex-col md:flex-row">
           {/* LEFT card — question stem + answers */}
-          <div className="w-1/2 min-h-0 overflow-y-auto rounded-2xl border shadow-sm p-[2em] flex flex-col gap-4"
+          <div className="md:w-1/2 min-h-0 overflow-y-auto rounded-2xl border shadow-sm p-[2em] flex flex-col gap-4"
             style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
             {renderQuestionStem()}
             <div>
@@ -753,7 +754,7 @@ export function SplitQuestionView({
           </div>
 
           {/* RIGHT column — reference panel (if references) or primary media */}
-          <div className="w-1/2 min-h-0 flex flex-col gap-3">
+          <div className="md:w-1/2 min-h-[320px] md:min-h-0 flex flex-col gap-3">
             {hasRef ? (
               <QuestionReferencePanel references={question.references!} />
             ) : (
