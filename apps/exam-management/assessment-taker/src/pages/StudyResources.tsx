@@ -245,16 +245,16 @@ function RecommendedCard({ item }: { item: RecommendedItem }) {
           className="rounded-full gap-1.5"
           style={
             item.source === 'ai'
-              ? { backgroundColor: 'var(--brand-tint)', color: 'var(--brand-color)' }
+              ? { backgroundColor: 'var(--brand-tint)', color: 'var(--foreground)' }
               : item.source === 'faculty'
-                ? { backgroundColor: 'color-mix(in oklch, var(--chart-1) 12%, var(--background))', color: 'var(--chart-1)' }
+                ? { backgroundColor: 'var(--state-info-blue-bg)', color: 'var(--state-info-blue-dark)' }
                 : { backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }
           }
         >
           <i className={src.icon} aria-hidden="true" style={{ fontSize: 10 }} />
           {src.label}
         </Badge>
-        <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+        <span className="text-xs font-semibold text-muted-foreground">
           {TYPE_LABEL[item.type]}
         </span>
       </div>
@@ -264,7 +264,7 @@ function RecommendedCard({ item }: { item: RecommendedItem }) {
       <p className="text-xs text-muted-foreground leading-relaxed">{item.reason}</p>
 
       {item.weakSignal && (
-        <div className="flex items-center gap-2 text-[11px]">
+        <div className="flex items-center gap-2 text-xs">
           <span className="text-muted-foreground">You</span>
           <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden relative">
             <div
@@ -290,7 +290,7 @@ function RecommendedCard({ item }: { item: RecommendedItem }) {
       )}
 
       <div className="flex items-center justify-between pt-1 border-t border-border mt-1">
-        <span className="text-[11px] text-muted-foreground inline-flex items-center gap-3">
+        <span className="text-xs text-muted-foreground inline-flex items-center gap-3">
           <span className="inline-flex items-center gap-1"><i className="fa-light fa-clock" aria-hidden="true" />{item.estimatedMinutes} min</span>
           {item.questionCount && (
             <span className="inline-flex items-center gap-1"><i className="fa-light fa-circle-question" aria-hidden="true" />{item.questionCount} Qs</span>
@@ -340,12 +340,12 @@ function FacultyPackRow({ pack }: { pack: FacultyPack }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-sm font-semibold text-foreground font-heading">{pack.title}</h2>
-            <Badge variant="secondary" className="rounded font-mono text-[9px] uppercase tracking-wider"
+            <Badge variant="secondary" className="rounded font-mono text-xs"
               style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
               {pack.course}
             </Badge>
           </div>
-          <p className="text-[11px] text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             Assigned by <span className="text-foreground font-medium">{pack.facultyName}</span>
             {' · '}
             {new Date(pack.assignedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -372,7 +372,7 @@ function FacultyPackRow({ pack }: { pack: FacultyPack }) {
         <div
           className="rounded-md px-3 py-2 text-xs leading-relaxed border-l-2"
           style={{
-            background: 'color-mix(in oklch, var(--chart-1) 5%, var(--card))',
+            background: 'var(--state-info-blue-bg)',
             borderLeftColor: 'var(--chart-1)',
             color: 'var(--foreground)',
           }}

@@ -188,7 +188,7 @@ export function ExamResults() {
           </div>
         </div>
 
-        <Tabs defaultValue="overview">
+        <Tabs defaultValue="overview" className="flex flex-col">
           <TabsList
             variant="line"
             className="w-full justify-start rounded-none border-b border-border h-auto p-0 mb-6 gap-0"

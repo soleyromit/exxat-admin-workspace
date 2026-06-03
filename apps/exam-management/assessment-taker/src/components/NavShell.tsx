@@ -212,7 +212,7 @@ function BrandRow({ entryPoint }: { entryPoint: EntryPoint }) {
       {!isPrism && (
         <SidebarMenuItem>
           <div className="px-3 pb-1 group-data-collapsible-icon:hidden">
-            <p className="text-[11px] text-muted-foreground leading-tight">Rush University · PT Program</p>
+            <p className="text-xs text-muted-foreground leading-tight">Rush University · PT Program</p>
           </div>
         </SidebarMenuItem>
       )}
@@ -284,7 +284,7 @@ function NotificationsItem() {
                     {notif.unread && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1" style={{ background: 'var(--brand-color)' }} />}
                   </div>
                   <p className="text-xs leading-relaxed text-muted-foreground">{notif.body}</p>
-                  <p className="text-[11px] mt-1 text-muted-foreground">{notif.time}</p>
+                  <p className="text-xs mt-1 text-muted-foreground">{notif.time}</p>
                 </div>
               </div>
             ))}
@@ -414,7 +414,7 @@ function ProfileFooter({ entryPoint }: { entryPoint: EntryPoint }) {
             >
               <Avatar className="size-8 shrink-0">
                 <AvatarFallback
-                  className="text-[11px] font-bold"
+                  className="text-xs font-bold"
                   style={{
                     background: 'var(--foreground)',
                     color: 'var(--background)',
@@ -434,7 +434,7 @@ function ProfileFooter({ entryPoint }: { entryPoint: EntryPoint }) {
             <DropdownMenuLabel>
               <div className="flex flex-col gap-0.5">
                 <span className="text-sm font-semibold">Ramona Sanchez</span>
-                <span className="text-[11px] text-muted-foreground font-normal">ANAT 601 · PT Program</span>
+                <span className="text-xs text-muted-foreground font-normal">ANAT 601 · PT Program</span>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -531,7 +531,7 @@ function TopBar({ title, entryPoint }: { title?: string; entryPoint: EntryPoint 
             </>
           )}
           {/* Standalone: subtle Exxat attribution far right */}
-          <span className="ms-auto text-[11px] text-muted-foreground group-data-collapsible-icon:hidden shrink-0">
+          <span className="ms-auto text-xs text-muted-foreground group-data-collapsible-icon:hidden shrink-0">
             Powered by Exxat
           </span>
         </>

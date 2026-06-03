@@ -324,7 +324,7 @@ export function SplitQuestionView({
       content = (
         <Tabs
           defaultValue="0"
-          className="rounded-xl border overflow-hidden gap-0"
+          className="flex flex-col rounded-xl border overflow-hidden gap-0"
           style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)', minHeight: '300px' }}
         >
           <TabsList

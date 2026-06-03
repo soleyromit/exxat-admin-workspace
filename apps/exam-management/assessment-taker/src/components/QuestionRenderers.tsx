@@ -86,6 +86,7 @@ function CrossOutButton({
     <DSButton
       variant="outline"
       size="icon-xs"
+      tabIndex={-1}
       onClick={onClick}
       className="shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100 high-contrast-visible"
       aria-label={isCrossed ? 'Remove cross-out' : 'Cross out option'}
@@ -133,13 +134,16 @@ export function RadioMCQRenderer({
         const isCrossed = crossedOut.has(option);
         const optionImage = question.optionImages?.[idx];
         return (
-          <div key={idx} className="group">
-            {/* div instead of button — CrossOutButton is a <button> inside; nesting <button> in <button> is invalid HTML */}
+          <div key={idx} className="group flex items-center gap-2">
+            {/* div instead of button — CrossOutButton is now a sibling, not a child, avoiding nested-interactive violation */}
             <div
               onClick={() => handleOptionClick(option)}
-              onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); handleOptionClick(option); } }}
+              onKeyDown={e => {
+                if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); handleOptionClick(option); }
+                if (e.key === 'x' || e.key === 'X') { e.preventDefault(); toggleCrossOut(e as unknown as React.MouseEvent, option); }
+              }}
               tabIndex={0}
-              className={`w-full text-left transition-all exam-focus flex ${hasImages ? 'flex-col' : 'flex-row items-center'} gap-3 p-[1em] rounded-xl border-2 ${isCrossed ? 'opacity-40' : ''}`}
+              className={`flex-1 text-left transition-all exam-focus flex ${hasImages ? 'flex-col' : 'flex-row items-center'} gap-3 p-[1em] rounded-xl border-2 ${isCrossed ? 'opacity-40' : ''}`}
               style={{
                 borderColor:
                 isSelected && !isCrossed ?
@@ -180,12 +184,11 @@ export function RadioMCQRenderer({
 
                   {option}
                 </span>
-                <CrossOutButton
-                  isCrossed={isCrossed}
-                  onClick={(e) => toggleCrossOut(e, option)} />
-
               </div>
             </div>
+            <CrossOutButton
+              isCrossed={isCrossed}
+              onClick={(e) => toggleCrossOut(e, option)} />
           </div>);
 
       })}
@@ -226,13 +229,16 @@ export function CheckboxRenderer({
         const isSelected = selectedSet.has(option);
         const isCrossed = crossedOut.has(option);
         return (
-          <div key={idx} className="group">
-            {/* div instead of button — CrossOutButton is a <button> inside; nesting <button> in <button> is invalid HTML */}
+          <div key={idx} className="group flex items-center gap-2">
+            {/* div instead of button — CrossOutButton is now a sibling, not a child, avoiding nested-interactive violation */}
             <div
               onClick={() => toggleOption(option)}
-              onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleOption(option); } }}
+              onKeyDown={e => {
+                if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleOption(option); }
+                if (e.key === 'x' || e.key === 'X') { e.preventDefault(); toggleCrossOut(e as unknown as React.MouseEvent, option); }
+              }}
               tabIndex={0}
-              className={`w-full text-left transition-all exam-focus flex items-center gap-4 p-[1em] rounded-xl border-2 ${isCrossed ? 'opacity-40' : ''}`}
+              className={`flex-1 text-left transition-all exam-focus flex items-center gap-4 p-[1em] rounded-xl border-2 ${isCrossed ? 'opacity-40' : ''}`}
               style={{
                 borderColor:
                 isSelected && !isCrossed ?
@@ -265,11 +271,10 @@ export function CheckboxRenderer({
 
                 {option}
               </span>
-              <CrossOutButton
-                isCrossed={isCrossed}
-                onClick={(e) => toggleCrossOut(e, option)} />
-
             </div>
+            <CrossOutButton
+              isCrossed={isCrossed}
+              onClick={(e) => toggleCrossOut(e, option)} />
           </div>);
 
       })}
@@ -307,32 +312,26 @@ export function CrossOutRenderer({
         const isCrossed = crossedOut.has(option);
         return (
           <div key={idx} className="flex items-center gap-2 group">
-            <button
+            <DSButton
+              variant="outline"
+              size="sm"
               onClick={() => handleOptionClick(option)}
-              className={`flex-1 text-left transition-all exam-focus flex items-center gap-4 p-[1em] rounded-xl border-2 ${isCrossed ? 'opacity-40' : ''}`}
+              className={`flex-1 justify-start transition-all exam-focus gap-4 rounded-xl border-2 h-auto text-left ${isCrossed ? 'opacity-40' : ''}`}
               style={{
-                borderColor: isSelected ?
-                'var(--foreground)' :
-                'var(--border)',
-                backgroundColor: isSelected ?
-                'var(--muted)' :
-                'var(--card)',
-                cursor: 'pointer'
+                borderColor: isSelected ? 'var(--foreground)' : 'var(--border)',
+                backgroundColor: isSelected ? 'var(--muted)' : 'var(--card)',
+                padding: '1em',
               }}
               aria-label={`Option ${SHORTCUT_KEYS[idx]}: ${option}. Click to select, or use the cross-out button to eliminate.`}
-              title={`Select option ${SHORTCUT_KEYS[idx]}`}
               {...narrateProps(`Option ${SHORTCUT_KEYS[idx]}: ${option}`)}>
-              
+
               <KeyBadge letter={SHORTCUT_KEYS[idx]} isSelected={isSelected} />
               <span
-                className={`text-[1em] ${isCrossed ? 'line-through opacity-50' : ''}`}
-                style={{
-                  color: 'var(--muted-foreground)'
-                }}>
-                
+                className={`text-[1em] flex-1 text-left ${isCrossed ? 'line-through opacity-50' : ''}`}
+                style={{ color: 'var(--muted-foreground)' }}>
                 {option}
               </span>
-            </button>
+            </DSButton>
             <CrossOutButton
               isCrossed={isCrossed}
               onClick={(e) => toggleCrossOut(e, option)} />
@@ -512,21 +511,22 @@ export function ShortAnswerRenderer({
         />
         
         {isSupported &&
-        <button
+        <DSButton
+          variant="ghost"
+          size="icon-sm"
           onClick={isListening ? stopListening : startListening}
-          className={`absolute bottom-4 right-4 p-3 rounded-full transition-all flex items-center justify-center ${isListening ? 'mic-pulse-ring' : ''}`}
+          className={`absolute bottom-4 right-4 rounded-full transition-all ${isListening ? 'mic-pulse-ring' : ''}`}
           style={{
-            backgroundColor: isListening ?
-            'var(--exam-accent-light)' :
-            'var(--card)',
+            backgroundColor: isListening ? 'var(--exam-accent-light)' : 'var(--card)',
             color: isListening ? 'var(--exam-accent)' : 'var(--muted-foreground)',
-            border: `1px solid ${isListening ? 'var(--exam-accent-border)' : 'var(--border)'}`
+            border: `1px solid ${isListening ? 'var(--exam-accent-border)' : 'var(--border)'}`,
+            width: '2.75rem',
+            height: '2.75rem',
           }}
           aria-label={isListening ? 'Stop dictation' : 'Start dictation'}
-          title={isListening ? 'Stop dictation' : 'Start dictation'}>
-          
-            <i className="fa-light fa-microphone" aria-hidden="true" style={{ fontSize: 20 }} />
-          </button>
+        >
+          <i className="fa-light fa-microphone" aria-hidden="true" style={{ fontSize: 20 }} />
+        </DSButton>
         }
       </div>
       {question.maxChars &&
@@ -790,24 +790,26 @@ export function AnatomyRenderer({
       {question.hotspots?.map((spot) => {
         const isSelected = selectedAnswer === spot.id;
         return (
-          <button
+          <DSButton
             key={spot.id}
+            variant="ghost"
+            size="icon-sm"
             onClick={() => onSelectAnswer(question.id, spot.id)}
-            className="absolute w-[1.5em] h-[1.5em] -ml-[0.75em] -mt-[0.75em] rounded-full border-2 transition-all exam-focus"
+            className="absolute rounded-full border-2 transition-all exam-focus"
             style={{
               left: `${spot.x}%`,
               top: `${spot.y}%`,
-              backgroundColor: isSelected ?
-              'var(--exam-accent)' :
-              'var(--card-80, rgba(255,255,255,0.8))',
-              borderColor: isSelected ?
-              'var(--exam-accent-text)' :
-              'var(--exam-accent)',
-              boxShadow: isSelected ?
-              '0 0 0 4px var(--exam-accent-light)' :
-              'none'
+              width: '1.5em',
+              height: '1.5em',
+              marginLeft: '-0.75em',
+              marginTop: '-0.75em',
+              backgroundColor: isSelected ? 'var(--exam-accent)' : 'rgba(255,255,255,0.8)',
+              borderColor: isSelected ? 'var(--exam-accent-text)' : 'var(--exam-accent)',
+              boxShadow: isSelected ? '0 0 0 4px var(--exam-accent-light)' : 'none',
+              padding: 0,
             }}
-            aria-label={spot.label} />);
+            aria-label={spot.label}
+          />);
 
 
       })}
@@ -939,21 +941,22 @@ export function EssayRenderer({
         />
         
         {isSupported &&
-        <button
+        <DSButton
+          variant="ghost"
+          size="icon-sm"
           onClick={isListening ? stopListening : startListening}
-          className={`absolute bottom-4 right-4 p-3 rounded-full transition-all flex items-center justify-center ${isListening ? 'mic-pulse-ring' : ''}`}
+          className={`absolute bottom-4 right-4 rounded-full transition-all ${isListening ? 'mic-pulse-ring' : ''}`}
           style={{
-            backgroundColor: isListening ?
-            'var(--exam-accent-light)' :
-            'var(--card)',
+            backgroundColor: isListening ? 'var(--exam-accent-light)' : 'var(--card)',
             color: isListening ? 'var(--exam-accent)' : 'var(--muted-foreground)',
-            border: `1px solid ${isListening ? 'var(--exam-accent-border)' : 'var(--border)'}`
+            border: `1px solid ${isListening ? 'var(--exam-accent-border)' : 'var(--border)'}`,
+            width: '2.75rem',
+            height: '2.75rem',
           }}
           aria-label={isListening ? 'Stop dictation' : 'Start dictation'}
-          title={isListening ? 'Stop dictation' : 'Start dictation'}>
-          
-            <i className="fa-light fa-microphone" aria-hidden="true" style={{ fontSize: 20 }} />
-          </button>
+        >
+          <i className="fa-light fa-microphone" aria-hidden="true" style={{ fontSize: 20 }} />
+        </DSButton>
         }
       </div>
       <div
@@ -1008,11 +1011,11 @@ export function WordHighlightRenderer({
       }}>
       
       <p
-        className="text-[0.65em] mb-3"
+        className="text-xs mb-3"
         style={{
           color: 'var(--muted-foreground)'
         }}>
-        
+
         Click or drag across words to highlight
       </p>
       {words.map((word, idx) => {

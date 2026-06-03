@@ -53,8 +53,8 @@ const TYPE_LABELS: Record<PastEntry['type'], string> = {
 function tone(score: number) {
   if (score >= 80) return { fg: 'var(--foreground)', circleFg: 'var(--state-success-dark)',   bg: 'var(--state-success-bg-soft)',  label: 'Strong',    labelFg: 'var(--state-success-dark)'    }
   if (score >= 70) return { fg: 'var(--foreground)', circleFg: 'var(--state-info-blue-dark)', bg: 'var(--state-info-blue-bg)',     label: 'On track',  labelFg: 'var(--state-info-blue-dark)'  }
-  if (score >= 60) return { fg: 'var(--foreground)', circleFg: 'var(--state-warning-dark)',   bg: 'var(--state-warning-bg-soft)',  label: 'Needs work', labelFg: 'var(--state-warning-dark)'   }
-  return                 { fg: 'var(--foreground)',  circleFg: 'var(--state-error-text-dark)', bg: 'var(--state-error-bg-soft)',   label: 'At risk',   labelFg: 'var(--state-error-text-dark)' }
+  if (score >= 60) return { fg: 'var(--foreground)', circleFg: 'var(--state-warning-dark)',   bg: 'var(--state-warning-bg-soft)',  label: 'Needs work', labelFg: 'var(--foreground)'   }
+  return                 { fg: 'var(--foreground)',  circleFg: 'var(--state-error-text-dark)', bg: 'var(--state-error-bg-soft)',   label: 'At risk',   labelFg: 'var(--foreground)' }
 }
 
 export function PastAssessments() {
