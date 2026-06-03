@@ -116,21 +116,6 @@ export function ExamToolbar({
             className="w-px h-5 hidden sm:block shrink-0"
             style={{ backgroundColor: 'var(--border)' }} />
 
-          {onToggleNav && (
-            <Tooltip content="Question navigator" position="bottom">
-              <DSButton
-                variant="ghost"
-                size="icon-sm"
-                onClick={onToggleNav}
-                aria-label={isNavOpen ? 'Close question navigator' : 'Open question navigator'}
-                aria-expanded={isNavOpen}
-              >
-                <i className="fa-light fa-sidebar" aria-hidden="true" />
-                <span className="sr-only">Toggle question navigator</span>
-              </DSButton>
-            </Tooltip>
-          )}
-          
           <div className="flex flex-col min-w-0">
             <Tooltip content={assessmentTitle ?? 'Assessment'} position="bottom">
               <h1
@@ -223,6 +208,21 @@ export function ExamToolbar({
                 <span className="hidden sm:inline">Reference</span>
               </DSButton>
             </Tooltip>
+          )}
+
+          {/* Questions navigator button */}
+          {onToggleNav && (
+            <DSButton
+              variant="outline"
+              size="sm"
+              onClick={onToggleNav}
+              aria-label={isNavOpen ? 'Close question navigator' : 'Open question navigator'}
+              aria-expanded={isNavOpen}
+              className="shrink-0"
+            >
+              <i className="fa-light fa-list-ul" aria-hidden="true" />
+              Questions
+            </DSButton>
           )}
 
           {/* Settings — last in order */}
