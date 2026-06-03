@@ -74,7 +74,6 @@ export function WizardNav({ currentStep, completedUpTo, onStepClick }: WizardNav
               size="sm"
               className="justify-start gap-2 w-full font-normal"
               disabled
-              aria-disabled="true"
             >
               <span
                 className="text-xs font-semibold shrink-0 flex items-center justify-center rounded-full"

@@ -247,7 +247,7 @@ export function StepDistribution({
                         />
 
                         <Avatar style={{ width: 28, height: 28, flexShrink: 0 }}>
-                          <AvatarFallback style={{ fontSize: 11, fontWeight: 600 }}>
+                          <AvatarFallback style={{ fontSize: 12, fontWeight: 600 }}>
                             {faculty?.initials ?? '?'}
                           </AvatarFallback>
                         </Avatar>

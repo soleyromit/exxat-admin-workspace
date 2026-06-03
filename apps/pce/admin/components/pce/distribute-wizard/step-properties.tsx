@@ -84,15 +84,16 @@ export function StepProperties({
 
       {/* Survey title */}
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="survey-title" className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
-          Survey title <span style={{ color: 'var(--destructive)' }}>*</span>
+        <label htmlFor="survey-title" className="text-sm font-medium">
+          Survey title <span aria-hidden="true" style={{ color: 'var(--destructive)' }}>*</span>
+          <span className="sr-only">(required)</span>
         </label>
         <Input
           id="survey-title"
           value={surveyTitle}
           onChange={e => onSurveyTitleChange(e.target.value)}
           placeholder="e.g. Fall 2026 Course Evaluations"
-          aria-label="Survey title"
+          aria-required="true"
           maxLength={120}
         />
       </div>
@@ -101,11 +102,12 @@ export function StepProperties({
       {isCE && (
         <>
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="term-select" className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
-              Term <span style={{ color: 'var(--destructive)' }}>*</span>
+            <label htmlFor="term-select" className="text-sm font-medium">
+              Term <span aria-hidden="true" style={{ color: 'var(--destructive)' }}>*</span>
+              <span className="sr-only">(required)</span>
             </label>
             <Select value={termId} onValueChange={onTermChange}>
-              <SelectTrigger id="term-select" aria-label="Select term">
+              <SelectTrigger id="term-select" aria-required="true">
                 <SelectValue placeholder="Choose a term…" />
               </SelectTrigger>
               <SelectContent>
@@ -120,9 +122,7 @@ export function StepProperties({
 
           {academicYear && (
             <div className="flex flex-col gap-1">
-              <p className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
-                Academic year
-              </p>
+              <p className="text-sm font-medium text-muted-foreground">Academic year</p>
               <p className="text-sm">{academicYear}</p>
             </div>
           )}
@@ -131,9 +131,9 @@ export function StepProperties({
 
       {/* Description */}
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="survey-description" className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
+        <label htmlFor="survey-description" className="text-sm font-medium">
           Description{' '}
-          <span className="font-normal" style={{ color: 'var(--muted-foreground)' }}>(optional)</span>
+          <span className="font-normal text-muted-foreground">(optional)</span>
         </label>
         <Textarea
           id="survey-description"
@@ -152,9 +152,7 @@ export function StepProperties({
 
       {/* Survey visibility */}
       <div className="flex flex-col gap-2">
-        <p className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
-          Visibility
-        </p>
+        <p className="text-sm font-medium">Visibility</p>
         <div
           className="flex gap-3"
           role="radiogroup"
@@ -201,9 +199,7 @@ export function StepProperties({
 
       {/* Keep responses anonymous */}
       <div className="flex flex-col gap-2">
-        <p className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
-          Response settings
-        </p>
+        <p className="text-sm font-medium">Response settings</p>
         <label
           className="flex items-start gap-3 cursor-pointer rounded-xl border border-border"
           style={{ padding: '14px 16px', background: 'var(--card)' }}

@@ -57,9 +57,9 @@ function EmailChip({ contact, onRemove }: { contact: EmailContact; onRemove: () 
         aria-label={`Remove ${displayName}`}
         onClick={onRemove}
         className="rounded-full text-muted-foreground hover:text-foreground shrink-0"
-        style={{ width: 14, height: 14 }}
+        style={{ width: 20, height: 20 }}
       >
-        <i className="fa-light fa-xmark text-[9px]" aria-hidden="true" />
+        <i className="fa-light fa-xmark text-xs" aria-hidden="true" />
       </Button>
     </Badge>
   )
@@ -329,11 +329,11 @@ export function StepCommunication({
                   {MOCK_LINK}
                 </code>
                 <Button variant="ghost" size="icon" onClick={handleCopyLink} aria-label="Copy public link">
-                  <i className={`fa-light fa-${linkCopied ? 'check' : 'copy'}`} aria-hidden="true" style={{ fontSize: 16, color: linkCopied ? 'var(--chart-2)' : undefined }} />
+                  <i className={`fa-light fa-${linkCopied ? 'check' : 'copy'}`} aria-hidden="true" style={{ fontSize: 16 }} />
                 </Button>
-                {linkCopied && (
-                  <span className="text-sm font-medium" style={{ color: 'var(--chart-2)', whiteSpace: 'nowrap' }}>Copied!</span>
-                )}
+                <span role="status" aria-live="polite" className="text-sm font-medium" style={{ whiteSpace: 'nowrap', minWidth: 0 }}>
+                  {linkCopied ? 'Copied!' : ''}
+                </span>
               </div>
             )}
           </div>
@@ -349,12 +349,18 @@ export function StepCommunication({
           <CardContent className="flex flex-col gap-4" style={{ padding: 16 }}>
           <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
             <div className="flex flex-col gap-1.5">
-              <p className="text-sm font-medium">Opens on <span style={{ color: 'var(--destructive)' }}>*</span></p>
-              <DatePickerField value={openDate} onChange={onOpenDateChange} />
+              <p id="label-opens-on" className="text-sm font-medium">
+                Opens on <span aria-hidden="true" style={{ color: 'var(--destructive)' }}>*</span>
+                <span className="sr-only">(required)</span>
+              </p>
+              <DatePickerField value={openDate} onChange={onOpenDateChange} aria-labelledby="label-opens-on" aria-required="true" />
             </div>
             <div className="flex flex-col gap-1.5">
-              <p className="text-sm font-medium">Closes on <span style={{ color: 'var(--destructive)' }}>*</span></p>
-              <DatePickerField value={closeDate} onChange={onCloseDateChange} />
+              <p id="label-closes-on" className="text-sm font-medium">
+                Closes on <span aria-hidden="true" style={{ color: 'var(--destructive)' }}>*</span>
+                <span className="sr-only">(required)</span>
+              </p>
+              <DatePickerField value={closeDate} onChange={onCloseDateChange} aria-labelledby="label-closes-on" aria-required="true" />
             </div>
             <div className="flex flex-col gap-1.5">
               <p className="text-sm font-medium">Results released <span className="font-normal">(optional)</span></p>

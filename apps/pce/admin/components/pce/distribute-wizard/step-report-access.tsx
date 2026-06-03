@@ -92,6 +92,7 @@ export function StepReportAccess({
               style={{ background: 'var(--dt-header-bg)' }}
             >
               <TableHead
+                scope="col"
                 className="h-9 px-3 text-xs font-medium border-b border-border"
                 style={{ color: 'var(--muted-foreground)' }}
               >
@@ -100,6 +101,7 @@ export function StepReportAccess({
               {SUBJECTS.map(s => (
                 <TableHead
                   key={s.key}
+                  scope="col"
                   className="h-9 px-3 text-xs font-medium border-b border-border text-center whitespace-normal"
                   style={{ width: 112, color: 'var(--foreground)' }}
                 >
