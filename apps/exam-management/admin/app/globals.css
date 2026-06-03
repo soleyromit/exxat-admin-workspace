@@ -14,8 +14,7 @@
   display: flex;
   flex-direction: row;
 }
-[data-slot="tabs-list"][data-variant="line"] [data-slot="tabs-trigger"][data-active]::after,
-[data-slot="tabs-list"][data-variant="line"] [data-slot="tabs-trigger"][data-state="active"]::after {
+[data-slot="tabs-list"][data-variant="line"] [data-slot="tabs-trigger"][data-active="true"]::after {
   content: "";
   position: absolute;
   inset-inline: 0;
@@ -23,6 +22,79 @@
   height: 2px;
   background: var(--foreground);
   opacity: 1;
+}
+
+/* ── Sidebar token — defined in globals.css, not theme.css ─────────────────── */
+:root {
+  --sidebar: var(--brand-tint);
+}
+
+.dark {
+  --sidebar: oklch(0.245 0.015 270);
+}
+
+/* ── DataTable tokens (mirrors exxat-ds/packages/ui/src/globals.css) ───────── */
+:root {
+  --dt-header-bg:       var(--background);
+  --dt-row-bg:          var(--background);
+  --dt-row-hover:       oklch(0.972 0.001 270);
+  --dt-row-selected:    oklch(0.962 0.003 260);
+  --dt-row-selected-fg: var(--foreground);
+  --dt-group-bg:        oklch(0.972 0.001 270);
+  --sticky-edge-fade:   oklch(0 0 0 / 0.08);
+}
+
+.dark {
+  --dt-row-hover:       oklch(0.24 0.01 270);
+  --dt-row-selected:    oklch(0.27 0.02 270);
+  --dt-group-bg:        oklch(0.24 0.01 270);
+  --sticky-edge-fade:   oklch(0 0 0 / 0.32);
+}
+
+/* ── REQUIRED FOOTER ─────────────────────────────────────────────────────── */
+/* Per-product additions (domain tokens, page-specific overrides) go below
+   this line. Examples: --pce-status-* badges, --qb-* question-bank tokens,
+   --courses-* table tints, etc.
+   Anything ABOVE this line must match this template verbatim. */
+
+
+/*
+  DS custom variants — required for DS Tailwind classes (data-active:,
+  data-horizontal:, data-open:, etc.) to fire correctly when compiled by
+  this product's own Tailwind.
+
+  Canonical source: shadcn@4.2.0/dist/tailwind.css — inlined because the
+  package is not hoisted in pnpm's virtual store. Reference copy lives at
+  apps/portal/app/globals.css. All products must keep these in sync.
+*/
+@custom-variant data-open {
+  &:where([data-state="open"]) { @slot; }
+}
+@custom-variant data-closed {
+  &:where([data-state="closed"]) { @slot; }
+}
+@custom-variant data-checked {
+  &:where([data-state="checked"]) { @slot; }
+}
+@custom-variant data-unchecked {
+  &:where([data-state="unchecked"]) { @slot; }
+}
+@custom-variant data-selected {
+  &:where([data-state="selected"]),
+  &:where([data-selected]:not([data-selected="false"])) { @slot; }
+}
+@custom-variant data-disabled {
+  &:where([data-disabled]:not([data-disabled="false"])) { @slot; }
+}
+@custom-variant data-active {
+  &:where([data-state="active"]),
+  &:where([data-active]:not([data-active="false"])) { @slot; }
+}
+@custom-variant data-horizontal {
+  &:where([data-orientation="horizontal"]) { @slot; }
+}
+@custom-variant data-vertical {
+  &:where([data-orientation="vertical"]) { @slot; }
 }
 
 /* ── DS sidebar list reset — SidebarMenu renders as <ul> without list-none ── */

@@ -4,7 +4,6 @@ import { useState } from 'react'
 import {
   Badge,
   Button,
-  Card,
   Checkbox,
   Input,
   InputGroup,
@@ -48,7 +47,7 @@ interface StepDistributionProps {
 
 function CourseTypeBadge({ type }: { type: 'didactic' | 'clinical' }) {
   return (
-    <Badge variant="secondary" className="rounded shrink-0">
+    <Badge variant="outline" className="rounded shrink-0">
       {type === 'didactic' ? 'Didactic' : 'Clinical'}
     </Badge>
   )
@@ -180,8 +179,7 @@ export function StepDistribution({
             />
           )}
 
-          {/* overflow-hidden safe — floating uses Radix Portal */}
-          <Card className="flex flex-col overflow-hidden shadow-none">
+          <div className="flex flex-col overflow-hidden rounded-lg border border-border">
             {/* Toolbar */}
             <div
               className="flex items-center gap-2 flex-wrap"
@@ -258,14 +256,7 @@ export function StepDistribution({
                         />
 
                         <Avatar style={{ width: 28, height: 28, flexShrink: 0 }}>
-                          <AvatarFallback
-                            style={{
-                              fontSize: 12,
-                              fontWeight: 600,
-                              backgroundColor: 'var(--avatar-initials-bg)',
-                              color: 'var(--avatar-initials-fg)',
-                            }}
-                          >
+                          <AvatarFallback style={{ fontSize: 11, fontWeight: 600 }}>
                             {faculty?.initials ?? '?'}
                           </AvatarFallback>
                         </Avatar>
@@ -284,7 +275,7 @@ export function StepDistribution({
                           </div>
                           <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
                             {faculty ? faculty.name : (
-                              <span style={{ color: 'var(--chart-4)' }}>Unassigned faculty</span>
+                              <span style={{ color: 'var(--muted-foreground)' }}>Unassigned faculty</span>
                             )}
                             {' '}· {offering.enrolledCount} enrolled
                             {offering.cohort && <> · {offering.cohort}</>}
@@ -320,7 +311,7 @@ export function StepDistribution({
                           <i
                             className="fa-light fa-circle-info text-xs shrink-0 mt-0.5"
                             aria-hidden="true"
-                            style={{ color: 'var(--chart-4)' }}
+                            style={{ color: 'var(--muted-foreground)' }}
                           />
                           <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
                             No instructor assigned. Instructor section will be suppressed in this survey.
@@ -332,7 +323,7 @@ export function StepDistribution({
                 })
               )}
             </div>
-          </Card>
+          </div>
         </div>
       )}
 
