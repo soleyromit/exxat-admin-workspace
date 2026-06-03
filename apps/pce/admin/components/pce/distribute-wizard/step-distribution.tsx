@@ -23,7 +23,6 @@ import {
   type CourseOffering,
   type ProgramTerm,
 } from '@/lib/pce-mock-data'
-import { CourseManagementDialog } from '@/components/pce/course-management-dialog'
 import { usePce } from '@/components/pce/pce-state'
 
 type TypeTab = 'all' | 'didactic' | 'clinical'
@@ -69,8 +68,6 @@ export function StepDistribution({
   const [typeTab, setTypeTab] = useState<TypeTab>('all')
   const [search, setSearch] = useState('')
   const [cohortFilter, setCohortFilter] = useState<string>('all')
-  const [manageOffering, setManageOffering] = useState<CourseOffering | null>(null)
-  const [manageOpen, setManageOpen] = useState(false)
 
   // Duplicate CE survey check
   const existingCourseCodes = new Set(
@@ -273,21 +270,6 @@ export function StepDistribution({
                           </span>
                         </div>
 
-                        {MOCK_COURSE_ENROLLMENTS[offering.id] && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={e => {
-                              e.preventDefault()
-                              setManageOffering(offering)
-                              setManageOpen(true)
-                            }}
-                            aria-label={`Manage ${course?.code}`}
-                          >
-                            <i className="fa-light fa-sliders" aria-hidden="true" style={{ fontSize: 12 }} />
-                            Manage
-                          </Button>
-                        )}
                       </label>
 
                       {isUnassigned && (
@@ -330,14 +312,6 @@ export function StepDistribution({
         </Button>
       </div>
 
-      <CourseManagementDialog
-        offering={manageOffering}
-        open={manageOpen}
-        onOpenChange={setManageOpen}
-        globalOpenDate={openDate}
-        globalCloseDate={closeDate}
-        onApplyDatesToAll={onApplyDatesToAll}
-      />
     </div>
   )
 }
