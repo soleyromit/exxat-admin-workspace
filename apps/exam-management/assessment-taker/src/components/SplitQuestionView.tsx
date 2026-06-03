@@ -118,23 +118,13 @@ function QuestionReferencePanel({
       role="complementary"
       aria-label="Question reference material"
     >
-      {/* Header */}
-      <div
-        style={{
-          padding: '10px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0,
-        }}
-      >
-        <p className="text-[0.75em] font-bold" style={{ color: 'var(--muted-foreground)' }}>
-          Reference Material
-        </p>
-      </div>
-
       {/* Tabs — only when multiple references */}
       {references.length > 1 && (
         <div
+          role="tablist"
           style={{
             display: 'flex', flexShrink: 0,
-            backgroundColor: 'var(--muted)', borderBottom: '1px solid var(--border)',
+            borderBottom: '1px solid var(--border)',
           }}
         >
           {references.map((ref, i) => (
@@ -142,7 +132,7 @@ function QuestionReferencePanel({
               key={i}
               onClick={() => setActiveIdx(i)}
               style={{
-                padding: '8px 14px', fontSize: 12, fontWeight: activeIdx === i ? 700 : 500,
+                padding: '10px 16px', fontSize: 13, fontWeight: activeIdx === i ? 600 : 400,
                 color: activeIdx === i ? 'var(--foreground)' : 'var(--muted-foreground)',
                 borderBottom: activeIdx === i ? '2px solid var(--foreground)' : '2px solid transparent',
                 backgroundColor: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap',
@@ -158,12 +148,6 @@ function QuestionReferencePanel({
 
       {/* Content */}
       <div style={{ flex: 1, overflow: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0 }}>
-        {references.length === 1 && (
-          <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)' }}>
-            {current.label}
-          </p>
-        )}
-
         {current.type === 'image' ? (
           <img
             src={current.url}
@@ -776,9 +760,6 @@ export function SplitQuestionView({
               <div
                 className="flex-1 min-h-0 overflow-y-auto rounded-2xl border shadow-sm p-[2em] flex flex-col gap-4"
                 style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
-                <p className="text-[0.75em] font-bold" style={{ color: 'var(--muted-foreground)' }}>
-                  Reference Material
-                </p>
                 {renderMediaOrContext()}
               </div>
             )}
