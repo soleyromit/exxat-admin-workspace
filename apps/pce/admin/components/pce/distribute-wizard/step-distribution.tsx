@@ -6,8 +6,6 @@ import {
   Button,
   Checkbox,
   Input,
-  InputGroup,
-  InputGroupAddon,
   LocalBanner,
   Avatar,
   AvatarFallback,
@@ -182,12 +180,7 @@ export function StepDistribution({
           <div className="flex flex-col overflow-hidden rounded-lg border border-border">
             {/* Toolbar */}
             <div
-              className="flex items-center gap-2 flex-wrap"
-              style={{
-                padding: '8px 12px',
-                borderBottom: '1px solid var(--border)',
-                background: 'var(--muted)',
-              }}
+              className="flex items-center gap-2 flex-wrap px-3 py-2 border-b border-border"
             >
               <Checkbox
                 checked={allVisibleSelected ? true : someVisibleSelected ? 'indeterminate' : false}
@@ -211,18 +204,16 @@ export function StepDistribution({
                   </SelectContent>
                 </Select>
               )}
-              <InputGroup className="h-8" style={{ minWidth: 180, maxWidth: 220 }}>
+              <div className="relative flex items-center" style={{ minWidth: 180, maxWidth: 220 }}>
+                <i className="fa-light fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs pointer-events-none" aria-hidden="true" />
                 <Input
                   placeholder="Search courses…"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   aria-label="Search courses"
-                  className="text-xs"
+                  className="h-8 pl-7 pr-2 text-xs"
                 />
-                <InputGroupAddon align="inline-end">
-                  <i className="fa-light fa-magnifying-glass" aria-hidden="true" />
-                </InputGroupAddon>
-              </InputGroup>
+              </div>
             </div>
 
             {/* Rows — scrollable */}
