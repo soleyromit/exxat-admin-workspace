@@ -1,5 +1,6 @@
-/** Shim — re-exports route-sync hooks from `@exxatdesignux/ui/components/shell`. */
+"use client"
 
+// Shim — re-exports route-sync hooks from `@exxatdesignux/ui/components/shell`.
 export {
   ProductRouteSync,
   useProductDashboardHref,
