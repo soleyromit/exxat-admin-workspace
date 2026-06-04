@@ -963,6 +963,76 @@ In the create-survey flow, a report access step shows which roles can see which 
 
 ---
 
+### 5.57 Vocabulary killed in prototype — "ad hoc", "view more", "Past" (2026-06-03)
+
+Source: `docs/research/meetings/2026-06-03-weekly-product-sync.md` (Granola `7a53688f`)
+
+Aarti reviewed Nipun's rough assessment prototype and killed three vocabulary/pattern items. None of these were present in Romit's built code — documented here to prevent future introduction.
+
+| Killed | Why | Status |
+|---|---|---|
+| "Ad hoc assessments" label | Aarti: "what does ad hoc versus non ad hoc mean?" | Never in code; do not introduce |
+| "View three more assessments" collapsed pattern | Aarti: "I do not also like the idea of hiding the past assessments under view three more assessments. That's just unnecessary clicks. It's okay to just make it longer scroll bar." | Never in code; do not introduce |
+| "Past" label for completed assessments | Aarti: "I also don't know if the word past is the better word for it... grading is something you would do on a completed assessment. Past always gives me understanding of it's complete and done and dusted." | Code uses "Completed" — correct. |
+
+### 5.58 System compatibility check → background only, never a visible step (2026-06-03)
+
+Source: `docs/research/meetings/2026-06-03-exam-management-sync-nipun.md` (Granola `d4f85e99`)
+
+System compatibility check (browser version, connectivity, storage) runs silently in the background. It must NEVER be a blocking visible step in the student pre-exam flow. It surfaces only on failure (e.g., incompatible browser).
+
+> "That can be a background check and surface only when there is an issue. You don't have to have it in the main flow is what I'm trying to tell you." — Nipun
+
+**Applied:** Removed `System Check` step from `PreExamFlow.tsx`. Flow is now 4 steps: Password → Instructions → Accommodation → Ready. D_AT11.
+
+### 5.59 Reference attachments — scope and structure (2026-06-03)
+
+Source: `docs/research/meetings/2026-06-03-exam-management-sync-nipun.md` (Granola `d4f85e99`)
+
+Extends §5.27 and T48. Precise rules confirmed:
+
+| Level | Rule |
+|---|---|
+| **Question-level** | Multiple attachments allowed. No limit on count. Total size limit 200MB. Rendered as tabs in the split view second pane. Supports: PDF, doc, table, video, audio, image. |
+| **Assessment-level** | ONE global reference doc for the whole exam (e.g., formula sheets, unit conversion tables). Shown globally accessible to student throughout exam. |
+| **Section-level** | NOT supported. "Will complicate it too much." |
+
+> "Assessment level, 100%, we will have [one global doc]. Section level, I feel we'll have, but that I can confirm... assessment level and not go into section level." — Nipun
+
+> "There's no limit on the number of attachments. The only limit is the size of the attachments." — Nipun (citing ExamSoft parity)
+
+Design task: T84 — update T48 design when building attachment surface. DESIGN-REVIEW.
+
+---
+
+## 6.14 PCE — Prism nav alignment + term start/end date reminder (2026-06-03)
+
+Source: `apps/pce/docs/research/meetings/2026-06-03-weekly-product-sync.md` (Granola `7a53688f`)
+
+### Search and Ask Leo placement (D_PCE42)
+
+Search and Ask Leo must stay in the **Prism top panel** — not in the left sidebar. This applies to PCE and all products.
+
+> "Search for example, should not be moved into the left hand [side]. It should be something that we put on the browser on the top... And then same thing with Ask Leo. These are things that are on the top panel... we cannot make them into left hand side menus. That's not going to work out." — Aarti
+
+Any structural nav change requires alignment with Himanshu + Yash before applying. T57 (PCE backlog).
+
+### Term missing start/end dates → reminder (D_PCE41)
+
+If the program has not entered start/end dates for a term in the academic calendar, PCE must show a reminder/link to go set them up. Course evaluation relies on term dates.
+
+> "Some message if they haven't... entered the start date and end date... a reminder to go add start date and date. So a link to come here or something might also be required." — Aarti
+
+T58 (PCE backlog). New UI pattern — DESIGN-REVIEW.
+
+### Academic year: do not collect separately (D_PCE40)
+
+Term picker already shows `{term name} · {academic year}` combined. Do not add a separate "Academic Year" field. Already correct in current code.
+
+> "We don't need to collect the academic year twice." — Aarti
+
+---
+
 ## Appendix — source meetings
 
 | Date | Title | Granola ID | Drove |
@@ -989,6 +1059,8 @@ In the create-survey flow, a report access step shows which roles can see which 
 | 2026-05-28 10:33 | Assessment setup and AI automation features for exam management | `925fa644` | Nipun + Vishal + Romit |
 | 2026-05-28 09:30 | Survey and template design — layout, moderation, and report access with Monil | `81beffd7` | Monil + Romit |
 | 2026-06-01 10:16 | Exam taker design review — navigation, question layout, and accessibility with Rohit | `caaae283` | Rohit + Romit |
+| 2026-06-03 07:30 | Weekly Product Sync — assessment creation prototypes, PCE navigation, Prism alignment | `7a53688f` | Aarti + Vishaka + Nipun + Vishal + Romit |
+| 2026-06-03 10:00 | Exam Management sync — assessment creation scope, system check, reference attachments | `d4f85e99` | Nipun + Romit |
 
 Per-meeting raw notes at `apps/exam-management/docs/research/meetings/` and `apps/pce/docs/research/meetings/`.
 
