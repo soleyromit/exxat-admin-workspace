@@ -26,13 +26,12 @@ export function GlobalReferencePanel({ onClose, refs }: GlobalReferencePanelProp
   return (
     <aside
       aria-label="Exam reference materials"
-      className="flex flex-col border-l border-border flex-shrink-0 overflow-hidden bg-card"
-      style={{ width: 340 }}
+      className="flex flex-col border-l border-border flex-shrink-0 overflow-hidden bg-card w-[340px]"
     >
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between flex-shrink-0 px-4 py-3 border-b border-border bg-muted">
         <div className="flex items-center gap-2">
-          <i className="fa-light fa-book-open fa-fw text-sm" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
+          <i className="fa-light fa-book-open fa-fw text-sm text-muted-foreground" aria-hidden="true" />
           <span className="text-sm font-semibold text-foreground">Exam References</span>
           <Badge variant="secondary" className="rounded-full px-1.5 tabular-nums">
             {refs.length}
@@ -63,7 +62,7 @@ function RefSection({ ref_, isLast }: { ref_: AssessmentReference; isLast: boole
   return (
     <section className={isLast ? '' : 'border-b border-border'}>
       <div className="flex items-center gap-2 px-4 py-2.5 sticky top-0 z-10 border-b border-border bg-muted">
-        <i className={`fa-light ${ref_.icon} fa-fw text-muted-foreground`} aria-hidden="true" style={{ fontSize: 13 }} />
+        <i className={`fa-light ${ref_.icon} fa-fw text-[13px] text-muted-foreground`} aria-hidden="true" />
         <span className="text-xs font-semibold text-foreground">{ref_.label}</span>
       </div>
 

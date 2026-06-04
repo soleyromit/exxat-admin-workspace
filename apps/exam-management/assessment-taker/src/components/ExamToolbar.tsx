@@ -185,22 +185,14 @@ export function ExamToolbar({
           {hasGlobalRef && (
             <Tooltip content="Open exam reference materials" position="bottom">
               <DSButton
-                variant="outline"
+                variant={isGlobalRefOpen ? 'default' : 'outline'}
                 size="sm"
                 onClick={onToggleGlobalRef}
                 aria-label={isGlobalRefOpen ? 'Close reference panel' : 'Open reference materials'}
+                aria-pressed={isGlobalRefOpen}
                 className="shrink-0"
-                style={
-                  isGlobalRefOpen
-                    ? {
-                        backgroundColor: 'var(--brand-tint)',
-                        borderColor: 'var(--brand-color)',
-                        color: 'var(--brand-color)',
-                      }
-                    : undefined
-                }
               >
-                <i className="fa-light fa-file-lines" aria-hidden="true" style={{ fontSize: 14 }} />
+                <i className="fa-light fa-file-lines text-sm" aria-hidden="true" />
                 <span className="hidden sm:inline">Reference</span>
               </DSButton>
             </Tooltip>
