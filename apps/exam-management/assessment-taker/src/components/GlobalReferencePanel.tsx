@@ -12,7 +12,7 @@
  * Multiple references are stacked vertically, all expanded — scroll to see all.
  */
 
-import { Button, Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@exxatdesignux/ui';
+import { Badge, Button, Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@exxatdesignux/ui';
 import type { AssessmentReference } from '../data/assessments';
 
 interface GlobalReferencePanelProps {
@@ -26,23 +26,17 @@ export function GlobalReferencePanel({ onClose, refs }: GlobalReferencePanelProp
   return (
     <aside
       aria-label="Exam reference materials"
-      className="flex flex-col border-l border-border flex-shrink-0 overflow-hidden"
-      style={{ width: 340, background: 'var(--card)' }}
+      className="flex flex-col border-l border-border flex-shrink-0 overflow-hidden bg-card"
+      style={{ width: 340 }}
     >
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div
-        className="flex items-center justify-between flex-shrink-0 px-4 py-3 border-b border-border"
-        style={{ background: 'var(--muted)' }}
-      >
+      <div className="flex items-center justify-between flex-shrink-0 px-4 py-3 border-b border-border bg-muted">
         <div className="flex items-center gap-2">
-          <i className="fa-light fa-book-open fa-fw" aria-hidden="true" style={{ color: 'var(--brand-color)', fontSize: 14 }} />
+          <i className="fa-light fa-book-open fa-fw text-sm" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
           <span className="text-sm font-semibold text-foreground">Exam References</span>
-          <span
-            className="text-xs font-medium tabular-nums px-1.5 py-0.5 rounded-full"
-            style={{ background: 'var(--brand-tint)', color: 'var(--brand-color)' }}
-          >
+          <Badge variant="secondary" className="rounded-full px-1.5 tabular-nums">
             {refs.length}
-          </span>
+          </Badge>
         </div>
         <Button
           variant="ghost"
@@ -50,7 +44,7 @@ export function GlobalReferencePanel({ onClose, refs }: GlobalReferencePanelProp
           onClick={onClose}
           aria-label="Close reference panel"
         >
-          <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 14 }} />
+          <i className="fa-light fa-xmark text-sm" aria-hidden="true" />
         </Button>
       </div>
 
@@ -68,16 +62,11 @@ export function GlobalReferencePanel({ onClose, refs }: GlobalReferencePanelProp
 function RefSection({ ref_, isLast }: { ref_: AssessmentReference; isLast: boolean }) {
   return (
     <section className={isLast ? '' : 'border-b border-border'}>
-      {/* Section header */}
-      <div
-        className="flex items-center gap-2 px-4 py-2.5 sticky top-0 z-10 border-b border-border"
-        style={{ background: 'var(--muted)' }}
-      >
-        <i className={`fa-light ${ref_.icon} fa-fw`} aria-hidden="true" style={{ color: 'var(--brand-color)', fontSize: 13 }} />
-        <span className="text-xs font-semibold text-foreground tracking-wide">{ref_.label}</span>
+      <div className="flex items-center gap-2 px-4 py-2.5 sticky top-0 z-10 border-b border-border bg-muted">
+        <i className={`fa-light ${ref_.icon} fa-fw text-muted-foreground`} aria-hidden="true" style={{ fontSize: 13 }} />
+        <span className="text-xs font-semibold text-foreground">{ref_.label}</span>
       </div>
 
-      {/* Section content */}
       <div className="px-4 py-3">
         {ref_.type === 'formula' && ref_.formulas && (
           <FormulaBlock formulas={ref_.formulas} />
@@ -99,11 +88,8 @@ function FormulaBlock({ formulas }: { formulas: NonNullable<AssessmentReference[
     <div className="flex flex-col gap-3">
       {formulas.map((f, i) => (
         <div key={i} className="flex flex-col gap-1">
-          <p className="text-xs font-semibold text-muted-foreground tracking-wide uppercase">{f.name}</p>
-          <div
-            className="rounded-md px-3 py-2 font-mono text-sm text-foreground"
-            style={{ background: 'var(--muted)', border: '1px solid var(--border)' }}
-          >
+          <p className="text-xs font-semibold text-muted-foreground">{f.name}</p>
+          <div className="rounded-md px-3 py-2 font-mono text-sm text-foreground bg-muted border border-border">
             {f.formula}
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">{f.variables}</p>
