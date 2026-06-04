@@ -8,7 +8,7 @@
  * approval-to-publication-to-results pipeline visible at a glance.
  *
  * Renders as a horizontal step strip:
- *   Draft ─ Pending ─ Approved ─ Published ─ Live ─ Submitted ─ Results
+ *   Draft ─ Pending ─ Approved ─ Published ─ Ongoing ─ Submitted ─ Results
  *
  * Past steps are filled, current step has a brand pulse, future steps fade.
  * "Changes-requested" branches off the Pending step with a warning treatment.

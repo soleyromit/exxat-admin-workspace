@@ -130,7 +130,7 @@ export function ActionItemsPanel({ faculty }: ActionItemsPanelProps) {
         id: 'live-now',
         icon: 'fa-circle',
         iconTone: 'info',
-        title: `${inProgress.length} ${inProgress.length === 1 ? 'exam is' : 'exams are'} live right now`,
+        title: `${inProgress.length} ${inProgress.length === 1 ? 'exam is' : 'exams are'} in progress right now`,
         detail: 'Monitor completion in real time — alert all, pause, or extend.',
         count: inProgress.length,
         href: `/assessments/${a.id}/monitor`,

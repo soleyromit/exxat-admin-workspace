@@ -1,20 +1,20 @@
 /**
- * PRE-EXAM FLOW — 5-step setup before entering the exam engine
+ * PRE-EXAM FLOW — 4-step setup before entering the exam engine
  *
- * Per Aarti + Darshan (Granola sessions) + Vishaka (May 14):
+ * Per Aarti + Darshan (Granola sessions) + Vishaka (May 14) + Nipun (Jun 3):
  *   Step 0: Password — faculty-announced class password (second-level auth)
- *   Step 1: System Check — browser, connectivity, storage
- *   Step 2: Instructions & Academic Integrity — exam-specific + e-signature
- *   Step 3: Accommodation Confirmation — confirm what's applied before starting
- *   Step 4: Ready — exam summary + "Start Exam" CTA
+ *   Step 1: Instructions & Academic Integrity — exam-specific + e-signature
+ *   Step 2: Accommodation Confirmation — confirm what's applied before starting
+ *   Step 3: Ready — exam summary + "Start Exam" CTA
  *
- * Lockdown browser enforcement is deferred to Q4 2026 (vendor evaluation:
- * Respondus vs HonorLock). Step 1 shows it as informational only.
+ * System compatibility check runs silently in the background — surface only on
+ * failure, never as a blocking visible step (Nipun directive Jun 3).
  *
- * Audio/video pre-check (Darshan's item) is shown as pending/TBD.
+ * Lockdown browser enforcement is deferred to Q1 2027 (vendor evaluation:
+ * Respondus vs HonorLock).
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Badge, Button, Input } from '@exxat/ds/packages/ui/src';
 import { MOCK_ASSESSMENTS, getEffectiveDuration, formatDuration, Assessment } from '../data/assessments';
@@ -32,7 +32,6 @@ const t = {
 
 const STEPS = [
   { id: 'password',      label: 'Enter Password',        icon: 'fa-lock' },
-  { id: 'system',        label: 'System Check',          icon: 'fa-display-code' },
   { id: 'instructions',  label: 'Instructions',          icon: 'fa-file-lines' },
   { id: 'accommodation', label: 'Accommodations',        icon: 'fa-universal-access' },
   { id: 'ready',         label: 'Ready to Start',        icon: 'fa-circle-check' },
@@ -165,124 +164,7 @@ function StepIndicator({ current }: { current: number }) {
   );
 }
 
-// ─── Step 1: System Check ─────────────────────────────────────────────────────
-function SystemCheck({ onNext }: { onNext: () => void }) {
-  const [checks, setChecks] = useState({
-    browser: false,
-    connection: false,
-    storage: false,
-  });
-
-  useEffect(() => {
-    // Simulate progressive checks
-    setTimeout(() => setChecks(c => ({ ...c, browser: true })), 600);
-    setTimeout(() => setChecks(c => ({ ...c, connection: true })), 1200);
-    setTimeout(() => setChecks(c => ({ ...c, storage: true })), 1800);
-  }, []);
-
-  const allPassed = Object.values(checks).every(Boolean);
-
-  const checkItems = [
-    {
-      key: 'browser' as const,
-      label: 'Browser Compatibility',
-      detail: 'Chrome 120+ / Edge 118+ / Firefox 121+ detected',
-      icon: 'fa-browser',
-    },
-    {
-      key: 'connection' as const,
-      label: 'Internet Connection',
-      detail: 'Connected · Signal strength: Strong',
-      icon: 'fa-wifi',
-    },
-    {
-      key: 'storage' as const,
-      label: 'Available Storage',
-      detail: '4.2 GB free — sufficient for exam session',
-      icon: 'fa-hard-drive',
-    },
-  ];
-
-  return (
-    <div>
-      <h2 style={{ fontSize: 22, fontWeight: 700, color: t.fg, marginBottom: 6, lineHeight: 1.2 }}>System Check</h2>
-      <p style={{ fontSize: 14, color: t.fgMuted, marginBottom: 28 }}>
-        We're verifying your setup before the exam begins. This takes a few seconds.
-      </p>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
-        {checkItems.map(item => (
-          <div key={item.key} style={{
-            display: 'flex', alignItems: 'center', gap: 16,
-            padding: '14px 18px', borderRadius: 10,
-            background: t.muted,
-            border: `1px solid ${t.border}`,
-            transition: 'all 0.3s ease',
-          }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: '50%',
-              background: t.card,
-              border: `1.5px solid ${t.border}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}>
-              {checks[item.key]
-                ? <i className="fa-solid fa-check" aria-hidden="true" style={{ color: t.fg, fontSize: 14 }} />
-                : <i className={`fa-light ${item.icon}`} aria-hidden="true" style={{ color: t.fgMuted, fontSize: 14, animation: 'spin 1s linear infinite' }} />
-              }
-            </div>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 14, fontWeight: 600, color: t.fg }}>{item.label}</p>
-              <p style={{ fontSize: 13, color: t.fgMuted }}>
-                {checks[item.key] ? item.detail : 'Checking…'}
-              </p>
-            </div>
-            <Badge variant="secondary" className="rounded-full text-xs font-semibold">
-              {checks[item.key] ? 'Passed' : '…'}
-            </Badge>
-          </div>
-        ))}
-
-        {/* Lockdown browser — deferred / informational */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 16,
-          padding: '14px 18px', borderRadius: 10,
-          background: t.muted, border: `1px solid ${t.border}`,
-        }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: '50%',
-            background: t.card, border: `1.5px solid ${t.border}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          }}>
-            <i className="fa-light fa-lock-open" aria-hidden="true" style={{ color: t.fgMuted, fontSize: 14 }} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: t.fg }}>Lockdown Browser</p>
-            <p style={{ fontSize: 13, color: t.fgMuted }}>
-              Not required for this exam
-            </p>
-          </div>
-          <Badge variant="secondary" className="rounded-full text-xs font-semibold">
-            Not Required
-          </Badge>
-        </div>
-      </div>
-
-      <Button
-        size="lg"
-        onClick={onNext}
-        disabled={!allPassed}
-        className="w-full"
-        aria-disabled={!allPassed}
-      >
-        <i className="fa-light fa-arrow-right" aria-hidden="true" />
-        {allPassed ? 'Continue to Instructions' : 'Running checks…'}
-      </Button>
-    </div>
-  );
-}
-
-// ─── Step 2: Instructions ─────────────────────────────────────────────────────
+// ─── Step 1: Instructions ─────────────────────────────────────────────────────
 function Instructions({ exam, onNext }: { exam: Assessment; onNext: () => void }) {
   const [attested, setAttested] = React.useState(false);
 
@@ -399,7 +281,7 @@ function Instructions({ exam, onNext }: { exam: Assessment; onNext: () => void }
   );
 }
 
-// ─── Step 3: Accommodation Confirmation ──────────────────────────────────────
+// ─── Step 2: Accommodation Confirmation ──────────────────────────────────────
 function AccommodationConfirmation({ exam, onNext }: { exam: Assessment; onNext: () => void }) {
   const acc = exam.accommodation;
   const effectiveMins = getEffectiveDuration(exam);
@@ -490,7 +372,7 @@ function AccommodationConfirmation({ exam, onNext }: { exam: Assessment; onNext:
   );
 }
 
-// ─── Step 4: Ready ────────────────────────────────────────────────────────────
+// ─── Step 3: Ready ────────────────────────────────────────────────────────────
 function ReadyToStart({ exam, onStart }: { exam: Assessment; onStart: () => void }) {
   return (
     <div style={{ textAlign: 'center' }}>
@@ -505,7 +387,7 @@ function ReadyToStart({ exam, onStart }: { exam: Assessment; onStart: () => void
 
       <h2 style={{ fontSize: 26, fontWeight: 700, color: t.fg, marginBottom: 8, lineHeight: 1.2 }}>You're Ready</h2>
       <p style={{ fontSize: 14, color: t.fgMuted, marginBottom: 28 }}>
-        All checks passed. Your exam is ready to begin. The timer starts when you click Start.
+        You're all set. Your exam is ready to begin. The timer starts when you click Start.
       </p>
 
       {/* Final summary */}
@@ -575,8 +457,8 @@ export function PreExamFlow() {
   const hasAccommodation = Boolean(exam.accommodation);
 
   const handleNext = () => {
-    if (step === 2 && !hasAccommodation) {
-      setStep(4); // skip accommodation
+    if (step === 1 && !hasAccommodation) {
+      setStep(3); // skip accommodation
     } else {
       setStep(s => s + 1);
     }
@@ -609,10 +491,9 @@ export function PreExamFlow() {
         <StepIndicator current={step} />
 
         {step === 0 && <ExamPassword onNext={() => setStep(1)} />}
-        {step === 1 && <SystemCheck onNext={() => setStep(2)} />}
-        {step === 2 && <Instructions exam={exam} onNext={handleNext} />}
-        {step === 3 && <AccommodationConfirmation exam={exam} onNext={() => setStep(4)} />}
-        {step === 4 && <ReadyToStart exam={exam} onStart={handleStart} />}
+        {step === 1 && <Instructions exam={exam} onNext={handleNext} />}
+        {step === 2 && <AccommodationConfirmation exam={exam} onNext={() => setStep(3)} />}
+        {step === 3 && <ReadyToStart exam={exam} onStart={handleStart} />}
       </div>
     </div>
   );
