@@ -2,7 +2,7 @@
  * KeyMetrics — thin re-export from @exxatdesignux/ui
  *
  * Migrated from vendored copy per docs/governance/ds-adoption.md → KeyMetrics row.
- * Previous vendored file: 2026-05-11 snapshot of exxat-ds/apps/web/components/key-metrics.tsx
+ * Previous vendored file: 2026-05-11 snapshot of @exxatdesignux/ui — vendored from DS web app: key-metrics.tsx
  *
  * All consumers import KeyMetrics and MetricItem — both available from the DS package.
  */

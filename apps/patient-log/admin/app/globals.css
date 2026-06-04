@@ -1,4 +1,4 @@
-@import '../../../../exxat-ds/packages/ui/src/theme.css';
+@import '@exxatdesignux/ui/globals.css';
 @import "tailwindcss";
 
 /* DS Tabs fix */

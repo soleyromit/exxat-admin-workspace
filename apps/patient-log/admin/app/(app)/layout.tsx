@@ -1,4 +1,4 @@
-import { SidebarProvider, SidebarInset, TooltipProvider, Toaster } from '@exxat/ds/packages/ui/src'
+import { SidebarProvider, SidebarInset, TooltipProvider, Toaster } from '@exxatdesignux/ui'
 import { AppSidebar } from '@/components/app-sidebar'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {

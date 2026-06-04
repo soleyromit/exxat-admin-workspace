@@ -14,7 +14,7 @@ import {
   SidebarMenuButton,
   SidebarSeparator,
   useSidebar,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/dashboard', icon: 'fa-grid-2' },

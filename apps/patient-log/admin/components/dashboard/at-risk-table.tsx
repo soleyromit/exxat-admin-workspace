@@ -2,7 +2,7 @@
 
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
-import { Badge } from '@exxat/ds/packages/ui/src'
+import { Badge } from '@exxatdesignux/ui'
 import { STUDENTS, type StudentLog } from '@/lib/mock-data'
 
 const AT_RISK_COLS: ColumnDef<StudentLog>[] = [

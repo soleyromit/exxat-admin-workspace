@@ -1,6 +1,6 @@
 'use client'
 
-import { useSidebar, Button, Tip } from '@exxat/ds/packages/ui/src'
+import { useSidebar, Button, Tip } from '@exxatdesignux/ui'
 
 export function SiteHeader({ title }: { title: string }) {
   const { toggleSidebar, state: sidebarState } = useSidebar()

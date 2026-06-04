@@ -8,7 +8,7 @@ import * as React from "react"
 import type { RowHeight } from "@/lib/row-height"
 import type { ColumnDef, SortDir } from "./types"
 import type { ActiveFilter, FilterOperator, SortRule } from "@/components/table-properties/types"
-import { parseRowDateToYmd } from "@exxat/ds/packages/ui/src"
+import { parseRowDateToYmd } from '@exxatdesignux/ui'
 
 let _filterId = 0
 function nextFilterId() { return `f-${++_filterId}` }

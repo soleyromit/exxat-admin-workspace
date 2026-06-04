@@ -1,8 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { Calendar } from "@exxat/ds/packages/ui/src"
-import { localDateToYmd, ymdToLocalDate } from "@exxat/ds/packages/ui/src"
+import { Calendar } from '@exxatdesignux/ui'
+import { localDateToYmd, ymdToLocalDate } from '@exxatdesignux/ui'
 
 /** Single-date calendar for table filters (YYYY-MM-DD). */
 export function FilterDateCalendar({
