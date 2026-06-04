@@ -134,6 +134,15 @@ Source: `docs/research/meetings/2026-06-01-exam-taker-navigation-rohit.md` (Gran
 | T81 | "Flag" vocabulary split: "Bookmark" (personal) + "Report an issue" (faculty review) — separate icons, separate flows | Student | Assessment taker | P1 — DESIGN-REVIEW | Rohit agreed with Romit's proposal. Current code uses single "Flag" concept. Requires separate UX flows + new data model for each. D_AT05. |
 | T82 | "Report an issue" button: de-emphasize — move into settings gear panel or bottom non-primary area | Student | Assessment taker | P1 — DESIGN-REVIEW | Rohit: "put it inside the settings button at the top or somewhere at the bottom where it doesn't take much attention." D_AT06. |
 
+## Phase 1 design tasks — added 2026-06-03
+
+Source: `docs/research/meetings/2026-06-03-weekly-product-sync.md` (Granola `7a53688f`) · `docs/research/meetings/2026-06-03-exam-management-sync-nipun.md` (Granola `d4f85e99`)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T83 | System compatibility check — removed from visible pre-exam flow | Student | Assessment taker (PreExamFlow) | P1 — ✅ APPLIED | Removed `System Check` step from `PreExamFlow.tsx`. Flow is now 4 steps: Password → Instructions → Accommodation → Ready. Runs as background check; surfaces only on failure. Nipun directive Jun 3. D_AT11. |
+| T84 | Reference attachments scope — extends T48 | Student / Admin | Assessment taker + question editor | P1 — DESIGN-REVIEW | Question-level: unlimited count (200MB total), shown as tabs in split view. Assessment-level: ONE global doc. Section-level: NOT supported. Update T48 design when building that surface. D_AT12. |
+
 ---
 
 ## Research / blockers (R1–R10 from audit)

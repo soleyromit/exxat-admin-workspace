@@ -116,6 +116,16 @@ Source: `apps/pce/admin/app/(app)/surveys/page.tsx` (applied from Granola `666c9
 | T55 | Released status label: admin vs. faculty language | Admin | Survey landing | P1 — ✅ APPLIED | Changed `released` status label from "Closed, Results Available" → "Results Released to Faculty" in `surveys/page.tsx:29`. Faculty language ("Results Available") should not appear in admin view. D_PCE (Meeting 4 directive). |
 | T56 | Define product brand color for PCE | Design | DS / theming | P2 | Leadership decision: each product has its own color (Prism=pink, ExactOne=indigo). PCE color is TBD. Pick token, apply to product theme. D_DS01. |
 
+## Phase 1 design tasks — added 2026-06-03
+
+Source: `apps/pce/docs/research/meetings/2026-06-03-weekly-product-sync.md` (Granola `7a53688f`)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T57 | Search and Ask Leo placement — confirm in Prism top panel, not left nav | Admin | All PCE screens | P1 — DESIGN-REVIEW | Aarti: "search for example, should not be moved into the left hand [side]... And then same thing with Ask Leo... we cannot make them into left hand side menus." Structural nav change requires Prism alignment discussion with Himanshu + Yash first. D_PCE42. |
+| T58 | Term missing start/end dates → show reminder/link | Admin | PCE landing / term setup entry | P1 — DESIGN-REVIEW | Aarti: "some message if they haven't entered the start date and end date... a reminder to go add start date and date. So a link to come here or something." New UI pattern — banner or contextual callout linking to academic calendar setup. D_PCE41. |
+| T59 | Survey push panel: font size / readability on small screens | Admin | `surveys/push/page.tsx` Step 2 | P2 — DESIGN-REVIEW | Aarti: "the font is and the gray is very small. On a small screen." Review text sizing and contrast in the course offerings list panel. D_PCE44. |
+
 ---
 
 ## Phase 1 — killed / superseded (updated 2026-05-26)
