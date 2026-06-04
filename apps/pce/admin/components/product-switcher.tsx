@@ -22,7 +22,6 @@ import { useProductSwitch } from "@/contexts/product-route-sync"
 import {
   expandSwitcherProducts,
   resolveActiveSwitcherEntry,
-  type SwitcherProductEntry,
 } from "@/lib/product-switcher-catalog"
 
 // Exxat One ships as **two siblings** because School-side and Site-side have

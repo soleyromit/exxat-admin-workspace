@@ -3,7 +3,7 @@
 import * as React from "react"
 import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes"
 
-// Vendored from exxat-ds/apps/web/components/theme-provider.tsx (2026-05-12).
+// Vendored from @exxatdesignux/ui — vendored from DS web app: theme-provider.tsx (2026-05-12).
 // Slim copy — preserves the 'd' hotkey for light/dark toggle. next-themes
 // manages the `.dark` class on <html>; useAppTheme (from @exxat/ds) manages
 // brand / contrast / text-size attributes alongside.

@@ -8,7 +8,7 @@ import { useAppTheme, type Brand, type TextSizePreference } from "@/hooks/use-ap
 import { SettingsFormRow } from "@/components/settings-form-row"
 import { cn } from "@/lib/utils"
 
-// Vendored from exxat-ds/apps/web/components/settings-appearance-card.tsx
+// Vendored from @exxatdesignux/ui/apps/web/components/settings-appearance-card.tsx
 // (2026-05-12). Slimmed: dropped Dashboard layout + Chart style sections
 // (those depend on product-shell-specific contexts; can be added per product
 // when needed). Kept: Theme (light/dark/system), Contrast (system/normal/high),

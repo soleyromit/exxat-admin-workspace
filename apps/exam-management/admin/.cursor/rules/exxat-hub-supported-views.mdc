@@ -1,0 +1,91 @@
+---
+description: List-page hubs — FULL_HUB_SUPPORTED_VIEWS, Add view parity, and real renderers (never trimmed allowlists or placeholder list rows). Auto-attaches when editing hub clients / list-page templates.
+globs: {components,lib,src}/**/*.{tsx,ts}
+alwaysApply: false
+appliesTo: [react]
+---
+
+# Exxat DS — hub supported views (Add view parity)
+
+**Canonical reference:** `components/library-table.tsx` + `components/library-client.tsx` (All questions / Library).
+
+**Registry:** `FULL_HUB_SUPPORTED_VIEWS` in `@exxatdesignux/ui/lib/data-list-view-registry` (re-export `@/lib/data-list-view-registry`).
+
+## Default allowlist (seven views)
+
+Every **`ListPageTemplate`** + **`HubTable`** hub that mounts a product data grid **MUST** expose the same **Add view** menu as Library unless product documents a narrower exception in the hub’s `*-supported-views.ts` file:
+
+| # | View | Render kind | How to implement |
+|---|------|-------------|------------------|
+| 1 | Table | `data-table` | Default `HubTable` / custom `columnDefs` |
+| 2 | List | `list-with-toolbar` | **`ListPageBoardCard`** `layout="row"` via `renderListRow` — same as `library-table.tsx` |
+| 3 | Board | `board-with-toolbar` | `renderers["board-with-toolbar"]` or `renderBoardCard` + `boardGroups` |
+| 4 | Dashboard | `dashboard-with-toolbar` | `renderers["dashboard-with-toolbar"]` with **`KeyMetrics`** / charts on `state.rows` |
+| 5 | Folder | `folder-with-toolbar` | `renderers["folder-with-toolbar"]` (e.g. `LibraryOsFolderView`, `FolderGridView`) |
+| 6 | List & details | `panel-with-toolbar` | `renderers["panel-with-toolbar"]` (Miller columns — see `library-table.tsx`) |
+| 7 | Tree & details | `tree-panel-with-toolbar` | `renderers["tree-panel-with-toolbar"]` (e.g. `HubTreePanelView`) |
+
+`HubTable` and `ListPageTemplate` default to **`FULL_HUB_SUPPORTED_VIEWS`** when `supportedViewTypes` is omitted.
+
+**`PRIMARY_HUB_SUPPORTED_VIEWS`** (table, list, board, dashboard only) is for hubs that **document** they intentionally omit folder/panel/tree — not the default for new work.
+
+## MUST (every new or touched hub)
+
+1. **Sync allowlists** — Pass the **same** `supportedViewTypes` to **`ListPageTemplate`** and **`HubTable`** (or only omit on both so the default applies).
+2. **Implement every allowed view** — Each entry in `supportedViewTypes` needs a renderer (explicit `renderers` map and/or `renderListRow` / `renderBoardCard` + `boardGroups`). Dev warns when a view is allowed but missing; users see **“does not implement X view”** if you ship the allowlist without bodies.
+3. **List rows use DS chrome** — **`ListPageBoardCard`** (Library list pattern). **MUST NOT** ship a bare two-line `renderListRow` (title + mono id only).
+4. **Library-shaped rows** — Hubs on **`LibraryItem`** with a custom table (e.g. Column types) **MUST** delegate non-table views to **`LibraryTable`** (`columnDefs` + `hubLabels` + `folders` state) — do not reimplement folder/panel/tree in isolation.
+5. **Token hubs** — Use **`FULL_HUB_SUPPORTED_VIEWS`** + **`components/tokens-hub-auxiliary-views.tsx`** (`renderTokenListRow`, `buildTokensHubRenderers`) — **MUST NOT** use `supportedViewTypes={["table"]}`.
+
+## MUST NOT
+
+- Pass **`PRIMARY_HUB_SUPPORTED_VIEWS`** or `["table", "list", "board", "dashboard"]` on a hub that should match Library Add view parity.
+- Pass **`supportedViewTypes={["table"]}`** on any primary hub or showcase inside **`ListPageTemplate`**.
+- Copy **`COLUMNS_SUPPORTED_VIEWS = PRIMARY_…`** without implementing folder/panel/tree.
+- Invent a new per-page allowlist constant without a matching renderer for every listed view.
+
+## ⛔ Wrong vs ✅ Right (`*-supported-views.ts`)
+
+For Exxat-domain entities, **default to FULL** because most entities have hierarchy worth surfacing — students (school > program > cohort), sites (network > location > site), placements (rotation > preceptor), courses (program > course > section).
+
+```ts
+// ⛔ WRONG — narrows the menu to 4 views with generic SaaS reasoning
+//   that ignores the Exxat domain (this is the bug we shipped in test-3
+//   for the Students hub — students DO have hierarchy).
+/**
+ * Why PRIMARY_HUB_SUPPORTED_VIEWS and not FULL_HUB_SUPPORTED_VIEWS?
+ * Students are flat records — they are not stored in folders, do not form
+ * a hierarchical tree, and have no parent/child split view…
+ */
+export { PRIMARY_HUB_SUPPORTED_VIEWS as STUDENTS_SUPPORTED_VIEWS }
+  from "@/lib/data-list-view-registry"
+
+// ✅ RIGHT — FULL is the default for new work; folder/panel/tree-panel
+//   surface the program > cohort > student hierarchy that already exists.
+/**
+ * Students hub view allowlist — FULL_HUB_SUPPORTED_VIEWS (all seven views).
+ * Every view is wired in `students-hub-table.tsx`:
+ *   - table             → built-in via `HubTable`
+ *   - list              → renderListRow using `ListPageBoardCard layout="row"`
+ *   - board             → renderBoardCard + boardGroups (group by status / program / cohort)
+ *   - dashboard         → renderers["dashboard-with-toolbar"] (KeyMetrics on filtered rows)
+ *   - folder            → renderers["folder-with-toolbar"] (FolderGridView of programs)
+ *   - panel             → renderers["panel-with-toolbar"] (FinderPanelView programs → students → detail)
+ *   - tree-panel        → renderers["tree-panel-with-toolbar"] (program > cohort > student outline + detail)
+ */
+export { FULL_HUB_SUPPORTED_VIEWS as STUDENTS_SUPPORTED_VIEWS }
+  from "@/lib/data-list-view-registry"
+```
+
+`HubTable` emits a dev-mode `console.warn` when `supportedViewTypes` matches `PRIMARY_HUB_SUPPORTED_VIEWS` (by reference or shape) — so the customer sees the recommendation on first dev boot if the agent narrows the allowlist by accident. Suppress only after documenting in your `*-supported-views.ts` why folder/panel/tree-panel are intentionally omitted (e.g. legacy Placements-only hubs).
+
+## Narrow exceptions (document in code comment)
+
+- Hubs that genuinely lack calendar/folder/panel/tree (e.g. legacy Placements-only four views) — export `ENTITY_SUPPORTED_VIEWS` in `lib/*-supported-views.ts` and **comment why** it is narrower than `FULL_HUB_SUPPORTED_VIEWS`.
+- Calendar is **not** in `FULL_HUB_SUPPORTED_VIEWS`; add only when the hub implements `calendar-with-toolbar`.
+
+## See also
+
+- **`.cursor/rules/exxat-data-tables.mdc`**, **`exxat-list-page-connected-views.mdc`**, **`exxat-list-page-view-shells.mdc`**
+- **`docs/exxat-ds/hub-supported-views-pattern.md`**
+- **`docs/exxat-ds/data-views-pattern.md`**

@@ -939,5 +939,5 @@ distinct — just not labeled "current" since all versions are usable)
 ✓  'use client' on every interactive component
 ✓  Font Awesome Pro: fa-light default, fa-solid active/selected
 ✓  All DS imports from @exxat/ds/packages/ui/src
-✗  Never edit exxat-ds/ or studentUX/ (read-only submodules)
+✗  Never edit @exxatdesignux/ui —  or studentUX/ (read-only submodules)
 ```

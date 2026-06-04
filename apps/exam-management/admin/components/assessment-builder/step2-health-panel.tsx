@@ -82,7 +82,7 @@ export function HealthPanel({ activeAsmt, objectives, timeMetrics, distribution,
         {/* Difficulty */}
         {diffTotal > 0 && (
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Difficulty</p>
+            <p className="text-xs font-semibold text-muted-foreground mb-2">Difficulty</p>
             {(['Easy', 'Medium', 'Hard'] as const).map(d => (
               <DiffRow key={d} label={d} count={distribution[d]} total={diffTotal} />
             ))}
@@ -92,14 +92,14 @@ export function HealthPanel({ activeAsmt, objectives, timeMetrics, distribution,
         {/* Bloom's */}
         {bloomsMetrics.filter(b => b.count > 0).length > 0 && (
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Bloom&apos;s</p>
+            <p className="text-xs font-semibold text-muted-foreground mb-2">Bloom&apos;s</p>
             {bloomsMetrics.filter(b => b.count > 0).map(b => (
               <div key={b.level} className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] text-muted-foreground" style={{ width: 70 }}>{b.level}</span>
+                <span className="text-xs text-muted-foreground" style={{ width: 70 }}>{b.level}</span>
                 <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'var(--muted)', overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${b.pct}%`, background: 'var(--brand-color)', borderRadius: 2 }} />
                 </div>
-                <span className="text-[10px] font-semibold text-foreground tabular-nums" style={{ width: 16 }}>{b.count}</span>
+                <span className="text-xs font-semibold text-foreground tabular-nums" style={{ width: 16 }}>{b.count}</span>
               </div>
             ))}
           </div>
@@ -108,7 +108,7 @@ export function HealthPanel({ activeAsmt, objectives, timeMetrics, distribution,
         {/* Topic coverage */}
         {objectives.length > 0 && (
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">
+            <p className="text-xs font-semibold text-muted-foreground mb-2">
               Topic coverage ({coveredCount}/{totalObjectives})
             </p>
             {objectives.map(o => (
@@ -117,9 +117,9 @@ export function HealthPanel({ activeAsmt, objectives, timeMetrics, distribution,
                   className={`fa-light ${coveredObjectiveIds.has(o.id) ? 'fa-circle-check' : 'fa-circle-xmark'}`}
                   role="img"
                   aria-label={coveredObjectiveIds.has(o.id) ? 'Covered' : 'Not covered'}
-                  style={{ fontSize: 10, color: coveredObjectiveIds.has(o.id) ? 'var(--brand-color)' : 'var(--muted-foreground)', width: 12 }}
+                  style={{ fontSize: 12, color: coveredObjectiveIds.has(o.id) ? 'var(--brand-color)' : 'var(--muted-foreground)', width: 14 }}
                 />
-                <span className="text-[10px] text-muted-foreground truncate">{o.title.slice(0, 45)}</span>
+                <span className="text-xs text-muted-foreground truncate">{o.title.slice(0, 45)}</span>
               </div>
             ))}
           </div>
@@ -128,15 +128,15 @@ export function HealthPanel({ activeAsmt, objectives, timeMetrics, distribution,
         {/* Flags */}
         {flagCount > 0 && (
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-            <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Flags</p>
+            <p className="text-xs font-semibold text-muted-foreground mb-2">Flags</p>
             {missingRationaleCount > 0 && (
-              <p className="text-[11px] text-muted-foreground mb-1">
+              <p className="text-xs text-muted-foreground mb-1">
                 <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ color: 'var(--chart-4)' }} />
                 {' '}{missingRationaleCount} missing rationale
               </p>
             )}
             {poorPbisCount > 0 && (
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 <i className="fa-light fa-chart-line-down" aria-hidden="true" style={{ color: 'var(--chart-4)' }} />
                 {' '}{poorPbisCount} low point-biserial
               </p>
@@ -152,8 +152,8 @@ function MetricRow({ label, value, children }: { label: string; value: string; c
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">{label}</p>
-        <p className="text-[11px] font-semibold text-foreground">{value}</p>
+        <p className="text-xs font-semibold text-muted-foreground">{label}</p>
+        <p className="text-xs font-semibold text-foreground">{value}</p>
       </div>
       {children}
     </div>
@@ -164,11 +164,11 @@ function DiffRow({ label, count, total }: { label: string; count: number; total:
   const colors = { Easy: 'var(--qb-diff-bar-easy)', Medium: 'var(--qb-diff-bar-medium)', Hard: 'var(--qb-diff-bar-hard)' }
   return (
     <div className="flex items-center gap-2 mb-1.5">
-      <span className="text-[10px] text-muted-foreground" style={{ width: 44 }}>{label}</span>
+      <span className="text-xs text-muted-foreground" style={{ width: 44 }}>{label}</span>
       <div style={{ flex: 1, height: 5, borderRadius: 3, background: 'var(--muted)', overflow: 'hidden' }}>
         <div style={{ height: '100%', width: total > 0 ? `${(count / total) * 100}%` : '0%', background: colors[label as keyof typeof colors], borderRadius: 3 }} />
       </div>
-      <span className="text-[10px] font-semibold text-foreground tabular-nums" style={{ width: 16 }}>{count}</span>
+      <span className="text-xs font-semibold text-foreground tabular-nums" style={{ width: 16 }}>{count}</span>
     </div>
   )
 }

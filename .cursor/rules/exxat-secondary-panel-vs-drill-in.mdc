@@ -35,7 +35,7 @@ If two answers point at different patterns, pick the one the user's **mental mod
 - The nested nav needs to **coexist** alongside primary nav rows so users can pivot back to other hubs without leaving scope.
 - **Persistent local state** survives across drilling (selected folder, expanded groups, scroll position).
 - **Multiple consumers** register against the same panel id (Library scope panel is the canonical case).
-- Reference: **Library** — `components/library-secondary-nav.tsx` + `components/sidebar/secondary-panel.tsx`.
+- Reference: **Library** — `components/library-secondary-nav.tsx` + `components/sidebar/secondary-panel.tsx`. **IA:** primary **Question bank** → child **Library** (`/library/all`) → secondary **All questions** / My / Folders — **`docs/exxat-ds/library-nav-ia-pattern.md`**.
 
 ## MUST use SidebarDrillIn when
 
@@ -70,7 +70,8 @@ For `SecondaryPanel` rows that route to distinct paths, use the shared `nav-acti
 
 ## See also
 
-- **`.cursor/rules/exxat-primary-nav-secondary-panel.mdc`** — the original SecondaryPanel rule (when to use it, lifecycle, `useAutoPanel`, surface elevation tokens).
+- **`.cursor/rules/exxat-primary-nav-secondary-panel.mdc`** — SecondaryPanel rule (lifecycle, flyout close vs dismiss, surface elevation).
+- **`docs/exxat-ds/library-nav-ia-pattern.md`** — Library three-tier nav + flyout behaviour.
 - **`.cursor/rules/exxat-accessibility.mdc`** — § "Keyboard scope and escape" (Esc handler required on every drill-in).
 - **`.cursor/rules/exxat-nav-single-active.mdc`** — one active row across primary + secondary + drilled-in nav.
 - **`docs/exxat-ds/component-selection-guide.md`** — top-of-funnel decision tree.

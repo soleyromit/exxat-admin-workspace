@@ -1,0 +1,40 @@
+---
+description: Exxat DS — WCAG 2.1 AA, ARIA tablists, 24px targets, contrast; see AGENTS.md §8 and exxat-accessibility skill
+alwaysApply: true
+appliesTo: [universal]
+---
+
+# Exxat DS — accessibility (binding summary)
+
+**Full checklist (ARIA, touch targets, color, sidebar badges, audit follow-ups):** repo **`.cursor/skills/exxat-accessibility/SKILL.md`**.
+
+**Product rules in prose + checklist:** **`./AGENTS.md` §8**.
+
+## Non‑negotiables
+
+1. **Target:** **WCAG 2.1 Level AA** (2.2 where noted — e.g. target size).
+2. **`role="tablist"`** — only **`role="tab"`** (or equivalent) as direct tab semantics. **MUST NOT** put `role="button"`, menus (`aria-haspopup`), or other controls **inside** the same `tablist` container.
+3. **Composite view switchers** (tabs + per-tab menu + remove): use **`role="toolbar"`** + **`aria-label`**; **`aria-pressed`** on toggles — **MUST NOT** misuse `tab`/`tablist` for those controls.
+4. **Touch targets (2.5.8):** interactive controls **≥ 24×24 CSS px** or **24px** spacing so hit areas do not overlap — use **`min-h-6 min-w-6` / `size-6`** for icon-only targets; avoid **`size-4`** as the sole target.
+5. **Contrast:** normal text **≥ 4.5:1**; UI components / focus where required **≥ 3:1**; muted text on tinted surfaces use tokens against the correct surface (e.g. sidebar), not only `--background`.
+6. **Minimum text size:** visible product copy **≥ 11px** — use **`text-xs`** or larger; **MUST NOT** use arbitrary Tailwind font sizes below that (see **`./AGENTS.md` §8.3**, **`src/globals.css`** `--text-xs`).
+7. **Dialogs / sheets:** must expose a **Title** (`DialogTitle` / `SheetTitle`); use **`sr-only`** if visually hidden (shadcn pattern).
+8. **Format hints are persistent, not placeholders (SC 3.3.2 Labels or Instructions, 1.3.1).** Any field that expects a specific format — **date, time, phone, currency, ID pattern, GPA scale, URL, hours, unit-bearing numbers** — MUST show the format as **persistent helper text** via **`FormDescription`** (or the field's description slot). Placeholders disappear on focus and are unreliable for AT, so **MUST NOT** be the sole carrier of the format. Example: GPA → "Out of 4.0"; Date → "MM/DD/YYYY"; Phone → "+1 (555) 555-0100"; Student ID → "STU-YYYY-####". Pair with `inputMode`, `pattern`, or a picker primitive (e.g. `DatePickerField`) where applicable; never rely on a free-text date input.
+9. **Every icon that communicates information MUST have a text alternative** — not just icon-only buttons. Three cases (SC 1.1.1 Non-text Content, 3.3.2 Labels or Instructions, 2.4.6 Headings and Labels):
+
+   - **A. Decorative icon next to text that already names it** (e.g. `<i class="fa-light fa-calendar-days" aria-hidden /> 12/14/2025 – 12/20/2025`) → icon MUST be **`aria-hidden`**; MUST NOT add `aria-label` (screen readers would announce the meaning twice). No tooltip needed.
+   - **B. Informational icon standing alone** — a calendar glyph used to mean "date range", clock for "updated at", pin for "site", graduation cap for "student", trending arrow for direction, status dot, icon-only chart legend — MUST pair **`role="img"` + `aria-label`** (or `aria-labelledby` on a wrapping element) with a visible **`Tooltip`** so sighted users who don't recognise the glyph learn the meaning. The icon wrapper MUST be keyboard-focusable (`tabIndex={0}` on the `span[role="img"]`) so the tooltip opens on focus.
+   - **C. Interactive icon-only button/link** (close `×`, chevron, overflow `⋯`, sort direction, filter chip dismiss, copy, Ask Leo toggle, row actions) → MUST pair **`aria-label`** on the `<button>` with a wrapping **`Tooltip`**. `aria-label` alone is NOT enough — sighted mouse users and keyboard users rely on the tooltip to discover what a bare icon does.
+
+   In all three cases, the inner `<i>` / `<svg>` MUST be `aria-hidden`; the accessible name lives on the wrapping element. Tooltip text MUST match the accessible name. Narrow exception: a chevron inside a labelled composite (`Select`, `Combobox`) where the parent control already names the whole thing. See **§8.6 (Case A/B/C)** in `AGENTS.md` and the accessibility skill.
+10. **Keyboard shortcut hints inside buttons** MUST use **`<Kbd variant="bare">`** (no background, no border, inherits `currentColor` at 70%). The default `tile` variant is reserved for **tooltips** and **menu `shortcut=` slots**. Glue multi-key chords into one bare kbd (e.g. `<Kbd variant="bare">⌘⌥K</Kbd>`), not one tile per key. Reference: `Next` / `Back` buttons in `new-library-item-form.tsx`; see `.cursor/rules/exxat-kbd-shortcuts.mdc`.
+
+After changing **views toolbar** or **tab** UIs, re-run **axe** (or equivalent) on **Placements** (or the affected page).
+
+**Charts:** Keyboard exploration uses **`ChartFigure`**; selected data points should have **visible** focus feedback — see skill **§ Charts (keyboard exploration)** and **`AGENTS.md` §4.3** (`chart-keyboard-selection`).
+
+## See also
+
+- **`./AGENTS.md`** §8 — accessibility in project context.
+- **`.cursor/rules/exxat-kbd-shortcuts.mdc`** — shortcuts paired with `Kbd` hints.
+- **`.cursor/rules/exxat-dashboard-view-charts.mdc`** — Data view chart keyboard parity.

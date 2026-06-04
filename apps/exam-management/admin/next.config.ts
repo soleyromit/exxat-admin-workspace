@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
   webpack(config) {
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@exxat/ds': path.resolve(__dirname, '../../../exxat-ds'),
+      // '@exxat/ds' alias removed — use '@exxatdesignux/ui' npm package directly
       '@exxat/student': path.resolve(__dirname, '../../../studentUX/src'),
       // DS dist imports react-router-dom; remap to a Next.js-safe no-op so
       // DS shell components render without requiring a <Router> wrapper.

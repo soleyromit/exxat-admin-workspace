@@ -44,6 +44,7 @@ import type { ExtendedCourseOffering } from '@/lib/course-mock-data'
 import { MOCK_QB_FOLDERS, mockAssessments } from '@/lib/qb-mock-data'
 import { findPersona } from '@/lib/personas'
 import { ImportAssessmentModal } from '@/components/import-assessment-modal'
+import { CreateAssessmentModal } from '@/components/create-assessment-modal'
 
 const IS_LMS_ACTIVE = false
 
@@ -331,7 +332,7 @@ function AssignFacultySheet({
 // ── Create Assessment modal ───────────────────────────────────────────────────
 // Four entry modes per Aarti May 19: blank, QB-first, copy from previous, import PDF.
 
-function CreateAssessmentModal({
+function LegacyCreateAssessmentModal({
   open, onOpenChange, offeringId, courseId, onOpenImport,
 }: {
   open: boolean
@@ -1268,7 +1269,8 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
   // Sheet open state
   const [enrollOpen, setEnrollOpen] = useState(false)
   const [assignOpen, setAssignOpen] = useState(false)
-  const [createModalOpen, setCreateModalOpen] = useState(false) // kept for ImportAssessmentModal only
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [newAsmtOpen, setNewAsmtOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
 
   const enrolledIds = useMemo(() => new Set(localStudents.map(s => s.id)), [localStudents])
@@ -1381,7 +1383,7 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
             <TabsContent value="assessments" className="m-0">
               <AssessmentsTab
                 offering={offering}
-                onNewAssessment={() => router.push(`/assessment-builder/create?courseId=${offering.courseId}&offeringId=${offering.id}`)}
+                onNewAssessment={() => setNewAsmtOpen(true)}
               />
             </TabsContent>
             <TabsContent value="students" className="m-0">
@@ -1434,6 +1436,12 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
         onImport={(questions) => {
           router.push(`/assessment-builder?offeringId=${offering.id}&mode=import&questionCount=${questions.length}`)
         }}
+      />
+      <CreateAssessmentModal
+        open={newAsmtOpen}
+        onOpenChange={setNewAsmtOpen}
+        courseId={offering.courseId}
+        offeringId={offering.id}
       />
     </>
   )

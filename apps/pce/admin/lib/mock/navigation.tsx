@@ -305,6 +305,13 @@ export interface NavSecondaryItem {
 /** Search + Notifications — rendered above Dashboard in the sidebar. */
 export const NAV_QUICK_ACTIONS: NavSecondaryItem[] = [
   {
+    key: "ask-leo",
+    title: "Ask Leo",
+    url: "#",
+    icon: <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" />,
+    opensAskLeo: true,
+  },
+  {
     key: "command-menu",
     title: "Search",
     url: "#",

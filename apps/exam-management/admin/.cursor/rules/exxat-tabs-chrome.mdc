@@ -1,0 +1,33 @@
+---
+description: Exxat DS — Tabs and view toolbars must not stretch full width; use ListPageTemplate for hub views. Auto-attaches when editing React surfaces with tabs or view toolbars.
+globs: {components,lib,src}/**/*.{tsx,ts}
+alwaysApply: false
+appliesTo: [react]
+---
+
+# Exxat DS — tabs chrome (no full-width stretch)
+
+## List hubs (All students, Placements, …)
+
+**MUST** use **`ListPageTemplate`** view toolbar — `role="toolbar"` + **`w-max`** segmented control (`viewSegmentedToolbarClass`), **not** Radix **`Tabs`** stretched across the page.
+
+- Reference: `packages/ui/src/components/templates/list-page.tsx` (views toolbar block).
+- **MUST NOT** build a custom full-width tab bar for “All students · 16” + Add view.
+
+## Entity / record detail (Overview, Academics, Placements, …)
+
+**MUST** use **`Tabs`**, **`TabsList`**, **`TabsTrigger`** from `@/components/ui/tabs`:
+
+- **`TabsList`** defaults to **`inline-flex w-fit`** — **MUST NOT** pass `className="w-full"` or wrap the list in a full-width flex container that forces triggers to **`flex-1`**.
+- Prefer **`variant="line"`** for record sub-nav under a **`PageHeader`** (`record-home` blueprint).
+- **`TabsTrigger`** may use `flex-1` only inside a **`w-fit`** list with a fixed number of tabs — never inside a bar that spans the content column.
+
+## MUST NOT
+
+- A single grey/white bar spanning the entire content width with tabs distributed edge-to-edge.
+- Mix hub **view tabs** (table/list/board) with entity **section tabs** (Overview/Academics) — different patterns.
+
+## See also
+
+- **`docs/exxat-ds/blueprints/page-header.md`** — header never carries view tabs
+- **`docs/exxat-ds/data-views-pattern.md`** — `ListPageTemplate` view toolbar

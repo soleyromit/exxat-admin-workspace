@@ -207,7 +207,7 @@ export default function AnalyticsPage() {
 
   /*
     KPI strip — fed to canonical KeyMetrics (vendored 2026-05-11 from
-    exxat-ds/apps/web/components/key-metrics.tsx per audit at
+    @exxatdesignux/ui (vendored from DS web app key-metrics.tsx) per audit at
     docs/governance/component-depth-audits/key-metrics.md).
 
     Trend semantics: all four KPIs render as `neutral` because they describe
@@ -660,7 +660,7 @@ export default function AnalyticsPage() {
 
             {/*
               By Course — sortable DataTable composite (apps/pce/admin/components/data-table/).
-              Subset of the reference at exxat-ds/apps/web/components/data-table/index.tsx —
+              Subset of the reference at @exxatdesignux/ui (vendored from DS web app data-table/index.tsx) —
               covers column-def-driven rendering + sortable headers + row drill-down +
               disabled-row state. Per Aarti D5: each row drills to /my-surveys/[id]/results.
               Disabled when survey not released (mirrors /my-surveys/page.tsx gate).

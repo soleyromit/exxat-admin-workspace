@@ -31,10 +31,15 @@ appliesTo: [universal]
 
 After changing **views toolbar** or **tab** UIs, re-run **axe** (or equivalent) on **Placements** (or the affected page).
 
+## Ship gate (every new build)
+
+Before merge, complete **`docs/exxat-ds/accessibility-ship-checklist.md`** for touched surface(s). Agents **MUST** verify: one H1 in `<main>`; icon-only Case C; persistent format hints; theme matrix (light / dark / HC); axe zero WCAG 2.x AA on `<main>`.
+
 **Charts:** Keyboard exploration uses **`ChartFigure`**; selected data points should have **visible** focus feedback — see skill **§ Charts (keyboard exploration)** and **`AGENTS.md` §4.3** (`chart-keyboard-selection`).
 
 ## See also
 
 - **`./AGENTS.md`** §8 — accessibility in project context.
+- **`docs/accessibility-ship-checklist.md`** / **`docs/exxat-ds/accessibility-ship-checklist.md`** — pre-merge ship gate.
 - **`.cursor/rules/exxat-kbd-shortcuts.mdc`** — shortcuts paired with `Kbd` hints.
 - **`.cursor/rules/exxat-dashboard-view-charts.mdc`** — Data view chart keyboard parity.

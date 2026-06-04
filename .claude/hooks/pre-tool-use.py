@@ -284,6 +284,88 @@ def load_snapshot() -> dict | None:
         return None
 
 
+_component_truth_cache: dict | None = None
+
+
+def load_component_truth() -> dict:
+    """Load component_truth from docs/foundations/ds-snapshot.json.
+    Returns {} on any failure — callers treat empty dict as no-op.
+    """
+    global _component_truth_cache
+    if _component_truth_cache is not None:
+        return _component_truth_cache
+    try:
+        foundations = WORKSPACE / "docs/foundations/ds-snapshot.json"
+        if not foundations.exists():
+            _component_truth_cache = {}
+            return {}
+        _component_truth_cache = json.loads(foundations.read_text()).get("component_truth", {})
+    except (json.JSONDecodeError, OSError):
+        _component_truth_cache = {}
+    return _component_truth_cache
+
+
+def emit_component_gaps(content: str) -> list[tuple[str, str, bool]]:
+    """DS-CMP-001 — when DS components with known source-import gaps are used,
+    emit WARN with the specific gaps and browser verify checklist.
+
+    Non-blocking: this is a design-time reminder, not a gate. It fires on
+    any edit to a TSX file that imports DS components with documented gaps,
+    so the developer sees the requirements before writing component-dependent
+    code.
+    """
+    truth = load_component_truth()
+    if not truth:
+        return []
+
+    # Match both source-import and compiled-import paths
+    all_import_re = re.compile(
+        r"import\s+(?:type\s+)?\{([^}]+)\}\s+from\s+['\"]"
+        r"(?:@exxat/ds/packages/ui/src|@exxatdesignux/ui)"
+        r"['\"]"
+    )
+
+    imported: set[str] = set()
+    for m in all_import_re.finditer(content):
+        for raw in m.group(1).split(","):
+            name = raw.strip().split(" as ")[0].strip()
+            if name and not name.startswith("type "):
+                imported.add(name)
+
+    if not imported:
+        return []
+
+    warnings: list[tuple[str, str, bool]] = []
+    seen_gap_keys: set[str] = set()
+
+    for component in sorted(imported):
+        entry = truth.get(component, {})
+        gaps = [g for g in entry.get("source_import_gaps", []) if g and "See " not in g]
+        checks = entry.get("verify_in_browser", [])
+        variants = entry.get("data_variants_required", [])
+
+        if not gaps and not variants:
+            continue  # Component has no known gaps — skip silently
+
+        parts: list[str] = [f"<{component}> has documented DS environment requirements:"]
+        if variants:
+            parts.append(f"  @custom-variant needed: {', '.join(variants)}")
+        for gap in gaps:
+            key = gap[:60]
+            if key not in seen_gap_keys:
+                seen_gap_keys.add(key)
+                parts.append(f"  ⚠ {gap}")
+        if checks:
+            checks_short = checks[:2]
+            parts.append(f"  Verify in browser: {' | '.join(checks_short)}")
+            if len(checks) > 2:
+                parts.append(f"    (+{len(checks)-2} more — see docs/watch/ds-snapshot.json)")
+
+        warnings.append(("DS-CMP-001", "\n  ".join(parts), False))
+
+    return warnings
+
+
 def check_ds_imports(content: str, profile: str) -> list[tuple[str, str]]:
     """DS-010 — verify every DS import resolves in ds-snapshot.json.
 
@@ -410,6 +492,33 @@ def main() -> None:
 
     if not file_path or "/apps/" not in file_path:
         sys.exit(0)
+
+    # ── CSS gate: validate globals.css / index.css for @custom-variant sentinel ──
+    # Runs BEFORE the tsx/ts early-exit so CSS files are not silently skipped.
+    if file_path.endswith(".css"):
+        if any(s in file_path for s in ("globals.css", "index.css")):
+            new_css = (
+                tool_input.get("new_string", "")
+                or tool_input.get("content", "")
+                or ""
+            )
+            if new_css and len(new_css) > 150 and "@custom-variant" not in new_css:
+                print(
+                    "[Design Intelligence Harness — PreToolUse CSS Gate]\n"
+                    f"  File: {file_path}\n\n"
+                    "  [WARN] DS-CSS-001: This CSS entry point is missing the @custom-variant block.\n"
+                    "  DS components silently break in browser — TypeScript passes, CSS never fires:\n"
+                    "    • Tabs variant=line: active underline invisible\n"
+                    "    • Dialog/Sheet: open/close is a hard cut (no animation)\n"
+                    "    • Select/DropdownMenu: dropdown snaps open (no zoom animation)\n"
+                    "    • Checkbox: checked/unchecked states may not render\n"
+                    "    • Sidebar: data-active='false' items get active styling\n\n"
+                    "  Apply the canonical 9-variant block from:\n"
+                    "  docs/governance/ds-product-compatibility.md",
+                    file=sys.stderr,
+                )
+        sys.exit(0)  # never run tsx rules on CSS files
+
     if not file_path.endswith((".tsx", ".ts")):
         sys.exit(0)
     if any(skip in file_path for skip in ["/node_modules/", ".test.", ".spec.", "/.next/", "/dist/"]):
@@ -500,6 +609,12 @@ def main() -> None:
             violations.append((rule_id, message, True))  # DS-010 always blocks
         for rule_id, message in check_ds_007(content, profile):
             violations.append((rule_id, message, True))  # DS-007 always blocks
+
+    # DS-CMP-001: component-specific gap enrichment (non-blocking)
+    # Emits source_import_gaps + verify_in_browser from the enriched snapshot
+    # whenever a file imports DS components with known environment requirements.
+    for rule_id, message, blocking in emit_component_gaps(content):
+        violations.append((rule_id, message, blocking))
 
     if not violations:
         _telemetry_emit(

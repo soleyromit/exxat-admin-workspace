@@ -16,7 +16,12 @@ When a page uses **`SiteHeader`** with **`breadcrumbs`** (a visible trail such a
 - Rely on **`SiteHeader`** breadcrumbs only for returning to parent routes.
 - Use a **single** explicit back affordance on flows that **omit** breadcrumbs by design (e.g. full-screen step, modal route) where product copy requires it.
 
+## SiteHeader breadcrumb overflow
+
+When the header variant shows a multi-segment trail (`PageBreadcrumbTrail` **`variant="header"`**), wrap the list in **`HorizontalScrollRegion`** with **`alignEnd`** and **`ariaLabel="Breadcrumb"`** so long paths scroll horizontally with a grouped `[← | →]` control — **`.cursor/rules/exxat-horizontal-scroll.mdc`**, **`components/page-breadcrumb-trail.tsx`**.
+
 ## See also
 
 - `components/site-header.tsx`
+- `components/page-breadcrumb-trail.tsx`
 - `components/templates/primary-page-template.tsx`

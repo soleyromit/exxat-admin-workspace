@@ -13,7 +13,7 @@ Run this skill BEFORE generating any DS import statement or component compositio
 
 | Situation | Use this skill? |
 |---|---|
-| Writing a new import from `@exxat/ds/packages/ui/src` | YES |
+| Writing a new import from `@exxatdesignux/ui` | YES |
 | Writing a new import from `@exxat/student/components/ui/<name>` | YES |
 | Writing a new import from `@exxat/student/components/shared` | YES |
 | Composing a Sidebar / Breadcrumb / Tabs / Sheet / Dialog | YES — substructure matters (A11Y-009) |
@@ -48,7 +48,7 @@ student = snap['profiles']['student']
 ```
 
 For **admin**:
-- `admin['exports']` — flat list of every importable name from `@exxat/ds/packages/ui/src` (Button, Sidebar, SidebarMenu, SidebarMenuItem, ...)
+- `admin['exports']` — flat list of every importable name from `@exxatdesignux/ui` (Button, Sidebar, SidebarMenu, SidebarMenuItem, ...)
 - `admin['components']` — per-component sub-exports (e.g., sidebar component has 15 exports including SidebarMenu, SidebarMenuButton)
 - `admin['hooks']` — useAppTheme, useCoachMark, useMobile, useModKeyLabel
 - `admin['tokens']` — 160 CSS custom properties (--brand-color, --text-xs, --control-height, ...)
@@ -64,7 +64,7 @@ Before writing `import { Foo } from '...'`, check:
 
 | Profile | Path | Allowlist source |
 |---|---|---|
-| admin | `@exxat/ds/packages/ui/src` | `admin.exports` (flat) |
+| admin | `@exxatdesignux/ui` | `admin.exports` (flat) |
 | student primitive | `@exxat/student/components/ui/<name>` | `student.primitives[<name>].exports` |
 | student shared | `@exxat/student/components/shared` | `student.shared` |
 
@@ -179,7 +179,7 @@ If verification fails (component not in snapshot), use `outcome='blocked'`.
 - ❌ Composing Sidebar/Breadcrumb/Tabs/Dialog from memory without checking the template
 - ❌ Inline `fontSize: '13px'` because "it's just a quick tweak" — DS-011 blocks
 - ❌ Cross-profile imports (admin file importing from `@exxat/student`) — DS-007 blocks
-- ❌ Searching the DS source files (`exxat-ds/`, `studentUX/`) instead of the snapshot — slower and may include unexported internals
+- ❌ Searching old source files instead of the snapshot — `@exxatdesignux/ui` npm package is now the source of truth
 
 ## Output to the conversation
 

@@ -9,7 +9,7 @@ appliesTo: [react]
 
 Some hubs expose **scoped navigation** (All / My / tree / filters) in a **nested panel** between the **icon rail** and **main content** — not as **primary nav child rows**.
 
-**Reference:** **Library** — **`lib/mock/navigation.tsx`** (`secondaryPanel: "library"`), **`components/app-sidebar.tsx`**, **`components/secondary-panel.tsx`**, **`components/library-panel-activator.tsx`**, **`components/library-secondary-nav.tsx`**, **`lib/library-nav.ts`** (URL scope).
+**Reference:** **Library** — **`lib/mock/navigation.tsx`** (`secondaryPanel: "library"`), **`components/sidebar/app-sidebar.tsx`**, **`components/sidebar/secondary-panel.tsx`**, **`components/library-secondary-nav.tsx`**, **`lib/library-nav.ts`** (URL scope). **Three-tier IA:** **`docs/exxat-ds/library-nav-ia-pattern.md`** (Question bank → Library → All questions scope).
 
 ## MUST (wiring)
 
@@ -17,6 +17,8 @@ Some hubs expose **scoped navigation** (All / My / tree / filters) in a **nested
 2. **`SecondaryPanel` registry** — In **`components/secondary-panel.tsx`**, add **`PANELS[id]`** → component that renders **panel chrome** (title, optional search) + **your secondary nav** list. **MUST** keep ids in sync with **`NAV_PRIMARY`**.
 3. **Auto-open on route** — The hub **`client`** (or layout slot) **MUST** mount **`*PanelActivator`** that calls **`useAutoPanel(id)`** with the **same id**, so deep links and first visit open the panel while the route is mounted (e.g. **`LibraryPanelActivator`** + **`beforeSiteHeader`** on **`LibraryClient`**).
 4. **Same-route reopen** — **`AppSidebar`** already calls **`openPanel(secondaryPanel)`** when the user clicks the primary item **again** while already on that **`url`** (prevents no-op navigation). Secondary nav rows that stay on the same path **SHOULD** call **`openPanel`** on click where **`react-router-dom` `Link`** would not fire (same **`to`**).
+5. **Flyout close vs dismiss** — On mobile / **`useSidebarReflowZoom`**, X / Esc / ⌘B on the **scope sheet** MUST call **`closeSecondaryFlyout()`** (hide sheet, keep **`activePanel`**). **MUST NOT** clear **`activePanel`** — otherwise ⌘B reopens the **primary** flyout instead of scope nav. **Main menu** (←) uses **`hideSecondaryFlyout()`** and MUST expand the active primary collapsible (e.g. Question bank) so the current child (e.g. **Library**) is visible.
+6. **Library IA** — Primary children: Library home, Search, **Library** (`/library/all`). **All questions** is **secondary only** — see **`docs/exxat-ds/library-nav-ia-pattern.md`**.
 
 ## Surface elevation (brand chrome)
 
@@ -47,6 +49,7 @@ The nested panel sits **between** the icon rail and main content. **MUST** use t
 ## See also
 
 - **`./AGENTS.md` §4.6** — handbook summary.
+- **`docs/exxat-ds/library-nav-ia-pattern.md`** — Question bank / Library / All questions + flyout lifecycle.
 - **`docs/exxat-ds/shell-surface-elevation-pattern.md`** — OKLCH tokens + product theme.
 - **`.cursor/rules/exxat-library-hub-header.mdc`** — folder-scoped library header **⋯** → **Customize folder** + client-mounted sheet.
 - **`.cursor/rules/exxat-page-vs-drawer.mdc`** — when **drawer** vs **route**; secondary panel is **nav chrome**, not a workflow drawer.

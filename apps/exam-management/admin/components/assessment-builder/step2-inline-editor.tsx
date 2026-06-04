@@ -29,20 +29,20 @@ export function InlineQuestionEditor({ question, onSave, onCancel, onCopyAndModi
       }}
     >
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold text-foreground">Editing {question.code}</span>
+        <span className="text-xs font-semibold text-foreground">Editing {question.code}</span>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => onCopyAndModify(question)}
-          className="gap-1.5 text-[11px] h-6"
+          className="gap-1.5"
         >
-          <i className="fa-light fa-copy" aria-hidden="true" style={{ fontSize: 10 }} />
+          <i className="fa-light fa-copy" aria-hidden="true" />
           Copy &amp; modify
         </Button>
       </div>
 
       <div>
-        <p className="text-[10px] text-muted-foreground mb-1">Question stem</p>
+        <p className="text-xs text-muted-foreground mb-1">Question stem</p>
         <Textarea
           value={stem}
           onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setStem(e.target.value)}
@@ -52,10 +52,10 @@ export function InlineQuestionEditor({ question, onSave, onCancel, onCopyAndModi
       </div>
 
       <div>
-        <p className="text-[10px] text-muted-foreground mb-1">
+        <p className="text-xs text-muted-foreground mb-1">
           Rationale
           {!rationale.trim() && (
-            <span style={{ color: 'color-mix(in oklch, var(--foreground) 40%, oklch(80% 0.15 80))' }}> — missing</span>
+            <span className="text-muted-foreground"> — missing</span>
           )}
         </p>
         <Textarea
@@ -64,7 +64,7 @@ export function InlineQuestionEditor({ question, onSave, onCancel, onCopyAndModi
           placeholder="Explain why this answer is correct…"
           className="text-xs min-h-12 resize-y"
           aria-label="Rationale"
-          style={{ borderColor: !rationale.trim() ? 'color-mix(in oklch, var(--foreground) 30%, oklch(80% 0.15 80))' : undefined }}
+          style={{ borderColor: !rationale.trim() ? 'var(--chart-4)' : undefined }}
         />
       </div>
 

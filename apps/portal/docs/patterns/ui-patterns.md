@@ -30,7 +30,7 @@ Portal is the workspace-wide cross-product navigation hub. Minimal UI exists tod
 import { Button, DataTable, Sheet, Dialog, ListPageTemplate, KeyMetrics, LocalBanner, StatusBadge } from '@exxatdesignux/ui'
 ```
 
-Never use `@exxat/ds`, `exxat-ds/packages/ui/src`, or any raw HTML primitive for a DS organism.
+Never use `@exxat/ds`, `@exxatdesignux/ui — packages/ui/src`, or any raw HTML primitive for a DS organism.
 
 ---
 

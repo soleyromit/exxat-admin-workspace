@@ -12,6 +12,7 @@ appliesTo: [react]
 **MUST** use **`ListPageTemplate`** view toolbar — `role="toolbar"` + **`w-max`** segmented control (`viewSegmentedToolbarClass`), **not** Radix **`Tabs`** stretched across the page.
 
 - Reference: `packages/ui/src/components/templates/list-page.tsx` (views toolbar block).
+- View tabs sit inside **`HorizontalScrollRegion`** with **`controlsLayout="group-end"`** (segmented `[← | →]` after the bar) — **`.cursor/rules/exxat-horizontal-scroll.mdc`**, **`docs/horizontal-scroll-pattern.md`**.
 - **MUST NOT** build a custom full-width tab bar for “All students · 16” + Add view.
 
 ## Entity / record detail (Overview, Academics, Placements, …)
@@ -19,6 +20,7 @@ appliesTo: [react]
 **MUST** use **`Tabs`**, **`TabsList`**, **`TabsTrigger`** from `@/components/ui/tabs`:
 
 - **`TabsList`** defaults to **`inline-flex w-fit`** — **MUST NOT** pass `className="w-full"` or wrap the list in a full-width flex container that forces triggers to **`flex-1`**.
+- When tabs overflow, use **`TabsListScrollRegion`** (wraps **`HorizontalScrollRegion`**) — grouped scroll control at the end, not flanking chevrons on both sides.
 - Prefer **`variant="line"`** for record sub-nav under a **`PageHeader`** (`record-home` blueprint).
 - **`TabsTrigger`** may use `flex-1` only inside a **`w-fit`** list with a fixed number of tabs — never inside a bar that spans the content column.
 
@@ -31,3 +33,4 @@ appliesTo: [react]
 
 - **`docs/exxat-ds/blueprints/page-header.md`** — header never carries view tabs
 - **`docs/exxat-ds/data-views-pattern.md`** — `ListPageTemplate` view toolbar
+- **`exxat-horizontal-scroll.mdc`** — shared scroll controls for overflowing tab rows

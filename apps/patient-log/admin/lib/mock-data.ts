@@ -1,6 +1,6 @@
 export type StudentStatus = 'on-track' | 'at-risk' | 'completed'
 
-export interface StudentLog {
+export interface StudentLog extends Record<string, unknown> {
   id: string
   name: string
   program: string

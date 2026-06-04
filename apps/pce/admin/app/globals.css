@@ -44,7 +44,7 @@
   --sidebar: oklch(0.245 0.015 270);
 }
 
-/* ── DataTable tokens (mirrors exxat-ds/packages/ui/src/globals.css) ───────── */
+/* ── DataTable tokens (mirrors @exxatdesignux/ui/globals.css) ───────────────── */
 :root {
   --dt-header-bg:       var(--background);
   --dt-row-bg:          var(--background);

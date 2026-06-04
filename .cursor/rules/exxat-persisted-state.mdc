@@ -41,8 +41,16 @@ real-time multi-tab mirroring) is **not** what this rule covers.
 2. **Page tabs** — Every `<ListPageTemplate>` that lets the user **add or
    rename view tabs** SHOULD pass `persistKey` so the arrangement
    survives. Hubs that already manage tabs in controlled mode (parent
-   owns `tabs` / `onTabsChange`) keep doing that — the `persistKey` prop
-   is ignored when controlled props are passed.
+   owns `tabs` / `onTabsChange` / `activeTabId`) keep doing that — the
+   `persistKey` prop is **ignored when controlled props are passed**.
+
+   **Anti-pattern:** Passing **`tabs` + `onTabsChange`** (or **`activeTabId`**
+   + **`onActiveTabChange`**) **and** expecting **`persistKey`** to restore
+   view tabs on reload — persistence is disabled in controlled mode. Prefer
+   **`persistKey` only** (uncontrolled tabs) or **`productPersistKey(product, hubKey)`**
+   when the hub does not need parent-owned tab state. Reference fix:
+   **`tokens-themes-client.tsx`** (removed controlled tab state; added
+   **`persistKey={productPersistKey(product, "tokens", …)}`**).
 
 3. **Distinct keys per consumer** — Two components that mount the same
    shared table (e.g. `library-table.tsx` is reused by `library-client`

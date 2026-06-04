@@ -20,7 +20,6 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import {
   Button, Tip,
   Collapsible, CollapsibleTrigger, CollapsibleContent,
@@ -35,6 +34,7 @@ interface AssessmentsTabProps {
   reviewByAssessment: Map<string, AssessmentReview>
   isViewer: boolean
   courseId: string
+  onNewAssessment?: () => void
 }
 
 // Group by COMPLETION status, not workflow. Per Aarti's May 7 directive:
@@ -82,10 +82,9 @@ const COMPLETION_BUCKETS: {
   },
 ]
 
-export function AssessmentsTab({ assessments, reviewByAssessment, isViewer, courseId }: AssessmentsTabProps) {
-  const router = useRouter()
+export function AssessmentsTab({ assessments, reviewByAssessment, isViewer, courseId, onNewAssessment }: AssessmentsTabProps) {
   function openCanvas() {
-    router.push(`/assessment-builder/create?courseId=${courseId}`)
+    onNewAssessment?.()
   }
   const [completedOpen, setCompletedOpen] = useState(false)
   const [filterBucket, setFilterBucket] = useState<CompletionBucket | null>(null)
@@ -205,7 +204,7 @@ export function AssessmentsTab({ assessments, reviewByAssessment, isViewer, cour
             will say five pending review, two reviewed, whatever." */}
         {totalWorkflowSignals > 0 && (
           <div className="px-4 py-2 border-t border-border bg-muted/30 flex items-center gap-2 flex-wrap">
-            <span className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">
+            <span className="text-xs font-semibold text-muted-foreground">
               Approval workflow
             </span>
             <span className="text-xs text-muted-foreground">

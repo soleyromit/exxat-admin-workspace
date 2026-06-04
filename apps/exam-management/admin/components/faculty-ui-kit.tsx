@@ -10,7 +10,7 @@
  *   - DS Card / Badge primitives — no raw divs masquerading as cards
  *
  * The 5 tones (brand/info/warning/success/neutral) are mapped to admin DS
- * theme tokens that exist in @theme inline at exxat-ds/packages/ui/src/theme.css
+ * theme tokens that exist in @theme inline at @exxatdesignux/ui/globals.css
  */
 
 import type { ReactNode } from 'react'

@@ -159,6 +159,19 @@ The data shape supports any number of children, but the collapsible variant is r
 
 **Reference:** `components/app-sidebar.tsx` (`CollapsibleNavItem`, `isCollapsibleParentMenuButtonActive`, `isCollapsibleChildActive`), `app/globals.css` (`@keyframes collapsible-down/up`), `lib/mock/navigation.tsx` (`NavLinkItem.children`).
 
+### 3.2.1 Nav flyout mode (mobile / zoom ≥ 200%)
+
+At **WCAG 1.4.10 reflow** (browser zoom ≥ 200% or equivalent narrow viewport), the primary sidebar becomes an **overlay flyout** (`isNavFlyout` on **`SidebarProvider`** in `@exxatdesignux/ui/components/ui/sidebar`).
+
+| Rule | Implementation |
+|---|---|
+| Don't block the page on load | Entering flyout mode **closes** the sidebar (not persisted) |
+| Dismiss on leaf navigation | Call **`dismissNavFlyout()`** from **`useSidebar()`** when a nav link navigates to its destination |
+| Keep flyout open for nested nav parents | **Do not** dismiss on rows with **`drillIn`** or **`secondaryPanel`** — user still picks a child |
+| Keyboard exit | **Esc** closes the flyout when open |
+
+**Reference:** `components/sidebar/app-sidebar.tsx` (`NavLinkItems`, `SidebarDrillInItems`), `components/library-secondary-nav.tsx`, **`exxat-sidebar-shell.mdc`**.
+
 ### 3.3 Secondary panel auto-collapse on high zoom
 
 `SecondaryPanelProvider` (`components/secondary-panel.tsx`) reads **`useSidebarReflowZoom()`** (browser zoom ≥ 200% **or** very short viewport — same WCAG 1.4.10 signal the primary sidebar uses) and **auto-collapses the nested rail to its icon variant on entering high zoom**. The user can re-expand once collapsed; the next zoom-out → zoom-in cycle re-collapses. `openPanel` also opens directly in compact mode when high zoom is active so freshly-navigated panels don't briefly flash expanded.
@@ -260,6 +273,10 @@ ListPageTemplate  (supportedViewTypes = FULL_HUB_SUPPORTED_VIEWS — seven views
 ```
 
 **Add view parity (binding):** `.cursor/rules/exxat-hub-supported-views.mdc`, `apps/web/docs/hub-supported-views-pattern.md`. **MUST NOT** use `supportedViewTypes={["table"]}` or four-view-only allowlists without a documented exception. List view **MUST** use **`ListPageBoardCard`** (`library-table.tsx`).
+
+**View tabs overflow:** The views toolbar is wrapped in **`HorizontalScrollRegion`** with **`controlsLayout="group-end"`** (segmented `[← | →]` after the tab bar). Record **`TabsList`** uses **`TabsListScrollRegion`**. SiteHeader breadcrumbs use the same primitive with **`alignEnd`**. **Do not** hand-build flanking chevrons — **`HorizontalScrollControls`** / **`useHorizontalScrollAffordances`** from `@exxatdesignux/ui/components/ui/horizontal-scroll-controls`. **`docs/horizontal-scroll-pattern.md`**, **`exxat-horizontal-scroll.mdc`**.
+
+**View tab persistence:** Pass **`persistKey`** (or **`productPersistKey(product, hubKey)`**) on **`ListPageTemplate`** for uncontrolled tabs. **Do not** pass **`tabs` / `onTabsChange`** and expect **`persistKey`** to restore — controlled mode disables tab persistence. Reference: **`tokens-themes-client.tsx`**.
 
 **Reference implementations:**
 - `components/library-client.tsx` + `components/library-table.tsx` — **canonical seven-view hub** (All questions)

@@ -1,0 +1,32 @@
+---
+description: Font Awesome Pro icons — kit, weights, markup, subset audit, accessibility pairing
+globs: {components,lib,src}/**/*.{tsx,ts}
+alwaysApply: false
+appliesTo: [react]
+---
+
+# Exxat DS — Font Awesome icons
+
+Product UI uses **Font Awesome 6 Pro** via the **Kit script** in **`src/layout.tsx`** (not per-page ad-hoc CDNs). **Authoritative accessibility pairing** for decorative vs informational vs icon-only controls: **`.cursor/rules/exxat-accessibility.mdc`** (Case A/B/C).
+
+## MUST
+
+1. **Markup** — Use **`<i className="…" />`** with **`fa-*`** weight + icon classes (e.g. **`fa-light fa-folder`**, **`fa-solid fa-check`**). Put **`aria-hidden="true"`** on the **`<i>`** when the **accessible name** lives on a parent (**`Button` `aria-label`**, adjacent text, **`Tip`** on interactive controls).
+2. **Weights** — Default inactive/ambient icons to **`fa-light`**; use **`fa-solid`** for **selected / active / strong emphasis** when the pattern already exists (e.g. sidebar rows, view tabs). Stay consistent within a surface.
+3. **Class strings** — Prefer **static** `className` strings so **`pnpm --filter web fa:subset-audit`** (see **`apps/web/scripts/fontawesome-subset-audit.mjs`**) can discover glyphs for **Kit subsetting** (`fontawesome-subset.manifest.json` → [fontawesome.com/kits](https://fontawesome.com/kits) Icon Selection).
+4. **Props APIs** — When a component accepts an icon, document **suffix only** (`fa-folder`) or **full classes** consistently with nearby code (**`lib/data-list-view.ts`**, **`lib/list-status-badges.ts`**, **`os-folder-glyph.tsx`**).
+
+## SHOULD
+
+- After adding **new** Font Awesome glyph names, run **`fa:subset-audit`** and refresh the **Kit** subset so production does not 404 missing icons.
+- Reuse **shared** maps (**`DATA_LIST_VIEW_TILES`**, **`lib/list-status-badges.ts`**) instead of one-off **`fa-*`** strings for the same semantic concept.
+
+## MUST NOT
+
+- Add **second** icon systems for **product chrome** (duplicate Lucide/Phosphor/Heroicons for the same nav, table toolbar, or hub cards) when Font Awesome is already the standard for that surface.
+- Put **meaningful** accessible names **only** on **`<i>`** without **`role`** / parent labelling — follow **Case B/C** in **`exxat-accessibility.mdc`**.
+
+## See also
+
+- **`./AGENTS.md`** — handbook; **§8** accessibility.
+- **`.cursor/rules/exxat-accessibility.mdc`** — tooltips + **`aria-label`** for icon-only buttons.

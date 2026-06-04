@@ -5,8 +5,7 @@
     "ignoreDeprecations": "5.0",
     "baseUrl": ".",
     "paths": {
-      "@exxat/ds/*": ["../../../exxat-ds/*"],
-      "@exxat/student/*": ["../../../studentUX/src/*"],
+            "@exxat/student/*": ["../../../studentUX/src/*"],
       "@/*": ["./*"]
     }
   },

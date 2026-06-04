@@ -4,7 +4,7 @@
 /**
  * KeyMetrics — WCAG 2.1 AA reusable KPI panel
  *
- * Vendored from exxat-ds/apps/web/components/key-metrics.tsx (2026-05-11)
+ * Vendored from @exxatdesignux/ui — vendored from DS web app: key-metrics.tsx (2026-05-11)
  * per docs/governance/component-depth-audits/key-metrics.md. First PCE consumer:
  * apps/pce/admin/app/(app)/analytics/page.tsx.
  *

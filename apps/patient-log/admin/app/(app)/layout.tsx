@@ -1,4 +1,4 @@
-import { SidebarProvider, SidebarInset, TooltipProvider, Toaster } from '@exxatdesignux/ui'
+import { SidebarProvider, SidebarInset, TooltipProvider } from '@exxatdesignux/ui'
 import { AppSidebar } from '@/components/app-sidebar'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -10,7 +10,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {children}
         </SidebarInset>
       </SidebarProvider>
-      <Toaster position="bottom-center" />
     </TooltipProvider>
   )
 }

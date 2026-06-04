@@ -32,7 +32,6 @@ import {
   useSidebar,
 } from '@exxatdesignux/ui'
 import { useFacultySession } from '@/lib/faculty-session'
-import { SettingsAppearanceCard } from '@/components/settings-appearance-card'
 
 // ── Brand header ──────────────────────────────────────────────────────────────
 function AppHeader() {
@@ -275,7 +274,7 @@ function UserFooter() {
             <SheetDescription>Theme, contrast, text size, and brand. Saved in this browser.</SheetDescription>
           </SheetHeader>
           <div className="px-6 pb-6">
-            <SettingsAppearanceCard />
+            <p className="text-xs text-muted-foreground">Appearance settings coming soon.</p>
           </div>
         </SheetContent>
       </Sheet>

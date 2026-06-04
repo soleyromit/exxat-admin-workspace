@@ -33,6 +33,7 @@ import { useFacultySession } from '@/lib/faculty-session'
 import { useAssessmentReviews } from '@/lib/assessment-review-store'
 import { AccessLevelChip, StatusPill } from '@/components/faculty-ui-kit'
 
+import { CreateAssessmentModal } from '@/components/create-assessment-modal'
 import { OverviewTab } from './tabs/overview-tab'
 import { AssessmentsTab } from './tabs/assessments-tab'
 import { StudentsTab } from './tabs/students-tab'
@@ -51,6 +52,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
   // Default landing = the assessment list, per Aarti's May 7 directive.
   // Curricular matrix moves to the secondary "Mapping" tab.
   const [activeTab, setActiveTab] = useState('assessments')
+  const [assessmentModalOpen, setAssessmentModalOpen] = useState(false)
 
   const course = useMemo(() => mockCourses.find(c => c.id === courseId), [courseId])
   const offerings = useMemo(
@@ -190,7 +192,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
           </Button>
         </Tip>
       )}
-      <PrimaryAction isViewer={isViewer} courseId={courseId} />
+      <PrimaryAction isViewer={isViewer} courseId={courseId} modalOpen={assessmentModalOpen} setModalOpen={setAssessmentModalOpen} />
     </div>
   )
 
@@ -266,6 +268,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                 reviewByAssessment={reviewByAssessment}
                 isViewer={isViewer}
                 courseId={courseId}
+                onNewAssessment={() => setAssessmentModalOpen(true)}
               />
             </TabsContent>
             <TabsContent value="students" className="m-0">
@@ -304,8 +307,14 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
   )
 }
 
-function PrimaryAction({ isViewer, courseId }: { isViewer: boolean; courseId: string }) {
-  const router = useRouter()
+function PrimaryAction({
+  isViewer, courseId, modalOpen, setModalOpen,
+}: {
+  isViewer: boolean
+  courseId: string
+  modalOpen: boolean
+  setModalOpen: (open: boolean) => void
+}) {
   if (isViewer) {
     return (
       <Tip label="Read-only access — you can't create assessments in this course.">
@@ -316,10 +325,18 @@ function PrimaryAction({ isViewer, courseId }: { isViewer: boolean; courseId: st
       </Tip>
     )
   }
+
   return (
-    <Button size="sm" className="gap-2" onClick={() => router.push(`/assessment-builder/create?courseId=${courseId}`)}>
-      <i className="fa-light fa-plus" aria-hidden="true" />
-      New assessment
-    </Button>
+    <>
+      <Button size="sm" className="gap-2" onClick={() => setModalOpen(true)}>
+        <i className="fa-light fa-plus" aria-hidden="true" />
+        New assessment
+      </Button>
+      <CreateAssessmentModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        courseId={courseId}
+      />
+    </>
   )
 }

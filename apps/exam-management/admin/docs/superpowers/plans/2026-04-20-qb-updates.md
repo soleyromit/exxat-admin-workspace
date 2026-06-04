@@ -4,9 +4,9 @@
 
 **Goal:** Redesign the Question Bank with simplified status model (Saved|Draft), flattened folder tree, Google Drive–style breadcrumb title, collaborator avatar stack, improved table columns/toolbar, DS compliance fixes, and two new scaffold pages (Courses, Assessment Builder).
 
-**Architecture:** State-first refactor (types → mock data → state) before any UI changes; each UI file is self-contained and gets its own task. No new dependencies — all UI uses existing @exxat-ds/ui and Font Awesome Pro.
+**Architecture:** State-first refactor (types → mock data → state) before any UI changes; each UI file is self-contained and gets its own task. No new dependencies — all UI uses existing @exxatdesignux/ui and Font Awesome Pro.
 
-**Tech Stack:** Next.js 15 App Router, @exxat-ds/ui, Tailwind v4, Font Awesome Pro, TypeScript
+**Tech Stack:** Next.js 15 App Router, @exxatdesignux/ui, Tailwind v4, Font Awesome Pro, TypeScript
 
 ---
 

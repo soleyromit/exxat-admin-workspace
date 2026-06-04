@@ -1,2 +1,2 @@
 'use client'
-export { SidebarProvider, SidebarInset, TooltipProvider, Toaster } from '@exxatdesignux/ui'
+export { SidebarProvider, SidebarInset, TooltipProvider } from '@exxatdesignux/ui'

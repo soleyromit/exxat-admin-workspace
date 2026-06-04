@@ -3,7 +3,7 @@
 /**
  * Table Properties Drawer (stripped vendor) — PCE.
  *
- * Vendored 2026-05-11 from `exxat-ds/apps/web/components/table-properties/`
+ * Vendored 2026-05-11 from `@exxatdesignux/ui — vendored from DS web app table-properties/`
  * per `docs/governance/component-depth-audits/organisms-templates.md`
  * + `docs/governance/ds-adoption.md` (kind="vendor").
  *

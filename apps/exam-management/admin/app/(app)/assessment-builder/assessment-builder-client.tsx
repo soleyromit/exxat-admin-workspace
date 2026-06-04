@@ -210,7 +210,24 @@ export default function AssessmentBuilderClient() {
         setBuilderState('ready')
       }, 2200)
     } else {
-      setActiveAsmt(newAsmt)
+      // No prompt — auto-scaffold sections + questions from course QB so the
+      // builder lands with real content instead of a blank canvas.
+      const pool = MOCK_QB_QUESTIONS.filter(
+        q => q.folder.startsWith(courseCode) || q.folderPath.toLowerCase().includes(courseCode.split('-')[0])
+      )
+      const fallback = pool.length >= 15 ? pool : MOCK_QB_QUESTIONS.slice(0, 30)
+      const defaultSections: AssessmentSection[] = [
+        { id: `sec-${draft.id}-0`, title: 'Section 1', questionIds: fallback.slice(0, 10).map(q => q.id) },
+        { id: `sec-${draft.id}-1`, title: 'Section 2', questionIds: fallback.slice(10, 20).map(q => q.id) },
+        { id: `sec-${draft.id}-2`, title: 'Section 3', questionIds: fallback.slice(20, 30).map(q => q.id) },
+      ].filter(s => s.questionIds.length > 0)
+      const defaultQIds = defaultSections.flatMap(s => s.questionIds)
+      const defaultQuestions: AssessmentQuestion[] = defaultQIds.map((qId, i) => ({
+        questionId: qId, order: i + 1, points: 4, bonus: false,
+      }))
+      const scaffolded: AssessmentDraft = { ...newAsmt, sections: defaultSections, questions: defaultQuestions }
+      setActiveAsmt(scaffolded)
+      setActiveSectionId(defaultSections[0]?.id ?? null)
       setBuilderState('ready')
     }
     setCourseId(draft.courseId)
@@ -975,49 +992,46 @@ export default function AssessmentBuilderClient() {
         </div>
       </div>
 
-      {/* ── Tab bar (38px) ────────────────────────────────────────────────── */}
-      <div style={{
-        display: 'flex', alignItems: 'stretch',
-        height: 38, borderBottom: '1px solid var(--border)',
-        background: 'var(--card)', flexShrink: 0, padding: '0 16px',
-      }}>
-        {[
-          { id: 'setup' as const,  label: 'Setup',  done: !!activeAsmt, num: 1 },
-          { id: 'build' as const,  label: 'Build',  done: false,         num: 2 },
-          { id: 'review' as const, label: 'Review', done: false,         num: 3 },
-        ].map(tab => {
+      {/* ── Tab bar ───────────────────────────────────────────────────────── */}
+      <div
+        role="tablist"
+        aria-label="Assessment builder steps"
+        style={{
+          display: 'flex', alignItems: 'stretch',
+          height: 40, borderBottom: '1px solid var(--border)',
+          background: 'var(--card)', flexShrink: 0, padding: '0 16px',
+        }}
+      >
+        {([
+          { id: 'setup'  as const, label: 'Structure' },
+          { id: 'build'  as const, label: 'Questions' },
+          { id: 'review' as const, label: 'Deliver'   },
+        ] as const).map(tab => {
           const isActive = activeTab === tab.id
-          const isDone = tab.done && !isActive
           return (
-            <Button
+            <button
               key={tab.id}
-              variant="ghost"
-              size="sm"
+              type="button"
               role="tab"
               aria-selected={isActive}
               onClick={() => { setActiveTab(tab.id); if (tab.id !== 'build') setPickerOpen(false) }}
-              className={`flex items-center gap-1.5 px-3.5 text-xs whitespace-nowrap rounded-none h-full border-b-2 ${isActive ? 'font-semibold text-foreground border-foreground' : isDone ? 'font-medium border-transparent' : 'font-medium border-transparent'}`}
               style={{
-                background: 'none',
-                color: isActive ? 'var(--foreground)' : isDone ? 'var(--chart-2)' : 'var(--muted-foreground)',
+                display: 'flex', alignItems: 'center',
+                padding: '0 14px', height: '100%',
+                fontSize: 13, fontWeight: isActive ? 600 : 500,
+                color: isActive ? 'var(--foreground)' : 'var(--muted-foreground)',
+                background: 'none', border: 'none', cursor: 'pointer',
+                borderBottom: `2px solid ${isActive ? 'var(--foreground)' : 'transparent'}`,
+                whiteSpace: 'nowrap', transition: 'color 0.15s',
               }}
             >
-              <span
-                className={`flex size-[18px] shrink-0 items-center justify-center rounded-full text-xs font-bold`}
-                style={{
-                  background: isActive ? 'var(--foreground)' : isDone ? 'var(--chart-2)' : 'var(--muted)',
-                  color: isActive || isDone ? 'var(--background)' : 'var(--muted-foreground)',
-                }}
-              >
-                {isDone ? '✓' : tab.num}
-              </span>
               {tab.label}
-            </Button>
+            </button>
           )
         })}
-        {/* Question count — right side of tab bar */}
+        {/* Live count — right side, visible on Questions tab */}
         {activeTab === 'build' && activeAsmt && (
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, paddingRight: 4 }}>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
               {activeAsmt.questions.length} Q · {activeAsmt.sections.length} section{activeAsmt.sections.length !== 1 ? 's' : ''}
             </span>
@@ -1033,7 +1047,7 @@ export default function AssessmentBuilderClient() {
 
               {/* ── Basic info ── */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)' }}>Basic info</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)' }}>Basic info</div>
 
                 {/* Name */}
                 <div>
@@ -1108,7 +1122,7 @@ export default function AssessmentBuilderClient() {
               {/* ── Description / Intent ── */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 20, borderTop: '1px solid var(--border)' }}>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)' }}>Primary goal / intent</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)' }}>Primary goal / intent</div>
                   <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 2 }}>What skill or knowledge does this assessment measure?</div>
                 </div>
                 <textarea
@@ -1127,7 +1141,7 @@ export default function AssessmentBuilderClient() {
               {/* ── Collaborators ── */}
               {(activeAsmt.collaboratorIds?.length ?? 0) > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 20, borderTop: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)' }}>Collaborators</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)' }}>Collaborators</div>
                   {(activeAsmt.collaboratorIds ?? []).map((facId, idx) => {
                     const fac = facultyListRows.find(f => f.id === facId)
                     if (!fac) return null
@@ -1153,7 +1167,7 @@ export default function AssessmentBuilderClient() {
               {/* ── Target distribution ── */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 20, borderTop: '1px solid var(--border)' }}>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)' }}>Target difficulty mix</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)' }}>Target difficulty mix</div>
                   <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 2 }}>Set expectations before building — actual distribution shown in Build tab.</div>
                 </div>
                 <div style={{ display: 'flex', gap: 12 }}>
@@ -1206,7 +1220,7 @@ export default function AssessmentBuilderClient() {
           {/* Left: sections sidebar (196px) */}
           <div style={{ width: 196, minWidth: 196, borderRight: '1px solid var(--sidebar-border, var(--border))', flexShrink: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--sidebar)' }}>
             <div style={{ padding: '10px 12px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-              <span className="text-xs font-bold uppercase tracking-[0.07em] text-muted-foreground">Sections</span>
+              <span className="text-xs font-semibold text-muted-foreground">Sections</span>
               <button
                 type="button"
                 aria-label="Add section"
@@ -1618,7 +1632,6 @@ export default function AssessmentBuilderClient() {
                                 padding: i === 0 ? '5px 4px' : '5px 8px',
                                 fontSize: 12, fontWeight: 600,
                                 color: 'var(--muted-foreground)',
-                                textTransform: 'uppercase', letterSpacing: '0.05em',
                                 textAlign: i === 0 ? 'center' : i >= 5 ? 'right' : 'left',
                                 whiteSpace: 'nowrap',
                               }}>
@@ -2042,7 +2055,7 @@ export default function AssessmentBuilderClient() {
                 {/* Question card */}
                 <div style={{ padding: '16px 28px', background: 'oklch(0.975 0.005 270)' }}>
                   <div style={{ background: 'var(--background)', border: '1px solid var(--border)', borderRadius: 10, padding: 16, maxWidth: 580, margin: '0 auto' }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 8 }}>
                       Question 1 of {activeAsmt?.questions.length ?? 20} — {activeAsmt?.sections[0]?.title ?? 'Section 1'}
                     </div>
                     <div style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 12, color: 'var(--foreground)' }}>
@@ -2290,7 +2303,7 @@ function ABAssessmentList({ assessments, activeId, onOpen, onCreate }: {
       overflow: 'hidden',
       background: 'var(--ab-panel-bg)',
     }}>
-      <div className="text-xs font-bold uppercase tracking-[.07em] text-muted-foreground" style={{
+      <div className="text-xs font-semibold text-muted-foreground" style={{
         padding: '10px 10px 4px',
         flexShrink: 0,
       }}>
@@ -2994,7 +3007,7 @@ function ABDiffChart({ distribution, timeMetrics, overtimeMetrics, durationMinut
         <>
           <SEP />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <span className="text-xs font-bold uppercase tracking-[0.07em] text-muted-foreground">
+            <span className="text-xs font-semibold text-muted-foreground">
               Bloom&rsquo;s
             </span>
             {bloomsMetrics.slice(0, 3).map(b => (
@@ -3086,7 +3099,7 @@ function NewQuestionEditorPanel({
         <div className="mx-auto max-w-3xl mb-6 px-4 py-3 border-t border-border flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <i className="fa-light fa-clock-rotate-left text-muted-foreground" aria-hidden="true" style={{ fontSize: 12 }} />
-            <span className="text-xs uppercase tracking-wider font-bold text-muted-foreground">
+            <span className="text-xs font-semibold text-muted-foreground">
               Added this session · {userCreated.length}
             </span>
           </div>
@@ -3102,7 +3115,7 @@ function NewQuestionEditorPanel({
               >
                 <Badge
                   variant="secondary"
-                  className="rounded font-mono text-[9px] uppercase tracking-wider"
+                  className="rounded font-mono text-xs"
                   style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}
                 >
                   {q.code}
@@ -3262,7 +3275,7 @@ function ReviewStep({
                 : { label: 'Total', value: 'Ungraded' },
             ].map(({ label, value }) => (
               <div key={label}>
-                <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">{label}</p>
+                <p className="text-xs font-semibold text-muted-foreground">{label}</p>
                 <p className="text-sm font-medium text-foreground mt-0.5">{value}</p>
               </div>
             ))}
@@ -3272,7 +3285,7 @@ function ReviewStep({
         {/* Difficulty breakdown */}
         {totalQ > 0 && (
           <div className="rounded-xl border border-border bg-card p-5">
-            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-4">Difficulty distribution</p>
+            <p className="text-xs font-semibold text-muted-foreground mb-4">Difficulty distribution</p>
             <div className="flex items-center gap-6">
               {bars.map(bar => {
                 const barPts = s.graded ? activeAsmt.questions
@@ -3314,7 +3327,7 @@ function ReviewStep({
         {/* Sections breakdown */}
         {activeAsmt.sections.length > 0 && (
           <div className="rounded-xl border border-border bg-card p-5">
-            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-3">Sections</p>
+            <p className="text-xs font-semibold text-muted-foreground mb-3">Sections</p>
             <div className="flex flex-col divide-y divide-border">
               {activeAsmt.sections.map((section, idx) => {
                 const filled = section.questionIds.length
@@ -3375,7 +3388,7 @@ function ReviewStep({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Schedule */}
           <div className="rounded-xl border border-border bg-card p-5">
-            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-3">Schedule</p>
+            <p className="text-xs font-semibold text-muted-foreground mb-3">Schedule</p>
             {activeAsmt.settings.type === 'Pop Quiz' ? (
               <div className="flex items-start gap-2 text-xs text-muted-foreground">
                 <i className="fa-light fa-bolt mt-0.5" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
@@ -3413,7 +3426,7 @@ function ReviewStep({
         {/* Blooms */}
         {bloomsMetrics.length > 0 && (
           <div className="rounded-xl border border-border bg-card p-5">
-            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-3">
+            <p className="text-xs font-semibold text-muted-foreground mb-3">
               Bloom&apos;s taxonomy coverage
             </p>
             <div className="flex flex-col gap-2">
@@ -3476,7 +3489,7 @@ function ReviewStep({
 function ScheduleRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">{label}</span>
+      <span className="text-xs font-semibold text-muted-foreground">{label}</span>
       <span className="text-xs text-foreground">{value}</span>
     </div>
   )
@@ -3521,7 +3534,7 @@ function InstructionsPreview({ text, requireAck }: { text: string; requireAck: b
       </button>
       {expanded && (
         <div className="px-5 pb-4 border-t border-border">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 pt-3">
+          <p className="text-xs font-semibold text-muted-foreground mb-2 pt-3">
             Students will see:
           </p>
           <div
@@ -3573,7 +3586,7 @@ function ApprovalPanel({ status, reviewRequest, onSendForReview, onPublish }: {
   return (
     <div className="rounded-xl border border-border bg-card p-5 flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">Approval</p>
+        <p className="text-xs font-semibold text-muted-foreground">Approval</p>
         <span
           className="text-xs font-medium px-2 py-0.5 rounded-full"
           style={{
@@ -3703,7 +3716,7 @@ function SelectedQuestionsOutline({
       background: 'var(--card)',
     }}>
       <div style={{ padding: '10px 14px 6px', flexShrink: 0 }}>
-        <p className="text-xs font-bold uppercase tracking-[.07em] text-muted-foreground">
+        <p className="text-xs font-semibold text-muted-foreground">
           Selected · {activeAsmt.questions.length}
         </p>
       </div>
@@ -3721,7 +3734,7 @@ function SelectedQuestionsOutline({
             if (item.kind === 'section') {
               return (
                 <div key={`section-${item.id}-${idx}`} className="mt-3 mb-1 px-2">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                  <p className="text-[9px] font-semibold text-muted-foreground">
                     {item.title} ({item.count})
                   </p>
                 </div>
@@ -3814,7 +3827,7 @@ function MetricsPanel({
     }}>
       {/* Question count */}
       <div>
-        <p className="text-xs font-bold uppercase tracking-[.07em] text-muted-foreground mb-1">Questions</p>
+        <p className="text-xs font-semibold text-muted-foreground mb-1">Questions</p>
         <p className="text-2xl font-bold text-foreground">{total}</p>
         <p className="text-xs text-muted-foreground">
           {durationMinutes} min
@@ -3832,7 +3845,7 @@ function MetricsPanel({
 
       {/* Difficulty distribution */}
       <div>
-        <p className="text-xs font-bold uppercase tracking-[.07em] text-muted-foreground mb-2">Difficulty</p>
+        <p className="text-xs font-semibold text-muted-foreground mb-2">Difficulty</p>
         <div className="flex items-end gap-3 h-14">
           {bars.map(bar => (
             <div key={bar.label} className="flex flex-col items-center gap-1 flex-1">
@@ -3855,7 +3868,7 @@ function MetricsPanel({
       {/* Psychometrics */}
       {psychoMetrics?.hasData && (
         <div>
-          <p className="text-xs font-bold uppercase tracking-[.07em] text-muted-foreground mb-2">Psychometrics</p>
+          <p className="text-xs font-semibold text-muted-foreground mb-2">Psychometrics</p>
           <div className="flex flex-col gap-1.5">
             {psychoMetrics.avgPValue != null && (
               <div className="flex items-center justify-between">
@@ -3906,7 +3919,7 @@ function MetricsPanel({
       {/* Blooms */}
       {bloomsMetrics.length > 0 && (
         <div>
-          <p className="text-xs font-bold uppercase tracking-[.07em] text-muted-foreground mb-2">Bloom&apos;s</p>
+          <p className="text-xs font-semibold text-muted-foreground mb-2">Bloom&apos;s</p>
           <div className="flex flex-col gap-1.5">
             {bloomsMetrics.slice(0, 5).map(b => (
               <div key={b.level} className="flex items-center gap-2">
@@ -4108,7 +4121,7 @@ function DetailsStep({
         {/* Left — identity */}
         <div className="flex flex-col gap-5">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Assessment name *</p>
+            <p className="text-xs font-semibold text-muted-foreground mb-2">Assessment name *</p>
             <input
               type="text"
               aria-label="Assessment name"
@@ -4126,7 +4139,7 @@ function DetailsStep({
             />
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">
+            <p className="text-xs font-semibold text-muted-foreground mb-2">
               Description <span className="font-normal normal-case tracking-normal text-xs">— optional, shown to students before they start</span>
             </p>
             <textarea
@@ -4148,7 +4161,7 @@ function DetailsStep({
         <div className="flex flex-col gap-5">
           {/* Type */}
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Type *</p>
+            <p className="text-xs font-semibold text-muted-foreground mb-2">Type *</p>
             <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Assessment type">
               {TYPES.map(({ type, icon, description }) => {
                 const active = settings.type === type
@@ -4178,7 +4191,7 @@ function DetailsStep({
 
           {/* Duration */}
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Duration</p>
+            <p className="text-xs font-semibold text-muted-foreground mb-2">Duration</p>
             <div className="flex items-center gap-2">
               <input
                 type="number"
@@ -4230,7 +4243,7 @@ function DetailsStep({
           {/* Sections */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">Sections</p>
+              <p className="text-xs font-semibold text-muted-foreground">Sections</p>
               <p className="text-xs text-muted-foreground">
                 Multi-faculty or case-study preread
               </p>
@@ -4372,7 +4385,7 @@ function DetailsStep({
 
           {/* Delivery Settings */}
           <div className="flex flex-col gap-4" style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
-            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">Delivery</p>
+            <p className="text-xs font-semibold text-muted-foreground">Delivery</p>
 
             {settings.type === 'Pop Quiz' ? (
               <div
@@ -4472,7 +4485,7 @@ function DetailsStep({
 
             {/* Delivery */}
             <div className="flex flex-col gap-3">
-              <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">Delivery</p>
+              <p className="text-xs font-semibold text-muted-foreground">Delivery</p>
 
               {/* Pre-flight date */}
               {settings.type !== 'Pop Quiz' && (
@@ -4539,7 +4552,7 @@ function DetailsStep({
 
             {/* Audience */}
             <div className="flex flex-col gap-3">
-              <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">Audience</p>
+              <p className="text-xs font-semibold text-muted-foreground">Audience</p>
               <Toggle
                 checked={settings.publishToAll}
                 onChange={v => patchSettings({ publishToAll: v, studentGroupIds: v ? [] : settings.studentGroupIds })}
@@ -4773,7 +4786,7 @@ function AssessmentSettingsContent({
     <div style={{ padding: '0 0 40px' }}>
       {/* Type */}
       <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--border)' }}>
-        <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-2">Scheduling</p>
+        <p className="text-xs font-semibold text-muted-foreground mb-2">Scheduling</p>
         <p className="text-xs text-muted-foreground mb-2">Assessment type</p>
         <div style={{ display: 'flex', gap: 8 }}>
           {TYPES.map(t => (
@@ -4835,7 +4848,7 @@ function AssessmentSettingsContent({
 
       {/* Grading */}
       <div style={{ padding: '12px 20px 0', borderTop: '1px solid var(--border)', marginTop: 4 }}>
-        <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-3">Grading</p>
+        <p className="text-xs font-semibold text-muted-foreground mb-3">Grading</p>
         <Toggle
           checked={settings.graded}
           onChange={v => onPatch({ graded: v })}
@@ -4862,7 +4875,7 @@ function AssessmentSettingsContent({
 
       {/* Pre-exam setup */}
       <div style={{ borderTop: '1px solid var(--border)', marginTop: 8 }}>
-        <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground" style={{ padding: '12px 20px 4px' }}>Pre-exam setup</p>
+        <p className="text-xs font-semibold text-muted-foreground" style={{ padding: '12px 20px 4px' }}>Pre-exam setup</p>
         <div style={{ padding: '0 20px' }}>
           <PreExamBlock
             label="Instructions"
@@ -4974,7 +4987,7 @@ function AssessmentSettingsSheet({
         <div className="flex flex-col gap-5 mt-6">
           {/* Assessment type */}
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">Type</p>
+            <p className="text-xs font-semibold text-muted-foreground">Type</p>
             <div className="flex gap-2">
               {TYPES.map(t => (
                 <button
@@ -5109,7 +5122,7 @@ function AssessmentSettingsSheet({
 
           {/* Navigation & access */}
           <div className="flex flex-col gap-0">
-            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-3">Navigation &amp; access</p>
+            <p className="text-xs font-semibold text-muted-foreground mb-3">Navigation &amp; access</p>
 
             <div className="flex items-center justify-between gap-4 pb-3 border-b border-border">
               <div className="min-w-0">
@@ -5218,7 +5231,7 @@ function AssessmentSettingsSheet({
 
           {/* Grading & Marking */}
           <div className="flex flex-col gap-0">
-            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-3">Grading &amp; marking</p>
+            <p className="text-xs font-semibold text-muted-foreground mb-3">Grading &amp; marking</p>
 
             <div className="flex items-center justify-between gap-4 pb-3 border-b border-border">
               <div className="min-w-0">
@@ -5261,7 +5274,7 @@ function AssessmentSettingsSheet({
 
           {/* Post-exam results */}
           <div className="flex flex-col gap-0">
-            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-3">Post-exam results</p>
+            <p className="text-xs font-semibold text-muted-foreground mb-3">Post-exam results</p>
 
             <div className="flex items-center justify-between gap-4 pb-3 border-b border-border">
               <div className="min-w-0">
@@ -5424,7 +5437,7 @@ function AssessmentSettingsSheet({
 
           {/* Exam end */}
           <div className="flex flex-col gap-0">
-            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-3">Exam end</p>
+            <p className="text-xs font-semibold text-muted-foreground mb-3">Exam end</p>
             <div className="flex items-center justify-between gap-4 pb-3 border-b border-border">
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground">Allow early submission</p>
@@ -5464,7 +5477,7 @@ function AssessmentSettingsSheet({
 
           {/* Digital tools */}
           <div className="flex flex-col gap-3">
-            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground">Digital tools</p>
+            <p className="text-xs font-semibold text-muted-foreground">Digital tools</p>
 
             {/* Calculator */}
             <div>
@@ -5553,7 +5566,7 @@ function AssessmentSettingsSheet({
 
           {/* Pre-exam setup */}
           <div className="flex flex-col gap-0">
-            <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted-foreground mb-3">Pre-exam setup</p>
+            <p className="text-xs font-semibold text-muted-foreground mb-3">Pre-exam setup</p>
 
             {/* Instructions block */}
             <PreExamBlock
@@ -5685,14 +5698,14 @@ function SectionsPanel({
 
   return (
     <div style={{ width: 280, minWidth: 280, borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--card)' }}>
-      <div className="text-xs font-bold uppercase tracking-[.07em] text-muted-foreground" style={{ padding: '10px 14px 6px', flexShrink: 0 }}>
+      <div className="text-xs font-semibold text-muted-foreground" style={{ padding: '10px 14px 6px', flexShrink: 0 }}>
         Sections
       </div>
 
       <div style={{ flex: 1, overflow: 'auto', padding: '0 10px 10px' }}>
         {unassigned.length > 0 && (
           <div className="mb-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 px-1">
+            <p className="text-xs font-semibold text-muted-foreground mb-1.5 px-1">
               Unassigned ({unassigned.length})
             </p>
             <div className="rounded-lg border border-dashed border-border p-2 flex flex-col gap-1">
@@ -5730,7 +5743,7 @@ function SectionsPanel({
         {activeAsmt.sections.map((section, idx) => (
           <div key={section.id} className="mb-3">
             <div className="flex items-center justify-between mb-1.5 px-1">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              <p className="text-xs font-semibold text-muted-foreground">
                 {idx + 1}. {section.title} ({section.questionIds.length})
               </p>
               <button
@@ -6066,11 +6079,11 @@ function CreationModeChooser({ courseId: _courseId, assessments, onCopyWithQuest
                     {/* Middle — code + badges + stem */}
                     <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 10, color: 'var(--muted-foreground)', background: 'var(--muted)', padding: '1px 6px', borderRadius: 3, fontFamily: 'monospace' }}>
+                        <span style={{ fontSize: 12, color: 'var(--muted-foreground)', background: 'var(--muted)', padding: '1px 6px', borderRadius: 3, fontFamily: 'monospace' }}>
                           {q.code}
                         </span>
-                        <Badge variant="secondary" style={{ fontSize: 10, padding: '0 5px', height: 18 }}>{q.type}</Badge>
-                        <Badge variant="outline" style={{ fontSize: 10, padding: '0 5px', height: 18, color: diffColor(q.difficulty), borderColor: diffColor(q.difficulty) }}>{q.difficulty}</Badge>
+                        <Badge variant="secondary" style={{ fontSize: 12, padding: '0 5px', height: 20 }}>{q.type}</Badge>
+                        <Badge variant="outline" style={{ fontSize: 12, padding: '0 5px', height: 20, color: diffColor(q.difficulty), borderColor: diffColor(q.difficulty) }}>{q.difficulty}</Badge>
                       </div>
                       <div style={{
                         fontSize: 13, lineHeight: 1.4, color: 'var(--foreground)',
@@ -6083,8 +6096,8 @@ function CreationModeChooser({ courseId: _courseId, assessments, onCopyWithQuest
 
                     {/* Right — PBI + usage */}
                     <div style={{ flexShrink: 0, textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>PBI {q.pbis != null ? q.pbis.toFixed(2) : '—'}</span>
-                      <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{q.usage}× used</span>
+                      <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>PBI {q.pbis != null ? q.pbis.toFixed(2) : '—'}</span>
+                      <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{q.usage}× used</span>
                     </div>
                   </div>
                 )
@@ -6098,13 +6111,13 @@ function CreationModeChooser({ courseId: _courseId, assessments, onCopyWithQuest
               {/* Panel header */}
               <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--card)', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 10, color: 'var(--muted-foreground)', background: 'var(--muted)', padding: '1px 6px', borderRadius: 3, fontFamily: 'monospace' }}>
+                  <span style={{ fontSize: 12, color: 'var(--muted-foreground)', background: 'var(--muted)', padding: '1px 6px', borderRadius: 3, fontFamily: 'monospace' }}>
                     {previewQ.code}
                   </span>
-                  <Badge variant="secondary" style={{ fontSize: 10, padding: '0 5px', height: 18 }}>{previewQ.type}</Badge>
-                  <Badge variant="outline" style={{ fontSize: 10, padding: '0 5px', height: 18, color: diffColor(previewQ.difficulty), borderColor: diffColor(previewQ.difficulty) }}>{previewQ.difficulty}</Badge>
+                  <Badge variant="secondary" style={{ fontSize: 12, padding: '0 5px', height: 20 }}>{previewQ.type}</Badge>
+                  <Badge variant="outline" style={{ fontSize: 12, padding: '0 5px', height: 20, color: diffColor(previewQ.difficulty), borderColor: diffColor(previewQ.difficulty) }}>{previewQ.difficulty}</Badge>
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+                <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
                   Usage {previewQ.usage}× · PBI {previewQ.pbis != null ? previewQ.pbis.toFixed(2) : '—'} · {previewQ.blooms}
                 </div>
               </div>
@@ -6201,12 +6214,12 @@ function CreationModeChooser({ courseId: _courseId, assessments, onCopyWithQuest
                     {/* Top row: term pill + duration */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span style={{
-                        fontSize: 11, color: 'var(--muted-foreground)',
+                        fontSize: 12, color: 'var(--muted-foreground)',
                         background: 'var(--muted)', padding: '2px 8px', borderRadius: 20,
                       }}>
                         {offering?.semester ?? '—'}
                       </span>
-                      <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{a.durationMinutes} min</span>
+                      <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{a.durationMinutes} min</span>
                     </div>
 
                     {/* Title */}
@@ -6226,7 +6239,7 @@ function CreationModeChooser({ courseId: _courseId, assessments, onCopyWithQuest
                         <div style={{ flex: med  / (total || 1), background: 'var(--chart-3)' }} />
                         <div style={{ flex: hard / (total || 1), background: 'var(--chart-1)' }} />
                       </div>
-                      <div style={{ fontSize: 10, color: 'var(--muted-foreground)', display: 'flex', gap: 8 }}>
+                      <div style={{ fontSize: 12, color: 'var(--muted-foreground)', display: 'flex', gap: 8 }}>
                         <span>E {pct(easy)}%</span>
                         <span>M {pct(med)}%</span>
                         <span>H {pct(hard)}%</span>
@@ -6315,7 +6328,7 @@ function CreationModeChooser({ courseId: _courseId, assessments, onCopyWithQuest
                   </div>
                   <div>
                     <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)', marginBottom: 2 }}>{path.label}</div>
-                    <div style={{ fontSize: 11, color: 'var(--muted-foreground)', lineHeight: 1.5, fontWeight: 400 }}>{path.desc}</div>
+                    <div style={{ fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1.5, fontWeight: 400 }}>{path.desc}</div>
                   </div>
                 </div>
               </Button>
@@ -6481,7 +6494,7 @@ function AddQuestionsModal({ initialMethod, selectedIds, onToggle, activeSection
                       type="button"
                       onClick={() => setActiveFilters(prev => on ? prev.filter(x => x !== f) : [...prev, f])}
                       style={{
-                        fontSize: 11, fontWeight: 500, borderRadius: 20, padding: '2px 9px', cursor: 'pointer', fontFamily: 'inherit',
+                        fontSize: 12, fontWeight: 500, borderRadius: 20, padding: '2px 9px', cursor: 'pointer', fontFamily: 'inherit',
                         background: on ? 'var(--foreground)' : 'var(--muted)',
                         color: on ? 'var(--background)' : 'var(--muted-foreground)',
                         border: on ? 'none' : '1px solid var(--border)',
@@ -6491,7 +6504,7 @@ function AddQuestionsModal({ initialMethod, selectedIds, onToggle, activeSection
                     </button>
                   )
                 })}
-                <span style={{ fontSize: 11, color: 'var(--muted-foreground)', marginLeft: 4 }}>
+                <span style={{ fontSize: 12, color: 'var(--muted-foreground)', marginLeft: 4 }}>
                   {qbQuestions.length} result{qbQuestions.length !== 1 ? 's' : ''}
                 </span>
               </div>
@@ -6775,7 +6788,7 @@ function SectionAssignSheet({
 
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {/* Faculty multi-select */}
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '12px 16px 6px' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', padding: '12px 16px 6px' }}>
             {collaboratorIds.length > 0 ? 'Assessment collaborators' : 'Faculty'}
           </div>
           {facultyPool.length === 0 ? (
@@ -7086,7 +7099,7 @@ function SectionAnalysisSheet({ open, onOpenChange, section, sectionIndex, quest
   function ChartSection({ title, children }: { title: string; children: React.ReactNode }) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--muted-foreground)' }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)' }}>
           {title}
         </div>
         {children}

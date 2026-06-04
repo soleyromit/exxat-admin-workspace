@@ -286,7 +286,7 @@ function SectionGroup({
               rows={2}
               style={{
                 width: '100%', paddingLeft: 10, paddingRight: 8, paddingTop: 6, paddingBottom: 6,
-                fontSize: 11, lineHeight: 1.5, fontFamily: 'inherit',
+                fontSize: 12, lineHeight: 1.5, fontFamily: 'inherit',
                 border: '1px solid var(--border)', borderLeft: 'none', borderRadius: '0 4px 4px 0',
                 background: 'var(--background)', color: 'var(--foreground)',
                 outline: 'none', resize: 'none',
@@ -303,7 +303,7 @@ function SectionGroup({
               rows={2}
               style={{
                 width: '100%', paddingLeft: 10, paddingRight: 8, paddingTop: 6, paddingBottom: 6,
-                fontSize: 11, lineHeight: 1.5, fontFamily: 'inherit',
+                fontSize: 12, lineHeight: 1.5, fontFamily: 'inherit',
                 border: '1px solid var(--border)', borderLeft: 'none', borderRadius: '0 4px 4px 0',
                 background: 'var(--background)', color: 'var(--foreground)',
                 outline: 'none', resize: 'none',

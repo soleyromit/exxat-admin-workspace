@@ -23,6 +23,30 @@ HubTable (inside ListPageTemplate)  ← canonical hub wrapper
   └── renderListRow / renderers     ← list, board, dashboard, folder, panel, tree
 ```
 
+### Pagination (HubTable)
+
+**User path:** Table view → **Properties** (sliders) → **Appearance → Pagination**. The toggle is **table-view only** — it does not appear on board, list, dashboard, folder, or panel views.
+
+**When enabled**, `HubTable` mounts **`CountSyncer`** + **`PaginationBar`** on **table** and **list** views and slices rows through **`useTableState.pagedRows`**. Board / dashboard / folder views are unaffected.
+
+| Mode | Hub client wiring | Use when |
+|------|-------------------|----------|
+| **Uncontrolled (default)** | Omit `pagination` and `onPaginationChange` | Library, Team, Placements — user toggles in Properties; `HubTable` owns `internalPaginationEnabled` |
+| **Controlled** | Pass **both** `pagination={bool}` and `onPaginationChange={setter}` | Page-level state (e.g. `columns-showcase.tsx` demo with `paginationInitialPageSize={5}`) |
+| **Server / external paging** | Pass `paginationOverride={{ page, pageSize }}` from the parent | Fetch one page at a time; parent owns page state — see **`docs/large-dataset-strategy.md`** |
+
+**MUST NOT**
+
+- Wire `onPaginationChange={() => {}}` — the drawer default is a **no-op**; the toggle will not activate pagination.
+- Pass only `pagination={true}` without a real `onPaginationChange` when you need **page-level** controlled state — without the handler, `HubTable` stays in uncontrolled mode.
+- Hand-roll `PaginationBar` on hubs that use `HubTable` unless you override via `tableRenderer` or `paginationOverride` (server mode).
+
+**Persistence:** With `<HubTable persistKey="…">`, the pagination on/off flag, current page, and page size save in lifecycle **`extras`** and restore on reload (per `persistTabId`).
+
+**References:** `packages/ui/src/components/data-views/hub-table.tsx` (`effectivePagination`, `chromeOwnedPagination`); `components/library-table.tsx` (uncontrolled); `components/columns-showcase.tsx` (controlled + small page size).
+
+**Monorepo dev:** `@exxatdesignux/ui` loads from **`dist/`**. After editing `hub-table.tsx`, run `pnpm --filter @exxatdesignux/ui build` and restart Vite.
+
 All imports:
 ```ts
 import { DataTable } from "@/components/data-table"
@@ -187,6 +211,7 @@ function FooDrawerToolbar({ state, totalRows, filterFields, fieldDefinitionsForD
     rows, sortRules, setSortRules, addSortRule, removeSortRule, toggleSortDir,
     colOrder, setColOrder, hiddenCols, toggleColVisibility, moveCol, groupBy, setGroupBy, sortKey,
   } = state
+  const [paginationEnabled, setPaginationEnabled] = React.useState(false)
 
   return (
     <>
@@ -209,7 +234,7 @@ function FooDrawerToolbar({ state, totalRows, filterFields, fieldDefinitionsForD
         open={sheetOpen} onOpenChange={setSheetOpen}
         showGridlines={showGridlines} onShowGridlinesChange={setShowGridlines}
         rowHeight={rowHeight} onRowHeightChange={setRowHeight}
-        pagination={false} onPaginationChange={() => {}}
+        pagination={paginationEnabled} onPaginationChange={setPaginationEnabled}
         activeFilters={activeFilters} onAddFilter={k => addFilter(k, true)}
         onUpdateFilter={updateFilter} onRemoveFilter={removeFilter}
         getFilterConnector={getConnector} onToggleFilterConnector={toggleConnector}

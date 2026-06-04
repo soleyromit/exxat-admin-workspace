@@ -1,4 +1,4 @@
-import { SidebarProvider, SidebarInset, TooltipProvider, Toaster } from './providers'
+import { SidebarProvider, SidebarInset, TooltipProvider } from './providers'
 import { AppSidebar } from '@/components/app-sidebar'
 import { FacultySessionProvider } from '@/lib/faculty-session'
 import { AssessmentReviewProvider } from '@/lib/assessment-review-store'
@@ -26,7 +26,6 @@ export default function AppLayout({
                     {children}
                   </SidebarInset>
                 </SidebarProvider>
-                <Toaster position="bottom-center" />
               </TooltipProvider>
             </CommunicationPolicyProvider>
           </StudentAccommodationProvider>

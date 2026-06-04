@@ -114,7 +114,7 @@ Write to `.review/canvas.html` (gitignored — see step 5). Layout:
 </html>
 ```
 
-Use the workspace DS tokens (read first 30 lines of `exxat-ds/packages/ui/src/theme.css` to extract). Don't fabricate colors.
+Use the workspace DS tokens (read first 30 lines of `node_modules/@exxatdesignux/ui/dist/index.d.ts` to extract). Don't fabricate colors.
 
 ### 4. Open in browser
 
