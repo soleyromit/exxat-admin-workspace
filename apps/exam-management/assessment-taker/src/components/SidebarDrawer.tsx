@@ -38,33 +38,17 @@ export function SidebarDrawer({
     <div
       role="complementary"
       aria-label="Question navigator"
-      className="animate-slide-in-right"
-      style={{
-        width: 240,
-        flexShrink: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        borderLeft: '1px solid var(--border)',
-        backgroundColor: 'var(--card)',
-        overflow: 'hidden',
-      }}
+      className="animate-slide-in-right w-60 shrink-0 flex flex-col border-l border-border bg-card overflow-hidden"
     >
       {/* Header */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 6,
-        padding: '12px 10px 12px 14px',
-        borderBottom: '1px solid var(--border)',
-        flexShrink: 0,
-      }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--foreground)', flex: 1 }}>
-          Questions
-        </span>
-        <span style={{ fontSize: 12, color: 'var(--muted-foreground)', fontWeight: 500 }}>
-          {answeredSet.size}<span style={{ opacity: 0.5 }}>/{questions.length}</span>
+      <div className="flex items-center gap-1.5 ps-3.5 pe-2.5 py-3 border-b border-border shrink-0">
+        <span className="text-sm font-bold text-foreground flex-1">Questions</span>
+        <span className="text-xs text-muted-foreground font-medium tabular-nums">
+          {answeredSet.size}<span className="opacity-50">/{questions.length}</span>
         </span>
         {flaggedSet.size > 0 && (
-          <span style={{ fontSize: 12, color: 'var(--muted-foreground)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 3 }}>
-            · <i className="fa-solid fa-bookmark" aria-hidden="true" style={{ fontSize: 10 }} />{flaggedSet.size}
+          <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+            · <i className="fa-solid fa-bookmark text-[9px]" aria-hidden="true" />{flaggedSet.size}
           </span>
         )}
         <DSButton
@@ -72,26 +56,20 @@ export function SidebarDrawer({
           size="icon-sm"
           onClick={onClose}
           aria-label="Close question navigator"
-          style={{ color: 'var(--muted-foreground)', flexShrink: 0 }}
+          className="text-muted-foreground shrink-0"
         >
-          <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 14 }} />
+          <i className="fa-light fa-xmark text-sm" aria-hidden="true" />
         </DSButton>
       </div>
 
       {/* Scrollable grid area */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '14px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div className="flex-1 overflow-y-auto p-3.5 flex flex-col gap-3.5">
 
         {/* Bookmarked group */}
         {bookmarkedIndices.length > 0 && (
           <div>
-            <div style={{
-              fontSize: 12, fontWeight: 600,
-              color: 'var(--muted-foreground)',
-              marginBottom: 8,
-              display: 'flex', alignItems: 'center', gap: 4,
-              textTransform: 'uppercase', letterSpacing: '0.04em',
-            }}>
-              <i className="fa-solid fa-bookmark" aria-hidden="true" style={{ fontSize: 9 }} />
+            <div className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
+              <i className="fa-solid fa-bookmark text-[9px]" aria-hidden="true" />
               Bookmarked
             </div>
             <TileGrid>
@@ -109,7 +87,7 @@ export function SidebarDrawer({
 
         {/* Divider */}
         {bookmarkedIndices.length > 0 && otherIndices.length > 0 && (
-          <div style={{ height: 1, backgroundColor: 'var(--border)', marginBlock: -4 }} />
+          <div className="h-px bg-border -my-1" />
         )}
 
         {/* All others — answered + unanswered combined */}
@@ -128,25 +106,22 @@ export function SidebarDrawer({
       </div>
 
       {/* Legend */}
-      <div style={{
-        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 8px',
-        padding: '10px 14px',
-        borderTop: '1px solid var(--border)',
-        flexShrink: 0,
-      }}>
+      <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 px-3.5 py-2.5 border-t border-border shrink-0">
         {([
           { swatch: 'filled', bg: 'var(--brand-color)', label: 'Current' },
           { swatch: 'filled', bg: 'var(--foreground)', label: 'Answered' },
           { swatch: 'border', borderColor: 'var(--state-flagged-text)', label: 'Bookmarked' },
           { swatch: 'border', borderColor: 'var(--border)', label: 'Unanswered' },
         ] as { swatch: 'filled' | 'border'; bg?: string; borderColor?: string; label: string }[]).map(({ swatch, bg, borderColor, label }) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{
-              width: 10, height: 10, borderRadius: 2, flexShrink: 0,
-              backgroundColor: swatch === 'filled' ? bg : 'transparent',
-              border: swatch === 'border' ? `1.5px solid ${borderColor}` : undefined,
-            }} />
-            <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{label}</span>
+          <div key={label} className="flex items-center gap-1.5">
+            <div
+              className="size-2.5 rounded-sm shrink-0"
+              style={{
+                backgroundColor: swatch === 'filled' ? bg : 'transparent',
+                border: swatch === 'border' ? `1.5px solid ${borderColor}` : undefined,
+              }}
+            />
+            <span className="text-xs text-muted-foreground">{label}</span>
           </div>
         ))}
       </div>
@@ -184,36 +159,9 @@ function getTileStatus(
   return 'unanswered';
 }
 
-function tileStyle(status: TileStatus): React.CSSProperties {
-  const base: React.CSSProperties = {
-    width: 36, height: 36, borderRadius: 7,
-    fontSize: 12, fontWeight: 600,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    cursor: 'pointer', flexShrink: 0,
-    border: '1.5px solid transparent',
-    transition: 'opacity 80ms',
-    background: 'none',
-    padding: 0,
-  };
-  switch (status) {
-    case 'current':
-      return { ...base, background: 'var(--brand-color)', color: 'var(--brand-foreground)', border: '1.5px solid transparent' };
-    case 'current-bookmarked':
-      return { ...base, background: 'var(--brand-color)', color: 'var(--brand-foreground)', border: '1.5px solid var(--state-flagged-text)' };
-    case 'bookmarked':
-      return { ...base, background: 'transparent', color: 'var(--state-flagged-text)', border: '1.5px solid var(--state-flagged-text)' };
-    case 'answered':
-      return { ...base, background: 'var(--foreground)', color: 'var(--background)', border: '1.5px solid transparent' };
-    case 'locked':
-      return { ...base, background: 'transparent', color: 'var(--muted-foreground)', border: '1.5px solid var(--border)', opacity: 0.35, cursor: 'not-allowed' };
-    default: // unanswered
-      return { ...base, background: 'transparent', color: 'var(--muted-foreground)', border: '1.5px solid var(--border)' };
-  }
-}
-
 function TileGrid({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, 36px)', gap: 6 }}>
+    <div className="grid gap-1.5" style={{ gridTemplateColumns: 'repeat(auto-fill, 36px)' }}>
       {children}
     </div>
   );
@@ -229,15 +177,35 @@ function Tile({
   onNavigate: (i: number) => void;
 }) {
   const isLocked = status === 'locked';
+
+  const tileColors: React.CSSProperties = (() => {
+    switch (status) {
+      case 'current':
+        return { backgroundColor: 'var(--brand-color)', color: 'var(--brand-foreground)', borderColor: 'transparent' };
+      case 'current-bookmarked':
+        return { backgroundColor: 'var(--brand-color)', color: 'var(--brand-foreground)', borderColor: 'var(--state-flagged-text)' };
+      case 'bookmarked':
+        return { color: 'var(--state-flagged-text)', borderColor: 'var(--state-flagged-text)' };
+      case 'answered':
+        return { backgroundColor: 'var(--foreground)', color: 'var(--background)', borderColor: 'transparent' };
+      case 'locked':
+        return { color: 'var(--muted-foreground)', borderColor: 'var(--border)', opacity: 0.35 };
+      default:
+        return { color: 'var(--muted-foreground)', borderColor: 'var(--border)' };
+    }
+  })();
+
   return (
-    <button
+    <DSButton
+      variant="ghost"
       onClick={() => { if (!isLocked) onNavigate(index); }}
       disabled={isLocked}
       aria-label={`Question ${index + 1}`}
       aria-current={status === 'current' || status === 'current-bookmarked' ? 'true' : undefined}
-      style={tileStyle(status)}
+      className="size-9 rounded-[7px] text-xs font-semibold p-0 border [border-width:1.5px] hover:opacity-80 transition-opacity"
+      style={tileColors}
     >
       {index + 1}
-    </button>
+    </DSButton>
   );
 }

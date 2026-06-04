@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-03",
+  "generated": "2026-06-04",
   "source": "@exxatdesignux/ui",
   "version": "0.6.30",
   "componentCount": 466,
@@ -578,7 +578,7 @@
         "toolbarSlot",
         "bulkActionsSlot"
       ],
-      "note": "vendored from exxat-ds/apps/web/components/data-table/"
+      "note": "vendored from node_modules/@exxatdesignux/ui/template-vite/components/data-table/"
     },
     "DataTableExtendedProps": {
       "importPath": "@exxatdesignux/ui",
@@ -1001,7 +1001,7 @@
         "periodSelector",
         "insightRail"
       ],
-      "note": "vendored from exxat-ds/apps/web/components/key-metrics.tsx"
+      "note": "vendored from node_modules/@exxatdesignux/ui/template-vite/components/key-metrics.tsx"
     },
     "KeyMetricsContent": {
       "importPath": "@exxatdesignux/ui",

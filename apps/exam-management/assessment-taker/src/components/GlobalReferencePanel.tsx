@@ -7,12 +7,16 @@
  * multiple questions... always available. Just like the calculator — open the resource
  * document. It is behind a click."
  *
- * Rendered as an inline flex sibling of <main> (not a floating overlay) so the student
- * sees questions on the left and references on the right simultaneously.
- * Multiple references are stacked vertically, all expanded — scroll to see all.
+ * Tab-per-reference layout: each ref gets its own full-panel content area so
+ * PDF/image types aren't crammed into a vertical scroll stack alongside text refs.
  */
 
-import { Badge, Button, Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@exxatdesignux/ui';
+import { useState, useCallback } from 'react';
+import {
+  Badge, Button,
+  Table, TableHeader, TableHead, TableBody, TableRow, TableCell,
+  Tabs, TabsList, TabsTrigger, TabsContent,
+} from '@exxatdesignux/ui';
 import type { AssessmentReference } from '../data/assessments';
 
 interface GlobalReferencePanelProps {
@@ -21,6 +25,8 @@ interface GlobalReferencePanelProps {
 }
 
 export function GlobalReferencePanel({ onClose, refs }: GlobalReferencePanelProps) {
+  const [activeTab, setActiveTab] = useState(refs[0]?.id ?? '');
+
   if (refs.length === 0) return null;
 
   return (
@@ -29,7 +35,7 @@ export function GlobalReferencePanel({ onClose, refs }: GlobalReferencePanelProp
       className="flex flex-col border-l border-border flex-shrink-0 overflow-hidden bg-card w-[340px]"
     >
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between flex-shrink-0 px-4 py-3 border-b border-border bg-muted">
+      <div className="flex items-center justify-between flex-shrink-0 px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <i className="fa-light fa-book-open fa-fw text-sm text-muted-foreground" aria-hidden="true" />
           <span className="text-sm font-semibold text-foreground">Exam References</span>
@@ -47,50 +53,67 @@ export function GlobalReferencePanel({ onClose, refs }: GlobalReferencePanelProp
         </Button>
       </div>
 
-      {/* ── Reference sections — all expanded, scroll to see all ────────── */}
-      <div className="flex-1 overflow-y-auto">
-        {refs.map((ref, i) => (
-          <RefSection key={ref.id} ref_={ref} isLast={i === refs.length - 1} />
+      {/* ── Tab switcher + content ───────────────────────────────────────── */}
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="flex flex-col flex-1 overflow-hidden"
+      >
+        {/* Wrapper handles horizontal scroll without clipping the active-tab underline */}
+        <div className="flex-shrink-0 border-b border-border overflow-x-auto">
+          <TabsList variant="line" className="w-max min-w-full justify-start px-4 h-auto p-0">
+            {refs.map((ref) => (
+              <TabsTrigger
+                key={ref.id}
+                value={ref.id}
+                className="shrink-0 text-xs px-3 py-2"
+              >
+                <i className={`fa-light ${ref.icon} fa-fw`} aria-hidden="true" />
+                <span className="max-w-[80px] truncate">{ref.label}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+
+        {refs.map((ref) => (
+          <TabsContent
+            key={ref.id}
+            value={ref.id}
+            className="flex-1 overflow-y-auto m-0 px-4 py-3"
+          >
+            {ref.type === 'formula' && ref.formulas && (
+              <FormulaBlock formulas={ref.formulas} />
+            )}
+            {ref.type === 'table' && ref.headers && ref.rows && (
+              <TableBlock headers={ref.headers} rows={ref.rows} note={ref.note} />
+            )}
+            {ref.type === 'text' && ref.paragraphs && (
+              <TextBlock paragraphs={ref.paragraphs} />
+            )}
+            {ref.type === 'image' && ref.url && (
+              <ImageBlock url={ref.url} label={ref.label} />
+            )}
+            {ref.type === 'pdf' && ref.url && (
+              <PdfBlock url={ref.url} label={ref.label} />
+            )}
+            {ref.type === 'doc' && ref.url && (
+              <DocBlock url={ref.url} label={ref.label} />
+            )}
+          </TabsContent>
         ))}
-      </div>
+      </Tabs>
     </aside>
-  );
-}
-
-// ─── Section wrapper ──────────────────────────────────────────────────────────
-function RefSection({ ref_, isLast }: { ref_: AssessmentReference; isLast: boolean }) {
-  return (
-    <section className={isLast ? '' : 'border-b border-border'}>
-      <div className="flex items-center gap-2 px-4 py-2.5 sticky top-0 z-10 border-b border-border bg-muted">
-        <i className={`fa-light ${ref_.icon} fa-fw text-[13px] text-muted-foreground`} aria-hidden="true" />
-        <span className="text-xs font-semibold text-foreground">{ref_.label}</span>
-      </div>
-
-      <div className="px-4 py-3">
-        {ref_.type === 'formula' && ref_.formulas && (
-          <FormulaBlock formulas={ref_.formulas} />
-        )}
-        {ref_.type === 'table' && ref_.headers && ref_.rows && (
-          <TableBlock headers={ref_.headers} rows={ref_.rows} note={ref_.note} />
-        )}
-        {ref_.type === 'text' && ref_.paragraphs && (
-          <TextBlock paragraphs={ref_.paragraphs} />
-        )}
-      </div>
-    </section>
   );
 }
 
 // ─── Formula block ────────────────────────────────────────────────────────────
 function FormulaBlock({ formulas }: { formulas: NonNullable<AssessmentReference['formulas']> }) {
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       {formulas.map((f, i) => (
-        <div key={i} className="flex flex-col gap-1">
-          <p className="text-xs font-semibold text-muted-foreground">{f.name}</p>
-          <div className="rounded-md px-3 py-2 font-mono text-sm text-foreground bg-muted border border-border">
-            {f.formula}
-          </div>
+        <div key={i} className="flex flex-col gap-1.5">
+          <p className="text-sm text-muted-foreground">{f.name}</p>
+          <p className="border-l-2 border-border pl-3 py-1 font-mono text-base text-foreground leading-snug">{f.formula}</p>
           <p className="text-xs text-muted-foreground leading-relaxed">{f.variables}</p>
         </div>
       ))}
@@ -107,13 +130,11 @@ function TableBlock({ headers, rows, note }: {
   return (
     <div className="flex flex-col gap-2">
       <div className="rounded-lg border border-border overflow-hidden">
-        <Table className="border-separate border-spacing-0">
+        <Table>
           <TableHeader>
             <TableRow>
               {headers.map((h, i) => (
-                <TableHead key={i} className="h-8 px-2.5 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg whitespace-nowrap">
-                  {h}
-                </TableHead>
+                <TableHead key={i}>{h}</TableHead>
               ))}
             </TableRow>
           </TableHeader>
@@ -121,9 +142,7 @@ function TableBlock({ headers, rows, note }: {
             {rows.map((row, i) => (
               <TableRow key={i}>
                 {row.map((cell, j) => (
-                  <TableCell key={j} className="px-2.5 py-1.5 text-xs">
-                    {cell}
-                  </TableCell>
+                  <TableCell key={j}>{cell}</TableCell>
                 ))}
               </TableRow>
             ))}
@@ -147,6 +166,76 @@ function TextBlock({ paragraphs }: { paragraphs: string[] }) {
       {paragraphs.map((p, i) => (
         <p key={i} className="text-sm text-foreground leading-relaxed">{p}</p>
       ))}
+    </div>
+  );
+}
+
+// ─── Image block ──────────────────────────────────────────────────────────────
+function ImageBlock({ url, label }: { url: string; label: string }) {
+  const [error, setError] = useState(false);
+  const handleError = useCallback(() => setError(true), []);
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 py-10 text-muted-foreground">
+        <i className="fa-light fa-image-slash fa-2x" aria-hidden="true" />
+        <span className="text-xs">Image could not be loaded</span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={url}
+      alt={label}
+      className="max-w-full h-auto rounded"
+      onError={handleError}
+    />
+  );
+}
+
+// ─── PDF block ────────────────────────────────────────────────────────────────
+function PdfBlock({ url, label }: { url: string; label: string }) {
+  return (
+    <div className="flex flex-col gap-2 h-full" style={{ minHeight: 400 }}>
+      <embed
+        src={url}
+        type="application/pdf"
+        title={label}
+        className="w-full flex-1 rounded"
+        style={{ minHeight: 400 }}
+      />
+      <a
+        href={url}
+        download
+        className="text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground"
+      >
+        <i className="fa-light fa-arrow-down-to-line fa-fw" aria-hidden="true" />
+        Download PDF
+      </a>
+    </div>
+  );
+}
+
+// ─── Doc block (Word / Google Doc — download only) ────────────────────────────
+function DocBlock({ url, label }: { url: string; label: string }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-start gap-3">
+        <i className="fa-light fa-file-word fa-2x text-muted-foreground mt-0.5 flex-shrink-0" aria-hidden="true" />
+        <div className="flex flex-col gap-1 min-w-0">
+          <p className="text-sm font-medium text-foreground truncate">{label}</p>
+          <p className="text-xs text-muted-foreground">Document files cannot be previewed in-browser.</p>
+        </div>
+      </div>
+      <a
+        href={url}
+        download
+        className="text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground"
+      >
+        <i className="fa-light fa-arrow-down-to-line fa-fw" aria-hidden="true" />
+        Download to view
+      </a>
     </div>
   );
 }

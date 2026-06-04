@@ -191,12 +191,12 @@ export function ExamResults() {
         <Tabs defaultValue="overview" className="flex flex-col">
           <TabsList
             variant="line"
-            className="w-full justify-start rounded-none border-b border-border h-auto p-0 mb-6 gap-0"
+            className="w-full justify-start border-b border-border h-auto p-0 mb-6"
           >
-            <TabsTrigger value="overview" className="rounded-none h-auto px-5 py-2.5 text-sm">
+            <TabsTrigger value="overview" className="px-5 py-2.5">
               Overview
             </TabsTrigger>
-            <TabsTrigger value="by-area" className="rounded-none h-auto px-5 py-2.5 text-sm">
+            <TabsTrigger value="by-area" className="px-5 py-2.5">
               Content Area Breakdown
             </TabsTrigger>
           </TabsList>

@@ -183,11 +183,11 @@ function QuestionReferencePanel({
             <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>{ref.title}</p>
           )}
           <div className="rounded-lg border border-border overflow-hidden">
-            <Table className="border-separate border-spacing-0">
+            <Table>
               <TableHeader>
                 <TableRow>
                   {ref.headers.map((h, i) => (
-                    <TableHead key={i} className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg whitespace-normal">{h}</TableHead>
+                    <TableHead key={i}>{h}</TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
@@ -195,7 +195,7 @@ function QuestionReferencePanel({
                 {ref.rows.map((row, i) => (
                   <TableRow key={i}>
                     {row.map((cell, j) => (
-                      <TableCell key={j} className="px-3 py-2.5 whitespace-normal align-top">{cell}</TableCell>
+                      <TableCell key={j}>{cell}</TableCell>
                     ))}
                   </TableRow>
                 ))}
@@ -262,16 +262,15 @@ function QuestionReferencePanel({
     >
       <div style={{ zoom: zoomPercent / 100, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         {references.length > 1 ? (
-          <Tabs defaultValue="0" className="flex flex-col flex-1 min-h-0 gap-0">
+          <Tabs defaultValue="0" className="flex flex-col flex-1 min-h-0">
             <TabsList
               variant="line"
-              className="w-full justify-start bg-transparent rounded-none px-[2em] pt-[2em] pb-0 h-auto flex-nowrap gap-0"
+              className="w-full justify-start px-4 border-b border-border h-auto p-0 shrink-0"
             >
               {references.map((ref, i) => (
                 <TabsTrigger
                   key={i}
                   value={String(i)}
-                  className="rounded-none h-auto px-0 me-[1.5em] py-2.5 text-sm font-semibold flex-none gap-1.5"
                 >
                   <i className={`fa-light ${typeIcon(ref.type)} fa-fw`} aria-hidden="true" />
                   {ref.label}
@@ -282,7 +281,7 @@ function QuestionReferencePanel({
               <TabsContent
                 key={i}
                 value={String(i)}
-                className="flex-1 overflow-auto p-[2em] flex flex-col gap-[0.625em] min-h-0 mt-0"
+                className="flex-1 overflow-auto p-[2em] flex flex-col gap-[0.625em] min-h-0"
               >
                 {renderRef(ref)}
               </TabsContent>
@@ -470,18 +469,17 @@ export function SplitQuestionView({
       content = (
         <Tabs
           defaultValue="0"
-          className="flex flex-col overflow-hidden gap-0"
+          className="flex flex-col overflow-hidden"
           style={{ minHeight: '300px' }}
         >
           <TabsList
             variant="line"
-            className="w-full justify-start bg-transparent rounded-none px-[2em] pt-[2em] pb-0 h-auto flex-nowrap gap-0"
+            className="w-full justify-start px-4 border-b border-border h-auto p-0 shrink-0"
           >
             {question.tabs.map((t, i) => (
               <TabsTrigger
                 key={i}
                 value={String(i)}
-                className="rounded-none h-auto px-0 me-[1.5em] py-2.5 text-sm font-semibold flex-none"
                 aria-label={`View ${t.title} tab`}
               >
                 {t.title}
@@ -556,11 +554,11 @@ export function SplitQuestionView({
       // Render ONLY the table — no answer choices
       content =
         <div className="rounded-lg border border-border overflow-hidden">
-          <Table className="border-separate border-spacing-0">
+          <Table>
             <TableHeader>
               <TableRow>
                 {question.tableData.headers.map((h, i) => (
-                  <TableHead key={i} className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg">{h}</TableHead>
+                  <TableHead key={i}>{h}</TableHead>
                 ))}
               </TableRow>
             </TableHeader>
@@ -568,7 +566,7 @@ export function SplitQuestionView({
               {question.tableData.rows.map((row, i) => (
                 <TableRow key={i}>
                   {row.map((cell, j) => (
-                    <TableCell key={j} className="px-3 py-2.5">{cell}</TableCell>
+                    <TableCell key={j}>{cell}</TableCell>
                   ))}
                 </TableRow>
               ))}
