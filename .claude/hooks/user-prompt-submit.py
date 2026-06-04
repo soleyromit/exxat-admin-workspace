@@ -147,6 +147,66 @@ def _detect_product(prompt: str) -> str | None:
     return None
 
 
+# DS environment status matrix — keep in sync with docs/governance/ds-product-compatibility.md
+DS_ENVIRONMENT: dict[str, dict] = {
+    "exam-management": {
+        "label": "Exam Management Admin",
+        "import_type": "source (@exxat/ds)",
+        "custom_variant": "✓",
+        "button_hover": "✓ (explicit CSS rule)",
+        "radius_4xl": "✓ (@theme inline)",
+        "css_entry": "apps/exam-management/admin/app/globals.css",
+    },
+    "pce": {
+        "label": "PCE Admin",
+        "import_type": "compiled (@exxatdesignux/ui)",
+        "custom_variant": "✓",
+        "button_hover": "N/A (compiled)",
+        "radius_4xl": "N/A (compiled)",
+        "css_entry": "apps/pce/admin/app/globals.css",
+    },
+    "portal": {
+        "label": "Portal",
+        "import_type": "compiled (@exxatdesignux/ui)",
+        "custom_variant": "✓",
+        "button_hover": "N/A (compiled)",
+        "radius_4xl": "N/A (compiled)",
+        "css_entry": "apps/portal/app/globals.css",
+    },
+    "patient-log": {
+        "label": "Patient Log",
+        "import_type": "compiled (@exxatdesignux/ui)",
+        "custom_variant": "check css entry",
+        "button_hover": "check css entry",
+        "radius_4xl": "check css entry",
+        "css_entry": "apps/patient-log/admin/app/globals.css",
+    },
+}
+
+
+def _ds_environment_block(prompt: str) -> list[str]:
+    """Inject DS environment status when design intent + product detected.
+    Replaces the manual Gate 1 ds-product-compatibility.md check with auto-injection.
+    Returns [] if no product detected or no entry in DS_ENVIRONMENT.
+    """
+    product = _detect_product(prompt)
+    if not product:
+        return []
+    env = DS_ENVIRONMENT.get(product)
+    if not env:
+        return []
+    return [
+        f"[DS Environment — {env['label']}]",
+        "",
+        f"  Import: {env['import_type']}",
+        f"  @custom-variant: {env['custom_variant']}  |  button hover (default): {env['button_hover']}  |  --radius-4xl: {env['radius_4xl']}",
+        f"  CSS entry: {env['css_entry']}",
+        "  Pre-task declaration REQUIRED before any JSX. Verify interactive states in browser after.",
+        "  Full truth: docs/governance/ds-product-compatibility.md + docs/watch/ds-snapshot.json",
+        "",
+    ]
+
+
 ACTION_DESCRIPTIONS: dict[str, str] = {
     "ds-profile-switch:student": "Load docs/foundations/ds-profiles/student.md and announce the switch (imports, fonts, templates, tone, a11y emphasis update)",
     "ds-profile-switch:admin": "Load docs/foundations/ds-profiles/admin.md and announce the switch",
@@ -157,8 +217,17 @@ ACTION_DESCRIPTIONS: dict[str, str] = {
     "intake:transcript-paste": "Invoke the intake skill with action=transcript-paste — saves transcript, extracts decisions + glossary candidates + persona refs, confirms each before write",
     "ref:figma-mcp": "Run mcp__claude_ai_Figma__get_design_context with parsed fileKey + nodeId before generating UI",
     "ref:magicpatterns-mcp": "Run mcp__claude_ai_Magic_Patterns__read_artifact_files to load the referenced prototype",
-    "intent:design": "Invoke superpowers:brainstorming first; check Mobbin search_screens; check Granola for relevant meetings; spawn ds-adoption-reviewer (Agent subagent_type=ds-adoption-reviewer) before creating any new component file to verify DS coverage; only then generate UI via frontend-design",
-    "intent:redesign": "Invoke superpowers:brainstorming and frontend-design before changing visuals",
+    "mobbin:search-required": (
+        "REQUIRED — run mcp__mobbin__search_screens BEFORE any layout, shape, or component decision. "
+        "Three queries minimum: (1) the specific pattern (e.g. 'exam question navigation panel', "
+        "'survey wizard step', 'assessment score card'); (2) the interaction type (e.g. 'split-screen editor', "
+        "'multi-step form', 'data table with inline filters'); (3) industry context (e.g. 'education SaaS dashboard', "
+        "'clinical workflow admin', 'learning management system'). "
+        "Cite ≥2 screenshot references in your response before proposing any layout or component shape. "
+        "Memory-default designs are banned — every layout decision must be grounded in Mobbin research."
+    ),
+    "intent:design": "Check Granola for relevant meetings (query_granola_meetings then get_meeting_transcript); invoke superpowers:brainstorming; spawn ds-adoption-reviewer before any new component file. Mobbin research handled by mobbin:search-required (runs first, above).",
+    "intent:redesign": "Run Mobbin research first (see mobbin:search-required above); then invoke superpowers:brainstorming and frontend-design. Every reshaped surface needs Mobbin references before touching code.",
     "lazy:ds-reference": "Read docs/CLAUDE-DS-REFERENCE.md before generating any UI code, importing DS components, or using DS tokens beyond the ~15 in CLAUDE.md §6. The full token tables, component APIs, theme system, and font setup live there (~8K tokens). Don't guess token names — verify against the reference.",
     "lib:context7": "Run mcp__plugin_context7_context7__resolve-library-id then query-docs for current API; do not generate from memory",
     "work:debug": "Invoke superpowers:systematic-debugging skill before proposing fixes",
@@ -403,6 +472,19 @@ def main() -> None:
             # Skip malformed patterns rather than failing the hook
             continue
 
+    # ── Mobbin is REQUIRED for ALL design work — new pages, redesigns, and edits ──
+    # Fires before everything else so visual research grounds all downstream decisions.
+    # Scope: intent:design (new), intent:redesign (rework), precheck (edit/fix/update).
+    # Memory-default layout shapes are banned — Mobbin cite ≥2 screenshots before proposing.
+    _is_design_intent = (
+        "intent:design" in seen
+        or "intent:redesign" in seen
+        or "precheck:pre-task-declaration" in seen
+    )
+    if _is_design_intent and "mobbin:search-required" not in seen:
+        matches.insert(0, "mobbin:search-required")
+        seen.add("mobbin:search-required")
+
     # Coupled actions: design/redesign intent always benefits from the DS
     # reference. Add ds-reference as a follow-on when either fires.
     if ("intent:design" in seen or "intent:redesign" in seen) and "lazy:ds-reference" not in seen:
@@ -438,7 +520,12 @@ def main() -> None:
     freshness = _registry_freshness_block()
     cascade = _cascade_check(prompt)
 
-    if not matches and not freshness and not cascade:
+    # DS environment auto-injection for design/edit prompts
+    ds_env: list[str] = []
+    if "intent:design" in seen or "intent:redesign" in seen or "precheck:pre-task-declaration" in seen:
+        ds_env = _ds_environment_block(prompt)
+
+    if not matches and not freshness and not cascade and not ds_env:
         print(json.dumps({}))
         return
 
@@ -453,6 +540,11 @@ def main() -> None:
     # before evaluating the prompt itself.
     if freshness:
         lines.extend(freshness)
+
+    # DS environment third — grounds design in the product's actual DS status
+    # before any component code is written. Auto-injects from DS_ENVIRONMENT dict.
+    if ds_env:
+        lines.extend(ds_env)
 
     if matches:
         lines.append("[Design Intelligence Harness — UserPromptSubmit triggers matched]")
