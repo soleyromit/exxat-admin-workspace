@@ -106,3 +106,65 @@ First snapshot taken for Roadmap-Exam-Management — no diff applied. Next run w
 
 **Why flagged:** CLEAR — In Assessment Experience engineering is 🔴 Blocked, awaiting design unblock by 4th June. 15th June is the delivery target for both QB (QA complete) and Assessment Creation & Distribution. No BUILD-STATUS feature statuses changed (no step 7b mapping match), but the blocking status is an urgent signal.
 **Suggested action:** If Romit owns the In Assessment Experience design, check what design asset is blocking engineering and prioritize its delivery by 4th June. The 15th June target is 13 days away — confirm whether Assessment Creation & Distribution design refinements are complete or need input.
+
+---
+
+## 2026-06-05 — Flagged: Exam Mgmt Roadmap — Nipun (4 changes)
+
+### Flag 1 — New Capability/User Story table added with P0/P1/P2 breakdown (AMBIGUOUS)
+**Changed text (before):** *(section did not exist — Excel previously started with "Project Status | Exam Management")*
+**Changed text (after):**
+> Capability   User story   Priority   Status   Owner
+> Manage Question Bank   Completed   Nipun
+> Course Offering — 7 sub-capabilities, all "In Review" (P0-Cohere, Vishal)
+> In Assessment Experience: Exam initiation "To be picked", Test taking experience "Completed", Post exam "To be picked"
+> Assessment Creation & Distribution — sub-items defined; Smart search "In Progress" (Bhargav)
+> Question Creation, Import, Grading sub-items defined (P0/P1)
+> Question Tagging: 🟡 In Progress (P1-Jan 20, Vishal)
+
+**Why flagged:** AMBIGUOUS — brand new sheet/section in the Excel with detailed capability breakdown and P0/P1/P2 priorities. Course Offering sub-capabilities all show "In Review" — imminent grooming. Exam initiation and post-exam completion are "To be picked" despite In Assessment Experience being ✅ Aligned at business level.
+**Suggested action:** Review with Nipun — does this replace the old Project Status grid or complement it? Confirm P0/P1 cutoffs match the current phase 1 plan. The 7 Course Offering sub-items all being "In Review" suggests grooming is imminent — confirm Romit has design coverage for all 7.
+
+---
+
+### Flag 2 — Open Questions section: 8 questions with 04-Jun-26 target dates (all past due as of today)
+**Changed text (before):** *(section did not exist)*
+**Changed text (after):**
+> 1. Are the User roles defined in the code? → Engg (Darshan)
+> 2. Do we have to build a review flow? (Graded, ungraded and graded low weightage) → CX
+> 3. Are accommodations at exam level or course level or student level → CX
+> 4. Who decides the publishing date? → CX
+> 5. Who can see student performance for assessment / course? (Creator, coordinator, TA — note: "Admin gives access to performance") → CX
+> 6. What is the role capability of Teaching assistant → CX
+> 7. When should we show the list of planned exams to students (status & date) → CX
+> 8. Should student experience cater for external hardware attachments → CX
+> All targeted for resolution 04-Jun-26 (yesterday).
+
+**Why flagged:** AMBIGUOUS — 8 open questions with target dates that have now passed. Questions 3 (accommodations scope) and 5 (student performance visibility) have FERPA-adjacent implications — student performance access control touches FERPA §99.31. These were open with Vishakha and Darshan.
+**Suggested action:** Check with Nipun/Darshan whether these were resolved in a June 4th meeting. Questions 3 and 5 have design implications — get answers before building student experience pages. If unresolved, escalate to Vishakha.
+
+---
+
+### Flag 3 — AI-Assisted Blueprint Creation added to 2027 roadmap (CLEAR)
+**Changed text (before):**
+> 2027: 1) transmit grades back to LMS   1) advanced question level metrics   1) Offline exam taking
+
+**Changed text (after):**
+> 2027: 1) transmit grades back to LMS   1) Advanced question level metrics   AI-Assisted Blueprint Creation   1) Offline exam taking
+
+**Why flagged:** CLEAR — "AI-Assisted Blueprint Creation" is a new 2027 feature not in the prior snapshot. Not yet tracked in BUILD-STATUS (2027 scope). "Blueprint" likely refers to AI-generated assessment plans aligned to Bloom's taxonomy distribution across a full course.
+**Suggested action:** No code action. Note as a 2027 AI feature concept — relevant when designing the assessment builder's blueprint/distribution chart (the Mark Distribution Card in the Assessment Builder PRD). Worth capturing in future roadmap discussions with Nipun.
+
+---
+
+### Flag 4 — Course Offering Engineering: Not Started → In Development by Darshan (12-Jun target); Design: In Refinement by Romit
+**Changed text (before):**
+> Course Offering Perspective | Design: 🟡 In Review (May 20 wireframes v1) | Engineering: ⚪ Not Started
+
+**Changed text (after):**
+> Course Offering | Design: In Refinement (Romit) | Engineering: In Development (Darshan) | Target: 12-Jun (both)
+
+**Why flagged:** CLEAR status change — Course Offering engineering has begun (In Development, Darshan, target 12-Jun). Design is now In Refinement by Romit. The 7 Course Offering sub-capabilities (list view, detail, assessment plan, course content, students, QB, faculty) are all In Review — imminent design finalization needed.
+**Suggested action:** If Romit's design is "In Refinement", confirm refinement items are resolved before 12-Jun. Check what design assets Darshan needs for the 7 sub-capability pages — all are P0-Cohere. BUILD-STATUS already shows Course Offering as 🟡 In Progress — no status change, but the 12-Jun engineering target is new.
+
+---
