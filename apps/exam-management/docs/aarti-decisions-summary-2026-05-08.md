@@ -7,7 +7,7 @@
 > **Status:** living document. Update as new meetings audit through the intake skill.
 
 **Maintainer:** Romit Soley (Designer II)
-**Last revision:** 2026-06-02
+**Last revision:** 2026-06-05
 
 ---
 
@@ -391,6 +391,52 @@ Admin ≠ PCE viewer. Faculty-as-admin must NOT leak peer evaluations.
 2. **Document base entities first.** ONE canonical doc, not eight versions across review calls.
 3. **Build the unglamorous setup screens BEFORE dashboard polish.** Master-list admin screens for the 11 entities are P0 foundational; dashboard exploration without alignment is a process anti-pattern.
 4. **Speculative dashboard exploration is wasted work.**
+
+### 5.20 Course landing page and navigation (Vishal + Romit, 2026-06-04)
+
+Source: `docs/research/meetings/2026-06-04-exam-management-vishal-course-landing.md` (Granola `e97078d1`)
+
+| Decision | Detail |
+|---|---|
+| Default landing | Course offerings list, filtered to **Ongoing** by default |
+| Filters | All / Ongoing / Upcoming / Completed (status pills) |
+| Card view | Deferred — list view only for Phase 1 |
+| "Primary Faculty" label | Not a Prism term — replaced with **"Course Coordinator"** everywhere |
+| Column label | "Faculty / Staff" acceptable for course list column |
+| Setup tab + Course Catalog | Navigate to Prism-base pages — do NOT rebuild inside Exam Management |
+| Mapping tab in course detail | Deferred — "We'll not have this right now" (Vishal). Confirm with Aarti before removing |
+| Accommodations tab | Placeholder — build when accommodations module ships |
+| Difficulty distribution in builder | Always visible (persistent) during assessment building |
+| ExamSoft parity | Explicit baseline floor — every design addition/removal needs stated rationale |
+| LMS integration UI | Deferred — not in current sprint scope |
+
+> "primary faculty is not a term we are using in Prism." — Vishal, 2026-06-04
+
+> "we can remove one tab altogether. That's a lot of space." — Vishal, 2026-06-04 (re: Setup tab)
+
+> "our designs should consider what ExamSoft has and with a strong rationale add or subtract from." — Vishal, 2026-06-04
+
+---
+
+### 6.11 CFE/PCE module architecture and student experience (Aarti, 2026-06-04)
+
+Source: `docs/research/meetings/2026-06-04-prism-redesign-aarti-alignment.md` (Granola `2ad77c6e`)
+
+| Decision | Detail |
+|---|---|
+| Two sections | CFE = **Course & Faculty Evaluation** + **Institutional Surveys** — distinct dashboards, distinct entry points |
+| Student experience | Email-driven and minimal. Pending-activities landing page aggregates all open survey emails |
+| Email CTAs | Two buttons per email: "complete this survey" (direct) + "see all my pending activities" (landing page) |
+| Module independence | New modules must work without Prism legacy dependency for base entity management |
+| Coexistence | New and old Prism modules must coexist during transition — no design island |
+| Himanshu alignment | Required before new module navigation is finalized and shipped |
+| Super admin only | Phase 1 ships super admin role only — no granular role variations at launch |
+
+> "we are going to have these two entry points and almost treat them as two sections of the product. And I'm good with that. Course and faculty, and institutional surveys." — Aarti, 2026-06-04
+
+> "I don't expect a lot of people to go here. I expect them to barely do this call to action, click done, dusted." — Aarti, 2026-06-04
+
+> "This needs to function independently. They're still saving data in the student entity, but this is operating independently." — Aarti, 2026-06-04
 
 ---
 
