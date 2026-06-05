@@ -503,6 +503,60 @@
       "files": ["docs/BUILD-STATUS.md"]
     },
     {
+      "id": "2026-06-05-exam-flagged-001",
+      "date": "2026-06-05",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "Exam Roadmap — New Capability/User Story table with P0/P1/P2 priorities and ownership",
+      "what": "Brand new sheet/section added to Nipun's Excel. Breaks down top-level features into user-story-level capabilities with P0-Cohere / P1-Jan 20 / P2 priorities. Course Offering has 7 sub-capabilities all 'In Review' (Vishal). In Assessment Experience: exam initiation and post-exam completion 'To be picked', test taking experience 'Completed'. Smart search for questions 'In Progress' (Bhargav). Question Tagging: 🟡 In Progress (Vishal). Exam grading: 'To be picked' (Bhargav). Assessment Creation sub-items defined but mostly no status yet.",
+      "why": "AMBIGUOUS — new structural tracking section may supersede or complement the old Project Status grid. 'In Review' for Course Offering sub-items and 'To be picked' for exam initiation/post-exam suggest grooming is imminent.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)"
+    },
+    {
+      "id": "2026-06-05-exam-flagged-002",
+      "date": "2026-06-05",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "Exam Roadmap — 8 open alignment questions with 04-Jun-26 target dates (all past due)",
+      "what": "New Open Questions section added with 8 unresolved questions: (1) Are User roles defined in code? (Engg/Darshan), (2) Build a review flow? (CX), (3) Accommodations at exam/course/student level? (CX), (4) Who decides publishing date? (CX), (5) Who can see student performance? (CX — note: Admin gives access), (6) Teaching assistant role capability (CX), (7) When to show planned exams to students? (CX), (8) Should student experience support external hardware? (CX). All targeted 04-Jun-26.",
+      "why": "AMBIGUOUS — open questions, all due yesterday (2026-06-05). Questions 3 and 5 have FERPA-adjacent implications (student performance visibility, accommodations).",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)"
+    },
+    {
+      "id": "2026-06-05-exam-flagged-003",
+      "date": "2026-06-05",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "Exam Roadmap — AI-Assisted Blueprint Creation added to 2027 roadmap",
+      "what": "New item 'AI-Assisted Blueprint Creation' added to the 2027 phase of the Phase-wise Roadmap by Workflow. Was not in the prior snapshot. Sits alongside transmit grades to LMS, Advanced question level metrics, and Offline exam taking.",
+      "why": "CLEAR — new 2027 feature. Not yet in BUILD-STATUS (2027 scope). Likely refers to AI-generated assessment blueprints (Bloom's distribution across a course's assessment plan).",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)"
+    },
+    {
+      "id": "2026-06-05-exam-flagged-004",
+      "date": "2026-06-05",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "Exam Roadmap — Course Offering Engineering: Not Started → In Development (Darshan, 12-Jun); Design: In Refinement (Romit)",
+      "what": "Course Offering design status changed from '🟡 In Review (May 20 wireframes v1)' to 'In Refinement (Romit)' with 20-May to 9-Jun window. Engineering changed from '⚪ Not Started' to 'In Development (Darshan)' with target 12-Jun. 7 Course Offering sub-capabilities all P0-Cohere and 'In Review'.",
+      "why": "CLEAR status change — engineering has begun on Course Offering. 12-Jun target means design must be finalized this week. BUILD-STATUS already shows 🟡 In Progress — no change needed to status label.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-05-exam-management-build-status-001",
+      "date": "2026-06-05",
+      "product": "exam-management",
+      "type": "prd-change",
+      "title": "BUILD-STATUS last updated date bumped to 2026-06-05",
+      "what": "No feature statuses changed in step 7b mapping (no 'Completed'/'Not Started'/etc. matches for top-level BUILD-STATUS features). Excel now has Gantt chart section (As-of: 2026-06-05), new Capability/User Story table, and open questions. Last updated date bumped to 2026-06-05.",
+      "why": "Nipun's roadmap Excel synced — structural changes detected (new Capability table, Gantt chart, open questions). No step-7b-mappable status changes for top-level features. PCE Phase 1 target (30 Aug 2026) remains future — BUILD-STATUS PCE row unchanged.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
+      "severity": null,
+      "files": ["docs/BUILD-STATUS.md"]
+    },
+    {
       "id": "2026-06-02-exam-flagged-001",
       "date": "2026-06-02",
       "product": "exam-management",
