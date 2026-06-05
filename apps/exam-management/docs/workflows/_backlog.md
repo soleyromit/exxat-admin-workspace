@@ -143,6 +143,19 @@ Source: `docs/research/meetings/2026-06-03-weekly-product-sync.md` (Granola `7a5
 | T83 | System compatibility check — removed from visible pre-exam flow | Student | Assessment taker (PreExamFlow) | P1 — ✅ APPLIED | Removed `System Check` step from `PreExamFlow.tsx`. Flow is now 4 steps: Password → Instructions → Accommodation → Ready. Runs as background check; surfaces only on failure. Nipun directive Jun 3. D_AT11. |
 | T84 | Reference attachments scope — extends T48 | Student / Admin | Assessment taker + question editor | P1 — DESIGN-REVIEW | Question-level: unlimited count (200MB total), shown as tabs in split view. Assessment-level: ONE global doc. Section-level: NOT supported. Update T48 design when building that surface. D_AT12. |
 
+## Phase 1 design tasks — added 2026-06-04
+
+Source: `docs/research/meetings/2026-06-04-exam-management-vishal-course-landing.md` (Granola `e97078d1`) · `docs/research/meetings/2026-06-04-prism-redesign-aarti-alignment.md` (Granola `2ad77c6e`)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T85 | Admin Courses — Setup tab + Course Catalog → navigate to Prism-base pages instead of full rebuild | Admin | Courses page (`courses-client.tsx`) | P1 — DESIGN-REVIEW | Vishal Jun 4: "we can remove one tab altogether. That's a lot of space … should we also move course catalog to the present base and have only course offerings here?" Structural tab removal — confirm with Aarti before applying. D_EM73. |
+| T86 | Mapping tab in course detail — confirm with Aarti, then hide/remove | Admin / Faculty | Course detail (`courses/[id]/course-detail-client.tsx`) | P1 — DESIGN-REVIEW | Vishal Jun 4: "Mapping is what? Tagging? Yeah. It's tagging. It'll come later. Yes. We'll not have this right now." Tab currently visible at line ~212. Do NOT remove without Aarti confirmation — conflicts with T14. D_EM74. |
+| T87 | Course offerings landing — analytics section design | Admin | Courses page | P2 | Vishal Jun 4: "we'll think of some analytics on screen analytics we can show." New design needed — data requirements TBD with Vishal. NEW DESIGN NEEDED. |
+| T88 | Himanshu alignment — schedule navigation coexistence review before shipping any new module nav | Design / Eng | Cross-product nav | P0 (blocker for nav) | Aarti Jun 4: "before we say this is ready for consumption, he needs to be included aligned, and invited to some of these meetings." Block new module nav design until completed. D_PCE10. |
+| T89 | PCE/CFE two-section architecture — two distinct entry points + dashboards for course+faculty eval vs. institutional surveys | Admin / Faculty | PCE product | P1 — DESIGN-REVIEW | Aarti Jun 4: "we are going to have these two entry points and almost treat them as two sections of the product. And I'm good with that. Course and faculty, and institutional surveys." NEW PAGE NEEDED — requires full product architecture pass for PCE. D_PCE12. |
+| T90 | PCE student email templates — two-CTA email design + pending-activities landing page | Student | PCE student flow | P1 — DESIGN-REVIEW | Aarti Jun 4: "this email should have both buttons. Like, see all my pending activities or click here to complete this survey." Two CTAs: complete-this-survey (direct link) + see-all-pending (landing page). NEW PAGE NEEDED. D_PCE14. |
+
 ---
 
 ## Research / blockers (R1–R10 from audit)
