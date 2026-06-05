@@ -46,7 +46,7 @@ import { courseOfferingRows, type CourseOfferingRow } from '@/lib/course-mock-da
 
 const ALL_ASSESSMENTS = [...mockAssessments, ...facultyExtraAssessments]
 
-// ── Shared helpers ────────────────────────────────────────────────────────────
+// ── Shared helpers ─────────────────────────────────────────────────────────────────────────────────
 
 function formatDate(iso: string): string {
   const [year, month, day] = iso.split('-').map(Number)
@@ -796,13 +796,13 @@ function AddOfferingSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
             />
           </div>
 
-          {/* Primary Faculty */}
+          {/* Course Coordinator */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="offering-faculty">
-              Primary Faculty <span className="text-destructive" aria-hidden="true">*</span>
+              Course Coordinator <span className="text-destructive" aria-hidden="true">*</span>
             </Label>
             <Select value={facultyId} onValueChange={setFacultyId}>
-              <SelectTrigger id="offering-faculty" aria-label="Primary Faculty">
+              <SelectTrigger id="offering-faculty" aria-label="Course Coordinator">
                 <SelectValue placeholder="Select faculty member" />
               </SelectTrigger>
               <SelectContent>
@@ -1420,7 +1420,7 @@ export default function CoursesClient() {
     return null
   }, [filtered.length, normalizedQuery, termFilter, visibleCourses])
 
-  // ── Faculty view (no tabs) ────────────────────────────────────────────────
+  // ── Faculty view (no tabs) ────────────────────────────────────────────────────────────────────────────
   if (hydrated && role === 'faculty') {
     const pageTitle = faculty
       ? `Welcome back, ${faculty.title} ${faculty.name.split(' ')[1] ?? faculty.name}`
@@ -1474,7 +1474,7 @@ export default function CoursesClient() {
     )
   }
 
-  // ── Admin view (3 tabs) ───────────────────────────────────────────────────
+  // ── Admin view (3 tabs) ────────────────────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState('course-offerings')
   const totalOfferings = courseOfferingRows.length
   const ongoingCount = courseOfferingRows.filter(r => r.status === 'ongoing').length
