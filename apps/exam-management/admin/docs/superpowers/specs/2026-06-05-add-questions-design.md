@@ -306,6 +306,7 @@ V0 question types per §4.3.1 of `assessment-creation-v0-requirements.md` — ex
 | Fill in the Blank | Sentence textarea with `{{blank}}` syntax + per-blank options list |
 | Match the Following | Two-column row builder: left prompt → right answer |
 | Hotspot Image | Image upload area + instruction to click correct region on preview |
+| Essay | No options section; shows word/page limit fields (min/max words, or page count toggle); optional rubric upload (named criteria + point values per criterion — per PRD §4.4) |
 
 - Correct answer: click the circle/checkbox on the option to mark it correct (MCQ: one; MSQ: multiple; T/F: one)
 - Options (MCQ / MSQ / T/F): 3 fields by default, "+ Add option" dashed row for more
