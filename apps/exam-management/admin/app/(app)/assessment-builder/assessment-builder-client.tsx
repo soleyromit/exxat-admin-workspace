@@ -382,7 +382,7 @@ export default function AssessmentBuilderClient() {
     setTimeout(() => {
       setNewlyAddedIds(prev => { const n = new Set(prev); n.delete(question.id); return n })
     }, 5000)
-    toggleQuestion(question.id, activeSectionId)
+    toggleQuestion(question.id, 'qb')
     setQbDetailQ(null)
   }
 
@@ -954,12 +954,12 @@ export default function AssessmentBuilderClient() {
   // Derive active section object for workspace view
   const activeSection = activeAsmt?.sections.find(s => s.id === activeSectionId) ?? null
 
-  // Questions in the active section
+  // Questions in the active section — search QB pool first, then user-created (AI/written/PDF)
   const activeSectionQuestions = activeSection
     ? activeSection.questionIds
         .map(qId => {
           const aq = activeAsmt?.questions.find(q => q.questionId === qId)
-          const q = MOCK_QB_QUESTIONS.find(q => q.id === qId)
+          const q = MOCK_QB_QUESTIONS.find(q => q.id === qId) ?? userCreated.find(q => q.id === qId)
           return aq && q ? { aq, q } : null
         })
         .filter(Boolean) as Array<{ aq: AssessmentQuestion; q: Question }>
