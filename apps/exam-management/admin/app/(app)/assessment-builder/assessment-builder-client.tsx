@@ -658,12 +658,8 @@ export default function AssessmentBuilderClient() {
   const [assessmentDescription, setAssessmentDescription] = useState('')
   const [sectionAnalysisOpen, setSectionAnalysisOpen] = useState(false)
   const [lastMovedId, setLastMovedId] = useState<string | null>(null)
-  const [aiPromptOpen, setAiPromptOpen] = useState(false)
-  const [aiPromptText, setAiPromptText] = useState('')
-  const [aiBuilding, setAiBuilding] = useState(false)
-
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [rightPanelMode, setRightPanelMode] = useState<'health' | 'settings' | 'section'>('health')
+  const [rightPanelMode, setRightPanelMode] = useState<'health' | 'settings'>('health')
   const [sendForReviewOpen, setSendForReviewOpen] = useState(false)
   const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<string>>(new Set())
   const [qbDetailQ, setQbDetailQ] = useState<Question | null>(null)
@@ -1271,7 +1267,7 @@ export default function AssessmentBuilderClient() {
               onUpdateSection={(sectionId, patch) => setActiveAsmt(prev => prev ? { ...prev, sections: prev.sections.map(s => s.id === sectionId ? { ...s, ...patch } : s) } : prev)}
               onAddSection={title => addSection(title)}
               activeSectionId={activeSectionId}
-              onSetActiveSection={id => { setActiveSectionId(id); if (id) setRightPanelMode('section'); handleAddModeChange('resting') }}
+              onSetActiveSection={id => { setActiveSectionId(id); handleAddModeChange('resting') }}
             />
           </div>
 
@@ -1350,8 +1346,41 @@ export default function AssessmentBuilderClient() {
                     )}
                   </div>
 
-                  {/* ── Add questions area (always visible when section is active) ── */}
-                  {addMode !== 'write' && addMode !== 'pdf' && addMode !== 'generating' && addMode !== 'extracting' && addMode !== 'runway' && (
+                  {/* ── Add questions toolbar — 4 discrete entry points ── */}
+                  {addMode === 'resting' && (
+                    <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--border)] shrink-0 flex-wrap">
+                      <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5"
+                        onClick={() => handleAddModeChange('qb')}>
+                        <i className="fa-light fa-magnifying-glass text-[11px]" aria-hidden="true" />
+                        Search QB
+                      </Button>
+                      <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5"
+                        onClick={() => handleAddModeChange('ai')}>
+                        <i className="fa-light fa-sparkles text-[11px]" aria-hidden="true" />
+                        AI Generate
+                      </Button>
+                      <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5"
+                        onClick={() => handleAddModeChange('write')}>
+                        <i className="fa-light fa-pen-line text-[11px]" aria-hidden="true" />
+                        New question
+                      </Button>
+                      <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5"
+                        onClick={() => handleAddModeChange('pdf')}>
+                        <i className="fa-light fa-file-arrow-up text-[11px]" aria-hidden="true" />
+                        Upload doc
+                      </Button>
+                    </div>
+                  )}
+                  {addMode === 'qb' && (
+                    <AddQuestionsInput
+                      mode={addMode}
+                      query={addQuery}
+                      onModeChange={handleAddModeChange}
+                      onQueryChange={handleAddQueryChange}
+                      onAiGenerate={handleAddAiGenerate}
+                    />
+                  )}
+                  {addMode === 'ai' && (
                     <AddQuestionsInput
                       mode={addMode}
                       query={addQuery}
@@ -1773,70 +1802,11 @@ export default function AssessmentBuilderClient() {
               )}
             </div>
 
-            {/* ── AI Prompt Bar ─────────────────────────────────────── */}
-            {activeSection && (
-              <div style={{
-                borderTop: '1px solid var(--border)', flexShrink: 0, background: 'var(--card)',
-              }}>
-                {aiPromptOpen ? (
-                  <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <textarea
-                      autoFocus
-                      rows={2}
-                      placeholder={`Ask Leo to adjust "${activeSection.title}"… e.g. "Add 3 MCQ on pharmacology at medium difficulty"`}
-                      value={aiPromptText}
-                      onChange={e => setAiPromptText(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Escape') { setAiPromptOpen(false); setAiPromptText('') }
-                        if (e.key === 'Enter' && !e.shiftKey && aiPromptText.trim()) {
-                          e.preventDefault()
-                          setAiBuilding(true)
-                          setTimeout(() => { setAiBuilding(false); setAiPromptOpen(false); setAiPromptText('') }, 1800)
-                        }
-                      }}
-                      style={{
-                        width: '100%', fontSize: 13, padding: '6px 9px', resize: 'none',
-                        border: '1px solid var(--border)', borderRadius: 7, fontFamily: 'inherit',
-                        color: 'var(--foreground)', background: 'var(--background)', outline: 'none',
-                        boxSizing: 'border-box', lineHeight: 1.5,
-                      }}
-                    />
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>Enter to send · Shift+Enter for new line · Esc to close</span>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <Button variant="outline" size="sm" className="h-6 px-2 text-xs"
-                          onClick={() => { setAiPromptOpen(false); setAiPromptText('') }}>
-                          Cancel
-                        </Button>
-                        <Button size="sm" className="h-6 px-2 text-xs"
-                          disabled={!aiPromptText.trim() || aiBuilding}
-                          onClick={() => {
-                            setAiBuilding(true)
-                            setTimeout(() => { setAiBuilding(false); setAiPromptOpen(false); setAiPromptText('') }, 1800)
-                          }}
-                        >
-                          {aiBuilding ? 'Building…' : 'Send'}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    onClick={() => setAiPromptOpen(true)}
-                    className="w-full justify-start gap-2 rounded-none px-3.5 py-2 h-auto text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-                  >
-                    <i className="fa-light fa-sparkles text-[13px] text-[var(--brand-color)]" aria-hidden="true" />
-                    Ask Leo to adjust this section…
-                  </Button>
-                )}
-              </div>
-            )}
           </div>
 
-          {/* Right panel — 3 states: health / settings / section */}
+          {/* Right panel — Health always, or Assessment Settings overlay */}
           <div style={{ width: 280, minWidth: 280, borderLeft: '1px solid var(--border)', flexShrink: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            {(rightPanelMode === 'health' || (rightPanelMode === 'section' && (!activeSectionId || !activeAsmt.sections.find(s => s.id === activeSectionId)))) && (
+            {rightPanelMode === 'health' && (
               <HealthPanel
                 activeAsmt={activeAsmt}
                 objectives={courseObjectives.filter(o => o.courseId === activeAsmt.courseId)}
@@ -1852,27 +1822,6 @@ export default function AssessmentBuilderClient() {
                 onClose={() => setRightPanelMode('health')}
               />
             )}
-            {rightPanelMode === 'section' && activeSectionId && (() => {
-              const currentSection = activeAsmt.sections.find(s => s.id === activeSectionId)
-              if (!currentSection) return null
-              return (
-                <Step2SectionSettingsPanel
-                  section={currentSection}
-                  faculty={facultyListRows}
-                  onPatch={(patch: Partial<AssessmentSection>) => setActiveAsmt(prev => {
-                    if (!prev) return prev
-                    const targetId = currentSection.id
-                    return {
-                      ...prev,
-                      sections: prev.sections.map(s =>
-                        s.id === targetId ? { ...s, ...patch } : s
-                      ),
-                    }
-                  })}
-                  onClose={() => setRightPanelMode('health')}
-                />
-              )
-            })()}
           </div>
         </div>
       )}
@@ -4456,53 +4405,61 @@ function DetailsStep({
                         <span className="text-xs text-muted-foreground shrink-0 max-w-[80px] truncate">
                           {assignedFaculty ? assignedFaculty.fullName.split(' ').slice(-1)[0] : '—'}
                         </span>
-                        <button
-                          type="button"
+                        <Button
+                          variant="ghost" size="icon-xs"
                           onClick={() => setExpandedSectionId(isExpanded ? null : sec.id)}
                           aria-expanded={isExpanded}
                           aria-label={`${isExpanded ? 'Collapse' : 'Expand'} section ${sec.title}`}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: '0 2px', lineHeight: 1 }}
+                          className="h-5 w-5 text-muted-foreground"
                         >
-                          <i className={`fa-light ${isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'}`} aria-hidden="true" style={{ fontSize: 11 }} />
-                        </button>
-                        <button
-                          type="button"
+                          <i className={`fa-light ${isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'} text-[11px]`} aria-hidden="true" />
+                        </Button>
+                        <Button
+                          variant="ghost" size="icon-xs"
                           onClick={() => { removeSection(sec.id); if (isExpanded) setExpandedSectionId(null) }}
                           aria-label={`Remove section ${sec.title}`}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: '0 2px', lineHeight: 1 }}
+                          className="h-5 w-5 text-muted-foreground"
                         >
-                          <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 11 }} />
-                        </button>
+                          <i className="fa-light fa-xmark text-[11px]" aria-hidden="true" />
+                        </Button>
                       </div>
 
                       {/* Expanded detail — flat, indented, no card treatment */}
                       {isExpanded && (
                         <div className="flex flex-col gap-3 px-3 pb-3 pt-2" style={{ borderTop: '1px solid var(--border)', background: 'var(--muted)' }}>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground w-24 shrink-0">Faculty</span>
-                            <Select
-                              value={(sec.facultyIds?.[0] ?? sec.facultyId) ?? '__none__'}
-                              onValueChange={val => onUpdate({
-                                sections: sections.map(s =>
-                                  s.id === sec.id ? { ...s, facultyIds: val === '__none__' ? undefined : [val], facultyId: undefined } : s
-                                ),
+                          <div className="flex items-start gap-2">
+                            <span className="text-xs text-muted-foreground w-24 shrink-0 pt-0.5">Assigned to</span>
+                            <div className="flex flex-col gap-1 flex-1">
+                              {activeFaculty.map(f => {
+                                const currentIds: string[] = sec.facultyIds?.length ? sec.facultyIds : sec.facultyId ? [sec.facultyId] : []
+                                const checked = currentIds.includes(f.id)
+                                return (
+                                  <label key={f.id} className="flex items-center gap-2 cursor-pointer select-none">
+                                    <input
+                                      type="checkbox"
+                                      checked={checked}
+                                      aria-label={`Assign ${f.fullName} to section ${sec.title}`}
+                                      onChange={() => {
+                                        const next = checked
+                                          ? currentIds.filter(id => id !== f.id)
+                                          : [...currentIds, f.id]
+                                        onUpdate({
+                                          sections: sections.map(s =>
+                                            s.id === sec.id ? { ...s, facultyIds: next.length ? next : undefined, facultyId: undefined } : s
+                                          ),
+                                        })
+                                      }}
+                                      className="accent-[var(--brand-color)] w-3.5 h-3.5 shrink-0"
+                                    />
+                                    <span className="text-xs text-foreground">{f.fullName}</span>
+                                    <span className="text-xs text-muted-foreground">{f.adminPosition}</span>
+                                  </label>
+                                )
                               })}
-                            >
-                              <SelectTrigger className="h-7 text-xs flex-1" aria-label={`Assign faculty to section ${sec.title}`}>
-                                <SelectValue placeholder="Unassigned" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="__none__">
-                                  <span className="text-muted-foreground">Unassigned</span>
-                                </SelectItem>
-                                {activeFaculty.map(f => (
-                                  <SelectItem key={f.id} value={f.id}>
-                                    {f.fullName}
-                                    <span className="text-muted-foreground ml-1.5 text-xs">· {f.adminPosition}</span>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                              {activeFaculty.length === 0 && (
+                                <span className="text-xs text-muted-foreground">No faculty on this course</span>
+                              )}
+                            </div>
                           </div>
 
                           {sectionContentAreas.length > 0 && (
