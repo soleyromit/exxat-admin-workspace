@@ -49,7 +49,7 @@ export function SectionsOutline({
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* Header */}
       <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <p className="text-xs font-semibold text-foreground">{activeAsmt.questions.length} questions</p>
+        <p className="text-xs font-semibold text-foreground">{activeAsmt.sections.length} section{activeAsmt.sections.length !== 1 ? 's' : ''}</p>
         {activeSectionId && (
           <Button variant="ghost" size="icon-xs" aria-label="Clear active section" onClick={() => onSetActiveSection(null)} className="text-muted-foreground hover:text-foreground h-auto w-auto p-0">
             <i className="fa-light fa-xmark" aria-hidden="true" />
