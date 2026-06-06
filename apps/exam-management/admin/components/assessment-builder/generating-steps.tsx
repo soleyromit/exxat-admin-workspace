@@ -48,7 +48,7 @@ export function GeneratingSteps({
       STEP_DELAY_MS
     )
     return () => clearTimeout(id)
-  }, [completedCount, labels.length, onComplete])
+  }, [completedCount, labels, onComplete])
 
   return (
     <div className="px-4 py-4 border-b border-[var(--border)] space-y-3">
