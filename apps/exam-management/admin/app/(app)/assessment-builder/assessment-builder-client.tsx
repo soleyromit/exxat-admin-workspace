@@ -4120,42 +4120,35 @@ function DetailsStep({
               {/* Blueprint — start from scratch or use past assessment */}
               <div>
                 <p className="text-xs font-semibold text-muted-foreground mb-2">Blueprint</p>
-                <div className="flex flex-col gap-2">
-                  <button
-                    type="button"
-                    onClick={() => { setBlueprintMode('scratch'); setTemplateAsmtId(null) }}
-                    className="flex items-center gap-3 text-left w-full transition-colors"
-                    style={{
-                      border: `1px solid ${blueprintMode === 'scratch' ? 'var(--brand-color)' : 'var(--border)'}`,
-                      background: blueprintMode === 'scratch' ? 'var(--brand-tint)' : 'var(--background)',
-                      borderRadius: 8, padding: '10px 14px', cursor: 'pointer',
-                    }}
-                  >
-                    <i className="fa-light fa-file-pen shrink-0" aria-hidden="true" style={{ color: blueprintMode === 'scratch' ? 'var(--brand-color)' : 'var(--muted-foreground)', fontSize: 13, width: 14 }} />
+                <RadioGroup
+                  value={blueprintMode}
+                  onValueChange={(val) => {
+                    const mode = val as 'scratch' | 'template'
+                    setBlueprintMode(mode)
+                    if (mode === 'scratch') setTemplateAsmtId(null)
+                  }}
+                  className="gap-2"
+                  aria-label="Blueprint mode"
+                >
+                  <label className="flex items-center gap-3 rounded-lg border border-[var(--border)] p-[10px_14px] cursor-pointer transition-colors has-[[data-state=checked]]:border-[var(--brand-color)] has-[[data-state=checked]]:bg-[var(--brand-tint)]">
+                    <RadioGroupItem value="scratch" className="sr-only" />
+                    <i className="fa-light fa-file-pen shrink-0" aria-hidden="true" style={{ fontSize: 13, width: 14, color: blueprintMode === 'scratch' ? 'var(--brand-color)' : 'var(--muted-foreground)' }} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-foreground">Start from scratch</p>
                       <p className="text-xs text-muted-foreground mt-0.5">Define sections and questions manually.</p>
                     </div>
                     {blueprintMode === 'scratch' && <i className="fa-solid fa-circle-check shrink-0" style={{ fontSize: 14, color: 'var(--brand-color)' }} aria-hidden="true" />}
-                  </button>
+                  </label>
 
-                  <button
-                    type="button"
-                    onClick={() => setBlueprintMode('template')}
-                    className="flex items-center gap-3 text-left w-full transition-colors"
-                    style={{
-                      border: `1px solid ${blueprintMode === 'template' ? 'var(--brand-color)' : 'var(--border)'}`,
-                      background: blueprintMode === 'template' ? 'var(--brand-tint)' : 'var(--background)',
-                      borderRadius: 8, padding: '10px 14px', cursor: 'pointer',
-                    }}
-                  >
-                    <i className="fa-light fa-copy shrink-0" aria-hidden="true" style={{ color: blueprintMode === 'template' ? 'var(--brand-color)' : 'var(--muted-foreground)', fontSize: 13, width: 14 }} />
+                  <label className="flex items-center gap-3 rounded-lg border border-[var(--border)] p-[10px_14px] cursor-pointer transition-colors has-[[data-state=checked]]:border-[var(--brand-color)] has-[[data-state=checked]]:bg-[var(--brand-tint)]">
+                    <RadioGroupItem value="template" className="sr-only" />
+                    <i className="fa-light fa-copy shrink-0" aria-hidden="true" style={{ fontSize: 13, width: 14, color: blueprintMode === 'template' ? 'var(--brand-color)' : 'var(--muted-foreground)' }} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-foreground">Use past assessment as template</p>
                       <p className="text-xs text-muted-foreground mt-0.5">Copy section structure from a previous term's exam.</p>
                     </div>
                     {blueprintMode === 'template' && <i className="fa-solid fa-circle-check shrink-0" style={{ fontSize: 14, color: 'var(--brand-color)' }} aria-hidden="true" />}
-                  </button>
+                  </label>
 
                   {/* Past assessment picker — shown when template mode selected */}
                   {blueprintMode === 'template' && (
@@ -4208,7 +4201,7 @@ function DetailsStep({
                       })}
                     </div>
                   )}
-                </div>
+                </RadioGroup>
               </div>
 
               {/* Topic weightage — always shown (V0 spec §4.1) */}
@@ -4627,25 +4620,28 @@ function DetailsStep({
               </div>
             </div>
 
-            <Toggle
-              checked={settings.randomize}
-              onChange={v => patchSettings({ randomize: v })}
-              label="Randomize question order"
-              description="Students see questions in a different sequence"
-            />
-            <Toggle
-              checked={settings.randomizeOptions}
-              onChange={v => patchSettings({ randomizeOptions: v })}
-              label="Randomize option order"
-              description="Shuffle answer choices within each question"
-            />
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Randomize question order</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Students see questions in a different sequence</p>
+              </div>
+              <ToggleSwitch checked={settings.randomize} onChange={v => patchSettings({ randomize: v })} />
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Randomize option order</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Shuffle answer choices within each question</p>
+              </div>
+              <ToggleSwitch checked={settings.randomizeOptions} onChange={v => patchSettings({ randomizeOptions: v })} />
+            </div>
 
-            <Toggle
-              checked={settings.showRationaleAfter}
-              onChange={v => patchSettings({ showRationaleAfter: v })}
-              label="Show rationale after submission"
-              description="Students see the correct answer and rationale after submitting."
-            />
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Show rationale after submission</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Students see the correct answer and rationale after submitting.</p>
+              </div>
+              <ToggleSwitch checked={settings.showRationaleAfter} onChange={v => patchSettings({ showRationaleAfter: v })} />
+            </div>
 
             <Separator />
 
@@ -4691,12 +4687,13 @@ function DetailsStep({
                 />
               </div>
 
-              <Toggle
-                checked={settings.allowUnauthorizedBreaks}
-                onChange={v => patchSettings({ allowUnauthorizedBreaks: v })}
-                label="Allow unauthorized breaks"
-                description="Students can take breaks without proctor approval."
-              />
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">Allow unauthorized breaks</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Students can take breaks without proctor approval.</p>
+                </div>
+                <ToggleSwitch checked={settings.allowUnauthorizedBreaks} onChange={v => patchSettings({ allowUnauthorizedBreaks: v })} />
+              </div>
             </div>
 
             <Separator />
@@ -4704,12 +4701,16 @@ function DetailsStep({
             {/* Audience */}
             <div className="flex flex-col gap-3">
               <p className="text-xs font-semibold text-muted-foreground">Audience</p>
-              <Toggle
-                checked={settings.publishToAll}
-                onChange={v => patchSettings({ publishToAll: v, studentGroupIds: v ? [] : settings.studentGroupIds })}
-                label="All enrolled students"
-                description="When off, select specific student groups below."
-              />
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">All enrolled students</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">When off, select specific student groups below.</p>
+                </div>
+                <ToggleSwitch
+                  checked={settings.publishToAll}
+                  onChange={v => patchSettings({ publishToAll: v, studentGroupIds: v ? [] : settings.studentGroupIds })}
+                />
+              </div>
               {!settings.publishToAll && (
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">Student groups</p>
@@ -4910,36 +4911,6 @@ function AssessmentSettingsContent({
 }) {
   const TYPES: import('@/lib/qb-types').AssessmentType[] = ['Exam', 'Quiz', 'Assignment']
 
-  function Toggle({ checked, onChange, label, description }: {
-    checked: boolean; onChange: (v: boolean) => void; label: string; description?: string
-  }) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ minWidth: 0 }}>
-          <p className="text-sm font-medium text-foreground">{label}</p>
-          {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
-        </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={checked}
-          aria-label={label}
-          onClick={() => onChange(!checked)}
-          style={{
-            width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', flexShrink: 0,
-            backgroundColor: checked ? 'var(--brand-color)' : 'var(--muted)',
-            position: 'relative', transition: 'background-color .15s',
-          }}
-        >
-          <span style={{
-            position: 'absolute', top: 2, left: checked ? 18 : 2,
-            width: 16, height: 16, borderRadius: '50%', backgroundColor: 'var(--background)',
-            transition: 'left .15s', display: 'block',
-          }} />
-        </button>
-      </div>
-    )
-  }
 
   return (
     <div style={{ padding: '0 0 40px' }}>
