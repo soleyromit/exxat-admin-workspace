@@ -107,9 +107,8 @@ function SectionNavItem({
   onSelect: () => void
   onUpdateSection: (sectionId: string, patch: Partial<AssessmentSection>) => void
 }) {
-  const assignedFaculty = section.facultyId
-    ? facultyListRows.find(f => f.id === section.facultyId)
-    : null
+  const assignedIds: string[] = section.facultyIds?.length ? section.facultyIds : section.facultyId ? [section.facultyId] : []
+  const assignedFaculty = facultyListRows.filter(f => assignedIds.includes(f.id))
   const isReady = section.status === 'ready'
 
   return (
@@ -142,25 +141,25 @@ function SectionNavItem({
         <span className="shrink-0 text-[11px] tabular-nums text-[var(--muted-foreground)] bg-[var(--muted)] rounded px-1.5 py-0.5 leading-none">
           {section.questionIds.length}
         </span>
-
-        {/* Ready badge */}
-        {isReady && (
-          <Badge
-            variant="outline"
-            className="shrink-0 h-4 px-1.5 text-[10px] border-[var(--chart-2)] text-[var(--chart-2)] leading-none"
-          >
-            Ready
-          </Badge>
-        )}
       </Button>
 
-      {/* Faculty initials — secondary info, muted */}
-      {assignedFaculty && !isReady && (
-        <div className="px-3 pb-1.5 -mt-1 flex items-center gap-1">
-          <span className="text-[10px] text-[var(--muted-foreground)]" title={assignedFaculty.fullName}>
-            <i className="fa-light fa-user text-[9px] mr-0.5" aria-hidden="true" />
-            {assignedFaculty.fullName.split(' ').map((n: string) => n[0]).join('')}
+      {/* Assigned instructors — secondary info below section row */}
+      {assignedFaculty.length > 0 && (
+        <div className="px-3 pb-1.5 -mt-1 flex items-center gap-1 flex-wrap">
+          <i className="fa-light fa-user text-[9px] text-[var(--muted-foreground)]" aria-hidden="true" />
+          <span className="text-[10px] text-[var(--muted-foreground)]">
+            {assignedFaculty.length === 1
+              ? assignedFaculty[0].fullName.split(' ').slice(-1)[0]
+              : assignedFaculty.map(f => f.fullName.split(' ').slice(-1)[0]).join(', ')}
           </span>
+          {isReady && (
+            <Badge
+              variant="outline"
+              className="ml-auto shrink-0 h-3.5 px-1 text-[9px] border-[var(--chart-2)] text-[var(--chart-2)] leading-none"
+            >
+              Ready
+            </Badge>
+          )}
         </div>
       )}
 
@@ -176,11 +175,17 @@ function SectionNavItem({
               <i className="fa-regular fa-ellipsis text-[10px]" aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuItem onClick={() => onUpdateSection(section.id, { status: isReady ? 'drafting' : 'ready' })}>
               <i className={`fa-regular ${isReady ? 'fa-rotate-left' : 'fa-circle-check'} text-xs`} aria-hidden="true" />
               {isReady ? 'Reopen' : 'Mark ready'}
             </DropdownMenuItem>
+            {assignedFaculty.length > 0 && (
+              <DropdownMenuItem onClick={() => {/* notify — wired to backend in Phase 1 */}}>
+                <i className="fa-regular fa-bell text-xs" aria-hidden="true" />
+                Notify {assignedFaculty.length === 1 ? assignedFaculty[0].fullName.split(' ').slice(-1)[0] : `${assignedFaculty.length} instructors`}
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem className="text-[var(--destructive)]" onClick={() => onUpdateSection(section.id, { status: 'drafting' })}>
               <i className="fa-regular fa-trash text-xs" aria-hidden="true" />
               Remove section

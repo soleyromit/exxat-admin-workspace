@@ -4535,16 +4535,47 @@ function DetailsStep({
                 </Button>
               </div>
             ) : (
-              <button
-                type="button"
+              <Button
+                variant="ghost" size="xs"
                 onClick={() => setAddingSec(true)}
-                className="flex items-center gap-1.5 text-xs self-start"
-                style={{ color: 'var(--brand-color)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                className="flex items-center gap-1.5 text-xs text-[var(--brand-color)] hover:text-[var(--brand-color)] px-0 h-auto py-0.5 self-start"
               >
-                <i className="fa-light fa-plus" aria-hidden="true" />
+                <i className="fa-light fa-plus text-[11px]" aria-hidden="true" />
                 Add section
-              </button>
+              </Button>
             )}
+          </div>
+
+          {/* Assessment-level collaborators */}
+          <div className="flex flex-col gap-3" style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground">Collaborators</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Faculty with access to the full assessment. Assign per-section owners above.</p>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              {activeFaculty.map(f => {
+                const currentCollabs: string[] = activeAsmt?.collaboratorIds ?? []
+                const checked = currentCollabs.includes(f.id)
+                return (
+                  <label key={f.id} className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      aria-label={`Add ${f.fullName} as collaborator`}
+                      onChange={() => {
+                        const next = checked
+                          ? currentCollabs.filter(id => id !== f.id)
+                          : [...currentCollabs, f.id]
+                        onUpdate({ collaboratorIds: next })
+                      }}
+                      className="accent-[var(--brand-color)] w-3.5 h-3.5 shrink-0"
+                    />
+                    <span className="text-sm text-foreground">{f.fullName}</span>
+                    <span className="text-xs text-muted-foreground">· {f.adminPosition}</span>
+                  </label>
+                )
+              })}
+            </div>
           </div>
 
           {/* Delivery Settings */}
