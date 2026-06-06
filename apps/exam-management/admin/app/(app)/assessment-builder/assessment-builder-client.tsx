@@ -683,6 +683,13 @@ export default function AssessmentBuilderClient() {
     }
   }, [urlMode, builderState])
 
+  // Auto-select first section when on build tab and none is selected
+  useEffect(() => {
+    if (activeTab === 'build' && !activeSectionId && activeAsmt && activeAsmt.sections.length > 0) {
+      setActiveSectionId(activeAsmt.sections[0].id)
+    }
+  }, [activeTab, activeAsmt?.sections.length])
+
   function handleAddModeChange(mode: AddMode) {
     setAddMode(mode)
     if (mode === 'resting') {
@@ -1197,7 +1204,13 @@ export default function AssessmentBuilderClient() {
               type="button"
               role="tab"
               aria-selected={isActive}
-              onClick={() => { setActiveTab(tab.id); if (tab.id !== 'build') setPickerOpen(false) }}
+              onClick={() => {
+                setActiveTab(tab.id)
+                if (tab.id !== 'build') setPickerOpen(false)
+                if (tab.id === 'build' && !activeSectionId && activeAsmt && activeAsmt.sections.length > 0) {
+                  setActiveSectionId(activeAsmt.sections[0].id)
+                }
+              }}
               style={{
                 display: 'flex', alignItems: 'center',
                 padding: '0 14px', height: '100%',
