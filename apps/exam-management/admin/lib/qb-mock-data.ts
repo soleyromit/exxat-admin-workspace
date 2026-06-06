@@ -1175,3 +1175,16 @@ export const MOCK_COPY_SOURCES = [
     sections: [],
   },
 ]
+
+// ─── Search utility ──────────────────────────────────────────────────────────
+
+export function searchQBQuestions(query: string, limit = 6): Question[] {
+  const q = query.trim().toLowerCase()
+  if (!q) return []
+  return MOCK_QB_QUESTIONS.filter(question =>
+    question.title.toLowerCase().includes(q) ||
+    (question.stemText ?? '').toLowerCase().includes(q) ||
+    question.tags.some(tag => tag.toLowerCase().includes(q)) ||
+    question.folder.toLowerCase().includes(q)
+  ).slice(0, limit)
+}
