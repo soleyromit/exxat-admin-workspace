@@ -46,6 +46,8 @@ import {
 import { SendForReviewDialog } from '@/components/assessment-builder/send-for-review-dialog'
 import { QuestionDetailSheet } from './question-detail-sheet'
 import { QbSearchBar, type QbFilter } from '@/components/assessment-builder/step2-qb-search-bar'
+import { QBResultDetailPanel } from '@/components/assessment-builder/qb-result-detail-panel'
+import type { GeneratedQuestion } from '@/lib/add-questions-types'
 
 // Estimated minutes per question type (base, before difficulty adjustment)
 const TIME_BY_TYPE: Record<QType, number> = {
@@ -339,6 +341,83 @@ export default function AssessmentBuilderClient() {
     })
   }
 
+  function handleAddQuestionToSection(questionId: string, sectionId: string) {
+    if (!activeAsmt) return
+    setNewlyAddedIds(prev => new Set([...prev, questionId]))
+    setTimeout(() => {
+      setNewlyAddedIds(prev => { const n = new Set(prev); n.delete(questionId); return n })
+    }, 5000)
+    setActiveAsmt(prev => {
+      if (!prev) return prev
+      const exists = prev.questions.find(q => q.questionId === questionId)
+      const nextQuestions = exists ? prev.questions : [...prev.questions, { questionId, order: prev.questions.length + 1, points: 0, bonus: false, provenance: 'qb' as const }]
+      const nextSections = prev.sections.map(s =>
+        s.id === sectionId ? { ...s, questionIds: [...new Set([...s.questionIds, questionId])] } : s
+      )
+      return { ...prev, questions: nextQuestions, sections: nextSections }
+    })
+  }
+
+  function handleOpenQBDetail(question: Question, results: Question[], index: number) {
+    setQbDetailQ(question)
+    setQbDetailResults(results)
+    setQbDetailIndex(index)
+  }
+
+  function handleQBDetailIndexChange(index: number) {
+    setQbDetailIndex(index)
+    setQbDetailQ(qbDetailResults[index] ?? null)
+  }
+
+  function handleAddFromQBDetail(question: Question) {
+    if (!activeSectionId) return
+    setNewlyAddedIds(prev => new Set([...prev, question.id]))
+    setTimeout(() => {
+      setNewlyAddedIds(prev => { const n = new Set(prev); n.delete(question.id); return n })
+    }, 5000)
+    toggleQuestion(question.id, activeSectionId)
+    setQbDetailQ(null)
+  }
+
+  function handleAddGeneratedQuestion(question: GeneratedQuestion, sectionId: string) {
+    const asQuestion: Question = {
+      id: question.id,
+      code: question.id.slice(-6).toUpperCase(),
+      version: 1,
+      age: 'Just now',
+      title: question.stemText.slice(0, 60) + (question.stemText.length > 60 ? '…' : ''),
+      type: question.type,
+      status: 'Draft' as const,
+      difficulty: question.difficulty,
+      blooms: 'Apply',
+      folder: 'AI-generated',
+      folderPath: 'AI-generated',
+      tags: [],
+      usage: 0,
+      pbis: null,
+      pbisDir: null,
+      stemText: question.stemText,
+      options: question.options?.map(o => ({ key: o.key, text: o.text, isCorrect: o.isCorrect, rationale: '' })),
+    }
+    setUserCreated(prev => [asQuestion, ...prev])
+    setNewlyAddedIds(prev => new Set([...prev, asQuestion.id]))
+    setTimeout(() => {
+      setNewlyAddedIds(prev => { const n = new Set(prev); n.delete(asQuestion.id); return n })
+    }, 5000)
+    // Add to assessment and assign to section
+    setActiveAsmt(prev => {
+      if (!prev) return prev
+      const nextSections = prev.sections.map(s =>
+        s.id === sectionId ? { ...s, questionIds: [...new Set([...s.questionIds, asQuestion.id])] } : s
+      )
+      return {
+        ...prev,
+        questions: [...prev.questions, { questionId: asQuestion.id, order: prev.questions.length + 1, points: 0, bonus: false, provenance: question.source === 'pdf' ? 'pdf' : question.source === 'write' ? 'manual' : 'ai' }],
+        sections: nextSections,
+      }
+    })
+  }
+
   // Project a fully-edited `QuestionDraft` (from QuestionEditor) into a QB
   // `Question` row, append it to userCreated, and add it to the active
   // assessment. Used by the inline editor in the picker's "new-question" tab.
@@ -580,6 +659,10 @@ export default function AssessmentBuilderClient() {
   const [rightPanelMode, setRightPanelMode] = useState<'health' | 'settings' | 'section'>('health')
   const [sendForReviewOpen, setSendForReviewOpen] = useState(false)
   const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<string>>(new Set())
+  const [qbDetailQ, setQbDetailQ] = useState<Question | null>(null)
+  const [qbDetailResults, setQbDetailResults] = useState<Question[]>([])
+  const [qbDetailIndex, setQbDetailIndex] = useState(0)
+  const [newlyAddedIds, setNewlyAddedIds] = useState<Set<string>>(new Set())
 
   // Auto-open QB picker when arriving via "Build from QB" quick-start
   useEffect(() => {
@@ -1097,186 +1180,25 @@ export default function AssessmentBuilderClient() {
       {activeTab === 'build' && activeAsmt && (
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-          {/* Left: sections sidebar (196px) */}
-          <div style={{ width: 196, minWidth: 196, borderRight: '1px solid var(--sidebar-border, var(--border))', flexShrink: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--sidebar)' }}>
-            <div style={{ padding: '10px 12px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-              <span className="text-xs font-semibold text-muted-foreground">Sections</span>
-              <button
-                type="button"
-                aria-label="Add section"
-                onClick={() => { setAddSectionOpen(true); setAddSectionTitle('') }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--brand-color)', fontSize: 12, fontWeight: 600, fontFamily: 'inherit' }}
-              >
-                + Add
-              </button>
-            </div>
-            {addSectionOpen && (
-              <div style={{ padding: '0 8px 8px', flexShrink: 0 }}>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <input
-                    autoFocus
-                    type="text"
-                    placeholder="Section name…"
-                    value={addSectionTitle}
-                    onChange={e => setAddSectionTitle(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        if (addSectionTitle.trim()) { addSection(addSectionTitle.trim()); setAddSectionOpen(false) }
-                      }
-                      if (e.key === 'Escape') setAddSectionOpen(false)
-                    }}
-                    style={{ flex: 1, height: 28, fontSize: 12, padding: '0 7px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', fontFamily: 'inherit' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => { if (addSectionTitle.trim()) { addSection(addSectionTitle.trim()); setAddSectionOpen(false) } }}
-                    style={{ height: 28, padding: '0 8px', fontSize: 12, fontWeight: 600, background: 'var(--brand-color)', color: 'var(--background)', border: 'none', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit' }}
-                  >
-                    Add
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Cancel add section"
-                    onClick={() => setAddSectionOpen(false)}
-                    style={{ height: 28, width: 28, fontSize: 12, background: 'none', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', color: 'var(--muted-foreground)', fontFamily: 'inherit' }}
-                  >
-                    ×
-                  </button>
-                </div>
-              </div>
-            )}
-            <div style={{ flex: 1, overflowY: 'auto' }}>
-              {activeAsmt.sections.length === 0 ? (
-                <div style={{ padding: '20px 12px', textAlign: 'center' }}>
-                  <p className="text-xs text-muted-foreground">No sections yet.</p>
-                </div>
-              ) : activeAsmt.sections.map((sec, idx) => {
-                const isActive = sec.id === activeSectionId
-                const facIds = sec.facultyIds?.length ? sec.facultyIds : sec.facultyId ? [sec.facultyId] : []
-                const sectionFaculty = facultyListRows.filter(f => facIds.includes(f.id))
-                return (
-                  <div key={sec.id}>
-                    <div style={{ display: 'flex', alignItems: 'center', background: isActive ? 'var(--background)' : 'none', borderLeft: `3px solid ${isActive ? 'var(--brand-color)' : 'transparent'}` }}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveSectionId(sec.id)
-                          setPickerOpen(false)
-                          setRightPanelMode('section')
-                        }}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 7,
-                          padding: '7px 4px 7px 12px', flex: 1, minWidth: 0, textAlign: 'left',
-                          background: 'none', border: 'none', cursor: 'pointer',
-                        }}
-                      >
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: isActive ? 'var(--brand-color)' : 'var(--border)', flexShrink: 0 }} />
-                        <span className="text-xs font-medium text-foreground" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {idx + 1}. {sec.title}
-                        </span>
-                        {(() => {
-                          const filled = sec.questionIds.length
-                          const target = sec.fillTarget?.value ?? sec.questionTarget ?? 20
-                          const isComplete = filled >= target
-                          const isStarted = filled > 0
-                          return (
-                            <span
-                              aria-label={`${filled} of ${target} questions filled`}
-                              style={{
-                                background: isComplete
-                                  ? 'var(--muted)'
-                                  : isStarted ? 'var(--brand-tint)' : 'var(--muted)',
-                                border: `1px solid ${isComplete
-                                  ? 'var(--muted)'
-                                  : isStarted ? 'var(--ring)' : 'var(--border)'}`,
-                                borderRadius: 10,
-                                padding: '1px 6px',
-                                fontSize: 12,
-                                color: isComplete ? 'var(--chart-2)' : isStarted ? 'var(--brand-color)' : 'var(--muted-foreground)',
-                                flexShrink: 0,
-                                whiteSpace: 'nowrap',
-                                fontWeight: 500,
-                              }}
-                            >
-                              {isComplete ? `✓ ${filled}` : `${filled}`} / {target} Q
-                            </span>
-                          )
-                        })()}
-                      </button>
-                      {/* Section settings icon */}
-                      <button
-                        type="button"
-                        aria-label={`Open settings for ${sec.title}`}
-                        onClick={() => {
-                          setActiveSectionId(sec.id)
-                          setRightPanelMode('section')
-                        }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 4px', color: 'var(--muted-foreground)', flexShrink: 0, lineHeight: 1 }}
-                      >
-                        <i className="fa-light fa-sliders" aria-hidden="true" style={{ fontSize: 12 }} />
-                      </button>
-                      {/* Section reorder buttons */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 0, paddingRight: 6, flexShrink: 0 }}>
-                        <button
-                          type="button"
-                          onClick={() => reorderSection(sec.id, 'up')}
-                          disabled={idx === 0}
-                          aria-label={`Move ${sec.title} up`}
-                          style={{ background: 'none', border: 'none', cursor: idx === 0 ? 'default' : 'pointer', padding: '1px 3px', color: idx === 0 ? 'var(--border)' : 'var(--muted-foreground)', lineHeight: 1 }}
-                        >
-                          <i className="fa-light fa-chevron-up" aria-hidden="true" style={{ fontSize: 9 }} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => reorderSection(sec.id, 'down')}
-                          disabled={idx === activeAsmt.sections.length - 1}
-                          aria-label={`Move ${sec.title} down`}
-                          style={{ background: 'none', border: 'none', cursor: idx === activeAsmt.sections.length - 1 ? 'default' : 'pointer', padding: '1px 3px', color: idx === activeAsmt.sections.length - 1 ? 'var(--border)' : 'var(--muted-foreground)', lineHeight: 1 }}
-                        >
-                          <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 9 }} />
-                        </button>
-                      </div>
-                    </div>
-                    {/* Faculty row — compact text label */}
-                    {sectionFaculty.length > 0 ? (
-                      <button
-                        type="button"
-                        onClick={() => setAssignSheetSectionId(sec.id)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '0 12px 5px 22px', background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', fontFamily: 'inherit' }}
-                      >
-                        <span style={{ fontSize: 12, color: 'var(--muted-foreground)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {sectionFaculty.length === 1
-                            ? sectionFaculty[0].fullName.split(' ').slice(-1)[0]
-                            : `${sectionFaculty[0].fullName.split(' ').slice(-1)[0]} +${sectionFaculty.length - 1}`}
-                        </span>
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setAssignSheetSectionId(sec.id)}
-                        style={{ fontSize: 12, color: 'var(--brand-color)', fontWeight: 500, padding: '0 12px 4px 22px', display: 'block', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
-                      >
-                        ＋ Assign faculty
-                      </button>
-                    )}
-                  </div>
-                )
-              })}
-              {/* Unassigned questions indicator */}
-              {(() => {
-                const assignedIds = new Set(activeAsmt.sections.flatMap(s => s.questionIds))
-                const unassignedCount = activeAsmt.questions.filter(q => !assignedIds.has(q.questionId)).length
-                if (unassignedCount === 0) return null
-                return (
-                  <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border)' }}>
-                    <p className="text-xs text-muted-foreground">
-                      <i className="fa-light fa-layer-group" aria-hidden="true" style={{ marginRight: 4 }} />
-                      {unassignedCount} unassigned
-                    </p>
-                  </div>
-                )
-              })()}
-            </div>
+          {/* Left: sections sidebar — SectionsOutline component */}
+          <div style={{ width: 220, minWidth: 220, borderRight: '1px solid var(--sidebar-border, var(--border))', flexShrink: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--sidebar)' }}>
+            <SectionsOutline
+              activeAsmt={activeAsmt}
+              selectedIds={selectedIds}
+              questions={[...MOCK_QB_QUESTIONS, ...userCreated]}
+              onRemove={id => toggleQuestion(id)}
+              onEditQuestion={id => setEditingQuestionId(id)}
+              editingQuestionId={editingQuestionId}
+              onUpdateSection={(sectionId, patch) => setActiveAsmt(prev => prev ? { ...prev, sections: prev.sections.map(s => s.id === sectionId ? { ...s, ...patch } : s) } : prev)}
+              onAddSection={title => addSection(title)}
+              activeSectionId={activeSectionId}
+              onSetActiveSection={id => { setActiveSectionId(id); if (id) setRightPanelMode('section') }}
+              onShowDetail={id => setDetailQuestionId(id)}
+              onOpenQBDetail={handleOpenQBDetail}
+              onAddQuestion={handleAddQuestionToSection}
+              onAddGenerated={handleAddGeneratedQuestion}
+              newlyAddedIds={newlyAddedIds}
+            />
           </div>
 
           {/* Center: section workspace — QB picker is now a Dialog */}
@@ -2152,6 +2074,14 @@ export default function AssessmentBuilderClient() {
         sectionIndex={activeAsmt?.sections.findIndex(s => s.id === assignSheetSectionId) ?? -1}
         collaboratorIds={activeAsmt?.collaboratorIds ?? []}
         onAssignFaculty={(sectionId, patch) => updateSection(sectionId, patch)}
+      />
+      <QBResultDetailPanel
+        question={qbDetailQ}
+        results={qbDetailResults}
+        index={qbDetailIndex}
+        onIndexChange={handleQBDetailIndexChange}
+        onAdd={handleAddFromQBDetail}
+        onClose={() => setQbDetailQ(null)}
       />
       <SectionAnalysisSheet
         open={sectionAnalysisOpen}

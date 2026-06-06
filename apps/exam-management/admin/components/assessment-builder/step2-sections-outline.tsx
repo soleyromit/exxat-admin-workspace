@@ -1,11 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@exxatdesignux/ui'
+import { Button, Badge, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@exxatdesignux/ui'
 import type { AssessmentDraft, AssessmentSection } from '@/lib/qb-types'
 import type { Question } from '@/lib/qb-types'
-import { MOCK_MISSING_RATIONALE_QUESTION_IDS, MOCK_POOR_PBIS_QUESTION_IDS } from '@/lib/qb-mock-data'
+import { MOCK_MISSING_RATIONALE_QUESTION_IDS, MOCK_POOR_PBIS_QUESTION_IDS, searchQBQuestions } from '@/lib/qb-mock-data'
 import { facultyListRows } from '@/lib/faculty-mock-data'
+import { AddQuestionsInput } from './add-questions-input'
+import { QbInlineResults } from './qb-inline-results'
+import { GeneratingSteps } from './generating-steps'
+import { RunwayReview } from './runway-review'
+import { WriteFromScratchForm } from './write-from-scratch-form'
+import { PdfDropZone } from './pdf-drop-zone'
+import type { AddMode, GeneratedQuestion } from '@/lib/add-questions-types'
 
 const PBI_LOW_THRESHOLD = 0.2
 
@@ -21,12 +28,17 @@ interface Props {
   activeSectionId: string | null
   onSetActiveSection: (id: string | null) => void
   onShowDetail?: (questionId: string) => void
+  onOpenQBDetail: (question: Question, results: Question[], index: number) => void
+  onAddQuestion: (questionId: string, sectionId: string) => void
+  onAddGenerated: (question: GeneratedQuestion, sectionId: string) => void
+  newlyAddedIds: Set<string>
 }
 
 export function SectionsOutline({
   activeAsmt, selectedIds, questions, onRemove, onEditQuestion,
   editingQuestionId, onUpdateSection, onAddSection,
   activeSectionId, onSetActiveSection, onShowDetail,
+  onOpenQBDetail, onAddQuestion, onAddGenerated, newlyAddedIds,
 }: Props) {
   const [showAddForm, setShowAddForm] = useState(false)
   const [newTitle, setNewTitle] = useState('')
@@ -107,6 +119,10 @@ export function SectionsOutline({
             isActive={activeSectionId === section.id}
             onSetActive={() => onSetActiveSection(activeSectionId === section.id ? null : section.id)}
             onShowDetail={onShowDetail}
+            onOpenQBDetail={onOpenQBDetail}
+            onAddQuestion={onAddQuestion}
+            onAddGenerated={onAddGenerated}
+            newlyAddedIds={newlyAddedIds}
           />
         ))}
 
@@ -125,6 +141,7 @@ export function SectionsOutline({
                 onEdit={onEditQuestion}
                 isEditing={editingQuestionId === aq.questionId}
                 onShowDetail={onShowDetail}
+                isNew={newlyAddedIds.has(aq.questionId)}
               />
             ))}
           </div>
@@ -137,6 +154,7 @@ export function SectionsOutline({
 function SectionGroup({
   section, questions, qById, onRemove, onEdit, editingId, onUpdateSection,
   isActive, onSetActive, onShowDetail,
+  onOpenQBDetail, onAddQuestion, onAddGenerated, newlyAddedIds,
 }: {
   section: AssessmentSection
   questions: Question[]
@@ -148,8 +166,87 @@ function SectionGroup({
   isActive: boolean
   onSetActive: () => void
   onShowDetail?: (questionId: string) => void
+  onOpenQBDetail: (question: Question, results: Question[], index: number) => void
+  onAddQuestion: (questionId: string, sectionId: string) => void
+  onAddGenerated: (question: GeneratedQuestion, sectionId: string) => void
+  newlyAddedIds: Set<string>
 }) {
   const [collapsed, setCollapsed] = useState(false)
+  const [addMode, setAddMode] = useState<AddMode>('resting')
+  const [query, setQuery] = useState('')
+  const [qbResults, setQbResults] = useState<Question[]>([])
+  const [activeResultIndex, setActiveResultIndex] = useState(-1)
+  const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[]>([])
+  const [editPrefill, setEditPrefill] = useState<GeneratedQuestion | undefined>(undefined)
+  const [pdfFile, setPdfFile] = useState<File | undefined>(undefined)
+
+  function handleQueryChange(q: string) {
+    setQuery(q)
+    if (q.trim()) {
+      setQbResults(searchQBQuestions(q, 6))
+    } else {
+      setQbResults([])
+      setActiveResultIndex(-1)
+    }
+  }
+
+  function handleResultClick(question: Question, index: number) {
+    setActiveResultIndex(index)
+    onOpenQBDetail(question, qbResults, index)
+  }
+
+  function handleAiGenerate(_prompt: string, _file?: File) {
+    setAddMode('generating')
+  }
+
+  function handleGeneratingComplete() {
+    const mockGenerated: GeneratedQuestion[] = [
+      {
+        id: `gen-${Date.now()}-1`,
+        type: 'MCQ',
+        difficulty: 'Hard',
+        stemText: 'A 72-year-old man presents with progressive PR lengthening before a dropped beat. Which is the most appropriate next step?',
+        options: [
+          { key: 'A', text: 'Mobitz I (Wenckebach); observation appropriate', isCorrect: true, isSuggestedCorrect: true },
+          { key: 'B', text: 'Mobitz II; immediate temporary pacing', isCorrect: false },
+          { key: 'C', text: 'Complete heart block; permanent pacemaker', isCorrect: false },
+          { key: 'D', text: 'First-degree AV block; no intervention', isCorrect: false },
+        ],
+        source: addMode === 'extracting' ? 'pdf' : 'ai',
+      },
+    ]
+    setGeneratedQuestions(mockGenerated)
+    setAddMode('runway')
+  }
+
+  function handleModeChange(mode: AddMode) {
+    setAddMode(mode)
+    if (mode === 'resting') {
+      setQuery('')
+      setQbResults([])
+      setActiveResultIndex(-1)
+      setEditPrefill(undefined)
+    }
+  }
+
+  function handleWriteSave(q: GeneratedQuestion) {
+    onAddGenerated(q, section.id)
+    setAddMode('resting')
+    setEditPrefill(undefined)
+    setQuery('')
+  }
+
+  function handlePdfFile(file: File) {
+    setPdfFile(file)
+    setAddMode('extracting')
+  }
+
+  function handleRunwayAddAll(qs: GeneratedQuestion[]) {
+    qs.forEach(q => onAddGenerated(q, section.id))
+    setAddMode('resting')
+    setGeneratedQuestions([])
+    setQuery('')
+  }
   const assignedFaculty = section.facultyId
     ? facultyListRows.find(f => f.id === section.facultyId)
     : null
@@ -223,6 +320,25 @@ function SectionGroup({
           )}
         </div>
 
+        {/* ··· options menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon-xs" aria-label="Section options" className="shrink-0">
+              <i className="fa-regular fa-ellipsis text-[10px]" aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem onClick={() => handleModeChange('write')}>
+              <i className="fa-regular fa-pen text-xs" aria-hidden="true" />
+              Write from scratch
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleModeChange('pdf')}>
+              <i className="fa-regular fa-file-pdf text-xs" aria-hidden="true" />
+              Import from PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         {/* Ready / Reopen */}
         {isReady ? (
           <>
@@ -259,6 +375,65 @@ function SectionGroup({
         </Button>
       </div>
 
+      {/* AddQuestionsInput — shown unless in write/pdf/generating/extracting/runway mode */}
+      {addMode !== 'write' && addMode !== 'pdf' && addMode !== 'generating' && addMode !== 'extracting' && addMode !== 'runway' && (
+        <AddQuestionsInput
+          mode={addMode}
+          query={query}
+          onModeChange={handleModeChange}
+          onQueryChange={handleQueryChange}
+          onAiGenerate={handleAiGenerate}
+        />
+      )}
+
+      {/* State 1A — QB inline results */}
+      {addMode === 'qb' && qbResults.length > 0 && (
+        <QbInlineResults
+          results={qbResults}
+          totalCount={qbResults.length}
+          activeIndex={activeResultIndex}
+          onResultClick={handleResultClick}
+        />
+      )}
+
+      {/* State 1C — Write from scratch */}
+      {addMode === 'write' && (
+        <WriteFromScratchForm
+          prefill={editPrefill}
+          onSave={handleWriteSave}
+          onCancel={() => handleModeChange('resting')}
+        />
+      )}
+
+      {/* State 1D — PDF drop zone */}
+      {addMode === 'pdf' && (
+        <PdfDropZone
+          onFile={handlePdfFile}
+          onCancel={() => handleModeChange('resting')}
+        />
+      )}
+
+      {/* State 2 / 2D — Generating / Extracting */}
+      {(addMode === 'generating' || addMode === 'extracting') && (
+        <GeneratingSteps
+          source={addMode === 'extracting' ? 'pdf' : 'ai'}
+          prompt={query}
+          fileName={pdfFile?.name}
+          onComplete={handleGeneratingComplete}
+        />
+      )}
+
+      {/* State 3 — Runway review */}
+      {addMode === 'runway' && generatedQuestions.length > 0 && (
+        <RunwayReview
+          questions={generatedQuestions}
+          onAddOne={q => onAddGenerated(q, section.id)}
+          onSkipOne={() => {}}
+          onAddAll={handleRunwayAddAll}
+          onEditCurrent={q => { setEditPrefill(q); setAddMode('write') }}
+        />
+      )}
+
       {/* Questions in section */}
       {!collapsed && section.questionIds.map(qId => (
         <QuestionRow
@@ -270,6 +445,7 @@ function SectionGroup({
           isEditing={editingId === qId}
           indent
           onShowDetail={onShowDetail}
+          isNew={newlyAddedIds.has(qId)}
         />
       ))}
 
@@ -317,7 +493,7 @@ function SectionGroup({
 }
 
 function QuestionRow({
-  questionId, question, onRemove, onEdit, isEditing, indent = false, onShowDetail,
+  questionId, question, onRemove, onEdit, isEditing, indent = false, onShowDetail, isNew,
 }: {
   questionId: string
   question: Question | undefined
@@ -326,6 +502,7 @@ function QuestionRow({
   isEditing: boolean
   indent?: boolean
   onShowDetail?: (questionId: string) => void
+  isNew?: boolean
 }) {
   const [hovered, setHovered] = useState(false)
   const poorPbis = MOCK_POOR_PBIS_QUESTION_IDS.has(questionId)
@@ -347,6 +524,7 @@ function QuestionRow({
         padding: `4px 12px 4px ${indent ? 24 : 12}px`,
         background: isEditing ? 'var(--muted)' : hovered ? 'var(--muted)' : 'transparent',
         cursor: 'default',
+        borderLeft: isNew ? '2px solid var(--chart-2)' : undefined,
       }}
     >
       {/* Warning icons */}
@@ -382,6 +560,16 @@ function QuestionRow({
       >
         {question?.title?.slice(0, 36) ?? questionId}
       </span>
+
+      {/* New badge */}
+      {isNew && (
+        <Badge
+          variant="outline"
+          className="shrink-0 text-[10px] h-4 px-1 border-[var(--chart-2)] text-[var(--chart-2)]"
+        >
+          ✓ New
+        </Badge>
+      )}
 
       {/* PBI chip */}
       {pbis !== null && (
