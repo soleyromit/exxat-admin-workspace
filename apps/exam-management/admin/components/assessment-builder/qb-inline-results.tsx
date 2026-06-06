@@ -66,15 +66,16 @@ export function QbInlineResults({
           {/* Difficulty badge */}
           <Badge
             variant="outline"
-            className="shrink-0 text-xs h-5 px-1.5"
-            style={{
-              color:
-                q.difficulty === 'Hard'
-                  ? 'var(--destructive)'
-                  : q.difficulty === 'Easy'
-                  ? 'var(--brand-color)'
-                  : 'var(--foreground)',
-            }}
+            className={[
+              'shrink-0 text-xs h-5 px-1.5',
+              q.difficulty === 'Hard'
+                ? 'text-[var(--destructive)]'
+                : q.difficulty === 'Easy'
+                ? 'text-[var(--brand-color)]'
+                : 'text-[var(--foreground)]',
+            ]
+              .filter(Boolean)
+              .join(' ')}
           >
             {q.difficulty}
           </Badge>
