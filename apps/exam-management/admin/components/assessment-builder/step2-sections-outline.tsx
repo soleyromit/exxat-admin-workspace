@@ -264,61 +264,77 @@ function SectionGroup({
       }}
     >
       {/* Section header */}
-      <div className="flex items-center gap-1 w-full px-3 py-1.5">
-        {/* Collapse trigger */}
+      <div className="flex items-center gap-2 w-full px-3 py-2">
+        {/* Collapse chevron */}
         <Button
-          variant="ghost"
-          size="sm"
+          variant="ghost" size="icon-xs"
           onClick={() => setCollapsed(c => !c)}
-          className="flex items-center gap-1.5 flex-1 text-left min-w-0 rounded h-auto py-0 px-0 justify-start"
+          className="shrink-0 text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+          aria-label={collapsed ? 'Expand section' : 'Collapse section'}
         >
           <i
-            className={`fa-light ${collapsed ? 'fa-chevron-right' : 'fa-chevron-down'}`}
+            className={`fa-solid ${collapsed ? 'fa-chevron-right' : 'fa-chevron-down'} text-[9px]`}
             aria-hidden="true"
-            style={{ fontSize: 9, color: 'var(--muted-foreground)', width: 10, flexShrink: 0 }}
           />
-          <span className="text-xs font-semibold text-foreground truncate">{section.title}</span>
-          <span className="text-xs text-muted-foreground shrink-0">{section.questionIds.length}</span>
-          {/* Content indicator dots */}
-          {(section.instructions || section.prereadText) && (
-            <div style={{ display: 'flex', flexDirection: 'row', gap: 3, flexShrink: 0 }}>
-              {section.instructions && (
-                <span
-                  className="inline-block size-1.5 rounded-full bg-[var(--chart-1)] opacity-50"
-                  title="Has section instructions"
-                />
-              )}
-              {section.prereadText && (
-                <span
-                  className="inline-block size-1.5 rounded-full bg-[var(--brand-color)] opacity-40"
-                  title="Has preread / case vignette"
-                />
-              )}
-            </div>
-          )}
         </Button>
 
-        {/* Faculty + collaborator chips */}
-        <div className="flex items-center gap-1 shrink-0">
-          {assignedFaculty && (
-            <span
-              className="text-xs text-muted-foreground shrink-0"
-              title={assignedFaculty.fullName}
-              style={{ maxWidth: 48, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+        {/* Title — flex-1 so it takes remaining space */}
+        <span className="text-sm font-medium text-[var(--foreground)] truncate flex-1 min-w-0">
+          {section.title}
+        </span>
+
+        {/* Question count chip */}
+        <span className="shrink-0 text-[11px] tabular-nums font-medium text-[var(--muted-foreground)] bg-[var(--muted)] rounded px-1.5 py-0.5">
+          {section.questionIds.length}
+        </span>
+
+        {/* Faculty / collaborator avatars — compact */}
+        {(assignedFaculty || collaborator) && (
+          <div className="flex items-center shrink-0" style={{ gap: 2 }}>
+            {assignedFaculty && (
+              <span
+                className="text-[10px] text-[var(--muted-foreground)]"
+                title={assignedFaculty.fullName}
+              >
+                {assignedFaculty.fullName.split(' ').map((n: string) => n[0]).join('')}
+              </span>
+            )}
+            {collaborator && (
+              <span
+                className="text-[10px] text-[var(--muted-foreground)] opacity-70"
+                title={`Collaborator: ${collaborator.fullName}`}
+              >
+                +{collaborator.fullName.split(' ').map((n: string) => n[0]).join('')}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Status — Ready badge or Mark ready button */}
+        {isReady ? (
+          <div className="flex items-center gap-1 shrink-0">
+            <Badge variant="outline" className="h-5 px-1.5 text-[10px] border-[var(--chart-2)] text-[var(--chart-2)]">
+              Ready
+            </Badge>
+            <Button
+              variant="ghost" size="icon-xs"
+              onClick={() => onUpdateSection(section.id, { status: 'drafting' })}
+              aria-label="Reopen section"
+              className="text-[var(--muted-foreground)]"
             >
-              {assignedFaculty.fullName.split(' ').slice(-1)[0]}
-            </span>
-          )}
-          {collaborator && (
-            <span
-              className="text-xs text-muted-foreground shrink-0"
-              title={`Collaborator: ${collaborator.fullName}`}
-              style={{ maxWidth: 40, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', opacity: 0.7 }}
-            >
-              +{collaborator.fullName.split(' ').slice(-1)[0]}
-            </span>
-          )}
-        </div>
+              <i className="fa-regular fa-rotate-left text-[9px]" aria-hidden="true" />
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="ghost" size="sm"
+            onClick={() => onUpdateSection(section.id, { status: 'ready' })}
+            className="h-6 px-2 text-[11px] shrink-0 text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+            aria-label={`Mark section ${section.title} as ready`}
+          >
+            Mark ready
+          </Button>
+        )}
 
         {/* ··· options menu */}
         <DropdownMenu>
@@ -327,52 +343,17 @@ function SectionGroup({
               <i className="fa-regular fa-ellipsis text-[10px]" aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuItem onClick={() => handleModeChange('write')}>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={() => { handleModeChange('write'); onSetActive() }}>
               <i className="fa-regular fa-pen text-xs" aria-hidden="true" />
               Write from scratch
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleModeChange('pdf')}>
+            <DropdownMenuItem onClick={() => { handleModeChange('pdf'); onSetActive() }}>
               <i className="fa-regular fa-file-pdf text-xs" aria-hidden="true" />
               Import from PDF
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-
-        {/* Ready / Reopen */}
-        {isReady ? (
-          <>
-            <span className="text-xs font-semibold shrink-0" style={{ color: 'var(--chart-2)' }}>Ready</span>
-            <Button
-              variant="ghost" size="sm"
-              onClick={() => onUpdateSection(section.id, { status: 'drafting' })}
-              className="h-5 px-1.5 text-xs shrink-0"
-              aria-label={`Reopen section ${section.title}`}
-            >Reopen</Button>
-          </>
-        ) : (
-          <Button
-            variant="outline" size="sm"
-            onClick={() => onUpdateSection(section.id, { status: 'ready' })}
-            className="h-5 px-1.5 text-xs shrink-0"
-            aria-label={`Mark section ${section.title} as ready`}
-          >Mark ready</Button>
-        )}
-      </div>
-
-      {/* "Add questions" targeting button */}
-      <div style={{ paddingLeft: 24, paddingRight: 12, paddingBottom: 4 }}>
-        <Button
-          variant="ghost"
-          size="xs"
-          onClick={onSetActive}
-          className={`text-xs transition-colors flex items-center gap-1 h-auto py-0.5 px-0 ${isActive ? 'font-semibold text-foreground' : 'font-normal text-muted-foreground'}`}
-          aria-pressed={isActive}
-          aria-label={isActive ? `Stop adding to ${section.title}` : `Add questions to ${section.title}`}
-        >
-          <i className={`fa-light ${isActive ? 'fa-arrow-right-to-bracket' : 'fa-plus'} text-[10px]`} aria-hidden="true" />
-          {isActive ? 'Adding here' : 'Add questions'}
-        </Button>
       </div>
 
       {/* AddQuestionsInput — shown unless in write/pdf/generating/extracting/runway mode */}
