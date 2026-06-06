@@ -4,6 +4,8 @@ import {
   Sheet,
   SheetContent,
   SheetClose,
+  SheetHeader,
+  SheetTitle,
   Button,
   Badge,
   Separator,
@@ -83,7 +85,7 @@ function FillBlankReadOnly({ question }: { question: Question }) {
         </p>
       )}
       {question.modelAnswer && (
-        <div className="px-3 py-2 rounded-md border border-green-500/40 bg-green-50/60">
+        <div className="px-3 py-2 border-l-2 border-green-500/60 bg-green-50/60">
           <p className="text-xs text-green-700 font-medium mb-0.5">Model answer</p>
           <p className="text-sm text-green-800">{question.modelAnswer}</p>
         </div>
@@ -92,23 +94,13 @@ function FillBlankReadOnly({ question }: { question: Question }) {
   )
 }
 
-function MatchingReadOnly({ question }: { question: Question }) {
+function MatchingReadOnly() {
   return (
-    <div className="space-y-1.5">
-      {(question.options ?? []).map((opt, i) => (
-        <div key={i} className="flex items-center gap-3 text-sm">
-          <span className="flex-1 px-3 py-2 rounded-md border border-[var(--border)] text-[var(--foreground)]">
-            {opt.key}. {opt.text}
-          </span>
-          <i className="fa-regular fa-arrow-right text-[var(--muted-foreground)]" aria-hidden="true" />
-          <span className="flex-1 px-3 py-2 rounded-md border border-green-500/40 bg-green-50/60 text-green-800">
-            {opt.text}
-          </span>
-        </div>
-      ))}
-      {(!question.options || question.options.length === 0) && (
-        <p className="text-sm text-[var(--muted-foreground)]">No pairs defined.</p>
-      )}
+    <div className="rounded-md border border-[var(--border)] bg-[var(--muted)] flex items-center justify-center h-20 text-sm text-[var(--muted-foreground)]">
+      <div className="text-center space-y-1">
+        <i className="fa-regular fa-shuffle text-lg" aria-hidden="true" />
+        <p className="text-xs">Matching preview not available — pairs displayed in exam view.</p>
+      </div>
     </div>
   )
 }
@@ -128,7 +120,7 @@ function HotspotReadOnly() {
 function EssayReadOnly({ question }: { question: Question }) {
   return (
     <div className="space-y-3">
-      <div className="rounded-md border border-[var(--border)] bg-[var(--muted)] px-3 py-2.5 text-sm text-[var(--muted-foreground)]">
+      <div className="border border-[var(--border)] bg-[var(--muted)] px-3 py-2.5 text-sm text-[var(--muted-foreground)]">
         Essay response area (open-ended)
       </div>
       {(question.minWordCount || question.wordLimitMax) && (
@@ -164,7 +156,7 @@ function ReadOnlyQuestionBody({ question }: { question: Question }) {
     case 'Short Answer':
       return <FillBlankReadOnly question={question} />
     case 'Matching':
-      return <MatchingReadOnly question={question} />
+      return <MatchingReadOnly />
     case 'Hotspot':
       return <HotspotReadOnly />
     case 'Essay':
@@ -199,6 +191,11 @@ export function QBResultDetailPanel({
       >
         {question && (
           <>
+            {/* Accessible sheet title (sr-only — satisfies Radix aria-labelledby requirement) */}
+            <SheetHeader className="sr-only">
+              <SheetTitle>{question?.title ?? 'Question detail'}</SheetTitle>
+            </SheetHeader>
+
             {/* Header */}
             <div className="flex items-start gap-2 px-4 pt-4 pb-3 border-b border-[var(--border)]">
               <div className="flex-1 space-y-1.5">
@@ -259,7 +256,7 @@ export function QBResultDetailPanel({
                 {question.correctness !== null && question.correctness !== undefined && (
                   <div className="text-center">
                     <p className="text-lg font-semibold text-[var(--foreground)]">
-                      {Math.round(question.correctness * 100)}%
+                      {Math.round(question.correctness)}%
                     </p>
                     <p className="text-xs text-[var(--muted-foreground)]">Avg correct</p>
                   </div>

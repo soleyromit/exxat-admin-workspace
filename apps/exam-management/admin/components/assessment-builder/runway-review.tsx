@@ -22,6 +22,7 @@ export function RunwayReview({
   const [currentIndex, setCurrentIndex] = useState(0)
   const [addedCount, setAddedCount] = useState(0)
   const [skippedIds, setSkippedIds] = useState<Set<string>>(new Set())
+  // TODO: localCorrectKey only supports single-select override; MSQ multi-correct editing deferred to V1
   const [localCorrectKey, setLocalCorrectKey] = useState<string | null>(null)
 
   const current = questions[currentIndex]
