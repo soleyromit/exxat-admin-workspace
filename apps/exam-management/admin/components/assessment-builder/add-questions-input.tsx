@@ -104,7 +104,7 @@ export function AddQuestionsInput({
           disabled={sendDisabled || !isAiMode}
           aria-label="Generate questions"
           className="shrink-0 w-5 h-5 p-0 disabled:opacity-30"
-          style={{ color: sendDisabled ? 'var(--muted-foreground)' : 'var(--brand-color)' }}
+          style={{ color: (sendDisabled || !isAiMode) ? 'var(--muted-foreground)' : 'var(--brand-color)' }}
         >
           <i className="fa-regular fa-arrow-right text-xs" aria-hidden="true" />
         </Button>
