@@ -47,7 +47,14 @@ import { SendForReviewDialog } from '@/components/assessment-builder/send-for-re
 import { QuestionDetailSheet } from './question-detail-sheet'
 import { QbSearchBar, type QbFilter } from '@/components/assessment-builder/step2-qb-search-bar'
 import { QBResultDetailPanel } from '@/components/assessment-builder/qb-result-detail-panel'
-import type { GeneratedQuestion } from '@/lib/add-questions-types'
+import type { AddMode, GeneratedQuestion } from '@/lib/add-questions-types'
+import { AddQuestionsInput } from '@/components/assessment-builder/add-questions-input'
+import { QbInlineResults } from '@/components/assessment-builder/qb-inline-results'
+import { GeneratingSteps } from '@/components/assessment-builder/generating-steps'
+import { RunwayReview } from '@/components/assessment-builder/runway-review'
+import { WriteFromScratchForm } from '@/components/assessment-builder/write-from-scratch-form'
+import { PdfDropZone } from '@/components/assessment-builder/pdf-drop-zone'
+import { searchQBQuestions } from '@/lib/qb-mock-data'
 
 // Estimated minutes per question type (base, before difficulty adjustment)
 const TIME_BY_TYPE: Record<QType, number> = {
@@ -664,12 +671,89 @@ export default function AssessmentBuilderClient() {
   const [qbDetailIndex, setQbDetailIndex] = useState(0)
   const [newlyAddedIds, setNewlyAddedIds] = useState<Set<string>>(new Set())
 
+  // Add-questions flow state (center workspace)
+  const [addMode, setAddMode] = useState<AddMode>('resting')
+  const [addQuery, setAddQuery] = useState('')
+  const [addQbResults, setAddQbResults] = useState<Question[]>([])
+  const [addActiveResultIndex, setAddActiveResultIndex] = useState(-1)
+  const [addGeneratedQuestions, setAddGeneratedQuestions] = useState<GeneratedQuestion[]>([])
+  const [addEditPrefill, setAddEditPrefill] = useState<GeneratedQuestion | undefined>(undefined)
+  const [addPdfFile, setAddPdfFile] = useState<File | undefined>(undefined)
+
   // Auto-open QB picker when arriving via "Build from QB" quick-start
   useEffect(() => {
     if (urlMode === 'qb' && builderState === 'ready') {
       setPickerOpen(true)
     }
   }, [urlMode, builderState])
+
+  function handleAddModeChange(mode: AddMode) {
+    setAddMode(mode)
+    if (mode === 'resting') {
+      setAddQuery('')
+      setAddQbResults([])
+      setAddActiveResultIndex(-1)
+      setAddEditPrefill(undefined)
+    }
+  }
+
+  function handleAddQueryChange(q: string) {
+    setAddQuery(q)
+    if (q.trim()) {
+      setAddQbResults(searchQBQuestions(q, 6))
+    } else {
+      setAddQbResults([])
+      setAddActiveResultIndex(-1)
+    }
+  }
+
+  function handleAddResultClick(question: Question, index: number) {
+    setAddActiveResultIndex(index)
+    handleOpenQBDetail(question, addQbResults, index)
+  }
+
+  function handleAddAiGenerate(_prompt: string, _file?: File) {
+    setAddMode('generating')
+  }
+
+  function handleAddGeneratingComplete() {
+    const mockGenerated: GeneratedQuestion[] = [
+      {
+        id: `gen-${Date.now()}-1`,
+        type: 'MCQ',
+        difficulty: 'Hard',
+        stemText: 'A 72-year-old man presents with progressive PR lengthening before a dropped beat. Which is the most appropriate next step?',
+        options: [
+          { key: 'A', text: 'Mobitz I (Wenckebach); observation appropriate', isCorrect: true, isSuggestedCorrect: true },
+          { key: 'B', text: 'Mobitz II; immediate temporary pacing', isCorrect: false },
+          { key: 'C', text: 'Complete heart block; permanent pacemaker', isCorrect: false },
+          { key: 'D', text: 'First-degree AV block; no intervention', isCorrect: false },
+        ],
+        source: addMode === 'extracting' ? 'pdf' : 'ai',
+      },
+    ]
+    setAddGeneratedQuestions(mockGenerated)
+    setAddMode('runway')
+  }
+
+  function handleAddWriteSave(q: GeneratedQuestion) {
+    if (activeSectionId) handleAddGeneratedQuestion(q, activeSectionId)
+    setAddMode('resting')
+    setAddEditPrefill(undefined)
+    setAddQuery('')
+  }
+
+  function handleAddPdfFile(file: File) {
+    setAddPdfFile(file)
+    setAddMode('extracting')
+  }
+
+  function handleAddRunwayAddAll(qs: GeneratedQuestion[]) {
+    if (activeSectionId) qs.forEach(q => handleAddGeneratedQuestion(q, activeSectionId))
+    setAddMode('resting')
+    setAddGeneratedQuestions([])
+    setAddQuery('')
+  }
 
   function addSection(title: string) {
     setActiveAsmt(prev => prev ? {
@@ -1180,24 +1264,14 @@ export default function AssessmentBuilderClient() {
       {activeTab === 'build' && activeAsmt && (
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-          {/* Left: sections sidebar — SectionsOutline component */}
-          <div style={{ width: 220, minWidth: 220, borderRight: '1px solid var(--sidebar-border, var(--border))', flexShrink: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--sidebar)' }}>
+          {/* Left: sections nav — pure navigation */}
+          <div style={{ width: 220, minWidth: 220, borderRight: '1px solid var(--border)', flexShrink: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--background)' }}>
             <SectionsOutline
               activeAsmt={activeAsmt}
-              selectedIds={selectedIds}
-              questions={[...MOCK_QB_QUESTIONS, ...userCreated]}
-              onRemove={id => toggleQuestion(id)}
-              onEditQuestion={id => setEditingQuestionId(id)}
-              editingQuestionId={editingQuestionId}
               onUpdateSection={(sectionId, patch) => setActiveAsmt(prev => prev ? { ...prev, sections: prev.sections.map(s => s.id === sectionId ? { ...s, ...patch } : s) } : prev)}
               onAddSection={title => addSection(title)}
               activeSectionId={activeSectionId}
-              onSetActiveSection={id => { setActiveSectionId(id); if (id) setRightPanelMode('section') }}
-              onShowDetail={id => setDetailQuestionId(id)}
-              onOpenQBDetail={handleOpenQBDetail}
-              onAddQuestion={handleAddQuestionToSection}
-              onAddGenerated={handleAddGeneratedQuestion}
-              newlyAddedIds={newlyAddedIds}
+              onSetActiveSection={id => { setActiveSectionId(id); if (id) setRightPanelMode('section'); handleAddModeChange('resting') }}
             />
           </div>
 
@@ -1264,55 +1338,74 @@ export default function AssessmentBuilderClient() {
                     )}
                     {/* Section analysis icon */}
                     {activeSectionQuestions.length > 0 && (
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost" size="icon-xs"
                         aria-label="Section analysis"
                         title="View section analysis"
                         onClick={() => setSectionAnalysisOpen(true)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', padding: '4px 6px', borderRadius: 5, display: 'flex', alignItems: 'center', fontSize: 13 }}
+                        className="text-[var(--muted-foreground)]"
                       >
                         <i className="fa-light fa-chart-simple" aria-hidden="true" />
-                      </button>
+                      </Button>
                     )}
                   </div>
+
+                  {/* ── Add questions area (always visible when section is active) ── */}
+                  {addMode !== 'write' && addMode !== 'pdf' && addMode !== 'generating' && addMode !== 'extracting' && addMode !== 'runway' && (
+                    <AddQuestionsInput
+                      mode={addMode}
+                      query={addQuery}
+                      onModeChange={handleAddModeChange}
+                      onQueryChange={handleAddQueryChange}
+                      onAiGenerate={handleAddAiGenerate}
+                    />
+                  )}
+                  {addMode === 'qb' && addQbResults.length > 0 && (
+                    <QbInlineResults
+                      results={addQbResults}
+                      totalCount={addQbResults.length}
+                      activeIndex={addActiveResultIndex}
+                      onResultClick={handleAddResultClick}
+                    />
+                  )}
+                  {addMode === 'write' && (
+                    <WriteFromScratchForm
+                      prefill={addEditPrefill}
+                      onSave={handleAddWriteSave}
+                      onCancel={() => handleAddModeChange('resting')}
+                    />
+                  )}
+                  {addMode === 'pdf' && (
+                    <PdfDropZone
+                      onFile={handleAddPdfFile}
+                      onCancel={() => handleAddModeChange('resting')}
+                    />
+                  )}
+                  {(addMode === 'generating' || addMode === 'extracting') && (
+                    <GeneratingSteps
+                      source={addMode === 'extracting' ? 'pdf' : 'ai'}
+                      prompt={addQuery}
+                      fileName={addPdfFile?.name}
+                      onComplete={handleAddGeneratingComplete}
+                    />
+                  )}
+                  {addMode === 'runway' && addGeneratedQuestions.length > 0 && (
+                    <RunwayReview
+                      questions={addGeneratedQuestions}
+                      onAddOne={q => { if (activeSectionId) handleAddGeneratedQuestion(q, activeSectionId) }}
+                      onSkipOne={() => {}}
+                      onAddAll={handleAddRunwayAddAll}
+                      onEditCurrent={q => { setAddEditPrefill(q); setAddMode('write') }}
+                    />
+                  )}
 
                   {/* Scrollable question list */}
                   <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
 
                     {activeSectionQuestions.length === 0 ? (
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20, padding: '32px 24px' }}>
-                        <div style={{ textAlign: 'center' }}>
-                          <p className="text-sm font-semibold text-foreground" style={{ marginBottom: 4 }}>No questions yet</p>
-                          <p className="text-xs text-muted-foreground">Choose how to add questions to this section.</p>
-                        </div>
-                        <div style={{ display: 'flex', gap: 10, width: '100%', maxWidth: 480 }}>
-                          {([
-                            { method: 'qb' as const,     icon: 'fa-database',       label: 'Question Bank',  desc: 'Search and pick from saved questions' },
-                            { method: 'pdf' as const,    icon: 'fa-file-pdf',       label: 'Import PDF',     desc: 'Upload a doc; Leo extracts questions' },
-                            { method: 'manual' as const, icon: 'fa-pen-to-square',  label: 'From scratch',   desc: 'Write a question stem and options' },
-                          ] as const).map(({ method, icon, label, desc }) => (
-                            <button
-                              key={method}
-                              type="button"
-                              onClick={() => { setPickerMethod(method); setPickerOpen(true) }}
-                              style={{
-                                flex: 1, textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
-                                background: 'var(--background)',
-                                border: '1px solid var(--border)',
-                                borderRadius: 10, padding: '14px 14px 12px',
-                                display: 'flex', flexDirection: 'column', gap: 8,
-                              }}
-                            >
-                              <div style={{ width: 30, height: 30, borderRadius: 7, background: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <i className={`fa-light ${icon}`} aria-hidden="true" style={{ fontSize: 13, color: 'var(--muted-foreground)' }} />
-                              </div>
-                              <div>
-                                <div className="text-xs font-semibold text-foreground" style={{ marginBottom: 2 }}>{label}</div>
-                                <div className="text-xs text-muted-foreground">{desc}</div>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
+                      <div className="flex flex-1 flex-col items-center justify-center gap-2 py-12 text-center px-6">
+                        <i className="fa-light fa-layer-group text-[var(--muted-foreground)] text-2xl" aria-hidden="true" />
+                        <p className="text-sm text-[var(--muted-foreground)]">No questions yet — search or generate above.</p>
                       </div>
                     ) : (
                       <>
@@ -1390,13 +1483,13 @@ export default function AssessmentBuilderClient() {
                               </select>
                             </>
                           )}
-                          <button
-                            type="button"
+                          <Button
+                            variant="ghost" size="sm"
                             onClick={() => setBulkSelectedIds(new Set())}
-                            style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'var(--muted-foreground)', fontFamily: 'inherit' }}
+                            className="ml-auto h-6 px-2 text-xs text-[var(--muted-foreground)]"
                           >
                             Clear
-                          </button>
+                          </Button>
                         </div>
                       )}
                       <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
@@ -1480,18 +1573,26 @@ export default function AssessmentBuilderClient() {
                                 </td>
                                 {/* # + reorder */}
                                 <td style={{ padding: '4px 4px', textAlign: 'center', verticalAlign: 'middle' }}>
-                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                                    <button type="button" aria-label={`Move ${q.title} up`}
+                                  <div className="flex flex-col items-center gap-0.5">
+                                    <Button
+                                      variant="ghost" size="icon-xs"
+                                      aria-label={`Move ${q.title} up`}
                                       onClick={e => { e.stopPropagation(); reorderQuestionInSection(activeSection.id, q.id, 'up') }}
                                       disabled={idx === 0}
-                                      style={{ background: 'none', border: 'none', padding: '1px 4px', cursor: idx === 0 ? 'default' : 'pointer', color: 'var(--muted-foreground)', fontSize: 9, lineHeight: 1, opacity: idx === 0 ? 0.2 : 0.55 }}
-                                    ><i className="fa-solid fa-angle-up" aria-hidden="true" /></button>
-                                    <span style={{ fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{idx + 1}</span>
-                                    <button type="button" aria-label={`Move ${q.title} down`}
+                                      className="h-4 w-5 text-[var(--muted-foreground)] disabled:opacity-20"
+                                    >
+                                      <i className="fa-solid fa-angle-up text-[9px]" aria-hidden="true" />
+                                    </Button>
+                                    <span className="text-xs text-[var(--muted-foreground)] tabular-nums leading-none">{idx + 1}</span>
+                                    <Button
+                                      variant="ghost" size="icon-xs"
+                                      aria-label={`Move ${q.title} down`}
                                       onClick={e => { e.stopPropagation(); reorderQuestionInSection(activeSection.id, q.id, 'down') }}
                                       disabled={idx === totalQ - 1}
-                                      style={{ background: 'none', border: 'none', padding: '1px 4px', cursor: idx === totalQ - 1 ? 'default' : 'pointer', color: 'var(--muted-foreground)', fontSize: 9, lineHeight: 1, opacity: idx === totalQ - 1 ? 0.2 : 0.55 }}
-                                    ><i className="fa-solid fa-angle-down" aria-hidden="true" /></button>
+                                      className="h-4 w-5 text-[var(--muted-foreground)] disabled:opacity-20"
+                                    >
+                                      <i className="fa-solid fa-angle-down text-[9px]" aria-hidden="true" />
+                                    </Button>
                                   </div>
                                 </td>
 
@@ -1633,36 +1734,22 @@ export default function AssessmentBuilderClient() {
 
                                 {/* Pin */}
                                 <td style={{ padding: '8px 6px', verticalAlign: 'middle', textAlign: 'center' }}>
-                                  <button
-                                    type="button"
+                                  <Button
+                                    variant="ghost" size="icon-xs"
                                     aria-label={isPinned ? `Unpin ${q.title}` : `Pin ${q.title} — won't be randomized`}
                                     title={isPinned ? 'Pinned — stays fixed during randomization' : 'Pin to fix position during randomization'}
                                     onClick={e => { e.stopPropagation(); togglePinQuestion(q.id) }}
-                                    style={{ background: 'none', border: 'none', padding: '3px', cursor: 'pointer', color: isPinned ? 'var(--brand-color)' : 'var(--muted-foreground)', fontSize: 11, opacity: isPinned ? 1 : 0.35 }}
+                                    className="h-5 w-5"
+                                    style={{ color: isPinned ? 'var(--brand-color)' : 'var(--muted-foreground)', opacity: isPinned ? 1 : 0.35 }}
                                   >
-                                    <i className={isPinned ? 'fa-solid fa-thumbtack' : 'fa-light fa-thumbtack'} aria-hidden="true" />
-                                  </button>
+                                    <i className={`${isPinned ? 'fa-solid' : 'fa-light'} fa-thumbtack text-[10px]`} aria-hidden="true" />
+                                  </Button>
                                 </td>
                               </tr>
                             )
                           })}
                         </tbody>
                       </table>
-
-                      {/* Footer: add actions — only shown when section has questions */}
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                        padding: '8px 14px', borderTop: '1px solid var(--border)',
-                        color: 'var(--muted-foreground)', fontSize: 12, flexShrink: 0,
-                      }}>
-                        <button
-                          type="button"
-                          onClick={() => setPickerOpen(true)}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', fontSize: 12, fontFamily: 'inherit', padding: 0 }}
-                        >
-                          + Add questions
-                        </button>
-                      </div>
                       </>
                     )}
                   </div>
@@ -1717,36 +1804,31 @@ export default function AssessmentBuilderClient() {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>Enter to send · Shift+Enter for new line · Esc to close</span>
                       <div style={{ display: 'flex', gap: 6 }}>
-                        <button type="button" onClick={() => { setAiPromptOpen(false); setAiPromptText('') }}
-                          style={{ fontSize: 12, padding: '3px 8px', background: 'none', border: '1px solid var(--border)', borderRadius: 5, cursor: 'pointer', color: 'var(--muted-foreground)', fontFamily: 'inherit' }}>
+                        <Button variant="outline" size="sm" className="h-6 px-2 text-xs"
+                          onClick={() => { setAiPromptOpen(false); setAiPromptText('') }}>
                           Cancel
-                        </button>
-                        <button
-                          type="button"
+                        </Button>
+                        <Button size="sm" className="h-6 px-2 text-xs"
                           disabled={!aiPromptText.trim() || aiBuilding}
                           onClick={() => {
                             setAiBuilding(true)
                             setTimeout(() => { setAiBuilding(false); setAiPromptOpen(false); setAiPromptText('') }, 1800)
                           }}
-                          style={{ fontSize: 12, padding: '3px 10px', background: 'var(--brand-color)', border: 'none', borderRadius: 5, cursor: aiPromptText.trim() ? 'pointer' : 'default', color: '#fff', fontWeight: 600, fontFamily: 'inherit', opacity: aiPromptText.trim() ? 1 : 0.5 }}
                         >
                           {aiBuilding ? 'Building…' : 'Send'}
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
                     onClick={() => setAiPromptOpen(true)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 14px',
-                      background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
-                    }}
+                    className="w-full justify-start gap-2 rounded-none px-3.5 py-2 h-auto text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
                   >
-                    <i className="fa-light fa-sparkles" aria-hidden="true" style={{ fontSize: 13, color: 'var(--brand-color)' }} />
-                    <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>Ask Leo to adjust this section…</span>
-                  </button>
+                    <i className="fa-light fa-sparkles text-[13px] text-[var(--brand-color)]" aria-hidden="true" />
+                    Ask Leo to adjust this section…
+                  </Button>
                 )}
               </div>
             )}

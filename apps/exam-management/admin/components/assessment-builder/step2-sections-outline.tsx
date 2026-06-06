@@ -3,51 +3,22 @@
 import { useState } from 'react'
 import { Button, Badge, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@exxatdesignux/ui'
 import type { AssessmentDraft, AssessmentSection } from '@/lib/qb-types'
-import type { Question } from '@/lib/qb-types'
-import { MOCK_MISSING_RATIONALE_QUESTION_IDS, MOCK_POOR_PBIS_QUESTION_IDS, searchQBQuestions } from '@/lib/qb-mock-data'
 import { facultyListRows } from '@/lib/faculty-mock-data'
-import { AddQuestionsInput } from './add-questions-input'
-import { QbInlineResults } from './qb-inline-results'
-import { GeneratingSteps } from './generating-steps'
-import { RunwayReview } from './runway-review'
-import { WriteFromScratchForm } from './write-from-scratch-form'
-import { PdfDropZone } from './pdf-drop-zone'
-import type { AddMode, GeneratedQuestion } from '@/lib/add-questions-types'
-
-const PBI_LOW_THRESHOLD = 0.2
 
 interface Props {
   activeAsmt: AssessmentDraft
-  selectedIds: Set<string>
-  questions: Question[]
-  onRemove: (questionId: string) => void
-  onEditQuestion: (questionId: string) => void
-  editingQuestionId: string | null
   onUpdateSection: (sectionId: string, patch: Partial<AssessmentSection>) => void
   onAddSection?: (title: string) => void
   activeSectionId: string | null
   onSetActiveSection: (id: string | null) => void
-  onShowDetail?: (questionId: string) => void
-  onOpenQBDetail: (question: Question, results: Question[], index: number) => void
-  onAddQuestion: (questionId: string, sectionId: string) => void
-  onAddGenerated: (question: GeneratedQuestion, sectionId: string) => void
-  newlyAddedIds: Set<string>
 }
 
 export function SectionsOutline({
-  activeAsmt, selectedIds, questions, onRemove, onEditQuestion,
-  editingQuestionId, onUpdateSection, onAddSection,
-  activeSectionId, onSetActiveSection, onShowDetail,
-  onOpenQBDetail, onAddQuestion, onAddGenerated, newlyAddedIds,
+  activeAsmt, onUpdateSection, onAddSection,
+  activeSectionId, onSetActiveSection,
 }: Props) {
   const [showAddForm, setShowAddForm] = useState(false)
   const [newTitle, setNewTitle] = useState('')
-  const qById = Object.fromEntries(questions.map(q => [q.id, q]))
-
-  const assignedIds = new Set(activeAsmt.sections.flatMap(s => s.questionIds))
-  const unassigned = activeAsmt.questions
-    .filter(aq => !assignedIds.has(aq.questionId))
-    .sort((a, b) => a.order - b.order)
 
   function handleAddSection() {
     const trimmed = newTitle.trim()
@@ -58,22 +29,40 @@ export function SectionsOutline({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <p className="text-xs font-semibold text-foreground">{activeAsmt.sections.length} section{activeAsmt.sections.length !== 1 ? 's' : ''}</p>
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--border)] shrink-0">
+        <span className="text-xs font-semibold text-[var(--foreground)]">
+          {activeAsmt.sections.length} section{activeAsmt.sections.length !== 1 ? 's' : ''}
+        </span>
         {activeSectionId && (
-          <Button variant="ghost" size="icon-xs" aria-label="Clear active section" onClick={() => onSetActiveSection(null)} className="text-muted-foreground hover:text-foreground h-auto w-auto p-0">
-            <i className="fa-light fa-xmark" aria-hidden="true" />
+          <Button
+            variant="ghost" size="icon-xs"
+            aria-label="Deselect section"
+            onClick={() => onSetActiveSection(null)}
+            className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+          >
+            <i className="fa-light fa-xmark text-[10px]" aria-hidden="true" />
           </Button>
         )}
       </div>
 
-      {/* Scrollable list */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
-        {/* Inline add-section form */}
+      {/* Section list */}
+      <div className="flex-1 overflow-y-auto py-1">
+        {activeAsmt.sections.map((section, idx) => (
+          <SectionNavItem
+            key={section.id}
+            section={section}
+            index={idx}
+            isActive={activeSectionId === section.id}
+            onSelect={() => onSetActiveSection(activeSectionId === section.id ? null : section.id)}
+            onUpdateSection={onUpdateSection}
+          />
+        ))}
+
+        {/* Add section */}
         {onAddSection && (
-          <div style={{ padding: '4px 12px 8px' }}>
+          <div className="px-3 pt-1 pb-2">
             {showAddForm ? (
               <div className="flex items-center gap-1.5">
                 <input
@@ -86,505 +75,119 @@ export function SectionsOutline({
                   }}
                   placeholder="Section title…"
                   autoFocus
-                  style={{
-                    flex: 1, fontSize: 12, padding: '4px 8px', borderRadius: 'var(--radius)',
-                    border: '1px solid var(--border-control-35)', background: 'var(--background)',
-                    color: 'var(--foreground)', outline: 'none', fontFamily: 'inherit',
-                  }}
+                  className="flex-1 text-xs px-2 py-1 rounded border border-[var(--border-control-35)] bg-[var(--background)] text-[var(--foreground)] outline-none"
                   aria-label="New section title"
                 />
                 <Button size="sm" onClick={handleAddSection} className="h-6 px-2 text-xs">Add</Button>
                 <Button variant="ghost" size="sm" onClick={() => { setShowAddForm(false); setNewTitle('') }} className="h-6 px-2 text-xs">✕</Button>
               </div>
             ) : (
-              <Button variant="ghost" size="xs" onClick={() => setShowAddForm(true)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-0 h-auto py-0.5">
-                <i className="fa-light fa-plus" aria-hidden="true" />
+              <Button
+                variant="ghost" size="xs"
+                onClick={() => setShowAddForm(true)}
+                className="flex items-center gap-1.5 text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] px-0 h-auto py-0.5 w-full justify-start"
+              >
+                <i className="fa-light fa-plus text-[10px]" aria-hidden="true" />
                 Add section
               </Button>
             )}
           </div>
         )}
-
-        {/* Sections */}
-        {activeAsmt.sections.map(section => (
-          <SectionGroup
-            key={section.id}
-            section={section}
-            questions={questions}
-            qById={qById}
-            onRemove={onRemove}
-            onEdit={onEditQuestion}
-            editingId={editingQuestionId}
-            onUpdateSection={onUpdateSection}
-            isActive={activeSectionId === section.id}
-            onSetActive={() => onSetActiveSection(activeSectionId === section.id ? null : section.id)}
-            onShowDetail={onShowDetail}
-            onOpenQBDetail={onOpenQBDetail}
-            onAddQuestion={onAddQuestion}
-            onAddGenerated={onAddGenerated}
-            newlyAddedIds={newlyAddedIds}
-          />
-        ))}
-
-        {/* Unassigned */}
-        {unassigned.length > 0 && (
-          <div style={{ marginTop: 8 }}>
-            <p className="text-xs font-semibold text-muted-foreground px-3 pt-1 pb-1">
-              Unassigned · {unassigned.length}
-            </p>
-            {unassigned.map(aq => (
-              <QuestionRow
-                key={aq.questionId}
-                questionId={aq.questionId}
-                question={qById[aq.questionId]}
-                onRemove={onRemove}
-                onEdit={onEditQuestion}
-                isEditing={editingQuestionId === aq.questionId}
-                onShowDetail={onShowDetail}
-                isNew={newlyAddedIds.has(aq.questionId)}
-              />
-            ))}
-          </div>
-        )}
       </div>
     </div>
   )
 }
 
-function SectionGroup({
-  section, questions, qById, onRemove, onEdit, editingId, onUpdateSection,
-  isActive, onSetActive, onShowDetail,
-  onOpenQBDetail, onAddQuestion, onAddGenerated, newlyAddedIds,
+function SectionNavItem({
+  section, index, isActive, onSelect, onUpdateSection,
 }: {
   section: AssessmentSection
-  questions: Question[]
-  qById: Record<string, Question>
-  onRemove: (id: string) => void
-  onEdit: (id: string) => void
-  editingId: string | null
-  onUpdateSection: (sectionId: string, patch: Partial<AssessmentSection>) => void
+  index: number
   isActive: boolean
-  onSetActive: () => void
-  onShowDetail?: (questionId: string) => void
-  onOpenQBDetail: (question: Question, results: Question[], index: number) => void
-  onAddQuestion: (questionId: string, sectionId: string) => void
-  onAddGenerated: (question: GeneratedQuestion, sectionId: string) => void
-  newlyAddedIds: Set<string>
+  onSelect: () => void
+  onUpdateSection: (sectionId: string, patch: Partial<AssessmentSection>) => void
 }) {
-  const [collapsed, setCollapsed] = useState(false)
-  const [addMode, setAddMode] = useState<AddMode>('resting')
-  const [query, setQuery] = useState('')
-  const [qbResults, setQbResults] = useState<Question[]>([])
-  const [activeResultIndex, setActiveResultIndex] = useState(-1)
-  const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[]>([])
-  const [editPrefill, setEditPrefill] = useState<GeneratedQuestion | undefined>(undefined)
-  const [pdfFile, setPdfFile] = useState<File | undefined>(undefined)
-
-  function handleQueryChange(q: string) {
-    setQuery(q)
-    if (q.trim()) {
-      setQbResults(searchQBQuestions(q, 6))
-    } else {
-      setQbResults([])
-      setActiveResultIndex(-1)
-    }
-  }
-
-  function handleResultClick(question: Question, index: number) {
-    setActiveResultIndex(index)
-    onOpenQBDetail(question, qbResults, index)
-  }
-
-  function handleAiGenerate(_prompt: string, _file?: File) {
-    setAddMode('generating')
-  }
-
-  function handleGeneratingComplete() {
-    const mockGenerated: GeneratedQuestion[] = [
-      {
-        id: `gen-${Date.now()}-1`,
-        type: 'MCQ',
-        difficulty: 'Hard',
-        stemText: 'A 72-year-old man presents with progressive PR lengthening before a dropped beat. Which is the most appropriate next step?',
-        options: [
-          { key: 'A', text: 'Mobitz I (Wenckebach); observation appropriate', isCorrect: true, isSuggestedCorrect: true },
-          { key: 'B', text: 'Mobitz II; immediate temporary pacing', isCorrect: false },
-          { key: 'C', text: 'Complete heart block; permanent pacemaker', isCorrect: false },
-          { key: 'D', text: 'First-degree AV block; no intervention', isCorrect: false },
-        ],
-        source: addMode === 'extracting' ? 'pdf' : 'ai',
-      },
-    ]
-    setGeneratedQuestions(mockGenerated)
-    setAddMode('runway')
-  }
-
-  function handleModeChange(mode: AddMode) {
-    setAddMode(mode)
-    if (mode === 'resting') {
-      setQuery('')
-      setQbResults([])
-      setActiveResultIndex(-1)
-      setEditPrefill(undefined)
-    }
-  }
-
-  function handleWriteSave(q: GeneratedQuestion) {
-    onAddGenerated(q, section.id)
-    setAddMode('resting')
-    setEditPrefill(undefined)
-    setQuery('')
-  }
-
-  function handlePdfFile(file: File) {
-    setPdfFile(file)
-    setAddMode('extracting')
-  }
-
-  function handleRunwayAddAll(qs: GeneratedQuestion[]) {
-    qs.forEach(q => onAddGenerated(q, section.id))
-    setAddMode('resting')
-    setGeneratedQuestions([])
-    setQuery('')
-  }
   const assignedFaculty = section.facultyId
     ? facultyListRows.find(f => f.id === section.facultyId)
-    : null
-  const collaborator = section.collaboratorId
-    ? facultyListRows.find(f => f.id === section.collaboratorId)
     : null
   const isReady = section.status === 'ready'
 
   return (
     <div
+      className="group relative"
       style={{
         background: isActive ? 'var(--muted)' : 'transparent',
         borderLeft: isActive ? '2px solid var(--foreground)' : '2px solid transparent',
-        marginBottom: 2,
       }}
     >
-      {/* Section header */}
-      <div className="flex items-center gap-2 w-full px-3 py-2">
-        {/* Collapse chevron */}
-        <Button
-          variant="ghost" size="icon-xs"
-          onClick={() => setCollapsed(c => !c)}
-          className="shrink-0 text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-          aria-label={collapsed ? 'Expand section' : 'Collapse section'}
-        >
-          <i
-            className={`fa-solid ${collapsed ? 'fa-chevron-right' : 'fa-chevron-down'} text-[9px]`}
-            aria-hidden="true"
-          />
-        </Button>
+      {/* Main clickable row */}
+      <Button
+        variant="ghost"
+        onClick={onSelect}
+        className="w-full flex items-center gap-2 px-3 py-2 h-auto justify-start rounded-none"
+        aria-pressed={isActive}
+        aria-label={`Select section ${section.title}`}
+      >
+        {/* Index */}
+        <span className="shrink-0 text-[11px] tabular-nums text-[var(--muted-foreground)] w-4 text-right">
+          {index + 1}.
+        </span>
 
-        {/* Title — flex-1 so it takes remaining space */}
-        <span className="text-sm font-medium text-[var(--foreground)] truncate flex-1 min-w-0">
+        {/* Title */}
+        <span className="flex-1 min-w-0 text-sm truncate font-medium text-[var(--foreground)]">
           {section.title}
         </span>
 
-        {/* Question count chip */}
-        <span className="shrink-0 text-[11px] tabular-nums font-medium text-[var(--muted-foreground)] bg-[var(--muted)] rounded px-1.5 py-0.5">
+        {/* Count chip */}
+        <span className="shrink-0 text-[11px] tabular-nums text-[var(--muted-foreground)] bg-[var(--muted)] rounded px-1.5 py-0.5 leading-none">
           {section.questionIds.length}
         </span>
 
-        {/* Faculty / collaborator avatars — compact */}
-        {(assignedFaculty || collaborator) && (
-          <div className="flex items-center shrink-0" style={{ gap: 2 }}>
-            {assignedFaculty && (
-              <span
-                className="text-[10px] text-[var(--muted-foreground)]"
-                title={assignedFaculty.fullName}
-              >
-                {assignedFaculty.fullName.split(' ').map((n: string) => n[0]).join('')}
-              </span>
-            )}
-            {collaborator && (
-              <span
-                className="text-[10px] text-[var(--muted-foreground)] opacity-70"
-                title={`Collaborator: ${collaborator.fullName}`}
-              >
-                +{collaborator.fullName.split(' ').map((n: string) => n[0]).join('')}
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Status — Ready badge or Mark ready button */}
-        {isReady ? (
-          <div className="flex items-center gap-1 shrink-0">
-            <Badge variant="outline" className="h-5 px-1.5 text-[10px] border-[var(--chart-2)] text-[var(--chart-2)]">
-              Ready
-            </Badge>
-            <Button
-              variant="ghost" size="icon-xs"
-              onClick={() => onUpdateSection(section.id, { status: 'drafting' })}
-              aria-label="Reopen section"
-              className="text-[var(--muted-foreground)]"
-            >
-              <i className="fa-regular fa-rotate-left text-[9px]" aria-hidden="true" />
-            </Button>
-          </div>
-        ) : (
-          <Button
-            variant="ghost" size="sm"
-            onClick={() => onUpdateSection(section.id, { status: 'ready' })}
-            className="h-6 px-2 text-[11px] shrink-0 text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-            aria-label={`Mark section ${section.title} as ready`}
+        {/* Ready badge */}
+        {isReady && (
+          <Badge
+            variant="outline"
+            className="shrink-0 h-4 px-1.5 text-[10px] border-[var(--chart-2)] text-[var(--chart-2)] leading-none"
           >
-            Mark ready
-          </Button>
+            Ready
+          </Badge>
         )}
+      </Button>
 
-        {/* ··· options menu */}
+      {/* Faculty initials — secondary info, muted */}
+      {assignedFaculty && !isReady && (
+        <div className="px-3 pb-1.5 -mt-1 flex items-center gap-1">
+          <span className="text-[10px] text-[var(--muted-foreground)]" title={assignedFaculty.fullName}>
+            <i className="fa-light fa-user text-[9px] mr-0.5" aria-hidden="true" />
+            {assignedFaculty.fullName.split(' ').map((n: string) => n[0]).join('')}
+          </span>
+        </div>
+      )}
+
+      {/* Options menu — hover-only */}
+      <div className="absolute right-1 top-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-xs" aria-label="Section options" className="shrink-0">
+            <Button
+              variant="ghost" size="icon-xs"
+              aria-label={`Options for section ${section.title}`}
+              className="h-6 w-6"
+            >
               <i className="fa-regular fa-ellipsis text-[10px]" aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => { handleModeChange('write'); onSetActive() }}>
-              <i className="fa-regular fa-pen text-xs" aria-hidden="true" />
-              Write from scratch
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem onClick={() => onUpdateSection(section.id, { status: isReady ? 'drafting' : 'ready' })}>
+              <i className={`fa-regular ${isReady ? 'fa-rotate-left' : 'fa-circle-check'} text-xs`} aria-hidden="true" />
+              {isReady ? 'Reopen' : 'Mark ready'}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { handleModeChange('pdf'); onSetActive() }}>
-              <i className="fa-regular fa-file-pdf text-xs" aria-hidden="true" />
-              Import from PDF
+            <DropdownMenuItem className="text-[var(--destructive)]" onClick={() => onUpdateSection(section.id, { status: 'drafting' })}>
+              <i className="fa-regular fa-trash text-xs" aria-hidden="true" />
+              Remove section
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-
-      {/* AddQuestionsInput — shown unless in write/pdf/generating/extracting/runway mode */}
-      {addMode !== 'write' && addMode !== 'pdf' && addMode !== 'generating' && addMode !== 'extracting' && addMode !== 'runway' && (
-        <AddQuestionsInput
-          mode={addMode}
-          query={query}
-          onModeChange={handleModeChange}
-          onQueryChange={handleQueryChange}
-          onAiGenerate={handleAiGenerate}
-        />
-      )}
-
-      {/* State 1A — QB inline results */}
-      {addMode === 'qb' && qbResults.length > 0 && (
-        <QbInlineResults
-          results={qbResults}
-          totalCount={qbResults.length}
-          activeIndex={activeResultIndex}
-          onResultClick={handleResultClick}
-        />
-      )}
-
-      {/* State 1C — Write from scratch */}
-      {addMode === 'write' && (
-        <WriteFromScratchForm
-          prefill={editPrefill}
-          onSave={handleWriteSave}
-          onCancel={() => handleModeChange('resting')}
-        />
-      )}
-
-      {/* State 1D — PDF drop zone */}
-      {addMode === 'pdf' && (
-        <PdfDropZone
-          onFile={handlePdfFile}
-          onCancel={() => handleModeChange('resting')}
-        />
-      )}
-
-      {/* State 2 / 2D — Generating / Extracting */}
-      {(addMode === 'generating' || addMode === 'extracting') && (
-        <GeneratingSteps
-          source={addMode === 'extracting' ? 'pdf' : 'ai'}
-          prompt={query}
-          fileName={pdfFile?.name}
-          onComplete={handleGeneratingComplete}
-        />
-      )}
-
-      {/* State 3 — Runway review */}
-      {addMode === 'runway' && generatedQuestions.length > 0 && (
-        <RunwayReview
-          questions={generatedQuestions}
-          onAddOne={q => onAddGenerated(q, section.id)}
-          onSkipOne={() => {}}
-          onAddAll={handleRunwayAddAll}
-          onEditCurrent={q => { setEditPrefill(q); setAddMode('write') }}
-        />
-      )}
-
-      {/* Questions in section */}
-      {!collapsed && section.questionIds.map(qId => (
-        <QuestionRow
-          key={qId}
-          questionId={qId}
-          question={qById[qId]}
-          onRemove={onRemove}
-          onEdit={onEdit}
-          isEditing={editingId === qId}
-          indent
-          onShowDetail={onShowDetail}
-          isNew={newlyAddedIds.has(qId)}
-        />
-      ))}
-
-      {/* Inline instructions + preread fields when section is active */}
-      {isActive && (
-        <div style={{ padding: '8px 12px 10px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <div style={{ position: 'relative' }}>
-            <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 3, borderRadius: '3px 0 0 3px', background: 'var(--chart-1)', opacity: 0.4 }} />
-            <textarea
-              aria-label={`Instructions for section ${section.title}`}
-              value={section.instructions ?? ''}
-              onChange={e => onUpdateSection(section.id, { instructions: e.target.value })}
-              placeholder="Section instructions (shown before this section starts)…"
-              rows={2}
-              style={{
-                width: '100%', paddingLeft: 10, paddingRight: 8, paddingTop: 6, paddingBottom: 6,
-                fontSize: 12, lineHeight: 1.5, fontFamily: 'inherit',
-                border: '1px solid var(--border)', borderLeft: 'none', borderRadius: '0 4px 4px 0',
-                background: 'var(--background)', color: 'var(--foreground)',
-                outline: 'none', resize: 'none',
-              }}
-            />
-          </div>
-          <div style={{ position: 'relative' }}>
-            <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 3, borderRadius: '3px 0 0 3px', background: 'var(--brand-color)', opacity: 0.3 }} />
-            <textarea
-              aria-label={`Preread for section ${section.title}`}
-              value={section.prereadText ?? ''}
-              onChange={e => onUpdateSection(section.id, { prereadText: e.target.value })}
-              placeholder="Preread / case vignette (shown alongside questions)…"
-              rows={2}
-              style={{
-                width: '100%', paddingLeft: 10, paddingRight: 8, paddingTop: 6, paddingBottom: 6,
-                fontSize: 12, lineHeight: 1.5, fontFamily: 'inherit',
-                border: '1px solid var(--border)', borderLeft: 'none', borderRadius: '0 4px 4px 0',
-                background: 'var(--background)', color: 'var(--foreground)',
-                outline: 'none', resize: 'none',
-              }}
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function QuestionRow({
-  questionId, question, onRemove, onEdit, isEditing, indent = false, onShowDetail, isNew,
-}: {
-  questionId: string
-  question: Question | undefined
-  onRemove: (id: string) => void
-  onEdit: (id: string) => void
-  isEditing: boolean
-  indent?: boolean
-  onShowDetail?: (questionId: string) => void
-  isNew?: boolean
-}) {
-  const [hovered, setHovered] = useState(false)
-  const poorPbis = MOCK_POOR_PBIS_QUESTION_IDS.has(questionId)
-  const missingRationale = MOCK_MISSING_RATIONALE_QUESTION_IDS.has(questionId)
-  const pbis = question?.pbis ?? null
-  const pbisLow = pbis !== null && pbis < PBI_LOW_THRESHOLD
-
-  return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onFocus={() => setHovered(true)}
-      onBlur={() => setHovered(false)}
-      tabIndex={-1}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        padding: `4px 12px 4px ${indent ? 24 : 12}px`,
-        background: isEditing ? 'var(--muted)' : hovered ? 'var(--muted)' : 'transparent',
-        cursor: 'default',
-        borderLeft: isNew ? '2px solid var(--chart-2)' : undefined,
-      }}
-    >
-      {/* Warning icons */}
-      {missingRationale ? (
-        <i
-          className="fa-light fa-triangle-exclamation shrink-0"
-          role="img"
-          aria-label="Missing rationale"
-          style={{ fontSize: 10, color: 'var(--chart-4)', width: 12 }}
-        />
-      ) : poorPbis || pbisLow ? (
-        <i
-          className="fa-light fa-chart-line-down shrink-0"
-          role="img"
-          aria-label="Low point-biserial"
-          style={{ fontSize: 10, color: 'var(--chart-4)', width: 12 }}
-        />
-      ) : (
-        <span style={{ width: 12 }} />
-      )}
-
-      {/* Code */}
-      <span className="text-xs font-mono text-muted-foreground shrink-0" style={{ width: 38 }}>
-        {question?.code?.slice(-4) ?? '—'}
-      </span>
-
-      {/* Title — clickable to show detail */}
-      <span
-        className="text-xs text-foreground truncate flex-1"
-        style={{ cursor: onShowDetail ? 'pointer' : 'default' }}
-        onClick={() => onShowDetail?.(questionId)}
-        title={question?.title}
-      >
-        {question?.title?.slice(0, 36) ?? questionId}
-      </span>
-
-      {/* New badge */}
-      {isNew && (
-        <Badge
-          variant="outline"
-          className="shrink-0 text-[10px] h-4 px-1 border-[var(--chart-2)] text-[var(--chart-2)]"
-        >
-          ✓ New
-        </Badge>
-      )}
-
-      {/* PBI chip */}
-      {pbis !== null && (
-        <span
-          className="text-xs font-mono shrink-0"
-          style={{ color: pbisLow ? 'var(--chart-4)' : 'var(--muted-foreground)' }}
-          title={`Point-biserial: ${pbis}${pbisLow ? ' — low, consider replacing' : ''}`}
-        >
-          {pbisLow && <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 9, marginRight: 2 }} />}
-          {pbis.toFixed(2)}
-        </span>
-      )}
-
-      {/* Hover actions */}
-      {hovered && (
-        <>
-          <Button
-            variant="ghost" size="sm"
-            onClick={() => onEdit(questionId)}
-            aria-label="Edit question"
-            className="h-6 w-6 p-0 shrink-0"
-          >
-            <i className="fa-light fa-pen" aria-hidden="true" style={{ fontSize: 9 }} />
-          </Button>
-          <Button
-            variant="ghost" size="sm"
-            onClick={() => onRemove(questionId)}
-            aria-label="Remove question"
-            className="h-6 w-6 p-0 shrink-0"
-          >
-            <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 9 }} />
-          </Button>
-        </>
-      )}
     </div>
   )
 }
