@@ -4039,27 +4039,29 @@ function DetailsStep({
       >
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-muted-foreground">Course</span>
-          <select
-            value={courseId}
-            onChange={e => onCourseChange(e.target.value)}
-            style={{ fontSize: 13, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--foreground)', padding: '4px 8px', cursor: 'pointer' }}
-          >
-            {mockCoursesLocal.map(c => (
-              <option key={c.id} value={c.id}>{c.code} · {c.name}</option>
-            ))}
-          </select>
+          <Select value={courseId} onValueChange={onCourseChange}>
+            <SelectTrigger className="h-7 text-xs w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {mockCoursesLocal.map(c => (
+                <SelectItem key={c.id} value={c.id}>{c.code} · {c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-muted-foreground">Offering</span>
-          <select
-            value={offeringId}
-            onChange={e => onOfferingChange(e.target.value)}
-            style={{ fontSize: 13, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--foreground)', padding: '4px 8px', cursor: 'pointer' }}
-          >
-            {offerings.map(o => (
-              <option key={o.id} value={o.id}>{o.semester}</option>
-            ))}
-          </select>
+          <Select value={offeringId} onValueChange={onOfferingChange}>
+            <SelectTrigger className="h-7 text-xs w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {offerings.map(o => (
+                <SelectItem key={o.id} value={o.id}>{o.semester}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -4071,20 +4073,14 @@ function DetailsStep({
           <div className="flex flex-col gap-4">
               <div>
                 <p className="text-xs font-semibold text-muted-foreground mb-2">Assessment name *</p>
-                <input
+                <Input
                   type="text"
                   aria-label="Assessment name"
                   value={name}
                   onChange={e => onUpdate({ title: e.target.value })}
                   placeholder="e.g. Midterm Exam"
                   autoFocus
-                  style={{
-                    width: '100%', height: 44, padding: '0 14px', fontSize: 16, fontWeight: 500,
-                    border: '1px solid var(--border)', borderRadius: 10,
-                    background: 'var(--background)', color: 'var(--foreground)', outline: 'none',
-                  }}
-                  onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--brand-color)'; (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px var(--ring)' }}
-                  onBlur={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--border)'; (e.target as HTMLInputElement).style.boxShadow = 'none' }}
+                  className="text-base font-medium h-11"
                 />
               </div>
 
@@ -4645,24 +4641,22 @@ function DetailsStep({
 
             <Separator />
 
-            {/* Delivery */}
+            {/* Session behavior */}
             <div className="flex flex-col gap-3">
-              <p className="text-xs font-semibold text-muted-foreground">Delivery</p>
+              <p className="text-xs font-semibold text-muted-foreground">Session behavior</p>
 
               {/* Pre-flight date */}
-  
+
               {/* Resume password */}
               <div>
                 <p className="text-xs text-muted-foreground mb-1.5">Resume password <span className="text-muted-foreground/60">(optional)</span></p>
-                <input
-                  type="text"
+                <Input
+                  type="password"
                   aria-label="Resume password"
                   placeholder="Leave blank — no resume password"
                   value={settings.resumePassword}
                   onChange={e => patchSettings({ resumePassword: e.target.value })}
-                  style={{ width: '100%', height: 36, padding: '0 8px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none' }}
-                  onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--ring)'; (e.target as HTMLInputElement).style.boxShadow = '0 0 0 2px var(--ring)' }}
-                  onBlur={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--border)'; (e.target as HTMLInputElement).style.boxShadow = 'none' }}
+                  className="h-9 text-sm"
                 />
                 <p className="text-xs text-muted-foreground mt-1">Required to resume after an authorized break.</p>
               </div>
@@ -4941,50 +4935,55 @@ function AssessmentSettingsContent({
 
       {/* Scheduling toggles */}
       <div style={{ padding: '0 20px' }}>
-        <Toggle
-          checked={settings.passwordRequired}
-          onChange={v => onPatch({ passwordRequired: v })}
-          label="Password required"
-          description="Students enter a password to unlock the exam."
-        />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ minWidth: 0 }}>
+            <p className="text-sm font-medium text-foreground">Password required</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Students enter a password to unlock the exam.</p>
+          </div>
+          <ToggleSwitch checked={settings.passwordRequired} onChange={v => onPatch({ passwordRequired: v })} />
+        </div>
         {settings.passwordRequired && (
-          <input
-            type="text"
+          <Input
+            type="password"
             placeholder="Set exam password…"
             value={settings.password}
             onChange={e => onPatch({ password: e.target.value })}
-            style={{ height: 36, padding: '0 12px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', width: '100%', marginBottom: 8 }}
+            className="h-9 text-sm my-2"
           />
         )}
-        <Toggle
-          checked={settings.randomize}
-          onChange={v => onPatch({ randomize: v })}
-          label="Randomize question order"
-          description="Each student sees questions in a different order."
-        />
-        <Toggle
-          checked={settings.randomizeOptions}
-          onChange={v => onPatch({ randomizeOptions: v })}
-          label="Randomize option order"
-          description="Shuffle answer choices within each question."
-        />
-        <Toggle
-          checked={settings.showRationaleAfter}
-          onChange={v => onPatch({ showRationaleAfter: v })}
-          label="Show rationale after submission"
-          description="Students see the correct answer and rationale after submitting."
-        />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ minWidth: 0 }}>
+            <p className="text-sm font-medium text-foreground">Randomize question order</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Each student sees questions in a different order.</p>
+          </div>
+          <ToggleSwitch checked={settings.randomize} onChange={v => onPatch({ randomize: v })} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ minWidth: 0 }}>
+            <p className="text-sm font-medium text-foreground">Randomize option order</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Shuffle answer choices within each question.</p>
+          </div>
+          <ToggleSwitch checked={settings.randomizeOptions} onChange={v => onPatch({ randomizeOptions: v })} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ minWidth: 0 }}>
+            <p className="text-sm font-medium text-foreground">Show rationale after submission</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Students see the correct answer and rationale after submitting.</p>
+          </div>
+          <ToggleSwitch checked={settings.showRationaleAfter} onChange={v => onPatch({ showRationaleAfter: v })} />
+        </div>
       </div>
 
       {/* Grading */}
       <div style={{ padding: '12px 20px 0', borderTop: '1px solid var(--border)', marginTop: 4 }}>
         <p className="text-xs font-semibold text-muted-foreground mb-3">Grading</p>
-        <Toggle
-          checked={settings.graded}
-          onChange={v => onPatch({ graded: v })}
-          label="Graded"
-          description="Assign point values to questions."
-        />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ minWidth: 0 }}>
+            <p className="text-sm font-medium text-foreground">Graded</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Assign point values to questions.</p>
+          </div>
+          <ToggleSwitch checked={settings.graded} onChange={v => onPatch({ graded: v })} />
+        </div>
         {settings.graded && (
           <div style={{ padding: '8px 0' }}>
             <p className="text-xs text-muted-foreground mb-1">Total marks</p>
