@@ -1301,7 +1301,83 @@ export default function AssessmentBuilderClient() {
               </div>
             )}
 
-            {/* ── Section Workspace view ── */}
+            {/* ── Add questions toolbar — always visible, not gated on section selection ── */}
+            {addMode === 'resting' && (
+              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--border)] shrink-0 flex-wrap">
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5"
+                  onClick={() => handleAddModeChange('qb')}>
+                  <i className="fa-light fa-magnifying-glass text-[11px]" aria-hidden="true" />
+                  Search QB
+                </Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5"
+                  onClick={() => handleAddModeChange('ai')}>
+                  <i className="fa-light fa-sparkles text-[11px]" aria-hidden="true" />
+                  AI Generate
+                </Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5"
+                  onClick={() => handleAddModeChange('write')}>
+                  <i className="fa-light fa-pen-line text-[11px]" aria-hidden="true" />
+                  New question
+                </Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5"
+                  onClick={() => handleAddModeChange('pdf')}>
+                  <i className="fa-light fa-file-arrow-up text-[11px]" aria-hidden="true" />
+                  Upload doc
+                </Button>
+              </div>
+            )}
+            {(addMode === 'qb' || addMode === 'ai') && (
+              <AddQuestionsInput
+                mode={addMode}
+                query={addQuery}
+                onModeChange={handleAddModeChange}
+                onQueryChange={handleAddQueryChange}
+                onAiGenerate={handleAddAiGenerate}
+              />
+            )}
+            {addMode === 'qb' && addQbResults.length > 0 && (
+              <QbInlineResults
+                results={addQbResults}
+                totalCount={addQbResults.length}
+                activeIndex={addActiveResultIndex}
+                onResultClick={handleAddResultClick}
+              />
+            )}
+            {addMode === 'write' && (
+              <WriteFromScratchForm
+                prefill={addEditPrefill}
+                onSave={handleAddWriteSave}
+                onCancel={() => handleAddModeChange('resting')}
+              />
+            )}
+            {addMode === 'pdf' && (
+              <PdfDropZone
+                onFile={handleAddPdfFile}
+                onCancel={() => handleAddModeChange('resting')}
+              />
+            )}
+            {(addMode === 'generating' || addMode === 'extracting') && (
+              <GeneratingSteps
+                source={addMode === 'extracting' ? 'pdf' : 'ai'}
+                prompt={addQuery}
+                fileName={addPdfFile?.name}
+                onComplete={handleAddGeneratingComplete}
+              />
+            )}
+            {addMode === 'runway' && addGeneratedQuestions.length > 0 && (
+              <RunwayReview
+                questions={addGeneratedQuestions}
+                onAddOne={q => {
+                  const targetId = activeSectionId ?? activeAsmt.sections[0]?.id
+                  if (targetId) handleAddGeneratedQuestion(q, targetId)
+                }}
+                onSkipOne={() => {}}
+                onAddAll={handleAddRunwayAddAll}
+                onEditCurrent={q => { setAddEditPrefill(q); setAddMode('write') }}
+              />
+            )}
+
+            {/* ── Section workspace: header + question list (requires an active section) ── */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               {activeSection ? (
                 <>
@@ -1314,7 +1390,6 @@ export default function AssessmentBuilderClient() {
                     <span className="text-sm font-semibold text-foreground" style={{ flexShrink: 0 }}>
                       {activeAsmt.sections.findIndex(s => s.id === activeSection.id) + 1}. {activeSection.title}
                     </span>
-                    {/* Faculty — compact inline text label */}
                     {(() => {
                       const facIds = activeSection.facultyIds?.length ? activeSection.facultyIds : activeSection.facultyId ? [activeSection.facultyId] : []
                       const headerFaculty = facultyListRows.filter(f => facIds.includes(f.id))
@@ -1331,7 +1406,6 @@ export default function AssessmentBuilderClient() {
                       )
                     })()}
                     <div style={{ flex: 1 }} />
-                    {/* Q count / ready */}
                     {sectionFillPct(activeSection) >= 80 ? (
                       <span style={{ fontSize: 12, color: 'var(--chart-2)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
                         <i className="fa-solid fa-circle-check" aria-hidden="true" style={{ fontSize: 11 }} />
@@ -1345,7 +1419,6 @@ export default function AssessmentBuilderClient() {
                         })()} Q
                       </span>
                     )}
-                    {/* Section analysis icon */}
                     {activeSectionQuestions.length > 0 && (
                       <Button
                         variant="ghost" size="icon-xs"
@@ -1358,88 +1431,6 @@ export default function AssessmentBuilderClient() {
                       </Button>
                     )}
                   </div>
-
-                  {/* ── Add questions toolbar — 4 discrete entry points ── */}
-                  {addMode === 'resting' && (
-                    <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--border)] shrink-0 flex-wrap">
-                      <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5"
-                        onClick={() => handleAddModeChange('qb')}>
-                        <i className="fa-light fa-magnifying-glass text-[11px]" aria-hidden="true" />
-                        Search QB
-                      </Button>
-                      <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5"
-                        onClick={() => handleAddModeChange('ai')}>
-                        <i className="fa-light fa-sparkles text-[11px]" aria-hidden="true" />
-                        AI Generate
-                      </Button>
-                      <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5"
-                        onClick={() => handleAddModeChange('write')}>
-                        <i className="fa-light fa-pen-line text-[11px]" aria-hidden="true" />
-                        New question
-                      </Button>
-                      <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5"
-                        onClick={() => handleAddModeChange('pdf')}>
-                        <i className="fa-light fa-file-arrow-up text-[11px]" aria-hidden="true" />
-                        Upload doc
-                      </Button>
-                    </div>
-                  )}
-                  {addMode === 'qb' && (
-                    <AddQuestionsInput
-                      mode={addMode}
-                      query={addQuery}
-                      onModeChange={handleAddModeChange}
-                      onQueryChange={handleAddQueryChange}
-                      onAiGenerate={handleAddAiGenerate}
-                    />
-                  )}
-                  {addMode === 'ai' && (
-                    <AddQuestionsInput
-                      mode={addMode}
-                      query={addQuery}
-                      onModeChange={handleAddModeChange}
-                      onQueryChange={handleAddQueryChange}
-                      onAiGenerate={handleAddAiGenerate}
-                    />
-                  )}
-                  {addMode === 'qb' && addQbResults.length > 0 && (
-                    <QbInlineResults
-                      results={addQbResults}
-                      totalCount={addQbResults.length}
-                      activeIndex={addActiveResultIndex}
-                      onResultClick={handleAddResultClick}
-                    />
-                  )}
-                  {addMode === 'write' && (
-                    <WriteFromScratchForm
-                      prefill={addEditPrefill}
-                      onSave={handleAddWriteSave}
-                      onCancel={() => handleAddModeChange('resting')}
-                    />
-                  )}
-                  {addMode === 'pdf' && (
-                    <PdfDropZone
-                      onFile={handleAddPdfFile}
-                      onCancel={() => handleAddModeChange('resting')}
-                    />
-                  )}
-                  {(addMode === 'generating' || addMode === 'extracting') && (
-                    <GeneratingSteps
-                      source={addMode === 'extracting' ? 'pdf' : 'ai'}
-                      prompt={addQuery}
-                      fileName={addPdfFile?.name}
-                      onComplete={handleAddGeneratingComplete}
-                    />
-                  )}
-                  {addMode === 'runway' && addGeneratedQuestions.length > 0 && (
-                    <RunwayReview
-                      questions={addGeneratedQuestions}
-                      onAddOne={q => { if (activeSectionId) handleAddGeneratedQuestion(q, activeSectionId) }}
-                      onSkipOne={() => {}}
-                      onAddAll={handleAddRunwayAddAll}
-                      onEditCurrent={q => { setAddEditPrefill(q); setAddMode('write') }}
-                    />
-                  )}
 
                   {/* Scrollable question list */}
                   <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
@@ -1797,20 +1788,9 @@ export default function AssessmentBuilderClient() {
                   </div>
                 </>
               ) : (
-                /* No section selected */
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 }}>
-                  {activeAsmt.sections.length === 0 ? (
-                    <>
-                      <i className="fa-light fa-layer-group text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
-                      <p className="text-sm text-muted-foreground text-center">No sections yet. Add a section in the left panel to get started.</p>
-                      <Button variant="outline" size="sm" onClick={() => setPickerOpen(true)} className="gap-1.5">
-                        <i className="fa-light fa-plus" aria-hidden="true" />
-                        Add questions
-                      </Button>
-                    </>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Select a section from the left panel.</p>
-                  )}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 24 }}>
+                  <i className="fa-light fa-sidebar text-muted-foreground" aria-hidden="true" style={{ fontSize: 20 }} />
+                  <p className="text-sm text-muted-foreground text-center">Select a section from the left panel to see its questions.</p>
                 </div>
               )}
             </div>
@@ -2082,7 +2062,7 @@ export default function AssessmentBuilderClient() {
       />
       <QuestionDetailSheet
         questionId={detailQuestionId}
-        questions={MOCK_QB_QUESTIONS}
+        questions={[...MOCK_QB_QUESTIONS, ...userCreated]}
         open={detailQuestionId !== null}
         onOpenChange={(o) => { if (!o) setDetailQuestionId(null) }}
         onEdit={(id) => { setEditingQuestionId(id); setDetailQuestionId(null) }}
