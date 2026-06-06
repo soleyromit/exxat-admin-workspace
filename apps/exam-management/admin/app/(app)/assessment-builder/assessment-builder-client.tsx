@@ -222,9 +222,30 @@ export default function AssessmentBuilderClient() {
         setBuilderState('ready')
       }, 2200)
     } else {
-      // No AI prompt — load with empty sections so Step 1 (Blueprint Setup)
-      // is the first screen the coordinator sees. They set up sections there.
-      setActiveAsmt({ ...newAsmt, sections: [], questions: [] })
+      // No AI prompt (e.g., sessionStorage cleared between sessions) —
+      // scaffold default sections with QB questions so the builder opens
+      // with meaningful content rather than a fully empty state.
+      const cCode = (mockCourses.find(c => c.id === draft.courseId)?.code ?? '').toLowerCase()
+      const pool = MOCK_QB_QUESTIONS.filter(q => q.folder.toLowerCase().includes(cCode) || q.folder.includes(cCode.toUpperCase()))
+      const defaultSectionTitles = pool.length > 0
+        ? ['Section 1', 'Section 2', 'Section 3']
+        : []
+      const defaultSections: AssessmentSection[] = defaultSectionTitles.map((title, i) => {
+        const sId = `sec-${draft.id}-default-${i}`
+        const qIds = pool.slice(i * 15, i * 15 + 15).map(q => q.id)
+        return { id: sId, title, questionIds: qIds }
+      })
+      const defaultQIds = defaultSections.flatMap(s => s.questionIds)
+      const defaultQuestions: AssessmentQuestion[] = defaultQIds.map((qId, i) => ({
+        questionId: qId, order: i + 1, points: 4, bonus: false, provenance: 'qb' as const,
+      }))
+      const scaffolded: AssessmentDraft = {
+        ...newAsmt,
+        sections: defaultSections,
+        questions: defaultQuestions,
+      }
+      setActiveAsmt(scaffolded)
+      setActiveSectionId(defaultSections[0]?.id ?? null)
       setBuilderState('ready')
     }
     setCourseId(draft.courseId)
