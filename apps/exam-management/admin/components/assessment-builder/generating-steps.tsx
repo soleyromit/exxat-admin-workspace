@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 interface GeneratingStepsProps {
   source: 'ai' | 'pdf'
@@ -35,7 +35,7 @@ export function GeneratingSteps({
   fileName = 'document.pdf',
   onComplete,
 }: GeneratingStepsProps) {
-  const labels = getStepLabels(source, prompt, fileName)
+  const labels = useMemo(() => getStepLabels(source, prompt, fileName), [source, prompt, fileName])
   const [completedCount, setCompletedCount] = useState(0)
 
   useEffect(() => {
