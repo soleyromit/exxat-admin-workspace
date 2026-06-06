@@ -1680,6 +1680,21 @@ export default function AssessmentBuilderClient() {
                                     >
                                       {q.title}
                                     </span>
+                                    {q.version > 1 && (
+                                      <span
+                                        title={`Version ${q.version}`}
+                                        style={{
+                                          fontSize: 9, fontWeight: 700, flexShrink: 0,
+                                          padding: '1px 4px', borderRadius: 3,
+                                          background: 'var(--brand-tint)',
+                                          color: 'var(--brand-color)',
+                                          border: '1px solid var(--brand-color)',
+                                          lineHeight: 1.4,
+                                        }}
+                                      >
+                                        v{q.version}
+                                      </span>
+                                    )}
                                     {(() => {
                                       const flag = activeAsmt.healthFlags.find(f => f.questionId === q.id)
                                       if (!flag) return null
