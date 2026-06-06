@@ -61,7 +61,9 @@ export interface Question {
   stemText?: string                        // full question stem; falls back to title
   options?: QuestionOption[]               // MCQ / MSQ only
   rubric?: { criterion: string; points: number }[]  // Essay only
+  modelAnswer?: string                     // Fill blank / Short Answer — model answer text
   minWordCount?: number                    // Essay only
+  wordLimitMax?: number                    // Essay only — max word count
   correctness?: number | null              // 0–100; % students who answered correctly
   avgTimeSeconds?: number | null           // avg seconds per student
   pValue?: number | null                   // numeric difficulty 0–1
@@ -176,10 +178,13 @@ export type AssessmentStatus =
   | 'completed'
 
 export interface AssessmentReviewRequest {
-  reviewerIds: string[]    // FacultyListRow IDs — multiple reviewers allowed
+  reviewerIds: string[]          // L1 reviewers (coordinators/faculty)
+  l2ReviewerIds?: string[]       // L2 chairperson reviewers
+  reviewLevel: 1 | 2             // which level is currently under review
+  l1ApprovedAt?: string | null   // ISO timestamp when L1 approved
   message: string
-  dueDate: string | null  // ISO date string
-  sentAt: string          // ISO timestamp
+  dueDate: string | null
+  sentAt: string
 }
 
 export interface DigitalToolsConfig {
@@ -278,6 +283,7 @@ export interface AssessmentSection {
   questionIds: string[]
   contentAreaIds?: string[]       // content areas this section targets (folder IDs)
   randomize?: boolean             // shuffle questions within this section independently
+  backNavBlocked?: boolean        // block backward navigation within this section (June 3 V0 requirement)
   status?: 'drafting' | 'ready'  // instructor signals section is ready for coordinator review
   timeLimitMinutes?: number        // section-level time limit; null/undefined = no separate timer
   prereadTimerMinutes?: number | null
@@ -310,6 +316,7 @@ export interface AssessmentDraft {
   targetDiffDistribution?: Record<QDiff, number>
   targetTypeDistribution?: Partial<Record<QType, number>>
   syllabusUrl?: string
+  topicWeightage?: { name: string; percentage: number }[]  // content area % targets (V0 spec §4.1)
 }
 
 /** Convenience factory for default settings */

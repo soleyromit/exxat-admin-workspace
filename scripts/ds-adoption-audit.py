@@ -254,6 +254,12 @@ LEGITIMATE_NON_CARD_DIVS = {
     # placeholder visually representing a "Written response" answer blank inside
     # a preview dialog. `h-8` constrains height to 32px — not card content chrome.
     "components/pce/distribute-wizard/survey-preview-dialog.tsx",
+    # exam-management: qb-result-detail-panel.tsx — read-only answer renderers.
+    # The flagged divs are inline answer-display boxes (model answer highlight for
+    # FillBlank; essay area placeholder), not card chrome. These are sub-sentence
+    # display elements inside a Sheet body — Card would over-engineer.
+    # Accepted by touch-gate exemption 2026-06-05.
+    "components/assessment-builder/qb-result-detail-panel.tsx",
 }
 
 GRANDFATHERED_ORGANISM_COLLISIONS: set[str] = set()
