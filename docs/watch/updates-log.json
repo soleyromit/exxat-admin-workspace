@@ -557,6 +557,18 @@
       "files": ["docs/BUILD-STATUS.md"]
     },
     {
+      "id": "2026-06-06-exam-management-build-status-001",
+      "date": "2026-06-06",
+      "product": "exam-management",
+      "type": "prd-change",
+      "title": "BUILD-STATUS last updated date bumped to 2026-06-06",
+      "what": "No feature statuses changed in step 7b mapping (Excel content unchanged from 2026-06-05 snapshot). Last updated date updated to today.",
+      "why": "Nipun's roadmap Excel synced — no status changes detected. PCE Phase 1 target (30 Aug 2026) remains future — BUILD-STATUS PCE row unchanged.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
+      "severity": null,
+      "files": ["docs/BUILD-STATUS.md"]
+    },
+    {
       "id": "2026-06-02-exam-flagged-001",
       "date": "2026-06-02",
       "product": "exam-management",
