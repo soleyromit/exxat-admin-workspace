@@ -4,6 +4,14 @@
 import { useRef, useState } from 'react'
 import { Button } from '@exxatdesignux/ui'
 
+const VALID_TYPES = [
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+]
+
+const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB
+
 interface PdfDropZoneProps {
   onFile: (file: File) => void
   onCancel: () => void
@@ -17,7 +25,10 @@ export function PdfDropZone({ onFile, onCancel }: PdfDropZoneProps) {
     e.preventDefault()
     setIsDragging(false)
     const file = e.dataTransfer.files[0]
-    if (file) onFile(file)
+    if (!file) return
+    if (!VALID_TYPES.includes(file.type)) return
+    if (file.size > MAX_FILE_SIZE) return
+    onFile(file)
   }
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -34,10 +45,9 @@ export function PdfDropZone({ onFile, onCancel }: PdfDropZoneProps) {
         </span>
         <Button
           variant="ghost"
-          size="icon"
+          size="icon-xs"
           onClick={onCancel}
           aria-label="Cancel PDF import"
-          className="w-6 h-6"
         >
           <i className="fa-regular fa-xmark text-xs" aria-hidden="true" />
         </Button>

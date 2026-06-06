@@ -26,5 +26,5 @@ export interface GeneratedQuestion {
   wordLimitMin?: number    // Essay
   wordLimitMax?: number    // Essay
   rubric?: { criterion: string; points: number }[]
-  source: 'ai' | 'pdf'
+  source: 'ai' | 'pdf' | 'write'
 }

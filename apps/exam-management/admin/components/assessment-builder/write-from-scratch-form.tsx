@@ -108,7 +108,7 @@ export function WriteFromScratchForm({
       type,
       difficulty,
       stemText: stem,
-      source: 'ai',
+      source: 'write',
       options:
         ['MCQ', 'MSQ', 'True/False'].includes(type)
           ? options
@@ -149,10 +149,11 @@ export function WriteFromScratchForm({
       <div className="px-3 py-3 space-y-4">
         {/* Stem */}
         <div className="space-y-1">
-          <label className="text-xs font-medium text-[var(--muted-foreground)]">
-            QUESTION STEM
+          <label htmlFor="wfs-stem" className="text-xs font-medium text-[var(--muted-foreground)]">
+            Question stem
           </label>
           <textarea
+            id="wfs-stem"
             // eslint-disable-next-line jsx-a11y/no-autofocus
             autoFocus
             value={stem}
@@ -167,10 +168,11 @@ export function WriteFromScratchForm({
         {/* Type + Difficulty row */}
         <div className="flex gap-3">
           <div className="flex-1 space-y-1">
-            <label className="text-xs font-medium text-[var(--muted-foreground)]">
-              TYPE
+            <label htmlFor="wfs-type" className="text-xs font-medium text-[var(--muted-foreground)]">
+              Question type
             </label>
             <select
+              id="wfs-type"
               value={type}
               onChange={e => handleTypeChange(e.target.value as QType)}
               className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-2 h-8 text-sm outline-none"
@@ -184,10 +186,11 @@ export function WriteFromScratchForm({
             </select>
           </div>
           <div className="flex-1 space-y-1">
-            <label className="text-xs font-medium text-[var(--muted-foreground)]">
-              DIFFICULTY
+            <label htmlFor="wfs-difficulty" className="text-xs font-medium text-[var(--muted-foreground)]">
+              Difficulty
             </label>
             <select
+              id="wfs-difficulty"
               value={difficulty}
               onChange={e => setDifficulty(e.target.value as QDiff)}
               className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-2 h-8 text-sm outline-none"
@@ -208,7 +211,7 @@ export function WriteFromScratchForm({
         {isOptionType && (
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-[var(--muted-foreground)]">
-              {type === 'MSQ' ? 'ANSWER OPTIONS (check all correct)' : 'ANSWER OPTIONS (click to mark correct)'}
+              {type === 'MSQ' ? 'Answer options (check all correct)' : 'Answer options (click to mark correct)'}
             </label>
             {options.map(opt => (
               <div key={opt.key} className="flex items-center gap-2">
@@ -222,7 +225,7 @@ export function WriteFromScratchForm({
                   className={[
                     'shrink-0 w-5 h-5 rounded-full border transition-colors',
                     opt.isCorrect
-                      ? 'border-green-500 bg-green-500 text-white'
+                      ? 'border-[var(--brand-color)] bg-[var(--brand-color)] text-white'
                       : 'border-[var(--border)] hover:border-[var(--brand-color)]',
                   ].join(' ')}
                 >
@@ -262,7 +265,7 @@ export function WriteFromScratchForm({
         {['Fill blank', 'Short Answer'].includes(type) && (
           <div className="space-y-1">
             <label className="text-xs font-medium text-[var(--muted-foreground)]">
-              MODEL ANSWER
+              Model answer
             </label>
             <input
               type="text"
@@ -279,7 +282,7 @@ export function WriteFromScratchForm({
         {type === 'Matching' && (
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-[var(--muted-foreground)]">
-              MATCH PAIRS
+              Match pairs
             </label>
             {matchPairs.map((pair, i) => (
               <div key={i} className="flex items-center gap-2">
@@ -328,7 +331,7 @@ export function WriteFromScratchForm({
             <div className="flex gap-3">
               <div className="flex-1 space-y-1">
                 <label className="text-xs font-medium text-[var(--muted-foreground)]">
-                  MIN WORDS
+                  Min words
                 </label>
                 <input
                   type="number"
@@ -341,7 +344,7 @@ export function WriteFromScratchForm({
               </div>
               <div className="flex-1 space-y-1">
                 <label className="text-xs font-medium text-[var(--muted-foreground)]">
-                  MAX WORDS
+                  Max words
                 </label>
                 <input
                   type="number"
