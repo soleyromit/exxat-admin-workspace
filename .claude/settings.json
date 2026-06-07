@@ -108,6 +108,15 @@
             "command": "node .claude/hooks/exxat-brief-gate.mjs"
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/ds-snapshot-inject.mjs"
+          }
+        ]
       }
     ],
     "PreCompact": [
