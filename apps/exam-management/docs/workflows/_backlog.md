@@ -156,6 +156,18 @@ Source: `docs/research/meetings/2026-06-04-exam-management-vishal-course-landing
 | T89 | PCE/CFE two-section architecture — two distinct entry points + dashboards for course+faculty eval vs. institutional surveys | Admin / Faculty | PCE product | P1 — DESIGN-REVIEW | Aarti Jun 4: "we are going to have these two entry points and almost treat them as two sections of the product. And I'm good with that. Course and faculty, and institutional surveys." NEW PAGE NEEDED — requires full product architecture pass for PCE. D_PCE12. |
 | T90 | PCE student email templates — two-CTA email design + pending-activities landing page | Student | PCE student flow | P1 — DESIGN-REVIEW | Aarti Jun 4: "this email should have both buttons. Like, see all my pending activities or click here to complete this survey." Two CTAs: complete-this-survey (direct link) + see-all-pending (landing page). NEW PAGE NEEDED. D_PCE14. |
 
+## Phase 1 design tasks — added 2026-06-06
+
+Source: `docs/research/meetings/2026-06-06-question-bank-design-kunal.md` (Granola `7729d58c`)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T91 | QB layout: resizable vertical divider between folder sidebar and question list | Admin / Faculty | Question bank | P1 — DESIGN-REVIEW | Kunal + Aarti confirmed: user must be able to drag vertical line to resize sidebar. Needed when folder/course names overflow. D_QB01. |
+| T92 | QB sidebar: "Not Assigned" virtual folder for questions with no location | Admin / Faculty | Question bank sidebar (`qb-sidebar.tsx`) | P1 | Virtual nav item alongside "All Questions" showing unassigned questions. Kunal implementing engineering side. Confirm design treatment with Kunal. D_QB02. |
+| T93 | Course list: filter or indicator for courses with zero QB questions | Admin | Courses page | P1 — DESIGN-REVIEW | Aarti: "show me all of the courses which have zero questions tagged to them." Could be a filter chip or empty-state badge on course rows. D_QB03. |
+| T94 | Assessment builder: section sticky header or floating label during scroll | Admin / Faculty | Assessment builder | P1 — DESIGN-REVIEW | Aarti: "when I'm scrolling the which section am I at? I don't know." User must always know which section they are in while scrolling. Sticky section header or intersection-observer-based floating label. D_QB07. |
+| T95 | QB question title: upgrade to font-semibold for readability | Admin / Faculty | Question bank table (`qb-table.tsx`) | P1 — ✅ APPLIED | Aarti: "maybe we want to put the question in bold." Changed `font-medium` → `font-semibold` on question stem div. D_QB06. |
+
 ---
 
 ## Research / blockers (R1–R10 from audit)

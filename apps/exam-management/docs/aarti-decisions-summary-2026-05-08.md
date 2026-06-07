@@ -7,7 +7,7 @@
 > **Status:** living document. Update as new meetings audit through the intake skill.
 
 **Maintainer:** Romit Soley (Designer II)
-**Last revision:** 2026-06-05
+**Last revision:** 2026-06-07
 
 ---
 
@@ -1077,6 +1077,27 @@ Term picker already shows `{term name} · {academic year}` combined. Do not add 
 
 > "We don't need to collect the academic year twice." — Aarti
 
+### 5.60 Question bank design review — filters, AI scope, and readability (2026-06-06)
+
+Source: `docs/research/meetings/2026-06-06-question-bank-design-kunal.md` (Granola `7729d58c`)  
+Participants: Romit + Kunal (Eng) + Aarti
+
+| Decision | Detail |
+|---|---|
+| **Resizable QB panel (D_QB01)** | Vertical divider between QB folder sidebar and question list must be draggable. Users need to widen the sidebar when course/folder names are long. |
+| **"Not Assigned" virtual folder (D_QB02)** | QB left sidebar must include a virtual item (alongside "All Questions") that shows only questions not assigned to any folder or location. Kunal is implementing on engineering side. |
+| **Courses with zero questions filter (D_QB03)** | Admin must be able to filter the course list to see only courses with zero QB questions tagged. Aarti: "Show me all of the courses which have zero questions tagged to them." |
+| **AI features stay in all designs (D_QB04)** | Even if engineering does not implement an AI feature on the current sprint, the UI/UX must show the full end-state including AI. Design does not wait for engineering. Engineering picks up features on their timeline. |
+| **QB filter = Prism filter (D_QB05)** | QB filter interaction (filter icon, layout control, drag to resize, export) must exactly match Prism's table filter pattern. Users must not need to relearn filtering when entering exam management. |
+| **QB question title: semibold (D_QB06)** | Question stem in QB table rows must use font-semibold for readability and visual differentiation from metadata. ✅ APPLIED: `qb-table.tsx` line ~3834. |
+| **Section visibility during scroll (D_QB07)** | While building or reviewing a multi-section assessment, the user must always know which section they are currently in. A sticky section header or floating section label is required in the assessment builder. |
+
+> "Your UI UX should be the end state. Whether Vishal and team pick it up and when do they introduce it and stuff like that is a different question." — Aarti, 2026-06-06
+
+> "Show me all of the courses which have zero questions tagged to them." — Aarti, 2026-06-06
+
+**Note on existing QB Sheet panels:** Version history (per-version course + avg score) and Usage panel (used count + last used date + avg score + P-bis) are already built in the question detail Sheet. Kunal demoed these as part of the engineering implementation review.
+
 ---
 
 ## Appendix — source meetings
@@ -1107,6 +1128,7 @@ Term picker already shows `{term name} · {academic year}` combined. Do not add 
 | 2026-06-01 10:16 | Exam taker design review — navigation, question layout, and accessibility with Rohit | `caaae283` | Rohit + Romit |
 | 2026-06-03 07:30 | Weekly Product Sync — assessment creation prototypes, PCE navigation, Prism alignment | `7a53688f` | Aarti + Vishaka + Nipun + Vishal + Romit |
 | 2026-06-03 10:00 | Exam Management sync — assessment creation scope, system check, reference attachments | `d4f85e99` | Nipun + Romit |
+| 2026-06-06 12:48 | Question bank design — filters, AI generation, and answer rationale | `7729d58c` | Kunal (Eng) + Aarti + Romit |
 
 Per-meeting raw notes at `apps/exam-management/docs/research/meetings/` and `apps/pce/docs/research/meetings/`.
 
