@@ -50,6 +50,12 @@ TRIGGERS: list[tuple[str, str]] = [
     (r"figma\.com/(design|board|slides|make)/", "ref:figma-mcp"),
     (r"magicpatterns\.com/c/", "ref:magicpatterns-mcp"),
 
+    # Design contract auto-triggers (priority 3.5)
+    # Claude Design HTML shared or referenced
+    (r"claude\.ai/design|offline\)\.html|Assessment Creation.*\.html|Downloads/.*\.html", "design-contract:html-spec"),
+    # Spec doc open in IDE or referenced in prompt
+    (r"assessment-creation-v0-requirements|Assessments PRD|creation-flow-gap-analysis|per the (spec|doc|requirements|prd|document)|check this doc|as per the (doc|spec|requirements|prd)|this doc was used|source.*\.md|\.md.*source", "design-contract:spec-parse"),
+
     # Design intent (priority 4) — broader noun set covers real prompt shapes
     # like "design the question navigator", not just "design a new screen"
     # (\w+\s+){0,3} allows up to 3 words before the noun (e.g. "course overview page")
@@ -226,7 +232,36 @@ ACTION_DESCRIPTIONS: dict[str, str] = {
         "Cite ≥2 screenshot references in your response before proposing any layout or component shape. "
         "Memory-default designs are banned — every layout decision must be grounded in Mobbin research."
     ),
-    "intent:design": "Check Granola for relevant meetings (query_granola_meetings then get_meeting_transcript); invoke superpowers:brainstorming; spawn ds-adoption-reviewer before any new component file. Mobbin research handled by mobbin:search-required (runs first, above).",
+    "intent:design": (
+        "REQUIRED SEQUENCE — do all steps before writing JSX:\n"
+        "  1. Load exxat-design-contract skill (.claude/skills/exxat-design-contract/SKILL.md).\n"
+        "  2. If a spec .md or PRD is referenced → run § 0 Spec Parse (read SOURCE doc, not interpreted .md).\n"
+        "  3. If a Claude Design HTML is present → run § 3 DS component map from the HTML.\n"
+        "  4. Run full contract (§ 0–6) and end turn with 'Contract ready — confirm or edit.'\n"
+        "  5. After confirmation → check Granola (query_granola_meetings then get_meeting_transcript).\n"
+        "  6. Spawn ds-adoption-reviewer before any new component file.\n"
+        "  Mobbin research handled by mobbin:search-required (runs first, above)."
+    ),
+    "design-contract:html-spec": (
+        "A Claude Design HTML file was shared or referenced. REQUIRED SEQUENCE:\n"
+        "  1. Load exxat-design-contract skill (.claude/skills/exxat-design-contract/SKILL.md).\n"
+        "  2. Read the HTML file — decompress __bundler/template, extract CSS classes and body structure.\n"
+        "  3. Build the DS component mapping table (design class → @exxatdesignux/ui component + variant).\n"
+        "  4. Run § 3 of the contract with the verified map.\n"
+        "  5. Do NOT write any TSX until the map is confirmed by the user.\n"
+        "  Design HTML location: /Users/romitsoley/Downloads/Assessment Creation (offline).html"
+    ),
+    "design-contract:spec-parse": (
+        "A spec document was referenced or is open in the IDE. REQUIRED SEQUENCE:\n"
+        "  1. Load exxat-design-contract skill (.claude/skills/exxat-design-contract/SKILL.md).\n"
+        "  2. Run § 0 Spec Parse — read the SOURCE document, not the interpreted .md:\n"
+        "     - SharePoint PRD: use mcp__claude_ai_Microsoft_365__read_resource with the file URI.\n"
+        "     - Granola meeting: use mcp__claude_ai_Granola__get_meeting_transcript with the meeting ID.\n"
+        "     - Assessment creation PRD URI: file:///b!_2xYksJpY02i2c_IMdywfj_GsYw4nixMmuYHQiw9DyEF5rFuOn4TQp2p2E75ioRS/01TEBFVP2VHHTFHJ5TAJH2DS74JZCL3LVT\n"
+        "  3. Extract REQ-XX per line — every requirement, constraint, decision, scope note.\n"
+        "  4. Flag contradictions with current code and scope gaps (no corresponding component).\n"
+        "  5. End turn with the parse output. No implementation until confirmed."
+    ),
     "intent:redesign": "Run Mobbin research first (see mobbin:search-required above); then invoke superpowers:brainstorming and frontend-design. Every reshaped surface needs Mobbin references before touching code.",
     "lazy:ds-reference": "Read docs/CLAUDE-DS-REFERENCE.md before generating any UI code, importing DS components, or using DS tokens beyond the ~15 in CLAUDE.md §6. The full token tables, component APIs, theme system, and font setup live there (~8K tokens). Don't guess token names — verify against the reference.",
     "lib:context7": "Run mcp__plugin_context7_context7__resolve-library-id then query-docs for current API; do not generate from memory",
@@ -517,6 +552,13 @@ def main() -> None:
                 matches.append(action)
                 seen.add(action)
 
+    # Coupled: design-contract triggers → always require the skill too
+    _has_design_contract = "design-contract:html-spec" in seen or "design-contract:spec-parse" in seen
+    if _has_design_contract and "intent:design" not in seen:
+        # Promote to design intent so all downstream coupled actions fire
+        matches.append("intent:design")
+        seen.add("intent:design")
+
     freshness = _registry_freshness_block()
     cascade = _cascade_check(prompt)
 
@@ -525,14 +567,36 @@ def main() -> None:
     if "intent:design" in seen or "intent:redesign" in seen or "precheck:pre-task-declaration" in seen:
         ds_env = _ds_environment_block(prompt)
 
-    if not matches and not freshness and not cascade and not ds_env:
+    # Opus model hint — injected as a top-level block for all design tasks.
+    # Cannot force the switch programmatically; this is the strongest available nudge.
+    _opus_hint: list[str] = []
+    _needs_opus = (
+        "intent:design" in seen
+        or "intent:redesign" in seen
+        or "design-contract:html-spec" in seen
+        or "design-contract:spec-parse" in seen
+    )
+    if _needs_opus:
+        _opus_hint = [
+            "╔══════════════════════════════════════════════════════════╗",
+            "║  DESIGN TASK — RECOMMENDED MODEL: claude-opus-4-8       ║",
+            "║  Type /model claude-opus-4-8 for spec parsing +          ║",
+            "║  component mapping. Return to sonnet for implementation. ║",
+            "╚══════════════════════════════════════════════════════════╝",
+            "",
+        ]
+
+    if not matches and not freshness and not cascade and not ds_env and not _opus_hint:
         print(json.dumps({}))
         return
 
     lines: list[str] = []
 
-    # Cascade check first — it's the highest-leverage Pattern B closure.
-    # The assistant must see the sibling list BEFORE picking up the edit.
+    # Opus hint FIRST — model must be right before anything else runs
+    if _opus_hint:
+        lines.extend(_opus_hint)
+
+    # Cascade check — Pattern B closure (sibling list before edit)
     if cascade:
         lines.extend(cascade)
 
