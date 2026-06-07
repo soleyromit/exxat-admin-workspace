@@ -12,6 +12,7 @@ import {
   Checkbox,
   LocalBanner,
   Skeleton,
+  Tabs, TabsList, TabsTrigger, TabsContent,
   useSidebar,
   Avatar, AvatarFallback, AvatarGroup,
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
@@ -30,6 +31,7 @@ import { QuestionEditor } from '@/components/question-editor/question-editor'
 import {
   createDraft, toQuestion, type QuestionDraft, type SaveDestination,
 } from '@/lib/question-editor-types'
+import { BuilderLifecycleStepper } from '@/components/assessment-builder/builder-lifecycle-stepper'
 import { SectionsOutline } from '@/components/assessment-builder/step2-sections-outline'
 import { HealthPanel } from '@/components/assessment-builder/step2-health-panel'
 import { Step2SettingsPanel } from '@/components/assessment-builder/step2-settings-panel'
@@ -656,9 +658,16 @@ export default function AssessmentBuilderClient() {
     setActiveAsmt(prev => prev ? { ...prev, healthFlags: computedHealthFlags } : prev)
   }, [computedHealthFlags]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Tab-based navigation replacing the old step wizard
-  // New assessments land on 'setup' (Step 1 — Blueprint Setup) per V0 requirements
-  const [activeTab, setActiveTab] = useState<'setup' | 'build' | 'review'>('setup')
+  // Tab-based navigation — 5 tabs matching design spec
+  type BuilderTab = 'setup' | 'build' | 'collaboration' | 'review' | 'preread'
+  const [activeTab, setActiveTab] = useState<BuilderTab>('setup')
+  function handleTabChange(tab: BuilderTab) {
+    setActiveTab(tab)
+    if (tab !== 'build') setPickerOpen(false)
+    if (tab === 'build' && !activeSectionId && activeAsmt && activeAsmt.sections.length > 0) {
+      setActiveSectionId(activeAsmt.sections[0].id)
+    }
+  }
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pickerMethod, setPickerMethod] = useState<'qb' | 'pdf' | 'manual' | 'ai'>('qb')
   const [assignSheetSectionId, setAssignSheetSectionId] = useState<string | null>(null)
@@ -1148,115 +1157,101 @@ export default function AssessmentBuilderClient() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+    <div className="flex flex-col h-full overflow-hidden">
       <h1 className="sr-only">Assessment Builder</h1>
 
-      {/* ── New header (52px) ─────────────────────────────────────────────── */}
-      <div style={{
-        display: 'flex', alignItems: 'center',
-        padding: '0 16px', height: 52,
-        borderBottom: '1px solid var(--border)',
-        background: 'var(--card)', flexShrink: 0, gap: 8,
-      }}>
-        {/* Left: back + separator + editable title + chips */}
+      {/* ── Lifecycle stepper ─────────────────────────────────────────────── */}
+      <BuilderLifecycleStepper status={activeAsmt?.settings?.status ?? 'draft'} />
+
+      {/* ── Header (52px) ─────────────────────────────────────────────────── */}
+      <div className="flex items-center px-4 h-[52px] border-b border-border bg-card shrink-0 gap-2">
+        {/* Back + breadcrumb */}
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => router.push('/assessment-builder/create')}
+          onClick={() => router.push('/courses')}
           className="gap-1.5 shrink-0"
         >
           <i className="fa-light fa-arrow-left" aria-hidden="true" />
-          {currentCourse?.code ?? 'Back'}
+          {currentCourse?.code ?? 'Courses'}
         </Button>
-        <span style={{ color: 'var(--border)', fontSize: 14, flexShrink: 0 }}>/</span>
-        <input
+        <span className="text-border text-sm shrink-0" aria-hidden="true">/</span>
+
+        {/* Editable title */}
+        <Input
           aria-label="Assessment title"
           value={activeAsmt?.title ?? 'New Assessment'}
           onChange={e => {
             const val = e.target.value
             setActiveAsmt(prev => prev ? { ...prev, title: val } : prev)
           }}
-          style={{
-            fontSize: 13, fontWeight: 600,
-            background: 'transparent', border: 'none',
-            borderBottom: '1.5px solid var(--brand-color)',
-            outline: 'none', color: 'var(--foreground)',
-            width: 200, padding: '0 2px',
-          }}
+          className="h-7 w-[220px] border-0 border-b-2 border-b-[var(--brand-color)] rounded-none bg-transparent px-1 text-sm font-semibold focus-visible:ring-0 focus-visible:ring-offset-0 shrink-0"
         />
-        {/* Right */}
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Badge variant="secondary" style={{ fontSize: 12 }}>Draft</Badge>
-          <Button variant="outline" size="sm" onClick={() => setActiveTab('review')}>Preview</Button>
+
+        {/* Meta strip chips */}
+        <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
+          {activeAsmt?.settings?.type && (
+            <Badge variant="secondary" className="shrink-0 text-xs">{activeAsmt.settings.type}</Badge>
+          )}
+          {activeAsmt?.questions && activeAsmt.questions.length > 0 && (
+            <Badge variant="secondary" className="shrink-0 text-xs tabular-nums">
+              {activeAsmt.questions.length} Q
+            </Badge>
+          )}
+          {activeAsmt?.sections && activeAsmt.sections.length > 0 && (
+            <Badge variant="secondary" className="shrink-0 text-xs tabular-nums">
+              {activeAsmt.sections.length} section{activeAsmt.sections.length !== 1 ? 's' : ''}
+            </Badge>
+          )}
+        </div>
+
+        {/* Right actions */}
+        <div className="flex items-center gap-2 shrink-0">
+          <Button variant="outline" size="sm" onClick={() => handleTabChange('review')}>
+            Preview
+          </Button>
           <Button
             variant="ghost"
-            size="sm"
+            size="icon-sm"
             aria-label="Assessment settings"
             onClick={() => setRightPanelMode(prev => prev === 'settings' ? 'health' : 'settings')}
           >
-            <i className="fa-light fa-gear" aria-hidden="true" />
+            <i className="fa-light fa-gear text-sm" aria-hidden="true" />
           </Button>
-          <Button size="sm" className="gap-1.5" onClick={() => setActiveTab('review')}>
-            Publish
-            <i className="fa-light fa-arrow-right" aria-hidden="true" />
+          <Button variant="default" size="sm" className="gap-1.5" onClick={() => handleTabChange('review')}>
+            Send for review
+            <i className="fa-light fa-arrow-right text-sm" aria-hidden="true" />
           </Button>
         </div>
       </div>
 
-      {/* ── Tab bar ───────────────────────────────────────────────────────── */}
-      <div
-        role="tablist"
-        aria-label="Assessment builder steps"
-        style={{
-          display: 'flex', alignItems: 'stretch',
-          height: 40, borderBottom: '1px solid var(--border)',
-          background: 'var(--card)', flexShrink: 0, padding: '0 16px',
-        }}
+      {/* ── 5-tab navigation (DS Tabs) ────────────────────────────────────── */}
+      <Tabs
+        value={activeTab}
+        onValueChange={v => handleTabChange(v as typeof activeTab)}
+        className="flex flex-col flex-1 min-h-0"
       >
-        {([
-          { id: 'setup'  as const, label: 'Structure' },
-          { id: 'build'  as const, label: 'Questions' },
-          { id: 'review' as const, label: 'Deliver'   },
-        ] as const).map(tab => {
-          const isActive = activeTab === tab.id
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              onClick={() => {
-                setActiveTab(tab.id)
-                if (tab.id !== 'build') setPickerOpen(false)
-                if (tab.id === 'build' && !activeSectionId && activeAsmt && activeAsmt.sections.length > 0) {
-                  setActiveSectionId(activeAsmt.sections[0].id)
-                }
-              }}
-              style={{
-                display: 'flex', alignItems: 'center',
-                padding: '0 14px', height: '100%',
-                fontSize: 13, fontWeight: isActive ? 600 : 500,
-                color: isActive ? 'var(--foreground)' : 'var(--muted-foreground)',
-                background: 'none', border: 'none', cursor: 'pointer',
-                borderBottom: `2px solid ${isActive ? 'var(--foreground)' : 'transparent'}`,
-                whiteSpace: 'nowrap', transition: 'color 0.15s',
-              }}
-            >
-              {tab.label}
-            </button>
-          )
-        })}
-        {/* Live count — right side, visible on Questions tab */}
-        {activeTab === 'build' && activeAsmt && (
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
-              {activeAsmt.questions.length} Q · {activeAsmt.sections.length} section{activeAsmt.sections.length !== 1 ? 's' : ''}
-            </span>
-          </div>
-        )}
-      </div>
+        <TabsList
+          variant="line"
+          className="px-4 h-10 rounded-none border-b border-border bg-card justify-start gap-0 shrink-0"
+        >
+          <TabsTrigger value="setup" className="h-full px-3 rounded-none">Structure</TabsTrigger>
+          <TabsTrigger value="build" className="h-full px-3 rounded-none">
+            All Questions
+            {activeTab === 'build' && activeAsmt && activeAsmt.questions.length > 0 && (
+              <span className="ml-1.5 text-xs text-muted-foreground tabular-nums">
+                {activeAsmt.questions.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="collaboration" className="h-full px-3 rounded-none">Collaboration</TabsTrigger>
+          <TabsTrigger value="review" className="h-full px-3 rounded-none">Settings</TabsTrigger>
+          <TabsTrigger value="preread" className="h-full px-3 rounded-none">Pre-Read</TabsTrigger>
+        </TabsList>
 
-      {/* ── Setup tab ─────────────────────────────────────────────────────── */}
+        {/* Tab content — TabsContent wrappers preserve a11y panel semantics */}
+        <TabsContent value="setup" className="flex-1 min-h-0 mt-0 data-[state=inactive]:hidden">
+          {/* ── Structure tab ─────────────────────────────────────────────── */}
       {activeTab === 'setup' && (
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
           {activeAsmt ? (
@@ -1289,8 +1284,10 @@ export default function AssessmentBuilderClient() {
           )}
         </div>
       )}
+        </TabsContent>
 
-      {/* ── Build tab ─────────────────────────────────────────────────────── */}
+        {/* ── All Questions tab ─────────────────────────────────────────────── */}
+        <TabsContent value="build" className="flex-1 min-h-0 mt-0 data-[state=inactive]:hidden">
       {activeTab === 'build' && activeAsmt && (
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
@@ -1838,7 +1835,6 @@ export default function AssessmentBuilderClient() {
             {rightPanelMode === 'health' && (
               <HealthPanel
                 activeAsmt={activeAsmt}
-                objectives={courseObjectives.filter(o => o.courseId === activeAsmt.courseId)}
                 timeMetrics={timeMetrics}
                 distribution={distribution}
                 bloomsMetrics={bloomsMetrics}
@@ -1866,19 +1862,35 @@ export default function AssessmentBuilderClient() {
         </div>
       )}
 
-      {/* ── QB Picker Dialog (centered modal) ──────────────────────────────── */}
-      {pickerOpen && (
-        <AddQuestionsModal
-          initialMethod={pickerMethod}
-          selectedIds={selectedIds}
-          onToggle={toggleQuestion}
-          activeSection={activeSection}
-          activeAsmt={activeAsmt}
-          onClose={() => setPickerOpen(false)}
-        />
-      )}
+        </TabsContent>
 
-      {/* ── Review tab ────────────────────────────────────────────────────── */}
+        {/* ── QB Picker Dialog — portal, position outside TabsContent ── */}
+        {pickerOpen && (
+          <AddQuestionsModal
+            initialMethod={pickerMethod}
+            selectedIds={selectedIds}
+            onToggle={toggleQuestion}
+            activeSection={activeSection}
+            activeAsmt={activeAsmt}
+            onClose={() => setPickerOpen(false)}
+          />
+        )}
+
+        {/* ── Collaboration tab (stub) ───────────────────────────────────── */}
+        <TabsContent value="collaboration" className="flex-1 min-h-0 mt-0 data-[state=inactive]:hidden">
+          <div className="flex flex-col flex-1 items-center justify-center gap-3 text-center px-6 h-full">
+            <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+              <i className="fa-light fa-users text-muted-foreground text-lg" aria-hidden="true" />
+            </div>
+            <p className="text-sm font-medium text-foreground">Section delegation & collaborators</p>
+            <p className="text-xs text-muted-foreground max-w-xs">
+              Assign sections to instructors and manage co-author permissions. Coming soon.
+            </p>
+          </div>
+        </TabsContent>
+
+        {/* ── Settings tab (was Review/Deliver) ─────────────────────────── */}
+        <TabsContent value="review" className="flex-1 min-h-0 mt-0 data-[state=inactive]:hidden">
       {activeTab === 'review' && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {/* Admin preview bar */}
@@ -1889,7 +1901,7 @@ export default function AssessmentBuilderClient() {
           }}>
             <span style={{ flex: 1 }}>Admin view — students won&apos;t see this bar.</span>
             {activeAsmt?.sections.map((sec, idx) => (
-              <Button key={sec.id} variant="ghost" size="sm" style={{ fontSize: 12, height: 26 }}>
+              <Button key={sec.id} variant="ghost" size="sm" className="h-[26px] text-xs">
                 {idx + 1}. {sec.title}
               </Button>
             ))}
@@ -2067,6 +2079,23 @@ export default function AssessmentBuilderClient() {
           </div>
         </div>
       )}
+
+        </TabsContent>
+
+        {/* ── Pre-Read tab (stub) ────────────────────────────────────────── */}
+        <TabsContent value="preread" className="flex-1 min-h-0 mt-0 data-[state=inactive]:hidden">
+          <div className="flex flex-col flex-1 items-center justify-center gap-3 text-center px-6 h-full">
+            <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+              <i className="fa-light fa-book-open text-muted-foreground text-lg" aria-hidden="true" />
+            </div>
+            <p className="text-sm font-medium text-foreground">Pre-read materials & attachments</p>
+            <p className="text-xs text-muted-foreground max-w-xs">
+              Attach PDFs, lab values, and reference docs at assessment or section level. Coming soon.
+            </p>
+          </div>
+        </TabsContent>
+
+      </Tabs>
 
       {/* Sheets + modals — always mounted so they survive tab transitions */}
       <AiGenerateModal
