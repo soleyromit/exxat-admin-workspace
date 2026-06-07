@@ -3831,7 +3831,7 @@ export function QBTable() {
                                     )}
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <div className="text-sm font-medium text-foreground leading-snug line-clamp-2 whitespace-normal" style={{
+                                        <div className="text-sm font-semibold text-foreground leading-snug line-clamp-2 whitespace-normal" style={{
                                           cursor: 'default'
                                         }}>
                                           {q.title}
