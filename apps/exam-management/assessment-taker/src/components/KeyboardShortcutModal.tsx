@@ -72,8 +72,6 @@ function KeyGroup({ keys }: { keys: string[] }) {
 }
 
 export function KeyboardShortcutModal({ isOpen, onClose }: KeyboardShortcutModalProps) {
-  const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
-
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     if (isOpen) document.addEventListener('keydown', handler);
@@ -115,9 +113,6 @@ export function KeyboardShortcutModal({ isOpen, onClose }: KeyboardShortcutModal
           <i className="fa-regular fa-keyboard" aria-hidden="true" style={{ fontSize: 16, color: 'var(--muted-foreground)' }} />
           <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--foreground)', flex: 1 }}>
             Keyboard shortcuts
-          </span>
-          <span style={{ fontSize: 11, color: 'var(--muted-foreground)', marginRight: 8 }}>
-            {isMac ? 'Mac' : 'Windows'}
           </span>
           <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close keyboard shortcuts">
             <i className="fa-regular fa-xmark" aria-hidden="true" style={{ fontSize: 16 }} />
