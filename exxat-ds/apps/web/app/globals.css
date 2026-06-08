@@ -28,8 +28,8 @@
   /* Typography */
   --font-heading: "ivypresto-text";
   --font-sans:    "Inter", ui-sans-serif, system-ui, sans-serif;
-  /* Minimum product text: 11px — use `text-xs` or larger; avoid arbitrary classes below 11px */
-  --text-xs: 0.6875rem; /* 11px at 16px root */
+  /* Minimum product text: 12px — use `text-xs` or larger; avoid arbitrary classes below 12px */
+  --text-xs: 0.75rem; /* 12px at 16px root (raised from 11px) */
 
   /* Semantic color map */
   --color-background:              var(--background);
@@ -133,7 +133,7 @@
    -------------------------------------------------------------------------- */
 html[data-text-size="compact"] {
   font-size: 94%;
-  --text-xs: 0.7333rem; /* ~11px when 1rem ≈ 15px */
+  --text-xs: 0.8rem; /* ~11px when 1rem ≈ 15px */
 }
 html[data-text-size="large"] {
   font-size: 112.5%;
@@ -150,7 +150,7 @@ html[data-text-size="large"] {
      and compounds incorrectly at Windows 150% system zoom.
      If a compact 14px density is needed, apply it at the component/page level
      via a scoped class, not globally on :root. */
-  /* Minimum readable UI copy: 11px (`text-xs` / --text-xs). Do not use smaller arbitrary sizes. */
+  /* Minimum readable UI copy: 12px (`text-xs` / --text-xs). Do not use smaller arbitrary sizes. */
 
   /* ── Typography ─────────────────────────────────────────────── */
   /* Ivy Presto loaded via Adobe Fonts Kit wuk5wqn (use.typekit.net) */
