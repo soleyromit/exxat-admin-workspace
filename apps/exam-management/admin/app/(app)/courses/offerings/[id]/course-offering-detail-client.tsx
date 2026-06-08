@@ -1381,7 +1381,7 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
             <TabsContent value="assessments" className="m-0">
               <AssessmentsTab
                 offering={offering}
-                onNewAssessment={() => router.push(`/assessment-builder?offeringId=${offering.id}&new=1`)}
+                onNewAssessment={() => router.push(`/assessment-builder/create?courseId=${offering.courseId}`)}
               />
             </TabsContent>
             <TabsContent value="students" className="m-0">

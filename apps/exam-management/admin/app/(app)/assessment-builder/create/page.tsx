@@ -1,10 +1,10 @@
 import { Suspense } from 'react'
-import CreateCanvasClient from './create-canvas-client'
+import NewAssessmentWizard from './new-assessment-wizard'
 
-export default function CreateCanvasPage() {
+export default function CreateAssessmentPage() {
   return (
     <Suspense>
-      <CreateCanvasClient />
+      <NewAssessmentWizard />
     </Suspense>
   )
 }

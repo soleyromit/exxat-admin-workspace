@@ -266,7 +266,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                 reviewByAssessment={reviewByAssessment}
                 isViewer={isViewer}
                 courseId={courseId}
-                onNewAssessment={() => router.push(`/assessment-builder?courseId=${courseId}&new=1`)}
+                onNewAssessment={() => router.push(`/assessment-builder/create?courseId=${courseId}`)}
               />
             </TabsContent>
             <TabsContent value="students" className="m-0">
@@ -324,7 +324,7 @@ function PrimaryAction({
   }
 
   return (
-    <Button variant="default" size="sm" className="gap-2" onClick={() => router.push(`/assessment-builder?courseId=${courseId}&new=1`)}>
+    <Button variant="default" size="sm" className="gap-2" onClick={() => router.push(`/assessment-builder/create?courseId=${courseId}`)}>
       <i className="fa-light fa-plus" aria-hidden="true" />
       New assessment
     </Button>
