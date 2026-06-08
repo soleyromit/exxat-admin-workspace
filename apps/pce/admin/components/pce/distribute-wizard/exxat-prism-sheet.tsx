@@ -305,13 +305,13 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
             {tab === 'student' && (
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-10" />
-                    <TableHead className="text-xs text-muted-foreground">Name</TableHead>
-                    <TableHead className="text-xs text-muted-foreground">Email</TableHead>
-                    <TableHead className="text-xs text-muted-foreground">Cohort</TableHead>
-                    <TableHead className="text-xs text-muted-foreground">Group</TableHead>
-                    <TableHead className="text-xs text-muted-foreground">Status</TableHead>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-10 h-9 px-3 bg-dt-header-bg select-none" />
+                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Name</TableHead>
+                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Email</TableHead>
+                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Cohort</TableHead>
+                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Group</TableHead>
+                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -340,13 +340,13 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
             {tab === 'faculty' && (
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-10" />
-                    <TableHead className="text-xs text-muted-foreground">Name</TableHead>
-                    <TableHead className="text-xs text-muted-foreground">Status</TableHead>
-                    <TableHead className="text-xs text-muted-foreground">Email</TableHead>
-                    <TableHead className="text-xs text-muted-foreground">Profile Types</TableHead>
-                    <TableHead className="text-xs text-muted-foreground">Position</TableHead>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-10 h-9 px-3 bg-dt-header-bg select-none" />
+                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Name</TableHead>
+                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Status</TableHead>
+                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Email</TableHead>
+                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Profile Types</TableHead>
+                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Position</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -373,13 +373,13 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
             {tab === 'personnel' && (
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs text-muted-foreground">Name</TableHead>
-                    <TableHead className="text-xs text-muted-foreground">Email</TableHead>
-                    <TableHead className="text-xs text-muted-foreground">Status</TableHead>
-                    <TableHead className="text-xs text-muted-foreground">Designation</TableHead>
-                    <TableHead className="text-xs text-muted-foreground">Clinical Instructor</TableHead>
-                    <TableHead className="text-xs text-muted-foreground">Practice Settings</TableHead>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Name</TableHead>
+                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Email</TableHead>
+                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Status</TableHead>
+                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Designation</TableHead>
+                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Clinical Instructor</TableHead>
+                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Practice Settings</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
