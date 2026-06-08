@@ -307,11 +307,11 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-10" />
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Cohort</TableHead>
-                    <TableHead>Group</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead className="text-xs text-muted-foreground">Name</TableHead>
+                    <TableHead className="text-xs text-muted-foreground">Email</TableHead>
+                    <TableHead className="text-xs text-muted-foreground">Cohort</TableHead>
+                    <TableHead className="text-xs text-muted-foreground">Group</TableHead>
+                    <TableHead className="text-xs text-muted-foreground">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -342,11 +342,11 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-10" />
-                    <TableHead>Name</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Profile Types</TableHead>
-                    <TableHead>Position</TableHead>
+                    <TableHead className="text-xs text-muted-foreground">Name</TableHead>
+                    <TableHead className="text-xs text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-xs text-muted-foreground">Email</TableHead>
+                    <TableHead className="text-xs text-muted-foreground">Profile Types</TableHead>
+                    <TableHead className="text-xs text-muted-foreground">Position</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
