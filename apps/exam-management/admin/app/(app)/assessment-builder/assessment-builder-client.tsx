@@ -32,6 +32,7 @@ import {
   createDraft, toQuestion, type QuestionDraft, type SaveDestination,
 } from '@/lib/question-editor-types'
 import { BuilderLifecycleStepper } from '@/components/assessment-builder/builder-lifecycle-stepper'
+import { BuilderMetaStrip } from '@/components/assessment-builder/builder-meta-strip'
 import { SectionsOutline } from '@/components/assessment-builder/step2-sections-outline'
 import { HealthPanel } from '@/components/assessment-builder/step2-health-panel'
 import { Step2SettingsPanel } from '@/components/assessment-builder/step2-settings-panel'
@@ -1208,22 +1209,8 @@ export default function AssessmentBuilderClient() {
           className="h-7 w-[220px] border-0 border-b-2 border-b-[var(--brand-color)] rounded-none bg-transparent px-1 text-sm font-semibold focus-visible:ring-0 focus-visible:ring-offset-0 shrink-0"
         />
 
-        {/* Meta strip chips */}
-        <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
-          {activeAsmt?.settings?.type && (
-            <Badge variant="secondary" className="shrink-0 text-xs">{activeAsmt.settings.type}</Badge>
-          )}
-          {activeAsmt?.questions && activeAsmt.questions.length > 0 && (
-            <Badge variant="secondary" className="shrink-0 text-xs tabular-nums">
-              {activeAsmt.questions.length} Q
-            </Badge>
-          )}
-          {activeAsmt?.sections && activeAsmt.sections.length > 0 && (
-            <Badge variant="secondary" className="shrink-0 text-xs tabular-nums">
-              {activeAsmt.sections.length} section{activeAsmt.sections.length !== 1 ? 's' : ''}
-            </Badge>
-          )}
-        </div>
+        {/* Spacer — at-a-glance facts now live in the meta strip below */}
+        <div className="flex-1 min-w-0" />
 
         {/* Right actions */}
         <div className="flex items-center gap-2 shrink-0">
@@ -1244,6 +1231,9 @@ export default function AssessmentBuilderClient() {
           </Button>
         </div>
       </div>
+
+      {/* ── Meta strip (at-a-glance facts, all tabs) ──────────────────────── */}
+      {activeAsmt && <BuilderMetaStrip asmt={activeAsmt} />}
 
       {/* ── 5-tab navigation (DS Tabs) ────────────────────────────────────── */}
       <Tabs
