@@ -76,8 +76,8 @@ export default function NewAssessmentWizard() {
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">New assessment</h1>
-            <p className="text-sm text-muted-foreground mt-1">Set the blueprint — Leo pre-fills what it can; you control everything.</p>
+            <h1 className="font-heading text-[32px] font-light leading-tight text-foreground">New assessment</h1>
+            <p className="text-sm text-muted-foreground mt-1.5">Set the blueprint — Leo pre-fills what it can; you control everything.</p>
           </div>
           <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => router.push('/courses')}>
             <i className="fa-light fa-xmark" aria-hidden="true" />
