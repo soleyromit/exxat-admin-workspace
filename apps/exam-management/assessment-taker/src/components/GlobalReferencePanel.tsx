@@ -201,15 +201,25 @@ function ImageBlock({ url, label }: { url: string; label: string }) {
 
 // ─── PDF block ────────────────────────────────────────────────────────────────
 function PdfBlock({ url, label }: { url: string; label: string }) {
+  const isAbsolute = url.startsWith('http://') || url.startsWith('https://');
+
   return (
-    <div className="flex flex-col gap-2 h-full" style={{ minHeight: 400 }}>
-      <embed
-        src={url}
-        type="application/pdf"
-        title={label}
-        className="w-full flex-1 rounded"
-        style={{ minHeight: 400 }}
-      />
+    <div className="flex flex-col gap-2 h-full" style={{ minHeight: isAbsolute ? 400 : 'auto' }}>
+      {isAbsolute ? (
+        <embed
+          src={url}
+          type="application/pdf"
+          title={label}
+          className="w-full flex-1 rounded"
+          style={{ minHeight: 400 }}
+        />
+      ) : (
+        <div className="flex flex-col items-center justify-center gap-3 py-10 text-muted-foreground rounded-lg border border-dashed border-border">
+          <i className="fa-light fa-file-pdf fa-2x" aria-hidden="true" />
+          <p className="text-sm">{label}</p>
+          <p className="text-xs">PDF preview not available in this environment</p>
+        </div>
+      )}
       <a
         href={url}
         download
