@@ -15,7 +15,7 @@ import { useState, useCallback } from 'react';
 import {
   Badge, Button,
   Table, TableHeader, TableHead, TableBody, TableRow, TableCell,
-  Tabs, TabsList, TabsTrigger, TabsContent,
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@exxatdesignux/ui';
 import type { AssessmentReference } from '../data/assessments';
 
@@ -53,34 +53,39 @@ export function GlobalReferencePanel({ onClose, refs }: GlobalReferencePanelProp
         </Button>
       </div>
 
-      {/* ── Tab switcher + content ───────────────────────────────────────── */}
-      <Tabs
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="flex flex-col flex-1 overflow-hidden"
-      >
-        {/* Wrapper handles horizontal scroll without clipping the active-tab underline */}
-        <div className="flex-shrink-0 border-b border-border overflow-x-auto">
-          <TabsList variant="line" className="w-max min-w-full justify-start px-4 h-auto p-0">
+      {/* ── Reference picker ────────────────────────────────────────────── */}
+      <div className="flex-shrink-0 px-3 py-2.5 border-b border-border">
+        <Select value={activeTab} onValueChange={setActiveTab}>
+          <SelectTrigger className="w-full h-8 text-xs">
+            <SelectValue>
+              {(() => {
+                const active = refs.find(r => r.id === activeTab);
+                return active ? (
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    <i className={`fa-light ${active.icon} fa-fw flex-shrink-0`} aria-hidden="true" />
+                    <span className="truncate">{active.label}</span>
+                  </span>
+                ) : null;
+              })()}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
             {refs.map((ref) => (
-              <TabsTrigger
-                key={ref.id}
-                value={ref.id}
-                className="shrink-0 text-xs px-3 py-2"
-              >
-                <i className={`fa-light ${ref.icon} fa-fw`} aria-hidden="true" />
-                <span className="max-w-[80px] truncate">{ref.label}</span>
-              </TabsTrigger>
+              <SelectItem key={ref.id} value={ref.id} className="text-xs">
+                <span className="flex items-center gap-1.5">
+                  <i className={`fa-light ${ref.icon} fa-fw`} aria-hidden="true" />
+                  {ref.label}
+                </span>
+              </SelectItem>
             ))}
-          </TabsList>
-        </div>
+          </SelectContent>
+        </Select>
+      </div>
 
-        {refs.map((ref) => (
-          <TabsContent
-            key={ref.id}
-            value={ref.id}
-            className="flex-1 overflow-y-auto m-0 px-4 py-3"
-          >
+      {/* ── Active reference content ─────────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto px-4 py-3">
+        {refs.map((ref) => ref.id === activeTab && (
+          <div key={ref.id}>
             {ref.type === 'formula' && ref.formulas && (
               <FormulaBlock formulas={ref.formulas} />
             )}
@@ -99,9 +104,9 @@ export function GlobalReferencePanel({ onClose, refs }: GlobalReferencePanelProp
             {ref.type === 'doc' && ref.url && (
               <DocBlock url={ref.url} label={ref.label} />
             )}
-          </TabsContent>
+          </div>
         ))}
-      </Tabs>
+      </div>
     </aside>
   );
 }
