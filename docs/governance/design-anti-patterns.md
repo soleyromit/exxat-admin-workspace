@@ -86,6 +86,9 @@ Every pattern below is banned. The table shows what to do instead.
 | `color-mix(in oklch, var(--destructive) 60%, var(--border))` | Use `var(--destructive)` at reduced opacity: `opacity-60` wrapper, or DS error variant | Raw oklch in color-mix violates DS token rule |
 | `color-mix(in oklch, var(--brand-color) 60%, var(--muted-foreground))` for "warning" text | Use `var(--muted-foreground)` — no custom warning color outside DS | DS doesn't define warning text; don't invent it |
 | Ad-hoc amber/orange via oklch | No amber color until DS defines one — use muted for below-threshold states | VIZ-004 says amber; but use DS token when available |
+| `opacity-50` / `opacity-*` on any text node | Use a different DS token to de-emphasise (`--muted-foreground` on light bg = 5.5:1, already low-contrast by design). Opacity multiplies against the base and makes contrast unpredictable. **A11Y-020** | `--muted-foreground` at `opacity-50` ≈ 2.5:1 — hard WCAG fail |
+| `var(--border)` as the only visual indicator for a UI state (swatch, dot, ring, underline) | Use `var(--muted-foreground)` minimum for non-text state indicators (3:1 required by WCAG 1.4.11). **A11Y-021** | `--border` on white ≈ 1.2:1 — fails non-text contrast |
+| Changing `text-muted-foreground` → `text-foreground` or `text-xs` → `text-[12px]` to "fix WCAG" | Check the contrast ratio, not the pixel size. `--muted-foreground` on `bg-card` = 5.5:1 in all themes — already passes 4.5:1. WCAG AA has no minimum px size. **CLARIFICATION A11Y-003** | Unnecessary changes add noise and erode the muted hierarchy |
 
 ### Step Indicators
 
@@ -124,6 +127,8 @@ Before writing the first `<div>`:
 □ Have I avoided uppercase tracking-wide more than once per screen?
 □ Does each surface type have a distinct visual role (not all bg-card)?
 □ Is the empty state content-specific (not generic centered icon)?
+□ Does any text node have opacity-* applied? (ban — use a token instead)
+□ Is var(--border) used as a state indicator? (ban — use muted-foreground min)
 ```
 
 If any answer is "no" — fix before writing code.
