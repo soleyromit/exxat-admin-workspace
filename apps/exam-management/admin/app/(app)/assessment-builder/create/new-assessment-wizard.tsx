@@ -42,7 +42,11 @@ export default function NewAssessmentWizard() {
   const searchParams = useSearchParams()
   const courseFromUrl = searchParams?.get('courseId') ?? null
 
-  const [step, setStep] = useState(0)
+  // ?step=1..4 deep-links a wizard step (demos + conformance tooling).
+  const [step, setStep] = useState(() => {
+    const s = Number(searchParams?.get('step'))
+    return Number.isFinite(s) && s >= 1 && s <= 4 ? s - 1 : 0
+  })
   const [name, setName] = useState('Cardiovascular Pharmacology — Midterm')
   const [type, setType] = useState<AsmtType>('Exam')
   const [grading, setGrading] = useState<Grading>('Graded')
