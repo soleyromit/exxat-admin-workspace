@@ -22,11 +22,11 @@ export function SendForReviewDialog({ open, onOpenChange, onSubmit }: Props) {
 
   const l1Reviewers = facultyListRows.filter(f =>
     f.status === 'active' &&
-    (f.adminPosition === 'Course Coordinator' || f.adminPosition === 'Course Instructor')
+    (f.adminPosition === 'Course Coordinator' || f.adminPosition === 'Instructor')
   )
   const l2Reviewers = facultyListRows.filter(f =>
     f.status === 'active' &&
-    (f.adminPosition === 'Program Director' || f.adminPosition === 'Department Chair')
+    f.adminPosition === 'Program Director'
   )
 
   function toggleL1(id: string) {
@@ -114,7 +114,7 @@ export function SendForReviewDialog({ open, onOpenChange, onSubmit }: Props) {
               <p className="text-xs font-semibold text-foreground">Chairperson approval</p>
               <span className="text-xs text-muted-foreground ms-auto">Optional</span>
             </div>
-            <p className="text-xs text-muted-foreground mb-2">Program Director or Chair gives final approval to publish.</p>
+            <p className="text-xs text-muted-foreground mb-2">A Program Director gives final approval to publish.</p>
             {l2Reviewers.length > 0 ? (
               <div className="flex flex-col gap-2">
                 {l2Reviewers.map(f => (
@@ -132,7 +132,7 @@ export function SendForReviewDialog({ open, onOpenChange, onSubmit }: Props) {
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground italic">No Program Directors or Chairs found.</p>
+              <p className="text-xs text-muted-foreground italic">No Program Directors found.</p>
             )}
           </div>
 

@@ -83,6 +83,8 @@ export const Link = React.forwardRef<
   HTMLAnchorElement,
   React.AnchorHTMLAttributes<HTMLAnchorElement> & { to?: string }
 >(function Link({ to, href, ...props }, ref) {
-  return <a ref={ref} href={to ?? href} {...props} />
+  // createElement (not JSX) so this stays a valid .ts module — it is aliased
+  // to "react-router-dom" in next.config.ts and must parse without a .tsx ext.
+  return React.createElement("a", { ref, href: to ?? href, ...props })
 })
 Link.displayName = "Link"
