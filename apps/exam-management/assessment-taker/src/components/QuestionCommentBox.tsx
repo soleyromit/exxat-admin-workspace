@@ -23,8 +23,8 @@ export function QuestionCommentBox({ questionId, initialComment = '', onSave, on
   return (
     <aside
       aria-label="Report issue to faculty"
-      className="flex flex-col border-l border-border flex-shrink-0 overflow-hidden bg-card"
-      style={{ width: 360 }}
+      className="absolute top-3 bottom-3 end-3 flex flex-col rounded-xl border border-border bg-card overflow-hidden z-10"
+      style={{ width: 360, boxShadow: '0 8px 32px rgba(0,0,0,0.14)' }}
     >
       {/* Header */}
       <div className="flex items-center justify-between flex-shrink-0 px-4 py-3 border-b border-border">
