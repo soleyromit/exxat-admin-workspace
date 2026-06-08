@@ -461,7 +461,7 @@ export function App() {
           zoomOut={zoomOut} />
         
 
-        <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden', position: 'relative' }}>
+        <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
           <main
             id="main-content"
             className="flex-1 overflow-hidden flex flex-col p-4 md:p-6"

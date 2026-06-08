@@ -33,8 +33,7 @@ export function GlobalReferencePanel({ onClose, refs }: GlobalReferencePanelProp
   return (
     <aside
       aria-label="Exam reference materials"
-      className="absolute top-3 bottom-3 end-3 flex flex-col rounded-xl border border-border bg-card overflow-hidden z-10"
-      style={{ width: 340, boxShadow: '0 8px 32px rgba(0,0,0,0.14)' }}
+      className="flex flex-col border-l border-border flex-shrink-0 overflow-hidden bg-muted w-[340px]"
     >
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between flex-shrink-0 px-4 py-3 border-b border-border">
