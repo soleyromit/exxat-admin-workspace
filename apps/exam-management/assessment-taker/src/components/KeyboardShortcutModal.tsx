@@ -41,6 +41,8 @@ const SHORTCUT_GROUPS: { label: string; items: Shortcut[] }[] = [
   },
 ];
 
+const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+
 const ARROW_ICONS: Record<string, string> = {
   '→': 'fa-arrow-right',
   '←': 'fa-arrow-left',
@@ -129,14 +131,13 @@ export function KeyboardShortcutModal({ isOpen, onClose }: KeyboardShortcutModal
 
         {/* Column headers */}
         <div style={{
-          display: 'grid', gridTemplateColumns: '1fr 110px 90px',
+          display: 'grid', gridTemplateColumns: '1fr 110px',
           padding: '8px 20px 6px',
           borderBottom: '1px solid var(--border)',
           flexShrink: 0,
         }}>
           <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Action</span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Windows</span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Mac</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Shortcut</span>
         </div>
 
         {/* Groups */}
@@ -157,7 +158,7 @@ export function KeyboardShortcutModal({ isOpen, onClose }: KeyboardShortcutModal
                 <div
                   key={description}
                   style={{
-                    display: 'grid', gridTemplateColumns: '1fr 110px 90px',
+                    display: 'grid', gridTemplateColumns: '1fr 110px',
                     alignItems: 'center',
                     padding: '8px 20px',
                     borderBottom: '1px solid var(--border)',
@@ -165,10 +166,7 @@ export function KeyboardShortcutModal({ isOpen, onClose }: KeyboardShortcutModal
                 >
                   <span style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>{description}</span>
                   <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <KeyGroup keys={win} />
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <KeyGroup keys={mac} />
+                    <KeyGroup keys={isMac ? mac : win} />
                   </div>
                 </div>
               ))}
