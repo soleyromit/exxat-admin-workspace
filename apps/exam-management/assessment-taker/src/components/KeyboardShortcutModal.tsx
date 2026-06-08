@@ -41,6 +41,13 @@ const SHORTCUT_GROUPS: { label: string; items: Shortcut[] }[] = [
   },
 ];
 
+const ARROW_ICONS: Record<string, string> = {
+  '→': 'fa-arrow-right',
+  '←': 'fa-arrow-left',
+  '↑': 'fa-arrow-up',
+  '↓': 'fa-arrow-down',
+};
+
 function KeyGroup({ keys }: { keys: string[] }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
@@ -59,7 +66,9 @@ function KeyGroup({ keys }: { keys: string[] }) {
             whiteSpace: 'nowrap',
             flexShrink: 0,
           }}>
-            {k}
+            {ARROW_ICONS[k]
+              ? <i className={`fa-solid ${ARROW_ICONS[k]}`} aria-hidden="true" style={{ fontSize: 10 }} />
+              : k}
           </kbd>
           {i < keys.length - 1 && (
             <span style={{ fontSize: 10, color: 'var(--muted-foreground)', lineHeight: 1 }}>+</span>
