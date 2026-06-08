@@ -41,7 +41,7 @@ export function QuestionCard(p: QuestionCardProps) {
   const bg = p.lastMoved ? 'var(--brand-tint)' : p.pinned ? 'var(--muted)' : 'var(--card)'
 
   return (
-    <Card className="transition-colors" style={{ background: bg }}>
+    <Card size="sm" className="rounded-lg transition-colors" style={{ background: bg }}>
       <CardContent className="p-3">
       <div className="flex items-start gap-2.5">
         <input
