@@ -49,8 +49,8 @@ export function QuestionCommentBox({ questionId, initialComment = '', onSave, is
             style={{ color: 'var(--state-warning-darkest)', fontSize: 14 }}
           />
           <p
-            className="text-xs font-bold"
-            style={{ color: 'var(--state-warning-darkest)' }}
+            className="font-bold"
+            style={{ color: 'var(--state-warning-darkest)', fontSize: 12 }}
           >
             Report issue to faculty
           </p>
@@ -65,7 +65,7 @@ export function QuestionCommentBox({ questionId, initialComment = '', onSave, is
         </Button>
       </div>
 
-      <p className="text-xs mb-3" style={{ color: 'var(--foreground)' }}>
+      <p className="mb-3" style={{ color: 'var(--foreground)', fontSize: 12 }}>
         Describe the issue (typo, ambiguous wording, suspected error). Faculty will review post-exam — you will not receive a real-time response.
       </p>
 
@@ -80,8 +80,8 @@ export function QuestionCommentBox({ questionId, initialComment = '', onSave, is
 
       <div className="flex items-center justify-between gap-3 mt-3">
         <span
-          className="text-xs"
           style={{
+            fontSize: 12,
             color: saved ? 'var(--state-success-dark)' : 'var(--muted-foreground)',
             fontWeight: saved ? 600 : 400,
           }}

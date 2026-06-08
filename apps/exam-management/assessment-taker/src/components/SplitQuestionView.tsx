@@ -263,7 +263,7 @@ function QuestionReferencePanel({
       <div style={{ zoom: zoomPercent / 100, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         {references.length > 1 ? (
           <Tabs defaultValue="0" className="flex flex-col flex-1 min-h-0">
-            <div className="shrink-0 border-b border-border overflow-x-auto">
+            <div className="shrink-0 border-b border-border overflow-x-auto pt-1">
               <TabsList variant="line" className="w-max min-w-full">
                 {references.map((ref, i) => (
                   <TabsTrigger key={i} value={String(i)}>

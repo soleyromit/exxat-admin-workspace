@@ -19,8 +19,6 @@ const SHORTCUT_GROUPS: { label: string; items: Shortcut[] }[] = [
     items: [
       { description: 'Next question',         win: ['→', '↵'],        mac: ['→', '↵'] },
       { description: 'Previous question',     win: ['←'],             mac: ['←'] },
-      { description: 'Forward navigation',    win: ['Alt', 'N'],      mac: ['⌥', 'N'] },
-      { description: 'Backward navigation',   win: ['Alt', 'P'],      mac: ['⌥', 'P'] },
     ],
   },
   {
@@ -37,7 +35,7 @@ const SHORTCUT_GROUPS: { label: string; items: Shortcut[] }[] = [
     items: [
       { description: 'Calculator',            win: ['Alt', 'C'],      mac: ['⌥', 'C'] },
       { description: 'Adjust font size',      win: ['Ctrl', '+/−'],   mac: ['⌘', '+/−'] },
-      { description: 'View shortcuts',        win: ['Ctrl', '/'],     mac: ['⌘', '/'] },
+      { description: 'View keyboard shortcuts', win: ['Ctrl', '/'],   mac: ['⌘', '/'] },
       { description: 'Close panels',          win: ['Esc'],           mac: ['Esc'] },
     ],
   },

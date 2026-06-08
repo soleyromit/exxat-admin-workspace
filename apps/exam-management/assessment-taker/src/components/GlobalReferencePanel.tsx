@@ -59,7 +59,7 @@ export function GlobalReferencePanel({ onClose, refs }: GlobalReferencePanelProp
         onValueChange={setActiveTab}
         className="flex flex-col flex-1 overflow-hidden"
       >
-        <div className="flex-shrink-0 border-b border-border overflow-x-auto">
+        <div className="flex-shrink-0 border-b border-border overflow-x-auto pt-1">
           <TabsList variant="line" className="w-max min-w-full">
             {refs.map((ref) => (
               <TabsTrigger key={ref.id} value={ref.id}>
