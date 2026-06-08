@@ -62,7 +62,7 @@ function KeyGroup({ keys }: { keys: string[] }) {
             boxShadow: '0 1px 0 0 var(--border)',
             color: 'var(--foreground)',
             fontSize: 11, fontWeight: 600,
-            fontFamily: 'monospace',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
             whiteSpace: 'nowrap',
             flexShrink: 0,
           }}>
