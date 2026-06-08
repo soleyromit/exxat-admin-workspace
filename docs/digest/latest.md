@@ -148,6 +148,7 @@
   - `claude-updates-watcher` (.claude/agents/claude-updates-watcher.md)
   - `compliance-reviewer` (.claude/agents/compliance-reviewer.md)
   - `ds-adoption-reviewer` (.claude/agents/ds-adoption-reviewer.md)
+  - `ds-conformance-reviewer` (.claude/agents/ds-conformance-reviewer.md)
   - `ds-updates-watcher` (.claude/agents/ds-updates-watcher.md)
   - `research-cross-corpus` (.claude/agents/research-cross-corpus.md)
   - `state-review` (.claude/agents/state-review.md)
