@@ -172,8 +172,8 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
               className={cn(
                 'rounded-none px-3 py-2.5 text-sm border-b-2 -mb-px transition-colors focus-visible:ring-inset capitalize h-auto',
                 tab === t
-                  ? 'border-foreground text-foreground font-medium'
-                  : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-transparent'
+                  ? 'border-b-foreground text-foreground font-medium'
+                  : 'border-b-transparent text-muted-foreground hover:text-foreground hover:bg-transparent'
               )}
             >
               {t === 'student' ? 'Students' : t === 'faculty' ? 'Faculty' : 'Personnel'}
@@ -408,19 +408,9 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const isActive = status === 'Active'
   if (status === 'N/A') return <span className="text-sm text-muted-foreground">N/A</span>
   return (
-    <Badge
-      variant="secondary"
-      className="rounded-full text-xs"
-      style={{
-        paddingInline: 8,
-        paddingBlock: 2,
-        background: 'var(--muted)',
-        color: isActive ? 'var(--chart-2)' : 'var(--muted-foreground)',
-      }}
-    >
+    <Badge variant="secondary" className="rounded-full text-xs" style={{ paddingInline: 8, paddingBlock: 2 }}>
       {status}
     </Badge>
   )
