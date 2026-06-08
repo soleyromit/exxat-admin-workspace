@@ -36,6 +36,7 @@ import { BuilderMetaStrip } from '@/components/assessment-builder/builder-meta-s
 import { MarkDistribution } from '@/components/assessment-builder/mark-distribution'
 import { CollaborationPanel } from '@/components/assessment-builder/collaboration-panel'
 import { PreReadPanel } from '@/components/assessment-builder/preread-panel'
+import { QuestionCard } from '@/components/assessment-builder/question-card'
 import { SectionsOutline } from '@/components/assessment-builder/step2-sections-outline'
 import { HealthPanel } from '@/components/assessment-builder/step2-health-panel'
 import { Step2SettingsPanel } from '@/components/assessment-builder/step2-settings-panel'
@@ -1582,279 +1583,56 @@ export default function AssessmentBuilderClient() {
                           </Button>
                         </div>
                       )}
-                      <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
-                        <colgroup>
-                          <col style={{ width: 36 }} />{/* Bulk select */}
-                          <col style={{ width: 52 }} />{/* # + reorder */}
-                          <col />{/* Question — takes remaining width */}
-                          <col style={{ width: 78 }} />{/* Type */}
-                          <col style={{ width: 68 }} />{/* Difficulty */}
-                          <col style={{ width: 84 }} />{/* Bloom's */}
-                          <col style={{ width: 50 }} />{/* PBI */}
-                          <col style={{ width: 48 }} />{/* By */}
-                          <col style={{ width: 48 }} />{/* Pts */}
-                          <col style={{ width: 32 }} />{/* Pin */}
-                        </colgroup>
-                        <thead>
-                          <tr style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--muted)', borderBottom: '1px solid var(--border)' }}>
-                            <th scope="col" style={{ padding: '5px 8px', width: 36, textAlign: 'center' }}>
-                              <input
-                                type="checkbox"
-                                aria-label="Select all questions"
-                                checked={bulkSelectedIds.size === activeSectionQuestions.length && activeSectionQuestions.length > 0}
-                                onChange={e => {
-                                  if (e.target.checked) {
-                                    setBulkSelectedIds(new Set(activeSectionQuestions.map(({ q }) => q.id)))
-                                  } else {
-                                    setBulkSelectedIds(new Set())
-                                  }
-                                }}
-                                style={{ cursor: 'pointer' }}
-                              />
-                            </th>
-                            {(['#', 'Question', 'Type', 'Diff.', 'Bloom\'s', 'PBI', 'By', 'Pts', ''] as const).map((label, i) => (
-                              <th key={i} scope="col" style={{
-                                padding: i === 0 ? '5px 4px' : '5px 8px',
-                                fontSize: 12, fontWeight: 600,
-                                color: 'var(--muted-foreground)',
-                                textAlign: i === 0 ? 'center' : i >= 5 ? 'right' : 'left',
-                                whiteSpace: 'nowrap',
-                              }}>
-                                {label}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {activeSectionQuestions.map(({ aq, q }, idx) => {
-                            const pbiLow = q.pbis !== null && q.pbis < 0.2
-                            const isPinned = pinnedQuestionIds.has(q.id)
-                            const totalQ = activeSectionQuestions.length
-                            const creatorPersona = q.creator ? PERSONA_BY_ID[q.creator] : null
-                            const editorPersona = (q.lastEditedBy && q.lastEditedBy !== q.creator) ? PERSONA_BY_ID[q.lastEditedBy] : null
-                            return (
-                              <tr
-                                key={q.id}
-                                style={{
-                                  borderBottom: '1px solid var(--border)',
-                                  background: lastMovedId === q.id
-                                    ? 'var(--brand-tint)'
-                                    : isPinned ? 'var(--muted)' : undefined,
-                                  transition: 'background 0.6s ease',
-                                }}
-                              >
-                                {/* Bulk select checkbox */}
-                                <td style={{ padding: '4px 8px', textAlign: 'center', verticalAlign: 'middle' }}>
-                                  <input
-                                    type="checkbox"
-                                    aria-label={`Select ${q.title}`}
-                                    checked={bulkSelectedIds.has(q.id)}
-                                    onChange={e => {
-                                      e.stopPropagation()
-                                      setBulkSelectedIds(prev => {
-                                        const next = new Set(prev)
-                                        if (e.target.checked) next.add(q.id)
-                                        else next.delete(q.id)
-                                        return next
-                                      })
-                                    }}
-                                    style={{ cursor: 'pointer' }}
-                                  />
-                                </td>
-                                {/* # + reorder */}
-                                <td style={{ padding: '4px 4px', textAlign: 'center', verticalAlign: 'middle' }}>
-                                  <div className="flex flex-col items-center gap-0.5">
-                                    <Button
-                                      variant="ghost" size="icon-xs"
-                                      aria-label={`Move ${q.title} up`}
-                                      onClick={e => { e.stopPropagation(); reorderQuestionInSection(activeSection.id, q.id, 'up') }}
-                                      disabled={idx === 0}
-                                      className="h-4 w-5 text-[var(--muted-foreground)] disabled:opacity-20"
-                                    >
-                                      <i className="fa-solid fa-angle-up text-[10px]" aria-hidden="true" />
-                                    </Button>
-                                    <span className="text-xs text-[var(--muted-foreground)] tabular-nums leading-none">{idx + 1}</span>
-                                    <Button
-                                      variant="ghost" size="icon-xs"
-                                      aria-label={`Move ${q.title} down`}
-                                      onClick={e => { e.stopPropagation(); reorderQuestionInSection(activeSection.id, q.id, 'down') }}
-                                      disabled={idx === totalQ - 1}
-                                      className="h-4 w-5 text-[var(--muted-foreground)] disabled:opacity-20"
-                                    >
-                                      <i className="fa-solid fa-angle-down text-[10px]" aria-hidden="true" />
-                                    </Button>
-                                  </div>
-                                </td>
-
-                                {/* Question title */}
-                                <td style={{ padding: '8px 8px', verticalAlign: 'middle' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                    {/* Provenance badge */}
-                                    {(() => {
-                                      const prov = aq.provenance
-                                      if (!prov || prov === 'qb') return null
-                                      const provenanceMap: Record<string, { icon: string; title: string; color: string }> = {
-                                        pdf:    { icon: 'fa-file-lines',    title: 'Imported from PDF',      color: 'var(--chart-3)' },
-                                        ai:     { icon: 'fa-sparkles',      title: 'AI-generated',           color: 'var(--brand-color)' },
-                                        manual: { icon: 'fa-pen-to-square', title: 'Written from scratch',   color: 'var(--muted-foreground)' },
-                                        copied: { icon: 'fa-copy',          title: 'Copied from prior exam', color: 'var(--chart-4)' },
-                                      }
-                                      const p = provenanceMap[prov]
-                                      if (!p) return null
-                                      return (
-                                        <span title={p.title} style={{ flexShrink: 0 }}>
-                                          <i className={`fa-light ${p.icon}`} aria-hidden="true" style={{ fontSize: 10, color: p.color }} />
-                                        </span>
-                                      )
-                                    })()}
-                                    <span
-                                      role="button"
-                                      tabIndex={0}
-                                      style={{ fontSize: 13, flex: 1, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', color: 'var(--foreground)', cursor: 'pointer', lineHeight: 1.4 }}
-                                      onClick={() => setDetailQuestionId(prev => prev === q.id ? null : q.id)}
-                                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setDetailQuestionId(prev => prev === q.id ? null : q.id) }}
-                                    >
-                                      {q.title}
-                                    </span>
-                                    {q.version > 1 && (
-                                      <span
-                                        title={`Version ${q.version}`}
-                                        style={{
-                                          fontSize: 10, fontWeight: 700, flexShrink: 0,
-                                          padding: '1px 4px', borderRadius: 3,
-                                          background: 'var(--brand-tint)',
-                                          color: 'var(--brand-color)',
-                                          border: '1px solid var(--brand-color)',
-                                          lineHeight: 1.4,
-                                        }}
-                                      >
-                                        v{q.version}
-                                      </span>
-                                    )}
-                                    {(() => {
-                                      const flag = activeAsmt.healthFlags.find(f => f.questionId === q.id)
-                                      if (!flag) return null
-                                      const flagTitle = (() => {
-                                        if (flag.type === 'missing-rationale') return 'Missing rationale'
-                                        if (flag.type === 'poor-pbis') return `Low pt-biserial (${flag.pbis.toFixed(2)})`
-                                        if (flag.type === 'poor-discriminator') return `Poor discriminator (pbis ${flag.pbis.toFixed(2)})`
-                                        if (flag.type === 'extreme-difficulty') return `Extreme difficulty (p=${flag.pValue.toFixed(2)})`
-                                        if (flag.type === 'near-zero-discrimination') return `Near-zero discrimination (D=${flag.discriminationIndex.toFixed(2)})`
-                                        return 'Quality flag'
-                                      })()
-                                      return (
-                                        <i
-                                          className="fa-solid fa-triangle-exclamation"
-                                          aria-hidden="true"
-                                          title={flagTitle}
-                                          style={{ fontSize: 11, color: 'var(--chart-4)', flexShrink: 0 }}
-                                        />
-                                      )
-                                    })()}
-                                  </div>
-                                </td>
-
-                                {/* Type */}
-                                <td style={{ padding: '8px 8px', verticalAlign: 'middle' }}>
-                                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--muted-foreground)' }}>
-                                    {TYPE_ICONS_Q[q.type] && <i className={TYPE_ICONS_Q[q.type]} aria-hidden="true" style={{ fontSize: 11, flexShrink: 0 }} />}
-                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.type}</span>
-                                  </span>
-                                </td>
-
-                                {/* Difficulty */}
-                                <td style={{ padding: '8px 8px', verticalAlign: 'middle' }}>
-                                  <span style={{ fontSize: 12, fontWeight: 600, color: DIFF_COLORS[q.difficulty] ?? 'var(--muted-foreground)' }}>
-                                    {q.difficulty}
-                                  </span>
-                                </td>
-
-                                {/* Bloom's */}
-                                <td style={{ padding: '8px 8px', verticalAlign: 'middle' }}>
-                                  <span style={{ fontSize: 12, color: 'var(--muted-foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
-                                    {q.blooms}
-                                  </span>
-                                </td>
-
-                                {/* PBI */}
-                                <td style={{ padding: '8px 8px', verticalAlign: 'middle', textAlign: 'right' }}>
-                                  {q.pbis !== null ? (
-                                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--foreground)', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                                      {pbiLow && <i className="fa-light fa-triangle-exclamation" aria-hidden="true" />}
-                                      {q.pbis.toFixed(2)}
-                                    </span>
-                                  ) : (
-                                    <span style={{ fontSize: 12, color: 'var(--border)' }}>—</span>
-                                  )}
-                                </td>
-
-                                {/* By — creator + editor avatars (DS AvatarGroup, neutral) */}
-                                <td style={{ padding: '8px 6px', verticalAlign: 'middle', textAlign: 'right' }}>
-                                  <TooltipProvider>
-                                    <AvatarGroup className="justify-end">
-                                      {creatorPersona && (
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Avatar size="sm">
-                                              <AvatarFallback>{creatorPersona.initials}</AvatarFallback>
-                                            </Avatar>
-                                          </TooltipTrigger>
-                                          <TooltipContent>Created by {creatorPersona.name}</TooltipContent>
-                                        </Tooltip>
-                                      )}
-                                      {editorPersona && (
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Avatar size="sm">
-                                              <AvatarFallback>{editorPersona.initials}</AvatarFallback>
-                                            </Avatar>
-                                          </TooltipTrigger>
-                                          <TooltipContent>Edited by {editorPersona.name}</TooltipContent>
-                                        </Tooltip>
-                                      )}
-                                    </AvatarGroup>
-                                  </TooltipProvider>
-                                </td>
-
-                                {/* Pts — editable point value */}
-                                <td style={{ padding: '4px 6px', verticalAlign: 'middle', textAlign: 'right' }}>
-                                  <input
-                                    type="number"
-                                    aria-label={`Points for ${q.title}`}
-                                    min={0}
-                                    value={aq.points}
-                                    onClick={e => e.stopPropagation()}
-                                    onChange={e => {
-                                      const v = parseInt(e.target.value)
-                                      updateQuestionPoints(q.id, isNaN(v) ? 0 : v)
-                                    }}
-                                    style={{
-                                      width: 38, height: 24, textAlign: 'center', fontSize: 12,
-                                      border: '1px solid var(--border)', borderRadius: 4,
-                                      background: 'var(--background)', color: 'var(--foreground)',
-                                      outline: 'none', padding: '0 4px',
-                                    }}
-                                  />
-                                </td>
-
-                                {/* Pin */}
-                                <td style={{ padding: '8px 6px', verticalAlign: 'middle', textAlign: 'center' }}>
-                                  <Button
-                                    variant="ghost" size="icon-xs"
-                                    aria-label={isPinned ? `Unpin ${q.title}` : `Pin ${q.title} — won't be randomized`}
-                                    title={isPinned ? 'Pinned — stays fixed during randomization' : 'Pin to fix position during randomization'}
-                                    onClick={e => { e.stopPropagation(); togglePinQuestion(q.id) }}
-                                    className="h-5 w-5"
-                                    style={{ color: isPinned ? 'var(--brand-color)' : 'var(--muted-foreground)', opacity: isPinned ? 1 : 0.35 }}
-                                  >
-                                    <i className={`${isPinned ? 'fa-solid' : 'fa-light'} fa-thumbtack text-[10px]`} aria-hidden="true" />
-                                  </Button>
-                                </td>
-                              </tr>
-                            )
-                          })}
-                        </tbody>
-                      </table>
+                      <div className="flex flex-col gap-2 px-3.5 py-3">
+                        {activeSectionQuestions.map(({ aq, q }, idx) => {
+                          const creatorPersona = q.creator ? PERSONA_BY_ID[q.creator] : null
+                          const editorPersona = (q.lastEditedBy && q.lastEditedBy !== q.creator) ? PERSONA_BY_ID[q.lastEditedBy] : null
+                          const provMap: Record<string, { icon: string; title: string; color: string }> = {
+                            pdf:    { icon: 'fa-file-lines',    title: 'Imported from PDF',      color: 'var(--chart-3)' },
+                            ai:     { icon: 'fa-sparkles',      title: 'AI-generated',           color: 'var(--brand-color)' },
+                            manual: { icon: 'fa-pen-to-square', title: 'Written from scratch',   color: 'var(--muted-foreground)' },
+                            copied: { icon: 'fa-copy',          title: 'Copied from prior exam', color: 'var(--chart-4)' },
+                          }
+                          const prov = aq.provenance && aq.provenance !== 'qb' ? (provMap[aq.provenance] ?? null) : null
+                          const flag = activeAsmt.healthFlags.find(f => f.questionId === q.id)
+                          const flagTitle = flag
+                            ? flag.type === 'missing-rationale' ? 'Missing rationale'
+                            : flag.type === 'poor-pbis' ? `Low pt-biserial (${flag.pbis.toFixed(2)})`
+                            : flag.type === 'poor-discriminator' ? `Poor discriminator (pbis ${flag.pbis.toFixed(2)})`
+                            : flag.type === 'extreme-difficulty' ? `Extreme difficulty (p=${flag.pValue.toFixed(2)})`
+                            : flag.type === 'near-zero-discrimination' ? `Near-zero discrimination (D=${flag.discriminationIndex.toFixed(2)})`
+                            : 'Quality flag'
+                            : null
+                          return (
+                            <QuestionCard
+                              key={q.id}
+                              index={idx}
+                              total={activeSectionQuestions.length}
+                              stem={q.title}
+                              type={q.type}
+                              typeIcon={TYPE_ICONS_Q[q.type]}
+                              difficulty={q.difficulty}
+                              diffColor={DIFF_COLORS[q.difficulty] ?? 'var(--muted-foreground)'}
+                              blooms={q.blooms}
+                              pbi={q.pbis}
+                              points={aq.points}
+                              version={q.version}
+                              selected={bulkSelectedIds.has(q.id)}
+                              pinned={pinnedQuestionIds.has(q.id)}
+                              lastMoved={lastMovedId === q.id}
+                              provenance={prov}
+                              flagTitle={flagTitle}
+                              creator={creatorPersona ? { initials: creatorPersona.initials, name: creatorPersona.name } : null}
+                              editor={editorPersona ? { initials: editorPersona.initials, name: editorPersona.name } : null}
+                              onToggleSelect={checked => setBulkSelectedIds(prev => { const next = new Set(prev); if (checked) next.add(q.id); else next.delete(q.id); return next })}
+                              onOpenDetail={() => setDetailQuestionId(prev => prev === q.id ? null : q.id)}
+                              onReorder={dir => reorderQuestionInSection(activeSection.id, q.id, dir)}
+                              onTogglePin={() => togglePinQuestion(q.id)}
+                              onSetPoints={v => updateQuestionPoints(q.id, v)}
+                            />
+                          )
+                        })}
+                      </div>
                       </>
                     )}
                   </div>
