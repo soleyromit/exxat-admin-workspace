@@ -34,7 +34,7 @@ export function GlobalReferencePanel({ onClose, refs }: GlobalReferencePanelProp
     <aside
       aria-label="Exam reference materials"
       className="flex flex-col flex-shrink-0 rounded-2xl border border-border shadow-sm overflow-hidden bg-card"
-      style={{ width: 340 }}
+      style={{ width: 340, marginBlock: 24 }}
     >
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between flex-shrink-0 px-4 py-3 border-b border-border">
