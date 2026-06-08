@@ -464,7 +464,7 @@ export function App() {
         <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
           <main
             id="main-content"
-            className="flex-1 overflow-hidden flex flex-col p-4 md:p-6 pb-24"
+            className="flex-1 overflow-hidden flex flex-col p-4 md:p-6"
             role="main"
             aria-label={`Question ${currentIndex + 1} of ${questions.length}`}>
 

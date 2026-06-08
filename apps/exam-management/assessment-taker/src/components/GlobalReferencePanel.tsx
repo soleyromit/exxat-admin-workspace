@@ -15,7 +15,7 @@ import { useState, useCallback, useEffect } from 'react';
 import {
   Badge, Button,
   Table, TableHeader, TableHead, TableBody, TableRow, TableCell,
-  Tabs, TabsList, TabsTrigger, TabsContent,
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from '@exxatdesignux/ui';
 import type { AssessmentReference } from '../data/assessments';
 
@@ -25,7 +25,8 @@ interface GlobalReferencePanelProps {
 }
 
 export function GlobalReferencePanel({ onClose, refs }: GlobalReferencePanelProps) {
-  const [activeTab, setActiveTab] = useState(refs[0]?.id ?? '');
+  const [activeRef, setActiveRef] = useState(refs[0]?.id ?? '');
+  const current = refs.find((r) => r.id === activeRef) ?? refs[0];
 
   if (refs.length === 0) return null;
 
@@ -53,50 +54,46 @@ export function GlobalReferencePanel({ onClose, refs }: GlobalReferencePanelProp
         </Button>
       </div>
 
-      {/* ── Tabs + content ───────────────────────────────────────────────── */}
-      <Tabs
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="flex flex-col flex-1 overflow-hidden"
-      >
-        <div className="flex-shrink-0 border-b border-border overflow-x-auto pt-1">
-          <TabsList variant="line" className="w-max min-w-full">
-            {refs.map((ref) => (
-              <TabsTrigger key={ref.id} value={ref.id}>
-                <i className={`fa-light ${ref.icon} fa-fw me-1.5`} aria-hidden="true" />
-                {ref.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+      {/* ── Dropdown selector ────────────────────────────────────────────── */}
+      {refs.length > 1 && (
+        <div className="flex-shrink-0 px-4 py-3 border-b border-border">
+          <Select value={activeRef} onValueChange={setActiveRef}>
+            <SelectTrigger className="w-full" aria-label="Select reference">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {refs.map((ref) => (
+                <SelectItem key={ref.id} value={ref.id}>
+                  <i className={`fa-light ${ref.icon} fa-fw me-1.5`} aria-hidden="true" />
+                  {ref.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
+      )}
 
-        {refs.map((ref) => (
-          <TabsContent
-            key={ref.id}
-            value={ref.id}
-            className="flex-1 overflow-y-auto m-0 px-4 py-3"
-          >
-            {ref.type === 'formula' && ref.formulas && (
-              <FormulaBlock formulas={ref.formulas} />
-            )}
-            {ref.type === 'table' && ref.headers && ref.rows && (
-              <TableBlock headers={ref.headers} rows={ref.rows} note={ref.note} />
-            )}
-            {ref.type === 'text' && ref.paragraphs && (
-              <TextBlock paragraphs={ref.paragraphs} />
-            )}
-            {ref.type === 'image' && ref.url && (
-              <ImageBlock url={ref.url} label={ref.label} />
-            )}
-            {ref.type === 'pdf' && ref.url && (
-              <PdfBlock url={ref.url} label={ref.label} />
-            )}
-            {ref.type === 'doc' && ref.url && (
-              <DocBlock url={ref.url} label={ref.label} />
-            )}
-          </TabsContent>
-        ))}
-      </Tabs>
+      {/* ── Content ──────────────────────────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto px-4 py-3">
+        {current?.type === 'formula' && current.formulas && (
+          <FormulaBlock formulas={current.formulas} />
+        )}
+        {current?.type === 'table' && current.headers && current.rows && (
+          <TableBlock headers={current.headers} rows={current.rows} note={current.note} />
+        )}
+        {current?.type === 'text' && current.paragraphs && (
+          <TextBlock paragraphs={current.paragraphs} />
+        )}
+        {current?.type === 'image' && current.url && (
+          <ImageBlock url={current.url} label={current.label} />
+        )}
+        {current?.type === 'pdf' && current.url && (
+          <PdfBlock url={current.url} label={current.label} />
+        )}
+        {current?.type === 'doc' && current.url && (
+          <DocBlock url={current.url} label={current.label} />
+        )}
+      </div>
     </aside>
   );
 }

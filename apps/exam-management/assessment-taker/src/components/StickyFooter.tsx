@@ -13,7 +13,7 @@ export function StickyFooter({
 }: StickyFooterProps) {
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 border-t z-30 px-4 flex items-center justify-between transition-colors"
+      className="flex-shrink-0 w-full border-t z-30 px-4 flex items-center justify-between transition-colors"
       style={{
         backgroundColor: 'var(--card)',
         borderColor: 'var(--border)',
