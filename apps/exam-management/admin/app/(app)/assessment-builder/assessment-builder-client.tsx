@@ -33,6 +33,9 @@ import {
 } from '@/lib/question-editor-types'
 import { BuilderLifecycleStepper } from '@/components/assessment-builder/builder-lifecycle-stepper'
 import { BuilderMetaStrip } from '@/components/assessment-builder/builder-meta-strip'
+import { MarkDistribution } from '@/components/assessment-builder/mark-distribution'
+import { CollaborationPanel } from '@/components/assessment-builder/collaboration-panel'
+import { PreReadPanel } from '@/components/assessment-builder/preread-panel'
 import { SectionsOutline } from '@/components/assessment-builder/step2-sections-outline'
 import { HealthPanel } from '@/components/assessment-builder/step2-health-panel'
 import { Step2SettingsPanel } from '@/components/assessment-builder/step2-settings-panel'
@@ -1263,8 +1266,12 @@ export default function AssessmentBuilderClient() {
         <TabsContent value="setup" className="flex-1 min-h-0 mt-0 data-[state=inactive]:hidden">
           {/* ── Structure tab ─────────────────────────────────────────────── */}
       {activeTab === 'setup' && (
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto', minHeight: 0 }}>
           {activeAsmt ? (
+            <>
+            <div className="px-6 pt-4 shrink-0">
+              <MarkDistribution asmt={activeAsmt} />
+            </div>
             <DetailsStep
               activeAsmt={activeAsmt}
               mockCoursesLocal={mockCourses}
@@ -1283,6 +1290,7 @@ export default function AssessmentBuilderClient() {
               onContinue={() => setActiveTab('build')}
               onCancel={() => router.push('/')}
             />
+            </>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: 12 }}>
               <p className="text-sm text-muted-foreground">No assessment found. Start from the canvas.</p>
@@ -1888,15 +1896,9 @@ export default function AssessmentBuilderClient() {
 
         {/* ── Collaboration tab (stub) ───────────────────────────────────── */}
         <TabsContent value="collaboration" className="flex-1 min-h-0 mt-0 data-[state=inactive]:hidden">
-          <div className="flex flex-col flex-1 items-center justify-center gap-3 text-center px-6 h-full">
-            <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-              <i className="fa-light fa-users text-muted-foreground text-lg" aria-hidden="true" />
-            </div>
-            <p className="text-sm font-medium text-foreground">Section delegation & collaborators</p>
-            <p className="text-xs text-muted-foreground max-w-xs">
-              Assign sections to instructors and manage co-author permissions. Coming soon.
-            </p>
-          </div>
+          {activeTab === 'collaboration' && activeAsmt && (
+            <CollaborationPanel asmt={activeAsmt} onAssignFaculty={() => setActiveTab('build')} />
+          )}
         </TabsContent>
 
         {/* ── Settings tab (was Review/Deliver) ─────────────────────────── */}
@@ -2094,15 +2096,15 @@ export default function AssessmentBuilderClient() {
 
         {/* ── Pre-Read tab (stub) ────────────────────────────────────────── */}
         <TabsContent value="preread" className="flex-1 min-h-0 mt-0 data-[state=inactive]:hidden">
-          <div className="flex flex-col flex-1 items-center justify-center gap-3 text-center px-6 h-full">
-            <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-              <i className="fa-light fa-book-open text-muted-foreground text-lg" aria-hidden="true" />
-            </div>
-            <p className="text-sm font-medium text-foreground">Pre-read materials & attachments</p>
-            <p className="text-xs text-muted-foreground max-w-xs">
-              Attach PDFs, lab values, and reference docs at assessment or section level. Coming soon.
-            </p>
-          </div>
+          {activeTab === 'preread' && activeAsmt && (
+            <PreReadPanel
+              asmt={activeAsmt}
+              onUpdate={patch => setActiveAsmt(prev => prev ? {
+                ...prev, ...patch,
+                settings: patch.settings ? { ...prev.settings, ...patch.settings } : prev.settings,
+              } : prev)}
+            />
+          )}
         </TabsContent>
 
       </Tabs>
