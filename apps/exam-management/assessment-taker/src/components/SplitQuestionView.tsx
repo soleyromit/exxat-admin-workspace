@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Question } from '../data/questions';
 import { Tooltip } from './Tooltip';
-import { QuestionCommentBox } from './QuestionCommentBox';
 import { Button as DSButton, Table, TableHeader, TableHead, TableBody, TableRow, TableCell, Tabs, TabsList, TabsTrigger, TabsContent } from '@exxatdesignux/ui';
 
 function ImagePanel({ src, alt }: {src: string;alt: string;}) {
@@ -317,11 +316,6 @@ export interface SplitQuestionViewProps {
   onToggleKeyboard?: () => void;
   needsKeyboard?: boolean;
   voiceNarrator?: boolean;
-  allowComments?: boolean;
-  comment?: string;
-  onCommentChange?: (questionId: number, comment: string) => void;
-  showReport?: boolean;
-  onCloseReport?: () => void;
   isFlagged?: boolean;
   onToggleFlag?: () => void;
 }
@@ -335,11 +329,6 @@ export function SplitQuestionView({
   onToggleKeyboard,
   needsKeyboard = false,
   voiceNarrator = false,
-  allowComments = false,
-  comment = '',
-  onCommentChange,
-  showReport = false,
-  onCloseReport,
   isFlagged = false,
   onToggleFlag,
 }: SplitQuestionViewProps) {
@@ -823,15 +812,6 @@ export function SplitQuestionView({
                 {renderInteractive()}
               </div>
               {renderInlineTools()}
-              {allowComments && (
-                <QuestionCommentBox
-                  questionId={question.id}
-                  initialComment={comment}
-                  onSave={onCommentChange}
-                  isOpen={showReport}
-                  onClose={onCloseReport || (() => {})}
-                />
-              )}
             </div>
           </div>
 
@@ -866,15 +846,6 @@ export function SplitQuestionView({
               {renderQuestionStem()}
               {renderInteractive()}
               {renderInlineTools()}
-              {allowComments && (
-                <QuestionCommentBox
-                  questionId={question.id}
-                  initialComment={comment}
-                  onSave={onCommentChange}
-                  isOpen={showReport}
-                  onClose={onCloseReport || (() => {})}
-                />
-              )}
             </div>
           </div>
         </div>

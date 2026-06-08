@@ -12,6 +12,7 @@ import { VirtualKeyboard } from './components/VirtualKeyboard';
 import { CalculatorPopover } from './components/CalculatorPopover';
 import { AccessibilityPanel } from './components/AccessibilityPanel';
 import { GlobalReferencePanel } from './components/GlobalReferencePanel';
+import { QuestionCommentBox } from './components/QuestionCommentBox';
 import { SubmitReviewOverlay } from './components/SubmitReviewOverlay';
 import { KeyboardShortcutModal } from './components/KeyboardShortcutModal';
 import { StickyFooter } from './components/StickyFooter';
@@ -478,11 +479,6 @@ export function App() {
               onToggleKeyboard={() => setShowKeyboard(!showKeyboard)}
               needsKeyboard={needsKeyboard}
               voiceNarrator={voiceNarrator}
-              allowComments={allowComments}
-              comment={comments[currentQuestion.id]}
-              onCommentChange={handleCommentChange}
-              showReport={showReport}
-              onCloseReport={() => setShowReport(false)}
               isFlagged={flagged.has(currentIndex)}
               onToggleFlag={handleToggleFlag} />
 
@@ -491,6 +487,13 @@ export function App() {
             <GlobalReferencePanel
               refs={assessment!.assessmentReferences!}
               onClose={() => setShowGlobalRef(false)} />
+          )}
+          {showReport && allowComments && (
+            <QuestionCommentBox
+              questionId={currentQuestion.id}
+              initialComment={comments[currentQuestion.id]}
+              onSave={handleCommentChange}
+              onClose={() => setShowReport(false)} />
           )}
           {showSidebar && (
             <SidebarDrawer
