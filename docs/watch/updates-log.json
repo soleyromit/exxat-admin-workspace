@@ -581,6 +581,30 @@
       "files": ["docs/BUILD-STATUS.md"]
     },
     {
+      "id": "2026-06-08-exam-management-001",
+      "date": "2026-06-08",
+      "product": "exam-management",
+      "type": "prd-change",
+      "title": "Exam Roadmap — Manage Question Bank row now shows explicit P0 - Cohere priority",
+      "what": "Capability table: 'Manage Question Bank' row gained explicit priority label 'P0 - Cohere'. Previously the row had no priority column value. Status (Completed) and owner (Nipun) unchanged.",
+      "why": "Nipun's roadmap Excel updated — P0-Cohere priority tag applied to Manage Question Bank capability row. CLEAR informational tracker update; no code change required (feature already shipped).",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-08-exam-management-build-status-001",
+      "date": "2026-06-08",
+      "product": "exam-management",
+      "type": "prd-change",
+      "title": "BUILD-STATUS last updated date bumped to 2026-06-08",
+      "what": "No feature statuses changed in step 7b mapping (only structural change was P0-Cohere priority added to Manage QB row — already Completed, no status change). Last updated date updated to today.",
+      "why": "Nipun's roadmap Excel synced — minor tracker update detected (P0 priority label on Manage QB). PCE Phase 1 target (30 Aug 2026) remains future — BUILD-STATUS PCE row unchanged.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
+      "severity": null,
+      "files": ["docs/BUILD-STATUS.md"]
+    },
+    {
       "id": "2026-06-02-exam-flagged-001",
       "date": "2026-06-02",
       "product": "exam-management",
