@@ -390,6 +390,7 @@ export function AppSidebar() {
                       >
                         <Link
                           href={item.href}
+                          aria-label={item.title}
                           aria-current={isActive ? 'page' : undefined}
                         >
                           <span
@@ -424,7 +425,7 @@ export function AppSidebar() {
             {FOOTER_NAV.map(item => (
               <SidebarMenuItem key={item.key}>
                 <SidebarMenuButton asChild tooltip={item.title}>
-                  <Link href={item.href}>
+                  <Link href={item.href} aria-label={item.title}>
                     <i className={`fa-light ${item.icon} text-sm`} aria-hidden="true" />
                     <span>{item.title}</span>
                   </Link>
