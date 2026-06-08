@@ -264,17 +264,10 @@ function QuestionReferencePanel({
         {references.length > 1 ? (
           <Tabs defaultValue="0" className="flex flex-col flex-1 min-h-0">
             <div className="shrink-0 border-b border-border overflow-x-auto">
-              <TabsList
-                variant="line"
-                className="w-max min-w-full justify-start px-2 h-auto p-0"
-              >
+              <TabsList variant="line" className="w-max min-w-full">
                 {references.map((ref, i) => (
-                  <TabsTrigger
-                    key={i}
-                    value={String(i)}
-                    className="shrink-0 text-xs gap-1.5 px-3 py-2.5"
-                  >
-                    <i className={`fa-light ${typeIcon(ref.type)} fa-fw`} aria-hidden="true" />
+                  <TabsTrigger key={i} value={String(i)}>
+                    <i className={`fa-light ${typeIcon(ref.type)} fa-fw me-1.5`} aria-hidden="true" />
                     {ref.label}
                   </TabsTrigger>
                 ))}

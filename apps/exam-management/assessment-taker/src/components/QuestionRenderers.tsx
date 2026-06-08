@@ -62,7 +62,7 @@ function KeyBadge({
 }: {letter: string;isSelected: boolean;}) {
   return (
     <span
-      className="inline-flex items-center justify-center rounded-md font-bold text-[0.75em] shrink-0 transition-colors"
+      className="inline-flex items-center justify-center rounded-md font-bold text-[12px] shrink-0 transition-colors"
       style={{
         width: '2em',
         height: '2em',

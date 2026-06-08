@@ -123,7 +123,7 @@ export function ExamToolbar({
             {currentSection && (
               <Tooltip content={`Section ${currentSection.number} · ${currentSection.title}`} position="bottom">
                 <span
-                  className="text-xs truncate"
+                  className="text-[12px] truncate"
                   style={{ color: 'var(--muted-foreground)', lineHeight: 1.2 }}
                   aria-label={`Current section: ${currentSection.title}`}
                 >

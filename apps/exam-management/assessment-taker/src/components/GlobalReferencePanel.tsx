@@ -60,14 +60,10 @@ export function GlobalReferencePanel({ onClose, refs }: GlobalReferencePanelProp
         className="flex flex-col flex-1 overflow-hidden"
       >
         <div className="flex-shrink-0 border-b border-border overflow-x-auto">
-          <TabsList variant="line" className="w-max min-w-full justify-start px-2 h-auto p-0">
+          <TabsList variant="line" className="w-max min-w-full">
             {refs.map((ref) => (
-              <TabsTrigger
-                key={ref.id}
-                value={ref.id}
-                className="shrink-0 text-xs gap-1.5 px-3 py-2.5"
-              >
-                <i className={`fa-light ${ref.icon} fa-fw`} aria-hidden="true" />
+              <TabsTrigger key={ref.id} value={ref.id}>
+                <i className={`fa-light ${ref.icon} fa-fw me-1.5`} aria-hidden="true" />
                 {ref.label}
               </TabsTrigger>
             ))}
@@ -113,7 +109,7 @@ function FormulaBlock({ formulas }: { formulas: NonNullable<AssessmentReference[
         <div key={i} className="flex flex-col gap-1.5">
           <p className="text-sm text-muted-foreground">{f.name}</p>
           <p className="border-l-2 border-border pl-3 py-1 font-mono text-base text-foreground leading-snug">{f.formula}</p>
-          <p className="text-xs text-muted-foreground leading-relaxed">{f.variables}</p>
+          <p className="text-[12px] text-muted-foreground leading-relaxed">{f.variables}</p>
         </div>
       ))}
     </div>
