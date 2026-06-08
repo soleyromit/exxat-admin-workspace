@@ -5,7 +5,7 @@ import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes"
 
 // Vendored from @exxatdesignux/ui — vendored from DS web app: theme-provider.tsx (2026-05-12).
 // Slim copy — preserves the 'd' hotkey for light/dark toggle. next-themes
-// manages the `.dark` class on <html>; useAppTheme (from @exxat/ds) manages
+// manages the `.dark` class on <html>; useAppTheme (from @exxatdesignux/ui) manages
 // brand / contrast / text-size attributes alongside.
 
 function ThemeProvider({

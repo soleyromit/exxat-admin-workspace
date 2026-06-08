@@ -58,6 +58,13 @@ PATTERN_RULES: list[tuple[str, str, str, str, bool]] = [
     ("DS-005", r"\btoast\s*\(|from\s+['\"]sonner['\"]",
      "toast()/Sonner banned in admin apps (DS-005). Use LocalBanner / SystemBanner.",
      r"/apps/[^/]+/admin/", True),
+    # DS-013 (visual fidelity) — display headings must use the DS serif display
+    # font (font-heading / ivypresto). Catches the generic-title antipattern:
+    # an h1/h2 at a large text size with no font-heading. sr-only headings have
+    # no display size, so they're exempt. See docs/governance/ds-visual-reference.md.
+    ("DS-013", r"<h[12]\b(?![^>]*font-heading)[^>]*\btext-(?:2xl|3xl|4xl|5xl|6xl|\[(?:2[4-9]|[3-9]\d)px\])",
+     "Display heading missing the DS display font (DS-013). Add `font-heading` (ivypresto serif) — page/detail titles + KPI numerals are serif, not sans-serif bold. See docs/governance/ds-visual-reference.md.",
+     r"/apps/", True),
     ("A11Y-004", r"<i\s+className\s*=\s*[\"']fa-[^\"']+[\"'](?![^>]*aria-hidden)",
      "FA icon missing aria-hidden=\"true\" (A11Y-004 / WCAG 1.3.1).",
      r"/apps/", True),
