@@ -823,6 +823,15 @@ export function SplitQuestionView({
                 {renderInteractive()}
               </div>
               {renderInlineTools()}
+              {allowComments && (
+                <QuestionCommentBox
+                  questionId={question.id}
+                  initialComment={comment}
+                  onSave={onCommentChange}
+                  isOpen={showReport}
+                  onClose={onCloseReport || (() => {})}
+                />
+              )}
             </div>
           </div>
 
@@ -845,15 +854,6 @@ export function SplitQuestionView({
                   </div>
                 )}
               </div>
-            )}
-            {allowComments && (
-              <QuestionCommentBox
-                questionId={question.id}
-                initialComment={comment}
-                onSave={onCommentChange}
-                isOpen={showReport}
-                onClose={onCloseReport || (() => {})}
-              />
             )}
           </div>
         </div> :
