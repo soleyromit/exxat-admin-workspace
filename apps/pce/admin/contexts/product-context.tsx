@@ -1,8 +1,6 @@
-/**
- * Shim — re-exports ProductProvider + useProduct from `@exxatdesignux/ui`.
- * New code SHOULD import directly from `@exxatdesignux/ui/components/shell`.
- */
+"use client"
 
+// Shim — re-exports ProductProvider + useProduct from `@exxatdesignux/ui`.
 export {
   ProductProvider,
   syncActiveProductThemeFromStore,
