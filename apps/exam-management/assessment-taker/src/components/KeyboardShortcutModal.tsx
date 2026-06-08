@@ -160,8 +160,7 @@ export function KeyboardShortcutModal({ isOpen, onClose }: KeyboardShortcutModal
                   style={{
                     display: 'grid', gridTemplateColumns: '1fr 110px',
                     alignItems: 'center',
-                    padding: '8px 20px',
-                    borderBottom: '1px solid var(--border)',
+                    padding: '7px 20px',
                   }}
                 >
                   <span style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>{description}</span>
