@@ -116,7 +116,7 @@ export function StepSurveyDesign({
   return (
     <div className="flex flex-col gap-5" style={{ maxWidth: 680 }}>
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold">Survey design</h1>
+        <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Survey design</h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
           Set a template for each course type. Expand to override individual courses.
         </p>

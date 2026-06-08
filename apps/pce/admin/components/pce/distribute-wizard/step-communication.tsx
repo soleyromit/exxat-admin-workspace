@@ -189,7 +189,7 @@ export function StepCommunication({
   return (
     <div className="flex flex-col gap-6" style={{ maxWidth: 600 }}>
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold">Communication</h1>
+        <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Communication</h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
           Set recipients, survey window, and configure invitation emails.
         </p>

@@ -22,7 +22,7 @@ export function StepSurveyDesignGeneral({
     <div className="flex flex-col gap-5" style={{ maxWidth: 640 }}>
       {/* Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-lg font-semibold">Survey design</h1>
+        <h1 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Survey design</h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
           Choose a template for this general survey.
         </p>

@@ -76,7 +76,7 @@ export function StepReportAccess({
     <div className="flex flex-col gap-6" style={{ maxWidth: 600 }}>
       {/* Step header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold">Report access</h1>
+        <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Report access</h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
           Choose which roles can view aggregate results for each evaluated subject.
         </p>

@@ -83,7 +83,7 @@ export function StepDistributionGeneral({ onBack, onNext }: StepDistributionGene
       {/* Step header + email template CTA */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold">Select Recipients</h1>
+          <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Select Recipients</h1>
           <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
             Choose how to distribute your survey
           </p>

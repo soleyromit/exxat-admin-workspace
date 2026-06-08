@@ -158,7 +158,7 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
         <div
           role="tablist"
           aria-label="Recipient type"
-          className="shrink-0 border-b border-border flex"
+          className="shrink-0 flex"
           style={{ paddingInline: 20 }}
         >
           {(['student', 'faculty', 'personnel'] as Persona[]).map(t => (

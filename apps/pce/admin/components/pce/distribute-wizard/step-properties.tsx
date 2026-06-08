@@ -74,7 +74,7 @@ export function StepProperties({
     <div className="flex flex-col gap-6" style={{ maxWidth: 600 }}>
       {/* Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold">Properties</h1>
+        <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Properties</h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
           {isCE
             ? 'Define the term and scope for this course evaluation cycle.'

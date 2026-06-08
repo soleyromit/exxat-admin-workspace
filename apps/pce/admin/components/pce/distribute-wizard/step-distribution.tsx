@@ -137,7 +137,7 @@ export function StepDistribution({
 
       {/* Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold">Courses &amp; access</h1>
+        <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Courses &amp; access</h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
           {selectedTerm.name} · {selectedTerm.academicYear}{programName ? ` · ${programName}` : ''}
         </p>
