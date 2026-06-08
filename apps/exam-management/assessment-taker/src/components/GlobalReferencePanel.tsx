@@ -56,7 +56,7 @@ export function GlobalReferencePanel({ onClose, refs }: GlobalReferencePanelProp
       {/* ── Reference picker ────────────────────────────────────────────── */}
       <div className="flex-shrink-0 px-3 py-2.5 border-b border-border">
         <Select value={activeTab} onValueChange={setActiveTab}>
-          <SelectTrigger className="w-full h-8 text-xs">
+          <SelectTrigger className="w-full" aria-label="Select reference material">
             <SelectValue>
               {(() => {
                 const active = refs.find(r => r.id === activeTab);
@@ -71,7 +71,7 @@ export function GlobalReferencePanel({ onClose, refs }: GlobalReferencePanelProp
           </SelectTrigger>
           <SelectContent>
             {refs.map((ref) => (
-              <SelectItem key={ref.id} value={ref.id} className="text-xs">
+              <SelectItem key={ref.id} value={ref.id}>
                 <span className="flex items-center gap-1.5">
                   <i className={`fa-light ${ref.icon} fa-fw`} aria-hidden="true" />
                   {ref.label}

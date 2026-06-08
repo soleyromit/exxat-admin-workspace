@@ -127,9 +127,9 @@ export function KeyboardShortcutModal({ isOpen, onClose }: KeyboardShortcutModal
           flexShrink: 0,
           borderBottom: '1px solid var(--border)',
         }}>
-          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Action</span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'right', paddingRight: 12 }}>Windows</span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'right' }}>Mac</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)' }}>Action</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', textAlign: 'right', paddingRight: 12 }}>Windows</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', textAlign: 'right' }}>Mac</span>
         </div>
 
         {/* Shortcut groups */}
@@ -138,10 +138,9 @@ export function KeyboardShortcutModal({ isOpen, onClose }: KeyboardShortcutModal
             <div key={label}>
               <div style={{
                 padding: '8px 20px 4px',
-                fontSize: 11, fontWeight: 700,
+                fontSize: 12, fontWeight: 700,
                 color: 'var(--muted-foreground)',
                 backgroundColor: 'var(--muted)',
-                letterSpacing: '0.03em',
               }}>
                 {label}
               </div>
