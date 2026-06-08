@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Question } from '../data/questions';
 import { Tooltip } from './Tooltip';
 import { QuestionCommentBox } from './QuestionCommentBox';
-import { Button as DSButton, Table, TableHeader, TableHead, TableBody, TableRow, TableCell, Tabs, TabsList, TabsTrigger, TabsContent } from '@exxatdesignux/ui';
+import { Button as DSButton, Table, TableHeader, TableHead, TableBody, TableRow, TableCell, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@exxatdesignux/ui';
 
 function ImagePanel({ src, alt }: {src: string;alt: string;}) {
   const [error, setError] = useState(false);
@@ -166,6 +166,7 @@ function QuestionReferencePanel({
   references: NonNullable<Question['references']>;
   zoomPercent: number;
 }) {
+  const [activeRef, setActiveRef] = useState('0');
   const renderRef = (ref: NonNullable<Question['references']>[0]) => {
     if (ref.type === 'image') {
       return (
@@ -262,31 +263,38 @@ function QuestionReferencePanel({
     >
       <div style={{ zoom: zoomPercent / 100, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         {references.length > 1 ? (
-          <Tabs defaultValue="0" className="flex flex-col flex-1 min-h-0">
-            <TabsList
-              variant="line"
-              className="w-full justify-start px-4 border-b border-border h-auto p-0 shrink-0"
-            >
-              {references.map((ref, i) => (
-                <TabsTrigger
-                  key={i}
-                  value={String(i)}
-                >
-                  <i className={`fa-light ${typeIcon(ref.type)} fa-fw`} aria-hidden="true" />
-                  {ref.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-            {references.map((ref, i) => (
-              <TabsContent
-                key={i}
-                value={String(i)}
-                className="flex-1 overflow-auto p-[2em] flex flex-col gap-[0.625em] min-h-0"
-              >
-                {renderRef(ref)}
-              </TabsContent>
-            ))}
-          </Tabs>
+          <>
+            <div className="shrink-0 px-3 py-2.5 border-b border-border">
+              <Select value={activeRef} onValueChange={setActiveRef}>
+                <SelectTrigger className="w-full" aria-label="Select reference">
+                  <SelectValue>
+                    {(() => {
+                      const ref = references[Number(activeRef)];
+                      return ref ? (
+                        <span className="flex items-center gap-1.5 min-w-0">
+                          <i className={`fa-light ${typeIcon(ref.type)} fa-fw flex-shrink-0`} aria-hidden="true" />
+                          <span className="truncate">{ref.label}</span>
+                        </span>
+                      ) : null;
+                    })()}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {references.map((ref, i) => (
+                    <SelectItem key={i} value={String(i)}>
+                      <span className="flex items-center gap-1.5">
+                        <i className={`fa-light ${typeIcon(ref.type)} fa-fw`} aria-hidden="true" />
+                        {ref.label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1 overflow-auto p-[2em] flex flex-col gap-[0.625em] min-h-0">
+              {renderRef(references[Number(activeRef)])}
+            </div>
+          </>
         ) : (
           <div style={{ flex: 1, overflow: 'auto', padding: '2em', display: 'flex', flexDirection: 'column', gap: '0.625em', minHeight: 0 }}>
             {renderRef(references[0])}
