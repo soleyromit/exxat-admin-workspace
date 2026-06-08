@@ -11,7 +11,7 @@
  * PDF/image types aren't crammed into a vertical scroll stack alongside text refs.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   Badge, Button,
   Table, TableHeader, TableHead, TableBody, TableRow, TableCell,
@@ -199,30 +199,86 @@ function ImageBlock({ url, label }: { url: string; label: string }) {
   );
 }
 
+// ─── PDF blob generator — produces a real in-memory PDF for mock/relative URLs ─
+function buildLabeledPdf(label: string): Blob {
+  type PdfLine = { text: string; bold?: boolean; size: number };
+  const lines: PdfLine[] = [
+    { text: label, bold: true, size: 14 },
+    { text: '', size: 11 },
+    { text: 'Reference document — for exam use only.', size: 11 },
+    { text: '', size: 11 },
+    { text: 'This document has been uploaded by your instructor', size: 11 },
+    { text: 'as a supplementary reference for this assessment.', size: 11 },
+    { text: '', size: 11 },
+    { text: 'Refer to this material as needed during your exam.', size: 11 },
+  ];
+
+  const streamParts: string[] = [];
+  let y = 740;
+  for (const { text, bold, size } of lines) {
+    if (!text) { y -= 10; continue; }
+    const safe = text.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+    streamParts.push(`BT ${bold ? '/FB' : '/F1'} ${size} Tf 40 ${y} Td (${safe}) Tj ET`);
+    y -= size + (bold ? 9 : 5);
+  }
+  const stream = streamParts.join('\n');
+
+  let body = '%PDF-1.4\n';
+  const offsets: number[] = [];
+  const addObj = (n: number, dict: string, streamContent?: string) => {
+    offsets.push(body.length);
+    if (streamContent !== undefined) {
+      body += `${n} 0 obj\n<< /Length ${streamContent.length} >>\nstream\n${streamContent}\nendstream\nendobj\n`;
+    } else {
+      body += `${n} 0 obj\n${dict}\nendobj\n`;
+    }
+  };
+  addObj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+  addObj(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+  addObj(3, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /FB 6 0 R >> >> >>');
+  addObj(4, '', stream);
+  addObj(5, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+  addObj(6, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+  const xrefPos = body.length;
+  let xref = `xref\n0 ${offsets.length + 1}\n0000000000 65535 f \n`;
+  for (const off of offsets) xref += `${String(off).padStart(10, '0')} 00000 n \n`;
+  xref += `trailer\n<< /Size ${offsets.length + 1} /Root 1 0 R >>\nstartxref\n${xrefPos}\n%%EOF`;
+  return new Blob([body + xref], { type: 'application/pdf' });
+}
+
 // ─── PDF block ────────────────────────────────────────────────────────────────
 function PdfBlock({ url, label }: { url: string; label: string }) {
   const isAbsolute = url.startsWith('http://') || url.startsWith('https://');
+  const [blobSrc, setBlobSrc] = useState('');
+
+  useEffect(() => {
+    if (isAbsolute) return;
+    const blob = buildLabeledPdf(label);
+    const blobUrl = URL.createObjectURL(blob);
+    setBlobSrc(blobUrl);
+    return () => URL.revokeObjectURL(blobUrl);
+  }, [label, isAbsolute]);
+
+  const embedSrc = isAbsolute ? url : blobSrc;
 
   return (
-    <div className="flex flex-col gap-2 h-full" style={{ minHeight: isAbsolute ? 400 : 'auto' }}>
-      {isAbsolute ? (
+    <div className="flex flex-col gap-2 h-full" style={{ minHeight: 400 }}>
+      {embedSrc ? (
         <embed
-          src={url}
+          src={embedSrc}
           type="application/pdf"
           title={label}
           className="w-full flex-1 rounded"
           style={{ minHeight: 400 }}
         />
       ) : (
-        <div className="flex flex-col items-center justify-center gap-3 py-10 text-muted-foreground rounded-lg border border-dashed border-border">
-          <i className="fa-light fa-file-pdf fa-2x" aria-hidden="true" />
-          <p className="text-sm">{label}</p>
-          <p className="text-xs">PDF preview not available in this environment</p>
+        <div className="flex flex-col items-center justify-center gap-2 py-10 text-muted-foreground">
+          <i className="fa-light fa-spinner-third fa-spin fa-2x" aria-hidden="true" />
         </div>
       )}
       <a
-        href={url}
-        download
+        href={embedSrc || '#'}
+        download={`${label}.pdf`}
         className="text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground"
       >
         <i className="fa-light fa-arrow-down-to-line fa-fw" aria-hidden="true" />
