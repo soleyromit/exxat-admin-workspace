@@ -52,7 +52,7 @@ export interface ExamSection {
 // Vishaka May 14: "Some formulas the instructor wants to upload which can be
 // for multiple questions... always available. Just like the calculator."
 
-export type AssessmentRefType = 'formula' | 'table' | 'text';
+export type AssessmentRefType = 'formula' | 'table' | 'text' | 'pdf' | 'image' | 'doc';
 
 export interface FormulaEntry {
   name: string;
@@ -73,6 +73,8 @@ export interface AssessmentReference {
   note?: string;
   // type: 'text'
   paragraphs?: string[];
+  // type: 'pdf' | 'image' | 'doc'
+  url?: string;
 }
 
 export interface Assessment {
@@ -287,6 +289,20 @@ export const MOCK_ASSESSMENTS: Assessment[] = [
           ['SpO₂', '≥ 95', '%'],
         ],
         note: 'Ranges are reference values for adults. Clinical interpretation must account for patient age, sex, and clinical context.',
+      },
+      {
+        id: 'ref-anatomy',
+        label: 'Heart Anatomy',
+        icon: 'fa-heart',
+        type: 'image',
+        url: '/heart_anatomy_placeholder.svg',
+      },
+      {
+        id: 'ref-protocol',
+        label: 'AHA Protocol',
+        icon: 'fa-file-pdf',
+        type: 'pdf',
+        url: '/aha-protocol.pdf',
       },
     ],
   },

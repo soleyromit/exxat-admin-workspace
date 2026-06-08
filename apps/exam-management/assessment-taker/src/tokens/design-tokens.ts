@@ -1,15 +1,15 @@
 /**
  * EXXAT EXAM MANAGEMENT — STUDENT UX DESIGN TOKENS
  *
- * Bridge layer: studentUX token system → Exxat DS (exxat-ds) CSS custom props.
+ * Bridge layer: studentUX token system → Exxat DS (@exxatdesignux/ui) CSS custom props.
  *
  * Rules:
- *  - Where exxat-ds defines the intent, delegate with var(--ds-token, fallback).
+ *  - Where @exxatdesignux/ui defines the intent, delegate with var(--ds-token, fallback).
  *  - Exam-specific states (answered/flagged/current), accessibility modes,
  *    calculator chrome, and exam-accent blue are studentUX-owned — kept as-is.
  *  - Never hardcode hex values in component files — use this map or CSS vars.
  *
- * exxat-ds variable reference (globals.css):
+ * @exxatdesignux/ui variable reference (globals.css):
  *   --background            Page/app background
  *   --foreground            Primary text
  *   --card                  Card/panel surface
@@ -31,9 +31,9 @@
  */
 
 export const tokens = {
-  // ─── Brand — delegates to exxat-ds ──────────────────────────────────────────
+  // ─── Brand — delegates to @exxatdesignux/ui ──────────────────────────────────────────
   brand: {
-    primary: 'var(--brand-color, #7C3AED)',           // exxat-ds lavender
+    primary: 'var(--brand-color, #7C3AED)',           // @exxatdesignux/ui lavender
     primaryHover: 'var(--brand-color-dark, #5B21B6)',
     primaryActive: 'var(--brand-color-deep, #3B0764)',
     primaryBg: 'var(--brand-tint-light, #F5F3FF)',
@@ -42,32 +42,32 @@ export const tokens = {
     primaryMidBg: 'var(--brand-tint-subtle, #DDD6FE)'
   },
 
-  // ─── Surface — delegates to exxat-ds ────────────────────────────────────────
+  // ─── Surface — delegates to @exxatdesignux/ui ────────────────────────────────────────
   surface: {
-    page: 'var(--background, #F8FAFC)',               // exxat-ds --background
-    white: 'var(--card, #FFFFFF)',                    // exxat-ds --card
-    subtle: 'var(--muted, #F1F5F9)',                  // exxat-ds --muted
+    page: 'var(--background, #F8FAFC)',               // @exxatdesignux/ui --background
+    white: 'var(--card, #FFFFFF)',                    // @exxatdesignux/ui --card
+    subtle: 'var(--muted, #F1F5F9)',                  // @exxatdesignux/ui --muted
     muted: 'var(--muted, #F8FAFC)',
     overlay: 'rgba(0,0,0,0.30)'
   },
 
-  // ─── Text — delegates to exxat-ds ───────────────────────────────────────────
+  // ─── Text — delegates to @exxatdesignux/ui ───────────────────────────────────────────
   text: {
-    primary: 'var(--foreground, #0F172A)',             // exxat-ds --foreground
-    secondary: 'var(--muted-foreground, #334155)',     // exxat-ds --muted-foreground
+    primary: 'var(--foreground, #0F172A)',             // @exxatdesignux/ui --foreground
+    secondary: 'var(--muted-foreground, #334155)',     // @exxatdesignux/ui --muted-foreground
     muted: 'var(--muted-foreground, #475569)',
     subtle: 'var(--muted-foreground, #64748B)',
     placeholder: 'var(--muted-foreground, #9CA3AF)',
-    inverse: 'var(--primary-foreground, #FFFFFF)',     // exxat-ds --primary-foreground
+    inverse: 'var(--primary-foreground, #FFFFFF)',     // @exxatdesignux/ui --primary-foreground
     timer: 'var(--muted-foreground, #334155)'
   },
 
-  // ─── Border — delegates to exxat-ds ─────────────────────────────────────────
+  // ─── Border — delegates to @exxatdesignux/ui ─────────────────────────────────────────
   border: {
-    default: 'var(--border, #E2E8F0)',                // exxat-ds --border
-    medium: 'var(--border-control, #CBD5E1)',          // exxat-ds --border-control
+    default: 'var(--border, #E2E8F0)',                // @exxatdesignux/ui --border
+    medium: 'var(--border-control, #CBD5E1)',          // @exxatdesignux/ui --border-control
     strong: 'var(--border-control-35, #94A3B8)',
-    focus: 'var(--ring, #A78BFA)'                     // exxat-ds --ring (lavender)
+    focus: 'var(--ring, #A78BFA)'                     // @exxatdesignux/ui --ring (lavender)
   },
 
   // ─── Exam states — now resolve through DS chart palette via index.css
@@ -120,7 +120,7 @@ export const tokens = {
 
   // ─── Sidebar active strip ───────────────────────────────────────────────────
   sidebar: {
-    activeBg: 'var(--brand-color-dark)'              // exxat-ds brand dark
+    activeBg: 'var(--brand-color-dark)'              // @exxatdesignux/ui brand dark
   },
 
   // ─── Exam accent — maps to DS chart-1 (indigo)

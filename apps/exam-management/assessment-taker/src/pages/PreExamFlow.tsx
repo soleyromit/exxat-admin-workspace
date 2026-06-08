@@ -186,14 +186,14 @@ function Instructions({ exam, onNext }: { exam: Assessment; onNext: () => void }
           style={{ background: 'var(--card)', borderColor: 'var(--border)', color: 'var(--foreground)', lineHeight: 1.7, maxHeight: 160 }}
         >
           {exam.instructions || 'No specific instructions provided for this exam.'}
-          {exam.referenceMaterials && exam.referenceMaterials.length > 0 && (
+          {exam.assessmentReferences && exam.assessmentReferences.length > 0 && (
             <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
               <p className="font-semibold mb-1.5">Reference Materials Available:</p>
               <ul className="ps-4 m-0 space-y-1">
-                {exam.referenceMaterials.map(m => (
-                  <li key={m}>
-                    <i className="fa-light fa-file-pdf fa-fw me-1.5" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
-                    {m}
+                {exam.assessmentReferences.map(m => (
+                  <li key={m.id}>
+                    <i className={`fa-light ${m.icon} fa-fw me-1.5`} aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
+                    {m.label}
                   </li>
                 ))}
               </ul>
