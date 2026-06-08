@@ -135,6 +135,20 @@ const DIFF_COLORS: Record<string, string> = {
   'Hard':   'var(--qb-diff-bar-hard)',
 }
 
+// Demo seed: `/assessment-builder?draftId=demo` mounts a fully populated
+// builder (default sections + QB questions scaffolded by the load effect)
+// without going through the create-canvas flow. Used for stakeholder demos
+// and visual verification. Course PHAR101 has QB content under phar101-*.
+const DEMO_DRAFT: Assessment = {
+  id: 'demo',
+  title: 'Cardiology Midterm — Demo',
+  courseId: 'course-phar101',
+  offeringId: 'offering-phar101-demo',
+  questionCount: 45,
+  diffDistribution: { Easy: 15, Medium: 20, Hard: 10 },
+  durationMinutes: 90,
+}
+
 export default function AssessmentBuilderClient() {
   const { currentPersona } = useFacultySession()
   const searchParams = useSearchParams()
@@ -172,6 +186,7 @@ export default function AssessmentBuilderClient() {
   useEffect(() => {
     if (!urlDraftId || !draftsHydrated) return
     const draft = localDrafts.find(d => d.id === urlDraftId)
+      ?? (urlDraftId === 'demo' ? DEMO_DRAFT : undefined)
     if (!draft) return
     if (activeAsmt?.id === draft.id) return
 
@@ -660,7 +675,12 @@ export default function AssessmentBuilderClient() {
 
   // Tab-based navigation — 5 tabs matching design spec
   type BuilderTab = 'setup' | 'build' | 'collaboration' | 'review' | 'preread'
-  const [activeTab, setActiveTab] = useState<BuilderTab>('setup')
+  const [activeTab, setActiveTab] = useState<BuilderTab>(() => {
+    // Deep-link to a specific builder tab via ?tab= (demo + verification).
+    const t = searchParams?.get('tab')
+    const valid: BuilderTab[] = ['setup', 'build', 'collaboration', 'review', 'preread']
+    return (valid as string[]).includes(t ?? '') ? (t as BuilderTab) : 'setup'
+  })
   function handleTabChange(tab: BuilderTab) {
     setActiveTab(tab)
     if (tab !== 'build') setPickerOpen(false)
@@ -4059,7 +4079,7 @@ function DetailsStep({
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-muted-foreground">Course</span>
           <Select value={courseId} onValueChange={onCourseChange}>
-            <SelectTrigger className="h-7 text-xs w-48">
+            <SelectTrigger className="h-7 text-xs w-48" aria-label="Course">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -4072,7 +4092,7 @@ function DetailsStep({
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-muted-foreground">Offering</span>
           <Select value={offeringId} onValueChange={onOfferingChange}>
-            <SelectTrigger className="h-7 text-xs w-40">
+            <SelectTrigger className="h-7 text-xs w-40" aria-label="Offering">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
