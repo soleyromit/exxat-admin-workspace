@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button, Badge, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@exxatdesignux/ui'
+import { Button, Badge, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuCheckboxItem, DropdownMenuSeparator } from '@exxatdesignux/ui'
 import type { AssessmentDraft, AssessmentSection } from '@/lib/qb-types'
 import { facultyListRows } from '@/lib/faculty-mock-data'
 
@@ -75,11 +75,13 @@ export function SectionsOutline({
                   }}
                   placeholder="Section title…"
                   autoFocus
-                  className="flex-1 text-xs px-2 py-1 rounded border border-[var(--border-control-35)] bg-[var(--background)] text-[var(--foreground)] outline-none"
+                  className="flex-1 text-xs px-2 py-1 rounded border border-[var(--border-control-35)] bg-[var(--background)] text-[var(--foreground)] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                   aria-label="New section title"
                 />
                 <Button size="sm" onClick={handleAddSection} className="h-6 px-2 text-xs">Add</Button>
-                <Button variant="ghost" size="sm" onClick={() => { setShowAddForm(false); setNewTitle('') }} className="h-6 px-2 text-xs">✕</Button>
+                <Button variant="ghost" size="sm" onClick={() => { setShowAddForm(false); setNewTitle('') }} className="h-6 px-2 text-xs" aria-label="Cancel adding section">
+                  <i className="fa-regular fa-xmark text-xs" aria-hidden="true" />
+                </Button>
               </div>
             ) : (
               <Button
@@ -165,7 +167,7 @@ function SectionNavItem({
 
       {/* Options menu — hover-only */}
       <div className="absolute right-1 top-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-        <DropdownMenu>
+        <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost" size="icon-xs"
@@ -175,17 +177,49 @@ function SectionNavItem({
               <i className="fa-regular fa-ellipsis text-[10px]" aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuItem onClick={() => onUpdateSection(section.id, { status: isReady ? 'drafting' : 'ready' })}>
               <i className={`fa-regular ${isReady ? 'fa-rotate-left' : 'fa-circle-check'} text-xs`} aria-hidden="true" />
               {isReady ? 'Reopen' : 'Mark ready'}
             </DropdownMenuItem>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <i className="fa-regular fa-user-plus text-xs" aria-hidden="true" />
+                Assign faculty
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="w-56">
+                {facultyListRows.length === 0 && (
+                  <DropdownMenuItem disabled>No faculty available</DropdownMenuItem>
+                )}
+                {facultyListRows.map(f => {
+                  const checked = assignedIds.includes(f.id)
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={f.id}
+                      checked={checked}
+                      onCheckedChange={() => {
+                        const next = checked
+                          ? assignedIds.filter(id => id !== f.id)
+                          : [...assignedIds, f.id]
+                        onUpdateSection(section.id, { facultyIds: next })
+                      }}
+                    >
+                      <span className="truncate">{f.fullName}</span>
+                      {f.adminPosition && (
+                        <span className="ml-auto text-[11px] text-muted-foreground shrink-0">{f.adminPosition.split(' ')[0]}</span>
+                      )}
+                    </DropdownMenuCheckboxItem>
+                  )
+                })}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
             {assignedFaculty.length > 0 && (
               <DropdownMenuItem onClick={() => {/* notify — wired to backend in Phase 1 */}}>
                 <i className="fa-regular fa-bell text-xs" aria-hidden="true" />
                 Notify {assignedFaculty.length === 1 ? assignedFaculty[0].fullName.split(' ').slice(-1)[0] : `${assignedFaculty.length} instructors`}
               </DropdownMenuItem>
             )}
+            <DropdownMenuSeparator />
             <DropdownMenuItem className="text-[var(--destructive)]" onClick={() => onUpdateSection(section.id, { status: 'drafting' })}>
               <i className="fa-regular fa-trash text-xs" aria-hidden="true" />
               Remove section

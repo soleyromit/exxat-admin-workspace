@@ -1,13 +1,11 @@
 'use client'
 
 import type { AssessmentDraft, AssessmentSection } from '@/lib/qb-types'
-import type { CourseObjective } from '@/lib/faculty-mock-data'
 import { facultyListRows } from '@/lib/faculty-mock-data'
 import { MOCK_QB_QUESTIONS, MOCK_MISSING_RATIONALE_QUESTION_IDS } from '@/lib/qb-mock-data'
 
 interface Props {
   activeAsmt: AssessmentDraft
-  objectives: CourseObjective[]
   timeMetrics: { totalMin: number; avgMin: number }
   distribution: { Easy: number; Medium: number; Hard: number }
   bloomsMetrics: { level: string; count: number; pct: number }[]
@@ -22,7 +20,7 @@ const BLOOMS_COLORS = [
 ]
 
 export function HealthPanel({
-  activeAsmt, objectives, timeMetrics, distribution, bloomsMetrics, targetQuestions = 50,
+  activeAsmt, timeMetrics, distribution, bloomsMetrics, targetQuestions = 50,
 }: Props) {
   const selectedIds = activeAsmt.questions.map(q => q.questionId)
   const totalQ = selectedIds.length
@@ -41,6 +39,17 @@ export function HealthPanel({
     acc[v] = (acc[v] ?? 0) + 1
     return acc
   }, {})
+
+  // Topic coverage — derived from actual question folderPaths
+  const topicCounts = selectedIds.reduce<Record<string, number>>((acc, id) => {
+    const q = MOCK_QB_QUESTIONS.find(qm => qm.id === id)
+    if (!q?.folderPath) return acc
+    const parts = q.folderPath.split(' / ')
+    const topic = parts.length > 1 ? parts.slice(1).join(' / ') : parts[0]
+    acc[topic] = (acc[topic] ?? 0) + 1
+    return acc
+  }, {})
+  const topicList = Object.entries(topicCounts).sort((a, b) => b[1] - a[1])
   const multiVersionCount = Object.entries(versionCounts)
     .filter(([v]) => Number(v) > 1)
     .reduce((s, [, c]) => s + c, 0)
@@ -198,9 +207,9 @@ export function HealthPanel({
         )}
 
         {/* ── Topic coverage ── */}
-        {objectives.length > 0 && (
-          <Section label={`Topic coverage`}>
-            <TopicGrid objectives={objectives} coveredCount={Math.ceil(objectives.length * 0.67)} />
+        {topicList.length > 0 && (
+          <Section label={`Topics — ${topicList.length} covered`}>
+            <TopicList topics={topicList} />
           </Section>
         )}
 
@@ -362,23 +371,31 @@ function PbiStrip({ values, threshold }: { values: number[]; threshold: number }
   )
 }
 
-function TopicGrid({ objectives, coveredCount }: { objectives: CourseObjective[]; coveredCount: number }) {
+function TopicList({ topics }: { topics: [string, number][] }) {
+  const max = Math.max(...topics.map(([, c]) => c), 1)
   return (
-    <div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginBottom: 6 }}>
-        {objectives.map((o, i) => (
-          <div
-            key={o.id}
-            title={o.title}
-            style={{
-              width: 10, height: 10, borderRadius: 2,
-              background: i < coveredCount ? 'var(--brand-color)' : 'var(--muted)',
-              opacity: i < coveredCount ? 0.85 : 0.4,
-            }}
-          />
-        ))}
-      </div>
-      <p className="text-[11px] text-muted-foreground">{coveredCount} of {objectives.length} objectives covered</p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+      {topics.map(([topic, count]) => (
+        <div key={topic} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{
+            fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)',
+            flexShrink: 0, width: 16, textAlign: 'right', fontVariantNumeric: 'tabular-nums',
+          }}>{count}</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontSize: 11, color: 'var(--foreground)',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              marginBottom: 2,
+            }}>{topic}</div>
+            <div style={{ height: 3, background: 'var(--muted)', borderRadius: 2, overflow: 'hidden' }}>
+              <div style={{
+                height: '100%', width: `${(count / max) * 100}%`,
+                background: 'var(--brand-color)', borderRadius: 2,
+              }} />
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
