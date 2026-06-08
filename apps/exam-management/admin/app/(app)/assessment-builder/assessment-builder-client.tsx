@@ -1529,7 +1529,7 @@ export default function AssessmentBuilderClient() {
                                 }
                               }
                             }}
-                            style={{ width: 52, height: 26, textAlign: 'center', fontSize: 12, border: '1px solid var(--border)', borderRadius: 5, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', padding: '0 4px' }}
+                            style={{ width: 52, height: 26, textAlign: 'center', fontSize: 12, border: '1px solid var(--border)', borderRadius: 4, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', padding: '0 4px' }}
                           />
                           <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>· Enter to apply</span>
                           {activeAsmt.sections.length > 1 && (
@@ -1671,7 +1671,7 @@ export default function AssessmentBuilderClient() {
                                       disabled={idx === 0}
                                       className="h-4 w-5 text-[var(--muted-foreground)] disabled:opacity-20"
                                     >
-                                      <i className="fa-solid fa-angle-up text-[9px]" aria-hidden="true" />
+                                      <i className="fa-solid fa-angle-up text-[10px]" aria-hidden="true" />
                                     </Button>
                                     <span className="text-xs text-[var(--muted-foreground)] tabular-nums leading-none">{idx + 1}</span>
                                     <Button
@@ -1681,7 +1681,7 @@ export default function AssessmentBuilderClient() {
                                       disabled={idx === totalQ - 1}
                                       className="h-4 w-5 text-[var(--muted-foreground)] disabled:opacity-20"
                                     >
-                                      <i className="fa-solid fa-angle-down text-[9px]" aria-hidden="true" />
+                                      <i className="fa-solid fa-angle-down text-[10px]" aria-hidden="true" />
                                     </Button>
                                   </div>
                                 </td>
@@ -1720,7 +1720,7 @@ export default function AssessmentBuilderClient() {
                                       <span
                                         title={`Version ${q.version}`}
                                         style={{
-                                          fontSize: 9, fontWeight: 700, flexShrink: 0,
+                                          fontSize: 10, fontWeight: 700, flexShrink: 0,
                                           padding: '1px 4px', borderRadius: 3,
                                           background: 'var(--brand-tint)',
                                           color: 'var(--brand-color)',
@@ -1830,7 +1830,7 @@ export default function AssessmentBuilderClient() {
                                     }}
                                     style={{
                                       width: 38, height: 24, textAlign: 'center', fontSize: 12,
-                                      border: '1px solid var(--border)', borderRadius: 5,
+                                      border: '1px solid var(--border)', borderRadius: 4,
                                       background: 'var(--background)', color: 'var(--foreground)',
                                       outline: 'none', padding: '0 4px',
                                     }}
@@ -2345,7 +2345,7 @@ function SectionAssignDropdown({ sections, onAssign, isSelected }: {
         style={{ height: 28, gap: 4 }}
       >
         Use
-        <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 9 }} />
+        <i className="fa-light fa-chevron-down" aria-hidden="true" style={{ fontSize: 10 }} />
       </Button>
       {open && (
         <>
@@ -2767,7 +2767,7 @@ function ABQuestionPicker({
                   <TableCell className="text-xs font-mono text-foreground">
                     {q.pbis !== null ? (
                       <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                        {q.pbis < 0.2 && <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 9 }} />}
+                        {q.pbis < 0.2 && <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 10 }} />}
                         {q.pbis.toFixed(2)}
                       </span>
                     ) : '—'}
@@ -3538,7 +3538,7 @@ function ApprovalPanel({ status, reviewRequest, onSendForReview, onPublish, onAp
           <div className="flex items-center gap-2">
             <div className="flex size-5 items-center justify-center rounded-full text-[10px] font-semibold shrink-0"
               style={{ background: 'var(--chart-2)', color: 'white' }}>
-              {level === 2 ? <i className="fa-solid fa-check" style={{ fontSize: 9 }} aria-hidden="true" /> : '1'}
+              {level === 2 ? <i className="fa-solid fa-check" style={{ fontSize: 10 }} aria-hidden="true" /> : '1'}
             </div>
             <p className="text-xs text-foreground">Peer review</p>
             <span className="text-xs text-muted-foreground ms-auto">{level === 2 ? 'Approved' : 'In progress'}</span>
@@ -3743,7 +3743,7 @@ function SelectedQuestionsOutline({
             if (item.kind === 'section') {
               return (
                 <div key={`section-${item.id}-${idx}`} className="mt-3 mb-1 px-2">
-                  <p className="text-[9px] font-semibold text-muted-foreground">
+                  <p className="text-[10px] font-semibold text-muted-foreground">
                     {item.title} ({item.count})
                   </p>
                 </div>
@@ -5157,7 +5157,7 @@ function AssessmentSettingsContent({
           >
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {(['audio', 'video', 'wifi', 'os'] as const).map(key => (
-                <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '3px 8px', border: `1px solid ${settings.techCheck[key] ? 'var(--foreground)' : 'var(--border)'}`, borderRadius: 5, cursor: 'pointer' }}>
+                <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '3px 8px', border: `1px solid ${settings.techCheck[key] ? 'var(--foreground)' : 'var(--border)'}`, borderRadius: 4, cursor: 'pointer' }}>
                   <input
                     type="checkbox"
                     checked={settings.techCheck[key]}
@@ -5867,7 +5867,7 @@ function AssessmentSettingsSheet({
             >
               <div className="flex flex-wrap gap-2">
                 {(['audio', 'video', 'wifi', 'os'] as const).map(key => (
-                  <label key={key} className="flex items-center gap-1.5 text-xs cursor-pointer" style={{ padding: '3px 8px', border: `1px solid ${local.techCheck[key] ? 'var(--foreground)' : 'var(--border)'}`, borderRadius: 5 }}>
+                  <label key={key} className="flex items-center gap-1.5 text-xs cursor-pointer" style={{ padding: '3px 8px', border: `1px solid ${local.techCheck[key] ? 'var(--foreground)' : 'var(--border)'}`, borderRadius: 4 }}>
                     <input
                       type="checkbox"
                       checked={local.techCheck[key]}
@@ -5985,7 +5985,7 @@ function SectionsPanel({
                   const question = MOCK_QB_QUESTIONS.find(mq => mq.id === qId)
                   return (
                     <div key={qId} className="flex items-center gap-2 text-xs text-foreground">
-                      <i className="fa-light fa-circle-dot shrink-0" aria-hidden="true" style={{ fontSize: 9, color: 'var(--brand-color)' }} />
+                      <i className="fa-light fa-circle-dot shrink-0" aria-hidden="true" style={{ fontSize: 10, color: 'var(--brand-color)' }} />
                       <span className="truncate">{question?.title ?? qId}</span>
                     </div>
                   )
@@ -7250,9 +7250,9 @@ function HBar({ label, count, total, color, labelWidth = 90, icon }: {
         {icon && <i className={icon} aria-hidden="true" style={{ fontSize: 11 }} />}
         {label}
       </span>
-      <div style={{ flex: 1, height: 10, borderRadius: 5, background: 'var(--border)', overflow: 'hidden' }}>
+      <div style={{ flex: 1, height: 10, borderRadius: 4, background: 'var(--border)', overflow: 'hidden' }}>
         <div style={{
-          width: `${pct}%`, height: '100%', borderRadius: 5, background: color,
+          width: `${pct}%`, height: '100%', borderRadius: 4, background: color,
           minWidth: count > 0 ? 5 : 0, transition: 'width 0.4s ease',
         }} />
       </div>

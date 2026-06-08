@@ -148,7 +148,7 @@ function SectionNavItem({
       {/* Assigned instructors — secondary info below section row */}
       {assignedFaculty.length > 0 && (
         <div className="px-3 pb-1.5 -mt-1 flex items-center gap-1 flex-wrap">
-          <i className="fa-light fa-user text-[9px] text-[var(--muted-foreground)]" aria-hidden="true" />
+          <i className="fa-light fa-user text-[10px] text-[var(--muted-foreground)]" aria-hidden="true" />
           <span className="text-[10px] text-[var(--muted-foreground)]">
             {assignedFaculty.length === 1
               ? assignedFaculty[0].fullName.split(' ').slice(-1)[0]
@@ -157,7 +157,7 @@ function SectionNavItem({
           {isReady && (
             <Badge
               variant="outline"
-              className="ml-auto shrink-0 h-3.5 px-1 text-[9px] border-[var(--chart-2)] text-[var(--chart-2)] leading-none"
+              className="ml-auto shrink-0 h-3.5 px-1 text-[10px] border-[var(--chart-2)] text-[var(--chart-2)] leading-none"
             >
               Ready
             </Badge>

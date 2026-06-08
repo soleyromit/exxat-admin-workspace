@@ -231,7 +231,7 @@ export function HealthPanel({
                   <div style={{
                     width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
                     background: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 9, fontWeight: 700, color: 'var(--muted-foreground)',
+                    fontSize: 10, fontWeight: 700, color: 'var(--muted-foreground)',
                   }}>
                     {faculty.fullName.split(' ').map(n => n[0]).join('').slice(0, 2)}
                   </div>
@@ -248,7 +248,7 @@ export function HealthPanel({
                   <div style={{
                     width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
                     background: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 9, fontWeight: 700, color: 'var(--muted-foreground)',
+                    fontSize: 10, fontWeight: 700, color: 'var(--muted-foreground)',
                   }}>
                     {f.fullName.split(' ').map(n => n[0]).join('').slice(0, 2)}
                   </div>
