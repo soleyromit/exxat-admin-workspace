@@ -1,5 +1,6 @@
 'use client'
 
+import { Button } from '@exxatdesignux/ui'
 import type { AssessmentDraft, AssessmentSection } from '@/lib/qb-types'
 import { facultyListRows } from '@/lib/faculty-mock-data'
 import { MOCK_QB_QUESTIONS, MOCK_MISSING_RATIONALE_QUESTION_IDS } from '@/lib/qb-mock-data'
@@ -87,7 +88,7 @@ export function HealthPanel({
       {/* Header */}
       <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-foreground">Assessment health</span>
+          <span className="text-xs font-semibold text-foreground">Exam overview</span>
           <span style={{
             fontSize: 11, fontWeight: 600, padding: '1px 6px', borderRadius: 4,
             background: health === 'good' ? 'var(--chart-2)' : health === 'warn' ? 'var(--chart-4)' : 'var(--muted)',
@@ -99,6 +100,14 @@ export function HealthPanel({
         <p className="text-xs text-muted-foreground mt-0.5">
           {totalQ} Q · {Math.round(timeMetrics.totalMin)} min est.{flagCount > 0 ? ` · ${flagCount} flag${flagCount !== 1 ? 's' : ''}` : ''}
         </p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-2 w-full justify-center gap-1.5 border-[var(--brand-color)] bg-[var(--brand-tint)] text-[var(--brand-color)]"
+        >
+          <i className="fa-light fa-wand-magic-sparkles text-xs" aria-hidden="true" />
+          Ask Leo to balance this exam
+        </Button>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 18 }}>
