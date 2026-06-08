@@ -33,7 +33,8 @@
 **Type scale** (`--fs-*`): hero 40 · page-title 32 · page-title-sm / 3xl 24 · 2xl 21 · xl 18 · lg 16 · base 14 · sm 12 · xs 12.
 **Weights** (`--fw-*`): light 300 · regular 400 · medium 500 · semibold 600 · bold 700.
 Display titles are typically `font-light` (300) or `font-normal` (400) — serif looks elegant light, NOT bold.
-**12px is the floor** — never go below `text-xs`.
+
+**Small-text floor (measured from the live DS, not a memory):** the DS overrides Tailwind so **`text-xs` renders 11px** (not 12px) at the 16px root. The `--fs-xs` *token* nominally says 12px, but the `text-xs` *utility* does not use it — `text-xs` = 11px is the DS's standard small text. Tiny tags/badges go to **10px**. So: standard small text = `text-xs` (11px); never write normal body/label text below 11px; reserve 10px for chips/badges only. (Conformance checker flags rendered text < 10px.)
 
 ---
 
