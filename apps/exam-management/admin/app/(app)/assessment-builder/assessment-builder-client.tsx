@@ -172,6 +172,7 @@ export default function AssessmentBuilderClient() {
   // builder lands ready instead of empty.
   const urlCourseId = searchParams?.get('courseId') ?? null
   const urlDraftId = searchParams?.get('draftId') ?? null
+  const urlNew = searchParams?.get('new') === '1'
   const urlMode = (searchParams?.get('mode') ?? null) as 'blank' | 'qb' | 'copy' | 'pdf' | null
   const urlSourceId = searchParams?.get('sourceId') ?? null
 
@@ -272,6 +273,26 @@ export default function AssessmentBuilderClient() {
     setCourseId(draft.courseId)
     setOfferingId(draft.offeringId)
   }, [urlDraftId, draftsHydrated, localDrafts, activeAsmt?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fresh entry via "+ New Assessment" (?new=1) — mount a blank draft straight
+  // into the builder on the Structure tab; the mode chooser is skipped (the
+  // blueprint + add-question entry points live inside the builder now).
+  useEffect(() => {
+    if (!urlNew || activeAsmt || urlDraftId) return
+    setActiveAsmt({
+      id: `asmt-new-${Date.now()}`,
+      title: 'New Assessment',
+      courseId,
+      offeringId,
+      questions: [],
+      sections: [],
+      durationMinutes: 90,
+      settings: defaultAssessmentSettings('Exam'),
+      healthFlags: [],
+    })
+    setBuilderState('ready')
+    setActiveTab('setup')
+  }, [urlNew, activeAsmt, urlDraftId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load source assessment questions when arriving via "Copy from previous"
   useEffect(() => {
@@ -1147,7 +1168,7 @@ export default function AssessmentBuilderClient() {
   }
 
   // Creation mode chooser — shown when no draft/source is loaded yet
-  if (builderState === 'idle' && activeAsmt === null && !urlDraftId) {
+  if (builderState === 'idle' && activeAsmt === null && !urlDraftId && !urlNew) {
     return <CreationModeChooser
       courseId={courseId}
       assessments={allCourseAssessments}
