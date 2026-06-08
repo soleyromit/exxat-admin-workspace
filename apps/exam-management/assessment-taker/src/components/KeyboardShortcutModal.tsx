@@ -17,7 +17,7 @@ const SHORTCUT_GROUPS: { label: string; items: Shortcut[] }[] = [
   {
     label: 'Navigation',
     items: [
-      { description: 'Next question',         win: ['→', '↵'],        mac: ['→', '↵'] },
+      { description: 'Next question',         win: ['→'],             mac: ['→'] },
       { description: 'Previous question',     win: ['←'],             mac: ['←'] },
     ],
   },

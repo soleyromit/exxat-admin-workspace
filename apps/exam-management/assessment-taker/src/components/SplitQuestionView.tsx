@@ -823,15 +823,6 @@ export function SplitQuestionView({
                 {renderInteractive()}
               </div>
               {renderInlineTools()}
-              {allowComments && (
-                <QuestionCommentBox
-                  questionId={question.id}
-                  initialComment={comment}
-                  onSave={onCommentChange}
-                  isOpen={showReport}
-                  onClose={onCloseReport || (() => {})}
-                />
-              )}
             </div>
           </div>
 
@@ -866,19 +857,21 @@ export function SplitQuestionView({
               {renderQuestionStem()}
               {renderInteractive()}
               {renderInlineTools()}
-              {allowComments && (
-                <QuestionCommentBox
-                  questionId={question.id}
-                  initialComment={comment}
-                  onSave={onCommentChange}
-                  isOpen={showReport}
-                  onClose={onCloseReport || (() => {})}
-                />
-              )}
             </div>
           </div>
         </div>
       }
+
+      {/* Report issue sheet — Portal-based, renders fixed to viewport */}
+      {allowComments && (
+        <QuestionCommentBox
+          questionId={question.id}
+          initialComment={comment}
+          onSave={onCommentChange}
+          isOpen={showReport}
+          onClose={onCloseReport || (() => {})}
+        />
+      )}
     </div>);
 
 }
