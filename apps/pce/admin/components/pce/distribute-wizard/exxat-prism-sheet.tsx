@@ -374,12 +374,12 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Designation</TableHead>
-                    <TableHead>Clinical Instructor</TableHead>
-                    <TableHead>Practice Settings</TableHead>
+                    <TableHead className="text-xs text-muted-foreground">Name</TableHead>
+                    <TableHead className="text-xs text-muted-foreground">Email</TableHead>
+                    <TableHead className="text-xs text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-xs text-muted-foreground">Designation</TableHead>
+                    <TableHead className="text-xs text-muted-foreground">Clinical Instructor</TableHead>
+                    <TableHead className="text-xs text-muted-foreground">Practice Settings</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
