@@ -380,7 +380,7 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {NAV_ITEMS.map(item => {
-                  const isActive = pathname.startsWith(item.href)
+                  const isActive = (pathname ?? '').startsWith(item.href)
                   return (
                     <SidebarMenuItem key={item.key}>
                       <SidebarMenuButton

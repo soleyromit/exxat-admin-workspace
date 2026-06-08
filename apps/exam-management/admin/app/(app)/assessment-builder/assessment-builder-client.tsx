@@ -4181,11 +4181,12 @@ function DetailsStep({
                               setTemplateAsmtId(pa.id)
                               const courseCode = (mockCourses.find(c => c.id === pa.courseId)?.code ?? '').toLowerCase()
                               const pool = MOCK_QB_QUESTIONS.filter(q => q.folder.startsWith(courseCode)).slice(0, pa.questionCount)
-                              const templateSections: AssessmentSection[] = pa.sections.length > 0
-                                ? pa.sections.map((s, i) => ({
+                              const paSections = pa.sections ?? []
+                              const templateSections: AssessmentSection[] = paSections.length > 0
+                                ? paSections.map((s, i) => ({
                                     id: `sec-tpl-${Date.now()}-${i}`,
                                     title: s.title,
-                                    questionIds: pool.slice(i * Math.ceil(pa.questionCount / pa.sections.length), (i + 1) * Math.ceil(pa.questionCount / pa.sections.length)).map(q => q.id),
+                                    questionIds: pool.slice(i * Math.ceil(pa.questionCount / paSections.length), (i + 1) * Math.ceil(pa.questionCount / paSections.length)).map(q => q.id),
                                   }))
                                 : [
                                     { id: `sec-tpl-${Date.now()}-0`, title: 'Section 1', questionIds: pool.slice(0, Math.ceil(pool.length / 2)).map(q => q.id) },

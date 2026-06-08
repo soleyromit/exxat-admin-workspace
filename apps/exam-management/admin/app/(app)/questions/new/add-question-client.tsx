@@ -216,8 +216,8 @@ function AddQuestionForm() {
   const searchParams = useSearchParams()
   const { currentPersona } = useFacultySession()
 
-  const folderId = searchParams.get('folder')
-  const objectiveId = searchParams.get('objective')
+  const folderId = searchParams?.get('folder') ?? null
+  const objectiveId = searchParams?.get('objective') ?? null
 
   // Multi-location state — initialised from the ?folder= param if present.
   const [folderIds, setFolderIds] = useState<string[]>(() =>

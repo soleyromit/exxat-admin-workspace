@@ -124,6 +124,8 @@ export interface Assessment {
   diffDistribution: Record<QDiff, number>
   durationMinutes: number
   collaboratorIds?: string[]
+  sections?: AssessmentSection[]   // section blueprint, used by copy-from-past-assessment
+  poorPbisCount?: number           // count of low-PBI questions, surfaced as a warning in the copy modal
 }
 
 export interface ReferenceMaterial {
