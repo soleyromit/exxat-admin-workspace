@@ -44,8 +44,8 @@ export function SidebarDrawer({
       {/* Header */}
       <div className="flex items-center gap-1.5 ps-3.5 pe-2.5 py-3 border-b border-border shrink-0">
         <span className="text-sm font-bold text-foreground flex-1">Questions</span>
-        <span className="text-xs text-muted-foreground font-medium tabular-nums">
-          {answeredSet.size}<span className="opacity-50">/{questions.length}</span>
+        <span className="text-[12px] text-muted-foreground font-medium tabular-nums">
+          {answeredSet.size}/{questions.length}
         </span>
         {flaggedSet.size > 0 && (
           <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
@@ -69,7 +69,7 @@ export function SidebarDrawer({
         {/* Bookmarked group */}
         {bookmarkedIndices.length > 0 && (
           <div>
-            <div className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
+            <div className="text-[12px] font-semibold text-muted-foreground mb-2 flex items-center gap-1">
               <i className="fa-solid fa-bookmark text-[9px]" aria-hidden="true" />
               Bookmarked
             </div>
@@ -112,7 +112,7 @@ export function SidebarDrawer({
           { swatch: 'filled', bg: 'var(--brand-color)', label: 'Current' },
           { swatch: 'filled', bg: 'var(--foreground)', label: 'Answered' },
           { swatch: 'border', borderColor: 'var(--state-flagged-text)', label: 'Bookmarked' },
-          { swatch: 'border', borderColor: 'var(--border)', label: 'Unanswered' },
+          { swatch: 'border', borderColor: 'var(--muted-foreground)', label: 'Unanswered' },
         ] as { swatch: 'filled' | 'border'; bg?: string; borderColor?: string; label: string }[]).map(({ swatch, bg, borderColor, label }) => (
           <div key={label} className="flex items-center gap-1.5">
             <div
@@ -122,7 +122,7 @@ export function SidebarDrawer({
                 border: swatch === 'border' ? `1.5px solid ${borderColor}` : undefined,
               }}
             />
-            <span className="text-xs text-muted-foreground">{label}</span>
+            <span className="text-[12px] text-muted-foreground">{label}</span>
           </div>
         ))}
       </div>
@@ -192,7 +192,7 @@ function Tile({
       case 'locked':
         return { color: 'var(--muted-foreground)', borderColor: 'var(--border)', opacity: 0.35 };
       default:
-        return { color: 'var(--muted-foreground)', borderColor: 'var(--border)' };
+        return { color: 'var(--foreground)', borderColor: 'var(--border)' };
     }
   })();
 
@@ -203,7 +203,7 @@ function Tile({
       disabled={isLocked}
       aria-label={`Question ${index + 1}`}
       aria-current={status === 'current' || status === 'current-bookmarked' ? 'true' : undefined}
-      className="size-9 rounded-[7px] text-xs font-semibold p-0 border [border-width:1.5px] hover:opacity-80 transition-opacity"
+      className="size-9 rounded-[7px] text-[12px] font-semibold p-0 border [border-width:1.5px] hover:opacity-80 transition-opacity"
       style={tileColors}
     >
       {index + 1}
