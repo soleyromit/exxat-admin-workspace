@@ -48,7 +48,9 @@ const data = await pg.evaluate(() => {
     if (txt && el.offsetParent !== null) {
       out.fonts.add(s.fontFamily.split(',')[0].replace(/["']/g, '').trim())
       if (fs && fs < out.minFont) out.minFont = fs
-      if (fs && fs < 12) out.belowFloor.push(`${el.tagName.toLowerCase()} ${Math.round(fs)}px "${(el.textContent || '').trim().slice(0, 24)}"`)
+      // DS actual floor: text-xs renders ~11px (root scaling) and the DS uses
+      // 10px tags/badges (see offline.html). Flag only genuinely micro text.
+      if (fs && fs < 10) out.belowFloor.push(`${el.tagName.toLowerCase()} ${Math.round(fs)}px "${(el.textContent || '').trim().slice(0, 24)}"`)
     }
     if (/^H[12]$/.test(el.tagName) && fs >= 20 && el.offsetParent !== null) {
       out.headings.push({ tag: el.tagName, text: (el.textContent || '').trim().slice(0, 32), font: s.fontFamily.split(',')[0].replace(/["']/g, '').trim(), size: Math.round(fs) })

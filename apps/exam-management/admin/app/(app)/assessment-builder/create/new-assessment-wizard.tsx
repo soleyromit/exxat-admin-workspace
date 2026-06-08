@@ -79,7 +79,7 @@ export default function NewAssessmentWizard() {
             <h1 className="font-heading text-[32px] font-light leading-tight text-foreground">New assessment</h1>
             <p className="text-sm text-muted-foreground mt-1.5">Set the blueprint — Leo pre-fills what it can; you control everything.</p>
           </div>
-          <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => router.push('/courses')}>
+          <Button variant="secondary" size="sm" className="gap-1.5" onClick={() => router.push('/courses')}>
             <i className="fa-light fa-xmark" aria-hidden="true" />
             Cancel
           </Button>
@@ -96,8 +96,8 @@ export default function NewAssessmentWizard() {
                 <div className="flex items-center gap-2 shrink-0">
                   <span
                     className={[
-                      'flex size-6 items-center justify-center rounded-full border text-xs font-semibold',
-                      done || active ? 'bg-[var(--brand-color)] border-[var(--brand-color)] text-white' : 'bg-card border-border text-muted-foreground',
+                      'flex size-6 items-center justify-center rounded-full border text-[12px] leading-none font-semibold',
+                      done || active ? 'bg-primary border-primary text-primary-foreground' : 'bg-card border-border text-muted-foreground',
                     ].join(' ')}
                     aria-hidden="true"
                   >
@@ -105,7 +105,7 @@ export default function NewAssessmentWizard() {
                   </span>
                   <span className={`text-sm ${active ? 'font-semibold text-foreground' : done ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>{label}</span>
                 </div>
-                {!last && <div className={`h-px flex-1 mx-3 ${done ? 'bg-[var(--brand-color)]' : 'bg-border'}`} aria-hidden="true" />}
+                {!last && <div className={`h-px flex-1 mx-3 ${done ? 'bg-primary' : 'bg-border'}`} aria-hidden="true" />}
               </div>
             )
           })}
@@ -148,7 +148,7 @@ function StepIntent(p: {
   return (
     <div className="flex flex-col gap-5 max-w-[640px]">
       <Field label="Assessment name" required>
-        <Input value={p.name} onChange={e => p.setName(e.target.value)} className="text-sm" />
+        <Input value={p.name} onChange={e => p.setName(e.target.value)} className="text-sm bg-muted" />
       </Field>
       <div className="flex gap-8">
         <Field label="Assessment type" required>
@@ -160,11 +160,11 @@ function StepIntent(p: {
       </div>
       <p className="text-xs text-muted-foreground -mt-2">Exams are always graded &amp; summative. Ungraded is available for Quiz &amp; Assignment.</p>
       <Field label="Primary goal / intent">
-        <Textarea value={p.intent} onChange={e => p.setIntent(e.target.value)} className="text-sm min-h-[76px] resize-y" />
+        <Textarea value={p.intent} onChange={e => p.setIntent(e.target.value)} className="text-sm min-h-[76px] resize-y bg-muted" />
         <p className="text-xs text-muted-foreground mt-1.5">Digitizes the &lsquo;why&rsquo; so collaborators and reviewers stay aligned without an offline meeting.</p>
       </Field>
       <Field label="Target audience level">
-        <Input value={p.audience} onChange={e => p.setAudience(e.target.value)} className="text-sm" />
+        <Input value={p.audience} onChange={e => p.setAudience(e.target.value)} className="text-sm bg-muted" />
       </Field>
     </div>
   )
@@ -381,7 +381,7 @@ function Field({ label, required, children }: { label: string; required?: boolea
 
 function Segmented<T extends string>({ value, onChange, options, soon = [] }: { value: T; onChange: (v: T) => void; options: readonly T[]; soon?: T[] }) {
   return (
-    <div className="inline-flex rounded-lg border border-border p-0.5 bg-muted">
+    <div className="inline-flex rounded-md border border-border p-0.5 bg-muted">
       {options.map(opt => {
         const on = value === opt
         const disabled = soon.includes(opt)
