@@ -27,39 +27,43 @@ export function BuilderLifecycleStepper({ status }: BuilderLifecycleStepperProps
   return (
     <TooltipProvider>
       <div
-        className="flex items-center px-6 h-9 border-b border-border bg-card shrink-0 gap-0"
+        className="flex items-start px-6 py-2 border-b border-border bg-card shrink-0"
         role="group"
         aria-label="Assessment lifecycle"
       >
         {STEPS.map((step, i) => {
-          const isDone    = i < current
-          const isActive  = i === current
-          const isFuture  = i > current
-          const isLast    = i === STEPS.length - 1
+          const isDone   = i < current
+          const isActive = i === current
+          const isLast   = i === STEPS.length - 1
 
           return (
-            <div key={step.key} className="flex items-center" style={{ flex: isLast ? '0 0 auto' : 1 }}>
-              {/* Step dot + label */}
+            <div key={step.key} className="flex items-start" style={{ flex: isLast ? '0 0 auto' : 1 }}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {/* Dot */}
+                  <div className="flex flex-col items-center gap-1 shrink-0">
+                    {/* Node — checkmark when done, filled dot + brand-tint ring when active, number when future */}
                     <div
                       className={[
-                        'size-2 rounded-full shrink-0 transition-colors',
-                        isDone   ? 'bg-chart-2'              : '',
-                        isActive ? 'bg-[var(--brand-color)]'  : '',
-                        isFuture ? 'bg-border'               : '',
+                        'flex size-5 items-center justify-center rounded-full border transition-colors',
+                        isDone   ? 'bg-chart-2 border-chart-2 text-white' : '',
+                        isActive ? 'bg-[var(--brand-color)] border-[var(--brand-color)] text-white ring-4 ring-[var(--brand-tint)]' : '',
+                        !isDone && !isActive ? 'bg-card border-border text-muted-foreground' : '',
                       ].filter(Boolean).join(' ')}
                       aria-hidden="true"
-                    />
-                    {/* Label — only active step shows inline */}
+                    >
+                      {isDone
+                        ? <i className="fa-solid fa-check text-[10px]" aria-hidden="true" />
+                        : isActive
+                          ? <span className="size-1.5 rounded-full bg-white" />
+                          : <span className="text-[10px] font-semibold tabular-nums">{i + 1}</span>}
+                    </div>
+                    {/* Label — all steps labelled (12px min) */}
                     <span
                       className={[
-                        'text-xs whitespace-nowrap transition-colors',
-                        isActive  ? 'font-semibold text-foreground'        : '',
-                        isDone    ? 'text-chart-2 font-medium'             : '',
-                        isFuture  ? 'text-muted-foreground/50 font-normal' : '',
+                        'text-xs whitespace-nowrap leading-none transition-colors',
+                        isActive ? 'font-semibold text-[var(--brand-color)]' : '',
+                        isDone   ? 'font-medium text-chart-2' : '',
+                        !isDone && !isActive ? 'font-normal text-muted-foreground' : '',
                       ].filter(Boolean).join(' ')}
                     >
                       {step.label}
@@ -71,13 +75,10 @@ export function BuilderLifecycleStepper({ status }: BuilderLifecycleStepperProps
                 </TooltipContent>
               </Tooltip>
 
-              {/* Connector line */}
+              {/* Connector — vertically centred on the 20px dot (mt-2.5) */}
               {!isLast && (
                 <div
-                  className={[
-                    'h-px flex-1 mx-2 transition-colors',
-                    isDone ? 'bg-chart-2' : 'bg-border',
-                  ].join(' ')}
+                  className={['mx-2 mt-2.5 h-0.5 flex-1 rounded-full transition-colors', isDone ? 'bg-chart-2' : 'bg-border'].join(' ')}
                   aria-hidden="true"
                 />
               )}
