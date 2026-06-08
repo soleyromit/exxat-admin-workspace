@@ -3,5 +3,5 @@
   "buildCommand": "echo skip",
   "installCommand": "echo skip",
   "outputDirectory": "dist",
-  "ignoreCommand": "[ -z \"$VERCEL_GIT_PREVIOUS_SHA\" ] && exit 1; git diff --quiet $VERCEL_GIT_PREVIOUS_SHA $VERCEL_GIT_COMMIT_SHA -- apps/exam-management/assessment-taker/"
+  "ignoreCommand": "[ -z \"$VERCEL_GIT_PREVIOUS_SHA\" ] && exit 1; git diff --quiet \"$VERCEL_GIT_PREVIOUS_SHA\" \"$VERCEL_GIT_COMMIT_SHA\" -- apps/exam-management/assessment-taker/ 2>/dev/null && exit 0; exit 1"
 }

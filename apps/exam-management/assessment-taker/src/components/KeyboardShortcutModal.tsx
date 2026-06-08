@@ -17,7 +17,7 @@ const SHORTCUT_GROUPS: { label: string; items: Shortcut[] }[] = [
   {
     label: 'Navigation',
     items: [
-      { description: 'Next question',         win: ['→', 'Enter'],    mac: ['→', 'Return'] },
+      { description: 'Next question',         win: ['→', '↵'],        mac: ['→', '↵'] },
       { description: 'Previous question',     win: ['←'],             mac: ['←'] },
       { description: 'Forward navigation',    win: ['Alt', 'N'],      mac: ['⌥', 'N'] },
       { description: 'Backward navigation',   win: ['Alt', 'P'],      mac: ['⌥', 'P'] },
@@ -36,7 +36,7 @@ const SHORTCUT_GROUPS: { label: string; items: Shortcut[] }[] = [
     label: 'Tools',
     items: [
       { description: 'Calculator',            win: ['Alt', 'C'],      mac: ['⌥', 'C'] },
-      { description: 'Adjust font size',      win: ['Ctrl', '+/-'],   mac: ['⌘', '+/-'] },
+      { description: 'Adjust font size',      win: ['Ctrl', '+/−'],   mac: ['⌘', '+/−'] },
       { description: 'View shortcuts',        win: ['Ctrl', '/'],     mac: ['⌘', '/'] },
       { description: 'Close panels',          win: ['Esc'],           mac: ['Esc'] },
     ],
@@ -45,24 +45,25 @@ const SHORTCUT_GROUPS: { label: string; items: Shortcut[] }[] = [
 
 function KeyGroup({ keys }: { keys: string[] }) {
   return (
-    <div style={{ display: 'flex', gap: 3, justifyContent: 'flex-end' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 3, justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
       {keys.map((k, i) => (
-        <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+        <span key={i} style={{ display: 'contents' }}>
           <kbd style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            minWidth: 26, height: 22, padding: '0 5px',
-            borderRadius: 4,
+            minWidth: 28, height: 24, padding: '0 7px',
+            borderRadius: 5,
             border: '1px solid var(--border)',
             backgroundColor: 'var(--muted)',
             color: 'var(--foreground)',
-            fontSize: 11, fontWeight: 600,
+            fontSize: 12, fontWeight: 600,
             fontFamily: 'monospace',
             whiteSpace: 'nowrap',
+            flexShrink: 0,
           }}>
             {k}
           </kbd>
           {i < keys.length - 1 && (
-            <span style={{ fontSize: 10, color: 'var(--muted-foreground)', lineHeight: 1 }}>+</span>
+            <span style={{ fontSize: 10, color: 'var(--muted-foreground)', lineHeight: 1, flexShrink: 0 }}>+</span>
           )}
         </span>
       ))}
@@ -98,7 +99,7 @@ export function KeyboardShortcutModal({ isOpen, onClose }: KeyboardShortcutModal
         backgroundColor: 'var(--card)',
         border: '1px solid var(--border)',
         borderRadius: 16,
-        width: 'min(480px, calc(100vw - 32px))',
+        width: 'min(520px, calc(100vw - 32px))',
         maxHeight: 'calc(100vh - 48px)',
         display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
@@ -125,15 +126,15 @@ export function KeyboardShortcutModal({ isOpen, onClose }: KeyboardShortcutModal
 
         {/* Column headers */}
         <div style={{
-          display: 'grid', gridTemplateColumns: '1fr auto auto',
-          padding: '8px 20px 4px',
+          display: 'grid', gridTemplateColumns: '1fr 120px 100px',
+          padding: '8px 20px 6px',
           gap: 0,
           flexShrink: 0,
           borderBottom: '1px solid var(--border)',
         }}>
           <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Action</span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em', width: 90, textAlign: 'right' }}>Windows</span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em', width: 72, textAlign: 'right' }}>Mac</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'right', paddingRight: 12 }}>Windows</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'right' }}>Mac</span>
         </div>
 
         {/* Shortcut groups */}
@@ -153,17 +154,17 @@ export function KeyboardShortcutModal({ isOpen, onClose }: KeyboardShortcutModal
                 <div
                   key={description}
                   style={{
-                    display: 'grid', gridTemplateColumns: '1fr auto auto',
+                    display: 'grid', gridTemplateColumns: '1fr 120px 100px',
                     alignItems: 'center',
                     padding: '9px 20px',
                     borderBottom: '1px solid var(--border)',
                   }}
                 >
                   <span style={{ fontSize: 13, color: 'var(--foreground)' }}>{description}</span>
-                  <div style={{ width: 90, display: 'flex', justifyContent: 'flex-end' }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', paddingRight: 12, borderRight: '1px solid var(--border)' }}>
                     <KeyGroup keys={win} />
                   </div>
-                  <div style={{ width: 72, display: 'flex', justifyContent: 'flex-end' }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                     <KeyGroup keys={mac} />
                   </div>
                 </div>
