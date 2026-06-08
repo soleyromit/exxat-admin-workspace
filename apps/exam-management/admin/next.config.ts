@@ -12,6 +12,16 @@ const nextConfig: NextConfig = {
     externalDir: true,
   },
   devIndicators: false,
+  // Turbopack resolves react-hook-form with the "react-server" export
+  // condition in server contexts, landing on react-server.esm.mjs which
+  // strips Controller/FormProvider/useFormContext. Force the full ESM build
+  // so DS Form components compile regardless of which rendering context
+  // triggers the import chain.
+  turbopack: {
+    resolveAlias: {
+      'react-hook-form': './node_modules/react-hook-form/dist/index.esm.mjs',
+    },
+  },
   webpack(config) {
     config.resolve.alias = {
       ...config.resolve.alias,
