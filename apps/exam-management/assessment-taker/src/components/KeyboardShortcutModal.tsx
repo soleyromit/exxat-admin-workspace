@@ -135,10 +135,9 @@ export function KeyboardShortcutModal({ isOpen, onClose }: KeyboardShortcutModal
           {SHORTCUT_GROUPS.map(({ label, items }) => (
             <div key={label}>
               <div style={{
-                padding: '8px 20px 4px',
-                fontSize: 12, fontWeight: 700,
+                padding: '10px 20px 4px',
+                fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
                 color: 'var(--muted-foreground)',
-                backgroundColor: 'var(--muted)',
               }}>
                 {label}
               </div>
