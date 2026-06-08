@@ -134,41 +134,44 @@ export function RadioMCQRenderer({
         const isCrossed = crossedOut.has(option);
         const optionImage = question.optionImages?.[idx];
         return (
-          <div
-            key={idx}
-            onClick={() => handleOptionClick(option)}
-            onKeyDown={e => {
-              if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); handleOptionClick(option); }
-              if (e.key === 'x' || e.key === 'X') { e.preventDefault(); toggleCrossOut(e as unknown as React.MouseEvent, option); }
-            }}
-            tabIndex={0}
-            className={`group w-full text-left transition-all exam-focus flex ${hasImages ? 'flex-col' : 'flex-row items-center'} gap-3 p-[1em] rounded-xl border-2 ${isCrossed ? 'opacity-40' : ''}`}
-            style={{
-              borderColor: isSelected && !isCrossed ? 'var(--foreground)' : 'var(--border)',
-              backgroundColor: isSelected && !isCrossed ? 'var(--muted)' : 'var(--card)',
-              cursor: 'pointer',
-            }}
-            role="radio"
-            aria-checked={isSelected}
-            aria-label={`Option ${SHORTCUT_KEYS[idx]}: ${option}. Click to select this answer.`}
-            title={`Select option ${SHORTCUT_KEYS[idx]}`}
-            {...narrateProps(`Option ${SHORTCUT_KEYS[idx]}: ${option}`)}>
+          <div key={idx} className={`group relative ${isCrossed ? 'opacity-40' : ''}`}>
+            <div
+              onClick={() => handleOptionClick(option)}
+              onKeyDown={e => {
+                if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); handleOptionClick(option); }
+                if (e.key === 'x' || e.key === 'X') { e.preventDefault(); toggleCrossOut(e as unknown as React.MouseEvent, option); }
+              }}
+              tabIndex={0}
+              className={`w-full text-left transition-all exam-focus flex ${hasImages ? 'flex-col' : 'flex-row items-center'} gap-3 p-[1em] pe-12 rounded-xl border-2`}
+              style={{
+                borderColor: isSelected && !isCrossed ? 'var(--foreground)' : 'var(--border)',
+                backgroundColor: isSelected && !isCrossed ? 'var(--muted)' : 'var(--card)',
+                cursor: 'pointer',
+              }}
+              role="radio"
+              aria-checked={isSelected}
+              aria-label={`Option ${SHORTCUT_KEYS[idx]}: ${option}. Click to select this answer.`}
+              title={`Select option ${SHORTCUT_KEYS[idx]}`}
+              {...narrateProps(`Option ${SHORTCUT_KEYS[idx]}: ${option}`)}>
 
-            {optionImage &&
-            <img
-              src={optionImage}
-              alt={`Option ${SHORTCUT_KEYS[idx]} image`}
-              className="w-full h-32 object-cover rounded-lg" />
-            }
-            <div className="flex items-center gap-3 w-full">
-              <KeyBadge
-                letter={SHORTCUT_KEYS[idx]}
-                isSelected={isSelected && !isCrossed} />
-              <span
-                className={`text-[1em] flex-1 ${isCrossed ? 'line-through' : ''}`}
-                style={{ color: 'var(--foreground)' }}>
-                {option}
-              </span>
+              {optionImage &&
+              <img
+                src={optionImage}
+                alt={`Option ${SHORTCUT_KEYS[idx]} image`}
+                className="w-full h-32 object-cover rounded-lg" />
+              }
+              <div className="flex items-center gap-3 w-full">
+                <KeyBadge
+                  letter={SHORTCUT_KEYS[idx]}
+                  isSelected={isSelected && !isCrossed} />
+                <span
+                  className={`text-[1em] flex-1 ${isCrossed ? 'line-through' : ''}`}
+                  style={{ color: 'var(--foreground)' }}>
+                  {option}
+                </span>
+              </div>
+            </div>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 z-10">
               <CrossOutButton
                 isCrossed={isCrossed}
                 onClick={(e) => toggleCrossOut(e, option)} />
@@ -213,36 +216,39 @@ export function CheckboxRenderer({
         const isSelected = selectedSet.has(option);
         const isCrossed = crossedOut.has(option);
         return (
-          <div
-            key={idx}
-            onClick={() => toggleOption(option)}
-            onKeyDown={e => {
-              if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleOption(option); }
-              if (e.key === 'x' || e.key === 'X') { e.preventDefault(); toggleCrossOut(e as unknown as React.MouseEvent, option); }
-            }}
-            tabIndex={0}
-            className={`group w-full text-left transition-all exam-focus flex items-center gap-4 p-[1em] rounded-xl border-2 ${isCrossed ? 'opacity-40' : ''}`}
-            style={{
-              borderColor: isSelected && !isCrossed ? 'var(--foreground)' : 'var(--border)',
-              backgroundColor: isSelected && !isCrossed ? 'var(--muted)' : 'var(--card)',
-              cursor: 'pointer',
-            }}
-            role="checkbox"
-            aria-checked={isSelected}
-            aria-label={`Option ${SHORTCUT_KEYS[idx]}: ${option}. Click to toggle this selection.`}
-            title={`Toggle option ${SHORTCUT_KEYS[idx]}`}
-            {...narrateProps(`Option ${SHORTCUT_KEYS[idx]}: ${option}`)}>
-            <KeyBadge
-              letter={SHORTCUT_KEYS[idx]}
-              isSelected={isSelected && !isCrossed} />
-            <span
-              className={`text-[1em] flex-1 ${isCrossed ? 'line-through' : ''}`}
-              style={{ color: 'var(--foreground)' }}>
-              {option}
-            </span>
-            <CrossOutButton
-              isCrossed={isCrossed}
-              onClick={(e) => toggleCrossOut(e, option)} />
+          <div key={idx} className={`group relative ${isCrossed ? 'opacity-40' : ''}`}>
+            <div
+              onClick={() => toggleOption(option)}
+              onKeyDown={e => {
+                if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleOption(option); }
+                if (e.key === 'x' || e.key === 'X') { e.preventDefault(); toggleCrossOut(e as unknown as React.MouseEvent, option); }
+              }}
+              tabIndex={0}
+              className="w-full text-left transition-all exam-focus flex items-center gap-4 p-[1em] pe-12 rounded-xl border-2"
+              style={{
+                borderColor: isSelected && !isCrossed ? 'var(--foreground)' : 'var(--border)',
+                backgroundColor: isSelected && !isCrossed ? 'var(--muted)' : 'var(--card)',
+                cursor: 'pointer',
+              }}
+              role="checkbox"
+              aria-checked={isSelected}
+              aria-label={`Option ${SHORTCUT_KEYS[idx]}: ${option}. Click to toggle this selection.`}
+              title={`Toggle option ${SHORTCUT_KEYS[idx]}`}
+              {...narrateProps(`Option ${SHORTCUT_KEYS[idx]}: ${option}`)}>
+              <KeyBadge
+                letter={SHORTCUT_KEYS[idx]}
+                isSelected={isSelected && !isCrossed} />
+              <span
+                className={`text-[1em] flex-1 ${isCrossed ? 'line-through' : ''}`}
+                style={{ color: 'var(--foreground)' }}>
+                {option}
+              </span>
+            </div>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 z-10">
+              <CrossOutButton
+                isCrossed={isCrossed}
+                onClick={(e) => toggleCrossOut(e, option)} />
+            </div>
           </div>);
 
       })}
@@ -279,34 +285,38 @@ export function CrossOutRenderer({
         const isSelected = selectedAnswer === option;
         const isCrossed = crossedOut.has(option);
         return (
-          <div
-            key={idx}
-            onClick={() => handleOptionClick(option)}
-            onKeyDown={e => {
-              if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); handleOptionClick(option); }
-              if (e.key === 'x' || e.key === 'X') { e.preventDefault(); toggleCrossOut(e as unknown as React.MouseEvent, option); }
-            }}
-            tabIndex={0}
-            className={`group w-full text-left transition-all exam-focus flex items-center gap-4 rounded-xl border-2 ${isCrossed ? 'opacity-40' : ''}`}
-            style={{
-              borderColor: isSelected ? 'var(--foreground)' : 'var(--border)',
-              backgroundColor: isSelected ? 'var(--muted)' : 'var(--card)',
-              padding: '1em',
-              cursor: 'pointer',
-            }}
-            role="radio"
-            aria-checked={isSelected}
-            aria-label={`Option ${SHORTCUT_KEYS[idx]}: ${option}. Click to select, or use the cross-out button to eliminate.`}
-            {...narrateProps(`Option ${SHORTCUT_KEYS[idx]}: ${option}`)}>
-            <KeyBadge letter={SHORTCUT_KEYS[idx]} isSelected={isSelected} />
-            <span
-              className={`text-[1em] flex-1 text-left ${isCrossed ? 'line-through opacity-50' : ''}`}
-              style={{ color: 'var(--foreground)' }}>
-              {option}
-            </span>
-            <CrossOutButton
-              isCrossed={isCrossed}
-              onClick={(e) => toggleCrossOut(e, option)} />
+          <div key={idx} className={`group relative ${isCrossed ? 'opacity-40' : ''}`}>
+            <div
+              onClick={() => handleOptionClick(option)}
+              onKeyDown={e => {
+                if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); handleOptionClick(option); }
+                if (e.key === 'x' || e.key === 'X') { e.preventDefault(); toggleCrossOut(e as unknown as React.MouseEvent, option); }
+              }}
+              tabIndex={0}
+              className="w-full text-left transition-all exam-focus flex items-center gap-4 rounded-xl border-2"
+              style={{
+                borderColor: isSelected ? 'var(--foreground)' : 'var(--border)',
+                backgroundColor: isSelected ? 'var(--muted)' : 'var(--card)',
+                padding: '1em',
+                paddingInlineEnd: '3em',
+                cursor: 'pointer',
+              }}
+              role="radio"
+              aria-checked={isSelected}
+              aria-label={`Option ${SHORTCUT_KEYS[idx]}: ${option}. Click to select, or use the cross-out button to eliminate.`}
+              {...narrateProps(`Option ${SHORTCUT_KEYS[idx]}: ${option}`)}>
+              <KeyBadge letter={SHORTCUT_KEYS[idx]} isSelected={isSelected} />
+              <span
+                className={`text-[1em] flex-1 text-left ${isCrossed ? 'line-through opacity-50' : ''}`}
+                style={{ color: 'var(--foreground)' }}>
+                {option}
+              </span>
+            </div>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 z-10">
+              <CrossOutButton
+                isCrossed={isCrossed}
+                onClick={(e) => toggleCrossOut(e, option)} />
+            </div>
           </div>);
 
       })}

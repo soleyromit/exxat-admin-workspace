@@ -294,6 +294,9 @@ export function App() {
         handleNavigate(currentIndex - 1);
       } else if (e.key.toLowerCase() === 'z') {
         handleToggleFlag();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+        e.preventDefault();
+        setShowShortcuts(prev => !prev);
       } else if (
       ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].includes(e.key.toLowerCase()))
       {
