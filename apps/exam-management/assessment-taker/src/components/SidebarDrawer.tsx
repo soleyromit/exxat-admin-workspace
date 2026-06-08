@@ -38,8 +38,7 @@ export function SidebarDrawer({
     <div
       role="complementary"
       aria-label="Question navigator"
-      className="animate-slide-in-right absolute top-3 bottom-3 end-3 w-64 flex flex-col rounded-xl border border-border bg-card overflow-hidden z-10"
-      style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.14)' }}
+      className="animate-slide-in-right w-60 shrink-0 flex flex-col border-l border-border bg-card overflow-hidden"
     >
       {/* Header */}
       <div className="flex items-center gap-1.5 ps-3.5 pe-2.5 py-3 border-b border-border shrink-0">
