@@ -615,6 +615,90 @@
       "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
       "severity": null,
       "files": []
+    },
+    {
+      "id": "2026-06-09-pce-flagged-001",
+      "date": "2026-06-09",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §13a.4 — Move search bar to top (design feedback, non-functional)",
+      "what": "Monil added §13a item 4: 'Move the search bar to the top'. Applies to the surveys master list page.",
+      "why": "CLEAR design directive from Monil's review of the prototype. Non-functional feedback — flag only, no code auto-applied.",
+      "source": "PCE PRD §13a Feedback on Designs — General Layout",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-09-pce-flagged-002",
+      "date": "2026-06-09",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §13a.5 — User profile position questioned (AMBIGUOUS — contains '?')",
+      "what": "Monil added §13a item 5: 'The user profile is supposed to be on the top right, any reason on why are we moving it to left bottom?' questioning current sidebar-footer user badge placement.",
+      "why": "AMBIGUOUS — sentence contains '?' inside design feedback section. Monil is questioning the current DS Sidebar footer slot usage for user profile.",
+      "source": "PCE PRD §13a Feedback on Designs — General Layout",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-09-pce-flagged-003",
+      "date": "2026-06-09",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §13b.1 — No copy option for templates (CLEAR scope restriction)",
+      "what": "Monil added §13b item 1: 'Do-not give option for user to copy existing template. They can just create template from scratch in course Evaluation.' Template creation UI not yet built — no code change applied.",
+      "why": "CLEAR product scope restriction from design review. Template creation must start from scratch only for Course Evaluation. Flag only — no existing code to remove.",
+      "source": "PCE PRD §13b Feedback on Designs — Create Template",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-09-pce-flagged-004",
+      "date": "2026-06-09",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §13b.3 — 'Add course type as an input' confirms §4 requirement",
+      "what": "Monil added §13b item 3: 'Add course type as an input' as design review confirmation that the Course Type (Didactic/Clinical) field must be visible in the template builder.",
+      "why": "CLEAR — confirms §4 requirement (User selects Course type: Didactic or Clinical, optional). Not a new requirement; a design review reminder to make the field explicitly visible.",
+      "source": "PCE PRD §13b Feedback on Designs — Create Template",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-09-pce-flagged-005",
+      "date": "2026-06-09",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §13c.1 — Push survey wizard steps should be horizontal",
+      "what": "Monil added §13c item 1: 'Wouldn't the steps of a push survey look good if they are horizontal. With this, user gets more real estate on the screen.' Applies to the Create Survey wizard stepper layout.",
+      "why": "CLEAR UX layout direction. Wizard not yet built in PCE app — flag for when it is. Horizontal stepper recommended over vertical/left-rail.",
+      "source": "PCE PRD §13c Feedback on Designs — Create Surveys",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-09-pce-flagged-006",
+      "date": "2026-06-09",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §13c.2 — 'No Report Access step for CE' conflicts with §4 (AMBIGUOUS)",
+      "what": "Monil added §13c item 2: 'For now, we donot need Report Access step for course Evaluation.' §4 still formally lists 5 wizard steps including Report Access (newly added). Direct contradiction between §4 and §13c.",
+      "why": "AMBIGUOUS — 'do not need' follows 'will not be covered' scope-exclusion pattern. Directly contradicts the formal §4 requirements which list Report Access as step 5. Must be resolved before building the wizard.",
+      "source": "PCE PRD §13c Feedback on Designs — Create Surveys vs §4 Key User Flows",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-09-exam-management-build-status-001",
+      "date": "2026-06-09",
+      "product": "exam-management",
+      "type": "prd-change",
+      "title": "BUILD-STATUS last updated date bumped to 2026-06-09",
+      "what": "No feature statuses changed in step 7b mapping (Excel content unchanged from 2026-06-08 snapshot — same Gantt As-of date, same capability table, same open questions). Last updated date updated to today.",
+      "why": "Nipun's roadmap Excel synced — no status changes detected. PCE Phase 1 target (30 Aug 2026) remains future — BUILD-STATUS PCE row unchanged.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
+      "severity": null,
+      "files": ["docs/BUILD-STATUS.md"]
     }
   ]
 }
