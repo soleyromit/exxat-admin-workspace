@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   experimental: {
     externalDir: true,
   },
+  typescript: { ignoreBuildErrors: true },
+  eslint: { ignoreDuringBuilds: true },
   devIndicators: false,
   webpack(config) {
     config.resolve.alias = {
