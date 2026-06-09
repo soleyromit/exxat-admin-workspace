@@ -31,8 +31,7 @@ import { QuestionEditor } from '@/components/question-editor/question-editor'
 import {
   createDraft, toQuestion, type QuestionDraft, type SaveDestination,
 } from '@/lib/question-editor-types'
-import { BuilderLifecycleStepper } from '@/components/assessment-builder/builder-lifecycle-stepper'
-import { BuilderMetaStrip } from '@/components/assessment-builder/builder-meta-strip'
+import { OverviewPanel } from '@/components/assessment-builder/overview-panel'
 import { MarkDistribution } from '@/components/assessment-builder/mark-distribution'
 import { CollaborationPanel } from '@/components/assessment-builder/collaboration-panel'
 import { PreReadPanel } from '@/components/assessment-builder/preread-panel'
@@ -40,8 +39,8 @@ import { QuestionCard } from '@/components/assessment-builder/question-card'
 import { SectionBlock } from '@/components/assessment-builder/section-block'
 import { DeliverySecurityPanel } from '@/components/assessment-builder/delivery-security-panel'
 import { ReviewPublishPanel } from '@/components/assessment-builder/review-publish-panel'
+import { BuilderStartScreen } from '@/components/assessment-builder/builder-start-screen'
 import { SectionsOutline } from '@/components/assessment-builder/step2-sections-outline'
-import { HealthPanel } from '@/components/assessment-builder/step2-health-panel'
 import { Step2SettingsPanel } from '@/components/assessment-builder/step2-settings-panel'
 import { Step2SectionSettingsPanel } from '@/components/assessment-builder/step2-section-settings-panel'
 import { GradingTray } from '@/components/assessment-builder/step2-grading-tray'
@@ -844,6 +843,16 @@ export default function AssessmentBuilderClient() {
     } : prev)
   }
 
+  function addSectionAndActivate(title: string, mode?: AddMode) {
+    const id = `sec-${Date.now()}`
+    setActiveAsmt(prev => prev ? {
+      ...prev,
+      sections: [...prev.sections, { id, title, questionIds: [] }],
+    } : prev)
+    setActiveSectionId(id)
+    if (mode) handleAddModeChange(mode)
+  }
+
   function reorderQuestionInSection(sectionId: string, questionId: string, direction: 'up' | 'down') {
     setActiveAsmt(prev => {
       if (!prev) return prev
@@ -1217,88 +1226,108 @@ export default function AssessmentBuilderClient() {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex-1 overflow-y-auto">
       <h1 className="sr-only">Assessment Builder</h1>
 
-      {/* ── Lifecycle stepper ─────────────────────────────────────────────── */}
-      <BuilderLifecycleStepper status={activeAsmt?.settings?.status ?? 'draft'} />
-
-      {/* ── Header (52px) ─────────────────────────────────────────────────── */}
-      <div className="flex items-center px-4 h-[52px] border-b border-border bg-card shrink-0 gap-2">
-        {/* Back + breadcrumb */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push('/courses')}
-          className="gap-1.5 shrink-0"
-        >
-          <i className="fa-light fa-arrow-left" aria-hidden="true" />
-          {currentCourse?.code ?? 'Courses'}
-        </Button>
-        <span className="text-border text-sm shrink-0" aria-hidden="true">/</span>
-
-        {/* Editable title */}
-        <Input
-          aria-label="Assessment title"
-          value={activeAsmt?.title ?? 'New Assessment'}
-          onChange={e => {
-            const val = e.target.value
-            setActiveAsmt(prev => prev ? { ...prev, title: val } : prev)
-          }}
-          className="h-7 w-[220px] border-0 border-b-2 border-b-[var(--brand-color)] rounded-none bg-transparent px-1 text-sm font-semibold focus-visible:ring-0 focus-visible:ring-offset-0 shrink-0"
-        />
-
-        {/* Spacer — at-a-glance facts now live in the meta strip below */}
-        <div className="flex-1 min-w-0" />
-
-        {/* Right actions */}
-        <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm" onClick={() => handleTabChange('review')}>
-            Preview
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Assessment settings"
-            onClick={() => setRightPanelMode(prev => prev === 'settings' ? 'health' : 'settings')}
-          >
-            <i className="fa-light fa-gear text-sm" aria-hidden="true" />
-          </Button>
-          <Button variant="default" size="sm" className="gap-1.5" onClick={() => handleTabChange('review')}>
-            Send for review
-            <i className="fa-light fa-arrow-right text-sm" aria-hidden="true" />
-          </Button>
-        </div>
-      </div>
-
-      {/* ── Meta strip (at-a-glance facts, all tabs) ──────────────────────── */}
-      {activeAsmt && <BuilderMetaStrip asmt={activeAsmt} />}
-
-      {/* ── 5-tab navigation (DS Tabs) ────────────────────────────────────── */}
+      {/* ── Tab state wrapper ─────────────────────────────────────────────── */}
       <Tabs
         value={activeTab}
         onValueChange={v => handleTabChange(v as typeof activeTab)}
-        className="flex flex-col flex-1 min-h-0"
+        className="flex flex-col min-h-full"
       >
-        <TabsList
-          variant="line"
-          className="px-4 h-10 rounded-none border-b border-border bg-card justify-start gap-0 shrink-0"
-        >
-          <TabsTrigger value="build" className="h-full px-3 rounded-none">
-            Build
-            {activeTab === 'build' && activeAsmt && activeAsmt.questions.length > 0 && (
-              <span className="ml-1.5 text-xs text-muted-foreground tabular-nums">
-                {activeAsmt.questions.length}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="setup" className="h-full px-3 rounded-none">Configure</TabsTrigger>
-          <TabsTrigger value="collaboration" className="h-full px-3 rounded-none">Delivery &amp; Security</TabsTrigger>
-          <TabsTrigger value="review" className="h-full px-3 rounded-none">Review &amp; Publish</TabsTrigger>
-        </TabsList>
+        {/* ── Page header — .page-head: title + meta + actions + tabs ────── */}
+        <div style={{ background: 'var(--card)', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, padding: '20px 24px 0' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {/* Back + state chip */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => router.push('/courses')}
+                  style={{ height: 30, padding: '0 8px', borderRadius: 8, fontWeight: 500, fontSize: 12.5, display: 'inline-flex', alignItems: 'center', gap: 7, cursor: 'pointer', border: 'none', background: 'transparent', color: 'var(--muted-foreground)', fontFamily: 'var(--font-sans)' }}
+                >
+                  <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 11 }} />
+                  All assessments
+                </button>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 22, padding: '0 9px', borderRadius: 999, border: '1px solid var(--border)', fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', background: 'var(--muted)' }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 999, background: 'var(--muted-foreground)', display: 'inline-block' }} />
+                  {activeAsmt?.settings?.status === 'pending-review' ? 'In review'
+                    : activeAsmt?.settings?.status === 'approved' ? 'Approved'
+                    : activeAsmt?.settings?.status === 'live' ? 'Live'
+                    : activeAsmt?.settings?.status === 'scheduled' ? 'Scheduled'
+                    : 'Draft'}
+                </span>
+              </div>
+              {/* .title-input — display font, 30px light */}
+              <input
+                aria-label="Assessment title"
+                value={activeAsmt?.title ?? 'New Assessment'}
+                onChange={e => {
+                  const val = e.target.value
+                  setActiveAsmt(prev => prev ? { ...prev, title: val } : prev)
+                }}
+                style={{
+                  fontFamily: 'var(--font-display)', fontWeight: 300, fontSize: 30, lineHeight: 1.15,
+                  letterSpacing: '-0.01em', border: '1px solid transparent', borderRadius: 8,
+                  padding: '2px 8px', margin: '0 -8px', background: 'transparent',
+                  color: 'var(--foreground)', outline: 'none', width: '100%', maxWidth: 720,
+                }}
+                onFocus={e => { e.target.style.borderColor = 'var(--border-control-3)' }}
+                onBlur={e => { e.target.style.borderColor = 'transparent' }}
+              />
+              {/* Meta row: course · type · security */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
+                <span style={{ fontSize: 12.5, color: 'var(--muted-foreground)' }}>
+                  {currentCourse?.code ?? 'Course'} · {activeAsmt?.settings?.type ?? 'Exam'} · Graded
+                </span>
+              </div>
+            </div>
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: 8, flexShrink: 0, paddingTop: 4 }}>
+              <Button variant="outline" size="sm" onClick={() => handleTabChange('review')}>
+                Preview &amp; simulate
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => {}}>
+                Save draft
+              </Button>
+              <Button variant="default" size="sm" className="gap-1.5" onClick={() => handleTabChange('review')}>
+                Submit for review
+                <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
+              </Button>
+            </div>
+          </div>
+          {/* Underline tabs — .utabs: gap 22px, height 42px */}
+          <TabsList
+            variant="line"
+            style={{ gap: 22, paddingLeft: 24, paddingRight: 24, height: 42, marginTop: 16 }}
+            className="rounded-none border-b border-border bg-transparent justify-start shrink-0 w-full"
+          >
+            <TabsTrigger value="build" style={{ padding: '0 2px', height: '100%', fontSize: 14, fontWeight: 500 }} className="rounded-none">
+              <i className="fa-light fa-list-check" aria-hidden="true" style={{ fontSize: 12, marginRight: 6 }} />
+              Build
+              {activeAsmt && activeAsmt.questions.length > 0 && (
+                <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--muted-foreground)', fontVariantNumeric: 'tabular-nums' }}>
+                  {activeAsmt.questions.length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="setup" style={{ padding: '0 2px', height: '100%', fontSize: 14, fontWeight: 500 }} className="rounded-none">
+              <i className="fa-light fa-gear" aria-hidden="true" style={{ fontSize: 12, marginRight: 6 }} />
+              Configure
+            </TabsTrigger>
+            <TabsTrigger value="collaboration" style={{ padding: '0 2px', height: '100%', fontSize: 14, fontWeight: 500 }} className="rounded-none">
+              <i className="fa-light fa-shield-halved" aria-hidden="true" style={{ fontSize: 12, marginRight: 6 }} />
+              Delivery &amp; Security
+            </TabsTrigger>
+            <TabsTrigger value="review" style={{ padding: '0 2px', height: '100%', fontSize: 14, fontWeight: 500 }} className="rounded-none">
+              <i className="fa-light fa-paper-plane" aria-hidden="true" style={{ fontSize: 12, marginRight: 6 }} />
+              Review &amp; Publish
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Tab content — TabsContent wrappers preserve a11y panel semantics */}
-        <TabsContent value="setup" className="flex-1 min-h-0 mt-0 data-[state=inactive]:hidden">
+        <TabsContent value="setup" className="flex-1 mt-0 data-[state=inactive]:hidden">
           {/* ── Configure tab (navigation, tools, grading, post-exam) ──────── */}
       {activeTab === 'setup' && activeAsmt && (
         <div className="flex-1 overflow-auto">
@@ -1311,213 +1340,229 @@ export default function AssessmentBuilderClient() {
       )}
         </TabsContent>
 
-        {/* ── All Questions tab ─────────────────────────────────────────────── */}
-        <TabsContent value="build" className="flex-1 min-h-0 mt-0 data-[state=inactive]:hidden">
-      {activeTab === 'build' && activeAsmt && (
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        {/* ── Build tab — page-scroll layout matching design ───────────────── */}
+        <TabsContent value="build" className="flex-1 mt-0 data-[state=inactive]:hidden">
+          {/* Empty assessment — start screen */}
+          {activeAsmt && activeAsmt.sections.length === 0 && (
+            <div style={{ maxWidth: 900, margin: '32px auto', padding: '0 24px' }}>
+              <BuilderStartScreen
+                onScratch={() => addSectionAndActivate('Section 1')}
+                onAI={() => addSectionAndActivate('Section 1', 'ai')}
+                onBank={() => addSectionAndActivate('Section 1', 'qb')}
+                onRecycle={() => addSectionAndActivate('Section 1')}
+              />
+            </div>
+          )}
 
-          {/* Left: sections nav — pure navigation */}
-          <div style={{ width: 220, minWidth: 220, borderRight: '1px solid var(--border)', flexShrink: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--background)' }}>
-            <SectionsOutline
-              activeAsmt={activeAsmt}
-              onUpdateSection={(sectionId, patch) => setActiveAsmt(prev => prev ? { ...prev, sections: prev.sections.map(s => s.id === sectionId ? { ...s, ...patch } : s) } : prev)}
-              onAddSection={title => addSection(title)}
-              activeSectionId={activeSectionId}
-              onSetActiveSection={id => { setActiveSectionId(id); handleAddModeChange('resting') }}
-            />
-          </div>
+          {/* No assessment selected */}
+          {!activeAsmt && (
+            <div style={{ maxWidth: 900, margin: '32px auto', padding: '0 24px' }}>
+              <BuilderStartScreen
+                onRecycle={() => router.push('/assessment-builder/create?pathway=recycle')}
+                onAI={() => router.push('/assessment-builder/create?pathway=ai')}
+                onBank={() => router.push('/assessment-builder/create?pathway=bank')}
+                onScratch={() => router.push('/assessment-builder/create?pathway=scratch')}
+              />
+            </div>
+          )}
 
-          {/* Center: section workspace — QB picker is now a Dialog */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-
-            {/* PDF import banner */}
-            {urlMode === 'pdf' && (
-              <div
-                className="flex items-center gap-3 px-4 py-2 text-xs shrink-0"
-                style={{ background: 'var(--brand-tint)', borderBottom: '1px solid var(--border)' }}
-              >
-                <i className="fa-light fa-file-pdf shrink-0" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
-                <span className="text-foreground">
-                  Built from PDF{urlSourceId ? `: ${decodeURIComponent(urlSourceId)}` : ''}.
-                  Review and adjust — edit stems, swap options, or add from QB.
-                </span>
-              </div>
-            )}
-
-            {/* Add-questions toolbar is now per-section (SectionBlock onAdd); the
-                mode panels below render for whichever section is active. */}
-            {(addMode === 'qb' || addMode === 'ai') && (
-              <AddQuestionsInput
-                mode={addMode}
-                query={addQuery}
-                onModeChange={handleAddModeChange}
-                onQueryChange={handleAddQueryChange}
-                onAiGenerate={handleAddAiGenerate}
-              />
-            )}
-            {addMode === 'qb' && addQbResults.length > 0 && (
-              <QbInlineResults
-                results={addQbResults}
-                totalCount={addQbResults.length}
-                activeIndex={addActiveResultIndex}
-                onResultClick={handleAddResultClick}
-              />
-            )}
-            {addMode === 'write' && (
-              <WriteFromScratchForm
-                prefill={addEditPrefill}
-                onSave={handleAddWriteSave}
-                onCancel={() => handleAddModeChange('resting')}
-              />
-            )}
-            {addMode === 'pdf' && (
-              <PdfDropZone
-                onFile={handleAddPdfFile}
-                onCancel={() => handleAddModeChange('resting')}
-              />
-            )}
-            {(addMode === 'generating' || addMode === 'extracting') && (
-              <GeneratingSteps
-                source={addMode === 'extracting' ? 'pdf' : 'ai'}
-                prompt={addQuery}
-                fileName={addPdfFile?.name}
-                onComplete={handleAddGeneratingComplete}
-              />
-            )}
-            {addMode === 'runway' && addGeneratedQuestions.length > 0 && (
-              <RunwayReview
-                questions={addGeneratedQuestions}
-                onAddOne={q => {
-                  const targetId = activeSectionId ?? activeAsmt.sections[0]?.id
-                  if (targetId) handleAddGeneratedQuestion(q, targetId)
-                }}
-                onSkipOne={() => {}}
-                onAddAll={handleAddRunwayAddAll}
-                onEditCurrent={q => { setAddEditPrefill(q); setAddMode('write') }}
-              />
-            )}
-
-            {/* ── Section workspace: header + question list (requires an active section) ── */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              {activeAsmt.sections.length === 0 ? (
-                <div className="flex flex-1 flex-col items-center justify-center gap-2 py-12 text-center px-6">
-                  <i className="fa-light fa-layer-group text-[var(--muted-foreground)] text-2xl" aria-hidden="true" />
-                  <p className="text-sm text-[var(--muted-foreground)]">No sections yet. Add a section to begin.</p>
+          {/* Builder canvas — sections + overview panel */}
+          {activeAsmt && activeAsmt.sections.length > 0 && (
+            <>
+              {/* PDF import banner — full-width above content */}
+              {urlMode === 'pdf' && (
+                <div className="flex items-center gap-3 px-6 py-2 text-xs" style={{ background: 'var(--brand-tint)', borderBottom: '1px solid var(--border)' }}>
+                  <i className="fa-light fa-file-pdf shrink-0" aria-hidden="true" style={{ color: 'var(--brand-color)' }} />
+                  <span className="text-foreground">
+                    Built from PDF{urlSourceId ? `: ${decodeURIComponent(urlSourceId)}` : ''}.
+                    Review and adjust — edit stems, swap options, or add from QB.
+                  </span>
                 </div>
-              ) : (
-                <div style={{ flex: 1, overflowY: 'auto' }}>
-                  {bulkSelectedIds.size > 0 && (
-                    <div role="status" aria-live="polite" className="flex items-center gap-2.5 px-3.5 py-1.5 sticky top-0 z-10" style={{ background: 'var(--brand-tint)', borderBottom: '1px solid var(--ring)' }}>
-                      <span className="text-xs font-semibold text-[var(--brand-color)]">{bulkSelectedIds.size} selected</span>
-                      <span className="text-border" aria-hidden="true">·</span>
-                      <span className="text-xs text-muted-foreground">Set points:</span>
-                      <input type="number" aria-label="Bulk set points for selected questions" min={0} placeholder="pts"
-                        onKeyDown={e => { if (e.key === 'Enter') { const v = parseInt((e.target as HTMLInputElement).value); if (!isNaN(v)) { bulkSetPoints([...bulkSelectedIds], v); (e.target as HTMLInputElement).value = '' } } }}
-                        className="h-6 w-12 rounded border border-border bg-background px-1 text-center text-xs text-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50" />
-                      {activeAsmt.sections.length > 1 && (
-                        <>
-                          <span className="text-border" aria-hidden="true">·</span>
-                          <select aria-label="Move selected questions to section" defaultValue=""
-                            onChange={e => { const targetSectionId = e.target.value; if (!targetSectionId || !activeAsmt) return; const selectedIds = [...bulkSelectedIds]; setActiveAsmt(prev => { if (!prev) return prev; const without = prev.sections.map(sec => ({ ...sec, questionIds: sec.questionIds.filter(qId => !selectedIds.includes(qId)) })); const moved = without.map(sec => { if (sec.id !== targetSectionId) return sec; const existing = new Set(sec.questionIds); return { ...sec, questionIds: [...sec.questionIds, ...selectedIds.filter(qId => !existing.has(qId))] } }); return { ...prev, sections: moved } }); setBulkSelectedIds(new Set()); e.target.value = '' }}
-                            className="h-6 rounded border border-border bg-background px-1.5 text-xs text-foreground outline-none">
-                            <option value="" disabled>Move to…</option>
-                            {activeAsmt.sections.map(sec => (<option key={sec.id} value={sec.id}>{sec.title}</option>))}
-                          </select>
-                        </>
-                      )}
-                      <Button variant="ghost" size="sm" onClick={() => setBulkSelectedIds(new Set())} className="ml-auto h-6 px-2 text-xs text-muted-foreground">Clear</Button>
-                    </div>
-                  )}
-                  {activeAsmt.sections.map((section, sIdx) => {
-                    const secQuestions = questionsForSection(section)
-                    const facIds = section.facultyIds?.length ? section.facultyIds : section.facultyId ? [section.facultyId] : []
-                    const secFaculty = facultyListRows.filter(f => facIds.includes(f.id))
-                    const facultyLabel = secFaculty.length === 0 ? null : secFaculty.length === 1 ? secFaculty[0].fullName : `${secFaculty[0].fullName.split(' ').slice(-1)[0]} +${secFaculty.length - 1}`
-                    const cards = secQuestions.map(({ aq, q }, idx) => {
-                      const creatorPersona = q.creator ? PERSONA_BY_ID[q.creator] : null
-                      const editorPersona = (q.lastEditedBy && q.lastEditedBy !== q.creator) ? PERSONA_BY_ID[q.lastEditedBy] : null
-                      const provMap: Record<string, { icon: string; title: string; color: string }> = {
-                        pdf:    { icon: 'fa-file-lines',    title: 'Imported from PDF',      color: 'var(--chart-3)' },
-                        ai:     { icon: 'fa-sparkles',      title: 'AI-generated',           color: 'var(--brand-color)' },
-                        manual: { icon: 'fa-pen-to-square', title: 'Written from scratch',   color: 'var(--muted-foreground)' },
-                        copied: { icon: 'fa-copy',          title: 'Copied from prior exam', color: 'var(--chart-4)' },
-                      }
-                      const prov = aq.provenance && aq.provenance !== 'qb' ? (provMap[aq.provenance] ?? null) : null
-                      const flag = activeAsmt.healthFlags.find(f => f.questionId === q.id)
-                      const flagTitle = flag
-                        ? flag.type === 'missing-rationale' ? 'Missing rationale'
-                        : flag.type === 'poor-pbis' ? `Low pt-biserial (${flag.pbis.toFixed(2)})`
-                        : flag.type === 'poor-discriminator' ? `Poor discriminator (pbis ${flag.pbis.toFixed(2)})`
-                        : flag.type === 'extreme-difficulty' ? `Extreme difficulty (p=${flag.pValue.toFixed(2)})`
-                        : flag.type === 'near-zero-discrimination' ? `Near-zero discrimination (D=${flag.discriminationIndex.toFixed(2)})`
-                        : 'Quality flag'
-                        : null
-                      return {
-                        rowKey: q.id, index: idx, total: secQuestions.length, stem: q.title, type: q.type,
-                        typeIcon: TYPE_ICONS_Q[q.type], difficulty: q.difficulty, diffColor: DIFF_COLORS[q.difficulty] ?? 'var(--muted-foreground)',
-                        blooms: q.blooms, pbi: q.pbis, points: aq.points, version: q.version,
-                        selected: bulkSelectedIds.has(q.id), pinned: pinnedQuestionIds.has(q.id), lastMoved: lastMovedId === q.id,
-                        provenance: prov, flagTitle,
-                        creator: creatorPersona ? { initials: creatorPersona.initials, name: creatorPersona.name } : null,
-                        editor: editorPersona ? { initials: editorPersona.initials, name: editorPersona.name } : null,
-                        onToggleSelect: (checked: boolean) => setBulkSelectedIds(prev => { const next = new Set(prev); if (checked) next.add(q.id); else next.delete(q.id); return next }),
-                        onOpenDetail: () => setDetailQuestionId(prev => prev === q.id ? null : q.id),
-                        onReorder: (dir: 'up' | 'down') => reorderQuestionInSection(section.id, q.id, dir),
-                        onTogglePin: () => togglePinQuestion(q.id),
-                        onSetPoints: (v: number) => updateQuestionPoints(q.id, v),
-                      }
-                    })
-                    return (
-                      <SectionBlock key={section.id} index={sIdx} title={section.title} facultyLabel={facultyLabel}
-                        ready={sectionFillPct(section) >= 80} questionCount={secQuestions.length}
-                        target={section.fillTarget?.value ?? section.questionTarget ?? null} cards={cards}
-                        onAnalysis={() => { setActiveSectionId(section.id); setSectionAnalysisOpen(true) }}
-                        onAdd={mode => { setActiveSectionId(section.id); handleAddModeChange(mode) }} />
-                    )
-                  })}
-                  <div className="px-3.5 py-4">
-                    <Button variant="outline" size="sm" className="w-full gap-1.5" onClick={() => addSection(`Section ${activeAsmt.sections.length + 1}`)}>
-                      <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                      Add section
+              )}
+
+              {/* Mode panels — full-width, above grid */}
+              {(addMode === 'qb' || addMode === 'ai') && (
+                <AddQuestionsInput
+                  mode={addMode}
+                  query={addQuery}
+                  onModeChange={handleAddModeChange}
+                  onQueryChange={handleAddQueryChange}
+                  onAiGenerate={handleAddAiGenerate}
+                />
+              )}
+              {addMode === 'qb' && addQbResults.length > 0 && (
+                <QbInlineResults
+                  results={addQbResults}
+                  totalCount={addQbResults.length}
+                  activeIndex={addActiveResultIndex}
+                  onResultClick={handleAddResultClick}
+                />
+              )}
+              {addMode === 'write' && (
+                <WriteFromScratchForm
+                  prefill={addEditPrefill}
+                  onSave={handleAddWriteSave}
+                  onCancel={() => handleAddModeChange('resting')}
+                />
+              )}
+              {addMode === 'pdf' && (
+                <PdfDropZone
+                  onFile={handleAddPdfFile}
+                  onCancel={() => handleAddModeChange('resting')}
+                />
+              )}
+              {(addMode === 'generating' || addMode === 'extracting') && (
+                <GeneratingSteps
+                  source={addMode === 'extracting' ? 'pdf' : 'ai'}
+                  prompt={addQuery}
+                  fileName={addPdfFile?.name}
+                  onComplete={handleAddGeneratingComplete}
+                />
+              )}
+              {addMode === 'runway' && addGeneratedQuestions.length > 0 && (
+                <RunwayReview
+                  questions={addGeneratedQuestions}
+                  onAddOne={q => {
+                    const targetId = activeSectionId ?? activeAsmt.sections[0]?.id
+                    if (targetId) handleAddGeneratedQuestion(q, targetId)
+                  }}
+                  onSkipOne={() => {}}
+                  onAddAll={handleAddRunwayAddAll}
+                  onEditCurrent={q => { setAddEditPrefill(q); setAddMode('write') }}
+                />
+              )}
+
+              {/* Page content — .content.wide: maxWidth 1400, centred */}
+              <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px', width: '100%' }}>
+
+                {/* Global toolbar */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--foreground)' }}>
+                    {activeAsmt.sections.length} {activeAsmt.sections.length === 1 ? 'section' : 'sections'} · {activeAsmt.questions.length} questions
+                  </span>
+                  <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+                    <Button variant="outline" size="sm" className="gap-1.5"
+                      onClick={() => { setActiveSectionId(activeAsmt.sections[0]?.id ?? null); handleAddModeChange('qb') }}>
+                      <i className="fa-light fa-magnifying-glass text-xs" aria-hidden="true" />
+                      Search bank
+                    </Button>
+                    <Button size="sm" className="gap-1.5"
+                      style={{ background: 'var(--leo-gradient)', color: 'white', border: 'none' }}
+                      onClick={() => { setActiveSectionId(activeAsmt.sections[0]?.id ?? null); handleAddModeChange('ai') }}>
+                      <i className="fa-duotone fa-star-christmas text-xs" aria-hidden="true" />
+                      AI generate
                     </Button>
                   </div>
                 </div>
-              )}
-            </div>
 
-          </div>
+                {/* .bulk-bar */}
+                {bulkSelectedIds.size > 0 && (
+                  <div role="status" aria-live="polite" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: 'oklch(from var(--brand-color) l c h / 0.07)', border: '1px solid oklch(from var(--brand-color) l c h / 0.28)', borderRadius: 12, marginBottom: 14 }}>
+                    <i className="fa-light fa-square-check" aria-hidden="true" style={{ color: 'var(--brand-color)', fontSize: 13 }} />
+                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--brand-color)' }}>{bulkSelectedIds.size} selected</span>
+                    <div style={{ width: 1, height: 18, background: 'var(--border)', margin: '0 4px' }} aria-hidden="true" />
+                    <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>Move to:</span>
+                    {activeAsmt.sections.map(sec => (
+                      <Button key={sec.id} variant="ghost" size="sm" className="h-7 px-2 text-xs"
+                        onClick={() => {
+                          const selectedIds = [...bulkSelectedIds]
+                          setActiveAsmt(prev => {
+                            if (!prev) return prev
+                            const without = prev.sections.map(s => ({ ...s, questionIds: s.questionIds.filter(qId => !selectedIds.includes(qId)) }))
+                            const moved = without.map(s => {
+                              if (s.id !== sec.id) return s
+                              const existing = new Set(s.questionIds)
+                              return { ...s, questionIds: [...s.questionIds, ...selectedIds.filter(qId => !existing.has(qId))] }
+                            })
+                            return { ...prev, sections: moved }
+                          })
+                          setBulkSelectedIds(new Set())
+                        }}>
+                        {sec.title}
+                      </Button>
+                    ))}
+                    <Button variant="ghost" size="sm" onClick={() => setBulkSelectedIds(new Set())} className="h-7 px-2 text-xs text-muted-foreground" style={{ marginLeft: 'auto' }}>Clear</Button>
+                  </div>
+                )}
 
-          {/* Right panel — Health always, or Assessment Settings overlay */}
-          <div style={{ width: 280, minWidth: 280, borderLeft: '1px solid var(--border)', flexShrink: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            {rightPanelMode === 'health' && (
-              <HealthPanel
-                activeAsmt={activeAsmt}
-                timeMetrics={timeMetrics}
-                distribution={distribution}
-                bloomsMetrics={bloomsMetrics}
-              />
-            )}
-            {rightPanelMode === 'settings' && (
-              <Step2SettingsPanel
-                settings={activeAsmt.settings}
-                onPatch={(patch: Partial<AssessmentSettings>) => setActiveAsmt(prev => prev ? { ...prev, settings: { ...prev.settings, ...patch } } : prev)}
-                onClose={() => setRightPanelMode('health')}
-              />
-            )}
-          </div>
-        </div>
-      )}
+                {/* 2-col grid: question area (1fr) | OverviewPanel (332px, sticky) */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 332px', gap: 24, alignItems: 'start' }}>
 
-      {/* Build tab — no active assessment */}
-      {activeTab === 'build' && !activeAsmt && (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
-          <p className="text-sm text-muted-foreground">No assessment found. Start from the canvas.</p>
-          <Button size="sm" onClick={() => router.push('/assessment-builder/create')} className="gap-1.5">
-            <i className="fa-light fa-arrow-left" aria-hidden="true" />
-            Back to canvas
-          </Button>
-        </div>
-      )}
+                  {/* Left: all sections + add section */}
+                  <div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                      {activeAsmt.sections.map((section, sIdx) => {
+                        const secQuestions = questionsForSection(section)
+                        const facIds = section.facultyIds?.length ? section.facultyIds : section.facultyId ? [section.facultyId] : []
+                        const secFaculty = facultyListRows.filter(f => facIds.includes(f.id))
+                        const facultyLabel = secFaculty.length === 0 ? null : secFaculty.length === 1 ? secFaculty[0].fullName : `${secFaculty[0].fullName.split(' ').slice(-1)[0]} +${secFaculty.length - 1}`
+                        const cards = secQuestions.map(({ aq, q }, idx) => {
+                          const creatorPersona = q.creator ? PERSONA_BY_ID[q.creator] : null
+                          const editorPersona = (q.lastEditedBy && q.lastEditedBy !== q.creator) ? PERSONA_BY_ID[q.lastEditedBy] : null
+                          const provMap: Record<string, { icon: string; title: string; color: string }> = {
+                            pdf:    { icon: 'fa-file-lines',    title: 'Imported from PDF',      color: 'var(--chart-3)' },
+                            ai:     { icon: 'fa-sparkles',      title: 'AI-generated',           color: 'var(--brand-color)' },
+                            manual: { icon: 'fa-pen-to-square', title: 'Written from scratch',   color: 'var(--muted-foreground)' },
+                            copied: { icon: 'fa-copy',          title: 'Copied from prior exam', color: 'var(--chart-4)' },
+                          }
+                          const prov = aq.provenance && aq.provenance !== 'qb' ? (provMap[aq.provenance] ?? null) : null
+                          const flag = activeAsmt.healthFlags.find(f => f.questionId === q.id)
+                          const flagTitle = flag
+                            ? flag.type === 'missing-rationale' ? 'Missing rationale'
+                            : flag.type === 'poor-pbis' ? `Low pt-biserial (${flag.pbis.toFixed(2)})`
+                            : flag.type === 'poor-discriminator' ? `Poor discriminator (pbis ${flag.pbis.toFixed(2)})`
+                            : flag.type === 'extreme-difficulty' ? `Extreme difficulty (p=${flag.pValue.toFixed(2)})`
+                            : flag.type === 'near-zero-discrimination' ? `Near-zero discrimination (D=${flag.discriminationIndex.toFixed(2)})`
+                            : 'Quality flag'
+                            : null
+                          return {
+                            rowKey: q.id, index: idx, total: secQuestions.length, stem: q.title, type: q.type,
+                            typeIcon: TYPE_ICONS_Q[q.type], difficulty: q.difficulty, diffColor: DIFF_COLORS[q.difficulty] ?? 'var(--muted-foreground)',
+                            blooms: q.blooms, pbi: q.pbis, points: aq.points, version: q.version,
+                            selected: bulkSelectedIds.has(q.id), pinned: pinnedQuestionIds.has(q.id), lastMoved: lastMovedId === q.id,
+                            provenance: prov, flagTitle,
+                            creator: creatorPersona ? { initials: creatorPersona.initials, name: creatorPersona.name } : null,
+                            editor: editorPersona ? { initials: editorPersona.initials, name: editorPersona.name } : null,
+                            onToggleSelect: (checked: boolean) => setBulkSelectedIds(prev => { const next = new Set(prev); if (checked) next.add(q.id); else next.delete(q.id); return next }),
+                            onOpenDetail: () => setDetailQuestionId(prev => prev === q.id ? null : q.id),
+                            onReorder: (dir: 'up' | 'down') => reorderQuestionInSection(section.id, q.id, dir),
+                            onTogglePin: () => togglePinQuestion(q.id),
+                            onSetPoints: (v: number) => updateQuestionPoints(q.id, v),
+                          }
+                        })
+                        return (
+                          <SectionBlock key={section.id} index={sIdx} title={section.title} facultyLabel={facultyLabel}
+                            ready={sectionFillPct(section) >= 80} questionCount={secQuestions.length}
+                            target={section.fillTarget?.value ?? section.questionTarget ?? null} cards={cards}
+                            onAnalysis={() => { setActiveSectionId(section.id); setSectionAnalysisOpen(true) }}
+                            onAdd={mode => { setActiveSectionId(section.id); handleAddModeChange(mode) }} />
+                        )
+                      })}
+                    </div>
+                    <div style={{ marginTop: 16 }}>
+                      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => addSection(`Section ${activeAsmt.sections.length + 1}`)}>
+                        <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                        Add section
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Right: OverviewPanel — sticky within grid, top 20px */}
+                  <div style={{ position: 'sticky', top: 20 }}>
+                    <OverviewPanel
+                      totalQuestions={activeAsmt.questions.length}
+                      totalPoints={computeTotalAssigned(activeAsmt.questions)}
+                      estimatedMinutes={activeAsmt.durationMinutes}
+                      flagCount={activeAsmt.healthFlags.length}
+                      onJumpFlags={() => {}}
+                      onAskLeo={() => {}}
+                    />
+                  </div>
+
+                </div>
+              </div>
+            </>
+          )}
 
         </TabsContent>
 

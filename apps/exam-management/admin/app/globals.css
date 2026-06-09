@@ -56,6 +56,12 @@
    --courses-* table tints, etc.
    Anything ABOVE this line must match this template verbatim. */
 
+/* ── Assessment Builder display tokens ──────────────────────────────────── */
+:root {
+  --font-display: "ivypresto-headline", "ivypresto-text", var(--font-heading), "Playfair Display", Georgia, serif;
+  --leo-gradient: linear-gradient(135deg, oklch(0.57 0.24 342) 0%, oklch(0.48 0.20 320) 50%, oklch(0.44 0.18 280) 100%);
+}
+
 
 /*
   DS custom variants — required for DS Tailwind classes (data-active:,

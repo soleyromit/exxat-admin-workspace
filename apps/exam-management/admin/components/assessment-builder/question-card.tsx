@@ -1,7 +1,8 @@
 'use client'
 
 import {
-  Card, CardContent, Button, Avatar, AvatarFallback, AvatarGroup,
+  Avatar, AvatarFallback, AvatarGroup,
+  Button,
   Tooltip, TooltipTrigger, TooltipContent, TooltipProvider,
 } from '@exxatdesignux/ui'
 
@@ -29,141 +30,217 @@ export interface QuestionCardProps {
   onReorder: (dir: 'up' | 'down') => void
   onTogglePin: () => void
   onSetPoints: (v: number) => void
+  topic?: string
+  source?: 'ai' | 'bank' | 'manual'
+  options?: Array<{ text: string; correct: boolean }>
+  onEdit?: () => void
+  onDelete?: () => void
 }
 
-/**
- * Question authoring card — the Claude Design builder surface: full readable
- * stem + a metadata row + per-question actions (points, pin, reorder), with an
- * inline warning when the question is flagged. Replaces the dense table row.
- */
+// Difficulty tint backgrounds using relative oklch colors
+function diffBgColor(difficulty: string) {
+  if (difficulty === 'Easy') return 'oklch(from var(--chart-2) l c h / 0.14)'
+  if (difficulty === 'Hard') return 'oklch(from var(--destructive) l c h / 0.12)'
+  return 'oklch(from var(--chart-4) l c h / 0.16)'
+}
+
+function diffTextColor(_difficulty: string, diffColor: string) {
+  // diffColor is already set by caller (var(--chip-2), var(--chip-4), etc.)
+  return diffColor
+}
+
 export function QuestionCard(p: QuestionCardProps) {
-  const pbiLow = p.pbi !== null && p.pbi < 0.2
-  const bg = p.lastMoved ? 'var(--brand-tint)' : p.pinned ? 'var(--muted)' : 'var(--card)'
+  const flagged = !!p.flagTitle
+  const handleEdit = p.onEdit ?? p.onOpenDetail
+
+  // .q-card (+ .q-card.flagged variant)
+  const cardStyle: React.CSSProperties = {
+    background: p.lastMoved ? 'var(--brand-tint)' : 'var(--card)',
+    border: flagged
+      ? '1px solid oklch(from var(--destructive) l c h / 0.4)'
+      : '1px solid var(--border)',
+    borderRadius: 13,
+    padding: '14px 16px',
+    transition: 'border-color 0.15s, box-shadow 0.15s',
+  }
 
   return (
-    <Card size="sm" className="rounded-lg transition-colors" style={{ background: bg }}>
-      <CardContent className="p-3">
-      <div className="flex items-start gap-2.5">
-        <input
-          type="checkbox"
-          aria-label={`Select ${p.stem}`}
-          checked={p.selected}
-          onChange={e => p.onToggleSelect(e.target.checked)}
-          className="mt-1 cursor-pointer shrink-0"
-        />
-        <span className="mt-0.5 w-5 shrink-0 text-right text-xs tabular-nums text-muted-foreground">{p.index + 1}</span>
+    <div style={cardStyle}>
+      <div style={{ display: 'flex', gap: 11 }}>
 
-        <div className="min-w-0 flex-1">
-          {/* Stem row */}
-          <div className="flex items-start gap-1.5">
-            {p.provenance && (
-              <i
-                className={`fa-light ${p.provenance.icon} text-[10px] mt-1 shrink-0`}
-                style={{ color: p.provenance.color }}
-                title={p.provenance.title}
-                aria-hidden="true"
-              />
-            )}
-            <span
-              role="button"
-              tabIndex={0}
-              onClick={p.onOpenDetail}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p.onOpenDetail() } }}
-              className="flex-1 cursor-pointer text-sm leading-snug text-foreground hover:text-[var(--brand-color)]"
-            >
-              {p.stem}
+        {/* Left col: grip + checkbox + index */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, marginTop: 2, flexShrink: 0 }}>
+          {/* .grip */}
+          <i className="fa-light fa-grip-vertical" aria-hidden="true" style={{ color: 'var(--border-control)', cursor: 'grab', fontSize: 14 }} />
+          {/* checkbox — .chk-btn */}
+          <input
+            type="checkbox"
+            aria-label={`Select question ${p.index + 1}`}
+            checked={p.selected}
+            onChange={e => p.onToggleSelect(e.target.checked)}
+            style={{ width: 14, height: 14, cursor: 'pointer', accentColor: 'var(--brand-color)' }}
+          />
+          {/* index */}
+          <span style={{ fontSize: 11, color: 'var(--muted-foreground)', fontVariantNumeric: 'tabular-nums' }}>
+            {p.index + 1}
+          </span>
+        </div>
+
+        {/* Right col: tag row + stem + options + flag + psy + actions */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+
+          {/* Tag row — above stem */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7, flexWrap: 'wrap' }}>
+
+            {/* Type .tag */}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 22, padding: '0 8px', borderRadius: 7, border: '1px solid var(--border)', fontSize: 11, color: 'var(--muted-foreground)', background: 'var(--card)', fontWeight: 500 }}>
+              {p.typeIcon && <i className={p.typeIcon} aria-hidden="true" style={{ fontSize: 9 }} />}
+              {p.type}
             </span>
+
+            {/* Difficulty .diff */}
+            <span style={{ height: 22, padding: '0 8px', borderRadius: 7, fontSize: 11, fontWeight: 600, display: 'inline-flex', alignItems: 'center', color: diffTextColor(p.difficulty, p.diffColor), background: diffBgColor(p.difficulty) }}>
+              {p.difficulty}
+            </span>
+
+            {/* Topic .tag */}
+            {p.topic && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', height: 22, padding: '0 8px', borderRadius: 7, border: '1px solid var(--border)', fontSize: 10, color: 'var(--muted-foreground)', background: 'var(--card)' }}>
+                {p.topic}
+              </span>
+            )}
+
+            {/* Bloom .tag */}
+            <span style={{ display: 'inline-flex', alignItems: 'center', height: 22, padding: '0 8px', borderRadius: 7, border: '1px solid var(--border)', fontSize: 10, color: 'var(--muted-foreground)', background: 'var(--card)' }}>
+              {p.blooms}
+            </span>
+
+            {/* Source badges */}
+            {p.source === 'ai' && (
+              // .tag.brand — AI source
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 22, padding: '0 8px', borderRadius: 7, border: '1px solid oklch(from var(--brand-color) l c h / 0.3)', fontSize: 10, fontWeight: 500, color: 'var(--brand-color-dark)', background: 'oklch(from var(--brand-color) l c h / 0.06)' }}>
+                <i className="fa-duotone fa-star-christmas" aria-hidden="true" style={{ fontSize: 9 }} />
+                AI
+              </span>
+            )}
+            {p.source === 'bank' && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 22, padding: '0 8px', borderRadius: 7, border: '1px solid var(--border)', fontSize: 10, color: 'var(--muted-foreground)', background: 'var(--card)' }}>
+                <i className="fa-light fa-rectangle-list" aria-hidden="true" style={{ fontSize: 9 }} />
+                Bank
+              </span>
+            )}
+
+            {/* Version */}
             {p.version > 1 && (
-              <span
-                title={`Version ${p.version}`}
-                className="shrink-0 rounded border border-[var(--brand-color)] bg-[var(--brand-tint)] px-1 py-px text-[10px] font-semibold text-[var(--brand-color)] leading-none"
-              >
+              <span style={{ display: 'inline-flex', alignItems: 'center', height: 22, padding: '0 8px', borderRadius: 7, border: '1px solid oklch(from var(--brand-color) l c h / 0.5)', fontSize: 10, fontWeight: 600, color: 'var(--brand-color)', background: 'oklch(from var(--brand-color) l c h / 0.06)' }}>
                 v{p.version}
               </span>
             )}
-            {p.flagTitle && (
-              <i
-                className="fa-solid fa-triangle-exclamation mt-0.5 shrink-0 text-xs text-[var(--chart-4)]"
-                title={p.flagTitle}
-                aria-hidden="true"
-              />
-            )}
+
+            {/* Points — right aligned */}
+            <span style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 600, color: 'var(--foreground)' }}>
+              {p.points} pts
+            </span>
           </div>
 
-          {/* Inline warning strip when flagged */}
-          {p.flagTitle && (
-            <p className="mt-1.5 rounded-md bg-muted px-2 py-1 text-xs text-[var(--chart-4)]">
-              {p.flagTitle}
-            </p>
+          {/* Stem */}
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={handleEdit}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleEdit() } }}
+            style={{ fontSize: 13.5, lineHeight: 1.45, color: 'var(--foreground)', cursor: 'pointer', outline: 'none' }}
+          >
+            {p.stem}
+          </div>
+
+          {/* Options preview — MCQ/MSQ/TF */}
+          {p.options && p.options.length > 0 && (
+            <div style={{ marginTop: 8, display: 'grid', gridTemplateColumns: p.options.length > 3 ? '1fr 1fr' : '1fr', gap: '3px 16px' }}>
+              {p.options.slice(0, 6).map((o, i) => (
+                <div key={i} style={{ fontSize: 12, color: o.correct ? 'var(--chip-2)' : 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <i className={`fa-light ${o.correct ? 'fa-circle-check' : 'fa-circle'}`} aria-hidden="true" style={{ fontSize: 10 }} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.text}</span>
+                </div>
+              ))}
+            </div>
           )}
 
-          {/* Meta row */}
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              {p.typeIcon && <i className={p.typeIcon} aria-hidden="true" />}
-              {p.type}
-            </span>
-            <span className="text-xs font-semibold" style={{ color: p.diffColor }}>{p.difficulty}</span>
-            <span className="text-xs text-muted-foreground">{p.blooms}</span>
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              {pbiLow && <i className="fa-light fa-triangle-exclamation" aria-hidden="true" />}
-              PBI {p.pbi !== null ? p.pbi.toFixed(2) : '—'}
-            </span>
-            {(p.creator || p.editor) && (
-              <TooltipProvider>
-                <AvatarGroup>
-                  {p.creator && (
-                    <Tooltip>
-                      <TooltipTrigger asChild><Avatar size="sm"><AvatarFallback>{p.creator.initials}</AvatarFallback></Avatar></TooltipTrigger>
-                      <TooltipContent>Created by {p.creator.name}</TooltipContent>
-                    </Tooltip>
-                  )}
-                  {p.editor && (
-                    <Tooltip>
-                      <TooltipTrigger asChild><Avatar size="sm"><AvatarFallback>{p.editor.initials}</AvatarFallback></Avatar></TooltipTrigger>
-                      <TooltipContent>Edited by {p.editor.name}</TooltipContent>
-                    </Tooltip>
-                  )}
-                </AvatarGroup>
-              </TooltipProvider>
-            )}
-
-            {/* Actions — right aligned */}
-            <div className="ml-auto flex items-center gap-1.5">
-              <label className="flex items-center gap-1 text-xs text-muted-foreground">
-                Pts
-                <input
-                  type="number"
-                  aria-label={`Points for ${p.stem}`}
-                  min={0}
-                  value={p.points}
-                  onChange={e => { const v = parseInt(e.target.value); p.onSetPoints(Number.isNaN(v) ? 0 : v) }}
-                  className="h-6 w-10 rounded border border-border bg-background px-1 text-center text-xs text-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                />
-              </label>
-              <Button
-                variant="ghost" size="icon-xs"
-                aria-label={p.pinned ? `Unpin ${p.stem}` : `Pin ${p.stem}`}
-                title={p.pinned ? 'Pinned — fixed during randomization' : 'Pin to fix position'}
-                onClick={p.onTogglePin}
-                className="h-6 w-6"
-                style={{ color: p.pinned ? 'var(--brand-color)' : 'var(--muted-foreground)', opacity: p.pinned ? 1 : 0.4 }}
-              >
-                <i className={`${p.pinned ? 'fa-solid' : 'fa-light'} fa-thumbtack text-[10px]`} aria-hidden="true" />
-              </Button>
-              <div className="flex flex-col">
-                <Button variant="ghost" size="icon-xs" aria-label={`Move ${p.stem} up`} disabled={p.index === 0} onClick={() => p.onReorder('up')} className="h-3.5 w-5 text-muted-foreground disabled:opacity-20">
-                  <i className="fa-solid fa-angle-up text-[10px]" aria-hidden="true" />
-                </Button>
-                <Button variant="ghost" size="icon-xs" aria-label={`Move ${p.stem} down`} disabled={p.index === p.total - 1} onClick={() => p.onReorder('down')} className="h-3.5 w-5 text-muted-foreground disabled:opacity-20">
-                  <i className="fa-solid fa-angle-down text-[10px]" aria-hidden="true" />
-                </Button>
-              </div>
+          {/* Flagged banner — .flag-banner */}
+          {flagged && (
+            <div style={{ marginTop: 9, display: 'flex', gap: 10, padding: '11px 13px', borderRadius: 10, background: 'oklch(from var(--destructive) l c h / 0.08)', border: '1px solid oklch(from var(--destructive) l c h / 0.28)', fontSize: 12.5, color: 'var(--chip-destructive, var(--destructive))' }}>
+              <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 13, marginTop: 1, flexShrink: 0 }} />
+              <div>{p.flagTitle}</div>
             </div>
+          )}
+
+          {/* Psychometrics */}
+          {p.pbi !== null && (
+            <div style={{ display: 'flex', gap: 16, marginTop: 9, fontSize: 11, color: 'var(--muted-foreground)' }}>
+              <span>
+                Pt-biserial{' '}
+                <b style={{ color: p.pbi < 0.1 ? 'var(--destructive)' : 'var(--foreground)', fontWeight: 600 }}>
+                  {p.pbi.toFixed(2)}
+                </b>
+              </span>
+              {/* Creator/editor avatars */}
+              {(p.creator || p.editor) && (
+                <TooltipProvider>
+                  <AvatarGroup style={{ marginLeft: 'auto' }}>
+                    {p.creator && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Avatar size="sm">
+                            <AvatarFallback>{p.creator.initials}</AvatarFallback>
+                          </Avatar>
+                        </TooltipTrigger>
+                        <TooltipContent>Created by {p.creator.name}</TooltipContent>
+                      </Tooltip>
+                    )}
+                    {p.editor && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Avatar size="sm">
+                            <AvatarFallback>{p.editor.initials}</AvatarFallback>
+                          </Avatar>
+                        </TooltipTrigger>
+                        <TooltipContent>Edited by {p.editor.name}</TooltipContent>
+                      </Tooltip>
+                    )}
+                  </AvatarGroup>
+                </TooltipProvider>
+              )}
+            </div>
+          )}
+
+          {/* Action row — Edit | Replace | Delete (design's .btn.ghost.sm) */}
+          <div style={{ display: 'flex', gap: 6, marginTop: 11 }} onClick={e => e.stopPropagation()}>
+            <Button variant="ghost" size="sm" onClick={handleEdit}>
+              <i className="fa-light fa-pen" aria-hidden="true" />
+              Edit
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => p.onOpenDetail()}
+              style={{ color: 'var(--brand-color-dark)' }}
+            >
+              <i className="fa-light fa-arrows-rotate" aria-hidden="true" />
+              Replace
+            </Button>
+            {p.onDelete && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={p.onDelete}
+                aria-label={`Delete question ${p.index + 1}`}
+              >
+                <i className="fa-light fa-trash" aria-hidden="true" />
+              </Button>
+            )}
           </div>
         </div>
       </div>
-      </CardContent>
-    </Card>
+    </div>
   )
 }
