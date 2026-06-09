@@ -293,7 +293,7 @@ export default function AssessmentBuilderClient() {
       healthFlags: [],
     })
     setBuilderState('ready')
-    setActiveTab('setup')
+    setActiveTab('build')
   }, [urlNew, activeAsmt, urlDraftId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load source assessment questions when arriving via "Copy from previous"
@@ -706,7 +706,7 @@ export default function AssessmentBuilderClient() {
     // Deep-link to a specific builder tab via ?tab= (demo + verification).
     const t = searchParams?.get('tab')
     const valid: BuilderTab[] = ['setup', 'build', 'collaboration', 'review', 'preread']
-    return (valid as string[]).includes(t ?? '') ? (t as BuilderTab) : 'setup'
+    return (valid as string[]).includes(t ?? '') ? (t as BuilderTab) : 'build'
   })
   function handleTabChange(tab: BuilderTab) {
     setActiveTab(tab)
@@ -1284,7 +1284,7 @@ export default function AssessmentBuilderClient() {
         >
           <TabsTrigger value="setup" className="h-full px-3 rounded-none">Structure</TabsTrigger>
           <TabsTrigger value="build" className="h-full px-3 rounded-none">
-            All Questions
+            Build
             {activeTab === 'build' && activeAsmt && activeAsmt.questions.length > 0 && (
               <span className="ml-1.5 text-xs text-muted-foreground tabular-nums">
                 {activeAsmt.questions.length}
