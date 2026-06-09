@@ -1,16 +1,10 @@
 'use client'
-// Table primitive used directly (not DataTable) — documented hand-roll.
-// Embedded picker inside a Sheet with a pinned footer CTA; DataTable's bulk-actions
-// bar conflicts with the Sheet footer. See docs/governance/ds-adoption.md.
 
-import { useState, useRef, useEffect } from 'react'
-import {
-  Button, Badge, Checkbox,
-  Input,
-  Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  Sheet, SheetContent, SheetHeader, SheetTitle,
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@exxatdesignux/ui'
+import { useState, useEffect } from 'react'
+import { Button, Badge, Sheet, SheetContent, SheetHeader, SheetTitle } from '@exxatdesignux/ui'
+import { DataTable } from '@/components/data-table'
+import { useTableState } from '@/components/data-table/use-table-state'
+import type { ColumnDef } from '@/components/data-table/types'
 import { cn } from '@/lib/utils'
 import { MOCK_STUDENTS, MOCK_FACULTY } from '@/lib/pce-mock-data'
 
@@ -25,15 +19,149 @@ export interface PrismRecipient {
 
 type Persona = 'student' | 'faculty' | 'personnel'
 
+// ── Data rows ──────────────────────────────────────────────────────────────
+
+type StudentRow = {
+  id: string
+  name: string
+  email: string
+  cohort: string
+  group: string
+  status: string
+  _enrollmentStatus: string
+  [key: string]: unknown
+}
+
+type FacultyRow = {
+  id: string
+  name: string
+  status: string
+  email: string
+  profileTypes: string
+  position: string
+  [key: string]: unknown
+}
+
+const STUDENT_ROWS: StudentRow[] = MOCK_STUDENTS.map(s => ({
+  id: s.id,
+  name: `${s.firstName} ${s.lastName}`,
+  email: s.email,
+  cohort: s.cohort,
+  group: 'N/A',
+  status: s.enrollmentStatus === 'enrolled' ? 'Active'
+        : s.enrollmentStatus === 'withdrawn' ? 'Withdrawn'
+        : s.enrollmentStatus === 'graduated' ? 'Graduated'
+        : s.enrollmentStatus === 'on-leave'  ? 'On Leave'
+        : 'N/A',
+  _enrollmentStatus: s.enrollmentStatus,
+}))
+
 const FACULTY_EXTENDED = MOCK_FACULTY.map((f, i) => ({
-  ...f,
+  id: f.id,
+  name: f.name,
   email: `${f.name.toLowerCase().replace(/[\s.]/g, '.')}@example.com`,
   status: i % 5 === 0 ? 'N/A' : 'Active',
   profileTypes: i % 4 === 0 ? 'N/A' : 'Faculty',
   position: ['Dean', 'Associate Dean', 'Full Professor', 'Assistant Professor', 'Director of Clinical Education', 'Department Chair'][i % 6],
-}))
+})) satisfies FacultyRow[]
 
 const STUDENT_COHORTS = Array.from(new Set(MOCK_STUDENTS.map(s => s.cohort))).sort()
+
+// ── Column definitions ─────────────────────────────────────────────────────
+
+const STUDENT_COLUMNS: ColumnDef<StudentRow>[] = [
+  {
+    key: 'name',
+    label: 'Name',
+    width: 200,
+    sortable: true,
+    cell: (row) => <span className="text-sm font-medium">{row.name}</span>,
+  },
+  {
+    key: 'email',
+    label: 'Email',
+    width: 240,
+    cell: (row) => <span className="text-sm text-muted-foreground">{row.email}</span>,
+  },
+  {
+    key: 'cohort',
+    label: 'Cohort',
+    width: 160,
+    sortable: true,
+    filter: {
+      type: 'select',
+      icon: 'fa-graduation-cap',
+      options: STUDENT_COHORTS.map(c => ({ value: c, label: c })),
+    },
+    cell: (row) => <span className="text-sm">{row.cohort}</span>,
+  },
+  {
+    key: 'group',
+    label: 'Group',
+    width: 100,
+    cell: (row) => <span className="text-sm text-muted-foreground">{row.group}</span>,
+  },
+  {
+    key: 'status',
+    label: 'Status',
+    width: 120,
+    filter: {
+      type: 'select',
+      icon: 'fa-circle-dot',
+      options: [
+        { value: 'Active',    label: 'Active'    },
+        { value: 'Withdrawn', label: 'Withdrawn' },
+        { value: 'Graduated', label: 'Graduated' },
+        { value: 'On Leave',  label: 'On Leave'  },
+      ],
+    },
+    cell: (row) => <StatusBadge status={row.status} />,
+  },
+]
+
+const FACULTY_COLUMNS: ColumnDef<FacultyRow>[] = [
+  {
+    key: 'name',
+    label: 'Name',
+    width: 200,
+    sortable: true,
+    cell: (row) => <span className="text-sm font-medium">{row.name}</span>,
+  },
+  {
+    key: 'status',
+    label: 'Status',
+    width: 120,
+    filter: {
+      type: 'select',
+      icon: 'fa-circle-dot',
+      options: [
+        { value: 'Active', label: 'Active' },
+        { value: 'N/A',    label: 'N/A'    },
+      ],
+    },
+    cell: (row) => <StatusBadge status={row.status} />,
+  },
+  {
+    key: 'email',
+    label: 'Email',
+    width: 240,
+    cell: (row) => <span className="text-sm text-muted-foreground">{row.email}</span>,
+  },
+  {
+    key: 'profileTypes',
+    label: 'Profile Types',
+    width: 140,
+    cell: (row) => <span className="text-sm">{row.profileTypes}</span>,
+  },
+  {
+    key: 'position',
+    label: 'Position',
+    width: 200,
+    cell: (row) => <span className="text-sm text-muted-foreground">{row.position}</span>,
+  },
+]
+
+// ── Component ──────────────────────────────────────────────────────────────
 
 interface ExxatPrismSheetProps {
   open: boolean
@@ -44,100 +172,34 @@ interface ExxatPrismSheetProps {
 
 export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, onCommit }: ExxatPrismSheetProps) {
   const [tab, setTab] = useState<Persona>('student')
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(initialIds))
-  const [search, setSearch] = useState('')
-  const [searchOpen, setSearchOpen] = useState(false)
-  const searchRef = useRef<HTMLInputElement>(null)
 
-  // Student filters
-  const [studentStatus, setStudentStatus] = useState('all')
-  const [studentCohort, setStudentCohort] = useState('all')
-  // Faculty filters
-  const [facultyStatus, setFacultyStatus] = useState('all')
+  // External states — one per tab so selection persists across tab switches
+  const studentState = useTableState<StudentRow>(STUDENT_ROWS, STUDENT_COLUMNS)
+  const facultyState = useTableState<FacultyRow>(FACULTY_EXTENDED, FACULTY_COLUMNS)
 
-  // Sync selection + reset transient state each time the sheet opens
+  // Sync initial selection + reset filters each time the sheet opens
   useEffect(() => {
     if (open) {
-      setSelectedIds(new Set(initialIds))
-      setSearch('')
-      setSearchOpen(false)
+      studentState.setSelected(new Set(STUDENT_ROWS.filter(r => initialIds.has(r.id)).map(r => r.id)))
+      facultyState.setSelected(new Set(FACULTY_EXTENDED.filter(r => initialIds.has(r.id)).map(r => r.id)))
+      studentState.setSearch('')
+      facultyState.setSearch('')
       setTab('student')
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
-  function handleTabChange(t: Persona) {
-    setTab(t)
-    setSearch('')
-    setSearchOpen(false)
-  }
+  const selectedCount = studentState.selected.size + facultyState.selected.size
 
-  const filteredStudents = MOCK_STUDENTS.filter(s => {
-    const q = search.toLowerCase()
-    const matchesSearch = !search || `${s.firstName} ${s.lastName}`.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)
-    const matchesStatus = studentStatus === 'all' || s.enrollmentStatus === studentStatus
-    const matchesCohort = studentCohort === 'all' || s.cohort === studentCohort
-    return matchesSearch && matchesStatus && matchesCohort
-  })
-
-  const filteredFaculty = FACULTY_EXTENDED.filter(f => {
-    const q = search.toLowerCase()
-    const matchesSearch = !search || f.name.toLowerCase().includes(q) || f.email.toLowerCase().includes(q)
-    const matchesStatus = facultyStatus === 'all' || (facultyStatus === 'active' ? f.status === 'Active' : f.status === 'N/A')
-    return matchesSearch && matchesStatus
-  })
-
-  function toggleId(id: string) {
-    setSelectedIds(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
-
-  // Select All / Clear All are tab-scoped so mixed selection across tabs works
-  function selectAll() {
-    const ids = tab === 'student'
-      ? filteredStudents.map(s => s.id)
-      : tab === 'faculty'
-      ? filteredFaculty.map(f => f.id)
-      : []
-    setSelectedIds(prev => new Set([...prev, ...ids]))
-  }
-
-  function clearAll() {
-    const poolIds = tab === 'student'
-      ? new Set(MOCK_STUDENTS.map(s => s.id))
-      : tab === 'faculty'
-      ? new Set(FACULTY_EXTENDED.map(f => f.id))
-      : new Set<string>()
-    setSelectedIds(prev => new Set([...prev].filter(id => !poolIds.has(id))))
-  }
-
-  // Commit collects from all pools — supports mixed student+faculty selection
   function handleCommit() {
     const recipients: PrismRecipient[] = []
-    MOCK_STUDENTS.filter(s => selectedIds.has(s.id)).forEach(s =>
-      recipients.push({ id: s.id, name: `${s.firstName} ${s.lastName}`, email: s.email, source: 'prism', subtitle: s.cohort, personaType: 'student' })
+    STUDENT_ROWS.filter(r => studentState.selected.has(r.id)).forEach(r =>
+      recipients.push({ id: r.id, name: r.name, email: r.email, source: 'prism', subtitle: r.cohort, personaType: 'student' })
     )
-    FACULTY_EXTENDED.filter(f => selectedIds.has(f.id)).forEach(f =>
-      recipients.push({ id: f.id, name: f.name, email: f.email, source: 'prism', subtitle: f.position, personaType: 'faculty' })
+    FACULTY_EXTENDED.filter(r => facultyState.selected.has(r.id)).forEach(r =>
+      recipients.push({ id: r.id, name: r.name, email: r.email, source: 'prism', subtitle: r.position, personaType: 'faculty' })
     )
     onCommit(recipients)
-  }
-
-  const filteredRows = tab === 'student' ? filteredStudents.length : tab === 'faculty' ? filteredFaculty.length : 0
-  const totalRows = tab === 'student' ? MOCK_STUDENTS.length : tab === 'faculty' ? FACULTY_EXTENDED.length : 0
-  const selectedCount = selectedIds.size
-
-  const hasActiveFilters =
-    (tab === 'student' && (studentStatus !== 'all' || studentCohort !== 'all')) ||
-    (tab === 'faculty' && facultyStatus !== 'all')
-
-  function resetFilters() {
-    setStudentStatus('all')
-    setStudentCohort('all')
-    setFacultyStatus('all')
   }
 
   return (
@@ -168,7 +230,7 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
               size="sm"
               role="tab"
               aria-selected={tab === t}
-              onClick={() => handleTabChange(t)}
+              onClick={() => setTab(t)}
               className={cn(
                 'rounded-none px-3 py-2.5 text-sm border-b-2 -mb-px transition-colors focus-visible:ring-inset capitalize h-auto',
                 tab === t
@@ -181,225 +243,60 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
           ))}
         </div>
 
-        {/* Body */}
+        {/* Body — flex-1 so DataTable fills remaining height */}
         <div className="flex flex-col flex-1 overflow-hidden">
-
-          {/* Combined filter + action toolbar */}
-          <div
-            className="flex items-center gap-2 shrink-0 border-b border-border"
-            style={{ padding: '8px 14px' }}
-          >
-            {/* Left: tab-specific filters */}
-            {tab === 'student' && (
-              <>
-                <Select value={studentStatus} onValueChange={setStudentStatus}>
-                  <SelectTrigger aria-label="Filter by status" className="h-7 text-xs" style={{ minWidth: 108 }}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="enrolled">Enrolled</SelectItem>
-                    <SelectItem value="graduated">Graduated</SelectItem>
-                    <SelectItem value="withdrawn">Withdrawn</SelectItem>
-                    <SelectItem value="on-leave">On Leave</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={studentCohort} onValueChange={setStudentCohort}>
-                  <SelectTrigger aria-label="Filter by cohort" className="h-7 text-xs" style={{ minWidth: 108 }}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Cohorts</SelectItem>
-                    {STUDENT_COHORTS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </>
-            )}
-
-            {tab === 'faculty' && (
-              <Select value={facultyStatus} onValueChange={setFacultyStatus}>
-                <SelectTrigger aria-label="Filter by status" className="h-7 text-xs" style={{ minWidth: 108 }}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-
-            {hasActiveFilters && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={resetFilters}
-                className="h-auto px-1 py-0.5 text-xs text-muted-foreground"
-              >
-                Reset
-              </Button>
-            )}
-
-            <div className="flex-1" />
-
-            {/* Select All / Clear All */}
-            {tab !== 'personnel' && (
-              <>
-                <Button variant="link" size="sm" className="p-0 h-auto text-xs" onClick={selectAll}>
-                  Select All
+          {tab === 'student' && (
+            <DataTable<StudentRow>
+              data={STUDENT_ROWS}
+              columns={STUDENT_COLUMNS}
+              getRowId={row => row.id}
+              getRowSelectionLabel={row => row.name}
+              selectable
+              searchable
+              state={studentState}
+              bulkActionsSlot={(sel) => (
+                <Button size="sm" variant="default" onClick={handleCommit}>
+                  Add {sel.size} recipient{sel.size !== 1 ? 's' : ''}
                 </Button>
-                <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>·</span>
-                <Button variant="link" size="sm" className="p-0 h-auto text-xs" onClick={clearAll}>
-                  Clear
+              )}
+              emptyState={
+                <div className="flex flex-col items-center gap-2 py-10">
+                  <i className="fa-light fa-users text-muted-foreground text-2xl" aria-hidden="true" />
+                  <p className="text-sm text-muted-foreground">No students match your filters</p>
+                </div>
+              }
+            />
+          )}
+
+          {tab === 'faculty' && (
+            <DataTable<FacultyRow>
+              data={FACULTY_EXTENDED}
+              columns={FACULTY_COLUMNS}
+              getRowId={row => row.id}
+              getRowSelectionLabel={row => row.name}
+              selectable
+              searchable
+              state={facultyState}
+              bulkActionsSlot={(sel) => (
+                <Button size="sm" variant="default" onClick={handleCommit}>
+                  Add {sel.size} recipient{sel.size !== 1 ? 's' : ''}
                 </Button>
-              </>
-            )}
+              )}
+              emptyState={
+                <div className="flex flex-col items-center gap-2 py-10">
+                  <i className="fa-light fa-chalkboard-user text-muted-foreground text-2xl" aria-hidden="true" />
+                  <p className="text-sm text-muted-foreground">No faculty match your filters</p>
+                </div>
+              }
+            />
+          )}
 
-            {/* DS toggle search */}
-            {searchOpen ? (
-              <div className="relative flex items-center">
-                <i className="fa-light fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs pointer-events-none" aria-hidden="true" />
-                <Input
-                  ref={searchRef}
-                  type="text"
-                  role="searchbox"
-                  inputMode="search"
-                  autoComplete="off"
-                  placeholder="Search…"
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  onBlur={() => { if (!search) setSearchOpen(false) }}
-                  onKeyDown={e => { if (e.key === 'Escape') { setSearch(''); setSearchOpen(false) } }}
-                  className={cn('h-8 w-48 pl-7 text-xs', search ? 'pr-8' : 'pr-2')}
-                  aria-label="Search recipients"
-                />
-                {search && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Clear search"
-                    onClick={() => setSearch('')}
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 size-6 text-muted-foreground hover:text-foreground"
-                  >
-                    <i className="fa-light fa-xmark text-xs" aria-hidden="true" />
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label="Search recipients"
-                onClick={() => { setSearchOpen(true); setTimeout(() => searchRef.current?.focus(), 10) }}
-              >
-                <i className="fa-light fa-magnifying-glass text-[13px]" aria-hidden="true" />
-              </Button>
-            )}
-          </div>
-
-          {/* Table */}
-          <div className="flex-1 overflow-auto">
-            {tab === 'student' && (
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="w-10 h-9 px-3 bg-dt-header-bg select-none" />
-                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Name</TableHead>
-                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Email</TableHead>
-                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Cohort</TableHead>
-                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Group</TableHead>
-                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredStudents.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-10">No record found</TableCell>
-                    </TableRow>
-                  ) : filteredStudents.map(s => (
-                    <TableRow key={s.id} className="cursor-pointer" onClick={() => toggleId(s.id)}>
-                      <TableCell>
-                        <Checkbox checked={selectedIds.has(s.id)} onCheckedChange={() => toggleId(s.id)} aria-label={`Select ${s.firstName} ${s.lastName}`} onClick={e => e.stopPropagation()} />
-                      </TableCell>
-                      <TableCell className="text-sm font-medium">{s.firstName} {s.lastName}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{s.email}</TableCell>
-                      <TableCell className="text-sm">{s.cohort}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">N/A</TableCell>
-                      <TableCell>
-                        <StatusBadge status={s.enrollmentStatus === 'enrolled' ? 'Active' : s.enrollmentStatus === 'withdrawn' ? 'Withdrawn' : 'N/A'} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-
-            {tab === 'faculty' && (
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="w-10 h-9 px-3 bg-dt-header-bg select-none" />
-                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Name</TableHead>
-                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Status</TableHead>
-                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Email</TableHead>
-                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Profile Types</TableHead>
-                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Position</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredFaculty.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-10">No record found</TableCell>
-                    </TableRow>
-                  ) : filteredFaculty.map(f => (
-                    <TableRow key={f.id} className="cursor-pointer" onClick={() => toggleId(f.id)}>
-                      <TableCell>
-                        <Checkbox checked={selectedIds.has(f.id)} onCheckedChange={() => toggleId(f.id)} aria-label={`Select ${f.name}`} onClick={e => e.stopPropagation()} />
-                      </TableCell>
-                      <TableCell className="text-sm font-medium">{f.name}</TableCell>
-                      <TableCell><StatusBadge status={f.status} /></TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{f.email}</TableCell>
-                      <TableCell className="text-sm">{f.profileTypes}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{f.position}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-
-            {tab === 'personnel' && (
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Name</TableHead>
-                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Email</TableHead>
-                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Status</TableHead>
-                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Designation</TableHead>
-                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Clinical Instructor</TableHead>
-                    <TableHead className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg select-none">Practice Settings</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-10">No record found</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div
-            className="shrink-0 border-t border-border flex items-center justify-end"
-            style={{ padding: '8px 14px' }}
-          >
-            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-              Showing {filteredRows} of {totalRows} results
-            </p>
-          </div>
+          {tab === 'personnel' && (
+            <div className="flex flex-col items-center justify-center gap-3 py-16 text-center h-full">
+              <i className="fa-light fa-user-tie text-muted-foreground text-2xl" aria-hidden="true" />
+              <p className="text-sm text-muted-foreground">Personnel data coming soon</p>
+            </div>
+          )}
         </div>
 
       </SheetContent>

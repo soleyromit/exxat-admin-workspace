@@ -1,5 +1,4 @@
-import { Button } from '@exxatdesignux/ui'
-"use client"
+'use client'
 
 /**
  * BrandColorPicker — single-anchor palette popover.
