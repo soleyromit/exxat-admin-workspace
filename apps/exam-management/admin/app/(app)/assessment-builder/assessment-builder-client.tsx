@@ -38,6 +38,8 @@ import { CollaborationPanel } from '@/components/assessment-builder/collaboratio
 import { PreReadPanel } from '@/components/assessment-builder/preread-panel'
 import { QuestionCard } from '@/components/assessment-builder/question-card'
 import { SectionBlock } from '@/components/assessment-builder/section-block'
+import { DeliverySecurityPanel } from '@/components/assessment-builder/delivery-security-panel'
+import { ReviewPublishPanel } from '@/components/assessment-builder/review-publish-panel'
 import { SectionsOutline } from '@/components/assessment-builder/step2-sections-outline'
 import { HealthPanel } from '@/components/assessment-builder/step2-health-panel'
 import { Step2SettingsPanel } from '@/components/assessment-builder/step2-settings-panel'
@@ -1282,7 +1284,6 @@ export default function AssessmentBuilderClient() {
           variant="line"
           className="px-4 h-10 rounded-none border-b border-border bg-card justify-start gap-0 shrink-0"
         >
-          <TabsTrigger value="setup" className="h-full px-3 rounded-none">Structure</TabsTrigger>
           <TabsTrigger value="build" className="h-full px-3 rounded-none">
             Build
             {activeTab === 'build' && activeAsmt && activeAsmt.questions.length > 0 && (
@@ -1291,49 +1292,21 @@ export default function AssessmentBuilderClient() {
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="collaboration" className="h-full px-3 rounded-none">Collaboration</TabsTrigger>
-          <TabsTrigger value="review" className="h-full px-3 rounded-none">Settings</TabsTrigger>
-          <TabsTrigger value="preread" className="h-full px-3 rounded-none">Pre-Read</TabsTrigger>
+          <TabsTrigger value="setup" className="h-full px-3 rounded-none">Configure</TabsTrigger>
+          <TabsTrigger value="collaboration" className="h-full px-3 rounded-none">Delivery &amp; Security</TabsTrigger>
+          <TabsTrigger value="review" className="h-full px-3 rounded-none">Review &amp; Publish</TabsTrigger>
         </TabsList>
 
         {/* Tab content — TabsContent wrappers preserve a11y panel semantics */}
         <TabsContent value="setup" className="flex-1 min-h-0 mt-0 data-[state=inactive]:hidden">
-          {/* ── Structure tab ─────────────────────────────────────────────── */}
-      {activeTab === 'setup' && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto', minHeight: 0 }}>
-          {activeAsmt ? (
-            <>
-            <div className="px-6 pt-4 shrink-0">
-              <MarkDistribution asmt={activeAsmt} />
-            </div>
-            <DetailsStep
-              activeAsmt={activeAsmt}
-              mockCoursesLocal={mockCourses}
-              mockCourseOfferingsLocal={mockCourseOfferings}
-              courseId={courseId}
-              offeringId={offeringId}
-              onCourseChange={id => {
-                setCourseId(id)
-                setOfferingId(mockCourseOfferings.find(o => o.courseId === id)?.id ?? '')
-              }}
-              onOfferingChange={setOfferingId}
-              onUpdate={patch => setActiveAsmt(prev => prev ? {
-                ...prev, ...patch,
-                settings: patch.settings ? { ...prev.settings, ...patch.settings } : prev.settings,
-              } : prev)}
-              onContinue={() => setActiveTab('build')}
-              onCancel={() => router.push('/')}
-            />
-            </>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: 12 }}>
-              <p className="text-sm text-muted-foreground">No assessment found. Start from the canvas.</p>
-              <Button size="sm" onClick={() => router.push('/assessment-builder/create')} className="gap-1.5">
-                <i className="fa-light fa-arrow-left" aria-hidden="true" />
-                Back to canvas
-              </Button>
-            </div>
-          )}
+          {/* ── Configure tab (navigation, tools, grading, post-exam) ──────── */}
+      {activeTab === 'setup' && activeAsmt && (
+        <div className="flex-1 overflow-auto">
+          <Step2SettingsPanel
+            settings={activeAsmt.settings}
+            onPatch={patch => setActiveAsmt(prev => prev ? { ...prev, settings: { ...prev.settings, ...patch } } : prev)}
+            onClose={() => setActiveTab('build')}
+          />
         </div>
       )}
         </TabsContent>
@@ -1563,212 +1536,21 @@ export default function AssessmentBuilderClient() {
         {/* ── Collaboration tab (stub) ───────────────────────────────────── */}
         <TabsContent value="collaboration" className="flex-1 min-h-0 mt-0 data-[state=inactive]:hidden">
           {activeTab === 'collaboration' && activeAsmt && (
-            <CollaborationPanel asmt={activeAsmt} onAssignFaculty={() => setActiveTab('build')} />
+            <DeliverySecurityPanel
+              settings={activeAsmt.settings}
+              onPatch={patch => setActiveAsmt(prev => prev ? { ...prev, settings: { ...prev.settings, ...patch } } : prev)}
+            />
           )}
         </TabsContent>
 
-        {/* ── Settings tab (was Review/Deliver) ─────────────────────────── */}
+        {/* ── Review & Publish tab ──────────────────────────────────────── */}
         <TabsContent value="review" className="flex-1 min-h-0 mt-0 data-[state=inactive]:hidden">
-      {activeTab === 'review' && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* Admin preview bar */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '8px 14px', borderBottom: '1px solid var(--border)',
-            background: 'var(--muted)', flexShrink: 0, fontSize: 12, color: 'var(--muted-foreground)',
-          }}>
-            <span style={{ flex: 1 }}>Admin view — students won&apos;t see this bar.</span>
-            {activeAsmt?.sections.map((sec, idx) => (
-              <Button key={sec.id} variant="ghost" size="sm" className="h-[26px] text-xs">
-                {idx + 1}. {sec.title}
-              </Button>
-            ))}
-          </div>
-
-          <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-            {/* Left: student sim + readiness */}
-            <div style={{ flex: 1, overflowY: 'auto', borderRight: '1px solid var(--border)' }}>
-              {/* ── Student taker simulation ── */}
-              <div style={{ borderBottom: '1px solid var(--border)' }}>
-                {/* ET toolbar */}
-                <div style={{ height: 52, background: 'var(--card)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', padding: '0 16px', gap: 10 }}>
-                  <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--foreground)' }}>EM</span>
-                  <span style={{ width: 1, height: 20, background: 'var(--border)' }} />
-                  <span style={{ fontSize: 13, fontWeight: 500, flex: 1, textAlign: 'center', color: 'var(--foreground)' }}>
-                    {activeAsmt?.title ?? 'Assessment'}
-                  </span>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--foreground)', fontVariantNumeric: 'tabular-nums' }}>01:26:44</span>
-                  <Button variant="outline" size="sm" style={{ marginLeft: 8 }}>Submit</Button>
-                </div>
-                {/* Progress bar */}
-                <div style={{ height: 3, background: 'var(--muted)' }}>
-                  <div style={{ height: '100%', width: '35%', background: 'var(--brand-color)' }} />
-                </div>
-                {/* Question card */}
-                <div style={{ padding: '16px 28px', background: 'oklch(0.975 0.005 270)' }}>
-                  <div style={{ background: 'var(--background)', border: '1px solid var(--border)', borderRadius: 10, padding: 16, maxWidth: 580, margin: '0 auto' }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: 8 }}>
-                      Question 1 of {activeAsmt?.questions.length ?? 20} — {activeAsmt?.sections[0]?.title ?? 'Section 1'}
-                    </div>
-                    <div style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 12, color: 'var(--foreground)' }}>
-                      {(() => {
-                        const firstQ = activeAsmt?.sections[0]?.questionIds[0]
-                          ? MOCK_QB_QUESTIONS.find(q => q.id === activeAsmt?.sections[0]?.questionIds[0])
-                          : MOCK_QB_QUESTIONS[0]
-                        return firstQ?.title ?? 'A 68-year-old patient with reduced ejection fraction heart failure is started on metoprolol succinate. Which best explains the long-term benefit?'
-                      })()}
-                    </div>
-                    {['Increased heart rate improves cardiac output', 'Reverse remodeling reduces ventricular wall stress over time', 'Direct inotropic effect augments stroke volume', 'Peripheral vasodilation reduces afterload acutely'].map((opt, i) => (
-                      <div key={i} style={{
-                        display: 'flex', alignItems: 'baseline', gap: 10,
-                        border: `2px solid ${i === 1 ? 'var(--brand-color)' : 'var(--border)'}`,
-                        borderRadius: 10, padding: '10px 14px', marginBottom: 8,
-                        background: i === 1 ? 'var(--brand-tint)' : 'transparent',
-                        fontSize: 13, cursor: 'pointer', color: 'var(--foreground)',
-                      }}>
-                        <span style={{
-                          width: 28, height: 28, borderRadius: 6, fontSize: 12, fontWeight: 700,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                          background: i === 1 ? 'var(--brand-color)' : 'var(--muted)',
-                          color: i === 1 ? '#fff' : 'var(--muted-foreground)',
-                        }}>
-                          {String.fromCharCode(65 + i)}
-                        </span>
-                        {opt}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                {/* ET footer */}
-                <div style={{ height: 52, background: 'var(--card)', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', padding: '0 20px', gap: 10 }}>
-                  <Button variant="outline" size="sm">← Previous</Button>
-                  <div style={{ fontSize: 13, fontWeight: 600, background: 'var(--muted)', borderRadius: 20, padding: '4px 14px', margin: '0 auto' }}>Q 1 / {activeAsmt?.questions.length ?? 20}</div>
-                  <Button variant="ghost" size="sm">Flag</Button>
-                  <Button size="sm">Next →</Button>
-                </div>
-              </div>
-
-              {/* ── Readiness check ── */}
-              <div style={{ padding: 20 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: 'var(--foreground)' }}>Readiness check</p>
-                {[
-                  {
-                    ok: (activeAsmt?.questions.length ?? 0) >= 1,
-                    label: `${activeAsmt?.questions.length ?? 0} questions across ${activeAsmt?.sections.length ?? 0} sections`,
-                    status: (activeAsmt?.questions.length ?? 0) >= 1 ? 'Complete' : 'Incomplete',
-                  },
-                  {
-                    ok: !activeAsmt || activeAsmt.sections.length === 0 || activeAsmt.sections.every(s => (s.facultyIds?.length ?? 0) > 0 || !!s.facultyId),
-                    label: 'All sections assigned to faculty',
-                    status: (!activeAsmt || activeAsmt.sections.length === 0 || activeAsmt.sections.every(s => (s.facultyIds?.length ?? 0) > 0 || !!s.facultyId)) ? 'Complete' : 'Incomplete',
-                  },
-                  {
-                    ok: !!(activeAsmt?.settings?.openDate),
-                    label: activeAsmt?.settings?.openDate
-                      ? `Exam window set (${new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date(activeAsmt.settings.openDate))})`
-                      : 'Exam window not set',
-                    status: !!(activeAsmt?.settings?.openDate) ? 'Complete' : 'Incomplete',
-                  },
-                  {
-                    ok: false,
-                    warn: true,
-                    label: `${MOCK_QB_QUESTIONS.filter(q => selectedIds.has(q.id) && q.pbis !== null && q.pbis < 0.2).length} questions with low pt. bi-serial (<0.20)`,
-                    status: 'Review',
-                  },
-                  {
-                    ok: false,
-                    warn: true,
-                    label: 'Not yet approved by department chair',
-                    status: 'Pending',
-                  },
-                ].map((item, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                    <span style={{ fontSize: 16 }}>{item.ok ? '✅' : item.warn ? '⚠️' : '❌'}</span>
-                    <span style={{ fontSize: 13, flex: 1, color: 'var(--foreground)' }}>{item.label}</span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: item.ok ? 'var(--chart-2)' : 'var(--chart-4)' }}>{item.status}</span>
-                  </div>
-                ))}
-
-                <div style={{ height: 1, background: 'var(--border)', margin: '14px 0' }} />
-
-                {/* Send for review box */}
-                <div style={{
-                  background: 'var(--muted)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 10, padding: 14, marginBottom: 14,
-                }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, color: 'var(--foreground)' }}>Send for review</p>
-                  <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 10, lineHeight: 1.4 }}>
-                    Your department chair reviews question quality, difficulty mix, and coverage before publishing.
-                  </p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 7, background: 'var(--background)' }}>
-                    <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#7c6bbf', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0 }}>DK</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)' }}>Dr. Kapoor</div>
-                      <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>Program Director</div>
-                    </div>
-                    <span style={{ fontSize: 12, padding: '2px 7px', borderRadius: 4, background: 'var(--muted)', color: 'var(--muted-foreground)' }}>Reviewer</span>
-                  </div>
-                  <Button size="sm" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setSendForReviewOpen(true)}>
-                    Send for review
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Right: publish panel (280px) */}
-            <div style={{ width: 280, flexShrink: 0, overflowY: 'auto', padding: 16 }}>
-              <div style={{
-                background: 'var(--brand-tint)',
-                border: '1px solid var(--ring)',
-                borderRadius: 10, padding: 14,
-              }}>
-                <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 4, color: 'var(--foreground)' }}>Ready to publish?</p>
-                <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 12, lineHeight: 1.4 }}>
-                  Students in the {activeAsmt ? 'Spring 2026' : ''} offering will be notified and can access the exam during the scheduled window.
-                </p>
-                {activeAsmt?.settings?.openDate && (
-                  <>
-                    <div style={{ marginBottom: 10 }}>
-                      <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 3 }}>Opens</div>
-                      <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)' }}>
-                        {new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(activeAsmt.settings.openDate))}
-                      </div>
-                    </div>
-                    {activeAsmt.settings.closeDate && (
-                      <div style={{ marginBottom: 14 }}>
-                        <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 3 }}>Closes</div>
-                        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)' }}>
-                          {new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(activeAsmt.settings.closeDate))}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-                {!activeAsmt?.settings?.openDate && (
-                  <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 14 }}>No exam window set yet. Add dates in Settings.</p>
-                )}
-                <Button size="sm" style={{ width: '100%', justifyContent: 'center' }} onClick={handlePublish}>
-                  Publish assessment
-                </Button>
-                <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 8, textAlign: 'center' }}>Review not required to publish</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-        </TabsContent>
-
-        {/* ── Pre-Read tab (stub) ────────────────────────────────────────── */}
-        <TabsContent value="preread" className="flex-1 min-h-0 mt-0 data-[state=inactive]:hidden">
-          {activeTab === 'preread' && activeAsmt && (
-            <PreReadPanel
+          {activeTab === 'review' && activeAsmt && (
+            <ReviewPublishPanel
               asmt={activeAsmt}
-              onUpdate={patch => setActiveAsmt(prev => prev ? {
-                ...prev, ...patch,
-                settings: patch.settings ? { ...prev.settings, ...patch.settings } : prev.settings,
-              } : prev)}
+              selectedIds={selectedIds}
+              onSendForReview={() => setSendForReviewOpen(true)}
+              onPublish={handlePublish}
             />
           )}
         </TabsContent>
