@@ -182,3 +182,65 @@ First snapshot taken for PCE PRD — Monil Pokar — no diff applied. Next run w
 
 **Why flagged:** CLEAR behavioral addition — submitted surveys remain visible to students (in a Submitted state) rather than disappearing from the student portal after submission. Student-facing display change.
 **Suggested action:** When building apps/pce/student/, show submitted surveys with a Submitted status badge in the student's survey list. Confirm with Monil whether students see submission timestamp or just the Submitted label.
+
+---
+
+## 2026-06-09 — Flagged: PCE PRD — Monil Pokar (6 new §13 design feedback items)
+
+### Flag 1 — §13a.4: "Move the search bar to the top" (CLEAR — non-functional)
+**Changed text (before):** *(§13a had 3 items only)*
+**Changed text (after):**
+> 4. Move the search bar to the top
+
+**Why flagged:** CLEAR UX directive from Monil's design review. Affects search bar placement on the surveys master list page. Non-functional feedback → no code auto-applied.
+**Suggested action:** When refining the surveys list page (apps/pce/admin/app/(app)/surveys/page.tsx), move the search bar above the table/filter controls to the top of the content area. Confirm with Monil the exact target position (above filter chips? above the entire toolbar?).
+
+---
+
+### Flag 2 — §13a.5: "User profile position question" (AMBIGUOUS — contains "?")
+**Changed text (before):** *(§13a had 3 items only)*
+**Changed text (after):**
+> 5. The user profile is supposed to be on the top right, any reason on why are we moving it to left bottom?
+
+**Why flagged:** Contains "?" inside design feedback section — AMBIGUOUS. Monil is questioning the current placement of the user profile (avatar/name) which appears at the bottom-left of the sidebar. This is the default DS Sidebar footer slot.
+**Suggested action:** Confirm with Monil: does he want the user profile badge moved to the SiteHeader top-right? The DS Sidebar component has a dedicated footer slot for user info — moving it to the header is an architectural change. Clarify before acting.
+
+---
+
+### Flag 3 — §13b.1: "No copy option for templates" (CLEAR scope restriction)
+**Changed text (before):** *(§13b had 1 item — FAAS UI confirmation)*
+**Changed text (after):**
+> 1. Do-not give option for user to copy existing template. They can just create template from scratch in course Evaluation
+
+**Why flagged:** CLEAR product scope decision — template creation in PCE should not include a "duplicate/copy template" option. Users must start from scratch each time. No template creation UI exists yet in the PCE app, so no code change to apply now.
+**Suggested action:** When building the Template Creation page (apps/pce/admin/app/(app)/templates/), do NOT include a copy/duplicate action in the template list row actions or toolbar. Only "New Template" from scratch. This is consistent with Phase 1 scope.
+
+---
+
+### Flag 4 — §13b.3: "Add course type as an input" (CLEAR — confirms §4 requirement)
+**Changed text (before):** *(§13b had 1 item only)*
+**Changed text (after):**
+> 3. Add course type as an input
+
+**Why flagged:** CLEAR design review confirmation. §4 already specifies "User selects Course type: Didactic or Clinical (optional)" as the second step of Template Creation. Monil is confirming this input must appear in the template builder design.
+**Suggested action:** No new action — §4 already mandates course type. When building Template Creation, ensure the course type (Didactic / Clinical) selector is explicitly visible in the design, not hidden behind an advanced options toggle.
+
+---
+
+### Flag 5 — §13c.1: "Survey wizard steps should be horizontal" (CLEAR UX direction)
+**Changed text (before):** *(§13c was empty in prior snapshot)*
+**Changed text (after):**
+> 1. Wouldn't the steps of a push survey look good if they are horizontal. With this, user gets more real estate on the screen
+
+**Why flagged:** CLEAR UX layout direction from Monil — the Create Survey wizard stepper should use a horizontal layout rather than a vertical/left-rail approach. Wizard is not yet built in the PCE app.
+**Suggested action:** When building the Create Survey wizard at apps/pce/admin/app/(app)/surveys/push/, use a horizontal stepper (5 steps: Properties/Details → Scope/Courses → Survey Design → Communication → Report Access). A full-width horizontal stepper maximises vertical screen real estate. Use DS Stepper component with horizontal orientation.
+
+---
+
+### Flag 6 — §13c.2: "No Report Access step for Course Evaluation" (AMBIGUOUS — contradicts §4)
+**Changed text (before):** *(§13c was empty in prior snapshot)*
+**Changed text (after):**
+> 2. For now, we donot need "Report Access" step for course Evaluation
+
+**Why flagged:** AMBIGUOUS scope conflict. §4 of the same PRD still formally lists 5 wizard steps including "5. Report Access (newly added)". §13c.2 now says Report Access is not needed for CE. These two sections directly contradict each other. The phrase "For now, we do not need" follows the "will not be covered" AMBIGUOUS pattern.
+**Suggested action:** Clarify with Monil which is correct — should the Create Survey wizard have 4 steps (drop Report Access) or 5 steps (keep Report Access as listed in §4)? If Report Access is dropped for CE but kept for General Surveys, the wizard step count will differ between survey types. This is a significant wizard architecture decision — resolve before building.
