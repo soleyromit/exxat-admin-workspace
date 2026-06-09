@@ -37,6 +37,7 @@ import { MarkDistribution } from '@/components/assessment-builder/mark-distribut
 import { CollaborationPanel } from '@/components/assessment-builder/collaboration-panel'
 import { PreReadPanel } from '@/components/assessment-builder/preread-panel'
 import { QuestionCard } from '@/components/assessment-builder/question-card'
+import { SectionBlock } from '@/components/assessment-builder/section-block'
 import { SectionsOutline } from '@/components/assessment-builder/step2-sections-outline'
 import { HealthPanel } from '@/components/assessment-builder/step2-health-panel'
 import { Step2SettingsPanel } from '@/components/assessment-builder/step2-settings-panel'
@@ -1041,6 +1042,17 @@ export default function AssessmentBuilderClient() {
         .filter(Boolean) as Array<{ aq: AssessmentQuestion; q: Question }>
     : []
 
+  // Questions for ANY section (generalizes activeSectionQuestions) — D1 canvas.
+  function questionsForSection(sec: AssessmentSection): Array<{ aq: AssessmentQuestion; q: Question }> {
+    return sec.questionIds
+      .map(qId => {
+        const aq = activeAsmt?.questions.find(q => q.questionId === qId)
+        const q = MOCK_QB_QUESTIONS.find(q => q.id === qId) ?? userCreated.find(q => q.id === qId)
+        return aq && q ? { aq, q } : null
+      })
+      .filter(Boolean) as Array<{ aq: AssessmentQuestion; q: Question }>
+  }
+
   // Section status: Ready if fill ≥ 80% of some target, else Drafting
   function sectionFillPct(sec: AssessmentSection): number {
     const target = sec.fillTarget?.value ?? sec.questionTarget ?? 20
@@ -1437,210 +1449,87 @@ export default function AssessmentBuilderClient() {
 
             {/* ── Section workspace: header + question list (requires an active section) ── */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              {activeSection ? (
-                <>
-                  {/* Section header bar */}
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px', height: 40,
-                    borderBottom: '1px solid var(--border)', flexShrink: 0,
-                    background: 'var(--card)',
-                  }}>
-                    <span className="text-sm font-semibold text-foreground" style={{ flexShrink: 0 }}>
-                      {activeAsmt.sections.findIndex(s => s.id === activeSection.id) + 1}. {activeSection.title}
-                    </span>
-                    {(() => {
-                      const facIds = activeSection.facultyIds?.length ? activeSection.facultyIds : activeSection.facultyId ? [activeSection.facultyId] : []
-                      const headerFaculty = facultyListRows.filter(f => facIds.includes(f.id))
-                      if (headerFaculty.length === 0) return null
-                      const label = headerFaculty.length === 1
-                        ? headerFaculty[0].fullName
-                        : `${headerFaculty[0].fullName.split(' ').slice(-1)[0]} +${headerFaculty.length - 1}`
-                      return (
-                        <span style={{ fontSize: 12, color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                          <span style={{ color: 'var(--border)' }}>·</span>
-                          <i className="fa-light fa-user" aria-hidden="true" style={{ fontSize: 11 }} />
-                          {label}
-                        </span>
-                      )
-                    })()}
-                    <div style={{ flex: 1 }} />
-                    {sectionFillPct(activeSection) >= 80 ? (
-                      <span style={{ fontSize: 12, color: 'var(--chart-2)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <i className="fa-solid fa-circle-check" aria-hidden="true" style={{ fontSize: 11 }} />
-                        Ready
-                      </span>
-                    ) : (
-                      <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
-                        {activeSectionQuestions.length}{(() => {
-                          const target = activeSection.fillTarget?.value ?? activeSection.questionTarget
-                          return target ? `/${target}` : ''
-                        })()} Q
-                      </span>
-                    )}
-                    {activeSectionQuestions.length > 0 && (
-                      <Button
-                        variant="ghost" size="icon-xs"
-                        aria-label="Section analysis"
-                        title="View section analysis"
-                        onClick={() => setSectionAnalysisOpen(true)}
-                        className="text-[var(--muted-foreground)]"
-                      >
-                        <i className="fa-light fa-chart-simple" aria-hidden="true" />
-                      </Button>
-                    )}
-                  </div>
-
-                  {/* Scrollable question list */}
-                  <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-
-                    {activeSectionQuestions.length === 0 ? (
-                      <div className="flex flex-1 flex-col items-center justify-center gap-2 py-12 text-center px-6">
-                        <i className="fa-light fa-layer-group text-[var(--muted-foreground)] text-2xl" aria-hidden="true" />
-                        <p className="text-sm text-[var(--muted-foreground)]">No questions yet — search or generate above.</p>
-                      </div>
-                    ) : (
-                      <>
-                      {bulkSelectedIds.size > 0 && (
-                        <div
-                        role="status"
-                        aria-live="polite"
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 10, padding: '6px 14px',
-                          background: 'var(--brand-tint)',
-                          borderBottom: '1px solid var(--ring)',
-                          flexShrink: 0,
-                        }}
-                      >
-                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--brand-color)' }}>
-                            {bulkSelectedIds.size} selected
-                          </span>
-                          <span style={{ color: 'var(--border)' }}>·</span>
-                          <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>Set points:</span>
-                          <input
-                            type="number"
-                            aria-label="Bulk set points for selected questions"
-                            min={0}
-                            placeholder="pts"
-                            onKeyDown={e => {
-                              if (e.key === 'Enter') {
-                                const v = parseInt((e.target as HTMLInputElement).value)
-                                if (!isNaN(v)) {
-                                  bulkSetPoints([...bulkSelectedIds], v);
-                                  (e.target as HTMLInputElement).value = ''
-                                }
-                              }
-                            }}
-                            style={{ width: 52, height: 26, textAlign: 'center', fontSize: 12, border: '1px solid var(--border)', borderRadius: 4, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', padding: '0 4px' }}
-                          />
-                          <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>· Enter to apply</span>
-                          {activeAsmt.sections.length > 1 && (
-                            <>
-                              <span style={{ color: 'var(--border)' }}>·</span>
-                              <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>Move to:</span>
-                              <select
-                                aria-label="Move selected questions to section"
-                                defaultValue=""
-                                onChange={e => {
-                                  const targetSectionId = e.target.value
-                                  if (!targetSectionId || !activeAsmt) return
-                                  const selectedIds = [...bulkSelectedIds]
-                                  setActiveAsmt(prev => {
-                                    if (!prev) return prev
-                                    const sectionsWithout = prev.sections.map(sec => ({
-                                      ...sec,
-                                      questionIds: sec.questionIds.filter(qId => !selectedIds.includes(qId)),
-                                    }))
-                                    const sectionsWithMoved = sectionsWithout.map(sec => {
-                                      if (sec.id !== targetSectionId) return sec
-                                      const existing = new Set(sec.questionIds)
-                                      const toAdd = selectedIds.filter(qId => !existing.has(qId))
-                                      return { ...sec, questionIds: [...sec.questionIds, ...toAdd] }
-                                    })
-                                    return { ...prev, sections: sectionsWithMoved }
-                                  })
-                                  setBulkSelectedIds(new Set())
-                                  e.target.value = ''
-                                }}
-                                style={{
-                                  fontSize: 12, padding: '2px 6px', border: '1px solid var(--border)', borderRadius: 6,
-                                  background: 'var(--background)', color: 'var(--foreground)', outline: 'none', cursor: 'pointer',
-                                  fontFamily: 'inherit', height: 26,
-                                }}
-                              >
-                                <option value="" disabled>Select section…</option>
-                                {activeAsmt.sections.map(sec => (
-                                  <option key={sec.id} value={sec.id}>{sec.title}</option>
-                                ))}
-                              </select>
-                            </>
-                          )}
-                          <Button
-                            variant="ghost" size="sm"
-                            onClick={() => setBulkSelectedIds(new Set())}
-                            className="ml-auto h-6 px-2 text-xs text-[var(--muted-foreground)]"
-                          >
-                            Clear
-                          </Button>
-                        </div>
-                      )}
-                      <div className="flex flex-col gap-2 px-3.5 py-3">
-                        {activeSectionQuestions.map(({ aq, q }, idx) => {
-                          const creatorPersona = q.creator ? PERSONA_BY_ID[q.creator] : null
-                          const editorPersona = (q.lastEditedBy && q.lastEditedBy !== q.creator) ? PERSONA_BY_ID[q.lastEditedBy] : null
-                          const provMap: Record<string, { icon: string; title: string; color: string }> = {
-                            pdf:    { icon: 'fa-file-lines',    title: 'Imported from PDF',      color: 'var(--chart-3)' },
-                            ai:     { icon: 'fa-sparkles',      title: 'AI-generated',           color: 'var(--brand-color)' },
-                            manual: { icon: 'fa-pen-to-square', title: 'Written from scratch',   color: 'var(--muted-foreground)' },
-                            copied: { icon: 'fa-copy',          title: 'Copied from prior exam', color: 'var(--chart-4)' },
-                          }
-                          const prov = aq.provenance && aq.provenance !== 'qb' ? (provMap[aq.provenance] ?? null) : null
-                          const flag = activeAsmt.healthFlags.find(f => f.questionId === q.id)
-                          const flagTitle = flag
-                            ? flag.type === 'missing-rationale' ? 'Missing rationale'
-                            : flag.type === 'poor-pbis' ? `Low pt-biserial (${flag.pbis.toFixed(2)})`
-                            : flag.type === 'poor-discriminator' ? `Poor discriminator (pbis ${flag.pbis.toFixed(2)})`
-                            : flag.type === 'extreme-difficulty' ? `Extreme difficulty (p=${flag.pValue.toFixed(2)})`
-                            : flag.type === 'near-zero-discrimination' ? `Near-zero discrimination (D=${flag.discriminationIndex.toFixed(2)})`
-                            : 'Quality flag'
-                            : null
-                          return (
-                            <QuestionCard
-                              key={q.id}
-                              index={idx}
-                              total={activeSectionQuestions.length}
-                              stem={q.title}
-                              type={q.type}
-                              typeIcon={TYPE_ICONS_Q[q.type]}
-                              difficulty={q.difficulty}
-                              diffColor={DIFF_COLORS[q.difficulty] ?? 'var(--muted-foreground)'}
-                              blooms={q.blooms}
-                              pbi={q.pbis}
-                              points={aq.points}
-                              version={q.version}
-                              selected={bulkSelectedIds.has(q.id)}
-                              pinned={pinnedQuestionIds.has(q.id)}
-                              lastMoved={lastMovedId === q.id}
-                              provenance={prov}
-                              flagTitle={flagTitle}
-                              creator={creatorPersona ? { initials: creatorPersona.initials, name: creatorPersona.name } : null}
-                              editor={editorPersona ? { initials: editorPersona.initials, name: editorPersona.name } : null}
-                              onToggleSelect={checked => setBulkSelectedIds(prev => { const next = new Set(prev); if (checked) next.add(q.id); else next.delete(q.id); return next })}
-                              onOpenDetail={() => setDetailQuestionId(prev => prev === q.id ? null : q.id)}
-                              onReorder={dir => reorderQuestionInSection(activeSection.id, q.id, dir)}
-                              onTogglePin={() => togglePinQuestion(q.id)}
-                              onSetPoints={v => updateQuestionPoints(q.id, v)}
-                            />
-                          )
-                        })}
-                      </div>
-                      </>
-                    )}
-                  </div>
-                </>
+              {activeAsmt.sections.length === 0 ? (
+                <div className="flex flex-1 flex-col items-center justify-center gap-2 py-12 text-center px-6">
+                  <i className="fa-light fa-layer-group text-[var(--muted-foreground)] text-2xl" aria-hidden="true" />
+                  <p className="text-sm text-[var(--muted-foreground)]">No sections yet. Add a section to begin.</p>
+                </div>
               ) : (
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 24 }}>
-                  <i className="fa-light fa-sidebar text-muted-foreground" aria-hidden="true" style={{ fontSize: 20 }} />
-                  <p className="text-sm text-muted-foreground text-center">Select a section from the left panel to see its questions.</p>
+                <div style={{ flex: 1, overflowY: 'auto' }}>
+                  {bulkSelectedIds.size > 0 && (
+                    <div role="status" aria-live="polite" className="flex items-center gap-2.5 px-3.5 py-1.5 sticky top-0 z-10" style={{ background: 'var(--brand-tint)', borderBottom: '1px solid var(--ring)' }}>
+                      <span className="text-xs font-semibold text-[var(--brand-color)]">{bulkSelectedIds.size} selected</span>
+                      <span className="text-border" aria-hidden="true">·</span>
+                      <span className="text-xs text-muted-foreground">Set points:</span>
+                      <input type="number" aria-label="Bulk set points for selected questions" min={0} placeholder="pts"
+                        onKeyDown={e => { if (e.key === 'Enter') { const v = parseInt((e.target as HTMLInputElement).value); if (!isNaN(v)) { bulkSetPoints([...bulkSelectedIds], v); (e.target as HTMLInputElement).value = '' } } }}
+                        className="h-6 w-12 rounded border border-border bg-background px-1 text-center text-xs text-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50" />
+                      {activeAsmt.sections.length > 1 && (
+                        <>
+                          <span className="text-border" aria-hidden="true">·</span>
+                          <select aria-label="Move selected questions to section" defaultValue=""
+                            onChange={e => { const targetSectionId = e.target.value; if (!targetSectionId || !activeAsmt) return; const selectedIds = [...bulkSelectedIds]; setActiveAsmt(prev => { if (!prev) return prev; const without = prev.sections.map(sec => ({ ...sec, questionIds: sec.questionIds.filter(qId => !selectedIds.includes(qId)) })); const moved = without.map(sec => { if (sec.id !== targetSectionId) return sec; const existing = new Set(sec.questionIds); return { ...sec, questionIds: [...sec.questionIds, ...selectedIds.filter(qId => !existing.has(qId))] } }); return { ...prev, sections: moved } }); setBulkSelectedIds(new Set()); e.target.value = '' }}
+                            className="h-6 rounded border border-border bg-background px-1.5 text-xs text-foreground outline-none">
+                            <option value="" disabled>Move to…</option>
+                            {activeAsmt.sections.map(sec => (<option key={sec.id} value={sec.id}>{sec.title}</option>))}
+                          </select>
+                        </>
+                      )}
+                      <Button variant="ghost" size="sm" onClick={() => setBulkSelectedIds(new Set())} className="ml-auto h-6 px-2 text-xs text-muted-foreground">Clear</Button>
+                    </div>
+                  )}
+                  {activeAsmt.sections.map((section, sIdx) => {
+                    const secQuestions = questionsForSection(section)
+                    const facIds = section.facultyIds?.length ? section.facultyIds : section.facultyId ? [section.facultyId] : []
+                    const secFaculty = facultyListRows.filter(f => facIds.includes(f.id))
+                    const facultyLabel = secFaculty.length === 0 ? null : secFaculty.length === 1 ? secFaculty[0].fullName : `${secFaculty[0].fullName.split(' ').slice(-1)[0]} +${secFaculty.length - 1}`
+                    const cards = secQuestions.map(({ aq, q }, idx) => {
+                      const creatorPersona = q.creator ? PERSONA_BY_ID[q.creator] : null
+                      const editorPersona = (q.lastEditedBy && q.lastEditedBy !== q.creator) ? PERSONA_BY_ID[q.lastEditedBy] : null
+                      const provMap: Record<string, { icon: string; title: string; color: string }> = {
+                        pdf:    { icon: 'fa-file-lines',    title: 'Imported from PDF',      color: 'var(--chart-3)' },
+                        ai:     { icon: 'fa-sparkles',      title: 'AI-generated',           color: 'var(--brand-color)' },
+                        manual: { icon: 'fa-pen-to-square', title: 'Written from scratch',   color: 'var(--muted-foreground)' },
+                        copied: { icon: 'fa-copy',          title: 'Copied from prior exam', color: 'var(--chart-4)' },
+                      }
+                      const prov = aq.provenance && aq.provenance !== 'qb' ? (provMap[aq.provenance] ?? null) : null
+                      const flag = activeAsmt.healthFlags.find(f => f.questionId === q.id)
+                      const flagTitle = flag
+                        ? flag.type === 'missing-rationale' ? 'Missing rationale'
+                        : flag.type === 'poor-pbis' ? `Low pt-biserial (${flag.pbis.toFixed(2)})`
+                        : flag.type === 'poor-discriminator' ? `Poor discriminator (pbis ${flag.pbis.toFixed(2)})`
+                        : flag.type === 'extreme-difficulty' ? `Extreme difficulty (p=${flag.pValue.toFixed(2)})`
+                        : flag.type === 'near-zero-discrimination' ? `Near-zero discrimination (D=${flag.discriminationIndex.toFixed(2)})`
+                        : 'Quality flag'
+                        : null
+                      return {
+                        rowKey: q.id, index: idx, total: secQuestions.length, stem: q.title, type: q.type,
+                        typeIcon: TYPE_ICONS_Q[q.type], difficulty: q.difficulty, diffColor: DIFF_COLORS[q.difficulty] ?? 'var(--muted-foreground)',
+                        blooms: q.blooms, pbi: q.pbis, points: aq.points, version: q.version,
+                        selected: bulkSelectedIds.has(q.id), pinned: pinnedQuestionIds.has(q.id), lastMoved: lastMovedId === q.id,
+                        provenance: prov, flagTitle,
+                        creator: creatorPersona ? { initials: creatorPersona.initials, name: creatorPersona.name } : null,
+                        editor: editorPersona ? { initials: editorPersona.initials, name: editorPersona.name } : null,
+                        onToggleSelect: (checked: boolean) => setBulkSelectedIds(prev => { const next = new Set(prev); if (checked) next.add(q.id); else next.delete(q.id); return next }),
+                        onOpenDetail: () => setDetailQuestionId(prev => prev === q.id ? null : q.id),
+                        onReorder: (dir: 'up' | 'down') => reorderQuestionInSection(section.id, q.id, dir),
+                        onTogglePin: () => togglePinQuestion(q.id),
+                        onSetPoints: (v: number) => updateQuestionPoints(q.id, v),
+                      }
+                    })
+                    return (
+                      <SectionBlock key={section.id} index={sIdx} title={section.title} facultyLabel={facultyLabel}
+                        ready={sectionFillPct(section) >= 80} questionCount={secQuestions.length}
+                        target={section.fillTarget?.value ?? section.questionTarget ?? null} cards={cards}
+                        onAnalysis={() => { setActiveSectionId(section.id); setSectionAnalysisOpen(true) }} />
+                    )
+                  })}
+                  <div className="px-3.5 py-4">
+                    <Button variant="outline" size="sm" className="w-full gap-1.5" onClick={() => addSection(`Section ${activeAsmt.sections.length + 1}`)}>
+                      <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                      Add section
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
