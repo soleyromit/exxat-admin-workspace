@@ -126,6 +126,16 @@ Source: `apps/pce/docs/research/meetings/2026-06-03-weekly-product-sync.md` (Gra
 | T58 | Term missing start/end dates → show reminder/link | Admin | PCE landing / term setup entry | P1 — DESIGN-REVIEW | Aarti: "some message if they haven't entered the start date and end date... a reminder to go add start date and date. So a link to come here or something." New UI pattern — banner or contextual callout linking to academic calendar setup. D_PCE41. |
 | T59 | Survey push panel: font size / readability on small screens | Admin | `surveys/push/page.tsx` Step 2 | P2 — DESIGN-REVIEW | Aarti: "the font is and the gray is very small. On a small screen." Review text sizing and contrast in the course offerings list panel. D_PCE44. |
 
+## Phase 1 design tasks — added 2026-06-09
+
+Source: `apps/pce/docs/research/meetings/2026-06-09-course-evaluation-template-push-review.md` (Granola `3fd2ac92`)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T60 | Template creation: add PDF/Word upload entry point inside "Build New" path | Admin | Template creation (`pce-modals.tsx` CreateTemplateSheet) | P1 — DESIGN-REVIEW | David (Jun 9): "I'm gonna wanna upload my PDF likely on that main, like, template screen. Can we not have an upload PDF from this screen where they can just upload one document." Aarti's past preference confirmed: upload goes inside "Build New", not as a third separate card. New flow needed: manual sections OR upload PDF/Word (doc-extraction path). D_PCE48. |
+| T61 | Template PDF upload: label as "PDF or Word document", accept `.pdf .doc .docx` | Admin | Template creation | P1 (part of T60) | David: "Why are we just saying PDF? ... PDF is PDF. Then they'll think that they first have to convert their word file into a PDF and then upload it." When T60 is built, set upload label and `accept` attr accordingly. Mirrors T74 (exam-management). D_PCE49. |
+| T62 | Validate all question text in mock data with program stakeholders before customer demo | Admin | Mock data (`pce-mock-data.ts`) | P3 (pre-launch) | David: "All these verbatim will need to be verified. Validated." Current question texts are placeholder-quality and should not be shown to customers without program review. D_PCE53. |
+
 ---
 
 ## Phase 1 — killed / superseded (updated 2026-05-26)

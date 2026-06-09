@@ -104,7 +104,7 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
     name: 'End-of-Term Evaluation',
     sections: ['course_content', 'faculty_performance'],
     status: 'active',
-    questionCount: 8,
+    questionCount: 7,
     usedBySurveyCount: 3,
     lastModified: 'Apr 10, 2026',
     createdBy: 'Dr. Thompson',
@@ -113,9 +113,8 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
       course_content: [
         { id: 'q1', text: 'The course objectives were clearly stated.', answerType: 'likert', order: 0 },
         { id: 'q2', text: 'Course materials supported my learning.', answerType: 'likert', order: 1 },
-        { id: 'q3', text: 'The workload was appropriate for the credit hours.', answerType: 'likert', order: 2 },
-        { id: 'q4', text: 'Assessments were aligned with learning objectives.', answerType: 'likert', order: 3 },
-        { id: 'q5', text: 'What would you change about this course?', answerType: 'free_text', order: 4 },
+        { id: 'q4', text: 'Assessments were aligned with learning objectives.', answerType: 'likert', order: 2 },
+        { id: 'q5', text: 'What would you change about this course?', answerType: 'free_text', order: 3 },
       ],
       faculty_performance: [
         { id: 'q6', text: 'The instructor was well-prepared for each class.', answerType: 'likert', order: 0 },

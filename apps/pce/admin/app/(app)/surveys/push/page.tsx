@@ -424,6 +424,7 @@ function Step3({ selectedTemplate, selectedTerm, selectedCount, openDate, closeD
             label="Window"
             value={`${openDate ? openDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'} → ${closeDate ? closeDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}`}
           />
+          <SummaryRow label="Privacy" value="Responses are anonymous" />
         </div>
       </div>
       <div className="flex items-center justify-between">
