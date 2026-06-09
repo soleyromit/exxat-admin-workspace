@@ -12,7 +12,15 @@ interface SectionBlockProps {
   target?: number | null
   cards: Array<QuestionCardProps & { rowKey: string }>
   onAnalysis?: () => void
+  onAdd?: (mode: 'qb' | 'ai' | 'write' | 'pdf') => void
 }
+
+const ADD_ACTIONS: { mode: 'qb' | 'ai' | 'write' | 'pdf'; icon: string; label: string }[] = [
+  { mode: 'qb', icon: 'fa-magnifying-glass', label: 'Search QB' },
+  { mode: 'ai', icon: 'fa-sparkles', label: 'AI Generate' },
+  { mode: 'write', icon: 'fa-pen-line', label: 'New question' },
+  { mode: 'pdf', icon: 'fa-file-arrow-up', label: 'Upload doc' },
+]
 
 /**
  * One section in the Build-tab canvas (D1): a card-top header + its question
@@ -49,6 +57,18 @@ export function SectionBlock(p: SectionBlockProps) {
           </Button>
         )}
       </div>
+
+      {/* Per-section add toolbar */}
+      {p.onAdd && (
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          {ADD_ACTIONS.map(a => (
+            <Button key={a.mode} variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => p.onAdd!(a.mode)}>
+              <i className={`fa-light ${a.icon} text-[11px]`} aria-hidden="true" />
+              {a.label}
+            </Button>
+          ))}
+        </div>
+      )}
 
       {/* Question cards (or per-section empty) */}
       {p.cards.length === 0 ? (

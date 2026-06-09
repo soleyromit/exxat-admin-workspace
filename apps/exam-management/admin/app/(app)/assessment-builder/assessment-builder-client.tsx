@@ -1371,31 +1371,8 @@ export default function AssessmentBuilderClient() {
               </div>
             )}
 
-            {/* ── Add questions toolbar — always visible, not gated on section selection ── */}
-            {addMode === 'resting' && (
-              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--border)] shrink-0 flex-wrap">
-                <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5"
-                  onClick={() => handleAddModeChange('qb')}>
-                  <i className="fa-light fa-magnifying-glass text-[11px]" aria-hidden="true" />
-                  Search QB
-                </Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5"
-                  onClick={() => handleAddModeChange('ai')}>
-                  <i className="fa-light fa-sparkles text-[11px]" aria-hidden="true" />
-                  AI Generate
-                </Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5"
-                  onClick={() => handleAddModeChange('write')}>
-                  <i className="fa-light fa-pen-line text-[11px]" aria-hidden="true" />
-                  New question
-                </Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5"
-                  onClick={() => handleAddModeChange('pdf')}>
-                  <i className="fa-light fa-file-arrow-up text-[11px]" aria-hidden="true" />
-                  Upload doc
-                </Button>
-              </div>
-            )}
+            {/* Add-questions toolbar is now per-section (SectionBlock onAdd); the
+                mode panels below render for whichever section is active. */}
             {(addMode === 'qb' || addMode === 'ai') && (
               <AddQuestionsInput
                 mode={addMode}
@@ -1521,7 +1498,8 @@ export default function AssessmentBuilderClient() {
                       <SectionBlock key={section.id} index={sIdx} title={section.title} facultyLabel={facultyLabel}
                         ready={sectionFillPct(section) >= 80} questionCount={secQuestions.length}
                         target={section.fillTarget?.value ?? section.questionTarget ?? null} cards={cards}
-                        onAnalysis={() => { setActiveSectionId(section.id); setSectionAnalysisOpen(true) }} />
+                        onAnalysis={() => { setActiveSectionId(section.id); setSectionAnalysisOpen(true) }}
+                        onAdd={mode => { setActiveSectionId(section.id); handleAddModeChange(mode) }} />
                     )
                   })}
                   <div className="px-3.5 py-4">
