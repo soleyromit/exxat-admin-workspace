@@ -418,7 +418,7 @@ export function BlueprintWizard({
                 <Button type="button" variant="outline" aria-pressed={syllabus} onClick={() => setSyllabus(true)}>
                   <Icon name="file-pdf" />MED-201_Syllabus_F26.pdf
                 </Button>
-                <Button type="button" variant="ghost" onClick={() => notify('Syllabus synced from Exxat Prism', 'info')}>
+                <Button type="button" variant="ghost" onClick={() => { setSyllabus(true); notify('Syllabus synced from Exxat Prism — attached', 'success') }}>
                   <Icon name="rotate" />Sync from Prism
                 </Button>
               </div>
@@ -531,7 +531,7 @@ export function BlueprintWizard({
                         </div>
                         <div style={{ display: 'flex', gap: 5 }}>
                           {Object.entries(p.mix).map(([k, v]) => (
-                            <Badge key={k} variant="secondary" style={{ fontSize: 10 }}>
+                            <Badge key={k} variant="secondary">
                               {k} {v}
                             </Badge>
                           ))}

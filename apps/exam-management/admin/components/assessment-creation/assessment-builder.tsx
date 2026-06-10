@@ -6,7 +6,7 @@
    density = card — the chosen product defaults). */
 
 import { useState, useRef, useEffect } from 'react'
-import { Button, Tabs, TabsList, TabsTrigger, Badge, Input, AvatarGroup, AvatarInitials } from '@exxatdesignux/ui'
+import { Button, Tabs, TabsList, TabsTrigger, TabsContent, Badge, Input, AvatarGroup, AvatarInitials } from '@exxatdesignux/ui'
 import { Icon, LeoStar } from './icons'
 import { useApp } from './primitives'
 import { AssessmentStatusBadge } from './assessment-status-badge'
@@ -61,6 +61,21 @@ export function AssessmentBuilder({
   const flagRef = useRef<HTMLDivElement | null>(null)
   const { notify, openLeo } = useApp()
   const askLeo = () => openLeo({ title: meta.name, sections })
+
+  // Draft state — track unsaved edits so "Save draft" is a real action, not a banner.
+  const [savedAt, setSavedAt] = useState<string | null>(null)
+  const [dirty, setDirty] = useState(false)
+  const firstEdit = useRef(true)
+  useEffect(() => {
+    if (firstEdit.current) { firstEdit.current = false; return }
+    setDirty(true)
+  }, [sections, meta])
+  function saveDraft() {
+    const t = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    setSavedAt(t)
+    setDirty(false)
+    notify(`Draft saved · ${totalQuestions(sections)} questions · ${t}`, 'success')
+  }
 
   useEffect(() => {
     if (autoAI) { setAiTargetSec(sections[sections.length - 1]?.id || null); setShowAI(true); clearAutoAI?.() }
@@ -248,7 +263,7 @@ export function AssessmentBuilder({
           </div>
           <div className="actions">
             <Button type="button" variant="outline" onClick={() => setShowPreview(true)}><Icon name="play" />Preview &amp; simulate</Button>
-            <Button type="button" variant="outline" onClick={() => notify('Draft saved · ' + totalQuestions(sections) + ' questions')}><Icon name="check" />Save draft</Button>
+            <Button type="button" variant="outline" disabled={!dirty && savedAt != null} onClick={saveDraft}><Icon name={savedAt && !dirty ? 'circle-check' : 'check'} />{savedAt && !dirty ? `Saved ${savedAt}` : 'Save draft'}</Button>
             {isInstructor
               ? <Button type="button" variant="default" onClick={onReview}><Icon name="paper-plane" />Submit Section B</Button>
               : <Button type="button" variant="default" onClick={onReview}><Icon name="paper-plane" />Submit for review</Button>}
@@ -260,27 +275,26 @@ export function AssessmentBuilder({
           value={tab}
           onValueChange={v => { if (v !== 'review') setTab(v as Tab) }}
           className="flex flex-col"
-          style={{ marginBottom: 22 }}
         >
-          <TabsList aria-label="Builder sections">
+          <TabsList aria-label="Builder sections" style={{ marginBottom: 22 }}>
             {([['build', 'Build', 'list-check'], ['configure', 'Configure', 'gear'], ['delivery', 'Delivery & Security', 'shield-halved'], ['review', 'Review & Publish', 'paper-plane']] as const).map(([id, label, ic]) => (
               <TabsTrigger key={id} value={id} onClick={id === 'review' ? () => onReview() : undefined}>
                 <Icon name={ic} />{label}
               </TabsTrigger>
             ))}
           </TabsList>
-        </Tabs>
 
-        {tab === 'build' && (
-          sections.length === 0
-            ? <BuilderStart name={meta.name} onRecycle={startRecycle} onScratch={startScratch} onAI={startAI} onBank={startBank} />
-            : <div style={{ display: 'grid', gridTemplateColumns: '1fr 332px', gap: 24, alignItems: 'start' }}>
-                {questionArea}
-                <OverviewPanel sections={sections} onAskLeo={askLeo} onJumpFlags={() => flagRef.current?.scrollIntoView({ block: 'center' })} />
-              </div>
-        )}
-        {tab === 'configure' && <ConfigureTab meta={meta} />}
-        {tab === 'delivery' && <DeliveryTab meta={meta} setMeta={setMeta} />}
+          <TabsContent value="build">
+            {sections.length === 0
+              ? <BuilderStart name={meta.name} onRecycle={startRecycle} onScratch={startScratch} onAI={startAI} onBank={startBank} />
+              : <div style={{ display: 'grid', gridTemplateColumns: '1fr 332px', gap: 24, alignItems: 'start' }}>
+                  {questionArea}
+                  <OverviewPanel sections={sections} onAskLeo={askLeo} onJumpFlags={() => flagRef.current?.scrollIntoView({ block: 'center' })} />
+                </div>}
+          </TabsContent>
+          <TabsContent value="configure"><ConfigureTab meta={meta} /></TabsContent>
+          <TabsContent value="delivery"><DeliveryTab meta={meta} setMeta={setMeta} /></TabsContent>
+        </Tabs>
 
         {/* modals */}
         {editing && <QuestionEditor question={editing.q} sectionName={editingSectionName} onSave={saveQuestion} onClose={() => setEditing(null)} />}

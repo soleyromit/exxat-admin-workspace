@@ -14,11 +14,14 @@
    results-explorer.jsx. */
 
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
-import { Card, CardContent, Button, Badge, AvatarInitials } from '@exxatdesignux/ui'
+import {
+  Card, CardContent, Button, Badge, AvatarInitials,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, Input,
+} from '@exxatdesignux/ui'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 import { Icon, LeoStar } from '../icons'
-import { AskLeo, useApp } from '../primitives'
+import { AskLeo, Field, useApp } from '../primitives'
 import { AssessmentStatusBadge } from '../assessment-status-badge'
 import {
   FACULTY,
@@ -66,6 +69,39 @@ function seeded(str: string) {
   let h = 2166136261
   for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) }
   return () => { h += 0x6D2B79F5; let t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296 }
+}
+
+// ── Real CSV export ─────────────────────────────────────────────
+// Builds a genuine item-analysis CSV from the rendered psychometrics and
+// triggers a browser download — no banner-only stub.
+function csvCell(v: unknown): string {
+  const s = String(v ?? '')
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}
+function exportItemAnalysisCsv(meta: BuilderMeta, allQ: AnalyzedQ[]): number {
+  const header = ['#', 'Section', 'Type', 'Question', 'Points', 'Difficulty (p)', 'Discrimination', 'Point-biserial']
+  const rows = allQ.map((q, i) => [
+    i + 1,
+    q.sec || '—',
+    (QTYPE[q.type]?.label) || q.type,
+    q.stem,
+    q.points,
+    fmt2(q.psy.p),
+    fmt2(q.psy.disc),
+    fmt2(q.psy.pbi),
+  ])
+  const body = [header, ...rows].map(r => r.map(csvCell).join(',')).join('\r\n')
+  const slug = (meta.name || 'assessment').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  const blob = new Blob([body], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${slug}-item-analysis.csv`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+  return rows.length
 }
 
 function resultsFor(meta: BuilderMeta, sections: Section[]): Results {
@@ -303,7 +339,7 @@ export function AssessmentStatus({ meta, sections, persona, onBack, onList, onBu
       <div className="actions">
         <Button variant="outline" onClick={onBuilder}><Icon name="eye" aria-hidden="true" />View questions</Button>
         {state === 'ready' && <Button onClick={onPreview}><Icon name="play" aria-hidden="true" />Preview as student</Button>}
-        {state === 'completed' && <Button onClick={() => notify('Exporting results — ExamSoft Excel + item analysis', 'info')}><Icon name="file-export" aria-hidden="true" />Export results</Button>}
+        {state === 'completed' && <Button onClick={() => { const n = exportItemAnalysisCsv(meta, sections.flatMap(s => s.questions.map(q => ({ ...q, sec: s.name }))) as AnalyzedQ[]); notify(`Downloaded results — ${n} items · CSV`, 'success') }}><Icon name="file-export" aria-hidden="true" />Export results</Button>}
         {state === 'archived' && <Button onClick={onRecycle}><Icon name="recycle" aria-hidden="true" />Recycle as blueprint</Button>}
       </div>
     </div>
@@ -322,12 +358,64 @@ export function AssessmentStatus({ meta, sections, persona, onBack, onList, onBu
 
 type NotifyFn = (msg: string, tone?: 'success' | 'info' | 'warn') => void
 
+/* ── RESCHEDULE ─────────────────────────────────────────────── */
+// "10/15/2026 11:59 PM EST" → "2026-10-15" for the date input default
+function dueToInputDate(due: string): string {
+  const m = due.match(/(\d{2})\/(\d{2})\/(\d{4})/)
+  return m ? `${m[3]}-${m[1]}-${m[2]}` : ''
+}
+// "2026-10-15" → "10/15/2026"
+function inputDateToDue(v: string): string {
+  const m = v.match(/(\d{4})-(\d{2})-(\d{2})/)
+  return m ? `${m[2]}/${m[3]}/${m[1]}` : v
+}
+function RescheduleDialog({ current, onClose, onConfirm }: {
+  current: string; onClose: () => void; onConfirm: (newDate: string, time: string) => void
+}) {
+  const [date, setDate] = useState(dueToInputDate(current))
+  const [time, setTime] = useState('09:00')
+  const timeLabel = (() => {
+    const [h, mm] = time.split(':').map(Number)
+    if (Number.isNaN(h)) return time
+    const am = h < 12; const hr = h % 12 === 0 ? 12 : h % 12
+    return `${hr}:${String(mm).padStart(2, '0')} ${am ? 'AM' : 'PM'} EST`
+  })()
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose() }}>
+      <DialogContent className="max-w-[440px]">
+        <DialogHeader>
+          <DialogTitle>Reschedule assessment</DialogTitle>
+          <DialogDescription>Pick a new open date and time. Students gain access at this moment; the window length is unchanged.</DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-3.5 py-1">
+          <Field label="Current open date" hint="When the exam was set to unlock">
+            <Input value={current} readOnly disabled />
+          </Field>
+          <div className="grid gap-3.5" style={{ gridTemplateColumns: '1.4fr 1fr' }}>
+            <Field label="New open date" req><Input type="date" value={date} onChange={e => setDate(e.target.value)} /></Field>
+            <Field label="Time (EST)" req><Input type="time" value={time} onChange={e => setTime(e.target.value)} /></Field>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button
+            disabled={!date}
+            onClick={() => onConfirm(inputDateToDue(date), timeLabel)}
+          ><Icon name="calendar" aria-hidden="true" />Reschedule</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 /* ── READY ──────────────────────────────────────────────────── */
 function ReadyView({ meta, sections, due, ownerName, onReview, onBuilder, onPreview, onUnpublish, notify }: {
   meta: BuilderMeta; sections: Section[]; due: string; ownerName: string
   onReview: () => void; onBuilder: () => void; onPreview: () => void; onUnpublish: () => void; notify: NotifyFn
 }) {
-  const days = daysUntil(due)
+  const [scheduledDue, setScheduledDue] = useState(due)
+  const [reschedule, setReschedule] = useState(false)
+  const days = daysUntil(scheduledDue)
   return (
     <div className="grid items-start gap-4" style={{ gridTemplateColumns: '1.5fr 1fr' }}>
       <div className="flex flex-col gap-4">
@@ -384,7 +472,7 @@ function ReadyView({ meta, sections, due, ownerName, onReview, onBuilder, onPrev
         <Card>
           <CardContent>
             <div className="mb-3.5 text-sm font-semibold">Schedule &amp; delivery</div>
-            <ConfigRow icon="calendar" label="Opens" value={due} />
+            <ConfigRow icon="calendar" label="Opens" value={scheduledDue} />
             <ConfigRow icon="hourglass-half" label="Window" value="120 min · single attempt" />
             <ConfigRow icon="shield-halved" label="Security" value={`${meta.security} · lockdown browser`} />
             <ConfigRow icon="shuffle" label="Delivery" value="Questions & options randomized" />
@@ -396,11 +484,23 @@ function ReadyView({ meta, sections, due, ownerName, onReview, onBuilder, onPrev
             <div className="mb-2.5 text-sm font-semibold">Manage</div>
             <div className="flex flex-col gap-2">
               <Button variant="outline" className="w-full justify-center" onClick={onUnpublish}><Icon name="lock-open" aria-hidden="true" />Unpublish to edit</Button>
-              <Button variant="ghost" className="w-full justify-center" onClick={() => notify('Reschedule — pick a new open date', 'info')}><Icon name="calendar" aria-hidden="true" />Reschedule</Button>
+              <Button variant="ghost" className="w-full justify-center" onClick={() => setReschedule(true)}><Icon name="calendar" aria-hidden="true" />Reschedule</Button>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {reschedule && (
+        <RescheduleDialog
+          current={scheduledDue}
+          onClose={() => setReschedule(false)}
+          onConfirm={(newDate, time) => {
+            setScheduledDue(`${newDate} ${time}`)
+            setReschedule(false)
+            notify(`Rescheduled — opens ${newDate} ${time}`, 'success')
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -466,7 +566,7 @@ function CompletedView({ meta, sections, due, ownerName, notify, onReview, onRec
               <div className="text-base font-semibold">Item analysis</div>
               <div className="text-xs text-muted-foreground">Per-question difficulty, discrimination &amp; point-biserial from this administration. Outliers float to the top.</div>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => notify('Exporting item analysis (CSV)', 'info')}><Icon name="file-export" aria-hidden="true" />Export</Button>
+            <Button variant="ghost" size="sm" onClick={() => { const n = exportItemAnalysisCsv(meta, r.allQ); notify(`Downloaded item analysis — ${n} items · CSV`, 'success') }}><Icon name="file-export" aria-hidden="true" />Export</Button>
           </div>
           <div className="mt-3"><ItemAnalysis allQ={r.allQ} onOpen={(i) => setExplore(i)} /></div>
         </CardContent>
@@ -528,7 +628,7 @@ function ArchivedView({ meta, sections, due, ownerName, notify, onBuilder, onRec
             <div className="flex flex-col gap-2">
               <Button className="w-full justify-center" onClick={onRecycle}><Icon name="recycle" aria-hidden="true" />Recycle as blueprint</Button>
               <Button variant="outline" className="w-full justify-center" onClick={onRestore}><Icon name="rotate-left" aria-hidden="true" />Restore to draft copy</Button>
-              <Button variant="ghost" className="w-full justify-center" onClick={() => notify('Exporting — ExamSoft Excel', 'info')}><Icon name="file-export" aria-hidden="true" />Export</Button>
+              <Button variant="ghost" className="w-full justify-center" onClick={() => { const n = exportItemAnalysisCsv(meta, r.allQ); notify(`Downloaded archived record — ${n} items · CSV`, 'success') }}><Icon name="file-export" aria-hidden="true" />Export</Button>
             </div>
           </CardContent>
         </Card>
