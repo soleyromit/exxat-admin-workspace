@@ -7,7 +7,7 @@
 > **Status:** living document. Update as new meetings audit through the intake skill.
 
 **Maintainer:** Romit Soley (Designer II)
-**Last revision:** 2026-06-07
+**Last revision:** 2026-06-10
 
 ---
 
@@ -437,6 +437,78 @@ Source: `docs/research/meetings/2026-06-04-prism-redesign-aarti-alignment.md` (G
 > "I don't expect a lot of people to go here. I expect them to barely do this call to action, click done, dusted." — Aarti, 2026-06-04
 
 > "This needs to function independently. They're still saving data in the student entity, but this is operating independently." — Aarti, 2026-06-04
+
+---
+
+### 5.21 Base entity mockup scope — current-information only (Mohit, 2026-06-09)
+
+Source: `docs/research/meetings/2026-06-09-exam-management-sync-mohit.md` (Granola `70d6511f`)
+
+| Decision | Detail |
+|---|---|
+| Mockup scope | Base entity landing pages (course offering, students, faculty, assessments) designed for CURRENT information availability ONLY |
+| Not in scope yet | Performance data, accommodations, interventions — introduced per-feature as each feature is built |
+| Assessment entry point | Confirmed: entry is from a COURSE OFFERING, not from the left-side "Assessment" menu |
+| Assessment creation scope | 8 core parts. Analytics additions expand to 10–12 later |
+| Questions emphasis | Arthi/Kurat feedback (5-min review): questions should be visually emphasized more |
+
+> "But my document is strictly limited to what we will have, the information we'll have. We are building course offering landing page. Performance will come later. We will introduce that information as in the respective entities or sub entities. Whenever we build that particular feature." — Mohit, 2026-06-09
+
+---
+
+### 6.12 PCE template builder + distribution — June 9 cadence decisions (Vishaka + David, 2026-06-09)
+
+Source: `apps/pce/docs/research/meetings/2026-06-09-post-course-survey-cadence.md` (Granola `3fd2ac92`)
+
+| Decision | Detail |
+|---|---|
+| Template creation paths | 3 mutually exclusive: Build new (manual) / Copy existing / Import from PDF or Word |
+| PDF/Word import location | Top-level template screen only — NOT buried inside sections. Aarti previously requested this; keep her preference |
+| Build new path | Go straight into writing questions — no per-section "add from template" or per-section upload |
+| Section creation | Multi-select roles at once → system generates one section per role |
+| Section labels | Labels only (from Prism course roles). No description text under labels |
+| Wording | "PDF or Word document" — never just "PDF" |
+| KILL: section-level "add from template" | Too complex — the copy-existing top-level path already handles this |
+| KILL: per-section upload | One doc at top level → all sections extracted. No section-level upload |
+| KILL: visibility/privacy toggle | Post-course uses review-and-release workflow, not open-sharing |
+| KILL: anonymous toggle | Always anonymous by default. Message only — no toggle |
+| KILL: anonymous link (PCE only) | Post-course = Prism-only distribution. General surveys keep all 3 channels |
+| KILL: additional email distribution (PCE only) | Exact Prism only for post-course surveys |
+| Reminders | Multiselect; counted from closing date; messaging must be explicit |
+| Results release date | Required field if comment moderation is not in Phase 1. Manual release fallback if no date |
+| Term-level date cascade | Surveys grouped by term (not "project"). Term-level date changes cascade to all instances; course-level override still possible |
+| KILL: report access screen | Phase 1 kill (supersedes T53). Role-based access handles who sees results |
+| Programmatic surveys | NO changes to existing UI or backend. Entry point only changes. Dashboard adds KPIs. Push flow = production flow |
+
+> "This whole section is not needed. Visibility, because we are going to control — we are not gonna call it visibility... we are going to have a review and release results workflow." — Vishaka, 2026-06-09
+
+> "Post course evaluation will only have one channel, which is via Exact Prism." — Vishaka, 2026-06-09
+
+> "By default, it would be anonymous. By default, Yes. It has to be anonymous... We should not ask. We'll just convey the message." — Vishaka, 2026-06-09
+
+---
+
+### 6.13 PCE architecture — tab structure, analytics, academic calendar (Vishaka + Arun, 2026-06-10)
+
+Source: `apps/pce/docs/research/meetings/2026-06-10-pce-architecture-vishaka-arun.md` (Granola `4d1fa807`)
+
+| Decision | Detail |
+|---|---|
+| Analytics tab naming | NOT "Longitudinal Insights" — use "Course Offering" + "Faculty" as the two entry points |
+| Course offering analytics | Term-grouped; per-offering stats: avg rating, response rate, enrolled, completed; 5-term trend |
+| Faculty analytics page | Top performers + needs-attention leaderboard at top, then searchable grid. Click → detail with spider graph + peer comparison + trend |
+| Student detail view | Current courses at top, past below, no future. Survey completion status integrated into course rows — NO separate "surveys" tab |
+| Academic calendar setup | PREREQUISITE. Settings screen: academic year (label + start/end date) + terms (start/end per year+term combo). Only configured terms pull into dashboard |
+| Base entities | View-only in PCE Phase 1. Students, faculty, courses pulled from Prism. Entity actions → navigate to Prism in new tab |
+| Standalone sellability | 2027 target. Phase 1 relies on Prism base |
+
+> "Don't call it longitudinal because call it faculty because I want faculty's insights." — Arun, 2026-06-10
+
+> "This page and this page [course + faculty dimensions] is what makes sense for us to say we are carving this out as a unique type of survey. It only makes sense to carve out if you can ace this." — Arun, 2026-06-10
+
+> "I don't think we need a separate tab called surveys. The whether or not the student has filled the survey be integrated here itself." — Arun, 2026-06-10
+
+> "We have to ensure your configuration is correct. Academic calendar is essentially a label... If it doesn't exist, we shall not pull it in." — Vishaka/Arun, 2026-06-10
 
 ---
 
@@ -1139,4 +1211,3 @@ Per-meeting raw notes at `apps/exam-management/docs/research/meetings/` and `app
 - Add new Aarti decisions as they're made — append to relevant section, cite meeting + date.
 - Mark superseded decisions explicitly; don't delete.
 - When an ADR is drafted from a decision here, link to it.
-- Keep section §3 (phasing) updated as launch dates shift.
