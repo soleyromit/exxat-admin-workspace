@@ -99,50 +99,54 @@ function ExamPassword({ onNext }: { onNext: () => void }) {
   }
 
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-1.5 leading-tight" style={{ color: 'var(--foreground)' }}>
-        Enter Exam Password
-      </h2>
-      <p className="text-sm mb-7" style={{ color: 'var(--muted-foreground)' }}>
-        Your faculty will display or announce the password when the exam begins. This confirms you are taking the exam at the scheduled time and location.
-      </p>
-
-      <div className="flex items-center gap-2.5 rounded-xl px-4 py-3.5 mb-6 border" style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}>
-        <i className="fa-light fa-circle-info fa-fw shrink-0" aria-hidden="true" style={{ color: 'var(--brand-color)', fontSize: 16 }} />
-        <p className="text-sm" style={{ color: 'var(--foreground)' }}>
-          The password is given verbally in class — do not share it with anyone who is not present.
+    <div className="flex-1 min-h-0 flex flex-col">
+      <div className="flex-1 overflow-y-auto">
+        <h2 className="text-xl font-bold mb-1.5 leading-tight" style={{ color: 'var(--foreground)' }}>
+          Enter Exam Password
+        </h2>
+        <p className="text-sm mb-7" style={{ color: 'var(--muted-foreground)' }}>
+          Your faculty will display or announce the password when the exam begins. This confirms you are taking the exam at the scheduled time and location.
         </p>
-      </div>
 
-      <div className="mb-6">
-        <label htmlFor="exam-password" className="block text-sm font-semibold mb-1.5" style={{ color: 'var(--foreground)' }}>
-          Exam Password
-        </label>
-        <Input
-          id="exam-password"
-          type="text"
-          placeholder="Enter password given by your faculty"
-          value={password}
-          onChange={e => { setPassword(e.target.value); setError(false); }}
-          onKeyDown={e => { if (e.key === 'Enter' && password) handleSubmit(); }}
-          autoComplete="off"
-          autoCapitalize="characters"
-          aria-invalid={error}
-          aria-describedby={error ? 'pw-error' : undefined}
-          className="w-full"
-        />
-        {error && (
-          <p id="pw-error" role="alert" className="flex items-center gap-1.5 text-sm mt-1.5" style={{ color: 'var(--destructive)' }}>
-            <i className="fa-light fa-circle-xmark" aria-hidden="true" />
-            Incorrect password. Ask your faculty to confirm.
+        <div className="flex items-center gap-2.5 rounded-xl px-4 py-3.5 mb-6 border" style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}>
+          <i className="fa-light fa-circle-info fa-fw shrink-0" aria-hidden="true" style={{ color: 'var(--brand-color)', fontSize: 16 }} />
+          <p className="text-sm" style={{ color: 'var(--foreground)' }}>
+            The password is given verbally in class — do not share it with anyone who is not present.
           </p>
-        )}
+        </div>
+
+        <div className="mb-2">
+          <label htmlFor="exam-password" className="block text-sm font-semibold mb-1.5" style={{ color: 'var(--foreground)' }}>
+            Exam Password
+          </label>
+          <Input
+            id="exam-password"
+            type="text"
+            placeholder="Enter password given by your faculty"
+            value={password}
+            onChange={e => { setPassword(e.target.value); setError(false); }}
+            onKeyDown={e => { if (e.key === 'Enter' && password) handleSubmit(); }}
+            autoComplete="off"
+            autoCapitalize="characters"
+            aria-invalid={error}
+            aria-describedby={error ? 'pw-error' : undefined}
+            className="w-full"
+          />
+          {error && (
+            <p id="pw-error" role="alert" className="flex items-center gap-1.5 text-sm mt-1.5" style={{ color: 'var(--destructive)' }}>
+              <i className="fa-light fa-circle-xmark" aria-hidden="true" />
+              Incorrect password. Ask your faculty to confirm.
+            </p>
+          )}
+        </div>
       </div>
 
-      <Button size="lg" onClick={handleSubmit} disabled={!password || checking} className="w-full">
-        <i className={`fa-light ${checking ? 'fa-spinner-third fa-spin' : 'fa-arrow-right'}`} aria-hidden="true" />
-        {checking ? 'Verifying…' : 'Continue'}
-      </Button>
+      <div className="shrink-0 pt-4 pb-2 border-t" style={{ borderColor: 'var(--border)' }}>
+        <Button size="lg" onClick={handleSubmit} disabled={!password || checking} className="w-full">
+          <i className={`fa-light ${checking ? 'fa-spinner-third fa-spin' : 'fa-arrow-right'}`} aria-hidden="true" />
+          {checking ? 'Verifying…' : 'Continue'}
+        </Button>
+      </div>
     </div>
   );
 }
@@ -165,115 +169,114 @@ function Instructions({ exam, onNext }: { exam: Assessment; onNext: () => void }
   ];
 
   return (
-    <div>
-      {/* Assessment header */}
-      <div className="mb-5">
-        <h2 className="text-xl font-bold leading-snug mb-1.5" style={{ color: 'var(--foreground)' }}>
-          {exam.title}
-        </h2>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant="secondary">{typeLabel[exam.type] ?? exam.type}</Badge>
-          {exam.isHighStakes && (
-            <Badge variant="outline">
-              <i className="fa-light fa-shield fa-fw me-1" aria-hidden="true" />
-              High Stakes
-            </Badge>
-          )}
-          <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-            {exam.facultyName}
-          </span>
-        </div>
-      </div>
-
-      {/* Assessment detail table */}
-      <div className="rounded-xl border overflow-hidden mb-6" style={{ borderColor: 'var(--border)' }}>
-        {detailItems.map((item, i) => (
-          <div
-            key={item.label}
-            className="flex items-center gap-4 px-4 py-2.5"
-            style={{
-              borderTop: i > 0 ? '1px solid var(--border)' : 'none',
-              background: 'var(--card)',
-            }}
-          >
-            <span
-              className="text-sm shrink-0"
-              style={{ color: 'var(--muted-foreground)', width: 120 }}
-            >
-              {item.label}
-            </span>
-            <span className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
-              {item.value}
+    <div className="flex-1 min-h-0 flex flex-col">
+      {/* Scrollable content — grows to fill available space */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Assessment header */}
+        <div className="mb-5">
+          <h2 className="text-xl font-bold leading-snug mb-1.5" style={{ color: 'var(--foreground)' }}>
+            {exam.title}
+          </h2>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="secondary">{typeLabel[exam.type] ?? exam.type}</Badge>
+            {exam.isHighStakes && (
+              <Badge variant="outline">
+                <i className="fa-light fa-shield fa-fw me-1" aria-hidden="true" />
+                High Stakes
+              </Badge>
+            )}
+            <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+              {exam.facultyName}
             </span>
           </div>
-        ))}
-      </div>
+        </div>
 
-      {/* Instructions */}
-      <div className="mb-5">
-        <p className="text-sm font-semibold mb-2" style={{ color: 'var(--foreground)' }}>
-          Instructions
-        </p>
-        <div
-          className="rounded-xl p-4 text-sm border overflow-y-auto"
-          style={{
-            background: 'var(--card)',
-            borderColor: 'var(--border)',
-            color: 'var(--foreground)',
-            lineHeight: 1.7,
-            maxHeight: 160,
-          }}
-          tabIndex={0}
-          aria-label="Exam instructions"
-        >
-          {exam.instructions || 'No specific instructions provided for this exam.'}
-          {exam.assessmentReferences && exam.assessmentReferences.length > 0 && (
-            <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
-              <p className="font-semibold mb-1.5">Reference materials available:</p>
-              <ul className="ps-4 m-0 space-y-1">
-                {exam.assessmentReferences.map(m => (
-                  <li key={m.id}>
-                    <i className={`fa-light ${m.icon} fa-fw me-1.5`} aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
-                    {m.label}
-                  </li>
-                ))}
-              </ul>
+        {/* Assessment detail table */}
+        <div className="rounded-xl border overflow-hidden mb-6" style={{ borderColor: 'var(--border)' }}>
+          {detailItems.map((item, i) => (
+            <div
+              key={item.label}
+              className="flex items-center gap-4 px-4 py-2.5"
+              style={{
+                borderTop: i > 0 ? '1px solid var(--border)' : 'none',
+                background: 'var(--card)',
+              }}
+            >
+              <span className="text-sm shrink-0" style={{ color: 'var(--muted-foreground)', width: 120 }}>
+                {item.label}
+              </span>
+              <span className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
+                {item.value}
+              </span>
             </div>
-          )}
+          ))}
+        </div>
+
+        {/* Instructions — no maxHeight; scrolls with the page */}
+        <div className="mb-4">
+          <p className="text-sm font-semibold mb-2" style={{ color: 'var(--foreground)' }}>
+            Instructions
+          </p>
+          <div
+            className="rounded-xl p-4 text-sm border"
+            style={{
+              background: 'var(--card)',
+              borderColor: 'var(--border)',
+              color: 'var(--foreground)',
+              lineHeight: 1.7,
+            }}
+            aria-label="Exam instructions"
+          >
+            {exam.instructions || 'No specific instructions provided for this exam.'}
+            {exam.assessmentReferences && exam.assessmentReferences.length > 0 && (
+              <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
+                <p className="font-semibold mb-1.5">Reference materials available:</p>
+                <ul className="ps-4 m-0 space-y-1">
+                  {exam.assessmentReferences.map(m => (
+                    <li key={m.id}>
+                      <i className={`fa-light ${m.icon} fa-fw me-1.5`} aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
+                      {m.label}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Consent / Attestation — gates Continue */}
-      <label
-        htmlFor="attestation"
-        className="flex items-start gap-3 rounded-xl p-4 mb-6 cursor-pointer border"
-        style={{
-          background: attested ? 'var(--muted)' : 'var(--background)',
-          borderColor: attested ? 'var(--foreground)' : 'var(--border)',
-          transition: 'border-color 0.15s, background 0.15s',
-        }}
-      >
-        <Checkbox
-          id="attestation"
-          checked={attested}
-          onCheckedChange={v => setAttested(Boolean(v))}
-          className="mt-0.5 shrink-0"
-          aria-required="true"
-        />
-        <div className="flex-1">
-          <p className="text-sm font-semibold mb-0.5" style={{ color: 'var(--foreground)' }}>
-            I understand and agree to the academic integrity policy
-          </p>
-          <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-            I will complete this assessment independently without unauthorized resources. I understand that academic dishonesty may result in disciplinary action under my institution's code of conduct.
-          </p>
-        </div>
-      </label>
-
-      <Button size="lg" onClick={onNext} disabled={!attested} className="w-full">
-        <i className="fa-light fa-arrow-right" aria-hidden="true" />
-        I Agree — Continue
-      </Button>
+      {/* Sticky footer — consent + CTA always visible */}
+      <div className="shrink-0 pt-4 pb-2 border-t" style={{ borderColor: 'var(--border)' }}>
+        <label
+          htmlFor="attestation"
+          className="flex items-start gap-3 rounded-xl p-3.5 mb-3 cursor-pointer border"
+          style={{
+            background: attested ? 'var(--muted)' : 'var(--background)',
+            borderColor: attested ? 'var(--foreground)' : 'var(--border)',
+            transition: 'border-color 0.15s, background 0.15s',
+          }}
+        >
+          <Checkbox
+            id="attestation"
+            checked={attested}
+            onCheckedChange={v => setAttested(Boolean(v))}
+            className="mt-0.5 shrink-0"
+            aria-required="true"
+          />
+          <div className="flex-1">
+            <p className="text-sm font-semibold mb-0.5" style={{ color: 'var(--foreground)' }}>
+              I understand and agree to the academic integrity policy
+            </p>
+            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+              I will complete this assessment independently without unauthorized resources.
+            </p>
+          </div>
+        </label>
+        <Button size="lg" onClick={onNext} disabled={!attested} className="w-full">
+          <i className="fa-light fa-arrow-right" aria-hidden="true" />
+          I Agree — Continue
+        </Button>
+      </div>
     </div>
   );
 }
@@ -284,74 +287,78 @@ function AccommodationConfirmation({ exam, onNext }: { exam: Assessment; onNext:
   const effectiveMins = getEffectiveDuration(exam);
 
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-1.5 leading-tight" style={{ color: 'var(--foreground)' }}>
-        Accommodation Confirmation
-      </h2>
-      <p className="text-sm mb-6" style={{ color: 'var(--muted-foreground)' }}>
-        Review your approved accommodations before the exam begins. If anything is incorrect, contact Student Services — do not start the exam.
-      </p>
+    <div className="flex-1 min-h-0 flex flex-col">
+      <div className="flex-1 overflow-y-auto">
+        <h2 className="text-xl font-bold mb-1.5 leading-tight" style={{ color: 'var(--foreground)' }}>
+          Accommodation Confirmation
+        </h2>
+        <p className="text-sm mb-6" style={{ color: 'var(--muted-foreground)' }}>
+          Review your approved accommodations before the exam begins. If anything is incorrect, contact Student Services — do not start the exam.
+        </p>
 
-      {acc ? (
-        <div className="flex flex-col gap-3 mb-6">
-          {[
-            acc.timeMultiplier > 1 && {
-              icon: 'fa-clock',
-              label: 'Extended Time',
-              value: `${acc.timeMultiplier}× — ${formatDuration(effectiveMins)} total (standard: ${formatDuration(exam.durationMinutes)})`,
-            },
-            acc.separateRoom && {
-              icon: 'fa-door-open',
-              label: 'Separate Testing Room',
-              value: 'You will take this exam in a private, distraction-free environment',
-            },
-            acc.extendedBreaks && {
-              icon: 'fa-mug-hot',
-              label: 'Extended Breaks',
-              value: acc.additionalNotes ?? 'Scheduled breaks during the exam',
-            },
-          ].filter(Boolean).map((item: any) => (
-            <div key={item.label} className="flex items-start gap-3.5 rounded-xl px-4 py-3.5 border" style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}>
-              <div className="flex items-center justify-center w-9 h-9 rounded-lg shrink-0 border" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-                <i className={`fa-light ${item.icon} fa-fw`} aria-hidden="true" style={{ color: 'var(--muted-foreground)', fontSize: 16 }} />
+        {acc ? (
+          <div className="flex flex-col gap-3 mb-4">
+            {[
+              acc.timeMultiplier > 1 && {
+                icon: 'fa-clock',
+                label: 'Extended Time',
+                value: `${acc.timeMultiplier}× — ${formatDuration(effectiveMins)} total (standard: ${formatDuration(exam.durationMinutes)})`,
+              },
+              acc.separateRoom && {
+                icon: 'fa-door-open',
+                label: 'Separate Testing Room',
+                value: 'You will take this exam in a private, distraction-free environment',
+              },
+              acc.extendedBreaks && {
+                icon: 'fa-mug-hot',
+                label: 'Extended Breaks',
+                value: acc.additionalNotes ?? 'Scheduled breaks during the exam',
+              },
+            ].filter(Boolean).map((item: any) => (
+              <div key={item.label} className="flex items-start gap-3.5 rounded-xl px-4 py-3.5 border" style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}>
+                <div className="flex items-center justify-center w-9 h-9 rounded-lg shrink-0 border" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+                  <i className={`fa-light ${item.icon} fa-fw`} aria-hidden="true" style={{ color: 'var(--muted-foreground)', fontSize: 16 }} />
+                </div>
+                <div>
+                  <p className="text-sm font-bold mb-0.5" style={{ color: 'var(--foreground)' }}>{item.label}</p>
+                  <p className="text-sm" style={{ color: 'var(--foreground)' }}>{item.value}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-bold mb-0.5" style={{ color: 'var(--foreground)' }}>{item.label}</p>
-                <p className="text-sm" style={{ color: 'var(--foreground)' }}>{item.value}</p>
-              </div>
+            ))}
+
+            <div className="flex items-center gap-2 rounded-lg px-4 py-3 border" style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}>
+              <i className="fa-light fa-circle-info fa-fw shrink-0" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
+              <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                Accommodations approved by <strong style={{ color: 'var(--foreground)' }}>{acc.approvedBy}</strong>. Faculty cannot modify accommodations.
+              </p>
             </div>
-          ))}
-
-          <div className="flex items-center gap-2 rounded-lg px-4 py-3 border" style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}>
-            <i className="fa-light fa-circle-info fa-fw shrink-0" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
+          </div>
+        ) : (
+          <div className="rounded-xl p-6 text-center mb-4 border" style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}>
+            <i className="fa-light fa-universal-access fa-fw block mb-2" aria-hidden="true" style={{ fontSize: 32, color: 'var(--muted-foreground)' }} />
+            <p className="text-sm font-semibold mb-1" style={{ color: 'var(--foreground)' }}>No accommodations on record</p>
             <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-              Accommodations approved by <strong style={{ color: 'var(--foreground)' }}>{acc.approvedBy}</strong>. Faculty cannot modify accommodations.
+              If you have an approved accommodation that isn't showing, contact Student Services before starting.
             </p>
           </div>
-        </div>
-      ) : (
-        <div className="rounded-xl p-6 text-center mb-6 border" style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}>
-          <i className="fa-light fa-universal-access fa-fw block mb-2" aria-hidden="true" style={{ fontSize: 32, color: 'var(--muted-foreground)' }} />
-          <p className="text-sm font-semibold mb-1" style={{ color: 'var(--foreground)' }}>No accommodations on record</p>
-          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-            If you have an approved accommodation that isn't showing, contact Student Services before starting.
-          </p>
-        </div>
-      )}
+        )}
 
-      <a
-        href="mailto:studentservices@exxat.edu"
-        className="block text-center text-sm mb-5 no-underline"
-        style={{ color: 'var(--brand-color)' }}
-      >
-        <i className="fa-light fa-envelope fa-fw me-1" aria-hidden="true" />
-        Contact Student Services if accommodations are incorrect
-      </a>
+        <a
+          href="mailto:studentservices@exxat.edu"
+          className="block text-center text-sm mb-2 no-underline"
+          style={{ color: 'var(--brand-color)' }}
+        >
+          <i className="fa-light fa-envelope fa-fw me-1" aria-hidden="true" />
+          Contact Student Services if accommodations are incorrect
+        </a>
+      </div>
 
-      <Button size="lg" onClick={onNext} className="w-full">
-        <i className="fa-light fa-arrow-right" aria-hidden="true" />
-        Accommodations are correct — Continue
-      </Button>
+      <div className="shrink-0 pt-4 pb-2 border-t" style={{ borderColor: 'var(--border)' }}>
+        <Button size="lg" onClick={onNext} className="w-full">
+          <i className="fa-light fa-arrow-right" aria-hidden="true" />
+          Accommodations are correct — Continue
+        </Button>
+      </div>
     </div>
   );
 }
@@ -359,47 +366,50 @@ function AccommodationConfirmation({ exam, onNext }: { exam: Assessment; onNext:
 // ─── Step 3: Ready ────────────────────────────────────────────────────────────
 function ReadyToStart({ exam, onStart }: { exam: Assessment; onStart: () => void }) {
   return (
-    <div className="text-center">
-      <div
-        className="flex items-center justify-center w-18 h-18 rounded-full mx-auto mb-5 border"
-        style={{ width: 72, height: 72, background: 'var(--muted)', borderColor: 'var(--border)' }}
-      >
-        <i className="fa-solid fa-circle-check" aria-hidden="true" style={{ color: 'var(--foreground)', fontSize: 32 }} />
-      </div>
+    <div className="flex-1 min-h-0 flex flex-col">
+      <div className="flex-1 overflow-y-auto text-center">
+        <div
+          className="flex items-center justify-center rounded-full mx-auto mb-5 border"
+          style={{ width: 72, height: 72, background: 'var(--muted)', borderColor: 'var(--border)' }}
+        >
+          <i className="fa-solid fa-circle-check" aria-hidden="true" style={{ color: 'var(--foreground)', fontSize: 32 }} />
+        </div>
 
-      <h2 className="text-2xl font-bold mb-2 leading-tight" style={{ color: 'var(--foreground)' }}>You're Ready</h2>
-      <p className="text-sm mb-7" style={{ color: 'var(--muted-foreground)' }}>
-        All checks passed. Your exam is ready to begin. The timer starts when you click Start.
-      </p>
+        <h2 className="text-2xl font-bold mb-2 leading-tight" style={{ color: 'var(--foreground)' }}>You're Ready</h2>
+        <p className="text-sm mb-7" style={{ color: 'var(--muted-foreground)' }}>
+          All checks passed. Your exam is ready to begin. The timer starts when you click Start.
+        </p>
 
-      <div className="rounded-xl p-5 mb-7 text-left border" style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}>
-        <p className="text-xs font-bold mb-3.5" style={{ color: 'var(--muted-foreground)' }}>Exam Summary</p>
-        <div className="grid grid-cols-2 gap-2.5">
-          {[
-            { label: 'Exam',         value: exam.title },
-            { label: 'Course',       value: `${exam.courseCode} · ${exam.courseName}` },
-            { label: 'Questions',    value: `${exam.questionCount}` },
-            { label: 'Time Allowed', value: formatDuration(getEffectiveDuration(exam)) },
-            { label: 'Passing Score', value: `${exam.passingScore}%` },
-            { label: 'Results',      value: exam.isHighStakes ? 'Available after faculty review' : 'Available immediately after submission' },
-          ].map(item => (
-            <div key={item.label}>
-              <p className="text-xs font-bold mb-0.5" style={{ color: 'var(--muted-foreground)' }}>{item.label}</p>
-              <p className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>{item.value}</p>
-            </div>
-          ))}
+        <div className="rounded-xl p-5 mb-4 text-left border" style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}>
+          <p className="text-xs font-bold mb-3.5" style={{ color: 'var(--muted-foreground)' }}>Exam Summary</p>
+          <div className="grid grid-cols-2 gap-2.5">
+            {[
+              { label: 'Exam',         value: exam.title },
+              { label: 'Course',       value: `${exam.courseCode} · ${exam.courseName}` },
+              { label: 'Questions',    value: `${exam.questionCount}` },
+              { label: 'Time Allowed', value: formatDuration(getEffectiveDuration(exam)) },
+              { label: 'Passing Score', value: `${exam.passingScore}%` },
+              { label: 'Results',      value: exam.isHighStakes ? 'Available after faculty review' : 'Available immediately after submission' },
+            ].map(item => (
+              <div key={item.label}>
+                <p className="text-xs font-bold mb-0.5" style={{ color: 'var(--muted-foreground)' }}>{item.label}</p>
+                <p className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>{item.value}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      <Button size="lg" onClick={onStart} className="w-full font-extrabold">
-        <i className="fa-solid fa-play" aria-hidden="true" />
-        Start Exam — Timer Begins Now
-      </Button>
-
-      <p className="text-xs mt-3" style={{ color: 'var(--muted-foreground)' }}>
-        <i className="fa-light fa-circle-info fa-fw me-1" aria-hidden="true" />
-        Once started, the exam session cannot be paused.
-      </p>
+      <div className="shrink-0 pt-4 pb-2 border-t" style={{ borderColor: 'var(--border)' }}>
+        <Button size="lg" onClick={onStart} className="w-full font-extrabold">
+          <i className="fa-solid fa-play" aria-hidden="true" />
+          Start Exam — Timer Begins Now
+        </Button>
+        <p className="text-xs mt-2.5 text-center" style={{ color: 'var(--muted-foreground)' }}>
+          <i className="fa-light fa-circle-info fa-fw me-1" aria-hidden="true" />
+          Once started, the exam session cannot be paused.
+        </p>
+      </div>
     </div>
   );
 }
@@ -459,9 +469,9 @@ export function PreExamFlow() {
   const handleStart = () => navigate(`/exam/${id}/take`);
 
   return (
-    <div className="min-h-full" style={{ background: 'var(--background)' }}>
+    <div className="h-svh flex flex-col overflow-hidden" style={{ background: 'var(--background)' }}>
       {/* Step breadcrumb bar */}
-      <div className="flex items-center justify-between px-6 h-11 border-b" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+      <div className="flex items-center justify-between px-6 h-11 border-b shrink-0" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
         <Button variant="ghost" size="sm" onClick={handleBack} style={{ color: 'var(--muted-foreground)' }}>
           <i className="fa-light fa-arrow-left" aria-hidden="true" />
           {step === 0 ? 'Back to Dashboard' : 'Previous Step'}
@@ -469,34 +479,37 @@ export function PreExamFlow() {
         <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Step {step + 1} of {STEPS.length}</span>
       </div>
 
-      <div className="max-w-xl mx-auto px-6 py-9 pb-16">
-        <StepIndicator current={step} />
+      {/* Flex-1 column — passes height down to the step component */}
+      <div className="flex-1 min-h-0 flex flex-col">
+        <div className="flex-1 min-h-0 flex flex-col max-w-xl mx-auto w-full px-6 pt-9">
+          <StepIndicator current={step} />
 
-        {/* Background compat warning strip — dismissible, does not block */}
-        {compatWarning && (
-          <div
-            role="alert"
-            className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 mb-5 text-sm border"
-            style={{ background: 'var(--muted)', borderColor: 'var(--border)', color: 'var(--foreground)', lineHeight: 1.4 }}
-          >
-            <i className="fa-light fa-triangle-exclamation fa-fw shrink-0" aria-hidden="true" style={{ fontSize: 15 }} />
-            <span className="flex-1">{compatWarning}</span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setCompatWarning(null)}
-              aria-label="Dismiss compatibility warning"
-              style={{ flexShrink: 0, color: 'var(--foreground)' }}
+          {/* Background compat warning strip — dismissible, does not block */}
+          {compatWarning && (
+            <div
+              role="alert"
+              className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 mb-5 text-sm border shrink-0"
+              style={{ background: 'var(--muted)', borderColor: 'var(--border)', color: 'var(--foreground)', lineHeight: 1.4 }}
             >
-              <i className="fa-light fa-xmark" aria-hidden="true" />
-            </Button>
-          </div>
-        )}
+              <i className="fa-light fa-triangle-exclamation fa-fw shrink-0" aria-hidden="true" style={{ fontSize: 15 }} />
+              <span className="flex-1">{compatWarning}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setCompatWarning(null)}
+                aria-label="Dismiss compatibility warning"
+                style={{ flexShrink: 0, color: 'var(--foreground)' }}
+              >
+                <i className="fa-light fa-xmark" aria-hidden="true" />
+              </Button>
+            </div>
+          )}
 
-        {step === 0 && <ExamPassword onNext={() => setStep(1)} />}
-        {step === 1 && <Instructions exam={exam} onNext={handleNext} />}
-        {step === 2 && <AccommodationConfirmation exam={exam} onNext={() => setStep(3)} />}
-        {step === 3 && <ReadyToStart exam={exam} onStart={handleStart} />}
+          {step === 0 && <ExamPassword onNext={() => setStep(1)} />}
+          {step === 1 && <Instructions exam={exam} onNext={handleNext} />}
+          {step === 2 && <AccommodationConfirmation exam={exam} onNext={() => setStep(3)} />}
+          {step === 3 && <ReadyToStart exam={exam} onStart={handleStart} />}
+        </div>
       </div>
     </div>
   );
