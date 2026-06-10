@@ -168,6 +168,14 @@ Source: `docs/research/meetings/2026-06-06-question-bank-design-kunal.md` (Grano
 | T94 | Assessment builder: section sticky header or floating label during scroll | Admin / Faculty | Assessment builder | P1 — DESIGN-REVIEW | Aarti: "when I'm scrolling the which section am I at? I don't know." User must always know which section they are in while scrolling. Sticky section header or intersection-observer-based floating label. D_QB07. |
 | T95 | QB question title: upgrade to font-semibold for readability | Admin / Faculty | Question bank table (`qb-table.tsx`) | P1 — ✅ APPLIED | Aarti: "maybe we want to put the question in bold." Changed `font-medium` → `font-semibold` on question stem div. D_QB06. |
 
+## Phase 1 design tasks — added 2026-06-09
+
+Source: `docs/research/meetings/2026-06-09-exam-management-sync-mohit.md` (Granola `70d6511f`) · `docs/research/meetings/2026-06-09-design-execution-arun.md` (Granola `a4a0e1db`)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T96 | Revise base entity mockups — remove future-state data | Admin / Faculty | Base entity pages (course offering, students, faculty, assessments) | P1 | Mohit 2026-06-09: design scope = current information availability ONLY. Performance data, accommodations, interventions introduced per-feature later. Deadline Thursday 2026-06-12. D_EM_M01. |
+
 ---
 
 ## Research / blockers (R1–R10 from audit)

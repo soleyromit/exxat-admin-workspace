@@ -134,6 +134,42 @@ Source: `apps/pce/docs/research/meetings/2026-06-03-weekly-product-sync.md` (Gra
 |---|---|---|---|
 | ~~§6.11 "Likert scale + free text ONLY"~~ | Phase 1 will have 3rd and 4th answer types. Design must use dropdown for extensibility. | 2026-05-26 |
 
+## Phase 1 design tasks — added 2026-06-09
+
+Source: `docs/research/meetings/2026-06-09-post-course-survey-cadence.md` (Granola `3fd2ac92`)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T60 | Template creation — 3 mutually exclusive top-level paths | Admin | Template creation | P1 — DESIGN-REVIEW | Paths: (1) Build new (manual), (2) Copy existing (duplicate + rename), (3) Import from PDF or Word (system auto-generates draft). Structural change to CreateTemplateSheet. D_PCE_NC01. |
+| T61 | PDF/Word import at top-level template screen | Admin | Template creation | P1 — DESIGN-REVIEW | Top-level path only. Remove per-section PDF upload. One doc → system extracts all sections + questions. Aarti previously requested this; keep her preference. D_PCE_NC02, D_PCE_NC08. |
+| T62 | Multi-select roles for section creation (Build new path) | Admin | Template editor | P1 — DESIGN-REVIEW | Admin picks all roles at once (multi-select); system creates one section per role. Replaces current one-at-a-time section add. D_PCE_NC04. |
+| T63 | KILL section-level "add from template" option | Admin | Template editor | P1 | Do not build. Remove from any in-progress designs. "Too complicated." Vishaka 2026-06-09. D_PCE_NC07. |
+| T64 | KILL visibility/privacy toggle in survey distribution | Admin | Survey push / settings | P1 | Do not build. Post-course evaluations use review-and-release workflow, not open-sharing toggle. D_PCE_NC09. |
+| T65 | KILL anonymous responses toggle | Admin | Survey push / settings | P1 | Default = anonymous always. Convey via message only. Do not build toggle. D_PCE_NC10. |
+| T66 | Post-course distribution: Prism-only channel | Admin | Survey push — distribution step | P1 — DESIGN-REVIEW | PCE: remove additional-email and anonymous-link options. General surveys: keep all 3 channels. D_PCE_NC11, D_PCE_NC12. |
+| T67 | Reminders: multiselect + from-closing-date messaging | Admin | Survey push — reminders step | P1 | Reminders counted from closing date. Messaging must be explicit. D_PCE_NC13. |
+| T68 | Results release date: required field (no comment moderation) | Admin | Survey push | P1 — DESIGN-REVIEW | Required if comment moderation not in Phase 1. Add messaging: if no date set, admin must manually release results. D_PCE_NC14. |
+| T69 | Term-level date cascade for bulk surveys | Admin | Survey push / dashboard | P1 — DESIGN-REVIEW | Surveys grouped by term. Term-level date change cascades to all instances. Individual course-level override still possible. NEW CONCEPT. D_PCE_NC15. |
+| T70 | CONFIRMED KILL — report access screen not in Phase 1 | Admin | Survey push flow | P1 | Supersedes T53 DESIGN-REVIEW → now confirmed KILL. Role-based access handles result visibility. Edge cases = manual download + email. D_PCE_NC16. |
+| T71 | File upload wording: "PDF or Word document" everywhere | Admin | Template creation + survey push | P1 | Replace all instances of "PDF" with "PDF or Word document" in upload labels and helper text. D_PCE_NC06. |
+
+## Phase 1 design tasks — added 2026-06-10
+
+Source: `docs/research/meetings/2026-06-10-pce-architecture-vishaka-arun.md` (Granola `4d1fa807`)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T72 | Analytics tab: rename "Longitudinal Insights" → "Course Offering" and "Faculty" | Admin | PCE nav / analytics | P1 | Do NOT call the analytics tabs "longitudinal insights". Two named entries: "Course Offering" + "Faculty". D_PCE_AV01. |
+| T73 | Faculty analytics page — leaderboard + grid + detail | Admin | Analytics | P1 — NEW PAGE NEEDED | Top performers section + needs-attention section + searchable grid (total courses, avg score, highest, lowest). Click → faculty detail: spider graph + trend chart + per-course history. D_PCE_AV04, D_PCE_AV05. |
+| T74 | Course offering analytics page — term-grouped with stats | Admin | Analytics | P1 — NEW PAGE NEEDED | Term-grouped offering list; row stats: avg rating, response rate, enrolled, completed; trend (5+ terms). D_PCE_AV03, D_PCE_AV16. |
+| T75 | Student detail view — merge course + survey status | Admin | Student directory detail | P1 — DESIGN-REVIEW | Current courses on top, past below, no future. Survey status (filled/not, released/not) integrated as column on course rows. No separate "surveys" tab. D_PCE_AV06, D_PCE_AV07. |
+| T76 | Academic calendar settings screen | Admin | Settings | P1 — NEW PAGE NEEDED | Academic year (label + start date + end date) + terms per year (start date + end date). Prerequisite for dashboard term-grouping. D_PCE_AV08, D_PCE_AV09. |
+| T77 | Dashboard: only show terms with configured calendar dates | Admin | PCE landing / dashboard | P1 — DESIGN-REVIEW | Unconfigured/blank terms excluded. Show reminder/link for any unconfigured terms (pairs with T58). D_PCE_AV09. |
+| T78 | Student directory in PCE — view-only with PCE columns | Admin | Student directory page | P1 — DESIGN-REVIEW | Phase-1 columns: cohort, campus, category, status, survey count, adherence metric. Entity actions → navigate to Prism in new tab. D_PCE_AV10, D_PCE_AV11. |
+| T79 | Faculty directory in PCE — view-only with PCE columns | Admin | Faculty directory page | P1 — DESIGN-REVIEW | Columns: name, designation, courses taught, avg rating. Entry to faculty detail/analytics. Entity actions → navigate to Prism in new tab. D_PCE_AV10, D_PCE_AV12. |
+
+---
+
 ## Open product questions
 
 - F2 (adjunct faculty) — email-only or rolls into faculty view? Reconfirm with Aarti.
