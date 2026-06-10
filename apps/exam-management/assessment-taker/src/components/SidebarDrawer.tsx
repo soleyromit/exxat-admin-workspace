@@ -12,6 +12,7 @@ export interface SidebarDrawerProps {
   flaggedSet: Set<number>;
   sections?: ExamSection[];
   onNavigate: (index: number) => void;
+  style?: React.CSSProperties;
 }
 
 export function SidebarDrawer({
@@ -23,6 +24,7 @@ export function SidebarDrawer({
   flaggedSet,
   sections,
   onNavigate,
+  style,
 }: SidebarDrawerProps) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -39,7 +41,7 @@ export function SidebarDrawer({
       role="complementary"
       aria-label="Question navigator"
       className="animate-slide-in-right w-60 shrink-0 flex flex-col rounded-2xl border border-border shadow-sm bg-card overflow-hidden"
-      style={{  }}
+      style={style}
     >
       {/* Header */}
       <div className="flex items-center gap-1.5 ps-3.5 pe-2.5 py-3 border-b border-border shrink-0">

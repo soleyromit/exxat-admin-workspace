@@ -11,7 +11,7 @@
  * PDF/image types aren't crammed into a vertical scroll stack alongside text refs.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Badge, Button,
   Table, TableHeader, TableHead, TableBody, TableRow, TableCell,
@@ -22,9 +22,10 @@ import type { AssessmentReference } from '../data/assessments';
 interface GlobalReferencePanelProps {
   onClose: () => void;
   refs: AssessmentReference[];
+  style?: React.CSSProperties;
 }
 
-export function GlobalReferencePanel({ onClose, refs }: GlobalReferencePanelProps) {
+export function GlobalReferencePanel({ onClose, refs, style }: GlobalReferencePanelProps) {
   const [activeRef, setActiveRef] = useState(refs[0]?.id ?? '');
   const current = refs.find((r) => r.id === activeRef) ?? refs[0];
 
@@ -34,7 +35,7 @@ export function GlobalReferencePanel({ onClose, refs }: GlobalReferencePanelProp
     <aside
       aria-label="Exam reference materials"
       className="flex flex-col flex-shrink-0 rounded-2xl border border-border shadow-sm overflow-hidden bg-card"
-      style={{ width: 340 }}
+      style={{ width: 340, ...style }}
     >
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between flex-shrink-0 px-4 py-3 border-b border-border">

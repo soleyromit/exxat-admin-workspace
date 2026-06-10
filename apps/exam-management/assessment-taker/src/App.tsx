@@ -64,6 +64,11 @@ function SectionStartScreen({
   questionStart,
   questionEnd,
   onBegin,
+  hasGlobalRef,
+  isGlobalRefOpen,
+  onToggleGlobalRef,
+  isNavOpen,
+  onToggleNav,
 }: {
   section: ExamSection;
   sectionNumber: number;
@@ -71,6 +76,11 @@ function SectionStartScreen({
   questionStart: number;
   questionEnd: number;
   onBegin: () => void;
+  hasGlobalRef?: boolean;
+  isGlobalRefOpen?: boolean;
+  onToggleGlobalRef?: () => void;
+  isNavOpen?: boolean;
+  onToggleNav?: () => void;
 }) {
   const beginRef = useRef<HTMLButtonElement>(null);
 
@@ -89,6 +99,35 @@ function SectionStartScreen({
         flexDirection: 'column', padding: '40px 24px',
       }}
     >
+      {/* Reference + Navigator access while reviewing section start */}
+      {(hasGlobalRef || onToggleNav) && (
+        <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 8 }}>
+          {hasGlobalRef && (
+            <Button
+              variant={isGlobalRefOpen ? 'default' : 'outline'}
+              size="sm"
+              onClick={onToggleGlobalRef}
+              aria-label={isGlobalRefOpen ? 'Close reference panel' : 'Open reference materials'}
+              aria-pressed={isGlobalRefOpen}
+            >
+              <i className="fa-light fa-file-lines" aria-hidden="true" />
+              Reference
+            </Button>
+          )}
+          {onToggleNav && (
+            <Button
+              variant={isNavOpen ? 'default' : 'outline'}
+              size="sm"
+              onClick={onToggleNav}
+              aria-label={isNavOpen ? 'Close question navigator' : 'Open question navigator'}
+              aria-expanded={isNavOpen}
+            >
+              <i className="fa-light fa-list-ul" aria-hidden="true" />
+              Questions
+            </Button>
+          )}
+        </div>
+      )}
       <div style={{ maxWidth: 520, width: '100%', textAlign: 'center' }}>
         {/* Section label */}
         <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', letterSpacing: 0.5, marginBottom: 12 }}>
@@ -449,6 +488,11 @@ export function App() {
               questionStart={boundary.start + 1}
               questionEnd={boundary.end + 1}
               onBegin={handleBeginSection}
+              hasGlobalRef={(assessment?.assessmentReferences?.length ?? 0) > 0}
+              isGlobalRefOpen={showGlobalRef}
+              onToggleGlobalRef={() => setShowGlobalRef(v => !v)}
+              isNavOpen={showSidebar}
+              onToggleNav={() => setShowSidebar(v => !v)}
             />
           );
         })()}
@@ -483,7 +527,7 @@ export function App() {
               onToggleFlag={handleToggleFlag} />
 
           </main>
-          {showGlobalRef && (assessment?.assessmentReferences?.length ?? 0) > 0 && (
+          {showGlobalRef && !showSectionStart && (assessment?.assessmentReferences?.length ?? 0) > 0 && (
             <GlobalReferencePanel
               refs={assessment!.assessmentReferences!}
               onClose={() => setShowGlobalRef(false)} />
@@ -495,7 +539,7 @@ export function App() {
               onSave={handleCommentChange}
               onClose={() => setShowReport(false)} />
           )}
-          {showSidebar && (
+          {showSidebar && !showSectionStart && (
             <SidebarDrawer
               onClose={() => setShowSidebar(false)}
               questions={questions}
@@ -509,6 +553,26 @@ export function App() {
         </div>
       </div>
       
+
+      {/* Panels lifted above section-start overlay (z-35 > overlay z-30) */}
+      {showSectionStart && showGlobalRef && (assessment?.assessmentReferences?.length ?? 0) > 0 && (
+        <GlobalReferencePanel
+          refs={assessment!.assessmentReferences!}
+          onClose={() => setShowGlobalRef(false)}
+          style={{ position: 'fixed', right: 16, top: 56, bottom: 16, zIndex: 35, height: 'auto' }} />
+      )}
+      {showSectionStart && showSidebar && (
+        <SidebarDrawer
+          onClose={() => setShowSidebar(false)}
+          questions={questions}
+          currentIndex={currentIndex}
+          highestReachedIndex={highestReachedIndex}
+          answeredSet={answeredIndices}
+          flaggedSet={flagged}
+          sections={assessment?.sections}
+          onNavigate={handleNavigate}
+          style={{ position: 'fixed', right: showGlobalRef && (assessment?.assessmentReferences?.length ?? 0) > 0 ? 372 : 16, top: 56, bottom: 16, zIndex: 35, height: 'auto' }} />
+      )}
 
       {/* Fallback floating tools — only shown when NOT inline (i.e., question doesn't need them but user toggled from settings) */}
       {showKeyboard && !needsKeyboard &&

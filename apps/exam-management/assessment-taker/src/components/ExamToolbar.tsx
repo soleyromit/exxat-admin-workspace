@@ -201,7 +201,7 @@ export function ExamToolbar({
           {/* Questions navigator button */}
           {onToggleNav && (
             <DSButton
-              variant="outline"
+              variant={isNavOpen ? 'default' : 'outline'}
               size="sm"
               onClick={onToggleNav}
               aria-label={isNavOpen ? 'Close question navigator' : 'Open question navigator'}
