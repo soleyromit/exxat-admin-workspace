@@ -197,6 +197,11 @@ DOCUMENTED_HAND_ROLLS = {
     "app/(app)/admin/standards/page.tsx",
     "app/(app)/admin/permissions/page.tsx",
     "app/(app)/my-surveys/page.tsx",
+    # pce: templates/new/page.tsx — wizard page, not a list page. DataTable is
+    # used only for the copy-select picker step; ListPageTemplate is for primary
+    # entity hubs, not wizard sub-steps. Intentional until a picker variant is
+    # added to ListPageTemplate.
+    "app/(app)/templates/new/page.tsx",
     # pce: SurveyStatusBadge — workflow status badges (draft/active/collecting/
     # closed/released) with product-specific CSS variables (--pce-status-*) and
     # dot indicators. DS StatusBadge covers only product-lifecycle states
@@ -831,8 +836,8 @@ def scan_file_for_clickable_without_focus_ring(rel: str, text: str) -> list[Gap]
 
 def scan_file_for_async_fetch_no_skeleton(rel: str, text: str) -> list[Gap]:
     """A file with async-fetch signals that does NOT import or render Skeleton.
-    Heuristic — some files compose loading state into a child component;
-    warn-only."""
+    Heuristic — some files compose loading state into a child component.
+    Promoted to block 2026-06-09 after 30+ days at 0 hits across all products."""
     if "components/data-table/" in rel:
         return []
     if rel in DOCUMENTED_HAND_ROLLS:
@@ -845,7 +850,7 @@ def scan_file_for_async_fetch_no_skeleton(rel: str, text: str) -> list[Gap]:
     m = ASYNC_FETCH_RE.search(text)
     line_no = text[: m.start()].count("\n") + 1 if m else 1
     return [Gap(
-        severity="warn",
+        severity="block",
         rule="async-fetch-no-skeleton",
         file=rel,
         line=line_no,
@@ -1554,9 +1559,9 @@ def main():
             "Default: all blocking rules. "
             "State-coverage rules (phase-0 warn, candidate promotion to block): "
             "datatable-no-empty-state, dialog-no-error-feedback, "
-            "opacity-60-on-text-parent, clickable-without-focus-ring, "
-            "async-fetch-no-skeleton. Promote each to block once the audit "
-            "shows 0 hits across all products."
+            "opacity-60-on-text-parent, clickable-without-focus-ring. "
+            "async-fetch-no-skeleton promoted to block 2026-06-09 (30+ days, 0 hits). "
+            "Promote remaining to block once the audit shows 0 hits across all products."
         ),
     )
     ap.add_argument("--product", help="Scope to one product (e.g., pce, exam-management).")
