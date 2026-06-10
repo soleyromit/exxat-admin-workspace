@@ -181,7 +181,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
             className="gap-2"
             onClick={() => {
               const id = courseAssessments.find(a => reviewByAssessment.get(a.id)?.state === 'in-progress')?.id
-              if (id) router.push(`/assessments/${id}/monitor`)
+              if (id) router.push(`/assessment-builder?id=${id}&view=monitor`)
             }}
           >
             <span className="inline-block size-1.5 rounded-full bg-chart-1 [animation:pulse-soft_1.6s_ease-in-out_infinite]" aria-hidden="true" />
@@ -198,6 +198,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
     <>
       <SiteHeader title={course.name} breadcrumbs={breadcrumbs} />
       <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none overflow-hidden">
+        <h1 className="sr-only">{course.name}</h1>
         <PageHeader
           title={course.name}
           subtitle={subtitle}
@@ -266,7 +267,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                 reviewByAssessment={reviewByAssessment}
                 isViewer={isViewer}
                 courseId={courseId}
-                onNewAssessment={() => router.push(`/assessment-builder/create?courseId=${courseId}`)}
+                onNewAssessment={() => router.push(`/assessment-builder?new=1&courseId=${courseId}`)}
               />
             </TabsContent>
             <TabsContent value="students" className="m-0">
@@ -324,7 +325,7 @@ function PrimaryAction({
   }
 
   return (
-    <Button variant="default" size="sm" className="gap-2" onClick={() => router.push(`/assessment-builder/create?courseId=${courseId}`)}>
+    <Button variant="default" size="sm" className="gap-2" onClick={() => router.push(`/assessment-builder?new=1&courseId=${courseId}`)}>
       <i className="fa-light fa-plus" aria-hidden="true" />
       New assessment
     </Button>

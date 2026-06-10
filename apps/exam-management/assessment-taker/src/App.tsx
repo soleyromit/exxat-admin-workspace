@@ -61,8 +61,6 @@ function SectionStartScreen({
   section,
   sectionNumber,
   totalSections,
-  questionStart,
-  questionEnd,
   onBegin,
   hasGlobalRef,
   isGlobalRefOpen,
@@ -73,8 +71,6 @@ function SectionStartScreen({
   section: ExamSection;
   sectionNumber: number;
   totalSections: number;
-  questionStart: number;
-  questionEnd: number;
   onBegin: () => void;
   hasGlobalRef?: boolean;
   isGlobalRefOpen?: boolean;
@@ -95,8 +91,8 @@ function SectionStartScreen({
       aria-labelledby="section-start-title"
       style={{
         position: 'fixed', inset: 0, zIndex: 30,
-        background: 'var(--background)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexDirection: 'column', padding: '40px 24px',
+        background: 'var(--background)', display: 'flex',
+        flexDirection: 'column', padding: '40px 24px', overflowY: 'auto',
       }}
     >
       {/* Reference + Navigator access while reviewing section start */}
@@ -128,43 +124,39 @@ function SectionStartScreen({
           )}
         </div>
       )}
-      <div style={{ maxWidth: 520, width: '100%', textAlign: 'center' }}>
+      <div style={{ maxWidth: 520, width: '100%', textAlign: 'left', margin: 'auto' }}>
         {/* Section label */}
-        <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', letterSpacing: 0.5, marginBottom: 12 }}>
+        <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', letterSpacing: 0.5, marginBottom: 6 }}>
           Section {sectionNumber} of {totalSections}
         </p>
 
-        {/* Section icon */}
-        <div style={{
-          width: 64, height: 64, borderRadius: '50%',
-          background: 'var(--muted)', border: '1px solid var(--border)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 20px',
-        }}>
-          <i className="fa-light fa-layer-group" aria-hidden="true" style={{ fontSize: 26, color: 'var(--brand-color)' }} />
-        </div>
-
         {/* Title */}
-        <h2 id="section-start-title" style={{ fontSize: 26, fontWeight: 700, color: 'var(--foreground)', marginBottom: 8, lineHeight: 1.2 }}>
+        <h2 id="section-start-title" style={{ fontSize: 24, fontWeight: 700, color: 'var(--foreground)', marginBottom: 6, lineHeight: 1.2 }}>
           {section.title}
         </h2>
 
         {/* Question range */}
-        <p style={{ fontSize: 14, color: 'var(--muted-foreground)', marginBottom: 28 }}>
-          Questions {questionStart}–{questionEnd} · {section.questionCount} questions
+        <p style={{ fontSize: 14, color: 'var(--muted-foreground)', marginBottom: 24 }}>
+          {section.questionCount} questions
         </p>
 
-        {/* Instructions */}
+        {/* Instructions — capped scroll area so the Begin button stays reachable */}
         {section.instructions && (
-          <div style={{
-            textAlign: 'left',
-            background: 'var(--card)', border: '1px solid var(--border)',
-            borderRadius: 12, padding: '16px 20px', marginBottom: 32,
-          }}>
+          <div
+            tabIndex={0}
+            role="region"
+            aria-label="Section instructions"
+            style={{
+              textAlign: 'left',
+              background: 'var(--card)', border: '1px solid var(--border)',
+              borderRadius: 12, padding: '16px 20px', marginBottom: 32,
+              maxHeight: '40vh', overflowY: 'auto',
+            }}
+          >
             <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-foreground)', marginBottom: 8 }}>
               Section Instructions
             </p>
-            <p style={{ fontSize: 14, color: 'var(--foreground)', lineHeight: 1.7 }}>
+            <p style={{ fontSize: 15, color: 'var(--foreground)', lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
               {section.instructions}
             </p>
           </div>
@@ -173,7 +165,6 @@ function SectionStartScreen({
         {/* CTA */}
         <Button ref={beginRef} size="lg" onClick={onBegin} className="w-full">
           Begin Section {sectionNumber}
-          <i className="fa-light fa-arrow-right" aria-hidden="true" />
         </Button>
       </div>
     </div>
@@ -485,8 +476,6 @@ export function App() {
               section={boundary.section}
               sectionNumber={boundary.sectionNumber}
               totalSections={assessment.sections.length}
-              questionStart={boundary.start + 1}
-              questionEnd={boundary.end + 1}
               onBegin={handleBeginSection}
               hasGlobalRef={(assessment?.assessmentReferences?.length ?? 0) > 0}
               isGlobalRefOpen={showGlobalRef}
@@ -598,7 +587,6 @@ export function App() {
           totalQuestions={questions.length}
           onNavigate={handleNavigate} />
       )}
-
 
       {showSubmitReview && (
         <SubmitReviewOverlay

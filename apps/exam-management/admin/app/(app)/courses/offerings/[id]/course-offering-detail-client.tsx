@@ -44,6 +44,8 @@ import type { ExtendedCourseOffering } from '@/lib/course-mock-data'
 import { MOCK_QB_FOLDERS, mockAssessments } from '@/lib/qb-mock-data'
 import { findPersona } from '@/lib/personas'
 import { ImportAssessmentModal } from '@/components/import-assessment-modal'
+import { AssessmentsLanding } from '@/components/assessment-creation/screens/assessments-landing'
+import { ASSESSMENTS as FLOW_ASSESSMENTS } from '@/components/assessment-creation/data'
 
 const IS_LMS_ACTIVE = false
 
@@ -69,12 +71,6 @@ const OFFERING_STATUS: Record<string, { label: string; bg: string; fg: string }>
   ongoing:   { label: 'Ongoing',   bg: 'var(--qb-status-saved-bg)', fg: 'var(--qb-status-saved-fg)' },
   completed: { label: 'Completed', bg: 'var(--muted)',               fg: 'var(--muted-foreground)' },
   upcoming:  { label: 'Upcoming',  bg: 'var(--brand-tint)', fg: 'var(--brand-color-dark)' },
-}
-
-const ASSESSMENT_STATUS: Record<string, { bg: string; fg: string }> = {
-  Published: { bg: 'var(--qb-status-saved-bg)', fg: 'var(--qb-status-saved-fg)' },
-  Draft:     { bg: 'var(--muted)',               fg: 'var(--muted-foreground)' },
-  Upcoming:  { bg: 'var(--brand-tint)', fg: 'var(--brand-color-dark)' },
 }
 
 const STUDENT_STATUS: Record<string, { label: string; bg: string; fg: string }> = {
@@ -498,128 +494,12 @@ function LegacyCreateAssessmentModal({
 
 // ── Assessments tab ───────────────────────────────────────────────────────────
 
-type AssessmentRow = ExtendedCourseOffering['assessments'][number] & Record<string, unknown>
-
-function buildAssessmentColumns(onNewAssessment: () => void): ColumnDef<AssessmentRow>[] {
-  return [
-    {
-      key: 'title',
-      label: 'Assessment',
-      width: 280,
-      sortable: true,
-      sortKey: 'title',
-      cell: (row) => (
-        <div className="flex items-center gap-2.5">
-          <div className="flex size-7 shrink-0 items-center justify-center rounded-md"
-            style={{ backgroundColor: 'var(--brand-tint)' }}>
-            <i className="fa-light fa-clipboard-list text-[12px]" aria-hidden="true"
-              style={{ color: 'var(--brand-color)' }} />
-          </div>
-          <span className="text-sm font-medium text-foreground truncate">{row.title as string}</span>
-        </div>
-      ),
-    },
-    {
-      key: 'type',
-      label: 'Type',
-      width: 140,
-      sortable: true,
-      sortKey: 'type',
-      cell: (row) => (
-        <span className="text-sm text-muted-foreground">{row.type as string}</span>
-      ),
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      width: 110,
-      sortable: true,
-      sortKey: 'status',
-      cell: (row) => {
-        const s = ASSESSMENT_STATUS[row.status as string] ?? ASSESSMENT_STATUS.Draft
-        return (
-          <Badge variant="secondary" className="rounded text-[11px] font-medium"
-            style={{ backgroundColor: s.bg, color: s.fg }}>
-            {row.status as string}
-          </Badge>
-        )
-      },
-    },
-    {
-      key: 'date',
-      label: 'Date',
-      width: 120,
-      sortable: true,
-      sortKey: 'date',
-      cell: (row) => (
-        <span className="text-sm text-muted-foreground tabular-nums">{formatDate(row.date as string)}</span>
-      ),
-    },
-    {
-      key: 'students',
-      label: 'Students',
-      width: 90,
-      sortable: true,
-      sortKey: 'students',
-      cell: (row) => (
-        <span className="text-sm text-foreground tabular-nums">{row.students as number}</span>
-      ),
-    },
-    {
-      key: 'actions',
-      label: '',
-      width: 52,
-      defaultPin: 'right',
-      lockPin: true,
-      cell: (row) => (
-        <RowActions
-          row={row}
-          label={row.title as string}
-          actions={[
-            { label: 'View Assessment', icon: 'fa-arrow-right', onClick: () => {} },
-            { label: 'Edit', icon: 'fa-pen', onClick: () => {} },
-          ]}
-        />
-      ),
-    },
-  ]
-}
-
-function AssessmentsTab({ offering, onNewAssessment }: { offering: ExtendedCourseOffering; onNewAssessment: () => void }) {
-  const assessmentColumns = useMemo(() => buildAssessmentColumns(onNewAssessment), [onNewAssessment])
-
+function AssessmentsTab({ onNewAssessment }: { offering: ExtendedCourseOffering; onNewAssessment: () => void }) {
+  const router = useRouter()
   return (
-    <DataTable<AssessmentRow>
-      data={offering.assessments as AssessmentRow[]}
-      columns={assessmentColumns}
-      getRowId={(row) => row.id as string}
-      selectable={false}
-      searchable={false}
-      showQueryControls={false}
-      toolbarSlot={() => (
-        <>
-          <span className="text-xs text-muted-foreground">
-            {offering.assessments.length} assessment{offering.assessments.length !== 1 ? 's' : ''}
-          </span>
-          <Button size="sm" onClick={onNewAssessment}>
-            <i className="fa-light fa-plus" aria-hidden="true" />
-            New Assessment
-          </Button>
-        </>
-      )}
-      emptyState={
-        <div className="flex flex-col items-center justify-center py-16 text-center gap-2">
-          <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-            <i className="fa-light fa-clipboard-list text-muted-foreground text-xl" aria-hidden="true" />
-          </div>
-          <p className="font-semibold text-foreground">No assessments yet</p>
-          <p className="text-sm text-muted-foreground">Create the first assessment for this course offering.</p>
-          <Button size="sm" className="mt-1" onClick={onNewAssessment}>
-            <i className="fa-light fa-plus" aria-hidden="true" />
-            New Assessment
-          </Button>
-        </div>
-      }
+    <AssessmentsLanding
+      onCreate={onNewAssessment}
+      onOpen={(a) => router.push(`/assessment-builder?id=${a.id}`)}
     />
   )
 }
@@ -640,14 +520,14 @@ const enrolledStudentColumns: ColumnDef<EnrolledStudentRow>[] = [
       return (
         <div className="flex items-center gap-3">
           <Avatar className="shrink-0" style={{ width: 32, height: 32 }} aria-hidden="true">
-            <AvatarFallback className="text-[11px] font-bold"
+            <AvatarFallback className="text-xs font-bold"
               style={{ backgroundColor: 'var(--brand-tint)', color: 'var(--brand-color-dark)' }}>
               {initials}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground truncate">{row.name as string}</p>
-            <p className="text-[11px] text-muted-foreground truncate">{row.email as string}</p>
+            <p className="text-xs text-muted-foreground truncate">{row.email as string}</p>
           </div>
         </div>
       )
@@ -662,7 +542,7 @@ const enrolledStudentColumns: ColumnDef<EnrolledStudentRow>[] = [
     cell: (row) => {
       const s = STUDENT_STATUS[row.status as string] ?? STUDENT_STATUS.enrolled
       return (
-        <Badge variant="secondary" className="rounded text-[11px] font-medium"
+        <Badge variant="secondary" className="rounded font-medium"
           style={{ backgroundColor: s.bg, color: s.fg }}>
           {s.label}
         </Badge>
@@ -810,7 +690,7 @@ function AccommodationsTab({ offering, onNavigateStudent }: {
               </div>
               <Badge
                 variant="secondary"
-                className="rounded text-[11px] shrink-0"
+                className="rounded text-xs shrink-0"
               >
                 {ACC_TYPE_LABEL[acc.type] ?? acc.type}
               </Badge>
@@ -844,7 +724,7 @@ const assignedFacultyColumns: ColumnDef<AssignedFacultyRow>[] = [
       return (
         <div className="flex items-center gap-3">
           <Avatar className="shrink-0" style={{ width: 32, height: 32 }} aria-hidden="true">
-            <AvatarFallback className="text-[11px] font-bold"
+            <AvatarFallback className="text-xs font-bold"
               style={{
                 backgroundColor: 'var(--brand-tint)',
                 color: 'var(--brand-color)',
@@ -864,7 +744,7 @@ const assignedFacultyColumns: ColumnDef<AssignedFacultyRow>[] = [
     sortable: true,
     sortKey: 'role',
     cell: (row) => (
-      <Badge variant="secondary" className="rounded text-[11px] font-medium"
+      <Badge variant="secondary" className="rounded font-medium"
         style={row.role === 'Course Coordinator'
           ? { backgroundColor: 'var(--brand-tint)', color: 'var(--brand-color)' }
           : { backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
@@ -1012,7 +892,7 @@ function OverviewTab({ offering, isPrism }: { offering: ExtendedCourseOffering; 
           <p className="text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground mb-3">Quick Reference</p>
           <div className="flex items-center justify-between py-2 border-b border-border">
             <span className="text-xs text-muted-foreground">Status</span>
-            <Badge variant="secondary" className="rounded text-[11px] font-medium"
+            <Badge variant="secondary" className="rounded font-medium"
               style={{ backgroundColor: status?.bg, color: status?.fg }}>
               {status?.label ?? offering.status}
             </Badge>
@@ -1103,7 +983,7 @@ function ResourcesTab({ offering }: { offering: ExtendedCourseOffering }) {
                 aria-hidden="true" />
             </span>
             <p className="text-sm font-medium text-foreground flex-1 truncate">{res.title}</p>
-            <Badge variant="secondary" className="rounded text-[11px] shrink-0"
+            <Badge variant="secondary" className="rounded text-xs shrink-0"
               style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
               {res.type}
             </Badge>
@@ -1170,7 +1050,7 @@ function QuestionBankTab({ courseId }: { courseId: string }) {
             <div className="flex items-center gap-1.5 mt-2">
               {collaborators.map(p => (
                 <Avatar key={p!.id} className="size-5">
-                  <AvatarFallback className="text-[9px]"
+                  <AvatarFallback className="text-xs"
                     style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
                     {p!.initials}
                   </AvatarFallback>
@@ -1212,7 +1092,7 @@ function QuestionBankTab({ courseId }: { courseId: string }) {
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium text-foreground truncate">{folder.name}</p>
                       {folder.isPrivateSpace && (
-                        <Badge variant="secondary" className="rounded text-[10px] px-1.5 py-0 shrink-0"
+                        <Badge variant="secondary" className="rounded text-xs px-1.5 py-0 shrink-0"
                           style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
                           Private
                         </Badge>
@@ -1325,17 +1205,15 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
               <TabsTrigger value="assessments">
                 <i className="fa-light fa-clipboard-list text-xs" aria-hidden="true" />
                 Assessments
-                {offering.assessments.length > 0 && (
-                  <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
-                    {offering.assessments.length}
-                  </Badge>
-                )}
+                <Badge variant="secondary" className="rounded-full text-xs px-1.5 py-0 min-w-[18px] text-center">
+                  {FLOW_ASSESSMENTS.length}
+                </Badge>
               </TabsTrigger>
               <TabsTrigger value="students">
                 <i className="fa-light fa-users text-xs" aria-hidden="true" />
                 Students
                 {localStudents.length > 0 && (
-                  <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                  <Badge variant="secondary" className="rounded-full text-xs px-1.5 py-0 min-w-[18px] text-center">
                     {localStudents.length}
                   </Badge>
                 )}
@@ -1344,7 +1222,7 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
                 <i className="fa-light fa-chalkboard-user text-xs" aria-hidden="true" />
                 Faculty
                 {localFaculty.length > 0 && (
-                  <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                  <Badge variant="secondary" className="rounded-full text-xs px-1.5 py-0 min-w-[18px] text-center">
                     {localFaculty.length}
                   </Badge>
                 )}
@@ -1353,7 +1231,7 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
                 <i className="fa-light fa-books text-xs" aria-hidden="true" />
                 Question Bank
                 {MOCK_QB_FOLDERS.some(f => f.id === offering.courseId.replace('course-', '')) && (
-                  <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                  <Badge variant="secondary" className="rounded-full text-xs px-1.5 py-0 min-w-[18px] text-center">
                     {MOCK_QB_FOLDERS.filter(f => f.parentId === offering.courseId.replace('course-', '')).length}
                   </Badge>
                 )}
@@ -1362,7 +1240,7 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
                 <i className="fa-light fa-folder-open text-xs" aria-hidden="true" />
                 Resources
                 {offering.resources.length > 0 && (
-                  <Badge variant="secondary" className="rounded-full text-[10px] px-1.5 py-0 min-w-[18px] text-center">
+                  <Badge variant="secondary" className="rounded-full text-xs px-1.5 py-0 min-w-[18px] text-center">
                     {offering.resources.length}
                   </Badge>
                 )}
@@ -1381,7 +1259,7 @@ export default function CourseOfferingDetailClient({ offering }: { offering: Ext
             <TabsContent value="assessments" className="m-0">
               <AssessmentsTab
                 offering={offering}
-                onNewAssessment={() => router.push(`/assessment-builder/create?courseId=${offering.courseId}`)}
+                onNewAssessment={() => router.push(`/assessment-builder?new=1&courseId=${offering.courseId}`)}
               />
             </TabsContent>
             <TabsContent value="students" className="m-0">

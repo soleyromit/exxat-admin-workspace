@@ -355,7 +355,7 @@ export const questions: Question[] = [
 {
   id: 11,
   text: 'Choose the correct normal adult respiratory rate range.',
-  type: 'dropdown',
+  type: 'mcq',
   options: [
   '8-12 breaths/min',
   '12-20 breaths/min',
@@ -645,7 +645,7 @@ export const questions: Question[] = [
 {
   id: 30,
   text: 'Select the appropriate triage category for a patient with a sprained ankle and stable vitals.',
-  type: 'dropdown',
+  type: 'mcq',
   options: [
   'Resuscitation (Level 1)',
   'Emergent (Level 2)',

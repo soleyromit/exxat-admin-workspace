@@ -3,9 +3,9 @@
 /* Blueprint Setup Wizard — define intent & parameters before the builder */
 
 import { useState } from 'react'
-import { Button, Card, CardContent, Input, Textarea, Badge, ToggleSwitch } from '@exxatdesignux/ui'
+import { Button, Card, CardContent, Input, Textarea, Badge, ToggleSwitch, AvatarInitials } from '@exxatdesignux/ui'
 import { Icon, LeoStar } from '../icons'
-import { Field, Avatar, useApp } from '../primitives'
+import { Field, useApp } from '../primitives'
 import { FACULTY, PAST_ASSESSMENTS, type BuilderMeta } from '../data'
 
 interface WizardStepMeta {
@@ -78,7 +78,7 @@ function WizardFlowOverview({ step, onJump }: { step: number; onJump: (i: number
                 onClick={() => onJump(i)}
                 aria-label={`Jump to step ${i + 1}: ${s.title}`}
                 aria-pressed={active}
-                className="card"
+               
                 style={{
                   flex: '1 1 0',
                   minWidth: 150,
@@ -121,7 +121,7 @@ function WizardFlowOverview({ step, onJump }: { step: number; onJump: (i: number
           )
         })}
         <Card
-          className="card"
+         
           style={{
             flex: '0 0 auto',
             display: 'flex',
@@ -155,7 +155,7 @@ function StepGuide({ step }: { step: number }) {
         style={{
           width: 34,
           height: 34,
-          borderRadius: 9,
+          borderRadius: 8,
           display: 'grid',
           placeItems: 'center',
           background: 'var(--card)',
@@ -429,7 +429,7 @@ export function BlueprintWizard({
             <div className="divider"></div>
             <Field label="Primary owner / admin" hint="Responsible for final publishing.">
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Avatar id="schen" size={32} />
+                <AvatarInitials initials={FACULTY.schen.initials} />
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 13 }}>Dr. Sarah Chen</div>
                   <div className="hint">Course Coordinator · you</div>
@@ -442,8 +442,8 @@ export function BlueprintWizard({
                   const f = FACULTY[id]
                   const on = collabs.includes(id)
                   return (
-                    <Card key={id} style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 12, borderRadius: 11 }}>
-                      <Avatar id={id} size={30} />
+                    <Card key={id} style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 12, borderRadius: 12 }}>
+                      <AvatarInitials initials={FACULTY[id].initials} />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 600, fontSize: 13 }}>{f.name}</div>
                         <div className="hint">{f.role}</div>
@@ -475,7 +475,7 @@ export function BlueprintWizard({
                   style={{
                     padding: 18,
                     cursor: 'pointer',
-                    borderRadius: 14,
+                    borderRadius: 16,
                     borderColor: pathway === o.id ? 'var(--brand-color)' : 'var(--border)',
                     boxShadow: pathway === o.id ? '0 0 0 3px oklch(from var(--brand-color) l c h / 0.16)' : 'none',
                   }}
@@ -486,7 +486,7 @@ export function BlueprintWizard({
                     ) : (
                       <Icon name={o.ic as string} style={{ fontSize: 19, color: 'var(--brand-color-dark)' }} />
                     )}
-                    {o.badge && <Badge variant="secondary" className="tag brand">{o.badge}</Badge>}
+                    {o.badge && <Badge variant="secondary">{o.badge}</Badge>}
                   </div>
                   <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 5 }}>{o.t}</div>
                   <div style={{ fontSize: 12.5, color: 'var(--muted-foreground)', lineHeight: 1.45 }}>{o.d}</div>
@@ -523,7 +523,7 @@ export function BlueprintWizard({
                         <div style={{ flex: 1 }}>
                           <div style={{ fontWeight: 600, fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 8 }}>
                             {p.name}
-                            {p.recommended && <Badge variant="secondary" className="tag brand">Best match</Badge>}
+                            {p.recommended && <Badge variant="secondary">Best match</Badge>}
                           </div>
                           <div className="hint" style={{ marginTop: 3 }}>
                             {p.cohort} · {p.sections} sections · {p.questions} questions · avg difficulty {p.avgDiff}

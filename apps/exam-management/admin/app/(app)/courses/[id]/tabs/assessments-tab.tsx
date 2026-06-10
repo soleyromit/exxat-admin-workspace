@@ -554,7 +554,7 @@ function ActionsForState({
     case 'draft':
       return (
         <Button asChild size="sm" className="gap-1.5">
-          <Link href={`/assessments/${assessmentId}`}>
+          <Link href={`/assessment-builder?id=${assessmentId}`}>
             <i className="fa-light fa-arrow-right" aria-hidden="true" />
             Open
           </Link>
@@ -563,7 +563,7 @@ function ActionsForState({
     case 'pending-chair':
       return (
         <Button asChild variant="outline" size="sm" className="gap-1.5">
-          <Link href={`/assessments/${assessmentId}/review`}>
+          <Link href={`/assessment-builder?id=${assessmentId}&view=review`}>
             <i className="fa-light fa-eye" aria-hidden="true" />
             View submission
           </Link>
@@ -572,7 +572,7 @@ function ActionsForState({
     case 'changes-requested':
       return (
         <Button asChild size="sm" className="gap-1.5">
-          <Link href={`/assessments/${assessmentId}/review`}>
+          <Link href={`/assessment-builder?id=${assessmentId}&view=review`}>
             <i className="fa-light fa-comment" aria-hidden="true" />
             View notes
           </Link>
@@ -581,7 +581,7 @@ function ActionsForState({
     case 'approved':
       return (
         <Button asChild size="sm" className="gap-1.5">
-          <Link href={`/assessments/${assessmentId}`}>
+          <Link href={`/assessment-builder?id=${assessmentId}`}>
             <i className="fa-light fa-bullhorn" aria-hidden="true" />
             Schedule & publish
           </Link>
@@ -590,7 +590,7 @@ function ActionsForState({
     case 'published':
       return (
         <Button asChild variant="outline" size="sm" className="gap-1.5">
-          <Link href={`/assessments/${assessmentId}`}>
+          <Link href={`/assessment-builder?id=${assessmentId}`}>
             <i className="fa-light fa-gear" aria-hidden="true" />
             Manage window
           </Link>
@@ -599,7 +599,7 @@ function ActionsForState({
     case 'in-progress':
       return (
         <Button asChild size="sm" className="gap-1.5">
-          <Link href={`/assessments/${assessmentId}/monitor`}>
+          <Link href={`/assessment-builder?id=${assessmentId}&view=monitor`}>
             <i className="fa-light fa-eye" aria-hidden="true" />
             Live monitor
           </Link>
@@ -608,7 +608,7 @@ function ActionsForState({
     case 'submitted':
       return (
         <Button asChild size="sm" className="gap-1.5">
-          <Link href={`/assessments/${assessmentId}/analytics`}>
+          <Link href={`/assessment-builder?id=${assessmentId}&view=analytics`}>
             <i className="fa-light fa-chart-mixed" aria-hidden="true" />
             Review & curve
           </Link>
@@ -617,7 +617,7 @@ function ActionsForState({
     case 'results-published':
       return (
         <Button asChild variant="outline" size="sm" className="gap-1.5">
-          <Link href={`/assessments/${assessmentId}/analytics`}>
+          <Link href={`/assessment-builder?id=${assessmentId}&view=analytics`}>
             <i className="fa-light fa-chart-mixed" aria-hidden="true" />
             Analytics
           </Link>

@@ -102,7 +102,7 @@ export function ActionItemsPanel({ faculty }: ActionItemsPanelProps) {
         detail: `Chair returned ${changesRequested.length === 1 ? a.title : 'multiple drafts'} with notes — address and resubmit.`,
         count: changesRequested.length,
         href: changesRequested.length === 1
-          ? `/assessments/${a.id}/review`
+          ? `/assessment-builder?id=${a.id}&view=review`
           : `/courses/${a.courseId}?tab=assessments`,
         hrefLabel: 'Review notes',
       })
@@ -118,7 +118,7 @@ export function ActionItemsPanel({ faculty }: ActionItemsPanelProps) {
         detail: `Chair-approved · awaiting your publish action.`,
         count: approvedAwaiting.length,
         href: approvedAwaiting.length === 1
-          ? `/assessments/${a.id}`
+          ? `/assessment-builder?id=${a.id}`
           : `/courses/${a.courseId}?tab=assessments`,
         hrefLabel: 'Schedule & publish',
       })
@@ -133,7 +133,7 @@ export function ActionItemsPanel({ faculty }: ActionItemsPanelProps) {
         title: `${inProgress.length} ${inProgress.length === 1 ? 'exam is' : 'exams are'} live right now`,
         detail: 'Monitor completion in real time — alert all, pause, or extend.',
         count: inProgress.length,
-        href: `/assessments/${a.id}/monitor`,
+        href: `/assessment-builder?id=${a.id}&view=monitor`,
         hrefLabel: 'Open live monitor',
       })
     }
@@ -147,7 +147,7 @@ export function ActionItemsPanel({ faculty }: ActionItemsPanelProps) {
         title: `${submittedPending.length} ${submittedPending.length === 1 ? 'assessment is' : 'assessments are'} ready to review`,
         detail: 'Run psychometrics, curve if needed, then publish results to students.',
         count: submittedPending.length,
-        href: `/assessments/${a.id}/analytics`,
+        href: `/assessment-builder?id=${a.id}&view=analytics`,
         hrefLabel: 'Review & curve',
       })
     }
@@ -189,7 +189,7 @@ export function ActionItemsPanel({ faculty }: ActionItemsPanelProps) {
         detail: 'No action needed yet — chair will respond within 3–4 days.',
         count: pendingChair.length,
         href: pendingChair.length === 1
-          ? `/assessments/${a.id}/review`
+          ? `/assessment-builder?id=${a.id}&view=review`
           : `/courses/${a.courseId}?tab=assessments`,
         hrefLabel: 'View status',
       })
