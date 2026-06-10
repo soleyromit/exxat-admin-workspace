@@ -86,6 +86,7 @@ export interface Assessment {
   facultyName: string;
   status: AssessmentStatus;
   isHighStakes: boolean;        // true = faculty review before results; false = immediate
+  forwardOnly?: boolean;        // true = no back-navigation (secure forward-only delivery)
 
   // Scheduling
   windowStart: Date;
@@ -147,15 +148,30 @@ export const MOCK_ASSESSMENTS: Assessment[] = [
     facultyName: 'Dr. Carla Medina',
     status: 'active',
     isHighStakes: true,
+    forwardOnly: true, // instructions state you can't return after advancing
     windowStart: NOW,
     windowEnd: new Date(NOW.getTime() + 3 * 60 * 60_000), // 3-hour window
     durationMinutes: 110,
     questionCount: 75,
     passingScore: 75,
-    instructions: 'Covers Chapters 12–18. Closed book. No reference materials. A proctor password will be provided at exam time.',
+    instructions: `This midterm covers Chapters 12–18 and is worth 30% of your final grade. Read the following carefully before you begin.
+
+Format and timing. The exam contains 75 questions across three sections and must be completed in a single sitting. Once you start, the timer runs continuously and cannot be paused — plan your breaks accordingly. You may move freely between questions within a section, but you cannot return to a section after you have advanced past it.
+
+Permitted materials. This is a closed-book exam, except for the approved reference materials listed below, which remain available from the toolbar throughout the exam. You may use the on-screen calculator. No personal notes, textbooks, websites, or communication tools of any kind are permitted.
+
+Academic integrity. By starting this exam you confirm that the work is entirely your own. Any use of unauthorized resources, communication with another person, or attempt to capture exam content will be reported under the program's academic integrity policy and may result in a failing grade.
+
+Technical issues. If your connection drops, your answers are saved automatically and you may rejoin within the exam window. If a question appears to contain an error, flag it using the comment tool and continue — do not let it cost you time. A proctor password will be provided at exam time.`,
     allowedAttempts: 1,
     instructionTimerSeconds: 300,
     allowComments: true,
+    accommodation: {
+      timeMultiplier: 1.5,
+      separateRoom: true,
+      extendedBreaks: false,
+      approvedBy: 'Jennifer Walsh, Student Services',
+    },
     contentAreas: [
       { id: 'ca-a01', name: 'Nervous System', questionCount: 25, weight: 33 },
       { id: 'ca-a02', name: 'Musculoskeletal', questionCount: 22, weight: 29 },
@@ -166,7 +182,13 @@ export const MOCK_ASSESSMENTS: Assessment[] = [
       {
         id: 'sec-1',
         title: 'Nervous System',
-        instructions: 'Questions in this section focus on the central and peripheral nervous system, neural signaling, and sensory pathways. All questions are single-best-answer MCQ. No reference materials are permitted.',
+        instructions: `This section focuses on the central and peripheral nervous system, neural signaling, and sensory pathways. All questions are single-best-answer multiple choice — select the one option that best answers each question.
+
+Pay close attention to the wording of each stem. Several questions ask for the EXCEPTION (e.g. "all of the following are true EXCEPT") or the BEST answer among several plausible options. Read all options before selecting.
+
+Diagrams and labeled figures appear in several questions. Use the zoom control in the toolbar if you need a closer look. Where a question references a value or threshold, assume standard adult physiological ranges unless the question states otherwise.
+
+No reference materials are permitted for this section — the approved formula and lab-value sheets become available only in Section 2. Budget roughly 80 seconds per question so you have time to review flagged items before the section ends.`,
         questionCount: 25,
         timeLimitMinutes: 36,
         contentAreas: ['ca-a01'],

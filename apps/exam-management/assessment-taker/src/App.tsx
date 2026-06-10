@@ -186,6 +186,8 @@ export function App() {
   const assessment =
     MOCK_ASSESSMENTS.find(a => a.id === id) ?? MOCK_ASSESSMENTS[0];
   const allowComments = assessment?.allowComments ?? false;
+  // Forward-only exams hide Previous + disable back-navigation (← key).
+  const allowBack = !(assessment?.forwardOnly);
   const handleCommentChange = useCallback((questionId: number, text: string) => {
     setComments(prev => ({ ...prev, [questionId]: text }));
   }, []);
@@ -321,7 +323,7 @@ export function App() {
       currentIndex < questions.length - 1)
       {
         handleNavigate(currentIndex + 1);
-      } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
+      } else if (e.key === 'ArrowLeft' && currentIndex > 0 && allowBack) {
         handleNavigate(currentIndex - 1);
       } else if (e.key.toLowerCase() === 'z') {
         handleToggleFlag();
@@ -585,6 +587,7 @@ export function App() {
         <StickyFooter
           currentIndex={currentIndex}
           totalQuestions={questions.length}
+          allowBack={allowBack}
           onNavigate={handleNavigate} />
       )}
 
