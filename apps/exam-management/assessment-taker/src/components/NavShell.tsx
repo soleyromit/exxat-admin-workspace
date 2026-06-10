@@ -116,9 +116,9 @@ export function NavShell({ children, title }: NavShellProps) {
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <SidebarMenuButton tooltip="Search or ask Leo · ⌘K" onClick={() => setPaletteOpen(true)}>
+                    <SidebarMenuButton tooltip="Search · ⌘K" onClick={() => setPaletteOpen(true)}>
                       <i className="fa-light fa-magnifying-glass" aria-hidden="true" />
-                      <span>Search or ask Leo</span>
+                      <span>Search</span>
                       <KbdGroup className="ms-auto group-data-collapsible-icon:hidden">
                         <Kbd>⌘</Kbd>
                         <Kbd>K</Kbd>
@@ -156,7 +156,7 @@ export function NavShell({ children, title }: NavShellProps) {
         </Sidebar>
 
         <SidebarInset className="flex flex-col overflow-hidden">
-          <TopBar title={title} entryPoint={entryPoint} />
+          <TopBar title={title} entryPoint={entryPoint} onAskLeo={() => setPaletteOpen(true)} />
           <div
             id="main-content"
             tabIndex={-1}
@@ -472,7 +472,7 @@ function ProfileFooter({ entryPoint }: { entryPoint: EntryPoint }) {
 }
 
 // ─── Top bar (sidebar trigger + breadcrumb) ──────────────────────────────────
-function TopBar({ title, entryPoint }: { title?: string; entryPoint: EntryPoint }) {
+function TopBar({ title, entryPoint, onAskLeo }: { title?: string; entryPoint: EntryPoint; onAskLeo: () => void }) {
   const isPrism = entryPoint === 'prism';
   return (
     <header
@@ -530,12 +530,31 @@ function TopBar({ title, entryPoint }: { title?: string; entryPoint: EntryPoint 
               <span className="text-sm truncate" style={{ color: 'var(--muted-foreground)' }}>{title}</span>
             </>
           )}
-          {/* Standalone: subtle Exxat attribution far right */}
-          <span className="ms-auto text-xs text-muted-foreground group-data-collapsible-icon:hidden shrink-0">
-            Powered by Exxat
-          </span>
         </>
       )}
+
+      {/* Ask Leo — right-aligned in both Prism and standalone modes */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onAskLeo}
+            aria-label="Ask Leo · ⌘K"
+            className="ms-auto shrink-0 gap-1.5"
+          >
+            <i className="fa-light fa-sparkles fa-fw" aria-hidden="true" />
+            Ask Leo
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          Ask Leo
+          <KbdGroup className="ms-2">
+            <Kbd>⌘</Kbd>
+            <Kbd>K</Kbd>
+          </KbdGroup>
+        </TooltipContent>
+      </Tooltip>
     </header>
   );
 }

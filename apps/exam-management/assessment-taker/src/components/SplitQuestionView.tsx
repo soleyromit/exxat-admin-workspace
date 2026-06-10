@@ -796,7 +796,7 @@ export function SplitQuestionView({
     <div className="w-full flex-1 min-h-0 animate-card-enter flex flex-col overflow-hidden">
 
       {hasMedia ?
-      <div className="flex-1 min-h-0 flex gap-6 overflow-hidden flex-col md:flex-row">
+      <div className="flex-1 min-h-0 flex gap-4 overflow-hidden flex-col md:flex-row">
 
           {/* LEFT card — question stem + answers */}
           <div className="md:w-1/2 min-h-0 overflow-y-auto rounded-2xl border shadow-sm"

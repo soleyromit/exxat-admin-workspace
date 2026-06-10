@@ -461,10 +461,10 @@ export function App() {
           zoomOut={zoomOut} />
         
 
-        <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden', backgroundColor: 'var(--background)', gap: 12, paddingInlineEnd: 24 }}>
+        <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden', backgroundColor: 'var(--background)', gap: 16, padding: '16px 16px' }}>
           <main
             id="main-content"
-            className="flex-1 min-w-[380px] overflow-hidden flex flex-col p-4 md:p-6"
+            className="flex-1 min-w-[380px] overflow-hidden flex flex-col"
             role="main"
             aria-label={`Question ${currentIndex + 1} of ${questions.length}`}>
 

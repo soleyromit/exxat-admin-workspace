@@ -147,48 +147,89 @@ function ExamPassword({ onNext }: { onNext: () => void }) {
   );
 }
 
-// ─── Step 1: Instructions ─────────────────────────────────────────────────────
+// ─── Step 1: Assessment Details + Consent ────────────────────────────────────
 function Instructions({ exam, onNext }: { exam: Assessment; onNext: () => void }) {
   const [attested, setAttested] = React.useState(false);
 
+  const typeLabel: Record<string, string> = {
+    quiz: 'Quiz', midterm: 'Midterm', final: 'Final Exam',
+    practical: 'Practical', review: 'Review',
+  };
+
+  const detailItems = [
+    { label: 'Course',         value: `${exam.courseCode} · ${exam.courseName}` },
+    { label: 'Questions',      value: String(exam.questionCount) },
+    { label: 'Duration',       value: formatDuration(getEffectiveDuration(exam)) },
+    { label: 'Attempts',       value: exam.allowedAttempts ? String(exam.allowedAttempts) : 'Unlimited' },
+    { label: 'Passing Score',  value: `${exam.passingScore}%` },
+  ];
+
   return (
     <div>
-      <h2 className="text-xl font-bold mb-1.5 leading-tight" style={{ color: 'var(--foreground)' }}>
-        Instructions
-      </h2>
-      <p className="text-sm mb-6" style={{ color: 'var(--muted-foreground)' }}>
-        Read the following carefully before you begin.
-      </p>
+      {/* Assessment header */}
+      <div className="mb-5">
+        <h2 className="text-xl font-bold leading-snug mb-1.5" style={{ color: 'var(--foreground)' }}>
+          {exam.title}
+        </h2>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge variant="secondary">{typeLabel[exam.type] ?? exam.type}</Badge>
+          {exam.isHighStakes && (
+            <Badge variant="outline">
+              <i className="fa-light fa-shield fa-fw me-1" aria-hidden="true" />
+              High Stakes
+            </Badge>
+          )}
+          <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+            {exam.facultyName}
+          </span>
+        </div>
+      </div>
 
-      {/* Exam summary strip */}
-      <div className="grid grid-cols-3 gap-3 rounded-xl p-4 mb-5 border" style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}>
-        {[
-          { icon: 'fa-list-check', label: 'Questions',    value: `${exam.questionCount}` },
-          { icon: 'fa-clock',      label: 'Time Allowed', value: formatDuration(getEffectiveDuration(exam)) },
-          { icon: 'fa-shield-check', label: 'Passing Score', value: `${exam.passingScore}%` },
-        ].map(item => (
-          <div key={item.label} className="text-center">
-            <i className={`fa-light ${item.icon} fa-fw block mb-1`} aria-hidden="true" style={{ color: 'var(--muted-foreground)', fontSize: 18 }} />
-            <p className="text-lg font-extrabold" style={{ color: 'var(--foreground)' }}>{item.value}</p>
-            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>{item.label}</p>
+      {/* Assessment detail table */}
+      <div className="rounded-xl border overflow-hidden mb-6" style={{ borderColor: 'var(--border)' }}>
+        {detailItems.map((item, i) => (
+          <div
+            key={item.label}
+            className="flex items-center gap-4 px-4 py-2.5"
+            style={{
+              borderTop: i > 0 ? '1px solid var(--border)' : 'none',
+              background: 'var(--card)',
+            }}
+          >
+            <span
+              className="text-sm shrink-0"
+              style={{ color: 'var(--muted-foreground)', width: 120 }}
+            >
+              {item.label}
+            </span>
+            <span className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
+              {item.value}
+            </span>
           </div>
         ))}
       </div>
 
-      {/* Faculty Instructions */}
+      {/* Instructions */}
       <div className="mb-5">
-        <div className="flex items-center gap-2 mb-2">
-          <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>Faculty Instructions</p>
-          <Badge variant="secondary" className="text-xs">From your instructor</Badge>
-        </div>
+        <p className="text-sm font-semibold mb-2" style={{ color: 'var(--foreground)' }}>
+          Instructions
+        </p>
         <div
           className="rounded-xl p-4 text-sm border overflow-y-auto"
-          style={{ background: 'var(--card)', borderColor: 'var(--border)', color: 'var(--foreground)', lineHeight: 1.7, maxHeight: 160 }}
+          style={{
+            background: 'var(--card)',
+            borderColor: 'var(--border)',
+            color: 'var(--foreground)',
+            lineHeight: 1.7,
+            maxHeight: 160,
+          }}
+          tabIndex={0}
+          aria-label="Exam instructions"
         >
           {exam.instructions || 'No specific instructions provided for this exam.'}
           {exam.assessmentReferences && exam.assessmentReferences.length > 0 && (
             <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
-              <p className="font-semibold mb-1.5">Reference Materials Available:</p>
+              <p className="font-semibold mb-1.5">Reference materials available:</p>
               <ul className="ps-4 m-0 space-y-1">
                 {exam.assessmentReferences.map(m => (
                   <li key={m.id}>
@@ -202,48 +243,36 @@ function Instructions({ exam, onNext }: { exam: Assessment; onNext: () => void }
         </div>
       </div>
 
-      {/* Academic Integrity */}
-      <div className="mb-5">
-        <div className="flex items-center gap-2 mb-2">
-          <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>Exxat Platform Instructions</p>
-          <Badge variant="secondary" className="text-xs">Academic Integrity</Badge>
-        </div>
-        <div
-          className="rounded-xl p-4 text-sm border overflow-y-auto"
-          style={{ background: 'var(--card)', borderColor: 'var(--border)', color: 'var(--muted-foreground)', lineHeight: 1.7, maxHeight: 120 }}
-        >
-          By starting this exam, you confirm that you will complete all questions independently without the assistance of any unauthorized resources, other students, or external parties. You understand that any form of academic dishonesty may result in a failing grade, academic probation, or dismissal from the program in accordance with your institution's code of conduct.
-        </div>
-      </div>
-
-      {/* Attestation — optional, does not gate Continue */}
+      {/* Consent / Attestation — gates Continue */}
       <label
         htmlFor="attestation"
         className="flex items-start gap-3 rounded-xl p-4 mb-6 cursor-pointer border"
-        style={{ background: 'var(--muted)', borderColor: 'var(--border)' }}
+        style={{
+          background: attested ? 'var(--muted)' : 'var(--background)',
+          borderColor: attested ? 'var(--foreground)' : 'var(--border)',
+          transition: 'border-color 0.15s, background 0.15s',
+        }}
       >
         <Checkbox
           id="attestation"
           checked={attested}
           onCheckedChange={v => setAttested(Boolean(v))}
           className="mt-0.5 shrink-0"
+          aria-required="true"
         />
         <div className="flex-1">
           <p className="text-sm font-semibold mb-0.5" style={{ color: 'var(--foreground)' }}>
-            I have read and understood all instructions
+            I understand and agree to the academic integrity policy
           </p>
           <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-            Optional — you can proceed without checking this.
+            I will complete this assessment independently without unauthorized resources. I understand that academic dishonesty may result in disciplinary action under my institution's code of conduct.
           </p>
         </div>
-        {attested && (
-          <i className="fa-solid fa-circle-check shrink-0 mt-0.5" aria-hidden="true" style={{ color: 'var(--foreground)', fontSize: 18 }} />
-        )}
       </label>
 
-      <Button size="lg" onClick={onNext} className="w-full">
+      <Button size="lg" onClick={onNext} disabled={!attested} className="w-full">
         <i className="fa-light fa-arrow-right" aria-hidden="true" />
-        Continue
+        I Agree — Continue
       </Button>
     </div>
   );

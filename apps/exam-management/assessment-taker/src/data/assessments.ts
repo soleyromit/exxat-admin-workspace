@@ -100,6 +100,8 @@ export interface Assessment {
   instructions: string;
   allowComments: boolean;       // Per-question comment/flag box for error reporting
   assessmentReferences?: AssessmentReference[];
+  allowedAttempts?: number;     // undefined = unlimited; admin-configurable
+  instructionTimerSeconds?: number; // admin-set review window; undefined = no timer; does NOT count toward exam time
 
   // Accommodations (from student services, not faculty)
   accommodation?: Accommodation;
@@ -151,6 +153,8 @@ export const MOCK_ASSESSMENTS: Assessment[] = [
     questionCount: 75,
     passingScore: 75,
     instructions: 'Covers Chapters 12–18. Closed book. No reference materials. A proctor password will be provided at exam time.',
+    allowedAttempts: 1,
+    instructionTimerSeconds: 300,
     allowComments: true,
     contentAreas: [
       { id: 'ca-a01', name: 'Nervous System', questionCount: 25, weight: 33 },
@@ -324,6 +328,7 @@ export const MOCK_ASSESSMENTS: Assessment[] = [
     passingScore: 75,
     instructions:
       'This exam covers Modules 1–3: drug classifications, mechanisms of action, pharmacokinetics, and adverse effects. No external materials permitted. Password required at exam start.',
+    allowedAttempts: 1,
     allowComments: false,
     accommodation: {
       timeMultiplier: 1.5,
@@ -357,6 +362,7 @@ export const MOCK_ASSESSMENTS: Assessment[] = [
     questionCount: 20,
     passingScore: 70,
     instructions: 'Short quiz on Neoplasia and Hemodynamic Disorders. Results available immediately.',
+    allowedAttempts: 2,
     allowComments: false,
     contentAreas: [
       { id: 'ca-070', name: 'Neoplasia', questionCount: 10, weight: 50 },

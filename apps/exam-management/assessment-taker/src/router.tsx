@@ -44,12 +44,9 @@ const router = createBrowserRouter([
     ),
   },
   {
+    // Pre-exam flow: no NavShell — focused lockdown experience starts here
     path: '/exam/:id/setup',
-    element: (
-      <NavShell>
-        <PreExamFlow />
-      </NavShell>
-    ),
+    element: <PreExamFlow />,
   },
   {
     // Exam engine: no NavShell — full-screen lockdown experience
