@@ -699,6 +699,30 @@
       "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
       "severity": null,
       "files": ["docs/BUILD-STATUS.md"]
+    },
+    {
+      "id": "2026-06-11-pce-flagged-001",
+      "date": "2026-06-11",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §13a.1 — CE/GS disambiguation renamed from 'survey switch in the user profile' to 'navigation'",
+      "what": "Design feedback §13a.1 updated: 'I have added a survey switch in the user profile to demonstrate the difference between CE and GS.' changed to 'I have added a navigation to demonstrate the difference between CE and GS.'",
+      "why": "CLEAR rename of the CE/GS disambiguation UI element in Monil's prototype feedback note. Non-functional (§13 Feedback on Designs section) → flag only, no code auto-applied.",
+      "source": "PCE PRD §13a Feedback on Designs — General Layout",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-11-exam-management-build-status-001",
+      "date": "2026-06-11",
+      "product": "exam-management",
+      "type": "prd-change",
+      "title": "BUILD-STATUS last updated date bumped to 2026-06-11",
+      "what": "No feature statuses changed in step 7b mapping (Excel content unchanged from 2026-06-09 snapshot — same Gantt As-of date, same capability table, same open questions). Last updated date updated to today.",
+      "why": "Nipun's roadmap Excel synced — no status changes detected. PCE Phase 1 target (30 Aug 2026) remains future — BUILD-STATUS PCE row unchanged.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
+      "severity": null,
+      "files": ["docs/BUILD-STATUS.md"]
     }
   ]
 }

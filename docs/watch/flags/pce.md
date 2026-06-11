@@ -244,3 +244,15 @@ First snapshot taken for PCE PRD — Monil Pokar — no diff applied. Next run w
 
 **Why flagged:** AMBIGUOUS scope conflict. §4 of the same PRD still formally lists 5 wizard steps including "5. Report Access (newly added)". §13c.2 now says Report Access is not needed for CE. These two sections directly contradict each other. The phrase "For now, we do not need" follows the "will not be covered" AMBIGUOUS pattern.
 **Suggested action:** Clarify with Monil which is correct — should the Create Survey wizard have 4 steps (drop Report Access) or 5 steps (keep Report Access as listed in §4)? If Report Access is dropped for CE but kept for General Surveys, the wizard step count will differ between survey types. This is a significant wizard architecture decision — resolve before building.
+
+---
+
+## 2026-06-11 — Flagged: PCE PRD — Monil Pokar (1 change)
+
+### Flag 1 — §13a.1: CE/GS disambiguation element renamed from "survey switch in the user profile" to "navigation" (CLEAR — non-functional)
+**Changed text (before):** "I have added a survey switch in the user profile to demonstrate the difference between CE and GS."
+**Changed text (after):** "I have added a navigation to demonstrate the difference between CE and GS."
+**Why flagged:** CLEAR rename of the CE/GS disambiguation UI element in Monil's design feedback note. Non-functional (§13 Feedback on Designs section) → flag only, no code auto-applied.
+**Suggested action:** The prototype CE/GS switch has been redesigned from a profile-area switch to a "navigation" pattern. Confirm with Monil what "navigation" refers to — separate sidebar nav entries for CE vs General Surveys? A top-nav toggle? This determines the sidebar routing architecture between the two survey types in apps/pce/admin/components/app-sidebar.tsx.
+
+---
