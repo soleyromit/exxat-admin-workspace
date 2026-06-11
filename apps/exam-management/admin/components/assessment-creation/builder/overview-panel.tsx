@@ -90,10 +90,10 @@ export function OverviewPanel({ sections, onAskLeo, onJumpFlags }: { sections: S
         <PsyRow label="Avg. point-biserial" value={fmt2(psy.pbi)} raw={Math.max(0, psy.pbi)} color={pbiColor(psy.pbi)} hint="item–total alignment (target > 0.25)" />
 
         {flags > 0 && (
-          <div className="flag-banner" style={{ marginTop: 14, cursor: 'pointer' }} onClick={onJumpFlags} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') onJumpFlags?.() }}>
+          <Button type="button" variant="ghost" onClick={onJumpFlags} className="flag-banner w-full h-auto justify-start whitespace-normal text-left font-normal" style={{ marginTop: 14 }}>
             <Icon name="triangle-exclamation" style={{ fontSize: 14, marginTop: 1 }} />
             <div><b>{flags} outlier question{flags > 1 ? 's' : ''} flagged.</b> Pulling the assessment&apos;s profile out of range — review before publishing.</div>
-          </div>
+          </Button>
         )}
         <div style={{ marginTop: 14, display: 'flex' }}>
           <Button type="button" variant="ghost" size="sm" onClick={onAskLeo}><LeoStar />Ask Leo to balance this exam</Button>
