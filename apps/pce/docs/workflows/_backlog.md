@@ -168,6 +168,24 @@ Source: `docs/research/meetings/2026-06-10-pce-architecture-vishaka-arun.md` (Gr
 | T78 | Student directory in PCE — view-only with PCE columns | Admin | Student directory page | P1 — DESIGN-REVIEW | Phase-1 columns: cohort, campus, category, status, survey count, adherence metric. Entity actions → navigate to Prism in new tab. D_PCE_AV10, D_PCE_AV11. |
 | T79 | Faculty directory in PCE — view-only with PCE columns | Admin | Faculty directory page | P1 — DESIGN-REVIEW | Columns: name, designation, courses taught, avg rating. Entry to faculty detail/analytics. Entity actions → navigate to Prism in new tab. D_PCE_AV10, D_PCE_AV12. |
 
+## Phase 1 design tasks — added 2026-06-10 (Aarti 1:1)
+
+Source: `docs/research/meetings/2026-06-10-course-faculty-eval-setup-aarti.md` (Granola `410d7c0e`)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T80 | Finalize menu structure (entry points, nav labels) with Mondal — before Baroda visit June 22 | Admin | PCE nav | P0 — URGENT | Coordination task. Nail down: how many menu items, how many entry points, overall layout (where Leo, where search, where entry points sit). D_PCE_AAD06. |
+| T81 | Setup section — email templates (initial + reminder) | Admin | Settings / Setup | P1 — NEW PAGE NEEDED | Two persistent email templates in Setup: (1) initial email sent when evaluation published; (2) reminder email. Reused term after term. Admin can override per-term. D_PCE_AAD01. |
+| T82 | Setup section — reminder schedule default | Admin | Settings / Setup | P1 — NEW PAGE NEEDED | Reminder schedule as a Setup item. Default = 15 days before term end date. Admin configures days-relative-to-close-date. Per-survey override allowed. D_PCE_AAD02. |
+| T83 | Setup section — course type → template default mapping | Admin | Settings / Setup | P1 — NEW PAGE NEEDED | Design mapping screen: each course type → default survey template. Auto-fills template during term setup. Admin can override per course. D_PCE_AAD03. |
+| T84 | Terminal evaluation card — consistent design across all 3 entry points | Admin | Analytics drilldown | P1 — DESIGN-REVIEW | The final course-offering instance view (analysis, response breakdown, per-question data) is the SAME whether entered via term, faculty, or course analytics path. Entry point only changes pre-drill aggregation. D_PCE_AAD08. |
+
+## Phase 1 — confirmed deferred (updated 2026-06-10)
+
+| # | Decision | Reason | Source |
+|---|---|---|---|
+| D_PCE_AAD05 | General survey module UI enhancements | Aarti: "I don't have the bandwidth to discuss updates to the general survey module." Phase 1 = course evaluations only. General survey entry point changes (nav) may still be needed, but no new general survey features in Phase 1. | 2026-06-10 Aarti 1:1 |
+
 ---
 
 ## Open product questions
