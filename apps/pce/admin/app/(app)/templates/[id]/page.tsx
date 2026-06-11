@@ -26,13 +26,22 @@ import {
   CollapsibleTrigger,
   CollapsibleContent,
   ToggleSwitch,
+  Field,
+  FieldLabel,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import type { TemplateQuestion, CourseTypeFilter } from '@/lib/pce-mock-data'
 
 const COURSE_TYPE_OPTIONS: { value: CourseTypeFilter; label: string }[] = [
-  { value: 'any',      label: 'Any' },
   { value: 'didactic', label: 'Didactic' },
   { value: 'clinical', label: 'Clinical' },
 ]
@@ -82,7 +91,7 @@ export default function TemplateEditorPage() {
 
   if (!template) {
     return (
-      <div className="flex flex-col items-center justify-center flex-1 gap-3 text-center py-20">
+      <div className="flex flex-col items-center justify-center flex-1 gap-3 text-center" style={{ minHeight: 240 }}>
         <i className="fa-light fa-circle-exclamation text-4xl text-muted-foreground" aria-hidden="true" />
         <p className="text-sm font-medium">Template not found</p>
         <Button variant="outline" size="sm" asChild>
@@ -181,61 +190,11 @@ export default function TemplateEditorPage() {
   }
   function handleQDragEnd() { questionDragInfo.current = null }
 
-  const headerActions = (
-    <>
-      <Badge
-        variant="secondary"
-        className="rounded shrink-0"
-        style={t.status === 'active'
-          ? { backgroundColor: 'var(--brand-tint)', color: 'var(--brand-color-dark)' }
-          : { backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }
-        }
-      >
-        {t.status === 'active' ? 'Active' : 'Draft'}
-      </Badge>
-      <span className="flex-1" />
-      <Button
-        variant="ghost"
-        size="sm"
-        className="shrink-0"
-        onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 3000) }}
-      >
-        Save draft
-      </Button>
-      {t.status === 'active' ? (
-        <Button variant="outline" size="sm" className="shrink-0" onClick={() => updateTemplate(t.id, { status: 'draft' })}>
-          Unpublish
-        </Button>
-      ) : (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="shrink-0">
-              <Button
-                variant="default"
-                size="sm"
-                disabled={!canPublish}
-                onClick={() => updateTemplate(t.id, { status: 'active' })}
-                style={!canPublish ? { pointerEvents: 'none' } : undefined}
-              >
-                <i className="fa-light fa-circle-check" aria-hidden="true" style={{ fontSize: 12 }} />
-                Publish
-              </Button>
-            </span>
-          </TooltipTrigger>
-          {!canPublish && (
-            <TooltipContent>Add at least one section with a question to publish</TooltipContent>
-          )}
-        </Tooltip>
-      )}
-    </>
-  )
-
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
       <SiteHeader
         breadcrumbs={[{ label: 'Templates', href: '/templates' }]}
         title={t.name}
-        actions={headerActions}
       />
       <h1 className="sr-only">{t.name}</h1>
 
@@ -247,42 +206,70 @@ export default function TemplateEditorPage() {
         </div>
       )}
 
-      {/* Builder body */}
-      <div className="flex flex-1 overflow-hidden">
-
-        {/* Sections canvas */}
-        <main className="flex-1 overflow-y-auto" style={{ padding: '32px 40px' }}>
-
-          {/* Canvas title block */}
-          <div className="mb-10" style={{ maxWidth: 720 }}>
-            <input
-              key={t.id}
-              type="text"
-              defaultValue={t.name}
-              onBlur={e => {
-                const v = e.currentTarget.value.trim()
-                if (v && v !== t.name) updateTemplate(t.id, { name: v })
-                else if (!v) e.currentTarget.value = t.name
-              }}
-              placeholder="Untitled template"
-              aria-label="Template name"
-              className="w-full bg-transparent outline-none focus:outline-none placeholder:text-muted-foreground"
-              style={{
-                fontFamily: 'var(--font-heading)',
-                fontSize: 28,
-                fontWeight: 400,
-                color: 'var(--foreground)',
-                lineHeight: 1.2,
-                border: 'none',
-                padding: 0,
-              }}
-            />
-            {t.description && (
-              <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
-                {t.description}
-              </p>
+      {/* Title row — heading + badge left, actions right-flush to match Ask Leo (pe-2 outer + pe-2 inner = 16px) */}
+      <div style={{ paddingLeft: 40, paddingRight: 16, paddingTop: 28 }}>
+        <div className="flex items-center gap-3 mb-5">
+          <p
+            className="min-w-0 truncate"
+            style={{
+              fontFamily: 'var(--font-heading)',
+              fontSize: 32,
+              fontWeight: 300,
+              color: 'var(--foreground)',
+              lineHeight: 1.2,
+            }}
+          >
+            {t.name || 'Untitled template'}
+          </p>
+          <Badge variant={t.status === 'active' ? 'default' : 'outline'} className="shrink-0">
+            {t.status === 'active' ? 'Active' : 'Draft'}
+          </Badge>
+          <div className="flex items-center gap-2 ml-auto shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 3000) }}
+            >
+              Save draft
+            </Button>
+            {t.status === 'active' ? (
+              <Button variant="outline" size="sm" onClick={() => updateTemplate(t.id, { status: 'draft' })}>
+                Unpublish
+              </Button>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      disabled={!canPublish}
+                      onClick={() => updateTemplate(t.id, { status: 'active' })}
+                    >
+                      Publish
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                {!canPublish && (
+                  <TooltipContent>Add at least one section with a question to publish</TooltipContent>
+                )}
+              </Tooltip>
             )}
           </div>
+        </div>
+      </div>
+
+      <Tabs defaultValue={sections.length > 0 ? 'builder' : 'details'} className="flex flex-col flex-1 min-h-0">
+        <div style={{ paddingInline: 40, borderBottom: '1px solid var(--border)' }}>
+          <TabsList variant="line">
+            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="builder">Builder</TabsTrigger>
+          </TabsList>
+        </div>
+
+        {/* ── Builder tab ── */}
+        <TabsContent value="builder" className="flex-1 overflow-y-auto m-0" style={{ padding: '32px 40px' }}>
+          <div style={{ maxWidth: 720 }}>
 
           {sections.length === 0 ? (
             <div className="flex items-center justify-center" style={{ minHeight: 200 }}>
@@ -290,10 +277,10 @@ export default function TemplateEditorPage() {
                 variant="link"
                 size="sm"
                 onClick={handleAddSection}
-                style={{ color: 'var(--brand-color)', fontWeight: 600, letterSpacing: '0.02em' }}
+                className="font-semibold text-[var(--brand-color)]"
               >
-                <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
-                ADD NEW SECTION
+                <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                Add new section
               </Button>
             </div>
           ) : (
@@ -303,8 +290,8 @@ export default function TemplateEditorPage() {
                 return (
                   <div
                     key={sec.id}
-                    className="rounded-lg border border-border overflow-hidden"
-                    style={{ background: 'var(--card)' }}
+                    className="border border-border overflow-hidden"
+                    style={{ background: 'var(--card)', borderRadius: 'var(--radius-lg)' }}
                   >
                     {/* Section header — muted background strip */}
                     <div
@@ -453,8 +440,8 @@ export default function TemplateEditorPage() {
                           <DropdownMenu modal={false}>
                             <DropdownMenuTrigger asChild>
                               <Button variant="default" size="sm">
-                                <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 11 }} />
-                                ADD QUESTION
+                                <i className="fa-light fa-plus" aria-hidden="true"  />
+                                Add question
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="center" className="w-56">
@@ -486,325 +473,340 @@ export default function TemplateEditorPage() {
                   variant="link"
                   size="sm"
                   onClick={handleAddSection}
-                  style={{ color: 'var(--brand-color)', fontWeight: 600, letterSpacing: '0.02em' }}
+                  className="font-semibold text-[var(--brand-color)]"
                 >
-                  <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
-                  ADD NEW SECTION
+                  <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                  Add new section
                 </Button>
               </div>
             </div>
           )}
-        </main>
+          </div>
+        </TabsContent>
 
-        {/* Attributes panel */}
-        <aside
-          className="flex flex-col shrink-0"
-          style={{ width: 280, borderLeft: '1px solid var(--border)', background: 'var(--background)' }}
-        >
-          {!selectedQ ? (
-            <>
-              {/* Panel header */}
-              <div
-                className="flex items-center shrink-0 px-4"
-                style={{ borderBottom: '1px solid var(--border)', height: 40 }}
-              >
-                <span className="text-sm font-medium">Template</span>
+        {/* ── Details tab ── */}
+        <TabsContent value="details" className="flex-1 overflow-y-auto m-0" style={{ padding: '32px 40px' }}>
+          <div style={{ maxWidth: 560 }} className="space-y-5">
+
+            {/* Title */}
+            <Field orientation="vertical">
+              <FieldLabel htmlFor="tmpl-name">Title</FieldLabel>
+              <Input
+                id="tmpl-name"
+                key={t.id}
+                defaultValue={t.name}
+                onBlur={e => {
+                  const v = e.currentTarget.value.trim()
+                  if (v && v !== t.name) updateTemplate(t.id, { name: v })
+                  else if (!v) e.currentTarget.value = t.name
+                }}
+                placeholder="Untitled template"
+                className="h-9 text-sm"
+              />
+            </Field>
+
+            {/* Description */}
+            <Field orientation="vertical">
+              <FieldLabel htmlFor="tmpl-desc">Description</FieldLabel>
+              <Textarea
+                id="tmpl-desc"
+                key={t.id}
+                defaultValue={t.description ?? ''}
+                onBlur={e => {
+                  const v = e.currentTarget.value.trim()
+                  if (v !== (t.description ?? '')) updateTemplate(t.id, { description: v || undefined })
+                }}
+                placeholder="What is this template for?"
+                rows={3}
+                className="text-sm"
+                style={{ resize: 'none' }}
+              />
+            </Field>
+
+            {/* Course type */}
+            <div>
+              <p className="text-sm font-medium mb-2">Course type</p>
+              <div className="flex flex-col gap-1" role="radiogroup" aria-label="Course type">
+                {COURSE_TYPE_OPTIONS.map(opt => {
+                  const active = t.courseType === opt.value
+                  return (
+                    <Button
+                      key={opt.value}
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      role="radio"
+                      aria-checked={active}
+                      className="flex items-center gap-3 justify-start rounded-lg text-left h-auto w-full"
+                      style={{
+                        padding: '7px 10px',
+                        background: active ? 'var(--muted)' : 'transparent',
+                      }}
+                      onClick={() => updateTemplate(t.id, { courseType: opt.value })}
+                    >
+                      <div
+                        className="shrink-0 rounded-full border-2 flex items-center justify-center"
+                        style={{
+                          width: 16, height: 16,
+                          borderColor: active ? 'var(--foreground)' : 'var(--border)',
+                        }}
+                      >
+                        {active && (
+                          <div
+                            className="rounded-full"
+                            style={{ width: 7, height: 7, background: 'var(--foreground)' }}
+                          />
+                        )}
+                      </div>
+                      <span className="text-sm font-medium">{opt.label}</span>
+                    </Button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Opening instructions */}
+            <div className="flex flex-col gap-3">
+              <div>
+                <p className="text-sm font-medium">Opening instructions</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
+                  Shown before the first question. Optional.
+                </p>
+              </div>
+              <div>
+                <label
+                  htmlFor="tmpl-instr-title"
+                  className="text-xs font-medium block mb-1.5"
+                  style={{ color: 'var(--muted-foreground)' }}
+                >
+                  Instruction title
+                </label>
+                <Input
+                  id="tmpl-instr-title"
+                  key={`${t.id}-instr-title`}
+                  defaultValue={t.formInstructionTitle ?? ''}
+                  onBlur={e => {
+                    const v = e.currentTarget.value.trim()
+                    if (v !== (t.formInstructionTitle ?? '')) updateTemplate(t.id, { formInstructionTitle: v || undefined })
+                  }}
+                  placeholder="e.g. Before you begin"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="tmpl-instr-desc"
+                  className="text-xs font-medium block mb-1.5"
+                  style={{ color: 'var(--muted-foreground)' }}
+                >
+                  Instruction text
+                </label>
+                <Textarea
+                  id="tmpl-instr-desc"
+                  key={`${t.id}-instr-desc`}
+                  defaultValue={t.formInstructionDescription ?? ''}
+                  onBlur={e => {
+                    const v = e.currentTarget.value.trim()
+                    if (v !== (t.formInstructionDescription ?? '')) updateTemplate(t.id, { formInstructionDescription: v || undefined })
+                  }}
+                  placeholder="Instructions shown to respondents before the first question…"
+                  rows={4}
+                  className="text-sm"
+                  style={{ resize: 'none' }}
+                />
+              </div>
+            </div>
+
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Field Details sheet — opens when a question is selected in the builder */}
+      <Sheet open={selectedQuestion !== null} onOpenChange={open => { if (!open) setSelectedQuestion(null) }}>
+        <SheetContent side="right" style={{ width: 320, display: 'flex', flexDirection: 'column', gap: 0 }}>
+          <SheetHeader style={{ padding: '16px 16px 12px', borderBottom: '1px solid var(--border)' }}>
+            <SheetTitle>Field Details</SheetTitle>
+          </SheetHeader>
+          {selectedQ && (
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+
+              {/* Question type */}
+              <div>
+                <label
+                  htmlFor="q-type-select"
+                  className="text-xs font-medium mb-1.5 block"
+                  style={{ color: 'var(--muted-foreground)' }}
+                >
+                  Question Type
+                </label>
+                <Select
+                  value={selectedQ.answerType}
+                  onValueChange={val => updateSelectedQ({ answerType: val as AnswerType })}
+                >
+                  <SelectTrigger id="q-type-select" className="h-8 text-sm w-full" aria-label="Question type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Q_TYPE_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        <span className="flex items-center gap-2">
+                          <i
+                            className={`fa-light ${opt.icon} shrink-0`}
+                            aria-hidden="true"
+                            style={{ width: 14, textAlign: 'center', color: 'var(--muted-foreground)' }}
+                          />
+                          {opt.label}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Template properties */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-5">
+              {/* Question text */}
+              <div>
+                <label
+                  htmlFor="q-text-area"
+                  className="text-xs font-medium mb-1.5 block"
+                  style={{ color: 'var(--muted-foreground)' }}
+                >
+                  Question
+                </label>
+                <Textarea
+                  id="q-text-area"
+                  value={selectedQ.text}
+                  onChange={e => updateSelectedQ({ text: e.target.value })}
+                  placeholder="Type your question…"
+                  rows={3}
+                  style={{ resize: 'none' }}
+                  className="text-sm"
+                />
+              </div>
 
-                {/* Name */}
-                <div>
-                  <label
-                    htmlFor="tmpl-name-panel"
-                    className="text-xs font-medium mb-1.5 block"
-                    style={{ color: 'var(--muted-foreground)' }}
-                  >
-                    Name
-                  </label>
-                  <Input
-                    id="tmpl-name-panel"
-                    key={t.id}
-                    defaultValue={t.name}
-                    onBlur={e => {
-                      const v = e.currentTarget.value.trim()
-                      if (!v) { e.currentTarget.value = t.name; return }
-                      if (v !== t.name) updateTemplate(t.id, { name: v })
-                    }}
-                    placeholder="Untitled template"
-                    className="h-8 text-sm"
-                  />
-                </div>
+              {/* Meta Information */}
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+                <Collapsible open={metaOpen} onOpenChange={setMetaOpen}>
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="ghost" size="sm"
+                      className="w-full justify-between px-0 hover:bg-transparent"
+                      style={{ color: 'var(--muted-foreground)' }}
+                    >
+                      <span className="text-xs font-medium">Meta Information</span>
+                      <i
+                        className={`fa-light fa-chevron-${metaOpen ? 'up' : 'down'} text-xs`}
+                        aria-hidden="true"
+                      />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-3 pt-2">
+                    <div>
+                      <label
+                        htmlFor="q-help-text"
+                        className="text-xs font-medium mb-1.5 block"
+                        style={{ color: 'var(--muted-foreground)' }}
+                      >
+                        Help Information
+                      </label>
+                      <Textarea
+                        id="q-help-text"
+                        rows={2}
+                        className="text-sm"
+                        placeholder="Optional helper text shown to respondents"
+                        style={{ resize: 'none' }}
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="q-report-title"
+                        className="text-xs font-medium mb-1.5 block"
+                        style={{ color: 'var(--muted-foreground)' }}
+                      >
+                        Report Title
+                      </label>
+                      <Input id="q-report-title" className="h-8 text-sm" placeholder="Same as question text" />
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              </div>
 
-                {/* Description */}
-                <div>
-                  <label
-                    htmlFor="tmpl-desc-panel"
-                    className="text-xs font-medium mb-1.5 block"
-                    style={{ color: 'var(--muted-foreground)' }}
-                  >
-                    Description
-                  </label>
-                  <Textarea
-                    id="tmpl-desc-panel"
-                    key={t.id}
-                    defaultValue={t.description ?? ''}
-                    onBlur={e => {
-                      const v = e.currentTarget.value.trim()
-                      if (v !== (t.description ?? '')) updateTemplate(t.id, { description: v || undefined })
-                    }}
-                    placeholder="What is this template for?"
-                    rows={3}
-                    className="text-sm"
-                    style={{ resize: 'none' }}
-                  />
-                </div>
-
-                {/* Course type */}
-                <div>
+              {/* Answer choices */}
+              {hasChoices(selectedQ.answerType) && (
+                <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
                   <p
                     className="text-xs font-medium mb-2"
                     style={{ color: 'var(--muted-foreground)' }}
                   >
-                    Course type
+                    Answer Choices
                   </p>
-                  <div className="flex flex-col gap-1" role="radiogroup" aria-label="Course type">
-                    {COURSE_TYPE_OPTIONS.map(opt => {
-                      const active = (t.courseType ?? 'any') === opt.value
-                      return (
-                        <Button
-                          key={opt.value}
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          role="radio"
-                          aria-checked={active}
-                          className="flex items-center gap-3 justify-start rounded-lg text-left h-auto w-full"
-                          style={{
-                            padding: '7px 10px',
-                            background: active ? 'var(--muted)' : 'transparent',
-                          }}
-                          onClick={() => updateTemplate(t.id, { courseType: opt.value })}
-                        >
-                          {/* Radio dot */}
-                          <div
-                            className="shrink-0 rounded-full border-2 flex items-center justify-center"
-                            style={{
-                              width: 16, height: 16,
-                              borderColor: active ? 'var(--foreground)' : 'var(--border)',
-                            }}
-                          >
-                            {active && (
-                              <div
-                                className="rounded-full"
-                                style={{ width: 7, height: 7, background: 'var(--foreground)' }}
-                              />
-                            )}
-                          </div>
-                          <span className="text-sm font-medium">{opt.label}</span>
-                        </Button>
-                      )
-                    })}
+                  <div className="flex flex-col gap-1.5 mb-2">
+                    {(optionInputs[selectedQ.id] ?? []).map((opt, idx) => (
+                      <Input
+                        key={idx}
+                        value={opt}
+                        onChange={e => handleOptionChange(selectedQ.id, idx, e.target.value)}
+                        placeholder={`Option ${idx + 1}`}
+                        className="h-8 text-sm"
+                      />
+                    ))}
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => handleAddOption(selectedQ.id)}
+                  >
+                    <i className="fa-light fa-plus" aria-hidden="true"  />
+                    Add options
+                  </Button>
                 </div>
+              )}
 
-              </div>
-            </>
-          ) : (
-            <>
+              {/* Toggles */}
               <div
-                className="flex items-center justify-between shrink-0 px-4"
-                style={{ borderBottom: '1px solid var(--border)', height: 40 }}
+                className="flex flex-col gap-3"
+                style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}
               >
-                <span className="text-sm font-medium">Field Details</span>
-                <Button
-                  variant="ghost" size="icon-sm" aria-label="Close attributes panel"
-                  onClick={() => setSelectedQuestion(null)}
-                >
-                  <i className="fa-light fa-xmark" aria-hidden="true" />
-                </Button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-
-                {/* Question type */}
-                <div>
+                <div className="flex items-center justify-between gap-2">
                   <label
-                    htmlFor="q-type-select"
-                    className="text-xs font-medium mb-1.5 block"
-                    style={{ color: 'var(--muted-foreground)' }}
+                    className="text-xs font-medium"
+                    style={{ color: 'var(--foreground)' }}
                   >
-                    Question Type
+                    Include Not Applicable Option
                   </label>
-                  <Select
-                    value={selectedQ.answerType}
-                    onValueChange={val => updateSelectedQ({ answerType: val as AnswerType })}
-                  >
-                    <SelectTrigger id="q-type-select" className="h-8 text-sm w-full" aria-label="Question type">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Q_TYPE_OPTIONS.map(opt => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          <span className="flex items-center gap-2">
-                            <i
-                              className={`fa-light ${opt.icon} shrink-0`}
-                              aria-hidden="true"
-                              style={{ width: 14, textAlign: 'center', color: 'var(--muted-foreground)' }}
-                            />
-                            {opt.label}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Question text */}
-                <div>
-                  <label
-                    htmlFor="q-text-area"
-                    className="text-xs font-medium mb-1.5 block"
-                    style={{ color: 'var(--muted-foreground)' }}
-                  >
-                    Question
-                  </label>
-                  <Textarea
-                    id="q-text-area"
-                    value={selectedQ.text}
-                    onChange={e => updateSelectedQ({ text: e.target.value })}
-                    placeholder="Type your question…"
-                    rows={3}
-                    style={{ resize: 'none' }}
-                    className="text-sm"
+                  <ToggleSwitch
+                    checked={naToggles[selectedQ.id] ?? false}
+                    onChange={() =>
+                      setNaToggles(prev => ({
+                        ...prev,
+                        [selectedQ.id]: !prev[selectedQ.id],
+                      }))
+                    }
                   />
                 </div>
-
-                {/* Meta Information */}
-                <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-                  <Collapsible open={metaOpen} onOpenChange={setMetaOpen}>
-                    <CollapsibleTrigger asChild>
-                      <Button
-                        variant="ghost" size="sm"
-                        className="w-full justify-between px-0 hover:bg-transparent"
-                        style={{ color: 'var(--muted-foreground)' }}
-                      >
-                        <span className="text-xs font-medium">Meta Information</span>
-                        <i
-                          className={`fa-light fa-chevron-${metaOpen ? 'up' : 'down'} text-xs`}
-                          aria-hidden="true"
-                        />
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-3 pt-2">
-                      <div>
-                        <label
-                          htmlFor="q-help-text"
-                          className="text-xs font-medium mb-1.5 block"
-                          style={{ color: 'var(--muted-foreground)' }}
-                        >
-                          Help Information
-                        </label>
-                        <Textarea
-                          id="q-help-text"
-                          rows={2}
-                          className="text-sm"
-                          placeholder="Optional helper text shown to respondents"
-                          style={{ resize: 'none' }}
-                        />
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="q-report-title"
-                          className="text-xs font-medium mb-1.5 block"
-                          style={{ color: 'var(--muted-foreground)' }}
-                        >
-                          Report Title
-                        </label>
-                        <Input id="q-report-title" className="h-8 text-sm" placeholder="Same as question text" />
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                </div>
-
-                {/* Answer choices — only for choice-type questions */}
-                {hasChoices(selectedQ.answerType) && (
-                  <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-                    <p
-                      className="text-xs font-medium mb-2"
-                      style={{ color: 'var(--muted-foreground)' }}
-                    >
-                      Answer Choices
-                    </p>
-                    <div className="flex flex-col gap-1.5 mb-2">
-                      {(optionInputs[selectedQ.id] ?? []).map((opt, idx) => (
-                        <Input
-                          key={idx}
-                          value={opt}
-                          onChange={e => handleOptionChange(selectedQ.id, idx, e.target.value)}
-                          placeholder={`Option ${idx + 1}`}
-                          className="h-8 text-sm"
-                        />
-                      ))}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => handleAddOption(selectedQ.id)}
-                    >
-                      <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 11 }} />
-                      ADD OPTIONS
-                    </Button>
-                  </div>
-                )}
-
-                {/* Toggles */}
-                <div
-                  className="flex flex-col gap-3"
-                  style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <label
-                      className="text-xs font-medium"
-                      style={{ color: 'var(--foreground)' }}
-                    >
-                      Include Not Applicable Option
-                    </label>
-                    <ToggleSwitch
-                      checked={naToggles[selectedQ.id] ?? false}
-                      onChange={() =>
-                        setNaToggles(prev => ({
-                          ...prev,
-                          [selectedQ.id]: !prev[selectedQ.id],
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <label
-                      className="text-xs font-medium"
-                      style={{ color: 'var(--foreground)' }}
-                    >
-                      Comments
-                    </label>
-                    <ToggleSwitch
-                      checked={commentToggles[selectedQ.id] ?? false}
-                      onChange={() =>
-                        setCommentToggles(prev => ({
-                          ...prev,
-                          [selectedQ.id]: !prev[selectedQ.id],
-                        }))
-                      }
-                    />
-                  </div>
+                <div className="flex items-center justify-between gap-2">
+                  <label
+                    className="text-xs font-medium"
+                    style={{ color: 'var(--foreground)' }}
+                  >
+                    Comments
+                  </label>
+                  <ToggleSwitch
+                    checked={commentToggles[selectedQ.id] ?? false}
+                    onChange={() =>
+                      setCommentToggles(prev => ({
+                        ...prev,
+                        [selectedQ.id]: !prev[selectedQ.id],
+                      }))
+                    }
+                  />
                 </div>
               </div>
-            </>
+
+            </div>
           )}
-        </aside>
-      </div>
+        </SheetContent>
+      </Sheet>
 
     </div>
   )
