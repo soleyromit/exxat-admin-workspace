@@ -1,7 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import {
   Button as DSButton,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+  ToggleGroup, ToggleGroupItem,
+  ToggleSwitch,
 } from '@exxatdesignux/ui';
 
 export type ColorBlindMode =
@@ -12,7 +14,6 @@ export type ColorBlindMode =
   | 'achromatopsia';
 
 export interface SettingsPanelProps {
-  isOpen: boolean;
   onClose: () => void;
   theme: 'light' | 'dark' | 'high-contrast';
   onThemeChange: (theme: 'light' | 'dark' | 'high-contrast') => void;
@@ -33,7 +34,6 @@ export interface SettingsPanelProps {
 }
 
 export function SettingsPanel({
-  isOpen,
   onClose,
   theme,
   onThemeChange,
@@ -50,32 +50,9 @@ export function SettingsPanel({
   onShowKeyboardShortcuts,
   onReportIssue,
 }: SettingsPanelProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [selectOpen, setSelectOpen] = useState(false);
-
-  useEffect(() => {
-    if (!isOpen) { setSelectOpen(false); }
-  }, [isOpen]);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (selectOpen) return;
-      const target = event.target as Element;
-      if (ref.current && !ref.current.contains(target)) {
-        onClose();
-      }
-    }
-    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen, onClose, selectOpen]);
-
-  if (!isOpen) return null;
-
   return (
     <div
-      ref={ref}
-      className="absolute top-full right-0 mt-2 w-[300px] rounded-xl shadow-lg z-50 animate-pop-in overflow-hidden"
-      style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }}
+      style={{ backgroundColor: 'var(--card)' }}
     >
       {/* Header */}
       <div
@@ -85,21 +62,23 @@ export function SettingsPanel({
         <span className="text-[13px] font-semibold" style={{ color: 'var(--foreground)' }}>
           Settings
         </span>
-        <button
+        <DSButton
+          variant="ghost"
+          size="icon-sm"
           onClick={onClose}
-          className="flex items-center justify-center w-7 h-7 rounded-md transition-colors hover:bg-[var(--muted)]"
           aria-label="Close settings"
-          style={{ color: 'var(--muted-foreground)' }}
         >
-          <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 14 }} />
-        </button>
+          <i className="fa-light fa-xmark text-sm" aria-hidden="true" />
+        </DSButton>
       </div>
 
       {/* Theme */}
       <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
-        <div
-          className="flex rounded-lg p-[3px]"
-          style={{ backgroundColor: 'var(--muted)', border: '1px solid var(--border)' }}
+        <ToggleGroup
+          type="single"
+          value={theme}
+          onValueChange={(v) => v && onThemeChange(v as 'light' | 'dark' | 'high-contrast')}
+          className="w-full"
         >
           {(
             [
@@ -108,27 +87,17 @@ export function SettingsPanel({
               { value: 'high-contrast', icon: 'fa-circle-half-stroke', label: 'Contrast' },
             ] as const
           ).map(({ value, icon, label }) => (
-            <button
+            <ToggleGroupItem
               key={value}
-              onClick={() => onThemeChange(value)}
-              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold transition-colors"
-              style={
-                theme === value
-                  ? {
-                      backgroundColor: 'var(--background)',
-                      color: 'var(--foreground)',
-                      boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
-                    }
-                  : { color: 'var(--muted-foreground)' }
-              }
-              aria-pressed={theme === value}
+              value={value}
               aria-label={`${label} theme`}
+              className="flex-1 gap-1.5 text-xs font-semibold"
             >
-              <i className={`fa-light ${icon}`} aria-hidden="true" style={{ fontSize: 13 }} />
+              <i className={`fa-light ${icon}`} aria-hidden="true" />
               {label}
-            </button>
+            </ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
       </div>
 
       {/* Display — text size + color vision */}
@@ -136,7 +105,7 @@ export function SettingsPanel({
         {/* Text size */}
         <div className="flex items-center justify-between px-4 h-11">
           <div className="flex items-center gap-3">
-            <i className="fa-light fa-text-size" aria-hidden="true" style={{ fontSize: 15, color: 'var(--muted-foreground)', width: 18, textAlign: 'center' }} />
+            <i className="fa-light fa-text-size text-sm text-muted-foreground w-4 text-center shrink-0" aria-hidden="true" />
             <span className="text-[13px] font-medium" style={{ color: 'var(--foreground)' }}>
               Text Size
             </span>
@@ -146,7 +115,7 @@ export function SettingsPanel({
             style={{ backgroundColor: 'var(--muted)', border: '1px solid var(--border)', padding: 2 }}
           >
             <DSButton variant="ghost" size="icon-xs" onClick={zoomOut} aria-label="Decrease text size">
-              <i className="fa-light fa-minus" aria-hidden="true" style={{ fontSize: 12 }} />
+              <i className="fa-light fa-minus text-xs" aria-hidden="true" />
             </DSButton>
             <span
               className="text-[12px] font-mono font-semibold w-10 text-center"
@@ -155,7 +124,7 @@ export function SettingsPanel({
               {zoomPercent}%
             </span>
             <DSButton variant="ghost" size="icon-xs" onClick={zoomIn} aria-label="Increase text size">
-              <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
+              <i className="fa-light fa-plus text-xs" aria-hidden="true" />
             </DSButton>
           </div>
         </div>
@@ -163,7 +132,7 @@ export function SettingsPanel({
         {/* Color vision */}
         <div className="flex items-center justify-between px-4 h-11">
           <div className="flex items-center gap-3">
-            <i className="fa-light fa-eye" aria-hidden="true" style={{ fontSize: 15, color: 'var(--muted-foreground)', width: 18, textAlign: 'center' }} />
+            <i className="fa-light fa-eye text-sm text-muted-foreground w-4 text-center shrink-0" aria-hidden="true" />
             <span className="text-[13px] font-medium" style={{ color: 'var(--foreground)' }}>
               Color Vision
             </span>
@@ -171,7 +140,6 @@ export function SettingsPanel({
           <Select
             value={colorBlindMode}
             onValueChange={(v) => onColorBlindModeChange?.(v as ColorBlindMode)}
-            onOpenChange={setSelectOpen}
           >
             <SelectTrigger
               size="sm"
@@ -194,46 +162,27 @@ export function SettingsPanel({
       {/* Tools */}
       <div style={{ borderBottom: '1px solid var(--border)' }}>
         <Row
-          icon={<i className="fa-light fa-calculator" aria-hidden="true" style={{ fontSize: 15 }} />}
+          icon={<i className="fa-light fa-calculator text-sm" aria-hidden="true" />}
           label="Calculator"
           onClick={() => { onToggleCalculator(); onClose(); }}
         />
         <Row
-          icon={<i className="fa-light fa-keyboard" aria-hidden="true" style={{ fontSize: 15 }} />}
+          icon={<i className="fa-light fa-keyboard text-sm" aria-hidden="true" />}
           label="Virtual Keyboard"
           onClick={() => { onToggleKeyboard(); onClose(); }}
         />
-        {/* Voice Narrator with toggle */}
-        <button
-          className="w-full flex items-center justify-between px-4 h-11 transition-colors hover:bg-[var(--muted)]"
-          onClick={onToggleVoiceNarrator}
-          role="switch"
-          aria-checked={voiceNarrator}
-          aria-label="Voice Narrator"
-        >
+        {/* Voice Narrator with DS ToggleSwitch */}
+        <div className="w-full flex items-center justify-between px-4 h-11">
           <div className="flex items-center gap-3">
             <span style={{ color: 'var(--muted-foreground)', width: 18, textAlign: 'center' }}>
-              <i className="fa-light fa-volume" aria-hidden="true" style={{ fontSize: 15 }} />
+              <i className="fa-light fa-volume" aria-hidden="true" />
             </span>
-            <span className="text-[13px] font-medium" style={{ color: 'var(--foreground)' }}>
+            <label htmlFor="narrator-toggle" className="text-[13px] font-medium cursor-pointer" style={{ color: 'var(--foreground)' }}>
               Voice Narrator
-            </span>
+            </label>
           </div>
-          {/* Toggle pill */}
-          <div
-            className="relative flex-shrink-0 rounded-full transition-colors"
-            style={{
-              width: 32,
-              height: 18,
-              backgroundColor: voiceNarrator ? 'var(--brand-color)' : 'var(--border)',
-            }}
-          >
-            <div
-              className="absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white transition-transform"
-              style={{ left: voiceNarrator ? 16 : 2 }}
-            />
-          </div>
-        </button>
+          <ToggleSwitch id="narrator-toggle" checked={voiceNarrator} onChange={onToggleVoiceNarrator} />
+        </div>
       </div>
 
       {/* Keyboard shortcuts + Report */}
@@ -241,7 +190,7 @@ export function SettingsPanel({
         <div style={{ borderBottom: '1px solid var(--border)' }}>
           {onShowKeyboardShortcuts && (
             <Row
-              icon={<i className="fa-light fa-key" aria-hidden="true" style={{ fontSize: 15 }} />}
+              icon={<i className="fa-light fa-key text-sm" aria-hidden="true" />}
               label="Keyboard Shortcuts"
               onClick={() => { onShowKeyboardShortcuts(); onClose(); }}
               chevron
@@ -249,7 +198,7 @@ export function SettingsPanel({
           )}
           {onReportIssue && (
             <Row
-              icon={<i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 15 }} />}
+              icon={<i className="fa-light fa-triangle-exclamation text-sm" aria-hidden="true" />}
               label="Report an issue"
               onClick={() => { onReportIssue(); onClose(); }}
               chevron
@@ -266,7 +215,7 @@ export function SettingsPanel({
           className="w-full font-semibold"
           onClick={() => { onClose(); onSubmit(); }}
         >
-          <i className="fa-light fa-paper-plane" aria-hidden="true" style={{ fontSize: 14 }} />
+          <i className="fa-light fa-paper-plane text-sm" aria-hidden="true" />
           Submit Exam
         </DSButton>
       </div>
@@ -286,9 +235,10 @@ function Row({
   chevron?: boolean;
 }) {
   return (
-    <button
+    <DSButton
+      variant="ghost"
       onClick={onClick}
-      className="w-full flex items-center justify-between px-4 h-11 transition-colors hover:bg-[var(--muted)] text-left"
+      className="w-full justify-between px-4 h-11"
     >
       <div className="flex items-center gap-3">
         <span style={{ color: 'var(--muted-foreground)', width: 18, textAlign: 'center' as const }}>
@@ -299,8 +249,8 @@ function Row({
         </span>
       </div>
       {chevron && (
-        <i className="fa-light fa-chevron-right" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)' }} />
+        <i className="fa-light fa-chevron-right text-xs" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
       )}
-    </button>
+    </DSButton>
   );
 }

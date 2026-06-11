@@ -118,7 +118,6 @@ export function ReviewSession() {
       style={{ background: t.bg, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}
       className="select-none"
     >
-      <h1 className="sr-only">Lockdown Review Session — {exam?.title}</h1>
       {/* ─── Lockdown header ────────────────────────────────────────────── */}
       <header
         className="flex items-center justify-between sticky top-0 z-50"
@@ -161,6 +160,7 @@ export function ReviewSession() {
         className="flex-1 overflow-y-auto"
         style={{ padding: '32px 24px 80px' }}
       >
+        <h1 className="sr-only">Lockdown Review Session — {exam?.title}</h1>
         <div style={{ maxWidth: 780, margin: '0 auto' }}>
           {/* Status badge — neutral, signal carried by icon, not color */}
           <div className="mb-4">

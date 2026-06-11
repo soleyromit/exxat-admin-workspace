@@ -104,6 +104,7 @@ export function NavShell({ children, title }: NavShellProps) {
     <TooltipProvider>
       {paletteOpen && <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />}
       <SidebarProvider className="h-svh">
+        <nav aria-label="Site navigation">
         <Sidebar variant="inset" collapsible="icon">
           {/* ─── Brand wordmark ───────────────────────────────────────── */}
           <SidebarHeader>
@@ -154,6 +155,7 @@ export function NavShell({ children, title }: NavShellProps) {
             <ProfileFooter entryPoint={entryPoint} />
           </SidebarFooter>
         </Sidebar>
+        </nav>
 
         <SidebarInset className="flex flex-col overflow-hidden">
           <TopBar title={title} entryPoint={entryPoint} onAskLeo={() => setPaletteOpen(true)} />

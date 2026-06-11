@@ -134,7 +134,7 @@ export function PostExam() {
                 />
               </div>
               <div>
-                <p style={{ fontSize: 15, fontWeight: 700, color: isPending ? 'var(--state-warning-darkest)' : 'var(--state-success-dark)', marginBottom: 6 }}>
+                <p style={{ fontSize: 15, fontWeight: 700, color: isPending ? 'var(--foreground)' : 'var(--state-success-dark)', marginBottom: 6 }}>
                   {isPending ? 'Results Pending Faculty Review' : 'Results Available Now'}
                 </p>
                 <p style={{ fontSize: 14, color: t.fg, lineHeight: 1.6, marginBottom: isPending ? 12 : 0 }}>
@@ -148,7 +148,7 @@ export function PostExam() {
                     display: 'inline-flex', alignItems: 'center', gap: 6,
                     background: 'var(--state-warning-bg-soft)', border: '1px solid var(--state-warning-border)',
                     borderRadius: 8, padding: '6px 12px',
-                    fontSize: 13, color: 'var(--state-warning-darkest)', fontWeight: 600,
+                    fontSize: 13, color: 'var(--foreground)', fontWeight: 600,
                   }}>
                     <i className="fa-light fa-calendar-check" aria-hidden="true" />
                     Estimated release: {exam.resultsHoldUntil.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}

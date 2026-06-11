@@ -7,7 +7,7 @@ import React, {
 'react';
 import { Question } from '../data/questions';
 import { useSpeechToText } from '../hooks/useSpeechToText';
-import { Button as DSButton, Textarea as DSTextarea, Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@exxatdesignux/ui';
+import { Button as DSButton, Textarea as DSTextarea, Table, TableHeader, TableHead, TableBody, TableRow, TableCell, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@exxatdesignux/ui';
 const SHORTCUT_KEYS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 interface RendererProps {
   question: Question;
@@ -91,7 +91,7 @@ function CrossOutButton({
       className="shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100 high-contrast-visible"
       aria-label={isCrossed ? 'Remove cross-out' : 'Cross out option'}
       style={{
-        color: isCrossed ? 'var(--semantic-error-text)' : 'var(--muted-foreground)',
+        color: isCrossed ? 'var(--state-error-text-dark)' : 'var(--muted-foreground)',
         backgroundColor: isCrossed ? 'var(--muted)' : 'var(--card)',
       }}
     >
@@ -412,7 +412,7 @@ export function HighlightRenderer({
       }}>
       
       <p
-        className="text-[0.75em] mb-3"
+        className="text-xs mb-3"
         style={{
           color: 'var(--muted-foreground)'
         }}>
@@ -422,15 +422,22 @@ export function HighlightRenderer({
       {question.sentenceGroups?.map((sentence, idx) => {
         const isHighlighted = selectedSet.has(idx);
         return (
-          <span
+          <DSButton
             key={idx}
+            variant="ghost"
+            size="xs"
+            type="button"
             onMouseDown={() => onMouseDown(idx)}
             onMouseEnter={() => onMouseEnter(idx)}
             onMouseUp={onMouseUp}
-            className={`cursor-pointer transition-all inline-block rounded px-1 mx-0.5 ${isHighlighted ? 'highlight-glow' : ''}`}
-            style={{
-              backgroundColor: isHighlighted ? undefined : undefined
+            onClick={(e) => {
+              // Keyboard-activated clicks report detail 0; toggle once so Enter/Space work.
+              if (e.detail === 0) {
+                onMouseDown(idx);
+                onMouseUp();
+              }
             }}
+            className={`inline-block h-auto whitespace-normal text-left text-[1em] font-normal leading-relaxed px-1 mx-0.5 ${isHighlighted ? 'highlight-glow' : ''}`}
             onMouseOver={(e) => {
               if (!isHighlighted)
               (e.currentTarget as HTMLElement).style.backgroundColor =
@@ -440,13 +447,12 @@ export function HighlightRenderer({
               if (!isHighlighted)
               (e.currentTarget as HTMLElement).style.backgroundColor = '';
             }}
-            tabIndex={0}
-            role="button"
+            aria-pressed={isHighlighted}
             aria-label={`Sentence ${idx + 1}: ${sentence}. Click to highlight or unhighlight.`}
             title="Click to highlight">
-            
+
             {sentence}
-          </span>);
+          </DSButton>);
 
       })}
     </div>);
@@ -512,7 +518,7 @@ export function ShortAnswerRenderer({
       </div>
       {question.maxChars &&
       <div
-        className="text-right text-[0.75em]"
+        className="text-right text-xs"
         style={{
           color: 'var(--muted-foreground)'
         }}>
@@ -553,37 +559,31 @@ export function FillBlankRenderer({
           const blankId = part.replace(/[{}]/g, '');
           const options = question.blanks?.[blankId] || [];
           return (
-            <select
+            <Select
               key={i}
-              value={answers[blankId] || ''}
-              onChange={(e) => handleSelect(blankId, e.target.value)}
-              className="exam-select py-[0.3em] pl-[0.6em] rounded-md border-2 text-[0.8em] font-semibold align-middle"
-              style={{
-                borderColor: answers[blankId] ?
-                'var(--brand-color)' :
-                'var(--border)',
-                color: 'var(--foreground)',
-                backgroundColor: 'var(--card)',
-                boxShadow: answers[blankId] ?
-                '0 0 0 2px var(--brand-tint)' :
-                '0 1px 2px var(--shadow-card)',
-                minWidth: '9em',
-                margin: '0 0.3em',
-                lineHeight: '1.4'
-              }}
-              aria-label={`Select the correct term for blank ${blankId}`}
-              title={`Select answer for blank ${blankId}`}
-              {...narrateProps(`Blank ${blankId}: choose the correct term`)}>
-              
-              <option value="" disabled>
-                Choose an answer…
-              </option>
-              {options.map((opt, j) =>
-              <option key={j} value={opt}>
-                  {opt}
-                </option>
-              )}
-            </select>);
+              value={answers[blankId] || undefined}
+              onValueChange={(val) => handleSelect(blankId, val)}>
+
+              <SelectTrigger
+                className="text-[0.8em] font-semibold align-middle"
+                style={{
+                  minWidth: '9em',
+                  margin: '0 0.3em'
+                }}
+                aria-label={`Select the correct term for blank ${blankId}`}
+                title={`Select answer for blank ${blankId}`}
+                {...narrateProps(`Blank ${blankId}: choose the correct term`)}>
+
+                <SelectValue placeholder="Choose an answer…" />
+              </SelectTrigger>
+              <SelectContent>
+                {options.map((opt, j) =>
+                <SelectItem key={j} value={opt}>
+                    {opt}
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>);
 
         }
         return (
@@ -621,49 +621,42 @@ export function MatchingRenderer({
           
             {pair.left}
           </div>
-          <select
-          value={answers[pair.left] || ''}
-          onChange={(e) =>
+          <Select
+          value={answers[pair.left] || undefined}
+          onValueChange={(val) =>
           onSelectAnswer(question.id, {
             ...answers,
-            [pair.left]: e.target.value
+            [pair.left]: val
           })
-          }
-          className="exam-select flex-1 py-[0.65em] pl-[0.85em] rounded-lg border-2 text-[0.9375em]"
-          style={{
-            borderColor: answers[pair.left] ?
-            'var(--brand-color)' :
-            'var(--border)',
-            backgroundColor: 'var(--card)',
-            color: 'var(--foreground)',
-            boxShadow: answers[pair.left] ?
-            '0 0 0 3px var(--brand-tint)' :
-            '0 1px 2px var(--shadow-card)'
-          }}
-          aria-label={`Match "${pair.left}" with the correct option`}
-          title={`Choose the matching term for "${pair.left}"`}
-          onFocus={() => {
-            if (voiceNarrator && 'speechSynthesis' in window) {
-              window.speechSynthesis.cancel();
-              const u = new SpeechSynthesisUtterance(
-                `Match ${pair.left} with: ${pair.rightOptions.join(', ')}`
-              );
-              window.speechSynthesis.speak(u);
-            }
-          }}
-          onBlur={() => {
-            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-          }}>
-          
-            <option value="" disabled>
-              Choose a match…
-            </option>
-            {pair.rightOptions.map((opt, j) =>
-          <option key={j} value={opt}>
+          }>
+
+            <SelectTrigger
+            className="flex-1 text-[0.9375em]"
+            aria-label={`Match "${pair.left}" with the correct option`}
+            title={`Choose the matching term for "${pair.left}"`}
+            onFocus={() => {
+              if (voiceNarrator && 'speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(
+                  `Match ${pair.left} with: ${pair.rightOptions.join(', ')}`
+                );
+                window.speechSynthesis.speak(u);
+              }
+            }}
+            onBlur={() => {
+              if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            }}>
+
+              <SelectValue placeholder="Choose a match…" />
+            </SelectTrigger>
+            <SelectContent>
+              {pair.rightOptions.map((opt, j) =>
+            <SelectItem key={j} value={opt}>
                 {opt}
-              </option>
-          )}
-          </select>
+              </SelectItem>
+            )}
+            </SelectContent>
+          </Select>
         </div>
       )}
     </div>);
@@ -998,11 +991,21 @@ export function WordHighlightRenderer({
         const isHighlighted = selectedSet.has(idx);
         return (
           <Fragment key={idx}>
-            <span
+            <DSButton
+              variant="ghost"
+              size="xs"
+              type="button"
               onMouseDown={() => onMouseDown(idx)}
               onMouseEnter={() => onMouseEnter(idx)}
               onMouseUp={onMouseUp}
-              className={`cursor-pointer transition-all inline-block rounded px-0.5 ${isHighlighted ? 'highlight-glow' : ''}`}
+              onClick={(e) => {
+                // Keyboard-activated clicks report detail 0; toggle once so Enter/Space work.
+                if (e.detail === 0) {
+                  onMouseDown(idx);
+                  onMouseUp();
+                }
+              }}
+              className={`inline-block h-auto whitespace-normal text-[1em] font-normal px-0.5 ${isHighlighted ? 'highlight-glow' : ''}`}
               onMouseOver={(e) => {
                 if (!isHighlighted)
                 (e.currentTarget as HTMLElement).style.backgroundColor =
@@ -1012,13 +1015,12 @@ export function WordHighlightRenderer({
                 if (!isHighlighted)
                 (e.currentTarget as HTMLElement).style.backgroundColor = '';
               }}
-              tabIndex={0}
-              role="button"
+              aria-pressed={isHighlighted}
               aria-label={`Word ${idx + 1}: ${word}. Click to highlight or unhighlight.`}
               title="Click to highlight">
-              
+
               {word}
-            </span>{' '}
+            </DSButton>{' '}
           </Fragment>);
 
       })}

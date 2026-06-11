@@ -20,8 +20,9 @@
  * persistent navigation, notifications, and profile access.
  */
 
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Outlet } from 'react-router-dom';
 import { NavShell } from './components/NavShell';
+import { DevReviewHUD } from './dev/DevReviewHUD';
 import { AssessmentDashboard } from './pages/AssessmentDashboard';
 import { PreExamFlow } from './pages/PreExamFlow';
 import { PostExam } from './pages/PostExam';
@@ -34,7 +35,21 @@ import { StudyResources } from './pages/StudyResources';
 import { SettingsPage, HelpPage } from './pages/PlaceholderPage';
 import { App as ExamEngine } from './App';
 
-const router = createBrowserRouter([
+// Root layout — renders the active route plus the live review overlay.
+// The literal `import.meta.env.DEV &&` lets Rollup dead-code-eliminate the HUD
+// (and axe-core) from every production build — Vercel preview/dev/prod are all
+// `vite build`, so the overlay never ships. A second hostname guard inside the
+// HUD covers the edge case of an exposed/previewed dev server.
+function RootLayout() {
+  return (
+    <>
+      <Outlet />
+      {import.meta.env.DEV && <DevReviewHUD product="apps/exam-management/assessment-taker" />}
+    </>
+  );
+}
+
+const childRoutes = [
   {
     path: '/',
     element: (
@@ -125,6 +140,13 @@ const router = createBrowserRouter([
         <HelpPage />
       </NavShell>
     ),
+  },
+];
+
+const router = createBrowserRouter([
+  {
+    element: <RootLayout />,
+    children: childRoutes,
   },
 ]);
 

@@ -409,9 +409,12 @@ export function AssessmentDashboard() {
         })()}
 
         {/* ── 4. System Messages — collapsed by default ────────────────────── */}
-        <section aria-label="System messages" style={{ marginBottom: 24 }}>
+        {/* SystemNotificationsSection renders its own labeled <section>; no
+            outer landmark wrapper (avoids a redundant nested region — axe
+            landmark-unique). Spacing applied via wrapper div, not <section>. */}
+        <div style={{ marginBottom: 24 }}>
           <SystemNotificationsSection />
-        </section>
+        </div>
 
         {/* Empty state */}
         {!hasActionItems && upcoming.length === 0 && past.length === 0 && (

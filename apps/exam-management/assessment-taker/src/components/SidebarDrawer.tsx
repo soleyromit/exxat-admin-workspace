@@ -66,7 +66,7 @@ export function SidebarDrawer({
       </div>
 
       {/* Scrollable grid area */}
-      <div className="flex-1 overflow-y-auto p-3.5 flex flex-col gap-3.5">
+      <div tabIndex={0} aria-label="Question navigator" className="flex-1 overflow-y-auto p-3.5 flex flex-col gap-3.5">
 
         {/* Bookmarked group */}
         {bookmarkedIndices.length > 0 && (
@@ -111,17 +111,19 @@ export function SidebarDrawer({
       {/* Legend */}
       <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 px-3.5 py-2.5 border-t border-border shrink-0">
         {([
-          { swatch: 'filled', bg: 'var(--brand-color)', label: 'Current' },
+          { swatch: 'ring', bg: 'var(--foreground)', label: 'Current' },
           { swatch: 'filled', bg: 'var(--foreground)', label: 'Answered' },
           { swatch: 'border', borderColor: 'var(--state-flagged-text)', label: 'Bookmarked' },
           { swatch: 'border', borderColor: 'var(--muted-foreground)', label: 'Unanswered' },
-        ] as { swatch: 'filled' | 'border'; bg?: string; borderColor?: string; label: string }[]).map(({ swatch, bg, borderColor, label }) => (
+        ] as { swatch: 'filled' | 'border' | 'ring'; bg?: string; borderColor?: string; label: string }[]).map(({ swatch, bg, borderColor, label }) => (
           <div key={label} className="flex items-center gap-1.5">
             <div
               className="size-2.5 rounded-sm shrink-0"
               style={{
-                backgroundColor: swatch === 'filled' ? bg : 'transparent',
+                backgroundColor: swatch === 'filled' || swatch === 'ring' ? bg : 'transparent',
                 border: swatch === 'border' ? `1.5px solid ${borderColor}` : undefined,
+                outline: swatch === 'ring' ? `2px solid ${bg}` : undefined,
+                outlineOffset: swatch === 'ring' ? '2px' : undefined,
               }}
             />
             <span className="text-[12px] text-muted-foreground">{label}</span>
@@ -181,12 +183,14 @@ function Tile({
 }) {
   const isLocked = status === 'locked';
 
+  const isCurrent = status === 'current' || status === 'current-bookmarked';
+
   const tileColors: React.CSSProperties = (() => {
     switch (status) {
       case 'current':
-        return { backgroundColor: 'var(--brand-color)', color: 'var(--brand-foreground)', borderColor: 'transparent' };
+        return { backgroundColor: 'var(--foreground)', color: 'var(--background)', borderColor: 'transparent' };
       case 'current-bookmarked':
-        return { backgroundColor: 'var(--brand-color)', color: 'var(--brand-foreground)', borderColor: 'var(--state-flagged-text)' };
+        return { backgroundColor: 'var(--foreground)', color: 'var(--background)', borderColor: 'var(--state-flagged-text)' };
       case 'bookmarked':
         return { color: 'var(--state-flagged-text)', borderColor: 'var(--state-flagged-text)' };
       case 'answered':
@@ -204,8 +208,8 @@ function Tile({
       onClick={() => { if (!isLocked) onNavigate(index); }}
       disabled={isLocked}
       aria-label={`Question ${index + 1}`}
-      aria-current={status === 'current' || status === 'current-bookmarked' ? 'true' : undefined}
-      className="size-9 rounded-[7px] text-[12px] font-semibold p-0 border [border-width:1.5px] hover:opacity-80 transition-opacity"
+      aria-current={isCurrent ? 'true' : undefined}
+      className={`size-9 rounded-[7px] text-[12px] font-semibold p-0 border [border-width:1.5px] hover:opacity-80 transition-opacity${isCurrent ? ' ring-2 ring-foreground ring-offset-1 ring-offset-background' : ''}`}
       style={tileColors}
     >
       {index + 1}

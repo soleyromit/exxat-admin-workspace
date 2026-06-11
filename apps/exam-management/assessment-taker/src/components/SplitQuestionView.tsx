@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Question } from '../data/questions';
 import { Tooltip } from './Tooltip';
-import { Button as DSButton, Table, TableHeader, TableHead, TableBody, TableRow, TableCell, Tabs, TabsList, TabsTrigger, TabsContent } from '@exxatdesignux/ui';
+import { Button as DSButton, Table, TableHeader, TableHead, TableBody, TableRow, TableCell, Tabs, TabsList, TabsTrigger, TabsContent, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@exxatdesignux/ui';
 
 function ImagePanel({ src, alt }: {src: string;alt: string;}) {
   const [error, setError] = useState(false);
@@ -276,6 +276,7 @@ function QuestionReferencePanel({
               <TabsContent
                 key={i}
                 value={String(i)}
+                tabIndex={0}
                 className="flex-1 overflow-auto p-[2em] flex flex-col gap-[0.625em] min-h-0"
               >
                 {renderRef(ref)}
@@ -283,7 +284,7 @@ function QuestionReferencePanel({
             ))}
           </Tabs>
         ) : (
-          <div style={{ flex: 1, overflow: 'auto', padding: '2em', display: 'flex', flexDirection: 'column', gap: '0.625em', minHeight: 0 }}>
+          <div tabIndex={0} aria-label="Reference content" style={{ flex: 1, overflow: 'auto', padding: '2em', display: 'flex', flexDirection: 'column', gap: '0.625em', minHeight: 0 }}>
             {renderRef(references[0])}
           </div>
         )}
@@ -401,6 +402,7 @@ export function SplitQuestionView({
         </span>
 
         <h2
+          id={`question-stem-${question.id}`}
           className="text-[1.125em] font-semibold leading-relaxed flex-1 transition-colors"
           style={{
             color: 'var(--foreground)',
@@ -754,26 +756,24 @@ export function SplitQuestionView({
         return <WordHighlightRenderer {...props} />;
       case 'dropdown':
         return (
-          <select
-            value={selectedAnswer || ''}
-            onChange={(e) => onSelectAnswer(question.id, e.target.value)}
-            className="w-full p-[1em] rounded-xl border-2 text-[1em] exam-focus"
-            style={{
-              borderColor: 'var(--border)',
-              backgroundColor: 'var(--card)',
-              color: 'var(--foreground)'
-            }}
-            aria-label="Select your answer from the dropdown options">
-            
-            <option value="" disabled>
-              Select an option...
-            </option>
-            {question.options?.map((opt, i) =>
-            <option key={i} value={opt}>
+          <Select
+            value={selectedAnswer || undefined}
+            onValueChange={(val) => onSelectAnswer(question.id, val)}>
+
+            <SelectTrigger
+              className="w-full text-[1em] exam-focus"
+              aria-labelledby={`question-stem-${question.id}`}>
+
+              <SelectValue placeholder="Select an option..." />
+            </SelectTrigger>
+            <SelectContent>
+              {question.options?.map((opt, i) =>
+              <SelectItem key={i} value={opt}>
                 {opt}
-              </option>
-            )}
-          </select>);
+              </SelectItem>
+              )}
+            </SelectContent>
+          </Select>);
 
       default:
         return <p>Unsupported question type.</p>;
@@ -821,6 +821,7 @@ export function SplitQuestionView({
               <QuestionReferencePanel references={question.references!} zoomPercent={zoomPercent} />
             ) : (
               <div
+                tabIndex={0}
                 className="flex-1 min-h-0 overflow-y-auto rounded-2xl border shadow-sm"
                 style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
                 {question.type === 'case-study' ? (

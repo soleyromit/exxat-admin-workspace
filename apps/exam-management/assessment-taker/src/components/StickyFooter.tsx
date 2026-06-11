@@ -40,8 +40,8 @@ export function StickyFooter({
         <span aria-hidden="true" style={{ display: 'inline-block', minWidth: 96 }} />
       )}
 
-      <span style={{ fontSize: 13, color: 'var(--muted-foreground)', fontWeight: 500 }}>
-        Q {currentIndex + 1} <span style={{ color: 'var(--muted-foreground)' }}>of {totalQuestions}</span>
+      <span className="text-sm font-medium text-muted-foreground">
+        Q {currentIndex + 1} <span>of {totalQuestions}</span>
       </span>
 
       <DSButton

@@ -13,14 +13,14 @@
  * the whole tree is gated on import.meta.env.DEV and never mounts in a build.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { startTransition, useCallback, useEffect, useRef, useState } from 'react';
 
 // Framework-agnostic current-path hook (works in Vite/react-router, Next, any
 // History-API router) — so this HUD can drop into any app without a router dep.
 function useLocationPath(): string {
   const [path, setPath] = useState(() => (typeof window !== 'undefined' ? window.location.pathname : ''));
   useEffect(() => {
-    const update = () => setPath(window.location.pathname);
+    const update = () => startTransition(() => setPath(window.location.pathname));
     window.addEventListener('popstate', update);
     const origPush = history.pushState;
     const origReplace = history.replaceState;
@@ -297,7 +297,7 @@ function DevReviewHUDInner({ product }: { product?: string }) {
     // axe (async)
     try {
       const axe = (await import('axe-core')).default;
-      const results = await axe.run({ exclude: [['[data-dev-hud]'], ['vite-error-overlay']] } as any, {
+      const results = await axe.run({ exclude: [['[data-dev-hud]']] } as any, {
         resultTypes: ['violations'],
         // keep it quick; the agent does the deep pass
         runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'] },

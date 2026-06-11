@@ -52,6 +52,9 @@
 @theme inline {
   /* rounded-4xl used by DS Badge for pill shape; DS theme only defines up to 3xl */
   --radius-4xl: 9999px;
+  /* DS ships --text-xs at 0.6875rem (11px); workspace floor is 12px. Raise the
+     text-xs utility to the documented DS floor so product copy never renders sub-12px. */
+  --text-xs: 0.75rem; /* 12px at 16px root */
 }
 
 /* ─── App-local tokens (no DS equivalent) ─────────────────────────────────── */
@@ -128,6 +131,13 @@
   --state-error-border-soft:color-mix(in srgb, var(--chart-5) 30%, var(--background));
   --state-bar-fail:         color-mix(in srgb, var(--chart-5) 60%, var(--background));
 
+  /* Semantic-error aliases — used by ExamToolbar's last-5-minutes timer state.
+     Map to the existing state-error-* family so the timer inherits the same
+     orange (chart-5) treatment as other error surfaces. */
+  --semantic-error-bg:     var(--state-error-bg-soft);
+  --semantic-error-border: var(--state-error-border-soft);
+  --semantic-error-text:   var(--state-error-text-dark);
+
   /* Required-field pill — same family as flagged/warning */
   --required-text:   color-mix(in srgb, var(--chart-4) 80%, var(--foreground));
   --required-bg:     color-mix(in srgb, var(--chart-4) 8%, var(--background));
@@ -203,7 +213,7 @@
    package provides hover via its own @layer base styles. Since we import DS
    as source (not the compiled package), we must supply that rule here. */
 [data-slot="button"][data-variant="default"]:hover:not(:disabled) {
-  background-color: color-mix(in oklch, var(--primary) 85%, var(--foreground));
+  background-color: color-mix(in srgb, var(--primary) 85%, var(--foreground));
 }
 
 /* ─── Reference panel HTML content ───────────────────────────────────────────

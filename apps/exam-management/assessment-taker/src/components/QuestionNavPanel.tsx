@@ -1,6 +1,7 @@
 // src/components/QuestionNavPanel.tsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
+import { Button } from '@exxatdesignux/ui';
 import { Question } from '../data/questions';
 import { ExamSection } from '../data/assessments';
 
@@ -344,20 +345,15 @@ export function QuestionNavPanel({
           <span style={{ fontSize: 12, color: 'var(--muted-foreground)', fontWeight: 500 }}>
             {currentIndex + 1} / {questions.length}
           </span>
-          <button
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={onClose}
             aria-label="Close question navigator"
             className="exam-focus"
-            style={{
-              width: 24, height: 24, borderRadius: 6,
-              background: 'transparent', border: 'none',
-              cursor: 'pointer', display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
-              fontSize: 12, color: 'var(--muted-foreground)',
-            }}
           >
-            ✕
-          </button>
+            <i className="fa-light fa-xmark" aria-hidden="true" />
+          </Button>
         </div>
 
         {/* Body — scrollable */}

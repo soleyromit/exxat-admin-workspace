@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button } from '@exxatdesignux/ui';
+import { TooltipProvider } from '@exxatdesignux/ui';
+import { Button } from './components/Button';
 import { questions } from './data/questions';
 import { MOCK_ASSESSMENTS, ExamSection } from './data/assessments';
 import { useTimer } from './hooks/useTimer';
@@ -62,21 +63,11 @@ function SectionStartScreen({
   sectionNumber,
   totalSections,
   onBegin,
-  hasGlobalRef,
-  isGlobalRefOpen,
-  onToggleGlobalRef,
-  isNavOpen,
-  onToggleNav,
 }: {
   section: ExamSection;
   sectionNumber: number;
   totalSections: number;
   onBegin: () => void;
-  hasGlobalRef?: boolean;
-  isGlobalRefOpen?: boolean;
-  onToggleGlobalRef?: () => void;
-  isNavOpen?: boolean;
-  onToggleNav?: () => void;
 }) {
   const beginRef = useRef<HTMLButtonElement>(null);
 
@@ -87,85 +78,77 @@ function SectionStartScreen({
   return (
     <div
       role="dialog"
-      aria-modal="true"
       aria-labelledby="section-start-title"
       style={{
         position: 'fixed', inset: 0, zIndex: 30,
         background: 'var(--background)', display: 'flex',
-        flexDirection: 'column', padding: '40px 24px', overflowY: 'auto',
+        flexDirection: 'column', justifyContent: 'safe center', alignItems: 'center',
+        // Top padding clears the fixed ExamToolbar (h-14 + 4px progress, z-40)
+        // so long instructions never scroll the section title behind the header.
+        padding: '76px 24px 40px', overflowY: 'auto',
       }}
     >
-      {/* Reference + Navigator access while reviewing section start */}
-      {(hasGlobalRef || onToggleNav) && (
-        <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 8 }}>
-          {hasGlobalRef && (
-            <Button
-              variant={isGlobalRefOpen ? 'default' : 'outline'}
-              size="sm"
-              onClick={onToggleGlobalRef}
-              aria-label={isGlobalRefOpen ? 'Close reference panel' : 'Open reference materials'}
-              aria-pressed={isGlobalRefOpen}
-            >
-              <i className="fa-light fa-file-lines" aria-hidden="true" />
-              Reference
-            </Button>
-          )}
-          {onToggleNav && (
-            <Button
-              variant={isNavOpen ? 'default' : 'outline'}
-              size="sm"
-              onClick={onToggleNav}
-              aria-label={isNavOpen ? 'Close question navigator' : 'Open question navigator'}
-              aria-expanded={isNavOpen}
-            >
-              <i className="fa-light fa-list-ul" aria-hidden="true" />
-              Questions
-            </Button>
-          )}
-        </div>
-      )}
-      <div style={{ maxWidth: 520, width: '100%', textAlign: 'left', margin: 'auto' }}>
+      {/* Reference + Navigator stay reachable via the ExamToolbar (z-40), which
+          renders above this overlay (z-30) during section start. */}
+      <div style={{ maxWidth: 560, width: '100%', textAlign: 'left', margin: '0 auto' }}>
         {/* Section label */}
-        <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted-foreground)', letterSpacing: 0.5, marginBottom: 6 }}>
+        <p className="text-xs font-medium text-muted-foreground mb-1.5">
           Section {sectionNumber} of {totalSections}
         </p>
 
         {/* Title */}
-        <h2 id="section-start-title" style={{ fontSize: 24, fontWeight: 700, color: 'var(--foreground)', marginBottom: 6, lineHeight: 1.2 }}>
+        <h2 id="section-start-title" className="font-heading text-2xl font-bold text-foreground leading-tight mb-1.5">
           {section.title}
         </h2>
 
         {/* Question range */}
-        <p style={{ fontSize: 14, color: 'var(--muted-foreground)', marginBottom: 24 }}>
+        <p className="text-sm text-muted-foreground mb-6">
           {section.questionCount} questions
         </p>
 
-        {/* Instructions — capped scroll area so the Begin button stays reachable */}
+        {/* Instructions — typographic hierarchy (heading + prose) to match the
+            pre-exam intro screen (PreExamFlow); plain instructional copy is not
+            boxed in a Card. The overlay itself scrolls so long instructions are
+            never truncated and the Begin button stays reachable. */}
         {section.instructions && (
-          <div
-            tabIndex={0}
-            role="region"
-            aria-label="Section instructions"
-            style={{
-              textAlign: 'left',
-              background: 'var(--card)', border: '1px solid var(--border)',
-              borderRadius: 12, padding: '16px 20px', marginBottom: 32,
-              maxHeight: '40vh', overflowY: 'auto',
-            }}
-          >
-            <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted-foreground)', marginBottom: 8 }}>
-              Section Instructions
-            </p>
-            <p style={{ fontSize: 15, color: 'var(--foreground)', lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
-              {section.instructions}
-            </p>
-          </div>
+          <section aria-label="Section instructions" style={{ marginBottom: 32 }}>
+            <h2 className="text-sm font-semibold text-foreground mb-2.5">Instructions</h2>
+            {/* Split on blank lines into discrete paragraphs so screen
+                readers announce each as its own block instead of one
+                run-on paragraph reliant on literal \n\n in the data.
+                Prose sized to match the PreExamFlow "Before you begin"
+                screen (text-base / 1.8) — same flow, consistent reading size. */}
+            {section.instructions.split(/\n{2,}/).map((para, i) => (
+              <p
+                key={i}
+                className="text-base text-foreground leading-relaxed whitespace-pre-wrap [&:not(:last-child)]:mb-4"
+              >
+                {para}
+              </p>
+            ))}
+          </section>
         )}
 
-        {/* CTA */}
-        <Button ref={beginRef} size="lg" onClick={onBegin} className="w-full">
-          Begin Section {sectionNumber}
-        </Button>
+        {/* CTA — pinned to the bottom of the scrolling overlay so the Begin
+            button is always reachable without scrolling to the end of long
+            instructions, mirroring the pinned "Start exam" footer in
+            PreExamFlow (BeforeYouBegin). For short instructions there is no
+            overflow, so it renders inline exactly as before. The solid
+            background lets instruction text scroll cleanly beneath it. */}
+        <div style={{ position: 'sticky', bottom: 0, background: 'var(--background)', paddingTop: 12, paddingBottom: 4, borderTop: '1px solid var(--border)' }}>
+          {/* Primary CTA carries the brand identity via the engine-local Button
+              wrapper's `primary` variant — the single source of the brand-color
+              treatment, so the section-start CTA renders identically to every
+              other primary action instead of re-declaring the override inline. */}
+          <Button
+            ref={beginRef}
+            variant="primary"
+            size="lg"
+            onClick={onBegin}
+            className="w-full"
+            label={`Begin Section ${sectionNumber}`}
+          />
+        </div>
       </div>
     </div>
   );
@@ -366,9 +349,10 @@ export function App() {
   answers]
   );
   return (
+    <TooltipProvider delayDuration={400}>
     <>
     <div
-      className={`h-screen w-full flex flex-col overflow-hidden transition-colors duration-300 theme-${theme}`}
+      className={`h-svh w-full flex flex-col overflow-hidden transition-colors duration-300 theme-${theme}`}
       style={{
         backgroundColor: 'var(--background)',
         filter:
@@ -427,6 +411,12 @@ export function App() {
         Skip to question content
       </a>
 
+      {/* Stable page h1 — present in every exam state (question view and section
+          overlay). The section overlay's h2 scopes to the current section only;
+          this sr-only h1 is the authoritative page-level heading for
+          axe page-has-heading-one and screen-reader document navigation. */}
+      <h1 className="sr-only">{assessment?.title ?? 'Exam'}</h1>
+
       <div aria-live="polite" className="sr-only">
         {announcement}
       </div>
@@ -479,11 +469,6 @@ export function App() {
               sectionNumber={boundary.sectionNumber}
               totalSections={assessment.sections.length}
               onBegin={handleBeginSection}
-              hasGlobalRef={(assessment?.assessmentReferences?.length ?? 0) > 0}
-              isGlobalRefOpen={showGlobalRef}
-              onToggleGlobalRef={() => setShowGlobalRef(v => !v)}
-              isNavOpen={showSidebar}
-              onToggleNav={() => setShowSidebar(v => !v)}
             />
           );
         })()}
@@ -501,6 +486,11 @@ export function App() {
             id="main-content"
             className="flex-1 min-w-[380px] overflow-hidden flex flex-col"
             role="main"
+            // The section-start overlay (z-30) visually covers the exam and we
+            // already hide the StickyFooter + side panels while it's up. Match
+            // that for the question body: inert removes its answer controls from
+            // tab order + the AT tree so focus can't land behind the overlay.
+            inert={showSectionStart}
             aria-label={`Question ${currentIndex + 1} of ${questions.length}`}>
 
             <SplitQuestionView
@@ -605,6 +595,7 @@ export function App() {
     </div>
       <KeyboardShortcutModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
     </>
+    </TooltipProvider>
   );
 
 }

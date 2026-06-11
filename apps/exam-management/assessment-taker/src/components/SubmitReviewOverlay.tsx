@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button } from '@exxatdesignux/ui';
+import { Button, Dialog, DialogContent } from '@exxatdesignux/ui';
 import { Question } from '../data/questions';
 
 interface SubmitReviewOverlayProps {
@@ -82,35 +82,12 @@ export function SubmitReviewOverlay({
   const confirmBody = getConfirmBody();
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={phase === 'review' ? 'Review before submitting' : 'Confirm submission'}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 60,
-        backgroundColor: phase === 'confirm' ? 'rgba(0,0,0,0.72)' : 'rgba(0,0,0,0.55)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px 16px',
-        transition: 'background-color 200ms',
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: 'var(--card)',
-          border: '1px solid var(--border)',
-          borderRadius: 16,
-          maxWidth: 540,
-          width: '100%',
-          maxHeight: '90vh',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          boxShadow: '0 24px 80px rgba(0,0,0,0.18)',
-        }}
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent
+        showCloseButton={false}
+        className="max-w-[540px] p-0 flex flex-col overflow-hidden"
+        style={{ maxHeight: '90vh' }}
+        aria-label={phase === 'review' ? 'Review before submitting' : 'Confirm submission'}
       >
 
         {phase === 'review' && (
@@ -196,8 +173,9 @@ export function SubmitReviewOverlay({
                   const isClickable = status !== 'unreached';
                   const isBookmarked = flaggedSet.has(index);
                   return (
-                    <button
+                    <Button
                       key={index}
+                      variant="ghost"
                       onClick={() => {
                         if (isClickable) {
                           onNavigate(index);
@@ -206,32 +184,26 @@ export function SubmitReviewOverlay({
                       }}
                       disabled={!isClickable}
                       aria-label={`Question ${index + 1} — ${s.label}${isClickable ? ', click to return' : ''}`}
+                      className="p-0 h-auto min-w-0 text-xs font-semibold flex items-center justify-center relative"
                       style={{
                         aspectRatio: '1',
                         borderRadius: 6,
                         border: `1px solid ${s.border}`,
                         backgroundColor: s.bg,
                         color: s.text,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        cursor: isClickable ? 'pointer' : 'default',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
                         transition: 'opacity 80ms',
                         opacity: status === 'unreached' ? 0.35 : 1,
-                        position: 'relative',
                       }}
                     >
                       {index + 1}
                       {isBookmarked && (
                         <i
-                          className="fa-solid fa-bookmark"
+                          className="fa-solid fa-bookmark text-xs absolute"
                           aria-hidden="true"
-                          style={{ position: 'absolute', top: 2, right: 3, fontSize: 12, color: 'var(--state-flagged-text)' }}
+                          style={{ top: 2, right: 3, color: 'var(--state-flagged-text)' }}
                         />
                       )}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -340,7 +312,7 @@ export function SubmitReviewOverlay({
           </>
         )}
 
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
