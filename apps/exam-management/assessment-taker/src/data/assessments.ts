@@ -148,7 +148,7 @@ export const MOCK_ASSESSMENTS: Assessment[] = [
     facultyName: 'Dr. Carla Medina',
     status: 'active',
     isHighStakes: true,
-    forwardOnly: true, // instructions state you can't return after advancing
+    forwardOnly: false,
     windowStart: NOW,
     windowEnd: new Date(NOW.getTime() + 3 * 60 * 60_000), // 3-hour window
     durationMinutes: 110,

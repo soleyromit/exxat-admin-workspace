@@ -6,10 +6,8 @@
  * exam engine picks up DS styling without touching a single callsite.
  *
  * Variant mapping (engine → DS):
- *   primary   → DS `default` + brand-color override   (pink Prism CTA — the
- *               DS `default` token resolves to dark gray in theme-prism, which
- *               loses the brand identity. We override bg/color to brand-color.)
- *   secondary → DS `outline`                          (bordered, neutral)
+ *   primary   → DS `default`  (dark primary — standard DS treatment)
+ *   secondary → DS `outline`  (bordered, neutral)
  *   ghost     → DS `ghost`
  *   danger    → DS `destructive`
  *
@@ -49,15 +47,7 @@ const SIZE_MAP: Record<ButtonSize, React.ComponentProps<typeof DSButton>['size']
   lg: 'lg',
 }
 
-// Primary buttons in the exam engine are brand-pink, not the DS dark-gray
-// `--primary` token. Apply the override only to `primary` consumers.
-const PRIMARY_BRAND_OVERRIDE: React.CSSProperties = {
-  backgroundColor: 'var(--brand-color)',
-  color: 'var(--brand-foreground)',
-  borderColor: 'var(--brand-color)',
-}
-
-export function Button({
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button({
   label,
   variant = 'secondary',
   size = 'md',
@@ -68,9 +58,10 @@ export function Button({
   className,
   type = 'button',
   'aria-label': ariaLabel,
-}: ButtonProps) {
+}, ref) {
   return (
     <DSButton
+      ref={ref}
       type={type}
       variant={VARIANT_MAP[variant]}
       size={SIZE_MAP[size]}
@@ -78,7 +69,6 @@ export function Button({
       onClick={onClick}
       className={className}
       aria-label={ariaLabel}
-      style={variant === 'primary' ? PRIMARY_BRAND_OVERRIDE : undefined}
     >
       {leadingIcon && (
         <i
@@ -95,4 +85,4 @@ export function Button({
       )}
     </DSButton>
   )
-}
+})

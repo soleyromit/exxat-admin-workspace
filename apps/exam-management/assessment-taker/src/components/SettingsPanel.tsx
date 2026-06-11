@@ -115,8 +115,9 @@ export function SettingsPanel({
               style={
                 theme === value
                   ? {
-                      backgroundColor: 'var(--brand-color)',
-                      color: 'var(--brand-foreground)',
+                      backgroundColor: 'var(--background)',
+                      color: 'var(--foreground)',
+                      boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
                     }
                   : { color: 'var(--muted-foreground)' }
               }
@@ -263,11 +264,6 @@ export function SettingsPanel({
           variant="default"
           size="default"
           className="w-full font-semibold"
-          style={{
-            backgroundColor: 'var(--brand-color)',
-            color: 'var(--brand-foreground)',
-            borderColor: 'var(--brand-color)',
-          }}
           onClick={() => { onClose(); onSubmit(); }}
         >
           <i className="fa-light fa-paper-plane" aria-hidden="true" style={{ fontSize: 14 }} />
