@@ -56,6 +56,13 @@
    --courses-* table tints, etc.
    Anything ABOVE this line must match this template verbatim. */
 
+/* ── DS typography floor — installed @exxatdesignux/ui ships --text-xs at
+   0.6875rem (11px); CLAUDE.md mandates a 12px product-text floor. Restore the
+   token to 0.75rem (12px) so every `text-xs` element clears the floor. ─────── */
+:root {
+  --text-xs: 0.75rem; /* 12px at 16px root */
+}
+
 /* ── Assessment Builder display tokens ──────────────────────────────────── */
 :root {
   --font-display: "ivypresto-headline", "ivypresto-text", var(--font-heading), "Playfair Display", Georgia, serif;
@@ -172,9 +179,19 @@
   /* Archived status */
   --qb-status-archived-bg: oklch(0.94 0.005 270);
   --qb-status-archived-fg: oklch(0.42 0.01 270);
+  --qb-status-archived-border: oklch(0.74 0.006 270);
   /* In Review status */
   --qb-status-review-bg: oklch(0.94 0.03 240);
   --qb-status-review-fg: oklch(0.38 0.08 240);
+  --qb-status-review-border: oklch(0.74 0.08 240);
+  /* Planned status — cool slate (scheduled, not started) */
+  --qb-status-planned-bg:     oklch(0.95 0.012 250);
+  --qb-status-planned-fg:     oklch(0.42 0.04 255);
+  --qb-status-planned-border: oklch(0.78 0.04 255);
+  /* Completed status — teal (delivered & graded; distinct from Ready green) */
+  --qb-status-completed-bg:     oklch(0.94 0.035 195);
+  --qb-status-completed-fg:     oklch(0.34 0.07 195);
+  --qb-status-completed-border: oklch(0.72 0.08 195);
 
   /* QB difficulty bar — neutral shades, lightest → darkest (Easy → Hard) */
   --qb-diff-easy-color:      oklch(0.78 0.004 270);      /* light neutral — Easy            */

@@ -6,10 +6,12 @@
    and a DS DataTable with clickable rows. No status filter tabs (status is a
    column); no row-count text. */
 
-import { useMemo, useState } from 'react'
-import { AvatarGroup, AvatarGroupCount, AvatarInitials, Badge, Button, Input } from '@exxatdesignux/ui'
+import { useMemo } from 'react'
+import { AvatarGroup, AvatarGroupCount, AvatarInitials, Badge, Button } from '@exxatdesignux/ui'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
+import { KeyMetrics, type MetricItem } from '@/components/key-metrics'
+import { EmptyState } from '@/components/empty-state'
 import {
   ASSESSMENTS, FACULTY, aggregatePsy, sectionsForAssessment, flaggedCount,
   type Assessment, type FacultyId,
@@ -31,25 +33,23 @@ function TeamAvatars({ owner, collaborators }: { owner: FacultyId; collaborators
 }
 
 export function AssessmentsLanding({ onOpen, onCreate }: { onOpen: (a: Assessment) => void; onCreate: () => void }) {
-  const [q, setQ] = useState('')
-
   const flaggedN = useMemo(() => ASSESSMENTS.reduce((n, a) => n + flaggedCount(sectionsForAssessment(a)), 0), [])
   const avgDiff = useMemo(() => {
     const all = ASSESSMENTS.flatMap(a => sectionsForAssessment(a).flatMap(s => s.questions))
     return all.length ? aggregatePsy(all).p.toFixed(2) : '—'
   }, [])
-  const kpis = [
-    { l: 'Active assessments', v: ASSESSMENTS.filter(a => ['draft', 'review', 'ready'].includes(a.state)).length },
-    { l: 'Awaiting review', v: ASSESSMENTS.filter(a => a.state === 'review').length },
-    { l: 'Flagged questions', v: flaggedN },
-    { l: 'Avg. difficulty index', v: avgDiff },
+  const metrics: MetricItem[] = [
+    { id: 'active', label: 'Active assessments', value: ASSESSMENTS.filter(a => ['draft', 'review', 'ready'].includes(a.state)).length, delta: `of ${ASSESSMENTS.length} total`, trend: 'neutral' },
+    { id: 'review', label: 'Awaiting review', value: ASSESSMENTS.filter(a => a.state === 'review').length, delta: 'pending sign-off', trend: 'neutral' },
+    { id: 'flagged', label: 'Flagged questions', value: flaggedN, delta: 'across all sections', trend: 'neutral' },
+    { id: 'avg-diff', label: 'Avg. difficulty index', value: avgDiff, delta: '0–1 scale', trend: 'neutral' },
   ]
 
-  const rows = ASSESSMENTS.filter(a => q === '' || a.name.toLowerCase().includes(q.toLowerCase())) as Row[]
+  const rows = ASSESSMENTS as Row[]
 
   const columns: ColumnDef<Row>[] = [
     {
-      key: 'title', label: 'Assessment', width: 320, sortable: true, sortKey: 'name',
+      key: 'title', label: 'Assessment', width: 380, minWidth: 320, sortable: true, sortKey: 'name',
       cell: (row) => (
         <div className="flex items-center gap-2.5">
           <div className="grid size-7 shrink-0 place-items-center rounded-md" style={{ backgroundColor: 'var(--brand-tint)' }}>
@@ -73,40 +73,40 @@ export function AssessmentsLanding({ onOpen, onCreate }: { onOpen: (a: Assessmen
 
   return (
     <div className="flex flex-col gap-5">
-      {/* KPI strip — borderless, readable */}
-      <div className="flex flex-wrap gap-x-10 gap-y-4">
-        {kpis.map(k => (
-          <div key={k.l} className="min-w-[120px]">
-            <div className="text-xs font-medium text-muted-foreground">{k.l}</div>
-            <div className="mt-0.5 text-2xl font-semibold leading-tight text-foreground tabular-nums">{k.v}</div>
-          </div>
-        ))}
-      </div>
+      {/* KPI strip — DS KeyMetrics flat band (borderless, no redundant header /
+          non-functional period selector); canonical embedded-strip pattern */}
+      <KeyMetrics variant="flat" showHeader={false} metricsSingleRow metrics={metrics} />
 
-      {/* table — every row clickable → detail; search + New Assessment in the toolbar */}
+      {/* table — every row clickable → detail; DS collapse/expand search (⌘K) +
+          New Assessment live in the DataTable toolbar */}
       <DataTable<Row>
         data={rows}
         columns={columns}
         getRowId={(row) => row.id as string}
         selectable={false}
-        searchable={false}
-        showQueryControls={false}
+        searchable
+        showQueryControls
         onRowClick={(row) => onOpen(row as Assessment)}
         toolbarSlot={() => (
-          <>
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search assessments…"
-              aria-label="Search assessments"
-              className="h-8 w-56"
-            />
-            <Button size="sm" className="ml-auto" onClick={onCreate}>
-              <i className="fa-light fa-plus" aria-hidden="true" />
-              New Assessment
-            </Button>
-          </>
+          <Button variant="default" size="sm" onClick={onCreate}>
+            <i className="fa-light fa-plus" aria-hidden="true" />
+            New Assessment
+          </Button>
         )}
+        emptyState={
+          <EmptyState
+            align="center"
+            icon="fa-clipboard-list"
+            title="No assessments yet"
+            description="Create an assessment for this course offering."
+            footer={
+              <Button variant="default" size="sm" onClick={onCreate}>
+                <i className="fa-light fa-plus" aria-hidden="true" />
+                New Assessment
+              </Button>
+            }
+          />
+        }
       />
     </div>
   )
