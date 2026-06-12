@@ -2,6 +2,27 @@
   "model": "claude-opus-4-8",
   "permissions": {
     "allow": [
+      "Agent(compliance-reviewer)",
+      "Agent(verification-reviewer)",
+      "Agent(visual-review)",
+      "Agent(state-review)",
+      "Agent(ds-conformance-reviewer)",
+      "Agent(ds-adoption-reviewer)",
+      "Agent(Explore)",
+      "Task(compliance-reviewer)",
+      "Task(verification-reviewer)",
+      "Task(visual-review)",
+      "Task(state-review)",
+      "Task(ds-conformance-reviewer)",
+      "Task(ds-adoption-reviewer)",
+      "Task(Explore)",
+      "Bash(pnpm typecheck *)",
+      "Bash(curl -s http://localhost:*)",
+      "Bash(BASE_URL=http://localhost:3001 node tools/visual-check/*)",
+      "mcp__mobbin__search_screens",
+      "mcp__mobbin__search_flows",
+      "mcp__claude_ai_Granola__get_meeting_transcript",
+      "mcp__claude_ai_Granola__query_granola_meetings",
       "Bash(ls /Users/romitsoley/Work/*.md)",
       "Bash(gh api *)",
       "Bash(python3 -c \"import json,sys; data=json.load\\(sys.stdin\\); [print\\(item['path']\\) for item in data.get\\('tree',[]\\) if not item['path'].startswith\\('.'\\) and item['type']=='blob']\")",
@@ -61,6 +82,7 @@
       "Bash(\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/*.py)",
       "Bash(python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/*.py)"
     ],
+    "defaultMode": "acceptEdits",
     "additionalDirectories": [
       "/Users/romitsoley/Work/apps/exam-management/admin/app/(app)/questions",
       "/Users/romitsoley/Work/apps/exam-management/student/app/exam/[id]"
@@ -106,16 +128,16 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/exxat-brief-gate.mjs"
+            "command": "node .claude/hooks/pre-edit-checks.mjs"
           }
         ]
       },
       {
-        "matcher": "Write|Edit|MultiEdit",
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/ds-snapshot-inject.mjs"
+            "command": "node .claude/hooks/exxat-brief-gate.mjs"
           }
         ]
       }
@@ -137,12 +159,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-css-edit.py",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/ds-companion.py",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit-checks.py",
             "timeout": 10
           }
         ]
@@ -167,6 +184,17 @@
             "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/subagent-stop.py",
             "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/ds-claim-gate.py",
+            "timeout": 10
           }
         ]
       }

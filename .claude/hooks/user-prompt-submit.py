@@ -63,7 +63,7 @@ TRIGGERS: list[tuple[str, str]] = [
     (r"\b(redesign|refactor|rework|polish|improve|tighten)\s+(this|the|that)\b", "intent:redesign"),
 
     # DS reference lazy-load (priority 4.5) — when prompt suggests UI/DS work,
-    # remind to read CLAUDE-DS-REFERENCE.md (which holds tokens, component
+    # remind to read `node tools/ds/source.mjs` (which holds tokens, component
     # APIs, theme system; ~8K tokens, lazy-loaded to keep CLAUDE.md tight).
     (r"\b(Button|Badge|Sheet|DataTable|Sidebar|Dropdown|Dialog|Tooltip|Tabs?|Avatar|Card|Popover|InputGroup|Field|Select|Checkbox|RadioGroup|Toggle|Drawer|Banner|Calendar|Breadcrumb)\b", "lazy:ds-reference"),
     (r"\bvar\(--[a-z][a-z0-9-]+\)|\b(tokens?|theme(-one|-prism)?|DS reference|design system|component(s)? from (the )?DS)\b", "lazy:ds-reference"),
@@ -208,7 +208,7 @@ def _ds_environment_block(prompt: str) -> list[str]:
         f"  @custom-variant: {env['custom_variant']}  |  button hover (default): {env['button_hover']}  |  --radius-4xl: {env['radius_4xl']}",
         f"  CSS entry: {env['css_entry']}",
         "  Pre-task declaration REQUIRED before any JSX. Verify interactive states in browser after.",
-        "  Full truth: docs/governance/ds-product-compatibility.md + docs/watch/ds-snapshot.json",
+        "  Full truth: docs/governance/ds-product-compatibility.md + `node tools/ds/source.mjs <Component>` (real installed @exxatdesignux/ui API)",
         "",
     ]
 
@@ -263,7 +263,7 @@ ACTION_DESCRIPTIONS: dict[str, str] = {
         "  5. End turn with the parse output. No implementation until confirmed."
     ),
     "intent:redesign": "Run Mobbin research first (see mobbin:search-required above); then invoke superpowers:brainstorming and frontend-design. Every reshaped surface needs Mobbin references before touching code.",
-    "lazy:ds-reference": "Read docs/CLAUDE-DS-REFERENCE.md before generating any UI code, importing DS components, or using DS tokens beyond the ~15 in CLAUDE.md §6. The full token tables, component APIs, theme system, and font setup live there (~8K tokens). Don't guess token names — verify against the reference.",
+    "lazy:ds-reference": "Read `node tools/ds/source.mjs` (+ globals.css) before generating any UI code, importing DS components, or using DS tokens beyond the ~15 in CLAUDE.md §6. The full token tables, component APIs, theme system, and font setup live there (~8K tokens). Don't guess token names — verify against the reference.",
     "lib:context7": "Run mcp__plugin_context7_context7__resolve-library-id then query-docs for current API; do not generate from memory",
     "work:debug": "Invoke superpowers:systematic-debugging skill before proposing fixes",
     "work:verify-before-complete": "Invoke superpowers:verification-before-completion before claiming complete; then superpowers:requesting-code-review",
@@ -478,6 +478,56 @@ def _registry_freshness_block() -> list[str]:
     return lines
 
 
+# ── Token-heavy actions: each one makes the assistant read a whole file or run a
+# multi-step sequence. Injecting these on a plain QUESTION is the ~60k-token waste
+# Romit flagged. They fire only on real build/edit commands (see suppression below).
+HEAVY_BUILD_ACTIONS: set[str] = {
+    "mobbin:search-required",
+    "intent:design",
+    "intent:redesign",
+    "design-contract:html-spec",
+    "design-contract:spec-parse",
+    "lazy:ds-reference",
+    "precheck:pre-task-declaration",
+    "lazy:ui-patterns-pce",
+    "lazy:ui-patterns-exam-management",
+    "lazy:ui-patterns-portal",
+    "lazy:ui-patterns-learning-contracts",
+    "lazy:ui-patterns-patient-log",
+    "lazy:ui-patterns-skills-checklist",
+}
+
+# Imperative build/edit command → run the pipeline. Interrogative/meta → don't.
+_BUILD_IMPERATIVE_RE = re.compile(
+    r"^\s*(please\s+)?(build|create|design|add|implement|redesign|rework|scaffold|"
+    r"wire|make|fix|update|refactor|polish|tighten|generate|render|code|write|"
+    r"replace|rebuild|redo|modernize)\b",
+    re.IGNORECASE,
+)
+_INTERROGATIVE_START_RE = re.compile(
+    r"^\s*(is|are|am|do|does|did|can|could|will|would|should|why|what|when|where|"
+    r"who|whom|which|how|have|has|had|may|might|shall|isn'?t|aren'?t|don'?t|"
+    r"doesn'?t|won'?t)\b",
+    re.IGNORECASE,
+)
+
+
+def _is_interrogative_non_build(prompt: str) -> bool:
+    """True when the prompt is a question or meta-discussion, NOT a command to
+    build/edit UI. Used to suppress the heavy build pipeline (and its token cost)
+    on prompts that just want an answer."""
+    p = prompt.strip()
+    if not p:
+        return False
+    if _BUILD_IMPERATIVE_RE.search(p):
+        return False  # a real build/edit command — let the pipeline fire
+    if p.endswith("?"):
+        return True
+    if _INTERROGATIVE_START_RE.search(p):
+        return True
+    return False
+
+
 def main() -> None:
     try:
         payload = json.load(sys.stdin)
@@ -506,6 +556,17 @@ def main() -> None:
         except re.error:
             # Skip malformed patterns rather than failing the hook
             continue
+
+    # ── Suppress the heavy build pipeline on questions / narrow asks ──
+    # Romit: don't burn ~60k tokens injecting Mobbin + contract + ui-patterns on a
+    # plain question. Drop the token-heavy actions; keep cheap, relevant triggers
+    # (frustration, intake, lib docs, profile switch, debug, etc.). Real build/edit
+    # commands ("design the X page", "fix the Y component") are NOT suppressed.
+    had_heavy_match = any(m in HEAVY_BUILD_ACTIONS for m in matches)
+    suppress_build = _is_interrogative_non_build(prompt)
+    if suppress_build:
+        matches = [m for m in matches if m not in HEAVY_BUILD_ACTIONS]
+        seen = {m for m in seen if m not in HEAVY_BUILD_ACTIONS}
 
     # ── Mobbin is REQUIRED for ALL design work — new pages, redesigns, and edits ──
     # Fires before everything else so visual research grounds all downstream decisions.
@@ -586,11 +647,39 @@ def main() -> None:
             "",
         ]
 
-    if not matches and not freshness and not cascade and not ds_env and not _opus_hint:
+    # Show the answer-first reminder whenever the build pipeline is (or would have
+    # been) in play — i.e. a heavy action matched, whether or not it was suppressed.
+    show_answer_first = had_heavy_match
+
+    if (not matches and not freshness and not cascade and not ds_env
+            and not _opus_hint and not show_answer_first):
         print(json.dumps({}))
         return
 
     lines: list[str] = []
+
+    # ── ANSWER-FIRST DISCIPLINE (priority -1, before everything) ──
+    # Root cause of "you drift from what I asked": the REQUIRED blocks below get
+    # injected on any design/build/fix-shaped prompt — INCLUDING plain questions
+    # ("is X bad at Y", "why does Z") — and get followed as a mandate to launch a
+    # pipeline instead of answering. This block reframes them as conditional.
+    # On a question, the heavy blocks are suppressed entirely (token saving); this
+    # short reminder is all that remains.
+    if show_answer_first:
+        lines.extend([
+            "================  ANSWER THE LITERAL REQUEST FIRST  ================",
+            "Do exactly what the user asked — nothing more — before any block below.",
+            "  • If they asked a QUESTION, answer it directly in your first sentence.",
+            "    Do NOT start a build / audit / contract / Mobbin sequence for a question.",
+            "  • If they asked for ONE thing (e.g. 'run X', 'share Y'), do that one thing,",
+            "    report the result, then stop. Don't expand it into a project.",
+            "  • The actions below are CONDITIONAL scaffolding for when you are actually",
+            "    creating or editing UI. They are NOT permission to widen a narrow ask.",
+            "  • Do NOT build / fix / refactor / 'improve' / audit beyond the literal",
+            "    request without explicit go-ahead. When unsure, do the minimum and ask.",
+            "===================================================================",
+            "",
+        ])
 
     # Opus hint FIRST — model must be right before anything else runs
     if _opus_hint:
@@ -618,7 +707,9 @@ def main() -> None:
             lines.append(f"  - {action}: {desc}")
         lines.extend([
             "",
-            "These actions are REQUIRED before generating a response. See docs/triggers.md for full map.",
+            "These actions are REQUIRED *only when the request is to build or edit UI*. "
+            "If the user asked a question or a single narrow task, answer/do that first "
+            "and apply only the ones that actually apply. See docs/triggers.md for full map.",
         ])
 
     print(json.dumps({
