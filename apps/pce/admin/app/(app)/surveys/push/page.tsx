@@ -51,10 +51,10 @@ function PushSurveyInner() {
   const [termId, setTermId] = useState(LATEST_TERM_ID)
   const [surveyDescription, setSurveyDescription] = useState('')
 
-  // Step 2 — Distribution
-  const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set())
+  // Step 2 — Survey Design
 
-  // Step 3 — Survey Design
+  // Step 3 — Distribution
+  const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set())
   const [templateAssignments, setTemplateAssignments] = useState<Record<string, string>>({})
   const [generalTemplateId, setGeneralTemplateId] = useState<string>('')
 
@@ -243,7 +243,31 @@ function PushSurveyInner() {
             />
           )}
 
-          {step === 2 && selectedTerm && (
+          {step === 2 && surveyMode === 'general' && (
+            <StepSurveyDesignGeneral
+              publishedTemplates={publishedTemplates}
+              selectedTemplateId={generalTemplateId}
+              onTemplateChange={setGeneralTemplateId}
+              onBack={() => setStep(1)}
+              onNext={() => setStep(3)}
+            />
+          )}
+
+          {step === 2 && surveyMode !== 'general' && (
+            <StepSurveyDesign
+              selectedOfferings={selectedOfferings}
+              publishedTemplates={publishedTemplates}
+              templateAssignments={templateAssignments}
+              onTemplateChange={(offeringId, tmplId) =>
+                setTemplateAssignments(p => ({ ...p, [offeringId]: tmplId }))
+              }
+              onBulkAssignByType={handleBulkAssignByType}
+              onBack={() => setStep(1)}
+              onNext={() => setStep(3)}
+            />
+          )}
+
+          {step === 3 && selectedTerm && (
             <StepDistribution
               offeringsForTerm={offeringsForTerm}
               selectedOfferings={selectedOfferings}
@@ -254,30 +278,6 @@ function PushSurveyInner() {
               onToggleOffering={handleToggleOffering}
               onSetExcluded={setExcludedIds}
               onApplyDatesToAll={(open, close) => { setOpenDate(open); setCloseDate(close) }}
-              onBack={() => setStep(1)}
-              onNext={() => setStep(3)}
-            />
-          )}
-
-          {step === 3 && surveyMode === 'general' && (
-            <StepSurveyDesignGeneral
-              publishedTemplates={publishedTemplates}
-              selectedTemplateId={generalTemplateId}
-              onTemplateChange={setGeneralTemplateId}
-              onBack={() => setStep(2)}
-              onNext={() => setStep(4)}
-            />
-          )}
-
-          {step === 3 && surveyMode !== 'general' && (
-            <StepSurveyDesign
-              selectedOfferings={selectedOfferings}
-              publishedTemplates={publishedTemplates}
-              templateAssignments={templateAssignments}
-              onTemplateChange={(offeringId, tmplId) =>
-                setTemplateAssignments(p => ({ ...p, [offeringId]: tmplId }))
-              }
-              onBulkAssignByType={handleBulkAssignByType}
               onBack={() => setStep(2)}
               onNext={() => setStep(4)}
             />

@@ -12,8 +12,8 @@ interface WizardNavProps {
 export function WizardNav({ currentStep, completedUpTo, onStepClick, mode = 'course_evaluation' }: WizardNavProps) {
   const STEPS = [
     { n: 1, label: mode === 'general' ? 'Survey' : 'Evaluation' },
-    { n: 2, label: 'Distribution' },
-    { n: 3, label: 'Design' },
+    { n: 2, label: 'Design' },
+    { n: 3, label: 'Distribution' },
     { n: 4, label: 'Communication' },
   ]
 
