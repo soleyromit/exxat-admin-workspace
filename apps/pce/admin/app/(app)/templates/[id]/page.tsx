@@ -1,11 +1,10 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { useParams } from 'next/navigation'
+import { useState, useRef, useMemo } from 'react'
+import { useParams, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import {
   Button,
-  Badge,
   Textarea,
   Input,
   LocalBanner,
@@ -32,6 +31,15 @@ import {
   TabsList,
   TabsTrigger,
   TabsContent,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  Command,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
   Sheet,
   SheetContent,
   SheetHeader,
@@ -39,7 +47,11 @@ import {
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
-import type { TemplateQuestion, CourseTypeFilter } from '@/lib/pce-mock-data'
+import { ListHubStatusBadge } from '@/components/list-hub-status-badge'
+import { LIST_HUB_STATUS_TINT_SUCCESS, LIST_HUB_STATUS_TINT_WARNING } from '@/lib/list-status-badges'
+import { MOCK_SUBJECTS } from '@/lib/pce-mock-data'
+import type { TemplateQuestion, CourseTypeFilter, SubjectKey } from '@/lib/pce-mock-data'
+// SubjectKey is used for predefined subjects; custom subjects use plain strings
 
 const COURSE_TYPE_OPTIONS: { value: CourseTypeFilter; label: string }[] = [
   { value: 'didactic', label: 'Didactic' },
@@ -49,18 +61,12 @@ const COURSE_TYPE_OPTIONS: { value: CourseTypeFilter; label: string }[] = [
 type AnswerType = TemplateQuestion['answerType']
 
 const Q_TYPE_OPTIONS: { value: AnswerType; label: string; icon: string }[] = [
-  { value: 'single_choice',   label: 'Single Choice Question',   icon: 'fa-circle-dot' },
-  { value: 'multiple_choice', label: 'Multiple Choice Question', icon: 'fa-square-check' },
-  { value: 'free_text',       label: 'Short/Long Answer Question', icon: 'fa-align-left' },
-  { value: 'title',           label: 'Title',                    icon: 'fa-heading' },
-  { value: 'number',          label: 'Number',                   icon: 'fa-hashtag' },
-  { value: 'select_dropdown', label: 'Select from dropdown',     icon: 'fa-chevron-down' },
-  { value: 'date_picker',     label: 'Date picker',              icon: 'fa-calendar' },
+  { value: 'likert',    label: 'Likert Scale',              icon: 'fa-sliders' },
+  { value: 'free_text', label: 'Short / Long Answer',       icon: 'fa-align-left' },
 ]
 
 function qTypeLabel(type: AnswerType): string {
-  return Q_TYPE_OPTIONS.find(o => o.value === type)?.label
-    ?? (type === 'likert' ? 'Likert (5-point)' : type)
+  return Q_TYPE_OPTIONS.find(o => o.value === type)?.label ?? type
 }
 
 function hasChoices(type: AnswerType) {
@@ -69,9 +75,11 @@ function hasChoices(type: AnswerType) {
 
 export default function TemplateEditorPage() {
   const { id } = useParams<{ id: string }>()
+  const pathname = usePathname()
+  const backHref = pathname.includes('/programmatic/') ? '/templates/programmatic' : '/templates'
   const {
     templates, updateTemplate,
-    addTemplateSection, removeTemplateSection,
+    addTemplateSection, removeTemplateSection, updateTemplateSection,
     addSectionQuestion, updateSectionQuestion, deleteSectionQuestion, reorderSectionQuestions,
   } = usePce()
 
@@ -81,6 +89,11 @@ export default function TemplateEditorPage() {
   const [closedSectionIds, setClosedSectionIds] = useState<Set<string>>(new Set())
   const [selectedQuestion, setSelectedQuestion] = useState<{ sectionId: string; questionId: string } | null>(null)
   const [metaOpen, setMetaOpen] = useState(false)
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null)
+  const [editingSectionTitle, setEditingSectionTitle] = useState('')
+  const [activeSubjectKey, setActiveSubjectKey] = useState<string | null>(null)
+  const [subjectPickerOpen, setSubjectPickerOpen] = useState(false)
+  const [subjectSearch, setSubjectSearch] = useState('')
 
   // Per-question local UI state (not persisted to data model)
   const [naToggles, setNaToggles] = useState<Record<string, boolean>>({})
@@ -95,16 +108,40 @@ export default function TemplateEditorPage() {
         <i className="fa-light fa-circle-exclamation text-4xl text-muted-foreground" aria-hidden="true" />
         <p className="text-sm font-medium">Template not found</p>
         <Button variant="outline" size="sm" asChild>
-          <Link href="/templates">Back to Templates</Link>
+          <Link href={backHref}>Back to Templates</Link>
         </Button>
       </div>
     )
   }
 
   const t = template
+  const isProgrammatic = t.surveyType === 'programmatic'
   const sections = t.templateSections ?? []
   const totalQuestions = sections.reduce((sum, s) => sum + s.questions.length, 0)
   const canPublish = sections.length > 0 && totalQuestions > 0
+
+  // Unique subject keys in order of first appearance
+  const activeSubjectKeys = useMemo(() => {
+    const seen = new Set<string>()
+    const result: string[] = []
+    for (const sec of sections) {
+      if (!seen.has(sec.subjectKey)) { seen.add(sec.subjectKey); result.push(sec.subjectKey) }
+    }
+    return result
+  }, [sections])
+
+  const currentTab: string | null =
+    (activeSubjectKey && activeSubjectKeys.includes(activeSubjectKey))
+      ? activeSubjectKey
+      : (activeSubjectKeys[0] ?? null)
+
+  const availableSubjects = useMemo(
+    () => MOCK_SUBJECTS.filter(s => !activeSubjectKeys.includes(s.key)),
+    [activeSubjectKeys]
+  )
+  const filteredSubjects = subjectSearch
+    ? availableSubjects.filter(s => s.label.toLowerCase().includes(subjectSearch.toLowerCase()))
+    : availableSubjects
 
   const selectedQ = selectedQuestion
     ? sections.find(s => s.id === selectedQuestion.sectionId)
@@ -120,12 +157,35 @@ export default function TemplateEditorPage() {
     })
   }
 
-  function handleAddSection() {
-    addTemplateSection(t.id, {
-      subjectKey: 'course_content',
-      title: 'Untitled Section',
-      questions: [],
+  function handleAddSubject(subjectKey: string) {
+    setSubjectPickerOpen(false)
+    setSubjectSearch('')
+    const predefined = MOCK_SUBJECTS.find(s => s.key === subjectKey)
+    const defaultTitle = predefined?.label ?? subjectKey
+    const newId = `sec-${Date.now()}`
+    addTemplateSection(t.id, { subjectKey, title: defaultTitle, questions: [] }, newId)
+    setActiveSubjectKey(subjectKey)
+    setEditingSectionId(newId)
+    setEditingSectionTitle(defaultTitle)
+  }
+
+  function handleRemoveSubject(subjectKey: string) {
+    sections.filter(s => s.subjectKey === subjectKey).forEach(s => {
+      removeTemplateSection(t.id, s.id)
+      if (selectedQuestion?.sectionId === s.id) setSelectedQuestion(null)
     })
+    const remaining = activeSubjectKeys.filter(k => k !== subjectKey)
+    setActiveSubjectKey(remaining[0] ?? null)
+  }
+
+  function handleAddSection(subjectKey?: string) {
+    const key = subjectKey ?? currentTab ?? (isProgrammatic ? 'course_content' : null)
+    if (!key) return
+    const newId = `sec-${Date.now()}`
+    addTemplateSection(t.id, { subjectKey: key, title: 'Untitled Section', questions: [] }, newId)
+    setEditingSectionId(newId)
+    setEditingSectionTitle('Untitled Section')
+    setClosedSectionIds(prev => { const n = new Set(prev); n.delete(newId); return n })
   }
 
   function handleAddQuestion(sectionId: string, type: AnswerType) {
@@ -190,13 +250,239 @@ export default function TemplateEditorPage() {
   }
   function handleQDragEnd() { questionDragInfo.current = null }
 
+  // ── Subject picker combobox ──────────────────────────────────────────────────
+  function renderSubjectPickerContent() {
+    const isCustom = subjectSearch.trim().length > 0 &&
+      !MOCK_SUBJECTS.some(s => s.label.toLowerCase() === subjectSearch.trim().toLowerCase()) &&
+      !activeSubjectKeys.includes(subjectSearch.trim())
+
+    return (
+      <Command shouldFilter={false}>
+        <CommandInput
+          placeholder="Search or type a subject…"
+          variant="default"
+          value={subjectSearch}
+          onValueChange={setSubjectSearch}
+        />
+        <CommandList>
+          {filteredSubjects.length === 0 && !isCustom && (
+            <CommandEmpty>
+              {availableSubjects.length === 0 ? 'All subjects added.' : 'No match.'}
+            </CommandEmpty>
+          )}
+          {filteredSubjects.length > 0 && (
+            <CommandGroup>
+              {filteredSubjects.map(s => (
+                <CommandItem
+                  key={s.key}
+                  value={s.key}
+                  onSelect={() => handleAddSubject(s.key)}
+                >
+                  <span className="flex-1">{s.label}</span>
+                  {s.isGeneral ? (
+                    <span className="text-xs ml-2 shrink-0" style={{ color: 'var(--muted-foreground)' }}>Always on</span>
+                  ) : s.prismCount === 0 ? (
+                    <span className="text-xs ml-2 shrink-0" style={{ color: 'var(--muted-foreground)' }}>No members</span>
+                  ) : (
+                    <span className="text-xs ml-2 shrink-0 tabular-nums" style={{ color: 'var(--muted-foreground)' }}>
+                      {s.prismCount} in Prism
+                    </span>
+                  )}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
+          {isCustom && (
+            <CommandGroup>
+              <CommandItem
+                value={subjectSearch.trim()}
+                onSelect={() => handleAddSubject(subjectSearch.trim())}
+              >
+                <i className="fa-light fa-plus text-xs shrink-0" aria-hidden="true" />
+                Create &ldquo;{subjectSearch.trim()}&rdquo;
+              </CommandItem>
+            </CommandGroup>
+          )}
+        </CommandList>
+      </Command>
+    )
+  }
+
+  // ── Section card ─────────────────────────────────────────────────────────────
+  function renderSectionCard(sec: typeof sections[0]) {
+    const isOpen = !closedSectionIds.has(sec.id)
+    return (
+      <div
+        key={sec.id}
+        className="border border-border overflow-hidden"
+        style={{ background: 'var(--card)', borderRadius: 'var(--radius-lg)' }}
+      >
+        {/* Section header */}
+        <div
+          className="flex items-center gap-2"
+          style={{
+            background: 'var(--muted)',
+            padding: '10px 14px',
+            borderBottom: isOpen ? '1px solid var(--border)' : 'none',
+          }}
+        >
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={isOpen ? `Collapse ${sec.title}` : `Expand ${sec.title}`}
+            onClick={() => toggleSection(sec.id)}
+            className="shrink-0"
+          >
+            <i className={`fa-solid fa-chevron-${isOpen ? 'down' : 'right'} text-xs`} aria-hidden="true" />
+          </Button>
+
+          <div className="flex-1 min-w-0">
+            {editingSectionId === sec.id ? (
+              <Input
+                autoFocus
+                aria-label="Section title"
+                value={editingSectionTitle}
+                onChange={e => setEditingSectionTitle(e.target.value)}
+                onBlur={() => {
+                  updateTemplateSection(t.id, sec.id, { title: editingSectionTitle.trim() || 'Untitled Section' })
+                  setEditingSectionId(null)
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                  if (e.key === 'Escape') setEditingSectionId(null)
+                }}
+                onClick={e => e.stopPropagation()}
+                className="h-7 text-sm font-semibold bg-transparent border-0 border-b border-transparent focus-visible:border-foreground focus-visible:ring-0 rounded-none shadow-none px-0"
+              />
+            ) : (
+              <span
+                className="text-sm font-semibold truncate cursor-text block"
+                onClick={e => {
+                  e.stopPropagation()
+                  setEditingSectionTitle(sec.title)
+                  setEditingSectionId(sec.id)
+                }}
+              >
+                {sec.title}
+              </span>
+            )}
+          </div>
+
+          <span className="text-xs tabular-nums shrink-0" style={{ color: 'var(--muted-foreground)' }}>
+            {sec.questions.length}q
+          </span>
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon-sm" aria-label="Section actions">
+                <i className="fa-regular fa-ellipsis text-xs" aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={() => {
+                  removeTemplateSection(t.id, sec.id)
+                  if (selectedQuestion?.sectionId === sec.id) setSelectedQuestion(null)
+                  // If removing the active subject tab, fall back to first remaining subject
+                  if (currentTab === sec.subjectKey) {
+                    const remaining = activeSubjectKeys.filter(k => k !== sec.subjectKey)
+                    setActiveSubjectKey(remaining[0] ?? null)
+                  }
+                }}
+              >
+                <i className="fa-light fa-trash" aria-hidden="true" /> Remove section
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Section body */}
+        {isOpen && (
+          <div className="flex flex-col">
+            {sec.questions.map((q, qIndex) => {
+              const isSelected =
+                selectedQuestion?.questionId === q.id && selectedQuestion?.sectionId === sec.id
+              return (
+                <div
+                  key={q.id}
+                  draggable
+                  onDragStart={() => handleQDragStart(sec.id, qIndex)}
+                  onDragOver={e => handleQDragOver(e, sec.id, qIndex)}
+                  onDragEnd={handleQDragEnd}
+                  style={{
+                    borderBottom: '1px solid var(--border)',
+                    background: isSelected ? 'var(--muted)' : 'transparent',
+                  }}
+                >
+                  <div className="flex items-start gap-2" style={{ padding: '10px 14px' }}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="flex-1 min-w-0 justify-start text-sm font-medium text-left h-auto p-0 hover:bg-transparent"
+                      onClick={() => setSelectedQuestion({ sectionId: sec.id, questionId: q.id })}
+                    >
+                      {q.text || <span style={{ color: 'var(--muted-foreground)' }}>Untitled Question</span>}
+                    </Button>
+                    <div className="flex items-center gap-0.5 shrink-0 ml-1">
+                      <span className="text-xs mr-1 shrink-0" style={{ color: 'var(--muted-foreground)' }}>
+                        {qTypeLabel(q.answerType)}
+                      </span>
+                      <Button variant="ghost" size="icon-sm" aria-label="Move up" disabled={qIndex === 0}
+                        onClick={() => handleMoveQuestion(sec.id, qIndex, 'up')}>
+                        <i className="fa-light fa-arrow-up text-xs" aria-hidden="true" />
+                      </Button>
+                      <Button variant="ghost" size="icon-sm" aria-label="Move down" disabled={qIndex === sec.questions.length - 1}
+                        onClick={() => handleMoveQuestion(sec.id, qIndex, 'down')}>
+                        <i className="fa-light fa-arrow-down text-xs" aria-hidden="true" />
+                      </Button>
+                      <Button variant="ghost" size="icon-sm" aria-label="Duplicate question"
+                        onClick={() => handleDuplicateQuestion(sec.id, q)}>
+                        <i className="fa-light fa-copy text-xs" aria-hidden="true" />
+                      </Button>
+                      <Button variant="ghost" size="icon-sm" aria-label="Delete question"
+                        onClick={() => handleDeleteQuestion(sec.id, q.id)}>
+                        <i className="fa-light fa-trash text-xs" aria-hidden="true" style={{ color: 'var(--destructive)' }} />
+                      </Button>
+                      <div style={{ cursor: 'grab' }} className="shrink-0 text-muted-foreground flex items-center">
+                        <DragHandleGripIcon />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+            <div className="flex items-center justify-center" style={{ padding: '20px 14px' }}>
+              <DropdownMenu modal={false}>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="default" size="sm">
+                    <i className="fa-light fa-plus" aria-hidden="true" />
+                    Add question
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" className="w-56">
+                  {Q_TYPE_OPTIONS.map(opt => (
+                    <DropdownMenuItem key={opt.value} onClick={() => handleAddQuestion(sec.id, opt.value)}>
+                      <i className={`fa-light ${opt.icon} shrink-0`} aria-hidden="true"
+                        style={{ width: 16, textAlign: 'center', color: 'var(--muted-foreground)' }} />
+                      {opt.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
       <SiteHeader
-        breadcrumbs={[{ label: 'Templates', href: '/templates' }]}
+        breadcrumbs={[{ label: 'Templates', href: backHref }]}
         title={t.name}
       />
-      <h1 className="sr-only">{t.name}</h1>
 
       {saved && (
         <div style={{ paddingInline: 24, paddingTop: 10 }}>
@@ -209,7 +495,7 @@ export default function TemplateEditorPage() {
       {/* Title row — heading + badge left, actions right-flush to match Ask Leo (pe-2 outer + pe-2 inner = 16px) */}
       <div style={{ paddingLeft: 40, paddingRight: 16, paddingTop: 28 }}>
         <div className="flex items-center gap-3 mb-5">
-          <p
+          <h1
             className="min-w-0 truncate"
             style={{
               fontFamily: 'var(--font-heading)',
@@ -220,10 +506,11 @@ export default function TemplateEditorPage() {
             }}
           >
             {t.name || 'Untitled template'}
-          </p>
-          <Badge variant={t.status === 'active' ? 'default' : 'outline'} className="shrink-0">
-            {t.status === 'active' ? 'Active' : 'Draft'}
-          </Badge>
+          </h1>
+          {t.status === 'active'
+            ? <ListHubStatusBadge label="Active" tint={LIST_HUB_STATUS_TINT_SUCCESS} icon="fa-circle-check" />
+            : <ListHubStatusBadge label="Draft" tint={LIST_HUB_STATUS_TINT_WARNING} icon="fa-pen-to-square" />
+          }
           <div className="flex items-center gap-2 ml-auto shrink-0">
             <Button
               variant="outline"
@@ -268,220 +555,133 @@ export default function TemplateEditorPage() {
         </div>
 
         {/* ── Builder tab ── */}
-        <TabsContent value="builder" className="flex-1 overflow-y-auto m-0" style={{ padding: '32px 40px' }}>
-          <div style={{ maxWidth: 720 }}>
-
-          {sections.length === 0 ? (
-            <div className="flex items-center justify-center" style={{ minHeight: 200 }}>
-              <Button
-                variant="link"
-                size="sm"
-                onClick={handleAddSection}
-                className="font-semibold text-[var(--brand-color)]"
-              >
-                <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                Add new section
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {sections.map(sec => {
-                const isOpen = !closedSectionIds.has(sec.id)
-                return (
-                  <div
-                    key={sec.id}
-                    className="border border-border overflow-hidden"
-                    style={{ background: 'var(--card)', borderRadius: 'var(--radius-lg)' }}
-                  >
-                    {/* Section header — muted background strip */}
-                    <div
-                      className="flex items-center gap-2"
-                      style={{
-                        background: 'var(--muted)',
-                        padding: '10px 14px',
-                        borderBottom: isOpen ? '1px solid var(--border)' : 'none',
-                      }}
-                    >
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={isOpen ? `Collapse ${sec.title}` : `Expand ${sec.title}`}
-                        onClick={() => toggleSection(sec.id)}
-                        className="shrink-0"
-                      >
-                        <i
-                          className={`fa-solid fa-chevron-${isOpen ? 'down' : 'right'} text-xs`}
-                          aria-hidden="true"
-                        />
-                      </Button>
-                      <span className="text-sm font-bold flex-1 min-w-0 truncate">{sec.title}</span>
-                      <span
-                        className="text-xs tabular-nums shrink-0"
-                        style={{ color: 'var(--muted-foreground)' }}
-                      >
-                        {sec.questions.length} question{sec.questions.length !== 1 ? 's' : ''}
-                      </span>
-                      <DropdownMenu modal={false}>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon-sm" aria-label="Section actions">
-                            <i className="fa-regular fa-ellipsis text-xs" aria-hidden="true" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-40">
-                          <DropdownMenuItem
-                            variant="destructive"
-                            disabled={sec.questions.length > 0}
-                            onClick={() => {
-                              if (sec.questions.length > 0) return
-                              removeTemplateSection(t.id, sec.id)
-                              if (selectedQuestion?.sectionId === sec.id) setSelectedQuestion(null)
-                            }}
-                          >
-                            <i className="fa-light fa-trash" aria-hidden="true" /> Remove section
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-
-                    {/* Section body */}
-                    {isOpen && (
-                      <div className="flex flex-col">
-                        {/* Question cards */}
-                        {sec.questions.map((q, qIndex) => {
-                          const isSelected =
-                            selectedQuestion?.questionId === q.id &&
-                            selectedQuestion?.sectionId === sec.id
-                          return (
-                            <div
-                              key={q.id}
-                              draggable
-                              onDragStart={() => handleQDragStart(sec.id, qIndex)}
-                              onDragOver={e => handleQDragOver(e, sec.id, qIndex)}
-                              onDragEnd={handleQDragEnd}
-                              style={{
-                                borderBottom: '1px solid var(--border)',
-                                background: isSelected ? 'var(--muted)' : 'transparent',
-                              }}
-                            >
-                              <div
-                                className="flex items-start gap-2"
-                                style={{ padding: '10px 14px' }}
-                              >
-                                {/* Question text */}
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="flex-1 min-w-0 justify-start text-sm font-medium text-left h-auto p-0 hover:bg-transparent"
-                                  onClick={() => setSelectedQuestion({ sectionId: sec.id, questionId: q.id })}
-                                >
-                                  {q.text || (
-                                    <span style={{ color: 'var(--muted-foreground)' }}>
-                                      Untitled Question
-                                    </span>
-                                  )}
-                                </Button>
-
-                                {/* Type label + toolbar */}
-                                <div className="flex items-center gap-0.5 shrink-0 ml-1">
-                                  <span
-                                    className="text-xs mr-1 shrink-0"
-                                    style={{ color: 'var(--muted-foreground)' }}
-                                  >
-                                    {qTypeLabel(q.answerType)}
-                                  </span>
-                                  <Button
-                                    variant="ghost" size="icon-sm" aria-label="Move up"
-                                    disabled={qIndex === 0}
-                                    onClick={() => handleMoveQuestion(sec.id, qIndex, 'up')}
-                                  >
-                                    <i className="fa-light fa-arrow-up text-xs" aria-hidden="true" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost" size="icon-sm" aria-label="Move down"
-                                    disabled={qIndex === sec.questions.length - 1}
-                                    onClick={() => handleMoveQuestion(sec.id, qIndex, 'down')}
-                                  >
-                                    <i className="fa-light fa-arrow-down text-xs" aria-hidden="true" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost" size="icon-sm" aria-label="Duplicate question"
-                                    onClick={() => handleDuplicateQuestion(sec.id, q)}
-                                  >
-                                    <i className="fa-light fa-copy text-xs" aria-hidden="true" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost" size="icon-sm" aria-label="Delete question"
-                                    onClick={() => handleDeleteQuestion(sec.id, q.id)}
-                                  >
-                                    <i
-                                      className="fa-light fa-trash text-xs"
-                                      aria-hidden="true"
-                                      style={{ color: 'var(--destructive)' }}
-                                    />
-                                  </Button>
-                                  <div
-                                    style={{ cursor: 'grab' }}
-                                    className="shrink-0 text-muted-foreground flex items-center"
-                                  >
-                                    <DragHandleGripIcon />
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        })}
-
-                        {/* Add question — centered solid button */}
-                        <div
-                          className="flex items-center justify-center"
-                          style={{ padding: '20px 14px' }}
-                        >
-                          <DropdownMenu modal={false}>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="default" size="sm">
-                                <i className="fa-light fa-plus" aria-hidden="true"  />
-                                Add question
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="center" className="w-56">
-                              {Q_TYPE_OPTIONS.map(opt => (
-                                <DropdownMenuItem
-                                  key={opt.value}
-                                  onClick={() => handleAddQuestion(sec.id, opt.value)}
-                                >
-                                  <i
-                                    className={`fa-light ${opt.icon} shrink-0`}
-                                    aria-hidden="true"
-                                    style={{ width: 16, textAlign: 'center', color: 'var(--muted-foreground)' }}
-                                  />
-                                  {opt.label}
-                                </DropdownMenuItem>
-                              ))}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </div>
-                    )}
+        <TabsContent value="builder" className="flex-1 min-h-0 flex flex-col m-0">
+          {isProgrammatic ? (
+            /* Programmatic surveys — flat section list */
+            <div className="flex-1 overflow-y-auto" style={{ padding: '32px 40px' }}>
+              <div style={{ maxWidth: 720 }}>
+                {sections.length === 0 ? (
+                  <div className="flex items-center justify-center" style={{ minHeight: 200 }}>
+                    <Button variant="link" size="sm" onClick={() => handleAddSection()} className="font-semibold">
+                      <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                      Add section
+                    </Button>
                   </div>
-                )
-              })}
-
-              {/* Add section link below */}
-              <div className="flex items-center justify-center" style={{ paddingTop: 4 }}>
-                <Button
-                  variant="link"
-                  size="sm"
-                  onClick={handleAddSection}
-                  className="font-semibold text-[var(--brand-color)]"
-                >
-                  <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                  Add new section
-                </Button>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    {sections.map(sec => renderSectionCard(sec))}
+                    <div className="flex items-center justify-center" style={{ paddingTop: 4 }}>
+                      <Button variant="link" size="sm" onClick={() => handleAddSection()} className="font-semibold">
+                        <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                        Add section
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
+          ) : sections.length === 0 ? (
+            /* Course evaluation — no subjects yet */
+            <div className="flex-1 flex flex-col items-center justify-center gap-4" style={{ padding: '48px 24px' }}>
+              <div
+                className="flex items-center justify-center rounded-full"
+                style={{ width: 48, height: 48, background: 'var(--muted)', color: 'var(--muted-foreground)' }}
+              >
+                <i className="fa-light fa-layer-group text-xl" aria-hidden="true" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium">No subjects yet</p>
+                <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                  Add a subject to start building this template.
+                </p>
+              </div>
+              <Popover
+                open={subjectPickerOpen}
+                onOpenChange={open => { setSubjectPickerOpen(open); if (!open) setSubjectSearch('') }}
+              >
+                <PopoverTrigger asChild>
+                  <Button variant="default" size="sm">
+                    <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                    Add subject
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="p-0 w-60" align="center" sideOffset={8}>
+                  {renderSubjectPickerContent()}
+                </PopoverContent>
+              </Popover>
+            </div>
+          ) : (
+            /* Course evaluation — subject tabs */
+            <Tabs
+              value={currentTab ?? ''}
+              onValueChange={v => setActiveSubjectKey(v)}
+              className="flex flex-col flex-1 min-h-0"
+            >
+              {/* Subject tab bar */}
+              <div
+                className="shrink-0 flex items-center gap-2"
+                style={{ padding: '8px 16px 8px 40px' }}
+              >
+                <TabsList variant="default">
+                  {activeSubjectKeys.map(key => (
+                    <TabsTrigger key={key} value={key} className="gap-1.5 pr-1">
+                      {MOCK_SUBJECTS.find(s => s.key === key)?.label ?? key}
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        aria-label={`Remove ${MOCK_SUBJECTS.find(s => s.key === key)?.label ?? key} subject`}
+                        className="opacity-50 hover:opacity-100 transition-opacity shrink-0"
+                        onClick={e => { e.stopPropagation(); handleRemoveSubject(key) }}
+                      >
+                        <i className="fa-solid fa-xmark text-[10px]" aria-hidden="true" />
+                      </Button>
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+                <Popover
+                  open={subjectPickerOpen}
+                  onOpenChange={open => { setSubjectPickerOpen(open); if (!open) setSubjectSearch('') }}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      className="shrink-0"
+                    >
+                      <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                      Add subject
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0 w-60" align="start" sideOffset={8}>
+                    {renderSubjectPickerContent()}
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* One TabsContent per subject */}
+              {activeSubjectKeys.map(key => {
+                const tabSections = sections.filter(s => s.subjectKey === key)
+                return (
+                  <TabsContent key={key} value={key} className="flex-1 overflow-y-auto m-0" style={{ padding: '16px 40px 32px' }}>
+                    <div style={{ maxWidth: 720 }} className="flex flex-col gap-4">
+                      {tabSections.map(sec => renderSectionCard(sec))}
+                      <div className="flex items-center justify-center" style={{ paddingTop: 4 }}>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          onClick={() => handleAddSection(key)}
+                          className="font-semibold"
+                        >
+                          <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                          Add section
+                        </Button>
+                      </div>
+                    </div>
+                  </TabsContent>
+                )
+              })}
+            </Tabs>
           )}
-          </div>
         </TabsContent>
 
         {/* ── Details tab ── */}
@@ -526,7 +726,7 @@ export default function TemplateEditorPage() {
             {/* Course type */}
             <div>
               <p className="text-sm font-medium mb-2">Course type</p>
-              <div className="flex flex-col gap-1" role="radiogroup" aria-label="Course type">
+              <div className="flex gap-2" role="radiogroup" aria-label="Course type">
                 {COURSE_TYPE_OPTIONS.map(opt => {
                   const active = t.courseType === opt.value
                   return (
@@ -537,9 +737,9 @@ export default function TemplateEditorPage() {
                       size="sm"
                       role="radio"
                       aria-checked={active}
-                      className="flex items-center gap-3 justify-start rounded-lg text-left h-auto w-full"
+                      className="flex items-center gap-2 rounded-lg h-auto"
                       style={{
-                        padding: '7px 10px',
+                        padding: '6px 10px',
                         background: active ? 'var(--muted)' : 'transparent',
                       }}
                       onClick={() => updateTemplate(t.id, { courseType: opt.value })}
@@ -569,18 +769,16 @@ export default function TemplateEditorPage() {
             <div className="flex flex-col gap-3">
               <div>
                 <p className="text-sm font-medium">Opening instructions</p>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
+                <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
                   Shown before the first question. Optional.
                 </p>
               </div>
               <div>
-                <label
+                <FieldLabel
                   htmlFor="tmpl-instr-title"
-                  className="text-xs font-medium block mb-1.5"
-                  style={{ color: 'var(--muted-foreground)' }}
                 >
                   Instruction title
-                </label>
+                </FieldLabel>
                 <Input
                   id="tmpl-instr-title"
                   key={`${t.id}-instr-title`}
@@ -594,13 +792,11 @@ export default function TemplateEditorPage() {
                 />
               </div>
               <div>
-                <label
+                <FieldLabel
                   htmlFor="tmpl-instr-desc"
-                  className="text-xs font-medium block mb-1.5"
-                  style={{ color: 'var(--muted-foreground)' }}
                 >
                   Instruction text
-                </label>
+                </FieldLabel>
                 <Textarea
                   id="tmpl-instr-desc"
                   key={`${t.id}-instr-desc`}
@@ -621,6 +817,7 @@ export default function TemplateEditorPage() {
         </TabsContent>
       </Tabs>
 
+
       {/* Field Details sheet — opens when a question is selected in the builder */}
       <Sheet open={selectedQuestion !== null} onOpenChange={open => { if (!open) setSelectedQuestion(null) }}>
         <SheetContent side="right" style={{ width: 320, display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -632,13 +829,12 @@ export default function TemplateEditorPage() {
 
               {/* Question type */}
               <div>
-                <label
+                <FieldLabel
                   htmlFor="q-type-select"
                   className="text-xs font-medium mb-1.5 block"
-                  style={{ color: 'var(--muted-foreground)' }}
                 >
                   Question Type
-                </label>
+                </FieldLabel>
                 <Select
                   value={selectedQ.answerType}
                   onValueChange={val => updateSelectedQ({ answerType: val as AnswerType })}
@@ -665,13 +861,12 @@ export default function TemplateEditorPage() {
 
               {/* Question text */}
               <div>
-                <label
+                <FieldLabel
                   htmlFor="q-text-area"
                   className="text-xs font-medium mb-1.5 block"
-                  style={{ color: 'var(--muted-foreground)' }}
                 >
                   Question
-                </label>
+                </FieldLabel>
                 <Textarea
                   id="q-text-area"
                   value={selectedQ.text}
@@ -690,7 +885,6 @@ export default function TemplateEditorPage() {
                     <Button
                       variant="ghost" size="sm"
                       className="w-full justify-between px-0 hover:bg-transparent"
-                      style={{ color: 'var(--muted-foreground)' }}
                     >
                       <span className="text-xs font-medium">Meta Information</span>
                       <i
@@ -701,13 +895,12 @@ export default function TemplateEditorPage() {
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-3 pt-2">
                     <div>
-                      <label
+                      <FieldLabel
                         htmlFor="q-help-text"
                         className="text-xs font-medium mb-1.5 block"
-                        style={{ color: 'var(--muted-foreground)' }}
                       >
                         Help Information
-                      </label>
+                      </FieldLabel>
                       <Textarea
                         id="q-help-text"
                         rows={2}
@@ -717,13 +910,12 @@ export default function TemplateEditorPage() {
                       />
                     </div>
                     <div>
-                      <label
+                      <FieldLabel
                         htmlFor="q-report-title"
                         className="text-xs font-medium mb-1.5 block"
-                        style={{ color: 'var(--muted-foreground)' }}
                       >
                         Report Title
-                      </label>
+                      </FieldLabel>
                       <Input id="q-report-title" className="h-8 text-sm" placeholder="Same as question text" />
                     </div>
                   </CollapsibleContent>
@@ -735,7 +927,6 @@ export default function TemplateEditorPage() {
                 <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
                   <p
                     className="text-xs font-medium mb-2"
-                    style={{ color: 'var(--muted-foreground)' }}
                   >
                     Answer Choices
                   </p>
@@ -768,12 +959,12 @@ export default function TemplateEditorPage() {
                 style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <label
+                  <FieldLabel
                     className="text-xs font-medium"
                     style={{ color: 'var(--foreground)' }}
                   >
                     Include Not Applicable Option
-                  </label>
+                  </FieldLabel>
                   <ToggleSwitch
                     checked={naToggles[selectedQ.id] ?? false}
                     onChange={() =>
@@ -785,12 +976,12 @@ export default function TemplateEditorPage() {
                   />
                 </div>
                 <div className="flex items-center justify-between gap-2">
-                  <label
+                  <FieldLabel
                     className="text-xs font-medium"
                     style={{ color: 'var(--foreground)' }}
                   >
                     Comments
-                  </label>
+                  </FieldLabel>
                   <ToggleSwitch
                     checked={commentToggles[selectedQ.id] ?? false}
                     onChange={() =>

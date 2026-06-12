@@ -4,25 +4,19 @@ import { useState, useRef, useMemo, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSearchParams } from 'next/navigation'
 import {
-  Button, Badge, Input, Textarea,
-  Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
+  Button, Badge, Input,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
-import type { SurveyType, CourseTypeFilter } from '@/lib/pce-mock-data'
+import type { SurveyType, CourseTypeFilter, TemplateQuestion } from '@/lib/pce-mock-data'
 
-// 'details' sits between pick and every downstream step except import
-// (import has its own name field on the upload screen)
+
 type Step =
   | 'pick'
-  | 'details'
   | 'copy-select'
   | 'import-upload'
-  | 'import-review'
-
-type PendingMethod = 'build' | 'copy'
 
 interface TemplateCopyRow extends Record<string, unknown> {
   id: string
@@ -43,31 +37,11 @@ const COURSE_TYPE_OPTIONS: {
   { value: 'clinical', label: 'Clinical', description: 'Rotation, placement, or practicum',        icon: 'fa-stethoscope' },
 ]
 
-type AnswerType =
-  | 'single_choice' | 'multiple_choice' | 'free_text'
-  | 'title' | 'number' | 'select_dropdown' | 'date_picker'
-
-const Q_TYPE_OPTIONS: { value: AnswerType; label: string }[] = [
-  { value: 'single_choice',   label: 'Single Choice' },
-  { value: 'multiple_choice', label: 'Multiple Choice' },
-  { value: 'free_text',       label: 'Short / Long Answer' },
-  { value: 'title',           label: 'Title' },
-  { value: 'number',          label: 'Number' },
-  { value: 'select_dropdown', label: 'Select from dropdown' },
-  { value: 'date_picker',     label: 'Date picker' },
-]
-
-interface ExtractedQuestion {
-  id: string
-  text: string
-  answerType: AnswerType
-}
-
 interface ExtractedSection {
   id: string
   title: string
   open: boolean
-  questions: ExtractedQuestion[]
+  questions: { id: string; text: string; answerType: string }[]
 }
 
 const MOCK_EXTRACTION: ExtractedSection[] = [
@@ -178,11 +152,6 @@ function NewTemplateInner() {
   const surveyType: SurveyType = isGeneral ? 'programmatic' : 'course_evaluation'
 
   const [step, setStep] = useState<Step>('pick')
-  const [pendingMethod, setPendingMethod] = useState<PendingMethod>('build')
-
-  // Details step fields
-  const [tmplName, setTmplName] = useState('')
-  const [tmplDesc, setTmplDesc] = useState('')
   const [courseType, setCourseType] = useState<CourseTypeFilter>('any')
 
   // Copy state
@@ -283,32 +252,20 @@ function NewTemplateInner() {
 
   // ── Pick handlers ─────────────────────────────────────────────────────────
 
-  function goToDetails(method: PendingMethod) {
-    setPendingMethod(method)
-    setStep('details')
-  }
-
-  // ── Details "Continue" ────────────────────────────────────────────────────
-
-  function handleDetailsContinue() {
-    if (pendingMethod === 'build') {
-      const id = createTemplate({
-        name: tmplName.trim() || 'Untitled template',
-        description: tmplDesc.trim() || undefined,
-        sections: ['course_content'],
-        status: 'draft',
-        questionCount: 0,
-        createdBy: user.name,
-        surveyType,
-        courseType,
-        questions: { course_content: [], faculty_performance: [], course_director: [] },
-        likertPointer: 5,
-        templateSections: [],
-      })
-      router.push(`/templates/${id}`)
-    } else {
-      setStep('copy-select')
-    }
+  function handleBuildNew() {
+    const id = createTemplate({
+      name: 'Untitled template',
+      sections: ['course_content'],
+      status: 'draft',
+      questionCount: 0,
+      createdBy: user.name,
+      surveyType,
+      courseType,
+      questions: { course_content: [], faculty_performance: [], course_director: [] },
+      likertPointer: 5,
+      templateSections: [],
+    })
+    router.push(isGeneral ? `/templates/programmatic/${id}` : `/templates/${id}`)
   }
 
   // ── Copy handlers ─────────────────────────────────────────────────────────
@@ -317,8 +274,7 @@ function NewTemplateInner() {
     if (!copySource) return
     const ts = Date.now()
     const id = createTemplate({
-      name: tmplName.trim() || `Copy of ${copySource.name}`,
-      description: tmplDesc.trim() || undefined,
+      name: `Copy of ${copySource.name}`,
       sections: copySource.sections,
       status: 'draft',
       questionCount: copySource.questionCount,
@@ -336,7 +292,7 @@ function NewTemplateInner() {
         })),
       })) ?? [],
     })
-    router.push(`/templates/${id}`)
+    router.push(isGeneral ? `/templates/programmatic/${id}` : `/templates/${id}`)
   }
 
   // ── Import handlers ───────────────────────────────────────────────────────
@@ -381,29 +337,12 @@ function NewTemplateInner() {
         questions: sec.questions.map((q, qi) => ({
           id: `q-import-${ts}-${si}-${qi}`,
           text: q.text,
-          answerType: q.answerType,
+          answerType: q.answerType as TemplateQuestion['answerType'],
           order: qi,
         })),
       })),
     })
-    router.push(`/templates/${id}`)
-  }
-
-  function updateExtractedQ(secId: string, qId: string, patch: Partial<ExtractedQuestion>) {
-    setExtractedSections(prev =>
-      prev.map(s =>
-        s.id !== secId ? s : {
-          ...s,
-          questions: s.questions.map(q => q.id !== qId ? q : { ...q, ...patch }),
-        }
-      )
-    )
-  }
-
-  function toggleSection(secId: string) {
-    setExtractedSections(prev =>
-      prev.map(s => s.id === secId ? { ...s, open: !s.open } : s)
-    )
+    router.push(isGeneral ? `/templates/programmatic/${id}` : `/templates/${id}`)
   }
 
   function resetImport() {
@@ -417,10 +356,8 @@ function NewTemplateInner() {
 
   const stepTitle: Record<Step, string> = {
     'pick':          'New template',
-    'details':       'Template details',
     'copy-select':   'Copy existing',
     'import-upload': 'Import from document',
-    'import-review': 'Review extracted questions',
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -435,7 +372,7 @@ function NewTemplateInner() {
       {/* ── Pick ── */}
       {step === 'pick' && (
         <StepShell centered>
-          <header className="mb-10 text-center">
+          <header className="mb-8 text-center">
             <h1 className="text-3xl font-normal mb-2" style={{ fontFamily: 'var(--font-heading)' }}>
               New template
             </h1>
@@ -443,19 +380,20 @@ function NewTemplateInner() {
               Choose how you want to start.
             </p>
           </header>
+
           <div className="flex flex-col gap-3">
             <OptionCard
               icon="fa-pen-line"
               title="Build new"
               description="Start with a blank template and add questions your way"
-              onClick={() => goToDetails('build')}
+              onClick={handleBuildNew}
             />
             {isGeneral && (
               <OptionCard
                 icon="fa-copy"
                 title="Copy existing"
                 description="Start from a template you already have and remix it"
-                onClick={() => goToDetails('copy')}
+                onClick={() => setStep('copy-select')}
               />
             )}
             <OptionCard
@@ -466,114 +404,6 @@ function NewTemplateInner() {
             />
           </div>
         </StepShell>
-      )}
-
-      {/* ── Details ── */}
-      {step === 'details' && (
-        <>
-          <StepShell centered>
-            <header className="mb-8">
-              <h2 className="text-2xl font-normal mb-1" style={{ fontFamily: 'var(--font-heading)' }}>
-                {pendingMethod === 'copy' ? 'Name your copy' : 'Name your template'}
-              </h2>
-              <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                {pendingMethod === 'copy'
-                  ? "You'll pick which template to copy in the next step."
-                  : 'You can always update these in the builder.'}
-              </p>
-            </header>
-
-            {/* Name */}
-            <div className="mb-5">
-              <label htmlFor="tmpl-name" className="block text-sm font-medium mb-1.5">
-                Template name
-              </label>
-              <Input
-                id="tmpl-name"
-                value={tmplName}
-                onChange={e => setTmplName(e.target.value)}
-                placeholder="e.g. Fall 2026 Clinical Rotation Evaluation"
-                className="h-9 text-sm"
-                autoFocus
-                maxLength={120}
-              />
-            </div>
-
-            {/* Description */}
-            <div className="mb-7">
-              <label htmlFor="tmpl-desc" className="block text-sm font-medium mb-1.5">
-                Description{' '}
-                <span className="font-normal" style={{ color: 'var(--muted-foreground)' }}>(optional)</span>
-              </label>
-              <Textarea
-                id="tmpl-desc"
-                value={tmplDesc}
-                onChange={e => setTmplDesc(e.target.value)}
-                placeholder="What is this template for? Who fills it out?"
-                className="text-sm resize-none"
-                rows={3}
-                maxLength={300}
-              />
-            </div>
-
-            {/* Course type — Airbnb-style radio cards */}
-            <div>
-              <p className="text-sm font-medium mb-3">Course type</p>
-              <div className="flex flex-col gap-2" role="radiogroup" aria-label="Course type">
-                {COURSE_TYPE_OPTIONS.map(opt => {
-                  const selected = courseType === opt.value
-                  return (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      role="radio"
-                      aria-checked={selected}
-                      className="w-full text-left flex items-center gap-4 rounded-xl border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      style={{
-                        padding: '14px 16px',
-                        borderColor: selected ? 'var(--foreground)' : 'var(--border)',
-                        background: 'var(--background)',
-                      }}
-                      onClick={() => setCourseType(opt.value)}
-                    >
-                      {/* Radio dot */}
-                      <div
-                        className="shrink-0 rounded-full border-2 flex items-center justify-center"
-                        style={{
-                          width: 18, height: 18,
-                          borderColor: selected ? 'var(--foreground)' : 'var(--border)',
-                        }}
-                      >
-                        {selected && (
-                          <div className="rounded-full" style={{ width: 8, height: 8, background: 'var(--foreground)' }} />
-                        )}
-                      </div>
-                      {/* Icon */}
-                      <div
-                        className="shrink-0 flex items-center justify-center rounded-lg"
-                        style={{ width: 36, height: 36, background: 'var(--muted)', color: 'var(--muted-foreground)' }}
-                      >
-                        <i className={`fa-light ${opt.icon} text-sm`} aria-hidden="true" />
-                      </div>
-                      {/* Text */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold">{opt.label}</p>
-                        <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>{opt.description}</p>
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          </StepShell>
-
-          <StepFooter
-            onBack={() => setStep('pick')}
-            onNext={handleDetailsContinue}
-            nextLabel={pendingMethod === 'build' ? 'Create template' : 'Choose template to copy'}
-            nextIcon={pendingMethod === 'build' ? 'fa-check' : 'fa-arrow-right'}
-          />
-        </>
       )}
 
       {/* ── Copy: select ── */}
@@ -611,7 +441,7 @@ function NewTemplateInner() {
           </div>
 
           <StepFooter
-            onBack={() => setStep('details')}
+            onBack={() => setStep('pick')}
             onNext={copyFromId ? handleCopyCreate : undefined}
             nextLabel="Copy & edit"
             nextDisabled={!copyFromId}
@@ -701,134 +531,14 @@ function NewTemplateInner() {
 
           <StepFooter
             onBack={() => { resetImport() }}
-            onNext={fileName ? () => setStep('import-review') : undefined}
-            nextLabel="Extract questions"
-            nextDisabled={!fileName}
-            nextIcon="fa-wand-magic-sparkles"
-          />
-        </>
-      )}
-
-      {/* ── Import: review ── */}
-      {step === 'import-review' && (
-        <>
-          <StepShell>
-            <header className="mb-6">
-              <div className="flex items-center gap-2 mb-1">
-                <i className="fa-light fa-file-lines text-sm" aria-hidden="true"
-                   style={{ color: 'var(--muted-foreground)' }} />
-                <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>{fileName}</p>
-              </div>
-              <h2 className="text-lg font-semibold">Review extracted questions</h2>
-              <p className="text-sm mt-1" style={{ color: 'var(--muted-foreground)' }}>
-                {extractedSections.reduce((n, s) => n + s.questions.length, 0)} questions across{' '}
-                {extractedSections.length} section{extractedSections.length !== 1 ? 's' : ''} — edit text or change types before creating.
-              </p>
-            </header>
-
-            <div className="mb-6" style={{ maxWidth: 480 }}>
-              <label htmlFor="import-name-review" className="block text-sm font-medium mb-1.5">
-                Template name
-              </label>
-              <Input
-                id="import-name-review"
-                value={importName}
-                onChange={e => setImportName(e.target.value)}
-                placeholder="Untitled template"
-                className="h-9 text-sm"
-              />
-            </div>
-
-            <div className="flex flex-col gap-3" style={{ maxWidth: 760 }}>
-              {extractedSections.map((sec, si) => (
-                <div
-                  key={sec.id}
-                  className="rounded-xl border border-border overflow-hidden"
-                  style={{ background: 'var(--background)' }}
-                >
-                  <button
-                    type="button"
-                    className="w-full flex items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-                    style={{
-                      padding: '12px 18px',
-                      background: 'var(--muted)',
-                      borderBottom: sec.open ? '1px solid var(--border)' : 'none',
-                    }}
-                    onClick={() => toggleSection(sec.id)}
-                  >
-                    <span
-                      className="text-xs font-semibold tabular-nums shrink-0 rounded-md flex items-center justify-center"
-                      style={{ width: 22, height: 22, background: 'var(--border)', color: 'var(--muted-foreground)' }}
-                    >
-                      {si + 1}
-                    </span>
-                    <span className="text-sm font-bold flex-1 min-w-0">{sec.title}</span>
-                    <span className="text-xs shrink-0 mr-2" style={{ color: 'var(--muted-foreground)' }}>
-                      {sec.questions.length} question{sec.questions.length !== 1 ? 's' : ''}
-                    </span>
-                    <i
-                      className={`fa-solid fa-chevron-${sec.open ? 'up' : 'down'} text-xs shrink-0`}
-                      aria-hidden="true"
-                      style={{ color: 'var(--muted-foreground)' }}
-                    />
-                  </button>
-                  {sec.open && (
-                    <div className="flex flex-col">
-                      {sec.questions.map((q, qi) => (
-                        <div
-                          key={q.id}
-                          className="flex items-start gap-3"
-                          style={{
-                            padding: '12px 18px',
-                            borderTop: qi > 0 ? '1px solid var(--border)' : 'none',
-                          }}
-                        >
-                          <span
-                            className="text-xs tabular-nums shrink-0 mt-2"
-                            style={{ color: 'var(--muted-foreground)', width: 22, textAlign: 'right' }}
-                          >
-                            {qi + 1}
-                          </span>
-                          <div className="flex flex-col gap-2 flex-1 min-w-0">
-                            <Input
-                              value={q.text}
-                              onChange={e => updateExtractedQ(sec.id, q.id, { text: e.target.value })}
-                              placeholder="Question text"
-                              className="h-8 text-sm"
-                            />
-                            <Select
-                              value={q.answerType}
-                              onValueChange={val => updateExtractedQ(sec.id, q.id, { answerType: val as AnswerType })}
-                            >
-                              <SelectTrigger className="h-7 text-xs" aria-label="Question type">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {Q_TYPE_OPTIONS.map(opt => (
-                                  <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                                    {opt.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </StepShell>
-
-          <StepFooter
-            onBack={() => setStep('import-upload')}
-            onNext={handleImportCreate}
+            onNext={fileName ? handleImportCreate : undefined}
             nextLabel="Create template"
+            nextDisabled={!fileName}
             nextIcon="fa-check"
           />
         </>
       )}
+
     </div>
   )
 }

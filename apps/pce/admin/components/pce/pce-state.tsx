@@ -57,7 +57,7 @@ interface PceState {
   removeInstructor: (surveyId: string, instructorId: string) => void
   toggleHideComment: (surveyId: string, commentIndex: number) => void
   // Template section actions
-  addTemplateSection: (templateId: string, section: Omit<PceTemplateSection, 'id' | 'order'>) => void
+  addTemplateSection: (templateId: string, section: Omit<PceTemplateSection, 'id' | 'order'>, id?: string) => void
   removeTemplateSection: (templateId: string, sectionId: string) => void
   updateTemplateSection: (templateId: string, sectionId: string, patch: Partial<Pick<PceTemplateSection, 'title' | 'subjectKey' | 'description'>>) => void
   reorderTemplateSections: (templateId: string, fromIndex: number, toIndex: number) => void
@@ -252,14 +252,15 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
 
   const addTemplateSection = useCallback((
     templateId: string,
-    section: Omit<PceTemplateSection, 'id' | 'order'>
+    section: Omit<PceTemplateSection, 'id' | 'order'>,
+    id?: string
   ) => {
     setTemplates(ts => ts.map(t => {
       if (t.id !== templateId) return t
       const sections = t.templateSections ?? []
       const newSection: PceTemplateSection = {
         ...section,
-        id: `sec-${Date.now()}`,
+        id: id ?? `sec-${Date.now()}`,
         order: sections.length,
       }
       return { ...t, templateSections: [...sections, newSection], lastModified: 'May 21, 2026' }

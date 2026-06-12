@@ -15,7 +15,7 @@ export interface PceSubject {
 
 export interface PceTemplateSection {
   id: string
-  subjectKey: SubjectKey
+  subjectKey: string
   title: string  // admin-customizable display name
   description?: string
   questions: TemplateQuestion[]

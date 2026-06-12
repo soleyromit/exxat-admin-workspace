@@ -99,7 +99,7 @@ export function TemplatesHub({ mode }: { mode: 'course_evaluation' | 'general' }
       width: 280,
       cell: (row) => (
         <Link
-          href={`/templates/${row.template.id}`}
+          href={isGeneral ? `/templates/programmatic/${row.template.id}` : `/templates/${row.template.id}`}
           className="font-medium hover:underline text-sm text-foreground"
           onClick={(e) => e.stopPropagation()}
         >
@@ -181,7 +181,7 @@ export function TemplatesHub({ mode }: { mode: 'course_evaluation' | 'general' }
       width: 44,
       cell: (row) => (
         <RowActions
-          onEdit={() => router.push(`/templates/${row.template.id}`)}
+          onEdit={() => router.push(isGeneral ? `/templates/programmatic/${row.template.id}` : `/templates/${row.template.id}`)}
           onDelete={() => setDeleteTemplate(row.template)}
         />
       ),
@@ -217,7 +217,7 @@ export function TemplatesHub({ mode }: { mode: 'course_evaluation' | 'general' }
             selectable
             searchable
             onRowClick={(row) => {
-              window.location.href = `/templates/${row.template.id}`
+              window.location.href = isGeneral ? `/templates/programmatic/${row.template.id}` : `/templates/${row.template.id}`
             }}
             toolbarSlot={(state) => {
               const filterFields: FilterFieldDef[] = columns
