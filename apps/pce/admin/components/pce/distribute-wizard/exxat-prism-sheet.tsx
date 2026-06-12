@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Button,
   Badge,
@@ -8,11 +8,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
 } from '@exxatdesignux/ui'
 import { DataTable } from '@/components/data-table'
 import { useTableState } from '@/components/data-table/use-table-state'
@@ -38,7 +33,24 @@ export interface PrismRecipient {
 
 type Persona = 'student' | 'faculty' | 'personnel'
 
-// ── Base data rows ─────────────────────────────────────────────────────────
+// ── Filter option lists (built once from mock data) ─────────────────────────
+
+const ACADEMIC_YEAR_OPTIONS = Array.from(
+  new Set(MOCK_PROGRAM_TERMS.map(t => t.academicYear))
+).sort().reverse().map(y => ({ value: y, label: y }))
+
+const TERM_OPTIONS = MOCK_PROGRAM_TERMS.map(t => ({ value: t.name, label: t.name }))
+
+const OFFERING_OPTIONS = MOCK_COURSE_OFFERINGS.map(o => {
+  const course = MOCK_MASTER_COURSES.find(c => c.id === o.masterCourseId)
+  const term   = MOCK_PROGRAM_TERMS.find(t => t.id === o.termId)
+  return {
+    value: `${course?.code ?? o.id}`,
+    label: `${course?.code} — ${course?.name} (${term?.name ?? ''})`,
+  }
+})
+
+// ── Row types ───────────────────────────────────────────────────────────────
 
 type StudentRow = {
   id: string
@@ -48,6 +60,10 @@ type StudentRow = {
   group: string
   status: string
   _enrollmentStatus: string
+  // hidden filter fields
+  academicYear: string
+  termName: string
+  offeringCode: string
   [key: string]: unknown
 }
 
@@ -59,36 +75,153 @@ type FacultyRow = {
   profileTypes: string
   position: string
   courseRole: string
+  // hidden filter fields
+  academicYear: string
+  termName: string
+  offeringCode: string
   [key: string]: unknown
 }
 
-const ALL_STUDENT_ROWS: StudentRow[] = MOCK_STUDENTS.map(s => ({
-  id: s.id,
-  name: `${s.firstName} ${s.lastName}`,
-  email: s.email,
-  cohort: s.cohort,
-  group: 'N/A',
-  status: s.enrollmentStatus === 'enrolled' ? 'Active'
-        : s.enrollmentStatus === 'withdrawn' ? 'Withdrawn'
-        : s.enrollmentStatus === 'graduated' ? 'Graduated'
-        : s.enrollmentStatus === 'on-leave'  ? 'On Leave'
-        : 'N/A',
-  _enrollmentStatus: s.enrollmentStatus,
-}))
+// ── Build rows — each row carries every offering it belongs to ──────────────
+// For filtering to work correctly, we expand so that a student who appears in
+// 3 offerings gets 3 rows. De-dup by id when committing.
 
-const FACULTY_EXTENDED = MOCK_FACULTY.map((f, i) => ({
-  id: f.id,
-  name: f.name,
-  email: `${f.name.toLowerCase().replace(/[\s.]/g, '.')}@example.com`,
-  status: i % 5 === 0 ? 'N/A' : 'Active',
-  profileTypes: i % 4 === 0 ? 'N/A' : 'Faculty',
-  position: ['Dean', 'Associate Dean', 'Full Professor', 'Assistant Professor', 'Director of Clinical Education', 'Department Chair'][i % 6],
-  courseRole: '',
-})) satisfies FacultyRow[]
+function buildStudentRows(): StudentRow[] {
+  const rows: StudentRow[] = []
+  for (const [offeringId, studentIds] of Object.entries(MOCK_COURSE_ENROLLMENTS)) {
+    const offering = MOCK_COURSE_OFFERINGS.find(o => o.id === offeringId)
+    if (!offering) continue
+    const course  = MOCK_MASTER_COURSES.find(c => c.id === offering.masterCourseId)
+    const term    = MOCK_PROGRAM_TERMS.find(t => t.id === offering.termId)
+    for (const sid of studentIds) {
+      const s = MOCK_STUDENTS.find(st => st.id === sid)
+      if (!s) continue
+      rows.push({
+        id: `${sid}__${offeringId}`,          // unique per student+offering
+        name: `${s.firstName} ${s.lastName}`,
+        email: s.email,
+        cohort: s.cohort,
+        group: 'N/A',
+        status: s.enrollmentStatus === 'enrolled' ? 'Active'
+              : s.enrollmentStatus === 'withdrawn' ? 'Withdrawn'
+              : s.enrollmentStatus === 'graduated' ? 'Graduated'
+              : s.enrollmentStatus === 'on-leave'  ? 'On Leave'
+              : 'N/A',
+        _enrollmentStatus: s.enrollmentStatus,
+        academicYear: term?.academicYear ?? '',
+        termName:     term?.name ?? '',
+        offeringCode: course?.code ?? '',
+      })
+    }
+  }
+  // Students not in any offering — still shown with blank context fields
+  const seenBaseIds = new Set(rows.map(r => r.id.split('__')[0]))
+  for (const s of MOCK_STUDENTS) {
+    if (!seenBaseIds.has(s.id)) {
+      rows.push({
+        id: s.id,
+        name: `${s.firstName} ${s.lastName}`,
+        email: s.email,
+        cohort: s.cohort,
+        group: 'N/A',
+        status: s.enrollmentStatus === 'enrolled' ? 'Active'
+              : s.enrollmentStatus === 'withdrawn' ? 'Withdrawn'
+              : s.enrollmentStatus === 'graduated' ? 'Graduated'
+              : s.enrollmentStatus === 'on-leave'  ? 'On Leave' : 'N/A',
+        _enrollmentStatus: s.enrollmentStatus,
+        academicYear: '',
+        termName: '',
+        offeringCode: '',
+      })
+    }
+  }
+  return rows
+}
 
-const STUDENT_COHORTS = Array.from(new Set(MOCK_STUDENTS.map(s => s.cohort))).sort()
+function buildFacultyRows(): FacultyRow[] {
+  const rows: FacultyRow[] = []
+  for (const offering of MOCK_COURSE_OFFERINGS) {
+    const course = MOCK_MASTER_COURSES.find(c => c.id === offering.masterCourseId)
+    const term   = MOCK_PROGRAM_TERMS.find(t => t.id === offering.termId)
+    const allIds = [offering.primaryFacultyId, ...offering.collaboratorIds].filter(Boolean)
+    for (const fid of allIds) {
+      const f = MOCK_FACULTY.find(fc => fc.id === fid)
+      if (!f) continue
+      const idx = MOCK_FACULTY.indexOf(f)
+      const isPrimary = fid === offering.primaryFacultyId
+      rows.push({
+        id: `${fid}__${offering.id}`,
+        name: f.name,
+        email: `${f.name.toLowerCase().replace(/[\s.]/g, '.')}@example.com`,
+        status: idx % 5 === 0 ? 'N/A' : 'Active',
+        profileTypes: idx % 4 === 0 ? 'N/A' : 'Faculty',
+        position: ['Dean', 'Associate Dean', 'Full Professor', 'Assistant Professor', 'Director of Clinical Education', 'Department Chair'][idx % 6],
+        courseRole: isPrimary ? 'Primary Faculty' : 'Additional Staff',
+        academicYear: term?.academicYear ?? '',
+        termName:     term?.name ?? '',
+        offeringCode: course?.code ?? '',
+      })
+    }
+  }
+  // Faculty not in any offering
+  const seenBaseIds = new Set(rows.map(r => r.id.split('__')[0]))
+  MOCK_FACULTY.forEach((f, idx) => {
+    if (!seenBaseIds.has(f.id)) {
+      rows.push({
+        id: f.id,
+        name: f.name,
+        email: `${f.name.toLowerCase().replace(/[\s.]/g, '.')}@example.com`,
+        status: idx % 5 === 0 ? 'N/A' : 'Active',
+        profileTypes: idx % 4 === 0 ? 'N/A' : 'Faculty',
+        position: ['Dean', 'Associate Dean', 'Full Professor', 'Assistant Professor', 'Director of Clinical Education', 'Department Chair'][idx % 6],
+        courseRole: '',
+        academicYear: '',
+        termName: '',
+        offeringCode: '',
+      })
+    }
+  })
+  return rows
+}
+
+const ALL_STUDENT_ROWS = buildStudentRows()
+const ALL_FACULTY_ROWS  = buildFacultyRows()
+const STUDENT_COHORTS   = Array.from(new Set(MOCK_STUDENTS.map(s => s.cohort))).sort()
 
 // ── Column definitions ──────────────────────────────────────────────────────
+
+const CONTEXT_FILTER_COLUMNS_STUDENT: ColumnDef<StudentRow>[] = [
+  {
+    key: 'academicYear',
+    label: 'Academic Year',
+    hidden: true,
+    filter: {
+      type: 'select',
+      icon: 'fa-calendar',
+      options: ACADEMIC_YEAR_OPTIONS,
+    },
+  },
+  {
+    key: 'termName',
+    label: 'Term',
+    hidden: true,
+    filter: {
+      type: 'select',
+      icon: 'fa-calendar-days',
+      options: TERM_OPTIONS,
+    },
+  },
+  {
+    key: 'offeringCode',
+    label: 'Course Offering',
+    hidden: true,
+    filter: {
+      type: 'select',
+      icon: 'fa-book',
+      options: OFFERING_OPTIONS,
+    },
+  },
+]
 
 const STUDENT_COLUMNS: ColumnDef<StudentRow>[] = [
   { key: 'select', label: '', width: 40, defaultPin: 'left', lockPin: true },
@@ -139,84 +272,91 @@ const STUDENT_COLUMNS: ColumnDef<StudentRow>[] = [
     },
     cell: (row) => <StatusBadge status={row.status} />,
   },
+  ...CONTEXT_FILTER_COLUMNS_STUDENT,
 ]
 
-function buildFacultyColumns(showCourseRole: boolean): ColumnDef<FacultyRow>[] {
-  const cols: ColumnDef<FacultyRow>[] = [
-    { key: 'select', label: '', width: 40, defaultPin: 'left', lockPin: true },
-    {
-      key: 'name',
-      label: 'Name',
-      width: 200,
-      sortable: true,
-      cell: (row) => <span className="text-sm font-medium">{row.name}</span>,
+const CONTEXT_FILTER_COLUMNS_FACULTY: ColumnDef<FacultyRow>[] = [
+  {
+    key: 'academicYear',
+    label: 'Academic Year',
+    hidden: true,
+    filter: {
+      type: 'select',
+      icon: 'fa-calendar',
+      options: ACADEMIC_YEAR_OPTIONS,
     },
-    {
-      key: 'status',
-      label: 'Status',
-      width: 120,
-      filter: {
-        type: 'select',
-        icon: 'fa-circle-dot',
-        options: [
-          { value: 'Active', label: 'Active' },
-          { value: 'N/A',    label: 'N/A'    },
-        ],
-      },
-      cell: (row) => <StatusBadge status={row.status} />,
+  },
+  {
+    key: 'termName',
+    label: 'Term',
+    hidden: true,
+    filter: {
+      type: 'select',
+      icon: 'fa-calendar-days',
+      options: TERM_OPTIONS,
     },
-    {
-      key: 'email',
-      label: 'Email',
-      width: 240,
-      cell: (row) => <span className="text-sm text-muted-foreground">{row.email}</span>,
+  },
+  {
+    key: 'offeringCode',
+    label: 'Course Offering',
+    hidden: true,
+    filter: {
+      type: 'select',
+      icon: 'fa-book',
+      options: OFFERING_OPTIONS,
     },
-    {
-      key: 'profileTypes',
-      label: 'Profile Types',
-      width: 140,
-      cell: (row) => <span className="text-sm">{row.profileTypes}</span>,
+  },
+]
+
+const FACULTY_COLUMNS: ColumnDef<FacultyRow>[] = [
+  { key: 'select', label: '', width: 40, defaultPin: 'left', lockPin: true },
+  {
+    key: 'name',
+    label: 'Name',
+    width: 200,
+    sortable: true,
+    cell: (row) => <span className="text-sm font-medium">{row.name}</span>,
+  },
+  {
+    key: 'status',
+    label: 'Status',
+    width: 120,
+    filter: {
+      type: 'select',
+      icon: 'fa-circle-dot',
+      options: [
+        { value: 'Active', label: 'Active' },
+        { value: 'N/A',    label: 'N/A'    },
+      ],
     },
-    {
-      key: 'position',
-      label: 'Position',
-      width: 200,
-      cell: (row) => <span className="text-sm text-muted-foreground">{row.position}</span>,
-    },
-  ]
-
-  if (showCourseRole) {
-    cols.push({
-      key: 'courseRole',
-      label: 'Course Role',
-      width: 160,
-      cell: (row) => <CourseRoleBadge role={row.courseRole} />,
-    })
-  }
-
-  return cols
-}
-
-// ── Derived data helpers ────────────────────────────────────────────────────
-
-function getStudentsForOffering(offeringId: string): StudentRow[] {
-  const enrolledIds = new Set(MOCK_COURSE_ENROLLMENTS[offeringId] ?? [])
-  return ALL_STUDENT_ROWS.filter(r => enrolledIds.has(r.id))
-}
-
-function getFacultyForOffering(offeringId: string): FacultyRow[] {
-  const offering = MOCK_COURSE_OFFERINGS.find(o => o.id === offeringId)
-  if (!offering) return []
-  const result: FacultyRow[] = []
-  FACULTY_EXTENDED.forEach(f => {
-    if (f.id === offering.primaryFacultyId) {
-      result.push({ ...f, courseRole: 'Primary Faculty' })
-    } else if (offering.collaboratorIds.includes(f.id)) {
-      result.push({ ...f, courseRole: 'Additional Staff' })
-    }
-  })
-  return result
-}
+    cell: (row) => <StatusBadge status={row.status} />,
+  },
+  {
+    key: 'email',
+    label: 'Email',
+    width: 240,
+    cell: (row) => <span className="text-sm text-muted-foreground">{row.email}</span>,
+  },
+  {
+    key: 'profileTypes',
+    label: 'Profile Types',
+    width: 140,
+    cell: (row) => <span className="text-sm">{row.profileTypes}</span>,
+  },
+  {
+    key: 'position',
+    label: 'Position',
+    width: 200,
+    cell: (row) => <span className="text-sm text-muted-foreground">{row.position}</span>,
+  },
+  {
+    key: 'courseRole',
+    label: 'Course Role',
+    width: 160,
+    cell: (row) => <CourseRoleBadge role={row.courseRole} />,
+  },
+  ...CONTEXT_FILTER_COLUMNS_FACULTY,
+]
 
 // ── Component ───────────────────────────────────────────────────────────────
 
@@ -227,92 +367,55 @@ interface ExxatPrismSheetProps {
   onCommit: (recipients: PrismRecipient[]) => void
 }
 
-const DEFAULT_TERM_ID = MOCK_PROGRAM_TERMS.find(t => t.status === 'active')?.id ?? MOCK_PROGRAM_TERMS[0]?.id ?? ''
-
 export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, onCommit }: ExxatPrismSheetProps) {
   const [tab, setTab] = useState<Persona>('student')
 
-  // ── Context filters ────────────────────────────────────────────────────
-  const [termId, setTermId] = useState(DEFAULT_TERM_ID)
-  const [offeringId, setOfferingId] = useState<string>('all')
-
-  const selectedTerm = useMemo(() => MOCK_PROGRAM_TERMS.find(t => t.id === termId), [termId])
-
-  // Group terms by academic year for the academic year select
-  const academicYears = useMemo(
-    () => Array.from(new Set(MOCK_PROGRAM_TERMS.map(t => t.academicYear))).sort().reverse(),
-    []
-  )
-  const [academicYear, setAcademicYear] = useState<string>(selectedTerm?.academicYear ?? '')
-
-  // Terms filtered to the selected academic year
-  const termsForYear = useMemo(
-    () => MOCK_PROGRAM_TERMS.filter(t => t.academicYear === academicYear),
-    [academicYear]
-  )
-
-  // Sync termId when academic year changes to first term in that year
-  useEffect(() => {
-    const first = termsForYear[0]
-    if (first) setTermId(first.id)
-  }, [academicYear]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Offerings for the selected term
-  const offeringsForTerm = useMemo(
-    () => MOCK_COURSE_OFFERINGS.filter(o => o.termId === termId),
-    [termId]
-  )
-
-  // Reset offering when term changes
-  useEffect(() => {
-    setOfferingId('all')
-  }, [termId])
-
-  // ── Derived rows based on filters ─────────────────────────────────────
-  const studentRows = useMemo(
-    () => offeringId === 'all' ? ALL_STUDENT_ROWS : getStudentsForOffering(offeringId),
-    [offeringId]
-  )
-
-  const facultyRows = useMemo(
-    () => offeringId === 'all' ? FACULTY_EXTENDED : getFacultyForOffering(offeringId),
-    [offeringId]
-  )
-
-  const showCourseRole = offeringId !== 'all'
-  const facultyColumns = useMemo(() => buildFacultyColumns(showCourseRole), [showCourseRole])
-
-  // ── Table states ───────────────────────────────────────────────────────
-  // studentRows/facultyRows are memo values; useTableState re-derives rows each render
-  const studentState = useTableState<StudentRow>(studentRows, STUDENT_COLUMNS)
-  const facultyState = useTableState<FacultyRow>(facultyRows, facultyColumns)
+  const studentState = useTableState<StudentRow>(ALL_STUDENT_ROWS, STUDENT_COLUMNS)
+  const facultyState = useTableState<FacultyRow>(ALL_FACULTY_ROWS,  FACULTY_COLUMNS)
 
   // Reset on open
   useEffect(() => {
     if (open) {
-      setTermId(DEFAULT_TERM_ID)
-      const defaultTerm = MOCK_PROGRAM_TERMS.find(t => t.id === DEFAULT_TERM_ID)
-      setAcademicYear(defaultTerm?.academicYear ?? '')
-      setOfferingId('all')
-      studentState.setSelected(new Set(ALL_STUDENT_ROWS.filter(r => initialIds.has(r.id)).map(r => r.id)))
-      facultyState.setSelected(new Set(FACULTY_EXTENDED.filter(r => initialIds.has(r.id)).map(r => r.id)))
+      // Map base student IDs to row IDs (rows are id__offeringId combos)
+      const studentRowIds = new Set(
+        ALL_STUDENT_ROWS.filter(r => initialIds.has(r.id.split('__')[0])).map(r => r.id)
+      )
+      const facultyRowIds = new Set(
+        ALL_FACULTY_ROWS.filter(r => initialIds.has(r.id.split('__')[0])).map(r => r.id)
+      )
+      studentState.setSelected(studentRowIds)
+      facultyState.setSelected(facultyRowIds)
       studentState.setSearch('')
       facultyState.setSearch('')
+      studentState.setActiveFilters([])
+      facultyState.setActiveFilters([])
       setTab('student')
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
-  const selectedCount = studentState.selected.size + facultyState.selected.size
+  // Count by unique base ID
+  const selectedStudentCount = new Set([...studentState.selected].map(id => String(id).split('__')[0])).size
+  const selectedFacultyCount = new Set([...facultyState.selected].map(id => String(id).split('__')[0])).size
+  const selectedCount = selectedStudentCount + selectedFacultyCount
 
   function handleCommit() {
     const recipients: PrismRecipient[] = []
-    ALL_STUDENT_ROWS.filter(r => studentState.selected.has(r.id)).forEach(r =>
-      recipients.push({ id: r.id, name: r.name, email: r.email, source: 'prism', subtitle: r.cohort, personaType: 'student' })
-    )
-    FACULTY_EXTENDED.filter(r => facultyState.selected.has(r.id)).forEach(r =>
-      recipients.push({ id: r.id, name: r.name, email: r.email, source: 'prism', subtitle: r.position, personaType: 'faculty' })
-    )
+    const seenStudents = new Set<string>()
+    ALL_STUDENT_ROWS.filter(r => studentState.selected.has(r.id)).forEach(r => {
+      const baseId = r.id.split('__')[0]
+      if (seenStudents.has(baseId)) return
+      seenStudents.add(baseId)
+      const s = MOCK_STUDENTS.find(st => st.id === baseId)
+      if (s) recipients.push({ id: baseId, name: r.name, email: r.email, source: 'prism', subtitle: r.cohort, personaType: 'student' })
+    })
+    const seenFaculty = new Set<string>()
+    ALL_FACULTY_ROWS.filter(r => facultyState.selected.has(r.id)).forEach(r => {
+      const baseId = r.id.split('__')[0]
+      if (seenFaculty.has(baseId)) return
+      seenFaculty.add(baseId)
+      recipients.push({ id: baseId, name: r.name, email: r.email, source: 'prism', subtitle: r.position, personaType: 'faculty' })
+    })
     onCommit(recipients)
   }
 
@@ -330,75 +433,11 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
           </Button>
         </SheetHeader>
 
-        {/* Context filters */}
-        <div
-          className="shrink-0 flex items-center gap-2 flex-wrap border-b border-border"
-          style={{ padding: '10px 20px' }}
-        >
-          <i className="fa-light fa-filter text-xs shrink-0" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
-
-          {/* Academic Year */}
-          <Select value={academicYear} onValueChange={setAcademicYear}>
-            <SelectTrigger className="h-8 text-xs" style={{ minWidth: 130 }} aria-label="Academic year">
-              <SelectValue placeholder="Academic year" />
-            </SelectTrigger>
-            <SelectContent>
-              {academicYears.map(y => (
-                <SelectItem key={y} value={y}>{y}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Term */}
-          <Select value={termId} onValueChange={setTermId}>
-            <SelectTrigger className="h-8 text-xs" style={{ minWidth: 130 }} aria-label="Term">
-              <SelectValue placeholder="Term" />
-            </SelectTrigger>
-            <SelectContent>
-              {termsForYear.map(t => (
-                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Course Offering */}
-          <Select value={offeringId} onValueChange={setOfferingId}>
-            <SelectTrigger className="h-8 text-xs" style={{ minWidth: 180 }} aria-label="Course offering">
-              <SelectValue placeholder="All course offerings" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All course offerings</SelectItem>
-              {offeringsForTerm.map(o => {
-                const course = MOCK_MASTER_COURSES.find(c => c.id === o.masterCourseId)
-                const faculty = MOCK_FACULTY.find(f => f.id === o.primaryFacultyId)
-                return (
-                  <SelectItem key={o.id} value={o.id}>
-                    {course?.code} — {course?.name}
-                    {faculty ? ` · ${faculty.name}` : ''}
-                  </SelectItem>
-                )
-              })}
-            </SelectContent>
-          </Select>
-
-          {offeringId !== 'all' && (
-            <button
-              type="button"
-              className="text-xs hover:underline underline-offset-2"
-              style={{ color: 'var(--muted-foreground)' }}
-              onClick={() => setOfferingId('all')}
-              aria-label="Clear course offering filter"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-
         {/* Tab bar */}
         <div
           role="tablist"
           aria-label="Recipient type"
-          className="shrink-0 flex"
+          className="shrink-0 flex border-b border-border"
           style={{ paddingInline: 20 }}
         >
           {(['student', 'faculty', 'personnel'] as Persona[]).map(t => (
@@ -417,14 +456,14 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
               )}
             >
               {t === 'student' ? 'Students' : t === 'faculty' ? 'Faculty' : 'Personnel'}
-              {t === 'student' && studentState.selected.size > 0 && (
+              {t === 'student' && selectedStudentCount > 0 && (
                 <Badge variant="secondary" className="ml-1.5 rounded-full" style={{ fontSize: 11, paddingInline: 6 }}>
-                  {studentState.selected.size}
+                  {selectedStudentCount}
                 </Badge>
               )}
-              {t === 'faculty' && facultyState.selected.size > 0 && (
+              {t === 'faculty' && selectedFacultyCount > 0 && (
                 <Badge variant="secondary" className="ml-1.5 rounded-full" style={{ fontSize: 11, paddingInline: 6 }}>
-                  {facultyState.selected.size}
+                  {selectedFacultyCount}
                 </Badge>
               )}
             </Button>
@@ -435,7 +474,7 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
         <div className="flex flex-col flex-1 overflow-hidden">
           {tab === 'student' && (
             <DataTable<StudentRow>
-              data={studentRows}
+              data={ALL_STUDENT_ROWS}
               columns={STUDENT_COLUMNS}
               getRowId={row => row.id}
               getRowSelectionLabel={row => row.name}
@@ -446,9 +485,7 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
               emptyState={
                 <div className="flex flex-col items-center gap-2 py-10">
                   <i className="fa-light fa-users text-muted-foreground text-2xl" aria-hidden="true" />
-                  <p className="text-sm text-muted-foreground">
-                    {offeringId !== 'all' ? 'No students enrolled in this course offering' : 'No students match your filters'}
-                  </p>
+                  <p className="text-sm text-muted-foreground">No students match your filters</p>
                 </div>
               }
             />
@@ -456,8 +493,8 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
 
           {tab === 'faculty' && (
             <DataTable<FacultyRow>
-              data={facultyRows}
-              columns={facultyColumns}
+              data={ALL_FACULTY_ROWS}
+              columns={FACULTY_COLUMNS}
               getRowId={row => row.id}
               getRowSelectionLabel={row => row.name}
               selectable
@@ -467,9 +504,7 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
               emptyState={
                 <div className="flex flex-col items-center gap-2 py-10">
                   <i className="fa-light fa-chalkboard-user text-muted-foreground text-2xl" aria-hidden="true" />
-                  <p className="text-sm text-muted-foreground">
-                    {offeringId !== 'all' ? 'No faculty assigned to this course offering' : 'No faculty match your filters'}
-                  </p>
+                  <p className="text-sm text-muted-foreground">No faculty match your filters</p>
                 </div>
               }
             />
