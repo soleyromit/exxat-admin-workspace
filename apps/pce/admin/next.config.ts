@@ -5,10 +5,6 @@ const nextConfig: NextConfig = {
   experimental: {
     externalDir: true,
   },
-  // Restrict Pages Router to a non-existent extension so the sync-extras-generated
-  // src/pages/ directory is never compiled as Next.js pages. The app/ directory is
-  // unaffected — it uses page.tsx/layout.tsx as special files regardless of this setting.
-  pageExtensions: ['_page.tsx', '_page.ts', '_page.jsx', '_page.js'],
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
   devIndicators: false,

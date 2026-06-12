@@ -16,6 +16,7 @@ import {
   DialogFooter,
   Button,
   Card,
+  CardContent,
   Badge,
   Input,
   Textarea,
@@ -188,7 +189,8 @@ function AIGenPanel({ onAccept, onClose, embedded }: { onAccept: (qs: GeneratedQ
             {AI_GENERATED.map(g => {
               const on = picked.includes(g.id)
               return (
-                <Card key={g.id} style={{ padding: '13px 15px', borderRadius: 12, borderColor: on ? 'oklch(from var(--brand-color) l c h / 0.40)' : 'var(--border)' }}>
+                <Card key={g.id} style={{ borderRadius: 12, borderColor: on ? 'oklch(from var(--brand-color) l c h / 0.40)' : 'var(--border)' }}>
+                  <CardContent style={{ padding: '13px 15px' }}>
                   <div style={{ display: 'flex', gap: 11 }}>
                     <Checkbox checked={on} onCheckedChange={() => togglePick(g.id)} aria-label={on ? 'Deselect question' : 'Select question'} style={{ marginTop: 2 }} />
                     <div style={{ flex: 1 }}>
@@ -208,6 +210,7 @@ function AIGenPanel({ onAccept, onClose, embedded }: { onAccept: (qs: GeneratedQ
                       </div>
                     </div>
                   </div>
+                  </CardContent>
                 </Card>
               )
             })}
@@ -255,7 +258,8 @@ export function SmartReplace({ question, onAccept, onClose }: { question: Questi
     topic: 'ACE Inhibitors', difficulty: 'Medium', bloom: 'Understand', psy: { p: 0.64, disc: 0.44, pbi: 0.41 },
   }
   const Q = ({ title, stem, opts, tone }: { title: string; stem: string; opts: { text: string; correct: boolean }[]; tone?: 'new' }) => (
-    <Card style={{ padding: 16, borderRadius: 12, flex: 1, borderColor: tone === 'new' ? 'oklch(from var(--brand-color) l c h / 0.40)' : 'var(--border)' }}>
+    <Card style={{ borderRadius: 12, flex: 1, borderColor: tone === 'new' ? 'oklch(from var(--brand-color) l c h / 0.40)' : 'var(--border)' }}>
+      <CardContent style={{ padding: 16 }}>
       <div style={{ marginBottom: 10 }}>
         <Badge variant={tone === 'new' ? 'default' : 'secondary'}>{title}</Badge>
       </div>
@@ -263,6 +267,7 @@ export function SmartReplace({ question, onAccept, onClose }: { question: Questi
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {opts.map((o, i) => <div key={i} style={{ fontSize: 12, color: o.correct ? 'var(--chip-2)' : 'var(--muted-foreground)', display: 'flex', gap: 6, alignItems: 'center' }}><Icon name={o.correct ? 'circle-check' : 'circle'} style={{ fontSize: 11 }} />{o.text}</div>)}
       </div>
+      </CardContent>
     </Card>
   )
   return (
@@ -343,7 +348,8 @@ export function SemanticSearch({ onAdd, onClose }: { onAdd: (qs: BankQuestion[])
             {ranked.map(q => {
               const on = picked.includes(q.id)
               return (
-                <Card key={q.id} style={{ padding: '12px 14px', borderRadius: 12, display: 'flex', gap: 11, alignItems: 'flex-start', cursor: 'pointer', borderColor: on ? 'oklch(from var(--brand-color) l c h / 0.40)' : 'var(--border)' }} onClick={() => toggle(q.id)}>
+                <Card key={q.id} style={{ borderRadius: 12, cursor: 'pointer', borderColor: on ? 'oklch(from var(--brand-color) l c h / 0.40)' : 'var(--border)' }} onClick={() => toggle(q.id)}>
+                  <CardContent style={{ padding: '12px 14px', display: 'flex', gap: 11, alignItems: 'flex-start' }}>
                   <Checkbox checked={on} onCheckedChange={() => toggle(q.id)} aria-label={on ? 'Deselect question' : 'Select question'} onClick={e => e.stopPropagation()} style={{ marginTop: 2 }} />
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 5, flexWrap: 'wrap' }}>
@@ -361,6 +367,7 @@ export function SemanticSearch({ onAdd, onClose }: { onAdd: (qs: BankQuestion[])
                     <div style={{ fontSize: 13, lineHeight: 1.4 }}>{q.stem}</div>
                     <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 5 }}>{q.bloom} · difficulty {q.p} · discrimination {q.disc} · pt-biserial {q.pbi}</div>
                   </div>
+                  </CardContent>
                 </Card>
               )
             })}

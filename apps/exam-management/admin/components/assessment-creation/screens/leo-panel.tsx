@@ -3,7 +3,7 @@
 /* Leo AI assistant — slide-in panel opened by every "Ask Leo" entry point */
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, Button, Card, Input } from '@exxatdesignux/ui'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, Button, Card, CardContent, Input } from '@exxatdesignux/ui'
 import { Icon, LeoStar } from '../icons'
 import {
   QTYPE,
@@ -205,7 +205,8 @@ function LeoBlock({ b, onReplace }: { b: Block; onReplace: (q: Question) => void
     return (
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, margin: '4px 0 10px' }}>
         {b.v.map(s => (
-          <Card key={s.l} style={{ padding: '8px 11px', borderRadius: 12 }}>
+          <Card key={s.l} style={{ borderRadius: 12 }}>
+            <CardContent style={{ padding: '8px 11px' }}>
             <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{s.l}</div>
             <div
               style={{
@@ -217,6 +218,7 @@ function LeoBlock({ b, onReplace }: { b: Block; onReplace: (q: Question) => void
             >
               {s.v}
             </div>
+            </CardContent>
           </Card>
         ))}
       </div>
@@ -225,12 +227,12 @@ function LeoBlock({ b, onReplace }: { b: Block; onReplace: (q: Question) => void
     return (
       <Card
         style={{
-          padding: '11px 13px',
           borderRadius: 12,
           marginBottom: 8,
           borderColor: 'oklch(from var(--destructive) l c h / 0.3)',
         }}
       >
+        <CardContent style={{ padding: '11px 13px' }}>
         <div style={{ display: 'flex', gap: 8, marginBottom: 7 }}>
           <Icon name="triangle-exclamation" style={{ color: 'var(--destructive)', fontSize: 13, marginTop: 1 }} />
           <div style={{ fontSize: 12.5, lineHeight: 1.4 }}>{b.v.stem}</div>
@@ -250,6 +252,7 @@ function LeoBlock({ b, onReplace }: { b: Block; onReplace: (q: Question) => void
             Suggest replacement
           </Button>
         )}
+        </CardContent>
       </Card>
     )
   return null

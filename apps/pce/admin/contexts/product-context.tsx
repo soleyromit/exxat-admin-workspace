@@ -1,5 +1,4 @@
 'use client'
-// Shim — re-exports ProductProvider + useProduct from `@exxatdesignux/ui`.
 
 export {
   ProductProvider,

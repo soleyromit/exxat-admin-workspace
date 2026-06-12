@@ -158,6 +158,15 @@ DOCUMENTED_HAND_ROLLS = {
     # exam-management: assessment-landing uses Sheet/Dialog for "Send to Chair" review workflow
     # and the download window is exam-download UX (not data-export). ExportDrawer doesn't apply.
     "app/(app)/assessments/[id]/assessment-landing-client.tsx",
+    # exam-management: status.tsx — AssessmentStatus screen with two intentional hand-rolls:
+    # 1. CSV export via exportItemAnalysisCsv() is a single-click browser download function;
+    #    ExportDrawer applies to Sheet/Dialog-based export UI with format selector + column picker.
+    #    The file has a <Dialog> for "Reschedule assessment" (date picker) which is not an
+    #    export drawer and co-triggers the export-drawer pattern.
+    # 2. Lifecycle stepper (LIFE step circles at grid/rounded-full/text-xs) is a progress
+    #    indicator, not a StatusBadge. DS StatusBadge covers product-lifecycle pill/dot badges;
+    #    no DS stepper component exists. AssessmentStatusBadge is a local component.
+    "components/assessment-creation/screens/status.tsx",
     # exam-management: students-tab Sheet is for "Enroll Student" (roster management),
     # not a CSV/data export. The "download" keyword refers to exam download UX.
     "app/(app)/courses/[id]/tabs/students-tab.tsx",

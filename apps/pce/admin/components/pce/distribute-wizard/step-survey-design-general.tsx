@@ -4,6 +4,7 @@ import { useState } from 'react'
 import {
   Button,
   Card,
+  CardContent,
   Select,
   SelectTrigger,
   SelectContent,
@@ -57,10 +58,7 @@ export function StepSurveyDesignGeneral({
         <>
           <div className="flex flex-col gap-3" role="list" aria-label="Survey template">
             <Card role="listitem" className="flex flex-col overflow-hidden shadow-none">
-              <div
-                className="flex items-center gap-3"
-                style={{ padding: '10px 14px' }}
-              >
+              <CardContent className="flex items-center gap-3 py-0" style={{ padding: '10px 14px' }}>
                 <span className="text-sm font-semibold flex-1 flex items-center gap-2">
                   General Survey
                   <span className="text-xs font-normal" style={{ color: 'var(--muted-foreground)' }}>
@@ -93,7 +91,7 @@ export function StepSurveyDesignGeneral({
                     <i className="fa-light fa-eye text-xs" aria-hidden="true" />
                   </Button>
                 )}
-              </div>
+              </CardContent>
             </Card>
           </div>
 

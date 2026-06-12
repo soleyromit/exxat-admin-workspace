@@ -302,6 +302,7 @@ function ItemAnalysis({ allQ, onOpen }: { allQ: AnalyzedQ[]; onOpen?: (i: number
         searchable={false}
         showQueryControls={false}
         onRowClick={onOpen ? (row) => onOpen(row.idx) : undefined}
+        emptyState={{ icon: 'list-check', heading: 'No items', description: 'No assessment items to display.' }}
       />
     </div>
   )
