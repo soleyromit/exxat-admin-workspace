@@ -159,8 +159,8 @@ function OptionCard({ icon, title, description, onClick }: {
         <i className={`fa-light ${icon} text-lg`} aria-hidden="true" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold">{title}</p>
-        <p className="text-sm mt-0.5" style={{ color: 'var(--muted-foreground)' }}>{description}</p>
+        <p className="text-sm font-semibold whitespace-normal">{title}</p>
+        <p className="text-sm mt-0.5 whitespace-normal" style={{ color: 'var(--muted-foreground)' }}>{description}</p>
       </div>
       <i className="fa-light fa-arrow-right text-sm shrink-0" aria-hidden="true"
          style={{ color: 'var(--muted-foreground)' }} />
@@ -450,12 +450,14 @@ function NewTemplateInner() {
               description="Start with a blank template and add questions your way"
               onClick={() => goToDetails('build')}
             />
-            <OptionCard
-              icon="fa-copy"
-              title="Copy existing"
-              description="Start from a template you already have and remix it"
-              onClick={() => goToDetails('copy')}
-            />
+            {isGeneral && (
+              <OptionCard
+                icon="fa-copy"
+                title="Copy existing"
+                description="Start from a template you already have and remix it"
+                onClick={() => goToDetails('copy')}
+              />
+            )}
             <OptionCard
               icon="fa-file-import"
               title="Import from document"

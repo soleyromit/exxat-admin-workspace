@@ -1,15 +1,14 @@
 'use client'
 
 import { useState, useMemo, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, usePathname } from 'next/navigation'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { WizardNav } from '@/components/pce/wizard-nav'
-import { StepProperties, type SurveyVisibility } from '@/components/pce/distribute-wizard/step-properties'
+import { StepProperties } from '@/components/pce/distribute-wizard/step-properties'
 import { StepDistribution } from '@/components/pce/distribute-wizard/step-distribution'
 import { StepSurveyDesign } from '@/components/pce/distribute-wizard/step-survey-design'
 import { StepCommunication, type Reminder } from '@/components/pce/distribute-wizard/step-communication'
-import { StepReportAccess, DEFAULT_REPORT_ACCESS, type ReportAccess } from '@/components/pce/distribute-wizard/step-report-access'
 import { StepSuccess } from '@/components/pce/distribute-wizard/step-success'
 import { StepDistributionGeneral } from '@/components/pce/distribute-wizard/step-distribution-general'
 import { StepSurveyDesignGeneral } from '@/components/pce/distribute-wizard/step-survey-design-general'
@@ -22,7 +21,7 @@ import {
 const LATEST_TERM_ID = [...MOCK_PROGRAM_TERMS]
   .sort((a, b) => b.startDate.localeCompare(a.startDate))[0]?.id ?? ''
 
-type WizardStep = 1 | 2 | 3 | 4 | 5 | 'success'
+type WizardStep = 1 | 2 | 3 | 4 | 'success'
 
 function dateToYmd(d: Date | undefined): string {
   if (!d) return ''
@@ -38,8 +37,10 @@ Take the survey: {{survey_link}}`
 function PushSurveyInner() {
   const { templates, pushSurveyBatch } = usePce()
   const params = useSearchParams()
+  const pathname = usePathname()
   const surveyMode: 'course_evaluation' | 'general' =
-    params.get('mode') === 'programmatic' ? 'general' : 'course_evaluation'
+    pathname.startsWith('/surveys/programmatic') || params.get('mode') === 'programmatic'
+      ? 'general' : 'course_evaluation'
 
   const [step, setStep] = useState<WizardStep>(1)
 
@@ -48,10 +49,8 @@ function PushSurveyInner() {
     surveyMode === 'general' ? 'programmatic' : 'course_evaluation'
   )
   const [surveyTitle, setSurveyTitle] = useState('')
-  const [keepAnonymous, setKeepAnonymous] = useState(false)
   const [termId, setTermId] = useState(LATEST_TERM_ID)
   const [surveyDescription, setSurveyDescription] = useState('')
-  const [surveyVisibility, setSurveyVisibility] = useState<SurveyVisibility>('program')
 
   // Step 2 — Distribution
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set())
@@ -70,9 +69,6 @@ function PushSurveyInner() {
   )
   const [emailBody, setEmailBody] = useState(DEFAULT_EMAIL_BODY)
   const [reminders, setReminders] = useState<Reminder[]>([])
-
-  // Step 5 — Report Access
-  const [reportAccess, setReportAccess] = useState<ReportAccess>(DEFAULT_REPORT_ACCESS)
 
   // ── Derived values ─────────────────────────────────────────────────────────
 
@@ -177,9 +173,6 @@ function PushSurveyInner() {
       emailBody,
       reminderEnabled: reminders.length > 0,
       reminderDaysBefore: reminders[0]?.daysBefore ?? 3,
-      reportAccess: Object.fromEntries(
-        Object.entries(reportAccess).map(([k, v]) => [k, Array.from(v)])
-      ),
     })
     setStep('success')
   }
@@ -188,10 +181,8 @@ function PushSurveyInner() {
     setStep(1)
     setSurveyType(surveyMode === 'general' ? 'programmatic' : 'course_evaluation')
     setSurveyTitle('')
-    setKeepAnonymous(false)
     setTermId(LATEST_TERM_ID)
     setSurveyDescription('')
-    setSurveyVisibility('program')
     setExcludedIds(new Set())
     setTemplateAssignments({})
     setGeneralTemplateId('')
@@ -202,7 +193,6 @@ function PushSurveyInner() {
     setEmailSubject('Your course evaluation for {{course_name}} is now open')
     setEmailBody(DEFAULT_EMAIL_BODY)
     setReminders([])
-    setReportAccess(DEFAULT_REPORT_ACCESS)
   }
 
   function handleStepNavClick(n: number) {
@@ -212,45 +202,44 @@ function PushSurveyInner() {
     }
   }
 
-  const currentStepNum = step === 'success' ? 6 : (step as number)
-  const completedUpTo = step === 'success' ? 5 : (step as number) - 1
+  const currentStepNum = step === 'success' ? 5 : (step as number)
+  const completedUpTo = step === 'success' ? 4 : (step as number) - 1
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
       <SiteHeader
-        breadcrumbs={[{ label: 'Surveys', href: '/surveys' }]}
-        title="Set up surveys"
+        breadcrumbs={[{
+          label: surveyMode === 'general' ? 'Surveys' : 'Evaluations',
+          href:  surveyMode === 'general' ? '/surveys/programmatic' : '/surveys',
+        }]}
+        title={surveyMode === 'general' ? 'Push survey' : 'Push evaluation'}
       />
-      <h1 className="sr-only">Set up surveys</h1>
+      <h1 className="sr-only">{surveyMode === 'general' ? 'Push survey' : 'Push evaluation'}</h1>
 
-      {/* Two-panel body */}
+      {/* Horizontal step bar — hidden on success step */}
+      {step !== 'success' && (
+        <WizardNav
+          currentStep={currentStepNum}
+          completedUpTo={completedUpTo}
+          onStepClick={handleStepNavClick}
+          mode={surveyMode}
+        />
+      )}
+
+      {/* Full-width content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left nav (220px) — hidden on success step */}
-        {step !== 'success' && (
-          <WizardNav
-            currentStep={currentStepNum}
-            completedUpTo={completedUpTo}
-            onStepClick={handleStepNavClick}
-          />
-        )}
-
-        {/* Right content */}
         <div className="flex-1 overflow-auto" style={{ padding: '32px 40px 48px' }}>
           {step === 1 && (
             <StepProperties
               surveyMode={surveyMode}
               surveyTitle={surveyTitle}
-              keepAnonymous={keepAnonymous}
               termId={termId}
               description={surveyDescription}
-              visibility={surveyVisibility}
               onSurveyTitleChange={setSurveyTitle}
-              onKeepAnonymousChange={setKeepAnonymous}
               onTermChange={handleTermChange}
               onDescriptionChange={setSurveyDescription}
-              onVisibilityChange={setSurveyVisibility}
               onNext={handleStep1Next}
             />
           )}
@@ -320,16 +309,7 @@ function PushSurveyInner() {
               onEmailBodyChange={setEmailBody}
               onRemindersChange={setReminders}
               onBack={() => setStep(3)}
-              onNext={() => setStep(5)}
-            />
-          )}
-
-          {step === 5 && (
-            <StepReportAccess
-              reportAccess={reportAccess}
-              onReportAccessChange={setReportAccess}
-              onBack={() => setStep(4)}
-              onPush={handlePush}
+              onNext={handlePush}
             />
           )}
 

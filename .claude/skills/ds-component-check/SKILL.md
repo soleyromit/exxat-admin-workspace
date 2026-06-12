@@ -1,6 +1,6 @@
 ---
 name: ds-component-check
-description: Use BEFORE writing any DS import in a .tsx file. Verifies the component exists in ds-snapshot.json, surfaces the correct import path + nav substructure template + tokens for the active profile. Prevents hallucinated APIs and incorrect substructure (e.g., raw <button> inside <Sidebar>, fontSize literals, wrong nav nesting).
+description: Use BEFORE writing any DS import in a .tsx file. Verifies the component exists in the installed @exxatdesignux/ui (read live via `node tools/ds/source.mjs`), surfaces the correct import path + props/variants + the live localhost:4000/library URL. Prevents hallucinated APIs and incorrect substructure (e.g., raw <button> inside <Sidebar>, fontSize literals, wrong nav nesting).
 ---
 
 # DS Component Check — Pre-flight Skill
@@ -35,28 +35,18 @@ cwd contains /apps/<product>/assessment-taker/ → profile = admin (exception pe
 
 If no product context, ask user.
 
-### Step 2 — Read the snapshot
+### Step 2 — Read the REAL package (not a snapshot)
 
-Source of truth: `docs/foundations/ds-snapshot.json` (regenerated automatically on submodule merge).
+Source of truth is the **installed `@exxatdesignux/ui`** package, read live — never a hand-maintained snapshot (those drift; the old `ds-snapshot.json` was deleted for exactly that reason).
 
-```python
-import json
-with open('docs/foundations/ds-snapshot.json') as f:
-    snap = json.load(f)
-admin = snap['profiles']['admin']
-student = snap['profiles']['student']
+For **admin** — run the source tool:
+```bash
+node tools/ds/source.mjs <Component...>   # real exports + props/variants/sizes from dist/*.d.ts
+node tools/ds/source.mjs --list           # every importable name from @exxatdesignux/ui
 ```
+It prints the exact import, the live `localhost:4000/library/<id>` URL, and the real type surface. A name not in `--list` does not exist in the DS.
 
-For **admin**:
-- `admin['exports']` — flat list of every importable name from `@exxatdesignux/ui` (Button, Sidebar, SidebarMenu, SidebarMenuItem, ...)
-- `admin['components']` — per-component sub-exports (e.g., sidebar component has 15 exports including SidebarMenu, SidebarMenuButton)
-- `admin['hooks']` — useAppTheme, useCoachMark, useMobile, useModKeyLabel
-- `admin['tokens']` — 160 CSS custom properties (--brand-color, --text-xs, --control-height, ...)
-
-For **student**:
-- `student['primitives']` — list of `{name, module, exports}` per file in `studentUX/src/components/ui/`
-- `student['shared']` — list of importable names from `@exxat/student/components/shared`
-- `student['tokens']` — 173 CSS custom properties
+For **student** (`@exxat/student`): read the real source directly — `studentUX/src/components/ui/` for primitives and `studentUX/src/components/shared/` for shared exports.
 
 ### Step 3 — Verify the component exists
 
@@ -64,12 +54,12 @@ Before writing `import { Foo } from '...'`, check:
 
 | Profile | Path | Allowlist source |
 |---|---|---|
-| admin | `@exxatdesignux/ui` | `admin.exports` (flat) |
+| admin | `@exxatdesignux/ui` | `node tools/ds/source.mjs --list` |
 | student primitive | `@exxat/student/components/ui/<name>` | `student.primitives[<name>].exports` |
 | student shared | `@exxat/student/components/shared` | `student.shared` |
 
 If `Foo` not in allowlist → **don't write the import.** Either:
-- Find the correct DS component name (run `python3 -c "import json; print([e for e in json.load(open('docs/foundations/ds-snapshot.json'))['profiles']['admin']['exports'] if 'foo' in e.lower()])"`
+- Find the correct DS component name (run `node tools/ds/source.mjs --list` and grep, or `node tools/ds/source.mjs Foo` for a did-you-mean)
 - Build a **product feature component** locally if no DS equivalent exists
 - Use `/intake` to file an override + propose adding it to DS
 

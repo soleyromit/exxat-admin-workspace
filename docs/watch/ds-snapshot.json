@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-10",
+  "generated": "2026-06-12",
   "source": "@exxatdesignux/ui",
   "version": "0.6.30",
   "componentCount": 466,
@@ -146,15 +146,7 @@
     },
     "Badge": {
       "importPath": "@exxatdesignux/ui",
-      "category": "primitives",
-      "variants": [
-        "default",
-        "secondary",
-        "destructive",
-        "outline",
-        "ghost",
-        "link"
-      ]
+      "category": "primitives"
     },
     "BoardCardIconRow": {
       "importPath": "@exxatdesignux/ui",
@@ -210,25 +202,7 @@
     },
     "Button": {
       "importPath": "@exxatdesignux/ui",
-      "category": "primitives",
-      "variants": [
-        "default",
-        "outline",
-        "secondary",
-        "ghost",
-        "destructive",
-        "link"
-      ],
-      "sizes": [
-        "default",
-        "xs",
-        "sm",
-        "lg",
-        "icon",
-        "icon-xs",
-        "icon-sm",
-        "icon-lg"
-      ]
+      "category": "primitives"
     },
     "COACH_MARK_FLOW_COMPLETED_EVENT": {
       "importPath": "@exxatdesignux/ui",
@@ -324,20 +298,7 @@
     },
     "CoachMark": {
       "importPath": "@exxatdesignux/ui",
-      "category": "organisms",
-      "sizes": [
-        "default",
-        "sm",
-        "lg"
-      ],
-      "keyProps": [
-        "state",
-        "side",
-        "align",
-        "sideOffset",
-        "nextLabel",
-        "skipLabel"
-      ]
+      "category": "organisms"
     },
     "CoachMarkProps": {
       "importPath": "@exxatdesignux/ui",
@@ -561,24 +522,7 @@
     },
     "DataTable": {
       "importPath": "@exxatdesignux/ui",
-      "category": "organisms",
-      "variants": [],
-      "sizes": [],
-      "keyProps": [
-        "data",
-        "columns",
-        "getRowId",
-        "selectable",
-        "searchable",
-        "defaultGroupBy",
-        "groupLabels",
-        "groupOrder",
-        "emptyState",
-        "onRowClick",
-        "toolbarSlot",
-        "bulkActionsSlot"
-      ],
-      "note": "vendored from node_modules/@exxatdesignux/ui/template-vite/components/data-table/"
+      "category": "organisms"
     },
     "DataTableExtendedProps": {
       "importPath": "@exxatdesignux/ui",
@@ -602,15 +546,7 @@
     },
     "DatePickerField": {
       "importPath": "@exxatdesignux/ui",
-      "category": "primitives",
-      "keyProps": [
-        "value",
-        "onChange",
-        "disabled",
-        "triggerClassName",
-        "fromYear",
-        "toYear"
-      ]
+      "category": "primitives"
     },
     "DatePickerFieldProps": {
       "importPath": "@exxatdesignux/ui",
@@ -950,13 +886,7 @@
     },
     "InputGroup": {
       "importPath": "@exxatdesignux/ui",
-      "category": "primitives",
-      "sizes": [
-        "xs",
-        "sm",
-        "icon-xs",
-        "icon-sm"
-      ]
+      "category": "primitives"
     },
     "InputGroupAddon": {
       "importPath": "@exxatdesignux/ui",
@@ -988,20 +918,7 @@
     },
     "KeyMetrics": {
       "importPath": "@exxatdesignux/ui",
-      "category": "organisms",
-      "variants": [
-        "card",
-        "flat",
-        "compact"
-      ],
-      "sizes": [],
-      "keyProps": [
-        "metrics",
-        "variant",
-        "periodSelector",
-        "insightRail"
-      ],
-      "note": "vendored from node_modules/@exxatdesignux/ui/template-vite/components/key-metrics.tsx"
+      "category": "organisms"
     },
     "KeyMetricsContent": {
       "importPath": "@exxatdesignux/ui",
@@ -1477,15 +1394,7 @@
     },
     "SelectionTileGrid": {
       "importPath": "@exxatdesignux/ui",
-      "category": "primitives",
-      "keyProps": [
-        "sectionLabel",
-        "options",
-        "columns",
-        "value",
-        "onValueChange",
-        "interaction"
-      ]
+      "category": "primitives"
     },
     "SelectionTileGridProps": {
       "importPath": "@exxatdesignux/ui",
@@ -1537,16 +1446,7 @@
     },
     "Sidebar": {
       "importPath": "@exxatdesignux/ui",
-      "category": "primitives",
-      "variants": [
-        "default",
-        "outline"
-      ],
-      "sizes": [
-        "default",
-        "sm",
-        "lg"
-      ]
+      "category": "primitives"
     },
     "SidebarContent": {
       "importPath": "@exxatdesignux/ui",
@@ -1666,19 +1566,7 @@
     },
     "StatusBadge": {
       "importPath": "@exxatdesignux/ui",
-      "category": "organisms",
-      "variants": [
-        "pill",
-        "dot"
-      ],
-      "sizes": [
-        "xs",
-        "sm",
-        "md"
-      ],
-      "keyProps": [
-        "label"
-      ]
+      "category": "organisms"
     },
     "StatusBadgeProps": {
       "importPath": "@exxatdesignux/ui",
@@ -1754,11 +1642,7 @@
     },
     "Tabs": {
       "importPath": "@exxatdesignux/ui",
-      "category": "primitives",
-      "variants": [
-        "default",
-        "line"
-      ]
+      "category": "primitives"
     },
     "TabsContent": {
       "importPath": "@exxatdesignux/ui",
@@ -1790,24 +1674,11 @@
     },
     "Tip": {
       "importPath": "@exxatdesignux/ui",
-      "category": "primitives",
-      "keyProps": [
-        "label",
-        "side"
-      ]
+      "category": "primitives"
     },
     "Toggle": {
       "importPath": "@exxatdesignux/ui",
-      "category": "primitives",
-      "variants": [
-        "default",
-        "outline"
-      ],
-      "sizes": [
-        "default",
-        "sm",
-        "lg"
-      ]
+      "category": "primitives"
     },
     "ToggleGroup": {
       "importPath": "@exxatdesignux/ui",
@@ -1819,11 +1690,7 @@
     },
     "ToggleSwitch": {
       "importPath": "@exxatdesignux/ui",
-      "category": "primitives",
-      "keyProps": [
-        "checked",
-        "onChange"
-      ]
+      "category": "primitives"
     },
     "Tooltip": {
       "importPath": "@exxatdesignux/ui",
@@ -1863,15 +1730,7 @@
     },
     "ViewSegmentedControl": {
       "importPath": "@exxatdesignux/ui",
-      "category": "primitives",
-      "keyProps": [
-        "value",
-        "onValueChange",
-        "options",
-        "iconOnly",
-        "showTooltips",
-        "tooltipSide"
-      ]
+      "category": "primitives"
     },
     "ViewSegmentedControlProps": {
       "importPath": "@exxatdesignux/ui",

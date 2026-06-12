@@ -6,86 +6,89 @@ interface WizardNavProps {
   currentStep: number
   completedUpTo: number
   onStepClick: (n: number) => void
+  mode?: 'course_evaluation' | 'general'
 }
 
-const STEPS = [
-  { n: 1, label: 'Properties' },
-  { n: 2, label: 'Distribution' },
-  { n: 3, label: 'Design' },
-  { n: 4, label: 'Communication' },
-  { n: 5, label: 'Report access' },
-]
+export function WizardNav({ currentStep, completedUpTo, onStepClick, mode = 'course_evaluation' }: WizardNavProps) {
+  const STEPS = [
+    { n: 1, label: mode === 'general' ? 'Survey' : 'Evaluation' },
+    { n: 2, label: 'Distribution' },
+    { n: 3, label: 'Design' },
+    { n: 4, label: 'Communication' },
+  ]
 
-export function WizardNav({ currentStep, completedUpTo, onStepClick }: WizardNavProps) {
   return (
-    <aside
-      className="flex flex-col shrink-0 border-r border-border"
-      style={{ width: 220, background: 'var(--background)', padding: '24px 12px' }}
+    <nav
+      aria-label="Wizard steps"
+      className="shrink-0 border-b border-border flex items-center"
+      style={{ height: 52, padding: '0 40px', background: 'var(--background)', gap: 0 }}
     >
-      <nav className="flex flex-col gap-0.5" aria-label="Wizard steps">
-        {STEPS.map(({ n, label }) => {
-          const isCompleted = n <= completedUpTo
-          const isCurrent = n === currentStep
+      {STEPS.map(({ n, label }, idx) => {
+        const isCompleted = n <= completedUpTo
+        const isCurrent = n === currentStep
+        const isFuture = !isCompleted && !isCurrent
 
-          if (isCompleted) {
-            return (
-              <Button
-                key={n}
-                variant="ghost"
-                size="sm"
-                className="justify-start gap-2 w-full font-normal"
-                onClick={() => onStepClick(n)}
-                aria-label={`Go to step ${n}: ${label}`}
-              >
-                <i
-                  className="fa-solid fa-check text-xs shrink-0"
-                  aria-hidden="true"
-                  style={{ color: 'var(--brand-color)', width: 16 }}
-                />
-                <span>{label}</span>
-              </Button>
-            )
-          }
-
-          if (isCurrent) {
-            return (
-              <Button
-                key={n}
-                variant="secondary"
-                size="sm"
-                className="justify-start gap-2 w-full font-normal cursor-default"
-                aria-current="step"
-              >
-                <i
-                  className="fa-solid fa-circle-dot shrink-0"
-                  aria-hidden="true"
-                  style={{ fontSize: 13, width: 16, color: 'var(--brand-color)' }}
-                />
-                <span className="font-semibold">{label}</span>
-              </Button>
-            )
-          }
-
-          // future
-          return (
+        return (
+          <div key={n} className="flex items-center" style={{ gap: 0 }}>
+            {/* Step pill */}
             <Button
-              key={n}
-              variant="ghost"
+              variant={isCurrent ? 'secondary' : 'ghost'}
               size="sm"
-              className="justify-start gap-2 w-full font-normal"
-              disabled
+              onClick={() => isCompleted ? onStepClick(n) : undefined}
+              disabled={isFuture}
+              aria-current={isCurrent ? 'step' : undefined}
+              aria-label={isCompleted ? `Go back to step ${n}: ${label}` : `Step ${n}: ${label}`}
+              className="gap-2 cursor-default"
+              style={isCurrent ? {} : isCompleted ? { cursor: 'pointer' } : {}}
             >
+              {/* Indicator: check for completed, filled dot for current, number for future */}
               <span
-                className="text-xs font-semibold shrink-0 flex items-center justify-center rounded-full"
-                style={{ width: 18, height: 18, background: 'var(--muted)', color: 'var(--muted-foreground)' }}
+                className="shrink-0 flex items-center justify-center rounded-full text-xs font-semibold"
+                style={{
+                  width: 20,
+                  height: 20,
+                  background: isCurrent
+                    ? 'var(--foreground)'
+                    : isCompleted
+                    ? 'transparent'
+                    : 'var(--muted)',
+                  color: isCurrent
+                    ? 'var(--background)'
+                    : isCompleted
+                    ? 'var(--brand-color)'
+                    : 'var(--muted-foreground)',
+                }}
               >
-                {n}
+                {isCompleted ? (
+                  <i className="fa-solid fa-check" style={{ fontSize: 10 }} aria-hidden="true" />
+                ) : (
+                  n
+                )}
               </span>
-              <span>{label}</span>
+
+              {/* Label */}
+              <span style={{ fontWeight: isCurrent ? 600 : 400 }}>
+                {label}
+              </span>
             </Button>
-          )
-        })}
-      </nav>
-    </aside>
+
+            {/* Connector line — between steps, not after last */}
+            {idx < STEPS.length - 1 && (
+              <span
+                aria-hidden="true"
+                style={{
+                  display: 'block',
+                  width: 32,
+                  height: 1,
+                  background: 'var(--border)',
+                  margin: '0 4px',
+                  flexShrink: 0,
+                }}
+              />
+            )}
+          </div>
+        )
+      })}
+    </nav>
   )
 }

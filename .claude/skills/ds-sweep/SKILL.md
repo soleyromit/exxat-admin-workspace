@@ -80,7 +80,7 @@ grep -rn "toast(" $TARGET --include="*.tsx" | grep -v "//\|import"
 
 ### Step 4 — DS component coverage check
 
-Cross-reference against `docs/watch/ds-snapshot.json`. For each hand-rolled pattern found:
+Cross-reference against `node tools/ds/source.mjs --list`. For each hand-rolled pattern found:
 
 | Hand-rolled pattern | DS equivalent to check |
 |---|---|

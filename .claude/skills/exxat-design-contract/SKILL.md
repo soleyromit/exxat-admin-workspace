@@ -122,7 +122,7 @@ Name the exact pattern and how it behaves.
 ## § 3 — DS components
 
 Before writing this section:
-1. Run `python3 -c "import json; snap=json.load(open('docs/foundations/ds-snapshot.json')); [print(e) for e in snap['profiles']['admin']['exports']]"` or grep the snapshot
+1. Run `python3 -c "import json; snap=json.load(open('`node tools/ds/source.mjs --list`')); [print(e) for e in snap['profiles']['admin']['exports']]"` or grep the snapshot
 2. Verify every component in your plan exists in the exports list
 3. If a component isn't in the list → it doesn't exist; find the correct name or build locally
 
@@ -143,12 +143,21 @@ Common mappings:
 
 ```
 DS components:
-  Component     | Variant      | Size | Token used           | Snapshot verified
-  ------------- | ------------ | ---- | -------------------- | -----------------
-  Button        | default      | sm   | —                    | exports[N]
-  Badge         | secondary    | —    | --muted-foreground   | exports[N]
+  Component     | Variant      | Size | Token used           | Snapshot ✓ | DS ref (localhost:4000)
+  ------------- | ------------ | ---- | -------------------- | ---------- | ------------------------
+  Button        | default      | sm   | —                    | exports[N] | localhost:4000/library/button
+  Badge         | secondary    | —    | --muted-foreground   | exports[N] | localhost:4000/library/badge
+  DataTable     | —            | —    | —                    | exports[N] | localhost:4000/library/data-table
   ...
 ```
+
+**The `DS ref` column is the handoff to implementation.** Every row must cite the
+exact localhost:4000 surface the component should look like — including the
+variant the DS uses for *this kind of surface* (list surface → list-card 12px,
+not generic Card 16px). This is what tells the implementer (often Sonnet) what to
+build, instead of leaving it to re-derive from memory. A contract with no DS ref
+URLs is not a complete handoff. Post-implementation, `visual-diff.mjs` is run
+against these same surfaces (the Stop gate `ds-claim-gate.py` enforces it).
 
 ---
 
@@ -228,8 +237,8 @@ query: "..."  →  [Product/Flow/ScreenID]  [url]
 [SaaS product] — [specific named interaction pattern]
 
 ## § 3  DS components
-Component     | Variant  | Size | Token              | Snapshot ✓
-------------- | -------- | ---- | ------------------ | ----------
+Component     | Variant  | Size | Token              | Snapshot ✓ | DS ref (localhost:4000)
+------------- | -------- | ---- | ------------------ | ---------- | ------------------------
 ...
 
 ## § 4  Interaction states
