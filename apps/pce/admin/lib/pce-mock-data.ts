@@ -56,12 +56,15 @@ export interface PceTemplate {
   surveyType?: SurveyType
   /** Dynamic subject-based sections (additive — parallel to legacy questions/sections). */
   templateSections?: PceTemplateSection[]
+  /** Optional form-level instruction shown to respondents before the first question. */
+  formInstructionTitle?: string
+  formInstructionDescription?: string
 }
 
 export interface TemplateQuestion {
   id: string
   text: string
-  answerType: 'likert' | 'free_text' | 'single_choice' | 'multiple_choice'
+  answerType: 'likert' | 'free_text' | 'single_choice' | 'multiple_choice' | 'title' | 'number' | 'select_dropdown' | 'date_picker'
   choices?: string[]
   /** 0-based position within its section */
   order: number
@@ -1050,6 +1053,28 @@ export const MOCK_COURSE_ENROLLMENTS: Record<string, string[]> = {
   co18: ['st6', 'st7', 'st8', 'st9'],                 // DPT-602
   co19: ['st6', 'st7', 'st8', 'st9'],                 // DPT-550
 }
+
+export interface Personnel {
+  id: string
+  name: string
+  email: string
+  role: string
+  department: string
+  status: 'Active' | 'Inactive'
+}
+
+export const MOCK_PERSONNEL: Personnel[] = [
+  { id: 'p1',  name: 'Sandra Torres',    email: 'storres@school.edu',     role: 'Program Coordinator',          department: 'Physical Therapy',   status: 'Active'   },
+  { id: 'p2',  name: 'James Whitfield',  email: 'jwhitfield@school.edu',  role: 'Clinical Education Director',  department: 'Clinical Affairs',   status: 'Active'   },
+  { id: 'p3',  name: 'Mei-Lin Cheng',    email: 'mcheng@school.edu',      role: 'Administrative Coordinator',   department: 'Student Services',   status: 'Active'   },
+  { id: 'p4',  name: 'Derek Okafor',     email: 'dokafor@school.edu',     role: 'Accreditation Specialist',     department: 'Academic Affairs',   status: 'Active'   },
+  { id: 'p5',  name: 'Priya Nair',       email: 'pnair@school.edu',       role: 'Curriculum Coordinator',       department: 'Academic Affairs',   status: 'Active'   },
+  { id: 'p6',  name: 'Tom Harrington',   email: 'tharrington@school.edu', role: 'IT Support Specialist',        department: 'Technology',         status: 'Active'   },
+  { id: 'p7',  name: 'Aisha Mukherjee',  email: 'amukherjee@school.edu',  role: 'Student Affairs Coordinator',  department: 'Student Services',   status: 'Active'   },
+  { id: 'p8',  name: 'Carlos Reyes',     email: 'creyes@school.edu',      role: 'Research Coordinator',         department: 'Research',           status: 'Inactive' },
+  { id: 'p9',  name: 'Laura Kwan',       email: 'lkwan@school.edu',       role: 'Program Coordinator',          department: 'Physical Therapy',   status: 'Active'   },
+  { id: 'p10', name: 'Nathan Brooks',    email: 'nbrooks@school.edu',     role: 'Financial Aid Advisor',        department: 'Student Services',   status: 'Active'   },
+]
 
 export const SECTION_LABELS: Record<TemplateSection, string> = {
   course_content: 'Course Content',

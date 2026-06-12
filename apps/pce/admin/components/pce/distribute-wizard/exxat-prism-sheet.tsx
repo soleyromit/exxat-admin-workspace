@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils'
 import {
   MOCK_STUDENTS,
   MOCK_FACULTY,
+  MOCK_PERSONNEL,
   MOCK_PROGRAM_TERMS,
   MOCK_COURSE_OFFERINGS,
   MOCK_MASTER_COURSES,
@@ -74,11 +75,20 @@ type FacultyRow = {
   email: string
   profileTypes: string
   position: string
-  courseRole: string
   // hidden filter fields
   academicYear: string
   termName: string
   offeringCode: string
+  [key: string]: unknown
+}
+
+type PersonnelRow = {
+  id: string
+  name: string
+  email: string
+  role: string
+  department: string
+  status: string
   [key: string]: unknown
 }
 
@@ -148,7 +158,6 @@ function buildFacultyRows(): FacultyRow[] {
       const f = MOCK_FACULTY.find(fc => fc.id === fid)
       if (!f) continue
       const idx = MOCK_FACULTY.indexOf(f)
-      const isPrimary = fid === offering.primaryFacultyId
       rows.push({
         id: `${fid}__${offering.id}`,
         name: f.name,
@@ -156,7 +165,6 @@ function buildFacultyRows(): FacultyRow[] {
         status: idx % 5 === 0 ? 'N/A' : 'Active',
         profileTypes: idx % 4 === 0 ? 'N/A' : 'Faculty',
         position: ['Dean', 'Associate Dean', 'Full Professor', 'Assistant Professor', 'Director of Clinical Education', 'Department Chair'][idx % 6],
-        courseRole: isPrimary ? 'Primary Faculty' : 'Additional Staff',
         academicYear: term?.academicYear ?? '',
         termName:     term?.name ?? '',
         offeringCode: course?.code ?? '',
@@ -174,7 +182,6 @@ function buildFacultyRows(): FacultyRow[] {
         status: idx % 5 === 0 ? 'N/A' : 'Active',
         profileTypes: idx % 4 === 0 ? 'N/A' : 'Faculty',
         position: ['Dean', 'Associate Dean', 'Full Professor', 'Assistant Professor', 'Director of Clinical Education', 'Department Chair'][idx % 6],
-        courseRole: '',
         academicYear: '',
         termName: '',
         offeringCode: '',
@@ -349,13 +356,70 @@ const FACULTY_COLUMNS: ColumnDef<FacultyRow>[] = [
     width: 200,
     cell: (row) => <span className="text-sm text-muted-foreground">{row.position}</span>,
   },
-  {
-    key: 'courseRole',
-    label: 'Course Role',
-    width: 160,
-    cell: (row) => <CourseRoleBadge role={row.courseRole} />,
-  },
   ...CONTEXT_FILTER_COLUMNS_FACULTY,
+]
+
+// ── Personnel rows + columns ────────────────────────────────────────────────
+
+const DEPARTMENTS = Array.from(new Set(MOCK_PERSONNEL.map(p => p.department))).sort()
+
+const ALL_PERSONNEL_ROWS: PersonnelRow[] = MOCK_PERSONNEL.map(p => ({
+  id: p.id,
+  name: p.name,
+  email: p.email,
+  role: p.role,
+  department: p.department,
+  status: p.status,
+}))
+
+const PERSONNEL_COLUMNS: ColumnDef<PersonnelRow>[] = [
+  { key: 'select', label: '', width: 40, defaultPin: 'left', lockPin: true },
+  {
+    key: 'name',
+    label: 'Name',
+    width: 200,
+    sortable: true,
+    cell: (row) => <span className="text-sm font-medium">{row.name}</span>,
+  },
+  {
+    key: 'email',
+    label: 'Email',
+    width: 240,
+    cell: (row) => <span className="text-sm text-muted-foreground">{row.email}</span>,
+  },
+  {
+    key: 'role',
+    label: 'Role',
+    width: 220,
+    sortable: true,
+    cell: (row) => <span className="text-sm">{row.role}</span>,
+  },
+  {
+    key: 'department',
+    label: 'Department',
+    width: 180,
+    sortable: true,
+    filter: {
+      type: 'select',
+      icon: 'fa-building',
+      options: DEPARTMENTS.map(d => ({ value: d, label: d })),
+    },
+    cell: (row) => <span className="text-sm text-muted-foreground">{row.department}</span>,
+  },
+  {
+    key: 'status',
+    label: 'Status',
+    width: 120,
+    filter: {
+      type: 'select',
+      icon: 'fa-circle-dot',
+      options: [
+        { value: 'Active',   label: 'Active'   },
+        { value: 'Inactive', label: 'Inactive' },
+      ],
+    },
+    cell: (row) => <StatusBadge status={row.status} />,
+  },
 ]
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -370,8 +434,9 @@ interface ExxatPrismSheetProps {
 export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, onCommit }: ExxatPrismSheetProps) {
   const [tab, setTab] = useState<Persona>('student')
 
-  const studentState = useTableState<StudentRow>(ALL_STUDENT_ROWS, STUDENT_COLUMNS)
-  const facultyState = useTableState<FacultyRow>(ALL_FACULTY_ROWS,  FACULTY_COLUMNS)
+  const studentState   = useTableState<StudentRow>(ALL_STUDENT_ROWS,   STUDENT_COLUMNS)
+  const facultyState   = useTableState<FacultyRow>(ALL_FACULTY_ROWS,   FACULTY_COLUMNS)
+  const personnelState = useTableState<PersonnelRow>(ALL_PERSONNEL_ROWS, PERSONNEL_COLUMNS)
 
   // Reset on open
   useEffect(() => {
@@ -383,21 +448,25 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
       const facultyRowIds = new Set(
         ALL_FACULTY_ROWS.filter(r => initialIds.has(r.id.split('__')[0])).map(r => r.id)
       )
+      personnelState.setSelected(new Set(ALL_PERSONNEL_ROWS.filter(r => initialIds.has(r.id)).map(r => r.id)))
       studentState.setSelected(studentRowIds)
       facultyState.setSelected(facultyRowIds)
       studentState.setSearch('')
       facultyState.setSearch('')
+      personnelState.setSearch('')
       studentState.setActiveFilters([])
       facultyState.setActiveFilters([])
+      personnelState.setActiveFilters([])
       setTab('student')
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   // Count by unique base ID
-  const selectedStudentCount = new Set([...studentState.selected].map(id => String(id).split('__')[0])).size
-  const selectedFacultyCount = new Set([...facultyState.selected].map(id => String(id).split('__')[0])).size
-  const selectedCount = selectedStudentCount + selectedFacultyCount
+  const selectedStudentCount   = new Set([...studentState.selected].map(id => String(id).split('__')[0])).size
+  const selectedFacultyCount   = new Set([...facultyState.selected].map(id => String(id).split('__')[0])).size
+  const selectedPersonnelCount = personnelState.selected.size
+  const selectedCount = selectedStudentCount + selectedFacultyCount + selectedPersonnelCount
 
   function handleCommit() {
     const recipients: PrismRecipient[] = []
@@ -415,6 +484,9 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
       if (seenFaculty.has(baseId)) return
       seenFaculty.add(baseId)
       recipients.push({ id: baseId, name: r.name, email: r.email, source: 'prism', subtitle: r.position, personaType: 'faculty' })
+    })
+    ALL_PERSONNEL_ROWS.filter(r => personnelState.selected.has(r.id)).forEach(r => {
+      recipients.push({ id: r.id, name: r.name, email: r.email, source: 'prism', subtitle: r.role, personaType: 'personnel' })
     })
     onCommit(recipients)
   }
@@ -466,6 +538,11 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
                   {selectedFacultyCount}
                 </Badge>
               )}
+              {t === 'personnel' && selectedPersonnelCount > 0 && (
+                <Badge variant="secondary" className="ml-1.5 rounded-full" style={{ fontSize: 11, paddingInline: 6 }}>
+                  {selectedPersonnelCount}
+                </Badge>
+              )}
             </Button>
           ))}
         </div>
@@ -511,10 +588,22 @@ export function ExxatPrismSheet({ open, onOpenChange, selectedIds: initialIds, o
           )}
 
           {tab === 'personnel' && (
-            <div className="flex flex-col items-center justify-center gap-3 py-16 text-center h-full">
-              <i className="fa-light fa-user-tie text-muted-foreground text-2xl" aria-hidden="true" />
-              <p className="text-sm text-muted-foreground">Personnel data coming soon</p>
-            </div>
+            <DataTable<PersonnelRow>
+              data={ALL_PERSONNEL_ROWS}
+              columns={PERSONNEL_COLUMNS}
+              getRowId={row => row.id}
+              getRowSelectionLabel={row => row.name}
+              selectable
+              searchable
+              hideBulkActions
+              state={personnelState}
+              emptyState={
+                <div className="flex flex-col items-center gap-2 py-10">
+                  <i className="fa-light fa-user-tie text-muted-foreground text-2xl" aria-hidden="true" />
+                  <p className="text-sm text-muted-foreground">No personnel match your filters</p>
+                </div>
+              }
+            />
           )}
         </div>
 
@@ -532,15 +621,3 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
-function CourseRoleBadge({ role }: { role: string }) {
-  if (!role) return <span className="text-sm text-muted-foreground">—</span>
-  return (
-    <Badge
-      variant={role === 'Primary Faculty' ? 'default' : 'outline'}
-      className="rounded text-xs"
-      style={{ paddingInline: 8 }}
-    >
-      {role}
-    </Badge>
-  )
-}
