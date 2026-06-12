@@ -591,6 +591,8 @@ export interface DataTableExtendedProps<TData extends Record<string, unknown>>
   toolbarSlot?: (state: ReturnType<typeof useTableState<TData>>) => React.ReactNode
   /** Slot rendered inside the floating bulk-action bar (after the "N selected" label) */
   bulkActionsSlot?: (selected: Set<string | number>, rows: TData[]) => React.ReactNode
+  /** When true, suppresses the floating bulk-action bar entirely */
+  hideBulkActions?: boolean
   /** Optional "add new row" row text — pass false to hide */
   addRowLabel?: string | false
   /** Custom option-value renderer for filter pills */
@@ -629,6 +631,7 @@ function DataTableInner<TData extends Record<string, unknown>>({
   defaultSort,
   toolbarSlot,
   bulkActionsSlot,
+  hideBulkActions = false,
   addRowLabel = false,
   renderFilterOptionValue,
   hasFooter = false,
@@ -1166,7 +1169,7 @@ function DataTableInner<TData extends Record<string, unknown>>({
       </div>
 
       {/* ── Floating bulk-action bar ──────────────────────────────────────── */}
-      {anySelected && (
+      {!hideBulkActions && anySelected && (
         <div
           role="status"
           aria-live="polite"
