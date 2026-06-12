@@ -1,7 +1,17 @@
 'use client'
 
-import { Button } from '@exxatdesignux/ui'
+import { useState } from 'react'
+import {
+  Button,
+  Card,
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from '@exxatdesignux/ui'
 import type { PceTemplate } from '@/lib/pce-mock-data'
+import { SurveyPreviewDialog } from './survey-preview-dialog'
 
 interface StepSurveyDesignGeneralProps {
   publishedTemplates: PceTemplate[]
@@ -18,31 +28,23 @@ export function StepSurveyDesignGeneral({
   onBack,
   onNext,
 }: StepSurveyDesignGeneralProps) {
+  const [previewTemplate, setPreviewTemplate] = useState<PceTemplate | null>(null)
+
   return (
-    <div className="flex flex-col gap-5" style={{ maxWidth: 640 }}>
-      {/* Header */}
+    <div className="flex flex-col gap-5" style={{ maxWidth: 680 }}>
       <div className="flex flex-col gap-1">
-        <h1 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Survey design</h1>
+        <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Survey design</h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-          Choose a template for this general survey.
+          Set a template for this survey.
         </p>
       </div>
 
       {publishedTemplates.length === 0 ? (
-        <div
-          className="flex flex-col items-center gap-3 py-14 text-center rounded-xl border border-dashed"
-          style={{ borderColor: 'var(--border)' }}
-        >
-          <i
-            className="fa-light fa-file-lines text-3xl"
-            aria-hidden="true"
-            style={{ color: 'var(--muted-foreground)' }}
-          />
+        <div className="flex flex-col items-center gap-3 py-14 text-center rounded-xl border border-dashed border-border">
+          <i className="fa-light fa-file-lines text-3xl" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
           <div>
-            <p className="text-sm font-medium">No general survey templates</p>
-            <p className="text-sm mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
-              Create and publish a General Survey template to continue.
-            </p>
+            <p className="text-sm font-medium">No published templates</p>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--muted-foreground)' }}>Publish a template to continue.</p>
           </div>
           <Button variant="outline" size="sm" asChild>
             <a href="/templates" target="_blank" rel="noreferrer" aria-label="Go to templates (opens in new tab)">
@@ -52,57 +54,67 @@ export function StepSurveyDesignGeneral({
           </Button>
         </div>
       ) : (
-        <div
-          className="flex flex-col rounded-xl border border-border overflow-hidden"
-          role="radiogroup"
-          aria-label="Select a template"
-          style={{ background: 'var(--card)' }}
-        >
-          {publishedTemplates.map((t, i) => {
-            const isSelected = t.id === selectedTemplateId
-            const isLast = i === publishedTemplates.length - 1
-            return (
-              <label
-                key={t.id}
-                className="flex items-start gap-3 cursor-pointer"
-                style={{
-                  padding: isSelected ? '13px 15px' : '14px 16px',
-                  borderBottom: isLast ? 'none' : '1px solid var(--border)',
-                  border: isSelected ? '2px solid var(--brand-color)' : undefined,
-                  background: isSelected ? 'var(--card)' : undefined,
-                }}
+        <>
+          <div className="flex flex-col gap-3" role="list" aria-label="Survey template">
+            <Card role="listitem" className="flex flex-col overflow-hidden shadow-none">
+              <div
+                className="flex items-center gap-3"
+                style={{ padding: '10px 14px' }}
               >
-                <input
-                  type="radio"
-                  name="general-template"
-                  value={t.id}
-                  checked={isSelected}
-                  onChange={() => onTemplateChange(t.id)}
-                  className="mt-0.5 shrink-0 accent-[var(--brand-color)]"
-                  aria-label={t.name}
-                />
-                <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                  <span className="text-sm font-semibold">{t.name}</span>
-                  {t.questionCount > 0 && (
-                    <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                      {t.questionCount} question{t.questionCount !== 1 ? 's' : ''}
-                    </span>
-                  )}
-                </div>
-                {isSelected && (
-                  <i
-                    className="fa-solid fa-check text-xs shrink-0 mt-0.5"
-                    aria-hidden="true"
-                    style={{ color: 'var(--brand-color)' }}
-                  />
+                <span className="text-sm font-semibold flex-1 flex items-center gap-2">
+                  General Survey
+                  <span className="text-xs font-normal" style={{ color: 'var(--muted-foreground)' }}>
+                    all recipients
+                  </span>
+                </span>
+
+                <Select value={selectedTemplateId} onValueChange={onTemplateChange}>
+                  <SelectTrigger
+                    className="w-48 shrink-0"
+                    aria-label="Template for this survey"
+                    style={{ height: 32, fontSize: 13 }}
+                  >
+                    <SelectValue placeholder="Choose template…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {publishedTemplates.map(t => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {selectedTemplateId && (
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Preview selected template"
+                    onClick={() => setPreviewTemplate(publishedTemplates.find(t => t.id === selectedTemplateId) ?? null)}
+                  >
+                    <i className="fa-light fa-eye text-xs" aria-hidden="true" />
+                  </Button>
                 )}
-              </label>
-            )
-          })}
-        </div>
+              </div>
+            </Card>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+              {selectedTemplateId ? '1 of 1 assigned' : '0 of 1 assigned'}
+            </span>
+            <a
+              href="/templates"
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs text-primary hover:underline underline-offset-2"
+              aria-label="Create a template (opens in new tab)"
+            >
+              Create a template
+              <i className="fa-light fa-arrow-up-right-from-square ml-1 text-xs" aria-hidden="true" />
+            </a>
+          </div>
+        </>
       )}
 
-      {/* Nav */}
       <div className="border-t border-border pt-4 flex items-center justify-between">
         <Button variant="outline" size="sm" onClick={onBack}>
           <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 12 }} />
@@ -118,6 +130,12 @@ export function StepSurveyDesignGeneral({
           <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 12 }} />
         </Button>
       </div>
+
+      <SurveyPreviewDialog
+        template={previewTemplate}
+        open={!!previewTemplate}
+        onOpenChange={open => { if (!open) setPreviewTemplate(null) }}
+      />
     </div>
   )
 }

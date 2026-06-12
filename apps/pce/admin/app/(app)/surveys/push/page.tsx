@@ -10,7 +10,6 @@ import { StepDistribution } from '@/components/pce/distribute-wizard/step-distri
 import { StepSurveyDesign } from '@/components/pce/distribute-wizard/step-survey-design'
 import { StepCommunication, type Reminder } from '@/components/pce/distribute-wizard/step-communication'
 import { StepSuccess } from '@/components/pce/distribute-wizard/step-success'
-import { StepDistributionGeneral } from '@/components/pce/distribute-wizard/step-distribution-general'
 import { StepSurveyDesignGeneral } from '@/components/pce/distribute-wizard/step-survey-design-general'
 import {
   MOCK_PROGRAM_TERMS,
@@ -244,14 +243,7 @@ function PushSurveyInner() {
             />
           )}
 
-          {step === 2 && surveyMode === 'general' && (
-            <StepDistributionGeneral
-              onBack={() => setStep(1)}
-              onNext={() => setStep(3)}
-            />
-          )}
-
-          {step === 2 && surveyMode !== 'general' && selectedTerm && (
+          {step === 2 && selectedTerm && (
             <StepDistribution
               offeringsForTerm={offeringsForTerm}
               selectedOfferings={selectedOfferings}
