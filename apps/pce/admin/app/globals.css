@@ -68,6 +68,28 @@
    --courses-* table tints, etc.
    Anything ABOVE this line must match this template verbatim. */
 
+:root {
+  /* Status badge tokens — mirrors EM's qb-status-* palette */
+  --qb-status-saved-bg:         oklch(0.945 0.040 155);
+  --qb-status-saved-fg:         oklch(0.28 0.12 155);
+  --qb-status-saved-border:     oklch(0.72 0.12 155);
+  --qb-status-draft-bg:         oklch(0.955 0.022 75);
+  --qb-status-draft-fg:         oklch(0.42 0.12 68);
+  --qb-status-draft-border:     oklch(0.82 0.08 72);
+  --qb-status-archived-bg:      oklch(0.94 0.005 270);
+  --qb-status-archived-fg:      oklch(0.42 0.01 270);
+  --qb-status-archived-border:  oklch(0.74 0.006 270);
+  --qb-status-review-bg:        oklch(0.94 0.03 240);
+  --qb-status-review-fg:        oklch(0.38 0.08 240);
+  --qb-status-review-border:    oklch(0.74 0.08 240);
+  --qb-status-planned-bg:       oklch(0.95 0.012 250);
+  --qb-status-planned-fg:       oklch(0.42 0.04 255);
+  --qb-status-planned-border:   oklch(0.78 0.04 255);
+  --qb-status-completed-bg:     oklch(0.94 0.035 195);
+  --qb-status-completed-fg:     oklch(0.34 0.07 195);
+  --qb-status-completed-border: oklch(0.72 0.08 195);
+}
+
 
 /*
   DS custom variants — required for DS Tailwind classes (data-active:,

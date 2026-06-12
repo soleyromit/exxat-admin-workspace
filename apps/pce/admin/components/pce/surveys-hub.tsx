@@ -14,7 +14,16 @@ import {
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
-import { SurveyStatusBadge } from '@/components/pce/pce-badges'
+import { ListHubStatusBadge } from '@/components/list-hub-status-badge'
+import {
+  LIST_HUB_STATUS_TINT_SUCCESS,
+  LIST_HUB_STATUS_TINT_WARNING,
+  LIST_HUB_STATUS_TINT_INFO,
+  LIST_HUB_STATUS_TINT_PLANNED,
+  LIST_HUB_STATUS_TINT_COMPLETED,
+  LIST_HUB_STATUS_TINT_NEUTRAL,
+  type StatusTint,
+} from '@/lib/list-status-badges'
 import { BulletGauge } from '@/components/pce/bullet-gauge'
 import { CreateSurveySheet, CloseSurveyDialog } from '@/components/pce/pce-modals'
 import {
@@ -56,6 +65,16 @@ function StatusContextCell({ survey }: { survey: PceSurvey }) {
     )
   }
   return null
+}
+
+const SURVEY_STATUS_BADGE: Record<SurveyStatus, { tint: StatusTint; icon: string; label: string }> = {
+  draft:          { tint: LIST_HUB_STATUS_TINT_WARNING,   icon: 'fa-pen-ruler',          label: 'Draft'          },
+  scheduled:      { tint: LIST_HUB_STATUS_TINT_PLANNED,   icon: 'fa-calendar',           label: 'Scheduled'      },
+  active:         { tint: LIST_HUB_STATUS_TINT_SUCCESS,   icon: 'fa-circle-check',       label: 'Active'         },
+  collecting:     { tint: LIST_HUB_STATUS_TINT_INFO,      icon: 'fa-circle-dot',         label: 'Collecting'     },
+  pending_review: { tint: LIST_HUB_STATUS_TINT_WARNING,   icon: 'fa-hourglass-half',     label: 'Pending Review' },
+  released:       { tint: LIST_HUB_STATUS_TINT_COMPLETED, icon: 'fa-flag-checkered',     label: 'Released'       },
+  closed:         { tint: LIST_HUB_STATUS_TINT_NEUTRAL,   icon: 'fa-box-archive',        label: 'Closed'         },
 }
 
 interface SurveyRow extends Record<string, unknown> {
@@ -100,7 +119,7 @@ export function SurveysHub({ mode }: { mode: 'course_evaluation' | 'general' }) 
 
   const isGeneral = mode === 'general'
   const title = isGeneral ? 'Surveys' : 'Evaluations'
-  const pushHref = isGeneral ? '/surveys/push?mode=programmatic' : '/surveys/push'
+  const pushHref = isGeneral ? '/surveys/programmatic/push' : '/surveys/push'
   const pushLabel = isGeneral ? 'Push surveys' : 'Push Evaluations'
 
   const activeTerm = MOCK_PROGRAM_TERMS.find(t => t.status === 'active') ?? null
@@ -190,7 +209,10 @@ export function SurveysHub({ mode }: { mode: 'course_evaluation' | 'general' }) 
       sortable: true,
       width: 150,
       filter: { type: 'select', icon: 'fa-circle-dot', options: STATUS_FILTER_OPTIONS },
-      cell: (row) => <SurveyStatusBadge status={row.status} />,
+      cell: (row) => {
+        const s = SURVEY_STATUS_BADGE[row.status as SurveyStatus] ?? SURVEY_STATUS_BADGE.draft
+        return <ListHubStatusBadge label={s.label} tint={s.tint} icon={s.icon} />
+      },
     },
     {
       key: 'statusContext',
@@ -284,7 +306,10 @@ export function SurveysHub({ mode }: { mode: 'course_evaluation' | 'general' }) 
       sortable: true,
       width: 150,
       filter: { type: 'select', icon: 'fa-circle-dot', options: STATUS_FILTER_OPTIONS },
-      cell: (row) => <SurveyStatusBadge status={row.status} />,
+      cell: (row) => {
+        const s = SURVEY_STATUS_BADGE[row.status as SurveyStatus] ?? SURVEY_STATUS_BADGE.draft
+        return <ListHubStatusBadge label={s.label} tint={s.tint} icon={s.icon} />
+      },
     },
     {
       key: 'statusContext',

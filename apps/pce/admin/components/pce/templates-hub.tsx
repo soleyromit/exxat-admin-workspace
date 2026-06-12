@@ -5,11 +5,19 @@ import { useRouter } from 'next/navigation'
 import {
   Button,
   PageHeader,
+  Tooltip, TooltipTrigger, TooltipContent,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
 } from '@exxatdesignux/ui'
+import { ListHubStatusBadge } from '@/components/list-hub-status-badge'
+import {
+  LIST_HUB_STATUS_TINT_SUCCESS,
+  LIST_HUB_STATUS_TINT_WARNING,
+} from '@/lib/list-status-badges'
+
+import { TablePropertiesDrawer } from '@/components/table-properties/drawer'
+import type { FilterFieldDef } from '@/components/table-properties/types'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
-import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { DeleteTemplateDialog } from '@/components/pce/pce-modals'
 import type { PceTemplate, SurveyStatus } from '@/lib/pce-mock-data'
 import { DataTable } from '@/components/data-table'
@@ -33,7 +41,6 @@ export function TemplatesHub({ mode }: { mode: 'course_evaluation' | 'general' }
 
   const isGeneral = mode === 'general'
   const title = 'Templates'
-  const badgeLabel = 'Programmatic Surveys'
   const newTemplateHref = isGeneral ? '/templates/new?mode=programmatic' : '/templates/new'
   const newTemplateLabel = isGeneral ? 'New Template' : 'New Template'
 
@@ -58,6 +65,15 @@ export function TemplatesHub({ mode }: { mode: 'course_evaluation' | 'general' }
     label: 'Course type',
     sortable: true,
     width: 140,
+    filter: {
+      type: 'select',
+      icon: 'fa-chalkboard-teacher',
+      operators: ['is', 'is_not'],
+      options: [
+        { value: 'didactic', label: 'Didactic' },
+        { value: 'clinical', label: 'Clinical' },
+      ],
+    },
     cell: (row) => {
       const ct = row.template.courseType
       if (!ct || ct === 'any') return <span className="text-sm text-muted-foreground">Any</span>
@@ -126,8 +142,29 @@ export function TemplatesHub({ mode }: { mode: 'course_evaluation' | 'general' }
       key: 'status',
       label: 'Status',
       sortable: true,
-      width: 140,
-      cell: (row) => <SurveyStatusBadge status={row.template.status} />,
+      width: 150,
+      filter: {
+        type: 'select',
+        icon: 'fa-circle-dot',
+        operators: ['is', 'is_not'],
+        options: [
+          {
+            value: 'active',
+            label: 'Active',
+            node: <ListHubStatusBadge label="Active" tint={LIST_HUB_STATUS_TINT_SUCCESS} icon="fa-circle-check" />,
+          },
+          {
+            value: 'draft',
+            label: 'Draft',
+            node: <ListHubStatusBadge label="Draft" tint={LIST_HUB_STATUS_TINT_WARNING} icon="fa-pen-to-square" />,
+          },
+        ],
+      },
+      cell: (row) => (
+        row.template.status === 'active'
+          ? <ListHubStatusBadge label="Active" tint={LIST_HUB_STATUS_TINT_SUCCESS} icon="fa-circle-check" />
+          : <ListHubStatusBadge label="Draft" tint={LIST_HUB_STATUS_TINT_WARNING} icon="fa-pen-to-square" />
+      ),
     },
     {
       key: 'lastModified',
@@ -182,7 +219,62 @@ export function TemplatesHub({ mode }: { mode: 'course_evaluation' | 'general' }
             onRowClick={(row) => {
               window.location.href = `/templates/${row.template.id}`
             }}
-            toolbarSlot={() => null}
+            toolbarSlot={(state) => {
+              const filterFields: FilterFieldDef[] = columns
+                .filter(c => c.filter)
+                .map(c => ({
+                  key: c.key,
+                  label: c.label,
+                  icon: c.filter!.icon ?? 'fa-filter',
+                  type: c.filter!.type,
+                  operators: c.filter!.operators ?? ['is', 'is_not'],
+                  options: c.filter!.options,
+                }))
+              return (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Table properties"
+                        aria-expanded={state.sheetOpen}
+                        onClick={() => state.setSheetOpen(o => !o)}
+                      >
+                        <i className="fa-light fa-sliders text-[13px]" aria-hidden="true" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">Table properties</TooltipContent>
+                  </Tooltip>
+                  <TablePropertiesDrawer
+                    open={state.sheetOpen}
+                    onOpenChange={state.setSheetOpen}
+                    activeFilters={state.activeFilters}
+                    onAddFilter={state.addFilter}
+                    onUpdateFilter={state.updateFilter}
+                    onRemoveFilter={state.removeFilter}
+                    getFilterConnector={state.getConnector}
+                    onToggleFilterConnector={state.toggleConnector}
+                    filterFields={filterFields}
+                    totalRows={rows.length}
+                    filteredRows={state.rows.length}
+                    sortRules={state.sortRules}
+                    onSortRulesChange={state.setSortRules}
+                    onAddSortRule={state.addSortRule}
+                    onRemoveSortRule={state.removeSortRule}
+                    onToggleSortDir={state.toggleSortDir}
+                    colOrder={state.colOrder}
+                    onColOrderChange={state.setColOrder}
+                    hiddenCols={state.hiddenCols}
+                    onToggleColVisibility={state.toggleColVisibility}
+                    onMoveCol={state.moveCol}
+                    resolveColumnLabel={(key) => columns.find(c => c.key === key)?.label ?? key}
+                    orderableKeys={columns.filter(c => c.key !== 'actions').map(c => c.key)}
+                  />
+                </>
+              )
+            }}
           />
         )}
       </div>

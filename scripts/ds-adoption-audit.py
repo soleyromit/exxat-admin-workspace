@@ -1031,7 +1031,8 @@ def scan_file_for_ferpa_data_coexistence(rel: str, text: str) -> list[Gap]:
 
 # Signals used by scanner B (hand-rolled status badge).
 _HAND_ROLLED_BADGE_NAME_RE = re.compile(
-    r"(?:function|const|class)\s+\w*(?:StatusBadge|SurveyStatusBadge|"
+    # ListHubStatusBadge is the DS-prescribed vendored name (template-vite) — exclude it.
+    r"(?:function|const|class)\s+(?!ListHub)\w*(?:StatusBadge|SurveyStatusBadge|"
     r"AssessmentStatusBadge|StatusDot)\w*\s*(?:[=(:<]|=>)",
     re.IGNORECASE,
 )
