@@ -7,15 +7,26 @@ interface WizardNavProps {
   completedUpTo: number
   onStepClick: (n: number) => void
   mode?: 'course_evaluation' | 'general'
+  steps?: { n: number; label: string }[]
 }
 
-export function WizardNav({ currentStep, completedUpTo, onStepClick, mode = 'course_evaluation' }: WizardNavProps) {
-  const STEPS = [
-    { n: 1, label: mode === 'general' ? 'Survey' : 'Evaluation' },
+const DEFAULT_STEPS: Record<string, { n: number; label: string }[]> = {
+  course_evaluation: [
+    { n: 1, label: 'Evaluation' },
     { n: 2, label: 'Design' },
     { n: 3, label: 'Distribution' },
     { n: 4, label: 'Communication' },
-  ]
+  ],
+  general: [
+    { n: 1, label: 'Survey' },
+    { n: 2, label: 'Design' },
+    { n: 3, label: 'Distribution' },
+    { n: 4, label: 'Communication' },
+  ],
+}
+
+export function WizardNav({ currentStep, completedUpTo, onStepClick, mode = 'course_evaluation', steps }: WizardNavProps) {
+  const STEPS = steps ?? DEFAULT_STEPS[mode]
 
   return (
     <nav
