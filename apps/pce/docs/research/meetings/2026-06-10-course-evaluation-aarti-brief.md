@@ -712,40 +712,89 @@ Left step nav + right question list with drag handles + "Add new question" inlin
 
 ## 13. Nav Delta + CommandPalette
 
-### Left nav changes
+### Current nav — source of truth (`lib/pce-nav.tsx`)
 
 ```
-PCE Admin left nav — current → after
-───────────────────────────────────────────────────────
-SETUP cluster (existing)
-  ├─ Academic Years & Terms     [EXISTS — extend]
-  ├─ Survey Templates           [EXISTS — extend]
-  ├─ Email Templates            [NET-NEW route: admin/email-templates]
-  └─ Reminder Schedule          [NET-NEW route: admin/reminder-schedule]
+NAV_ADMIN (admin role)
+├── Course Evaluation                          ← collapsible group
+│   ├── Evaluations          /surveys
+│   └── Templates            /templates
+│
+├── Programmatic Surveys                       ← collapsible group
+│   ├── Surveys              /surveys/programmatic
+│   └── Templates            /templates/programmatic
+│
+└── Setup                                      ← collapsible group (ALL entity + config mixed)
+    ├── Students             /admin/students
+    ├── Faculty              /admin/faculty
+    ├── Courses              /admin/courses
+    ├── Terms                /admin/terms
+    ├── Offerings            /admin/offerings
+    ├── Competencies         /admin/competencies
+    ├── Content Areas        /admin/content-areas
+    ├── Standards            /admin/standards
+    ├── Assessment Types     /admin/assessment-types
+    ├── Permissions          /admin/permissions
+    └── Overview             /admin
 
-ACTIVATE                        [NET-NEW nav item + route: admin/activate]
-  └─ Term Activation wizard     (replaces run-evaluation + push flows)
-
-ANALYTICS cluster (existing: "By Term" only)
-  └─ Analytics                  [CHANGE: one route analytics/page.tsx with Tabs]
-      ├─ By Term   (tab)        [EXISTS — wire to rebuilt Eval Card + Nudge]
-      ├─ By Faculty (tab)       [NET-NEW tab + route analytics?by=faculty]
-      └─ By Course  (tab)       [NET-NEW tab + route analytics?by=course]
+⚠ Analytics: NOT in nav (route /analytics exists but is unreachable from sidebar)
+⚠ Moderation: NOT in nav (route /moderation exists but unreachable)
+⚠ Setup mixes entity management + eval config in one flat list — no separation
 ```
 
-**Decision required (OPEN-8):** Does Analytics use `Tabs` (one page) or three separate left-nav sub-items? Recommend `Tabs variant="line"` on one page — simpler nav, three doors are conceptually parallel, matches Aarti's "three entry points" framing. Flag for Mondal confirmation before build.
+### Target nav — after Course & Faculty Evaluation module
+
+```
+NAV_ADMIN (target)
+├── Course Evaluation                          ← collapsible group
+│   ├── Evaluations          /surveys          [EXISTS]
+│   ├── Activate             /admin/activate   [NET-NEW]
+│   ├── Analytics            /analytics        [NET-NEW nav entry; Tabs inside]
+│   │     By Term / By Faculty / By Course     [tabs on analytics page]
+│   ├── Moderation           /moderation       [ADD to nav — route exists, was invisible]
+│   └── Templates            /templates        [EXISTS — extend]
+│
+├── Programmatic Surveys                       ← unchanged
+│   ├── Surveys              /surveys/programmatic
+│   └── Templates            /templates/programmatic
+│
+└── Setup                                      ← split: Directories + Eval Config
+    │
+    ├── ── Directories (read-only) ──
+    │   ├── Students         /admin/students   [EXISTS — make read-only + eval cols]
+    │   ├── Faculty          /admin/faculty    [EXISTS — make read-only + rating stats]
+    │   ├── Courses          /admin/courses    [EXISTS — make read-only + cross-term stats]
+    │   └── Offerings        /admin/offerings  [EXISTS — make read-only + eval status]
+    │
+    ├── ── Eval Config ──
+    │   ├── Academic Years & Terms  /admin/terms               [EXISTS — add enable toggle + dates]
+    │   ├── Survey Templates        /templates                 [same route as CE > Templates]
+    │   ├── Email Templates         /admin/email-templates     [NET-NEW]
+    │   └── Reminder Schedule       /admin/reminder-schedule   [NET-NEW]
+    │
+    └── ── PCE-wide (unchanged) ──
+        ├── Competencies     /admin/competencies
+        ├── Content Areas    /admin/content-areas
+        ├── Standards        /admin/standards
+        ├── Assessment Types /admin/assessment-types
+        ├── Permissions      /admin/permissions
+        └── Overview         /admin
+```
+
+**Decision required (OPEN-8):** Does Analytics use `Tabs variant="line"` (one page, three tabs) or three separate nav sub-items? Recommend tabs — matches Aarti's "three entry points" framing, simpler nav. Flag for Mondal before build.
+
+**Decision required (OPEN-9):** Should Setup split into visible sub-labels ("Directories" / "Eval Config" / "PCE-wide") in the sidebar, or stay flat with items reordered? Recommend sub-labels using `SidebarNavLabel` — the current flat list of 11 items is already unmanageable. Flag for Mondal.
 
 ### CommandPalette registrations (`components/command-palette.tsx`)
 
-Four new navigable surfaces need adding to the Admin group:
-
 | Label | Route | Group |
 |---|---|---|
+| Activate Evaluations | `/admin/activate` | Course Evaluation |
+| Analytics — By Faculty | `/analytics?by=faculty` | Course Evaluation |
+| Analytics — By Course | `/analytics?by=course` | Course Evaluation |
+| Moderation | `/moderation` | Course Evaluation |
 | Email Templates | `/admin/email-templates` | Setup |
 | Reminder Schedule | `/admin/reminder-schedule` | Setup |
-| Activate Evaluations | `/admin/activate` | Workflow |
-| Analytics — By Faculty | `/analytics?by=faculty` | Analytics |
-| Analytics — By Course | `/analytics?by=course` | Analytics |
 
 ### Build blockers — OPEN questions (pin before Baroda Jun 22)
 
@@ -753,4 +802,89 @@ Four new navigable surfaces need adding to the Admin group:
 |---|---|---|
 | OPEN-1 | >1 template per course type: which is the default in Step 2 auto-assign? | Term Activation Step 2 logic |
 | OPEN-7 | Leo/chat placement in new surfaces — inherit shell header or per-module? | Every new page shell |
-| OPEN-8 | Analytics: `Tabs` on one page vs three separate nav sub-items? | Left nav structure + Analytics route |
+| OPEN-8 | Analytics: Tabs on one page vs three separate nav sub-items? | Left nav + analytics route |
+| OPEN-9 | Setup: sub-labels ("Directories" / "Eval Config") vs flat reordered list? | `lib/pce-nav.tsx` restructure |
+
+---
+
+## 14. End-to-end Functional Flow
+
+This is the system lifecycle — what the platform does from school onboarding through analytics, mapped against time and persona. Different from §7 (task journeys). Use this to verify that every surface in the module connects to a real moment in the flow.
+
+### Lifecycle diagram
+
+```
+TIME →    [Year start]      [Term prep]     [Open date]    [Collecting]   [Close date]  [Analytics]
+           (once/year)       (< 5 min)       (auto)         (weeks)        (auto)        (ongoing)
+
+──────────────────────────────────────────────────────────────────────────────────────────────────
+ADMIN     Enable AY         Select term     —              Monitor %      —             By Term
+ACTIONS   + Terms           Select courses                 completion     —             By Faculty
+          Build Templates   Approve dates                  Ad-hoc Nudge   Release?      By Course
+          Write Emails      Approve emails                 (optional)     → Moderation  → Eval Card
+          Set Reminders     Save & Schedule
+          (Setup zone)      (Activate wizard)
+                ↓                 ↓
+DATA       Defaults stored   Distribution   Initial email  Reminder       Responses     Aggregated
+CREATED    in Setup          record         scheduled      emails fire    locked        per-question
+           (reused every     SCHEDULED      (on open date) (N days        (read-only)   scores
+            term)            status set     sent to all    before
+                                            students       term end)
+                ↓                 ↓               ↓              ↓              ↓
+STUDENT    —                 —               Receives       Can edit       Cannot        —
+ACTIONS                                     email CTA      submitted      edit
+                                            → Survey HOME  responses      responses
+                                            Fills sections
+                                            (course +
+                                             per-faculty)
+                                            Submits
+                ↓                 ↓               ↓              ↓              ↓
+STATUS     —                 SCHEDULED       COLLECTING     COLLECTING     CLOSED        CLOSED
+           (no distribution  (saved, not     (open date     (reminders     (close date   (Eval Card
+            record yet)       sent)           reached)       auto-fire)     reached)      unlocked)
+```
+
+### Data dependencies between zones
+
+```
+SETUP outputs → ACTIVATION consumes
+─────────────────────────────────────────────────────────────────
+Term.endDate              → Step 3 date calculator (open = end−7, close = end+0)
+Term.enabledForEval       → Step 1 term picker (only enabled terms appear)
+Template.courseType       → Step 2 auto-assign (Didactic → Standard Didactic Eval)
+EmailTemplate.initial     → Step 4 pre-fill (editable per activation)
+EmailTemplate.reminder    → Step 4 pre-fill (editable per activation)
+ReminderSchedule.intervals → Step 3 reminder preview (Dec 1 / Dec 5 / Dec 10)
+
+ACTIVATION outputs → AUTO-FIRE consumes
+─────────────────────────────────────────────────────────────────
+Distribution.openDate     → trigger: fire initial email + set status COLLECTING
+Distribution.closeDate    → trigger: set status CLOSED
+ReminderSchedule × Term.endDate → trigger: fire reminder emails on calculated dates
+
+COLLECTING state → ANALYTICS consumes
+─────────────────────────────────────────────────────────────────
+Response.submittedAt      → completion % shown in By Term during COLLECTING
+Response.perQuestion      → Eval Card bar charts (only after CLOSED)
+Faculty.courseOfferings   → By Faculty aggregation
+Course.allOfferings       → By Course cross-term aggregation
+```
+
+### What each surface connects to in the flow
+
+| Surface | Lifecycle moment | Input from | Output to |
+|---|---|---|---|
+| Academic Years & Terms | Year start (once) | Admin | Term.endDate → Activation |
+| Survey Templates | Year start (once) | Admin | Template → Activation auto-assign |
+| Email Templates | Year start (once) | Admin | Email body → Activation pre-fill |
+| Reminder Schedule | Year start (once) | Admin | Intervals → Activation date preview |
+| Term Activation wizard | Term prep (< 5 min) | Setup defaults | Distribution records (SCHEDULED) |
+| Auto-fire (initial email) | Open date (auto) | Distribution.openDate | Student receives email CTA |
+| Auto-fire (reminders) | N days before term end (auto) | ReminderSchedule × Term.endDate | Student receives reminder |
+| Survey HOME (student) | Open → Close | Email CTA link | Student response records |
+| By Term analytics | During COLLECTING + after CLOSE | Distribution + Responses | Admin sees % + Nudge |
+| Ad-hoc Nudge | During COLLECTING | Admin action | Out-of-schedule reminder email |
+| Moderation | After CLOSE | Open-text responses | Admin releases / flags |
+| By Faculty analytics | After CLOSE | Faculty + Responses | Faculty performance view |
+| By Course analytics | After CLOSE | Course history + Responses | Cross-term trend view |
+| Evaluation Card | After CLOSE | One offering × one faculty | Per-question breakdown |
