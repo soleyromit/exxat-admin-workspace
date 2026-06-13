@@ -1172,6 +1172,153 @@ Participants: Romit + Kunal (Eng) + Aarti
 
 ---
 
+### 5.61 Base entity scope + assessment creation entry point (2026-06-09)
+
+Source: `docs/research/meetings/2026-06-09-exam-management-sync-mohit.md` (Granola `70d6511f`)  
+Participants: Romit + Mohit
+
+| Decision | Detail |
+|---|---|
+| **Base entity scope (D_EM_M01)** | Landing pages scope = **current information only**. No performance data, accommodations, or interventions. These are introduced later when each feature is built. |
+| **Assessment creation entry point (D_EM_M02)** | Entry = from a **course offering**, NOT from the left-nav "Assessment" item. Left-nav entry was a demo error; course is the true parent context. |
+
+> "My document is strictly limited to what we will have, the information we'll have. We are building course offering landing page. Performance will come later. We will introduce that information in the respective entities or sub entities. Whenever we build that particular feature." — Mohit
+
+Design task: T96 — revise base entity mockups. Scope = current information only. Deadline 2026-06-12.
+
+---
+
+## 6.15 PCE — Template creation paths, distribution rules, and Phase 1 kills (2026-06-09)
+
+Source: `apps/pce/docs/research/meetings/2026-06-09-post-course-survey-cadence.md` (Granola `3fd2ac92`)  
+Participants: Romit + Vishaka + David + Monel
+
+### Template creation — 3 mutually exclusive top-level paths (D_PCE_NC01–NC04)
+
+- **Build new** — manual sections and questions only. Once inside a section, go straight into question writing. No "add from template" per section. No per-section upload.
+- **Copy existing** — duplicate a prior template, new name + metadata.
+- **Import from PDF or Word** — upload ONE document at the top level; system auto-creates sections + questions. Upload label must read "PDF or Word document" (not just "PDF").
+
+> "So they're mutually exclusive. If they want to build new, they're basically manually creating sections. If they are copying from existing the survey already exists in Exact Prism. And third is that they have a word or a PDF that they are uploading and the system will create that into a survey for them." — David / Vishaka
+
+### Kills confirmed in this session
+
+| Kill | Reason |
+|---|---|
+| Section-level "add from template" | "Too complicated. We already gave them the copy-existing option." — Vishaka |
+| Section-level PDF/Word upload | No use case: one document covers whole survey, not individual sections. |
+| Visibility/privacy toggle in distribution | "This whole section is not needed. We are going to have a review and release results workflow." — Vishaka |
+| Anonymous responses toggle | Always anonymous by default. Surface as informational message, not a toggle. |
+| Anonymous link distribution channel (PCE only) | "These are very focused surveys that only students who have experienced these instructors are going to take." — Vishaka |
+| Report access screen per survey | Role-based access handles it. Edge cases = admin downloads + emails manually. Phase 1 must stay minimal for adoption. |
+
+### Distribution rules (D_PCE_NC11–NC13)
+
+- Post-course evaluation: **Prism-only** distribution. No additional-email or anonymous-link options.
+- General (programmatic) surveys: **all three channels** remain.
+- Reminders: **multiselect**, counted from **closing date** (not opening date). Messaging must state this clearly.
+
+### Results release (D_PCE_NC14–NC15)
+
+- Results release date = **required** if comment moderation is not Phase 1. If no date set, admin must manually release. Surface in messaging.
+- Surveys grouped by **term** (not "project"). Changing dates at term level cascades to all course instances. Individual course-level override still possible.
+
+> "The mandatory would need result release date. It cannot be optional." — Vishaka
+
+> "Guideline, we should keep it minimalistic, simple, and clean. Because that is what will give us good adoption and liking in phase one." — Vishaka
+
+---
+
+## 6.16 PCE — Tab structure, analytics dimensions, and base entity strategy (2026-06-10)
+
+Source: `apps/pce/docs/research/meetings/2026-06-10-pce-architecture-vishaka-arun.md` (Granola `4d1fa807`)  
+Participants: Romit + Vishaka + Arun + Vinaya (dev manager)
+
+### Analytics page naming (D_PCE_AV01)
+
+Do **not** call analytics tabs "Longitudinal Insights". The two named dimensions are:
+- **Course Offering** — analytics entered from a course perspective
+- **Faculty** — analytics entered from a faculty perspective
+
+> "Don't call it longitudinal because call it faculty because I want faculty's insights." — Arun
+
+### Dashboard structure (D_PCE_AV02)
+
+Dashboard groups course offerings by **term** (current, future, past). Term is the primary organizing axis.
+
+### Faculty analytics page (D_PCE_AV04–AV05)
+
+- Top: leaderboard (top performers + needs-attention)
+- Below: searchable grid — columns: total courses, avg score, highest score, lowest score
+- Click faculty → detail: **spider graph** (template sections as axes, peer comparison + longitudinal trend) + per-course history
+
+> "The landing page will be like top five performing faculty, faculty that need attention — the bottom five faculty. And then on the right side, just the selection of the faculty." — Arun
+
+### Course offering analytics page (D_PCE_AV03, AV16)
+
+Offerings listed per term descending. Per-row stats: avg rating, response rate, enrolled, completed. Click → trend + results view.
+
+> "This page and this page [course dimension + faculty dimension] is what makes sense for us to say we are carving this out as a unique type of survey." — Arun / Vishaka
+
+### Student detail — no separate surveys tab (D_PCE_AV06–AV07)
+
+Survey completion status **integrated into course rows**. Current courses on top, past below. No separate "Surveys" tab.
+
+### Academic calendar = prerequisite for term grouping (D_PCE_AV08–AV09)
+
+Settings must include academic year + term labels with start/end dates. Dashboard term-grouping only shows terms with configured dates. Unconfigured terms are excluded and trigger a reminder.
+
+> "Is everybody clear that the setup section will force them to add start date and dates for their years and terms that they want to use?" — Vishaka
+
+### Base entities = pulled from Prism; no separate creation in PCE Phase 1 (D_PCE_AV10–AV14)
+
+Students, faculty, courses = view-only in PCE. All entity management navigates to Prism in a new tab. **Standalone sellability target: 2027** — by then PCE must work independently. Phase 1 relies on Prism base.
+
+---
+
+## 6.17 PCE — Setup section, email templates, term workflow (Aarti 1:1) (2026-06-10)
+
+Source: `apps/pce/docs/research/meetings/2026-06-10-course-faculty-eval-setup-aarti.md` (Granola `410d7c0e`)  
+Participants: Romit + Aarti (11:16 PM EDT)
+
+> Context: India team (new initiatives) coming to Baroda week of June 22. One full day dedicated to course & faculty evaluation. Aarti wants design and structure nailed down before that visit.
+
+### Setup section items (D_PCE_AAD01–AAD03)
+
+- **Two email templates** — initial (sent when evaluation published) + reminder. Persistent in Setup, reused term after term. Per-term override allowed.
+- **Default reminder schedule** — anchored on term end date. Default = 15 days before term end. Configurable as days-relative-to-close-date. Per-survey override allowed.
+- **Course type → template default mapping** — each course type has a default survey template. When setting up a term, courses auto-populate with their type's default template. Admin can override per course.
+
+> "The email template is a setup. The reminder schedule is a setup. Actual survey is a setup." — Aarti
+
+### Term setup = 3-minute task (D_PCE_AAD04)
+
+Once defaults are configured: (1) select term → (2) courses auto-populate with type + default template → (3) confirm dates → (4) confirm email templates → save.
+
+> "Assuming I don't want to edit anything, I select fall twenty twenty six, I select my courses. I say okay to the dates. I say okay to the email templates. And I save it, and I'm done. It literally should take you two to five minutes to get a new term ready." — Aarti
+
+### General survey module enhancements: explicitly deferred (D_PCE_AAD05)
+
+> "Right now, I don't have the bandwidth to discuss the updates that we want to make to the general general survey module." — Aarti
+
+Phase 1 scope = course evaluations only. No new general survey features in Phase 1.
+
+### Menu structure: finalize with Mondal before Baroda visit (D_PCE_AAD06)
+
+> "I'm hoping that in the coming week, you can nail down with Mondal all the menu items specifically that we are going to design and how the menu item is going to be structured." — Aarti
+
+T80 (PCE backlog) — block time with Monil this week. Deadline: before June 22.
+
+### Directory pages: view-only (D_PCE_AAD07)
+
+Student directory shows: courses registered in, evaluation completion status, due dates, overall stats ("student was part of 8 courses but has only completed 2"). Full Prism profile opens in new tab.
+
+### Terminal evaluation card: consistent across all entry points (D_PCE_AAD08)
+
+The final course-offering instance view is the **same** whether entered via term, faculty, or course path. Entry point only changes the aggregation stats shown before drilling in.
+
+---
+
 ## Appendix — source meetings
 
 | Date | Title | Granola ID | Drove |
@@ -1201,6 +1348,11 @@ Participants: Romit + Kunal (Eng) + Aarti
 | 2026-06-03 07:30 | Weekly Product Sync — assessment creation prototypes, PCE navigation, Prism alignment | `7a53688f` | Aarti + Vishaka + Nipun + Vishal + Romit |
 | 2026-06-03 10:00 | Exam Management sync — assessment creation scope, system check, reference attachments | `d4f85e99` | Nipun + Romit |
 | 2026-06-06 12:48 | Question bank design — filters, AI generation, and answer rationale | `7729d58c` | Kunal (Eng) + Aarti + Romit |
+| 2026-06-09 07:32 | Design and product execution — prioritizing speed and alignment with Arun | `a4a0e1db` | Arun + Romit |
+| 2026-06-09 10:00 | Exam Management Sync up — base entity scope, assessment creation entry | `70d6511f` | Mohit + Romit |
+| 2026-06-09 08:45 | Post-Course Survey Cadence Meeting — template paths, distribution rules, Phase 1 kills | `3fd2ac92` | Vishaka + David + Monel + Romit |
+| 2026-06-10 07:30 | PCE Architecture — tab structure, analytics dimensions, base entity strategy | `4d1fa807` | Vishaka + Arun + Vinaya + Romit |
+| 2026-06-10 11:16 | Course & Faculty Evaluation — setup, directories, term workflow (Aarti 1:1) | `410d7c0e` | Aarti + Romit |
 
 Per-meeting raw notes at `apps/exam-management/docs/research/meetings/` and `apps/pce/docs/research/meetings/`.
 
