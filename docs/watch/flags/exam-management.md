@@ -168,3 +168,14 @@ First snapshot taken for Roadmap-Exam-Management — no diff applied. Next run w
 **Suggested action:** If Romit's design is "In Refinement", confirm refinement items are resolved before 12-Jun. Check what design assets Darshan needs for the 7 sub-capability pages — all are P0-Cohere. BUILD-STATUS already shows Course Offering as 🟡 In Progress — no status change, but the 12-Jun engineering target is new.
 
 ---
+
+## 2026-06-13 — Flagged: Exam Mgmt Roadmap — Nipun (1 change)
+
+### Flag 1 — "POC" and "POC Completed" status annotations added to roadmap project status rows (CLEAR — new status type, no BUILD-STATUS mapping)
+**Changed text (before):** `9-Jun  9-Jun  9-Jun  19-Jun  19-Jun  19-Jun  19-Jun  19-Jun  19-Jun  31-Jul  19-Jun`
+**Changed text (after):** `9-Jun  9-Jun   POC  9-Jun   POC  19-Jun   POC Completed  19-Jun  19-Jun  19-Jun  19-Jun  19-Jun  31-Jul`
+
+**Why flagged:** CLEAR — "POC" and "POC Completed" are new status values not previously seen in Nipun's Excel. These don't map to any standard step-7b BUILD-STATUS values (Completed / In Progress / Initial Prototyping / Not Started / TBD). The extracted Excel text format doesn't allow clear mapping of which features these statuses apply to.
+**Suggested action:** Ask Nipun which features have POC / POC Completed status, and how these map to BUILD-STATUS labels. "POC Completed" likely signals engineering feasibility has been validated and design handoff is imminent — it may warrant a new 🔵 Initial Prototyping or 🟡 In Progress entry in BUILD-STATUS depending on the feature. Also check whether these apply to Course Offering sub-capabilities (most recently entering engineering).
+
+---

@@ -256,3 +256,55 @@ First snapshot taken for PCE PRD — Monil Pokar — no diff applied. Next run w
 **Suggested action:** The prototype CE/GS switch has been redesigned from a profile-area switch to a "navigation" pattern. Confirm with Monil what "navigation" refers to — separate sidebar nav entries for CE vs General Surveys? A top-nav toggle? This determines the sidebar routing architecture between the two survey types in apps/pce/admin/components/app-sidebar.tsx.
 
 ---
+
+## 2026-06-13 — Flagged: PCE PRD — Monil Pokar (4 changes)
+
+### Flag 1 — §2 Decision 5b: Course types changed from Didactic/Clinical to Practice/Classroom/Lab (CLEAR — supersedes pce-decision-008 and pce-decision-016)
+**Changed text (before):**
+> b. Course type (Optional)
+>    i. Didactic
+>    ii. Clinical
+
+**Changed text (after):**
+> b. Course type (Optional)
+>    i. Practice
+>    ii. Classroom
+>    iii. Lab
+
+**Why flagged:** CLEAR course type vocabulary change. Three types now instead of two. pce-decision-008 explicitly references "Didactic or Clinical" — superseded by pce-decision-019. pce-decision-016 also references these old names — superseded by pce-decision-022. No PCE template builder code exists yet in the codebase to update.
+**Suggested action:** When building the Template Creation page, use Practice / Classroom / Lab as the course type options. All prior flags referencing "Didactic" or "Clinical" as course types should use the new vocabulary. Confirm with Monil whether the new type names are final or still evolving before implementing.
+
+---
+
+### Flag 2 — §2 New Product Decisions 6 & 7: Selling independently Q2 2027, No Student login till Q3 2027 (CLEAR — scope decisions extracted as pce-decision-020 and pce-decision-021)
+**Changed text (before):** *(decisions 6 and 7 did not exist — §2 had 6 decisions ending with "What will not be covered in phase 1")*
+**Changed text (after):**
+> 6. Focus on selling this module independently in Q2, 2027
+> 7. No Student login till Q3, 2027 for this module
+> 8. What will not be covered in phase 1: Detailed scope here (renumbered from 6)
+
+**Why flagged:** CLEAR scope decisions. Decision 7 formally defers the student-facing PCE evaluation experience (apps/pce/student/) past the 30 August 2026 Phase 1 launch to Q3 2027. This is a significant scope reduction — student app scaffolding may not be needed for the August milestone.
+**Suggested action:** Confirm with Monil that Phase 1 (30 Aug 2026) is admin-only — no student login flow. If confirmed, the student evaluation form can be deprioritized entirely. This frees capacity for Phase 1 admin-side work. Also: "selling independently Q2 2027" implies PCE will be positioned as a standalone module — confirm whether this affects the product packaging visible in the Portal app.
+
+---
+
+### Flag 3 — §13a.5 resolved: User profile confirmed at bottom-left per DS convention (CLEAR — resolves 2026-06-09 Flag 2)
+**Changed text (before):**
+> 5. The user profile is supposed to be on the top right, any reason on why are we moving it to left bottom?
+
+**Changed text (after):**
+> 5. The user profile is supposed to be on the top right, any reason on why are we moving it to left bottom? (Since we are referring to new DS, therefore, the user profile remains at the bottom)
+
+**Why flagged:** CLEAR — prior AMBIGUOUS flag (2026-06-09 Flag 2) is now resolved. Monil confirms the user profile stays in the DS Sidebar footer slot at bottom-left per the new DS convention. No code change needed.
+**Suggested action:** Close the prior ambiguity. DS Sidebar footer slot is the confirmed placement for user profile in PCE admin. No layout change needed.
+
+---
+
+### Flag 4 — Multiple §13 design feedback items now marked "(Done)" (non-functional documentation update)
+**Changed text (before):** §13a.2, §13a.4, §13b.1, §13b.2, §13b.3, §13c.1, §13c.2 had no resolution annotation.
+**Changed text (after):** All above items now annotated with "(Done)" in the PRD, confirming the design prototype has incorporated each feedback item.
+
+**Why flagged:** Non-functional document update — Monil has acknowledged the design feedback by marking items complete. No code actions needed. These align with prior flags already logged (2026-06-09 Flags 1–6 and 2026-06-11 Flag 1).
+**Suggested action:** No further action needed on these items. Treat as confirmation that the prototype designs at https://exxat-pce-admin-git-dev-soleyromits-projects.vercel.app/surveys have incorporated Monil's design review feedback.
+
+---

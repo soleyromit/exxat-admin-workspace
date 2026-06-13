@@ -723,6 +723,104 @@
       "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
       "severity": null,
       "files": ["docs/BUILD-STATUS.md"]
+    },
+    {
+      "id": "2026-06-13-pce-flagged-001",
+      "date": "2026-06-13",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §2 Decision 5b — Course types changed: Didactic/Clinical → Practice/Classroom/Lab (supersedes pce-decision-008 and pce-decision-016)",
+      "what": "Key Product Decision 5b updated: Course type values changed from [i. Didactic, ii. Clinical] to [i. Practice, ii. Classroom, iii. Lab]. Three values now instead of two. pce-decision-008 and pce-decision-016 superseded by pce-decision-019 and pce-decision-022.",
+      "why": "CLEAR vocabulary change. No PCE template builder code exists yet — flag only.",
+      "source": "PCE PRD §2 Key Product Decisions #5b (Monil Pokar)"
+    },
+    {
+      "id": "2026-06-13-pce-flagged-002",
+      "date": "2026-06-13",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §2 New decisions 6 & 7: Selling independently Q2 2027, No Student login till Q3 2027",
+      "what": "Decision 6: 'Focus on selling this module independently in Q2, 2027'. Decision 7: 'No Student login till Q3, 2027 for this module'. Old decision #6 ('What will not be covered') renumbered to #8. Extracted as pce-decision-020 and pce-decision-021.",
+      "why": "CLEAR scope decisions. Decision 7 formally defers student-facing PCE experience past 30 Aug 2026 Phase 1 launch.",
+      "source": "PCE PRD §2 Key Product Decisions #6 and #7 (Monil Pokar)"
+    },
+    {
+      "id": "2026-06-13-pce-flagged-003",
+      "date": "2026-06-13",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §13a.5 resolved — User profile confirmed at bottom-left per DS convention (closes 2026-06-09 Flag 2)",
+      "what": "§13a.5 now has resolution annotation: '(Since we are referring to new DS, therefore, the user profile remains at the bottom)'. Prior AMBIGUOUS flag (2026-06-09) resolved.",
+      "why": "CLEAR resolution. DS Sidebar footer slot confirmed for user profile placement in PCE admin.",
+      "source": "PCE PRD §13a Feedback on Designs — General Layout"
+    },
+    {
+      "id": "2026-06-13-pce-flagged-004",
+      "date": "2026-06-13",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §13 — Multiple design feedback items marked '(Done)'",
+      "what": "§13a.2, §13a.4, §13b.1, §13b.2, §13b.3, §13c.1, §13c.2 all annotated with '(Done)'. Monil has confirmed the design prototype incorporates these feedback items.",
+      "why": "Non-functional documentation update. No code changes needed.",
+      "source": "PCE PRD §13 Feedback on Designs (Monil Pokar)"
+    },
+    {
+      "id": "2026-06-13-exam-flagged-001",
+      "date": "2026-06-13",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "Exam Roadmap — 'POC' and 'POC Completed' status annotations added to roadmap rows",
+      "what": "New status values 'POC' and 'POC Completed' appeared in Nipun's Excel roadmap rows. These don't map to any standard step-7b BUILD-STATUS values. Feature names cannot be determined from extracted text format.",
+      "why": "CLEAR — new status type not previously seen. No BUILD-STATUS update applied.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)"
+    },
+    {
+      "id": "2026-06-13-pce-decision-001",
+      "date": "2026-06-13",
+      "product": "pce",
+      "type": "decision-extracted",
+      "title": "PCE PRD — Decision extracted: Course types updated to Practice/Classroom/Lab (pce-decision-019, supersedes pce-decision-008)",
+      "what": "New decision capturing updated course type vocabulary: Practice, Classroom, Lab (replacing deprecated Didactic, Clinical).",
+      "source": "PCE PRD §2 Key Product Decisions #5b"
+    },
+    {
+      "id": "2026-06-13-pce-decision-002",
+      "date": "2026-06-13",
+      "product": "pce",
+      "type": "decision-extracted",
+      "title": "PCE PRD — Decision extracted: Selling PCE module independently Q2 2027 (pce-decision-020)",
+      "what": "New scope decision: Focus on selling PCE module independently in Q2, 2027.",
+      "source": "PCE PRD §2 Key Product Decisions #6"
+    },
+    {
+      "id": "2026-06-13-pce-decision-003",
+      "date": "2026-06-13",
+      "product": "pce",
+      "type": "decision-extracted",
+      "title": "PCE PRD — Decision extracted: No Student login till Q3 2027 (pce-decision-021)",
+      "what": "New scope decision: No Student login till Q3, 2027. Student-facing PCE evaluation formally deferred past 30 Aug 2026 Phase 1 launch.",
+      "source": "PCE PRD §2 Key Product Decisions #7"
+    },
+    {
+      "id": "2026-06-13-pce-decision-004",
+      "date": "2026-06-13",
+      "product": "pce",
+      "type": "decision-extracted",
+      "title": "PCE PRD — Decision extracted: Course type auto-assignment updated to Practice/Classroom/Lab (pce-decision-022, supersedes pce-decision-016)",
+      "what": "Auto-assignment logic updated: template course types Practice/Classroom/Lab now used for matching during distribution setup. Supersedes pce-decision-016 which referenced deprecated Didactic/Clinical names.",
+      "source": "PCE PRD §2 Key Product Decisions #5b + May 19 transcript"
+    },
+    {
+      "id": "2026-06-13-exam-management-build-status-001",
+      "date": "2026-06-13",
+      "product": "exam-management",
+      "type": "prd-change",
+      "title": "BUILD-STATUS last updated date bumped to 2026-06-13",
+      "what": "No feature statuses changed in step 7b mapping ('POC' and 'POC Completed' values don't map to standard BUILD-STATUS status labels). Last updated date updated to 2026-06-13. PCE section remains '🟡 In Progress — target 30 Aug 2026' (Phase 1 launch still future).",
+      "why": "Nipun's roadmap Excel synced — POC/POC Completed annotations detected but unmapped. PCE Phase 1 target (30 Aug 2026) remains future — BUILD-STATUS PCE row unchanged.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
+      "severity": null,
+      "files": ["docs/BUILD-STATUS.md"]
     }
   ]
 }

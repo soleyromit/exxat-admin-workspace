@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-06-11",
+  "lastUpdated": "2026-06-13",
   "decisions": [
     {
       "id": "pce-decision-001",
@@ -79,7 +79,8 @@
       "source": "PCE PRD §2 Key Product Decisions #5",
       "sourceType": "prd",
       "date": "2026-05-23",
-      "status": "confirmed"
+      "status": "superseded",
+      "supersededBy": "pce-decision-019"
     },
     {
       "id": "pce-decision-009",
@@ -159,7 +160,8 @@
       "source": "Post-course evaluation template — workflow, role-based access, and distribution setup with Monel transcript — May 19, 2026",
       "sourceType": "transcript",
       "date": "2026-05-19",
-      "status": "confirmed"
+      "status": "superseded",
+      "supersededBy": "pce-decision-022"
     },
     {
       "id": "pce-decision-017",
@@ -309,6 +311,46 @@
       "source": "PCE PRD §12 Dependencies and Risks — FAAS UI",
       "sourceType": "prd",
       "date": "2026-06-02",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-019",
+      "product": "pce",
+      "text": "Three new constructs introduced to enable CE: Survey type (mandatory — Course evaluations or General surveys), Course type (optional — Practice, Classroom, or Lab), and Subject (assigned to each section). Course type values were updated from Didactic/Clinical to Practice/Classroom/Lab.",
+      "stakeholder": "Monil Pokar",
+      "source": "PCE PRD §2 Key Product Decisions #5 (updated 2026-06-13)",
+      "sourceType": "prd",
+      "date": "2026-06-13",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-020",
+      "product": "pce",
+      "text": "Focus on selling this module independently in Q2, 2027.",
+      "stakeholder": "Monil Pokar",
+      "source": "PCE PRD §2 Key Product Decisions #6",
+      "sourceType": "prd",
+      "date": "2026-06-13",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-021",
+      "product": "pce",
+      "text": "No Student login till Q3, 2027 for this module. The student-facing PCE evaluation experience is formally deferred past the 30 August 2026 Phase 1 launch.",
+      "stakeholder": "Monil Pokar",
+      "source": "PCE PRD §2 Key Product Decisions #7",
+      "sourceType": "prd",
+      "date": "2026-06-13",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-022",
+      "product": "pce",
+      "text": "If a template has a course type (Practice, Classroom, or Lab) assigned, it auto-assigns to matching course offerings during distribution. If no course type is set in the template, manual course-type assignment is required per course during distribution setup. (Supersedes pce-decision-016 which referenced deprecated Didactic/Clinical course type names.)",
+      "stakeholder": "Monil Pokar",
+      "source": "PCE PRD §2 Key Product Decisions #5b (course type rename 2026-06-13) + Post-course evaluation template transcript — May 19, 2026",
+      "sourceType": "prd",
+      "date": "2026-06-13",
       "status": "confirmed"
     }
   ]
