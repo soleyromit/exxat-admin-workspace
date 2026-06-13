@@ -4,6 +4,88 @@
 **Context:** Baroda prep — new initiatives team visits week of Jun 22; one day dedicated to this module.
 **Status:** Master reference for Jun 22 Baroda discussions. Use to map against codebase before that day.
 
+---
+
+## 0. Architectural Principles — How Aarti's Directives Connect
+
+All of Aarti's requirements follow from one decision: **the term is the organizing axis** — the unit of activation, the unit of analytics, and the anchor for all time-based logic. Four principles flow from that:
+
+### Principle 1 — Setup once, activate trivially
+
+The Setup zone exists entirely to pre-build what term activation will consume. Every Setup entity is parameterized by the term end date:
+
+```
+AY + Term dates  →  Survey Templates  →  Email Templates  →  Reminder Schedule
+       ↓                  ↓                   ↓                     ↓
+   term end date      course type        {{daysRemaining}}     N days before term end
+   (the anchor)       auto-assign       (dynamic, 1 template)  (not survey close date)
+```
+
+This is why reminders anchor to term end, not close date — the *term*, not the survey, is the unit.
+
+### Principle 2 — Prism owns entities; PCE owns evaluation artifacts
+
+The read-only directory rule is an architectural boundary, not a UI preference:
+
+```
+Prism (Angular)             PCE (React)
+────────────────────        ─────────────────────────────────────
+Students                    which courses they evaluated
+Faculty                     avg rating + completion stats
+Courses (master)            times offered + avg rating (cross-term)
+Course Offerings            eval status, completion % per term
+AY / Terms (shared)  ←→    dates + "enable for evaluation" toggle
+```
+
+The only write-back is AY/Terms — PCE edits the shared Prism dropdown so admins don't need two tabs for setup.
+
+### Principle 3 — Three analytics entry points converge to one terminal card
+
+By Term / By Faculty / By Course are three slices of the same data. They all drill to the same atomic record: **one course offering × one faculty**.
+
+```
+By Term   ──→  term stats    ──→  course grid   ──┐
+By Faculty ──→  faculty stats ──→  offerings    ──→  Evaluation Card
+By Course  ──→  cross-term   ──→  offering list ──┘  (courseOffering × faculty)
+```
+
+The three doors exist because different stakeholders ask different questions — but the terminal card is identical regardless of entry.
+
+### Principle 4 — Activation is scheduling, not triggering (Save ≠ Send)
+
+```
+Admin activates a term  →  system stores a distribution schedule (SCHEDULED)
+                                ↓  open date arrives
+                           Initial email auto-fires
+                                ↓  term end − N days
+                           Reminder auto-fires  (one template, {{daysRemaining}} fills in)
+                                ↓  close date arrives
+                           Status → CLOSED  →  Evaluation Card unlocked
+```
+
+The current `pushSurveyBatch` breaks this by immediately setting status to `collecting` — it treats activation as a trigger rather than a schedule.
+
+### How the four principles unify the full scope
+
+```
+SETUP (once per school / year)        ACTIVATION (per term, <5 min)
+──────────────────────────────        ──────────────────────────────────────
+AY + Term dates               →       Step 1: pick enabled term
+Survey Templates (by type)    →       Step 2: courses auto-assign by type
+Email Templates (×2, dynamic) →       Step 4: pre-filled, editable per-activation
+Reminder Schedule             →       Step 3: dates calculated from term end anchor
+                                      Step 5: Save & Schedule  (nothing fires yet)
+
+ANALYTICS (after term closes)
+────────────────────────────────────────────────────────────────────────────
+By Term / By Faculty / By Course  →  Evaluation Card (same terminal, three entrances)
+Ad-hoc Nudge available during COLLECTING state
+```
+
+**The four violations in the current build** (editable CRUD directories, close-date reminder anchor, two competing activation flows, immediate send on push) all contradict the same principle: Prism owns entities, term owns the timeline, Setup owns the defaults, Activation just picks and confirms.
+
+---
+
 > **Load-bearing constraint:** "Directory" in the transcript is *language*, not a new nav section.
 > Entity list pages (Students, Faculty, Courses, Offerings) already exist in PCE nav — they need to become
 > read-only with eval-context columns + Prism links. No new "Directory" top-level nav item.
@@ -564,3 +646,111 @@ Admin sees low completion on NUR 250 in Fall 2026.
 **Changed (existing) surfaces:** 4 entity list pages (read-only + eval cols + KPI + Prism link), Academic Years/Terms (enable toggle), Survey Templates (faculty variants + upload mode), Term Activation wizard (2 flows → 1), Evaluation Card (section → per-question), By-Term analytics (row drill + nudge).
 
 **Hard constraints:** No new "Directory" nav; Prism = read-only source of truth (new tab); exactly 2 email templates; reminders anchor to term end; Save schedules, never sends immediately; 2–5 min activation target; no student login; no red in rating viz; KPIs capped at 4.
+
+---
+
+## 11. DS Component Map
+
+Sourced from `@exxatdesignux/ui@0.6.28` (`node tools/ds/source.mjs`). Generate against these types + `localhost:4000/library/<id>` — not from memory.
+
+> **Key finding:** No `Stepper` component exists in the DS. `WizardNav` (`components/pce/wizard-nav.tsx`) stays custom. Everything else maps to DS imports.
+
+| Surface | DS Component | Verdict | Notes |
+|---|---|---|---|
+| Entity list KPI strips (Students, Faculty, Courses, Offerings) | `KeyMetrics` variant="flat" | IMPORT | `metrics: MetricItem[]`; omit delta for most; max 4 items per brief constraint |
+| Analytics KPI strips (By Term, By Faculty, By Course) | `KeyMetrics` variant="card" | IMPORT | Same component; use `trendPolarity` for completion rate (higher_is_better) |
+| Analytics By Term / Faculty / Course switcher | `Tabs` variant="line" | IMPORT | Add `flex flex-col` to root; `TabsList` + `TabsContent` per door |
+| Term Activation wizard step indicator | Custom `WizardNav` (already built) | KEEP CUSTOM | No DS Stepper — `components/pce/wizard-nav.tsx` is correct |
+| Step 1 — term radio selection | `RadioGroup` + `RadioGroupItem` | IMPORT | One item per enabled term |
+| Step 2 — per-row template override | `Select` + `SelectContent` + `SelectItem` | IMPORT | One Select per course offering row |
+| Faculty role variants (template builder Section 2) | `Accordion` + `AccordionItem` + `AccordionTrigger` + `AccordionContent` | IMPORT | One AccordionItem per role variant (Main / Guest / Assistant); live: `localhost:4000/library/accordion` |
+| Section drag-to-reorder (template builder) | `useDraggableList` hook | IMPORT | Already in DS; pairs with `DragHandleGripIcon` |
+| Reminder interval rows | `InputGroup` + `InputGroupInput` + `InputGroupAddon` | IMPORT | "[ N ] days before term end" pattern |
+| Email template editor (subject + body) | `Input` + `Textarea` | IMPORT | Standard DS form fields |
+| Evaluation Card per-question bar charts | `ChartContainer` + `ChartConfig` + Recharts `BarChart` | IMPORT | `ChartContainer` wraps Recharts `ResponsiveContainer`; use `ChartConfig` for token-mapped bar colors; live: `localhost:4000/library/chart` |
+| Evaluation Card free-text "View all" | `Sheet` (side) | IMPORT | Sheet from right; `SheetContent` + `SheetHeader` |
+| Eval status column (SCHEDULED / COLLECTING / CLOSED / BLOCKED) | `Badge` | IMPORT | **Not** `StatusBadge` — that's Beta/New/Alpha only; use `Badge` with variant per status |
+| Row detail panel on entity pages | `Sheet` | IMPORT | Side panel; "Open in Prism ↗" button inside footer |
+| "Open in Prism ↗" action | `Button` variant="ghost" size="sm" | IMPORT | `aria-label="Open in Prism"` required; `target="_blank"` link |
+| Ad-hoc Nudge confirmation | `AlertDialog` | IMPORT | Confirming action ("Send reminder to N non-responders?"); not `Dialog` |
+| Setup-level empty states (no enabled terms, no templates) | `LocalBanner` | IMPORT | Warning variant with CTA link to Setup |
+
+---
+
+## 12. Mobbin Reference Screens
+
+Searched Jun 12, 2026. Use these as layout + interaction references before drawing any wireframe.
+
+### Term Activation wizard
+
+**Best reference — [AWS Amplify: Create new app · App settings](https://mobbin.com/screens/4e197c45-1b5a-46e6-a886-ecc0ac8baaaf)**
+Left vertical step list (check = complete, filled circle = current, number = future) + right content with auto-detected defaults + override fields. Direct match for "pre-filled defaults, admin can edit" pattern of Steps 3–4.
+
+**Secondary — [Workable: Create onboarding workflow](https://mobbin.com/screens/072275d2-39b8-4bcb-bf34-cc5af3143747)**
+Left step list + right content with card list + slide-out panel. Good model for Step 2 (course list with per-row template assignment + optional per-course drawer).
+
+**Secondary — [Gorgias: Add articles using templates](https://mobbin.com/screens/00b90d78-3433-4fee-9992-1543330c13c0)**
+Grouped checklist with "Next" flow inside a wizard step. Matches the "select all / deselect" course-picker pattern in Step 2.
+
+### By-Faculty analytics
+
+**Best reference — [Whop: User overview](https://mobbin.com/screens/35f39075-8bb9-4e71-a56c-abdc7a2bbace)**
+Left profile sidebar with KPIs (Spent / Joined / MRR), right content with tabs (Summary / User logs) and DataTable. Very close to By-Faculty: left = faculty KPIs (courses taught / avg rating / avg completion), right = offerings DataTable.
+
+**Secondary — [Amplitude: User profile insights](https://mobbin.com/screens/29fad030-c7c0-4f8f-b15d-e50c307bd9b2)**
+KPIs strip + bar charts + tabular breakdown. Good reference for the aggregated-stats-before-drill pattern.
+
+### Survey template builder
+
+**Best reference — [Charma: Create Template](https://mobbin.com/screens/02d7709d-df33-423c-9acb-7c24a777bfcd)**
+Section headers with "+ Add Topic" per section and "+ Add Section" at bottom. Drag handle on individual rows. Almost exactly the Section 1 (course) + Section 2 (per-faculty) two-tier model — use this as the layout reference for template builder.
+
+**Secondary — [Workable: Create survey](https://mobbin.com/screens/7cb170fa-bd3a-48eb-aa2f-4e5a87e66e57)**
+Left step nav + right question list with drag handles + "Add new question" inline. Good for the question-level interaction within a role variant.
+
+---
+
+## 13. Nav Delta + CommandPalette
+
+### Left nav changes
+
+```
+PCE Admin left nav — current → after
+───────────────────────────────────────────────────────
+SETUP cluster (existing)
+  ├─ Academic Years & Terms     [EXISTS — extend]
+  ├─ Survey Templates           [EXISTS — extend]
+  ├─ Email Templates            [NET-NEW route: admin/email-templates]
+  └─ Reminder Schedule          [NET-NEW route: admin/reminder-schedule]
+
+ACTIVATE                        [NET-NEW nav item + route: admin/activate]
+  └─ Term Activation wizard     (replaces run-evaluation + push flows)
+
+ANALYTICS cluster (existing: "By Term" only)
+  └─ Analytics                  [CHANGE: one route analytics/page.tsx with Tabs]
+      ├─ By Term   (tab)        [EXISTS — wire to rebuilt Eval Card + Nudge]
+      ├─ By Faculty (tab)       [NET-NEW tab + route analytics?by=faculty]
+      └─ By Course  (tab)       [NET-NEW tab + route analytics?by=course]
+```
+
+**Decision required (OPEN-8):** Does Analytics use `Tabs` (one page) or three separate left-nav sub-items? Recommend `Tabs variant="line"` on one page — simpler nav, three doors are conceptually parallel, matches Aarti's "three entry points" framing. Flag for Mondal confirmation before build.
+
+### CommandPalette registrations (`components/command-palette.tsx`)
+
+Four new navigable surfaces need adding to the Admin group:
+
+| Label | Route | Group |
+|---|---|---|
+| Email Templates | `/admin/email-templates` | Setup |
+| Reminder Schedule | `/admin/reminder-schedule` | Setup |
+| Activate Evaluations | `/admin/activate` | Workflow |
+| Analytics — By Faculty | `/analytics?by=faculty` | Analytics |
+| Analytics — By Course | `/analytics?by=course` | Analytics |
+
+### Build blockers — OPEN questions (pin before Baroda Jun 22)
+
+| # | Question | Blocks |
+|---|---|---|
+| OPEN-1 | >1 template per course type: which is the default in Step 2 auto-assign? | Term Activation Step 2 logic |
+| OPEN-7 | Leo/chat placement in new surfaces — inherit shell header or per-module? | Every new page shell |
+| OPEN-8 | Analytics: `Tabs` on one page vs three separate nav sub-items? | Left nav structure + Analytics route |
