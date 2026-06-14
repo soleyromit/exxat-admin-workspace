@@ -1319,6 +1319,55 @@ The final course-offering instance view is the **same** whether entered via term
 
 ---
 
+### 5.62 Assessment workflow phases, list columns, and design process (2026-06-13)
+
+Source: `apps/exam-management/docs/research/meetings/2026-06-13-aarti-pce-exam-management.md` (Granola `ab7e2691`)  
+Participants: Romit + Aarti (recording dated 2026-06-04)
+
+#### Chair-approval review workflow is Phase 2 (D_EM_AA02)
+
+> "Later we can build in review process because review is like a phase two process. So we're not doing that." — Aarti
+
+**Supersedes T47 (was P1).** The pending-chair / changes-requested / approved state machine in `assessments-tab.tsx` is Phase 2 work. Do not build or surface the review submission flow for December launch. The existing code must be updated — DESIGN-REVIEW task T99.
+
+#### Faculty section question-assignment NOT Phase 1 (D_EM_AA01)
+
+Romit designed a feature where faculty are assigned a question quota per assessment section. Aarti confirmed this is not Phase 1.
+
+> "is this feature going in the first phase? No, not yet. Okay. So it's a conceptual. So again, like for me, the easier part is that I can just say that just remove the button." — Aarti
+
+Remove the faculty-assign button from all designs. Keep as a concept-only artifact.
+
+#### Assessment list UI — columns and publish status (D_EM_AA03, D_EM_AA04, D_EM_AA05)
+
+Each row in the assessment list (course detail → Assessments tab) must show:
+
+| Column / attribute | Rule |
+|---|---|
+| **Status** | If published date is set → "Published" + the date. If not set → "Not yet published" with a publish action CTA. |
+| **Applicable count** | How many students this assessment applies to. |
+| **Completed count** | How many students have completed it. |
+| **Attributes near title** | "Scored" and "Timed" as key attribute chips. |
+
+> "If published date has been set, I want to show you the status as published and the date. If published date is not there, then the status next to this can be… not yet published or whatever." — Aarti
+
+> "it's applicable to how many students and then how many students have completed it" — Aarti
+
+> "scored and timed are…good attributes" — Aarti
+
+#### Two-track design process (D_EM_AA06)
+
+Aarti explicitly endorsed maintaining two versions of designs going forward:
+
+1. **Concept track** — big-picture thinking, no Phase constraints. Shared only with Aarti in 1:1s.
+2. **Phase 1 cleaned-up track** — same design with phase-2 features removed. Shared with PMs and engineering.
+
+> "there are going to be two different kind of design activities from my side. One is purely concept. This is just our exclusive discussion where everything is possible. And then there is a part of it where we say that... a cleaned up version." — Aarti
+
+> "I am not okay with the big picture thinking not happening at all. I am okay with the big picture thinking. The big picture thinking has to be done." — Aarti
+
+---
+
 ## Appendix — source meetings
 
 | Date | Title | Granola ID | Drove |
@@ -1353,6 +1402,7 @@ The final course-offering instance view is the **same** whether entered via term
 | 2026-06-09 08:45 | Post-Course Survey Cadence Meeting — template paths, distribution rules, Phase 1 kills | `3fd2ac92` | Vishaka + David + Monel + Romit |
 | 2026-06-10 07:30 | PCE Architecture — tab structure, analytics dimensions, base entity strategy | `4d1fa807` | Vishaka + Arun + Vinaya + Romit |
 | 2026-06-10 11:16 | Course & Faculty Evaluation — setup, directories, term workflow (Aarti 1:1) | `410d7c0e` | Aarti + Romit |
+| 2026-06-13 19:10 | Meeting with Aarti on PCE, Exam Management (recording from 2026-06-04) | `ab7e2691` | Aarti + Romit |
 
 Per-meeting raw notes at `apps/exam-management/docs/research/meetings/` and `apps/pce/docs/research/meetings/`.
 

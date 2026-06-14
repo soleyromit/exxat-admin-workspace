@@ -40,7 +40,7 @@ Source: 2026-05-08 Aarti audit (`docs/research/meetings/2026-05-08-aarti-design-
 | T44 | Product landing page — current-term courses | Admin/Faculty | Landing | P1 | Active/current-term course offerings as primary anchor. Not a flat list of all courses ever. |
 | T45 | Assessment builder — section creation UI | Faculty | Assessment builder | P1 | Free text title per section, assign instructor per section, add/remove sections. Must-have Phase 1. |
 | T46 | Pre-exam instruction page | Faculty | Assessment builder | P1 | Faculty uploads free text instructions; configurable timer (eats into / doesn't eat into total time); optional student attestation. NEW screen — FLAG. |
-| T47 | Assessment review workflow | Faculty/Admin | Assessment builder | P1 | Send to 1+ reviewers; track status (pending/approved/changes-requested). Assessment-level only (not section-level). DESIGN-REVIEW — needs new data model. |
+| ~~T47~~ | ~~Assessment review workflow~~ | ~~Faculty/Admin~~ | ~~Assessment builder~~ | ~~SUPERSEDED — Phase 2~~ | Aarti 2026-06-13: "Later we can build in review process because review is like a phase two process. So we're not doing that." Chair-approval workflow is Phase 2. See T99 for code update. |
 | T48 | Reference material in exam | Student | Assessment taker | P1 | Globally accessible (button, like calculator). Question-specific reference = tabs. Formula sheets AI-converted to text area. |
 | T49 | Faculty app — point-of-view doc | Faculty | Design brief | P1 | Romit drafts: persona, landing page, core workflows for faculty login. |
 | T50 | Three alignment docs | PM/Design | Process | P0 | (1) Types of questions supported, (2) config at assessment vs. question level, (3) attributes of a question. PM team to produce. |
@@ -177,6 +177,17 @@ Source: `docs/research/meetings/2026-06-09-exam-management-sync-mohit.md` (Grano
 | T96 | Revise base entity mockups — remove future-state data | Admin / Faculty | Base entity pages (course offering, students, faculty, assessments) | P1 | Mohit 2026-06-09: design scope = current information availability ONLY. Performance data, accommodations, interventions introduced per-feature later. Deadline Thursday 2026-06-12. D_EM_M01. |
 
 ---
+
+## Phase 1 design tasks — added 2026-06-13
+
+Source: `docs/research/meetings/2026-06-13-aarti-pce-exam-management.md` (Granola `ab7e2691`)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T97 | Assessment builder designs: remove faculty section question-assignment feature | Admin / Faculty | Assessment builder (Figma designs) | P1 | Aarti 2026-06-13: "is this feature going in the first phase? No, not yet. I can just say that just remove the button." Not yet in code — design doc cleanup only. D_EM_AA01. |
+| T98 | Assessment list UI: add publish status+date, "not yet published" CTA, applicable count, completion count, scored/timed attributes | Admin / Faculty | Course detail → Assessments tab (`assessments-tab.tsx`) | P1 — DESIGN-REVIEW | Per D_EM_AA03–AA05. Currently no publish date column, no applicable/completed counts, no scored/timed chips. Requires mock data updates + UI changes to `AssessmentCard` and list header. |
+| T99 | Review workflow → Phase 2: update assessments-tab.tsx to hide/remove chair-approval states | Admin / Faculty | `assessments-tab.tsx`, `assessment-review-client.tsx` | P1 — DESIGN-REVIEW | Supersedes T47. Aarti 2026-06-13: "review is like a phase two process. So we're not doing that." `WorkflowStepIndicator`, pending-chair/changes-requested/approved states, and "Approval workflow" secondary bar must be removed or hidden. Structural change — needs dedicated design + eng pass. D_EM_AA02. |
+| T100 | Two-track design process: maintain concept doc + Phase 1 cleaned-up Figma going forward | Design / Process | Figma / design docs | P1 | Aarti 2026-06-13: "there are going to be two different kind of design activities… One is purely concept… And then there is… a cleaned up version." Every new feature area needs both tracks documented. D_EM_AA06. |
 
 ## Research / blockers (R1–R10 from audit)
 
