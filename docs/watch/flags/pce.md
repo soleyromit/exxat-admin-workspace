@@ -256,3 +256,64 @@ First snapshot taken for PCE PRD — Monil Pokar — no diff applied. Next run w
 **Suggested action:** The prototype CE/GS switch has been redesigned from a profile-area switch to a "navigation" pattern. Confirm with Monil what "navigation" refers to — separate sidebar nav entries for CE vs General Surveys? A top-nav toggle? This determines the sidebar routing architecture between the two survey types in apps/pce/admin/components/app-sidebar.tsx.
 
 ---
+
+## 2026-06-14 — Flagged: PCE PRD — Monil Pokar (4 changes)
+
+### Flag 1 — Course type values changed in §2 Key Product Decisions: Didactic/Clinical → Practice/Classroom/Lab (AMBIGUOUS — internal PRD contradiction)
+**Changed text (before):**
+> b. Course type (Optional)
+>    i. Didactic
+>    ii. Clinical
+
+**Changed text (after):**
+> b. Course type (Optional)
+>    i. Practice
+>    ii. Classroom
+>    iii. Lab
+
+**Why flagged:** AMBIGUOUS — §2 changed course type values to {Practice, Classroom, Lab}, adding a third value. BUT §4 Step 1 Template Creation still reads "User selects Course type: Didactic or Clinical (optional)". Internal contradiction within the same live PRD. Additionally, `apps/pce/admin/lib/pce-mock-data.ts:43` and `apps/pce/admin/app/(app)/analytics/page.tsx:125` reference `courseType: 'didactic' | 'clinical'`. Auto-apply blocked due to internal contradiction.
+**Suggested action:** Ask Monil: (1) Was course type deliberately changed to Practice/Classroom/Lab, or was §2 accidentally updated? (2) If confirmed, update §4 Step 1 as well. (3) After confirmation: update `CourseTypeFilter` in analytics/page.tsx + `courseType` values in pce-mock-data.ts to match new taxonomy.
+
+---
+
+### Flag 2 — New Key Product Decisions 6 & 7 added: selling Q2 2027 + no student login Q3 2027
+**Changed text (before):**
+> 6. What will not be covered in phase 1: Detailed scope here
+
+**Changed text (after):**
+> 6. Focus on selling this module independently in Q2, 2027
+> 7. No Student login till Q3, 2027 for this module
+> 8. What will not be covered in phase 1: Detailed scope here
+
+**Why flagged:** CLEAR product scope decisions. Decision 7 ("No Student login till Q3, 2027") is a "We won't" scope decision with build implications — student-facing survey response UI should not be built until Q3 2027. Non-functional → flag only, no code edit applied. Both added to stakeholder-decisions.json as pce-decision-019 and pce-decision-020.
+**Suggested action:** Confirm with Monil whether "No Student login" means (a) no student portal at all until Q3 2027, or (b) specifically the auth/login for the student app. This clarifies whether apps/pce/student/ is in or out of scope before Q3 2027.
+
+---
+
+### Flag 3 — §13a.5: User profile position resolved — confirmed at bottom-left per DS
+**Changed text (before):**
+> 5. The user profile is supposed to be on the top right, any reason on why are we moving it to left bottom?
+
+**Changed text (after):**
+> 5. The user profile is supposed to be on the top right, any reason on why are we moving it to left bottom? (Since we are referring to new DS, therefore, the user profile remains at the bottom)
+
+**Why flagged:** CLEAR resolution of the AMBIGUOUS flag from 2026-06-09. Monil confirmed user profile badge stays at bottom-left because it follows the DS Sidebar footer slot. No code change needed — current PCE app already uses DS Sidebar footer for user badge. Resolves 2026-06-09 Flag 2.
+**Suggested action:** No action required. 2026-06-09 Flag 2 is resolved.
+
+---
+
+### Flag 4 — §13 design feedback resolved: multiple items marked (Done), CE wizard confirmed as 4 steps
+**Changed text (before):**
+> §13a.2: "Moderation can be captured as a part of survey status..."
+> §13a.4: "Move the search bar to the top"
+> §13b.1, §13b.2, §13b.3: template feedback items (no "(Done)" marker)
+> §13c.1: "Wouldn't the steps of a push survey look good if they are horizontal..."
+> §13c.2: "For now, we donot need 'Report Access' step for course Evaluation"
+
+**Changed text (after):**
+> All of the above now have "(Done)" appended.
+
+**Why flagged:** CLEAR resolution of multiple open design feedback items. Most significant: §13c.2 "(Done)" confirms CE wizard does NOT include a Report Access step. The 4-step wizard is confirmed: Properties/Details → Scope/Courses → Survey Design → Communication. This resolves the AMBIGUOUS flag from 2026-06-09 (§13c.2 conflict). Non-functional → flag only.
+**Suggested action:** When building Create Survey wizard at apps/pce/admin/app/(app)/surveys/push/, implement exactly 4 horizontal steps: Properties/Details → Scope/Courses → Survey Design → Communication. Report Access is confirmed out of scope for CE. Resolves 2026-06-09 Flag 6.
+
+---

@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-06-11",
+  "lastUpdated": "2026-06-14",
   "decisions": [
     {
       "id": "pce-decision-001",
@@ -309,6 +309,26 @@
       "source": "PCE PRD §12 Dependencies and Risks — FAAS UI",
       "sourceType": "prd",
       "date": "2026-06-02",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-019",
+      "product": "pce",
+      "text": "Focus on selling this module independently in Q2, 2027.",
+      "stakeholder": "Monil Pokar",
+      "source": "PCE PRD §2 Key Product Decisions #6",
+      "sourceType": "prd",
+      "date": "2026-06-14",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-020",
+      "product": "pce",
+      "text": "No Student login till Q3, 2027 for this module.",
+      "stakeholder": "Monil Pokar",
+      "source": "PCE PRD §2 Key Product Decisions #7",
+      "sourceType": "prd",
+      "date": "2026-06-14",
       "status": "confirmed"
     }
   ]

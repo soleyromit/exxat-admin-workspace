@@ -168,3 +168,17 @@ First snapshot taken for Roadmap-Exam-Management — no diff applied. Next run w
 **Suggested action:** If Romit's design is "In Refinement", confirm refinement items are resolved before 12-Jun. Check what design assets Darshan needs for the 7 sub-capability pages — all are P0-Cohere. BUILD-STATUS already shows Course Offering as 🟡 In Progress — no status change, but the 12-Jun engineering target is new.
 
 ---
+
+## 2026-06-14 — Flagged: Exam Mgmt Roadmap — Nipun (1 change)
+
+### Flag 1 — Gantt chart: "POC" and "POC Completed" status entries added
+**Changed text (before):**
+> 9-Jun  9-Jun  9-Jun  19-Jun  19-Jun  19-Jun  19-Jun  19-Jun  19-Jun  31-Jul  19-Jun
+
+**Changed text (after):**
+> 9-Jun  9-Jun   POC  9-Jun   POC  19-Jun   POC Completed  19-Jun  19-Jun  19-Jun  19-Jun  19-Jun  31-Jul
+
+**Why flagged:** CLEAR — "POC" and "POC Completed" labels appeared in the Gantt chart rows. Context suggests this relates to Secure Browser ("One member to test respondus with current POC urgently" — flagged 2026-06-02). "POC Completed" indicates a proof-of-concept was finished. Does not map to a Step 7b status update (no "Completed → 🟢 Shipped" for a full feature). Informational.
+**Suggested action:** Confirm with Nipun what "POC Completed" refers to. If Secure Browser POC is done and integration is proceeding, In Assessment Experience may move toward a later engineering phase. Does not change current 🟡 In Progress status in BUILD-STATUS.
+
+---

@@ -723,6 +723,96 @@
       "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
       "severity": null,
       "files": ["docs/BUILD-STATUS.md"]
+    },
+    {
+      "id": "2026-06-14-pce-flagged-001",
+      "date": "2026-06-14",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §2 — Course type values changed: Didactic/Clinical → Practice/Classroom/Lab (AMBIGUOUS — internal PRD contradiction)",
+      "what": "§2 Key Product Decisions item 5b changed from {Didactic, Clinical} to {Practice, Classroom, Lab}. §4 Step 1 Template Creation still says 'Didactic or Clinical'. Internal contradiction. Code references at pce-mock-data.ts:43 and analytics/page.tsx:125 use 'didactic'|'clinical'. Auto-apply blocked.",
+      "why": "AMBIGUOUS — internal PRD self-contradiction prevents safe auto-apply. Requires Monil clarification before updating code.",
+      "source": "PCE PRD §2 Key Product Decisions #5 (Monil Pokar, updated 2026-06-14)",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-14-pce-flagged-002",
+      "date": "2026-06-14",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §2 — New decisions 6 & 7 added: sell independently Q2 2027; no student login Q3 2027",
+      "what": "Two new key product decisions added: (6) Focus on selling this module independently in Q2, 2027. (7) No Student login till Q3, 2027 for this module. Added to stakeholder-decisions.json as pce-decision-019 and pce-decision-020.",
+      "why": "CLEAR product scope decisions. Decision 7 is a 'We won't' scope flag with build implications for apps/pce/student/. Non-functional — flag only, no code edit.",
+      "source": "PCE PRD §2 Key Product Decisions #6 and #7 (Monil Pokar, updated 2026-06-14)",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-14-pce-flagged-003",
+      "date": "2026-06-14",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §13a.5 resolved — user profile confirmed at bottom-left per DS",
+      "what": "Monil added response to §13a.5 question: 'Since we are referring to new DS, therefore, the user profile remains at the bottom'. Resolves the AMBIGUOUS flag from 2026-06-09. No code change needed.",
+      "why": "CLEAR resolution — DS-mandated Sidebar footer slot confirmed for user profile. Closes open ambiguity.",
+      "source": "PCE PRD §13a Feedback on Designs (Monil Pokar, 2026-06-14)",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-14-pce-flagged-004",
+      "date": "2026-06-14",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §13 — Multiple design feedback items marked (Done); CE wizard confirmed 4 steps",
+      "what": "§13a.2, §13a.4, §13b.1, §13b.2, §13b.3, §13c.1, §13c.2 all marked (Done). Most important: §13c.2 '(Done)' confirms CE wizard has no Report Access step → 4-step wizard confirmed: Properties/Details → Scope/Courses → Survey Design → Communication. Resolves 2026-06-09 Flag 6.",
+      "why": "CLEAR — design prototype updated. 4-step CE wizard is now confirmed. Non-functional → flag only.",
+      "source": "PCE PRD §13 Feedback on Designs (Monil Pokar, 2026-06-14)",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-14-exam-flagged-001",
+      "date": "2026-06-14",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "Exam Roadmap — Gantt chart: 'POC' and 'POC Completed' entries added",
+      "what": "New 'POC' and 'POC Completed' labels appeared in Gantt chart timeline rows. Context: likely Secure Browser POC completion. Does not map to Step 7b status update.",
+      "why": "CLEAR tracker update — informational. Does not change BUILD-STATUS feature statuses.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-14-pce-decision-001",
+      "date": "2026-06-14",
+      "product": "pce",
+      "type": "decision-extracted",
+      "title": "PCE PRD — Decision extracted: Sell module independently Q2 2027 (pce-decision-019)",
+      "what": "New decision: Focus on selling this module independently in Q2, 2027.",
+      "source": "PCE PRD §2 Key Product Decisions #6"
+    },
+    {
+      "id": "2026-06-14-pce-decision-002",
+      "date": "2026-06-14",
+      "product": "pce",
+      "type": "decision-extracted",
+      "title": "PCE PRD — Decision extracted: No Student login till Q3 2027 (pce-decision-020)",
+      "what": "New decision: No Student login till Q3, 2027 for this module.",
+      "source": "PCE PRD §2 Key Product Decisions #7"
+    },
+    {
+      "id": "2026-06-14-exam-management-build-status-001",
+      "date": "2026-06-14",
+      "product": "exam-management",
+      "type": "prd-change",
+      "title": "BUILD-STATUS last updated date bumped to 2026-06-14",
+      "what": "No feature statuses changed in step 7b mapping (Excel has new POC/POC Completed Gantt labels, but these do not map to Completed/In Progress/Not Started status values). Last updated date updated to today.",
+      "why": "Nipun's roadmap Excel synced — Gantt POC/POC Completed labels detected (informational). PCE Phase 1 target (30 Aug 2026) remains future — BUILD-STATUS PCE row unchanged.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
+      "severity": null,
+      "files": ["docs/BUILD-STATUS.md"]
     }
   ]
 }
