@@ -31,8 +31,13 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 const BASE = process.env.BASE_URL || 'http://localhost:3001'
 const DS_URL = process.env.DS_URL || 'http://localhost:4000'
 const route = process.argv[2] || '/'
+// Canonical DS reference = the @exxatdesignux/ui@0.6.x viewer scaffolded at
+// ~/exxat-ds-viewer (run: cd ~/exxat-ds-viewer && pnpm exec vite --port 4000).
+// These routes render the published package products consume — NOT the dead
+// legacy exxat-ds/apps/web (@exxat-ds/ui@0.0.1). /gallery has the most
+// components in one place (richest vocabulary); the rest cover charts/hub/tokens.
 const DS_ROUTES = (process.env.DS_ROUTES ||
-  '/dashboard,/data-list,/question-bank,/settings,/examples,/library/button,/library/data-table,/library/badge,/library/card')
+  '/gallery,/prism/dashboard,/prism/library,/tokens-themes,/columns')
   .split(',').map((s) => s.trim()).filter(Boolean)
 const GLOBALS = process.env.DS_CSS ||
   '/Users/romitsoley/Work/apps/exam-management/admin/node_modules/@exxatdesignux/ui/src/globals.css'
@@ -108,7 +113,7 @@ for (const r of DS_ROUTES) {
 }
 if (dsRoutesOk === 0) {
   console.error(`\n✗ Could not reach the DS at ${DS_URL} on any reference route.`)
-  console.error(`  Start it (Exxat-DS-Workspace/apps/docs on :4000) or pass DS_ROUTES. Aborting.`)
+  console.error(`  Start it: cd ~/exxat-ds-viewer && pnpm exec vite --port 4000  (or pass DS_ROUTES). Aborting.`)
   await b.close(); process.exit(2)
 }
 
