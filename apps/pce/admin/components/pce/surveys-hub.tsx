@@ -15,17 +15,10 @@ import {
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { ListHubStatusBadge } from '@/components/list-hub-status-badge'
-import {
-  LIST_HUB_STATUS_TINT_SUCCESS,
-  LIST_HUB_STATUS_TINT_WARNING,
-  LIST_HUB_STATUS_TINT_INFO,
-  LIST_HUB_STATUS_TINT_PLANNED,
-  LIST_HUB_STATUS_TINT_COMPLETED,
-  LIST_HUB_STATUS_TINT_NEUTRAL,
-  type StatusTint,
-} from '@/lib/list-status-badges'
+import { SURVEY_STATUS_BADGE } from '@/components/pce/pce-badges'
 import { BulletGauge } from '@/components/pce/bullet-gauge'
 import { CreateSurveySheet, CloseSurveyDialog } from '@/components/pce/pce-modals'
+import { ModerationSheet } from '@/components/pce/moderation-sheet'
 import {
   MOCK_TERMS,
   MOCK_PROGRAM_TERMS,
@@ -42,7 +35,7 @@ function formatIsoDate(iso: string): string {
 }
 
 
-function StatusContextCell({ survey }: { survey: PceSurvey }) {
+function StatusContextCell({ survey, onReview }: { survey: PceSurvey; onReview?: () => void }) {
   const muted: React.CSSProperties = { color: 'var(--muted-foreground)' }
   if (survey.status === 'scheduled' && survey.openDate) {
     return <span className="text-sm" style={muted}>Opens {formatIsoDate(survey.openDate)}</span>
@@ -52,9 +45,14 @@ function StatusContextCell({ survey }: { survey: PceSurvey }) {
   }
   if (survey.status === 'pending_review') {
     return (
-      <Link href="/moderation" className="text-sm hover:underline" style={muted} onClick={(e) => e.stopPropagation()}>
+      <Button
+        variant="link"
+        className="h-auto p-0 text-sm font-normal hover:underline text-left"
+        style={muted}
+        onClick={(e) => { e.stopPropagation(); onReview?.() }}
+      >
         Ready to release →
-      </Link>
+      </Button>
     )
   }
   if (survey.status === 'released') {
@@ -67,15 +65,6 @@ function StatusContextCell({ survey }: { survey: PceSurvey }) {
   return null
 }
 
-const SURVEY_STATUS_BADGE: Record<SurveyStatus, { tint: StatusTint; icon: string; label: string }> = {
-  draft:          { tint: LIST_HUB_STATUS_TINT_WARNING,   icon: 'fa-pen-ruler',          label: 'Draft'          },
-  scheduled:      { tint: LIST_HUB_STATUS_TINT_PLANNED,   icon: 'fa-calendar',           label: 'Scheduled'      },
-  active:         { tint: LIST_HUB_STATUS_TINT_SUCCESS,   icon: 'fa-circle-check',       label: 'Active'         },
-  collecting:     { tint: LIST_HUB_STATUS_TINT_INFO,      icon: 'fa-circle-dot',         label: 'Collecting'     },
-  pending_review: { tint: LIST_HUB_STATUS_TINT_WARNING,   icon: 'fa-hourglass-half',     label: 'Pending Review' },
-  released:       { tint: LIST_HUB_STATUS_TINT_COMPLETED, icon: 'fa-flag-checkered',     label: 'Released'       },
-  closed:         { tint: LIST_HUB_STATUS_TINT_NEUTRAL,   icon: 'fa-box-archive',        label: 'Closed'         },
-}
 
 interface SurveyRow extends Record<string, unknown> {
   id: string
@@ -116,6 +105,7 @@ export function SurveysHub({ mode }: { mode: 'course_evaluation' | 'general' }) 
   const { surveys } = usePce()
   const [createOpen, setCreateOpen] = useState(false)
   const [closeSurvey, setCloseSurvey] = useState<PceSurvey | null>(null)
+  const [moderationSurveyId, setModerationSurveyId] = useState<string | null>(null)
 
   const isGeneral = mode === 'general'
   const title = isGeneral ? 'Surveys' : 'Evaluations'
@@ -218,7 +208,7 @@ export function SurveysHub({ mode }: { mode: 'course_evaluation' | 'general' }) 
       key: 'statusContext',
       label: 'Details',
       width: 200,
-      cell: (row) => <StatusContextCell survey={row.survey} />,
+      cell: (row) => <StatusContextCell survey={row.survey} onReview={() => setModerationSurveyId(row.survey.id)} />,
     },
     {
       key: 'responseRate',
@@ -241,7 +231,7 @@ export function SurveysHub({ mode }: { mode: 'course_evaluation' | 'general' }) 
       key: 'actions',
       label: '',
       width: 44,
-      cell: (row) => <RowActions survey={row.survey} onClose={() => setCloseSurvey(row.survey)} />,
+      cell: (row) => <RowActions survey={row.survey} onClose={() => setCloseSurvey(row.survey)} onReview={() => setModerationSurveyId(row.survey.id)} />,
     },
   ] : [
     termColumn,
@@ -315,7 +305,7 @@ export function SurveysHub({ mode }: { mode: 'course_evaluation' | 'general' }) 
       key: 'statusContext',
       label: 'Details',
       width: 200,
-      cell: (row) => <StatusContextCell survey={row.survey} />,
+      cell: (row) => <StatusContextCell survey={row.survey} onReview={() => setModerationSurveyId(row.survey.id)} />,
     },
     {
       key: 'responseRate',
@@ -338,7 +328,7 @@ export function SurveysHub({ mode }: { mode: 'course_evaluation' | 'general' }) 
       key: 'actions',
       label: '',
       width: 44,
-      cell: (row) => <RowActions survey={row.survey} onClose={() => setCloseSurvey(row.survey)} />,
+      cell: (row) => <RowActions survey={row.survey} onClose={() => setCloseSurvey(row.survey)} onReview={() => setModerationSurveyId(row.survey.id)} />,
     },
   ]
 
@@ -449,11 +439,17 @@ export function SurveysHub({ mode }: { mode: 'course_evaluation' | 'general' }) 
         onOpenChange={v => { if (!v) setCloseSurvey(null) }}
         survey={closeSurvey}
       />
+      {!isGeneral && (
+        <ModerationSheet
+          surveyId={moderationSurveyId}
+          onClose={() => setModerationSurveyId(null)}
+        />
+      )}
     </div>
   )
 }
 
-function RowActions({ survey, onClose }: { survey: PceSurvey; onClose: () => void }) {
+function RowActions({ survey, onClose, onReview }: { survey: PceSurvey; onClose: () => void; onReview?: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false)
   return (
     <DropdownMenu modal={false} onOpenChange={setMenuOpen} open={menuOpen}>
@@ -469,11 +465,9 @@ function RowActions({ survey, onClose }: { survey: PceSurvey; onClose: () => voi
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44" onClick={(e) => e.stopPropagation()}>
         {survey.status === 'pending_review' ? (
-          <DropdownMenuItem asChild>
-            <Link href="/moderation">
-              <i className="fa-light fa-shield-check" aria-hidden="true" />
-              Review &amp; Release
-            </Link>
+          <DropdownMenuItem onSelect={() => { setMenuOpen(false); onReview?.() }}>
+            <i className="fa-light fa-shield-check" aria-hidden="true" />
+            Review &amp; Release
           </DropdownMenuItem>
         ) : survey.status === 'draft' ? (
           <DropdownMenuItem asChild>
