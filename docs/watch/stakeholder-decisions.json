@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-06-11",
+  "lastUpdated": "2026-06-15",
   "decisions": [
     {
       "id": "pce-decision-001",
@@ -139,7 +139,8 @@
       "source": "Post-course evaluation template — workflow, role-based access, and distribution setup with Monel transcript — May 19, 2026",
       "sourceType": "transcript",
       "date": "2026-05-19",
-      "status": "confirmed"
+      "status": "superseded",
+      "supersededBy": "pce-decision-028"
     },
     {
       "id": "pce-decision-015",
@@ -309,6 +310,187 @@
       "source": "PCE PRD §12 Dependencies and Risks — FAAS UI",
       "sourceType": "prd",
       "date": "2026-06-02",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-019",
+      "product": "pce",
+      "text": "Three entry points for CE results viewing: (1) by term — shows all courses in the term with per-term and per-course stats; (2) by faculty — shows all courses a faculty member has taught with per-faculty aggregated stats; (3) by course — shows all historical offerings of a course with per-course aggregated stats. The final 'evaluation card' (single course-offering result view) is identical regardless of which entry point is used.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Course and faculty evaluation setup — directories, templates, and term workflow transcript — Jun 10, 2026",
+      "sourceType": "transcript",
+      "date": "2026-06-10",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-020",
+      "product": "pce",
+      "text": "Directory pages (student, faculty, course master list, course offering) within the CE module are VIEW-ONLY. They pull data from Prism base. No student/faculty/course management workflows are built inside CE. When a user needs to perform a data-management action (e.g., register a student to a course, add faculty to a course), they are deep-linked to the appropriate Prism page in a new tab. The underlying data resides only in Prism — CE never duplicates it.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Course and faculty evaluation setup — directories, templates, and term workflow transcript — Jun 10, 2026",
+      "sourceType": "transcript",
+      "date": "2026-06-10",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-021",
+      "product": "pce",
+      "text": "Students do not get a login, profile creation, or invitation for course evaluations. Distribution is email-only: student email addresses are used to send an initial notification and reminders with a direct link. Students click the link to access and fill the evaluation. No student-facing authentication or account setup is required for CE participation.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Course and faculty evaluation setup — directories, templates, and term workflow transcript — Jun 10, 2026",
+      "sourceType": "transcript",
+      "date": "2026-06-10",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-022",
+      "product": "pce",
+      "text": "Two reusable email templates exist in the CE setup: (1) initial notification sent when a survey opens, and (2) a reminder email template (dynamic — same template reused for all reminder cycles). The default reminder schedule is anchored on term end date (e.g., 15 days before term end). No separate template per reminder cycle is needed.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Course and faculty evaluation setup — directories, templates, and term workflow transcript — Jun 10, 2026",
+      "sourceType": "transcript",
+      "date": "2026-06-10",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-023",
+      "product": "pce",
+      "text": "Academic year and term configuration — with start and end dates for each term — is a mandatory prerequisite for CE distribution automation. Without dates, the system cannot calculate when to open evaluations, send reminders, or close surveys. The CE setup section must require this configuration before a term can be enabled for CE. Terms with missing dates are excluded from the term-enablement workflow.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Course and faculty evaluation setup — directories, templates, and term workflow transcript — Jun 10, 2026; confirmed in India discussion — Weekly Product Sync | New Initiatives (Prism) transcript — Jun 10, 2026",
+      "sourceType": "transcript",
+      "date": "2026-06-10",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-024",
+      "product": "pce",
+      "text": "The CE dashboard groups evaluations by term (not 'project'). Term is the primary organizing concept throughout the CE module — the landing page, dashboard, distribution flow, and analytics all anchor on the current term. Each term group shows its associated course offerings with KPIs and completion stats.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "India discussion — Weekly Product Sync | New Initiatives (Prism) transcript — Jun 10, 2026",
+      "sourceType": "transcript",
+      "date": "2026-06-10",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-025",
+      "product": "pce",
+      "text": "Longitudinal analytics requires two dedicated sidebar entry points: (1) Faculty — a faculty directory with leaderboard showing top/bottom performing faculty, search, and a detail view with spider graph (per-section scores), trend chart (historical rating), peer comparison, and per-course breakdown; (2) Course — a course directory showing all historical offerings of each course, with aggregated performance stats and click-through to individual offering results. These two pages are the key differentiators of PCE from a general survey tool.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "India discussion — Weekly Product Sync | New Initiatives (Prism) transcript — Jun 10, 2026",
+      "sourceType": "transcript",
+      "date": "2026-06-10",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-026",
+      "product": "pce",
+      "text": "Template sections have three categories: (1) Course content — questions about the course itself; (2) Faculty/roles — questions for faculty, with a multi-select of which program-level faculty roles from Prism this section applies to (all selected roles share the same questions in that section); (3) General — a catch-all section for questions not tied to a specific person or the course content. Multiple sections of each category can be added. The subject/role lookup is powered by program-level faculty role associations in Prism.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "India discussion — Weekly Product Sync | New Initiatives (Prism) transcript — Jun 10, 2026",
+      "sourceType": "transcript",
+      "date": "2026-06-10",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-027",
+      "product": "pce",
+      "text": "Faculty evaluation results must not be visible to other faculty. Faculty members should not be able to see each other's scores. This is an explicit design requirement for the CE module, addressing a known limitation of the current Prism product where all faculty can view each other's course evaluation data.",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "India discussion — Weekly Product Sync | New Initiatives (Prism) transcript — Jun 10, 2026",
+      "sourceType": "transcript",
+      "date": "2026-06-10",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-028",
+      "product": "pce",
+      "text": "Template creation: 'Build new' has two sub-options — (a) manually add sections or (b) import from a PDF or Word document (AI parses and creates a draft template). The document import option is presented at the top-level template creation screen, not buried per section. No predefined vendor-provided starter templates are included in phase 1. The 'pick from question bank' path remains a future capability. Note: whether 'Copy existing template' is a supported path is unresolved — see DECISION CONFLICT in docs/watch/flags/pce.md dated 2026-06-09.",
+      "stakeholder": "Vishaka Bhavsar",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jun 9, 2026",
+      "sourceType": "transcript",
+      "date": "2026-06-09",
+      "status": "confirmed",
+      "supersedes": "pce-decision-014"
+    },
+    {
+      "id": "pce-decision-029",
+      "product": "pce",
+      "text": "When adding sections to a template (Build new path): all desired sections/roles can be multi-selected in one action — no need to add one section at a time. Section descriptions are removed; only role/subject labels are shown. There is no per-section PDF import option (document import is top-level only). After choosing 'Build new', the user goes directly into the section-editing interface without additional intermediate option screens.",
+      "stakeholder": "Vishaka Bhavsar",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jun 9, 2026",
+      "sourceType": "transcript",
+      "date": "2026-06-09",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-030",
+      "product": "pce",
+      "text": "PCE distribution channel is Exact Prism only — no anonymous public link for course evaluations. The anonymous link option remains in the general survey tool only. Each student is permitted to submit only once per course evaluation, enforced by the backend using the Prism student roster for that course offering.",
+      "stakeholder": "Vishaka Bhavsar",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jun 9, 2026",
+      "sourceType": "transcript",
+      "date": "2026-06-09",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-031",
+      "product": "pce",
+      "text": "Anonymous response is a non-configurable default in CE — not an option the admin chooses. The distribution UI communicates 'responses are anonymous' as a statement to the admin, not as a toggle or question. The visibility/privacy toggle (private vs. share with program) shown in the general survey tool is removed from the CE distribution flow.",
+      "stakeholder": "Vishaka Bhavsar",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jun 9, 2026",
+      "sourceType": "transcript",
+      "date": "2026-06-09",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-032",
+      "product": "pce",
+      "text": "Comment moderation is a stretch goal for phase 1. If comment moderation is excluded: the results release date field becomes mandatory (not optional) in the distribution setup — the system uses this date to automatically distribute results to stakeholders. If no date is provided, the admin must manually share results; the UI must communicate this explicitly. Results must not be released to faculty before they have submitted final grades — the system cannot enforce this but must include a messaging reminder (soft, not a hard block).",
+      "stakeholder": "Vishaka Bhavsar",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jun 9, 2026",
+      "sourceType": "transcript",
+      "date": "2026-06-09",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-033",
+      "product": "pce",
+      "text": "Bulk distribution supports two levels of date override: (1) parent (term group) level — date changes cascade to all course instances in the same term distribution; (2) individual course instance level — override for a specific course without affecting others. Both granularities must be supported. The parent-level override is the primary workflow for extending survey windows across an entire term.",
+      "stakeholder": "Monil Pokar",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jun 9, 2026",
+      "sourceType": "transcript",
+      "date": "2026-06-09",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-034",
+      "product": "pce",
+      "text": "The Report Access step is removed from the CE distribution wizard in phase 1. Role-based access (program director and above) controls who can view all survey results — no per-survey access configuration is needed. If an admin wants to share specific evaluation data (e.g., a TA's results with a coordinator), they can manually download and email it. Phase 1 must remain simple: no custom report access rules per survey distribution. This resolves the PRD §4 vs. §13c.2 conflict flagged on 2026-06-09.",
+      "stakeholder": "Vishaka Bhavsar",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jun 9, 2026",
+      "sourceType": "transcript",
+      "date": "2026-06-09",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-035",
+      "product": "pce",
+      "text": "The general survey (programmatic survey) module UI, workflow, and backend are unchanged in this phase. Only the navigation entry point changes — CE and General Surveys are accessible as separate sidebar tabs within the same top-level module. No functional changes to the existing general survey workflow without a strong rationale and explicit approval, as users have already learned the current system and changing it mid-flight creates retraining burden.",
+      "stakeholder": "Vishaka Bhavsar",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jun 9, 2026",
+      "sourceType": "transcript",
+      "date": "2026-06-09",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-014",
+      "product": "exam-management",
+      "text": "The course offering landing page in phase 1 is limited to information that currently exists in the system — no future-state data. Performance analytics, accommodations, and interventions are explicitly excluded from the initial build and will be introduced incrementally as those features are built in later phases. The design must not anticipate data that does not yet exist.",
+      "stakeholder": "Nipun (PM)",
+      "source": "Exam Management Sync up transcript — Jun 9, 2026",
+      "sourceType": "transcript",
+      "date": "2026-06-09",
       "status": "confirmed"
     }
   ]
