@@ -338,6 +338,14 @@ CIRCULAR_IMG_RE = re.compile(r"<\s*img\b[^>]*rounded-full")
 AVATAR_DS_RE = re.compile(r"<\s*Avatar(?:Image|Fallback)?\b")
 SHEET_DS_RE = re.compile(r"<\s*(?:Sheet|SheetContent|Dialog|DialogContent|Drawer)\b")
 CLASSNAME_VALUE_RE = re.compile(r"""className\s*=\s*["'`]([^"'`]+)["'`]""")
+# A <button> carrying a non-button ARIA role is a deliberate semantic control
+# (radio/tab/switch/option/menuitem), NOT a generic action button — "use DS
+# Button" is the wrong advice for it. (A radio/tab wants RadioGroup/Tabs, flagged
+# by their own rules; an intentional a11y pattern like question-editor's roving
+# radio is correct as-is.) Skip these in the raw-button rule.
+SEMANTIC_ROLE_RE = re.compile(
+    r'role\s*=\s*["\'](?:radio|tab|switch|option|menuitem|menuitemradio|menuitemcheckbox)["\']'
+)
 
 # ── State-coverage regexes (added 2026-05-11; phase-0 warn) ────────────────
 # DataTable JSX open (multi-line). Just locates the start position; we
@@ -602,6 +610,9 @@ def scan_file_for_raw_button(rel: str, text: str) -> list[Gap]:
         lt = lines[line_no - 1].lstrip() if line_no <= len(lines) else ""
         # Skip matches inside comment lines (e.g. a docstring mentioning "<button>").
         if lt.startswith("//") or lt.startswith("*") or lt.startswith("/*"):
+            continue
+        # Skip deliberate ARIA semantic controls (radio/tab/switch/…) — not generic Buttons.
+        if SEMANTIC_ROLE_RE.search(m.group(0)):
             continue
         return [Gap(
             severity="warn",
