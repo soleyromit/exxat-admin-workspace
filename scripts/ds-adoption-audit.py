@@ -608,8 +608,9 @@ def scan_file_for_raw_button(rel: str, text: str) -> list[Gap]:
     for m in RAW_BUTTON_RE.finditer(text):
         line_no = text[: m.start()].count("\n") + 1
         lt = lines[line_no - 1].lstrip() if line_no <= len(lines) else ""
-        # Skip matches inside comment lines (e.g. a docstring mentioning "<button>").
-        if lt.startswith("//") or lt.startswith("*") or lt.startswith("/*"):
+        # Skip matches inside comment lines (e.g. a docstring or JSX comment
+        # mentioning "<button>"). Covers //, /* */, leading *, and JSX {/* */}.
+        if lt.startswith(("//", "*", "/*", "{/*")):
             continue
         # Skip deliberate ARIA semantic controls (radio/tab/switch/…) — not generic Buttons.
         if SEMANTIC_ROLE_RE.search(m.group(0)):
