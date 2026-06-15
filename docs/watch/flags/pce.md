@@ -247,6 +247,21 @@ First snapshot taken for PCE PRD — Monil Pokar — no diff applied. Next run w
 
 ---
 
+## DECISION CONFLICT — 2026-06-09
+**Old decision:** pce-decision-014 (superseded) — "Three creation paths: import an existing evaluation document (PDF/Word) via AI parsing, build manually question by question, or (future) pick from question bank."
+**New directive from Monil Pokar in PCE PRD §13b.1 (Jun 9, 2026):** "Do-not give option for user to copy existing template. They can just create template from scratch in course Evaluation." → No copy-existing path.
+**Conflicting directive from Vishaka Bhavsar in Post-Course Survey Cadence Meeting BiWeekly (Jun 9, 2026):** Vishaka confirmed "copy existing" as a valid top-level path alongside "build new": "If they are copying from existing the survey already exists in exact prism, and they are just making a copy, giving it a new name and new metadata." — Copy-existing path confirmed.
+**Action:** Monil (PRD §13b.1) says no copy. Vishaka (BiWeekly, same day) says copy is valid. These two contradict. Confirm with Adi/Monil which applies before building the template creation screen. Until resolved, pce-decision-028 documents only the undisputed parts (Build new sub-options; document import at top level).
+
+---
+
+## 2026-06-09 — RESOLUTION: PRD §13c.2 ambiguity (Report Access step) resolved
+**Flagged on:** 2026-06-09 — §13c.2: "For now, we donot need Report Access step for course Evaluation" contradicted §4 which listed Report Access as step 5.
+**Resolution (Jun 9, 2026, Post-Course Survey Cadence Meeting BiWeekly):** Vishaka Bhavsar confirmed removal of the Report Access screen: "will remove this report access." This is now pce-decision-034. The §4 wizard step list should be treated as 4 steps for CE (drop Report Access). The §4 step count will need updating in the PRD.
+**Status:** RESOLVED — pce-decision-034 is the authoritative decision.
+
+---
+
 ## 2026-06-11 — Flagged: PCE PRD — Monil Pokar (1 change)
 
 ### Flag 1 — §13a.1: CE/GS disambiguation element renamed from "survey switch in the user profile" to "navigation" (CLEAR — non-functional)
