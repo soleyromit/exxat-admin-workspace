@@ -1,287 +1,106 @@
-{
-  "generated": "2026-06-06",
-  "dsSubmodulePath": "exxat-ds/packages/ui/src",
-  "componentCount": 44,
-  "components": {
-    "Avatar": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "Badge": {
-      "importPath": "@exxat/ds/packages/ui/src",
-      "variants": [
-        "default",
-        "secondary",
-        "destructive",
-        "outline",
-        "ghost",
-        "link"
-      ]
-    },
-    "Banner": {
-      "importPath": "@exxat/ds/packages/ui/src",
-      "variants": [
-        "info",
-        "warning",
-        "error",
-        "success",
-        "promo"
-      ]
-    },
-    "Breadcrumb": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "Button": {
-      "importPath": "@exxat/ds/packages/ui/src",
-      "variants": [
-        "default",
-        "outline",
-        "secondary",
-        "ghost",
-        "destructive",
-        "link"
-      ],
-      "sizes": [
-        "default",
-        "xs",
-        "sm",
-        "lg",
-        "icon",
-        "icon-xs",
-        "icon-sm",
-        "icon-lg"
-      ]
-    },
-    "Calendar": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "Card": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "Chart": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "Checkbox": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "CoachMark": {
-      "importPath": "@exxat/ds/packages/ui/src",
-      "sizes": [
-        "default",
-        "sm",
-        "lg"
-      ],
-      "keyProps": [
-        "state",
-        "side",
-        "align",
-        "sideOffset",
-        "nextLabel",
-        "skipLabel"
-      ]
-    },
-    "Collapsible": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "Command": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "DatePickerField": {
-      "importPath": "@exxat/ds/packages/ui/src",
-      "keyProps": [
-        "value",
-        "onChange",
-        "disabled",
-        "triggerClassName",
-        "fromYear",
-        "toYear"
-      ]
-    },
-    "Dialog": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "DragHandleGrip": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "Drawer": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "DropdownMenu": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "Field": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "Form": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "InputGroup": {
-      "importPath": "@exxat/ds/packages/ui/src",
-      "sizes": [
-        "xs",
-        "sm",
-        "icon-xs",
-        "icon-sm"
-      ]
-    },
-    "Input": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "Kbd": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "Label": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "Popover": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "RadioGroup": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "Select": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "SelectionTileGrid": {
-      "importPath": "@exxat/ds/packages/ui/src",
-      "keyProps": [
-        "sectionLabel",
-        "options",
-        "columns",
-        "value",
-        "onValueChange",
-        "interaction"
-      ]
-    },
-    "Separator": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "Sheet": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "Sidebar": {
-      "importPath": "@exxat/ds/packages/ui/src",
-      "variants": [
-        "default",
-        "outline"
-      ],
-      "sizes": [
-        "default",
-        "sm",
-        "lg"
-      ]
-    },
-    "Skeleton": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "Sonner": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "StatusBadge": {
-      "importPath": "@exxat/ds/packages/ui/src",
-      "variants": [
-        "pill",
-        "dot"
-      ],
-      "sizes": [
-        "xs",
-        "sm",
-        "md"
-      ],
-      "keyProps": [
-        "label"
-      ]
-    },
-    "Table": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "Tabs": {
-      "importPath": "@exxat/ds/packages/ui/src",
-      "variants": [
-        "default",
-        "line"
-      ]
-    },
-    "Textarea": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "Tip": {
-      "importPath": "@exxat/ds/packages/ui/src",
-      "keyProps": [
-        "label",
-        "side"
-      ]
-    },
-    "ToggleGroup": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "ToggleSwitch": {
-      "importPath": "@exxat/ds/packages/ui/src",
-      "keyProps": [
-        "checked",
-        "onChange"
-      ]
-    },
-    "Toggle": {
-      "importPath": "@exxat/ds/packages/ui/src",
-      "variants": [
-        "default",
-        "outline"
-      ],
-      "sizes": [
-        "default",
-        "sm",
-        "lg"
-      ]
-    },
-    "Tooltip": {
-      "importPath": "@exxat/ds/packages/ui/src"
-    },
-    "ViewSegmentedControl": {
-      "importPath": "@exxat/ds/packages/ui/src",
-      "keyProps": [
-        "value",
-        "onValueChange",
-        "options",
-        "iconOnly",
-        "showTooltips",
-        "tooltipSide"
-      ]
-    },
-    "DataTable": {
-      "importPath": "@/components/data-table",
-      "note": "vendored from exxat-ds/apps/web/components/data-table/",
-      "variants": [],
-      "sizes": [],
-      "keyProps": [
-        "data",
-        "columns",
-        "getRowId",
-        "selectable",
-        "searchable",
-        "defaultGroupBy",
-        "groupLabels",
-        "groupOrder",
-        "emptyState",
-        "onRowClick",
-        "toolbarSlot",
-        "bulkActionsSlot"
-      ]
-    },
-    "KeyMetrics": {
-      "importPath": "@/components/key-metrics",
-      "note": "vendored from exxat-ds/apps/web/components/key-metrics.tsx",
-      "variants": [
-        "card",
-        "flat",
-        "compact"
-      ],
-      "sizes": [],
-      "keyProps": [
-        "metrics",
-        "variant",
-        "periodSelector",
-        "insightRail"
-      ]
-    }
-  }
-}
+ewogICJnZW5lcmF0ZWQiOiAiMjAyNi0wNi0xNSIsCiAgImRzU3VibW9kdWxlUGF0aCI6ICJleHhh
+dC1kcy9wYWNrYWdlcy91aS9zcmMiLAogICJjb21wb25lbnRDb3VudCI6IDQ0LAogICJjb21wb25l
+bnRzIjogewogICAgIkF2YXRhciI6IHsKICAgICAgImltcG9ydFBhdGgiOiAiQGV4eGF0L2RzL3Bh
+Y2thZ2VzL3VpL3NyYyIKICAgIH0sCiAgICAiQmFkZ2UiOiB7CiAgICAgICJpbXBvcnRQYXRoIjog
+IkBleHhhdC9kcy9wYWNrYWdlcy91aS9zcmMiLAogICAgICAidmFyaWFudHMiOiBbCiAgICAgICAg
+ImRlZmF1bHQiLAogICAgICAgICJzZWNvbmRhcnkiLAogICAgICAgICJkZXN0cnVjdGl2ZSIsCiAg
+ICAgICAgIm91dGxpbmUiLAogICAgICAgICJnaG9zdCIsCiAgICAgICAgImxpbmsiCiAgICAgIF0K
+ICAgIH0sCiAgICAiQmFubmVyIjogewogICAgICAiaW1wb3J0UGF0aCI6ICJAZXh4YXQvZHMvcGFj
+a2FnZXMvdWkvc3JjIiwKICAgICAgInZhcmlhbnRzIjogWwogICAgICAgICJpbmZvIiwKICAgICAg
+ICAid2FybmluZyIsCiAgICAgICAgImVycm9yIiwKICAgICAgICAic3VjY2VzcyIsCiAgICAgICAg
+InByb21vIgogICAgICBdCiAgICB9LAogICAgIkJyZWFkY3J1bWIiOiB7CiAgICAgICJpbXBvcnRQ
+YXRoIjogIkBleHhhdC9kcy9wYWNrYWdlcy91aS9zcmMiCiAgICB9LAogICAgIkJ1dHRvbiI6IHsK
+ICAgICAgImltcG9ydFBhdGgiOiAiQGV4eGF0L2RzL3BhY2thZ2VzL3VpL3NyYyIsCiAgICAgICJ2
+YXJpYW50cyI6IFsKICAgICAgICAiZGVmYXVsdCIsCiAgICAgICAgIm91dGxpbmUiLAogICAgICAg
+ICJzZWNvbmRhcnkiLAogICAgICAgICJnaG9zdCIsCiAgICAgICAgImRlc3RydWN0aXZlIiwKICAg
+ICAgICAibGluayIKICAgICAgXSwKICAgICAgInNpemVzIjogWwogICAgICAgICJkZWZhdWx0IiwK
+ICAgICAgICAieHMiLAogICAgICAgICJzbSIsCiAgICAgICAgImxnIiwKICAgICAgICAiaWNvbiIs
+CiAgICAgICAgImljb24teHMiLAogICAgICAgICJpY29uLXNtIiwKICAgICAgICAiaWNvbi1sZyIK
+ICAgICAgXQogICAgfSwKICAgICJDYWxlbmRhciI6IHsKICAgICAgImltcG9ydFBhdGgiOiAiQGV4
+eGF0L2RzL3BhY2thZ2VzL3VpL3NyYyIKICAgIH0sCiAgICAiQ2FyZCI6IHsKICAgICAgImltcG9y
+dFBhdGgiOiAiQGV4eGF0L2RzL3BhY2thZ2VzL3VpL3NyYyIKICAgIH0sCiAgICAiQ2hhcnQiOiB7
+CiAgICAgICJpbXBvcnRQYXRoIjogIkBleHhhdC9kcy9wYWNrYWdlcy91aS9zcmMiCiAgICB9LAog
+ICAgIkNoZWNrYm94IjogewogICAgICAiaW1wb3J0UGF0aCI6ICJAZXh4YXQvZHMvcGFja2FnZXMv
+dWkvc3JjIgogICAgfSwKICAgICJDb2FjaE1hcmsiOiB7CiAgICAgICJpbXBvcnRQYXRoIjogIkBl
+eHhhdC9kcy9wYWNrYWdlcy91aS9zcmMiLAogICAgICAic2l6ZXMiOiBbCiAgICAgICAgImRlZmF1
+bHQiLAogICAgICAgICJzbSIsCiAgICAgICAgImxnIgogICAgICBdLAogICAgICAia2V5UHJvcHMi
+OiBbCiAgICAgICAgInN0YXRlIiwKICAgICAgICAic2lkZSIsCiAgICAgICAgImFsaWduIiwKICAg
+ICAgICAic2lkZU9mZnNldCIsCiAgICAgICAgIm5leHRMYWJlbCIsCiAgICAgICAgInNraXBMYWJl
+bCIKICAgICAgXQogICAgfSwKICAgICJDb2xsYXBzaWJsZSI6IHsKICAgICAgImltcG9ydFBhdGgi
+OiAiQGV4eGF0L2RzL3BhY2thZ2VzL3VpL3NyYyIKICAgIH0sCiAgICAiQ29tbWFuZCI6IHsKICAg
+ICAgImltcG9ydFBhdGgiOiAiQGV4eGF0L2RzL3BhY2thZ2VzL3VpL3NyYyIKICAgIH0sCiAgICAi
+RGF0ZVBpY2tlckZpZWxkIjogewogICAgICAiaW1wb3J0UGF0aCI6ICJAZXh4YXQvZHMvcGFja2Fn
+ZXMvdWkvc3JjIiwKICAgICAgImtleVByb3BzIjogWwogICAgICAgICJ2YWx1ZSIsCiAgICAgICAg
+Im9uQ2hhbmdlIiwKICAgICAgICAiZGlzYWJsZWQiLAogICAgICAgICJ0cmlnZ2VyQ2xhc3NOYW1l
+IiwKICAgICAgICAiZnJvbVllYXIiLAogICAgICAgICJ0b1llYXIiCiAgICAgIF0KICAgIH0sCiAg
+ICAiRGlhbG9nIjogewogICAgICAiaW1wb3J0UGF0aCI6ICJAZXh4YXQvZHMvcGFja2FnZXMvdWkv
+c3JjIgogICAgfSwKICAgICJEcmFnSGFuZGxlR3JpcCI6IHsKICAgICAgImltcG9ydFBhdGgiOiAi
+QGV4eGF0L2RzL3BhY2thZ2VzL3VpL3NyYyIKICAgIH0sCiAgICAiRHJhd2VyIjogewogICAgICAi
+aW1wb3J0UGF0aCI6ICJAZXh4YXQvZHMvcGFja2FnZXMvdWkvc3JjIgogICAgfSwKICAgICJEcm9w
+ZG93bk1lbnUiOiB7CiAgICAgICJpbXBvcnRQYXRoIjogIkBleHhhdC9kcy9wYWNrYWdlcy91aS9z
+cmMiCiAgICB9LAogICAgIkZpZWxkIjogewogICAgICAiaW1wb3J0UGF0aCI6ICJAZXh4YXQvZHMv
+cGFja2FnZXMvdWkvc3JjIgogICAgfSwKICAgICJGb3JtIjogewogICAgICAiaW1wb3J0UGF0aCI6
+ICJAZXh4YXQvZHMvcGFja2FnZXMvdWkvc3JjIgogICAgfSwKICAgICJJbnB1dEdyb3VwIjogewog
+ICAgICAiaW1wb3J0UGF0aCI6ICJAZXh4YXQvZHMvcGFja2FnZXMvdWkvc3JjIiwKICAgICAgInNp
+emVzIjogWwogICAgICAgICJ4cyIsCiAgICAgICAgInNtIiwKICAgICAgICAiaWNvbi14cyIsCiAg
+ICAgICAgImljb24tc20iCiAgICAgIF0KICAgIH0sCiAgICAiSW5wdXQiOiB7CiAgICAgICJpbXBv
+cnRQYXRoIjogIkBleHhhdC9kcy9wYWNrYWdlcy91aS9zcmMiCiAgICB9LAogICAgIktiZCI6IHsK
+ICAgICAgImltcG9ydFBhdGgiOiAiQGV4eGF0L2RzL3BhY2thZ2VzL3VpL3NyYyIKICAgIH0sCiAg
+ICAiTGFiZWwiOiB7CiAgICAgICJpbXBvcnRQYXRoIjogIkBleHhhdC9kcy9wYWNrYWdlcy91aS9z
+cmMiCiAgICB9LAogICAgIlBvcG92ZXIiOiB7CiAgICAgICJpbXBvcnRQYXRoIjogIkBleHhhdC9k
+cy9wYWNrYWdlcy91aS9zcmMiCiAgICB9LAogICAgIlJhZGlvR3JvdXAiOiB7CiAgICAgICJpbXBv
+cnRQYXRoIjogIkBleHhhdC9kcy9wYWNrYWdlcy91aS9zcmMiCiAgICB9LAogICAgIlNlbGVjdCI6
+IHsKICAgICAgImltcG9ydFBhdGgiOiAiQGV4eGF0L2RzL3BhY2thZ2VzL3VpL3NyYyIKICAgIH0s
+CiAgICAiU2VsZWN0aW9uVGlsZUdyaWQiOiB7CiAgICAgICJpbXBvcnRQYXRoIjogIkBleHhhdC9k
+cy9wYWNrYWdlcy91aS9zcmMiLAogICAgICAia2V5UHJvcHMiOiBbCiAgICAgICAgInNlY3Rpb25M
+YWJlbCIsCiAgICAgICAgIm9wdGlvbnMiLAogICAgICAgICJjb2x1bW5zIiwKICAgICAgICAidmFs
+dWUiLAogICAgICAgICJvblZhbHVlQ2hhbmdlIiwKICAgICAgICAiaW50ZXJhY3Rpb24iCiAgICAg
+IF0KICAgIH0sCiAgICAiU2VwYXJhdG9yIjogewogICAgICAiaW1wb3J0UGF0aCI6ICJAZXh4YXQv
+ZHMvcGFja2FnZXMvdWkvc3JjIgogICAgfSwKICAgICJTaGVldCI6IHsKICAgICAgImltcG9ydFBh
+dGgiOiAiQGV4eGF0L2RzL3BhY2thZ2VzL3VpL3NyYyIKICAgIH0sCiAgICAiU2lkZWJhciI6IHsK
+ICAgICAgImltcG9ydFBhdGgiOiAiQGV4eGF0L2RzL3BhY2thZ2VzL3VpL3NyYyIsCiAgICAgICJ2
+YXJpYW50cyI6IFsKICAgICAgICAiZGVmYXVsdCIsCiAgICAgICAgIm91dGxpbmUiCiAgICAgIF0s
+CiAgICAgICJzaXplcyI6IFsKICAgICAgICAiZGVmYXVsdCIsCiAgICAgICAgInNtIiwKICAgICAg
+ICAibGciCiAgICAgIF0KICAgIH0sCiAgICAiU2tlbGV0b24iOiB7CiAgICAgICJpbXBvcnRQYXRo
+IjogIkBleHhhdC9kcy9wYWNrYWdlcy91aS9zcmMiCiAgICB9LAogICAgIlNvbm5lciI6IHsKICAg
+ICAgImltcG9ydFBhdGgiOiAiQGV4eGF0L2RzL3BhY2thZ2VzL3VpL3NyYyIKICAgIH0sCiAgICAi
+U3RhdHVzQmFkZ2UiOiB7CiAgICAgICJpbXBvcnRQYXRoIjogIkBleHhhdC9kcy9wYWNrYWdlcy91
+aS9zcmMiLAogICAgICAidmFyaWFudHMiOiBbCiAgICAgICAgInBpbGwiLAogICAgICAgICJkb3Qi
+CiAgICAgIF0sCiAgICAgICJzaXplcyI6IFsKICAgICAgICAieHMiLAogICAgICAgICJzbSIsCiAg
+ICAgICAgIm1kIgogICAgICBdLAogICAgICAia2V5UHJvcHMiOiBbCiAgICAgICAgImxhYmVsIgog
+ICAgICBdCiAgICB9LAogICAgIlRhYmxlIjogewogICAgICAiaW1wb3J0UGF0aCI6ICJAZXh4YXQv
+ZHMvcGFja2FnZXMvdWkvc3JjIgogICAgfSwKICAgICJUYWJzIjogewogICAgICAiaW1wb3J0UGF0
+aCI6ICJAZXh4YXQvZHMvcGFja2FnZXMvdWkvc3JjIiwKICAgICAgInZhcmlhbnRzIjogWwogICAg
+ICAgICJkZWZhdWx0IiwKICAgICAgICAibGluZSIKICAgICAgXQogICAgfSwKICAgICJUZXh0YXJl
+YSI6IHsKICAgICAgImltcG9ydFBhdGgiOiAiQGV4eGF0L2RzL3BhY2thZ2VzL3VpL3NyYyIKICAg
+IH0sCiAgICAiVGlwIjogewogICAgICAiaW1wb3J0UGF0aCI6ICJAZXh4YXQvZHMvcGFja2FnZXMv
+dWkvc3JjIiwKICAgICAgImtleVByb3BzIjogWwogICAgICAgICJsYWJlbCIsCiAgICAgICAgInNp
+ZGUiCiAgICAgIF0KICAgIH0sCiAgICAiVG9nZ2xlR3JvdXAiOiB7CiAgICAgICJpbXBvcnRQYXRo
+IjogIkBleHhhdC9kcy9wYWNrYWdlcy91aS9zcmMiCiAgICB9LAogICAgIlRvZ2dsZVN3aXRjaCI6
+IHsKICAgICAgImltcG9ydFBhdGgiOiAiQGV4eGF0L2RzL3BhY2thZ2VzL3VpL3NyYyIsCiAgICAg
+ICJrZXlQcm9wcyI6IFsKICAgICAgICAiY2hlY2tlZCIsCiAgICAgICAgIm9uQ2hhbmdlIgogICAg
+ICBdCiAgICB9LAogICAgIlRvZ2dsZSI6IHsKICAgICAgImltcG9ydFBhdGgiOiAiQGV4eGF0L2Rz
+L3BhY2thZ2VzL3VpL3NyYyIsCiAgICAgICJ2YXJpYW50cyI6IFsKICAgICAgICAiZGVmYXVsdCIs
+CiAgICAgICAgIm91dGxpbmUiCiAgICAgIF0sCiAgICAgICJzaXplcyI6IFsKICAgICAgICAiZGVm
+YXVsdCIsCiAgICAgICAgInNtIiwKICAgICAgICAibGciCiAgICAgIF0KICAgIH0sCiAgICAiVG9v
+bHRpcCI6IHsKICAgICAgImltcG9ydFBhdGgiOiAiQGV4eGF0L2RzL3BhY2thZ2VzL3VpL3NyYyIK
+ICAgIH0sCiAgICAiVmlld1NlZ21lbnRlZENvbnRyb2wiOiB7CiAgICAgICJpbXBvcnRQYXRoIjog
+IkBleHhhdC9kcy9wYWNrYWdlcy91aS9zcmMiLAogICAgICAia2V5UHJvcHMiOiBbCiAgICAgICAg
+InZhbHVlIiwKICAgICAgICAib25WYWx1ZUNoYW5nZSIsCiAgICAgICAgIm9wdGlvbnMiLAogICAg
+ICAgICJpY29uT25seSIsCiAgICAgICAgInNob3dUb29sdGlwcyIsCiAgICAgICAgInRvb2x0aXBT
+aWRlIgogICAgICBdCiAgICB9LAogICAgIkRhdGFUYWJsZSI6IHsKICAgICAgImltcG9ydFBhdGgi
+OiAiQC9jb21wb25lbnRzL2RhdGEtdGFibGUiLAogICAgICAibm90ZSI6ICJ2ZW5kb3JlZCBmcm9t
+IGV4eGF0LWRzL2FwcHMvd2ViL2NvbXBvbmVudHMvZGF0YS10YWJsZS8iLAogICAgICAidmFyaWFu
+dHMiOiBbXSwKICAgICAgInNpemVzIjogW10sCiAgICAgICJrZXlQcm9wcyI6IFsKICAgICAgICAi
+ZGF0YSIsCiAgICAgICAgImNvbHVtbnMiLAogICAgICAgICJnZXRSb3dJZCIsCiAgICAgICAgInNl
+bGVjdGFibGUiLAogICAgICAgICJzZWFyY2hhYmxlIiwKICAgICAgICAiZGVmYXVsdEdyb3VwQnki
+LAogICAgICAgICJncm91cExhYmVscyIsCiAgICAgICAgImdyb3VwT3JkZXIiLAogICAgICAgICJl
+bXB0eVN0YXRlIiwKICAgICAgICAib25Sb3dDbGljayIsCiAgICAgICAgInRvb2xiYXJTbG90IiwK
+ICAgICAgICAiYnVsa0FjdGlvbnNTbG90IgogICAgICBdCiAgICB9LAogICAgIktleU1ldHJpY3Mi
+OiB7CiAgICAgICJpbXBvcnRQYXRoIjogIkAvY29tcG9uZW50cy9rZXktbWV0cmljcyIsCiAgICAg
+ICJub3RlIjogInZlbmRvcmVkIGZyb20gZXh4YXQtZHMvYXBwcy93ZWIvY29tcG9uZW50cy9rZXkt
+bWV0cmljcy50c3giLAogICAgICAidmFyaWFudHMiOiBbCiAgICAgICAgImNhcmQiLAogICAgICAg
+ICJmbGF0IiwKICAgICAgICAiY29tcGFjdCIKICAgICAgXSwKICAgICAgInNpemVzIjogW10sCiAg
+ICAgICJrZXlQcm9wcyI6IFsKICAgICAgICAibWV0cmljcyIsCiAgICAgICAgInZhcmlhbnQiLAog
+ICAgICAgICJwZXJpb2RTZWxlY3RvciIsCiAgICAgICAgImluc2lnaHRSYWlsIgogICAgICBdCiAg
+ICB9CiAgfQp9
