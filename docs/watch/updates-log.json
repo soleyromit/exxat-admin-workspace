@@ -379,7 +379,7 @@
       "date": "2026-05-30",
       "product": "pce",
       "type": "prd-flagged",
-      "title": "PCE PRD — Wizard Step 2 renamed 'Create Survey'; substep 2 renamed 'Scope/Courses'",
+      "title": "PCE PRD — Wizard Step 2 renamed 'Create Survey'; substep 2 renamed 'Distribution' → 'Scope/Courses'",
       "what": "Section heading changed from 'Distribute Survey' to 'Create Survey'. Wizard substep 2 changed from 'Distribution' to 'Scope/Courses'. Communication and Report Access steps marked as '(newly added)'.",
       "why": "CLEAR rename — no code change needed (code already uses CreateSurvey terminology). Step label to use when building wizard.",
       "source": "PCE PRD §4.2 Step 2 — Create Survey"
@@ -480,15 +480,6 @@
       "source": "PCE PRD §4 Key User Flows — Step 3 Response Collection",
       "severity": null,
       "files": []
-    },
-    {
-      "id": "2026-06-02-pce-decision-001",
-      "date": "2026-06-02",
-      "product": "pce",
-      "type": "decision-extracted",
-      "title": "PCE PRD — Decision extracted: FAAS UI used as-is for template question creation (pce-decision-018)",
-      "what": "New decision: FAAS UI will be used as-is for question creation in the template builder. The trade-off is user experience — FAAS UI follows the old design system while CE is built on the new design system.",
-      "source": "PCE PRD §12 Dependencies and Risks — FAAS UI row"
     },
     {
       "id": "2026-06-02-exam-management-build-status-001",
@@ -723,6 +714,15 @@
       "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
       "severity": null,
       "files": ["docs/BUILD-STATUS.md"]
+    },
+    {
+      "id": "2026-06-15-granola-intake-001",
+      "date": "2026-06-15",
+      "product": "pce",
+      "type": "decision-extracted",
+      "title": "Granola intake — 17 new PCE decisions + 1 exam decision from Jun 9–10 transcripts",
+      "what": "Extracted 18 confirmed design decisions from 4 meeting transcripts (Post-Course Survey Cadence Meeting BiWeekly Jun 9; Exam Management Sync up Jun 9; Course and faculty evaluation setup Jun 10; India discussion — Weekly Product Sync Jun 10). PCE decisions cover: 3 CE results entry points (term/faculty/course), directory pages view-only with Prism deep-links, student email-only distribution (no login), 2 email templates with term-anchored reminder schedule, academic year/term dates as mandatory prerequisite, term-grouped dashboard, 2 longitudinal analytics sidebar entry points (Faculty leaderboard + Course history), 3-category template section structure (Course/Faculty/General with multi-select roles), faculty results must not be visible to other faculty, template creation paths (Build new sub-options: manual or PDF/Word import; top-level document import, not per-section), multi-select section adding with labels only, Prism-only distribution channel, anonymous response non-configurable default (visibility toggle removed), comment moderation stretch goal (results release date mandatory if excluded), parent+child date override for bulk distribution, report access screen removed (role-based access only), general survey UI unchanged. Exam decision: course offering page limited to currently available data only. 1 conflict flagged (copy existing template), 1 decision superseded (pce-decision-014 → pce-decision-028). Added as pce-decision-019 through pce-decision-035 and exam-decision-014.",
+      "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jun 9, 2026; Exam Management Sync up transcript — Jun 9, 2026; Course and faculty evaluation setup — directories, templates, and term workflow transcript — Jun 10, 2026; India discussion — Weekly Product Sync | New Initiatives (Prism) transcript — Jun 10, 2026"
     }
   ]
 }
