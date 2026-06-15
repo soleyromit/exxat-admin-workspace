@@ -138,6 +138,11 @@ DOCUMENTED_HAND_ROLLS = {
     "components/pce/trend-sparkline.tsx",
     "components/pce/response-gauge.tsx",
     "components/pce/ai-insight-card.tsx",
+    # Internal dev / utility surfaces — NOT shipped product UI (triage 2026-06-15):
+    #  - dev-review-hud: in-DOM conformance overlay; its <button>s + #hex are dev chrome.
+    #  - brand-color-picker: swatch <button>s and hex values are intrinsic to a color picker.
+    "app/dev-review-hud.tsx",
+    "components/brand-color-picker.tsx",
     # Chart depth audit 2026-05-11 — three viz functions inside larger files
     # are documented as intentional hand-rolls. Note: scan_filename_for_ds_organism
     # only matches on filename stems so these aren't actually flagged by it; entries
@@ -591,17 +596,21 @@ def scan_file_for_raw_button(rel: str, text: str) -> list[Gap]:
         return []
     if rel in DOCUMENTED_HAND_ROLLS:
         return []
-    m = RAW_BUTTON_RE.search(text)
-    if not m:
-        return []
-    line_no = text[: m.start()].count("\n") + 1
-    return [Gap(
-        severity="warn",
-        rule="raw-html-button",
-        file=rel,
-        line=line_no,
-        message="Raw <button> element. Use DS Button with explicit variant + size.",
-    )]
+    lines = text.split("\n")
+    for m in RAW_BUTTON_RE.finditer(text):
+        line_no = text[: m.start()].count("\n") + 1
+        lt = lines[line_no - 1].lstrip() if line_no <= len(lines) else ""
+        # Skip matches inside comment lines (e.g. a docstring mentioning "<button>").
+        if lt.startswith("//") or lt.startswith("*") or lt.startswith("/*"):
+            continue
+        return [Gap(
+            severity="warn",
+            rule="raw-html-button",
+            file=rel,
+            line=line_no,
+            message="Raw <button> element. Use DS Button with explicit variant + size.",
+        )]
+    return []
 
 def scan_file_for_hand_rolled_tabs(rel: str, text: str) -> list[Gap]:
     """Flag hand-rolled tab strips (role="tab"/"tablist") not built on DS Tabs.
