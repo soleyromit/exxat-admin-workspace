@@ -176,6 +176,22 @@ Source: `docs/research/meetings/2026-06-09-exam-management-sync-mohit.md` (Grano
 |---|---|---|---|---|---|
 | T96 | Revise base entity mockups — remove future-state data | Admin / Faculty | Base entity pages (course offering, students, faculty, assessments) | P1 | Mohit 2026-06-09: design scope = current information availability ONLY. Performance data, accommodations, interventions introduced per-feature later. Deadline Thursday 2026-06-12. D_EM_M01. |
 
+## Phase 1 design tasks — added 2026-06-13
+
+Source: `docs/research/meetings/2026-06-13-aarti-pce-exam-management.md` (Granola `ab7e2691`)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T97 | Assessment lifecycle tabs within course | Admin / Faculty | Assessment landing (within course detail) | P1 — DESIGN-REVIEW | Three distinct tabs/phases after assessment is created: (1) Edit/Build — questions + sections; (2) Publish/Distribute — dates, delivery method, time limits; (3) Stats/Monitor — proctoring view, completion counts. Distribution is a SEPARATE step from building. D_EM_J13_04. |
+| T98 | Cohere conference booth — user testing with Romit + Himanshu | Design | Cross-product coordination | P1 — ACTION ITEM | 300+ attendees. AB testing, current-product issue collection, feedback. Aarti applying for Himanshu US visa. Post-India (July) planning meeting. Coordinate with Kunal on screens/iPads. D_EM_J13_08. |
+
+## Phase 1 → Phase 2 demotions (updated 2026-06-13)
+
+| # | Task | Original priority | Demotion reason | Source |
+|---|---|---|---|---|
+| T47 | Assessment review workflow | P1 — DESIGN-REVIEW | Aarti Jun 4: "Later we can build in review process because review is like a phase two process. So we're not doing that." Phase 2 confirmed. | 2026-06-13 |
+| T45 | Assessment builder — section creation UI (faculty assignment portion) | P1 | Faculty section assignment (assigning a section to a faculty to add questions) = Phase 2. Aarti Jun 4: "Is this feature going in the first phase? No, not yet." Section creation UI itself is still P1, but the per-section faculty assignment is Phase 2. | 2026-06-13 |
+
 ---
 
 ## Research / blockers (R1–R10 from audit)

@@ -186,6 +186,20 @@ Source: `docs/research/meetings/2026-06-10-course-faculty-eval-setup-aarti.md` (
 |---|---|---|---|
 | D_PCE_AAD05 | General survey module UI enhancements | Aarti: "I don't have the bandwidth to discuss updates to the general survey module." Phase 1 = course evaluations only. General survey entry point changes (nav) may still be needed, but no new general survey features in Phase 1. | 2026-06-10 Aarti 1:1 |
 
+## Phase 1 design tasks — added 2026-06-13
+
+Source: `docs/research/meetings/2026-06-13-aarti-pce-exam-management.md` (Granola `ab7e2691`)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T85 | Cohere conference booth — user testing with Romit + Himanshu | Design | Cross-product coordination | P1 — ACTION ITEM | 300+ attendees. AB testing, current-product issue collection, feedback. Aarti applying for Himanshu US visa. Post-India (July) planning meeting. Coordinate screens/iPads with Kunal. D_PCE_J13_06. |
+
+## Phase 1 — confirmed deferred (updated 2026-06-13)
+
+| # | Decision | Reason | Source |
+|---|---|---|---|
+| D_PCE_J13_02 | Multiple admin permission tiers | Phase 1 = super admin only. "We don't want to worry about like, oh, you can do this but not this." Tiers evolve as module matures. | 2026-06-13 |
+
 ---
 
 ## Open product questions
