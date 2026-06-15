@@ -325,6 +325,14 @@ EYEBROW_PARAGRAPH_RE = re.compile(
 RAW_BUTTON_RE = re.compile(r"<\s*button\b[^>]*>")
 HEX_COLOR_RE = re.compile(r"['\"]\#[0-9a-fA-F]{3,8}\b['\"]?")
 RGB_COLOR_RE = re.compile(r"\brgb\s*\(")
+# Hand-rolled component detection (WARN) — added 2026-06-15 to close coverage
+# gaps for tabs / avatar / sheet that previously drifted undetected.
+ROLE_TABLIST_RE = re.compile(r'role\s*=\s*["\'](?:tablist|tab)["\']')
+TABS_DS_RE = re.compile(r"<\s*Tabs(?:Trigger|List)\b")
+CIRCULAR_IMG_RE = re.compile(r"<\s*img\b[^>]*rounded-full")
+AVATAR_DS_RE = re.compile(r"<\s*Avatar(?:Image|Fallback)?\b")
+SHEET_DS_RE = re.compile(r"<\s*(?:Sheet|SheetContent|Dialog|DialogContent|Drawer)\b")
+CLASSNAME_VALUE_RE = re.compile(r"""className\s*=\s*["'`]([^"'`]+)["'`]""")
 
 # ── State-coverage regexes (added 2026-05-11; phase-0 warn) ────────────────
 # DataTable JSX open (multi-line). Just locates the start position; we
@@ -594,6 +602,62 @@ def scan_file_for_raw_button(rel: str, text: str) -> list[Gap]:
         line=line_no,
         message="Raw <button> element. Use DS Button with explicit variant + size.",
     )]
+
+def scan_file_for_hand_rolled_tabs(rel: str, text: str) -> list[Gap]:
+    """Flag hand-rolled tab strips (role="tab"/"tablist") not built on DS Tabs.
+    No DOCUMENTED_HAND_ROLLS blanket skip — that list is per-component (e.g. a
+    DataTable exception) and must not exempt an unrelated hand-rolled tablist."""
+    m = ROLE_TABLIST_RE.search(text)
+    if not m or TABS_DS_RE.search(text):
+        return []
+    return [Gap(
+        severity="warn",
+        rule="hand-rolled-tabs",
+        file=rel,
+        line=text[: m.start()].count("\n") + 1,
+        message="Hand-rolled tabs (role=\"tab\"/\"tablist\") — use DS Tabs / TabsList / "
+                "TabsTrigger / TabsContent from '@exxatdesignux/ui'. See docs/governance/ds-adoption.md.",
+    )]
+
+def scan_file_for_hand_rolled_avatar(rel: str, text: str) -> list[Gap]:
+    """Flag a circular <img> (rounded-full) used as an avatar without DS Avatar."""
+    m = CIRCULAR_IMG_RE.search(text)
+    if not m or AVATAR_DS_RE.search(text):
+        return []
+    return [Gap(
+        severity="warn",
+        rule="hand-rolled-avatar",
+        file=rel,
+        line=text[: m.start()].count("\n") + 1,
+        message="Circular <img> (rounded-full) used as an avatar — use DS Avatar + "
+                "AvatarImage / AvatarFallback from '@exxatdesignux/ui' (fallback, sizes, shapes). "
+                "See docs/governance/ds-adoption.md.",
+    )]
+
+def scan_file_for_hand_rolled_sheet_panel(rel: str, text: str) -> list[Gap]:
+    """Flag a hand-rolled fixed full-height side panel that should be a DS Sheet.
+    Conservative: requires `fixed` + `inset-y-0` + a side + a width in ONE className,
+    skips the app sidebar (the intended fixed nav), and skips files already using
+    DS Sheet/Dialog/Drawer."""
+    if "components/sidebar/" in rel:  # the app sidebar is the intended fixed nav
+        return []
+    if SHEET_DS_RE.search(text):
+        return []
+    for m in CLASSNAME_VALUE_RE.finditer(text):
+        cls = m.group(1)
+        if ("fixed" in cls and "inset-y-0" in cls
+                and ("right-0" in cls or "left-0" in cls)
+                and re.search(r"\bw-", cls)):
+            return [Gap(
+                severity="warn",
+                rule="hand-rolled-sheet-panel",
+                file=rel,
+                line=text[: m.start()].count("\n") + 1,
+                message="Hand-rolled fixed side panel (fixed + inset-y-0 + left/right + width) — "
+                        "use DS Sheet / SheetContent from '@exxatdesignux/ui' (overlay, focus trap, "
+                        "close, inset shell). See docs/governance/ds-adoption.md.",
+            )]
+    return []
 
 def scan_file_for_color_literals(rel: str, text: str) -> list[Gap]:
     """Flag hex / rgb literals. Theme files are exempt.
@@ -1513,6 +1577,11 @@ def audit_product(product: str, role: str, root: Path) -> ProductReport:
             # Catches overflow-clipped popovers + missing globals.css (color mismatch).
             scan_file_for_overflow_hidden_with_floating,
             scan_file_for_missing_globals_css,
+            # Component-substitution coverage (WARN) — added 2026-06-15.
+            # Closes tabs/avatar/sheet blind spots flagged in the gallery audit.
+            scan_file_for_hand_rolled_tabs,
+            scan_file_for_hand_rolled_avatar,
+            scan_file_for_hand_rolled_sheet_panel,
         ):
             for g in fn(short_rel, text):
                 g.file = rel
