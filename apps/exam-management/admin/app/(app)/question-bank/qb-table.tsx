@@ -12,7 +12,7 @@ import {
   Sheet, SheetContent, SheetTitle,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuLabel,
-  Popover, PopoverTrigger, PopoverContent,
+  Popover, PopoverTrigger, PopoverAnchor, PopoverContent,
   Tooltip, TooltipTrigger, TooltipContent, Tip,
   InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput,
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -686,7 +686,7 @@ function DeleteQuestionDialog({ question, open, onClose }: { question: Question;
 // ── DS DataTable source (apps/web/components/data-table/index.tsx):
 // ── TH = h-9 px-3 text-left align-middle text-xs font-medium text-muted-foreground tracking-wide select-none
 // ── TD default = px-3 py-2.5 | compact = py-1 | comfortable = py-4
-const TH = 'h-9 px-3 text-start align-middle text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg border-b border-border select-none whitespace-nowrap'
+const TH = 'h-9 px-3 text-start align-middle text-[12px] font-medium text-muted-foreground tracking-wide bg-dt-header-bg border-b border-border select-none whitespace-nowrap'
 const TD = 'px-3 py-2.5 align-middle border-b border-border group-last/row:border-b-0 whitespace-nowrap'
 
 // Clean toggle — uses brand-color for ON state, neutral for OFF
@@ -791,7 +791,7 @@ function LocationCell({ question }: { question: Question }) {
           <Button
             variant="ghost" size="xs"
             onClick={e => e.stopPropagation()}
-            className="text-[10px] text-muted-foreground font-medium shrink-0"
+            className="text-xs text-muted-foreground font-medium shrink-0"
             style={{ height: 18, padding: '0 5px', borderRadius: 99, backgroundColor: 'var(--muted)' }}
           >
             +{allLocations.length - 1}
@@ -1539,31 +1539,26 @@ function FilterPropertiesSheet({
                       keyboard- and screen-reader accessible (was raw <div
                       onClick> with no a11y semantics). */}
                   {bookmarkOnly && (
+                    /* Non-interactive container — the toggle and the remove
+                       control are SIBLING buttons, not nested. (Was a
+                       div[role="button"] wrapping a <Button>, which is a
+                       nested-interactive violation.) */
                     <div
-                      className="rounded-lg border border-border overflow-hidden cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-                      onClick={() => setBookmarkOnly(v => !v)}
-                      role="button"
-                      tabIndex={0}
-                      aria-pressed={true}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          setBookmarkOnly(v => !v)
-                        }
-                      }}
+                      className="flex items-center rounded-lg border border-border overflow-hidden select-none"
                       style={{ background: 'var(--brand-tint)' }}
                     >
-                      <div className="flex items-center gap-2.5 px-3 py-2.5">
-                        <span aria-hidden="true" className="inline-flex items-center justify-center shrink-0 rounded-[3px] border transition-colors"
-                          style={{ width: 14, height: 14, background: 'var(--primary)', borderColor: 'var(--primary)' }}>
-                          <i className="fa-solid fa-check text-primary-foreground" aria-hidden="true" style={{ fontSize: 7 }} />
-                        </span>
-                        <span className="text-sm font-medium text-foreground flex-1">Bookmarked only</span>
-                        <Button variant="ghost" size="icon-xs" onClick={e => { e.stopPropagation(); setBookmarkOnly(false) }}
-                          aria-label="Remove bookmarked filter" className="text-muted-foreground hover:text-destructive">
-                          <i className="fa-light fa-trash text-xs" aria-hidden="true" />
-                        </Button>
-                      </div>
+                      <Button
+                        variant="ghost"
+                        onClick={() => setBookmarkOnly(v => !v)}
+                        className="h-auto flex-1 justify-start gap-2.5 px-3 py-2.5 text-left font-medium hover:bg-transparent"
+                      >
+                        <i className="fa-solid fa-bookmark text-xs text-primary" aria-hidden="true" />
+                        <span className="text-sm text-foreground flex-1">Bookmarked only</span>
+                      </Button>
+                      <Button variant="ghost" size="icon-xs" onClick={() => setBookmarkOnly(false)}
+                        aria-label="Remove bookmarked filter" className="mr-2 text-muted-foreground hover:text-destructive">
+                        <i className="fa-light fa-trash text-xs" aria-hidden="true" />
+                      </Button>
                     </div>
                   )}
                 </>
@@ -1832,7 +1827,7 @@ function FilterPropertiesSheet({
                               {rule.operator === 'is' ? 'is' : 'is not'}
                               <i className="fa-light fa-chevron-down text-xs" aria-hidden="true" />
                             </Button>
-                            <span className="text-xs text-muted-foreground truncate">
+                            <span className="text-sm text-muted-foreground truncate">
                               {rule.values.join(', ') || '—'}
                             </span>
                           </div>
@@ -2389,87 +2384,97 @@ function ColHeader({
       onDragEnd={onDragEnd}
     >
       <DropdownMenu onOpenChange={open => { if (!open) setColSearch('') }}>
-        {/* Sortable column header — role/tabIndex/onKeyDown + focus-visible
-            ring so keyboard users can trigger sort (was raw <div onClick>
-            with no a11y). The inner Popover trigger keeps its own focus. */}
-        <div
-          className="flex items-center gap-1 group/col-hdr cursor-pointer select-none w-full rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-          onClick={() => col.sortKey && onSort(col.key, isActive && sortDir === 'asc' ? 'desc' : 'asc')}
-          role={col.sortKey ? 'button' : undefined}
-          tabIndex={col.sortKey ? 0 : undefined}
-          aria-label={
-            col.sortKey
-              ? `Sort by ${col.label}, ${
-                  isActive
-                    ? sortDir === 'asc'
-                      ? 'currently ascending'
-                      : 'currently descending'
-                    : 'not sorted'
-                }`
-              : undefined
-          }
-          onKeyDown={e => {
-            if (col.sortKey && (e.key === 'Enter' || e.key === ' ')) {
-              e.preventDefault()
-              onSort(col.key, isActive && sortDir === 'asc' ? 'desc' : 'asc')
-            }
-          }}
-        >
-          {col.key === 'difficulty' ? (
-            <Popover open={diffHoverOpen} onOpenChange={setDiffHoverOpen}>
-              <PopoverTrigger asChild>
-                <span
-                  className={`flex-1 truncate cursor-default${isActive ? ' text-foreground' : ''}`}
-                  onMouseEnter={() => {
-                    if (diffHoverTimerRef.current) clearTimeout(diffHoverTimerRef.current)
-                    diffHoverTimerRef.current = setTimeout(() => setDiffHoverOpen(true), 400)
-                  }}
-                  onMouseLeave={() => { if (diffHoverTimerRef.current) clearTimeout(diffHoverTimerRef.current); setDiffHoverOpen(false) }}
-                >
-                  {col.label}
+        {/* Sortable column header — the sort action is a real <button> (was a
+            div[role="button"] that wrapped the DropdownMenuTrigger Button,
+            causing nested-interactive). The trigger Button is now a SIBLING of
+            the sort button inside a plain, non-interactive <div>. */}
+        <div className="flex items-center gap-1 group/col-hdr w-full">
+          {col.sortKey ? (
+            <button
+              type="button"
+              className="flex-1 flex items-center min-w-0 cursor-pointer select-none rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+              onClick={() => onSort(col.key, isActive && sortDir === 'asc' ? 'desc' : 'asc')}
+              aria-label={`Sort by ${col.label}, ${
+                isActive
+                  ? sortDir === 'asc'
+                    ? 'currently ascending'
+                    : 'currently descending'
+                  : 'not sorted'
+              }`}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  onSort(col.key, isActive && sortDir === 'asc' ? 'desc' : 'asc')
+                }
+              }}
+            >
+              {col.key === 'difficulty' ? (
+                <Popover open={diffHoverOpen} onOpenChange={setDiffHoverOpen}>
+                  {/* PopoverAnchor (not Trigger) — this popover is hover-driven via
+                      the controlled `open` state, so it is NOT an interactive
+                      control. Anchor positions the content without cloning
+                      aria-haspopup/aria-expanded or role="button" onto the span,
+                      which avoids both aria-allowed-attr and nested-interactive
+                      (the span lives inside the sort <button>). */}
+                  <PopoverAnchor asChild>
+                    <span
+                      className={`flex-1 truncate cursor-default${isActive ? ' text-foreground' : ''}`}
+                      onMouseEnter={() => {
+                        if (diffHoverTimerRef.current) clearTimeout(diffHoverTimerRef.current)
+                        diffHoverTimerRef.current = setTimeout(() => setDiffHoverOpen(true), 400)
+                      }}
+                      onMouseLeave={() => { if (diffHoverTimerRef.current) clearTimeout(diffHoverTimerRef.current); setDiffHoverOpen(false) }}
+                    >
+                      {col.label}
+                    </span>
+                  </PopoverAnchor>
+                  <PopoverContent side="bottom" align="start" className="w-52 p-3">
+                    <DiffDistributionPopover questions={distQuestions ?? []} />
+                  </PopoverContent>
+                </Popover>
+              ) : col.key === 'blooms' ? (
+                <Popover open={bloomsHoverOpen} onOpenChange={setBloomsHoverOpen}>
+                  {/* PopoverAnchor (not Trigger) — hover-driven popover; see the
+                      difficulty header above for the full rationale (avoids
+                      aria-allowed-attr + nested-interactive on the span). */}
+                  <PopoverAnchor asChild>
+                    <span
+                      className={`flex-1 truncate cursor-default${isActive ? ' text-foreground' : ''}`}
+                      onMouseEnter={() => {
+                        if (bloomsHoverTimerRef.current) clearTimeout(bloomsHoverTimerRef.current)
+                        bloomsHoverTimerRef.current = setTimeout(() => setBloomsHoverOpen(true), 400)
+                      }}
+                      onMouseLeave={() => { if (bloomsHoverTimerRef.current) clearTimeout(bloomsHoverTimerRef.current); setBloomsHoverOpen(false) }}
+                    >
+                      {col.label}
+                    </span>
+                  </PopoverAnchor>
+                  <PopoverContent side="bottom" align="start" className="w-52 p-3">
+                    <BloomsDistributionPopover questions={bloomsQuestions ?? []} />
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                <span className={`flex-1 truncate${isActive ? ' text-foreground' : ''}`}>{col.label}</span>
+              )}
+              {sortRank !== null && (
+                <span className="flex items-center gap-0.5 ml-1 shrink-0">
+                  <i
+                    className={`fa-solid ${(sortRules?.find(r => r.col === col.key)?.dir ?? 'asc') === 'asc' ? 'fa-arrow-up' : 'fa-arrow-down'} text-xs`}
+                    aria-hidden="true"
+                  />
+                  {(sortRules?.length ?? 0) > 1 && (
+                    <span className="text-[9px] font-bold leading-none" style={{ color: 'var(--brand-color)' }}>
+                      {sortRank}
+                    </span>
+                  )}
                 </span>
-              </PopoverTrigger>
-              <PopoverContent side="bottom" align="start" className="w-52 p-3">
-                <DiffDistributionPopover questions={distQuestions ?? []} />
-              </PopoverContent>
-            </Popover>
-          ) : col.key === 'blooms' ? (
-            <Popover open={bloomsHoverOpen} onOpenChange={setBloomsHoverOpen}>
-              <PopoverTrigger asChild>
-                <span
-                  className={`flex-1 truncate cursor-default${isActive ? ' text-foreground' : ''}`}
-                  onMouseEnter={() => {
-                    if (bloomsHoverTimerRef.current) clearTimeout(bloomsHoverTimerRef.current)
-                    bloomsHoverTimerRef.current = setTimeout(() => setBloomsHoverOpen(true), 400)
-                  }}
-                  onMouseLeave={() => { if (bloomsHoverTimerRef.current) clearTimeout(bloomsHoverTimerRef.current); setBloomsHoverOpen(false) }}
-                >
-                  {col.label}
-                </span>
-              </PopoverTrigger>
-              <PopoverContent side="bottom" align="start" className="w-52 p-3">
-                <BloomsDistributionPopover questions={bloomsQuestions ?? []} />
-              </PopoverContent>
-            </Popover>
+              )}
+            </button>
           ) : (
             <span className={`flex-1 truncate${isActive ? ' text-foreground' : ''}`}>{col.label}</span>
           )}
-          {sortRank !== null && (
-            <span className="flex items-center gap-0.5 ml-1 shrink-0">
-              <i
-                className={`fa-solid ${(sortRules?.find(r => r.col === col.key)?.dir ?? 'asc') === 'asc' ? 'fa-arrow-up' : 'fa-arrow-down'} text-xs`}
-                aria-hidden="true"
-              />
-              {(sortRules?.length ?? 0) > 1 && (
-                <span className="text-[9px] font-bold leading-none" style={{ color: 'var(--brand-color)' }}>
-                  {sortRank}
-                </span>
-              )}
-            </span>
-          )}
           <DropdownMenuTrigger
             className="opacity-0 group-hover/col-hdr:opacity-100 transition-opacity flex items-center justify-center"
-            onClick={e => e.stopPropagation()}
             asChild
           >
             <Button
@@ -2747,7 +2752,7 @@ export function QBTable() {
   // Shadow the module-level TD so all cells pick up the current density + optional gridlines
   const TD = `px-3 ${rowPy} align-middle border-b border-border group-last/row:border-b-0 whitespace-nowrap${showGridlines ? ' border-r border-border last:border-r-0' : ''}`
   // Shadow TH so header cells get matching vertical gridlines
-  const TH_CLS = `h-9 px-3 text-start align-middle text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg border-b border-border select-none whitespace-nowrap${showGridlines ? ' border-r border-border last:border-r-0' : ''}`
+  const TH_CLS = `h-9 px-3 text-start align-middle text-[12px] font-medium text-muted-foreground tracking-wide bg-dt-header-bg border-b border-border select-none whitespace-nowrap${showGridlines ? ' border-r border-border last:border-r-0' : ''}`
   const [paginationEnabled, setPaginationEnabled] = useState(true)
   const [showTableTitle, setShowTableTitle] = useState(true)
   const [showColumnLabels, setShowColumnLabels] = useState(true)
@@ -3487,7 +3492,7 @@ export function QBTable() {
                   {/* Select all */}
                   <TableHead className={TH_CLS} style={{ width: 40, minWidth: 40, maxWidth: 40, paddingInline: 0, position: 'sticky', left: 0, zIndex: 3, backgroundColor: 'var(--dt-header-bg)', boxShadow: '2px 0 4px var(--sticky-edge-fade)' }}>
                     <div className="flex items-center justify-center">
-                      <span className="sr-only">Select all</span>
+                      <span className="sr-only text-sm">Select all</span>
                       <Checkbox
                         checked={allSelected ? true : someSelected ? 'indeterminate' : false}
                         onCheckedChange={handleSelectAll}
@@ -3573,7 +3578,9 @@ export function QBTable() {
                       />
                     )
                   })}
-                  <TableHead className={TH_CLS} style={{ width: 0, minWidth: 0, padding: 0, border: 'none', position: 'sticky', right: 0, zIndex: 2, background: 'var(--dt-header-bg)' }} />
+                  <TableHead className={TH_CLS} style={{ width: 0, minWidth: 0, padding: 0, border: 'none', position: 'sticky', right: 0, zIndex: 2, background: 'var(--dt-header-bg)' }}>
+                    <span className="sr-only text-sm">Row actions</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>}
               <TableBody className="[&_tr:last-child]:border-b-0">
@@ -3781,7 +3788,7 @@ export function QBTable() {
                                 <Popover>
                                   <PopoverTrigger asChild>
                                     <Button variant="ghost" size="icon-xs" aria-label="Version history">
-                                      <Badge variant="secondary" className="rounded font-mono text-[10px]" style={{ padding: '1px 5px', cursor: 'pointer' }}>
+                                      <Badge variant="secondary" className="rounded font-mono text-xs" style={{ padding: '1px 5px', cursor: 'pointer' }}>
                                         V{q.version}
                                       </Badge>
                                     </Button>
@@ -3974,7 +3981,7 @@ export function QBTable() {
               <div className="flex items-center gap-2 text-muted-foreground">
                 <span className="whitespace-nowrap">Rows per page</span>
                 <Select value={String(perPage)} onValueChange={v => setPerPage(Number(v))}>
-                  <SelectTrigger className="inline-flex items-center gap-1 px-2 py-1 rounded border border-input bg-background hover:bg-interactive-hover text-foreground text-sm h-auto focus-visible:ring-ring" style={{ width: 64 }}>
+                  <SelectTrigger aria-label="Rows per page" className="inline-flex items-center gap-1 px-2 py-1 rounded border border-input bg-background hover:bg-interactive-hover text-foreground text-sm h-auto focus-visible:ring-ring" style={{ width: 64 }}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
