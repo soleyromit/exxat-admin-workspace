@@ -82,12 +82,14 @@ function AttributesPanel({
   question,
   meta,
   onTextBlur,
+  onTypeChange,
   onMetaChange,
   onClose,
 }: {
   question: TemplateQuestion
   meta: QMeta
   onTextBlur: (text: string) => void
+  onTypeChange: (type: AnswerType) => void
   onMetaChange: (patch: Partial<QMeta>) => void
   onClose: () => void
 }) {
@@ -116,6 +118,26 @@ function AttributesPanel({
         </div>
         <TabsContent value="field-details" className="flex-1 overflow-y-auto m-0">
           <div className="flex flex-col gap-5" style={{ padding: '16px' }}>
+
+            {/* Answer type */}
+            <Field orientation="vertical">
+              <FieldLabel htmlFor="attr-q-type">Answer type</FieldLabel>
+              <Select value={question.answerType} onValueChange={v => onTypeChange(v as AnswerType)}>
+                <SelectTrigger id="attr-q-type" className="text-sm" aria-label="Answer type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Q_TYPE_OPTIONS.map(o => (
+                    <SelectItem key={o.value} value={o.value}>
+                      <span className="flex items-center gap-1.5">
+                        <i className={`fa-light ${o.icon}`} aria-hidden="true" />
+                        {o.label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
 
             {/* Question text */}
             <Field orientation="vertical">
@@ -309,9 +331,9 @@ export default function TemplateEditorPage() {
     setClosedSectionIds(prev => { const n = new Set(prev); n.delete(newId); return n })
   }
 
-  function handleAddQuestion(sectionId: string) {
+  function handleAddQuestion(sectionId: string, type: AnswerType) {
     const newId = `q-${Date.now()}`
-    addSectionQuestion(t.id, sectionId, 'Untitled Question', 'likert', undefined, newId)
+    addSectionQuestion(t.id, sectionId, 'Untitled Question', type, undefined, newId)
     setClosedSectionIds(prev => { const next = new Set(prev); next.delete(sectionId); return next })
     setSelectedQuestion({ sectionId, questionId: newId })
   }
@@ -584,17 +606,24 @@ export default function TemplateEditorPage() {
               )
             })}
 
-            {/* Add question — centered filled button */}
+            {/* Add question — dropdown to pick type */}
             <div className="flex justify-center pt-2">
-              <Button
-                variant="default"
-                size="sm"
-                className="font-semibold"
-                onClick={() => handleAddQuestion(sec.id)}
-              >
-                <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                Add question
-              </Button>
+              <DropdownMenu modal={false}>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="default" size="sm" className="font-semibold">
+                    <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                    Add question
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" sideOffset={6}>
+                  {Q_TYPE_OPTIONS.map(o => (
+                    <DropdownMenuItem key={o.value} onClick={() => handleAddQuestion(sec.id, o.value)}>
+                      <i className={`fa-light ${o.icon}`} aria-hidden="true" />
+                      {o.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         )}
@@ -891,6 +920,9 @@ export default function TemplateEditorPage() {
                 meta={getQMeta(selectedQuestion.questionId)}
                 onTextBlur={text =>
                   updateSectionQuestion(t.id, selectedQuestion.sectionId, selectedQuestion.questionId, { text })
+                }
+                onTypeChange={type =>
+                  updateSectionQuestion(t.id, selectedQuestion.sectionId, selectedQuestion.questionId, { answerType: type })
                 }
                 onMetaChange={patch => patchQMeta(selectedQuestion.questionId, patch)}
                 onClose={() => setSelectedQuestion(null)}
