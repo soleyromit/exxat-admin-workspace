@@ -284,9 +284,8 @@ export default function TemplateEditorPage() {
                   <CommandItem key={s.key} value={s.key} onSelect={() => toggleRole(s.key)} aria-selected={checked}>
                     <Checkbox
                       checked={checked}
-                      size="sm"
                       tabIndex={-1}
-                      className="pointer-events-none shrink-0"
+                      className="pointer-events-none shrink-0 size-3.5 p-0"
                       aria-hidden="true"
                     />
                     <span className="flex-1 ml-2 truncate">{s.label}</span>
