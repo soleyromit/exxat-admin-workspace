@@ -15,11 +15,14 @@ import type { PceSurvey, SubjectKey } from '@/lib/pce-mock-data'
 
 const SUBJECT_LABELS: Record<SubjectKey, string> = {
   course_content:     'Course Content',
+  faculty:            'Faculty',
   course_instructor:  'Course Instructor',
   course_coordinator: 'Course Coordinator',
   teaching_assistant: 'Teaching Assistant',
   lab_instructor:     'Lab Instructor',
   course_director:    'Course Director',
+  preceptor:          'Preceptor',
+  clinical_supervisor: 'Clinical Supervisor',
 }
 
 export default function ModerationPage() {

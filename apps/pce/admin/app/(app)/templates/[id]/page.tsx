@@ -40,6 +40,7 @@ import {
   CommandEmpty,
   CommandGroup,
   CommandItem,
+  Checkbox,
   Sheet,
   SheetContent,
   SheetHeader,
@@ -91,9 +92,16 @@ export default function TemplateEditorPage() {
   const [metaOpen, setMetaOpen] = useState(false)
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null)
   const [editingSectionTitle, setEditingSectionTitle] = useState('')
-  const [activeSubjectKey, setActiveSubjectKey] = useState<string | null>(null)
-  const [subjectPickerOpen, setSubjectPickerOpen] = useState(false)
-  const [subjectSearch, setSubjectSearch] = useState('')
+  // Subject group tabs — each group has a key, display label, and list of evaluated roles
+  const [subjectGroups, setSubjectGroups] = useState<Array<{ key: string; label: string; roles: string[] }>>([
+    { key: 'course_content', label: 'Course', roles: [] },
+    { key: 'faculty', label: 'Faculty', roles: [] },
+  ])
+  const [activeGroup, setActiveGroup] = useState('course_content')
+  const [groupPickerOpen, setGroupPickerOpen] = useState(false)
+  const [newGroupName, setNewGroupName] = useState('')
+  const [rolePickerGroupKey, setRolePickerGroupKey] = useState<string | null>(null)
+  const [roleSearch, setRoleSearch] = useState('')
 
   // Per-question local UI state (not persisted to data model)
   const [naToggles, setNaToggles] = useState<Record<string, boolean>>({})
@@ -120,29 +128,6 @@ export default function TemplateEditorPage() {
   const totalQuestions = sections.reduce((sum, s) => sum + s.questions.length, 0)
   const canPublish = sections.length > 0 && totalQuestions > 0
 
-  // Unique subject keys in order of first appearance
-  const activeSubjectKeys = useMemo(() => {
-    const seen = new Set<string>()
-    const result: string[] = []
-    for (const sec of sections) {
-      if (!seen.has(sec.subjectKey)) { seen.add(sec.subjectKey); result.push(sec.subjectKey) }
-    }
-    return result
-  }, [sections])
-
-  const currentTab: string | null =
-    (activeSubjectKey && activeSubjectKeys.includes(activeSubjectKey))
-      ? activeSubjectKey
-      : (activeSubjectKeys[0] ?? null)
-
-  const availableSubjects = useMemo(
-    () => MOCK_SUBJECTS.filter(s => !activeSubjectKeys.includes(s.key)),
-    [activeSubjectKeys]
-  )
-  const filteredSubjects = subjectSearch
-    ? availableSubjects.filter(s => s.label.toLowerCase().includes(subjectSearch.toLowerCase()))
-    : availableSubjects
-
   const selectedQ = selectedQuestion
     ? sections.find(s => s.id === selectedQuestion.sectionId)
         ?.questions.find(q => q.id === selectedQuestion.questionId) ?? null
@@ -157,29 +142,40 @@ export default function TemplateEditorPage() {
     })
   }
 
-  function handleAddSubject(subjectKey: string) {
-    setSubjectPickerOpen(false)
-    setSubjectSearch('')
-    const predefined = MOCK_SUBJECTS.find(s => s.key === subjectKey)
-    const defaultTitle = predefined?.label ?? subjectKey
-    const newId = `sec-${Date.now()}`
-    addTemplateSection(t.id, { subjectKey, title: defaultTitle, questions: [] }, newId)
-    setActiveSubjectKey(subjectKey)
-    setEditingSectionId(newId)
-    setEditingSectionTitle(defaultTitle)
+  function handleAddGroup() {
+    const label = newGroupName.trim()
+    if (!label) return
+    const key = `grp-${Date.now()}`
+    setSubjectGroups(prev => [...prev, { key, label, roles: [] }])
+    setActiveGroup(key)
+    setGroupPickerOpen(false)
+    setNewGroupName('')
   }
 
-  function handleRemoveSubject(subjectKey: string) {
-    sections.filter(s => s.subjectKey === subjectKey).forEach(s => {
+  function handleRemoveGroup(key: string) {
+    if (key === 'course_content') return
+    sections.filter(s => s.subjectKey === key).forEach(s => {
       removeTemplateSection(t.id, s.id)
       if (selectedQuestion?.sectionId === s.id) setSelectedQuestion(null)
     })
-    const remaining = activeSubjectKeys.filter(k => k !== subjectKey)
-    setActiveSubjectKey(remaining[0] ?? null)
+    setSubjectGroups(prev => prev.filter(g => g.key !== key))
+    setActiveGroup('course_content')
+  }
+
+  function handleAddRole(groupKey: string, roleKey: string) {
+    setSubjectGroups(prev => prev.map(g =>
+      g.key === groupKey ? { ...g, roles: [...g.roles, roleKey] } : g
+    ))
+  }
+
+  function handleRemoveRole(groupKey: string, roleKey: string) {
+    setSubjectGroups(prev => prev.map(g =>
+      g.key === groupKey ? { ...g, roles: g.roles.filter(r => r !== roleKey) } : g
+    ))
   }
 
   function handleAddSection(subjectKey?: string) {
-    const key = subjectKey ?? currentTab ?? (isProgrammatic ? 'course_content' : null)
+    const key = subjectKey ?? (isProgrammatic ? 'course_content' : activeGroup)
     if (!key) return
     const newId = `sec-${Date.now()}`
     addTemplateSection(t.id, { subjectKey: key, title: 'Untitled Section', questions: [] }, newId)
@@ -250,56 +246,68 @@ export default function TemplateEditorPage() {
   }
   function handleQDragEnd() { questionDragInfo.current = null }
 
-  // ── Subject picker combobox ──────────────────────────────────────────────────
-  function renderSubjectPickerContent() {
-    const isCustom = subjectSearch.trim().length > 0 &&
-      !MOCK_SUBJECTS.some(s => s.label.toLowerCase() === subjectSearch.trim().toLowerCase()) &&
-      !activeSubjectKeys.includes(subjectSearch.trim())
+  // ── Role picker — checkmark list, multi-select, custom entry ────────────────
+  function renderRolePickerContent(groupKey: string) {
+    const group = subjectGroups.find(g => g.key === groupKey)
+    const selected = new Set(group?.roles ?? [])
+    const allRoles = MOCK_SUBJECTS
+      .filter(s => s.key !== 'course_content' && s.key !== 'faculty')
+      .sort((a, b) => a.label.localeCompare(b.label))
+    const filtered = roleSearch
+      ? allRoles.filter(s => s.label.toLowerCase().includes(roleSearch.toLowerCase()))
+      : allRoles
+    const isCustom = roleSearch.trim().length > 0 &&
+      !allRoles.some(s => s.label.toLowerCase() === roleSearch.trim().toLowerCase()) &&
+      !selected.has(roleSearch.trim())
+
+    function toggleRole(roleKey: string) {
+      if (selected.has(roleKey)) handleRemoveRole(groupKey, roleKey)
+      else handleAddRole(groupKey, roleKey)
+    }
 
     return (
-      <Command shouldFilter={false}>
+      <Command shouldFilter={false} className="[&_[data-slot=input-group]]:bg-background [&_[data-slot=input-group]]:border-border/60">
         <CommandInput
-          placeholder="Search or type a subject…"
-          variant="default"
-          value={subjectSearch}
-          onValueChange={setSubjectSearch}
+          placeholder="Search or add role…"
+          value={roleSearch}
+          onValueChange={setRoleSearch}
         />
         <CommandList>
-          {filteredSubjects.length === 0 && !isCustom && (
-            <CommandEmpty>
-              {availableSubjects.length === 0 ? 'All subjects added.' : 'No match.'}
-            </CommandEmpty>
+          {filtered.length === 0 && !isCustom && (
+            <CommandEmpty>No roles found.</CommandEmpty>
           )}
-          {filteredSubjects.length > 0 && (
+          {filtered.length > 0 && (
             <CommandGroup>
-              {filteredSubjects.map(s => (
-                <CommandItem
-                  key={s.key}
-                  value={s.key}
-                  onSelect={() => handleAddSubject(s.key)}
-                >
-                  <span className="flex-1">{s.label}</span>
-                  {s.isGeneral ? (
-                    <span className="text-xs ml-2 shrink-0" style={{ color: 'var(--muted-foreground)' }}>Always on</span>
-                  ) : s.prismCount === 0 ? (
-                    <span className="text-xs ml-2 shrink-0" style={{ color: 'var(--muted-foreground)' }}>No members</span>
-                  ) : (
-                    <span className="text-xs ml-2 shrink-0 tabular-nums" style={{ color: 'var(--muted-foreground)' }}>
-                      {s.prismCount} in Prism
-                    </span>
-                  )}
-                </CommandItem>
-              ))}
+              {filtered.map(s => {
+                const checked = selected.has(s.key)
+                return (
+                  <CommandItem key={s.key} value={s.key} onSelect={() => toggleRole(s.key)} aria-selected={checked}>
+                    <Checkbox
+                      checked={checked}
+                      size="sm"
+                      tabIndex={-1}
+                      className="pointer-events-none shrink-0"
+                      aria-hidden="true"
+                    />
+                    <span className="flex-1 ml-2 truncate">{s.label}</span>
+                    {(s.prismCount ?? 0) > 0 && (
+                      <span className="text-xs ml-2 shrink-0 tabular-nums text-muted-foreground">
+                        {s.prismCount} in Prism
+                      </span>
+                    )}
+                  </CommandItem>
+                )
+              })}
             </CommandGroup>
           )}
           {isCustom && (
             <CommandGroup>
               <CommandItem
-                value={subjectSearch.trim()}
-                onSelect={() => handleAddSubject(subjectSearch.trim())}
+                value={roleSearch.trim()}
+                onSelect={() => { handleAddRole(groupKey, roleSearch.trim()); setRoleSearch('') }}
               >
                 <i className="fa-light fa-plus text-xs shrink-0" aria-hidden="true" />
-                Create &ldquo;{subjectSearch.trim()}&rdquo;
+                <span className="ml-2">Add &ldquo;{roleSearch.trim()}&rdquo;</span>
               </CommandItem>
             </CommandGroup>
           )}
@@ -383,11 +391,6 @@ export default function TemplateEditorPage() {
                 onClick={() => {
                   removeTemplateSection(t.id, sec.id)
                   if (selectedQuestion?.sectionId === sec.id) setSelectedQuestion(null)
-                  // If removing the active subject tab, fall back to first remaining subject
-                  if (currentTab === sec.subjectKey) {
-                    const remaining = activeSubjectKeys.filter(k => k !== sec.subjectKey)
-                    setActiveSubjectKey(remaining[0] ?? null)
-                  }
                 }}
               >
                 <i className="fa-light fa-trash" aria-hidden="true" /> Remove section
@@ -580,106 +583,174 @@ export default function TemplateEditorPage() {
                 )}
               </div>
             </div>
-          ) : sections.length === 0 ? (
-            /* Course evaluation — no subjects yet */
-            <div className="flex-1 flex flex-col items-center justify-center gap-4" style={{ padding: '48px 24px' }}>
-              <div
-                className="flex items-center justify-center rounded-full"
-                style={{ width: 48, height: 48, background: 'var(--muted)', color: 'var(--muted-foreground)' }}
-              >
-                <i className="fa-light fa-layer-group text-xl" aria-hidden="true" />
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-medium">No subjects yet</p>
-                <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                  Add a subject to start building this template.
-                </p>
-              </div>
-              <Popover
-                open={subjectPickerOpen}
-                onOpenChange={open => { setSubjectPickerOpen(open); if (!open) setSubjectSearch('') }}
-              >
-                <PopoverTrigger asChild>
-                  <Button variant="default" size="sm">
-                    <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                    Add subject
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="p-0 w-60" align="center" sideOffset={8}>
-                  {renderSubjectPickerContent()}
-                </PopoverContent>
-              </Popover>
-            </div>
           ) : (
-            /* Course evaluation — subject tabs */
+            /* Course evaluation — dynamic subject group tabs, default (pill) variant */
             <Tabs
-              value={currentTab ?? ''}
-              onValueChange={v => setActiveSubjectKey(v)}
+              value={activeGroup}
+              onValueChange={setActiveGroup}
               className="flex flex-col flex-1 min-h-0"
             >
-              {/* Subject tab bar */}
+              {/* Subject group strip — default variant (pill), visually distinct from Details/Builder */}
               <div
-                className="shrink-0 flex items-center gap-2"
-                style={{ padding: '8px 16px 8px 40px' }}
+                className="flex items-center gap-3 shrink-0"
+                style={{ paddingInline: 40, paddingBlock: 10, borderBottom: '1px solid var(--border)' }}
               >
                 <TabsList variant="default">
-                  {activeSubjectKeys.map(key => (
-                    <TabsTrigger key={key} value={key} className="gap-1.5 pr-1">
-                      {MOCK_SUBJECTS.find(s => s.key === key)?.label ?? key}
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        aria-label={`Remove ${MOCK_SUBJECTS.find(s => s.key === key)?.label ?? key} subject`}
-                        className="opacity-50 hover:opacity-100 transition-opacity shrink-0"
-                        onClick={e => { e.stopPropagation(); handleRemoveSubject(key) }}
-                      >
-                        <i className="fa-solid fa-xmark text-[10px]" aria-hidden="true" />
-                      </Button>
+                  {subjectGroups.map(g => (
+                    <TabsTrigger
+                      key={g.key}
+                      value={g.key}
+                      className={g.key !== 'course_content' ? 'gap-1.5 pr-1' : ''}
+                    >
+                      {g.label}
+                      {g.key !== 'course_content' && (
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          aria-label={`Remove ${g.label} group`}
+                          className="opacity-50 hover:opacity-100 transition-opacity shrink-0"
+                          onClick={e => { e.stopPropagation(); handleRemoveGroup(g.key) }}
+                        >
+                          <i className="fa-solid fa-xmark text-[10px]" aria-hidden="true" />
+                        </Button>
+                      )}
                     </TabsTrigger>
                   ))}
                 </TabsList>
+
+                {/* + Add group */}
                 <Popover
-                  open={subjectPickerOpen}
-                  onOpenChange={open => { setSubjectPickerOpen(open); if (!open) setSubjectSearch('') }}
+                  open={groupPickerOpen}
+                  onOpenChange={open => { setGroupPickerOpen(open); if (!open) setNewGroupName('') }}
                 >
                   <PopoverTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      className="shrink-0"
-                    >
+                    <Button variant="ghost" size="xs" className="shrink-0">
                       <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                      Add subject
+                      Add group
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="p-0 w-60" align="start" sideOffset={8}>
-                    {renderSubjectPickerContent()}
+                  <PopoverContent className="p-3 w-52" align="start" sideOffset={8}>
+                    <div className="flex flex-col gap-2">
+                      <p className="text-xs font-medium">Group name</p>
+                      <Input
+                        autoFocus
+                        placeholder="e.g. Clinical Site"
+                        value={newGroupName}
+                        onChange={e => setNewGroupName(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleAddGroup() }}
+                        className="h-8 text-sm"
+                      />
+                      <Button size="sm" onClick={handleAddGroup} disabled={!newGroupName.trim()}>
+                        Create group
+                      </Button>
+                    </div>
                   </PopoverContent>
                 </Popover>
               </div>
 
-              {/* One TabsContent per subject */}
-              {activeSubjectKeys.map(key => {
-                const tabSections = sections.filter(s => s.subjectKey === key)
-                return (
-                  <TabsContent key={key} value={key} className="flex-1 overflow-y-auto m-0" style={{ padding: '16px 40px 32px' }}>
-                    <div style={{ maxWidth: 720 }} className="flex flex-col gap-4">
-                      {tabSections.map(sec => renderSectionCard(sec))}
-                      <div className="flex items-center justify-center" style={{ paddingTop: 4 }}>
-                        <Button
-                          variant="link"
-                          size="sm"
-                          onClick={() => handleAddSection(key)}
-                          className="font-semibold"
-                        >
-                          <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                          Add section
-                        </Button>
+              {/* Tab content — scrollable */}
+              <div className="flex-1 overflow-y-auto" style={{ padding: '28px 40px 48px' }}>
+                {subjectGroups.map(group => {
+                  const groupSections = sections.filter(s => s.subjectKey === group.key)
+                  return (
+                    <TabsContent key={group.key} value={group.key} className="m-0">
+                      <div style={{ maxWidth: 720 }} className="flex flex-col gap-4">
+
+                        {/* Role tags row — non-course groups only */}
+                        {group.key === 'course_content' ? (
+                          <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                            Shown once per course
+                          </p>
+                        ) : (
+                          <div
+                            className="flex items-start gap-3 pb-3"
+                            style={{ borderBottom: '1px solid var(--border)' }}
+                          >
+                            {/* Label — fixed left */}
+                            <span className="text-sm font-medium shrink-0 pt-0.5">Evaluates</span>
+
+                            {/* Tags — wrap freely in middle */}
+                            <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
+                              {group.roles.length === 0 ? (
+                                <span className="text-sm" style={{ color: 'var(--muted-foreground)', paddingTop: 2 }}>
+                                  No roles selected — sections shown once per role member when added
+                                </span>
+                              ) : group.roles.map(roleKey => {
+                                const role = MOCK_SUBJECTS.find(s => s.key === roleKey)
+                                return (
+                                  <span
+                                    key={roleKey}
+                                    className="inline-flex items-center gap-1.5 text-sm font-medium rounded-full"
+                                    style={{
+                                      background: 'var(--muted)',
+                                      color: 'var(--foreground)',
+                                      padding: '3px 10px 3px 12px',
+                                    }}
+                                  >
+                                    {role?.label ?? roleKey}
+                                    <Button
+                                      variant="ghost"
+                                      size="icon-xs"
+                                      aria-label={`Remove ${role?.label ?? roleKey}`}
+                                      className="opacity-50 hover:opacity-100 -mr-1"
+                                      onClick={() => handleRemoveRole(group.key, roleKey)}
+                                    >
+                                      <i className="fa-solid fa-xmark text-xs" aria-hidden="true" />
+                                    </Button>
+                                  </span>
+                                )
+                              })}
+                            </div>
+
+                            {/* Add role — pinned right, never shifts */}
+                            <Popover
+                              open={rolePickerGroupKey === group.key}
+                              onOpenChange={open => {
+                                setRolePickerGroupKey(open ? group.key : null)
+                                if (!open) setRoleSearch('')
+                              }}
+                            >
+                              <PopoverTrigger asChild>
+                                <Button variant="outline" size="xs" className="shrink-0">
+                                  <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                                  Add role
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="p-0 w-72" align="end" sideOffset={8}>
+                                {renderRolePickerContent(group.key)}
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                        )}
+
+                        {/* Sections */}
+                        {groupSections.length === 0 ? (
+                          <div
+                            className="flex items-center justify-center rounded-lg border border-dashed"
+                            style={{ padding: '28px 16px', borderColor: 'var(--border)' }}
+                          >
+                            <Button variant="link" size="sm" onClick={() => handleAddSection(group.key)} className="font-semibold">
+                              <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                              Add section
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            {groupSections.map(sec => renderSectionCard(sec))}
+                            <div className="flex items-center justify-center" style={{ paddingTop: 4 }}>
+                              <Button variant="link" size="sm" onClick={() => handleAddSection(group.key)} className="font-semibold">
+                                <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                                Add section
+                              </Button>
+                            </div>
+                          </>
+                        )}
+
                       </div>
-                    </div>
-                  </TabsContent>
-                )
-              })}
+                    </TabsContent>
+                  )
+                })}
+              </div>
             </Tabs>
           )}
         </TabsContent>

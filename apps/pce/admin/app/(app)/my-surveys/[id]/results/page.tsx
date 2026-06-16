@@ -88,11 +88,14 @@ const LEGACY_LABEL: Record<TemplateSection, string> = {
 
 const SUBJECT_LABEL: Record<SubjectKey, string> = {
   course_content:     'Course Content',
+  faculty:            'Faculty',
   course_instructor:  'Course Instructor',
   course_coordinator: 'Course Coordinator',
   teaching_assistant: 'Teaching Assistant',
   lab_instructor:     'Lab Instructor',
   course_director:    'Course Director',
+  preceptor:          'Preceptor',
+  clinical_supervisor: 'Clinical Supervisor',
 }
 
 // ── Likert distribution bar row ───────────────────────────────────────────────
@@ -127,6 +130,7 @@ export default function FacultyResultsPage() {
   if (!survey) {
     return (
       <div className="flex flex-col items-center justify-center flex-1 gap-3 text-center py-20">
+        <h1 className="sr-only">Survey results not found</h1>
         <i className="fa-light fa-circle-exclamation text-4xl text-muted-foreground" aria-hidden="true" />
         <p className="text-sm font-medium">Survey not found</p>
         <Button variant="outline" size="sm" asChild>

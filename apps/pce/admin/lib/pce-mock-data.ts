@@ -1,7 +1,7 @@
 export type SurveyStatus = 'draft' | 'active' | 'collecting' | 'scheduled' | 'pending_review' | 'released' | 'closed'
 export type TemplateSection = 'course_content' | 'faculty_performance' | 'course_director'
 export type UserRole = 'admin' | 'faculty'
-export type SubjectKey = 'course_content' | 'course_instructor' | 'course_coordinator' | 'teaching_assistant' | 'lab_instructor' | 'course_director'
+export type SubjectKey = 'course_content' | 'faculty' | 'course_instructor' | 'course_coordinator' | 'teaching_assistant' | 'lab_instructor' | 'course_director' | 'preceptor' | 'clinical_supervisor'
 export type SurveyType = 'course_evaluation' | 'programmatic'
 export type CourseTypeFilter = 'didactic' | 'clinical' | 'any'
 
@@ -11,6 +11,7 @@ export interface PceSubject {
   description: string
   isGeneral: boolean  // true = always available (e.g. Course Content), false = Prism role-based
   prismCount?: number // how many courses in the mock data have this role assigned
+  perLabel?: string   // "course" | "faculty member" | "preceptor" etc.
 }
 
 export interface PceTemplateSection {
@@ -75,6 +76,7 @@ export interface PceInstructor {
   name: string
   initials: string
   role: 'primary' | 'guest'
+  department?: string
 }
 
 export interface PceSurvey {
@@ -154,9 +156,10 @@ export const MOCK_CURRENT_USER: PceUser = {
 export const MOCK_SUBJECTS: PceSubject[] = [
   {
     key: 'course_content',
-    label: 'Course Content',
+    label: 'Course',
     description: 'Evaluates the course itself — structure, materials, objectives, workload.',
     isGeneral: true,
+    perLabel: 'course',
   },
   {
     key: 'course_instructor',
@@ -164,6 +167,7 @@ export const MOCK_SUBJECTS: PceSubject[] = [
     description: 'Evaluates faculty who teach portions of the course.',
     isGeneral: false,
     prismCount: 3,
+    perLabel: 'faculty member',
   },
   {
     key: 'course_coordinator',
@@ -171,6 +175,7 @@ export const MOCK_SUBJECTS: PceSubject[] = [
     description: 'Evaluates the faculty member responsible for managing the course.',
     isGeneral: false,
     prismCount: 1,
+    perLabel: 'faculty member',
   },
   {
     key: 'teaching_assistant',
@@ -178,6 +183,7 @@ export const MOCK_SUBJECTS: PceSubject[] = [
     description: 'Evaluates TAs who support instruction.',
     isGeneral: false,
     prismCount: 0,
+    perLabel: 'teaching assistant',
   },
   {
     key: 'lab_instructor',
@@ -185,6 +191,7 @@ export const MOCK_SUBJECTS: PceSubject[] = [
     description: 'Evaluates faculty running lab sessions.',
     isGeneral: false,
     prismCount: 1,
+    perLabel: 'lab instructor',
   },
   {
     key: 'course_director',
@@ -192,6 +199,23 @@ export const MOCK_SUBJECTS: PceSubject[] = [
     description: 'Evaluates the director overseeing the course curriculum.',
     isGeneral: false,
     prismCount: 1,
+    perLabel: 'course director',
+  },
+  {
+    key: 'preceptor',
+    label: 'Preceptor',
+    description: 'Evaluates clinical preceptors who supervise students during rotations.',
+    isGeneral: false,
+    prismCount: 0,
+    perLabel: 'preceptor',
+  },
+  {
+    key: 'clinical_supervisor',
+    label: 'Clinical Supervisor',
+    description: 'Evaluates clinical supervisors at the placement site.',
+    isGeneral: false,
+    prismCount: 0,
+    perLabel: 'clinical supervisor',
   },
 ]
 
@@ -305,7 +329,7 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
       },
       {
         id: 'ts1-2',
-        subjectKey: 'course_instructor',
+        subjectKey: 'faculty',
         title: 'Faculty Performance',
         order: 1,
         questions: [
@@ -340,7 +364,7 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
     templateSections: [
       {
         id: 'ts2-1',
-        subjectKey: 'course_instructor',
+        subjectKey: 'faculty',
         title: 'Faculty Performance',
         order: 0,
         questions: [
@@ -727,6 +751,7 @@ export interface MasterCourse {
   name: string
   department: string
   status: 'active' | 'inactive'
+  type: 'didactic' | 'clinical' | 'seminar'
   /** Last edited; YYYY-MM-DD */
   lastEdited: string
   /** Editor display name */
@@ -741,37 +766,39 @@ export interface ProgramTerm {
   startDate: string
   endDate: string
   status: 'active' | 'archived'
+  /** Controls whether this term appears in the Activation wizard and product dropdowns */
+  enabledForEval: boolean
 }
 
 export const MOCK_MASTER_COURSES: MasterCourse[] = [
   // Year 1 — Foundations (Didactic)
-  { id: 'mc1',  code: 'DPT-501', name: 'Human Anatomy & Kinesiology',      department: 'Core Sciences',    status: 'active',   lastEdited: '2026-04-12', editedBy: 'Dr. Chen'     },
-  { id: 'mc2',  code: 'DPT-502', name: 'Physiology & Pathophysiology',      department: 'Core Sciences',    status: 'active',   lastEdited: '2026-03-22', editedBy: 'Dr. Williams' },
-  { id: 'mc3',  code: 'DPT-503', name: 'Biomechanics',                      department: 'Core Sciences',    status: 'active',   lastEdited: '2026-02-08', editedBy: 'Dr. Kim'      },
-  { id: 'mc4',  code: 'DPT-504', name: 'Neuroanatomy',                      department: 'Core Sciences',    status: 'active',   lastEdited: '2025-11-30', editedBy: 'Dr. Kim'      },
-  { id: 'mc5',  code: 'DPT-505', name: 'Pharmacology for Physical Therapists', department: 'Clinical Sciences', status: 'active', lastEdited: '2026-01-15', editedBy: 'Dr. Gomez'  },
+  { id: 'mc1',  code: 'DPT-501', name: 'Human Anatomy & Kinesiology',         department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2026-04-12', editedBy: 'Dr. Chen'     },
+  { id: 'mc2',  code: 'DPT-502', name: 'Physiology & Pathophysiology',         department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2026-03-22', editedBy: 'Dr. Williams' },
+  { id: 'mc3',  code: 'DPT-503', name: 'Biomechanics',                         department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2026-02-08', editedBy: 'Dr. Kim'      },
+  { id: 'mc4',  code: 'DPT-504', name: 'Neuroanatomy',                         department: 'Core Sciences',      type: 'didactic',  status: 'active',   lastEdited: '2025-11-30', editedBy: 'Dr. Kim'      },
+  { id: 'mc5',  code: 'DPT-505', name: 'Pharmacology for Physical Therapists', department: 'Clinical Sciences',  type: 'didactic',  status: 'active',   lastEdited: '2026-01-15', editedBy: 'Dr. Gomez'    },
   // Year 2 — Clinical Sciences (Didactic)
-  { id: 'mc6',  code: 'DPT-510', name: 'Musculoskeletal Physical Therapy I',   department: 'Physical Therapy', status: 'active', lastEdited: '2026-01-20', editedBy: 'Dr. Patel'   },
-  { id: 'mc7',  code: 'DPT-511', name: 'Musculoskeletal Physical Therapy II',  department: 'Physical Therapy', status: 'active', lastEdited: '2026-04-20', editedBy: 'Dr. Patel'   },
-  { id: 'mc8',  code: 'DPT-520', name: 'Neurological Physical Therapy',        department: 'Physical Therapy', status: 'active', lastEdited: '2026-03-05', editedBy: 'Dr. Williams' },
-  { id: 'mc9',  code: 'DPT-530', name: 'Cardiopulmonary Physical Therapy',     department: 'Physical Therapy', status: 'active', lastEdited: '2026-02-18', editedBy: 'Dr. Kim'      },
-  { id: 'mc10', code: 'DPT-540', name: 'Differential Diagnosis',               department: 'Clinical Sciences', status: 'active', lastEdited: '2026-01-10', editedBy: 'Dr. Hassan'  },
-  { id: 'mc11', code: 'DPT-550', name: 'Evidence-Based Practice & Research',   department: 'Research',         status: 'active', lastEdited: '2026-03-28', editedBy: 'Dr. Williams' },
+  { id: 'mc6',  code: 'DPT-510', name: 'Musculoskeletal Physical Therapy I',   department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-01-20', editedBy: 'Dr. Patel'    },
+  { id: 'mc7',  code: 'DPT-511', name: 'Musculoskeletal Physical Therapy II',  department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-04-20', editedBy: 'Dr. Patel'    },
+  { id: 'mc8',  code: 'DPT-520', name: 'Neurological Physical Therapy',        department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-03-05', editedBy: 'Dr. Williams' },
+  { id: 'mc9',  code: 'DPT-530', name: 'Cardiopulmonary Physical Therapy',     department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-02-18', editedBy: 'Dr. Kim'      },
+  { id: 'mc10', code: 'DPT-540', name: 'Differential Diagnosis',               department: 'Clinical Sciences',  type: 'didactic',  status: 'active',   lastEdited: '2026-01-10', editedBy: 'Dr. Hassan'   },
+  { id: 'mc11', code: 'DPT-550', name: 'Evidence-Based Practice & Research',   department: 'Research',           type: 'seminar',   status: 'active',   lastEdited: '2026-03-28', editedBy: 'Dr. Williams' },
   // Specialty Electives (Didactic)
-  { id: 'mc12', code: 'DPT-611', name: 'Pediatric Physical Therapy',           department: 'Physical Therapy', status: 'active', lastEdited: '2026-01-08', editedBy: 'Dr. Gomez'   },
-  { id: 'mc13', code: 'DPT-612', name: 'Geriatric Physical Therapy',           department: 'Physical Therapy', status: 'active', lastEdited: '2026-02-14', editedBy: 'Dr. Hassan'  },
+  { id: 'mc12', code: 'DPT-611', name: 'Pediatric Physical Therapy',           department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-01-08', editedBy: 'Dr. Gomez'    },
+  { id: 'mc13', code: 'DPT-612', name: 'Geriatric Physical Therapy',           department: 'Physical Therapy',   type: 'didactic',  status: 'active',   lastEdited: '2026-02-14', editedBy: 'Dr. Hassan'   },
   // Clinical Education (Clinical)
-  { id: 'mc14', code: 'DPT-601', name: 'Clinical Practicum I',                 department: 'Clinical Education', status: 'active', lastEdited: '2026-04-01', editedBy: 'Dr. Patel'  },
-  { id: 'mc15', code: 'DPT-602', name: 'Clinical Practicum II',                department: 'Clinical Education', status: 'active', lastEdited: '2026-04-01', editedBy: 'Dr. Hassan' },
-  { id: 'mc16', code: 'DPT-603', name: 'Clinical Practicum III (Full-Time)',   department: 'Clinical Education', status: 'active', lastEdited: '2025-12-10', editedBy: 'Dr. Patel'  },
+  { id: 'mc14', code: 'DPT-601', name: 'Clinical Practicum I',                 department: 'Clinical Education', type: 'clinical',  status: 'active',   lastEdited: '2026-04-01', editedBy: 'Dr. Patel'    },
+  { id: 'mc15', code: 'DPT-602', name: 'Clinical Practicum II',                department: 'Clinical Education', type: 'clinical',  status: 'active',   lastEdited: '2026-04-01', editedBy: 'Dr. Hassan'   },
+  { id: 'mc16', code: 'DPT-603', name: 'Clinical Practicum III (Full-Time)',   department: 'Clinical Education', type: 'clinical',  status: 'active',   lastEdited: '2025-12-10', editedBy: 'Dr. Patel'    },
 ]
 
 export const MOCK_PROGRAM_TERMS: ProgramTerm[] = [
-  { id: 'pt1', name: 'Spring 2026', academicYear: '2025–2026', startDate: '2026-01-12', endDate: '2026-05-08', status: 'active'   },
-  { id: 'pt2', name: 'Fall 2025',   academicYear: '2025–2026', startDate: '2025-08-25', endDate: '2025-12-12', status: 'archived' },
-  { id: 'pt3', name: 'Spring 2025', academicYear: '2024–2025', startDate: '2025-01-13', endDate: '2025-05-09', status: 'archived' },
-  { id: 'pt4', name: 'Fall 2024',   academicYear: '2024–2025', startDate: '2024-08-26', endDate: '2024-12-13', status: 'archived' },
-  { id: 'pt5', name: 'Fall 2026',   academicYear: '2026–2027', startDate: '2026-08-24', endDate: '2026-12-11', status: 'active'   },
+  { id: 'pt1', name: 'Spring 2026', academicYear: '2025–2026', startDate: '2026-01-12', endDate: '2026-05-08', status: 'active',   enabledForEval: true  },
+  { id: 'pt2', name: 'Fall 2025',   academicYear: '2025–2026', startDate: '2025-08-25', endDate: '2025-12-12', status: 'archived', enabledForEval: false },
+  { id: 'pt3', name: 'Spring 2025', academicYear: '2024–2025', startDate: '2025-01-13', endDate: '2025-05-09', status: 'archived', enabledForEval: false },
+  { id: 'pt4', name: 'Fall 2024',   academicYear: '2024–2025', startDate: '2024-08-26', endDate: '2024-12-13', status: 'archived', enabledForEval: false },
+  { id: 'pt5', name: 'Fall 2026',   academicYear: '2026–2027', startDate: '2026-08-24', endDate: '2026-12-11', status: 'active',   enabledForEval: true  },
 ]
 
 /** LMS-on/off school config. Per workspace ADR-002, default is LMS-on; in this prototype we mock the off state so manual CRUD demos work. Toggle in future via Settings. */
@@ -1094,6 +1121,157 @@ export const SECTION_ABBREV: Record<TemplateSection, string> = {
   course_director: 'CD',
 }
 
+// ── Per-question scoring — Evaluation Card (Sections tab) ────────────────────
+
+export interface QuestionScore {
+  questionId: string
+  avg: number
+  count: number
+  /** Response counts for ratings 1–5; index 0 = rating 1. */
+  distribution: [number, number, number, number, number]
+}
+
+export interface InstructorQuestionBlock {
+  instructorId: string
+  scores: QuestionScore[]
+}
+
+export interface SurveyQuestionData {
+  surveyId: string
+  /** Likert question scores keyed by subjectKey (non-faculty sections). */
+  sectionScores: Record<string, QuestionScore[]>
+  /** Faculty section (course_instructor) — one block per instructor. */
+  instructorBlocks?: InstructorQuestionBlock[]
+  /** Open-text response counts keyed by questionId. */
+  freeTextCounts: Record<string, number>
+}
+
+export const MOCK_SURVEY_QUESTION_DATA: SurveyQuestionData[] = [
+  {
+    surveyId: 's1',
+    sectionScores: {
+      course_content: [
+        { questionId: 'q1', avg: 4.2, count: 34, distribution: [ 0,  2,  4, 14, 14] },
+        { questionId: 'q2', avg: 4.0, count: 34, distribution: [ 0,  3,  5, 15, 11] },
+        { questionId: 'q3', avg: 3.6, count: 34, distribution: [ 1,  4,  8, 14,  7] },
+        { questionId: 'q4', avg: 3.9, count: 34, distribution: [ 0,  3,  8, 14,  9] },
+      ],
+    },
+    instructorBlocks: [
+      {
+        instructorId: 'f1',
+        scores: [
+          { questionId: 'q6', avg: 4.4, count: 34, distribution: [ 0,  1,  3, 11, 19] },
+          { questionId: 'q7', avg: 4.2, count: 34, distribution: [ 0,  2,  4, 13, 15] },
+        ],
+      },
+      {
+        instructorId: 'f2',
+        scores: [
+          { questionId: 'q6', avg: 4.1, count: 34, distribution: [ 0,  2,  6, 14, 12] },
+          { questionId: 'q7', avg: 3.7, count: 34, distribution: [ 0,  4,  8, 14,  8] },
+        ],
+      },
+    ],
+    freeTextCounts: { q5: 12, q8: 8 },
+  },
+  // s2 — DPT-601 Clinical Practicum I · Dr. Williams (f3) primary + Dr. Chen (f2) guest · 21 responses
+  {
+    surveyId: 's2',
+    sectionScores: {
+      course_content: [
+        { questionId: 'q1', avg: 4.1, count: 21, distribution: [ 0,  1,  3, 10,  7] },
+        { questionId: 'q2', avg: 4.0, count: 21, distribution: [ 0,  1,  4, 11,  5] },
+        { questionId: 'q3', avg: 3.9, count: 21, distribution: [ 0,  2,  5,  9,  5] },
+        { questionId: 'q4', avg: 4.2, count: 21, distribution: [ 0,  0,  3, 10,  8] },
+      ],
+    },
+    instructorBlocks: [
+      {
+        instructorId: 'f3',
+        scores: [
+          { questionId: 'q6', avg: 4.6, count: 21, distribution: [ 0,  0,  1,  8, 12] },
+          { questionId: 'q7', avg: 4.4, count: 21, distribution: [ 0,  0,  2,  8, 11] },
+        ],
+      },
+      {
+        instructorId: 'f2',
+        scores: [
+          { questionId: 'q6', avg: 4.0, count: 21, distribution: [ 0,  1,  4,  9,  7] },
+          { questionId: 'q7', avg: 3.8, count: 21, distribution: [ 0,  2,  5,  9,  5] },
+        ],
+      },
+    ],
+    freeTextCounts: { q5: 9, q8: 5 },
+  },
+  // s3 — DPT-602 Clinical Practicum II · Dr. Maria Williams (f3) · 46 responses
+  {
+    surveyId: 's3',
+    sectionScores: {
+      course_content: [
+        { questionId: 'q1', avg: 3.8, count: 46, distribution: [ 1,  4,  9, 20, 12] },
+        { questionId: 'q2', avg: 3.7, count: 46, distribution: [ 1,  5, 11, 20,  9] },
+        { questionId: 'q3', avg: 3.8, count: 46, distribution: [ 1,  3, 10, 21, 11] },
+        { questionId: 'q4', avg: 3.9, count: 46, distribution: [ 0,  4,  9, 20, 13] },
+      ],
+    },
+    instructorBlocks: [
+      {
+        instructorId: 'f3',
+        scores: [
+          { questionId: 'q6', avg: 4.6, count: 46, distribution: [ 0,  1,  3, 12, 30] },
+          { questionId: 'q7', avg: 4.5, count: 46, distribution: [ 0,  1,  4, 16, 25] },
+        ],
+      },
+    ],
+    freeTextCounts: { q5: 18, q8: 11 },
+  },
+  // s4 — DPT-504 Neuroanatomy · Dr. James Kim (f4) · 44 responses
+  {
+    surveyId: 's4',
+    sectionScores: {
+      course_content: [
+        { questionId: 'q1', avg: 4.5, count: 44, distribution: [ 0,  1,  3, 17, 23] },
+        { questionId: 'q2', avg: 4.6, count: 44, distribution: [ 0,  0,  4, 14, 26] },
+        { questionId: 'q3', avg: 4.4, count: 44, distribution: [ 0,  1,  5, 19, 19] },
+        { questionId: 'q4', avg: 4.5, count: 44, distribution: [ 0,  1,  4, 17, 22] },
+      ],
+    },
+    instructorBlocks: [
+      {
+        instructorId: 'f4',
+        scores: [
+          { questionId: 'q6', avg: 4.7, count: 44, distribution: [ 0,  0,  2, 10, 32] },
+          { questionId: 'q7', avg: 4.5, count: 44, distribution: [ 0,  1,  3, 16, 24] },
+        ],
+      },
+    ],
+    freeTextCounts: { q5: 9, q8: 6 },
+  },
+  // s5 — DPT-502 Physiology & Pathophysiology · Dr. James Kim (f4) · 22 responses
+  {
+    surveyId: 's5',
+    sectionScores: {
+      course_content: [
+        { questionId: 'q1', avg: 3.9, count: 22, distribution: [ 0,  2,  4, 10,  6] },
+        { questionId: 'q2', avg: 3.8, count: 22, distribution: [ 0,  2,  5, 10,  5] },
+        { questionId: 'q3', avg: 4.0, count: 22, distribution: [ 0,  1,  4, 11,  6] },
+        { questionId: 'q4', avg: 3.9, count: 22, distribution: [ 0,  2,  4, 10,  6] },
+      ],
+    },
+    instructorBlocks: [
+      {
+        instructorId: 'f4',
+        scores: [
+          { questionId: 'q6', avg: 4.2, count: 22, distribution: [ 0,  1,  3,  9,  9] },
+          { questionId: 'q7', avg: 4.0, count: 22, distribution: [ 0,  1,  4, 10,  7] },
+        ],
+      },
+    ],
+    freeTextCounts: { q5: 7, q8: 4 },
+  },
+]
+
 export const MOCK_COURSES = [
   { code: 'BIO 201', name: 'Cellular Biology' },
   { code: 'NURS 310', name: 'Advanced Patient Care' },
@@ -1106,10 +1284,61 @@ export const MOCK_COURSES = [
 ]
 
 export const MOCK_FACULTY: PceInstructor[] = [
-  { id: 'f1', name: 'Dr. Anita Patel',    initials: 'AP', role: 'primary' },
-  { id: 'f2', name: 'Dr. Kevin Chen',     initials: 'KC', role: 'primary' },
-  { id: 'f3', name: 'Dr. Maria Williams', initials: 'MW', role: 'primary' },
-  { id: 'f4', name: 'Dr. James Kim',      initials: 'JK', role: 'primary' },
-  { id: 'f5', name: 'Dr. Rachel Gomez',   initials: 'RG', role: 'primary' },
-  { id: 'f6', name: 'Dr. Omar Hassan',    initials: 'OH', role: 'primary' },
+  { id: 'f1', name: 'Dr. Anita Patel',    initials: 'AP', role: 'primary', department: 'Basic Sciences'           },
+  { id: 'f2', name: 'Dr. Kevin Chen',     initials: 'KC', role: 'primary', department: 'Basic Sciences'           },
+  { id: 'f3', name: 'Dr. Maria Williams', initials: 'MW', role: 'primary', department: 'Clinical Education'       },
+  { id: 'f4', name: 'Dr. James Kim',      initials: 'JK', role: 'primary', department: 'Clinical Education'       },
+  { id: 'f5', name: 'Dr. Rachel Gomez',   initials: 'RG', role: 'primary', department: 'Applied Sciences'         },
+  { id: 'f6', name: 'Dr. Omar Hassan',    initials: 'OH', role: 'primary', department: 'Applied Sciences'         },
 ]
+
+export interface FacultyOfferingRecord {
+  facultyId: string
+  surveyId?: string
+  courseCode: string
+  courseName: string
+  term: string
+  role: 'primary' | 'guest'
+  enrolled: number
+  responseRate: number
+  avgRating: number
+}
+
+export const MOCK_FACULTY_OFFERINGS: FacultyOfferingRecord[] = [
+  // Dr. Anita Patel (f1) — Physical Sciences, strong & consistent
+  { facultyId: 'f1', surveyId: 's1', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Spring 2026', role: 'primary', enrolled: 50, responseRate: 68, avgRating: 4.4 },
+  { facultyId: 'f1',                 courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Spring 2025', role: 'primary', enrolled: 48, responseRate: 72, avgRating: 4.3 },
+  { facultyId: 'f1',                 courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Spring 2024', role: 'primary', enrolled: 46, responseRate: 75, avgRating: 4.2 },
+  { facultyId: 'f1', surveyId: 's6', courseCode: 'DPT-505', courseName: 'Biomechanics I',              term: 'Spring 2026', role: 'primary', enrolled: 50, responseRate: 58, avgRating: 4.1 },
+  { facultyId: 'f1',                 courseCode: 'DPT-505', courseName: 'Biomechanics I',              term: 'Fall 2025',   role: 'primary', enrolled: 50, responseRate: 65, avgRating: 4.0 },
+  // Dr. Kevin Chen (f2) — Basic Science, regular guest lecturer
+  { facultyId: 'f2', surveyId: 's1', courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Spring 2026', role: 'guest',   enrolled: 50, responseRate: 68, avgRating: 4.2 },
+  { facultyId: 'f2', surveyId: 's2', courseCode: 'DPT-601', courseName: 'Clinical Practicum I',        term: 'Spring 2026', role: 'guest',   enrolled: 38, responseRate: 42, avgRating: 3.9 },
+  { facultyId: 'f2',                 courseCode: 'DPT-501', courseName: 'Human Anatomy & Kinesiology', term: 'Spring 2025', role: 'guest',   enrolled: 48, responseRate: 71, avgRating: 4.0 },
+  // Dr. Maria Williams (f3) — Clinical Education, highest ratings
+  { facultyId: 'f3', surveyId: 's2', courseCode: 'DPT-601', courseName: 'Clinical Practicum I',        term: 'Spring 2026', role: 'primary', enrolled: 38, responseRate: 42, avgRating: 4.5 },
+  { facultyId: 'f3', surveyId: 's3', courseCode: 'DPT-602', courseName: 'Clinical Practicum II',       term: 'Spring 2026', role: 'primary', enrolled: 32, responseRate: 55, avgRating: 4.3 },
+  { facultyId: 'f3',                 courseCode: 'DPT-601', courseName: 'Clinical Practicum I',        term: 'Spring 2025', role: 'primary', enrolled: 36, responseRate: 48, avgRating: 4.4 },
+  { facultyId: 'f3',                 courseCode: 'DPT-601', courseName: 'Clinical Practicum I',        term: 'Spring 2024', role: 'primary', enrolled: 34, responseRate: 52, avgRating: 4.1 },
+  // Dr. James Kim (f4) — Neurological PT, one at-risk offering
+  { facultyId: 'f4', surveyId: 's4', courseCode: 'DPT-710', courseName: 'Neurological Rehab',         term: 'Fall 2025',   role: 'primary', enrolled: 42, responseRate: 78, avgRating: 4.6 },
+  { facultyId: 'f4', surveyId: 's5', courseCode: 'DPT-711', courseName: 'Pediatric Rehab',            term: 'Fall 2025',   role: 'primary', enrolled: 42, responseRate: 71, avgRating: 4.2 },
+  { facultyId: 'f4',                 courseCode: 'DPT-710', courseName: 'Neurological Rehab',         term: 'Fall 2024',   role: 'primary', enrolled: 40, responseRate: 82, avgRating: 4.5 },
+  { facultyId: 'f4',                 courseCode: 'DPT-502', courseName: 'Exercise Physiology',        term: 'Spring 2025', role: 'primary', enrolled: 48, responseRate: 60, avgRating: 3.5 },
+  // Dr. Rachel Gomez (f5) — Biomechanics, trending up from at-risk
+  { facultyId: 'f5', surveyId: 's6', courseCode: 'DPT-505', courseName: 'Biomechanics I',             term: 'Spring 2026', role: 'primary', enrolled: 50, responseRate: 58, avgRating: 3.8 },
+  { facultyId: 'f5',                 courseCode: 'DPT-506', courseName: 'Biomechanics II',            term: 'Spring 2025', role: 'primary', enrolled: 48, responseRate: 62, avgRating: 3.6 },
+  { facultyId: 'f5',                 courseCode: 'DPT-506', courseName: 'Biomechanics II',            term: 'Spring 2024', role: 'primary', enrolled: 46, responseRate: 55, avgRating: 3.4 },
+  // Dr. Omar Hassan (f6) — Evidence-Based Practice, newer faculty
+  { facultyId: 'f6',                 courseCode: 'DPT-801', courseName: 'Evidence-Based Practice',   term: 'Fall 2025',   role: 'primary', enrolled: 45, responseRate: 74, avgRating: 4.3 },
+  { facultyId: 'f6',                 courseCode: 'DPT-801', courseName: 'Evidence-Based Practice',   term: 'Spring 2026', role: 'primary', enrolled: 50, responseRate: 68, avgRating: 4.4 },
+]
+
+/** Question-level scores for programmatic surveys (gen-s1 = collecting). */
+export const MOCK_PROG_QUESTION_SCORES: Record<string, { questionId: string; text: string; avg: number; count: number; distribution: [number, number, number, number, number] }[]> = {
+  'gen-s1': [
+    { questionId: 'gq1', text: 'How well did the program prepare you for your career?',     avg: 4.1, count: 63, distribution: [ 2,  4, 10, 29, 18] },
+    { questionId: 'gq2', text: 'How satisfied are you with the quality of instruction?',    avg: 3.8, count: 63, distribution: [ 3,  7, 14, 26, 13] },
+    { questionId: 'gq3', text: 'How likely are you to recommend this program?',             avg: 4.3, count: 63, distribution: [ 1,  3,  7, 24, 28] },
+  ],
+}

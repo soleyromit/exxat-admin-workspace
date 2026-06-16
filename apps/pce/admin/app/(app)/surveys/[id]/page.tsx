@@ -2,17 +2,20 @@
 
 import { useState, useMemo } from 'react'
 import { useParams } from 'next/navigation'
+import Link from 'next/link'
 import {
-  Button, Avatar, AvatarFallback, Badge,
-  Card, CardContent,
-  Tabs, TabsList, TabsTrigger, TabsContent,
+  Button,
+  Avatar, AvatarFallback,
+  Badge,
+  Card, CardHeader, CardTitle,
+  KeyMetrics,
 } from '@exxatdesignux/ui'
+import type { MetricItem } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
-import { BulletGauge } from '@/components/pce/bullet-gauge'
-import { SectionScoreStrip } from '@/components/pce/section-score-strip'
 import { AiInsightCard } from '@/components/pce/ai-insight-card'
+import { QuestionChartBlock } from '@/components/pce/question-chart-block'
 import {
   CloseSurveyDialog,
   AddGuestSheet,
@@ -22,10 +25,10 @@ import {
 import {
   MOCK_RESPONSES,
   MOCK_OPEN_TEXT_RESPONSES,
+  MOCK_SURVEY_QUESTION_DATA,
   type ResponseComment,
   type SubjectKey,
 } from '@/lib/pce-mock-data'
-import Link from 'next/link'
 
 // ── Theme derivation (AI layer — no NLP in mock, keyword-based proxy) ─────────
 interface ThemeRow {
@@ -101,49 +104,28 @@ function SentimentDot({ sentiment }: { sentiment: 'positive' | 'neutral' | 'conc
 // ── Subject key → label ───────────────────────────────────────────────────────
 const SUBJECT_LABEL: Record<SubjectKey | 'faculty_performance', string> = {
   course_content:     'Course Content',
+  faculty:            'Faculty',
   course_instructor:  'Course Instructor',
   course_coordinator: 'Course Coordinator',
   teaching_assistant: 'Teaching Assistant',
   lab_instructor:     'Lab Instructor',
   course_director:    'Course Director',
+  preceptor:          'Preceptor',
+  clinical_supervisor: 'Clinical Supervisor',
   faculty_performance: 'Faculty Performance',
-}
-
-// Legacy section key → current SubjectKey (mock data uses old 'faculty_performance' key)
-const LEGACY_SECTION_MAP: Record<string, string> = {
-  faculty_performance: 'course_instructor',
-}
-
-// ── KPI card shell ────────────────────────────────────────────────────────────
-function KpiCard({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <Card>
-      <CardContent className="pt-4 flex flex-col gap-3">
-        <p className="text-xs font-medium text-muted-foreground">{label}</p>
-        {children}
-      </CardContent>
-    </Card>
-  )
-}
-
-// ── Sentiment color ───────────────────────────────────────────────────────────
-const SENTIMENT_COLOR: Record<string, string> = {
-  positive: 'var(--chart-2)',
-  neutral:  'var(--muted-foreground)',
-  concern:  'var(--chart-4)',
 }
 
 // =============================================================================
 
 export default function SurveyDetailPage() {
-  const { id } = useParams<{ id: string }>()
+  const params = useParams<{ id: string }>()
+  const id = params?.id
   const { surveys, templates, removeInstructor } = usePce()
 
   const [closeOpen,    setCloseOpen]    = useState(false)
   const [addGuestOpen, setAddGuestOpen] = useState(false)
   const [releaseOpen,  setReleaseOpen]  = useState(false)
   const [localFlagged, setLocalFlagged] = useState<Set<string>>(new Set())
-  const [activeTab,    setActiveTab]    = useState('overview')
   const [linkCopied,   setLinkCopied]   = useState(false)
 
   const survey        = surveys.find(s => s.id === id)
@@ -151,15 +133,13 @@ export default function SurveyDetailPage() {
   const responses     = survey ? MOCK_RESPONSES.find(r => r.surveyId === survey.id) : null
   const openTextResps = survey ? MOCK_OPEN_TEXT_RESPONSES.filter(r => r.surveyId === survey.id) : []
 
-  const themes         = useMemo(() => responses ? deriveThemes(responses.comments) : [], [responses])
-  const trajectoryMsg  = survey ? trajectoryText(survey.responseCount, survey.openDate, survey.deadline) : null
-  const days           = survey ? daysUntil(survey.deadline) : 0
+  const themes        = useMemo(() => responses ? deriveThemes(responses.comments) : [], [responses])
+  const trajectoryMsg = survey ? trajectoryText(survey.responseCount, survey.openDate, survey.deadline) : null
+  const days          = survey ? daysUntil(survey.deadline) : 0
+  const questionData  = MOCK_SURVEY_QUESTION_DATA.find(d => d.surveyId === id) ?? null
 
-  const positiveCount = responses?.comments.filter(c => c.sentiment === 'positive').length ?? 0
-  const neutralCount  = responses?.comments.filter(c => c.sentiment === 'neutral').length  ?? 0
-  const concernCount  = responses?.comments.filter(c => c.sentiment === 'concern').length  ?? 0
-
-  const flaggedCount = openTextResps.filter(r => r.flagged || localFlagged.has(r.id)).length
+  const concernCount  = responses?.comments.filter(c => c.sentiment === 'concern').length ?? 0
+  const flaggedCount  = openTextResps.filter(r => r.flagged || localFlagged.has(r.id)).length
 
   const templateSections = template?.templateSections?.length
     ? template.templateSections
@@ -174,6 +154,7 @@ export default function SurveyDetailPage() {
   if (!survey) {
     return (
       <div className="flex flex-col items-center justify-center flex-1 gap-3 text-center py-20">
+        <h1 className="sr-only">Survey not found</h1>
         <i className="fa-light fa-circle-exclamation text-4xl text-muted-foreground" aria-hidden="true" />
         <p className="text-sm font-medium">Survey not found</p>
         <Button variant="outline" size="sm" asChild>
@@ -183,10 +164,9 @@ export default function SurveyDetailPage() {
     )
   }
 
-  const canClose       = survey.status === 'collecting' || survey.status === 'active'
+  const canClose        = survey.status === 'collecting' || survey.status === 'active'
   const isPendingReview = survey.status === 'pending_review'
-  const isReleased     = survey.status === 'released' || survey.status === 'closed'
-  const isActive       = survey.status === 'active' || survey.status === 'collecting'
+  const isActive        = survey.status === 'active' || survey.status === 'collecting'
 
   const MOCK_SURVEY_LINK = `https://survey.exxat.com/s/${survey.id}`
 
@@ -204,603 +184,377 @@ export default function SurveyDetailPage() {
     })
   }
 
+  // ── KPI strip — contextual per survey lifecycle stage ────────────────────────
+  const thirdMetric: MetricItem = isPendingReview
+    ? {
+        id: 'flagged',
+        label: 'Flagged responses',
+        value: flaggedCount,
+        delta: '',
+        description: flaggedCount > 0 ? 'Pending review before release' : 'No flagged responses',
+        trend: 'neutral',
+      }
+    : canClose
+    ? {
+        id: 'time',
+        label: 'Time remaining',
+        value: `${days}d`,
+        delta: '',
+        description: `Closes ${survey.deadline}`,
+        trend: 'neutral',
+      }
+    : {
+        id: 'closed',
+        label: 'Survey closed',
+        value: survey.responseCount,
+        delta: '',
+        description: `Final responses · ${survey.deadline}`,
+        trend: 'neutral',
+      }
+
+  const kpiMetrics: MetricItem[] = [
+    {
+      id: 'response-rate',
+      label: 'Response rate',
+      value: `${survey.responseRate}%`,
+      delta: '',
+      description: `${survey.responseCount} of ${survey.enrollmentCount} responded`,
+      trend: 'neutral',
+      metricVariant: 'hero',
+    },
+    {
+      id: 'sections',
+      label: 'Template sections',
+      value: templateSections.length,
+      delta: '',
+      description: template?.name ?? 'No template assigned',
+      trend: 'neutral',
+      href: template ? `/templates/${template.id}` : undefined,
+    },
+    thirdMetric,
+  ]
+
   return (
     <>
       {/* ── Header ── */}
-      <SiteHeader title={`${survey.courseCode} — ${survey.courseName}`} />
-      <div
-        className="flex items-center gap-2 border-b border-border shrink-0"
-        style={{ padding: '14px 28px 14px' }}
-      >
-        <Link href="/surveys" className="text-sm text-muted-foreground hover:text-foreground">
-          Surveys
-        </Link>
-        <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
-        <span className="text-sm text-muted-foreground">{survey.term}</span>
-        <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
-        <h1
-          className="text-sm font-semibold flex-1 truncate"
-          style={{ fontFamily: 'var(--font-heading)' }}
-        >
-          {survey.courseCode} — {survey.courseName}
-        </h1>
-        <SurveyStatusBadge status={survey.status} />
-        <div className="flex items-center gap-2">
-          {isActive && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCopyLink}
-              aria-label="Copy student survey link"
-            >
-              <i
-                className={`fa-light fa-${linkCopied ? 'check' : 'link'}`}
-                aria-hidden="true"
-                style={{ fontSize: 12, color: linkCopied ? 'var(--chart-2)' : undefined }}
-              />
-              {linkCopied ? 'Link copied' : 'Copy survey link'}
-            </Button>
-          )}
-          {canClose && (
-            <SendReminderPopover survey={survey}>
-              <Button variant="outline" size="sm">
-                <i className="fa-light fa-bell" aria-hidden="true" style={{ fontSize: 12 }} />
-                Send Reminder
+      <SiteHeader
+        breadcrumbs={[{ label: 'Surveys', href: '/surveys' }]}
+        title={`${survey.courseCode} — ${survey.courseName}`}
+      />
+
+      {/* ── Title row — h1 + badge left, actions right (matches templates/[id] pattern) ── */}
+      <div style={{ paddingLeft: 40, paddingRight: 16, paddingTop: 28, paddingBottom: 0 }}>
+        <div className="flex items-center gap-3 mb-5">
+          <h1
+            className="min-w-0 truncate"
+            style={{
+              fontFamily: 'var(--font-heading)',
+              fontSize: 32,
+              fontWeight: 300,
+              color: 'var(--foreground)',
+              lineHeight: 1.2,
+            }}
+          >
+            {survey.courseCode} — {survey.courseName}
+          </h1>
+          <SurveyStatusBadge status={survey.status} />
+          <div className="flex items-center gap-2 ml-auto shrink-0">
+            {isActive && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyLink}
+                aria-label="Copy student survey link"
+              >
+                <i
+                  className={`fa-light fa-${linkCopied ? 'check' : 'link'}`}
+                  aria-hidden="true"
+                  style={{ fontSize: 12, color: linkCopied ? 'var(--chart-2)' : undefined }}
+                />
+                {linkCopied ? 'Link copied' : 'Copy survey link'}
               </Button>
-            </SendReminderPopover>
-          )}
-          {isPendingReview && (
-            <Button variant="default" size="sm" onClick={() => setReleaseOpen(true)}>
-              <i className="fa-light fa-share-from-square" aria-hidden="true" style={{ fontSize: 12 }} />
-              Share Results with Faculty
-            </Button>
-          )}
+            )}
+            {canClose && (
+              <SendReminderPopover survey={survey}>
+                <Button variant="outline" size="sm">
+                  <i className="fa-light fa-bell" aria-hidden="true" style={{ fontSize: 12 }} />
+                  Send Reminder
+                </Button>
+              </SendReminderPopover>
+            )}
+            {isPendingReview && (
+              <Button variant="default" size="sm" onClick={() => setReleaseOpen(true)}>
+                <i className="fa-light fa-share-from-square" aria-hidden="true" style={{ fontSize: 12 }} />
+                Share Results with Faculty
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ── Flagged responses alert banner ── */}
-      {isPendingReview && flaggedCount > 0 && (
-        <div
-          role="alert"
-          className="flex items-center justify-between px-7 py-2.5 text-sm border-b border-border"
-          style={{ backgroundColor: 'var(--muted)' }}
-        >
-          <div className="flex items-center gap-2">
-            <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ color: 'var(--chart-4)' }} />
-            <span>
-              <strong>{flaggedCount} flagged response{flaggedCount > 1 ? 's' : ''}</strong> — review before sharing results.
-            </span>
-          </div>
-          <Button variant="ghost" size="sm" onClick={() => setActiveTab('moderate')}>
-            Review now
-            <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 11 }} />
-          </Button>
-        </div>
-      )}
 
-      {/* ── Tabs ── */}
-      <div className="flex-1 overflow-auto">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
-          <div className="border-b border-border px-7 shrink-0">
-            <TabsList variant="line">
-              <TabsTrigger value="overview">
-                <i className="fa-light fa-chart-simple" aria-hidden="true" style={{ fontSize: 13 }} />
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value="sections">
-                <i className="fa-light fa-table-list" aria-hidden="true" style={{ fontSize: 13 }} />
-                Sections
-                {templateSections.length > 0 && (
-                  <Badge variant="secondary" className="rounded-full text-xs px-1.5 py-0 min-w-[18px] text-center">
-                    {templateSections.length}
-                  </Badge>
+      {/* ── Single-scroll body ── */}
+      <div className="flex-1 overflow-auto" style={{ padding: '4px 28px 28px' }}>
+        <div className="flex flex-col gap-6">
+
+          {/* KPI strip */}
+          <KeyMetrics
+            variant="compact"
+            metricsSingleRow
+            metrics={kpiMetrics}
+          />
+
+          {/* Instructors */}
+          <Card className="overflow-hidden">
+            <CardHeader className="border-b">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Instructors</CardTitle>
+                {canClose && (
+                  <Button variant="ghost" size="sm" onClick={() => setAddGuestOpen(true)}>
+                    <i className="fa-light fa-plus" aria-hidden="true" />
+                    Add Guest
+                  </Button>
                 )}
-              </TabsTrigger>
-              <TabsTrigger value="responses">
-                <i className="fa-light fa-comment-lines" aria-hidden="true" style={{ fontSize: 13 }} />
-                Responses
-                {responses && responses.comments.length > 0 && (
-                  <Badge variant="secondary" className="rounded-full text-xs px-1.5 py-0 min-w-[18px] text-center">
-                    {responses.comments.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              {isPendingReview && (
-                <TabsTrigger value="moderate">
-                  <i className="fa-light fa-shield-check" aria-hidden="true" style={{ fontSize: 13 }} />
-                  Moderate
-                  {flaggedCount > 0 && (
-                    <Badge
-                      variant="secondary"
-                      className="rounded-full text-xs px-1.5 py-0 min-w-[18px] text-center"
-                      style={{ backgroundColor: 'var(--chart-4)', color: 'var(--background)' }}
+              </div>
+            </CardHeader>
+            {survey.instructors.length === 0 ? (
+              <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                No instructors assigned.
+              </div>
+            ) : (
+              survey.instructors.map((instructor, i) => (
+                <div
+                  key={instructor.id}
+                  className="flex items-center justify-between px-4 py-3"
+                  style={{ borderBottom: i < survey.instructors.length - 1 ? '1px solid var(--border)' : 'none' }}
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback
+                        className="text-xs"
+                        style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}
+                      >
+                        {instructor.initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm font-medium">{instructor.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {instructor.role === 'primary' ? 'Primary instructor' : 'Guest lecturer'}
+                      </span>
+                    </div>
+                  </div>
+                  {instructor.role === 'guest' && canClose && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive"
+                      onClick={() => removeInstructor(survey.id, instructor.id)}
                     >
-                      {flaggedCount}
-                    </Badge>
+                      Remove
+                    </Button>
                   )}
-                </TabsTrigger>
-              )}
-            </TabsList>
-          </div>
+                </div>
+              ))
+            )}
+          </Card>
 
-          <div className="flex-1 overflow-auto px-7 py-5">
-
-            {/* ── Overview ──────────────────────────────────────────────── */}
-            <TabsContent value="overview" className="mt-0 outline-none">
-              <div className="max-w-3xl flex flex-col gap-6">
-
-                {/* 3 KPI cards */}
-                <div className="grid grid-cols-3 gap-4">
-
-                  {/* Response Rate */}
-                  <KpiCard label="Response Rate">
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-baseline gap-2">
+          {/* AI insight */}
+          {responses && responses.comments.length > 0 && (
+            <AiInsightCard
+              source={`${responses.comments.length} open-text response${responses.comments.length > 1 ? 's' : ''} · ${themes.length} theme${themes.length !== 1 ? 's' : ''} identified`}
+              body={
+                <div className="flex flex-col gap-3">
+                  {themes.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {themes.map(t => (
                         <span
-                          className="text-2xl font-semibold"
-                          style={{ fontVariantNumeric: 'tabular-nums' }}
+                          key={t.label}
+                          className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md"
+                          style={{ backgroundColor: 'var(--muted)', color: 'var(--foreground)' }}
                         >
-                          {survey.responseRate}%
+                          <SentimentDot sentiment={t.sentiment} />
+                          {t.label}
+                          <span style={{ color: 'var(--muted-foreground)' }}>· {t.occurrences}</span>
                         </span>
-                        <span className="text-sm text-muted-foreground">
-                          {survey.responseCount} / {survey.enrollmentCount}
-                        </span>
-                      </div>
-                      <BulletGauge
-                        responseCount={survey.responseCount}
-                        enrollmentCount={survey.enrollmentCount}
-                        width={180}
-                        height={6}
-                        ariaLabel={`Response rate: ${survey.responseRate}% — ${survey.responseCount} of ${survey.enrollmentCount} responded`}
-                      />
-                      <p className="text-xs text-muted-foreground">N=5 minimum threshold</p>
-                    </div>
-                  </KpiCard>
-
-                  {/* Time Remaining */}
-                  <KpiCard label={canClose ? 'Time Remaining' : 'Closed'}>
-                    <div className="flex flex-col gap-1">
-                      {canClose ? (
-                        <>
-                          <span
-                            className="text-2xl font-semibold"
-                            style={{ fontVariantNumeric: 'tabular-nums' }}
-                          >
-                            {days}d
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            Closes {survey.deadline}
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="text-sm font-medium">Survey closed</span>
-                          <span className="text-sm text-muted-foreground">{survey.deadline}</span>
-                        </>
-                      )}
-                    </div>
-                    {canClose && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-fit text-destructive"
-                        onClick={() => setCloseOpen(true)}
-                      >
-                        Close early
-                      </Button>
-                    )}
-                  </KpiCard>
-
-                  {/* Template */}
-                  <KpiCard label="Template">
-                    {template ? (
-                      <div className="flex flex-col gap-1">
-                        <Link
-                          href={`/templates/${template.id}`}
-                          className="text-sm font-medium hover:underline"
-                          style={{ color: 'var(--brand-color)' }}
-                        >
-                          {template.name}
-                        </Link>
-                        <span className="text-sm text-muted-foreground">
-                          {templateSections.length} section{templateSections.length !== 1 ? 's' : ''}
-                          {' · '}
-                          {template.questionCount} questions
-                        </span>
-                        {template.courseType && template.courseType !== 'any' && (
-                          <span className="text-xs text-muted-foreground capitalize">
-                            {template.courseType}
-                          </span>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">No template assigned</span>
-                    )}
-                  </KpiCard>
-                </div>
-
-                {/* AI Insight */}
-                {responses && responses.comments.length > 0 && (
-                  <AiInsightCard
-                    source={`${responses.comments.length} open-text response${responses.comments.length > 1 ? 's' : ''} · ${themes.length} theme${themes.length !== 1 ? 's' : ''} identified`}
-                    body={
-                      <div className="flex flex-col gap-3">
-                        {/* Theme chips */}
-                        {themes.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {themes.map(t => (
-                              <span
-                                key={t.label}
-                                className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md"
-                                style={{ backgroundColor: 'var(--muted)', color: 'var(--foreground)' }}
-                              >
-                                <SentimentDot sentiment={t.sentiment} />
-                                {t.label}
-                                <span style={{ color: 'var(--muted-foreground)' }}>· {t.occurrences}</span>
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        {/* Trajectory or concern count */}
-                        {trajectoryMsg && (
-                          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                            {trajectoryMsg}
-                          </p>
-                        )}
-                        {concernCount > 0 && (
-                          <p className="text-sm">
-                            <strong>{concernCount}</strong> response{concernCount > 1 ? 's raise concerns' : ' raises a concern'} — see Responses tab for details.
-                          </p>
-                        )}
-                      </div>
-                    }
-                    actions={
-                      <Button variant="outline" size="sm" onClick={() => setActiveTab('responses')}>
-                        View responses
-                        <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 11 }} />
-                      </Button>
-                    }
-                  />
-                )}
-
-                {/* Instructors */}
-                <div className="border border-border rounded-lg overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                    <h2 className="text-sm font-semibold">Instructors</h2>
-                    {canClose && (
-                      <Button variant="ghost" size="sm" onClick={() => setAddGuestOpen(true)}>
-                        <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 11 }} />
-                        Add Guest
-                      </Button>
-                    )}
-                  </div>
-                  {survey.instructors.length === 0 ? (
-                    <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-                      No instructors assigned.
-                    </div>
-                  ) : (
-                    survey.instructors.map((instructor, i) => (
-                      <div
-                        key={instructor.id}
-                        className="flex items-center justify-between px-4 py-3"
-                        style={{ borderBottom: i < survey.instructors.length - 1 ? '1px solid var(--border)' : 'none' }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarFallback
-                              className="text-xs"
-                              style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}
-                            >
-                              {instructor.initials}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-sm font-medium">{instructor.name}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {instructor.role === 'primary' ? 'Primary instructor' : 'Guest lecturer'}
-                            </span>
-                          </div>
-                        </div>
-                        {instructor.role === 'guest' && canClose && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive"
-                            onClick={() => removeInstructor(survey.id, instructor.id)}
-                          >
-                            Remove
-                          </Button>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-
-              </div>
-            </TabsContent>
-
-            {/* ── Sections ──────────────────────────────────────────────── */}
-            <TabsContent value="sections" className="mt-0 outline-none">
-              <div className="max-w-3xl flex flex-col gap-4">
-                <p className="text-xs text-muted-foreground">
-                  Per-section Likert averages (1–5 scale). Scores appear once responses are collected.
-                </p>
-
-                {templateSections.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16 gap-3 text-center border border-border rounded-lg">
-                    <i className="fa-light fa-table-list text-3xl text-muted-foreground" aria-hidden="true" />
-                    <p className="text-sm font-medium">No template sections</p>
-                    <p className="text-sm text-muted-foreground">Assign a template with sections to see scores here.</p>
-                  </div>
-                ) : (
-                  <div className="border border-border rounded-lg overflow-hidden">
-                    {templateSections.map((section, idx) => {
-                      const legacyKey = LEGACY_SECTION_MAP[section.subjectKey]
-                      const score = responses?.sectionScores.find(
-                        s => s.section === section.subjectKey ||
-                             s.section === legacyKey ||
-                             (s.section as string) === section.id
-                      )
-                      const qCount = section.questions.length
-                      const likertCount = section.questions.filter(q => q.answerType === 'likert').length
-
-                      return (
-                        <div
-                          key={section.id}
-                          className="flex items-center gap-6 px-4 py-4"
-                          style={{ borderBottom: idx < templateSections.length - 1 ? '1px solid var(--border)' : 'none' }}
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium">{section.title}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {qCount > 0
-                                ? `${qCount} question${qCount !== 1 ? 's' : ''}${likertCount > 0 ? ` · ${likertCount} rated` : ''}`
-                                : 'No questions yet'
-                              }
-                            </p>
-                          </div>
-                          {score ? (
-                            <div className="flex items-center gap-4 flex-shrink-0">
-                              <SectionScoreStrip
-                                score={score.avg}
-                                width={140}
-                                ariaLabel={`${section.title}: ${score.avg.toFixed(1)} out of 5`}
-                              />
-                              <div className="text-right" style={{ minWidth: 52 }}>
-                                <span
-                                  className="text-base font-semibold"
-                                  style={{ fontVariantNumeric: 'tabular-nums' }}
-                                >
-                                  {score.avg.toFixed(1)}
-                                </span>
-                                <span className="text-xs text-muted-foreground"> / 5</span>
-                              </div>
-                              <span
-                                className="text-xs text-muted-foreground text-right"
-                                style={{ minWidth: 72 }}
-                              >
-                                {score.count} responses
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground flex-shrink-0">No data yet</span>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-
-            {/* ── Responses ─────────────────────────────────────────────── */}
-            <TabsContent value="responses" className="mt-0 outline-none">
-              <div className="max-w-3xl flex flex-col gap-6">
-                {responses && responses.comments.length > 0 ? (
-                  <>
-                    {/* Sentiment summary */}
-                    <div className="grid grid-cols-3 gap-4">
-                      {[
-                        { label: 'Positive', count: positiveCount, sentiment: 'positive', icon: 'fa-face-smile' },
-                        { label: 'Neutral',  count: neutralCount,  sentiment: 'neutral',  icon: 'fa-face-meh' },
-                        { label: 'Concerns', count: concernCount,  sentiment: 'concern',  icon: 'fa-face-worried' },
-                      ].map(({ label, count, sentiment, icon }) => (
-                        <div
-                          key={label}
-                          className="border border-border rounded-lg px-4 py-3 flex items-center gap-3 bg-card"
-                        >
-                          <i
-                            className={`fa-light ${icon} text-2xl`}
-                            aria-hidden="true"
-                            style={{ color: SENTIMENT_COLOR[sentiment] }}
-                          />
-                          <div>
-                            <p
-                              className="text-2xl font-semibold"
-                              style={{ fontVariantNumeric: 'tabular-nums' }}
-                            >
-                              {count}
-                            </p>
-                            <p className="text-xs text-muted-foreground">{label}</p>
-                          </div>
-                        </div>
                       ))}
                     </div>
-
-                    {/* Themes table */}
-                    {themes.length > 0 && (
-                      <div className="border border-border rounded-lg overflow-hidden">
-                        <div className="px-4 py-3 border-b border-border">
-                          <div className="flex items-center gap-1.5">
-                            <i
-                              className="fa-light fa-sparkles text-xs"
-                              aria-hidden="true"
-                              style={{ color: 'var(--brand-color)' }}
-                            />
-                            <h2 className="text-sm font-semibold">Themes</h2>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-0.5">AI-identified from open-text responses</p>
-                        </div>
-                        <div className="grid grid-cols-[1fr_120px_80px] px-4 py-2 border-b border-border">
-                          <span className="text-xs text-muted-foreground font-medium">Theme</span>
-                          <span className="text-xs text-muted-foreground font-medium">Sentiment</span>
-                          <span className="text-xs text-muted-foreground font-medium text-right">Occurrences</span>
-                        </div>
-                        {themes.map(t => (
-                          <div
-                            key={t.label}
-                            className="grid grid-cols-[1fr_120px_80px] px-4 py-3 items-center"
-                            style={{ borderBottom: '1px solid var(--border)' }}
-                          >
-                            <span className="text-sm">{t.label}</span>
-                            <div className="flex items-center gap-2">
-                              <SentimentDot sentiment={t.sentiment} />
-                              <span
-                                className="text-sm"
-                                style={{ color: SENTIMENT_COLOR[t.sentiment] }}
-                              >
-                                {t.sentiment === 'concern' ? 'Concern' : t.sentiment === 'positive' ? 'Positive' : 'Neutral'}
-                              </span>
-                            </div>
-                            <span
-                              className="text-sm text-right"
-                              style={{ fontVariantNumeric: 'tabular-nums' }}
-                            >
-                              {t.occurrences}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Open-text responses — clinical surveys gated to Moderate tab per HIPAA §10 */}
-                    {survey.courseType === 'clinical' ? (
-                      <div className="flex flex-col items-center justify-center py-10 gap-3 text-center border border-border rounded-lg">
-                        <i className="fa-light fa-shield-halved text-3xl text-muted-foreground" aria-hidden="true" />
-                        <p className="text-sm font-medium">Clinical responses — moderation required</p>
-                        <p className="text-sm text-muted-foreground" style={{ maxWidth: 340 }}>
-                          Open-text responses from clinical surveys are reviewed in the Moderate tab before release.
-                        </p>
-                        {isPendingReview && (
-                          <Button variant="outline" size="sm" onClick={() => setActiveTab('moderate')}>
-                            Go to Moderate
-                            <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 11 }} />
-                          </Button>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="border border-border rounded-lg overflow-hidden">
-                        <div className="px-4 py-3 border-b border-border">
-                          <h2 className="text-sm font-semibold">Open-text responses</h2>
-                        </div>
-                        {responses.comments.map((comment, idx) => (
-                          <div
-                            key={idx}
-                            className="px-4 py-3 flex gap-3 items-start"
-                            style={{ borderBottom: idx < responses.comments.length - 1 ? '1px solid var(--border)' : 'none' }}
-                          >
-                            <SentimentDot sentiment={comment.sentiment} />
-                            <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                              <p className="text-sm">{comment.text}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {(comment.section as string).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-                    <i className="fa-light fa-comment-lines text-4xl text-muted-foreground" aria-hidden="true" />
-                    <p className="text-sm font-medium">No responses yet</p>
-                    <p className="text-sm text-muted-foreground" style={{ maxWidth: 320 }}>
-                      Open-text responses will appear here as students submit the survey.
+                  )}
+                  {trajectoryMsg && (
+                    <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                      {trajectoryMsg}
                     </p>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-
-            {/* ── Moderate ──────────────────────────────────────────────── */}
-            {isPendingReview && (
-              <TabsContent value="moderate" className="mt-0 outline-none">
-                <div className="max-w-3xl flex flex-col gap-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h2 className="text-sm font-semibold">Review open-text responses</h2>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Flagged responses are hidden from faculty results. Approve all to share.
-                      </p>
-                    </div>
-                    <Button variant="default" size="sm" onClick={() => setReleaseOpen(true)}>
-                      <i className="fa-light fa-share-from-square" aria-hidden="true" style={{ fontSize: 12 }} />
-                      Share Results with Faculty
-                    </Button>
-                  </div>
-
-                  {openTextResps.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 gap-3 text-center border border-border rounded-lg">
-                      <i className="fa-light fa-circle-check text-3xl text-muted-foreground" aria-hidden="true" />
-                      <p className="text-sm font-medium">Nothing to moderate</p>
-                      <p className="text-sm text-muted-foreground">No open-text responses for this survey.</p>
-                    </div>
-                  ) : (
-                    <div className="border border-border rounded-lg overflow-hidden">
-                      {openTextResps.map((resp, idx) => {
-                        const isFlagged = resp.flagged || localFlagged.has(resp.id)
-                        return (
-                          <div
-                            key={resp.id}
-                            className="p-4 flex gap-4 items-start"
-                            style={{
-                              borderBottom: idx < openTextResps.length - 1 ? '1px solid var(--border)' : 'none',
-                              backgroundColor: isFlagged ? 'var(--muted)' : undefined,
-                            }}
-                          >
-                            <div className="flex-1 flex flex-col gap-1.5 min-w-0">
-                              <p className="text-xs font-medium text-muted-foreground">
-                                {SUBJECT_LABEL[resp.sectionSubject] ?? resp.sectionSubject}
-                              </p>
-                              <p className="text-xs text-muted-foreground">{resp.questionText}</p>
-                              <p className="text-sm">{resp.text}</p>
-                            </div>
-                            <div className="flex-shrink-0 flex items-center gap-2">
-                              {isFlagged && (
-                                <span
-                                  className="text-xs px-2 py-0.5 rounded-md"
-                                  style={{ backgroundColor: 'var(--muted)', color: 'var(--chart-4)' }}
-                                >
-                                  Flagged
-                                </span>
-                              )}
-                              <Button
-                                variant={isFlagged ? 'outline' : 'ghost'}
-                                size="sm"
-                                aria-label={isFlagged ? 'Remove flag from this response' : 'Flag this response'}
-                                onClick={() => toggleFlag(resp.id)}
-                                style={isFlagged ? { color: 'var(--chart-4)', borderColor: 'var(--chart-4)' } : {}}
-                              >
-                                <i
-                                  className={`fa-${isFlagged ? 'solid' : 'light'} fa-flag`}
-                                  aria-hidden="true"
-                                  style={{ fontSize: 12 }}
-                                />
-                                {isFlagged ? 'Unflag' : 'Flag'}
-                              </Button>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
+                  )}
+                  {concernCount > 0 && (
+                    <p className="text-sm">
+                      <strong>{concernCount}</strong> response{concernCount > 1 ? 's raise concerns' : ' raises a concern'}.
+                    </p>
                   )}
                 </div>
-              </TabsContent>
-            )}
+              }
+            />
+          )}
 
-          </div>
-        </Tabs>
+          {/* ── Section blocks ── */}
+          {templateSections.length === 0 ? (
+            <Card className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+              <i className="fa-light fa-table-list text-3xl text-muted-foreground" aria-hidden="true" />
+              <p className="text-sm font-medium">No template sections</p>
+              <p className="text-sm text-muted-foreground">Assign a template with sections to see scores here.</p>
+            </Card>
+          ) : (
+            templateSections.flatMap(section => {
+              const isFacultySection = section.subjectKey === 'course_instructor'
+              const blocks = questionData?.instructorBlocks
+
+              // Faculty section — repeat once per instructor
+              if (isFacultySection && blocks && blocks.length > 0) {
+                return blocks.map(block => {
+                  const instructor = survey.instructors.find(i => i.id === block.instructorId)
+                  const instructorLabel = instructor
+                    ? `${instructor.name} · ${instructor.role === 'primary' ? 'Primary instructor' : 'Guest lecturer'}`
+                    : null
+
+                  return (
+                    <Card key={`${section.id}-${block.instructorId}`} className="overflow-hidden">
+                      <CardHeader className="border-b">
+                        <div className="flex items-center gap-3">
+                          {instructor && (
+                            <Avatar className="h-7 w-7 shrink-0">
+                              <AvatarFallback
+                                className="text-xs"
+                                style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}
+                              >
+                                {instructor.initials}
+                              </AvatarFallback>
+                            </Avatar>
+                          )}
+                          <div className="flex flex-col gap-0.5">
+                            <CardTitle className="text-sm">{section.title}</CardTitle>
+                            {instructorLabel && (
+                              <p className="text-xs text-muted-foreground">{instructorLabel}</p>
+                            )}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      {section.questions.map((q, qi) => (
+                        <QuestionChartBlock
+                          key={q.id}
+                          question={q}
+                          questionNumber={qi + 1}
+                          score={block.scores.find(s => s.questionId === q.id)}
+                          freeTextCount={questionData?.freeTextCounts[q.id]}
+                          surveyId={survey.id}
+                          isLast={qi === section.questions.length - 1}
+                        />
+                      ))}
+                    </Card>
+                  )
+                })
+              }
+
+              // All other sections
+              const sectionScores = questionData?.sectionScores[section.subjectKey] ?? []
+              return [
+                <Card key={section.id} className="overflow-hidden">
+                  <CardHeader className="border-b">
+                    <CardTitle className="text-sm">{section.title}</CardTitle>
+                  </CardHeader>
+                  {section.questions.length === 0 ? (
+                    <div className="px-4 py-6 text-center">
+                      <p className="text-sm text-muted-foreground">No questions in this section.</p>
+                    </div>
+                  ) : (
+                    section.questions.map((q, qi) => (
+                      <QuestionChartBlock
+                        key={q.id}
+                        question={q}
+                        questionNumber={qi + 1}
+                        score={sectionScores.find(s => s.questionId === q.id)}
+                        freeTextCount={questionData?.freeTextCounts[q.id]}
+                        surveyId={survey.id}
+                        isLast={qi === section.questions.length - 1}
+                      />
+                    ))
+                  )}
+                </Card>,
+              ]
+            })
+          )}
+
+          {/* ── Moderation section (pending_review only) ── */}
+          {isPendingReview && (
+            <div id="moderation-section" className="flex flex-col gap-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-sm font-semibold">Review open-text responses</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Flagged responses are hidden from faculty results. Approve all to share.
+                  </p>
+                </div>
+                <Button variant="default" size="sm" onClick={() => setReleaseOpen(true)}>
+                  <i className="fa-light fa-share-from-square" aria-hidden="true" style={{ fontSize: 12 }} />
+                  Share Results with Faculty
+                </Button>
+              </div>
+
+              {openTextResps.length === 0 ? (
+                <Card className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+                  <i className="fa-light fa-circle-check text-3xl text-muted-foreground" aria-hidden="true" />
+                  <p className="text-sm font-medium">Nothing to moderate</p>
+                  <p className="text-sm text-muted-foreground">No open-text responses for this survey.</p>
+                </Card>
+              ) : (
+                <Card className="overflow-hidden">
+                  {openTextResps.map((resp, idx) => {
+                    const isFlagged = resp.flagged || localFlagged.has(resp.id)
+                    return (
+                      <div
+                        key={resp.id}
+                        className="p-4 flex gap-4 items-start"
+                        style={{
+                          borderBottom: idx < openTextResps.length - 1 ? '1px solid var(--border)' : 'none',
+                          backgroundColor: isFlagged ? 'var(--muted)' : undefined,
+                        }}
+                      >
+                        <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+                          <p className="text-xs font-medium text-muted-foreground">
+                            {SUBJECT_LABEL[resp.sectionSubject] ?? resp.sectionSubject}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{resp.questionText}</p>
+                          <p className="text-sm">{resp.text}</p>
+                        </div>
+                        <div className="flex-shrink-0 flex items-center gap-2">
+                          {isFlagged && (
+                            <Badge variant="outline" className="rounded">
+                              <i className="fa-light fa-flag" aria-hidden="true" />
+                              Flagged
+                            </Badge>
+                          )}
+                          <Button
+                            variant={isFlagged ? 'outline' : 'ghost'}
+                            size="sm"
+                            aria-label={isFlagged ? 'Remove flag from this response' : 'Flag this response'}
+                            onClick={() => toggleFlag(resp.id)}
+                            style={isFlagged ? { borderColor: 'var(--chart-4)' } : {}}
+                          >
+                            <i
+                              className={`fa-${isFlagged ? 'solid' : 'light'} fa-flag`}
+                              aria-hidden="true"
+                              style={{ fontSize: 12 }}
+                            />
+                            {isFlagged ? 'Unflag' : 'Flag'}
+                          </Button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </Card>
+              )}
+            </div>
+          )}
+
+        </div>
       </div>
 
       {/* ── Dialogs ── */}
