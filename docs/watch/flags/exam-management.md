@@ -168,3 +168,79 @@ First snapshot taken for Roadmap-Exam-Management — no diff applied. Next run w
 **Suggested action:** If Romit's design is "In Refinement", confirm refinement items are resolved before 12-Jun. Check what design assets Darshan needs for the 7 sub-capability pages — all are P0-Cohere. BUILD-STATUS already shows Course Offering as 🟡 In Progress — no status change, but the 12-Jun engineering target is new.
 
 ---
+
+## 2026-06-16 — Flagged: Exam Mgmt Roadmap — Nipun (5 changes)
+
+### Flag 1 — In Assessment Experience: Exam Initiation and Post-Exam Completion now Completed (BUILD-STATUS updated → 🟢 Shipped)
+**Changed text (before):**
+> Exam initiation - soft download, landing page, test taking setup   P0-Cohere   To be picked   Bhargav
+> Test taking experience   P0-Cohere   Completed   Bhargav
+> Post exam completion - results, assessments page   P0-Cohere   To be picked   Bhargav
+
+**Changed text (after):**
+> Test taking experience   P0-Cohere   Completed   Bhargav
+> Exam initiation - soft download, landing page, test taking setup   P0-Cohere   Completed   Bhargav
+> Post exam completion - results, assessments page   P0-Cohere   Completed   Bhargav
+
+**Why flagged:** CLEAR — all 3 In Assessment Experience sub-items (Exam initiation, Test taking, Post-exam completion) are now Completed. The previously blocked/To-be-picked items are resolved. BUILD-STATUS applied: "In Assessment Experience (Student)" updated from 🟡 In Progress to 🟢 Shipped.
+**Suggested action:** Verify with Bhargav/Darshan that in-assessment experience is QA-complete and deployed. The project status grid also shows no more 🔴 Blocked status on this feature.
+
+---
+
+### Flag 2 — Confirmed milestones added: P0-Cohere 15-Sep 2026, P1-Beta 19-Dec 2026, P2-GA 20-Sep (CLEAR)
+**Changed text (before):** *(only vague "September/October/December" phase labels existed)*
+**Changed text (after):**
+> P0 - Cohere   15-Sep
+> P1 - Beta   19-Dec
+> P2 - GA Launch   20-Sep
+
+**Why flagged:** CLEAR — explicit milestone dates confirmed in Nipun's roadmap for the first time. These are now the authoritative delivery targets. Extracted as exam-decision-015 in stakeholder-decisions.json. BUILD-STATUS updated with these dates.
+**Suggested action:** Build planning should target P0-Cohere feature completion by 15-Sep 2026. Beta launch 19-Dec 2026. GA 20-Sep (year TBD — confirm if 2027 with Nipun).
+
+---
+
+### Flag 3 — Assessment Creation & Distribution sub-items gained statuses (CLEAR — tracker update)
+**Changed text (before):** *(most Assessment Creation sub-items had no status)*
+**Changed text (after):**
+> Manual assessment creation   In Review   Nipun
+> Question bank search - manual   In Progress   Nipun
+> In assessment configurations - assessment level   In Review   Nipun
+> In assessment configurations - question level   In Review   Nipun
+> Import and edit an assessment file using AI   In Review   Nipun
+> Manual question creation   In Refinement   Nipun
+> Question flagging and refinement using AI   Completed   Nipun
+> AI question variant creation   Completed   Nipun
+> Import via human readable document   In Refinement   Nipun
+> Import via test banks   To be picked   Nipun
+> Examsoft specific import   To be picked   Nipun
+> Review & collaborator, and user roles   In Review   Nipun
+
+**Why flagged:** CLEAR tracker update — most Assessment Creation sub-items now have statuses. Notable: Question flagging/AI and AI question variant creation are Completed. Manual question creation and question import are In Refinement. Assessment creation and configuration items are In Review (engineering readiness imminent).
+**Suggested action:** Prioritize design finalization for "In Review" items (Manual assessment creation, In-assessment configs, Import via AI, Review & collaborator) as engineering will likely pick them up next. "In Refinement" items (Manual question creation, Import via human-readable doc) may still need design input from Romit.
+
+---
+
+### Flag 4 — June solution review meetings scheduled: 23–25 Jun (CLEAR — planning)
+**Changed text (before):** *(vague "June — 2 days" planning block)*
+**Changed text (after):**
+> 23-Jun Morning: EM Solution Review — In Assessments (student), Base entities & settings, Assessments creation & distribution
+> 23-Jun Evening: EM Solution Review — Assessments creation & distribution, Question creation, import
+> 24-Jun: EM Brainstorming — Accreditation (Submissions, Category/Tagging, Collaborative assessments, Rubrics, RBAC), Certification (Strategic alignment, RBAC)
+> 25-Jun: EM Project Planning — Buffer for parking lot items; P0 Cohere, P1 Beta Launch, GA, Pricing, GTM
+
+**Why flagged:** CLEAR — specific 3-day planning session locked in for 23–25 June. Covers all outstanding P0-Cohere items plus accreditation, certification, and beta planning. Romit should prepare design assets for the 23-Jun Solution Review (in-assessments student experience, base entities, assessments creation & distribution).
+**Suggested action:** Prepare finalized designs for: (1) In-Assessment student experience; (2) Base entities & settings pages; (3) Assessment creation & distribution screens. These will be reviewed on 23-Jun. Consider if any of the current "In Refinement" items (Manual QB creation, Import) need finalization before 24-Jun brainstorming.
+
+---
+
+### Flag 5 — Course Offering sub-items reduced: "View and manage assessment plan" and "View and manage course content" removed (CLEAR)
+**Changed text (before):**
+> View and manage assessment plan for a course offering   P0-Cohere   In Review   Vishal
+> View and manage course content for a course offering   P0-Cohere   In Review   Vishal
+
+**Changed text (after):** *(both rows removed; 5 sub-items remain instead of 7)*
+
+**Why flagged:** CLEAR removal — 2 sub-items were removed from the Course Offering capability table. "Assessment plan" and "Course content" management are no longer tracked as P0-Cohere sub-items. May be deferred, renamed, or absorbed into other features.
+**Suggested action:** Confirm with Nipun whether assessment plan and course content management are descoped from Phase 1 or moved to a later phase. If descoped, any in-progress designs for those sub-tabs should be paused.
+
+---

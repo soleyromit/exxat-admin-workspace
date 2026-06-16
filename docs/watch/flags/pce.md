@@ -271,3 +271,67 @@ First snapshot taken for PCE PRD — Monil Pokar — no diff applied. Next run w
 **Suggested action:** The prototype CE/GS switch has been redesigned from a profile-area switch to a "navigation" pattern. Confirm with Monil what "navigation" refers to — separate sidebar nav entries for CE vs General Surveys? A top-nav toggle? This determines the sidebar routing architecture between the two survey types in apps/pce/admin/components/app-sidebar.tsx.
 
 ---
+
+## 2026-06-16 — Flagged: PCE PRD — Monil Pokar (4 changes)
+
+### Flag 1 — §2 Key Product Decision #5: Course type options changed from Didactic/Clinical to Practice/Classroom/Lab (AMBIGUOUS — conflicts with existing decisions)
+**Changed text (before):**
+> b. Course type (Optional)
+>    i. Didactic
+>    ii. Clinical
+
+**Changed text (after):**
+> b. Course type (Optional)
+>    i. Practice
+>    ii. Classroom
+>    iii. Lab
+
+**Why flagged:** AMBIGUOUS — this is a fundamental taxonomy change. "Didactic" and "Clinical" are health-education standard terms referenced throughout existing confirmed decisions: pce-decision-002 ("For Clinical Course, preceptor and site evaluations stay within learning activities"), pce-decision-008 ("Course type (optional — Didactic or Clinical)"), and pce-decision-016 ("If a template has a course type (Didactic or Clinical) assigned, it auto-assigns…"). The new values (Practice / Classroom / Lab) are structurally and semantically different. This could be an early draft update or an intentional rethink of the taxonomy. Code impact: `apps/pce/admin/app/(app)/analytics/page.tsx` lines 508–509 hardcode "didactic" and "clinical" as toggle values — these would need updating. No auto-apply until confirmed.
+**Suggested action:** Confirm with Monil whether Course type values are being replaced entirely (Practice/Classroom/Lab supersede Didactic/Clinical) or if this is a draft change. If confirmed: (1) Update analytics page toggle from 2 options to 3; (2) Update pce-decision-008 and pce-decision-016 to reflect new taxonomy; (3) Clarify what "Clinical Course" means in pce-decision-002 under the new taxonomy.
+
+---
+
+### Flag 2 — §2 Key Product Decisions: Two new scope decisions added (#6 and #7)
+**Changed text (before):** *(only decisions 1–5 + "What will not be covered" existed)*
+**Changed text (after):**
+> 6. Focus on selling this module independently in Q2, 2027
+> 7. No Student login till Q3, 2027 for this module
+
+**Why flagged:** CLEAR new scope decisions. Decision #6 sets a commercial milestone (independent selling of CE module in Q2 2027). Decision #7 formally defers any student-facing login/portal for CE to Q3 2027 — this is consistent with pce-decision-021 (email-only distribution, no student auth for CE participation) but adds a timeline. Extracted as pce-decision-036 and pce-decision-037 in stakeholder-decisions.json.
+**Suggested action:** No immediate code action. Note: decision #7 confirms student app (apps/pce/student/) is not prioritized until Q3 2027. Romit should ensure the current student app scaffold is not blocking admin-side CE work.
+
+---
+
+### Flag 3 — New "General Layout: Entry point and Side bar tabs" section added to §4 Key User Flows (CLEAR — new navigation spec)
+**Changed text (before):** *(Status of a Survey table was followed directly by Step 1 — Template Creation)*
+**Changed text (after):**
+> General Layout: Entry point and Side bar tabs
+> • Tabs:
+>     Surveys
+>       Course Evaluations — Dashboard, Templates
+>       General Surveys — Dashboard, Templates
+>     Directory
+>       Program Details, Academic Calendar, Term, Courses, Faculty and Staff, Students, Settings
+>       Eval Window — Email templates, Reminder cadence, Rbac
+
+**Why flagged:** CLEAR — this is the first explicit sidebar navigation specification in the PCE PRD, defining two top-level sections (Surveys + Directory) with sub-items. The Directory section includes: Program Details, Academic Calendar, Term, Courses, Faculty and Staff, Students, Settings, and an Eval Window sub-section. This confirms and expands on pce-decision-020 (directory pages view-only). The sidebar structure in apps/pce/admin/components/app-sidebar.tsx should eventually reflect this structure.
+**Suggested action:** When building or refining the PCE admin sidebar, use this as the canonical navigation spec. The "Eval Window" group (Email templates, Reminder cadence, RBAC) is new — not currently in the sidebar. Confirm with Monil whether "RBAC" under Eval Window is a new settings page or existing.
+
+---
+
+### Flag 4 — §13 Design Feedback: Multiple items resolved with "(Done)" annotations (informational)
+**Changed text (before):** Various §13a, §13b, §13c items had no resolution status.
+**Changed text (after):** All previously open §13 design feedback items are now annotated:
+- §13a.2: "(Done)" — Moderation moved to survey status
+- §13a.4: "(Done)" — Search bar moved to top
+- §13a.5: "(Since we are referring to new DS, therefore, the user profile remains at the bottom)" — DS sidebar footer placement confirmed, not moving to top-right
+- §13b.1: "(Done)" — No copy template option
+- §13b.2: "(Done)" — FAAS UI for question design, subject assignment outside FAAS
+- §13b.3: "(Done)" — Course type added as input
+- §13c.1: "(Done)" — Horizontal survey wizard steps
+- §13c.2: "(Done)" — No Report Access step (consistent with pce-decision-034)
+
+**Why flagged:** CLEAR informational — all §13 design review items from Monil's prototype review have been resolved. The user profile position question (§13a.5) is now definitively answered: it stays at the bottom-left (DS sidebar footer slot) per the new DS convention. This closes the ambiguity flagged on 2026-06-09 (Flag 2).
+**Suggested action:** No code action. The user profile position is confirmed bottom-left — do not move it to top-right. All other Done items are already reflected in the codebase or are pre-built guidance.
+
+---

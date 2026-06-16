@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-06-15",
+  "lastUpdated": "2026-06-16",
   "decisions": [
     {
       "id": "pce-decision-001",
@@ -491,6 +491,36 @@
       "source": "Exam Management Sync up transcript — Jun 9, 2026",
       "sourceType": "transcript",
       "date": "2026-06-09",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-036",
+      "product": "pce",
+      "text": "Focus on selling this module independently in Q2, 2027.",
+      "stakeholder": "Monil Pokar",
+      "source": "PCE PRD §2 Key Product Decisions #6",
+      "sourceType": "prd",
+      "date": "2026-06-16",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-037",
+      "product": "pce",
+      "text": "No Student login for the CE module until Q3, 2027. Students access CE surveys via email link only (no portal login) through at least Q2 2027.",
+      "stakeholder": "Monil Pokar",
+      "source": "PCE PRD §2 Key Product Decisions #7",
+      "sourceType": "prd",
+      "date": "2026-06-16",
+      "status": "confirmed"
+    },
+    {
+      "id": "exam-decision-015",
+      "product": "exam-management",
+      "text": "Confirmed Exam Management milestone targets: P0 Cohere delivery 15-Sep 2026, P1 Beta launch 19-Dec 2026, P2 GA Launch 20-Sep (year TBD — estimated 2027 given current timeline). These are the first explicit date-bound milestones recorded in Nipun's roadmap.",
+      "stakeholder": "Nipun (PM)",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest) §Planning — synced 2026-06-16",
+      "sourceType": "prd",
+      "date": "2026-06-16",
       "status": "confirmed"
     }
   ]

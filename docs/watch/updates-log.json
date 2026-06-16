@@ -723,6 +723,141 @@
       "title": "Granola intake — 17 new PCE decisions + 1 exam decision from Jun 9–10 transcripts",
       "what": "Extracted 18 confirmed design decisions from 4 meeting transcripts (Post-Course Survey Cadence Meeting BiWeekly Jun 9; Exam Management Sync up Jun 9; Course and faculty evaluation setup Jun 10; India discussion — Weekly Product Sync Jun 10). PCE decisions cover: 3 CE results entry points (term/faculty/course), directory pages view-only with Prism deep-links, student email-only distribution (no login), 2 email templates with term-anchored reminder schedule, academic year/term dates as mandatory prerequisite, term-grouped dashboard, 2 longitudinal analytics sidebar entry points (Faculty leaderboard + Course history), 3-category template section structure (Course/Faculty/General with multi-select roles), faculty results must not be visible to other faculty, template creation paths (Build new sub-options: manual or PDF/Word import; top-level document import, not per-section), multi-select section adding with labels only, Prism-only distribution channel, anonymous response non-configurable default (visibility toggle removed), comment moderation stretch goal (results release date mandatory if excluded), parent+child date override for bulk distribution, report access screen removed (role-based access only), general survey UI unchanged. Exam decision: course offering page limited to currently available data only. 1 conflict flagged (copy existing template), 1 decision superseded (pce-decision-014 → pce-decision-028). Added as pce-decision-019 through pce-decision-035 and exam-decision-014.",
       "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jun 9, 2026; Exam Management Sync up transcript — Jun 9, 2026; Course and faculty evaluation setup — directories, templates, and term workflow transcript — Jun 10, 2026; India discussion — Weekly Product Sync | New Initiatives (Prism) transcript — Jun 10, 2026"
+    },
+    {
+      "id": "2026-06-16-pce-flagged-001",
+      "date": "2026-06-16",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §2 — Course type options changed from Didactic/Clinical to Practice/Classroom/Lab (AMBIGUOUS — conflicts with pce-decision-002, pce-decision-008)",
+      "what": "Key Product Decision #5b: Course type values changed from 'i. Didactic ii. Clinical' to 'i. Practice ii. Classroom iii. Lab'. Also adds a third option (3 values instead of 2). Existing confirmed decisions pce-decision-002 (Clinical Course scope) and pce-decision-008 (course type defined as Didactic or Clinical) reference the old taxonomy.",
+      "why": "AMBIGUOUS — conflicts with multiple existing confirmed decisions. Semantically different taxonomy (not just a rename). Code impact: apps/pce/admin/app/(app)/analytics/page.tsx lines 508-509 hardcode 'didactic'/'clinical' toggle values. Auto-apply withheld pending Romit confirmation.",
+      "source": "PCE PRD §2 Key Product Decisions #5 — Monil Pokar",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-16-pce-flagged-002",
+      "date": "2026-06-16",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §2 — New scope decisions #6 and #7 added (CLEAR)",
+      "what": "Two new Key Product Decisions added: #6 'Focus on selling this module independently in Q2, 2027' and #7 'No Student login till Q3, 2027 for this module'. Extracted as pce-decision-036 and pce-decision-037 in stakeholder-decisions.json.",
+      "why": "CLEAR new scope decisions setting commercial and student-facing timeline boundaries. Decision #7 confirms student app (apps/pce/student/) is not prioritized until Q3 2027.",
+      "source": "PCE PRD §2 Key Product Decisions — Monil Pokar",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-16-pce-flagged-003",
+      "date": "2026-06-16",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §4 — New 'General Layout: Entry point and Side bar tabs' section defines full sidebar navigation (CLEAR)",
+      "what": "New section added between the Status of a Survey table and Step 1 — Template Creation. Defines two top-level sidebar sections: Surveys (Course Evaluations + General Surveys, each with Dashboard + Templates) and Directory (Program Details, Academic Calendar, Term, Courses, Faculty and Staff, Students, Settings, Eval Window with Email templates/Reminder cadence/RBAC).",
+      "why": "CLEAR — first explicit sidebar navigation specification in the PCE PRD. The 'Eval Window' group is new and not currently in the sidebar. Non-functional spec addition — no auto-apply to code.",
+      "source": "PCE PRD §4 Key User Flows — General Layout — Monil Pokar",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-16-pce-flagged-004",
+      "date": "2026-06-16",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §13 — All design feedback items resolved with (Done) annotations",
+      "what": "§13a items 2, 4, 5 and §13b items 1, 2, 3 and §13c items 1, 2 all marked Done. §13a.5 user profile position confirmed: stays bottom-left (DS sidebar footer slot) — 'Since we are referring to new DS, therefore, the user profile remains at the bottom'. This resolves the §13a.5 ambiguity flagged 2026-06-09.",
+      "why": "CLEAR informational — all open design review items from Monil's prototype review are resolved. User profile position confirmed bottom-left. No code action needed.",
+      "source": "PCE PRD §13 Feedback on Designs — Monil Pokar",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-16-exam-flagged-001",
+      "date": "2026-06-16",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "Exam Roadmap — In Assessment Experience: Exam Initiation and Post-Exam Completion now Completed (all 3 sub-items Completed; BUILD-STATUS updated)",
+      "what": "Exam initiation (soft download, landing page, test taking setup) changed from 'To be picked' to 'Completed' (Bhargav). Post exam completion (results, assessments page) changed from 'To be picked' to 'Completed' (Bhargav). Test taking experience was already Completed. All 3 sub-items under In Assessment Experience are now Completed. BUILD-STATUS updated: 'In Assessment Experience (Student)' → 🟢 Shipped.",
+      "why": "CLEAR — all In Assessment Experience P0-Cohere sub-items are complete. The previously blocked feature is fully unblocked and delivered.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
+      "severity": null,
+      "files": ["docs/BUILD-STATUS.md"]
+    },
+    {
+      "id": "2026-06-16-exam-flagged-002",
+      "date": "2026-06-16",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "Exam Roadmap — Milestone dates confirmed: P0-Cohere 15-Sep, P1-Beta 19-Dec, P2-GA 20-Sep (CLEAR)",
+      "what": "First explicit milestone dates appear in Nipun's roadmap: P0-Cohere 15-Sep 2026, P1-Beta 19-Dec 2026, P2-GA Launch 20-Sep (year TBD). Extracted as exam-decision-015. Added to BUILD-STATUS.md Confirmed Milestones block.",
+      "why": "CLEAR — these are the first concrete delivery targets recorded in the roadmap. Prior planning only had vague 'September/October/December' phase markers.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest) §Planning",
+      "severity": null,
+      "files": ["docs/BUILD-STATUS.md"]
+    },
+    {
+      "id": "2026-06-16-exam-flagged-003",
+      "date": "2026-06-16",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "Exam Roadmap — Assessment Creation sub-items now have statuses; Review & Collaborator moves to In Review (CLEAR informational)",
+      "what": "Multiple Assessment Creation sub-items gained statuses: Manual assessment creation (In Review), Question bank search manual (In Progress), In assessment configs assessment level (In Review), In assessment configs question level (In Review), Import AI (In Review), Manual question creation (In Refinement), Question flagging/AI (Completed), AI question variant creation (Completed), Import via human readable (In Refinement), Import via test banks (To be picked), Examsoft import (To be picked), Review & collaborator (In Review). Also: 2 Course Offering sub-items removed ('View and manage assessment plan' and 'View and manage course content').",
+      "why": "CLEAR tracker update. Notable completions: Question flagging/AI and AI question variant creation are done. 'In Review' items are approaching engineering readiness. Course Offering sub-items removal may indicate descoping.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-16-exam-flagged-004",
+      "date": "2026-06-16",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "Exam Roadmap — June 23–25 solution review meetings scheduled with detailed agenda (CLEAR — planning)",
+      "what": "Planning section completely restructured. Specific 3-day session: 23-Jun morning (In Assessments student, Base entities & settings, Assessments creation & distribution), 23-Jun evening (Assessments creation & distribution, Question creation/import), 24-Jun (EM Brainstorming: Accreditation + Certification topics — submissions, category/tagging, collaborative assessments, rubrics, RBAC), 25-Jun (EM Project Planning: P0 Cohere, P1 Beta Launch, GA, Pricing, GTM). Beta contact 'Laura' transferred to 'Kim' (Laura → Kim).",
+      "why": "CLEAR planning update. Romit should prepare designs for the 23-Jun sessions (In-Assessment student experience, Base entities, Assessment creation & distribution). 24-Jun brainstorming may generate new decisions.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest) §Planning",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-16-exam-management-build-status-001",
+      "date": "2026-06-16",
+      "product": "exam-management",
+      "type": "prd-change",
+      "title": "BUILD-STATUS updated: In Assessment Experience → 🟢 Shipped; milestone dates added",
+      "what": "Two changes applied: (1) 'In Assessment Experience (Student)' status changed from 🟡 In Progress to 🟢 Shipped — all 3 sub-items (Exam initiation, Test taking, Post-exam completion) confirmed Completed in Nipun's roadmap. (2) Confirmed milestones block added under Exam Management: P0-Cohere 15-Sep 2026, P1-Beta 19-Dec 2026, P2-GA 20-Sep. Last updated date bumped to 2026-06-16.",
+      "why": "Nipun's roadmap Excel updated — In Assessment Experience unblocked and fully delivered. First explicit milestone dates confirmed.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
+      "severity": null,
+      "files": ["docs/BUILD-STATUS.md"]
+    },
+    {
+      "id": "2026-06-16-pce-decision-036",
+      "date": "2026-06-16",
+      "product": "pce",
+      "type": "decision-extracted",
+      "title": "PCE PRD — Decision extracted: Sell CE module independently in Q2 2027 (pce-decision-036)",
+      "what": "New decision: Focus on selling this module independently in Q2, 2027. Sets the commercial milestone for CE becoming a standalone sellable product.",
+      "source": "PCE PRD §2 Key Product Decisions #6"
+    },
+    {
+      "id": "2026-06-16-pce-decision-037",
+      "date": "2026-06-16",
+      "product": "pce",
+      "type": "decision-extracted",
+      "title": "PCE PRD — Decision extracted: No Student login for CE module until Q3 2027 (pce-decision-037)",
+      "what": "New decision: No Student login till Q3, 2027 for this module. Formalizes email-only student access to CE surveys through at least Q2 2027. Confirms student app (apps/pce/student/) is not a priority before Q3 2027.",
+      "source": "PCE PRD §2 Key Product Decisions #7"
+    },
+    {
+      "id": "2026-06-16-exam-decision-015",
+      "date": "2026-06-16",
+      "product": "exam-management",
+      "type": "decision-extracted",
+      "title": "Exam Roadmap — Decision extracted: Milestone dates P0-Cohere/P1-Beta/P2-GA (exam-decision-015)",
+      "what": "New decision: Exam Management milestone targets — P0 Cohere: 15-Sep 2026, P1 Beta: 19-Dec 2026, P2 GA Launch: 20-Sep. First concrete date-bound milestones in Nipun's roadmap.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest) §Planning"
     }
   ]
 }
