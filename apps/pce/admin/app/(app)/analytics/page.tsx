@@ -244,7 +244,7 @@ function AnalyticsInner() {
   const searchParams = useSearchParams()
 
   const [activeTab, setActiveTab]                 = useState<AnalyticsTab>(
-    (searchParams.get('tab') as AnalyticsTab) || 'term'
+    (searchParams?.get('tab') as AnalyticsTab) || 'term'
   )
   const [axis, setAxis]                           = useState<Axis>('term')
   const [term, setTerm]                           = useState('Spring 2026')
@@ -252,10 +252,10 @@ function AnalyticsInner() {
   const [nudgeTarget, setNudgeTarget]             = useState<NudgeTarget | null>(null)
   const [selectedSurveyId, setSelectedSurveyId]   = useState<string | null>(null)
   const [selectedFacultyId, setSelectedFacultyId] = useState<string>(
-    searchParams.get('facultyId') || (MOCK_FACULTY[0]?.id ?? '')
+    searchParams?.get('facultyId') || (MOCK_FACULTY[0]?.id ?? '')
   )
   const [selectedCourseCode, setSelectedCourseCode] = useState<string>(
-    searchParams.get('courseCode') || ''
+    searchParams?.get('courseCode') || ''
   )
 
   /* ── By Term ── */
