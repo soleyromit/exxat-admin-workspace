@@ -61,3 +61,12 @@ If any step fails or produces unexpected output:
 
 ## Known edge cases
 <!-- Agent appends failure fixes here -->
+
+### 2026-06-16: ds-snapshot.json was base64-encoded
+**Symptom:** Step 3 spot-check fails with `json.decoder.JSONDecodeError: Expecting value` because the file contains base64 text instead of JSON.
+**Cause:** A prior commit stored the snapshot as base64-encoded content (likely a git/MCP encoding artifact from a push_files call).
+**Fix:** The build script (`scripts/build_ds_snapshot.py`) always writes plain JSON. Running Step 2 overwrites the bad file. If Step 3 still fails before Step 2 runs, decode first: `base64 -d docs/watch/ds-snapshot.json | python3 -c "import json,sys; s=json.load(sys.stdin); ..."`.
+
+### 2026-06-16: git push rejected with HTTP 403
+**Symptom:** `git push -u origin main` fails with `error: RPC failed; HTTP 403 curl 22 The requested URL returned error: 403` repeatedly.
+**Fix:** Use `mcp__github__create_or_update_file` instead. Get the blob SHA with `git rev-parse origin/main:docs/watch/ds-snapshot.json`, then call the MCP tool with `owner=soleyromit`, `repo=exxat-admin-workspace`, `branch=main`, the file content, and the SHA.
