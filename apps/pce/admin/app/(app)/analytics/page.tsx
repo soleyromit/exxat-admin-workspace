@@ -252,7 +252,7 @@ function AnalyticsInner() {
   const [nudgeTarget, setNudgeTarget]             = useState<NudgeTarget | null>(null)
   const [selectedSurveyId, setSelectedSurveyId]   = useState<string | null>(null)
   const [selectedFacultyId, setSelectedFacultyId] = useState<string>(
-    searchParams.get('facultyId') || MOCK_FACULTY[0]?.id ?? ''
+    searchParams.get('facultyId') || (MOCK_FACULTY[0]?.id ?? '')
   )
   const [selectedCourseCode, setSelectedCourseCode] = useState<string>(
     searchParams.get('courseCode') || ''
