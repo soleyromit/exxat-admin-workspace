@@ -1,694 +1,953 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useState, useMemo, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   Button, Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   ToggleGroup, ToggleGroupItem,
-  LocalBanner, Card, CardHeader, CardTitle, CardDescription, CardContent,
-  Badge,
+  KeyMetrics,
+  Tabs, TabsList, TabsTrigger, TabsContent,
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
+  Card, CardContent, CardHeader, CardTitle, CardDescription,
+  ChartContainer, ChartTooltip, ChartTooltipContent,
+  ChartLegend, ChartLegendContent,
 } from '@exxatdesignux/ui'
+import type { MetricItem, ChartConfig } from '@exxatdesignux/ui'
+import {
+  BarChart, Bar, XAxis, YAxis, LineChart, Line, CartesianGrid, Cell,
+} from 'recharts'
 import { SiteHeader } from '@/components/site-header'
+import { EvaluationCardSheet } from '@/components/pce/evaluation-card-sheet'
 import { DataTable } from '@/components/data-table'
+import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import type { ColumnDef } from '@/components/data-table/types'
-import { KeyMetrics } from '@exxatdesignux/ui'
-import type { MetricItem } from '@exxatdesignux/ui'
 import { usePce } from '@/components/pce/pce-state'
-import { TrendSparkline } from '@/components/pce/trend-sparkline'
-import { AiInsightCard } from '@/components/pce/ai-insight-card'
-import { MOCK_RESPONSES, MOCK_TEMPLATES, MOCK_TERMS, MOCK_COHORTS, SECTION_LABELS } from '@/lib/pce-mock-data'
+import {
+  MOCK_SURVEYS, MOCK_TERMS, MOCK_COHORTS, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS,
+} from '@/lib/pce-mock-data'
+import type { FacultyOfferingRecord, SurveyStatus } from '@/lib/pce-mock-data'
 
-/* ScoreLandscape — horizontal bar chart, sorted by score, brand-color bars +
-   tier dots (green ≥4.3, brand 3.7-4.3, amber <3.7). Pattern from
-   apps/pce/prototype/pce-evaluation.html chartScoreLandscape (~line 1317).
-   Rows are keyboard-navigable and drill into offering detail.
-   Brand presence per DS-018: bars use --brand-color. */
-interface ScoreLandscapeProps {
-  courses: { survey: { id: string; courseCode: string; courseName: string }; avg: number; isReleased: boolean }[]
-  onDrill: (surveyId: string, isReleased: boolean) => void
-}
-function ScoreLandscape({ courses, onDrill }: ScoreLandscapeProps) {
-  const rowH = 32
-  const padTop = 6
-  const trackW = 280  // bar track width in arbitrary SVG units
-  const labelW = 132
-  const valW = 36
-  const totalW = labelW + trackW + valW + 14
-  const totalH = padTop + courses.length * rowH + 4
-  const tierColor = (a: number) =>
-    a >= 4.3 ? 'var(--chart-2)' :
-    a >= 3.7 ? 'var(--brand-color)' :
-                'var(--chart-4)'
-  return (
-    <figure role="figure" aria-label={`Score landscape: ${courses.length} courses sorted by average`}>
-      <svg
-        viewBox={`0 0 ${totalW} ${totalH}`}
-        preserveAspectRatio="xMidYMid meet"
-        style={{ width: '100%', height: 'auto', display: 'block' }}
-      >
-        {courses.map((c, i) => {
-          const y = padTop + i * rowH
-          const barW = (c.avg / 5) * trackW
-          return (
-            <g
-              key={c.survey.id}
-              tabIndex={0}
-              role="button"
-              aria-label={`${c.survey.courseCode}, ${c.survey.courseName}, ${c.avg.toFixed(2)} of 5. Press Enter to drill in.`}
-              style={{ cursor: 'pointer', outline: 'none' }}
-              onClick={() => onDrill(c.survey.id, c.isReleased)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  onDrill(c.survey.id, c.isReleased)
-                }
-              }}
-            >
-              <rect x={0} y={y - 2} width={totalW} height={rowH - 2} fill="transparent" />
-              <circle cx={9} cy={y + rowH / 2 - 2} r={3} fill={tierColor(c.avg)} />
-              <text x={20} y={y + rowH / 2 + 2} fontSize={12} fontWeight={600} fill="var(--foreground)" fontFamily="Inter">
-                {c.survey.courseCode}
-              </text>
-              <text x={20} y={y + rowH / 2 + 14} fontSize={10} fill="var(--muted-foreground)" fontFamily="Inter">
-                {c.survey.courseName.length > 22 ? `${c.survey.courseName.slice(0, 22)}…` : c.survey.courseName}
-              </text>
-              <rect x={labelW} y={y + rowH / 2 - 4} width={trackW} height={8} fill="var(--muted)" rx={4} />
-              <rect x={labelW} y={y + rowH / 2 - 4} width={barW} height={8} fill="var(--brand-color)" rx={4} />
-              <text
-                x={labelW + trackW + 6}
-                y={y + rowH / 2 + 4}
-                fontSize={13}
-                fontWeight={700}
-                fill="var(--foreground)"
-                fontFamily="Inter"
-                style={{ fontVariantNumeric: 'tabular-nums' }}
-              >
-                {c.avg.toFixed(2)}
-              </text>
-            </g>
-          )
-        })}
-      </svg>
-    </figure>
-  )
-}
+/* Satisfies DataTable's `TData extends Record<string, unknown>` constraint. */
+type FacultyOfferingRow = FacultyOfferingRecord & Record<string, unknown>
+type CourseTermRow = {
+  id: string; courseCode: string; courseName: string
+  primaryFaculty: string; enrolled: number; completion: number
+  status: string; isReleased: boolean
+} & Record<string, unknown>
+type CourseOfferingRow = FacultyOfferingRecord & { facultyName: string } & Record<string, unknown>
 
-function ScoreBar({ score, max = 5 }: { score: number; max?: number }) {
-  return (
-    <div className="flex items-center gap-2">
-      <div
-        style={{
-          height: 6,
-          width: 80,
-          borderRadius: 3,
-          backgroundColor: 'var(--muted)',
-          overflow: 'hidden',
-          flexShrink: 0,
-        }}
-      >
-        <div
-          style={{
-            height: '100%',
-            width: `${(score / max) * 100}%`,
-            borderRadius: 3,
-            backgroundColor: 'var(--brand-color)',
-          }}
-        />
-      </div>
-      <span className="tabular-nums text-sm font-semibold">{score}</span>
-    </div>
-  )
-}
+/* Amber for <3.7, brand for 3.7–4.3, green for ≥4.3. No red per aarti_no_red memory. */
+const tierColor = (avg: number) =>
+  avg >= 4.3 ? 'var(--chart-2)' : avg >= 3.7 ? 'var(--brand-color)' : 'var(--chart-4)'
 
 type Axis = 'term' | 'cohort'
-type CourseTypeFilter = 'all' | 'didactic' | 'clinical'
+type AnalyticsTab = 'term' | 'faculty' | 'course'
+type NudgeTarget = { id: string; courseCode: string; courseName: string; nonResponders: number }
 
-export default function AnalyticsPage() {
-  const { surveys } = usePce()
-  const router = useRouter()
-  // Per Aarti 2026-05-08 16:09 D4: two top-level axes — Term + Cohort.
-  const [axis, setAxis] = useState<Axis>('term')
-  const [term, setTerm] = useState('Spring 2026')
-  const [cohort, setCohort] = useState('Class of 2026')
-  // Per Aarti 2026-05-08 16:09 design task C5: clinical/didactic split on Cohort view.
-  const [courseTypeFilter, setCourseTypeFilter] = useState<CourseTypeFilter>('all')
+type FacultyRow = {
+  id: string; name: string; initials: string; department: string
+  coursesCount: number; avgRating: number; avgCompletion: number
+  termsCount: number; offerings: FacultyOfferingRow[]
+}
 
-  const scopedSurveys = useMemo(() => {
-    let filtered = axis === 'term'
-      ? surveys.filter(s => s.term === term)
-      : surveys.filter(s => s.cohort === cohort)
+/* Enrollment-weighted average rating. */
+function weightedAvg(offerings: FacultyOfferingRecord[]): number {
+  const totalEnrolled = offerings.reduce((s, o) => s + o.enrolled, 0)
+  if (totalEnrolled === 0) return 0
+  return offerings.reduce((s, o) => s + o.avgRating * o.enrolled, 0) / totalEnrolled
+}
 
-    // Course-type filter applies on Cohort view only (per audit C5)
-    if (axis === 'cohort' && courseTypeFilter !== 'all') {
-      filtered = filtered.filter(s => s.courseType === courseTypeFilter)
-    }
-    return filtered
-  }, [surveys, axis, term, cohort, courseTypeFilter])
+/* Chronological sort order for term labels. */
+const TERM_ORDER = [
+  'Spring 2022','Fall 2022','Spring 2023','Fall 2023',
+  'Spring 2024','Fall 2024','Spring 2025','Fall 2025','Spring 2026',
+]
 
-  const releasedSurveys = scopedSurveys.filter(s => s.status === 'released' || s.status === 'closed')
 
-  const totalRate = scopedSurveys.length > 0
-    ? Math.round(scopedSurveys.reduce((acc, s) => acc + s.responseRate, 0) / scopedSurveys.length)
-    : 0
-
-  const completedCount = releasedSurveys.length
-
-  // Aggregate section scores across responses in scope
-  const scopedResponses = MOCK_RESPONSES.filter(r =>
-    scopedSurveys.some(s => s.id === r.surveyId)
-  )
-
-  const sectionAvgs: Record<string, number[]> = {}
-  scopedResponses.forEach(r => {
-    r.sectionScores.forEach(s => {
-      if (!sectionAvgs[s.section]) sectionAvgs[s.section] = []
-      sectionAvgs[s.section].push(s.avg)
-    })
-  })
-
-  const sectionSummary = Object.entries(sectionAvgs).map(([section, avgs]) => ({
-    section,
-    avg: Math.round((avgs.reduce((a, b) => a + b, 0) / avgs.length) * 10) / 10,
-  }))
-
-  /* Released-course scores for landscape + at-risk computations.
-     courseAvg = mean of all section averages for that survey. */
-  const releasedScoreList = useMemo(() => {
-    return releasedSurveys
-      .map(survey => {
-        const resp = MOCK_RESPONSES.find(r => r.surveyId === survey.id)
-        const avgs = resp?.sectionScores.map(s => s.avg) ?? []
-        const courseAvg = avgs.length > 0
-          ? avgs.reduce((a, b) => a + b, 0) / avgs.length
-          : 0
-        return { survey, avg: courseAvg, isReleased: true }
-      })
-      .filter(c => c.avg > 0)
-      .sort((a, b) => b.avg - a.avg)
-  }, [releasedSurveys])
-
-  /* Program-level rollup */
-  const programAvg = releasedScoreList.length > 0
-    ? releasedScoreList.reduce((sum, c) => sum + c.avg, 0) / releasedScoreList.length
-    : null
-
-  /* At-risk: released courses below 3.7 (prototype threshold) */
-  const atRiskCourses = releasedScoreList.filter(c => c.avg < 3.7)
-
-  /* Pending review: surveys in pending_review or closed (awaiting release) */
-  const pendingReviewCount = scopedSurveys.filter(s => s.status === 'pending_review' || s.status === 'closed').length
-
-  /* Reflection rate — stub: assume 1/3 of released faculty have submitted reflection */
-  const reflectedCount = Math.round(releasedSurveys.length * 0.6)
-  const reflectionRate = releasedSurveys.length > 0
-    ? Math.round((reflectedCount / releasedSurveys.length) * 100)
-    : 0
-
-  /*
-    KPI strip — fed to canonical KeyMetrics (vendored 2026-05-11 from
-    @exxatdesignux/ui (vendored from DS web app key-metrics.tsx) per audit at
-    docs/governance/component-depth-audits/key-metrics.md).
-
-    Trend semantics: all four KPIs render as `neutral` because they describe
-    *state*, not period-over-period change (no historical anchor for "vs last
-    week"). Neutral renders a muted minus chip; the descriptive context lives
-    in `delta`. Per memory feedback_aarti_no_red.md, we avoid `trend: "down"`
-    here (would render --destructive red) even on at-risk count > 0 — the
-    at-risk panel below already carries the colour signal.
-
-    The `delta` string carries the descriptor that was previously the
-    KpiButton `meta` prop. Each KPI deep-links via `href` to the relevant
-    drill surface (same routes as before).
-  */
-  const kpiMetrics: MetricItem[] = [
+/* ── By Term columns ── */
+function buildTermColumns(
+  onNudge: (row: CourseTermRow) => void,
+): ColumnDef<CourseTermRow>[] {
+  return [
     {
-      id: 'program-avg',
-      label: 'Program avg',
-      value: programAvg ? `${programAvg.toFixed(2)}/5` : '—',
-      delta: `${releasedSurveys.length} of ${scopedSurveys.length} released`,
-      trend: 'neutral',
-      href: '#score-landscape',
-    },
-    {
-      id: 'at-risk',
-      label: 'At-risk courses',
-      value: atRiskCourses.length,
-      delta: 'Released, below 3.7',
-      trend: 'neutral',
-      href: '#at-risk',
-    },
-    {
-      id: 'pending-review',
-      label: 'Pending review',
-      value: pendingReviewCount,
-      delta: 'Awaiting moderation',
-      trend: 'neutral',
-      href: '/surveys',
-    },
-    {
-      id: 'reflection-rate',
-      label: 'Reflection rate',
-      value: `${reflectionRate}%`,
-      delta: `${reflectedCount} of ${releasedSurveys.length} faculty`,
-      trend: 'neutral',
-    },
-  ]
-
-  /* Program trend — last 4 terms hardcoded as historical baseline; current is programAvg */
-  const programTrendHistory: { label: string; value: number }[] = [
-    { label: 'Sp 24', value: 3.95 },
-    { label: 'Fa 24', value: 4.00 },
-    { label: 'Sp 25', value: 4.02 },
-    { label: 'Fa 25', value: 4.05 },
-  ]
-
-  /* Per-course breakdown — flattened so canonical DataTable's sortKey can index
-     real properties on the row. Section averages, instructor name, etc. are
-     precomputed here so `sortable: true` works without custom accessors. */
-  const courseBreakdown = scopedSurveys.map(survey => {
-    const resp = MOCK_RESPONSES.find(r => r.surveyId === survey.id)
-    const scores = resp?.sectionScores ?? []
-    return {
-      id: survey.id,
-      survey,
-      scores,
-      courseCode: survey.courseCode,
-      instructorName: survey.instructors.find(i => i.role === 'primary')?.name ?? '',
-      courseType: survey.courseType ?? '',
-      rate: survey.responseRate,
-      ccAvg: scores.find(s => s.section === 'course_content')?.avg ?? null,
-      fpAvg: scores.find(s => s.section === 'faculty_performance')?.avg ?? null,
-      cdAvg: scores.find(s => s.section === 'course_director')?.avg ?? null,
-      isReleased: survey.status === 'released' || survey.status === 'closed',
-    }
-  })
-
-  type CourseRow = typeof courseBreakdown[number]
-
-  /* Canonical DataTable ColumnDef — sort uses sortKey to index TData; cell
-     handles alignment via className since canonical doesn't expose `align`. */
-  const courseColumns: ColumnDef<CourseRow>[] = [
-    {
-      key: 'courseCode',
-      label: 'Course',
-      sortable: true,
+      key: 'courseCode', label: 'Course', sortable: true,
       cell: (row) => (
-        <div className="flex flex-col gap-0.5">
-          <span className="text-sm font-medium">{row.survey.courseCode}</span>
-          <span className="text-xs truncate max-w-32 text-muted-foreground">
-            {row.survey.courseName}
-          </span>
+        <div className="min-w-0">
+          <p className="text-sm font-medium">{row.courseCode}</p>
+          <p className="text-xs text-muted-foreground truncate max-w-[160px]">{row.courseName}</p>
         </div>
       ),
     },
     {
-      key: 'instructorName',
-      label: 'Instructor',
-      sortable: true,
+      key: 'primaryFaculty', label: 'Faculty', sortable: true,
+      cell: (row) => <span className="text-sm">{row.primaryFaculty}</span>,
+    },
+    {
+      key: 'enrolled', label: 'Enrolled', sortable: true,
+      header: () => <span className="block text-right">Enrolled</span>,
+      cell: (row) => <div className="text-right tabular-nums text-sm">{row.enrolled}</div>,
+    },
+    {
+      key: 'completion', label: 'Completion', sortable: true,
+      header: () => <span className="block text-right">Completion</span>,
       cell: (row) => (
-        <span className="text-sm font-medium">{row.instructorName || '—'}</span>
+        <div className="text-right tabular-nums text-sm">
+          {row.completion > 0 ? `${row.completion}%` : '—'}
+        </div>
       ),
     },
     {
-      key: 'courseType',
-      label: 'Type',
-      sortable: true,
-      cell: (row) => row.courseType ? (
-        <span className="text-xs capitalize text-muted-foreground">{row.courseType}</span>
-      ) : (
-        <span className="text-muted-foreground">—</span>
-      ),
+      key: 'status', label: 'Status', sortable: true,
+      cell: (row) => <SurveyStatusBadge status={row.status as SurveyStatus} />,
     },
     {
-      key: 'rate',
-      label: 'Rate',
-      sortable: true,
-      header: () => <span className="block text-right">Rate</span>,
-      cell: (row) => (
-        <div className="text-right tabular-nums text-sm font-semibold">{row.rate}%</div>
-      ),
-    },
-    {
-      key: 'ccAvg',
-      label: 'CC',
-      sortable: true,
-      header: () => <span className="block text-right">CC</span>,
-      cell: (row) => row.ccAvg != null
-        ? <div className="text-right tabular-nums text-sm font-semibold">{row.ccAvg}</div>
-        : <div className="text-right text-muted-foreground">—</div>,
-    },
-    {
-      key: 'fpAvg',
-      label: 'FP',
-      sortable: true,
-      header: () => <span className="block text-right">FP</span>,
-      cell: (row) => row.fpAvg != null
-        ? <div className="text-right tabular-nums text-sm font-semibold">{row.fpAvg}</div>
-        : <div className="text-right text-muted-foreground">—</div>,
-    },
-    {
-      key: 'cdAvg',
-      label: 'CD',
-      sortable: true,
-      header: () => <span className="block text-right">CD</span>,
-      cell: (row) => row.cdAvg != null
-        ? <div className="text-right tabular-nums text-sm font-semibold">{row.cdAvg}</div>
-        : <div className="text-right text-muted-foreground">—</div>,
-    },
-    {
-      key: 'trend',
-      label: 'Trend',
+      key: 'action', label: '', width: 96,
       cell: (row) => {
-        const history = (row.survey.priorOfferings ?? []).map(po => ({
-          label: po.term,
-          value: po.courseAvg,
-        }))
-        return (
-          <TrendSparkline
-            history={history}
-            currentValue={row.ccAvg ?? undefined}
-            currentLabel={row.survey.term}
-          />
-        )
+        if (row.status === 'collecting') {
+          return (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => { e.stopPropagation(); onNudge(row) }}
+              aria-label={`Send ad-hoc reminder for ${row.courseCode}`}
+            >
+              Nudge
+            </Button>
+          )
+        }
+        return null
       },
     },
-    {
-      key: 'drill',
-      label: '',
-      width: 32,
-      cell: (row) => row.isReleased ? (
-        <div className="text-center">
-          <i className="fa-light fa-chevron-right text-muted-foreground text-xs" aria-hidden="true" />
-        </div>
-      ) : (
-        /* WCAG fix 2026-05-11: aria-label on bare <i> is aria-prohibited-attr.
-           Wrap in role="img" span; mark icon aria-hidden. (visual-review caught.) */
-        <div className="text-center">
-          <span role="img" aria-label="Results pending" className="inline-block">
-            <i className="fa-light fa-lock-keyhole text-muted-foreground text-xs" aria-hidden="true" />
-          </span>
-        </div>
-      ),
-    },
   ]
+}
 
-  const hasData = scopedSurveys.length > 0
+/* ── By Faculty offering columns ── */
+const offeringColumns: ColumnDef<FacultyOfferingRow>[] = [
+  {
+    key: 'courseCode', label: 'Course', sortable: true,
+    cell: (row) => (
+      <div className="min-w-0">
+        <p className="text-sm font-medium">{row.courseCode}</p>
+        <p className="text-xs text-muted-foreground truncate max-w-[160px]">{row.courseName}</p>
+      </div>
+    ),
+  },
+  {
+    key: 'term', label: 'Term', sortable: true,
+    cell: (row) => <span className="text-sm">{row.term}</span>,
+  },
+  {
+    key: 'role', label: 'Role',
+    cell: (row) => <span className="text-xs capitalize text-muted-foreground">{row.role}</span>,
+  },
+  {
+    key: 'enrolled', label: 'Enrolled', sortable: true,
+    header: () => <span className="block text-right">Enrolled</span>,
+    cell: (row) => <div className="text-right tabular-nums text-sm">{row.enrolled}</div>,
+  },
+  {
+    key: 'responseRate', label: 'Completion', sortable: true,
+    header: () => <span className="block text-right">Completion</span>,
+    cell: (row) => <div className="text-right tabular-nums text-sm">{row.responseRate}%</div>,
+  },
+  {
+    key: 'avgRating', label: 'Rating', sortable: true,
+    header: () => <span className="block text-right">Rating</span>,
+    cell: (row) => (
+      <div
+        className="text-right tabular-nums text-sm font-semibold"
+        style={{ color: tierColor(row.avgRating) }}
+      >
+        {row.avgRating.toFixed(1)}
+      </div>
+    ),
+  },
+  {
+    key: 'drill', label: '', width: 32,
+    cell: (row) => row.surveyId ? (
+      <div className="text-center">
+        <i className="fa-light fa-chevron-right text-muted-foreground text-xs" aria-hidden="true" />
+      </div>
+    ) : null,
+  },
+]
+
+/* ── By Course offering columns ── */
+const courseOfferingColumns: ColumnDef<CourseOfferingRow>[] = [
+  {
+    key: 'term', label: 'Term', sortable: true,
+    cell: (row) => <span className="text-sm">{row.term}</span>,
+  },
+  {
+    key: 'facultyName', label: 'Faculty', sortable: true,
+    cell: (row) => (
+      <div className="min-w-0">
+        <p className="text-sm">{row.facultyName}</p>
+        <p className="text-xs capitalize text-muted-foreground">{row.role}</p>
+      </div>
+    ),
+  },
+  {
+    key: 'enrolled', label: 'Enrolled', sortable: true,
+    header: () => <span className="block text-right">Enrolled</span>,
+    cell: (row) => <div className="text-right tabular-nums text-sm">{row.enrolled}</div>,
+  },
+  {
+    key: 'avgRating', label: 'Rating', sortable: true,
+    header: () => <span className="block text-right">Rating</span>,
+    cell: (row) => (
+      <div
+        className="text-right tabular-nums text-sm font-semibold"
+        style={{ color: tierColor(row.avgRating) }}
+      >
+        {row.avgRating.toFixed(1)}
+      </div>
+    ),
+  },
+  {
+    key: 'responseRate', label: 'Completion', sortable: true,
+    header: () => <span className="block text-right">Completion</span>,
+    cell: (row) => <div className="text-right tabular-nums text-sm">{row.responseRate}%</div>,
+  },
+  {
+    key: 'drill', label: '', width: 32,
+    cell: (row) => row.surveyId ? (
+      <div className="text-center">
+        <i className="fa-light fa-chevron-right text-muted-foreground text-xs" aria-hidden="true" />
+      </div>
+    ) : null,
+  },
+]
+
+/* ── Chart configs ── */
+const programTrendConfig: ChartConfig = {
+  courseAvg:  { label: 'Course avg',  color: 'var(--chart-1)' },
+  facultyAvg: { label: 'Faculty avg', color: 'var(--chart-2)' },
+}
+const courseRankConfig: ChartConfig = {
+  avg: { label: 'Avg rating', color: 'var(--chart-1)' },
+}
+const facultyRankConfig: ChartConfig = {
+  avg: { label: 'Avg rating', color: 'var(--chart-2)' },
+}
+const compareConfig: ChartConfig = {
+  rating: { label: 'Avg rating', color: 'var(--brand-color)' },
+}
+const courseTrendConfig: ChartConfig = {
+  rating: { label: 'Avg rating', color: 'var(--chart-1)' },
+}
+
+/* ── Page ── */
+function AnalyticsInner() {
+  const { surveys } = usePce()
+  const searchParams = useSearchParams()
+
+  const [activeTab, setActiveTab]                 = useState<AnalyticsTab>(
+    (searchParams.get('tab') as AnalyticsTab) || 'term'
+  )
+  const [axis, setAxis]                           = useState<Axis>('term')
+  const [term, setTerm]                           = useState('Spring 2026')
+  const [cohort, setCohort]                       = useState('Class of 2026')
+  const [nudgeTarget, setNudgeTarget]             = useState<NudgeTarget | null>(null)
+  const [selectedSurveyId, setSelectedSurveyId]   = useState<string | null>(null)
+  const [selectedFacultyId, setSelectedFacultyId] = useState<string>(
+    searchParams.get('facultyId') || MOCK_FACULTY[0]?.id ?? ''
+  )
+  const [selectedCourseCode, setSelectedCourseCode] = useState<string>(
+    searchParams.get('courseCode') || ''
+  )
+
+  /* ── By Term ── */
+  const scopedSurveys = useMemo(
+    () => axis === 'term'
+      ? surveys.filter(s => s.term === term)
+      : surveys.filter(s => s.cohort === cohort),
+    [surveys, axis, term, cohort],
+  )
+
+  const termCourseRows = useMemo((): CourseTermRow[] =>
+    scopedSurveys.map(s => ({
+      id: s.id,
+      courseCode: s.courseCode,
+      courseName: s.courseName,
+      primaryFaculty: s.instructors.find(i => i.role === 'primary')?.name ?? '—',
+      enrolled: s.enrollmentCount,
+      completion: s.responseRate,
+      status: s.status,
+      isReleased: s.status === 'released' || s.status === 'closed',
+    })),
+    [scopedSurveys],
+  )
+
+  const byTermKpis: MetricItem[] = useMemo(() => {
+    const totalEnrolled  = termCourseRows.reduce((sum, r) => sum + r.enrolled, 0)
+    const totalResponses = termCourseRows.reduce((sum, r) => sum + Math.round(r.enrolled * r.completion / 100), 0)
+    const overallPct     = totalEnrolled > 0 ? Math.round((totalResponses / totalEnrolled) * 100) : 0
+    const collecting     = termCourseRows.filter(r => r.status === 'collecting' || r.status === 'scheduled').length
+    return [
+      { id: 'completion', label: 'Overall completion', value: `${overallPct}%`,         delta: `${termCourseRows.length} courses`,           trend: 'neutral' },
+      { id: 'responses',  label: 'Responses',          value: totalResponses,            delta: `of ${totalEnrolled} enrolled`,               trend: 'neutral' },
+      { id: 'courses',    label: 'Courses',             value: termCourseRows.length,    delta: axis === 'term' ? term : cohort,              trend: 'neutral' },
+      { id: 'collecting', label: 'Collecting',          value: collecting,               delta: 'still open',                                 trend: 'neutral' },
+    ]
+  }, [termCourseRows, axis, term, cohort])
+
+  const termColumns = useMemo(
+    () => buildTermColumns(
+      (row) => setNudgeTarget({
+        id: row.id,
+        courseCode: row.courseCode,
+        courseName: row.courseName,
+        nonResponders: Math.max(0, row.enrolled - Math.round(row.enrolled * row.completion / 100)),
+      }),
+    ),
+    [],
+  )
+
+  /* Dual-line trend: aggregate priorOfferings from CE surveys by term. */
+  const programTrendData = useMemo(() => {
+    const ceSurveys = MOCK_SURVEYS.filter(s => s.surveyType !== 'programmatic')
+    const byTerm: Record<string, { courseAvgs: number[]; facultyAvgs: number[] }> = {}
+    ceSurveys.forEach(s => {
+      s.priorOfferings?.forEach(po => {
+        if (!byTerm[po.term]) byTerm[po.term] = { courseAvgs: [], facultyAvgs: [] }
+        byTerm[po.term].courseAvgs.push(po.courseAvg)
+        if (po.facultyAvg != null) byTerm[po.term].facultyAvgs.push(po.facultyAvg)
+      })
+    })
+    return TERM_ORDER.filter(t => byTerm[t]).map(t => ({
+      term: t.replace('Spring ', 'Sp ').replace('Fall ', 'Fa '),
+      courseAvg:  +(byTerm[t].courseAvgs.reduce((s, v) => s + v, 0) / byTerm[t].courseAvgs.length).toFixed(2),
+      facultyAvg: byTerm[t].facultyAvgs.length > 0
+        ? +(byTerm[t].facultyAvgs.reduce((s, v) => s + v, 0) / byTerm[t].facultyAvgs.length).toFixed(2)
+        : null,
+    }))
+  }, [])
+
+  /* All-time enrollment-weighted course rankings. */
+  const courseAllTimeRanked = useMemo(() => {
+    const byCode: Record<string, { totalRating: number; totalEnrolled: number }> = {}
+    MOCK_FACULTY_OFFERINGS.forEach(o => {
+      if (!byCode[o.courseCode]) byCode[o.courseCode] = { totalRating: 0, totalEnrolled: 0 }
+      byCode[o.courseCode].totalRating   += o.avgRating * o.enrolled
+      byCode[o.courseCode].totalEnrolled += o.enrolled
+    })
+    return Object.entries(byCode)
+      .map(([code, v]) => ({ code, avg: v.totalEnrolled > 0 ? +(v.totalRating / v.totalEnrolled).toFixed(2) : 0 }))
+      .filter(c => c.avg > 0)
+      .sort((a, b) => b.avg - a.avg)
+  }, [])
+
+  /* All-time enrollment-weighted faculty rankings. */
+  const facultyAllTimeRanked = useMemo(() => {
+    const byFaculty: Record<string, { name: string; totalRating: number; totalEnrolled: number }> = {}
+    MOCK_FACULTY_OFFERINGS.forEach(o => {
+      const f = MOCK_FACULTY.find(fac => fac.id === o.facultyId)
+      if (!f) return
+      const last = f.name.split(' ').slice(-1)[0]
+      if (!byFaculty[o.facultyId]) byFaculty[o.facultyId] = { name: last, totalRating: 0, totalEnrolled: 0 }
+      byFaculty[o.facultyId].totalRating   += o.avgRating * o.enrolled
+      byFaculty[o.facultyId].totalEnrolled += o.enrolled
+    })
+    return Object.values(byFaculty)
+      .map(v => ({ name: v.name, avg: v.totalEnrolled > 0 ? +(v.totalRating / v.totalEnrolled).toFixed(2) : 0 }))
+      .filter(f => f.avg > 0)
+      .sort((a, b) => b.avg - a.avg)
+  }, [])
+
+  /* ── By Faculty ── */
+  const facultyRows = useMemo((): FacultyRow[] =>
+    MOCK_FACULTY.map(f => {
+      const offerings     = MOCK_FACULTY_OFFERINGS.filter(o => o.facultyId === f.id) as FacultyOfferingRow[]
+      const avgRating     = +(weightedAvg(offerings) * 10 | 0) / 10 || 0
+      const avgCompletion = offerings.length > 0
+        ? Math.round(offerings.reduce((s, o) => s + o.responseRate, 0) / offerings.length) : 0
+      const uniqueTerms   = [...new Set(offerings.map(o => o.term))]
+      return {
+        id: f.id, name: f.name, initials: f.initials,
+        department: f.department ?? '—',
+        coursesCount: offerings.length,
+        avgRating, avgCompletion, termsCount: uniqueTerms.length,
+        offerings,
+      }
+    }),
+    [],
+  )
+
+  const selectedFaculty = useMemo(
+    () => facultyRows.find(f => f.id === selectedFacultyId) ?? null,
+    [facultyRows, selectedFacultyId],
+  )
+
+  const facultyKpis: MetricItem[] = useMemo(() => {
+    if (!selectedFaculty) return []
+    return [
+      { id: 'f-courses',    label: 'Courses taught', value: selectedFaculty.coursesCount,                                                    delta: 'across all terms', trend: 'neutral' },
+      { id: 'f-rating',     label: 'Avg rating',     value: selectedFaculty.avgRating > 0 ? `${selectedFaculty.avgRating.toFixed(1)}/5` : '—', delta: 'enrollment-weighted', trend: 'neutral' },
+      { id: 'f-completion', label: 'Avg completion', value: selectedFaculty.avgCompletion > 0 ? `${selectedFaculty.avgCompletion}%` : '—',    delta: 'all offerings',       trend: 'neutral' },
+      { id: 'f-terms',      label: 'Terms active',   value: selectedFaculty.termsCount,                                                      delta: 'term appearances',    trend: 'neutral' },
+    ]
+  }, [selectedFaculty])
+
+  /* Comparative bars: own vs dept avg vs school avg (enrollment-weighted). */
+  const compareData = useMemo(() => {
+    if (!selectedFaculty) return []
+    const ownOfferings  = MOCK_FACULTY_OFFERINGS.filter(o => o.facultyId === selectedFaculty.id)
+    const deptIds       = MOCK_FACULTY.filter(f => f.department === selectedFaculty.department).map(f => f.id)
+    const deptOfferings = MOCK_FACULTY_OFFERINGS.filter(o => deptIds.includes(o.facultyId))
+    return [
+      { label: 'School avg',  rating: +weightedAvg(MOCK_FACULTY_OFFERINGS).toFixed(2) },
+      { label: 'Dept avg',    rating: +weightedAvg(deptOfferings).toFixed(2) },
+      { label: selectedFaculty.name.split(' ').slice(-1)[0], rating: +weightedAvg(ownOfferings).toFixed(2) },
+    ]
+  }, [selectedFaculty])
+
+  /* ── By Course ── */
+  const distinctCourses = useMemo(() => {
+    const seen = new Set<string>()
+    const list: { code: string; name: string }[] = []
+    MOCK_FACULTY_OFFERINGS.forEach(o => {
+      if (!seen.has(o.courseCode)) {
+        seen.add(o.courseCode)
+        list.push({ code: o.courseCode, name: o.courseName })
+      }
+    })
+    return list.sort((a, b) => a.code.localeCompare(b.code))
+  }, [])
+
+  const effectiveCourseCode = selectedCourseCode || distinctCourses[0]?.code || ''
+
+  const courseOfferings = useMemo((): CourseOfferingRow[] => {
+    if (!effectiveCourseCode) return []
+    return MOCK_FACULTY_OFFERINGS
+      .filter(o => o.courseCode === effectiveCourseCode)
+      .map(o => ({
+        ...o,
+        facultyName: MOCK_FACULTY.find(f => f.id === o.facultyId)?.name ?? '—',
+      }) as CourseOfferingRow)
+      .sort((a, b) => b.term.localeCompare(a.term))
+  }, [effectiveCourseCode])
+
+  const courseKpis: MetricItem[] = useMemo(() => {
+    if (!courseOfferings.length) return []
+    const avgRating     = +weightedAvg(courseOfferings).toFixed(1)
+    const avgCompletion = Math.round(courseOfferings.reduce((s, o) => s + o.responseRate, 0) / courseOfferings.length)
+    const sorted        = [...courseOfferings].sort((a, b) => a.term.localeCompare(b.term))
+    const trendDir      = sorted.length >= 2
+      ? (sorted[sorted.length - 1].avgRating >= sorted[sorted.length - 2].avgRating ? '↗' : '↘')
+      : '—'
+    return [
+      { id: 'c-count',      label: 'Times offered',  value: courseOfferings.length,  delta: 'all terms',           trend: 'neutral' },
+      { id: 'c-rating',     label: 'Avg rating',     value: `${avgRating}/5`,        delta: 'enrollment-weighted',  trend: 'neutral' },
+      { id: 'c-completion', label: 'Avg completion', value: `${avgCompletion}%`,     delta: 'all offerings',        trend: 'neutral' },
+      { id: 'c-trend',      label: 'Trend',          value: trendDir,                delta: 'vs prior term',        trend: 'neutral' },
+    ]
+  }, [courseOfferings])
+
+  /* Rating trend for selected course (enrollment-weighted per term). */
+  const courseTrendData = useMemo(() => {
+    if (!courseOfferings.length) return []
+    const byTerm: Record<string, { total: number; enrolled: number }> = {}
+    courseOfferings.forEach(o => {
+      if (!byTerm[o.term]) byTerm[o.term] = { total: 0, enrolled: 0 }
+      byTerm[o.term].total   += o.avgRating * o.enrolled
+      byTerm[o.term].enrolled += o.enrolled
+    })
+    return TERM_ORDER.filter(t => byTerm[t]).map(t => ({
+      term:   t.replace('Spring ', 'Sp ').replace('Fall ', 'Fa '),
+      rating: +(byTerm[t].total / byTerm[t].enrolled).toFixed(2),
+    }))
+  }, [courseOfferings])
+
   const scopeLabel = axis === 'term' ? term : cohort
-
-  // C9 — Template-aggregation guard rail. Per Aarti audit: "Show a banner/warning
-  // when aggregating across surveys with different templates. Surface
-  // scale-consistency status (1–5 matched). Don't silently aggregate
-  // incompatible data."
-  const templatesInScope = useMemo(() => {
-    const ids = new Set(scopedSurveys.map(s => s.templateId))
-    return Array.from(ids)
-      .map(id => MOCK_TEMPLATES.find(t => t.id === id))
-      .filter((t): t is NonNullable<typeof t> => Boolean(t))
-  }, [scopedSurveys])
-
-  const hasMixedTemplates = templatesInScope.length > 1
-
-  // Identify sections that only appear in some templates (incomplete coverage)
-  const incompleteSections = useMemo(() => {
-    if (templatesInScope.length < 2) return []
-    const allSections = new Set(templatesInScope.flatMap(t => t.sections))
-    return Array.from(allSections).filter(section =>
-      !templatesInScope.every(t => t.sections.includes(section))
-    )
-  }, [templatesInScope])
 
   return (
     <>
       <SiteHeader title="Analytics" />
-      <div className="flex items-center gap-3 shrink-0" style={{ padding: '14px 28px 14px' }}>
+
+      <div className="flex items-center gap-3 shrink-0" style={{ padding: '14px 28px 0' }}>
         <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Analytics</h1>
-
-        {/* View axis toggle (D4): Term ↔ Cohort. Faculty is one click down (D5) */}
-        <ToggleGroup
-          type="single"
-          value={axis}
-          onValueChange={(v) => v && setAxis(v as Axis)}
-          variant="outline"
-          size="sm"
-        >
-          <ToggleGroupItem value="term" aria-label="Term view">Term</ToggleGroupItem>
-          <ToggleGroupItem value="cohort" aria-label="Cohort view">Cohort</ToggleGroupItem>
-        </ToggleGroup>
-
-        {axis === 'term' ? (
-          <Select value={term} onValueChange={setTerm}>
-            <SelectTrigger className="h-8 w-36 text-sm" aria-label="Select term">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {MOCK_TERMS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        ) : (
-          <Select value={cohort} onValueChange={setCohort}>
-            <SelectTrigger className="h-8 w-44 text-sm" aria-label="Select cohort">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {MOCK_COHORTS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        )}
-
         <Button variant="outline" size="sm">
           <i className="fa-light fa-arrow-down-to-line" aria-hidden="true" />
           Export
         </Button>
       </div>
 
-      <div className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
-        {!hasData ? (
-          <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-            <i className="fa-light fa-chart-mixed text-muted-foreground text-4xl" aria-hidden="true" />
-            <div className="flex flex-col gap-1">
-              <p className="text-sm font-medium">No analytics data for {scopeLabel}</p>
-              <p className="text-sm text-muted-foreground max-w-xs">
-                Release surveys to faculty to see aggregated results here.
-              </p>
-            </div>
-          </div>
-        ) : (
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => setActiveTab(v as AnalyticsTab)}
+        className="flex flex-col flex-1 min-h-0"
+      >
+        <div className="border-b border-border shrink-0" style={{ padding: '0 28px' }}>
+          <TabsList variant="line">
+            <TabsTrigger value="term">By Term</TabsTrigger>
+            <TabsTrigger value="faculty">By Faculty</TabsTrigger>
+            <TabsTrigger value="course">By Course</TabsTrigger>
+          </TabsList>
+        </div>
+
+        {/* ───── By Term ───── */}
+        <TabsContent value="term" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
           <div className="flex flex-col gap-6 max-w-4xl">
 
-            {/* C9 — Template-aggregation guard rail */}
-            {hasMixedTemplates && (
-              <LocalBanner variant="warning" title="Mixed templates in scope">
-                These {scopedSurveys.length} courses use {templatesInScope.length} different templates
-                ({templatesInScope.map(t => t.name).join(', ')}).
-                {incompleteSections.length > 0 && (
-                  <>
-                    {' '}Sections{' '}
-                    <span className="font-medium">
-                      {incompleteSections.map(s => SECTION_LABELS[s as keyof typeof SECTION_LABELS] ?? s).join(', ')}
-                    </span>
-                    {' '}only appear in some templates — section averages may reflect partial coverage.
-                  </>
-                )}
-              </LocalBanner>
-            )}
+            <div className="flex items-center gap-3">
+              <ToggleGroup
+                type="single"
+                value={axis}
+                onValueChange={(v) => v && setAxis(v as Axis)}
+                variant="outline"
+                size="sm"
+              >
+                <ToggleGroupItem value="term"   aria-label="View by term">Term</ToggleGroupItem>
+                <ToggleGroupItem value="cohort" aria-label="View by cohort">Cohort</ToggleGroupItem>
+              </ToggleGroup>
 
-            {/* Course-type filter — Cohort view only (per audit C5) */}
-            {axis === 'cohort' && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Course type:</span>
-                <ToggleGroup
-                  type="single"
-                  value={courseTypeFilter}
-                  onValueChange={(v) => v && setCourseTypeFilter(v as CourseTypeFilter)}
-                  size="sm"
-                >
-                  <ToggleGroupItem value="all" aria-label="All courses">All</ToggleGroupItem>
-                  <ToggleGroupItem value="didactic" aria-label="Didactic only">Didactic</ToggleGroupItem>
-                  <ToggleGroupItem value="clinical" aria-label="Clinical only">Clinical</ToggleGroupItem>
-                </ToggleGroup>
-              </div>
-            )}
-
-            {/*
-              AI insights — pulled-vs-AI lane affordance per docs/patterns/viz/ai-vs-pulled-lane.md.
-              Per Aarti 2026-05-08 16:09 D14: AI summaries surface BEFORE question-level detail.
-            */}
-            <AiInsightCard
-              body={
-                axis === 'term'
-                  ? `Across ${scopedSurveys.length} courses this term, response rate is ${totalRate}%. ${releasedSurveys.length > 0 ? 'Themes from released surveys cluster on pacing and faculty availability.' : 'No surveys released yet — themes will appear once results are available.'}`
-                  : `${cohort} has ${scopedSurveys.length} courses${courseTypeFilter !== 'all' ? ` (${courseTypeFilter})` : ''} in scope. ${releasedSurveys.length > 0 ? 'AI will surface cohort-level themes once enough released-survey data is available.' : 'No released surveys yet for this cohort.'}`
-              }
-              source={`${scopedResponses.length} response${scopedResponses.length === 1 ? '' : 's'} across ${releasedSurveys.length} released survey${releasedSurveys.length === 1 ? '' : 's'}`}
-            />
-
-            {/*
-              KPI strip — canonical KeyMetrics organism (vendored from Admin DS,
-              2026-05-11). Replaces 4× hand-rolled KpiButton tiles per audit at
-              docs/governance/component-depth-audits/key-metrics.md.
-              Each metric drills via its `href` — same routes as before.
-              `metricsSingleRow` + `showHeader={false}` for an integrated 4-up
-              strip; canonical handles a11y (trend `aria-label`, focus rings,
-              ≥4.5:1 contrast).
-            */}
-            <KeyMetrics
-              variant="card"
-              showHeader={false}
-              metricsSingleRow
-              metrics={kpiMetrics}
-            />
-
-            {/*
-              Score Landscape + Program Trend — paired analytics cards per prototype PD dashboard.
-              Score Landscape: sorted bar chart with tier dots (≥4.3 strong, 3.7-4.3 solid, <3.7 concern).
-              Program Trend: 5-term sparkline using TrendSparkline component (DS-016).
-            */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" id="score-landscape">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-baseline justify-between gap-3">
-                    <div className="min-w-0">
-                      <CardTitle className="text-sm">Score landscape</CardTitle>
-                      <CardDescription>
-                        Released courses, sorted by avg. Click any bar to drill in.
-                      </CardDescription>
-                    </div>
-                    <div className="hidden md:flex items-center gap-2.5 text-[10px] text-muted-foreground shrink-0">
-                      <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full" style={{ background: 'var(--chart-2)' }} aria-hidden="true" />
-                        ≥4.3
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full" style={{ background: 'var(--brand-color)' }} aria-hidden="true" />
-                        3.7–4.3
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full" style={{ background: 'var(--chart-4)' }} aria-hidden="true" />
-                        &lt;3.7
-                      </span>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {releasedSurveys.length > 0 ? (
-                    <ScoreLandscape courses={releasedScoreList} onDrill={(id, released) => {
-                      if (released) router.push(`/my-surveys/${id}/results`)
-                    }} />
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-8">
-                      No released courses yet for {scopeLabel}.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">Program trend</CardTitle>
-                  <CardDescription>Last 5 terms, current highlighted.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <TrendSparkline
-                    history={programTrendHistory}
-                    currentValue={programAvg ?? undefined}
-                    currentLabel={term}
-                    width={300}
-                    height={80}
-                    min={3.0}
-                    max={5.0}
-                  />
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {programTrendHistory.length + (programAvg ? 1 : 0)} terms tracked.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/*
-              At-risk panel — conditional. Released courses with avg <3.7 surface here per
-              prototype. Empty state morphs into "Course health" affirmation when no risk.
-              Brand presence: --brand-tint background on count chip; --brand-color-dark border.
-            */}
-            <Card id="at-risk">
-              <CardHeader className="border-b border-border">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <i
-                    className={atRiskCourses.length > 0 ? 'fa-light fa-triangle-exclamation' : 'fa-light fa-heart-pulse'}
-                    style={{ color: atRiskCourses.length > 0 ? 'var(--chart-4)' : 'var(--chart-2)' }}
-                    aria-hidden="true"
-                  />
-                  {atRiskCourses.length > 0 ? 'At-risk courses' : 'Course health'}
-                  {atRiskCourses.length > 0 && (
-                    <Badge
-                      variant="secondary"
-                      className="rounded-full text-[10px] ms-1"
-                      style={{ backgroundColor: 'var(--brand-tint)', color: 'var(--brand-color-dark)' }}
-                    >
-                      {atRiskCourses.length}
-                    </Badge>
-                  )}
-                </CardTitle>
-                <CardDescription>
-                  {atRiskCourses.length > 0
-                    ? 'Released courses below 3.7. Click any row to drill in.'
-                    : 'All released courses currently at or above 3.7. No CQI actions required this term.'}
-                </CardDescription>
-              </CardHeader>
-              {atRiskCourses.length > 0 && (
-                <CardContent className="p-0">
-                  <ul className="divide-y divide-border">
-                    {atRiskCourses.map(({ survey, avg }) => (
-                      <li key={survey.id}>
-                        <Link
-                          href={`/my-surveys/${survey.id}/results`}
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-inset"
-                        >
-                          <span className="text-sm font-medium">{survey.courseCode}</span>
-                          <span className="text-xs text-muted-foreground truncate flex-1">{survey.courseName}</span>
-                          <span className="text-sm tabular-nums font-semibold" style={{ color: 'var(--chart-4)' }}>
-                            {avg.toFixed(2)}
-                          </span>
-                          <i className="fa-light fa-arrow-right text-xs text-muted-foreground" aria-hidden="true" />
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
+              {axis === 'term' ? (
+                <Select value={term} onValueChange={setTerm}>
+                  <SelectTrigger className="h-8 w-36 text-sm" aria-label="Select term">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MOCK_TERMS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Select value={cohort} onValueChange={setCohort}>
+                  <SelectTrigger className="h-8 w-44 text-sm" aria-label="Select cohort">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MOCK_COHORTS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               )}
-            </Card>
-
-            {/*
-              By Course — sortable DataTable composite (apps/pce/admin/components/data-table/).
-              Subset of the reference at @exxatdesignux/ui (vendored from DS web app data-table/index.tsx) —
-              covers column-def-driven rendering + sortable headers + row drill-down +
-              disabled-row state. Per Aarti D5: each row drills to /my-surveys/[id]/results.
-              Disabled when survey not released (mirrors /my-surveys/page.tsx gate).
-            */}
-            <div className="flex flex-col gap-3">
-              <h2 className="text-sm font-semibold">By Course</h2>
-              <p className="text-xs text-muted-foreground">
-                Click any column header to sort. Click any released row to drill into question-level detail. Rows showing a lock icon are still collecting.
-              </p>
-              <div className="border border-border rounded-lg overflow-hidden">
-                <DataTable<CourseRow>
-                  data={courseBreakdown}
-                  columns={courseColumns}
-                  getRowId={(row) => row.id}
-                  selectable={false}
-                  searchable={false}
-                  onRowClick={(row) => {
-                    if (row.isReleased) {
-                      router.push(`/my-surveys/${row.survey.id}/results`)
-                    }
-                  }}
-                />
-              </div>
             </div>
 
+            {termCourseRows.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
+                <i className="fa-light fa-chart-mixed text-muted-foreground text-4xl" aria-hidden="true" />
+                <div className="flex flex-col gap-1">
+                  <p className="text-sm font-medium">No courses for {scopeLabel}</p>
+                  <p className="text-sm text-muted-foreground max-w-xs">
+                    Activate a term to see surveys here.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <KeyMetrics variant="compact" metricsSingleRow metrics={byTermKpis} />
+
+                {/* Program-level trend (full width) */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Program trend</CardTitle>
+                    <CardDescription>Course rating vs. faculty rating across terms.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ChartContainer
+                      config={programTrendConfig}
+                      className="h-[168px] w-full"
+                      role="img"
+                      aria-label="Program trend: course avg vs faculty avg across historical terms"
+                    >
+                      <LineChart data={programTrendData} margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
+                        <CartesianGrid vertical={false} stroke="var(--border)" />
+                        <XAxis
+                          dataKey="term"
+                          tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+                          tickLine={false}
+                          axisLine={false}
+                        />
+                        <YAxis
+                          domain={[3.4, 4.8]}
+                          tickFormatter={(v: number) => v.toFixed(1)}
+                          tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+                          tickLine={false}
+                          axisLine={false}
+                          width={28}
+                        />
+                        <ChartTooltip
+                          content={
+                            <ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, '']} />
+                          }
+                        />
+                        <ChartLegend content={<ChartLegendContent />} />
+                        <Line type="monotone" dataKey="courseAvg"  stroke="var(--color-courseAvg)"  strokeWidth={2} dot={{ r: 3, fill: 'var(--color-courseAvg)'  }} activeDot={{ r: 4 }} />
+                        <Line type="monotone" dataKey="facultyAvg" stroke="var(--color-facultyAvg)" strokeWidth={2} dot={{ r: 3, fill: 'var(--color-facultyAvg)' }} activeDot={{ r: 4 }} connectNulls={false} />
+                      </LineChart>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Leaderboards: course rankings + faculty rankings */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+                  {/* All-time course rankings */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">Course rankings</CardTitle>
+                      <CardDescription>Enrollment-weighted avg, all time. Color = tier.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ChartContainer
+                        config={courseRankConfig}
+                        style={{ height: `${courseAllTimeRanked.length * 24 + 8}px` }}
+                        className="w-full"
+                        role="img"
+                        aria-label="Course rankings by enrollment-weighted average rating"
+                      >
+                        <BarChart
+                          layout="vertical"
+                          data={courseAllTimeRanked}
+                          margin={{ top: 0, right: 36, bottom: 0, left: 0 }}
+                        >
+                          <XAxis type="number" domain={[0, 5]} hide />
+                          <YAxis
+                            type="category"
+                            dataKey="code"
+                            width={68}
+                            tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+                            tickLine={false}
+                            axisLine={false}
+                          />
+                          <Bar dataKey="avg" radius={[0, 3, 3, 0]} maxBarSize={14} background={{ fill: 'var(--muted)' }}>
+                            {courseAllTimeRanked.map((c) => (
+                              <Cell key={c.code} fill={tierColor(c.avg)} />
+                            ))}
+                          </Bar>
+                          <ChartTooltip
+                            cursor={false}
+                            content={
+                              <ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, 'Avg rating']} />
+                            }
+                          />
+                        </BarChart>
+                      </ChartContainer>
+                    </CardContent>
+                  </Card>
+
+                  {/* All-time faculty rankings */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">Faculty rankings</CardTitle>
+                      <CardDescription>Enrollment-weighted avg, all time. Color = tier.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ChartContainer
+                        config={facultyRankConfig}
+                        style={{ height: `${facultyAllTimeRanked.length * 24 + 8}px` }}
+                        className="w-full"
+                        role="img"
+                        aria-label="Faculty rankings by enrollment-weighted average rating"
+                      >
+                        <BarChart
+                          layout="vertical"
+                          data={facultyAllTimeRanked}
+                          margin={{ top: 0, right: 36, bottom: 0, left: 0 }}
+                        >
+                          <XAxis type="number" domain={[0, 5]} hide />
+                          <YAxis
+                            type="category"
+                            dataKey="name"
+                            width={68}
+                            tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+                            tickLine={false}
+                            axisLine={false}
+                          />
+                          <Bar dataKey="avg" radius={[0, 3, 3, 0]} maxBarSize={14} background={{ fill: 'var(--muted)' }}>
+                            {facultyAllTimeRanked.map((f) => (
+                              <Cell key={f.name} fill={tierColor(f.avg)} />
+                            ))}
+                          </Bar>
+                          <ChartTooltip
+                            cursor={false}
+                            content={
+                              <ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, 'Avg rating']} />
+                            }
+                          />
+                        </BarChart>
+                      </ChartContainer>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <h2 className="text-sm font-semibold">Courses in {scopeLabel}</h2>
+                  <p className="text-xs text-muted-foreground">
+                    Click a released row to open its Evaluation Card. Use Nudge to send an ad-hoc reminder to non-responders.
+                  </p>
+                  <div className="border border-border rounded-lg overflow-hidden">
+                    <DataTable<CourseTermRow>
+                      data={termCourseRows}
+                      columns={termColumns}
+                      getRowId={(row) => row.id}
+                      selectable={false}
+                      searchable={false}
+                      onRowClick={(row) => setSelectedSurveyId(row.id)}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
           </div>
-        )}
-      </div>
+        </TabsContent>
+
+        {/* ───── By Faculty ───── */}
+        <TabsContent value="faculty" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
+          <div className="flex flex-col gap-6 max-w-4xl">
+
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-muted-foreground shrink-0" htmlFor="faculty-select">
+                Faculty
+              </label>
+              <Select value={selectedFacultyId} onValueChange={setSelectedFacultyId}>
+                <SelectTrigger id="faculty-select" className="h-8 w-56 text-sm" aria-label="Select faculty">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MOCK_FACULTY.map(f => (
+                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedFaculty ? (
+              <>
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold shrink-0"
+                    style={{ backgroundColor: 'var(--brand-tint)', color: 'var(--brand-color-dark)' }}
+                    aria-hidden="true"
+                  >
+                    {selectedFaculty.initials}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">{selectedFaculty.name}</p>
+                    <p className="text-xs text-muted-foreground">{selectedFaculty.department}</p>
+                  </div>
+                </div>
+
+                <KeyMetrics variant="compact" metricsSingleRow metrics={facultyKpis} />
+
+                {/* Comparative context: own vs dept avg vs school avg */}
+                {compareData.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">Comparative context</CardTitle>
+                      <CardDescription>
+                        Enrollment-weighted avg vs. {selectedFaculty.department} dept and program average.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ChartContainer
+                        config={compareConfig}
+                        className="h-[100px] w-full"
+                        role="img"
+                        aria-label={`Rating comparison for ${selectedFaculty.name} vs department and school averages`}
+                      >
+                        <BarChart
+                          layout="vertical"
+                          data={compareData}
+                          margin={{ top: 0, right: 48, bottom: 0, left: 0 }}
+                        >
+                          <XAxis type="number" domain={[0, 5]} hide />
+                          <YAxis
+                            type="category"
+                            dataKey="label"
+                            width={88}
+                            tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
+                            tickLine={false}
+                            axisLine={false}
+                          />
+                          <Bar dataKey="rating" radius={[0, 3, 3, 0]} maxBarSize={16} background={{ fill: 'var(--muted)' }}>
+                            {compareData.map((_, i) => (
+                              <Cell
+                                key={i}
+                                fill={i === compareData.length - 1 ? 'var(--brand-color)' : 'var(--muted-foreground)'}
+                                fillOpacity={i === compareData.length - 1 ? 1 : 0.4}
+                              />
+                            ))}
+                          </Bar>
+                          <ChartTooltip
+                            cursor={false}
+                            content={
+                              <ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, 'Avg rating']} />
+                            }
+                          />
+                        </BarChart>
+                      </ChartContainer>
+                    </CardContent>
+                  </Card>
+                )}
+
+                <div className="flex flex-col gap-2">
+                  <h2 className="text-sm font-semibold">
+                    Offerings by {selectedFaculty.name.split(' ').slice(1).join(' ') || selectedFaculty.name}
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    Rows with <i className="fa-light fa-chevron-right" aria-hidden="true" /> have evaluation data — click to open the card.
+                  </p>
+                  <div className="border border-border rounded-lg overflow-hidden">
+                    <DataTable<FacultyOfferingRow>
+                      data={selectedFaculty.offerings}
+                      columns={offeringColumns}
+                      getRowId={(row) => `${row.facultyId}-${row.term}-${row.courseCode}`}
+                      selectable={false}
+                      searchable={false}
+                      onRowClick={(row) => { if (row.surveyId) setSelectedSurveyId(row.surveyId) }}
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-3 py-20 text-center text-muted-foreground">
+                <i className="fa-light fa-user-tie text-4xl" aria-hidden="true" />
+                <p className="text-sm">Select a faculty member above to view their offerings.</p>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* ───── By Course ───── */}
+        <TabsContent value="course" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
+          <div className="flex flex-col gap-6 max-w-4xl">
+
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-muted-foreground shrink-0" htmlFor="course-select">
+                Course
+              </label>
+              <Select value={effectiveCourseCode} onValueChange={setSelectedCourseCode}>
+                <SelectTrigger id="course-select" className="h-8 w-64 text-sm" aria-label="Select course">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {distinctCourses.map(c => (
+                    <SelectItem key={c.code} value={c.code}>{c.code} — {c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {courseOfferings.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-20 text-center text-muted-foreground">
+                <i className="fa-light fa-chart-line text-4xl" aria-hidden="true" />
+                <p className="text-sm">Select a course above to view its cross-term history.</p>
+              </div>
+            ) : (
+              <>
+                <KeyMetrics variant="compact" metricsSingleRow metrics={courseKpis} />
+
+                {/* Rating trend for this course */}
+                {courseTrendData.length >= 2 && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">Rating trend — {effectiveCourseCode}</CardTitle>
+                      <CardDescription>Enrollment-weighted avg rating per term.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ChartContainer
+                        config={courseTrendConfig}
+                        className="h-[140px] w-full"
+                        role="img"
+                        aria-label={`Rating trend for ${effectiveCourseCode} across terms`}
+                      >
+                        <LineChart data={courseTrendData} margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
+                          <CartesianGrid vertical={false} stroke="var(--border)" />
+                          <XAxis
+                            dataKey="term"
+                            tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+                            tickLine={false}
+                            axisLine={false}
+                          />
+                          <YAxis
+                            domain={[3.0, 5.0]}
+                            tickFormatter={(v: number) => v.toFixed(1)}
+                            tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+                            tickLine={false}
+                            axisLine={false}
+                            width={28}
+                          />
+                          <ChartTooltip
+                            content={
+                              <ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, 'Avg rating']} />
+                            }
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="rating"
+                            stroke="var(--color-rating)"
+                            strokeWidth={2}
+                            dot={{ r: 4, fill: 'var(--color-rating)' }}
+                            activeDot={{ r: 5 }}
+                          />
+                        </LineChart>
+                      </ChartContainer>
+                    </CardContent>
+                  </Card>
+                )}
+
+                <div className="flex flex-col gap-2">
+                  <h2 className="text-sm font-semibold">Offerings of {effectiveCourseCode}</h2>
+                  <p className="text-xs text-muted-foreground">
+                    Click any row to open the Evaluation Card for that term.
+                  </p>
+                  <div className="border border-border rounded-lg overflow-hidden">
+                    <DataTable<CourseOfferingRow>
+                      data={courseOfferings}
+                      columns={courseOfferingColumns}
+                      getRowId={(row) => `${row.courseCode}-${row.term}-${row.facultyId}`}
+                      selectable={false}
+                      searchable={false}
+                      onRowClick={(row) => { if (row.surveyId) setSelectedSurveyId(row.surveyId) }}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* ───── Evaluation Card ───── */}
+      <EvaluationCardSheet
+        surveyId={selectedSurveyId}
+        onClose={() => setSelectedSurveyId(null)}
+      />
+
+      {/* ───── Nudge confirmation ───── */}
+      <AlertDialog open={!!nudgeTarget} onOpenChange={(open) => !open && setNudgeTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send ad-hoc reminder</AlertDialogTitle>
+            <AlertDialogDescription>
+              {nudgeTarget && (
+                <>
+                  Send an immediate reminder to{' '}
+                  <strong>
+                    {nudgeTarget.nonResponders} non-responder{nudgeTarget.nonResponders !== 1 ? 's' : ''}
+                  </strong>{' '}
+                  in <strong>{nudgeTarget.courseCode} — {nudgeTarget.courseName}</strong>.
+                  This is an out-of-schedule nudge.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction>Send reminder</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
+  )
+}
+
+export default function AnalyticsPage() {
+  return (
+    <Suspense>
+      <AnalyticsInner />
+    </Suspense>
   )
 }

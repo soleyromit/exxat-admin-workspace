@@ -1,67 +1,77 @@
 'use client'
 
-/**
- * Admin · Faculty (UC-19, workspace ADR-001 entity #5).
- *
- * Per Aarti 2026-05-08 16:09 D12: Faculty profile must be a SHARED component
- * between Exam Mgmt + CFE — single source of truth. This admin list view is
- * the platform-level inventory; the per-faculty drilldown will become a
- * shared React component in a later workstream.
- */
-
 import { useMemo } from 'react'
 import Link from 'next/link'
-import {
-  Button,
-  Tooltip, TooltipContent, TooltipTrigger,
-  Avatar, AvatarFallback,
-} from '@exxatdesignux/ui'
+import { Avatar, AvatarFallback, KeyMetrics } from '@exxatdesignux/ui'
+import type { MetricItem } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import {
-  MOCK_FACULTY, MOCK_LMS_ENABLED, MOCK_COURSE_OFFERINGS,
+  MOCK_FACULTY, MOCK_FACULTY_OFFERINGS,
   type PceInstructor,
 } from '@/lib/pce-mock-data'
-import { DataTable } from '@/components/data-table'
+import { DataTablePaginated } from '@/components/data-table/pagination'
 import type { ColumnDef } from '@/components/data-table/types'
-import { RowActions, type RowAction } from '@/components/data-table/row-actions'
 
-/* Flat row type — keep faculty record + sortable scalars (name, count). */
 interface FacultyRow extends Record<string, unknown> {
   id: string
   faculty: PceInstructor
-  name: string
-  initials: string
+  name: string; initials: string; department: string
   offeringCount: number
+  avgRating: number | null
+  avgCompletion: number | null
 }
 
+const PRISM_BASE = 'https://app.exxat.com/prism/dpt/faculty'
+
+const tierColor = (avg: number) =>
+  avg >= 4.3 ? 'var(--chart-2)' : avg >= 3.7 ? 'var(--brand-color)' : 'var(--chart-4)'
+
+const completionColor = (pct: number) =>
+  pct >= 80 ? 'var(--chart-2)' : pct >= 60 ? 'var(--brand-color)' : 'var(--chart-4)'
+
 export default function FacultyPage() {
-  // Derived: count of course offerings per faculty (active term)
-  const offeringCount = useMemo(() => {
-    const m = new Map<string, number>()
-    for (const o of MOCK_COURSE_OFFERINGS) {
-      if (o.status === 'archived') continue
-      m.set(o.primaryFacultyId, (m.get(o.primaryFacultyId) ?? 0) + 1)
-    }
-    return m
+  const rows: FacultyRow[] = useMemo(() => {
+    return MOCK_FACULTY.map(f => {
+      const offerings = MOCK_FACULTY_OFFERINGS.filter(o => o.facultyId === f.id)
+      const totalEnrolled = offerings.reduce((s, o) => s + o.enrolled, 0)
+      const avgRating = totalEnrolled > 0
+        ? +(offerings.reduce((s, o) => s + o.avgRating * o.enrolled, 0) / totalEnrolled).toFixed(2)
+        : null
+      const avgCompletion = totalEnrolled > 0
+        ? +(offerings.reduce((s, o) => s + o.responseRate * o.enrolled, 0) / totalEnrolled).toFixed(1)
+        : null
+      return {
+        id: f.id, faculty: f,
+        name: f.name, initials: f.initials,
+        department: f.department ?? '—',
+        offeringCount: offerings.length,
+        avgRating, avgCompletion,
+      }
+    })
   }, [])
 
-  const rows: FacultyRow[] = useMemo(
-    () => MOCK_FACULTY.map(f => ({
-      id: f.id,
-      faculty: f,
-      name: f.name,
-      initials: f.initials,
-      offeringCount: offeringCount.get(f.id) ?? 0,
-    })),
-    [offeringCount]
-  )
+  const departments  = [...new Set(MOCK_FACULTY.map(f => f.department).filter(Boolean))].length
+  const programAvg   = (() => {
+    const totalE = MOCK_FACULTY_OFFERINGS.reduce((s, o) => s + o.enrolled, 0)
+    if (totalE === 0) return null
+    return +(MOCK_FACULTY_OFFERINGS.reduce((s, o) => s + o.avgRating * o.enrolled, 0) / totalE).toFixed(1)
+  })()
+  const programCompletion = (() => {
+    const totalE = MOCK_FACULTY_OFFERINGS.reduce((s, o) => s + o.enrolled, 0)
+    if (totalE === 0) return null
+    return +(MOCK_FACULTY_OFFERINGS.reduce((s, o) => s + o.responseRate * o.enrolled, 0) / totalE).toFixed(1)
+  })()
+
+  const kpis: MetricItem[] = [
+    { id: 'faculty',    label: 'Faculty',         value: MOCK_FACULTY.length,                                       delta: '', trend: 'neutral' },
+    { id: 'dept',       label: 'Departments',      value: departments,                                               delta: '', trend: 'neutral' },
+    { id: 'rating',     label: 'Avg rating',       value: programAvg !== null ? `${programAvg}/5` : '—',            delta: '', trend: 'neutral' },
+    { id: 'completion', label: 'Avg completion',   value: programCompletion !== null ? `${programCompletion}%` : '—', delta: '', trend: 'neutral' },
+  ]
 
   const columns: ColumnDef<FacultyRow>[] = [
     {
-      key: 'name',
-      label: 'Name',
-      sortable: true,
-      width: 280,
+      key: 'name', label: 'Name', sortable: true, width: 260,
       cell: (row) => (
         <div className="flex items-center gap-2">
           <Avatar className="h-7 w-7 rounded-full shrink-0">
@@ -77,37 +87,63 @@ export default function FacultyPage() {
       ),
     },
     {
-      key: 'offeringCount',
-      label: 'Active offerings',
-      sortable: true,
-      width: 180,
+      key: 'department', label: 'Department', sortable: true, width: 200,
+      cell: (row) => <span className="text-sm text-muted-foreground">{row.department}</span>,
+    },
+    {
+      key: 'offeringCount', label: 'Offerings', sortable: true, width: 110,
+      header: () => <span className="block text-right">Offerings</span>,
       cell: (row) => (
-        <span className="tabular-nums text-sm">
-          {row.offeringCount > 0
-            ? `${row.offeringCount} offering${row.offeringCount === 1 ? '' : 's'}`
-            : <span className="text-muted-foreground">none</span>}
-        </span>
+        <div className="text-right tabular-nums text-sm">
+          {row.offeringCount > 0 ? row.offeringCount : <span className="text-muted-foreground">—</span>}
+        </div>
       ),
     },
     {
-      key: 'actions',
-      label: '',
-      width: 44,
+      key: 'avgCompletion', label: 'Completion', sortable: true, width: 120,
+      header: () => <span className="block text-right">Completion</span>,
       cell: (row) => (
-        <RowActions
-          row={row}
-          label={row.name}
-          actions={FACULTY_ROW_ACTIONS}
+        <div
+          className="text-right tabular-nums text-sm font-semibold"
+          style={{ color: row.avgCompletion !== null ? completionColor(row.avgCompletion) : 'var(--muted-foreground)' }}
+        >
+          {row.avgCompletion !== null ? `${row.avgCompletion}%` : '—'}
+        </div>
+      ),
+    },
+    {
+      key: 'avgRating', label: 'Avg rating', sortable: true, width: 120,
+      header: () => <span className="block text-right">Avg rating</span>,
+      cell: (row) => (
+        <div
+          className="text-right tabular-nums text-sm font-semibold"
+          style={{ color: row.avgRating !== null ? tierColor(row.avgRating) : 'var(--muted-foreground)' }}
+        >
+          {row.avgRating !== null ? `${row.avgRating.toFixed(1)}/5` : '—'}
+        </div>
+      ),
+    },
+    {
+      key: 'analytics', label: '', width: 32,
+      cell: (row) => (
+        <Link
+          href={`/analytics?tab=faculty&facultyId=${row.id}`}
+          onClick={e => e.stopPropagation()}
+          title="View in Analytics"
+        >
+          <i className="fa-light fa-chart-mixed text-xs" style={{ color: 'var(--brand-color)' }} aria-hidden="true" />
+        </Link>
+      ),
+    },
+    {
+      key: 'prism', label: '', width: 32,
+      cell: () => (
+        <i
+          className="fa-light fa-arrow-up-right-from-square text-xs text-muted-foreground"
+          aria-hidden="true"
         />
       ),
     },
-  ]
-
-  const FACULTY_ROW_ACTIONS: RowAction<FacultyRow>[] = [
-    { label: 'Edit profile',   icon: 'fa-pen',             disabled: MOCK_LMS_ENABLED },
-    { label: 'View offerings', icon: 'fa-rectangle-list'  },
-    { label: 'Manage roles',   icon: 'fa-shield-check'    },
-    { label: 'Archive',        icon: 'fa-box-archive',     variant: 'destructive', divider: true },
   ]
 
   return (
@@ -117,78 +153,42 @@ export default function FacultyPage() {
         <Link href="/admin" className="text-sm text-muted-foreground">Admin</Link>
         <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
         <h1 className="text-sm font-semibold flex-1 truncate">Faculty</h1>
+        <span className="text-xs text-muted-foreground flex items-center gap-1">
+          <i className="fa-light fa-rotate text-xs" aria-hidden="true" />
+          Synced from Prism
+        </span>
       </div>
 
-      <div className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
+      <div className="shrink-0 [&_*]:!border-e-0 px-4 lg:px-6" style={{ paddingBlock: 4 }}>
+        <KeyMetrics variant="compact" showHeader={false} metricsSingleRow metrics={kpis} />
+      </div>
+
+      <div className="flex-1 overflow-auto" style={{ paddingTop: 16, paddingBottom: 28 }}>
         <div className="max-w-5xl flex flex-col gap-4">
 
-          <p className="text-sm text-muted-foreground max-w-2xl">
-            Faculty profiles are shared across all modules. Manage the master list here.
+          <p className="text-sm text-muted-foreground px-4 lg:px-6">
+            {MOCK_FACULTY.length} faculty · {departments} department{departments !== 1 ? 's' : ''}.
+            Click any row to open the faculty profile in Prism.
           </p>
 
-          {/* Toolbar: Add + Import sit outside the table because they aren't column controls.
-              Search is provided by DataTable's built-in searchable toolbar. */}
-          <div className="flex items-center gap-2 justify-end">
-            {MOCK_LMS_ENABLED ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="default" disabled aria-disabled="true">
-                    <i className="fa-light fa-plus" aria-hidden="true" />
-                    Add faculty
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Managed by your LMS</TooltipContent>
-              </Tooltip>
-            ) : (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="default" disabled aria-disabled="true">
-                    <i className="fa-light fa-plus" aria-hidden="true" />
-                    Add faculty
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Faculty add UI coming in next pass — use Import CSV for now</TooltipContent>
-              </Tooltip>
-            )}
-
-            <Button variant="outline">
-              <i className="fa-light fa-arrow-up-from-bracket" aria-hidden="true" />
-              Import CSV
-            </Button>
-          </div>
-
-          <DataTable<FacultyRow>
+          <DataTablePaginated<FacultyRow>
             data={rows}
             columns={columns}
             getRowId={(row) => row.id}
-            selectable
+            selectable={false}
             searchable
+            onRowClick={(row) => window.open(`${PRISM_BASE}/${row.id}`, '_blank', 'noopener')}
             emptyState={
               <div className="flex flex-col items-center gap-2 py-6">
                 <i className="fa-light fa-users text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
-                <p className="text-sm font-medium">
-                  {rows.length === 0 ? 'No faculty yet' : 'No faculty match your search'}
-                </p>
-                <p className="text-xs text-muted-foreground" style={{ maxWidth: 320 }}>
-                  {rows.length === 0
-                    ? (MOCK_LMS_ENABLED ? 'Faculty sync from your LMS — none have synced yet.' : 'Import a CSV or wait for the Add faculty UI in Phase 2.')
-                    : 'Try a different name or clear the search.'}
-                </p>
+                <p className="text-sm font-medium">No faculty match your search</p>
               </div>
             }
             toolbarSlot={() => null}
           />
-
-          {!MOCK_LMS_ENABLED && (
-            <p className="text-xs text-muted-foreground">
-              <i className="fa-light fa-circle-info text-xs me-1" aria-hidden="true" />
-              LMS integration is off. Faculty list is managed manually.
-            </p>
-          )}
 
         </div>
       </div>
     </>
   )
 }
-

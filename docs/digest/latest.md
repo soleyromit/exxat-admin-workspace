@@ -49,7 +49,7 @@
 | `patient-log` | `experience-principles` | Patient Log — Experience Principles | 2026-05-09 |
 | `patient-log` | `use-cases` | Patient Log — Use Cases | 2026-05-09 |
 | `patient-log` | `vision` | Patient Log — Vision | 2026-05-09 |
-| `pce` | `aarti-perspective` | Aarti's Perspective — PCE / CFE | 2026-06-13 |
+| `pce` | `aarti-perspective` | Aarti's Perspective — PCE / CFE | 2026-06-16 |
 | `pce` | `ai-layer` | PCE / CFE — AI Layer | 2026-05-09 |
 | `pce` | `experience-principles` | PCE / CFE — Experience Principles | 2026-05-09 |
 | `pce` | `use-cases` | PCE / CFE — Use Cases | 2026-05-09 |
