@@ -41,10 +41,6 @@ import {
   CommandGroup,
   CommandItem,
   Checkbox,
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
@@ -70,8 +66,70 @@ function qTypeLabel(type: AnswerType): string {
   return Q_TYPE_OPTIONS.find(o => o.value === type)?.label ?? type
 }
 
-function hasChoices(type: AnswerType) {
-  return type === 'single_choice' || type === 'multiple_choice' || type === 'select_dropdown'
+// Inline expand card — replaces the question row when adding or editing
+function QuestionExpandCard({
+  initialText = '',
+  initialType = 'likert' as AnswerType,
+  onSave,
+  onCancel,
+}: {
+  initialText?: string
+  initialType?: AnswerType
+  onSave: (text: string, type: AnswerType) => void
+  onCancel: () => void
+}) {
+  const [text, setText] = useState(initialText)
+  const [type, setType] = useState<AnswerType>(initialType)
+
+  return (
+    <div
+      style={{
+        border: '1.5px solid var(--brand-color)',
+        borderRadius: 'var(--radius)',
+        padding: 12,
+        background: 'var(--background)',
+        margin: '4px 0 8px',
+      }}
+    >
+      <Textarea
+        autoFocus
+        value={text}
+        onChange={e => setText(e.target.value)}
+        placeholder="Type your question…"
+        rows={2}
+        style={{ resize: 'none' }}
+        className="text-sm border-0 shadow-none focus-visible:ring-0 px-0 bg-transparent mb-3"
+      />
+      <div className="flex items-center justify-between gap-2">
+        <Select value={type} onValueChange={v => setType(v as AnswerType)}>
+          <SelectTrigger className="h-7 text-xs w-40" aria-label="Answer type">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {Q_TYPE_OPTIONS.map(o => (
+              <SelectItem key={o.value} value={o.value}>
+                <span className="flex items-center gap-1.5">
+                  <i className={`fa-light ${o.icon}`} aria-hidden="true" />
+                  {o.label}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="flex items-center gap-1.5">
+          <Button variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
+          <Button
+            variant="default"
+            size="sm"
+            disabled={!text.trim()}
+            onClick={() => { if (text.trim()) onSave(text.trim(), type) }}
+          >
+            {initialText ? 'Save' : 'Add'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function TemplateEditorPage() {
@@ -88,8 +146,8 @@ export default function TemplateEditorPage() {
 
   const [saved, setSaved] = useState(false)
   const [closedSectionIds, setClosedSectionIds] = useState<Set<string>>(new Set())
-  const [selectedQuestion, setSelectedQuestion] = useState<{ sectionId: string; questionId: string } | null>(null)
-  const [metaOpen, setMetaOpen] = useState(false)
+  const [editingQuestion, setEditingQuestion] = useState<{ sectionId: string; questionId: string } | null>(null)
+  const [addingToSectionId, setAddingToSectionId] = useState<string | null>(null)
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null)
   const [editingSectionTitle, setEditingSectionTitle] = useState('')
   // Subject group tabs — each group has a key, display label, and list of evaluated roles
@@ -103,10 +161,6 @@ export default function TemplateEditorPage() {
   const [rolePickerGroupKey, setRolePickerGroupKey] = useState<string | null>(null)
   const [roleSearch, setRoleSearch] = useState('')
 
-  // Per-question local UI state (not persisted to data model)
-  const [naToggles, setNaToggles] = useState<Record<string, boolean>>({})
-  const [commentToggles, setCommentToggles] = useState<Record<string, boolean>>({})
-  const [optionInputs, setOptionInputs] = useState<Record<string, string[]>>({})
 
   const questionDragInfo = useRef<{ sectionId: string; index: number } | null>(null)
 
@@ -127,11 +181,6 @@ export default function TemplateEditorPage() {
   const sections = t.templateSections ?? []
   const totalQuestions = sections.reduce((sum, s) => sum + s.questions.length, 0)
   const canPublish = sections.length > 0 && totalQuestions > 0
-
-  const selectedQ = selectedQuestion
-    ? sections.find(s => s.id === selectedQuestion.sectionId)
-        ?.questions.find(q => q.id === selectedQuestion.questionId) ?? null
-    : null
 
   function toggleSection(sectionId: string) {
     setClosedSectionIds(prev => {
@@ -156,7 +205,7 @@ export default function TemplateEditorPage() {
     if (key === 'course_content') return
     sections.filter(s => s.subjectKey === key).forEach(s => {
       removeTemplateSection(t.id, s.id)
-      if (selectedQuestion?.sectionId === s.id) setSelectedQuestion(null)
+      if (editingQuestion?.sectionId === s.id) setEditingQuestion(null)
     })
     setSubjectGroups(prev => prev.filter(g => g.key !== key))
     setActiveGroup('course_content')
@@ -184,20 +233,21 @@ export default function TemplateEditorPage() {
     setClosedSectionIds(prev => { const n = new Set(prev); n.delete(newId); return n })
   }
 
-  function handleAddQuestion(sectionId: string, type: AnswerType) {
+  function handleAddQuestion(sectionId: string, text: string, type: AnswerType) {
     const newId = `q-${Date.now()}`
-    addSectionQuestion(t.id, sectionId, '', type, undefined, newId)
+    addSectionQuestion(t.id, sectionId, text, type, undefined, newId)
     setClosedSectionIds(prev => {
       const next = new Set(prev)
       next.delete(sectionId)
       return next
     })
-    setSelectedQuestion({ sectionId, questionId: newId })
+    setAddingToSectionId(null)
   }
 
-  function updateSelectedQ(patch: Partial<Pick<TemplateQuestion, 'text' | 'answerType'>>) {
-    if (!selectedQuestion) return
-    updateSectionQuestion(t.id, selectedQuestion.sectionId, selectedQuestion.questionId, patch)
+  function handleSaveEditQuestion(text: string, type: AnswerType) {
+    if (!editingQuestion) return
+    updateSectionQuestion(t.id, editingQuestion.sectionId, editingQuestion.questionId, { text, answerType: type })
+    setEditingQuestion(null)
   }
 
   function handleMoveQuestion(sectionId: string, index: number, direction: 'up' | 'down') {
@@ -211,27 +261,11 @@ export default function TemplateEditorPage() {
   function handleDuplicateQuestion(sectionId: string, q: TemplateQuestion) {
     const newId = `q-${Date.now()}`
     addSectionQuestion(t.id, sectionId, q.text, q.answerType, q.choices, newId)
-    setSelectedQuestion({ sectionId, questionId: newId })
   }
 
   function handleDeleteQuestion(sectionId: string, questionId: string) {
     deleteSectionQuestion(t.id, sectionId, questionId)
-    if (selectedQuestion?.questionId === questionId) setSelectedQuestion(null)
-  }
-
-  function handleAddOption(questionId: string) {
-    setOptionInputs(prev => ({
-      ...prev,
-      [questionId]: [...(prev[questionId] ?? []), ''],
-    }))
-  }
-
-  function handleOptionChange(questionId: string, idx: number, val: string) {
-    setOptionInputs(prev => {
-      const arr = [...(prev[questionId] ?? [])]
-      arr[idx] = val
-      return { ...prev, [questionId]: arr }
-    })
+    if (editingQuestion?.questionId === questionId) setEditingQuestion(null)
   }
 
   function handleQDragStart(sectionId: string, index: number) {
@@ -389,7 +423,8 @@ export default function TemplateEditorPage() {
                 variant="destructive"
                 onClick={() => {
                   removeTemplateSection(t.id, sec.id)
-                  if (selectedQuestion?.sectionId === sec.id) setSelectedQuestion(null)
+                  if (editingQuestion?.sectionId === sec.id) setEditingQuestion(null)
+                  if (addingToSectionId === sec.id) setAddingToSectionId(null)
                 }}
               >
                 <i className="fa-light fa-trash" aria-hidden="true" /> Remove section
@@ -400,10 +435,21 @@ export default function TemplateEditorPage() {
 
         {/* Section body */}
         {isOpen && (
-          <div className="flex flex-col">
+          <div className="flex flex-col px-3 pb-3">
             {sec.questions.map((q, qIndex) => {
-              const isSelected =
-                selectedQuestion?.questionId === q.id && selectedQuestion?.sectionId === sec.id
+              const isEditing =
+                editingQuestion?.questionId === q.id && editingQuestion?.sectionId === sec.id
+              if (isEditing) {
+                return (
+                  <QuestionExpandCard
+                    key={q.id}
+                    initialText={q.text}
+                    initialType={q.answerType}
+                    onSave={handleSaveEditQuestion}
+                    onCancel={() => setEditingQuestion(null)}
+                  />
+                )
+              }
               return (
                 <div
                   key={q.id}
@@ -411,68 +457,63 @@ export default function TemplateEditorPage() {
                   onDragStart={() => handleQDragStart(sec.id, qIndex)}
                   onDragOver={e => handleQDragOver(e, sec.id, qIndex)}
                   onDragEnd={handleQDragEnd}
-                  style={{
-                    borderBottom: '1px solid var(--border)',
-                    background: isSelected ? 'var(--muted)' : 'transparent',
-                  }}
+                  className="flex items-start gap-2 group"
+                  style={{ borderBottom: '1px solid var(--border)', padding: '10px 0' }}
                 >
-                  <div className="flex items-start gap-2" style={{ padding: '10px 14px' }}>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="flex-1 min-w-0 justify-start text-sm font-medium text-left h-auto p-0 hover:bg-transparent"
-                      onClick={() => setSelectedQuestion({ sectionId: sec.id, questionId: q.id })}
-                    >
-                      {q.text || <span style={{ color: 'var(--muted-foreground)' }}>Untitled Question</span>}
+                  <div style={{ cursor: 'grab' }} className="shrink-0 text-muted-foreground flex items-center opacity-0 group-hover:opacity-40 mt-0.5">
+                    <DragHandleGripIcon />
+                  </div>
+                  <span className="shrink-0 tabular-nums text-xs font-medium text-muted-foreground mt-0.5" style={{ width: 16, textAlign: 'right' }}>
+                    {qIndex + 1}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex-1 min-w-0 justify-start text-sm font-medium text-left h-auto p-0 hover:bg-transparent"
+                    onClick={() => { setEditingQuestion({ sectionId: sec.id, questionId: q.id }); setAddingToSectionId(null) }}
+                  >
+                    {q.text || <span style={{ color: 'var(--muted-foreground)' }}>Untitled question</span>}
+                  </Button>
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <span className="text-xs mr-1 shrink-0 text-muted-foreground">{qTypeLabel(q.answerType)}</span>
+                    <Button variant="ghost" size="icon-sm" aria-label="Move up" disabled={qIndex === 0}
+                      onClick={() => handleMoveQuestion(sec.id, qIndex, 'up')}>
+                      <i className="fa-light fa-arrow-up text-xs" aria-hidden="true" />
                     </Button>
-                    <div className="flex items-center gap-0.5 shrink-0 ml-1">
-                      <span className="text-xs mr-1 shrink-0" style={{ color: 'var(--muted-foreground)' }}>
-                        {qTypeLabel(q.answerType)}
-                      </span>
-                      <Button variant="ghost" size="icon-sm" aria-label="Move up" disabled={qIndex === 0}
-                        onClick={() => handleMoveQuestion(sec.id, qIndex, 'up')}>
-                        <i className="fa-light fa-arrow-up text-xs" aria-hidden="true" />
-                      </Button>
-                      <Button variant="ghost" size="icon-sm" aria-label="Move down" disabled={qIndex === sec.questions.length - 1}
-                        onClick={() => handleMoveQuestion(sec.id, qIndex, 'down')}>
-                        <i className="fa-light fa-arrow-down text-xs" aria-hidden="true" />
-                      </Button>
-                      <Button variant="ghost" size="icon-sm" aria-label="Duplicate question"
-                        onClick={() => handleDuplicateQuestion(sec.id, q)}>
-                        <i className="fa-light fa-copy text-xs" aria-hidden="true" />
-                      </Button>
-                      <Button variant="ghost" size="icon-sm" aria-label="Delete question"
-                        onClick={() => handleDeleteQuestion(sec.id, q.id)}>
-                        <i className="fa-light fa-trash text-xs" aria-hidden="true" style={{ color: 'var(--destructive)' }} />
-                      </Button>
-                      <div style={{ cursor: 'grab' }} className="shrink-0 text-muted-foreground flex items-center">
-                        <DragHandleGripIcon />
-                      </div>
-                    </div>
+                    <Button variant="ghost" size="icon-sm" aria-label="Move down" disabled={qIndex === sec.questions.length - 1}
+                      onClick={() => handleMoveQuestion(sec.id, qIndex, 'down')}>
+                      <i className="fa-light fa-arrow-down text-xs" aria-hidden="true" />
+                    </Button>
+                    <Button variant="ghost" size="icon-sm" aria-label="Duplicate question"
+                      onClick={() => handleDuplicateQuestion(sec.id, q)}>
+                      <i className="fa-light fa-copy text-xs" aria-hidden="true" />
+                    </Button>
+                    <Button variant="ghost" size="icon-sm" aria-label="Delete question"
+                      onClick={() => handleDeleteQuestion(sec.id, q.id)}>
+                      <i className="fa-light fa-trash text-xs" aria-hidden="true" style={{ color: 'var(--destructive)' }} />
+                    </Button>
                   </div>
                 </div>
               )
             })}
-            <div className="flex items-center justify-center" style={{ padding: '20px 14px' }}>
-              <DropdownMenu modal={false}>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="default" size="sm">
-                    <i className="fa-light fa-plus" aria-hidden="true" />
-                    Add question
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="center" className="w-56">
-                  {Q_TYPE_OPTIONS.map(opt => (
-                    <DropdownMenuItem key={opt.value} onClick={() => handleAddQuestion(sec.id, opt.value)}>
-                      <i className={`fa-light ${opt.icon} shrink-0`} aria-hidden="true"
-                        style={{ width: 16, textAlign: 'center', color: 'var(--muted-foreground)' }} />
-                      {opt.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            {addingToSectionId === sec.id ? (
+              <QuestionExpandCard
+                onSave={(text, type) => handleAddQuestion(sec.id, text, type)}
+                onCancel={() => setAddingToSectionId(null)}
+              />
+            ) : (
+              <div className="pt-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground"
+                  onClick={() => { setAddingToSectionId(sec.id); setEditingQuestion(null) }}
+                >
+                  <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                  Add question
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -888,186 +929,6 @@ export default function TemplateEditorPage() {
       </Tabs>
 
 
-      {/* Field Details sheet — opens when a question is selected in the builder */}
-      <Sheet open={selectedQuestion !== null} onOpenChange={open => { if (!open) setSelectedQuestion(null) }}>
-        <SheetContent side="right" style={{ width: 320, display: 'flex', flexDirection: 'column', gap: 0 }}>
-          <SheetHeader style={{ padding: '16px 16px 12px', borderBottom: '1px solid var(--border)' }}>
-            <SheetTitle>Field Details</SheetTitle>
-          </SheetHeader>
-          {selectedQ && (
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-
-              {/* Question type */}
-              <div>
-                <FieldLabel
-                  htmlFor="q-type-select"
-                  className="text-xs font-medium mb-1.5 block"
-                >
-                  Question Type
-                </FieldLabel>
-                <Select
-                  value={selectedQ.answerType}
-                  onValueChange={val => updateSelectedQ({ answerType: val as AnswerType })}
-                >
-                  <SelectTrigger id="q-type-select" className="h-8 text-sm w-full" aria-label="Question type">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Q_TYPE_OPTIONS.map(opt => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        <span className="flex items-center gap-2">
-                          <i
-                            className={`fa-light ${opt.icon} shrink-0`}
-                            aria-hidden="true"
-                            style={{ width: 14, textAlign: 'center', color: 'var(--muted-foreground)' }}
-                          />
-                          {opt.label}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Question text */}
-              <div>
-                <FieldLabel
-                  htmlFor="q-text-area"
-                  className="text-xs font-medium mb-1.5 block"
-                >
-                  Question
-                </FieldLabel>
-                <Textarea
-                  id="q-text-area"
-                  value={selectedQ.text}
-                  onChange={e => updateSelectedQ({ text: e.target.value })}
-                  placeholder="Type your question…"
-                  rows={3}
-                  style={{ resize: 'none' }}
-                  className="text-sm"
-                />
-              </div>
-
-              {/* Meta Information */}
-              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-                <Collapsible open={metaOpen} onOpenChange={setMetaOpen}>
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      variant="ghost" size="sm"
-                      className="w-full justify-between px-0 hover:bg-transparent"
-                    >
-                      <span className="text-xs font-medium">Meta Information</span>
-                      <i
-                        className={`fa-light fa-chevron-${metaOpen ? 'up' : 'down'} text-xs`}
-                        aria-hidden="true"
-                      />
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-3 pt-2">
-                    <div>
-                      <FieldLabel
-                        htmlFor="q-help-text"
-                        className="text-xs font-medium mb-1.5 block"
-                      >
-                        Help Information
-                      </FieldLabel>
-                      <Textarea
-                        id="q-help-text"
-                        rows={2}
-                        className="text-sm"
-                        placeholder="Optional helper text shown to respondents"
-                        style={{ resize: 'none' }}
-                      />
-                    </div>
-                    <div>
-                      <FieldLabel
-                        htmlFor="q-report-title"
-                        className="text-xs font-medium mb-1.5 block"
-                      >
-                        Report Title
-                      </FieldLabel>
-                      <Input id="q-report-title" className="h-8 text-sm" placeholder="Same as question text" />
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              </div>
-
-              {/* Answer choices */}
-              {hasChoices(selectedQ.answerType) && (
-                <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-                  <p
-                    className="text-xs font-medium mb-2"
-                  >
-                    Answer Choices
-                  </p>
-                  <div className="flex flex-col gap-1.5 mb-2">
-                    {(optionInputs[selectedQ.id] ?? []).map((opt, idx) => (
-                      <Input
-                        key={idx}
-                        value={opt}
-                        onChange={e => handleOptionChange(selectedQ.id, idx, e.target.value)}
-                        placeholder={`Option ${idx + 1}`}
-                        className="h-8 text-sm"
-                      />
-                    ))}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => handleAddOption(selectedQ.id)}
-                  >
-                    <i className="fa-light fa-plus" aria-hidden="true"  />
-                    Add options
-                  </Button>
-                </div>
-              )}
-
-              {/* Toggles */}
-              <div
-                className="flex flex-col gap-3"
-                style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <FieldLabel
-                    className="text-xs font-medium"
-                    style={{ color: 'var(--foreground)' }}
-                  >
-                    Include Not Applicable Option
-                  </FieldLabel>
-                  <ToggleSwitch
-                    checked={naToggles[selectedQ.id] ?? false}
-                    onChange={() =>
-                      setNaToggles(prev => ({
-                        ...prev,
-                        [selectedQ.id]: !prev[selectedQ.id],
-                      }))
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between gap-2">
-                  <FieldLabel
-                    className="text-xs font-medium"
-                    style={{ color: 'var(--foreground)' }}
-                  >
-                    Comments
-                  </FieldLabel>
-                  <ToggleSwitch
-                    checked={commentToggles[selectedQ.id] ?? false}
-                    onChange={() =>
-                      setCommentToggles(prev => ({
-                        ...prev,
-                        [selectedQ.id]: !prev[selectedQ.id],
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
 
     </div>
   )
