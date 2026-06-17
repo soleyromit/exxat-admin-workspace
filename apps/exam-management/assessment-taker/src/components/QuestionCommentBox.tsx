@@ -24,7 +24,7 @@ export function QuestionCommentBox({ questionId, initialComment = '', onSave, on
     <aside
       aria-label="Report issue to faculty"
       className="flex flex-col flex-shrink-0 rounded-2xl border border-border shadow-sm overflow-hidden bg-card"
-      style={{ width: 360, marginBlock: 24 }}
+      style={{ width: 360 }}
     >
       {/* Header */}
       <div className="flex items-center justify-between flex-shrink-0 px-4 py-3 border-b border-border">
@@ -44,18 +44,17 @@ export function QuestionCommentBox({ questionId, initialComment = '', onSave, on
       </div>
 
       {/* Body */}
-      <div className="flex flex-col gap-4 flex-1 overflow-y-auto px-4 py-4">
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
+      <div className="flex flex-col gap-3 flex-1 min-h-0 px-4 py-4">
+        <p className="text-sm leading-relaxed shrink-0" style={{ color: 'var(--muted-foreground)' }}>
           Describe the issue (typo, ambiguous wording, suspected error). Faculty will review post-exam — you will not receive a real-time response.
         </p>
 
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          rows={5}
           placeholder="e.g. Option C and D appear to describe the same condition…"
           aria-label="Describe the issue"
-          className="resize-none"
+          className="resize-none flex-1 min-h-0"
         />
 
         <p

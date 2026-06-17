@@ -1,8 +1,8 @@
 {
-  "generated": "2026-06-16",
+  "generated": "2026-06-17",
   "source": "@exxatdesignux/ui",
-  "version": "0.6.30",
-  "componentCount": 466,
+  "version": "0.6.48",
+  "componentCount": 472,
   "components": {
     "ALL_DATA_LIST_VIEW_TYPES": {
       "importPath": "@exxatdesignux/ui",
@@ -712,6 +712,10 @@
       "importPath": "@exxatdesignux/ui",
       "category": "organisms"
     },
+    "FILTER_TEXT_MASK_FORMAT_HINT": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "FULL_HUB_SUPPORTED_VIEWS": {
       "importPath": "@exxatdesignux/ui",
       "category": "data_views"
@@ -1120,6 +1124,10 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "NavFlyoutToggleHandler": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "NestedSecondaryPanelShell": {
       "importPath": "@exxatdesignux/ui",
       "category": "templates"
@@ -1337,6 +1345,14 @@
       "category": "primitives"
     },
     "RowHeight": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SELECTION_TILE_BELOW_DEFAULT_PREVIEW_SIZE": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
+    "SELECTION_TILE_COMPACT_ICON_SIZE": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
@@ -1652,6 +1668,10 @@
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
     },
+    "TabsListScrollRegion": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "primitives"
+    },
     "TabsTrigger": {
       "importPath": "@exxatdesignux/ui",
       "category": "primitives"
@@ -1833,6 +1853,10 @@
       "category": "hooks"
     },
     "useProductSwitch": {
+      "importPath": "@exxatdesignux/ui",
+      "category": "hooks"
+    },
+    "useRegisterNavFlyoutToggle": {
       "importPath": "@exxatdesignux/ui",
       "category": "hooks"
     },

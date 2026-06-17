@@ -16,6 +16,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   Avatar, AvatarFallback,
   Badge, Button,
+  Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator,
   Sidebar, SidebarProvider, SidebarInset, SidebarTrigger,
   SidebarHeader, SidebarContent, SidebarFooter,
   SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuBadge,
@@ -104,7 +105,6 @@ export function NavShell({ children, title }: NavShellProps) {
     <TooltipProvider>
       {paletteOpen && <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />}
       <SidebarProvider className="h-svh">
-        <nav aria-label="Site navigation">
         <Sidebar variant="inset" collapsible="icon">
           {/* ─── Brand wordmark ───────────────────────────────────────── */}
           <SidebarHeader>
@@ -112,6 +112,9 @@ export function NavShell({ children, title }: NavShellProps) {
           </SidebarHeader>
 
           <SidebarContent>
+            {/* nav landmark wraps only the content — Sidebar must be a direct
+                child of SidebarProvider so the peer CSS sibling selector works */}
+            <nav aria-label="Site navigation" className="contents">
             {/* ─── Search / Notifications ─────────────────────────────── */}
             <SidebarGroup className="py-1">
               <SidebarGroupContent>
@@ -145,6 +148,7 @@ export function NavShell({ children, title }: NavShellProps) {
                 <DocumentsNav />
               </SidebarGroupContent>
             </SidebarGroup>
+            </nav>
           </SidebarContent>
 
           {/* ─── Footer: Settings · Get Help · Profile ─────────────────── */}
@@ -155,7 +159,6 @@ export function NavShell({ children, title }: NavShellProps) {
             <ProfileFooter entryPoint={entryPoint} />
           </SidebarFooter>
         </Sidebar>
-        </nav>
 
         <SidebarInset className="flex flex-col overflow-hidden">
           <TopBar title={title} entryPoint={entryPoint} onAskLeo={() => setPaletteOpen(true)} />
@@ -186,7 +189,7 @@ function BrandRow({ entryPoint }: { entryPoint: EntryPoint }) {
           <span
             className="flex size-7 shrink-0 items-center justify-center text-[13px] font-bold"
             style={{
-              borderRadius: isPrism ? '50%' : 8,
+              borderRadius: isPrism ? '50%' : 'var(--radius)',
               backgroundColor: isPrism ? 'var(--brand-color)' : 'var(--muted)',
               color: isPrism ? 'var(--brand-foreground)' : 'var(--muted-foreground)',
             }}
@@ -235,11 +238,6 @@ function NotificationsItem() {
     success: 'var(--chart-2)',
     info:    'var(--chart-1)',
   };
-  const notifTypeBg: Record<string, string> = {
-    warning: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))',
-    success: 'color-mix(in oklch, var(--chart-2) 14%, var(--background))',
-    info:    'color-mix(in oklch, var(--chart-1) 14%, var(--background))',
-  };
 
   return (
     <SidebarMenuItem>
@@ -274,10 +272,10 @@ function NotificationsItem() {
                 onClick={() => setNotifications(ns => ns.map(n => n.id === notif.id ? { ...n, unread: false } : n))}
                 className="flex gap-3 cursor-pointer px-4 py-3 border-b border-border last:border-b-0 transition-colors"
                 style={{
-                  background: notif.unread ? 'color-mix(in oklch, var(--brand-color) 4%, var(--card))' : 'var(--card)',
+                  background: notif.unread ? 'var(--brand-tint)' : 'var(--card)',
                 }}
               >
-                <div className="flex items-center justify-center flex-shrink-0" style={{ width: 36, height: 36, borderRadius: 10, background: notifTypeBg[notif.type] }}>
+                <div className="flex items-center justify-center flex-shrink-0" style={{ width: 36, height: 36, borderRadius: 'var(--radius)', background: 'var(--muted)' }}>
                   <i className={`fa-light ${notif.icon}`} aria-hidden="true" style={{ fontSize: 15, color: notifTypeColor[notif.type] }} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -501,38 +499,50 @@ function TopBar({ title, entryPoint, onAskLeo }: { title?: string; entryPoint: E
 
       {/* Prism: Prism > Exam Management > [page] */}
       {isPrism ? (
-        <>
-          <a
-            href="#prism-home"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors truncate"
-            style={{ textDecoration: 'none' }}
-          >
-            Prism
-          </a>
-          <i className="fa-light fa-chevron-right fa-xs shrink-0" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
-          <span className="text-sm font-semibold truncate" style={{ color: 'var(--foreground)' }}>
-            Exam Management
-          </span>
-          {title && (
-            <>
-              <i className="fa-light fa-chevron-right fa-xs shrink-0" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
-              <span className="text-sm truncate" style={{ color: 'var(--muted-foreground)' }}>{title}</span>
-            </>
-          )}
-        </>
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="#prism-home">Prism</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              {title ? (
+                <BreadcrumbLink href="#">Exam Management</BreadcrumbLink>
+              ) : (
+                <BreadcrumbPage>Exam Management</BreadcrumbPage>
+              )}
+            </BreadcrumbItem>
+            {title && (
+              <>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{title}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </>
+            )}
+          </BreadcrumbList>
+        </Breadcrumb>
       ) : (
         /* Standalone: Exam Management > [page] — no Prism reference */
-        <>
-          <span className="text-sm font-semibold truncate" style={{ color: 'var(--foreground)' }}>
-            Exam Management
-          </span>
-          {title && (
-            <>
-              <i className="fa-light fa-chevron-right fa-xs shrink-0" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
-              <span className="text-sm truncate" style={{ color: 'var(--muted-foreground)' }}>{title}</span>
-            </>
-          )}
-        </>
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              {title ? (
+                <BreadcrumbLink href="#">Exam Management</BreadcrumbLink>
+              ) : (
+                <BreadcrumbPage>Exam Management</BreadcrumbPage>
+              )}
+            </BreadcrumbItem>
+            {title && (
+              <>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{title}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </>
+            )}
+          </BreadcrumbList>
+        </Breadcrumb>
       )}
 
       {/* Ask Leo — right-aligned in both Prism and standalone modes */}

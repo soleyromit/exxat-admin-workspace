@@ -16,7 +16,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Badge, Button, Checkbox, Input } from '@exxatdesignux/ui';
+import { Badge, Button, Checkbox, Input, LocalBanner } from '@exxatdesignux/ui';
 import { MOCK_ASSESSMENTS, getEffectiveDuration, formatDuration, Assessment } from '../data/assessments';
 
 const typeLabel: Record<string, string> = {
@@ -174,9 +174,9 @@ function BeforeYouBegin({ exam, onStart }: { exam: Assessment; onStart: () => vo
         </div>
 
         {/* Instructions — primary content */}
-        <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--foreground)', marginBottom: 10 }}>
+        <h3 className="text-sm font-semibold text-foreground mb-2.5">
           Instructions
-        </h2>
+        </h3>
         <p style={{ fontSize: 16, color: 'var(--foreground)', lineHeight: 1.8, whiteSpace: 'pre-wrap', margin: 0 }}>
           {exam.instructions || 'No specific instructions provided for this exam.'}
         </p>
@@ -184,9 +184,9 @@ function BeforeYouBegin({ exam, onStart }: { exam: Assessment; onStart: () => vo
         {/* Reference materials */}
         {exam.assessmentReferences && exam.assessmentReferences.length > 0 && (
           <div className="mt-6">
-            <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--foreground)', marginBottom: 8 }}>
+            <h3 className="text-sm font-semibold text-foreground mb-2">
               Reference materials
-            </h2>
+            </h3>
             <p style={{ fontSize: 13, color: 'var(--muted-foreground)', marginBottom: 10 }}>
               Available from the toolbar throughout the exam.
             </p>
@@ -208,9 +208,9 @@ function BeforeYouBegin({ exam, onStart }: { exam: Assessment; onStart: () => vo
         {/* Accommodations — only when the student has any */}
         {acc && accItems.length > 0 && (
           <div className="mt-6 pt-6 border-t" style={{ borderColor: 'var(--border)' }}>
-            <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--foreground)', marginBottom: 4 }}>
+            <h3 className="text-sm font-semibold text-foreground mb-1">
               Your accommodations
-            </h2>
+            </h3>
             <p style={{ fontSize: 13, color: 'var(--muted-foreground)', marginBottom: 12, lineHeight: 1.5 }}>
               Applied to your exam. If anything is incorrect, contact Student Services before starting.
             </p>
@@ -308,7 +308,7 @@ export function PreExamFlow() {
         className="flex items-center px-6 h-12 border-b shrink-0"
         style={{ background: 'var(--card)', borderColor: 'var(--border)' }}
       >
-        <Button variant="ghost" size="sm" onClick={handleBack} style={{ color: 'var(--muted-foreground)' }}>
+        <Button variant="ghost" size="sm" onClick={handleBack}>
           <i className="fa-light fa-arrow-left" aria-hidden="true" />
           {screen === 'password' ? 'Back to Dashboard' : 'Back'}
         </Button>
@@ -324,23 +324,13 @@ export function PreExamFlow() {
         </h1>
         {compatWarning && (
           <div className="shrink-0 w-full px-6 pt-6" style={{ maxWidth: 560, marginInline: 'auto' }}>
-            <div
-              role="alert"
-              className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 border"
-              style={{ background: 'var(--muted)', borderColor: 'var(--border)', color: 'var(--foreground)', fontSize: 14, lineHeight: 1.4 }}
+            <LocalBanner
+              variant="warning"
+              dismissible
+              onDismiss={() => setCompatWarning(null)}
             >
-              <i className="fa-light fa-triangle-exclamation fa-fw shrink-0" aria-hidden="true" style={{ fontSize: 15 }} />
-              <span className="flex-1">{compatWarning}</span>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => setCompatWarning(null)}
-                aria-label="Dismiss compatibility warning"
-                style={{ flexShrink: 0, color: 'var(--foreground)' }}
-              >
-                <i className="fa-light fa-xmark" aria-hidden="true" />
-              </Button>
-            </div>
+              {compatWarning}
+            </LocalBanner>
           </div>
         )}
 
