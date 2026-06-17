@@ -194,6 +194,23 @@ Source: `docs/research/meetings/2026-06-13-aarti-pce-exam-management.md` (Granol
 |---|---|---|---|---|---|
 | T85 | Cohere conference booth — user testing with Romit + Himanshu | Design | Cross-product coordination | P1 — ACTION ITEM | 300+ attendees. AB testing, current-product issue collection, feedback. Aarti applying for Himanshu US visa. Post-India (July) planning meeting. Coordinate screens/iPads with Kunal. D_PCE_J13_06. |
 
+## Phase 1 design tasks — added 2026-06-16
+
+Source: `docs/research/meetings/2026-06-16-pce-directory-entry-points-manil.md` (Granola `9a5f3e06`)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T86 | Multi-select courses in directory → "Push survey" CTA | Admin | Course directory | P1 — DESIGN-REVIEW | When admin selects 2+ courses in the course directory, show a "Push survey" button. Creates a survey scoped to only those courses; flow jumps to step 2 (scope pre-filled). NEW affordance — not in current push survey flow. D_PCE_MN03. |
+| T87 | Directory four-view tabs — per-view entry points | Admin | PCE directory | P1 — NEW PAGE NEEDED + DESIGN-REVIEW | Four directory tabs: term view, course view, faculty view, student view. Each tab must have entry points for: (1) create template, (2) create survey, (3) analytics. Route `app/(app)/directory/` does not exist — currently split into separate admin entity pages. Unified "Directory" section with tabs is what Manil/Aarti envision. Architecture decision needed before implementing. Supplements T47, T78, T79. D_PCE_MN01. |
+
+## ⚠️ Escalated conflicts — updated 2026-06-17
+
+Source: `apps/exam-management/docs/research/meetings/2026-06-17-himanshu-design-system-nav-alignment.md` (Granola `1f55db0d`)
+
+| # | Conflict | Status | Parties | Notes |
+|---|---|---|---|---|
+| T57-CONFLICT | Ask Leo placement: Aarti (Jun 3, D_PCE42) said NOT in left nav. Himanshu (Jun 17) confirmed Ask Leo IS in left sidebar due to 400–500 person Zoom layout issues. | UNRESOLVED — do NOT touch sidebar | Himanshu to coordinate with Arun + Yash + Aarti | Do not apply any Ask Leo or sidebar positioning changes until alignment meeting happens. T99 in exam-management backlog tracks the same conflict. |
+
 ## Phase 1 — confirmed deferred (updated 2026-06-13)
 
 | # | Decision | Reason | Source |

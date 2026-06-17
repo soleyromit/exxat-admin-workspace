@@ -185,6 +185,16 @@ Source: `docs/research/meetings/2026-06-13-aarti-pce-exam-management.md` (Granol
 | T97 | Assessment lifecycle tabs within course | Admin / Faculty | Assessment landing (within course detail) | P1 — DESIGN-REVIEW | Three distinct tabs/phases after assessment is created: (1) Edit/Build — questions + sections; (2) Publish/Distribute — dates, delivery method, time limits; (3) Stats/Monitor — proctoring view, completion counts. Distribution is a SEPARATE step from building. D_EM_J13_04. |
 | T98 | Cohere conference booth — user testing with Romit + Himanshu | Design | Cross-product coordination | P1 — ACTION ITEM | 300+ attendees. AB testing, current-product issue collection, feedback. Aarti applying for Himanshu US visa. Post-India (July) planning meeting. Coordinate with Kunal on screens/iPads. D_EM_J13_08. |
 
+## Phase 1 design tasks — added 2026-06-17
+
+Source: `docs/research/meetings/2026-06-17-himanshu-design-system-nav-alignment.md` (Granola `1f55db0d`)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T99 | ⚠️ Ask Leo placement conflict — BLOCKER for nav design | Design / Eng | Cross-product nav (exam-management + PCE) | P0 — BLOCKER | Aarti Jun 3 (D_PCE42, T57): Ask Leo should NOT be in left nav. Himanshu Jun 17: Ask Leo IS in left sidebar (moved from top-right due to 400–500 person Zoom layout issues). Himanshu to coordinate with Arun + Yash + Aarti. Do NOT change sidebar code until resolved. D_EM_HIM01, D_EM_HIM02. |
+| T100 | Student exam experience — DS adaptation for exam-specific components | Student | Assessment taker | P1 — DESIGN-REVIEW | Design system needs new/adapted components for exam-taker flow: keyboard-navigable answer selection (no mouse), text highlight, text strikethrough/elimination, bookmarks, hotspot questions, accessibility panel (color vision, 400% text size, dark contrast, on-screen keyboard), PDF viewer with zoom, audio/video. Himanshu to prioritize. Track together. D_EM_HIM07. |
+| T101 | Module entry point concept — share with Himanshu; align with Aarti | Design | Cross-product platform | P1 — ACTION ITEM | App-store-style platform entry showing contracted products as a list; non-contracted → CTA to email sales. Shown to Himanshu Jun 17 (first time). Himanshu to review with team and surface to Aarti for alignment. Not finalized. D_EM_HIM05. |
+
 ## Phase 1 → Phase 2 demotions (updated 2026-06-13)
 
 | # | Task | Original priority | Demotion reason | Source |
