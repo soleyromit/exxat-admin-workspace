@@ -716,6 +716,121 @@
       "files": ["docs/BUILD-STATUS.md"]
     },
     {
+      "id": "2026-06-17-pce-change-001",
+      "date": "2026-06-17",
+      "product": "pce",
+      "type": "prd-change",
+      "title": "PCE PRD — Course type taxonomy renamed: Didactic/Clinical → Practice/Classroom/Lab",
+      "what": "§2 Key Decision #5 course type values changed from Didactic/Clinical (2 types) to Practice/Classroom/Lab (3 new types). Code updated: pce-mock-data.ts type union updated to 'practice' | 'classroom' | 'lab'; all 'didactic' values → 'classroom'; all 'clinical' values → 'practice'. analytics/page.tsx CourseTypeFilter type and ToggleGroupItems updated to match (All/Classroom/Practice/Lab).",
+      "why": "Monil updated PRD §2 Key Decision #5 on 14 Jun 2026. Course taxonomy now uses setting-based names (Practice, Classroom, Lab) rather than instructional method names (Didactic, Clinical). CLEAR rename — applied directly.",
+      "source": "PCE PRD §2 Key Product Decisions #5 (Monil Pokar, updated 14 June 2026)",
+      "severity": null,
+      "files": [
+        "apps/pce/admin/lib/pce-mock-data.ts",
+        "apps/pce/admin/app/(app)/analytics/page.tsx"
+      ]
+    },
+    {
+      "id": "2026-06-17-pce-flagged-001",
+      "date": "2026-06-17",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §2 — Two new roadmap decisions: sell independently Q2 2027; no student login till Q3 2027",
+      "what": "Two new Key Product Decisions added: #6 Focus on selling this module independently in Q2, 2027; #7 No Student login till Q3, 2027 for this module.",
+      "why": "CLEAR non-functional roadmap decisions. Extracted to stakeholder-decisions.json as pce-decision-036 and pce-decision-037. No code action.",
+      "source": "PCE PRD §2 Key Product Decisions #6 and #7 (Monil Pokar, updated 14 June 2026)"
+    },
+    {
+      "id": "2026-06-17-pce-flagged-002",
+      "date": "2026-06-17",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §4 — Full sidebar navigation taxonomy now formally specified in PRD",
+      "what": "New 'General Layout: Entry point and Side bar tabs' section added to §4. Full taxonomy: Surveys → Course Evaluations (Dashboard, Templates) + General Surveys (Dashboard, Templates); Directory → Program Details (Academic Calendar, Term), Courses, Faculty and Staff, Students; Settings → Eval Window, Email templates, Reminder cadence, RBAC.",
+      "why": "CLEAR structural design specification now in PRD. Matches transcripts from Jun 9-10. Settings sub-items are new scope items not yet tracked. Flag for sidebar rebuild reference.",
+      "source": "PCE PRD §4 Key User Flows — General Layout: Entry point and Side bar tabs (Monil Pokar, updated 14 June 2026)"
+    },
+    {
+      "id": "2026-06-17-pce-flagged-003",
+      "date": "2026-06-17",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §4 Step 2 — Properties/Details wizard step marked (removed)",
+      "what": "The first wizard step 'Properties/Details' is now marked '(removed)' in the PRD. Wizard now effectively starts at Scope/Courses.",
+      "why": "CLEAR wizard step removal. Combined with pce-decision-034 (Report Access removed), wizard is now 3 steps: Scope/Courses → Survey Design → Communication. No code change — wizard not yet built.",
+      "source": "PCE PRD §4 Step 2 — Create Survey wizard (Monil Pokar, updated 14 June 2026)"
+    },
+    {
+      "id": "2026-06-17-exam-management-build-status-001",
+      "date": "2026-06-17",
+      "product": "exam-management",
+      "type": "prd-change",
+      "title": "BUILD-STATUS: In Assessment Experience (Student) updated to 🟢 Shipped; last updated bumped to 2026-06-17",
+      "what": "Exam initiation (soft download, landing page, test taking setup) and Post exam completion (results, assessments page) changed from 'To be picked' → 'Completed' in Nipun's Excel. Combined with Test taking experience (already Completed), all 3 P0-Cohere sub-items under In Assessment Experience are now Completed. Step 7b mapping: Completed → 🟢 Shipped. BUILD-STATUS.md updated.",
+      "why": "Nipun's roadmap Excel updated — Bhargav completed exam initiation and post-exam completion. All three In Assessment Experience P0 items are done.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)",
+      "severity": null,
+      "files": ["docs/BUILD-STATUS.md"]
+    },
+    {
+      "id": "2026-06-17-exam-flagged-001",
+      "date": "2026-06-17",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "Exam Roadmap — Course Offering: 2 sub-capabilities removed; target slipped to 16-Jun",
+      "what": "View and manage assessment plan + View and manage course content no longer present in Course Offering sub-capabilities. Target date slipped 12-Jun → 16-Jun.",
+      "why": "AMBIGUOUS — possible scope change or merger into Base Entities section. No BUILD-STATUS change.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)"
+    },
+    {
+      "id": "2026-06-17-exam-flagged-002",
+      "date": "2026-06-17",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "Exam Roadmap — New 'Base Entities' section: Students + Faculty (In Progress), Settings-RBAC (To be picked)",
+      "what": "Brand new 'Base Entities' section added to capability table with Students entity (In Progress, Vishal), Faculty entity (In Progress, Vishal), Settings - RBAC (To be picked, Vishal). All P0-Cohere.",
+      "why": "AMBIGUOUS — new top-level section. May absorb deferred Course Offering sub-items (assessment plan, course content). RBAC newly tracked as P0.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)"
+    },
+    {
+      "id": "2026-06-17-exam-flagged-003",
+      "date": "2026-06-17",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "Exam Roadmap — Question Creation + Assessment Creation sub-items now have explicit statuses",
+      "what": "Manual question creation: In Refinement; Question flagging/AI refinement: Completed; AI variant creation: Completed; Import via human readable doc: In Refinement; Import via test banks: To be picked; Examsoft import: To be picked; Manual assessment creation: In Review; In assessment configs (assessment + question level): In Review; Import and edit via AI: In Review; Review & collaborator roles: In Review.",
+      "why": "CLEAR status fills. Step 7b mapping: Question Creation (Manual & AI) stays 🟡 In Progress (manual In Refinement). Question Tagging/Import stays 🟡 In Progress. Assessment Creation stays 🟡 In Progress (In Review, not Completed).",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)"
+    },
+    {
+      "id": "2026-06-17-exam-flagged-004",
+      "date": "2026-06-17",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "Exam Roadmap — June 23-25 EM Solution Review sessions + P0/P1/P2 milestone dates confirmed",
+      "what": "Solution Review sessions: Jun 23 morning (In Assessments, Base entities, Assessments creation & distribution), Jun 23 evening (Assessment creation, Question creation + import), Jun 24 (EM Brainstorming — Accreditation, Certification, Rubrics, RBAC), Jun 25 (Project Planning). Milestone dates: P0-Cohere = 15-Sep 2026, P1-Beta = 19-Dec 2026, P2-GA Launch = 20-Sep.",
+      "why": "AMBIGUOUS — sessions are 6 days away. All major P0-Cohere design areas must be review-ready by June 23. GA Launch date (20-Sep) is ambiguous — could be 2026 or 2027.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest)"
+    },
+    {
+      "id": "2026-06-17-pce-decision-036",
+      "date": "2026-06-17",
+      "product": "pce",
+      "type": "decision-extracted",
+      "title": "PCE PRD — Decision extracted: Sell independently Q2 2027 (pce-decision-036)",
+      "what": "New decision: Focus on selling PCE module independently in Q2, 2027.",
+      "source": "PCE PRD §2 Key Product Decisions #6"
+    },
+    {
+      "id": "2026-06-17-pce-decision-037",
+      "date": "2026-06-17",
+      "product": "pce",
+      "type": "decision-extracted",
+      "title": "PCE PRD — Decision extracted: No student login till Q3 2027 (pce-decision-037)",
+      "what": "New decision: No Student login for the CE module until Q3, 2027.",
+      "source": "PCE PRD §2 Key Product Decisions #7"
+    },
+    {
       "id": "2026-06-15-granola-intake-001",
       "date": "2026-06-15",
       "product": "pce",

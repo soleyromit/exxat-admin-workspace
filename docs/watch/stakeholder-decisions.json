@@ -492,6 +492,26 @@
       "sourceType": "transcript",
       "date": "2026-06-09",
       "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-036",
+      "product": "pce",
+      "text": "Focus on selling this module independently in Q2, 2027. PCE/CE module will be positioned as a standalone commercial offering, separate from the core Prism suite.",
+      "stakeholder": "Monil Pokar",
+      "source": "PCE PRD §2 Key Product Decisions #6",
+      "sourceType": "prd",
+      "date": "2026-06-17",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-037",
+      "product": "pce",
+      "text": "No Student login for the PCE/CE module until Q3, 2027. Students access course evaluations via email link only (email-only distribution as per pce-decision-021). No student portal authentication for CE in phase 1 or phase 2.",
+      "stakeholder": "Monil Pokar",
+      "source": "PCE PRD §2 Key Product Decisions #7",
+      "sourceType": "prd",
+      "date": "2026-06-17",
+      "status": "confirmed"
     }
   ]
 }
