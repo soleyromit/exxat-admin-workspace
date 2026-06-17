@@ -262,6 +262,54 @@ First snapshot taken for PCE PRD — Monil Pokar — no diff applied. Next run w
 
 ---
 
+## 2026-06-17 — Flagged: PCE PRD — Monil Pokar (4 changes; 1 CLEAR change applied)
+
+### CLEAR change applied — Course type taxonomy renamed: Didactic/Clinical → Practice/Classroom/Lab
+**Changed text (before):** "Course type (Optional): i. Didactic, ii. Clinical"
+**Changed text (after):** "Course type (Optional): i. Practice, ii. Classroom, iii. Lab"
+**Code applied:**
+- `apps/pce/admin/lib/pce-mock-data.ts`: type union updated to `'practice' | 'classroom' | 'lab'`; all `'didactic'` mock values → `'classroom'`; all `'clinical'` values → `'practice'`
+- `apps/pce/admin/app/(app)/analytics/page.tsx`: `CourseTypeFilter` type updated; ToggleGroupItems now All / Classroom / Practice / Lab
+
+---
+
+### Flag 1 — §2 Key Decisions: Two new roadmap decisions added (non-functional)
+**Changed text (before):** "6. What will not be covered in phase 1: Detailed scope here"
+**Changed text (after):** Two new items prepended before the scope exclusion:
+> 6. Focus on selling this module independently in Q2, 2027
+> 7. No Student login till Q3, 2027 for this module
+
+**Why flagged:** CLEAR product roadmap decisions. Non-functional (sales/commercialisation direction) → extracted to stakeholder-decisions.json as pce-decision-036 and pce-decision-037. No code action.
+**Suggested action:** Informational. Confirm with Monil whether "selling independently in Q2 2027" means PCE will be priced separately from the Prism suite, and whether the student portal for CE is expected to be built in Q3 2027.
+
+---
+
+### Flag 2 — §4 Key User Flows: Full sidebar navigation structure now formally specified
+**Changed text (before):** *(no sidebar taxonomy under §4)*
+**Changed text (after):**
+> Tabs: Surveys → Course Evaluations (Dashboard, Templates) + General Surveys (Dashboard, Templates) | Directory → Program Details (Academic Calendar, Term), Courses, Faculty and Staff, Students | Settings → Eval Window, Email templates, Reminder cadence, Rbac
+
+**Why flagged:** CLEAR structural design spec now formally in the PRD. Matches the navigation discussed in Jun 9–10 transcripts. The sidebar structure is more detailed than what is currently implemented. No auto-applied (sidebar being rebuilt from spec).
+**Suggested action:** When rebuilding `apps/pce/admin/components/app-sidebar.tsx`, use this taxonomy as the canonical nav structure. Settings sub-items (Eval Window, Email templates, Reminder cadence, RBAC) are new and not yet in the sidebar.
+
+---
+
+### Flag 3 — §4 Step 2: "Properties/Details" step marked "(removed)" from wizard
+**Changed text (before):** "1. Properties/Details"
+**Changed text (after):** "1. Properties/Details (removed)"
+**Why flagged:** CLEAR wizard step removal. Step 2 wizard now starts at Scope/Courses (previously step 2). Wizard is not yet built — flag for when it is.
+**Suggested action:** When building the Create Survey wizard, start at Scope/Courses as the first step. The wizard is now 3 steps: Scope/Courses → Survey Design → Communication (per-session PRD §4 and pce-decision-034 which removed Report Access).
+
+---
+
+### Flag 4 — Appendix B: New NIU→Anthology competitor case study added
+**Changed text (before):** *(Appendix B had 2 articles)*
+**Changed text (after):** New article added: "2/ How NIU switched from Blue to Anthology in 2026: NIU switches course evaluation platforms due to rising costs – Northern Star"
+**Why flagged:** Informational competitor benchmark addition. No code action.
+**Suggested action:** No action needed. This is market context for stakeholder presentations about PCE differentiation.
+
+---
+
 ## 2026-06-11 — Flagged: PCE PRD — Monil Pokar (1 change)
 
 ### Flag 1 — §13a.1: CE/GS disambiguation element renamed from "survey switch in the user profile" to "navigation" (CLEAR — non-functional)

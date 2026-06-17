@@ -168,3 +168,83 @@ First snapshot taken for Roadmap-Exam-Management — no diff applied. Next run w
 **Suggested action:** If Romit's design is "In Refinement", confirm refinement items are resolved before 12-Jun. Check what design assets Darshan needs for the 7 sub-capability pages — all are P0-Cohere. BUILD-STATUS already shows Course Offering as 🟡 In Progress — no status change, but the 12-Jun engineering target is new.
 
 ---
+
+## 2026-06-17 — Flagged: Exam Mgmt Roadmap — Nipun (5 changes; 1 CLEAR BUILD-STATUS applied)
+
+### CLEAR change applied — In Assessment Experience: all 3 P0-Cohere sub-items now Completed → 🟢 Shipped
+**Changed text (before):**
+> Exam initiation - soft download, landing page, test taking setup | P0-Cohere | To be picked | Bhargav
+> Post exam completion - results, assessments page | P0-Cohere | To be picked | Bhargav
+
+**Changed text (after):**
+> Exam initiation - soft download, landing page, test taking setup | P0-Cohere | Completed | Bhargav
+> Post exam completion - results, assessments page | P0-Cohere | Completed | Bhargav
+
+**Why flagged:** CLEAR — all 3 P0-Cohere sub-items under "In Assessment Experience" are now Completed (test taking was already Completed in last snapshot). Step 7b mapping: "Completed" → 🟢 Shipped. BUILD-STATUS.md updated: "In Assessment Experience (Student)" changed from 🟡 In Progress to 🟢 Shipped.
+
+---
+
+### Flag 1 — Course Offering: 2 sub-capabilities removed; target date updated to 16-Jun
+**Changed text (before):**
+> View and manage assessment plan for a course offering | P0-Cohere | In Review | Vishal
+> View and manage course content for a course offering | P0-Cohere | In Review | Vishal
+
+**Changed text (after):** Both rows are no longer present. Target date for Course Offering engineering changed from 12-Jun to 16-Jun.
+
+**Why flagged:** AMBIGUOUS — two Course Offering sub-capabilities removed. May represent scope change (deferred), rename, or merger into Base Entities. The 12-Jun target also slipped to 16-Jun. No BUILD-STATUS change (still 🟡 In Progress).
+**Suggested action:** Confirm with Nipun/Vishal whether "assessment plan" and "course content" sub-pages are deferred, renamed, or absorbed into the Base Entities framework. Engineering target slipped 4 days — check if design refinements caused the delay.
+
+---
+
+### Flag 2 — New "Base Entities" section added: Students, Faculty, Settings-RBAC (In Progress)
+**Changed text (before):** *(section did not exist)*
+**Changed text (after):**
+> Base Entities | Students entity | P0-Cohere | In Progress | Vishal
+> Base Entities | Faculty entity | P0-Cohere | In Progress | Vishal
+> Base Entities | Settings - RBAC | P0-Cohere | To be picked | Vishal
+
+**Why flagged:** AMBIGUOUS — new top-level section "Base Entities" appeared in the capability table. Students and Faculty entities are In Progress. This may clarify where assessment plan/course content sub-items went (absorbed into base entity pages). RBAC is now tracked explicitly as a P0 item.
+**Suggested action:** Confirm with Nipun whether Base Entities represents new standalone pages (students list, faculty list) or backend-only data setup. If UI pages are needed, these are P0-Cohere and Vishal is the owner.
+
+---
+
+### Flag 3 — Multiple Question Creation and Assessment Creation items now have explicit statuses
+**Changed text (before):** *(most items in these sections had blank status)*
+**Changed text (after):**
+> Manual question creation | P0-Cohere | In Refinement | Nipun
+> Question flagging and refinement using AI | P0-Cohere | Completed | Nipun
+> AI question variant creation | P0-Cohere | Completed | Nipun
+> Import via human readable document | P0-Cohere | In Refinement | Nipun
+> Import via test banks | P0-Cohere | To be picked | Nipun
+> Examsoft specific import | P1-Jan 20 | To be picked | Nipun
+> Manual assessment creation | P0-Cohere | In Review | Nipun
+> In assessment configurations (assessment + question level) | P0-Cohere | In Review | Nipun
+> Import and edit an assessment file using AI | P0-Cohere | In Review | Nipun
+> Review & collaborator, and user roles | P1-Jan 20 | In Review | Nipun
+
+**Why flagged:** CLEAR status fills — many capabilities that previously had blank status now show In Refinement, Completed, or In Review. Step 7b mapping for top-level BUILD-STATUS features: "Question Creation" still shows mixed statuses — manual is In Refinement, AI flagging/variant Completed. No BUILD-STATUS change to "Question Creation (Manual & AI)" (stays 🟡 In Progress).
+**Suggested action:** Informational. Question Tagging/Import stays 🟡 In Progress. Assessment Creation is moving toward review/complete on multiple sub-items. No action needed on BUILD-STATUS this run.
+
+---
+
+### Flag 4 — New June 23-25 EM Solution Review sessions and P0/P1/P2 milestone dates added
+**Changed text (before):** *(no solution review sessions or milestone target dates)*
+**Changed text (after):**
+> June 23 (Morning): EM Solution Review — In Assessments (student), Base entities & settings, Assessments creation & distribution
+> June 23 (Evening): EM Solution Review — Assessments creation & distribution, Question creation + import
+> June 24: EM Brainstorming — Accreditation (Submissions, Strategic alignment), Certification (Collaborative assessments, Strategic alignment), Rubrics, RBAC
+> June 25: EM Project Planning — Buffer for parking lot items
+> P0 - Cohere: 15-Sep 2026 | P1 - Beta: 19-Dec 2026 | P2 - GA Launch: 20-Sep (2027 implied)
+
+**Why flagged:** AMBIGUOUS — major planning sessions are 6 days away (June 23-25). Solution review sessions cover all key P0-Cohere features. Milestone dates are now explicit: P0 Cohere = 15-Sep, P1 Beta = 19-Dec. The GA Launch date of 20-Sep is ambiguous (2026 or 2027?).
+**Suggested action:** Romit should prepare all In Assessment, Base Entities, Assessment Creation & Distribution, and Question Creation designs for review by June 23. These sessions are 6 days out. Confirm GA Launch 20-Sep is 2027, not 2026.
+
+---
+
+### Flag 5 — "Laura → Kim" stakeholder name change in beta/consultant list
+**Changed text (before):** "Laura" (first entry in stakeholder table)
+**Changed text (after):** "Laura --> Kim"
+**Why flagged:** CLEAR stakeholder change — "Laura" has transitioned to "Kim" on the beta account team. Informational only.
+**Suggested action:** No action. Update internal contacts if you communicate with beta schools directly.
+
+---
