@@ -1,6 +1,6 @@
 # Workspace Build Status
 > Single source of truth for session continuity. Update after each significant build session.
-> Last updated: 2026-06-11
+> Last updated: 2026-06-17
 
 ---
 
@@ -64,7 +64,7 @@ vercel deploy --prebuilt --prod --yes
 | Create and Manage Question Bank | 🟢 Shipped |
 | My Questions & All Questions | 🟢 Shipped |
 | Assessment Creation | 🟡 In Progress |
-| In Assessment Experience (Student) | 🟡 In Progress |
+| In Assessment Experience (Student) | 🟢 Shipped |
 | Course Offering Perspective | 🟡 In Progress |
 | Question Creation (Manual & AI) | 🟡 In Progress |
 | Question Tagging / Import | 🟡 In Progress |
