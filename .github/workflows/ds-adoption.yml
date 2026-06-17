@@ -1,0 +1,68 @@
+name: DS Adoption Gate
+
+# Blocks a PR when the files IT TOUCHES introduce or keep DS violations the audit
+# can detect — raw <button>, hardcoded hex/rgb, hand-rolled / assumed components
+# (status badge, export drawer, tabs), missing empty-states, card-masquerade divs,
+# etc. (exactly Himanshu's complaint: "hardcoded values, assumed components").
+#
+# WHY this and not "fix everything": pre-existing violations in files the PR does
+# NOT touch do NOT fail it — so the gate stops the *inflow* without failing every
+# PR on the existing backlog (which would just get the gate disabled).
+#
+# This is the UNBYPASSABLE version of the local pre-commit ds-touch-gate. Local
+# pre-commit is `--no-verify`-skippable (it was skipped repeatedly); a required
+# CI check is not. The deterministic script audits every PR identically — it does
+# not depend on anyone (or any agent) "auditing well".
+#
+# Honest scope — what this does NOT guarantee:
+#   - It catches what the audit's rules can detect. It does NOT catch a valid-but-
+#     stale component choice (right tokens, wrong/old component) or visual/pattern
+#     drift. Those need the visual-diff vs localhost:4000 + human review.
+#   "Passes this gate" = "no detectable hardcoded values / assumed components in
+#   touched files", NOT "perfectly DS-conformant".
+
+on:
+  pull_request:
+    branches: [dev, main]
+    paths:
+      - 'apps/**/*.tsx'
+      - 'apps/**/*.ts'
+      - 'scripts/ds-adoption-audit.py'
+  workflow_dispatch:
+
+jobs:
+  ds-adoption-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # need the merge base to diff changed files
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compute changed product files (.tsx/.ts under apps/)
+        id: changed
+        run: |
+          set -euo pipefail
+          git fetch origin "${{ github.base_ref }}" --depth=1
+          BASE=$(git merge-base "origin/${{ github.base_ref }}" HEAD)
+          FILES=$(git diff --name-only --diff-filter=ACMR "$BASE" HEAD \
+                    -- 'apps/**/*.tsx' 'apps/**/*.ts' | tr '\n' ' ')
+          echo "files=$FILES" >> "$GITHUB_OUTPUT"
+          echo "### Changed product files" >> "$GITHUB_STEP_SUMMARY"
+          if [ -z "$FILES" ]; then
+            echo "_none — gate skipped_" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "$FILES" | tr ' ' '\n' | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: DS adoption touch-gate (block new/kept violations in touched files)
+        if: steps.changed.outputs.files != ''
+        run: |
+          set -o pipefail
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          python3 scripts/ds-adoption-audit.py \
+            --touched-files "${{ steps.changed.outputs.files }}" \
+            --strict | tee -a "$GITHUB_STEP_SUMMARY"
