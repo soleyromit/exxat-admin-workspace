@@ -362,6 +362,41 @@ def render_pending(ts: str, exxat_diff: dict, student_diff: dict) -> str:
     return "\n".join(lines)
 
 
+def npm_package_section() -> str:
+    """Detect the installed-vs-latest gap for the @exxatdesignux/ui NPM PACKAGE —
+    the canonical DS that products actually consume (this script historically
+    watched only the legacy exxat-ds submodule, which is the real blind spot:
+    0.6.30 vs 0.6.48 shipped undetected). Returns a markdown section, or '' if
+    up to date / undeterminable."""
+    import json as _json
+    import subprocess as _sp
+    installed = None
+    for rel in ("apps/pce/admin", "apps/exam-management/admin", "apps/portal"):
+        pj = REPO_ROOT / rel / "node_modules" / "@exxatdesignux" / "ui" / "package.json"
+        if pj.exists():
+            try:
+                installed = _json.loads(pj.read_text(encoding="utf-8"))["version"]
+                break
+            except Exception:
+                pass
+    if not installed:
+        return ""
+    try:
+        latest = _sp.run(["npm", "view", "@exxatdesignux/ui", "version"],
+                         capture_output=True, text=True, timeout=20).stdout.strip()
+    except Exception:
+        return ""
+    if not latest or latest == installed:
+        return ""
+    return (
+        "## @exxatdesignux/ui — NPM package (the canonical DS)\n\n"
+        f"- **Installed `{installed}` · Latest `{latest}`** — consumer apps are behind.\n"
+        "- Upgrade via the `exxat-package-upgrade` skill: `pnpm add @exxatdesignux/ui@latest` "
+        "then `npx exxat-ui upgrade` per app.\n"
+        "- Release notes: https://github.com/ExxatDesign/Exxat-DS-Workspace/blob/main/packages/ui/RELEASES.md\n\n"
+    )
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--force", action="store_true",
@@ -419,9 +454,15 @@ def main() -> int:
         student_tokens_diff["added"], student_tokens_diff["removed"], student_tokens_diff["value_changed"],
     ])
 
-    if has_deltas or args.force:
-        PENDING.write_text(render_pending(ts, exxat_diff, student_diff), encoding="utf-8")
-        print(f"ds-update-watch — DELTAS detected, wrote {PENDING.relative_to(REPO_ROOT)}")
+    npm_section = npm_package_section()
+
+    if has_deltas or args.force or npm_section:
+        body = render_pending(ts, exxat_diff, student_diff) if (has_deltas or args.force) else empty_pending_body(ts)
+        if npm_section:
+            body = body.rstrip() + "\n\n" + npm_section
+        PENDING.write_text(body, encoding="utf-8")
+        why = "DELTAS" if (has_deltas or args.force) else "npm-package gap"
+        print(f"ds-update-watch — {why}, wrote {PENDING.relative_to(REPO_ROOT)}")
     else:
         # Preserve any prior pending content unless empty already
         if not PENDING.exists() or "no DS deltas detected" not in PENDING.read_text(encoding="utf-8"):
