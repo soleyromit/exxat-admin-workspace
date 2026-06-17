@@ -643,7 +643,7 @@ export const MOCK_COURSE_OFFERINGS: CourseOffering[] = [
   { id: 'co4', masterCourseId: 'mc4', termId: 'pt2', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 50, status: 'archived' },
   { id: 'co5', masterCourseId: 'mc5', termId: 'pt1', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 30, status: 'active' },
   { id: 'co6', masterCourseId: 'mc6', termId: 'pt1', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 10, status: 'active' },
-  { id: 'co7', masterCourseId: 'mc7', termId: 'pt1', cohort: 'Class of 'Class of 2027', primaryFacultyId: 'f2', collaboratorIds: [],     enrolledCount: 35, status: 'planned' },
+  { id: 'co7', masterCourseId: 'mc7', termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f2', collaboratorIds: [],     enrolledCount: 35, status: 'planned' },
   { id: 'co8', masterCourseId: 'mc1', termId: 'pt5', cohort: 'Class of 2028', primaryFacultyId: 'f2', collaboratorIds: ['f1'], enrolledCount: 50, status: 'planned' },
 ]
 

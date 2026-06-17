@@ -122,7 +122,7 @@ function ScoreBar({ score, max = 5 }: { score: number; max?: number }) {
 }
 
 type Axis = 'term' | 'cohort'
-type CourseTypeFilter = 'all' | 'didactic' | 'clinical'
+type CourseTypeFilter = 'all' | 'practice' | 'classroom' | 'lab'
 
 export default function AnalyticsPage() {
   const { surveys } = usePce()
@@ -505,8 +505,9 @@ export default function AnalyticsPage() {
                   size="sm"
                 >
                   <ToggleGroupItem value="all" aria-label="All courses">All</ToggleGroupItem>
-                  <ToggleGroupItem value="didactic" aria-label="Didactic only">Didactic</ToggleGroupItem>
-                  <ToggleGroupItem value="clinical" aria-label="Clinical only">Clinical</ToggleGroupItem>
+                  <ToggleGroupItem value="classroom" aria-label="Classroom based only">Classroom</ToggleGroupItem>
+                  <ToggleGroupItem value="practice" aria-label="Practice based only">Practice</ToggleGroupItem>
+                  <ToggleGroupItem value="lab" aria-label="Lab based only">Lab</ToggleGroupItem>
                 </ToggleGroup>
               </div>
             )}
