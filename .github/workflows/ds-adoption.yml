@@ -28,6 +28,16 @@ on:
       - 'apps/**/*.tsx'
       - 'apps/**/*.ts'
       - 'scripts/ds-adoption-audit.py'
+  # Direct commits to dev/main are the real workflow here — a PR-only gate would
+  # never fire. Push runs can't *block* a push (it already happened) but they mark
+  # the commit red. To truly block, require this check + disallow direct pushes
+  # (branch protection — a repo-admin toggle, see PR/commit handoff).
+  push:
+    branches: [dev, main]
+    paths:
+      - 'apps/**/*.tsx'
+      - 'apps/**/*.ts'
+      - 'scripts/ds-adoption-audit.py'
   workflow_dispatch:
 
 jobs:
@@ -46,8 +56,16 @@ jobs:
         id: changed
         run: |
           set -euo pipefail
-          git fetch origin "${{ github.base_ref }}" --depth=1
-          BASE=$(git merge-base "origin/${{ github.base_ref }}" HEAD)
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin "${{ github.base_ref }}" --depth=1
+            BASE=$(git merge-base "origin/${{ github.base_ref }}" HEAD)
+          else
+            BASE="${{ github.event.before }}"
+            # New branch / first push (all-zero before) → fall back to last commit.
+            if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+              BASE="HEAD~1"
+            fi
+          fi
           FILES=$(git diff --name-only --diff-filter=ACMR "$BASE" HEAD \
                     -- 'apps/**/*.tsx' 'apps/**/*.ts' | tr '\n' ' ')
           echo "files=$FILES" >> "$GITHUB_OUTPUT"
