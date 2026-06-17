@@ -39,8 +39,8 @@ export interface PceSurvey {
   term: string
   /** Cohort = graduating class (e.g., "Class of 2027"). Per Aarti 2026-05-08 16:09 D3, the atomic unit for evaluation is course × term × cohort × faculty. */
   cohort?: string
-  /** Per UC-14 + workspace ADR-002: didactic | clinical (optional, extensible). Used for clinical/didactic split filter on Cohort view (C5). */
-  courseType?: 'didactic' | 'clinical'
+  /** Per UC-14 + workspace ADR-002: practice | classroom | lab (optional, extensible). Updated per PRD §2 Key Decision #5 (14 Jun 2026) — replaces Didactic/Clinical taxonomy. */
+  courseType?: 'practice' | 'classroom' | 'lab'
   /** Prior offerings of the SAME course in earlier terms — drives the trend sparkline (C7). Oldest first; current is excluded (it's the survey itself). */
   priorOfferings?: PriorOffering[]
   templateId: string
@@ -177,7 +177,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     courseName: 'Cellular Biology',
     term: 'Spring 2026',
     cohort: 'Class of 2027',
-    courseType: 'didactic',
+    courseType: 'classroom',
     priorOfferings: [
       { term: 'Spring 2024', courseAvg: 4.0, facultyAvg: 4.2 },
       { term: 'Spring 2025', courseAvg: 4.1, facultyAvg: 4.2 },
@@ -197,7 +197,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     courseName: 'Advanced Patient Care',
     term: 'Spring 2026',
     cohort: 'Class of 2026',
-    courseType: 'clinical',
+    courseType: 'practice',
     priorOfferings: [
       { term: 'Spring 2024', courseAvg: 3.6, facultyAvg: 3.8 },
       { term: 'Spring 2025', courseAvg: 3.9, facultyAvg: 4.0 },
@@ -217,7 +217,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     courseName: 'Clinical Pharmacology',
     term: 'Spring 2026',
     cohort: 'Class of 2026',
-    courseType: 'clinical',
+    courseType: 'practice',
     priorOfferings: [
       { term: 'Spring 2023', courseAvg: 3.9, facultyAvg: 4.0 },
       { term: 'Spring 2024', courseAvg: 4.1, facultyAvg: 4.4 },
@@ -239,7 +239,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     courseName: 'Medical Physics',
     term: 'Fall 2025',
     cohort: 'Class of 2028',
-    courseType: 'didactic',
+    courseType: 'classroom',
     priorOfferings: [
       { term: 'Fall 2022', courseAvg: 4.4, facultyAvg: 4.5 },
       { term: 'Fall 2023', courseAvg: 4.2, facultyAvg: 4.3 },
@@ -262,7 +262,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     courseName: 'Fundamentals of Nursing',
     term: 'Spring 2026',
     cohort: 'Class of 2028',
-    courseType: 'didactic',
+    courseType: 'classroom',
     priorOfferings: [
       { term: 'Spring 2024', courseAvg: 4.0, facultyAvg: 4.1 },
       { term: 'Spring 2025', courseAvg: 4.0, facultyAvg: 4.0 },
@@ -282,7 +282,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     courseName: 'Introduction to Medicine',
     term: 'Spring 2026',
     cohort: 'Class of 2028',
-    courseType: 'didactic',
+    courseType: 'classroom',
     priorOfferings: [
       { term: 'Spring 2025', courseAvg: 3.8, facultyAvg: 4.0 },
     ],
@@ -301,7 +301,7 @@ export const MOCK_SURVEYS: PceSurvey[] = [
     courseName: 'Molecular Genetics',
     term: 'Spring 2026',
     cohort: 'Class of 2027',
-    courseType: 'didactic',
+    courseType: 'classroom',
     /* No prior offerings — first time this course is offered. */
     templateId: 't2',
     status: 'draft',
@@ -621,7 +621,7 @@ export const MOCK_COMPETENCIES: Competency[] = [
   { id: 'cm4', name: 'Quality Improvement',     description: 'Use data to monitor outcomes and improve care quality',                                source: 'IOM',           status: 'active' },
   { id: 'cm5', name: 'Safety',                  description: 'Minimize risk of harm to patients and providers',                                       source: 'IOM',           status: 'active' },
   { id: 'cm6', name: 'Informatics',             description: 'Use information and technology to communicate, manage, and support decision-making',  source: 'IOM',           status: 'active' },
-  { id: 'cm7', name: 'Pharmacological Therapy', description: 'Apply principles of pharmacology to medication management',                            source: 'NLN',           status: 'active' },
+  { id: 'cm7', name: 'Pharmacological Therapy', description: 'Apply pharmacotherapeutic principles to medication management',                            source: 'NLN',           status: 'active' },
   { id: 'cm8', name: 'Patient Education',       description: 'Provide individualized education to promote health',                                    source: 'NLN', parentId: 'cm1', status: 'active' },
 ]
 
@@ -643,7 +643,7 @@ export const MOCK_COURSE_OFFERINGS: CourseOffering[] = [
   { id: 'co4', masterCourseId: 'mc4', termId: 'pt2', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 50, status: 'archived' },
   { id: 'co5', masterCourseId: 'mc5', termId: 'pt1', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 30, status: 'active' },
   { id: 'co6', masterCourseId: 'mc6', termId: 'pt1', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 10, status: 'active' },
-  { id: 'co7', masterCourseId: 'mc7', termId: 'pt1', cohort: 'Class of 2027', primaryFacultyId: 'f2', collaboratorIds: [],     enrolledCount: 35, status: 'planned' },
+  { id: 'co7', masterCourseId: 'mc7', termId: 'pt1', cohort: 'Class of 'Class of 2027', primaryFacultyId: 'f2', collaboratorIds: [],     enrolledCount: 35, status: 'planned' },
   { id: 'co8', masterCourseId: 'mc1', termId: 'pt5', cohort: 'Class of 2028', primaryFacultyId: 'f2', collaboratorIds: ['f1'], enrolledCount: 50, status: 'planned' },
 ]
 
