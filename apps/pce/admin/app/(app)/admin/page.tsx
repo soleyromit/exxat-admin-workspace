@@ -13,6 +13,11 @@ import {
   Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
+import {
+  MOCK_MASTER_COURSES, MOCK_PROGRAM_TERMS, MOCK_COURSE_OFFERINGS,
+  MOCK_STUDENTS, MOCK_ACCOMMODATIONS, MOCK_CONTENT_AREAS,
+  MOCK_COMPETENCIES, MOCK_STANDARDS, MOCK_ASSESSMENT_TYPES,
+} from '@/lib/pce-mock-data'
 
 interface EntityTile {
   key: string
@@ -30,25 +35,33 @@ const ENTITIES: EntityTile[] = [
   // Available now
   { key: 'courses', title: 'Master Courses', icon: 'fa-book',
     description: 'Catalog of every course the program offers.',
-    href: '/admin/courses', status: 'available', metric: '8 courses' },
+    href: '/admin/courses', status: 'available', metric: `${MOCK_MASTER_COURSES.length} courses` },
 
   { key: 'terms', title: 'Terms', icon: 'fa-calendar-days',
     description: 'Academic terms (Spring 2026, Fall 2025, etc.).',
-    href: '/admin/terms', status: 'available', metric: '5 terms' },
+    href: '/admin/terms', status: 'available', metric: `${MOCK_PROGRAM_TERMS.length} terms · ${MOCK_PROGRAM_TERMS.filter(t => t.status === 'active').length} active` },
 
   { key: 'offerings', title: 'Course Offerings', icon: 'fa-rectangle-list',
     description: 'A course delivered in a specific term and cohort, taught by a faculty member.',
-    href: '/admin/offerings', status: 'available', metric: '8 offerings' },
+    href: '/admin/offerings', status: 'available', metric: `${MOCK_COURSE_OFFERINGS.length} offerings · ${MOCK_COURSE_OFFERINGS.filter(o => o.status === 'active').length} active` },
 
   // Phase 1 — coming next
 
   { key: 'students', title: 'Students', icon: 'fa-graduation-cap',
     description: 'Synced from LMS or imported manually.',
-    href: '/admin/students', status: 'available', metric: '17 students · 14 enrolled' },
+    href: '/admin/students', status: 'available', metric: `${MOCK_STUDENTS.length} students · ${MOCK_STUDENTS.filter(s => s.enrollmentStatus === 'enrolled').length} enrolled` },
 
   { key: 'faculty', title: 'Faculty', icon: 'fa-users',
     description: 'Faculty profiles and role assignments.',
     href: '/admin/faculty', status: 'available', metric: 'shared across modules' },
+
+  { key: 'email-templates', title: 'Email Templates', icon: 'fa-envelope',
+    description: 'Initial invitation and reminder templates used each cycle.',
+    href: '/admin/email-templates', status: 'available', metric: '2 templates' },
+
+  { key: 'reminder-schedule', title: 'Reminder Schedule', icon: 'fa-bell',
+    description: 'Default reminder intervals anchored to term end date.',
+    href: '/admin/reminder-schedule', status: 'available', metric: '3 active intervals' },
 
   { key: 'permissions', title: 'Permissions', icon: 'fa-shield-check',
     description: 'Role assignments and collaboration access.',
@@ -56,24 +69,24 @@ const ENTITIES: EntityTile[] = [
 
   { key: 'content-areas', title: 'Content Areas', icon: 'fa-tags',
     description: 'Topic taxonomy mapped to courses + questions.',
-    href: '/admin/content-areas', status: 'available', metric: '8 areas' },
+    href: '/admin/content-areas', status: 'available', metric: `${MOCK_CONTENT_AREAS.length} areas` },
 
   { key: 'competencies', title: 'Competencies', icon: 'fa-medal',
     description: 'Program-level outcome capabilities.',
-    href: '/admin/competencies', status: 'available', metric: '8 competencies' },
+    href: '/admin/competencies', status: 'available', metric: `${MOCK_COMPETENCIES.length} competencies` },
 
   { key: 'standards', title: 'Standards', icon: 'fa-stamp',
     description: 'Accreditation requirements (CAPTE, ARC-PA, NCLEX, etc.).',
-    href: '/admin/standards', status: 'available', metric: '8 standards' },
+    href: '/admin/standards', status: 'available', metric: `${MOCK_STANDARDS.length} standards` },
 
   { key: 'assessment-types', title: 'Assessment Types', icon: 'fa-clipboard-question',
     description: 'Pop quiz, timed, take-home, open-book, proctored.',
-    href: '/admin/assessment-types', status: 'available', metric: '7 types (5 P1)' },
+    href: '/admin/assessment-types', status: 'available', metric: `${MOCK_ASSESSMENT_TYPES.length} types (${MOCK_ASSESSMENT_TYPES.filter(t => t.phase === 1 && t.status === 'active').length} P1)` },
 
   // Shared module (workspace ADR-006)
   { key: 'accommodations', title: 'Accommodations', icon: 'fa-universal-access',
     description: 'Shared disability and accommodation catalog available across all modules.',
-    href: '/admin/accommodations', status: 'available', metric: '12 in catalog' },
+    href: '/admin/accommodations', status: 'available', metric: `${MOCK_ACCOMMODATIONS.filter(a => a.status === 'active').length} in catalog` },
 ]
 
 /* DS Card slot composition (replaces hand-rolled <article> + raw divs).

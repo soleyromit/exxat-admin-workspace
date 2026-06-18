@@ -10,11 +10,11 @@
  *     also collapses the main sidebar via `secondary-panel.tsx#openPanel`.
  *   - `PrimaryPageTemplate` + `ListPageTemplate` — same hub frame as
  *     Placements / Library.
- *   - **`HubTable`** (NOT raw `DataTable`) — the canonical primitive that
- *     wires `useTableState`, the toolbar (search + filter chips + filter
- *     dropdown + sort), `TablePropertiesDrawerButton`, view-type tiles,
- *     bulk-actions, and conditional rules. Hubs that drop down to raw
- *     `DataTable` silently lose filters and Properties; do not do that.
+ *   - **`HubTable`** (NOT the raw DataTable primitive) — the canonical hub
+ *     wrapper that wires `useTableState`, the toolbar (search + filter chips
+ *     + filter dropdown + sort), `TablePropertiesDrawerButton`, view-type
+ *     tiles, bulk-actions, and conditional rules. Hubs that drop to the raw
+ *     primitive silently lose filters and Properties; do not do that.
  *   - One view tab (`viewType: "table"`) — category scope is the panel's
  *     job, not the view tabs'.
  *

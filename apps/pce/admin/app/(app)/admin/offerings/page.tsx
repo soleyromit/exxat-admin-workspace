@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  KeyMetrics,
+  KeyMetrics, Button,
 } from '@exxatdesignux/ui'
 import type { MetricItem } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
@@ -53,6 +54,7 @@ const completionColor = (pct: number) =>
   pct >= 80 ? 'var(--chart-2)' : pct >= 60 ? 'var(--brand-color)' : 'var(--chart-4)'
 
 export default function CourseOfferingsPage() {
+  const router = useRouter()
   const [termFilter, setTermFilter]       = useState('all')
   const [statusFilter, setStatusFilter]   = useState('all')
   const [selectedSurveyId, setSelectedSurveyId] = useState<string | null>(null)
@@ -100,6 +102,7 @@ export default function CourseOfferingsPage() {
   ]
 
   const columns: ColumnDef<OfferingRow>[] = [
+    { key: 'select', label: '', width: 40, defaultPin: 'left', lockPin: true },
     {
       key: 'courseCode', label: 'Course', sortable: true, width: 220,
       cell: (row) => (
@@ -230,7 +233,7 @@ export default function CourseOfferingsPage() {
             data={tableRows}
             columns={columns}
             getRowId={(row) => row.id}
-            selectable={false}
+            selectable
             searchable
             defaultGroupBy="termName"
             onRowClick={(row) => {
@@ -251,6 +254,20 @@ export default function CourseOfferingsPage() {
               </div>
             }
             toolbarSlot={() => null}
+            bulkActionsSlot={(selected) => (
+              <Button
+                variant="default"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => {
+                  const ids = Array.from(selected).join(',')
+                  router.push(`/surveys/activate?offerings=${ids}`)
+                }}
+              >
+                <i className="fa-light fa-paper-plane" aria-hidden="true" style={{ fontSize: 11 }} />
+                Push Survey
+              </Button>
+            )}
           />
 
         </div>

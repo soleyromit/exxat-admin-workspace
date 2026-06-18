@@ -1,166 +1,152 @@
 'use client'
 
-/**
- * Admin · Master Courses (UC-19, workspace ADR-001 entity #1).
- *
- * Per docs/patterns/admin/master-list-admin.md — uniform list shape:
- * Search · Add · Import · Table · Per-row dropdown · LMS sync footer.
- *
- * Per workspace ADR-002 (LMS-first default): Add disabled when LMS-on.
- * Mock data uses MOCK_LMS_ENABLED = false so manual CRUD is exercisable.
- */
-
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
-  Button,
-  Input,
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
-  Tooltip, TooltipContent, TooltipTrigger,
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
-  Field, FieldLabel, FieldGroup, FieldError,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  LocalBanner,
+  Badge, KeyMetrics,
 } from '@exxatdesignux/ui'
+import type { MetricItem } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import {
-  MOCK_MASTER_COURSES, MOCK_LMS_ENABLED,
+  MOCK_MASTER_COURSES, MOCK_COURSE_OFFERINGS, MOCK_FACULTY_OFFERINGS,
   type MasterCourse,
 } from '@/lib/pce-mock-data'
-import { DataTable } from '@/components/data-table'
+import { DataTablePaginated } from '@/components/data-table/pagination'
 import type { ColumnDef } from '@/components/data-table/types'
 
-const DEPARTMENTS = ['Biological Sciences', 'Nursing', 'Medicine', 'Foundations', 'Pharmacy']
+const TYPE_LABELS: Record<MasterCourse['type'], string> = {
+  didactic: 'Didactic',
+  clinical: 'Clinical',
+  seminar:  'Seminar',
+}
+
+const TYPE_BADGE_VARIANT: Record<MasterCourse['type'], 'secondary' | 'outline'> = {
+  didactic: 'secondary',
+  clinical: 'outline',
+  seminar:  'outline',
+}
+
+/* Precompute per-course stats from offerings + faculty offering data */
+const _offeringsByMCId = MOCK_COURSE_OFFERINGS.reduce<Record<string, number>>((acc, o) => {
+  acc[o.masterCourseId] = (acc[o.masterCourseId] ?? 0) + 1
+  return acc
+}, {})
+
+const _codeById = new Map(MOCK_MASTER_COURSES.map(c => [c.id, c.code]))
+
+const _avgRatingByCode = MOCK_FACULTY_OFFERINGS.reduce<Record<string, { sum: number; n: number }>>((acc, fo) => {
+  if (!acc[fo.courseCode]) acc[fo.courseCode] = { sum: 0, n: 0 }
+  acc[fo.courseCode].sum += fo.avgRating * fo.enrolled
+  acc[fo.courseCode].n   += fo.enrolled
+  return acc
+}, {})
 
 interface MasterCourseRow extends Record<string, unknown> {
   id: string
   code: string
   name: string
   department: string
+  type: MasterCourse['type']
   status: MasterCourse['status']
-  lastEdited: string
-  editedBy: string
-  raw: MasterCourse
+  timesOffered: number
+  avgRating: number | null
 }
 
+const DEPARTMENTS = [...new Set(MOCK_MASTER_COURSES.map(c => c.department))].sort()
+const PRISM_BASE  = 'https://app.exxat.com/prism/dpt/courses'
+
+const tierColor = (avg: number) =>
+  avg >= 4.3 ? 'var(--chart-2)' : avg >= 3.7 ? 'var(--brand-color)' : 'var(--chip-4)'
+
 export default function MasterCoursesPage() {
-  // Local-state CRUD; no backend persistence — fine for prototype/Phase 1.
-  const [rows, setRows] = useState<MasterCourse[]>(MOCK_MASTER_COURSES)
   const [departmentFilter, setDepartmentFilter] = useState('all')
-  const [addOpen, setAddOpen] = useState(false)
-  const [draft, setDraft] = useState({ code: '', name: '', department: DEPARTMENTS[0] })
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [typeFilter, setTypeFilter] = useState('all')
 
-  const filteredRaw = rows.filter(r => {
-    if (departmentFilter !== 'all' && r.department !== departmentFilter) return false
-    return true
-  })
+  const tableRows: MasterCourseRow[] = useMemo(
+    () => MOCK_MASTER_COURSES
+      .filter(r => {
+        if (departmentFilter !== 'all' && r.department !== departmentFilter) return false
+        if (typeFilter !== 'all' && r.type !== typeFilter) return false
+        return true
+      })
+      .map(r => {
+        const ratingData = _avgRatingByCode[r.code]
+        return {
+          id: r.id, code: r.code, name: r.name,
+          department: r.department, type: r.type, status: r.status,
+          timesOffered: _offeringsByMCId[r.id] ?? 0,
+          avgRating: ratingData && ratingData.n > 0
+            ? +(ratingData.sum / ratingData.n).toFixed(2)
+            : null,
+        }
+      }),
+    [departmentFilter, typeFilter],
+  )
 
-  const tableRows: MasterCourseRow[] = filteredRaw.map(r => ({
-    id: r.id,
-    code: r.code,
-    name: r.name,
-    department: r.department,
-    status: r.status,
-    lastEdited: r.lastEdited,
-    editedBy: r.editedBy,
-    raw: r,
-  }))
+  /* KPI metrics (max 4 per brief) */
+  const activeCount    = MOCK_MASTER_COURSES.filter(c => c.status === 'active').length
+  const didacticCount  = MOCK_MASTER_COURSES.filter(c => c.type === 'didactic').length
+  const clinicalCount  = MOCK_MASTER_COURSES.filter(c => c.type === 'clinical').length
+  const allRatings = Object.values(_avgRatingByCode)
+  const programAvgRating = allRatings.length > 0
+    ? +(allRatings.reduce((s, r) => s + (r.n > 0 ? r.sum / r.n : 0), 0) / allRatings.filter(r => r.n > 0).length).toFixed(1)
+    : null
 
-  // Validation pattern: accommodations/page.tsx:96-126.
-  function validate(): Record<string, string> {
-    const next: Record<string, string> = {}
-    const trimmedCode = draft.code.trim()
-    const trimmedName = draft.name.trim()
-    if (!trimmedCode) next.code = 'Course code is required.'
-    else if (rows.some(r => r.code.trim().toLowerCase() === trimmedCode.toLowerCase())) {
-      next.code = 'A course with this code already exists.'
-    }
-    if (!trimmedName) next.name = 'Course name is required.'
-    return next
-  }
-
-  function handleSave() {
-    const next = validate()
-    setErrors(next)
-    if (Object.keys(next).length > 0) return
-    const today = new Date().toISOString().slice(0, 10)
-    const newRow: MasterCourse = {
-      id: `mc${Date.now()}`,
-      code: draft.code.trim(),
-      name: draft.name.trim(),
-      department: draft.department,
-      status: 'active',
-      lastEdited: today,
-      editedBy: 'You (current user)',
-    }
-    setRows([newRow, ...rows])
-    setDraft({ code: '', name: '', department: DEPARTMENTS[0] })
-    setErrors({})
-    setAddOpen(false)
-  }
-
-  function handleAddOpenChange(open: boolean) {
-    setAddOpen(open)
-    if (!open) setErrors({})
-  }
-
-  function handleArchive(id: string) {
-    setRows(rows.map(r => r.id === id ? { ...r, status: r.status === 'active' ? 'inactive' : 'active' } : r))
-  }
+  const kpis: MetricItem[] = [
+    { id: 'total',    label: 'Total courses',   value: MOCK_MASTER_COURSES.length, delta: '', trend: 'neutral' },
+    { id: 'didactic', label: 'Didactic',         value: didacticCount,              delta: '', trend: 'neutral' },
+    { id: 'clinical', label: 'Clinical',          value: clinicalCount,              delta: '', trend: 'neutral' },
+    { id: 'rating',   label: 'Avg program rating', value: programAvgRating !== null ? `${programAvgRating}/5` : '—', delta: '', trend: 'neutral' },
+  ]
 
   const columns: ColumnDef<MasterCourseRow>[] = [
     {
-      key: 'code',
-      label: 'Code',
-      sortable: true,
-      width: 120,
+      key: 'code', label: 'Code', sortable: true, width: 110,
       cell: (row) => <span className="font-mono text-xs">{row.code}</span>,
     },
     {
-      key: 'name',
-      label: 'Name',
-      sortable: true,
-      width: 260,
+      key: 'name', label: 'Name', sortable: true, width: 280,
       cell: (row) => <span className="text-sm font-medium">{row.name}</span>,
     },
     {
-      key: 'department',
-      label: 'Department',
-      sortable: true,
-      width: 200,
+      key: 'type', label: 'Type', sortable: true, width: 110,
+      cell: (row) => (
+        <Badge variant={TYPE_BADGE_VARIANT[row.type]} className="capitalize text-xs">
+          {TYPE_LABELS[row.type]}
+        </Badge>
+      ),
+    },
+    {
+      key: 'department', label: 'Department', sortable: true, width: 190,
       cell: (row) => <span className="text-sm text-muted-foreground">{row.department}</span>,
     },
     {
-      key: 'status',
-      label: 'Status',
-      sortable: true,
-      width: 110,
+      key: 'timesOffered', label: 'Times offered', sortable: true, width: 130,
+      header: () => <span className="block text-right">Times offered</span>,
       cell: (row) => (
-        <span className={
-          'text-xs capitalize ' +
-          (row.status === 'active' ? 'text-foreground' : 'text-muted-foreground')
-        }>
-          {row.status}
-        </span>
+        <div className="text-right tabular-nums text-sm text-muted-foreground">
+          {row.timesOffered > 0 ? row.timesOffered : '—'}
+        </div>
       ),
     },
     {
-      key: 'lastEdited',
-      label: 'Last edited',
-      sortable: true,
-      width: 220,
+      key: 'avgRating', label: 'Avg rating', sortable: true, width: 110,
+      header: () => <span className="block text-right">Avg rating</span>,
       cell: (row) => (
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {row.lastEdited} · {row.editedBy}
-        </span>
+        <div
+          className="text-right tabular-nums text-sm font-semibold"
+          style={{ color: row.avgRating !== null ? tierColor(row.avgRating) : 'var(--muted-foreground)' }}
+        >
+          {row.avgRating !== null ? `${row.avgRating.toFixed(1)}/5` : '—'}
+        </div>
       ),
     },
     {
-      key: 'actions',
-      label: '',
-      width: 44,
-      cell: (row) => <RowActions row={row.raw} onArchive={() => handleArchive(row.raw.id)} />,
+      key: 'prism', label: '', width: 36,
+      cell: () => (
+        <i className="fa-light fa-arrow-up-right-from-square text-xs text-muted-foreground" aria-hidden="true" />
+      ),
     },
   ]
 
@@ -171,14 +157,35 @@ export default function MasterCoursesPage() {
         <Link href="/admin" className="text-sm text-muted-foreground">Admin</Link>
         <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
         <h1 className="text-sm font-semibold flex-1 truncate">Master Courses</h1>
+        <span className="text-xs text-muted-foreground flex items-center gap-1">
+          <i className="fa-light fa-rotate text-xs" aria-hidden="true" />
+          Synced from Prism
+        </span>
       </div>
 
-      <div className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
+      <div className="shrink-0 [&_*]:!border-e-0 px-4 lg:px-6" style={{ paddingBlock: 4 }}>
+        <KeyMetrics variant="compact" showHeader={false} metricsSingleRow metrics={kpis} />
+      </div>
+
+      <div className="flex-1 overflow-auto" style={{ paddingTop: 16, paddingBottom: 28 }}>
         <div className="max-w-5xl flex flex-col gap-4">
 
-          {/* External hard-filter (department) + Add/Import actions.
-              DataTable provides built-in search/properties below. */}
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap px-4 lg:px-6">
+            <p className="text-sm text-muted-foreground flex-1">
+              {activeCount} active · {MOCK_MASTER_COURSES.length} total.
+              Click any row to open in Prism.
+            </p>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="h-8 w-36 text-sm" aria-label="Filter by type">
+                <SelectValue placeholder="All types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All types</SelectItem>
+                <SelectItem value="didactic">Didactic</SelectItem>
+                <SelectItem value="clinical">Clinical</SelectItem>
+                <SelectItem value="seminar">Seminar</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
               <SelectTrigger className="h-8 w-52 text-sm" aria-label="Filter by department">
                 <SelectValue placeholder="All departments" />
@@ -188,176 +195,30 @@ export default function MasterCoursesPage() {
                 {DEPARTMENTS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
               </SelectContent>
             </Select>
-
-            <div className="flex-1" />
-
-            {MOCK_LMS_ENABLED ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="default" disabled aria-disabled="true">
-                    <i className="fa-light fa-plus" aria-hidden="true" />
-                    Add course
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Managed by your LMS</TooltipContent>
-              </Tooltip>
-            ) : (
-              <Button variant="default" onClick={() => setAddOpen(true)}>
-                <i className="fa-light fa-plus" aria-hidden="true" />
-                Add course
-              </Button>
-            )}
-
-            <Button variant="outline">
-              <i className="fa-light fa-arrow-up-from-bracket" aria-hidden="true" />
-              Import CSV
-            </Button>
           </div>
 
-          {tableRows.length === 0 ? (
-            <div className="border border-border rounded-lg flex flex-col items-center justify-center gap-2 py-10 text-center">
-              <p className="text-sm font-medium">
-                {departmentFilter !== 'all' ? 'No courses match this filter' : 'No master courses yet'}
-              </p>
-              {departmentFilter === 'all' && !MOCK_LMS_ENABLED && (
-                <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
-                  <i className="fa-light fa-plus" aria-hidden="true" />
-                  Add your first course
-                </Button>
-              )}
-            </div>
-          ) : (
-            <DataTable<MasterCourseRow>
-              data={tableRows}
-              columns={columns}
-              getRowId={(row) => row.id}
-              selectable
-              searchable
-              toolbarSlot={() => null}
-            />
-          )}
-
-          {/* LMS sync indicator (footer) */}
-          {MOCK_LMS_ENABLED && (
-            <p className="text-xs text-muted-foreground text-right">
-              Last synced 4m ago <span style={{ color: 'var(--chart-2)' }}>●</span>
-            </p>
-          )}
-          {!MOCK_LMS_ENABLED && (
-            <p className="text-xs text-muted-foreground">
-              <i className="fa-light fa-circle-info text-xs me-1" aria-hidden="true" />
-              LMS integration is off. This list is managed manually.
-            </p>
-          )}
+          <DataTablePaginated<MasterCourseRow>
+            data={tableRows}
+            columns={columns}
+            getRowId={(row) => row.id}
+            selectable={false}
+            searchable
+            onRowClick={(row) => window.open(`${PRISM_BASE}/${row.id}`, '_blank', 'noopener')}
+            emptyState={
+              <div className="flex flex-col items-center gap-2 py-6">
+                <i className="fa-light fa-book text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
+                <p className="text-sm font-medium">
+                  {departmentFilter !== 'all' || typeFilter !== 'all'
+                    ? 'No courses match these filters'
+                    : 'No courses match your search'}
+                </p>
+              </div>
+            }
+            toolbarSlot={() => null}
+          />
 
         </div>
       </div>
-
-      {/* Add course dialog */}
-      <Dialog open={addOpen} onOpenChange={handleAddOpenChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add master course</DialogTitle>
-            <DialogDescription>
-              Master courses live at program level and are reused across terms via course offerings.
-            </DialogDescription>
-          </DialogHeader>
-
-          {Object.keys(errors).length >= 2 && (
-            <LocalBanner variant="error" title="Fix the following before saving">
-              {Object.keys(errors).length} fields need attention.
-            </LocalBanner>
-          )}
-
-          <FieldGroup>
-            <Field orientation="vertical">
-              <FieldLabel htmlFor="course-code">Course code *</FieldLabel>
-              <Input
-                id="course-code"
-                placeholder="e.g., BIO 401"
-                value={draft.code}
-                onChange={e => setDraft({ ...draft, code: e.target.value })}
-                aria-required="true"
-                aria-invalid={!!errors.code}
-                aria-describedby={errors.code ? 'course-code-error' : undefined}
-              />
-              {errors.code && <FieldError id="course-code-error">{errors.code}</FieldError>}
-            </Field>
-            <Field orientation="vertical">
-              <FieldLabel htmlFor="course-name">Course name *</FieldLabel>
-              <Input
-                id="course-name"
-                placeholder="e.g., Advanced Cellular Biology"
-                value={draft.name}
-                onChange={e => setDraft({ ...draft, name: e.target.value })}
-                aria-required="true"
-                aria-invalid={!!errors.name}
-                aria-describedby={errors.name ? 'course-name-error' : undefined}
-              />
-              {errors.name && <FieldError id="course-name-error">{errors.name}</FieldError>}
-            </Field>
-            <Field orientation="vertical">
-              <FieldLabel htmlFor="course-dept">Department</FieldLabel>
-              <Select value={draft.department} onValueChange={v => setDraft({ ...draft, department: v })}>
-                <SelectTrigger id="course-dept" aria-label="Department">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {DEPARTMENTS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </Field>
-          </FieldGroup>
-
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button
-              variant="default"
-              onClick={handleSave}
-            >
-              Add course
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
-  )
-}
-
-function RowActions({ row, onArchive }: { row: MasterCourse; onArchive: () => void }) {
-  return (
-    // modal={false} — axe aria-hidden-focus fix (2026-05-11)
-    <DropdownMenu modal={false}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label={`Actions for ${row.name}`}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <i className="fa-regular fa-ellipsis" aria-hidden="true" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-44" onClick={(e) => e.stopPropagation()}>
-        <DropdownMenuItem disabled={MOCK_LMS_ENABLED}>
-          <i className="fa-light fa-pen" aria-hidden="true" />
-          Edit
-        </DropdownMenuItem>
-        <DropdownMenuItem>
-          <i className="fa-light fa-clock-rotate-left" aria-hidden="true" />
-          View history
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          variant="destructive"
-          onClick={onArchive}
-        >
-          <i className="fa-light fa-box-archive" aria-hidden="true" />
-          {row.status === 'active' ? 'Archive' : 'Reactivate'}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
   )
 }

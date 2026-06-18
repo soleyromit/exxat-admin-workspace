@@ -156,6 +156,12 @@ DOCUMENTED_HAND_ROLLS = {
     # Documented as a legitimate hand-roll in docs/governance/ds-adoption.md →
     # DataTable row.
     "app/(app)/assessment-builder/assessment-builder-client.tsx",
+    # exam-management: qb-table — purpose-built spreadsheet for the question bank.
+    # Frozen header + left column, virtual scroll over thousands of rows, inline
+    # cell editing, drag-handle column resizing, multi-level group-by. DataTable's
+    # row model and bulk-actions bar don't compose with this interaction surface.
+    # Documented in docs/governance/ds-adoption.md → DataTable hand-rolls 2026-06-17.
+    "app/(app)/question-bank/qb-table.tsx",
     # exam-management: access and private pages use local DataTable — ListPageTemplate migration
     # deferred until the DataTable vendoring (exam-management uses local vendored copy) is resolved.
     "app/(app)/access/page.tsx",

@@ -1,15 +1,5 @@
 'use client'
 
-/**
- * Admin · Terms (UC-19, workspace ADR-001 entity #2).
- *
- * Per Aarti 2026-05-05: term + academic year are SEPARATE Prism fields,
- * not "semester". Course offering = master course × term × cohort × faculty.
- *
- * Per docs/patterns/admin/master-list-admin.md — uniform list shape.
- * Per workspace ADR-002: Add disabled when LMS-on.
- */
-
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
@@ -20,14 +10,12 @@ import {
   Field, FieldLabel, FieldGroup, FieldDescription, FieldError,
   LocalBanner,
   DatePickerField,
+  ToggleSwitch,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 
-/** YYYY-MM-DD string ↔ Date helpers. Keeps mock data shape stable while DatePickerField
- *  works with native Date. Strings preserve lexicographic == chronological order for sort. */
 function ymdToDate(ymd: string): Date | undefined {
   if (!ymd) return undefined
-  // Parse as local date (avoid TZ shifting an interactive picker selection).
   const [y, m, d] = ymd.split('-').map(Number)
   if (!y || !m || !d) return undefined
   return new Date(y, m - 1, d)
@@ -39,6 +27,7 @@ function dateToYmd(d: Date | undefined): string {
   const day = String(d.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
 }
+
 import {
   MOCK_PROGRAM_TERMS, MOCK_LMS_ENABLED,
   type ProgramTerm,
@@ -54,6 +43,7 @@ interface TermRow extends Record<string, unknown> {
   startDate: string
   endDate: string
   status: ProgramTerm['status']
+  enabledForEval: boolean
 }
 
 export default function TermsPage() {
@@ -70,11 +60,11 @@ export default function TermsPage() {
       startDate: r.startDate,
       endDate: r.endDate,
       status: r.status,
+      enabledForEval: r.enabledForEval,
     })),
     [rows]
   )
 
-  // Group by academic year — most-recent first.
   const groupOrder = useMemo(
     () => Array.from(new Set(rows.map(r => r.academicYear))).sort().reverse(),
     [rows]
@@ -110,6 +100,7 @@ export default function TermsPage() {
       startDate: draft.startDate,
       endDate: draft.endDate,
       status: 'active',
+      enabledForEval: false,
     }
     setRows([newRow, ...rows])
     setDraft({ name: '', academicYear: '', startDate: '', endDate: '' })
@@ -126,40 +117,46 @@ export default function TermsPage() {
     setRows(rows.map(r => r.id === id ? { ...r, status: r.status === 'active' ? 'archived' : 'active' } : r))
   }
 
+  function handleToggleEval(id: string) {
+    setRows(rows.map(r => r.id === id ? { ...r, enabledForEval: !r.enabledForEval } : r))
+  }
+
+  const enabledCount = rows.filter(r => r.enabledForEval).length
+
   const columns: ColumnDef<TermRow>[] = [
     {
       key: 'name',
       label: 'Term',
       sortable: true,
-      width: 200,
+      width: 180,
       cell: (row) => <span className="text-sm font-medium">{row.name}</span>,
     },
     {
       key: 'academicYear',
       label: 'Academic year',
       sortable: true,
-      width: 160,
+      width: 150,
       cell: (row) => <span className="text-sm text-muted-foreground">{row.academicYear}</span>,
     },
     {
       key: 'startDate',
       label: 'Start',
       sortable: true,
-      width: 140,
+      width: 130,
       cell: (row) => <span className="text-xs tabular-nums text-muted-foreground">{row.startDate}</span>,
     },
     {
       key: 'endDate',
       label: 'End',
       sortable: true,
-      width: 140,
+      width: 130,
       cell: (row) => <span className="text-xs tabular-nums text-muted-foreground">{row.endDate}</span>,
     },
     {
       key: 'status',
       label: 'Status',
       sortable: true,
-      width: 120,
+      width: 110,
       cell: (row) => (
         <span className={
           'text-xs capitalize ' +
@@ -167,6 +164,35 @@ export default function TermsPage() {
         }>
           {row.status}
         </span>
+      ),
+    },
+    {
+      key: 'enabledForEval',
+      label: 'Enable for evaluation',
+      sortable: false,
+      width: 180,
+      header: () => (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="flex items-center gap-1 cursor-help">
+              Enable for evaluation
+              <i className="fa-light fa-circle-info text-xs text-muted-foreground" aria-hidden="true" />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent style={{ maxWidth: 240 }}>
+            Only enabled terms appear in the Activation wizard and analytics dropdowns.
+            Set end dates before enabling — reminders anchor to the term end date.
+          </TooltipContent>
+        </Tooltip>
+      ),
+      cell: (row) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          <ToggleSwitch
+            id={`eval-toggle-${row.id}`}
+            checked={row.enabledForEval}
+            onChange={() => handleToggleEval(row.id)}
+          />
+        </div>
       ),
     },
     {
@@ -205,29 +231,33 @@ export default function TermsPage() {
       <div className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
         <div className="max-w-5xl flex flex-col gap-4">
 
-          {/* Toolbar: Add + Import. Search is provided by DataTable. */}
-          <div className="flex items-center gap-2 justify-end">
-            {MOCK_LMS_ENABLED ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="default" disabled aria-disabled="true">
-                    <i className="fa-light fa-plus" aria-hidden="true" />
-                    Add term
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Managed by your LMS</TooltipContent>
-              </Tooltip>
-            ) : (
-              <Button variant="default" onClick={() => setAddOpen(true)}>
-                <i className="fa-light fa-plus" aria-hidden="true" />
-                Add term
+          <div className="flex items-center gap-2 justify-between flex-wrap">
+            <p className="text-sm text-muted-foreground">
+              {rows.length} term{rows.length !== 1 ? 's' : ''} · {enabledCount} enabled for evaluation.
+              Enable a term so it appears in the Activation wizard — reminders anchor to its end date.
+            </p>
+            <div className="flex items-center gap-2">
+              {MOCK_LMS_ENABLED ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="default" disabled aria-disabled="true">
+                      <i className="fa-light fa-plus" aria-hidden="true" />
+                      Add term
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Managed by your LMS</TooltipContent>
+                </Tooltip>
+              ) : (
+                <Button variant="default" onClick={() => setAddOpen(true)}>
+                  <i className="fa-light fa-plus" aria-hidden="true" />
+                  Add term
+                </Button>
+              )}
+              <Button variant="outline">
+                <i className="fa-light fa-arrow-up-from-bracket" aria-hidden="true" />
+                Import CSV
               </Button>
-            )}
-
-            <Button variant="outline">
-              <i className="fa-light fa-arrow-up-from-bracket" aria-hidden="true" />
-              Import CSV
-            </Button>
+            </div>
           </div>
 
           <DataTable<TermRow>
@@ -270,7 +300,8 @@ export default function TermsPage() {
           <DialogHeader>
             <DialogTitle>Add term</DialogTitle>
             <DialogDescription>
-              Per Aarti 2026-05-05: term + academic year are separate fields. A course offering combines a master course with a term to produce a specific instance.
+              Set start and end dates — the end date anchors all reminder schedules for this term.
+              Toggle "Enable for evaluation" after saving to include it in the Activation wizard.
             </DialogDescription>
           </DialogHeader>
 
@@ -346,4 +377,3 @@ export default function TermsPage() {
     </>
   )
 }
-
