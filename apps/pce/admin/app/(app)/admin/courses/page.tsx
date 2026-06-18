@@ -152,16 +152,7 @@ export default function MasterCoursesPage() {
 
   return (
     <>
-      <SiteHeader title="Master Courses" />
-      <div className="flex items-center gap-3 shrink-0" style={{ padding: '14px 28px 14px' }}>
-        <Link href="/admin" className="text-sm text-muted-foreground">Admin</Link>
-        <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
-        <h1 className="text-sm font-semibold flex-1 truncate">Master Courses</h1>
-        <span className="text-xs text-muted-foreground flex items-center gap-1">
-          <i className="fa-light fa-rotate text-xs" aria-hidden="true" />
-          Synced from Prism
-        </span>
-      </div>
+      <SiteHeader title="Master Courses" breadcrumbs={[{ label: 'Directory', href: '/admin' }]} />
 
       <div className="shrink-0 [&_*]:!border-e-0 px-4 lg:px-6" style={{ paddingBlock: 4 }}>
         <KeyMetrics variant="compact" showHeader={false} metricsSingleRow metrics={kpis} />

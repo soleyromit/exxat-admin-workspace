@@ -221,12 +221,7 @@ export default function TermsPage() {
 
   return (
     <>
-      <SiteHeader title="Terms" />
-      <div className="flex items-center gap-3 shrink-0" style={{ padding: '14px 28px 14px' }}>
-        <Link href="/admin" className="text-sm text-muted-foreground">Admin</Link>
-        <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
-        <h1 className="text-sm font-semibold flex-1 truncate">Terms</h1>
-      </div>
+      <SiteHeader title="Terms" breadcrumbs={[{ label: 'Directory', href: '/admin' }]} />
 
       <div className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
         <div className="max-w-5xl flex flex-col gap-4">

@@ -160,7 +160,7 @@ export default function CourseOfferingsPage() {
         <Link
           href={`/analytics?tab=course&courseCode=${encodeURIComponent(row.courseCode)}`}
           onClick={e => e.stopPropagation()}
-          title="View in Analytics"
+          aria-label={`View analytics for ${row.courseCode}`}
         >
           <i className="fa-light fa-chart-mixed text-xs" style={{ color: 'var(--brand-color)' }} aria-hidden="true" />
         </Link>
@@ -178,56 +178,20 @@ export default function CourseOfferingsPage() {
 
   return (
     <>
-      <SiteHeader title="Course Offerings" />
+      <SiteHeader title="Course Offerings" breadcrumbs={[{ label: 'Directory', href: '/admin' }]} />
       <EvaluationCardSheet surveyId={selectedSurveyId} onClose={() => setSelectedSurveyId(null)} />
-      <div className="flex items-center gap-3 shrink-0" style={{ padding: '14px 28px 14px' }}>
-        <Link href="/admin" className="text-sm text-muted-foreground">Admin</Link>
-        <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
-        <h1 className="text-sm font-semibold flex-1 truncate">Course Offerings</h1>
-        <span className="text-xs text-muted-foreground flex items-center gap-1">
-          <i className="fa-light fa-rotate text-xs" aria-hidden="true" />
-          Synced from Prism
-        </span>
-      </div>
 
-      <div className="shrink-0 [&_*]:!border-e-0 px-4 lg:px-6" style={{ paddingBlock: 4 }}>
+      <div className="shrink-0 px-4 lg:px-6" style={{ paddingBlock: 4 }}>
         <KeyMetrics variant="compact" showHeader={false} metricsSingleRow metrics={kpis} />
       </div>
 
       <div className="flex-1 overflow-auto" style={{ paddingTop: 16, paddingBottom: 28 }}>
         <div className="max-w-6xl flex flex-col gap-4">
 
-          <div className="flex items-center gap-3 flex-wrap px-4 lg:px-6">
-            <p className="text-sm text-muted-foreground flex-1">
-              {MOCK_COURSE_OFFERINGS.length} offerings · {activeCount} active.
-              Rows with <i className="fa-light fa-chart-bar" style={{ color: 'var(--brand-color)' }} aria-hidden="true" /> open the Evaluation Card; others open in Prism.
-            </p>
-
-            <Select value={termFilter} onValueChange={setTermFilter}>
-              <SelectTrigger className="h-8 w-40 text-sm" aria-label="Filter by term">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All terms</SelectItem>
-                {MOCK_PROGRAM_TERMS.map(t => (
-                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-8 w-36 text-sm" aria-label="Filter by status">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="planned">Planned</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="archived">Archived</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <p className="text-sm text-muted-foreground px-4 lg:px-6">
+            {MOCK_COURSE_OFFERINGS.length} offerings · {activeCount} active.
+            Rows with <i className="fa-light fa-chart-bar" style={{ color: 'var(--brand-color)' }} aria-hidden="true" /> open the Evaluation Card; others open in Prism.
+          </p>
 
           <DataTablePaginated<OfferingRow>
             data={tableRows}
@@ -253,7 +217,33 @@ export default function CourseOfferingsPage() {
                 </p>
               </div>
             }
-            toolbarSlot={() => null}
+            toolbarSlot={() => (
+              <>
+                <Select value={termFilter} onValueChange={setTermFilter}>
+                  <SelectTrigger className="h-8 w-40 text-sm" aria-label="Filter by term">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All terms</SelectItem>
+                    {MOCK_PROGRAM_TERMS.map(t => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="h-8 w-36 text-sm" aria-label="Filter by status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="planned">Planned</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+              </>
+            )}
             bulkActionsSlot={(selected) => (
               <Button
                 variant="default"

@@ -1,12 +1,13 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import Link from 'next/link'
 import {
-  Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Avatar, AvatarFallback,
   Tooltip, TooltipContent, TooltipTrigger,
+  Button, KeyMetrics,
 } from '@exxatdesignux/ui'
+import type { MetricItem } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import {
   MOCK_STUDENTS, MOCK_COHORTS, MOCK_COURSE_ENROLLMENTS,
@@ -71,20 +72,8 @@ interface StudentRow extends Record<string, unknown> {
 const PRISM_BASE = 'https://app.exxat.com/prism/dpt/students'
 
 export default function StudentsPage() {
-  const [cohortFilter, setCohortFilter] = useState('all')
-  const [statusFilter, setStatusFilter] = useState('all')
-
-  const filtered = useMemo(() =>
-    MOCK_STUDENTS.filter(r => {
-      if (cohortFilter !== 'all' && r.cohort !== cohortFilter) return false
-      if (statusFilter !== 'all' && r.enrollmentStatus !== statusFilter) return false
-      return true
-    }),
-    [cohortFilter, statusFilter],
-  )
-
   const tableRows: StudentRow[] = useMemo(
-    () => filtered.map(r => {
+    () => MOCK_STUDENTS.map(r => {
       const { courses, completed, open } = getEvalStats(r.id)
       return {
         id: r.id,
@@ -98,11 +87,17 @@ export default function StudentsPage() {
         evalsOpen: open,
       }
     }),
-    [filtered],
+    [],
   )
 
   const enrolledCount       = MOCK_STUDENTS.filter(r => r.enrollmentStatus === 'enrolled').length
   const accommodationsCount = MOCK_STUDENTS.filter(r => r.hasAccommodations).length
+
+  const kpis: MetricItem[] = [
+    { id: 'enrolled',  label: 'Enrolled',       value: enrolledCount,         delta: '', trend: 'neutral' },
+    { id: 'total',     label: 'Total students',  value: MOCK_STUDENTS.length,  delta: '', trend: 'neutral' },
+    { id: 'accomm',    label: 'Accommodations',  value: accommodationsCount,   delta: '', trend: 'neutral' },
+  ]
 
   const columns: ColumnDef<StudentRow>[] = [
     {
@@ -177,7 +172,7 @@ export default function StudentsPage() {
         if (row.evalsCompleted > 0) parts.push(`${row.evalsCompleted} done`)
         if (row.evalsOpen > 0) parts.push(`${row.evalsOpen} open`)
         return (
-          <span className="text-xs" style={{ color: row.evalsOpen > 0 ? 'var(--brand-color)' : 'var(--muted-foreground)' }}>
+          <span className="text-xs" style={{ color: row.evalsOpen > 0 ? 'var(--foreground)' : 'var(--muted-foreground)' }}>
             {parts.join(' · ')}
           </span>
         )
@@ -196,50 +191,29 @@ export default function StudentsPage() {
 
   return (
     <>
-      <SiteHeader title="Students" />
-      <div className="flex items-center gap-3 shrink-0" style={{ padding: '14px 28px 14px' }}>
-        <Link href="/admin" className="text-sm text-muted-foreground">Admin</Link>
-        <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
-        <h1 className="text-sm font-semibold flex-1 truncate">Students</h1>
-        <span className="text-xs text-muted-foreground flex items-center gap-1">
-          <i className="fa-light fa-rotate text-xs" aria-hidden="true" />
-          Synced from Prism
-        </span>
+      <h1 className="sr-only">Students</h1>
+      <SiteHeader title="Students" breadcrumbs={[{ label: 'Directory', href: '/admin' }]} />
+
+      <div className="shrink-0 [&_*]:!border-e-0 px-4 lg:px-6" style={{ paddingBlock: 4 }}>
+        <KeyMetrics variant="compact" showHeader={false} metricsSingleRow metrics={kpis} />
       </div>
 
-      <div className="flex-1 overflow-auto" style={{ paddingTop: 20, paddingBottom: 28 }}>
-        <div className="max-w-6xl flex flex-col gap-4">
+      <div className="flex-1 overflow-auto" style={{ padding: '16px 28px 28px' }}>
+        <div className="max-w-5xl flex flex-col gap-4">
 
-          <div className="flex items-baseline justify-between gap-3 flex-wrap px-4 lg:px-6">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             <p className="text-sm text-muted-foreground">
-              {enrolledCount} enrolled · {MOCK_STUDENTS.length} total · {accommodationsCount} with accommodations.
               Click any row to open the student record in Prism.
             </p>
-            <Link href="#" className="text-xs text-muted-foreground underline">
-              Manage accommodations →
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap px-4 lg:px-6">
-            <Select value={cohortFilter} onValueChange={setCohortFilter}>
-              <SelectTrigger className="h-8 w-44 text-sm" aria-label="Filter by cohort">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All cohorts</SelectItem>
-                {MOCK_COHORTS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
-
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-8 w-36 text-sm" aria-label="Filter by status">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                {STATUSES.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <i className="fa-light fa-rotate text-xs" aria-hidden="true" />
+                Synced from Prism
+              </span>
+              <Link href="#" className="text-xs text-muted-foreground underline">
+                Manage accommodations →
+              </Link>
+            </div>
           </div>
 
           <DataTablePaginated<StudentRow>
@@ -253,11 +227,7 @@ export default function StudentsPage() {
             emptyState={
               <div className="flex flex-col items-center gap-2 py-6">
                 <i className="fa-light fa-graduation-cap text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
-                <p className="text-sm font-medium">
-                  {cohortFilter !== 'all' || statusFilter !== 'all'
-                    ? 'No students match these filters'
-                    : 'No students match your search'}
-                </p>
+                <p className="text-sm font-medium">No students match your search</p>
               </div>
             }
             toolbarSlot={(state) => {
@@ -273,17 +243,21 @@ export default function StudentsPage() {
               const orderableKeys = columns.filter(c => c.key !== 'prism').map(c => c.key)
               return (
                 <>
+                  <span className="text-xs text-muted-foreground">
+                    {state.rows.length} student{state.rows.length !== 1 ? 's' : ''}
+                  </span>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        className="inline-flex items-center justify-center h-7 w-7 rounded text-muted-foreground hover:bg-muted transition-colors"
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="text-muted-foreground"
                         aria-label="Table properties"
                         aria-expanded={state.sheetOpen}
                         onClick={() => state.setSheetOpen(o => !o)}
                       >
                         <i className="fa-light fa-sliders text-[13px]" aria-hidden="true" />
-                      </button>
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">Table properties</TooltipContent>
                   </Tooltip>

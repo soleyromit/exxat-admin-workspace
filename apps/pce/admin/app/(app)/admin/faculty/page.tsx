@@ -1,8 +1,9 @@
 'use client'
 
 import { useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Avatar, AvatarFallback, KeyMetrics } from '@exxatdesignux/ui'
+import { Avatar, AvatarFallback, KeyMetrics, Button } from '@exxatdesignux/ui'
 import type { MetricItem } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import {
@@ -30,6 +31,7 @@ const completionColor = (pct: number) =>
   pct >= 80 ? 'var(--chart-2)' : pct >= 60 ? 'var(--brand-color)' : 'var(--chart-4)'
 
 export default function FacultyPage() {
+  const router = useRouter()
   const rows: FacultyRow[] = useMemo(() => {
     return MOCK_FACULTY.map(f => {
       const offerings = MOCK_FACULTY_OFFERINGS.filter(o => o.facultyId === f.id)
@@ -127,9 +129,10 @@ export default function FacultyPage() {
       key: 'analytics', label: '', width: 32,
       cell: (row) => (
         <Link
-          href={`/analytics?tab=faculty&facultyId=${row.id}`}
+          href={`/analytics/faculty/${row.id}`}
           onClick={e => e.stopPropagation()}
-          title="View in Analytics"
+          title="View analytics"
+          aria-label={`View analytics for ${row.name}`}
         >
           <i className="fa-light fa-chart-mixed text-xs" style={{ color: 'var(--brand-color)' }} aria-hidden="true" />
         </Link>
@@ -148,16 +151,7 @@ export default function FacultyPage() {
 
   return (
     <>
-      <SiteHeader title="Faculty" />
-      <div className="flex items-center gap-3 shrink-0" style={{ padding: '14px 28px 14px' }}>
-        <Link href="/admin" className="text-sm text-muted-foreground">Admin</Link>
-        <i className="fa-light fa-chevron-right text-xs text-muted-foreground" aria-hidden="true" />
-        <h1 className="text-sm font-semibold flex-1 truncate">Faculty</h1>
-        <span className="text-xs text-muted-foreground flex items-center gap-1">
-          <i className="fa-light fa-rotate text-xs" aria-hidden="true" />
-          Synced from Prism
-        </span>
-      </div>
+      <SiteHeader title="Faculty" breadcrumbs={[{ label: 'Directory', href: '/admin' }]} />
 
       <div className="shrink-0 [&_*]:!border-e-0 px-4 lg:px-6" style={{ paddingBlock: 4 }}>
         <KeyMetrics variant="compact" showHeader={false} metricsSingleRow metrics={kpis} />
@@ -175,9 +169,23 @@ export default function FacultyPage() {
             data={rows}
             columns={columns}
             getRowId={(row) => row.id}
-            selectable={false}
+            selectable
             searchable
             onRowClick={(row) => window.open(`${PRISM_BASE}/${row.id}`, '_blank', 'noopener')}
+            bulkActionsSlot={(selected) => (
+              <Button
+                variant="default"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => {
+                  const ids = Array.from(selected).join(',')
+                  router.push(`/surveys/activate?faculty=${ids}`)
+                }}
+              >
+                <i className="fa-light fa-paper-plane" aria-hidden="true" style={{ fontSize: 11 }} />
+                Push Evaluation
+              </Button>
+            )}
             emptyState={
               <div className="flex flex-col items-center gap-2 py-6">
                 <i className="fa-light fa-users text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
