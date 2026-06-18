@@ -33,6 +33,12 @@ export interface Question {
   audioUrl?: string;
   pdfUrl?: string;
 
+  // Per-question supplementary reference material
+  references?: Array<
+    | { type: 'image' | 'pdf' | 'html'; label: string; url: string }
+    | { type: 'table'; label: string; title?: string; headers: string[]; rows: string[][]; note?: string }
+  >;
+
   // Caption for media (audio, video, chart)
   caption?: string;
 
@@ -89,7 +95,14 @@ export const questions: Question[] = [
   type: 'mcq',
   options: ['Chest pain', 'Skin rash', 'Hearing loss', 'Blurred vision'],
   points: 5,
-  required: true
+  required: true,
+  references: [
+    {
+      url: 'https://images.unsplash.com/photo-1559757175-5700dde675bc?w=900&q=80',
+      type: 'image',
+      label: 'ECG Strip',
+    },
+  ],
 },
 {
   id: 2,
@@ -101,9 +114,33 @@ export const questions: Question[] = [
   'Atenolol',
   'Amlodipine',
   'Propranolol'],
-
   points: 10,
-  required: true
+  required: true,
+  references: [
+    {
+      type: 'table',
+      label: 'Beta-Blocker Classes',
+      title: 'Beta-blocker selectivity and clinical use',
+      headers: ['Drug', 'Selectivity', 'Primary Use'],
+      rows: [
+        ['Metoprolol', 'β1-selective', 'HTN, angina, HF'],
+        ['Atenolol', 'β1-selective', 'HTN, post-MI'],
+        ['Propranolol', 'Non-selective', 'HTN, migraines, tremor'],
+        ['Carvedilol', 'Non-selective + α1', 'HF, HTN'],
+      ],
+      note: 'ISA = intrinsic sympathomimetic activity; HF = heart failure',
+    },
+    {
+      url: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=900&q=80',
+      type: 'image',
+      label: 'Drug Reference Chart',
+    },
+    {
+      type: 'pdf',
+      label: 'Pharmacology Guide',
+      url: '',
+    },
+  ],
 },
 {
   id: 3,
@@ -167,7 +204,23 @@ export const questions: Question[] = [
     blank2: ['Angiotensin II', 'Angiotensin III', 'Renin']
   },
   points: 10,
-  required: true
+  required: true,
+  references: [
+    {
+      type: 'table',
+      label: 'RAAS Pathway',
+      title: 'Renin–Angiotensin–Aldosterone System',
+      headers: ['Step', 'Agent', 'Site of action'],
+      rows: [
+        ['1', 'Renin', 'Released from juxtaglomerular cells (kidney)'],
+        ['2', 'Angiotensin I', 'Angiotensinogen → Angiotensin I (liver)'],
+        ['3', 'ACE', 'Converts Ang I → Ang II (lung endothelium)'],
+        ['4', 'Angiotensin II', 'Vasoconstriction; stimulates aldosterone release'],
+        ['5', 'Aldosterone', 'Na⁺ reabsorption & K⁺ secretion (adrenal cortex → kidney)'],
+      ],
+      note: 'Key mnemonic: Renin → Angiotensin I → Angiotensin II → Aldosterone (RAA ladder)',
+    },
+  ],
 },
 {
   id: 6,
@@ -180,7 +233,39 @@ export const questions: Question[] = [
   'Her current blood pressure is 150/95 mmHg and heart rate is 88 bpm.'],
 
   points: 10,
-  required: false
+  required: false,
+  references: [
+    {
+      type: 'html',
+      label: 'Beta-Blocker Reference',
+      url: `<div style="font-size:13px;line-height:1.7;color:var(--foreground)">
+        <p style="font-weight:700;font-size:14px;margin:0 0 12px">Beta-Blockers: Indications &amp; Contraindications</p>
+        <p style="font-weight:600;font-size:12px;margin:0 0 6px;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.04em">Common agents</p>
+        <p style="margin:0 0 14px;font-size:12px">Metoprolol · Atenolol · Propranolol · Carvedilol · Bisoprolol</p>
+        <p style="font-weight:600;font-size:12px;margin:0 0 6px;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.04em">Indications</p>
+        <ul style="margin:0 0 14px;padding-left:18px;font-size:12px">
+          <li>Hypertension</li>
+          <li>Angina pectoris</li>
+          <li>Heart failure (carvedilol, metoprolol succinate)</li>
+          <li>Post-MI cardioprotection</li>
+          <li>Atrial fibrillation rate control</li>
+        </ul>
+        <p style="font-weight:600;font-size:12px;margin:0 0 6px;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.04em">Absolute contraindications</p>
+        <ul style="margin:0 0 14px;padding-left:18px;font-size:12px">
+          <li>Severe reactive airway disease (asthma, COPD)</li>
+          <li>Decompensated heart failure</li>
+          <li>High-degree AV block (without pacemaker)</li>
+          <li>Cardiogenic shock</li>
+        </ul>
+        <p style="font-weight:600;font-size:12px;margin:0 0 6px;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.04em">Relative contraindications</p>
+        <ul style="margin:0;padding-left:18px;font-size:12px">
+          <li>Prinzmetal angina (vasospastic)</li>
+          <li>Diabetes with frequent hypoglycemia</li>
+          <li>Peripheral artery disease</li>
+        </ul>
+      </div>`,
+    },
+  ],
 },
 {
   id: 7,
@@ -194,7 +279,29 @@ export const questions: Question[] = [
   'Tremor'],
 
   points: 5,
-  required: true
+  required: true,
+  references: [
+    {
+      type: 'image',
+      label: 'Thyroid Hormone Effects',
+      url: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=900&q=80',
+    },
+    {
+      type: 'table',
+      label: 'Hypo vs Hyper',
+      title: 'Hypothyroidism vs Hyperthyroidism',
+      headers: ['Feature', 'Hypothyroid ↓', 'Hyperthyroid ↑'],
+      rows: [
+        ['Weight', 'Gain', 'Loss'],
+        ['Heart rate', 'Bradycardia', 'Tachycardia'],
+        ['Temperature', 'Cold intolerance', 'Heat intolerance'],
+        ['Bowel', 'Constipation', 'Diarrhea'],
+        ['Skin/hair', 'Dry, coarse, hair loss', 'Moist, fine hair'],
+        ['Reflexes', 'Slow (delayed relaxation)', 'Hyperreflexia, tremor'],
+        ['Mood', 'Depression, fatigue', 'Anxiety, irritability'],
+      ],
+    },
+  ],
 },
 {
   id: 8,
@@ -248,7 +355,7 @@ export const questions: Question[] = [
 {
   id: 11,
   text: 'Choose the correct normal adult respiratory rate range.',
-  type: 'dropdown',
+  type: 'mcq',
   options: [
   '8-12 breaths/min',
   '12-20 breaths/min',
@@ -538,7 +645,7 @@ export const questions: Question[] = [
 {
   id: 30,
   text: 'Select the appropriate triage category for a patient with a sprained ankle and stable vitals.',
-  type: 'dropdown',
+  type: 'mcq',
   options: [
   'Resuscitation (Level 1)',
   'Emergent (Level 2)',

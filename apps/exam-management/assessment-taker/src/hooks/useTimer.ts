@@ -33,7 +33,13 @@ export function useTimer(initialSeconds: number = 3600): UseTimerReturn {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
 
-  const formatted = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  // Show h:mm:ss once the exam is an hour or longer so a 2-hour exam reads as
+  // "2:00:00", not the ambiguous "120:00". Sub-hour exams stay mm:ss.
+  const hours = Math.floor(totalSeconds / 3600);
+  const formatted =
+    hours > 0
+      ? `${hours}:${String(minutes % 60).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+      : `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
   const pause = useCallback(() => setIsRunning(false), []);
   const resume = useCallback(() => setIsRunning(true), []);

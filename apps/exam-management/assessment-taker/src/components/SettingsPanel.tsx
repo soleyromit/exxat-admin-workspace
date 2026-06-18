@@ -1,17 +1,19 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React from 'react';
 import {
   Button as DSButton,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
-  Kbd as DSKbd,
-} from '@exxat/ds/packages/ui/src';
+  ToggleGroup, ToggleGroupItem,
+  ToggleSwitch,
+} from '@exxatdesignux/ui';
+
 export type ColorBlindMode =
-'none' |
-'protanopia' |
-'deuteranopia' |
-'tritanopia' |
-'achromatopsia';
+  | 'none'
+  | 'protanopia'
+  | 'deuteranopia'
+  | 'tritanopia'
+  | 'achromatopsia';
+
 export interface SettingsPanelProps {
-  isOpen: boolean;
   onClose: () => void;
   theme: 'light' | 'dark' | 'high-contrast';
   onThemeChange: (theme: 'light' | 'dark' | 'high-contrast') => void;
@@ -27,9 +29,11 @@ export interface SettingsPanelProps {
   colorBlindMode?: ColorBlindMode;
   onColorBlindModeChange?: (mode: ColorBlindMode) => void;
   onExit?: () => void;
+  onShowKeyboardShortcuts?: () => void;
+  onReportIssue?: () => void;
 }
+
 export function SettingsPanel({
-  isOpen,
   onClose,
   theme,
   onThemeChange,
@@ -43,203 +47,95 @@ export function SettingsPanel({
   onSubmit,
   colorBlindMode = 'none',
   onColorBlindModeChange,
-  onExit: _onExit
+  onShowKeyboardShortcuts,
+  onReportIssue,
 }: SettingsPanelProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
-        onClose();
-      }
-    }
-    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen, onClose]);
-  if (!isOpen) return null;
   return (
     <div
-      ref={ref}
-      className="absolute top-full right-0 mt-2 w-[300px] rounded-xl shadow-lg py-2 z-50 animate-pop-in"
-      style={{
-        backgroundColor: 'var(--card)',
-        color: 'var(--foreground)',
-        border: '1px solid var(--border)'
-      }}>
-      
-      {/* Theme Section */}
+      style={{ backgroundColor: 'var(--card)' }}
+    >
+      {/* Header */}
       <div
-        className="px-4 py-3"
-        style={{
-          borderBottom: '1px solid var(--border)'
-        }}>
-        
-        <div
-          className="text-xs font-semibold mb-3 uppercase tracking-wider"
-          style={{
-            color: 'var(--muted-foreground)'
-          }}>
-          
-          Theme
-        </div>
-        <div
-          className="flex rounded-lg p-1"
-          style={{
-            backgroundColor: 'var(--muted)',
-            border: '1px solid var(--border)'
-          }}>
-          
-          <ThemeButton
-            active={theme === 'light'}
-            onClick={() => onThemeChange('light')}
-            icon={<i className="fa-light fa-sun" aria-hidden="true" style={{ fontSize: 14 }} />}
-            label="Light" />
-
-          <ThemeButton
-            active={theme === 'dark'}
-            onClick={() => onThemeChange('dark')}
-            icon={<i className="fa-light fa-moon" aria-hidden="true" style={{ fontSize: 14 }} />}
-            label="Dark" />
-
-          <ThemeButton
-            active={theme === 'high-contrast'}
-            onClick={() => onThemeChange('high-contrast')}
-            icon={<i className="fa-light fa-circle-half-stroke" aria-hidden="true" style={{ fontSize: 14 }} />}
-            label="Contrast" />
-          
-        </div>
+        className="flex items-center justify-between px-4 h-11"
+        style={{ borderBottom: '1px solid var(--border)' }}
+      >
+        <span className="text-[13px] font-semibold" style={{ color: 'var(--foreground)' }}>
+          Settings
+        </span>
+        <DSButton
+          variant="ghost"
+          size="icon-sm"
+          onClick={onClose}
+          aria-label="Close settings"
+        >
+          <i className="fa-light fa-xmark text-sm" aria-hidden="true" />
+        </DSButton>
       </div>
 
-      {/* Tools Section */}
-      <div
-        style={{
-          borderBottom: '1px solid var(--border)'
-        }}>
-        
-        <SettingsItem
-          icon={<i className="fa-light fa-calculator" aria-hidden="true" style={{ fontSize: 17 }} />}
-          label="Calculator"
-          onClick={() => {
-            onToggleCalculator();
-            onClose();
-          }} />
-
-        <SettingsItem
-          icon={<i className="fa-light fa-keyboard" aria-hidden="true" style={{ fontSize: 17 }} />}
-          label="Virtual Keyboard"
-          onClick={() => {
-            onToggleKeyboard();
-            onClose();
-          }} />
-        
-        <div
-          className="px-4 py-2.5 flex items-center justify-between transition-colors hover:bg-[var(--muted)] cursor-pointer"
-          onClick={onToggleVoiceNarrator}>
-          
-          <div
-            className="flex items-center gap-3 text-[13px] font-medium"
-            style={{
-              color: 'var(--foreground)'
-            }}>
-            
-            <i className="fa-light fa-volume" aria-hidden="true" style={{ fontSize: 17, color: 'var(--muted-foreground)' }} />
-            
-            <span>Voice Narrator</span>
-          </div>
-          <div
-            className="w-8 h-4 rounded-full relative transition-colors"
-            style={{
-              backgroundColor: voiceNarrator ?
-              'var(--exam-accent)' :
-              'var(--border)'
-            }}>
-            
-            <div
-              className="absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform"
-              style={{
-                left: voiceNarrator ? '18px' : '2px'
-              }} />
-            
-          </div>
-        </div>
-      </div>
-
-      {/* Accessibility Section */}
-      <div
-        className="px-4 py-3"
-        style={{
-          borderBottom: '1px solid var(--border)'
-        }}>
-        
-        <div
-          className="text-xs font-semibold mb-3 uppercase tracking-wider"
-          style={{
-            color: 'var(--muted-foreground)'
-          }}>
-          
-          Accessibility
-        </div>
-
-        {/* Zoom Control */}
-        <div
-          className="flex items-center justify-between py-2.5 transition-colors"
-          style={{
-            cursor: 'default'
-          }}>
-          
-          <div className="flex items-center gap-3 text-[13px] font-medium">
-            <i className="fa-light fa-magnifying-glass-plus" aria-hidden="true" style={{ fontSize: 17, color: 'var(--muted-foreground)' }} />
-            
-            <span>Text Size</span>
-          </div>
-          <div
-            className="flex items-center gap-1 rounded-md p-0.5"
-            style={{
-              backgroundColor: 'var(--muted)',
-              border: '1px solid var(--border)'
-            }}>
-            <DSButton
-              variant="ghost"
-              size="icon-xs"
-              onClick={zoomOut}
-              aria-label="Zoom out"
-              title="Decrease text size"
+      {/* Theme */}
+      <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+        <ToggleGroup
+          type="single"
+          value={theme}
+          onValueChange={(v) => v && onThemeChange(v as 'light' | 'dark' | 'high-contrast')}
+          className="w-full"
+        >
+          {(
+            [
+              { value: 'light', icon: 'fa-sun', label: 'Light' },
+              { value: 'dark', icon: 'fa-moon', label: 'Dark' },
+              { value: 'high-contrast', icon: 'fa-circle-half-stroke', label: 'Contrast' },
+            ] as const
+          ).map(({ value, icon, label }) => (
+            <ToggleGroupItem
+              key={value}
+              value={value}
+              aria-label={`${label} theme`}
+              className="flex-1 gap-1.5 text-xs font-semibold"
             >
-              <i className="fa-light fa-magnifying-glass-minus" aria-hidden="true" style={{ fontSize: 13 }} />
+              <i className={`fa-light ${icon}`} aria-hidden="true" />
+              {label}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+      </div>
+
+      {/* Display — text size + color vision */}
+      <div style={{ borderBottom: '1px solid var(--border)' }}>
+        {/* Text size */}
+        <div className="flex items-center justify-between px-4 h-11">
+          <div className="flex items-center gap-3">
+            <i className="fa-light fa-text-size text-sm text-muted-foreground w-4 text-center shrink-0" aria-hidden="true" />
+            <span className="text-[13px] font-medium" style={{ color: 'var(--foreground)' }}>
+              Text Size
+            </span>
+          </div>
+          <div
+            className="flex items-center gap-0.5 rounded-md"
+            style={{ backgroundColor: 'var(--muted)', border: '1px solid var(--border)', padding: 2 }}
+          >
+            <DSButton variant="ghost" size="icon-xs" onClick={zoomOut} aria-label="Decrease text size">
+              <i className="fa-light fa-minus text-xs" aria-hidden="true" />
             </DSButton>
             <span
-              className="text-xs font-mono w-11 text-center font-semibold"
+              className="text-[12px] font-mono font-semibold w-10 text-center"
               style={{ color: 'var(--foreground)' }}
             >
               {zoomPercent}%
             </span>
-            <DSButton
-              variant="ghost"
-              size="icon-xs"
-              onClick={zoomIn}
-              aria-label="Zoom in"
-              title="Increase text size"
-            >
-              <i className="fa-light fa-magnifying-glass-plus" aria-hidden="true" style={{ fontSize: 13 }} />
+            <DSButton variant="ghost" size="icon-xs" onClick={zoomIn} aria-label="Increase text size">
+              <i className="fa-light fa-plus text-xs" aria-hidden="true" />
             </DSButton>
           </div>
         </div>
 
-        {/* Color Vision Mode */}
-        <div
-          className="py-2.5 flex items-center justify-between"
-          style={{
-            cursor: 'default'
-          }}>
-          
-          <div
-            className="flex items-center gap-3 text-[13px] font-medium"
-            style={{
-              color: 'var(--foreground)'
-            }}>
-            
-            <i className="fa-light fa-eye" aria-hidden="true" style={{ fontSize: 17, color: 'var(--muted-foreground)' }} />
-            
-            <span>Color Vision</span>
+        {/* Color vision */}
+        <div className="flex items-center justify-between px-4 h-11">
+          <div className="flex items-center gap-3">
+            <i className="fa-light fa-eye text-sm text-muted-foreground w-4 text-center shrink-0" aria-hidden="true" />
+            <span className="text-[13px] font-medium" style={{ color: 'var(--foreground)' }}>
+              Color Vision
+            </span>
           </div>
           <Select
             value={colorBlindMode}
@@ -247,7 +143,7 @@ export function SettingsPanel({
           >
             <SelectTrigger
               size="sm"
-              className="w-[140px] text-[13px] font-medium"
+              className="w-[120px] text-[12px]"
               aria-label="Select color vision mode"
             >
               <SelectValue />
@@ -263,201 +159,98 @@ export function SettingsPanel({
         </div>
       </div>
 
-      {/* Keyboard Shortcuts */}
-      <div
-        className="px-4 py-3"
-        style={{
-          borderBottom: '1px solid var(--border)'
-        }}>
-        
-        <div
-          className="text-xs font-semibold mb-3 uppercase tracking-wider"
-          style={{
-            color: 'var(--muted-foreground)'
-          }}>
-          
-          Keyboard Shortcuts
-        </div>
-        <div className="flex flex-col gap-2">
-          <ShortcutRow keys={['A', 'B', 'C', 'D']} label="Select answer" />
-          <ShortcutRow keys={['←', '→']} label="Navigate questions" />
-          <ShortcutRow keys={['Enter']} label="Next question" />
-          <ShortcutRow keys={['Z']} label="Flag question" />
+      {/* Tools */}
+      <div style={{ borderBottom: '1px solid var(--border)' }}>
+        <Row
+          icon={<i className="fa-light fa-calculator text-sm" aria-hidden="true" />}
+          label="Calculator"
+          onClick={() => { onToggleCalculator(); onClose(); }}
+        />
+        <Row
+          icon={<i className="fa-light fa-keyboard text-sm" aria-hidden="true" />}
+          label="Virtual Keyboard"
+          onClick={() => { onToggleKeyboard(); onClose(); }}
+        />
+        {/* Voice Narrator with DS ToggleSwitch */}
+        <div className="w-full flex items-center justify-between px-4 h-11">
+          <div className="flex items-center gap-3">
+            <span style={{ color: 'var(--muted-foreground)', width: 18, textAlign: 'center' }}>
+              <i className="fa-light fa-volume" aria-hidden="true" />
+            </span>
+            <label htmlFor="narrator-toggle" className="text-[13px] font-medium cursor-pointer" style={{ color: 'var(--foreground)' }}>
+              Voice Narrator
+            </label>
+          </div>
+          <ToggleSwitch id="narrator-toggle" checked={voiceNarrator} onChange={onToggleVoiceNarrator} />
         </div>
       </div>
 
-      {/* Submit Exam */}
+      {/* Keyboard shortcuts + Report */}
+      {(onShowKeyboardShortcuts || onReportIssue) && (
+        <div style={{ borderBottom: '1px solid var(--border)' }}>
+          {onShowKeyboardShortcuts && (
+            <Row
+              icon={<i className="fa-light fa-key text-sm" aria-hidden="true" />}
+              label="Keyboard Shortcuts"
+              onClick={() => { onShowKeyboardShortcuts(); onClose(); }}
+              chevron
+            />
+          )}
+          {onReportIssue && (
+            <Row
+              icon={<i className="fa-light fa-triangle-exclamation text-sm" aria-hidden="true" />}
+              label="Report an issue"
+              onClick={() => { onReportIssue(); onClose(); }}
+              chevron
+            />
+          )}
+        </div>
+      )}
+
+      {/* Submit */}
       <div className="px-4 py-3">
-        <SubmitButton onSubmit={onSubmit} onClose={onClose} />
+        <DSButton
+          variant="default"
+          size="default"
+          className="w-full font-semibold"
+          onClick={() => { onClose(); onSubmit(); }}
+        >
+          <i className="fa-light fa-paper-plane text-sm" aria-hidden="true" />
+          Submit Exam
+        </DSButton>
       </div>
-    </div>);
-
+    </div>
+  );
 }
-function ThemeButton({
-  active,
-  onClick,
-  icon,
-  label
 
-
-
-
-
-}: {active: boolean;onClick: () => void;icon: React.ReactNode;label: string;}) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[11px] font-semibold transition-colors"
-      style={{
-        backgroundColor: active ? 'var(--brand-color)' : 'transparent',
-        color: active ? 'var(--brand-foreground)' : 'var(--muted-foreground)',
-        boxShadow: active ? '0 1px 2px var(--shadow-card, rgba(0,0,0,0.15))' : 'none'
-      }}
-      onMouseEnter={(e) => {
-        if (!active)
-        (e.currentTarget as HTMLElement).style.backgroundColor =
-        'var(--muted)';
-      }}
-      onMouseLeave={(e) => {
-        if (!active)
-        (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-      }}>
-      
-      {icon}
-      {label}
-    </button>);
-
-}
-function SettingsItem({
+function Row({
   icon,
   label,
   onClick,
-  shortcut
-
-
-
-
-
-}: {icon: React.ReactNode;label: string;onClick: () => void;shortcut?: string;}) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-center justify-between px-4 py-2.5 transition-colors text-[13px] font-medium"
-      style={{
-        color: 'var(--foreground)'
-      }}
-      onMouseEnter={(e) => {
-        ;(e.currentTarget as HTMLElement).style.backgroundColor =
-        'var(--muted)';
-      }}
-      onMouseLeave={(e) => {
-        ;(e.currentTarget as HTMLElement).style.backgroundColor = '';
-      }}>
-      
-      <div className="flex items-center gap-3">
-        <span
-          style={{
-            color: 'var(--muted-foreground)'
-          }}>
-          
-          {icon}
-        </span>
-        <span>{label}</span>
-      </div>
-      {shortcut &&
-      <span
-        className="text-[10px] font-mono"
-        style={{
-          color: 'var(--muted-foreground)'
-        }}>
-        
-          {shortcut}
-        </span>
-      }
-    </button>);
-
-}
-function SubmitButton({
-  onSubmit,
-  onClose,
+  chevron = false,
 }: {
-  onSubmit: () => void;
-  onClose: () => void;
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  chevron?: boolean;
 }) {
-  const [confirming, setConfirming] = useState(false);
-
-  if (confirming) {
-    return (
-      <div className="flex flex-col gap-1.5">
-        <p
-          className="text-[10px] font-medium leading-tight"
-          style={{ color: 'var(--foreground)' }}
-        >
-          Submit exam? You cannot change answers after submission.
-        </p>
-        <div className="flex gap-1.5">
-          <DSButton
-            variant="default"
-            size="sm"
-            className="flex-1 font-bold"
-            style={{
-              backgroundColor: 'var(--brand-color)',
-              color: 'var(--brand-foreground)',
-              borderColor: 'var(--brand-color)',
-            }}
-            onClick={() => {
-              onClose();
-              onSubmit();
-            }}
-          >
-            Yes, Submit
-          </DSButton>
-          <DSButton
-            variant="outline"
-            size="sm"
-            className="flex-1"
-            onClick={() => setConfirming(false)}
-          >
-            Cancel
-          </DSButton>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <DSButton
-      variant="default"
-      size="default"
-      className="w-full font-bold shadow-sm"
-      style={{
-        backgroundColor: 'var(--brand-color)',
-        color: 'var(--brand-foreground)',
-        borderColor: 'var(--brand-color)',
-      }}
-      onClick={() => setConfirming(true)}
+      variant="ghost"
+      onClick={onClick}
+      className="w-full justify-between px-4 h-11"
     >
-      <i className="fa-light fa-paper-plane" aria-hidden="true" style={{ fontSize: 16 }} />
-      Submit Exam
+      <div className="flex items-center gap-3">
+        <span style={{ color: 'var(--muted-foreground)', width: 18, textAlign: 'center' as const }}>
+          {icon}
+        </span>
+        <span className="text-[13px] font-medium" style={{ color: 'var(--foreground)' }}>
+          {label}
+        </span>
+      </div>
+      {chevron && (
+        <i className="fa-light fa-chevron-right text-xs" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
+      )}
     </DSButton>
   );
-}
-function ShortcutRow({ keys, label }: {keys: string[];label: string;}) {
-  return (
-    <div className="flex items-center justify-between py-0.5">
-      <span
-        className="text-[10px]"
-        style={{
-          color: 'var(--muted-foreground)'
-        }}>
-        
-        {label}
-      </span>
-      <div className="flex gap-0.5">
-        {keys.map((k, i) => (
-          <DSKbd key={i}>{k}</DSKbd>
-        ))}
-      </div>
-    </div>);
-
 }

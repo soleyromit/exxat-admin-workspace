@@ -3,7 +3,7 @@
  *
  * Reflects Aarti + Vishaka's architecture from Granola sessions:
  *   - Active assessments always front and center
- *   - Two result publication modes: immediate vs faculty-reviewed
+ *   - Two result publication modes: immediate (low-stakes) vs faculty-reviewed (high-stakes)
  *   - Accommodations owned by student services, applied at assessment level
  *   - Three result tiers: assessment → course → program (program deferred 2027)
  *   - Section-based timing architecture (UI deferred 2027, but data model supports it)
@@ -15,7 +15,7 @@ export type AssessmentStatus =
   | 'in_progress'       // Student has begun; timer running
   | 'upcoming'          // Scheduled but not yet open
   | 'submitted'         // Submitted; awaiting faculty review
-  | 'results_pending'   // Results withheld — faculty review period
+  | 'results_pending'   // Results withheld — high-stakes, faculty review period
   | 'results_published' // Results available to student
   | 'review_available'  // Scheduled review session window is open
   | 'review_complete';  // Review session closed
@@ -42,9 +42,39 @@ export interface ContentArea {
 export interface ExamSection {
   id: string;
   title: string;
+  instructions?: string;
   questionCount: number;
   timeLimitMinutes: number;
   contentAreas: string[];       // ContentArea IDs
+}
+
+// ─── Assessment-level reference materials ────────────────────────────────────
+// Vishaka May 14: "Some formulas the instructor wants to upload which can be
+// for multiple questions... always available. Just like the calculator."
+
+export type AssessmentRefType = 'formula' | 'table' | 'text' | 'pdf' | 'image' | 'doc';
+
+export interface FormulaEntry {
+  name: string;
+  formula: string;       // Unicode math string, e.g. "Vd = Dose / C₀"
+  variables: string;     // Plain-text definition of each variable
+}
+
+export interface AssessmentReference {
+  id: string;
+  label: string;
+  icon: string;          // FA icon class, e.g. "fa-function"
+  type: AssessmentRefType;
+  // type: 'formula'
+  formulas?: FormulaEntry[];
+  // type: 'table'
+  headers?: string[];
+  rows?: string[][];
+  note?: string;
+  // type: 'text'
+  paragraphs?: string[];
+  // type: 'pdf' | 'image' | 'doc'
+  url?: string;
 }
 
 export interface Assessment {
@@ -56,6 +86,7 @@ export interface Assessment {
   facultyName: string;
   status: AssessmentStatus;
   isHighStakes: boolean;        // true = faculty review before results; false = immediate
+  forwardOnly?: boolean;        // true = no back-navigation (secure forward-only delivery)
 
   // Scheduling
   windowStart: Date;
@@ -69,7 +100,9 @@ export interface Assessment {
   sections?: ExamSection[];     // Section-based (architecture deferred to 2027)
   instructions: string;
   allowComments: boolean;       // Per-question comment/flag box for error reporting
-  referenceMaterials?: string[];
+  assessmentReferences?: AssessmentReference[];
+  allowedAttempts?: number;     // undefined = unlimited; admin-configurable
+  instructionTimerSeconds?: number; // admin-set review window; undefined = no timer; does NOT count toward exam time
 
   // Accommodations (from student services, not faculty)
   accommodation?: Accommodation;
@@ -84,7 +117,7 @@ export interface Assessment {
   percentile?: number;
   passingScore: number;
   resultPublishedAt?: Date;
-  resultsHoldUntil?: Date;      // Estimated release date when results are pending faculty review
+  resultsHoldUntil?: Date;      // High-stakes: estimated release date
 
   // Grouping
   term?: string;             // e.g. "Spring 2026" — used to group results by term
@@ -115,24 +148,192 @@ export const MOCK_ASSESSMENTS: Assessment[] = [
     facultyName: 'Dr. Carla Medina',
     status: 'active',
     isHighStakes: true,
+    forwardOnly: false,
     windowStart: NOW,
     windowEnd: new Date(NOW.getTime() + 3 * 60 * 60_000), // 3-hour window
     durationMinutes: 110,
     questionCount: 75,
     passingScore: 75,
-    instructions: 'Covers Chapters 12–18. Closed book. No reference materials. A proctor password will be provided at exam time.',
+    instructions: `This midterm covers Chapters 12–18 and is worth 30% of your final grade. Read the following carefully before you begin.
+
+Format and timing. The exam contains 75 questions across three sections and must be completed in a single sitting. Once you start, the timer runs continuously and cannot be paused — plan your breaks accordingly. You may move freely between questions within a section, but you cannot return to a section after you have advanced past it.
+
+Permitted materials. This is a closed-book exam, except for the approved reference materials listed below, which remain available from the toolbar throughout the exam. You may use the on-screen calculator. No personal notes, textbooks, websites, or communication tools of any kind are permitted.
+
+Academic integrity. By starting this exam you confirm that the work is entirely your own. Any use of unauthorized resources, communication with another person, or attempt to capture exam content will be reported under the program's academic integrity policy and may result in a failing grade.
+
+Technical issues. If your connection drops, your answers are saved automatically and you may rejoin within the exam window. If a question appears to contain an error, flag it using the comment tool and continue — do not let it cost you time. A proctor password will be provided at exam time.`,
+    allowedAttempts: 1,
+    instructionTimerSeconds: 300,
     allowComments: true,
+    accommodation: {
+      timeMultiplier: 1.5,
+      separateRoom: true,
+      extendedBreaks: false,
+      approvedBy: 'Jennifer Walsh, Student Services',
+    },
     contentAreas: [
       { id: 'ca-a01', name: 'Nervous System', questionCount: 25, weight: 33 },
       { id: 'ca-a02', name: 'Musculoskeletal', questionCount: 22, weight: 29 },
       { id: 'ca-a03', name: 'Cardiovascular', questionCount: 18, weight: 24 },
       { id: 'ca-a04', name: 'Endocrine', questionCount: 10, weight: 14 },
     ],
+    sections: [
+      {
+        id: 'sec-1',
+        title: 'Nervous System',
+        instructions: `This section focuses on the central and peripheral nervous system, neural signaling, and sensory pathways. All questions are single-best-answer multiple choice — select the one option that best answers each question.
+
+Pay close attention to the wording of each stem. Several questions ask for the EXCEPTION (e.g. "all of the following are true EXCEPT") or the BEST answer among several plausible options. Read all options before selecting.
+
+Diagrams and labeled figures appear in several questions. Use the zoom control in the toolbar if you need a closer look. Where a question references a value or threshold, assume standard adult physiological ranges unless the question states otherwise.
+
+No reference materials are permitted for this section — the approved formula and lab-value sheets become available only in Section 2. Budget roughly 80 seconds per question so you have time to review flagged items before the section ends.`,
+        questionCount: 25,
+        timeLimitMinutes: 36,
+        contentAreas: ['ca-a01'],
+      },
+      {
+        id: 'sec-2',
+        title: 'Musculoskeletal & Cardiovascular',
+        instructions: 'This section covers muscle mechanics, joint structure, and cardiovascular physiology. Some questions include clinical vignettes. Reference chart is available via the toolbar.',
+        questionCount: 40,
+        timeLimitMinutes: 58,
+        contentAreas: ['ca-a02', 'ca-a03'],
+      },
+      {
+        id: 'sec-3',
+        title: 'Endocrine System',
+        instructions: 'Final section. Covers hormonal regulation, feedback loops, and endocrine pathologies. This is the most challenging section — allocate time accordingly.',
+        questionCount: 10,
+        timeLimitMinutes: 16,
+        contentAreas: ['ca-a04'],
+      },
+    ],
     reviewShowsCorrectAnswers: false,
     reviewShowsRationale: false,
+    assessmentReferences: [
+      {
+        id: 'ref-pk',
+        label: 'Pharmacokinetic Formulas',
+        icon: 'fa-function',
+        type: 'formula',
+        formulas: [
+          {
+            name: 'Volume of Distribution',
+            formula: 'Vd = Dose / C₀',
+            variables: 'Dose = administered dose (mg); C₀ = initial plasma concentration (mg/L)',
+          },
+          {
+            name: 'Clearance',
+            formula: 'Cl = k × Vd',
+            variables: 'k = elimination rate constant (hr⁻¹); Vd = volume of distribution (L)',
+          },
+          {
+            name: 'Half-Life',
+            formula: 't½ = 0.693 / k',
+            variables: 'k = elimination rate constant (hr⁻¹)',
+          },
+          {
+            name: 'Steady-State Concentration',
+            formula: 'Css = (F × D) / (Cl × τ)',
+            variables: 'F = bioavailability (0–1); D = dose (mg); Cl = clearance (L/hr); τ = dosing interval (hr)',
+          },
+          {
+            name: 'Loading Dose',
+            formula: 'LD = Css × Vd / F',
+            variables: 'Css = target steady-state concentration; Vd = volume of distribution; F = bioavailability',
+          },
+          {
+            name: 'Bioavailability',
+            formula: 'F = AUCpo / AUCiv × (DIV / DPO)',
+            variables: 'AUCpo = area under curve (oral); AUCiv = area under curve (IV); D = dose',
+          },
+        ],
+      },
+      {
+        id: 'ref-dose',
+        label: 'Dosage Calculations',
+        icon: 'fa-calculator',
+        type: 'formula',
+        formulas: [
+          {
+            name: 'Weight-Based Dose',
+            formula: 'Dose (mg) = Weight (kg) × Dose (mg/kg)',
+            variables: 'Weight in kg; prescribed dose in mg/kg',
+          },
+          {
+            name: 'IV Flow Rate',
+            formula: 'Rate (mL/hr) = Volume (mL) / Time (hr)',
+            variables: 'Total volume to infuse divided by infusion duration in hours',
+          },
+          {
+            name: 'Drop Rate',
+            formula: 'gtts/min = (Volume × Drop Factor) / Time (min)',
+            variables: 'Drop factor: macrodrip = 10, 15, or 20 gtts/mL; microdrip = 60 gtts/mL',
+          },
+          {
+            name: 'Creatinine Clearance (Cockcroft-Gault)',
+            formula: 'CrCl = [(140 − age) × weight] / (72 × SCr)',
+            variables: 'Age in years; weight in kg; SCr = serum creatinine (mg/dL). Multiply by 0.85 for female patients.',
+          },
+          {
+            name: 'Body Surface Area (Mosteller)',
+            formula: 'BSA (m²) = √[(height × weight) / 3600]',
+            variables: 'Height in cm; weight in kg',
+          },
+        ],
+      },
+      {
+        id: 'ref-labs',
+        label: 'Reference Lab Values',
+        icon: 'fa-flask-vial',
+        type: 'table',
+        headers: ['Test', 'Normal Range', 'Unit'],
+        rows: [
+          ['Sodium (Na⁺)', '135 – 145', 'mEq/L'],
+          ['Potassium (K⁺)', '3.5 – 5.0', 'mEq/L'],
+          ['Chloride (Cl⁻)', '96 – 106', 'mEq/L'],
+          ['Bicarbonate (HCO₃⁻)', '22 – 29', 'mEq/L'],
+          ['BUN', '7 – 20', 'mg/dL'],
+          ['Creatinine', '0.6 – 1.2', 'mg/dL'],
+          ['Glucose (fasting)', '70 – 99', 'mg/dL'],
+          ['WBC', '4.5 – 11.0', '×10³/μL'],
+          ['Hemoglobin (M)', '14.0 – 18.0', 'g/dL'],
+          ['Hemoglobin (F)', '12.0 – 16.0', 'g/dL'],
+          ['Platelets', '150 – 400', '×10³/μL'],
+          ['ALT', '7 – 56', 'U/L'],
+          ['AST', '10 – 40', 'U/L'],
+          ['Total Bilirubin', '0.1 – 1.2', 'mg/dL'],
+          ['Albumin', '3.5 – 5.0', 'g/dL'],
+          ['Calcium (Ca²⁺)', '8.5 – 10.5', 'mg/dL'],
+          ['Phosphate', '2.5 – 4.5', 'mg/dL'],
+          ['Magnesium', '1.7 – 2.2', 'mg/dL'],
+          ['pH (arterial)', '7.35 – 7.45', '—'],
+          ['PaO₂', '80 – 100', 'mmHg'],
+          ['PaCO₂', '35 – 45', 'mmHg'],
+          ['SpO₂', '≥ 95', '%'],
+        ],
+        note: 'Ranges are reference values for adults. Clinical interpretation must account for patient age, sex, and clinical context.',
+      },
+      {
+        id: 'ref-anatomy',
+        label: 'Heart Anatomy',
+        icon: 'fa-heart',
+        type: 'image',
+        url: '/heart_anatomy_placeholder.svg',
+      },
+      {
+        id: 'ref-protocol',
+        label: 'AHA Protocol',
+        icon: 'fa-file-pdf',
+        type: 'pdf',
+        url: '/aha-protocol.pdf',
+      },
+    ],
   },
 
-  // ── Upcoming #1 — proctored + accommodation, 2 days out ───────────────
+  // ── Upcoming #1 — high-stakes + accommodation, 2 days out ───────────────
   {
     id: 'exam-006',
     title: 'Pharmacology — Midterm Examination',
@@ -149,6 +350,7 @@ export const MOCK_ASSESSMENTS: Assessment[] = [
     passingScore: 75,
     instructions:
       'This exam covers Modules 1–3: drug classifications, mechanisms of action, pharmacokinetics, and adverse effects. No external materials permitted. Password required at exam start.',
+    allowedAttempts: 1,
     allowComments: false,
     accommodation: {
       timeMultiplier: 1.5,
@@ -166,7 +368,7 @@ export const MOCK_ASSESSMENTS: Assessment[] = [
     reviewShowsRationale: true,
   },
 
-  // ── Upcoming #2 — self-paced, 1 day out ──────────────────────────────────
+  // ── Upcoming #2 — low-stakes, 1 day out ──────────────────────────────────
   {
     id: 'exam-007',
     title: 'Pathophysiology — Unit 4 Quiz',
@@ -182,6 +384,7 @@ export const MOCK_ASSESSMENTS: Assessment[] = [
     questionCount: 20,
     passingScore: 70,
     instructions: 'Short quiz on Neoplasia and Hemodynamic Disorders. Results available immediately.',
+    allowedAttempts: 2,
     allowComments: false,
     contentAreas: [
       { id: 'ca-070', name: 'Neoplasia', questionCount: 10, weight: 50 },

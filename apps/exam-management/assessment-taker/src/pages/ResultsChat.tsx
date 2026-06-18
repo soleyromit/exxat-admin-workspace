@@ -26,7 +26,7 @@ import {
   Avatar, AvatarFallback,
   Badge, Button,
   Textarea,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 
 interface Message {
   id: string
@@ -127,7 +127,7 @@ export function ResultsChat() {
           variant="secondary"
           className="rounded-full gap-1.5"
           style={{
-            backgroundColor: 'color-mix(in oklch, var(--brand-color) 12%, var(--background))',
+            backgroundColor: 'var(--brand-tint)',
             color: 'var(--brand-color)',
           }}
         >
@@ -165,11 +165,11 @@ export function ResultsChat() {
               }}
             />
             <div className="flex items-center justify-between mt-1.5">
-              <span className="text-[11px] text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 <i className="fa-light fa-circle-info me-1" aria-hidden="true" />
                 Faculty review messages post-exam · keep it constructive
               </span>
-              <span className={`text-[11px] tabular-nums ${charCount > charLimit * 0.9 ? 'text-destructive' : 'text-muted-foreground'}`}>
+              <span className={`text-xs tabular-nums ${charCount > charLimit * 0.9 ? 'text-destructive' : 'text-muted-foreground'}`}>
                 {charCount}/{charLimit}
               </span>
             </div>
@@ -216,7 +216,7 @@ function MessageBubble({ m }: { m: Message }) {
     <div className={`flex gap-3 ${isStudent ? 'flex-row-reverse' : ''}`}>
       <Avatar className="size-8 shrink-0">
         <AvatarFallback
-          className="text-[10px] font-bold"
+          className="text-xs font-bold"
           style={
             isStudent
               ? { background: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }
@@ -233,18 +233,18 @@ function MessageBubble({ m }: { m: Message }) {
           {!isStudent && (
             <Badge
               variant="secondary"
-              className="rounded font-mono text-[9px] uppercase tracking-wider"
+              className="rounded font-mono text-xs uppercase tracking-wider"
               style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}
             >
               Faculty
             </Badge>
           )}
-          <span className="text-[10px] text-muted-foreground">{time}</span>
+          <span className="text-xs text-muted-foreground">{time}</span>
         </div>
 
         {m.isQuestionRef && (
           <div
-            className="text-[11px] rounded-md px-2 py-1 flex items-center gap-1.5"
+            className="text-xs rounded-md px-2 py-1 flex items-center gap-1.5"
             style={{
               background: 'color-mix(in oklch, var(--chart-1) 8%, var(--card))',
               border: '1px solid color-mix(in oklch, var(--chart-1) 20%, transparent)',

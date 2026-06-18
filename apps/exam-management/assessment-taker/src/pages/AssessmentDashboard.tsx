@@ -18,7 +18,7 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button } from '@exxat/ds/packages/ui/src';
+import { Badge, Button } from '@exxatdesignux/ui';
 import {
   MOCK_ASSESSMENTS,
   Assessment,
@@ -47,7 +47,7 @@ const t = {
 
 // ─── Section label style ──────────────────────────────────────────────────────
 const sectionLabelStyle: React.CSSProperties = {
-  fontSize: 11,
+  fontSize: 12,
   fontWeight: 700,
   color: t.fgMuted,
   textTransform: 'uppercase',
@@ -91,78 +91,63 @@ function useCountdown(totalSeconds: number) {
 }
 
 
-// ─── ActionCard — card for active and in_progress exams ──────────────────────
-function ActionCard({ exam, onNavigate }: { exam: Assessment; onNavigate: (path: string) => void }) {
+// ─── ActionRow — compact table row for active/in-progress exams ──────────────
+function ActionRow({ exam, onNavigate }: { exam: Assessment; onNavigate: (path: string) => void }) {
   const effectiveMins = getEffectiveDuration(exam);
   const remainingSecs = getTimeRemaining(exam);
   const countdown = useCountdown(exam.status === 'in_progress' ? remainingSecs : 0);
   const isInProgress = exam.status === 'in_progress';
   const isWarning = isInProgress && countdown < 15 * 60;
 
+  const typeLabel: Record<string, string> = {
+    quiz: 'Quiz', midterm: 'Midterm', final: 'Final Exam',
+    practical: 'Practical', review: 'Review',
+  };
+
   return (
-    <div
-      role="region"
-      aria-label={`${isInProgress ? 'In progress' : 'Active exam'}: ${exam.title}`}
-      style={{
-        background: t.card,
-        border: `1px solid var(--border)`,
-        borderLeft: '3px solid var(--brand-color)',
-        borderRadius: 10,
-        padding: '14px 18px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 16,
-      }}
-    >
-      {/* Left column */}
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      padding: '12px 0 12px 12px',
+      borderBottom: `1px solid ${t.border}`,
+      gap: 12,
+      borderLeft: `3px solid var(--brand-color)`,
+      paddingLeft: 12,
+    }}>
+      {/* Left: title + meta */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: 11, color: t.fgMuted, marginBottom: 3 }}>
-          {exam.courseCode} · {exam.courseName}
+        <p style={{ fontSize: 14, fontWeight: 600, color: t.fg, marginBottom: 3 }}>{exam.title}</p>
+        <p style={{ fontSize: 12, color: t.fgMuted }}>
+          {exam.courseCode} · {formatDuration(effectiveMins)} · {exam.questionCount} Q
+          {exam.allowedAttempts ? ` · ${exam.allowedAttempts} attempt${exam.allowedAttempts > 1 ? 's' : ''}` : ''}
         </p>
-        <p style={{ fontSize: 15, fontWeight: 700, color: t.fg, marginBottom: 6 }}>
-          {exam.title}
-        </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, fontSize: 12, color: t.fgMuted }}>
-          <span style={{ color: t.fg, fontWeight: 600 }}>
-            <i className="fa-light fa-clock" aria-hidden="true" style={{ marginRight: 4, fontWeight: 400 }} />
-            Closes {exam.windowEnd.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} today
-          </span>
-          <span>
-            <i className="fa-light fa-list-check" aria-hidden="true" style={{ marginRight: 4 }} />
-            {exam.questionCount} Q
-          </span>
-          <span>
-            <i className="fa-light fa-hourglass" aria-hidden="true" style={{ marginRight: 4 }} />
-            {formatDuration(effectiveMins)}
-          </span>
-          {exam.accommodation && (
-            <AccommodationChip timeMultiplier={exam.accommodation.timeMultiplier} />
-          )}
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 5, marginTop: 5 }}>
+          <Badge variant="secondary">{typeLabel[exam.type] ?? exam.type}</Badge>
+          {exam.isHighStakes && <Badge variant="outline">High Stakes</Badge>}
+          {exam.accommodation && <AccommodationChip timeMultiplier={exam.accommodation.timeMultiplier} />}
         </div>
       </div>
 
-      {/* Right column */}
-      <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-        {isInProgress && (
-          <div
+      {/* Right: time indicator + action */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+        {isInProgress ? (
+          <span
             aria-live="polite"
-            aria-label={`Time remaining: ${formatCountdown(countdown)}`}
-            style={{ textAlign: 'right' }}
+            style={{ fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: isWarning ? t.destructive : t.brand }}
           >
-            <p style={{ fontSize: 10, fontWeight: 600, color: isWarning ? t.destructive : t.fgMuted, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 2 }}>
-              Time Left
-            </p>
-            <p style={{ fontSize: 20, fontWeight: 700, color: isWarning ? t.destructive : t.brand, letterSpacing: 1 }}>
-              {formatCountdown(countdown)}
-            </p>
-          </div>
+            {formatCountdown(countdown)} left
+          </span>
+        ) : (
+          <span style={{ fontSize: 12, color: t.fgMuted }}>
+            Closes {exam.windowEnd.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+          </span>
         )}
         <Button
-          size="lg"
-          onClick={() => onNavigate(isInProgress ? `/exam/${exam.id}/take` : `/exam/${exam.id}/setup`)}
+          size="sm"
+          onClick={() => onNavigate(`/exam/${exam.id}/setup`)}
           aria-label={isInProgress ? `Continue ${exam.title}` : `Start ${exam.title}`}
         >
-          {isInProgress ? 'Continue Exam' : 'Start Exam'}
+          {isInProgress ? 'Continue' : 'Start Exam'}
           <i className={`fa-solid ${isInProgress ? 'fa-play' : 'fa-arrow-right'}`} aria-hidden="true" />
         </Button>
       </div>
@@ -220,7 +205,7 @@ function ResultRow({ exam, onView }: { exam: Assessment; onView: () => void }) {
     }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontSize: 13, fontWeight: 600, color: t.fg, marginBottom: 2 }}>{exam.title}</p>
-        <p style={{ fontSize: 11, color: t.fgMuted }}>{exam.courseCode} · {date}</p>
+        <p style={{ fontSize: 12, color: t.fgMuted }}>{exam.courseCode} · {date}</p>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         <StatusBadge status={exam.status} />
@@ -273,7 +258,7 @@ function SystemNotificationsSection() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <h2
           id="sys-notif-heading"
-          style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: t.fgMuted }}
+          style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: t.fgMuted }}
         >
           System Messages
         </h2>
@@ -332,13 +317,13 @@ function SystemNotificationsSection() {
 
               {/* Date + channel */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 }}>
-                <span style={{ fontSize: 11, color: t.fgMuted }}>{relativeDate(n.sentAt)}</span>
+                <span style={{ fontSize: 12, color: t.fgMuted }}>{relativeDate(n.sentAt)}</span>
                 <span style={{
-                  fontSize: 10, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
-                  color: t.fgMuted, opacity: 0.7,
+                  fontSize: 12, fontWeight: 600,
+                  color: t.fgMuted,
                   display: 'flex', alignItems: 'center', gap: 3,
                 }}>
-                  <i className="fa-light fa-envelope" aria-hidden="true" style={{ fontSize: 9 }} />
+                  <i className="fa-light fa-envelope" aria-hidden="true" style={{ fontSize: 12 }} />
                   Email
                 </span>
               </div>
@@ -377,9 +362,9 @@ export function AssessmentDashboard() {
         {hasActionItems && (
           <section aria-label="Action required" style={{ marginBottom: 24 }}>
             <p style={sectionLabelStyle}>Action Required</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ borderTop: `1px solid ${t.border}` }}>
               {active.map(e => (
-                <ActionCard key={e.id} exam={e} onNavigate={navigate} />
+                <ActionRow key={e.id} exam={e} onNavigate={navigate} />
               ))}
             </div>
           </section>
@@ -411,7 +396,7 @@ export function AssessmentDashboard() {
               <p style={sectionLabelStyle}>Results</p>
               {termOrder.map(term => (
                 <div key={term} style={{ marginBottom: 16 }}>
-                  <p style={{ fontSize: 11, fontWeight: 600, color: t.fgMuted, marginBottom: 0 }}>{term}</p>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: t.fgMuted, marginBottom: 0 }}>{term}</p>
                   <div style={{ borderTop: `1px solid ${t.border}` }}>
                     {grouped[term].map(e => (
                       <ResultRow key={e.id} exam={e} onView={() => navigate(`/exam/${e.id}/results`)} />
@@ -424,9 +409,12 @@ export function AssessmentDashboard() {
         })()}
 
         {/* ── 4. System Messages — collapsed by default ────────────────────── */}
-        <section aria-label="System messages" style={{ marginBottom: 24 }}>
+        {/* SystemNotificationsSection renders its own labeled <section>; no
+            outer landmark wrapper (avoids a redundant nested region — axe
+            landmark-unique). Spacing applied via wrapper div, not <section>. */}
+        <div style={{ marginBottom: 24 }}>
           <SystemNotificationsSection />
-        </section>
+        </div>
 
         {/* Empty state */}
         {!hasActionItems && upcoming.length === 0 && past.length === 0 && (

@@ -1,14 +1,61 @@
 /* ─── Exxat-DS foundation (Tailwind v4) ──────────────────────────────────────
-   Loads the admin DS theme tokens (--background, --foreground, --primary,
-   --brand-color, --brand-tint*, --sidebar*, etc.) plus the @theme inline
-   bridge that surfaces them as Tailwind v4 utility classes.
+   Imports the compiled @exxatdesignux/ui globals: Tailwind base, DS theme
+   tokens, @source paths for the package's own dist, and @theme bridge.
    ────────────────────────────────────────────────────────────────────────── */
-@import '../../../../exxat-ds/packages/ui/src/theme.css';
-@import 'tailwindcss';
+@import '@exxatdesignux/ui/globals.css';
 
-/* Scan Exxat-DS source so its classes (bg-primary, text-foreground, etc.)
-   are picked up when DS components are imported into this app. */
-@source '../../../../exxat-ds/packages/ui/src/**/*.{ts,tsx}';
+/*
+  DS custom variants — required for DS Tailwind classes (data-active:,
+  data-horizontal:, data-open:, etc.) to fire correctly when compiled by
+  this product's own Tailwind.
+
+  Canonical source: shadcn@4.2.0/dist/tailwind.css — inlined because the
+  package is not hoisted in pnpm's virtual store. Reference copy lives at
+  apps/portal/app/globals.css. All products must keep these in sync.
+
+  Without this block:
+  · data-horizontal:flex-col   never fires → Tabs renders as horizontal flex
+  · group-data-horizontal/tabs never fires → active-tab underline invisible
+  · data-active: (built-in)    matches ANY value (incl. "false") → wrong states
+*/
+@custom-variant data-open {
+  &:where([data-state="open"]) { @slot; }
+}
+@custom-variant data-closed {
+  &:where([data-state="closed"]) { @slot; }
+}
+@custom-variant data-checked {
+  &:where([data-state="checked"]) { @slot; }
+}
+@custom-variant data-unchecked {
+  &:where([data-state="unchecked"]) { @slot; }
+}
+@custom-variant data-selected {
+  &:where([data-state="selected"]),
+  &:where([data-selected]:not([data-selected="false"])) { @slot; }
+}
+@custom-variant data-disabled {
+  &:where([data-disabled]:not([data-disabled="false"])) { @slot; }
+}
+@custom-variant data-active {
+  &:where([data-state="active"]),
+  &:where([data-active]:not([data-active="false"])) { @slot; }
+}
+@custom-variant data-horizontal {
+  &:where([data-orientation="horizontal"]) { @slot; }
+}
+@custom-variant data-vertical {
+  &:where([data-orientation="vertical"]) { @slot; }
+}
+
+/* ─── DS token gaps — missing from the submodule's theme.css scale ────────── */
+@theme inline {
+  /* rounded-4xl used by DS Badge for pill shape; DS theme only defines up to 3xl */
+  --radius-4xl: 9999px;
+  /* DS ships --text-xs at 0.6875rem (11px); workspace floor is 12px. Raise the
+     text-xs utility to the documented DS floor so product copy never renders sub-12px. */
+  --text-xs: 0.75rem; /* 12px at 16px root */
+}
 
 /* ─── App-local tokens (no DS equivalent) ─────────────────────────────────── */
 :root {
@@ -25,10 +72,10 @@
   /* Shadow tokens — sized for exam-card depth */
   --shadow-card:  rgba(0, 0, 0, 0.06);
   --shadow-heavy: rgba(0, 0, 0, 0.15);
-  --shadow-brand: color-mix(in oklch, var(--brand-color) 30%, transparent);
+  --shadow-brand: color-mix(in srgb, var(--brand-color) 30%, transparent);
 
   /* Avatar initials — derived from brand */
-  --avatar-initials-bg: color-mix(in oklch, var(--brand-color) 14%, var(--background));
+  --avatar-initials-bg: color-mix(in srgb, var(--brand-color) 14%, var(--background));
   --avatar-initials-fg: var(--brand-color-dark);
 
   /* ─── Exam state tokens · derived from DS chart palette ────────────────────
@@ -43,62 +90,66 @@
      ────────────────────────────────────────────────────────────────────── */
 
   /* Exam state — answered / flagged / current */
-  --state-answered-bg:     color-mix(in oklch, var(--chart-2) 14%, var(--background));
-  --state-answered-border: color-mix(in oklch, var(--chart-2) 50%, var(--background));
-  --state-answered-text:   color-mix(in oklch, var(--chart-2) 80%, var(--foreground));
-  --state-flagged-bg:      color-mix(in oklch, var(--chart-4) 18%, var(--background));
-  --state-flagged-border:  color-mix(in oklch, var(--chart-4) 60%, var(--background));
-  --state-flagged-text:    color-mix(in oklch, var(--chart-4) 80%, var(--foreground));
+  --state-answered-bg:     color-mix(in srgb, var(--chart-2) 14%, var(--background));
+  --state-answered-border: color-mix(in srgb, var(--chart-2) 50%, var(--background));
+  --state-answered-text:   color-mix(in srgb, var(--chart-2) 80%, var(--foreground));
+  --state-flagged-bg:      color-mix(in srgb, var(--chart-4) 18%, var(--background));
+  --state-flagged-border:  color-mix(in srgb, var(--chart-4) 60%, var(--background));
+  --state-flagged-text:    color-mix(in srgb, var(--chart-4) 80%, var(--foreground));
 
   /* Exam-accent · maps to DS chart-1 (indigo) — kept distinct from brand
      so the question chrome stays neutral while brand stays for primary CTAs. */
   --exam-accent:        var(--chart-1);
-  --exam-accent-hover:  color-mix(in oklch, var(--chart-1) 90%, var(--foreground));
-  --exam-accent-light:  color-mix(in oklch, var(--chart-1) 8%, var(--background));
-  --exam-accent-border: color-mix(in oklch, var(--chart-1) 35%, var(--background));
-  --exam-accent-mid:    color-mix(in oklch, var(--chart-1) 75%, var(--background));
+  --exam-accent-hover:  color-mix(in srgb, var(--chart-1) 90%, var(--foreground));
+  --exam-accent-light:  color-mix(in srgb, var(--chart-1) 8%, var(--background));
+  --exam-accent-border: color-mix(in srgb, var(--chart-1) 35%, var(--background));
+  --exam-accent-mid:    color-mix(in srgb, var(--chart-1) 75%, var(--background));
 
   /* Status / banner palettes */
   --state-success-text:     var(--chart-2);
-  --state-success-bg:       color-mix(in oklch, var(--chart-2) 8%, var(--background));
-  --state-success-accent:   color-mix(in oklch, var(--chart-2) 50%, var(--background));
-  --state-success-bg-soft:  color-mix(in oklch, var(--chart-2) 14%, var(--background));
-  --state-success-dark:     color-mix(in oklch, var(--chart-2) 80%, var(--foreground));
+  --state-success-bg:       color-mix(in srgb, var(--chart-2) 8%, var(--background));
+  --state-success-accent:   color-mix(in srgb, var(--chart-2) 50%, var(--background));
+  --state-success-bg-soft:  color-mix(in srgb, var(--chart-2) 14%, var(--background));
+  --state-success-dark:     color-mix(in srgb, var(--chart-2) 80%, var(--foreground));
   --state-warning-text:     var(--chart-4);
-  --state-warning-bg:       color-mix(in oklch, var(--chart-4) 8%, var(--background));
-  --state-warning-accent:   color-mix(in oklch, var(--chart-4) 50%, var(--background));
-  --state-warning-bg-soft:  color-mix(in oklch, var(--chart-4) 18%, var(--background));
-  --state-warning-border:   color-mix(in oklch, var(--chart-4) 30%, var(--background));
-  --state-warning-dark:     color-mix(in oklch, var(--chart-4) 90%, var(--foreground));
-  --state-warning-darkest:  color-mix(in oklch, var(--chart-4) 80%, var(--foreground));
+  --state-warning-bg:       color-mix(in srgb, var(--chart-4) 8%, var(--background));
+  --state-warning-accent:   color-mix(in srgb, var(--chart-4) 50%, var(--background));
+  --state-warning-bg-soft:  color-mix(in srgb, var(--chart-4) 18%, var(--background));
+  --state-warning-border:   color-mix(in srgb, var(--chart-4) 30%, var(--background));
+  --state-warning-dark:     color-mix(in srgb, var(--chart-4) 90%, var(--foreground));
+  --state-warning-darkest:  color-mix(in srgb, var(--chart-4) 80%, var(--foreground));
   --state-info-blue-dark:   var(--chart-1);
-  --state-info-blue-bg:     color-mix(in oklch, var(--chart-1) 8%, var(--background));
-  --state-info-blue-border: color-mix(in oklch, var(--chart-1) 35%, var(--background));
-  --state-info-blue-mid:    color-mix(in oklch, var(--chart-1) 75%, var(--background));
+  --state-info-blue-bg:     color-mix(in srgb, var(--chart-1) 8%, var(--background));
+  --state-info-blue-border: color-mix(in srgb, var(--chart-1) 35%, var(--background));
+  --state-info-blue-mid:    color-mix(in srgb, var(--chart-1) 75%, var(--background));
   /* Error → chart-5 (orange) per Aarti's no-red rule (memory:
      project_exam_aarti_decisions). Reserve --destructive for true
      destructive confirmations only. */
   --state-error-accent:     var(--chart-5);
-  --state-error-text-dark:  color-mix(in oklch, var(--chart-5) 90%, var(--foreground));
-  --state-error-bg-soft:    color-mix(in oklch, var(--chart-5) 8%, var(--background));
-  --state-error-border-soft:color-mix(in oklch, var(--chart-5) 30%, var(--background));
-  --state-bar-fail:         color-mix(in oklch, var(--chart-5) 60%, var(--background));
+  --state-error-text-dark:  color-mix(in srgb, var(--chart-5) 90%, var(--foreground));
+  --state-error-bg-soft:    color-mix(in srgb, var(--chart-5) 8%, var(--background));
+  --state-error-border-soft:color-mix(in srgb, var(--chart-5) 30%, var(--background));
+  --state-bar-fail:         color-mix(in srgb, var(--chart-5) 60%, var(--background));
+
+  /* Semantic-error aliases — used by ExamToolbar's last-5-minutes timer state.
+     Map to the existing state-error-* family so the timer inherits the same
+     orange (chart-5) treatment as other error surfaces. */
+  --semantic-error-bg:     var(--state-error-bg-soft);
+  --semantic-error-border: var(--state-error-border-soft);
+  --semantic-error-text:   var(--state-error-text-dark);
 
   /* Required-field pill — same family as flagged/warning */
-  --required-text:   color-mix(in oklch, var(--chart-4) 80%, var(--foreground));
-  --required-bg:     color-mix(in oklch, var(--chart-4) 8%, var(--background));
-  --required-border: color-mix(in oklch, var(--chart-4) 30%, var(--background));
+  --required-text:   color-mix(in srgb, var(--chart-4) 80%, var(--foreground));
+  --required-bg:     color-mix(in srgb, var(--chart-4) 8%, var(--background));
+  --required-border: color-mix(in srgb, var(--chart-4) 30%, var(--background));
 
-  /* Highlight / cross-out (exam annotation tools) — neutral: no chart color injection */
-  --highlight-bg:     color-mix(in oklch, var(--foreground) 8%, var(--background));
-  --highlight-bg-end: color-mix(in oklch, var(--foreground) 12%, var(--background));
-  --highlight-text:   var(--foreground);
-  --highlight-shadow: color-mix(in oklch, var(--foreground) 12%, transparent);
+  /* Highlight / cross-out (exam annotation tools) */
+  --highlight-bg:     #FEF08A;
+  --highlight-bg-end: #FDE047;
+  --highlight-text:   #713F12;
+  --highlight-shadow: rgba(253, 224, 71, 0.4);
   --crossout-text:    var(--muted-foreground);
   --crossout-opacity: 0.45;
-
-  /* Calculator display — neutral charcoal · zero-chroma color-mix */
-  --calc-display-bg: color-mix(in oklch, var(--foreground) 92%, var(--background));
 }
 
 /* Sidebar token — admin DS provides .theme-prism / .theme-rose definitions
@@ -122,69 +173,84 @@
   --highlight-bg-end: #713F12;
   --highlight-text:   #FEF9C3;
   --highlight-shadow: rgba(202, 138, 4, 0.3);
-  --crossout-text:    #64748B;
+  /* #888888 was 4.1:1 on dark bg — WCAG AA fail. var(--muted-foreground) in
+     dark resolves to oklch(0.72) ≈ 6.3:1. */
+  --crossout-text:    var(--muted-foreground);
   --crossout-opacity: 0.55;
 }
 
 /* ─── High contrast theme ─────────────────────────────────────────────────── */
+/* Builds on DS .dark base tokens. Overrides exam state tokens with neon values
+   that meet WCAG AA on near-black backgrounds (contrast ratios in comments). */
 .theme-high-contrast {
+  /* Answered: #00FF00 on #003300 → 10.6:1 ✓ */
   --state-answered-bg: #003300;
   --state-answered-border: #00FF00;
   --state-answered-text: #00FF00;
+  /* Bookmarked: #FFCC00 on #332200 → 8.1:1 ✓ */
   --state-flagged-bg: #332200;
   --state-flagged-border: #FFCC00;
   --state-flagged-text: #FFCC00;
+  /* Progress bar + accent elements */
   --exam-accent: #00FFFF;
   --exam-accent-hover: #00CCCC;
   --exam-accent-light: #003333;
   --exam-accent-border: #00FFFF;
+  /* Highlight tool */
   --highlight-bg:     #FFFF00;
   --highlight-bg-end: #FFFF00;
   --highlight-text:   #000000;
   --highlight-shadow: rgba(255, 255, 0, 0.6);
-  --crossout-text:    #888888;
+  /* Crossout: oklch(0.82) ≈ #D0D0D0 → ~12:1 on near-black bg ✓
+     (was #888888 = 4.1:1 — WCAG AA fail) */
+  --crossout-text:    oklch(0.82 0 0);
   --crossout-opacity: 0.7;
 }
 
-/* ─── Sidebar polish — match Prism reference (flat items, soft active fill) ──
-   The DS SidebarMenuButton CVA in Tailwind v4 ends up matching `data-active:`
-   utilities for any data-active value (including "false") in this app's
-   compile environment, plus Radix DropdownMenu sets data-state on triggers.
-   Force every row truly flat except the one with data-active="true". */
-html body [data-slot="sidebar-menu-button"]:not([data-active="true"]) {
-  background-color: transparent !important;
-  background-image: none !important;
-  box-shadow: none !important;
-  --tw-shadow: 0 0 #0000 !important;
-  --tw-shadow-colored: 0 0 #0000 !important;
-  --tw-ring-shadow: 0 0 #0000 !important;
-  --tw-ring-offset-shadow: 0 0 #0000 !important;
-  --tw-ring-color: transparent !important;
-  --tw-ring-width: 0 !important;
-  border-color: transparent !important;
-  font-weight: 500 !important;
-  color: var(--sidebar-foreground) !important;
+/* ─── DS Button — default variant hover ───────────────────────────────────────
+   The DS Button CVA `default` variant defines hover only for anchor elements
+   ([a]:hover:bg-primary/80). For regular <button> elements, the DS compiled
+   package provides hover via its own @layer base styles. Since we import DS
+   as source (not the compiled package), we must supply that rule here. */
+[data-slot="button"][data-variant="default"]:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--primary) 85%, var(--foreground));
 }
-html body [data-slot="sidebar-menu-button"]:not([data-active="true"]):hover {
-  background-color: var(--sidebar-accent) !important;
-  color: var(--sidebar-accent-foreground) !important;
+
+/* ─── Reference panel HTML content ───────────────────────────────────────────
+   Questions with type:'html' references render via dangerouslySetInnerHTML.
+   DS Table components can't be used for HTML string content, so we match
+   raw <table> elements to DS Table visual output (ds/table.tsx pattern):
+   border-b on rows, no cell borders, h-10 header, p-2 cells, text-sm. */
+.ref-html-content table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem; /* text-sm — matches DS Table */
 }
-html body [data-slot="sidebar-menu-button"][data-active="true"] {
-  background-color: var(--sidebar-accent) !important;
-  background-image: none !important;
-  color: var(--sidebar-accent-foreground) !important;
-  box-shadow: none !important;
-  --tw-shadow: 0 0 #0000 !important;
-  --tw-ring-shadow: 0 0 #0000 !important;
-  --tw-ring-offset-shadow: 0 0 #0000 !important;
-  --tw-ring-color: transparent !important;
-  --tw-ring-width: 0 !important;
-  border-color: transparent !important;
-  font-weight: 600 !important;
+.ref-html-content thead tr {
+  border-bottom: 1px solid var(--border);
 }
-html body [data-slot="sidebar-menu-button"][data-state="open"] {
-  background-color: var(--sidebar-accent) !important;
-  color: var(--sidebar-accent-foreground) !important;
+.ref-html-content th {
+  background: var(--muted);
+  color: var(--foreground);
+  font-weight: 500;
+  font-size: 0.75rem; /* 12px minimum — WCAG A11Y */
+  padding: 8px 12px;
+  text-align: left;
+  vertical-align: middle;
+}
+.ref-html-content tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background-color 150ms;
+}
+.ref-html-content tbody tr:last-child {
+  border-bottom: none;
+}
+.ref-html-content td {
+  padding: 8px 12px;
+  vertical-align: middle;
+}
+.ref-html-content tbody tr:hover {
+  background-color: var(--muted);
 }
 
 /* ─── Typography ─────────────────────────────────────────────────────────── */
@@ -273,6 +339,12 @@ html body [data-slot="sidebar-menu-button"][data-state="open"] {
 }
 .animate-slide-in-left { animation: slide-in-left 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+.animate-slide-in-right { animation: slide-in-right 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
 @keyframes slide-up {
   from { transform: translateY(100%); }
   to   { transform: translateY(0); }
@@ -309,9 +381,9 @@ html body [data-slot="sidebar-menu-button"][data-state="open"] {
 
 /* ─── Mic pulse ring (rose-tinted) ───────────────────────────────────────── */
 @keyframes pulse-ring {
-  0%   { box-shadow: 0 0 0 0   color-mix(in oklch, var(--brand-color) 50%, transparent); }
-  70%  { box-shadow: 0 0 0 8px color-mix(in oklch, var(--brand-color)  0%, transparent); }
-  100% { box-shadow: 0 0 0 0   color-mix(in oklch, var(--brand-color)  0%, transparent); }
+  0%   { box-shadow: 0 0 0 0   color-mix(in srgb, var(--brand-color) 50%, transparent); }
+  70%  { box-shadow: 0 0 0 8px color-mix(in srgb, var(--brand-color)  0%, transparent); }
+  100% { box-shadow: 0 0 0 0   color-mix(in srgb, var(--brand-color)  0%, transparent); }
 }
 .mic-pulse-ring { animation: pulse-ring 1.5s ease-out infinite; }
 
@@ -335,16 +407,16 @@ html body [data-slot="sidebar-menu-button"][data-state="open"] {
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 .exam-select:hover {
-  border-color: var(--exam-accent-mid) !important;
+  border-color: var(--brand-color) !important;
   background-color: var(--card);
 }
 .exam-select:focus {
   outline: none;
-  border-color: var(--exam-accent) !important;
-  box-shadow: 0 0 0 3px var(--exam-accent-light);
+  border-color: var(--brand-color) !important;
+  box-shadow: 0 0 0 3px var(--brand-tint);
 }
 .exam-select option { padding: 8px 12px; background-color: var(--card); color: var(--foreground); }
-.exam-select option:checked { background-color: var(--exam-accent-light); color: var(--exam-accent); }
+.exam-select option:checked { background-color: var(--brand-tint); color: var(--foreground); }
 .exam-select option:disabled { color: var(--muted-foreground); }
 .theme-dark .exam-select,
 .theme-high-contrast .exam-select {

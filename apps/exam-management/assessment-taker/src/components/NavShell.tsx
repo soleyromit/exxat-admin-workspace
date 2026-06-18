@@ -16,6 +16,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   Avatar, AvatarFallback,
   Badge, Button,
+  Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator,
   Sidebar, SidebarProvider, SidebarInset, SidebarTrigger,
   SidebarHeader, SidebarContent, SidebarFooter,
   SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarMenuBadge,
@@ -25,7 +26,7 @@ import {
   TooltipProvider,
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
   Tooltip, TooltipTrigger, TooltipContent,
-} from '@exxat/ds/packages/ui/src';
+} from '@exxatdesignux/ui';
 import { CommandPalette } from './CommandPalette';
 
 const MOCK_NOTIFICATIONS = [
@@ -102,7 +103,7 @@ export function NavShell({ children, title }: NavShellProps) {
 
   return (
     <TooltipProvider>
-      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+      {paletteOpen && <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />}
       <SidebarProvider className="h-svh">
         <Sidebar variant="inset" collapsible="icon">
           {/* ─── Brand wordmark ───────────────────────────────────────── */}
@@ -111,14 +112,17 @@ export function NavShell({ children, title }: NavShellProps) {
           </SidebarHeader>
 
           <SidebarContent>
+            {/* nav landmark wraps only the content — Sidebar must be a direct
+                child of SidebarProvider so the peer CSS sibling selector works */}
+            <nav aria-label="Site navigation" className="contents">
             {/* ─── Search / Notifications ─────────────────────────────── */}
             <SidebarGroup className="py-1">
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <SidebarMenuButton tooltip="Search or ask Leo · ⌘K" onClick={() => setPaletteOpen(true)}>
+                    <SidebarMenuButton tooltip="Search · ⌘K" onClick={() => setPaletteOpen(true)}>
                       <i className="fa-light fa-magnifying-glass" aria-hidden="true" />
-                      <span>Search or ask Leo</span>
+                      <span>Search</span>
                       <KbdGroup className="ms-auto group-data-collapsible-icon:hidden">
                         <Kbd>⌘</Kbd>
                         <Kbd>K</Kbd>
@@ -144,6 +148,7 @@ export function NavShell({ children, title }: NavShellProps) {
                 <DocumentsNav />
               </SidebarGroupContent>
             </SidebarGroup>
+            </nav>
           </SidebarContent>
 
           {/* ─── Footer: Settings · Get Help · Profile ─────────────────── */}
@@ -156,14 +161,14 @@ export function NavShell({ children, title }: NavShellProps) {
         </Sidebar>
 
         <SidebarInset className="flex flex-col overflow-hidden">
-          <TopBar title={title} entryPoint={entryPoint} />
-          <main
+          <TopBar title={title} entryPoint={entryPoint} onAskLeo={() => setPaletteOpen(true)} />
+          <div
             id="main-content"
             tabIndex={-1}
             className="flex-1 overflow-y-auto outline-none"
           >
             {children}
-          </main>
+          </div>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>
@@ -184,7 +189,7 @@ function BrandRow({ entryPoint }: { entryPoint: EntryPoint }) {
           <span
             className="flex size-7 shrink-0 items-center justify-center text-[13px] font-bold"
             style={{
-              borderRadius: isPrism ? '50%' : 8,
+              borderRadius: isPrism ? '50%' : 'var(--radius)',
               backgroundColor: isPrism ? 'var(--brand-color)' : 'var(--muted)',
               color: isPrism ? 'var(--brand-foreground)' : 'var(--muted-foreground)',
             }}
@@ -212,7 +217,7 @@ function BrandRow({ entryPoint }: { entryPoint: EntryPoint }) {
       {!isPrism && (
         <SidebarMenuItem>
           <div className="px-3 pb-1 group-data-collapsible-icon:hidden">
-            <p className="text-[11px] text-muted-foreground leading-tight">Rush University · PT Program</p>
+            <p className="text-xs text-muted-foreground leading-tight">Rush University · PT Program</p>
           </div>
         </SidebarMenuItem>
       )}
@@ -232,11 +237,6 @@ function NotificationsItem() {
     warning: 'var(--chart-4)',
     success: 'var(--chart-2)',
     info:    'var(--chart-1)',
-  };
-  const notifTypeBg: Record<string, string> = {
-    warning: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))',
-    success: 'color-mix(in oklch, var(--chart-2) 14%, var(--background))',
-    info:    'color-mix(in oklch, var(--chart-1) 14%, var(--background))',
   };
 
   return (
@@ -272,10 +272,10 @@ function NotificationsItem() {
                 onClick={() => setNotifications(ns => ns.map(n => n.id === notif.id ? { ...n, unread: false } : n))}
                 className="flex gap-3 cursor-pointer px-4 py-3 border-b border-border last:border-b-0 transition-colors"
                 style={{
-                  background: notif.unread ? 'color-mix(in oklch, var(--brand-color) 4%, var(--card))' : 'var(--card)',
+                  background: notif.unread ? 'var(--brand-tint)' : 'var(--card)',
                 }}
               >
-                <div className="flex items-center justify-center flex-shrink-0" style={{ width: 36, height: 36, borderRadius: 10, background: notifTypeBg[notif.type] }}>
+                <div className="flex items-center justify-center flex-shrink-0" style={{ width: 36, height: 36, borderRadius: 'var(--radius)', background: 'var(--muted)' }}>
                   <i className={`fa-light ${notif.icon}`} aria-hidden="true" style={{ fontSize: 15, color: notifTypeColor[notif.type] }} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -284,7 +284,7 @@ function NotificationsItem() {
                     {notif.unread && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1" style={{ background: 'var(--brand-color)' }} />}
                   </div>
                   <p className="text-xs leading-relaxed text-muted-foreground">{notif.body}</p>
-                  <p className="text-[11px] mt-1 text-muted-foreground">{notif.time}</p>
+                  <p className="text-xs mt-1 text-muted-foreground">{notif.time}</p>
                 </div>
               </div>
             ))}
@@ -318,12 +318,9 @@ function PrimaryNav() {
                 <span>{item.label}</span>
                 {item.badge && (
                   <Badge
-                    className="ms-auto rounded-full text-[10px] font-semibold gap-0 px-2 group-data-collapsible-icon:hidden"
-                    style={{
-                      backgroundColor: 'var(--brand-color)',
-                      color: 'var(--brand-foreground)',
-                      border: 'none',
-                    }}
+                    variant="outline"
+                    className="ms-auto rounded-full text-xs font-semibold gap-0 px-2 group-data-collapsible-icon:hidden"
+                    style={{ color: 'var(--brand-dark)', borderColor: 'var(--brand-dark)' }}
                   >
                     {item.badge}
                   </Badge>
@@ -358,12 +355,9 @@ function DocumentsNav() {
                 <span>{item.label}</span>
                 {item.badge?.tone === 'beta' && (
                   <Badge
-                    className="ms-auto rounded-full text-[10px] font-semibold px-2 group-data-collapsible-icon:hidden"
-                    style={{
-                      backgroundColor: 'color-mix(in oklch, var(--chart-4) 25%, var(--background))',
-                      color: 'var(--chart-4)',
-                      border: 'none',
-                    }}
+                    variant="outline"
+                    className="ms-auto rounded-full text-xs font-semibold px-2 group-data-collapsible-icon:hidden"
+                    style={{ color: 'var(--muted-foreground)', borderColor: 'var(--border)' }}
                   >
                     {item.badge.text}
                   </Badge>
@@ -420,7 +414,7 @@ function ProfileFooter({ entryPoint }: { entryPoint: EntryPoint }) {
             >
               <Avatar className="size-8 shrink-0">
                 <AvatarFallback
-                  className="text-[11px] font-bold"
+                  className="text-xs font-bold"
                   style={{
                     background: 'var(--foreground)',
                     color: 'var(--background)',
@@ -440,7 +434,7 @@ function ProfileFooter({ entryPoint }: { entryPoint: EntryPoint }) {
             <DropdownMenuLabel>
               <div className="flex flex-col gap-0.5">
                 <span className="text-sm font-semibold">Ramona Sanchez</span>
-                <span className="text-[11px] text-muted-foreground font-normal">ANAT 601 · PT Program</span>
+                <span className="text-xs text-muted-foreground font-normal">ANAT 601 · PT Program</span>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -478,7 +472,7 @@ function ProfileFooter({ entryPoint }: { entryPoint: EntryPoint }) {
 }
 
 // ─── Top bar (sidebar trigger + breadcrumb) ──────────────────────────────────
-function TopBar({ title, entryPoint }: { title?: string; entryPoint: EntryPoint }) {
+function TopBar({ title, entryPoint, onAskLeo }: { title?: string; entryPoint: EntryPoint; onAskLeo: () => void }) {
   const isPrism = entryPoint === 'prism';
   return (
     <header
@@ -505,43 +499,74 @@ function TopBar({ title, entryPoint }: { title?: string; entryPoint: EntryPoint 
 
       {/* Prism: Prism > Exam Management > [page] */}
       {isPrism ? (
-        <>
-          <a
-            href="#prism-home"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors truncate"
-            style={{ textDecoration: 'none' }}
-          >
-            Prism
-          </a>
-          <i className="fa-light fa-chevron-right fa-xs shrink-0" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
-          <span className="text-sm font-semibold truncate" style={{ color: 'var(--foreground)' }}>
-            Exam Management
-          </span>
-          {title && (
-            <>
-              <i className="fa-light fa-chevron-right fa-xs shrink-0" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
-              <span className="text-sm truncate" style={{ color: 'var(--muted-foreground)' }}>{title}</span>
-            </>
-          )}
-        </>
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="#prism-home">Prism</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              {title ? (
+                <BreadcrumbLink href="#">Exam Management</BreadcrumbLink>
+              ) : (
+                <BreadcrumbPage>Exam Management</BreadcrumbPage>
+              )}
+            </BreadcrumbItem>
+            {title && (
+              <>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{title}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </>
+            )}
+          </BreadcrumbList>
+        </Breadcrumb>
       ) : (
         /* Standalone: Exam Management > [page] — no Prism reference */
-        <>
-          <span className="text-sm font-semibold truncate" style={{ color: 'var(--foreground)' }}>
-            Exam Management
-          </span>
-          {title && (
-            <>
-              <i className="fa-light fa-chevron-right fa-xs shrink-0" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
-              <span className="text-sm truncate" style={{ color: 'var(--muted-foreground)' }}>{title}</span>
-            </>
-          )}
-          {/* Standalone: subtle Exxat attribution far right */}
-          <span className="ms-auto text-[11px] text-muted-foreground group-data-collapsible-icon:hidden shrink-0">
-            Powered by Exxat
-          </span>
-        </>
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              {title ? (
+                <BreadcrumbLink href="#">Exam Management</BreadcrumbLink>
+              ) : (
+                <BreadcrumbPage>Exam Management</BreadcrumbPage>
+              )}
+            </BreadcrumbItem>
+            {title && (
+              <>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{title}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </>
+            )}
+          </BreadcrumbList>
+        </Breadcrumb>
       )}
+
+      {/* Ask Leo — right-aligned in both Prism and standalone modes */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onAskLeo}
+            aria-label="Ask Leo · ⌘K"
+            className="ms-auto shrink-0 gap-1.5"
+          >
+            <i className="fa-light fa-sparkles fa-fw" aria-hidden="true" />
+            Ask Leo
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          Ask Leo
+          <KbdGroup className="ms-2">
+            <Kbd>⌘</Kbd>
+            <Kbd>K</Kbd>
+          </KbdGroup>
+        </TooltipContent>
+      </Tooltip>
     </header>
   );
 }

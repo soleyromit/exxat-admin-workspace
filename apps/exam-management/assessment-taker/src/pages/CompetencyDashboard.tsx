@@ -9,7 +9,7 @@
  */
 
 import { useState } from 'react';
-import { Button } from '@exxat/ds/packages/ui/src';
+import { Button } from '@exxatdesignux/ui';
 import { MOCK_COURSE_COMPETENCIES, MOCK_ASSESSMENTS, CourseCompetency } from '../data/assessments';
 
 const t = {
@@ -18,8 +18,8 @@ const t = {
   muted: 'var(--muted)',
   brand: 'var(--brand-color)',
   brandDark: 'var(--brand-color-dark)',
-  brandSurface: 'var(--brand-color-light, #F5F3FF)',
-  brandBorder: 'var(--brand-tint, #EDE9FE)',
+  brandSurface: 'var(--brand-tint)',
+  brandBorder: 'var(--brand-tint)',
   fg: 'var(--foreground)',
   fgMuted: 'var(--muted-foreground)',
   border: 'var(--border)',
@@ -56,12 +56,12 @@ function CourseCard({ course }: { course: CourseCompetency }) {
             <p style={{ fontSize: 12, fontWeight: 700, color: t.fgMuted, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4 }}>
               {course.courseCode}
             </p>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: t.fg }}>{course.courseName}</h3>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: t.fg }}>{course.courseName}</h2>
           </div>
           {haData ? (
             <div style={{ textAlign: 'right' }}>
               <p style={{ fontSize: 26, fontWeight: 700, color: t.fg, lineHeight: 1 }}>{avg}%</p>
-              <p style={{ fontSize: 11, color: t.fgMuted }}>avg score</p>
+              <p style={{ fontSize: 12, color: t.fgMuted }}>avg score</p>
             </div>
           ) : (
             <span style={{ fontSize: 12, color: t.fgMuted, background: t.muted, padding: '4px 10px', borderRadius: 99 }}>
@@ -180,7 +180,7 @@ export function CompetencyDashboard() {
                 <i className={`fa-light ${item.icon}`} aria-hidden="true" style={{ color: t.fgMuted, fontSize: 16 }} />
               </div>
               <p style={{ fontSize: 22, fontWeight: 700, color: t.fg }}>{item.value}</p>
-              <p style={{ fontSize: 11, color: t.fgMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.3 }}>{item.label}</p>
+              <p style={{ fontSize: 12, color: t.fgMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.3 }}>{item.label}</p>
             </div>
           ))}
         </div>

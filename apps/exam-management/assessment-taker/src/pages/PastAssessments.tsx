@@ -15,7 +15,7 @@ import {
   Badge, Button,
   InputGroup, InputGroupAddon, InputGroupInput,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 
 // ─── Mock past-assessment dataset (richer than dashboard's small set) ───────
 type PastEntry = {
@@ -51,10 +51,10 @@ const TYPE_LABELS: Record<PastEntry['type'], string> = {
 }
 
 function tone(score: number) {
-  if (score >= 80) return { fg: 'var(--state-success-dark)',     bg: 'var(--state-success-bg-soft)',  label: 'Strong'      }
-  if (score >= 70) return { fg: 'var(--state-info-blue-dark)',   bg: 'var(--state-info-blue-bg)',     label: 'On track'    }
-  if (score >= 60) return { fg: 'var(--state-warning-dark)',     bg: 'var(--state-warning-bg-soft)',  label: 'Needs work'  }
-  return                 { fg: 'var(--state-error-text-dark)',   bg: 'var(--state-error-bg-soft)',    label: 'At risk'     }
+  if (score >= 80) return { fg: 'var(--foreground)', circleFg: 'var(--state-success-dark)',   bg: 'var(--state-success-bg-soft)',  label: 'Strong',    labelFg: 'var(--state-success-dark)'    }
+  if (score >= 70) return { fg: 'var(--foreground)', circleFg: 'var(--state-info-blue-dark)', bg: 'var(--state-info-blue-bg)',     label: 'On track',  labelFg: 'var(--state-info-blue-dark)'  }
+  if (score >= 60) return { fg: 'var(--foreground)', circleFg: 'var(--state-warning-dark)',   bg: 'var(--state-warning-bg-soft)',  label: 'Needs work', labelFg: 'var(--foreground)'   }
+  return                 { fg: 'var(--foreground)',  circleFg: 'var(--state-error-text-dark)', bg: 'var(--state-error-bg-soft)',   label: 'At risk',   labelFg: 'var(--foreground)' }
 }
 
 export function PastAssessments() {
@@ -140,7 +140,7 @@ export function PastAssessments() {
           </InputGroup>
 
           <Select value={courseFilter} onValueChange={setCourseFilter}>
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-[200px]" aria-label="Filter by course">
               <i className="fa-light fa-graduation-cap me-2" aria-hidden="true" />
               <SelectValue />
             </SelectTrigger>
@@ -153,7 +153,7 @@ export function PastAssessments() {
           </Select>
 
           <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[180px]" aria-label="Sort order">
               <i className="fa-light fa-arrow-down-wide-short me-2" aria-hidden="true" />
               <SelectValue />
             </SelectTrigger>
@@ -202,14 +202,14 @@ function SummaryTile({
       <span
         className="flex size-9 shrink-0 items-center justify-center rounded-lg"
         style={{
-          background: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+          background: 'var(--brand-tint)',
           color: 'var(--brand-color)',
         }}
       >
         <i className={`fa-light ${icon}`} aria-hidden="true" style={{ fontSize: 14 }} />
       </span>
       <div className="flex flex-col leading-tight">
-        <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{label}</span>
+        <span className="text-xs font-semibold text-muted-foreground">{label}</span>
         <span className="text-base font-bold tabular-nums" style={{ color: valueColor ?? 'var(--foreground)' }}>{value}</span>
       </div>
     </div>
@@ -237,13 +237,13 @@ function PastRow({
         className="flex flex-col items-center justify-center size-14 rounded-full shrink-0 border-2"
         style={{
           background: t.bg,
-          borderColor: t.fg,
+          borderColor: t.circleFg,
           color: t.fg,
         }}
         aria-hidden="true"
       >
         <span className="text-base font-bold tabular-nums leading-none">{a.score}</span>
-        <span className="text-[8px] uppercase tracking-wider font-bold mt-0.5">pct</span>
+        <span className="text-xs font-bold mt-0.5">pct</span>
       </div>
 
       {/* Title + course */}
@@ -252,7 +252,7 @@ function PastRow({
           <p className="text-sm font-semibold text-foreground truncate font-heading">{a.title}</p>
           <Badge
             variant="secondary"
-            className="rounded font-mono text-[9px] uppercase tracking-wider"
+            className="rounded font-mono text-xs"
             style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}
           >
             {TYPE_LABELS[a.type]}
@@ -280,13 +280,13 @@ function PastRow({
 
       {/* Cohort delta + tier label */}
       <div className="hidden md:flex flex-col items-end gap-0.5 shrink-0 w-32">
-        <span className="text-xs font-medium" style={{ color: t.fg }}>{t.label}</span>
+        <span className="text-xs font-medium" style={{ color: t.labelFg }}>{t.label}</span>
         <span
-          className="text-[11px] font-mono tabular-nums"
+          className="text-xs font-mono tabular-nums"
           style={{ color: deltaPositive ? 'var(--state-success-dark)' : 'var(--state-error-text-dark)' }}
           title={`Cohort median: ${a.cohortMedian}%`}
         >
-          <i className={`fa-light ${deltaPositive ? 'fa-arrow-up' : 'fa-arrow-down'} me-1`} aria-hidden="true" style={{ fontSize: 9 }} />
+          <i className={`fa-light ${deltaPositive ? 'fa-arrow-up' : 'fa-arrow-down'} me-1`} aria-hidden="true" style={{ fontSize: 12 }} />
           {deltaPositive ? '+' : ''}{delta} vs cohort
         </span>
       </div>

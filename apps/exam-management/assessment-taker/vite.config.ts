@@ -8,12 +8,8 @@ export default defineConfig({
   resolve: {
     dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
     alias: {
-      // Primary DS — Exxat-DS (admin DS), sourced from workspace submodule.
-      // Same path used by apps/exam-management/admin/next.config.ts.
-      '@exxat/ds': path.resolve(__dirname, '../../../exxat-ds'),
-      // studentUX DS — kept aliased so we can switch back to studentUX
-      // for this app once its setup gaps (Tailwind v4 source, badge.tsx style
-      // collision) are resolved at the studentUX level.
+      // studentUX DS — kept aliased for future switch-back once studentUX resolves
+      // its Tailwind v4 source / badge.tsx style collision gaps.
       '@exxat/student': path.resolve(__dirname, '../../../studentUX/src'),
       // Version-pinned specifiers used by studentUX components, retained for
       // future switch-back. No-ops when only Exxat-DS imports are used.

@@ -35,7 +35,7 @@ import {
   CommandSeparator,
   Kbd,
   KbdGroup,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 
 interface PaletteItem {
   id: string

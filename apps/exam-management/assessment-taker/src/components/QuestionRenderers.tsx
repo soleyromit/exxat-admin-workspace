@@ -7,7 +7,7 @@ import React, {
 'react';
 import { Question } from '../data/questions';
 import { useSpeechToText } from '../hooks/useSpeechToText';
-import { Button as DSButton, Textarea as DSTextarea } from '@exxat/ds/packages/ui/src';
+import { Button as DSButton, Textarea as DSTextarea, Table, TableHeader, TableHead, TableBody, TableRow, TableCell, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@exxatdesignux/ui';
 const SHORTCUT_KEYS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 interface RendererProps {
   question: Question;
@@ -62,7 +62,7 @@ function KeyBadge({
 }: {letter: string;isSelected: boolean;}) {
   return (
     <span
-      className="inline-flex items-center justify-center rounded-md font-bold text-[0.75em] shrink-0 transition-colors"
+      className="inline-flex items-center justify-center rounded-md font-bold text-[12px] shrink-0 transition-colors"
       style={{
         width: '2em',
         height: '2em',
@@ -86,11 +86,12 @@ function CrossOutButton({
     <DSButton
       variant="outline"
       size="icon-xs"
+      tabIndex={-1}
       onClick={onClick}
       className="shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100 high-contrast-visible"
       aria-label={isCrossed ? 'Remove cross-out' : 'Cross out option'}
       style={{
-        color: isCrossed ? 'var(--semantic-error-text)' : 'var(--muted-foreground)',
+        color: isCrossed ? 'var(--state-error-text-dark)' : 'var(--muted-foreground)',
         backgroundColor: isCrossed ? 'var(--muted)' : 'var(--card)',
       }}
     >
@@ -133,23 +134,19 @@ export function RadioMCQRenderer({
         const isCrossed = crossedOut.has(option);
         const optionImage = question.optionImages?.[idx];
         return (
-          <div key={idx} className="group">
-            {/* div instead of button — CrossOutButton is a <button> inside; nesting <button> in <button> is invalid HTML */}
+          <div key={idx} className={`group relative ${isCrossed ? 'opacity-40' : ''}`}>
             <div
               onClick={() => handleOptionClick(option)}
-              onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); handleOptionClick(option); } }}
+              onKeyDown={e => {
+                if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); handleOptionClick(option); }
+                if (e.key === 'x' || e.key === 'X') { e.preventDefault(); toggleCrossOut(e as unknown as React.MouseEvent, option); }
+              }}
               tabIndex={0}
-              className={`w-full text-left transition-all exam-focus flex ${hasImages ? 'flex-col' : 'flex-row items-center'} gap-3 p-[1em] rounded-xl border-2 ${isCrossed ? 'opacity-40' : ''}`}
+              className={`w-full text-left transition-all exam-focus flex ${hasImages ? 'flex-col' : 'flex-row items-center'} gap-3 p-[1em] pe-12 rounded-xl border-2`}
               style={{
-                borderColor:
-                isSelected && !isCrossed ?
-                'var(--foreground)' :
-                'var(--border)',
-                backgroundColor:
-                isSelected && !isCrossed ?
-                'var(--muted)' :
-                'var(--card)',
-                cursor: 'pointer'
+                borderColor: isSelected && !isCrossed ? 'var(--foreground)' : 'var(--border)',
+                backgroundColor: isSelected && !isCrossed ? 'var(--muted)' : 'var(--card)',
+                cursor: 'pointer',
               }}
               role="radio"
               aria-checked={isSelected}
@@ -162,29 +159,22 @@ export function RadioMCQRenderer({
                 src={optionImage}
                 alt={`Option ${SHORTCUT_KEYS[idx]} image`}
                 className="w-full h-32 object-cover rounded-lg" />
-
               }
               <div className="flex items-center gap-3 w-full">
                 <KeyBadge
                   letter={SHORTCUT_KEYS[idx]}
                   isSelected={isSelected && !isCrossed} />
-
                 <span
                   className={`text-[1em] flex-1 ${isCrossed ? 'line-through' : ''}`}
-                  style={{
-                    color:
-                    isSelected && !isCrossed ?
-                    'var(--foreground)' :
-                    'var(--muted-foreground)'
-                  }}>
-
+                  style={{ color: 'var(--foreground)' }}>
                   {option}
                 </span>
-                <CrossOutButton
-                  isCrossed={isCrossed}
-                  onClick={(e) => toggleCrossOut(e, option)} />
-
               </div>
+            </div>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 z-10">
+              <CrossOutButton
+                isCrossed={isCrossed}
+                onClick={(e) => toggleCrossOut(e, option)} />
             </div>
           </div>);
 
@@ -226,53 +216,38 @@ export function CheckboxRenderer({
         const isSelected = selectedSet.has(option);
         const isCrossed = crossedOut.has(option);
         return (
-          <div key={idx} className="group">
-            {/* div instead of button — CrossOutButton is a <button> inside; nesting <button> in <button> is invalid HTML */}
+          <div key={idx} className={`group relative ${isCrossed ? 'opacity-40' : ''}`}>
             <div
               onClick={() => toggleOption(option)}
-              onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleOption(option); } }}
+              onKeyDown={e => {
+                if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleOption(option); }
+                if (e.key === 'x' || e.key === 'X') { e.preventDefault(); toggleCrossOut(e as unknown as React.MouseEvent, option); }
+              }}
               tabIndex={0}
-              className={`w-full text-left transition-all exam-focus flex items-center gap-4 p-[1em] rounded-xl border-2 ${isCrossed ? 'opacity-40' : ''}`}
+              className="w-full text-left transition-all exam-focus flex items-center gap-4 p-[1em] pe-12 rounded-xl border-2"
               style={{
-                borderColor:
-                isSelected && !isCrossed ?
-                'var(--foreground)' :
-                'var(--border)',
-                backgroundColor:
-                isSelected && !isCrossed ?
-                'var(--muted)' :
-                'var(--card)',
-                cursor: 'pointer'
+                borderColor: isSelected && !isCrossed ? 'var(--foreground)' : 'var(--border)',
+                backgroundColor: isSelected && !isCrossed ? 'var(--muted)' : 'var(--card)',
+                cursor: 'pointer',
               }}
               role="checkbox"
               aria-checked={isSelected}
               aria-label={`Option ${SHORTCUT_KEYS[idx]}: ${option}. Click to toggle this selection.`}
               title={`Toggle option ${SHORTCUT_KEYS[idx]}`}
               {...narrateProps(`Option ${SHORTCUT_KEYS[idx]}: ${option}`)}>
-
               <KeyBadge
                 letter={SHORTCUT_KEYS[idx]}
                 isSelected={isSelected && !isCrossed} />
-
-              {isSelected && !isCrossed ?
-              <i className="fa-solid fa-square-check" aria-hidden="true" style={{ fontSize: 24, color: 'var(--foreground)' }} /> :
-              <i className="fa-light fa-square" aria-hidden="true" style={{ fontSize: 24, color: 'var(--border)' }} />
-              }
               <span
                 className={`text-[1em] flex-1 ${isCrossed ? 'line-through' : ''}`}
-                style={{
-                  color:
-                  isSelected && !isCrossed ?
-                  'var(--foreground)' :
-                  'var(--muted-foreground)'
-                }}>
-
+                style={{ color: 'var(--foreground)' }}>
                 {option}
               </span>
+            </div>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 z-10">
               <CrossOutButton
                 isCrossed={isCrossed}
                 onClick={(e) => toggleCrossOut(e, option)} />
-
             </div>
           </div>);
 
@@ -310,37 +285,38 @@ export function CrossOutRenderer({
         const isSelected = selectedAnswer === option;
         const isCrossed = crossedOut.has(option);
         return (
-          <div key={idx} className="flex items-center gap-2 group">
-            <button
+          <div key={idx} className={`group relative ${isCrossed ? 'opacity-40' : ''}`}>
+            <div
               onClick={() => handleOptionClick(option)}
-              className={`flex-1 text-left transition-all exam-focus flex items-center gap-4 p-[1em] rounded-xl border-2 ${isCrossed ? 'opacity-40' : ''}`}
-              style={{
-                borderColor: isSelected ?
-                'var(--foreground)' :
-                'var(--border)',
-                backgroundColor: isSelected ?
-                'var(--muted)' :
-                'var(--card)',
-                cursor: 'pointer'
+              onKeyDown={e => {
+                if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); handleOptionClick(option); }
+                if (e.key === 'x' || e.key === 'X') { e.preventDefault(); toggleCrossOut(e as unknown as React.MouseEvent, option); }
               }}
+              tabIndex={0}
+              className="w-full text-left transition-all exam-focus flex items-center gap-4 rounded-xl border-2"
+              style={{
+                borderColor: isSelected ? 'var(--foreground)' : 'var(--border)',
+                backgroundColor: isSelected ? 'var(--muted)' : 'var(--card)',
+                padding: '1em',
+                paddingInlineEnd: '3em',
+                cursor: 'pointer',
+              }}
+              role="radio"
+              aria-checked={isSelected}
               aria-label={`Option ${SHORTCUT_KEYS[idx]}: ${option}. Click to select, or use the cross-out button to eliminate.`}
-              title={`Select option ${SHORTCUT_KEYS[idx]}`}
               {...narrateProps(`Option ${SHORTCUT_KEYS[idx]}: ${option}`)}>
-              
               <KeyBadge letter={SHORTCUT_KEYS[idx]} isSelected={isSelected} />
               <span
-                className={`text-[1em] ${isCrossed ? 'line-through opacity-50' : ''}`}
-                style={{
-                  color: 'var(--muted-foreground)'
-                }}>
-                
+                className={`text-[1em] flex-1 text-left ${isCrossed ? 'line-through opacity-50' : ''}`}
+                style={{ color: 'var(--foreground)' }}>
                 {option}
               </span>
-            </button>
-            <CrossOutButton
-              isCrossed={isCrossed}
-              onClick={(e) => toggleCrossOut(e, option)} />
-            
+            </div>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 z-10">
+              <CrossOutButton
+                isCrossed={isCrossed}
+                onClick={(e) => toggleCrossOut(e, option)} />
+            </div>
           </div>);
 
       })}
@@ -432,11 +408,11 @@ export function HighlightRenderer({
       style={{
         borderColor: 'var(--border)',
         backgroundColor: 'var(--card)',
-        color: 'var(--muted-foreground)'
+        color: 'var(--foreground)'
       }}>
       
       <p
-        className="text-[0.75em] mb-3"
+        className="text-xs mb-3"
         style={{
           color: 'var(--muted-foreground)'
         }}>
@@ -446,15 +422,22 @@ export function HighlightRenderer({
       {question.sentenceGroups?.map((sentence, idx) => {
         const isHighlighted = selectedSet.has(idx);
         return (
-          <span
+          <DSButton
             key={idx}
+            variant="ghost"
+            size="xs"
+            type="button"
             onMouseDown={() => onMouseDown(idx)}
             onMouseEnter={() => onMouseEnter(idx)}
             onMouseUp={onMouseUp}
-            className={`cursor-pointer transition-all inline-block rounded px-1 mx-0.5 ${isHighlighted ? 'highlight-glow' : ''}`}
-            style={{
-              backgroundColor: isHighlighted ? undefined : undefined
+            onClick={(e) => {
+              // Keyboard-activated clicks report detail 0; toggle once so Enter/Space work.
+              if (e.detail === 0) {
+                onMouseDown(idx);
+                onMouseUp();
+              }
             }}
+            className={`inline-block h-auto whitespace-normal text-left text-[1em] font-normal leading-relaxed px-1 mx-0.5 ${isHighlighted ? 'highlight-glow' : ''}`}
             onMouseOver={(e) => {
               if (!isHighlighted)
               (e.currentTarget as HTMLElement).style.backgroundColor =
@@ -464,13 +447,12 @@ export function HighlightRenderer({
               if (!isHighlighted)
               (e.currentTarget as HTMLElement).style.backgroundColor = '';
             }}
-            tabIndex={0}
-            role="button"
+            aria-pressed={isHighlighted}
             aria-label={`Sentence ${idx + 1}: ${sentence}. Click to highlight or unhighlight.`}
             title="Click to highlight">
-            
+
             {sentence}
-          </span>);
+          </DSButton>);
 
       })}
     </div>);
@@ -516,26 +498,27 @@ export function ShortAnswerRenderer({
         />
         
         {isSupported &&
-        <button
+        <DSButton
+          variant="ghost"
+          size="icon-sm"
           onClick={isListening ? stopListening : startListening}
-          className={`absolute bottom-4 right-4 p-3 rounded-full transition-all flex items-center justify-center ${isListening ? 'mic-pulse-ring' : ''}`}
+          className={`absolute bottom-4 right-4 rounded-full transition-all ${isListening ? 'mic-pulse-ring' : ''}`}
           style={{
-            backgroundColor: isListening ?
-            'var(--exam-accent-light)' :
-            'var(--card)',
+            backgroundColor: isListening ? 'var(--exam-accent-light)' : 'var(--card)',
             color: isListening ? 'var(--exam-accent)' : 'var(--muted-foreground)',
-            border: `1px solid ${isListening ? 'var(--exam-accent-border)' : 'var(--border)'}`
+            border: `1px solid ${isListening ? 'var(--exam-accent-border)' : 'var(--border)'}`,
+            width: '2.75rem',
+            height: '2.75rem',
           }}
           aria-label={isListening ? 'Stop dictation' : 'Start dictation'}
-          title={isListening ? 'Stop dictation' : 'Start dictation'}>
-          
-            <i className="fa-light fa-microphone" aria-hidden="true" style={{ fontSize: 20 }} />
-          </button>
+        >
+          <i className="fa-light fa-microphone" aria-hidden="true" style={{ fontSize: 20 }} />
+        </DSButton>
         }
       </div>
       {question.maxChars &&
       <div
-        className="text-right text-[0.75em]"
+        className="text-right text-xs"
         style={{
           color: 'var(--muted-foreground)'
         }}>
@@ -576,41 +559,31 @@ export function FillBlankRenderer({
           const blankId = part.replace(/[{}]/g, '');
           const options = question.blanks?.[blankId] || [];
           return (
-            <select
+            <Select
               key={i}
-              value={answers[blankId] || ''}
-              onChange={(e) => handleSelect(blankId, e.target.value)}
-              className="exam-select py-[0.3em] pl-[0.6em] rounded-md border-2 text-[0.8em] font-semibold align-middle"
-              style={{
-                borderColor: answers[blankId] ?
-                'var(--exam-accent)' :
-                'var(--border)',
-                color: answers[blankId] ?
-                'var(--exam-accent)' :
-                'var(--muted-foreground)',
-                backgroundColor: answers[blankId] ?
-                'var(--exam-accent-light)' :
-                'var(--card)',
-                boxShadow: answers[blankId] ?
-                '0 0 0 2px var(--exam-accent-light)' :
-                '0 1px 2px var(--shadow-card)',
-                minWidth: '9em',
-                margin: '0 0.3em',
-                lineHeight: '1.4'
-              }}
-              aria-label={`Select the correct term for blank ${blankId}`}
-              title={`Select answer for blank ${blankId}`}
-              {...narrateProps(`Blank ${blankId}: choose the correct term`)}>
-              
-              <option value="" disabled>
-                Choose an answer…
-              </option>
-              {options.map((opt, j) =>
-              <option key={j} value={opt}>
-                  {opt}
-                </option>
-              )}
-            </select>);
+              value={answers[blankId] || undefined}
+              onValueChange={(val) => handleSelect(blankId, val)}>
+
+              <SelectTrigger
+                className="text-[0.8em] font-semibold align-middle"
+                style={{
+                  minWidth: '9em',
+                  margin: '0 0.3em'
+                }}
+                aria-label={`Select the correct term for blank ${blankId}`}
+                title={`Select answer for blank ${blankId}`}
+                {...narrateProps(`Blank ${blankId}: choose the correct term`)}>
+
+                <SelectValue placeholder="Choose an answer…" />
+              </SelectTrigger>
+              <SelectContent>
+                {options.map((opt, j) =>
+                <SelectItem key={j} value={opt}>
+                    {opt}
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>);
 
         }
         return (
@@ -648,53 +621,42 @@ export function MatchingRenderer({
           
             {pair.left}
           </div>
-          <select
-          value={answers[pair.left] || ''}
-          onChange={(e) =>
+          <Select
+          value={answers[pair.left] || undefined}
+          onValueChange={(val) =>
           onSelectAnswer(question.id, {
             ...answers,
-            [pair.left]: e.target.value
+            [pair.left]: val
           })
-          }
-          className="exam-select flex-1 py-[0.65em] pl-[0.85em] rounded-lg border-2 text-[0.9375em]"
-          style={{
-            borderColor: answers[pair.left] ?
-            'var(--exam-accent)' :
-            'var(--border)',
-            backgroundColor: answers[pair.left] ?
-            'var(--exam-accent-light)' :
-            'var(--card)',
-            color: answers[pair.left] ?
-            'var(--exam-accent)' :
-            'var(--muted-foreground)',
-            boxShadow: answers[pair.left] ?
-            '0 0 0 3px var(--exam-accent-light)' :
-            '0 1px 2px var(--shadow-card)'
-          }}
-          aria-label={`Match "${pair.left}" with the correct option`}
-          title={`Choose the matching term for "${pair.left}"`}
-          onFocus={() => {
-            if (voiceNarrator && 'speechSynthesis' in window) {
-              window.speechSynthesis.cancel();
-              const u = new SpeechSynthesisUtterance(
-                `Match ${pair.left} with: ${pair.rightOptions.join(', ')}`
-              );
-              window.speechSynthesis.speak(u);
-            }
-          }}
-          onBlur={() => {
-            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-          }}>
-          
-            <option value="" disabled>
-              Choose a match…
-            </option>
-            {pair.rightOptions.map((opt, j) =>
-          <option key={j} value={opt}>
+          }>
+
+            <SelectTrigger
+            className="flex-1 text-[0.9375em]"
+            aria-label={`Match "${pair.left}" with the correct option`}
+            title={`Choose the matching term for "${pair.left}"`}
+            onFocus={() => {
+              if (voiceNarrator && 'speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(
+                  `Match ${pair.left} with: ${pair.rightOptions.join(', ')}`
+                );
+                window.speechSynthesis.speak(u);
+              }
+            }}
+            onBlur={() => {
+              if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            }}>
+
+              <SelectValue placeholder="Choose a match…" />
+            </SelectTrigger>
+            <SelectContent>
+              {pair.rightOptions.map((opt, j) =>
+            <SelectItem key={j} value={opt}>
                 {opt}
-              </option>
-          )}
-          </select>
+              </SelectItem>
+            )}
+            </SelectContent>
+          </Select>
         </div>
       )}
     </div>);
@@ -802,24 +764,26 @@ export function AnatomyRenderer({
       {question.hotspots?.map((spot) => {
         const isSelected = selectedAnswer === spot.id;
         return (
-          <button
+          <DSButton
             key={spot.id}
+            variant="ghost"
+            size="icon-sm"
             onClick={() => onSelectAnswer(question.id, spot.id)}
-            className="absolute w-[1.5em] h-[1.5em] -ml-[0.75em] -mt-[0.75em] rounded-full border-2 transition-all exam-focus"
+            className="absolute rounded-full border-2 transition-all exam-focus"
             style={{
               left: `${spot.x}%`,
               top: `${spot.y}%`,
-              backgroundColor: isSelected ?
-              'var(--exam-accent)' :
-              'var(--card-80, rgba(255,255,255,0.8))',
-              borderColor: isSelected ?
-              'var(--exam-accent-text)' :
-              'var(--exam-accent)',
-              boxShadow: isSelected ?
-              '0 0 0 4px var(--exam-accent-light)' :
-              'none'
+              width: '1.5em',
+              height: '1.5em',
+              marginLeft: '-0.75em',
+              marginTop: '-0.75em',
+              backgroundColor: isSelected ? 'var(--exam-accent)' : 'rgba(255,255,255,0.8)',
+              borderColor: isSelected ? 'var(--exam-accent-text)' : 'var(--exam-accent)',
+              boxShadow: isSelected ? '0 0 0 4px var(--exam-accent-light)' : 'none',
+              padding: 0,
             }}
-            aria-label={spot.label} />);
+            aria-label={spot.label}
+          />);
 
 
       })}
@@ -833,58 +797,25 @@ export function TableRenderer({
 }: RendererProps) {
   return (
     <div className="flex flex-col gap-6">
-      <div
-        className="overflow-x-auto rounded-xl border"
-        style={{
-          borderColor: 'var(--border)'
-        }}>
-        
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr
-              style={{
-                backgroundColor: 'var(--muted)'
-              }}>
-              
-              {question.tableData?.headers.map((h, i) =>
-              <th
-                key={i}
-                className="p-[1em] font-bold text-[0.875em] border-b"
-                style={{
-                  color: 'var(--foreground)',
-                  borderColor: 'var(--border)'
-                }}>
-                
-                  {h}
-                </th>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {question.tableData?.rows.map((row, i) =>
-            <tr
-              key={i}
-              className="border-b last:border-0"
-              style={{
-                borderColor: 'var(--border)',
-                backgroundColor: 'var(--card)'
-              }}>
-              
-                {row.map((cell, j) =>
-              <td
-                key={j}
-                className="p-[1em] text-[0.875em]"
-                style={{
-                  color: 'var(--muted-foreground)'
-                }}>
-                
-                    {cell}
-                  </td>
-              )}
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div className="rounded-lg border border-border overflow-hidden">
+        <Table className="border-separate border-spacing-0">
+          <TableHeader>
+            <TableRow>
+              {question.tableData?.headers.map((h, i) => (
+                <TableHead key={i} className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg">{h}</TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {question.tableData?.rows.map((row, i) => (
+              <TableRow key={i}>
+                {row.map((cell, j) => (
+                  <TableCell key={j} className="px-3 py-2.5">{cell}</TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
       <RadioMCQRenderer
         question={question}
@@ -958,9 +889,9 @@ export function EssayRenderer({
         style={{
           backgroundColor: 'var(--muted)',
           borderColor: 'var(--border)',
-          color: 'var(--muted-foreground)'
+          color: 'var(--foreground)'
         }}>
-        
+
           <strong>Prompt:</strong> {question.essayPrompt}
         </div>
       }
@@ -979,21 +910,22 @@ export function EssayRenderer({
         />
         
         {isSupported &&
-        <button
+        <DSButton
+          variant="ghost"
+          size="icon-sm"
           onClick={isListening ? stopListening : startListening}
-          className={`absolute bottom-4 right-4 p-3 rounded-full transition-all flex items-center justify-center ${isListening ? 'mic-pulse-ring' : ''}`}
+          className={`absolute bottom-4 right-4 rounded-full transition-all ${isListening ? 'mic-pulse-ring' : ''}`}
           style={{
-            backgroundColor: isListening ?
-            'var(--exam-accent-light)' :
-            'var(--card)',
+            backgroundColor: isListening ? 'var(--exam-accent-light)' : 'var(--card)',
             color: isListening ? 'var(--exam-accent)' : 'var(--muted-foreground)',
-            border: `1px solid ${isListening ? 'var(--exam-accent-border)' : 'var(--border)'}`
+            border: `1px solid ${isListening ? 'var(--exam-accent-border)' : 'var(--border)'}`,
+            width: '2.75rem',
+            height: '2.75rem',
           }}
           aria-label={isListening ? 'Stop dictation' : 'Start dictation'}
-          title={isListening ? 'Stop dictation' : 'Start dictation'}>
-          
-            <i className="fa-light fa-microphone" aria-hidden="true" style={{ fontSize: 20 }} />
-          </button>
+        >
+          <i className="fa-light fa-microphone" aria-hidden="true" style={{ fontSize: 20 }} />
+        </DSButton>
         }
       </div>
       <div
@@ -1048,22 +980,32 @@ export function WordHighlightRenderer({
       }}>
       
       <p
-        className="text-[0.65em] mb-3"
+        className="text-xs mb-3"
         style={{
           color: 'var(--muted-foreground)'
         }}>
-        
+
         Click or drag across words to highlight
       </p>
       {words.map((word, idx) => {
         const isHighlighted = selectedSet.has(idx);
         return (
           <Fragment key={idx}>
-            <span
+            <DSButton
+              variant="ghost"
+              size="xs"
+              type="button"
               onMouseDown={() => onMouseDown(idx)}
               onMouseEnter={() => onMouseEnter(idx)}
               onMouseUp={onMouseUp}
-              className={`cursor-pointer transition-all inline-block rounded px-0.5 ${isHighlighted ? 'highlight-glow' : ''}`}
+              onClick={(e) => {
+                // Keyboard-activated clicks report detail 0; toggle once so Enter/Space work.
+                if (e.detail === 0) {
+                  onMouseDown(idx);
+                  onMouseUp();
+                }
+              }}
+              className={`inline-block h-auto whitespace-normal text-[1em] font-normal px-0.5 ${isHighlighted ? 'highlight-glow' : ''}`}
               onMouseOver={(e) => {
                 if (!isHighlighted)
                 (e.currentTarget as HTMLElement).style.backgroundColor =
@@ -1073,13 +1015,12 @@ export function WordHighlightRenderer({
                 if (!isHighlighted)
                 (e.currentTarget as HTMLElement).style.backgroundColor = '';
               }}
-              tabIndex={0}
-              role="button"
+              aria-pressed={isHighlighted}
               aria-label={`Word ${idx + 1}: ${word}. Click to highlight or unhighlight.`}
               title="Click to highlight">
-              
+
               {word}
-            </span>{' '}
+            </DSButton>{' '}
           </Fragment>);
 
       })}
@@ -1098,9 +1039,9 @@ export function PassageRenderer({
         style={{
           borderColor: 'var(--border)',
           backgroundColor: 'var(--muted)',
-          color: 'var(--muted-foreground)'
+          color: 'var(--foreground)'
         }}>
-        
+
         {question.passageText}
       </div>
       <RadioMCQRenderer

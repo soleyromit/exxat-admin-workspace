@@ -15,7 +15,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button } from '@exxat/ds/packages/ui/src';
+import { Button, Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@exxatdesignux/ui';
 import { ExamBadge } from '../components/ExamBadge';
 import { questions } from '../data/questions';
 import { MOCK_ASSESSMENTS } from '../data/assessments';
@@ -138,7 +138,7 @@ export function ReviewSession() {
             <p className="text-xs font-semibold leading-tight" style={{ color: t.fg }}>
               Lockdown Review Session
             </p>
-            <p style={{ fontSize: 11, color: t.fgMuted }}>
+            <p style={{ fontSize: 12, color: t.fgMuted }}>
               Copy, screenshot, and right-click are disabled · {exam?.title}
             </p>
           </div>
@@ -160,6 +160,7 @@ export function ReviewSession() {
         className="flex-1 overflow-y-auto"
         style={{ padding: '32px 24px 80px' }}
       >
+        <h1 className="sr-only">Lockdown Review Session — {exam?.title}</h1>
         <div style={{ maxWidth: 780, margin: '0 auto' }}>
           {/* Status badge — neutral, signal carried by icon, not color */}
           <div className="mb-4">
@@ -180,7 +181,7 @@ export function ReviewSession() {
             }}
           >
             <p
-              className="text-xs font-bold uppercase tracking-wider mb-2"
+              className="text-xs font-bold mb-2"
               style={{ color: t.fgMuted }}
             >
               Question {currentIndex + 1}
@@ -220,7 +221,7 @@ export function ReviewSession() {
                 style={{ color: t.fgMuted, fontSize: 18, marginTop: 2 }}
               />
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: t.fgMuted }}>
+                <p className="text-xs font-semibold mb-1.5" style={{ color: t.fgMuted }}>
                   Rationale
                 </p>
                 <p style={{ fontSize: 14, color: t.fg, lineHeight: 1.6 }}>{getRationale(question)}</p>
@@ -311,7 +312,7 @@ function ReviewQuestionBody({
                   width: 22, height: 22, borderRadius: '50%',
                   background: t.muted, color: t.fgMuted,
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 11, fontWeight: 700, flexShrink: 0, marginTop: 1,
+                  fontSize: 12, fontWeight: 700, flexShrink: 0, marginTop: 1,
                 }}>
                   {String.fromCharCode(65 + idx)}
                 </span>
@@ -385,7 +386,7 @@ function ReviewQuestionBody({
             }}>
               {s}
               {isCorrectS && (
-                <span style={{ marginLeft: 10, fontSize: 11, color: t.fgMuted, fontWeight: 600 }}>
+                <span style={{ marginLeft: 10, fontSize: 12, color: t.fgMuted, fontWeight: 600 }}>
                   <i className="fa-light fa-check me-1" aria-hidden="true" />Correct highlight
                 </span>
               )}
@@ -471,25 +472,25 @@ function ReviewQuestionBody({
   // Table: render the table as-is — no answer key in mock
   if (question.type === 'table' && question.tableData) {
     return (
-      <div style={{ overflowX: 'auto', border: `1px solid ${t.border}`, borderRadius: 10 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-          <thead>
-            <tr style={{ background: t.muted }}>
+      <div className="rounded-lg border border-border overflow-hidden">
+        <Table className="border-separate border-spacing-0">
+          <TableHeader>
+            <TableRow>
               {question.tableData.headers.map((h, i) => (
-                <th key={i} style={{ padding: '10px 14px', textAlign: 'left', color: t.fg, fontWeight: 600, borderBottom: `1px solid ${t.border}` }}>{h}</th>
+                <TableHead key={i} className="h-9 px-3 text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg">{h}</TableHead>
               ))}
-            </tr>
-          </thead>
-          <tbody>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {question.tableData.rows.map((row, r) => (
-              <tr key={r}>
+              <TableRow key={r}>
                 {row.map((cell, c) => (
-                  <td key={c} style={{ padding: '10px 14px', color: t.fg, borderBottom: `1px solid ${t.border}` }}>{cell}</td>
+                  <TableCell key={c} className="px-3 py-2.5">{cell}</TableCell>
                 ))}
-              </tr>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     );
   }

@@ -9,9 +9,8 @@
  *   - Three-tier architecture: assessment → course → program (program deferred 2027)
  */
 
-import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button } from '@exxat/ds/packages/ui/src';
+import { Button, Tabs, TabsList, TabsTrigger, TabsContent } from '@exxatdesignux/ui';
 import { ExamBadge } from '../components/ExamBadge';
 import { MOCK_ASSESSMENTS, ContentArea } from '../data/assessments';
 
@@ -21,8 +20,8 @@ const t = {
   muted: 'var(--muted)',
   brand: 'var(--brand-color)',
   brandDark: 'var(--brand-color-dark)',
-  brandSurface: 'var(--brand-color-light, #F5F3FF)',
-  brandBorder: 'var(--brand-tint, #EDE9FE)',
+  brandSurface: 'var(--brand-tint)',
+  brandBorder: 'var(--brand-tint)',
   fg: 'var(--foreground)',
   fgMuted: 'var(--muted-foreground)',
   border: 'var(--border)',
@@ -104,8 +103,6 @@ function ContentAreaBar({ ca, maxScore = 100 }: { ca: ContentArea; maxScore?: nu
 export function ExamResults() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'overview' | 'by-area'>('overview');
-
   // Default to the published results exam for demo
   const exam = MOCK_ASSESSMENTS.find(a => a.id === id)
     ?? MOCK_ASSESSMENTS.find(a => a.status === 'results_published')!;
@@ -115,12 +112,6 @@ export function ExamResults() {
   const passing = exam?.passingScore ?? 75;
   const passed = score >= passing;
   const hasReview = exam?.status === 'review_available' || Boolean(exam?.reviewSessionStart);
-
-  const tabs = ['overview', 'by-area'] as const;
-  const tabLabels: Record<typeof tabs[number], string> = {
-    overview: 'Overview',
-    'by-area': 'Content Area Breakdown',
-  };
 
   return (
     <div style={{ background: t.bg, fontFamily: 'Inter, system-ui, sans-serif', minHeight: '100%' }}>
@@ -152,7 +143,7 @@ export function ExamResults() {
                     background: t.muted, borderRadius: 10, padding: '10px 12px', textAlign: 'center',
                   }}>
                     <p style={{ fontSize: 20, fontWeight: 700, color: t.fg }}>{item.value}</p>
-                    <p style={{ fontSize: 11, color: t.fgMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.3 }}>{item.label}</p>
+                    <p style={{ fontSize: 12, color: t.fgMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.3 }}>{item.label}</p>
                   </div>
                 ))}
               </div>
@@ -176,7 +167,7 @@ export function ExamResults() {
                 <i className="fa-light fa-calendar-check" aria-hidden="true" />
                 Enter review
                 {exam?.reviewSessionEnd && (
-                  <span style={{ fontSize: 11, opacity: 0.8, fontWeight: 400 }}>
+                  <span style={{ fontSize: 12, opacity: 0.8, fontWeight: 400 }}>
                     · closes {exam.reviewSessionEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </span>
                 )}
@@ -197,126 +188,117 @@ export function ExamResults() {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div style={{
-          display: 'flex', borderBottom: `1px solid ${t.border}`, marginBottom: 24, gap: 0,
-        }} role="tablist">
-          {tabs.map(tab => (
-            <Button
-              key={tab}
-              variant="ghost"
-              role="tab"
-              aria-selected={activeTab === tab}
-              onClick={() => setActiveTab(tab)}
-              className="rounded-none px-5 py-2.5 h-auto -mb-px text-sm"
-              style={{
-                borderBottom: activeTab === tab ? `2px solid ${t.fg}` : '2px solid transparent',
-                color: activeTab === tab ? t.fg : t.fgMuted,
-                fontWeight: activeTab === tab ? 600 : 500,
-              }}
-            >
-              {tabLabels[tab]}
-            </Button>
-          ))}
-        </div>
+        <Tabs defaultValue="overview" className="flex flex-col">
+          <TabsList
+            variant="line"
+            className="w-full justify-start border-b border-border h-auto p-0 mb-6"
+          >
+            <TabsTrigger value="overview" className="px-5 py-2.5">
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="by-area" className="px-5 py-2.5">
+              Content Area Breakdown
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Overview tab */}
-        {activeTab === 'overview' && (
-          <div>
-            {/* Stats grid */}
-            <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-              gap: 12, marginBottom: 24,
-            }}>
-              {[
-                { icon: 'fa-check-circle',  label: 'Correct',   value: `${Math.round(score / 100 * (exam?.questionCount ?? 50))}` },
-                { icon: 'fa-times-circle',  label: 'Incorrect', value: `${Math.round((100 - score) / 100 * (exam?.questionCount ?? 50))}` },
-                { icon: 'fa-flag',          label: 'Flagged',   value: '3' },
-                { icon: 'fa-message-lines', label: 'Comments',  value: exam?.allowComments ? '2' : '—' },
-              ].map(item => (
-                <div key={item.label} style={{
-                  background: t.card, border: `1px solid ${t.border}`,
-                  borderRadius: 12, padding: '16px', textAlign: 'center',
-                }}>
-                  <div style={{
-                    width: 36, height: 36, borderRadius: 10,
-                    background: t.muted, margin: '0 auto 8px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+          {/* Overview tab */}
+          <TabsContent value="overview">
+            <div>
+              {/* Stats grid */}
+              <div style={{
+                display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+                gap: 12, marginBottom: 24,
+              }}>
+                {[
+                  { icon: 'fa-check-circle',  label: 'Correct',   value: `${Math.round(score / 100 * (exam?.questionCount ?? 50))}` },
+                  { icon: 'fa-times-circle',  label: 'Incorrect', value: `${Math.round((100 - score) / 100 * (exam?.questionCount ?? 50))}` },
+                  { icon: 'fa-flag',          label: 'Flagged',   value: '3' },
+                  { icon: 'fa-message-lines', label: 'Comments',  value: exam?.allowComments ? '2' : '—' },
+                ].map(item => (
+                  <div key={item.label} style={{
+                    background: t.card, border: `1px solid ${t.border}`,
+                    borderRadius: 12, padding: '16px', textAlign: 'center',
                   }}>
-                    <i className={`fa-light ${item.icon}`} aria-hidden="true" style={{ color: t.fgMuted, fontSize: 16 }} />
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 10,
+                      background: t.muted, margin: '0 auto 8px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <i className={`fa-light ${item.icon}`} aria-hidden="true" style={{ color: t.fgMuted, fontSize: 16 }} />
+                    </div>
+                    <p style={{ fontSize: 22, fontWeight: 700, color: t.fg }}>{item.value}</p>
+                    <p style={{ fontSize: 12, color: t.fgMuted, fontWeight: 600 }}>{item.label}</p>
                   </div>
-                  <p style={{ fontSize: 22, fontWeight: 700, color: t.fg }}>{item.value}</p>
-                  <p style={{ fontSize: 12, color: t.fgMuted, fontWeight: 600 }}>{item.label}</p>
+                ))}
+              </div>
+
+              {/* Performance insight — neutral, not red */}
+              <div style={{
+                background: t.muted, border: `1px solid ${t.border}`,
+                borderRadius: 12, padding: '16px 20px',
+                display: 'flex', gap: 12, alignItems: 'flex-start',
+              }}>
+                <i
+                  className={`fa-light ${passed ? 'fa-circle-check' : 'fa-triangle-exclamation'}`}
+                  aria-hidden="true"
+                  style={{ color: t.fgMuted, fontSize: 20, marginTop: 1 }}
+                />
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: t.fg, marginBottom: 4 }}>
+                    {passed ? `Strong performance — you cleared the ${passing}% threshold` : `Score below the ${passing}% passing threshold`}
+                  </p>
+                  <p style={{ fontSize: 13, color: t.fgMuted, lineHeight: 1.6 }}>
+                    {passed
+                      ? `You scored in the ${percentile}th percentile. Review your weakest content area to strengthen that competency before the next assessment.`
+                      : 'Review the content area breakdown below to identify where to focus remediation. Contact your faculty to discuss next steps.'}
+                  </p>
                 </div>
-              ))}
-            </div>
-
-            {/* Performance insight — neutral, not red */}
-            <div style={{
-              background: t.muted, border: `1px solid ${t.border}`,
-              borderRadius: 12, padding: '16px 20px',
-              display: 'flex', gap: 12, alignItems: 'flex-start',
-            }}>
-              <i
-                className={`fa-light ${passed ? 'fa-circle-check' : 'fa-triangle-exclamation'}`}
-                aria-hidden="true"
-                style={{ color: t.fgMuted, fontSize: 20, marginTop: 1 }}
-              />
-              <div>
-                <p style={{ fontSize: 14, fontWeight: 600, color: t.fg, marginBottom: 4 }}>
-                  {passed ? `Strong performance — you cleared the ${passing}% threshold` : `Score below the ${passing}% passing threshold`}
-                </p>
-                <p style={{ fontSize: 13, color: t.fgMuted, lineHeight: 1.6 }}>
-                  {passed
-                    ? `You scored in the ${percentile}th percentile. Review your weakest content area to strengthen that competency before the next assessment.`
-                    : 'Review the content area breakdown below to identify where to focus remediation. Contact your faculty to discuss next steps.'}
-                </p>
               </div>
             </div>
-          </div>
-        )}
+          </TabsContent>
 
-        {/* Content area tab */}
-        {activeTab === 'by-area' && (
-          <div>
-            <div style={{
-              background: t.card, border: `1px solid ${t.border}`,
-              borderRadius: 12, padding: '20px 24px', marginBottom: 20,
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, color: t.fg }}>Performance by Content Area</p>
-                <span style={{ fontSize: 11, color: t.fgMuted }}>
-                  Marker shows the {passing}% passing threshold
-                </span>
+          {/* Content area tab */}
+          <TabsContent value="by-area">
+            <div>
+              <div style={{
+                background: t.card, border: `1px solid ${t.border}`,
+                borderRadius: 12, padding: '20px 24px', marginBottom: 20,
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: t.fg }}>Performance by Content Area</p>
+                  <span style={{ fontSize: 12, color: t.fgMuted }}>
+                    Marker shows the {passing}% passing threshold
+                  </span>
+                </div>
+
+                {exam?.contentAreas.filter(ca => ca.score !== undefined).map(ca => (
+                  <ContentAreaBar key={ca.id} ca={ca} />
+                ))}
+
+                {exam?.contentAreas.every(ca => ca.score === undefined) && (
+                  <p style={{ fontSize: 14, color: t.fgMuted, textAlign: 'center', padding: '20px 0' }}>
+                    Content area breakdown not available for this assessment.
+                  </p>
+                )}
               </div>
 
-              {exam?.contentAreas.filter(ca => ca.score !== undefined).map(ca => (
-                <ContentAreaBar key={ca.id} ca={ca} />
-              ))}
-
-              {exam?.contentAreas.every(ca => ca.score === undefined) && (
-                <p style={{ fontSize: 14, color: t.fgMuted, textAlign: 'center', padding: '20px 0' }}>
-                  Content area breakdown not available for this assessment.
-                </p>
-              )}
-            </div>
-
-            {/* Competency link — neutral, low-emphasis */}
-            <div style={{
-              background: t.muted, border: `1px solid ${t.border}`,
-              borderRadius: 12, padding: '16px 20px',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-            }}>
-              <div>
-                <p style={{ fontSize: 14, fontWeight: 600, color: t.fg }}>See how this maps to your course competencies</p>
-                <p style={{ fontSize: 13, color: t.fgMuted }}>View aggregated performance across all {exam?.courseName} assessments</p>
+              {/* Competency link — neutral, low-emphasis */}
+              <div style={{
+                background: t.muted, border: `1px solid ${t.border}`,
+                borderRadius: 12, padding: '16px 20px',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+              }}>
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: t.fg }}>See how this maps to your course competencies</p>
+                  <p style={{ fontSize: 13, color: t.fgMuted }}>View aggregated performance across all {exam?.courseName} assessments</p>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => navigate('/competency')} className="whitespace-nowrap">
+                  Course Dashboard <i className="fa-light fa-arrow-right" aria-hidden="true" />
+                </Button>
               </div>
-              <Button size="sm" variant="outline" onClick={() => navigate('/competency')} className="whitespace-nowrap">
-                Course Dashboard <i className="fa-light fa-arrow-right" aria-hidden="true" />
-              </Button>
             </div>
-          </div>
-        )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

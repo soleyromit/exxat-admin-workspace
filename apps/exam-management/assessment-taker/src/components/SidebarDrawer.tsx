@@ -1,304 +1,218 @@
-import React, { useEffect, useRef } from 'react';
-import { tokens } from '../tokens/design-tokens';
+import React, { useEffect } from 'react';
 import { Question } from '../data/questions';
-import { Button as DSButton } from '@exxat/ds/packages/ui/src';
+import { ExamSection } from '../data/assessments';
+import { Button as DSButton } from '@exxatdesignux/ui';
+
 export interface SidebarDrawerProps {
-  isOpen: boolean;
   onClose: () => void;
-  showQuestionNavInHamburger?: boolean;
   questions: Question[];
   currentIndex: number;
+  highestReachedIndex: number;
   answeredSet: Set<number>;
   flaggedSet: Set<number>;
+  sections?: ExamSection[];
   onNavigate: (index: number) => void;
+  style?: React.CSSProperties;
 }
+
 export function SidebarDrawer({
-  isOpen,
   onClose,
   questions,
   currentIndex,
+  highestReachedIndex,
   answeredSet,
   flaggedSet,
-  onNavigate
+  sections,
+  onNavigate,
+  style,
 }: SidebarDrawerProps) {
-  const drawerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    if (isOpen) {
-      document.addEventListener('keydown', handler);
-      drawerRef.current?.focus();
-    }
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [isOpen, onClose]);
-  if (!isOpen) return null;
-  return (
-    <div className="fixed inset-0 z-[100] flex">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 transition-opacity"
-        style={{
-          backgroundColor: tokens.surface.overlay
-        }}
-        onClick={onClose}
-        aria-hidden="true" />
-      
+  }, [onClose]);
 
-      {/* Drawer */}
-      <div
-        ref={drawerRef}
-        tabIndex={-1}
-        className="relative w-full max-w-sm h-full shadow-2xl flex flex-col animate-slide-in-left outline-none transition-colors"
-        style={{
-          backgroundColor: 'var(--card)'
-        }}
-        role="dialog"
-        aria-label="Exam Information">
-        
-        <div
-          className="flex items-center justify-between p-5 border-b"
-          style={{
-            borderColor: 'var(--border)'
-          }}>
-          
-          <div className="flex items-center gap-3">
-            <img
-              src="/exxat_header_logo.svg"
-              alt="Exxat"
-              className="h-6" />
-            
-            <div
-              className="w-px h-5"
-              style={{
-                backgroundColor: tokens.border.default
-              }} />
-            
-            <span
-              className="font-semibold text-xs px-2 py-0.5 rounded-full"
-              style={{
-                color: 'var(--exam-accent)',
-                backgroundColor: 'var(--exam-accent-light)',
-                border: '1px solid var(--exam-accent-border)'
-              }}>
-              
-              Attempt #1
-            </span>
-          </div>
-          <DSButton variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close sidebar">
-            <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 18 }} />
-          </DSButton>
-        </div>
+  const bookmarkedIndices = questions.map((_, i) => i).filter(i => flaggedSet.has(i));
+  const bookmarkedIdxSet = new Set(bookmarkedIndices);
+  const otherIndices = questions.map((_, i) => i).filter(i => !bookmarkedIdxSet.has(i));
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-8">
-          <div>
-            <h2
-              className="font-bold text-xl mb-1"
-              style={{
-                color: 'var(--foreground)'
-              }}>
-              
-              Introduction to Pathology
-            </h2>
-            <p
-              className="text-sm"
-              style={{
-                color: 'var(--muted-foreground)'
-              }}>
-              
-              Midterm Examination • Fall 2026
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <StatCard
-              icon={<i className="fa-light fa-file-lines" aria-hidden="true" style={{ fontSize: 16 }} />}
-              label="Questions"
-              value={`${questions.length} Total`}
-              color="var(--exam-accent)"
-              bg="var(--exam-accent-light)" />
-
-            <StatCard
-              icon={<i className="fa-light fa-clock" aria-hidden="true" style={{ fontSize: 16 }} />}
-              label="Time Limit"
-              value="60 Mins"
-              color="var(--state-warning-text)"
-              bg="var(--state-warning-bg)" />
-
-            <StatCard
-              icon={<i className="fa-light fa-circle-check" aria-hidden="true" style={{ fontSize: 16 }} />}
-              label="Passing"
-              value="70%"
-              color="var(--state-success-text)"
-              bg="var(--state-success-bg)" />
-
-            <StatCard
-              icon={<i className="fa-light fa-bolt" aria-hidden="true" style={{ fontSize: 16 }} />}
-              label="Difficulty"
-              value="Medium"
-              color="var(--state-info-text)"
-              bg="var(--state-info-bg)" />
-            
-          </div>
-
-          <div>
-            <h3
-              className="font-bold text-xs uppercase tracking-wider mb-3"
-              style={{
-                color: 'var(--foreground)'
-              }}>
-              
-              Instructions
-            </h3>
-            <div
-              className="rounded-lg p-4"
-              style={{
-                backgroundColor: 'var(--exam-accent-light)',
-                border: '1px solid var(--exam-accent-border)'
-              }}>
-              
-              <ul className="space-y-2">
-                <InstructionItem text="Read each question carefully before attempting." />
-                <InstructionItem text="You can flag questions for review and return to them later." />
-                <InstructionItem text="Use keyboard shortcuts A-D to quickly select answers." />
-                <InstructionItem text="Required questions are marked with a red indicator." />
-              </ul>
-            </div>
-          </div>
-
-          {/* Question Navigator — always shown */}
-          <div>
-            <h3
-              className="font-bold text-xs uppercase tracking-wider mb-3"
-              style={{
-                color: 'var(--foreground)'
-              }}>
-              
-              Question Navigator
-            </h3>
-            <div className="grid grid-cols-5 gap-2">
-              {questions.map((q, i) => {
-                const isCurrent = i === currentIndex;
-                const isAnswered = answeredSet.has(i);
-                const isFlagged = flaggedSet.has(i);
-                let bg = 'var(--card)';
-                let border = 'var(--border)';
-                let color = 'var(--muted-foreground)';
-                if (isCurrent) {
-                  bg = 'var(--exam-accent)';
-                  border = 'var(--exam-accent)';
-                  color = 'var(--primary-foreground)';
-                } else if (isFlagged) {
-                  bg = 'var(--state-flagged-bg)';
-                  border = 'var(--state-flagged-border)';
-                  color = 'var(--state-flagged-text)';
-                } else if (isAnswered) {
-                  bg = 'var(--state-answered-bg)';
-                  border = 'var(--state-answered-border)';
-                  color = 'var(--state-answered-text)';
-                }
-                return (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      onNavigate(i);
-                      onClose();
-                    }}
-                    className="h-10 rounded-lg font-semibold text-sm transition-all hover:opacity-80 exam-focus relative flex items-center justify-center"
-                    style={{
-                      backgroundColor: bg,
-                      border: `1px solid ${border}`,
-                      color
-                    }}>
-                    
-                    {i + 1}
-                    {q.required && !isAnswered && !isCurrent &&
-                    <span
-                      className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2"
-                      style={{
-                        backgroundColor: 'var(--semantic-error-dot)',
-                        borderColor: 'var(--card)'
-                      }} />
-
-                    }
-                  </button>);
-
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>);
-
-}
-function StatCard({
-  icon,
-  label,
-  value,
-  color,
-  bg
-
-
-
-
-
-
-}: {icon: React.ReactNode;label: string;value: string;color: string;bg: string;}) {
   return (
     <div
-      className="p-3 rounded-xl border"
-      style={{
-        borderColor: 'var(--border)',
-        backgroundColor: 'var(--card)'
-      }}>
-      
-      <div className="flex items-center gap-2 mb-1">
-        <div
-          className="w-6 h-6 rounded-md flex items-center justify-center"
-          style={{
-            backgroundColor: bg,
-            color
-          }}>
-          
-          {icon}
-        </div>
-        <span
-          className="text-xs font-medium"
-          style={{
-            color: 'var(--muted-foreground)'
-          }}>
-          
-          {label}
+      role="complementary"
+      aria-label="Question navigator"
+      className="animate-slide-in-right w-60 shrink-0 flex flex-col rounded-2xl border border-border shadow-sm bg-card overflow-hidden"
+      style={style}
+    >
+      {/* Header */}
+      <div className="flex items-center gap-1.5 ps-3.5 pe-2.5 py-3 border-b border-border shrink-0">
+        <span className="text-sm font-bold text-foreground flex-1">Questions</span>
+        <span className="text-[12px] text-muted-foreground font-medium tabular-nums">
+          {answeredSet.size}/{questions.length}
         </span>
+        {flaggedSet.size > 0 && (
+          <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+            · <i className="fa-solid fa-bookmark text-[9px]" aria-hidden="true" />{flaggedSet.size}
+          </span>
+        )}
+        <DSButton
+          variant="ghost"
+          size="icon-sm"
+          onClick={onClose}
+          aria-label="Close question navigator"
+          className="text-muted-foreground shrink-0"
+        >
+          <i className="fa-light fa-xmark text-sm" aria-hidden="true" />
+        </DSButton>
       </div>
-      <p
-        className="font-bold text-sm"
-        style={{
-          color: 'var(--foreground)'
-        }}>
-        
-        {value}
-      </p>
-    </div>);
 
+      {/* Scrollable grid area */}
+      <div tabIndex={0} aria-label="Question navigator" className="flex-1 overflow-y-auto p-3.5 flex flex-col gap-3.5">
+
+        {/* Bookmarked group */}
+        {bookmarkedIndices.length > 0 && (
+          <div>
+            <div className="text-[12px] font-semibold text-muted-foreground mb-2 flex items-center gap-1">
+              <i className="fa-solid fa-bookmark text-[9px]" aria-hidden="true" />
+              Bookmarked
+            </div>
+            <TileGrid>
+              {bookmarkedIndices.map(i => (
+                <Tile
+                  key={i}
+                  index={i}
+                  status={getTileStatus(i, currentIndex, highestReachedIndex, flaggedSet, answeredSet, sections)}
+                  onNavigate={onNavigate}
+                />
+              ))}
+            </TileGrid>
+          </div>
+        )}
+
+        {/* Divider */}
+        {bookmarkedIndices.length > 0 && otherIndices.length > 0 && (
+          <div className="h-px bg-border -my-1" />
+        )}
+
+        {/* All others — answered + unanswered combined */}
+        {otherIndices.length > 0 && (
+          <TileGrid>
+            {otherIndices.map(i => (
+              <Tile
+                key={i}
+                index={i}
+                status={getTileStatus(i, currentIndex, highestReachedIndex, flaggedSet, answeredSet, sections)}
+                onNavigate={onNavigate}
+              />
+            ))}
+          </TileGrid>
+        )}
+      </div>
+
+      {/* Legend */}
+      <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 px-3.5 py-2.5 border-t border-border shrink-0">
+        {([
+          { swatch: 'ring', bg: 'var(--foreground)', label: 'Current' },
+          { swatch: 'filled', bg: 'var(--foreground)', label: 'Answered' },
+          { swatch: 'border', borderColor: 'var(--state-flagged-text)', label: 'Bookmarked' },
+          { swatch: 'border', borderColor: 'var(--muted-foreground)', label: 'Unanswered' },
+        ] as { swatch: 'filled' | 'border' | 'ring'; bg?: string; borderColor?: string; label: string }[]).map(({ swatch, bg, borderColor, label }) => (
+          <div key={label} className="flex items-center gap-1.5">
+            <div
+              className="size-2.5 rounded-sm shrink-0"
+              style={{
+                backgroundColor: swatch === 'filled' || swatch === 'ring' ? bg : 'transparent',
+                border: swatch === 'border' ? `1.5px solid ${borderColor}` : undefined,
+                outline: swatch === 'ring' ? `2px solid ${bg}` : undefined,
+                outlineOffset: swatch === 'ring' ? '2px' : undefined,
+              }}
+            />
+            <span className="text-[12px] text-muted-foreground">{label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
-function InstructionItem({ text }: {text: string;}) {
-  return (
-    <li
-      className="flex items-start gap-2 text-sm"
-      style={{
-        color: 'var(--muted-foreground)'
-      }}>
-      
-      <span
-        className="text-[10px]"
-        style={{
-          color: 'var(--exam-accent)',
-          marginTop: '5px'
-        }}>
-        ●
-      </span>
-      {text}
-    </li>);
 
+type TileStatus = 'current' | 'current-bookmarked' | 'bookmarked' | 'answered' | 'unanswered' | 'locked';
+
+function getTileStatus(
+  index: number,
+  currentIndex: number,
+  highestReachedIndex: number,
+  flaggedSet: Set<number>,
+  answeredSet: Set<number>,
+  sections?: ExamSection[],
+): TileStatus {
+  if (sections?.length) {
+    let cum = 0;
+    let questionSection = 0;
+    let highestSection = 0;
+    for (let i = 0; i < sections.length; i++) {
+      if (index < cum + sections[i].questionCount) questionSection = i;
+      if (highestReachedIndex < cum + sections[i].questionCount) { highestSection = i; break; }
+      cum += sections[i].questionCount;
+    }
+    if (questionSection > highestSection) return 'locked';
+  }
+  const isCurrent = index === currentIndex;
+  const isBookmarked = flaggedSet.has(index);
+  if (isCurrent && isBookmarked) return 'current-bookmarked';
+  if (isCurrent) return 'current';
+  if (isBookmarked) return 'bookmarked';
+  if (answeredSet.has(index)) return 'answered';
+  return 'unanswered';
+}
+
+function TileGrid({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="grid gap-1.5" style={{ gridTemplateColumns: 'repeat(auto-fill, 36px)' }}>
+      {children}
+    </div>
+  );
+}
+
+function Tile({
+  index,
+  status,
+  onNavigate,
+}: {
+  index: number;
+  status: TileStatus;
+  onNavigate: (i: number) => void;
+}) {
+  const isLocked = status === 'locked';
+
+  const isCurrent = status === 'current' || status === 'current-bookmarked';
+
+  const tileColors: React.CSSProperties = (() => {
+    switch (status) {
+      case 'current':
+        return { backgroundColor: 'var(--foreground)', color: 'var(--background)', borderColor: 'transparent' };
+      case 'current-bookmarked':
+        return { backgroundColor: 'var(--foreground)', color: 'var(--background)', borderColor: 'var(--state-flagged-text)' };
+      case 'bookmarked':
+        return { color: 'var(--state-flagged-text)', borderColor: 'var(--state-flagged-text)' };
+      case 'answered':
+        return { backgroundColor: 'var(--foreground)', color: 'var(--background)', borderColor: 'transparent' };
+      case 'locked':
+        return { color: 'var(--muted-foreground)', borderColor: 'var(--border)', opacity: 0.35 };
+      default:
+        return { color: 'var(--foreground)', borderColor: 'var(--border)' };
+    }
+  })();
+
+  return (
+    <DSButton
+      variant="ghost"
+      onClick={() => { if (!isLocked) onNavigate(index); }}
+      disabled={isLocked}
+      aria-label={`Question ${index + 1}`}
+      aria-current={isCurrent ? 'true' : undefined}
+      className={`size-9 rounded-[7px] text-[12px] font-semibold p-0 border [border-width:1.5px] hover:opacity-80 transition-opacity${isCurrent ? ' ring-2 ring-foreground ring-offset-1 ring-offset-background' : ''}`}
+      style={tileColors}
+    >
+      {index + 1}
+    </DSButton>
+  );
 }

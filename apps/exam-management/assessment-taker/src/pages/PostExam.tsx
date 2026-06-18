@@ -10,7 +10,7 @@
 
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { Button } from '@exxat/ds/packages/ui/src';
+import { Button } from '@exxatdesignux/ui';
 import { MOCK_ASSESSMENTS } from '../data/assessments';
 
 const t = {
@@ -19,8 +19,8 @@ const t = {
   muted: 'var(--muted)',
   brand: 'var(--brand-color)',
   brandDark: 'var(--brand-color-dark)',
-  brandSurface: 'var(--brand-color-light, #F5F3FF)',
-  brandBorder: 'var(--brand-tint, #EDE9FE)',
+  brandSurface: 'var(--brand-tint)',
+  brandBorder: 'var(--brand-tint)',
   fg: 'var(--foreground)',
   fgMuted: 'var(--muted-foreground)',
   border: 'var(--border)',
@@ -42,9 +42,13 @@ export function PostExam() {
         return p + 20;
       });
     }, 240);
-    const done = setTimeout(() => setUploadStage('uploaded'), 1500);
+    const done = setTimeout(() => {
+      // Clear saved responses from localStorage after successful "upload"
+      try { localStorage.removeItem(`exam-response-${id ?? 'demo'}`); } catch { /* ignore */ }
+      setUploadStage('uploaded');
+    }, 1500);
     return () => { clearInterval(interval); clearTimeout(done); };
-  }, []);
+  }, [id]);
 
   // For demo: default to the results_pending exam
   const exam = MOCK_ASSESSMENTS.find(a => a.id === id) ?? MOCK_ASSESSMENTS.find(a => a.status === 'results_pending')!;
@@ -67,7 +71,7 @@ export function PostExam() {
           <h1 className="font-heading" style={{ fontSize: 26, fontWeight: 700, color: 'var(--state-success-dark)', marginBottom: 8 }}>
             Uploading your responses…
           </h1>
-          <p style={{ fontSize: 14, color: 'var(--state-success-dark)', marginBottom: 28, opacity: 0.8 }}>
+          <p style={{ fontSize: 14, color: 'var(--state-success-dark)', marginBottom: 28 }}>
             Please do not close this window.
           </p>
           <div style={{ width: '100%', height: 8, borderRadius: 99, background: 'rgba(0,0,0,0.1)' }}>
@@ -78,7 +82,7 @@ export function PostExam() {
               transition: 'width 0.25s ease',
             }} />
           </div>
-          <p style={{ fontSize: 13, color: 'var(--state-success-dark)', marginTop: 12, opacity: 0.7 }}>
+          <p style={{ fontSize: 13, color: 'var(--state-success-dark)', marginTop: 12 }}>
             {uploadProgress}% uploaded
           </p>
         </div>
@@ -130,12 +134,12 @@ export function PostExam() {
                 />
               </div>
               <div>
-                <p style={{ fontSize: 15, fontWeight: 700, color: isPending ? 'var(--state-warning-darkest)' : 'var(--state-success-dark)', marginBottom: 6 }}>
+                <p style={{ fontSize: 15, fontWeight: 700, color: isPending ? 'var(--foreground)' : 'var(--state-success-dark)', marginBottom: 6 }}>
                   {isPending ? 'Results Pending Faculty Review' : 'Results Available Now'}
                 </p>
                 <p style={{ fontSize: 14, color: t.fg, lineHeight: 1.6, marginBottom: isPending ? 12 : 0 }}>
                   {isPending
-                    ? 'Your faculty will review submissions before releasing results — this typically takes 3–4 business days. You will receive a notification when results are published.'
+                    ? 'This is a high-stakes exam. Your faculty will review submissions before releasing results — this typically takes 3–4 business days. You will receive a notification when results are published.'
                     : 'Your results are ready. You can view your score and performance breakdown now.'
                   }
                 </p>
@@ -144,7 +148,7 @@ export function PostExam() {
                     display: 'inline-flex', alignItems: 'center', gap: 6,
                     background: 'var(--state-warning-bg-soft)', border: '1px solid var(--state-warning-border)',
                     borderRadius: 8, padding: '6px 12px',
-                    fontSize: 13, color: 'var(--state-warning-darkest)', fontWeight: 600,
+                    fontSize: 13, color: 'var(--foreground)', fontWeight: 600,
                   }}>
                     <i className="fa-light fa-calendar-check" aria-hidden="true" />
                     Estimated release: {exam.resultsHoldUntil.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
