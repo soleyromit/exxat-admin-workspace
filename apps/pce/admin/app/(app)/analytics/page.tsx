@@ -232,12 +232,6 @@ const courseRankConfig: ChartConfig = {
 const facultyRankConfig: ChartConfig = {
   avg: { label: 'Avg rating', color: 'var(--chart-2)' },
 }
-const compareConfig: ChartConfig = {
-  rating: { label: 'Avg rating', color: 'var(--brand-color)' },
-}
-const courseTrendConfig: ChartConfig = {
-  rating: { label: 'Avg rating', color: 'var(--chart-1)' },
-}
 
 const AxisTick = ({ x, y, payload, textAnchor }: Record<string, any>) => (
   <text x={x} y={y} textAnchor={textAnchor ?? 'middle'} dominantBaseline="central" className="text-xs fill-muted-foreground">
@@ -269,11 +263,12 @@ function AnalyticsInner() {
   )
 
   /* ── By Term ── */
+  // Course Evaluation analytics must exclude programmatic (institutional) surveys.
   const scopedSurveys = useMemo(
     () => axis === 'term'
-      ? surveys.filter(s => s.term === term)
-      : surveys.filter(s => s.cohort === cohort),
-    [surveys, axis, term, cohort],
+      ? ceSurveysLive.filter(s => s.term === term)
+      : ceSurveysLive.filter(s => s.cohort === cohort),
+    [ceSurveysLive, axis, term, cohort],
   )
 
   const termCourseRows = useMemo((): CourseTermRow[] =>
@@ -296,10 +291,10 @@ function AnalyticsInner() {
     const overallPct     = totalEnrolled > 0 ? Math.round((totalResponses / totalEnrolled) * 100) : 0
     const collecting     = termCourseRows.filter(r => r.status === 'collecting' || r.status === 'scheduled').length
     return [
-      { id: 'completion', label: 'Overall completion', value: `${overallPct}%`,         delta: `${termCourseRows.length} courses`,           trend: 'neutral' },
-      { id: 'responses',  label: 'Responses',          value: totalResponses,            delta: `of ${totalEnrolled} enrolled`,               trend: 'neutral' },
-      { id: 'courses',    label: 'Courses',             value: termCourseRows.length,    delta: axis === 'term' ? term : cohort,              trend: 'neutral' },
-      { id: 'collecting', label: 'Collecting',          value: collecting,               delta: 'still open',                                 trend: 'neutral' },
+      { id: 'completion', label: 'Overall completion', value: `${overallPct}%`,         delta: '', trend: 'neutral', description: `${termCourseRows.length} courses` },
+      { id: 'responses',  label: 'Responses',          value: totalResponses,            delta: '', trend: 'neutral', description: `of ${totalEnrolled} enrolled` },
+      { id: 'courses',    label: 'Courses',             value: termCourseRows.length,    delta: '', trend: 'neutral', description: axis === 'term' ? term : cohort },
+      { id: 'collecting', label: 'Collecting',          value: collecting,               delta: '', trend: 'neutral', description: 'still open' },
     ]
   }, [termCourseRows, axis, term, cohort])
 
@@ -393,10 +388,10 @@ function AnalyticsInner() {
   const facultyKpis: MetricItem[] = useMemo(() => {
     if (!selectedFaculty) return []
     return [
-      { id: 'f-courses',    label: 'Courses taught', value: selectedFaculty.coursesCount,                                                    delta: 'across all terms', trend: 'neutral' },
-      { id: 'f-rating',     label: 'Avg rating',     value: selectedFaculty.avgRating > 0 ? `${selectedFaculty.avgRating.toFixed(1)}/5` : '—', delta: 'enrollment-weighted', trend: 'neutral' },
-      { id: 'f-completion', label: 'Avg completion', value: selectedFaculty.avgCompletion > 0 ? `${selectedFaculty.avgCompletion}%` : '—',    delta: 'all offerings',       trend: 'neutral' },
-      { id: 'f-terms',      label: 'Terms active',   value: selectedFaculty.termsCount,                                                      delta: 'term appearances',    trend: 'neutral' },
+      { id: 'f-courses',    label: 'Courses taught', value: selectedFaculty.coursesCount,                                                    delta: '', trend: 'neutral', description: 'across all terms' },
+      { id: 'f-rating',     label: 'Avg rating',     value: selectedFaculty.avgRating > 0 ? `${selectedFaculty.avgRating.toFixed(1)}/5` : '—', delta: '', trend: 'neutral', description: 'enrollment-weighted' },
+      { id: 'f-completion', label: 'Avg completion', value: selectedFaculty.avgCompletion > 0 ? `${selectedFaculty.avgCompletion}%` : '—',    delta: '', trend: 'neutral', description: 'all offerings' },
+      { id: 'f-terms',      label: 'Terms active',   value: selectedFaculty.termsCount,                                                      delta: '', trend: 'neutral', description: 'term appearances' },
     ]
   }, [selectedFaculty])
 
@@ -448,10 +443,10 @@ function AnalyticsInner() {
       ? (sorted[sorted.length - 1].avgRating >= sorted[sorted.length - 2].avgRating ? '↗' : '↘')
       : '—'
     return [
-      { id: 'c-count',      label: 'Times offered',  value: courseOfferings.length,  delta: 'all terms',           trend: 'neutral' },
-      { id: 'c-rating',     label: 'Avg rating',     value: `${avgRating}/5`,        delta: 'enrollment-weighted',  trend: 'neutral' },
-      { id: 'c-completion', label: 'Avg completion', value: `${avgCompletion}%`,     delta: 'all offerings',        trend: 'neutral' },
-      { id: 'c-trend',      label: 'Trend',          value: trendDir,                delta: 'vs prior term',        trend: 'neutral' },
+      { id: 'c-count',      label: 'Times offered',  value: courseOfferings.length,  delta: '', trend: 'neutral', description: 'all terms' },
+      { id: 'c-rating',     label: 'Avg rating',     value: `${avgRating}/5`,        delta: '', trend: 'neutral', description: 'enrollment-weighted' },
+      { id: 'c-completion', label: 'Avg completion', value: `${avgCompletion}%`,     delta: '', trend: 'neutral', description: 'all offerings' },
+      { id: 'c-trend',      label: 'Trend',          value: trendDir,                delta: '', trend: 'neutral', description: 'vs prior term' },
     ]
   }, [courseOfferings])
 
@@ -563,7 +558,8 @@ function AnalyticsInner() {
                   <CardContent>
                     <ChartContainer
                       config={programTrendConfig}
-                      className="h-[168px] w-full"
+                      className="w-full"
+                      style={{ height: 168 }}
                       role="img"
                       aria-label="Program trend: course avg vs faculty avg across historical terms"
                     >
@@ -589,8 +585,8 @@ function AnalyticsInner() {
                           }
                         />
                         <ChartLegend content={<ChartLegendContent />} />
-                        <Line type="monotone" dataKey="courseAvg"  stroke="var(--color-courseAvg)"  strokeWidth={2} dot={{ r: 3, fill: 'var(--color-courseAvg)'  }} activeDot={{ r: 4 }} />
-                        <Line type="monotone" dataKey="facultyAvg" stroke="var(--color-facultyAvg)" strokeWidth={2} dot={{ r: 3, fill: 'var(--color-facultyAvg)' }} activeDot={{ r: 4 }} connectNulls={false} />
+                        <Line type="monotone" dataKey="courseAvg"  stroke="var(--color-courseAvg)"  strokeWidth={2} dot={{ r: 3, fill: 'var(--color-courseAvg)'  }} activeDot={{ r: 4 }} isAnimationActive={false} />
+                        <Line type="monotone" dataKey="facultyAvg" stroke="var(--color-facultyAvg)" strokeWidth={2} dot={{ r: 3, fill: 'var(--color-facultyAvg)' }} activeDot={{ r: 4 }} connectNulls={false} isAnimationActive={false} />
                       </LineChart>
                     </ChartContainer>
                   </CardContent>
@@ -757,43 +753,20 @@ function AnalyticsInner() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <ChartContainer
-                        config={compareConfig}
-                        className="h-[100px] w-full"
-                        role="img"
-                        aria-label={`Rating comparison for ${selectedFaculty.name} vs department and school averages`}
-                      >
-                        <BarChart
-                          layout="vertical"
-                          data={compareData}
-                          margin={{ top: 0, right: 48, bottom: 0, left: 0 }}
-                        >
-                          <XAxis type="number" domain={[0, 5]} hide />
-                          <YAxis
-                            type="category"
-                            dataKey="label"
-                            width={88}
-                            tick={{ fill: 'var(--muted-foreground)' }}
-                            tickLine={false}
-                            axisLine={false}
-                          />
-                          <Bar dataKey="rating" radius={[0, 3, 3, 0]} maxBarSize={16} background={{ fill: 'var(--muted)' }}>
-                            {compareData.map((_, i) => (
-                              <Cell
-                                key={i}
-                                fill={i === compareData.length - 1 ? 'var(--brand-color)' : 'var(--muted-foreground)'}
-                                fillOpacity={i === compareData.length - 1 ? 1 : 0.4}
-                              />
-                            ))}
-                          </Bar>
-                          <ChartTooltip
-                            cursor={false}
-                            content={
-                              <ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, 'Avg rating']} />
-                            }
-                          />
-                        </BarChart>
-                      </ChartContainer>
+                      <div className="flex flex-col gap-3">
+                        {compareData.map((d, i) => {
+                          const isOwn = i === compareData.length - 1
+                          return (
+                            <div key={d.label} className="flex items-center gap-3">
+                              <span className="text-xs w-24 shrink-0 truncate" style={{ color: isOwn ? 'var(--foreground)' : 'var(--muted-foreground)' }}>{d.label}</span>
+                              <div className="flex-1 h-3 rounded-full overflow-hidden" style={{ background: 'var(--muted)' }}>
+                                <div className="h-3 rounded-full" style={{ width: `${(d.rating / 5) * 100}%`, background: isOwn ? 'var(--brand-color)' : 'var(--muted-foreground)', opacity: isOwn ? 1 : 0.45 }} />
+                              </div>
+                              <span className="text-sm font-semibold tabular-nums w-10 text-right" style={{ color: isOwn ? 'var(--brand-color)' : 'var(--muted-foreground)' }}>{d.rating.toFixed(1)}<span className="text-muted-foreground font-normal text-xs">/5</span></span>
+                            </div>
+                          )
+                        })}
+                      </div>
                     </CardContent>
                   </Card>
                 )}
@@ -863,43 +836,49 @@ function AnalyticsInner() {
                       <CardDescription>Enrollment-weighted avg rating per term.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <ChartContainer
-                        config={courseTrendConfig}
-                        className="h-[140px] w-full"
-                        role="img"
-                        aria-label={`Rating trend for ${effectiveCourseCode} across terms`}
-                      >
-                        <LineChart data={courseTrendData} margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
-                          <CartesianGrid vertical={false} stroke="var(--border)" />
-                          <XAxis
-                            dataKey="term"
-                            tick={{ fill: 'var(--muted-foreground)' }}
-                            tickLine={false}
-                            axisLine={false}
-                          />
-                          <YAxis
-                            domain={[3.0, 5.0]}
-                            tickFormatter={(v: number) => v.toFixed(1)}
-                            tick={{ fill: 'var(--muted-foreground)' }}
-                            tickLine={false}
-                            axisLine={false}
-                            width={28}
-                          />
-                          <ChartTooltip
-                            content={
-                              <ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, 'Avg rating']} />
-                            }
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="rating"
-                            stroke="var(--color-rating)"
-                            strokeWidth={2}
-                            dot={{ r: 4, fill: 'var(--color-rating)' }}
-                            activeDot={{ r: 5 }}
-                          />
-                        </LineChart>
-                      </ChartContainer>
+                      {/* Inline SVG line — reliable in tabs (recharts ResponsiveContainer
+                          measures 0 height when mounted inside an inactive Radix tab). */}
+                      {(() => {
+                        const data = courseTrendData
+                        const MIN = 3, MAX = 5
+                        const n = data.length
+                        const X = (i: number) => n <= 1 ? 50 : (i / (n - 1)) * 100
+                        const Y = (r: number) => 6 + (1 - (Math.max(MIN, Math.min(MAX, r)) - MIN) / (MAX - MIN)) * 88
+                        const pts = data.map((d, i) => `${X(i)},${Y(d.rating)}`).join(' ')
+                        return (
+                          <div className="flex flex-col" style={{ height: 140 }} role="img" aria-label={`Rating trend for ${effectiveCourseCode}: ${data.map(d => `${d.term} ${d.rating}`).join(', ')}`}>
+                            <div className="flex flex-1 gap-1">
+                              {/* y-axis gutter */}
+                              <div className="relative w-7 shrink-0">
+                                {[5, 4, 3].map(v => (
+                                  <span key={v} className="absolute right-1 text-[10px] text-muted-foreground tabular-nums -translate-y-1/2" style={{ top: `${Y(v)}%` }}>{v.toFixed(1)}</span>
+                                ))}
+                              </div>
+                              {/* plot area — single 0–100% coordinate space for grid, line and dots */}
+                              <div className="relative flex-1">
+                                {[5, 4, 3].map(v => (
+                                  <div key={v} className="absolute inset-x-0 border-t border-border" style={{ top: `${Y(v)}%` }} />
+                                ))}
+                                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                                  <polyline points={pts} fill="none" stroke="var(--brand-color)" strokeWidth={2} vectorEffect="non-scaling-stroke" />
+                                </svg>
+                                {data.map((d, i) => (
+                                  <div key={i} className="absolute size-2 rounded-full -translate-x-1/2 -translate-y-1/2" style={{ left: `${X(i)}%`, top: `${Y(d.rating)}%`, background: 'var(--brand-color)' }} title={`${d.term}: ${d.rating}/5`} />
+                                ))}
+                              </div>
+                            </div>
+                            {/* x-axis labels aligned under the plot area */}
+                            <div className="flex gap-1">
+                              <div className="w-7 shrink-0" />
+                              <div className="flex-1 flex justify-between mt-1">
+                                {data.map((d, i) => (
+                                  <span key={i} className="text-[10px] text-muted-foreground">{d.term}</span>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })()}
                     </CardContent>
                   </Card>
                 )}
