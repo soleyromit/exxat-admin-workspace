@@ -219,7 +219,7 @@ export function DashboardMonitor({
                   <div key={type} className="flex flex-col gap-1.5">
                     <div className="flex items-baseline justify-between text-xs">
                       <span className="capitalize font-medium">{type} <span className="text-muted-foreground font-normal">· {courses} course{courses !== 1 ? 's' : ''}</span></span>
-                      <span className="tabular-nums font-semibold" style={{ color: rate >= RESPONSE_TARGET ? 'var(--chart-2)' : 'var(--chart-4)' }}>{rate}%</span>
+                      <span className="tabular-nums font-semibold" style={{ color: rate >= RESPONSE_TARGET ? 'var(--chart-2)' : 'var(--chip-4)' }}>{rate}%</span>
                     </div>
                     <Bullet value={rate} target={RESPONSE_TARGET} color={rate >= RESPONSE_TARGET ? 'var(--chart-2)' : 'var(--brand-color)'} />
                   </div>
@@ -255,7 +255,7 @@ export function DashboardMonitor({
                       </p>
                       <div className="flex items-center gap-2 mt-1.5 max-w-[280px]">
                         <Bullet value={s.responseRate} target={AT_RISK_THRESHOLD} color="var(--chart-4)" />
-                        <span className="text-xs tabular-nums font-semibold w-9 text-right" style={{ color: 'var(--chart-4)' }}>{s.responseRate}%</span>
+                        <span className="text-xs tabular-nums font-semibold w-9 text-right" style={{ color: 'var(--chip-4)' }}>{s.responseRate}%</span>
                       </div>
                     </div>
                     <div className="text-right shrink-0 hidden sm:block">
