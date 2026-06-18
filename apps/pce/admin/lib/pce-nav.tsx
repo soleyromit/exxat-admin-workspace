@@ -2,6 +2,7 @@
 "use client"
 
 import type * as React from "react"
+import { LeoIcon } from "@/components/ui/leo-icon"
 
 export interface NavLinkItem {
   key: string
@@ -22,6 +23,7 @@ export interface NavSecondaryItem {
   icon: React.ReactNode
   iconActive?: React.ReactNode
   opensCommandMenu?: boolean
+  opensAskLeo?: boolean
 }
 
 export interface NavProgram { id: string; name: string }
@@ -61,6 +63,21 @@ export const NAV_SCHOOL_DEFAULT = NAV_SCHOOLS[0]
 export const NAV_PROGRAM_DEFAULT = NAV_SCHOOLS[0].programs[0]
 
 export const NAV_QUICK_ACTIONS: NavSecondaryItem[] = [
+  {
+    key: "ask-leo",
+    title: "Ask Leo",
+    url: "#",
+    icon: (
+      <LeoIcon
+        variant="ambient"
+        size="sm"
+        sparkleCadence="default"
+        orbitingSparkles={false}
+        className="pointer-events-none overflow-visible"
+      />
+    ),
+    opensAskLeo: true,
+  },
   {
     key: "search",
     title: "Search",

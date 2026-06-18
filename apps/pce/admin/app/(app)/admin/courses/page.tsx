@@ -143,6 +143,19 @@ export default function MasterCoursesPage() {
       ),
     },
     {
+      key: 'analytics', label: '', width: 32,
+      cell: (row) => row.avgRating !== null ? (
+        <Link
+          href={`/analytics/course/${encodeURIComponent(row.code)}?from=directory`}
+          onClick={e => e.stopPropagation()}
+          title="View analytics"
+          aria-label={`View analytics for ${row.code}`}
+        >
+          <i className="fa-light fa-chart-mixed text-xs" style={{ color: 'var(--brand-color)' }} aria-hidden="true" />
+        </Link>
+      ) : null,
+    },
+    {
       key: 'prism', label: '', width: 36,
       cell: () => (
         <i className="fa-light fa-arrow-up-right-from-square text-xs text-muted-foreground" aria-hidden="true" />
@@ -152,34 +165,10 @@ export default function MasterCoursesPage() {
 
   return (
     <>
-      <SiteHeader title="Master Courses" breadcrumbs={[{ label: 'Directory', href: '/admin' }]} />
+      <SiteHeader title="Courses" breadcrumbs={[{ label: 'Directory', href: '/admin' }]} />
       <PageHeader
-        title="Master Courses"
+        title="Courses"
         subtitle={`${activeCount} active · ${MOCK_MASTER_COURSES.length} total`}
-        actions={
-          <div className="flex items-center gap-2 flex-wrap">
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="h-8 w-36 text-sm" aria-label="Filter by type">
-                <SelectValue placeholder="All types" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All types</SelectItem>
-                <SelectItem value="didactic">Didactic</SelectItem>
-                <SelectItem value="clinical">Clinical</SelectItem>
-                <SelectItem value="seminar">Seminar</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-              <SelectTrigger className="h-8 w-52 text-sm" aria-label="Filter by department">
-                <SelectValue placeholder="All departments" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All departments</SelectItem>
-                {DEPARTMENTS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-        }
       />
 
       <div className="shrink-0 [&_*]:!border-e-0 px-4 lg:px-6" style={{ paddingBlock: 4 }}>
@@ -206,7 +195,30 @@ export default function MasterCoursesPage() {
                 </p>
               </div>
             }
-            toolbarSlot={() => null}
+            toolbarSlot={() => (
+              <>
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger className="h-8 w-36 text-sm" aria-label="Filter by type">
+                    <SelectValue placeholder="All types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All types</SelectItem>
+                    <SelectItem value="didactic">Didactic</SelectItem>
+                    <SelectItem value="clinical">Clinical</SelectItem>
+                    <SelectItem value="seminar">Seminar</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                  <SelectTrigger className="h-8 w-52 text-sm" aria-label="Filter by department">
+                    <SelectValue placeholder="All departments" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All departments</SelectItem>
+                    {DEPARTMENTS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </>
+            )}
           />
 
         </div>

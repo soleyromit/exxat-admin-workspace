@@ -52,6 +52,7 @@ import { Kbd, KbdGroup } from "@/components/ui/kbd"
 import { useModKeyLabel } from "@/hooks/use-mod-key-label"
 import { ExxatProductLogo } from "@/components/exxat-product-logo"
 import { NavUser } from "@/components/sidebar/nav-user"
+import { useAskLeo } from "@/components/ask-leo-sidebar"
 import { motionHeaderEnter } from "@/lib/motion-ui"
 import {
   NAV_ADMIN,
@@ -175,6 +176,7 @@ function TeamSwitcher() {
 
 function QuickActionItems({ items }: { items: NavSecondaryItem[] }) {
   const mod = useModKeyLabel()
+  const { setOpen: setAskLeoOpen } = useAskLeo()
 
   return (
     <>
@@ -183,6 +185,7 @@ function QuickActionItems({ items }: { items: NavSecondaryItem[] }) {
           <SidebarMenuButton
             onClick={() => {
               if (item.opensCommandMenu) requestOpenCommandMenu()
+              if (item.opensAskLeo) setAskLeoOpen(true)
             }}
             tooltip={item.title}
           >
@@ -191,6 +194,13 @@ function QuickActionItems({ items }: { items: NavSecondaryItem[] }) {
             {item.opensCommandMenu && (
               <KbdGroup className="ms-auto group-data-collapsible-icon:hidden">
                 <Kbd>{mod}</Kbd>
+                <Kbd>K</Kbd>
+              </KbdGroup>
+            )}
+            {item.opensAskLeo && (
+              <KbdGroup className="ms-auto group-data-collapsible-icon:hidden">
+                <Kbd>{mod}</Kbd>
+                <Kbd>⌥</Kbd>
                 <Kbd>K</Kbd>
               </KbdGroup>
             )}
@@ -243,7 +253,7 @@ function CollapsibleNavItem({ item, pathname, allNavUrls }: { item: NavLinkItem;
           <Tooltip>
             <TooltipTrigger asChild>
               <PopoverTrigger asChild>
-                <SidebarMenuButton isActive={isAnyChildActive}>
+                <SidebarMenuButton isActive={isAnyChildActive} aria-label={item.title}>
                   <span className="size-4 shrink-0 flex items-center justify-center" aria-hidden="true">
                     {triggerIcon}
                   </span>

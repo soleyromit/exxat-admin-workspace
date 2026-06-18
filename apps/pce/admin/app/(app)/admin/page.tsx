@@ -33,7 +33,7 @@ interface EntityTile {
 
 const ENTITIES: EntityTile[] = [
   // Available now
-  { key: 'courses', title: 'Master Courses', icon: 'fa-book',
+  { key: 'courses', title: 'Courses', icon: 'fa-book',
     description: 'Catalog of every course the program offers.',
     href: '/admin/courses', status: 'available', metric: `${MOCK_MASTER_COURSES.length} courses` },
 
