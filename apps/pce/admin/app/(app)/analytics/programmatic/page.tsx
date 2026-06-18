@@ -24,13 +24,6 @@ function surveyTypeName(name: string): string {
   return 'General'
 }
 
-function surveyTypeShort(name: string): string {
-  if (name.includes('Alumni'))    return 'Alumni'
-  if (name.includes('Preceptor')) return 'Preceptor'
-  if (name.includes('Exit'))      return 'Exit'
-  return 'General'
-}
-
 function StatusLabel({ status }: { status: string }) {
   if (status === 'collecting') return <span className="text-xs font-medium" style={{ color: 'var(--brand-color)' }}>Collecting</span>
   if (status === 'released')   return <span className="text-xs font-medium" style={{ color: 'var(--chart-2)' }}>Released</span>
@@ -135,21 +128,22 @@ export default function ProgrammaticAnalyticsPage() {
     const overallRate    = totalSent > 0 ? Math.round((totalResponses / totalSent) * 100) : 0
     const active         = progSurveys.filter(s => s.status === 'collecting').length
     return [
-      { id: 'rate',      label: 'Response rate',   value: `${overallRate}%`,  delta: `${totalSent} invited`,   trend: 'neutral' },
-      { id: 'responses', label: 'Total responses', value: totalResponses,     delta: 'across all surveys',     trend: 'neutral' },
-      { id: 'active',    label: 'Collecting',      value: active,             delta: 'currently open',         trend: 'neutral' },
-      { id: 'surveys',   label: 'Surveys',         value: progSurveys.length, delta: 'this period',            trend: 'neutral' },
+      { id: 'rate',      label: 'Response rate',   value: `${overallRate}%`,  delta: '', trend: 'neutral', description: `${totalSent} invited` },
+      { id: 'responses', label: 'Total responses', value: totalResponses,     delta: '', trend: 'neutral', description: 'across all surveys' },
+      { id: 'active',    label: 'Collecting',      value: active,             delta: '', trend: 'neutral', description: 'currently open' },
+      { id: 'surveys',   label: 'Surveys',         value: progSurveys.length, delta: '', trend: 'neutral', description: 'this period' },
     ]
   }, [progSurveys])
 
-  /* Only show surveys with actual response data in the rate bar chart. */
+  /* Only show surveys with actual response data in the rate bar chart, ranked. */
   const rateData = useMemo(
     () => progSurveys
       .filter(s => s.responseRate > 0)
       .map(s => ({
-        name: surveyTypeShort(s.courseCode),
+        name: s.courseCode.split('—')[0].trim(),
         rate: s.responseRate,
-      })),
+      }))
+      .sort((a, b) => b.rate - a.rate),
     [progSurveys],
   )
 
@@ -196,31 +190,37 @@ export default function ProgrammaticAnalyticsPage() {
                 {rateData.length > 0 ? (
                   <ChartContainer
                     config={rateConfig}
-                    className="h-[100px] w-full"
+                    className="w-full"
+                    style={{ height: 176 }}
                     role="img"
-                    aria-label="Response rate by survey type, Spring 2026"
+                    aria-label="Response rate by survey, Spring 2026"
                   >
                     <BarChart
                       layout="vertical"
                       data={rateData}
-                      margin={{ top: 0, right: 8, bottom: 0, left: 0 }}
+                      margin={{ top: 0, right: 40, bottom: 0, left: 0 }}
                     >
                       <XAxis type="number" domain={[0, 100]} hide />
                       <YAxis
                         type="category"
                         dataKey="name"
-                        width={76}
-                        tick={{ fill: 'var(--muted-foreground)' }}
+                        width={132}
+                        tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
                         tickLine={false}
                         axisLine={false}
                       />
                       <Bar
                         dataKey="rate"
-                        fill="var(--color-rate)"
                         radius={[0, 3, 3, 0]}
-                        maxBarSize={18}
-                        background={{ fill: 'var(--muted)' }}
-                      />
+                        maxBarSize={16}
+                        background={{ fill: 'var(--muted)', radius: 3 }}
+                        isAnimationActive={false}
+                        label={{ position: 'right', formatter: (v: number) => `${v}%`, fontSize: 11, fill: 'var(--muted-foreground)' }}
+                      >
+                        {rateData.map((d, i) => (
+                          <Cell key={i} fill={d.rate >= 80 ? 'var(--chart-2)' : d.rate >= 60 ? 'var(--brand-color)' : 'var(--chart-4)'} />
+                        ))}
+                      </Bar>
                       <ChartTooltip
                         cursor={false}
                         content={
@@ -248,13 +248,14 @@ export default function ProgrammaticAnalyticsPage() {
               <CardContent>
                 <ChartContainer
                   config={trendConfig}
-                  className="h-[100px] w-full"
+                  className="w-full"
+                  style={{ height: 176 }}
                   role="img"
                   aria-label="Response rate trend across last 4 terms"
                 >
                   <LineChart
                     data={PROG_TREND}
-                    margin={{ top: 4, right: 8, bottom: 0, left: 0 }}
+                    margin={{ top: 8, right: 12, bottom: 0, left: 0 }}
                   >
                     <CartesianGrid vertical={false} stroke="var(--border)" />
                     <XAxis
@@ -279,9 +280,9 @@ export default function ProgrammaticAnalyticsPage() {
                       }
                     />
                     <ChartLegend content={<ChartLegendContent />} />
-                    <Line type="monotone" dataKey="alumni"    stroke="var(--color-alumni)"    strokeWidth={2} dot={{ r: 3, fill: 'var(--color-alumni)'    }} activeDot={{ r: 4 }} connectNulls={false} />
-                    <Line type="monotone" dataKey="preceptor" stroke="var(--color-preceptor)" strokeWidth={2} dot={{ r: 3, fill: 'var(--color-preceptor)' }} activeDot={{ r: 4 }} connectNulls={false} />
-                    <Line type="monotone" dataKey="exit"      stroke="var(--color-exit)"      strokeWidth={2} dot={{ r: 3, fill: 'var(--color-exit)'      }} activeDot={{ r: 4 }} connectNulls={false} />
+                    <Line type="monotone" dataKey="alumni"    stroke="var(--color-alumni)"    strokeWidth={2} dot={{ r: 3, fill: 'var(--color-alumni)'    }} activeDot={{ r: 4 }} connectNulls={false} isAnimationActive={false} />
+                    <Line type="monotone" dataKey="preceptor" stroke="var(--color-preceptor)" strokeWidth={2} dot={{ r: 3, fill: 'var(--color-preceptor)' }} activeDot={{ r: 4 }} connectNulls={false} isAnimationActive={false} />
+                    <Line type="monotone" dataKey="exit"      stroke="var(--color-exit)"      strokeWidth={2} dot={{ r: 3, fill: 'var(--color-exit)'      }} activeDot={{ r: 4 }} connectNulls={false} isAnimationActive={false} />
                   </LineChart>
                 </ChartContainer>
               </CardContent>
@@ -325,7 +326,7 @@ export default function ProgrammaticAnalyticsPage() {
                         tickLine={false}
                         axisLine={false}
                       />
-                      <Bar dataKey="avg" radius={[0, 3, 3, 0]} maxBarSize={18} background={{ fill: 'var(--muted)' }}>
+                      <Bar dataKey="avg" radius={[0, 3, 3, 0]} maxBarSize={18} background={{ fill: 'var(--muted)' }} isAnimationActive={false}>
                         {scores.map((q) => (
                           <Cell
                             key={q.questionId}
