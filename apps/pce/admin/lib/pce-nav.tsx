@@ -77,7 +77,7 @@ export const NAV_QUICK_ACTIONS: NavSecondaryItem[] = [
           size="sm"
           sparkleCadence="default"
           orbitingSparkles={false}
-          className="pointer-events-none absolute scale-50 overflow-visible"
+          className="pointer-events-none absolute scale-[0.6] overflow-visible"
         />
       </span>
     ),
