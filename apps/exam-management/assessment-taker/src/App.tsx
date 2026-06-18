@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { TooltipProvider } from '@exxatdesignux/ui';
-import { Button } from './components/Button';
+import { Button, Separator, TooltipProvider } from '@exxatdesignux/ui';
 import { questions } from './data/questions';
 import { MOCK_ASSESSMENTS, ExamSection } from './data/assessments';
 import { useTimer } from './hooks/useTimer';
@@ -78,26 +77,47 @@ function SectionStartScreen({
   return (
     <div
       role="dialog"
-      aria-labelledby="section-start-title"
-      style={{
-        position: 'fixed', inset: 0, zIndex: 30,
-        background: 'var(--background)', display: 'flex',
-        flexDirection: 'column', justifyContent: 'safe center', alignItems: 'center',
-        // Top padding clears the fixed ExamToolbar (h-14 + 4px progress, z-40)
-        // so long instructions never scroll the section title behind the header.
-        padding: '76px 24px 40px', overflowY: 'auto',
+      aria-labelledby="section-num-label section-start-title"
+      aria-describedby={section.instructions ? 'section-start-desc' : undefined}
+      className="fixed inset-0 z-30 bg-background flex flex-col overflow-hidden"
+      onKeyDown={(e) => {
+        // Non-dismissible gate: Escape redirects focus to the only action rather
+        // than silently swallowing the key, satisfying the ARIA dialog Escape contract.
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          beginRef.current?.focus();
+          return;
+        }
+        // Focus trap: Tab cycles within the overlay; prevents focus reaching
+        // background content that is inert but still in the accessibility tree
+        // for browsers with incomplete inert support.
+        if (e.key === 'Tab') {
+          const focusables = Array.from(
+            e.currentTarget.querySelectorAll<HTMLElement>(
+              'button:not([disabled]),[href],input:not([disabled]),[tabindex]:not([tabindex="-1"])'
+            )
+          );
+          if (focusables.length < 2) return;
+          const first = focusables[0];
+          const last = focusables[focusables.length - 1];
+          if (e.shiftKey ? document.activeElement === first : document.activeElement === last) {
+            e.preventDefault();
+            (e.shiftKey ? last : first).focus();
+          }
+        }
       }}
     >
       {/* Reference + Navigator stay reachable via the ExamToolbar (z-40), which
           renders above this overlay (z-30) during section start. */}
       <div style={{ maxWidth: 560, width: '100%', textAlign: 'left', margin: '0 auto' }}>
-        {/* Section label */}
-        <p className="text-xs font-medium text-muted-foreground mb-1.5">
+        {/* Section label — id referenced in aria-labelledby so AT announces
+            "Section 1 of 3 Nervous System, dialog" when the overlay opens. */}
+        <p id="section-num-label" className="text-xs font-medium text-muted-foreground mb-1.5">
           Section {sectionNumber} of {totalSections}
         </p>
 
-        {/* Title */}
-        <h2 id="section-start-title" className="font-heading text-2xl font-bold text-foreground leading-tight mb-1.5">
+        {/* Title — tabIndex={-1} makes this h2 a valid skip-link focus target */}
+        <h2 id="section-start-title" tabIndex={-1} className="font-heading text-2xl font-bold text-foreground leading-tight mb-1.5 outline-none">
           {section.title}
         </h2>
 
@@ -111,8 +131,8 @@ function SectionStartScreen({
             boxed in a Card. The overlay itself scrolls so long instructions are
             never truncated and the Begin button stays reachable. */}
         {section.instructions && (
-          <section aria-label="Section instructions" style={{ marginBottom: 32 }}>
-            <h2 className="text-sm font-semibold text-foreground mb-2.5">Instructions</h2>
+          <div id="section-start-desc" className="mb-8">
+            <h3 className="text-sm font-semibold text-foreground mb-2.5">Instructions</h3>
             {/* Split on blank lines into discrete paragraphs so screen
                 readers announce each as its own block instead of one
                 run-on paragraph reliant on literal \n\n in the data.
@@ -121,12 +141,12 @@ function SectionStartScreen({
             {section.instructions.split(/\n{2,}/).map((para, i) => (
               <p
                 key={i}
-                className="text-base text-foreground leading-relaxed whitespace-pre-wrap [&:not(:last-child)]:mb-4"
+                className="text-base text-foreground leading-[1.8] whitespace-pre-wrap [&:not(:last-child)]:mb-4"
               >
                 {para}
               </p>
             ))}
-          </section>
+          </div>
         )}
 
         {/* CTA — pinned to the bottom of the scrolling overlay so the Begin
@@ -135,19 +155,21 @@ function SectionStartScreen({
             PreExamFlow (BeforeYouBegin). For short instructions there is no
             overflow, so it renders inline exactly as before. The solid
             background lets instruction text scroll cleanly beneath it. */}
-        <div style={{ position: 'sticky', bottom: 0, background: 'var(--background)', paddingTop: 12, paddingBottom: 4, borderTop: '1px solid var(--border)' }}>
+        <div className="sticky bottom-0 pt-4 pb-4 bg-background">
+          <Separator className="mb-4" />
           {/* Primary CTA carries the brand identity via the engine-local Button
               wrapper's `primary` variant — the single source of the brand-color
               treatment, so the section-start CTA renders identically to every
               other primary action instead of re-declaring the override inline. */}
           <Button
             ref={beginRef}
-            variant="primary"
+            variant="default"
             size="lg"
             onClick={onBegin}
             className="w-full"
-            label={`Begin Section ${sectionNumber}`}
-          />
+          >
+            Begin Section {sectionNumber}
+          </Button>
         </div>
       </div>
     </div>
@@ -193,6 +215,7 @@ export function App() {
   const [theme, setTheme] = useState<'light' | 'dark' | 'high-contrast'>(
     'light'
   );
+  const [reduceMotion, setReduceMotion] = useState(false);
   // Sync DS dark-mode class on <html> so DS tokens (--background, --card, etc.) update
   useEffect(() => {
     const root = document.documentElement;
@@ -203,6 +226,14 @@ export function App() {
     }
     return () => root.classList.remove('dark');
   }, [theme]);
+  // Honour student reduce-motion preference: add class so CSS media-query-alike
+  // rules can suppress transitions and animations across the exam engine.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (reduceMotion) root.classList.add('motion-reduce');
+    else root.classList.remove('motion-reduce');
+    return () => root.classList.remove('motion-reduce');
+  }, [reduceMotion]);
   const { formatted: timerFormatted, totalSeconds } = useTimer(7200);
   const isLastFiveMinutes = totalSeconds <= 300;
   const { zoomPercent, zoomIn, zoomOut, announcement } = useZoom();
@@ -251,6 +282,13 @@ export function App() {
     }
   }, [assessment?.autoAdvance, questions, handleNavigate]);
 
+  const mainRef = useRef<HTMLElement>(null);
+  // Return focus to the question body when the section-start dialog dismisses
+  // so keyboard users land in the exam rather than on <body>.
+  useEffect(() => {
+    if (!showSectionStart) mainRef.current?.focus();
+  }, [showSectionStart]);
+
   const handleBeginSection = useCallback(() => {
     if (pendingNavigateIndex !== null) {
       setCurrentIndex(pendingNavigateIndex);
@@ -292,6 +330,8 @@ export function App() {
   // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Section start overlay owns focus; let the Begin button handle Enter normally.
+      if (showSectionStart) return;
       if (
       e.target instanceof HTMLInputElement ||
       e.target instanceof HTMLTextAreaElement ||
@@ -341,6 +381,7 @@ export function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
+  showSectionStart,
   currentIndex,
   currentQuestion,
   handleNavigate,
@@ -352,7 +393,7 @@ export function App() {
     <TooltipProvider delayDuration={400}>
     <>
     <div
-      className={`h-svh w-full flex flex-col overflow-hidden transition-colors duration-300 theme-${theme}`}
+      className={`h-svh w-full flex flex-col overflow-hidden transition-colors duration-300${theme !== 'light' ? ` theme-${theme}` : ''}`}
       style={{
         backgroundColor: 'var(--background)',
         filter:
@@ -399,23 +440,20 @@ export function App() {
           </filter>
         </defs>
       </svg>
-      {/* Skip navigation for screen readers */}
+      {/* Skip navigation for screen readers.
+          When the section-start overlay is showing, <main> is inert and
+          #main-content is removed from the AT tree — point to the section
+          heading instead so the skip mechanism stays functional. */}
       <a
-        href="#main-content"
+        href={showSectionStart ? '#section-start-title' : '#main-content'}
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-md focus:font-heading focus:text-sm focus:font-bold"
         style={{
           backgroundColor: 'var(--brand-color)',
           color: 'var(--brand-foreground)'
-        }}>
-        
-        Skip to question content
+        }}
+      >
+        {showSectionStart ? 'Skip to section info' : 'Skip to question content'}
       </a>
-
-      {/* Stable page h1 — present in every exam state (question view and section
-          overlay). The section overlay's h2 scopes to the current section only;
-          this sr-only h1 is the authoritative page-level heading for
-          axe page-has-heading-one and screen-reader document navigation. */}
-      <h1 className="sr-only">{assessment?.title ?? 'Exam'}</h1>
 
       <div aria-live="polite" className="sr-only">
         {announcement}
@@ -430,7 +468,7 @@ export function App() {
         assessmentTitle={assessment?.title}
         courseLabel={assessment ? `${assessment.courseCode} · ${assessment.courseName}` : undefined}
         totalQuestions={questions.length}
-        currentIndex={currentIndex}
+        currentIndex={showSectionStart && pendingNavigateIndex !== null ? pendingNavigateIndex : currentIndex}
         zoomPercent={zoomPercent}
         onToggleCalculator={() => setShowCalculator(!showCalculator)}
         onToggleKeyboard={() => setShowKeyboard(!showKeyboard)}
@@ -449,12 +487,19 @@ export function App() {
         hasGlobalRef={(assessment?.assessmentReferences?.length ?? 0) > 0}
         isGlobalRefOpen={showGlobalRef}
         onToggleGlobalRef={() => setShowGlobalRef(v => !v)}
-        sections={assessment?.sections}
+        sections={showSectionStart ? undefined : assessment?.sections}
         onShowKeyboardShortcuts={() => setShowShortcuts(true)}
         onToggleNav={() => setShowSidebar(v => !v)}
         isNavOpen={showSidebar}
         onReportIssue={allowComments ? () => setShowReport(true) : undefined} />
       
+
+      {/* Page-level h1 lives outside every inert boundary so it stays in the AT
+          during both question view and the section-start overlay (where <main>
+          is inerted). axe page-has-heading-one always finds exactly one h1.
+          Named <section> (region landmark) satisfies axe:region without
+          creating a second banner landmark (which <header> would). */}
+      <h1 className="sr-only">{assessment?.title ?? 'Exam'}</h1>
 
       <div className="relative flex-1 overflow-hidden flex flex-col">
         {showSectionStart && assessment?.sections?.length && (() => {
@@ -478,19 +523,23 @@ export function App() {
           onClose={() => setShowAccessibility(false)}
           zoomPercent={zoomPercent}
           zoomIn={zoomIn}
-          zoomOut={zoomOut} />
+          zoomOut={zoomOut}
+          highContrast={theme === 'high-contrast'}
+          onHighContrastChange={(v) => setTheme(v ? 'high-contrast' : 'light')}
+          reduceMotion={reduceMotion}
+          onReduceMotionChange={setReduceMotion} />
         
 
         <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden', backgroundColor: 'var(--background)', gap: 16, padding: '16px 16px' }}>
           <main
             id="main-content"
             className="flex-1 min-w-[380px] overflow-hidden flex flex-col"
-            role="main"
-            // The section-start overlay (z-30) visually covers the exam and we
-            // already hide the StickyFooter + side panels while it's up. Match
-            // that for the question body: inert removes its answer controls from
-            // tab order + the AT tree so focus can't land behind the overlay.
+            // inert removes question controls from tab order during section-start.
+            // aria-hidden additionally covers AT browse mode (NVDA/JAWS virtual
+            // cursor), which ignores inert in some versions. Together they fully
+            // exclude the question body from AT while the section-start dialog is up.
             inert={showSectionStart}
+            aria-hidden={showSectionStart || undefined}
             aria-label={`Question ${currentIndex + 1} of ${questions.length}`}>
 
             <SplitQuestionView
