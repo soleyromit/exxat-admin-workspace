@@ -238,6 +238,12 @@ const courseTrendConfig: ChartConfig = {
   rating: { label: 'Avg rating', color: 'var(--chart-1)' },
 }
 
+const AxisTick = ({ x, y, payload, textAnchor }: Record<string, any>) => (
+  <text x={x} y={y} textAnchor={textAnchor ?? 'middle'} dominantBaseline="central" className="text-xs fill-muted-foreground">
+    {payload?.value}
+  </text>
+)
+
 /* ── Page ── */
 function AnalyticsInner() {
   const { surveys } = usePce()
@@ -464,10 +470,10 @@ function AnalyticsInner() {
 
   return (
     <>
-      <SiteHeader title="Analytics" />
+      <SiteHeader title="Dashboard" />
 
       <div className="flex items-center gap-3 shrink-0" style={{ padding: '14px 28px 0' }}>
-        <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Analytics</h1>
+        <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>Dashboard</h1>
         <Button variant="outline" size="sm">
           <i className="fa-light fa-arrow-down-to-line" aria-hidden="true" />
           Export
@@ -555,14 +561,14 @@ function AnalyticsInner() {
                         <CartesianGrid vertical={false} stroke="var(--border)" />
                         <XAxis
                           dataKey="term"
-                          tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+                          tick={{ fill: 'var(--muted-foreground)' }}
                           tickLine={false}
                           axisLine={false}
                         />
                         <YAxis
                           domain={[3.4, 4.8]}
                           tickFormatter={(v: number) => v.toFixed(1)}
-                          tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+                          tick={{ fill: 'var(--muted-foreground)' }}
                           tickLine={false}
                           axisLine={false}
                           width={28}
@@ -607,7 +613,7 @@ function AnalyticsInner() {
                             type="category"
                             dataKey="code"
                             width={68}
-                            tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+                            tick={{ fill: 'var(--muted-foreground)' }}
                             tickLine={false}
                             axisLine={false}
                           />
@@ -651,7 +657,7 @@ function AnalyticsInner() {
                             type="category"
                             dataKey="name"
                             width={68}
-                            tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+                            tick={{ fill: 'var(--muted-foreground)' }}
                             tickLine={false}
                             axisLine={false}
                           />
@@ -757,7 +763,7 @@ function AnalyticsInner() {
                             type="category"
                             dataKey="label"
                             width={88}
-                            tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
+                            tick={{ fill: 'var(--muted-foreground)' }}
                             tickLine={false}
                             axisLine={false}
                           />
@@ -857,14 +863,14 @@ function AnalyticsInner() {
                           <CartesianGrid vertical={false} stroke="var(--border)" />
                           <XAxis
                             dataKey="term"
-                            tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+                            tick={{ fill: 'var(--muted-foreground)' }}
                             tickLine={false}
                             axisLine={false}
                           />
                           <YAxis
                             domain={[3.0, 5.0]}
                             tickFormatter={(v: number) => v.toFixed(1)}
-                            tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+                            tick={{ fill: 'var(--muted-foreground)' }}
                             tickLine={false}
                             axisLine={false}
                             width={28}

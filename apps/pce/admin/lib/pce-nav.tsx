@@ -67,14 +67,19 @@ export const NAV_QUICK_ACTIONS: NavSecondaryItem[] = [
     key: "ask-leo",
     title: "Ask Leo",
     url: "#",
+    // LeoIcon's smallest preset is 32px (size-8); nav icons are 16px (size-4).
+    // Wrap in a 16px slot and scale the glyph to 0.5 so it shares the exact
+    // footprint + left edge of every other nav icon (no stray left padding).
     icon: (
-      <LeoIcon
-        variant="ambient"
-        size="sm"
-        sparkleCadence="default"
-        orbitingSparkles={false}
-        className="pointer-events-none overflow-visible"
-      />
+      <span className="relative flex size-4 shrink-0 items-center justify-center">
+        <LeoIcon
+          variant="ambient"
+          size="sm"
+          sparkleCadence="default"
+          orbitingSparkles={false}
+          className="pointer-events-none absolute scale-50 overflow-visible"
+        />
+      </span>
     ),
     opensAskLeo: true,
   },
@@ -96,6 +101,13 @@ export const NAV_ADMIN: NavLinkItem[] = [
     iconActive: <i className="fa-solid fa-star" aria-hidden="true" />,
     children: [
       {
+        key: "ce-analytics",
+        title: "Dashboard",
+        url: "/analytics",
+        icon:       <i className="fa-light fa-chart-mixed" aria-hidden="true" />,
+        iconActive: <i className="fa-solid fa-chart-mixed" aria-hidden="true" />,
+      },
+      {
         key: "ce-surveys",
         title: "Evaluations",
         url: "/surveys",
@@ -109,13 +121,6 @@ export const NAV_ADMIN: NavLinkItem[] = [
         icon:       <i className="fa-light fa-rectangle-list" aria-hidden="true" />,
         iconActive: <i className="fa-solid fa-rectangle-list" aria-hidden="true" />,
       },
-      {
-        key: "ce-analytics",
-        title: "Analytics",
-        url: "/analytics",
-        icon:       <i className="fa-light fa-chart-mixed" aria-hidden="true" />,
-        iconActive: <i className="fa-solid fa-chart-mixed" aria-hidden="true" />,
-      },
     ],
   },
   {
@@ -125,6 +130,13 @@ export const NAV_ADMIN: NavLinkItem[] = [
     icon:       <i className="fa-light fa-chart-network" aria-hidden="true" />,
     iconActive: <i className="fa-solid fa-chart-network" aria-hidden="true" />,
     children: [
+      {
+        key: "ps-analytics",
+        title: "Dashboard",
+        url: "/analytics/programmatic",
+        icon:       <i className="fa-light fa-chart-mixed" aria-hidden="true" />,
+        iconActive: <i className="fa-solid fa-chart-mixed" aria-hidden="true" />,
+      },
       {
         key: "ps-surveys",
         title: "Surveys",
@@ -138,13 +150,6 @@ export const NAV_ADMIN: NavLinkItem[] = [
         url: "/templates/programmatic",
         icon:       <i className="fa-light fa-rectangle-list" aria-hidden="true" />,
         iconActive: <i className="fa-solid fa-rectangle-list" aria-hidden="true" />,
-      },
-      {
-        key: "ps-analytics",
-        title: "Analytics",
-        url: "/analytics/programmatic",
-        icon:       <i className="fa-light fa-chart-mixed" aria-hidden="true" />,
-        iconActive: <i className="fa-solid fa-chart-mixed" aria-hidden="true" />,
       },
     ],
   },

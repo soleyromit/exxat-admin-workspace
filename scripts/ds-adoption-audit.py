@@ -147,7 +147,8 @@ DOCUMENTED_HAND_ROLLS = {
     # are documented as intentional hand-rolls. Note: scan_filename_for_ds_organism
     # only matches on filename stems so these aren't actually flagged by it; entries
     # remain here for documentation parity with the registry.
-    "app/(app)/analytics/page.tsx",  # ScoreLandscape l.29
+    "app/(app)/analytics/page.tsx",  # ScoreLandscape l.29 — dashboard, not a list page
+    "app/(app)/analytics/programmatic/page.tsx",  # dashboard, not a list page
     "components/curricular-loop-diagram.tsx",  # PerformanceHeatmap l.267, TrendRow l.797
     # exam-management: assessment-builder question picker — tightly coupled
     # picker grid (full-row click toggles selection, custom selected-row tint,

@@ -161,11 +161,11 @@ export default function ProgrammaticAnalyticsPage() {
 
   return (
     <>
-      <SiteHeader title="Analytics" />
+      <SiteHeader title="Dashboard" />
 
       <div className="flex items-center gap-3 shrink-0" style={{ padding: '14px 28px 0' }}>
         <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>
-          Analytics
+          Dashboard
         </h1>
         <Button variant="outline" size="sm">
           <i className="fa-light fa-arrow-down-to-line" aria-hidden="true" />
@@ -210,7 +210,7 @@ export default function ProgrammaticAnalyticsPage() {
                         type="category"
                         dataKey="name"
                         width={76}
-                        tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
+                        tick={{ fill: 'var(--muted-foreground)' }}
                         tickLine={false}
                         axisLine={false}
                       />
@@ -259,14 +259,14 @@ export default function ProgrammaticAnalyticsPage() {
                     <CartesianGrid vertical={false} stroke="var(--border)" />
                     <XAxis
                       dataKey="term"
-                      tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+                      tick={{ fill: 'var(--muted-foreground)' }}
                       tickLine={false}
                       axisLine={false}
                     />
                     <YAxis
                       domain={[0, 100]}
                       tickFormatter={(v: number) => `${v}%`}
-                      tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+                      tick={{ fill: 'var(--muted-foreground)' }}
                       tickLine={false}
                       axisLine={false}
                       width={36}
@@ -321,7 +321,7 @@ export default function ProgrammaticAnalyticsPage() {
                         type="category"
                         dataKey="label"
                         width={260}
-                        tick={{ fontSize: 11, fill: 'var(--muted-foreground)', width: 256 }}
+                        tick={{ fill: 'var(--muted-foreground)', width: 256 }}
                         tickLine={false}
                         axisLine={false}
                       />

@@ -1,9 +1,8 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import Link from 'next/link'
 import {
-  Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Badge, KeyMetrics, PageHeader,
 } from '@exxatdesignux/ui'
 import type { MetricItem } from '@exxatdesignux/ui'
@@ -60,28 +59,21 @@ const tierColor = (avg: number) =>
   avg >= 4.3 ? 'var(--chart-2)' : avg >= 3.7 ? 'var(--brand-color)' : 'var(--chip-4)'
 
 export default function MasterCoursesPage() {
-  const [departmentFilter, setDepartmentFilter] = useState('all')
-  const [typeFilter, setTypeFilter] = useState('all')
-
+  // Filtering (type, department) is owned by the DataTable's native filter
+  // popover via each column's `filter` config — no external filter controls.
   const tableRows: MasterCourseRow[] = useMemo(
-    () => MOCK_MASTER_COURSES
-      .filter(r => {
-        if (departmentFilter !== 'all' && r.department !== departmentFilter) return false
-        if (typeFilter !== 'all' && r.type !== typeFilter) return false
-        return true
-      })
-      .map(r => {
-        const ratingData = _avgRatingByCode[r.code]
-        return {
-          id: r.id, code: r.code, name: r.name,
-          department: r.department, type: r.type, status: r.status,
-          timesOffered: _offeringsByMCId[r.id] ?? 0,
-          avgRating: ratingData && ratingData.n > 0
-            ? +(ratingData.sum / ratingData.n).toFixed(2)
-            : null,
-        }
-      }),
-    [departmentFilter, typeFilter],
+    () => MOCK_MASTER_COURSES.map(r => {
+      const ratingData = _avgRatingByCode[r.code]
+      return {
+        id: r.id, code: r.code, name: r.name,
+        department: r.department, type: r.type, status: r.status,
+        timesOffered: _offeringsByMCId[r.id] ?? 0,
+        avgRating: ratingData && ratingData.n > 0
+          ? +(ratingData.sum / ratingData.n).toFixed(2)
+          : null,
+      }
+    }),
+    [],
   )
 
   /* KPI metrics (max 4 per brief) */
@@ -116,10 +108,22 @@ export default function MasterCoursesPage() {
           {TYPE_LABELS[row.type]}
         </Badge>
       ),
+      filter: {
+        type: 'select', icon: 'fa-shapes', operators: ['is', 'is_not'],
+        options: [
+          { value: 'didactic', label: 'Didactic' },
+          { value: 'clinical', label: 'Clinical' },
+          { value: 'seminar',  label: 'Seminar' },
+        ],
+      },
     },
     {
       key: 'department', label: 'Department', sortable: true, width: 190,
       cell: (row) => <span className="text-sm text-muted-foreground">{row.department}</span>,
+      filter: {
+        type: 'select', icon: 'fa-building-columns', operators: ['is', 'is_not'],
+        options: DEPARTMENTS.map(d => ({ value: d, label: d })),
+      },
     },
     {
       key: 'timesOffered', label: 'Times offered', sortable: true, width: 130,
@@ -188,37 +192,9 @@ export default function MasterCoursesPage() {
             emptyState={
               <div className="flex flex-col items-center gap-2 py-6">
                 <i className="fa-light fa-book text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
-                <p className="text-sm font-medium">
-                  {departmentFilter !== 'all' || typeFilter !== 'all'
-                    ? 'No courses match these filters'
-                    : 'No courses match your search'}
-                </p>
+                <p className="text-sm font-medium">No courses match your search or filters</p>
               </div>
             }
-            toolbarSlot={() => (
-              <>
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="h-8 w-36 text-sm" aria-label="Filter by type">
-                    <SelectValue placeholder="All types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All types</SelectItem>
-                    <SelectItem value="didactic">Didactic</SelectItem>
-                    <SelectItem value="clinical">Clinical</SelectItem>
-                    <SelectItem value="seminar">Seminar</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                  <SelectTrigger className="h-8 w-52 text-sm" aria-label="Filter by department">
-                    <SelectValue placeholder="All departments" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All departments</SelectItem>
-                    {DEPARTMENTS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </>
-            )}
           />
 
         </div>
