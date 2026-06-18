@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Avatar, AvatarFallback, KeyMetrics, Button, PageHeader } from '@exxatdesignux/ui'
+import { Avatar, AvatarFallback, KeyMetrics, Button, PageHeader, Badge } from '@exxatdesignux/ui'
 import type { MetricItem } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import {
@@ -17,6 +17,7 @@ interface FacultyRow extends Record<string, unknown> {
   id: string
   faculty: PceInstructor
   name: string; initials: string; department: string
+  facultyType: string; employmentStatus: string
   offeringCount: number
   avgRating: number | null
   avgCompletion: number | null
@@ -46,6 +47,8 @@ export default function FacultyPage() {
         id: f.id, faculty: f,
         name: f.name, initials: f.initials,
         department: f.department ?? '—',
+        facultyType: f.facultyType ?? 'faculty',
+        employmentStatus: f.employmentStatus ?? 'active',
         offeringCount: offerings.length,
         avgRating, avgCompletion,
       }
@@ -84,13 +87,40 @@ export default function FacultyPage() {
               {row.initials}
             </AvatarFallback>
           </Avatar>
-          <span className="text-sm font-medium">{row.name}</span>
+          <div className="min-w-0">
+            <p className="text-sm font-medium leading-tight">{row.name}</p>
+            {(row.faculty.rank || row.faculty.position) && (
+              <p className="text-xs text-muted-foreground leading-tight truncate">
+                {[row.faculty.rank, row.faculty.position].filter(Boolean).join(' · ')}
+              </p>
+            )}
+          </div>
         </div>
       ),
     },
     {
-      key: 'department', label: 'Department', sortable: true, width: 200,
+      key: 'department', label: 'Department', sortable: true, width: 180,
       cell: (row) => <span className="text-sm text-muted-foreground">{row.department}</span>,
+    },
+    {
+      key: 'facultyType', label: 'Type', sortable: true, width: 90,
+      cell: (row) => (
+        <Badge variant={row.facultyType === 'staff' ? 'outline' : 'secondary'} className="text-xs capitalize">
+          {row.facultyType}
+        </Badge>
+      ),
+    },
+    {
+      key: 'employmentStatus', label: 'Status', sortable: true, width: 100,
+      cell: (row) => {
+        const active = row.employmentStatus !== 'inactive'
+        return (
+          <span className="flex items-center gap-1.5 text-xs">
+            <span className="size-1.5 rounded-full" style={{ background: active ? 'var(--chart-2)' : 'var(--muted-foreground)' }} aria-hidden="true" />
+            <span className={active ? '' : 'text-muted-foreground'}>{active ? 'Active' : 'Inactive'}</span>
+          </span>
+        )
+      },
     },
     {
       key: 'offeringCount', label: 'Offerings', sortable: true, width: 110,

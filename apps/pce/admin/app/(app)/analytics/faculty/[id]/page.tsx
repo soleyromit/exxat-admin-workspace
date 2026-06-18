@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import Link from 'next/link'
 import { useParams, useSearchParams } from 'next/navigation'
 import {
-  Avatar, AvatarFallback, KeyMetrics, Button,
+  Avatar, AvatarFallback, KeyMetrics, Button, Badge,
   ChartContainer, ChartTooltip, ChartTooltipContent,
 } from '@exxatdesignux/ui'
 import type { MetricItem, ChartConfig } from '@exxatdesignux/ui'
@@ -168,6 +168,7 @@ export default function FacultyAnalyticsProfile() {
     { id: 'completion', label: 'Completion',     value: avgCompletion !== null ? `${avgCompletion}%` : '—', delta: '', trend: 'neutral' },
     { id: 'courses',    label: 'Courses taught', value: uniqueCourses,  delta: '', trend: 'neutral' },
     { id: 'terms',      label: 'Terms active',   value: uniqueTerms,    delta: '', trend: 'neutral' },
+    { id: 'students',   label: 'Students taught', value: totalEnrolled.toLocaleString(), delta: '', trend: 'neutral' },
     { id: 'rank',       label: 'Peer rank',      value: peerRank ?? '—', delta: '', trend: 'neutral' },
   ]
 
@@ -198,7 +199,7 @@ export default function FacultyAnalyticsProfile() {
       />
 
       {/* Profile header */}
-      <div className="shrink-0 flex items-center gap-4" style={{ padding: '20px 28px 16px' }}>
+      <div className="shrink-0 flex items-start gap-4" style={{ padding: '20px 28px 16px' }}>
         <Avatar className="h-12 w-12 rounded-full shrink-0">
           <AvatarFallback
             className="rounded-full text-base font-semibold"
@@ -208,8 +209,31 @@ export default function FacultyAnalyticsProfile() {
           </AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
-          <h1 className="text-lg font-semibold leading-tight">{faculty.name}</h1>
-          <p className="text-sm text-muted-foreground">{faculty.department ?? 'Faculty'}</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-lg font-semibold leading-tight">{faculty.name}</h1>
+            {faculty.employmentStatus && (
+              <Badge variant={faculty.employmentStatus === 'inactive' ? 'outline' : 'secondary'} className="text-xs capitalize">
+                {faculty.employmentStatus}
+              </Badge>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {[faculty.rank, faculty.department, faculty.position].filter(Boolean).join(' · ') || 'Faculty'}
+          </p>
+          {(faculty.email || faculty.phone) && (
+            <div className="flex items-center gap-4 mt-1.5 text-xs text-muted-foreground">
+              {faculty.email && (
+                <a href={`mailto:${faculty.email}`} className="flex items-center gap-1.5 hover:text-foreground">
+                  <i className="fa-light fa-envelope" aria-hidden="true" />{faculty.email}
+                </a>
+              )}
+              {faculty.phone && (
+                <span className="flex items-center gap-1.5">
+                  <i className="fa-light fa-phone" aria-hidden="true" />{faculty.phone}
+                </span>
+              )}
+            </div>
+          )}
         </div>
         <Button variant="outline" size="sm" asChild>
           <a href={`${PRISM_BASE}/${faculty.id}`} target="_blank" rel="noopener noreferrer">

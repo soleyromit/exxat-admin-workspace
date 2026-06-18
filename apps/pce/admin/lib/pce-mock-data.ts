@@ -77,6 +77,13 @@ export interface PceInstructor {
   initials: string
   role: 'primary' | 'guest'
   department?: string
+  /** Directory/profile fields (optional — survey.instructors carry only id/name/role). */
+  facultyType?: 'faculty' | 'staff'
+  rank?: string        // e.g. 'Professor', 'Associate Professor', 'Lecturer'
+  position?: string    // e.g. 'Department Chair', 'Program Director'
+  email?: string
+  phone?: string
+  employmentStatus?: 'active' | 'inactive'
 }
 
 export interface PceSurvey {
@@ -1310,12 +1317,12 @@ export const MOCK_COURSES = [
 ]
 
 export const MOCK_FACULTY: PceInstructor[] = [
-  { id: 'f1', name: 'Dr. Anita Patel',    initials: 'AP', role: 'primary', department: 'Basic Sciences'           },
-  { id: 'f2', name: 'Dr. Kevin Chen',     initials: 'KC', role: 'primary', department: 'Basic Sciences'           },
-  { id: 'f3', name: 'Dr. Maria Williams', initials: 'MW', role: 'primary', department: 'Clinical Education'       },
-  { id: 'f4', name: 'Dr. James Kim',      initials: 'JK', role: 'primary', department: 'Clinical Education'       },
-  { id: 'f5', name: 'Dr. Rachel Gomez',   initials: 'RG', role: 'primary', department: 'Applied Sciences'         },
-  { id: 'f6', name: 'Dr. Omar Hassan',    initials: 'OH', role: 'primary', department: 'Applied Sciences'         },
+  { id: 'f1', name: 'Dr. Anita Patel',    initials: 'AP', role: 'primary', department: 'Basic Sciences',     facultyType: 'faculty', rank: 'Professor',           position: 'Department Chair',  email: 'anita.patel@university.edu',    phone: '+1 (555) 101-1001', employmentStatus: 'active'   },
+  { id: 'f2', name: 'Dr. Kevin Chen',     initials: 'KC', role: 'primary', department: 'Basic Sciences',     facultyType: 'faculty', rank: 'Associate Professor', position: 'Course Director',   email: 'kevin.chen@university.edu',     phone: '+1 (555) 101-1002', employmentStatus: 'active'   },
+  { id: 'f3', name: 'Dr. Maria Williams', initials: 'MW', role: 'primary', department: 'Clinical Education', facultyType: 'faculty', rank: 'Professor',           position: 'Program Director',  email: 'maria.williams@university.edu', phone: '+1 (555) 101-1003', employmentStatus: 'active'   },
+  { id: 'f4', name: 'Dr. James Kim',      initials: 'JK', role: 'primary', department: 'Clinical Education', facultyType: 'faculty', rank: 'Assistant Professor', position: 'Clinical Coordinator', email: 'james.kim@university.edu',    phone: '+1 (555) 101-1004', employmentStatus: 'active'   },
+  { id: 'f5', name: 'Dr. Rachel Gomez',   initials: 'RG', role: 'primary', department: 'Applied Sciences',   facultyType: 'faculty', rank: 'Associate Professor', position: 'Faculty',           email: 'rachel.gomez@university.edu',   phone: '+1 (555) 101-1005', employmentStatus: 'active'   },
+  { id: 'f6', name: 'Dr. Omar Hassan',    initials: 'OH', role: 'primary', department: 'Applied Sciences',   facultyType: 'staff',   rank: 'Lecturer',           position: 'Lab Instructor',    email: 'omar.hassan@university.edu',    phone: '+1 (555) 101-1006', employmentStatus: 'inactive' },
 ]
 
 export interface FacultyOfferingRecord {

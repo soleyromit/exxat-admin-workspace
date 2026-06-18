@@ -176,6 +176,7 @@ export default function CourseAnalyticsProfile() {
     { id: 'completion', label: 'Completion',  value: avgCompletion !== null ? `${avgCompletion}%` : '—', delta: '', trend: 'neutral' },
     { id: 'terms',      label: 'Terms offered', value: uniqueTerms,   delta: '', trend: 'neutral' },
     { id: 'faculty',    label: 'Faculty',     value: uniqueFaculty,    delta: '', trend: 'neutral' },
+    { id: 'students',   label: 'Students',    value: totalEnrolled.toLocaleString(), delta: '', trend: 'neutral' },
     { id: 'rank',       label: 'Peer rank',   value: peerRank ?? '—',  delta: '', trend: 'neutral' },
   ]
 
