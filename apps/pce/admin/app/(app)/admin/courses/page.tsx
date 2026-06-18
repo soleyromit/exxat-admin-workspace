@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  Badge, KeyMetrics,
+  Badge, KeyMetrics, PageHeader,
 } from '@exxatdesignux/ui'
 import type { MetricItem } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
@@ -153,19 +153,11 @@ export default function MasterCoursesPage() {
   return (
     <>
       <SiteHeader title="Master Courses" breadcrumbs={[{ label: 'Directory', href: '/admin' }]} />
-
-      <div className="shrink-0 [&_*]:!border-e-0 px-4 lg:px-6" style={{ paddingBlock: 4 }}>
-        <KeyMetrics variant="compact" showHeader={false} metricsSingleRow metrics={kpis} />
-      </div>
-
-      <div className="flex-1 overflow-auto" style={{ paddingTop: 16, paddingBottom: 28 }}>
-        <div className="max-w-5xl flex flex-col gap-4">
-
-          <div className="flex items-center gap-2 flex-wrap px-4 lg:px-6">
-            <p className="text-sm text-muted-foreground flex-1">
-              {activeCount} active · {MOCK_MASTER_COURSES.length} total.
-              Click any row to open in Prism.
-            </p>
+      <PageHeader
+        title="Master Courses"
+        subtitle={`${activeCount} active · ${MOCK_MASTER_COURSES.length} total`}
+        actions={
+          <div className="flex items-center gap-2 flex-wrap">
             <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger className="h-8 w-36 text-sm" aria-label="Filter by type">
                 <SelectValue placeholder="All types" />
@@ -187,6 +179,15 @@ export default function MasterCoursesPage() {
               </SelectContent>
             </Select>
           </div>
+        }
+      />
+
+      <div className="shrink-0 [&_*]:!border-e-0 px-4 lg:px-6" style={{ paddingBlock: 4 }}>
+        <KeyMetrics variant="compact" showHeader={false} metricsSingleRow metrics={kpis} />
+      </div>
+
+      <div className="flex-1 overflow-auto" style={{ paddingTop: 16, paddingBottom: 28 }}>
+        <div className="max-w-5xl flex flex-col gap-4">
 
           <DataTablePaginated<MasterCourseRow>
             data={tableRows}

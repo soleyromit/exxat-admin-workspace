@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Avatar, AvatarFallback, KeyMetrics, Button } from '@exxatdesignux/ui'
+import { Avatar, AvatarFallback, KeyMetrics, Button, PageHeader } from '@exxatdesignux/ui'
 import type { MetricItem } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import {
@@ -152,6 +152,16 @@ export default function FacultyPage() {
   return (
     <>
       <SiteHeader title="Faculty" breadcrumbs={[{ label: 'Directory', href: '/admin' }]} />
+      <PageHeader
+        title="Faculty"
+        subtitle={`${MOCK_FACULTY.length} faculty · ${departments} department${departments !== 1 ? 's' : ''}`}
+        actions={
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <i className="fa-light fa-rotate text-xs" aria-hidden="true" />
+            Synced from Prism
+          </span>
+        }
+      />
 
       <div className="shrink-0 [&_*]:!border-e-0 px-4 lg:px-6" style={{ paddingBlock: 4 }}>
         <KeyMetrics variant="compact" showHeader={false} metricsSingleRow metrics={kpis} />
@@ -159,11 +169,6 @@ export default function FacultyPage() {
 
       <div className="flex-1 overflow-auto" style={{ paddingTop: 16, paddingBottom: 28 }}>
         <div className="max-w-5xl flex flex-col gap-4">
-
-          <p className="text-sm text-muted-foreground px-4 lg:px-6">
-            {MOCK_FACULTY.length} faculty · {departments} department{departments !== 1 ? 's' : ''}.
-            Click any row to open the faculty profile in Prism.
-          </p>
 
           <DataTablePaginated<FacultyRow>
             data={rows}

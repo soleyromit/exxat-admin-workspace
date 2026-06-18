@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   Avatar, AvatarFallback,
   Tooltip, TooltipContent, TooltipTrigger,
-  Button, KeyMetrics,
+  Button, KeyMetrics, PageHeader,
 } from '@exxatdesignux/ui'
 import type { MetricItem } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
@@ -191,8 +191,22 @@ export default function StudentsPage() {
 
   return (
     <>
-      <h1 className="sr-only">Students</h1>
       <SiteHeader title="Students" breadcrumbs={[{ label: 'Directory', href: '/admin' }]} />
+      <PageHeader
+        title="Students"
+        subtitle={`${tableRows.length} student${tableRows.length !== 1 ? 's' : ''}`}
+        actions={
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <i className="fa-light fa-rotate text-xs" aria-hidden="true" />
+              Synced from Prism
+            </span>
+            <Link href="#" className="text-xs text-muted-foreground underline">
+              Manage accommodations →
+            </Link>
+          </div>
+        }
+      />
 
       <div className="shrink-0 [&_*]:!border-e-0 px-4 lg:px-6" style={{ paddingBlock: 4 }}>
         <KeyMetrics variant="compact" showHeader={false} metricsSingleRow metrics={kpis} />
@@ -200,21 +214,6 @@ export default function StudentsPage() {
 
       <div className="flex-1 overflow-auto" style={{ padding: '16px 28px 28px' }}>
         <div className="max-w-5xl flex flex-col gap-4">
-
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <p className="text-sm text-muted-foreground">
-              Click any row to open the student record in Prism.
-            </p>
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <i className="fa-light fa-rotate text-xs" aria-hidden="true" />
-                Synced from Prism
-              </span>
-              <Link href="#" className="text-xs text-muted-foreground underline">
-                Manage accommodations →
-              </Link>
-            </div>
-          </div>
 
           <DataTablePaginated<StudentRow>
             data={tableRows}

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  KeyMetrics, Button,
+  KeyMetrics, Button, PageHeader,
 } from '@exxatdesignux/ui'
 import type { MetricItem } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
@@ -179,6 +179,16 @@ export default function CourseOfferingsPage() {
   return (
     <>
       <SiteHeader title="Course Offerings" breadcrumbs={[{ label: 'Directory', href: '/admin' }]} />
+      <PageHeader
+        title="Course Offerings"
+        subtitle={
+          <span className="inline-flex items-center gap-1 flex-wrap">
+            {MOCK_COURSE_OFFERINGS.length} offerings · {activeCount} active. Rows with
+            <i className="fa-light fa-chart-bar" style={{ color: 'var(--brand-color)' }} aria-hidden="true" />
+            open the Evaluation Card; others open in Prism.
+          </span>
+        }
+      />
       <EvaluationCardSheet surveyId={selectedSurveyId} onClose={() => setSelectedSurveyId(null)} />
 
       <div className="shrink-0 px-4 lg:px-6" style={{ paddingBlock: 4 }}>
@@ -187,11 +197,6 @@ export default function CourseOfferingsPage() {
 
       <div className="flex-1 overflow-auto" style={{ paddingTop: 16, paddingBottom: 28 }}>
         <div className="max-w-6xl flex flex-col gap-4">
-
-          <p className="text-sm text-muted-foreground px-4 lg:px-6">
-            {MOCK_COURSE_OFFERINGS.length} offerings · {activeCount} active.
-            Rows with <i className="fa-light fa-chart-bar" style={{ color: 'var(--brand-color)' }} aria-hidden="true" /> open the Evaluation Card; others open in Prism.
-          </p>
 
           <DataTablePaginated<OfferingRow>
             data={tableRows}

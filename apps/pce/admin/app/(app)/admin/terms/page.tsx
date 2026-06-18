@@ -5,6 +5,7 @@ import Link from 'next/link'
 import {
   Button,
   Input,
+  PageHeader,
   Tooltip, TooltipContent, TooltipTrigger,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
   Field, FieldLabel, FieldGroup, FieldDescription, FieldError,
@@ -222,38 +223,37 @@ export default function TermsPage() {
   return (
     <>
       <SiteHeader title="Terms" breadcrumbs={[{ label: 'Directory', href: '/admin' }]} />
+      <PageHeader
+        title="Terms"
+        subtitle={`${rows.length} term${rows.length !== 1 ? 's' : ''} · ${enabledCount} enabled for evaluation — reminders anchor to each term's end date`}
+        actions={
+          <div className="flex items-center gap-2">
+            {MOCK_LMS_ENABLED ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="default" disabled aria-disabled="true">
+                    <i className="fa-light fa-plus" aria-hidden="true" />
+                    Add term
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Managed by your LMS</TooltipContent>
+              </Tooltip>
+            ) : (
+              <Button variant="default" onClick={() => setAddOpen(true)}>
+                <i className="fa-light fa-plus" aria-hidden="true" />
+                Add term
+              </Button>
+            )}
+            <Button variant="outline">
+              <i className="fa-light fa-arrow-up-from-bracket" aria-hidden="true" />
+              Import CSV
+            </Button>
+          </div>
+        }
+      />
 
       <div className="flex-1 overflow-auto" style={{ padding: '20px 28px 28px' }}>
         <div className="max-w-5xl flex flex-col gap-4">
-
-          <div className="flex items-center gap-2 justify-between flex-wrap">
-            <p className="text-sm text-muted-foreground">
-              {rows.length} term{rows.length !== 1 ? 's' : ''} · {enabledCount} enabled for evaluation.
-              Enable a term so it appears in the Activation wizard — reminders anchor to its end date.
-            </p>
-            <div className="flex items-center gap-2">
-              {MOCK_LMS_ENABLED ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="default" disabled aria-disabled="true">
-                      <i className="fa-light fa-plus" aria-hidden="true" />
-                      Add term
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Managed by your LMS</TooltipContent>
-                </Tooltip>
-              ) : (
-                <Button variant="default" onClick={() => setAddOpen(true)}>
-                  <i className="fa-light fa-plus" aria-hidden="true" />
-                  Add term
-                </Button>
-              )}
-              <Button variant="outline">
-                <i className="fa-light fa-arrow-up-from-bracket" aria-hidden="true" />
-                Import CSV
-              </Button>
-            </div>
-          </div>
 
           <DataTable<TermRow>
             data={tableRows}
