@@ -87,20 +87,25 @@ const trendConfig: ChartConfig = { rate: { label: 'Response rate', color: 'var(-
 export function DashboardMonitor({
   surveys,
   onNudge,
+  term,
 }: {
   surveys: PceSurvey[]
   onNudge: (t: MonitorNudgeTarget) => void
+  /** Scope to a specific term (e.g. a Term profile). Omit = latest active cycle. */
+  term?: string
 }) {
   const live = surveys
 
   const { currentTerm, prevTerm } = useMemo(() => {
     const present = new Set(live.map(s => s.term))
     const ordered = TERM_ORDER.filter(t => present.has(t))
+    const cur = term ?? ordered[ordered.length - 1] ?? live[0]?.term ?? null
+    const idx = cur ? ordered.indexOf(cur) : -1
     return {
-      currentTerm: ordered[ordered.length - 1] ?? live[0]?.term ?? null,
-      prevTerm: ordered[ordered.length - 2] ?? null,
+      currentTerm: cur,
+      prevTerm: idx > 0 ? ordered[idx - 1] : null,
     }
-  }, [live])
+  }, [live, term])
 
   const cycle = useMemo(
     () => currentTerm ? live.filter(s => s.term === currentTerm) : [],
@@ -200,7 +205,9 @@ export function DashboardMonitor({
     <div className="flex flex-col gap-4 max-w-5xl">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <p className="text-sm text-muted-foreground">
-          Monitoring <span className="font-medium text-foreground">{currentTerm}</span> — the active evaluation cycle.
+          {term
+            ? <><span className="font-medium text-foreground">{currentTerm}</span> evaluation cycle.</>
+            : <>Monitoring <span className="font-medium text-foreground">{currentTerm}</span> — the active evaluation cycle.</>}
         </p>
         {statusChips.length > 0 && (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">

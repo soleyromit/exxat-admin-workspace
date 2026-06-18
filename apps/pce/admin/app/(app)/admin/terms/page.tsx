@@ -197,6 +197,19 @@ export default function TermsPage() {
       ),
     },
     {
+      key: 'analytics', label: '', width: 32,
+      cell: (row) => row.enabledForEval ? (
+        <Link
+          href={`/analytics/term/${row.id}?from=directory`}
+          onClick={e => e.stopPropagation()}
+          title="View analytics"
+          aria-label={`View analytics for ${row.name}`}
+        >
+          <i className="fa-light fa-chart-mixed text-xs" style={{ color: 'var(--brand-color)' }} aria-hidden="true" />
+        </Link>
+      ) : null,
+    },
+    {
       key: 'actions',
       label: '',
       width: 44,
