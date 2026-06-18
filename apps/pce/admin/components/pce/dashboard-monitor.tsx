@@ -50,9 +50,13 @@ function weightedRate(surveys: PceSurvey[]): number | null {
   return Math.round(surveys.reduce((s, x) => s + x.responseRate * x.enrollmentCount, 0) / enrolled)
 }
 
-function daysUntil(ymd: string): number {
-  const end = new Date(ymd + 'T00:00:00').getTime()
-  return Math.ceil((end - Date.now()) / 86_400_000)
+/** Deadlines arrive as 'MMM DD, YYYY' (e.g. "Apr 30, 2026") or ISO — both
+ *  parse via `new Date(str)`. Returns null for unparseable/missing dates so the
+ *  "days left" line hides rather than rendering a NaN-derived "closing today". */
+function daysUntil(dateStr: string): number | null {
+  const t = new Date(dateStr).getTime()
+  if (!Number.isFinite(t)) return null
+  return Math.ceil((t - Date.now()) / 86_400_000)
 }
 
 /** Token-styled bullet: fill + qualitative track + target tick. */
@@ -104,8 +108,15 @@ export function DashboardMonitor({
     return c
   }, [cycle])
 
-  const segments = STATUS_GROUPS.map(g => ({ ...g, count: counts[g.key] ?? 0 })).filter(s => s.count > 0)
-  const totalCount = segments.reduce((s, g) => s + g.count, 0)
+  // Catch-all so an unknown/future status still segments (and the bar always
+  // sums to the full cycle) rather than silently dropping out.
+  const matchedStatuses = new Set(STATUS_GROUPS.flatMap(g => g.statuses))
+  const otherCount = cycle.filter(s => !matchedStatuses.has(s.status)).length
+  const segments = [
+    ...STATUS_GROUPS.map(g => ({ key: g.key, label: g.label, color: g.color, count: counts[g.key] ?? 0 })),
+    ...(otherCount > 0 ? [{ key: 'other', label: 'Other', color: 'var(--border)', count: otherCount }] : []),
+  ].filter(s => s.count > 0)
+  const totalCount = cycle.length
 
   const liveSurveys = cycle.filter(s => s.status === 'active' || s.status === 'collecting')
   const responsesCollected = cycle.reduce((s, x) => s + x.responseCount, 0)
