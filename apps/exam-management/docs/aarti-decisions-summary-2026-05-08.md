@@ -1135,6 +1135,8 @@ Search and Ask Leo must stay in the **Prism top panel** — not in the left side
 
 Any structural nav change requires alignment with Himanshu + Yash before applying. T57 (PCE backlog).
 
+⚠️ **CONFLICT (2026-06-17):** Himanshu confirmed he already moved Ask Leo to the **left sidebar** (engineering decision, driven by 400–500 person Zoom layout issues causing top-right position to break). This directly contradicts Aarti's directive above. **Do NOT change sidebar code until resolved.** Himanshu to coordinate with Arun + Yash + Aarti. See T99, D_EM_HIM01, D_EM_HIM02 — `docs/research/meetings/2026-06-17-himanshu-design-system-nav-alignment.md`.
+
 ### Term missing start/end dates → reminder (D_PCE41)
 
 If the program has not entered start/end dates for a term in the academic calendar, PCE must show a reminder/link to go set them up. Course evaluation relies on term dates.
@@ -1353,6 +1355,7 @@ The final course-offering instance view is the **same** whether entered via term
 | 2026-06-09 08:45 | Post-Course Survey Cadence Meeting — template paths, distribution rules, Phase 1 kills | `3fd2ac92` | Vishaka + David + Monel + Romit |
 | 2026-06-10 07:30 | PCE Architecture — tab structure, analytics dimensions, base entity strategy | `4d1fa807` | Vishaka + Arun + Vinaya + Romit |
 | 2026-06-10 11:16 | Course & Faculty Evaluation — setup, directories, term workflow (Aarti 1:1) | `410d7c0e` | Aarti + Romit |
+| 2026-06-17 05:17 | Design system and nav alignment — engineering sync (cross-product) | `1f55db0d` | Himanshu + Romit |
 
 Per-meeting raw notes at `apps/exam-management/docs/research/meetings/` and `apps/pce/docs/research/meetings/`.
 
