@@ -50,10 +50,6 @@ const rateConfig: ChartConfig = {
   rate: { label: 'Response rate', color: 'var(--brand-color)' },
 }
 
-const qScoreConfig: ChartConfig = {
-  avg: { label: 'Avg score', color: 'var(--chart-1)' },
-}
-
 type ProgSurveyRow = {
   id: string; name: string; type: string; status: string
   sent: number; responses: number; rate: number; deadline: string
@@ -302,73 +298,43 @@ export default function ProgrammaticAnalyticsPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ChartContainer
-                    config={qScoreConfig}
-                    className="w-full"
-                    style={{ height: `${scores.length * 48 + 8}px` }}
-                    role="img"
-                    aria-label={`Question scores for ${surveyTypeName(survey.courseCode)}`}
-                  >
-                    <BarChart
-                      layout="vertical"
-                      data={scores.map(q => ({
-                        label: q.text.length > 52 ? q.text.slice(0, 50) + '…' : q.text,
-                        avg: q.avg,
-                      }))}
-                      margin={{ top: 0, right: 48, bottom: 0, left: 0 }}
-                    >
-                      <XAxis type="number" domain={[0, 5]} hide />
-                      <YAxis
-                        type="category"
-                        dataKey="label"
-                        width={260}
-                        tick={{ fill: 'var(--muted-foreground)', width: 256 }}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <Bar dataKey="avg" radius={[0, 3, 3, 0]} maxBarSize={18} background={{ fill: 'var(--muted)' }} isAnimationActive={false}>
-                        {scores.map((q) => (
-                          <Cell
-                            key={q.questionId}
-                            fill={q.avg >= 4.3 ? 'var(--chart-2)' : q.avg >= 3.7 ? 'var(--brand-color)' : 'var(--chart-4)'}
-                          />
-                        ))}
-                      </Bar>
-                      <ChartTooltip
-                        cursor={false}
-                        content={
-                          <ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, 'Avg score']} />
-                        }
-                      />
-                    </BarChart>
-                  </ChartContainer>
+                  {/* Legend — explains the distribution bar + scale */}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-1 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1.5"><span className="size-2 rounded-full" style={{ background: 'var(--chart-4)' }} aria-hidden="true" />Needs improvement (1–2)</span>
+                    <span className="flex items-center gap-1.5"><span className="size-2 rounded-full" style={{ background: 'var(--muted-foreground)', opacity: 0.45 }} aria-hidden="true" />Neutral (3)</span>
+                    <span className="flex items-center gap-1.5"><span className="size-2 rounded-full" style={{ background: 'var(--chart-2)' }} aria-hidden="true" />Positive (4–5)</span>
+                  </div>
 
-                  {/* Score distribution micro-view */}
-                  <div className="mt-4 flex flex-col gap-2">
+                  <div className="flex flex-col">
                     {scores.map(q => {
-                      const total = q.distribution.reduce((s, v) => s + v, 0)
+                      const neg = (q.distribution[0] ?? 0) + (q.distribution[1] ?? 0)
+                      const neu = q.distribution[2] ?? 0
+                      const pos = (q.distribution[3] ?? 0) + (q.distribution[4] ?? 0)
+                      const total = neg + neu + pos
+                      const pct = (n: number) => total > 0 ? (n / total) * 100 : 0
+                      const tier = q.avg >= 4.3 ? 'var(--chart-2)' : q.avg >= 3.7 ? 'var(--brand-color)' : 'var(--chip-4)'
                       return (
-                        <div key={q.questionId} className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground w-4 text-right font-medium">{q.avg.toFixed(1)}</span>
-                          <div className="flex-1 flex h-2 rounded overflow-hidden gap-px">
-                            {q.distribution.map((count, i) => (
-                              <div
-                                key={i}
-                                className="h-full"
-                                style={{
-                                  width: `${total > 0 ? (count / total) * 100 : 0}%`,
-                                  backgroundColor: i >= 3 ? 'var(--chart-2)' : i === 2 ? 'var(--muted-foreground)' : 'var(--chart-4)',
-                                  opacity: i >= 3 ? 1 : i === 2 ? 0.5 : 0.6,
-                                }}
-                                aria-hidden="true"
-                              />
-                            ))}
+                        <div key={q.questionId} className="flex flex-col gap-2 py-3 border-b border-border last:border-0">
+                          {/* full question text + labelled average */}
+                          <div className="flex items-baseline justify-between gap-4">
+                            <p className="text-sm flex-1">{q.text}</p>
+                            <span className="shrink-0 text-sm tabular-nums">
+                              <span className="font-semibold" style={{ color: tier }}>{q.avg.toFixed(1)}</span>
+                              <span className="text-muted-foreground"> / 5 avg</span>
+                            </span>
                           </div>
-                          <span className="text-xs text-muted-foreground w-4">{q.count}</span>
+                          {/* distribution bar (1→5 left to right) + labelled n */}
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1 flex h-2.5 rounded-full overflow-hidden" style={{ background: 'var(--muted)' }} role="img" aria-label={`${Math.round(pct(pos))}% positive, ${Math.round(pct(neu))}% neutral, ${Math.round(pct(neg))}% needs improvement`}>
+                              {neg > 0 && <div style={{ width: `${pct(neg)}%`, background: 'var(--chart-4)' }} />}
+                              {neu > 0 && <div style={{ width: `${pct(neu)}%`, background: 'var(--muted-foreground)', opacity: 0.45 }} />}
+                              {pos > 0 && <div style={{ width: `${pct(pos)}%`, background: 'var(--chart-2)' }} />}
+                            </div>
+                            <span className="shrink-0 w-20 text-right text-xs text-muted-foreground tabular-nums">n = {q.count}</span>
+                          </div>
                         </div>
                       )
                     })}
-                    <p className="text-xs text-muted-foreground mt-1">Distribution: 1–2 (needs improvement) · 3 (neutral) · 4–5 (positive)</p>
                   </div>
                 </CardContent>
               </Card>
