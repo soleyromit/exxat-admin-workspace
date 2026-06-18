@@ -14,7 +14,7 @@ import {
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import {
-  MOCK_MASTER_COURSES, MOCK_PROGRAM_TERMS, MOCK_COURSE_OFFERINGS,
+  MOCK_PROGRAM_TERMS, MOCK_COURSE_OFFERINGS,
   MOCK_STUDENTS, MOCK_ACCOMMODATIONS, MOCK_CONTENT_AREAS,
   MOCK_COMPETENCIES, MOCK_STANDARDS, MOCK_ASSESSMENT_TYPES,
 } from '@/lib/pce-mock-data'
@@ -33,10 +33,6 @@ interface EntityTile {
 
 const ENTITIES: EntityTile[] = [
   // Available now
-  { key: 'courses', title: 'Courses', icon: 'fa-book',
-    description: 'Catalog of every course the program offers.',
-    href: '/admin/courses', status: 'available', metric: `${MOCK_MASTER_COURSES.length} courses` },
-
   { key: 'terms', title: 'Terms', icon: 'fa-calendar-days',
     description: 'Academic terms (Spring 2026, Fall 2025, etc.).',
     href: '/admin/terms', status: 'available', metric: `${MOCK_PROGRAM_TERMS.length} terms · ${MOCK_PROGRAM_TERMS.filter(t => t.status === 'active').length} active` },

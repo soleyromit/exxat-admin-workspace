@@ -4,9 +4,8 @@ import { MOCK_SURVEYS, MOCK_TEMPLATES } from "@/lib/pce-mock-data"
 const ADMIN_ENTITY_ROUTES = [
   { id: "admin-students",         label: "Students",         href: "/admin/students",         icon: "fa-light fa-graduation-cap" },
   { id: "admin-faculty",          label: "Faculty",          href: "/admin/faculty",          icon: "fa-light fa-user-tie" },
-  { id: "admin-courses",          label: "Courses",          href: "/admin/courses",          icon: "fa-light fa-book" },
   { id: "admin-terms",            label: "Terms",            href: "/admin/terms",            icon: "fa-light fa-calendar" },
-  { id: "admin-offerings",        label: "Offerings",        href: "/admin/offerings",        icon: "fa-light fa-layer-group" },
+  { id: "admin-offerings",        label: "Course Offerings", href: "/admin/offerings",        icon: "fa-light fa-layer-group" },
   { id: "admin-competencies",     label: "Competencies",     href: "/admin/competencies",     icon: "fa-light fa-list-check" },
   { id: "admin-content-areas",    label: "Content Areas",    href: "/admin/content-areas",    icon: "fa-light fa-grid-2" },
   { id: "admin-standards",        label: "Standards",        href: "/admin/standards",        icon: "fa-light fa-certificate" },
@@ -16,12 +15,16 @@ const ADMIN_ENTITY_ROUTES = [
 ]
 
 const PAGE_ROUTES = [
-  { id: "page-surveys",    label: "Surveys",    href: "/surveys",    icon: "fa-light fa-paper-plane" },
-  { id: "page-templates",  label: "Templates",  href: "/templates",  icon: "fa-light fa-rectangle-list" },
-  { id: "page-moderation", label: "Moderation", href: "/moderation", icon: "fa-light fa-shield-check" },
-  { id: "page-analytics",  label: "Analytics",  href: "/analytics",  icon: "fa-light fa-chart-mixed" },
-  { id: "page-settings",   label: "Settings",   href: "/settings",   icon: "fa-light fa-gear" },
-  { id: "page-help",       label: "Help",       href: "/help",       icon: "fa-light fa-circle-question" },
+  { id: "page-surveys",           label: "Surveys",                              href: "/surveys",                   icon: "fa-light fa-paper-plane" },
+  { id: "page-activate",          label: "Activate Term",                        href: "/surveys/activate",          icon: "fa-light fa-circle-play" },
+  { id: "page-templates",         label: "Templates",                            href: "/templates",                 icon: "fa-light fa-rectangle-list" },
+  { id: "page-moderation",        label: "Moderation",                           href: "/moderation",                icon: "fa-light fa-shield-check" },
+  { id: "page-analytics-ce",      label: "Analytics — Course Evaluation",        href: "/analytics",                 icon: "fa-light fa-chart-mixed" },
+  { id: "page-analytics-ps",      label: "Analytics — Programmatic",             href: "/analytics/programmatic",    icon: "fa-light fa-chart-mixed" },
+  { id: "page-email-templates",   label: "Email Templates",                      href: "/admin/email-templates",     icon: "fa-light fa-envelope" },
+  { id: "page-reminder-schedule", label: "Reminder Schedule",                    href: "/admin/reminder-schedule",   icon: "fa-light fa-bell" },
+  { id: "page-settings",          label: "Settings",                             href: "/settings",                  icon: "fa-light fa-gear" },
+  { id: "page-help",              label: "Help",                                 href: "/help",                      icon: "fa-light fa-circle-question" },
 ]
 
 export const PCE_COMMAND_MENU_DATA_GROUPS: CommandMenuGroup[] = [

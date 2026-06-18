@@ -207,7 +207,7 @@ export default function CourseAnalyticsProfile() {
     <>
       <SiteHeader
         breadcrumbs={fromDir
-          ? [{ label: 'Courses', href: '/admin/courses' }]
+          ? [{ label: 'Course Offerings', href: '/admin/offerings' }]
           : [{ label: 'Analytics', href: '/analytics' }]
         }
         title={course.code}

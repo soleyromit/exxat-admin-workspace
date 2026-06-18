@@ -157,8 +157,7 @@ export const NAV_ADMIN: NavLinkItem[] = [
     children: [
       { key: "students",  title: "Students",  url: "/admin/students",  icon: <i className="fa-light fa-graduation-cap" aria-hidden="true" /> },
       { key: "faculty",   title: "Faculty",   url: "/admin/faculty",   icon: <i className="fa-light fa-user-tie" aria-hidden="true" /> },
-      { key: "courses",   title: "Courses",   url: "/admin/courses",   icon: <i className="fa-light fa-book" aria-hidden="true" /> },
-      { key: "offerings", title: "Offerings", url: "/admin/offerings", icon: <i className="fa-light fa-layer-group" aria-hidden="true" /> },
+      { key: "offerings", title: "Course Offerings", url: "/admin/offerings", icon: <i className="fa-light fa-layer-group" aria-hidden="true" /> },
       { key: "terms",     title: "Terms",     url: "/admin/terms",     icon: <i className="fa-light fa-calendar" aria-hidden="true" /> },
     ],
   },

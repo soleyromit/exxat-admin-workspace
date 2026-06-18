@@ -158,7 +158,7 @@ export default function CourseOfferingsPage() {
       key: 'analytics', label: '', width: 32,
       cell: (row) => (
         <Link
-          href={`/analytics?tab=course&courseCode=${encodeURIComponent(row.courseCode)}`}
+          href={`/analytics/course/${encodeURIComponent(row.courseCode)}?from=directory`}
           onClick={e => e.stopPropagation()}
           aria-label={`View analytics for ${row.courseCode}`}
         >
