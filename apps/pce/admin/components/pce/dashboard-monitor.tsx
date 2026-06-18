@@ -2,24 +2,31 @@
 
 /**
  * DashboardMonitor — the at-a-glance monitoring layer on the Course Evaluation
- * Dashboard (`/analytics`). Answers "what needs me right now?" for the current
- * evaluation cycle, above the analytical By Term/Faculty/Course tabs.
+ * Dashboard (`/analytics`, default "Overview" tab). Answers "what needs me right
+ * now?" for the current evaluation cycle, above the analytical tabs.
  *
- * Blocks (build-plan §5): KPI strip (deltas + absolute counts) · evaluation
- * status (segmented bar) · response-by-course-type (bullets vs 70% target) ·
- * at-risk evaluations (ranked, below 60%, inline Nudge).
- *
- * DS: KeyMetrics + Card + Button + tokens. The segmented bar and bullet are
- * token-styled compositions (DS has no such primitive). No red in score/risk
- * viz (aarti_no_red) — "below threshold" = amber (--chart-4).
+ * Viz is distribution- and trend-led (build-plan §3), NOT flat progress/segmented
+ * bars (see feedback_no_basic_progress_bar_viz):
+ *   • Response distribution — multi-dimensional scatter strip: x = response rate,
+ *     dot size = enrollment, color = risk tier, with threshold + median reference
+ *     lines. Shows spread, laggards and center at a glance.
+ *   • Response rate over time — trend line across terms, current cycle marked.
+ *   • At-risk worklist — actionable rows (no bars), inline Nudge.
+ * DS: KeyMetrics + Card + ChartContainer + Button + tokens. No red (aarti_no_red);
+ * amber TEXT uses --chip-4 (AA), amber FILLS use --chart-4.
  */
 
 import { useMemo } from 'react'
 import {
   KeyMetrics, Button,
   Card, CardContent, CardHeader, CardTitle, CardDescription,
+  ChartContainer, ChartTooltip,
 } from '@exxatdesignux/ui'
-import type { MetricItem } from '@exxatdesignux/ui'
+import type { MetricItem, ChartConfig } from '@exxatdesignux/ui'
+import {
+  ScatterChart, Scatter, Cell, XAxis, YAxis, ZAxis, ReferenceLine,
+  LineChart, Line, CartesianGrid,
+} from 'recharts'
 import type { PceSurvey } from '@/lib/pce-mock-data'
 
 export interface MonitorNudgeTarget {
@@ -34,15 +41,18 @@ const TERM_ORDER = [
 const AT_RISK_THRESHOLD = 60
 const RESPONSE_TARGET = 70
 
-/** Status → display group + token color. No red (aarti_no_red). */
 const STATUS_GROUPS: { key: string; label: string; statuses: string[]; color: string }[] = [
-  { key: 'live',      label: 'Live',      statuses: ['active', 'collecting'],  color: 'var(--brand-color)' },
-  { key: 'scheduled', label: 'Scheduled', statuses: ['scheduled', 'planned'],  color: 'var(--chart-1)' },
-  { key: 'review',    label: 'In review', statuses: ['pending_review'],         color: 'var(--chart-4)' },
-  { key: 'released',  label: 'Released',  statuses: ['released'],               color: 'var(--chart-2)' },
-  { key: 'closed',    label: 'Closed',    statuses: ['closed'],                 color: 'var(--muted-foreground)' },
-  { key: 'draft',     label: 'Draft',     statuses: ['draft'],                  color: 'var(--border-control-35)' },
+  { key: 'live',      label: 'Live',      statuses: ['active', 'collecting'], color: 'var(--brand-color)' },
+  { key: 'scheduled', label: 'Scheduled', statuses: ['scheduled', 'planned'], color: 'var(--chart-1)' },
+  { key: 'review',    label: 'In review', statuses: ['pending_review'],        color: 'var(--chart-4)' },
+  { key: 'released',  label: 'Released',  statuses: ['released'],              color: 'var(--chart-2)' },
+  { key: 'closed',    label: 'Closed',    statuses: ['closed'],                color: 'var(--muted-foreground)' },
+  { key: 'draft',     label: 'Draft',     statuses: ['draft'],                 color: 'var(--border-control-35)' },
 ]
+
+/** Risk tier → FILL token (fills don't need AA contrast). No red. */
+const dotFill = (rate: number) =>
+  rate >= RESPONSE_TARGET ? 'var(--chart-2)' : rate >= AT_RISK_THRESHOLD ? 'var(--brand-color)' : 'var(--chart-4)'
 
 function weightedRate(surveys: PceSurvey[]): number | null {
   const enrolled = surveys.reduce((s, x) => s + x.enrollmentCount, 0)
@@ -50,33 +60,29 @@ function weightedRate(surveys: PceSurvey[]): number | null {
   return Math.round(surveys.reduce((s, x) => s + x.responseRate * x.enrollmentCount, 0) / enrolled)
 }
 
-/** Deadlines arrive as 'MMM DD, YYYY' (e.g. "Apr 30, 2026") or ISO — both
- *  parse via `new Date(str)`. Returns null for unparseable/missing dates so the
- *  "days left" line hides rather than rendering a NaN-derived "closing today". */
+function median(nums: number[]): number | null {
+  if (nums.length === 0) return null
+  const s = [...nums].sort((a, b) => a - b)
+  const m = Math.floor(s.length / 2)
+  return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2)
+}
+
+/** Deterministic vertical jitter in [0.18, 0.82] so the strip reads as a cloud. */
+function jitter(seed: string): number {
+  let h = 0
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) % 1000
+  return 0.18 + (h / 1000) * 0.64
+}
+
+/** Deadlines arrive as 'MMM DD, YYYY' or ISO — both parse via new Date(). Null when unparseable. */
 function daysUntil(dateStr: string): number | null {
   const t = new Date(dateStr).getTime()
   if (!Number.isFinite(t)) return null
   return Math.ceil((t - Date.now()) / 86_400_000)
 }
 
-/** Token-styled bullet: fill + qualitative track + target tick. */
-function Bullet({ value, color, target }: { value: number; color: string; target?: number }) {
-  return (
-    <div className="relative h-2.5 w-full rounded-full" style={{ background: 'var(--muted)' }}>
-      <div
-        className="absolute inset-y-0 left-0 rounded-full"
-        style={{ width: `${Math.min(100, Math.max(0, value))}%`, background: color }}
-      />
-      {target != null && (
-        <div
-          className="absolute w-0.5 rounded-full"
-          style={{ left: `${target}%`, top: -2, bottom: -2, background: 'var(--foreground)' }}
-          aria-hidden="true"
-        />
-      )}
-    </div>
-  )
-}
+const distConfig: ChartConfig = { rate: { label: 'Response rate', color: 'var(--brand-color)' } }
+const trendConfig: ChartConfig = { rate: { label: 'Response rate', color: 'var(--brand-color)' } }
 
 export function DashboardMonitor({
   surveys,
@@ -87,7 +93,6 @@ export function DashboardMonitor({
 }) {
   const live = surveys
 
-  // Current evaluation cycle = latest term present (chronological).
   const { currentTerm, prevTerm } = useMemo(() => {
     const present = new Set(live.map(s => s.term))
     const ordered = TERM_ORDER.filter(t => present.has(t))
@@ -108,15 +113,12 @@ export function DashboardMonitor({
     return c
   }, [cycle])
 
-  // Catch-all so an unknown/future status still segments (and the bar always
-  // sums to the full cycle) rather than silently dropping out.
   const matchedStatuses = new Set(STATUS_GROUPS.flatMap(g => g.statuses))
   const otherCount = cycle.filter(s => !matchedStatuses.has(s.status)).length
-  const segments = [
+  const statusChips = [
     ...STATUS_GROUPS.map(g => ({ key: g.key, label: g.label, color: g.color, count: counts[g.key] ?? 0 })),
     ...(otherCount > 0 ? [{ key: 'other', label: 'Other', color: 'var(--border)', count: otherCount }] : []),
   ].filter(s => s.count > 0)
-  const totalCount = cycle.length
 
   const liveSurveys = cycle.filter(s => s.status === 'active' || s.status === 'collecting')
   const responsesCollected = cycle.reduce((s, x) => s + x.responseCount, 0)
@@ -127,52 +129,69 @@ export function DashboardMonitor({
   const facultyEvaluated = new Set(cycle.flatMap(s => s.instructors.map(i => i.id))).size
 
   const atRisk = useMemo(() =>
-    liveSurveys
-      .filter(s => s.responseRate < AT_RISK_THRESHOLD)
-      .sort((a, b) => a.responseRate - b.responseRate),
+    liveSurveys.filter(s => s.responseRate < AT_RISK_THRESHOLD).sort((a, b) => a.responseRate - b.responseRate),
     [liveSurveys],
   )
 
-  // Response by course type (current cycle, only types with data).
-  const byType = useMemo(() => {
+  // Distribution strip: every cycle course as a point (x = rate, size = enrollment, color = tier).
+  const distData = useMemo(() =>
+    cycle.map(s => ({
+      rate: s.responseRate,
+      y: jitter(s.id || s.courseCode),
+      z: s.enrollmentCount,
+      code: s.courseCode,
+      name: s.courseName,
+    })),
+    [cycle],
+  )
+  const cycleMedian = useMemo(() => median(cycle.map(s => s.responseRate)), [cycle])
+
+  // Response-rate trend across terms (real, weighted), current cycle marked.
+  const trendData = useMemo(() => {
+    const present = new Set(live.map(s => s.term))
+    return TERM_ORDER.filter(t => present.has(t)).map(t => ({
+      term: t.replace('Spring ', 'Sp ').replace('Fall ', 'Fa '),
+      rate: weightedRate(live.filter(s => s.term === t)),
+      current: t === currentTerm,
+    }))
+  }, [live, currentTerm])
+
+  const byTypeNote = useMemo(() => {
     return (['didactic', 'clinical'] as const)
       .map(type => {
-        const subset = cycle.filter(s => s.courseType === type)
-        const rate = weightedRate(subset)
-        return rate == null ? null : { type, rate, courses: subset.length }
+        const r = weightedRate(cycle.filter(s => s.courseType === type))
+        return r == null ? null : `${type[0].toUpperCase()}${type.slice(1)} ${r}%`
       })
-      .filter((x): x is { type: 'didactic' | 'clinical'; rate: number; courses: number } => x !== null)
+      .filter(Boolean).join('  ·  ')
   }, [cycle])
 
   const kpis: MetricItem[] = [
-    {
-      id: 'active', label: 'Active evaluations', value: liveSurveys.length,
-      delta: `${counts.scheduled ?? 0} scheduled · ${counts.closed ?? 0} closed`, trend: 'neutral',
-    },
-    {
-      id: 'rate', label: 'Avg response rate', value: avgRate != null ? `${avgRate}%` : '—',
-      delta: rateDelta != null ? `${rateDelta >= 0 ? '+' : ''}${rateDelta}% vs ${prevTerm}` : '',
-      trend: rateDelta == null ? 'neutral' : rateDelta > 0 ? 'up' : rateDelta < 0 ? 'down' : 'neutral',
-    },
-    {
-      id: 'responses', label: 'Responses collected', value: responsesCollected.toLocaleString(),
-      delta: `of ${enrolledTotal.toLocaleString()} students`, trend: 'neutral',
-    },
+    { id: 'active', label: 'Active evaluations', value: liveSurveys.length, delta: `${counts.scheduled ?? 0} scheduled · ${counts.closed ?? 0} closed`, trend: 'neutral' },
+    { id: 'rate', label: 'Avg response rate', value: avgRate != null ? `${avgRate}%` : '—', delta: rateDelta != null ? `${rateDelta >= 0 ? '+' : ''}${rateDelta}% vs ${prevTerm}` : '', trend: rateDelta == null ? 'neutral' : rateDelta > 0 ? 'up' : rateDelta < 0 ? 'down' : 'neutral' },
+    { id: 'responses', label: 'Responses collected', value: responsesCollected.toLocaleString(), delta: `of ${enrolledTotal.toLocaleString()} students`, trend: 'neutral' },
     { id: 'faculty', label: 'Faculty evaluated', value: facultyEvaluated, delta: '', trend: 'neutral' },
-    {
-      id: 'atrisk', label: 'Courses at risk', value: atRisk.length,
-      delta: `below ${AT_RISK_THRESHOLD}%`, trend: 'neutral',
-    },
+    { id: 'atrisk', label: 'Courses at risk', value: atRisk.length, delta: `below ${AT_RISK_THRESHOLD}%`, trend: 'neutral' },
   ]
 
   if (!currentTerm || cycle.length === 0) return null
 
   return (
     <div className="flex flex-col gap-4 max-w-5xl">
-      <div className="flex items-baseline justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <p className="text-sm text-muted-foreground">
           Monitoring <span className="font-medium text-foreground">{currentTerm}</span> — the active evaluation cycle.
         </p>
+        {statusChips.length > 0 && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {statusChips.map(s => (
+              <span key={s.key} className="flex items-center gap-1.5 text-xs">
+                <span className="size-2 rounded-full" style={{ background: s.color }} aria-hidden="true" />
+                <span className="text-muted-foreground">{s.label}</span>
+                <span className="font-semibold tabular-nums">{s.count}</span>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="[&_*]:!border-e-0">
@@ -180,57 +199,89 @@ export function DashboardMonitor({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Evaluation status — segmented bar */}
+        {/* Response distribution — multi-dimensional scatter strip */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Evaluation status</CardTitle>
-            <CardDescription>{totalCount} evaluation{totalCount !== 1 ? 's' : ''} this cycle</CardDescription>
+            <CardTitle className="text-sm">Response distribution</CardTitle>
+            <CardDescription>
+              Each course by response rate · dot size = enrolment{byTypeNote ? ` · ${byTypeNote}` : ''}
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex h-2.5 w-full overflow-hidden rounded-full" style={{ background: 'var(--muted)' }} role="img" aria-label="Evaluation status distribution">
-              {segments.map(s => (
-                <div key={s.key} style={{ width: `${(s.count / totalCount) * 100}%`, background: s.color }} title={`${s.label}: ${s.count}`} />
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3">
-              {segments.map(s => (
-                <span key={s.key} className="flex items-center gap-1.5 text-xs">
-                  <span className="size-2 rounded-full" style={{ background: s.color }} aria-hidden="true" />
-                  <span className="text-muted-foreground">{s.label}</span>
-                  <span className="font-semibold tabular-nums">{s.count}</span>
-                </span>
-              ))}
-            </div>
+            <ChartContainer config={distConfig} className="h-44 w-full" role="img" aria-label="Response-rate distribution across cycle courses">
+              <ScatterChart margin={{ top: 16, right: 8, bottom: 0, left: -24 }}>
+                <CartesianGrid horizontal={false} stroke="var(--border)" />
+                <XAxis type="number" dataKey="rate" domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(v: number) => `${v}%`} tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
+                <YAxis type="number" dataKey="y" domain={[0, 1]} hide />
+                <ZAxis type="number" dataKey="z" range={[50, 380]} />
+                <ReferenceLine x={AT_RISK_THRESHOLD} stroke="var(--chip-4)" strokeDasharray="4 3" label={{ value: `${AT_RISK_THRESHOLD}% risk`, position: 'insideTopLeft', fontSize: 10, fill: 'var(--chip-4)' }} />
+                {cycleMedian != null && (
+                  <ReferenceLine x={cycleMedian} stroke="var(--muted-foreground)" strokeDasharray="2 2" label={{ value: 'median', position: 'insideTopRight', fontSize: 10, fill: 'var(--muted-foreground)' }} />
+                )}
+                <ChartTooltip
+                  cursor={false}
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null
+                    const d = payload[0].payload as { code: string; name: string; rate: number; z: number }
+                    return (
+                      <div className="rounded-lg border border-border bg-popover px-2.5 py-1.5 text-xs shadow-md">
+                        <p className="font-medium">{d.code} <span className="font-semibold tabular-nums" style={{ color: dotFill(d.rate) === 'var(--chart-4)' ? 'var(--chip-4)' : dotFill(d.rate) }}>{d.rate}%</span></p>
+                        <p className="text-muted-foreground">{d.name} · {d.z} enrolled</p>
+                      </div>
+                    )
+                  }}
+                />
+                <Scatter data={distData}>
+                  {distData.map((d, i) => <Cell key={i} fill={dotFill(d.rate)} fillOpacity={0.8} stroke={dotFill(d.rate)} />)}
+                </Scatter>
+              </ScatterChart>
+            </ChartContainer>
           </CardContent>
         </Card>
 
-        {/* Response by course type — bullets vs target */}
+        {/* Response rate over time — trend */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Response by course type</CardTitle>
-            <CardDescription>Completion vs {RESPONSE_TARGET}% target</CardDescription>
+            <CardTitle className="text-sm">Response rate over time</CardTitle>
+            <CardDescription>Enrolment-weighted average per term · {RESPONSE_TARGET}% target</CardDescription>
           </CardHeader>
           <CardContent>
-            {byType.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No course-type data this cycle.</p>
-            ) : (
-              <div className="flex flex-col gap-3.5">
-                {byType.map(({ type, rate, courses }) => (
-                  <div key={type} className="flex flex-col gap-1.5">
-                    <div className="flex items-baseline justify-between text-xs">
-                      <span className="capitalize font-medium">{type} <span className="text-muted-foreground font-normal">· {courses} course{courses !== 1 ? 's' : ''}</span></span>
-                      <span className="tabular-nums font-semibold" style={{ color: rate >= RESPONSE_TARGET ? 'var(--chart-2)' : 'var(--chip-4)' }}>{rate}%</span>
-                    </div>
-                    <Bullet value={rate} target={RESPONSE_TARGET} color={rate >= RESPONSE_TARGET ? 'var(--chart-2)' : 'var(--brand-color)'} />
-                  </div>
-                ))}
-              </div>
-            )}
+            <ChartContainer config={trendConfig} className="h-44 w-full" role="img" aria-label="Average response rate per term">
+              <LineChart data={trendData} margin={{ top: 8, right: 8, bottom: 0, left: -24 }}>
+                <CartesianGrid vertical={false} stroke="var(--border)" />
+                <XAxis dataKey="term" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
+                <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(v: number) => `${v}%`} width={36} tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
+                <ReferenceLine y={RESPONSE_TARGET} stroke="var(--muted-foreground)" strokeDasharray="4 3" />
+                <ChartTooltip
+                  cursor={{ stroke: 'var(--border)' }}
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null
+                    const v = payload[0].value as number | null
+                    return (
+                      <div className="rounded-lg border border-border bg-popover px-2.5 py-1.5 text-xs shadow-md">
+                        <p className="font-medium">{label} <span className="font-semibold tabular-nums">{v != null ? `${v}%` : '—'}</span></p>
+                      </div>
+                    )
+                  }}
+                />
+                <Line
+                  type="monotone" dataKey="rate" stroke="var(--brand-color)" strokeWidth={2}
+                  connectNulls
+                  dot={(props: { cx?: number; cy?: number; payload?: { current?: boolean } }) => {
+                    const { cx, cy, payload } = props
+                    if (cx == null || cy == null) return <g />
+                    const cur = payload?.current
+                    return <circle cx={cx} cy={cy} r={cur ? 5 : 3} fill={cur ? 'var(--brand-color)' : 'var(--card)'} stroke="var(--brand-color)" strokeWidth={2} />
+                  }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ChartContainer>
           </CardContent>
         </Card>
       </div>
 
-      {/* At-risk evaluations */}
+      {/* At-risk worklist — actionable rows, no bars */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">At-risk evaluations</CardTitle>
@@ -244,26 +295,21 @@ export function DashboardMonitor({
             </div>
           ) : (
             <div className="flex flex-col">
-              {atRisk.map(s => {
+              {atRisk.map((s, i) => {
                 const nonResponders = Math.max(0, s.enrollmentCount - s.responseCount)
                 const days = s.deadline ? daysUntil(s.deadline) : null
                 return (
                   <div key={s.id} className="flex items-center gap-4 py-2.5 border-b border-border last:border-0">
+                    <span className="text-xs tabular-nums text-muted-foreground w-4 text-center shrink-0">{i + 1}</span>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium truncate">
                         {s.courseCode} <span className="text-muted-foreground font-normal">{s.courseName}</span>
                       </p>
-                      <div className="flex items-center gap-2 mt-1.5 max-w-[280px]">
-                        <Bullet value={s.responseRate} target={AT_RISK_THRESHOLD} color="var(--chart-4)" />
-                        <span className="text-xs tabular-nums font-semibold w-9 text-right" style={{ color: 'var(--chip-4)' }}>{s.responseRate}%</span>
-                      </div>
+                      <p className="text-xs text-muted-foreground tabular-nums mt-0.5">
+                        {nonResponders} non-responders{days != null ? ` · ${days > 0 ? `${days} days left` : 'closing today'}` : ''}
+                      </p>
                     </div>
-                    <div className="text-right shrink-0 hidden sm:block">
-                      <p className="text-xs text-muted-foreground tabular-nums">{nonResponders} non-responders</p>
-                      {days != null && (
-                        <p className="text-xs text-muted-foreground tabular-nums">{days > 0 ? `${days} days left` : 'closing today'}</p>
-                      )}
-                    </div>
+                    <span className="text-base font-semibold tabular-nums shrink-0" style={{ color: 'var(--chip-4)' }}>{s.responseRate}%</span>
                     <Button
                       variant="outline" size="sm" className="shrink-0"
                       onClick={() => onNudge({ id: s.id, courseCode: s.courseCode, courseName: s.courseName, nonResponders })}
