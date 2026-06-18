@@ -49,7 +49,7 @@ const RESPONSE_TARGET = 70
 const AT_RISK_THRESHOLD = 60
 
 type ProgSurveyRow = {
-  id: string; name: string; type: string; status: string
+  id: string; name: string; type: string; target: string; status: string
   sent: number; responses: number; rate: number; deadline: string
 } & Record<string, unknown>
 
@@ -58,9 +58,18 @@ const surveyColumns: ColumnDef<ProgSurveyRow>[] = [
     key: 'name', label: 'Survey', sortable: true,
     cell: (row) => (
       <div className="min-w-0">
-        <p className="text-sm font-medium truncate max-w-[200px]">{row.name}</p>
+        <p className="text-sm font-medium truncate max-w-[220px]">{row.name.split('—')[0].trim()}</p>
         <p className="text-xs text-muted-foreground">{row.type}</p>
       </div>
+    ),
+  },
+  {
+    key: 'target', label: 'Target', sortable: true, width: 160,
+    cell: (row) => (
+      <span className="text-sm text-muted-foreground inline-flex items-center gap-1.5">
+        <i className="fa-light fa-users-viewfinder text-xs" aria-hidden="true" />
+        {row.target}
+      </span>
     ),
   },
   {
@@ -107,6 +116,7 @@ export default function ProgrammaticAnalyticsPage() {
       id:        s.id,
       name:      s.courseCode,
       type:      surveyTypeName(s.courseCode),
+      target:    s.courseCode.split('—')[1]?.trim() ?? 'All participants',
       status:    s.status,
       sent:      s.enrollmentCount,
       responses: s.responseCount,
