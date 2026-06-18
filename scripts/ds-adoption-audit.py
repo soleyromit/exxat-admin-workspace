@@ -156,6 +156,10 @@ DOCUMENTED_HAND_ROLLS = {
     # Documented as a legitimate hand-roll in docs/governance/ds-adoption.md →
     # DataTable row.
     "app/(app)/assessment-builder/assessment-builder-client.tsx",
+    # pce: faculty analytics profile — detail page for a single faculty member; the DataTable
+    # renders a courses/offerings sub-list (not the primary entity list). ListPageTemplate is
+    # for top-level entity list pages, not sub-tables within a profile view.
+    "app/(app)/analytics/faculty/[id]/page.tsx",
     # exam-management: qb-table — purpose-built spreadsheet for the question bank.
     # Frozen header + left column, virtual scroll over thousands of rows, inline
     # cell editing, drag-handle column resizing, multi-level group-by. DataTable's
