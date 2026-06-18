@@ -18,6 +18,7 @@ import {
   BarChart, Bar, XAxis, YAxis, LineChart, Line, CartesianGrid, Cell,
 } from 'recharts'
 import { SiteHeader } from '@/components/site-header'
+import { DashboardMonitor } from '@/components/pce/dashboard-monitor'
 import { EvaluationCardSheet } from '@/components/pce/evaluation-card-sheet'
 import { DataTable } from '@/components/data-table'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
@@ -42,7 +43,7 @@ const tierColor = (avg: number) =>
   avg >= 4.3 ? 'var(--chart-2)' : avg >= 3.7 ? 'var(--brand-color)' : 'var(--chart-4)'
 
 type Axis = 'term' | 'cohort'
-type AnalyticsTab = 'term' | 'faculty' | 'course'
+type AnalyticsTab = 'overview' | 'term' | 'faculty' | 'course'
 type NudgeTarget = { id: string; courseCode: string; courseName: string; nonResponders: number }
 
 type FacultyRow = {
@@ -249,8 +250,11 @@ function AnalyticsInner() {
   const { surveys } = usePce()
   const searchParams = useSearchParams()
 
+  // Course-evaluation surveys feed the Overview monitor (excludes programmatic).
+  const ceSurveysLive = useMemo(() => surveys.filter(s => s.surveyType !== 'programmatic'), [surveys])
+
   const [activeTab, setActiveTab]                 = useState<AnalyticsTab>(
-    (searchParams?.get('tab') as AnalyticsTab) || 'term'
+    (searchParams?.get('tab') as AnalyticsTab) || 'overview'
   )
   const [axis, setAxis]                           = useState<Axis>('term')
   const [term, setTerm]                           = useState('Spring 2026')
@@ -487,11 +491,17 @@ function AnalyticsInner() {
       >
         <div className="border-b border-border shrink-0" style={{ padding: '0 28px' }}>
           <TabsList variant="line">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="term">By Term</TabsTrigger>
             <TabsTrigger value="faculty">By Faculty</TabsTrigger>
             <TabsTrigger value="course">By Course</TabsTrigger>
           </TabsList>
         </div>
+
+        {/* ───── Overview (monitoring) ───── */}
+        <TabsContent value="overview" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
+          <DashboardMonitor surveys={ceSurveysLive} onNudge={setNudgeTarget} />
+        </TabsContent>
 
         {/* ───── By Term ───── */}
         <TabsContent value="term" className="flex-1 overflow-auto m-0" style={{ padding: '20px 28px 28px' }}>
