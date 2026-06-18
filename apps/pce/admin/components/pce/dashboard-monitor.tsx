@@ -22,10 +22,10 @@ import {
   Card, CardContent, CardHeader, CardTitle, CardDescription,
   ChartContainer, ChartTooltip,
 } from '@exxatdesignux/ui'
-import type { MetricItem, ChartConfig } from '@exxatdesignux/ui'
+import type { MetricItem, MetricInsight, ChartConfig } from '@exxatdesignux/ui'
 import {
   ScatterChart, Scatter, Cell, XAxis, YAxis, ZAxis, ReferenceLine,
-  LineChart, Line, CartesianGrid,
+  AreaChart, Area, CartesianGrid,
 } from 'recharts'
 import type { PceSurvey } from '@/lib/pce-mock-data'
 
@@ -127,6 +127,10 @@ export function DashboardMonitor({
   const prevAvgRate = prevTerm ? weightedRate(live.filter(s => s.term === prevTerm)) : null
   const rateDelta = avgRate != null && prevAvgRate != null ? avgRate - prevAvgRate : null
   const facultyEvaluated = new Set(cycle.flatMap(s => s.instructors.map(i => i.id))).size
+  const closingThisWeek = liveSurveys.filter(s => {
+    const d = s.deadline ? daysUntil(s.deadline) : null
+    return d != null && d >= 0 && d <= 7
+  }).length
 
   const atRisk = useMemo(() =>
     liveSurveys.filter(s => s.responseRate < AT_RISK_THRESHOLD).sort((a, b) => a.responseRate - b.responseRate),
@@ -165,13 +169,30 @@ export function DashboardMonitor({
       .filter(Boolean).join('  ·  ')
   }, [cycle])
 
+  // Prose goes in `description` (delta is reserved for the trend chip). The rate
+  // delta uses `informational` polarity so a decline shows muted, never red.
   const kpis: MetricItem[] = [
-    { id: 'active', label: 'Active evaluations', value: liveSurveys.length, delta: `${counts.scheduled ?? 0} scheduled · ${counts.closed ?? 0} closed`, trend: 'neutral' },
-    { id: 'rate', label: 'Avg response rate', value: avgRate != null ? `${avgRate}%` : '—', delta: rateDelta != null ? `${rateDelta >= 0 ? '+' : ''}${rateDelta}% vs ${prevTerm}` : '', trend: rateDelta == null ? 'neutral' : rateDelta > 0 ? 'up' : rateDelta < 0 ? 'down' : 'neutral' },
-    { id: 'responses', label: 'Responses collected', value: responsesCollected.toLocaleString(), delta: `of ${enrolledTotal.toLocaleString()} students`, trend: 'neutral' },
+    { id: 'active', label: 'Active evaluations', value: liveSurveys.length, delta: '', trend: 'neutral', description: `${counts.scheduled ?? 0} scheduled · ${counts.closed ?? 0} closed` },
+    { id: 'rate', label: 'Avg response rate', value: avgRate != null ? `${avgRate}%` : '—', delta: rateDelta != null ? `${rateDelta >= 0 ? '+' : ''}${rateDelta}%` : '', trend: rateDelta == null ? 'neutral' : rateDelta > 0 ? 'up' : 'down', trendPolarity: 'informational', description: prevTerm ? `vs ${prevTerm}` : '' },
+    { id: 'responses', label: 'Responses collected', value: responsesCollected.toLocaleString(), delta: '', trend: 'neutral', description: `of ${enrolledTotal.toLocaleString()} students` },
     { id: 'faculty', label: 'Faculty evaluated', value: facultyEvaluated, delta: '', trend: 'neutral' },
-    { id: 'atrisk', label: 'Courses at risk', value: atRisk.length, delta: `below ${AT_RISK_THRESHOLD}%`, trend: 'neutral' },
+    { id: 'atrisk', label: 'Courses at risk', value: atRisk.length, delta: '', trend: 'neutral', description: `below ${AT_RISK_THRESHOLD}%` },
+    { id: 'closing', label: 'Closing this week', value: closingThisWeek, delta: '', trend: 'neutral', description: 'within 7 days' },
   ]
+
+  // Fill the KeyMetrics insight rail with a real, actionable summary (was empty → grey box).
+  const worst = atRisk[0]
+  const insight: MetricInsight = worst ? {
+    title: `${atRisk.length} course${atRisk.length !== 1 ? 's' : ''} at risk`,
+    description: `${worst.courseCode} (${worst.courseName}) is at ${worst.responseRate}% — nudge before it closes.`,
+    severity: 'warning',
+    actionLabel: `Nudge ${worst.courseCode}`,
+    onAction: () => onNudge({ id: worst.id, courseCode: worst.courseCode, courseName: worst.courseName, nonResponders: Math.max(0, worst.enrollmentCount - worst.responseCount) }),
+  } : {
+    title: 'On track',
+    description: `All ${liveSurveys.length} live evaluation${liveSurveys.length !== 1 ? 's are' : ' is'} at or above the ${AT_RISK_THRESHOLD}% threshold.`,
+    severity: 'info',
+  }
 
   if (!currentTerm || cycle.length === 0) return null
 
@@ -194,9 +215,7 @@ export function DashboardMonitor({
         )}
       </div>
 
-      <div className="[&_*]:!border-e-0">
-        <KeyMetrics variant="compact" showHeader={false} metricsSingleRow metrics={kpis} />
-      </div>
+      <KeyMetrics variant="compact" showHeader={false} metricsSingleRow insightCompact metrics={kpis} insight={insight} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Response distribution — multi-dimensional scatter strip */}
@@ -209,14 +228,15 @@ export function DashboardMonitor({
           </CardHeader>
           <CardContent>
             <ChartContainer config={distConfig} className="h-44 w-full" role="img" aria-label="Response-rate distribution across cycle courses">
-              <ScatterChart margin={{ top: 16, right: 8, bottom: 0, left: -24 }}>
+              <ScatterChart margin={{ top: 18, right: 12, bottom: 0, left: 4 }}>
                 <CartesianGrid horizontal={false} stroke="var(--border)" />
                 <XAxis type="number" dataKey="rate" domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(v: number) => `${v}%`} tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
                 <YAxis type="number" dataKey="y" domain={[0, 1]} hide />
-                <ZAxis type="number" dataKey="z" range={[50, 380]} />
-                <ReferenceLine x={AT_RISK_THRESHOLD} stroke="var(--chip-4)" strokeDasharray="4 3" label={{ value: `${AT_RISK_THRESHOLD}% risk`, position: 'insideTopLeft', fontSize: 10, fill: 'var(--chip-4)' }} />
+                <ZAxis type="number" dataKey="z" range={[50, 360]} />
+                {/* threshold label sits low, median label sits high — no collision */}
+                <ReferenceLine x={AT_RISK_THRESHOLD} stroke="var(--chip-4)" strokeDasharray="4 3" label={{ value: `${AT_RISK_THRESHOLD}% target`, position: 'insideBottomLeft', fontSize: 10, fill: 'var(--chip-4)' }} />
                 {cycleMedian != null && (
-                  <ReferenceLine x={cycleMedian} stroke="var(--muted-foreground)" strokeDasharray="2 2" label={{ value: 'median', position: 'insideTopRight', fontSize: 10, fill: 'var(--muted-foreground)' }} />
+                  <ReferenceLine x={cycleMedian} stroke="var(--muted-foreground)" strokeDasharray="2 2" label={{ value: `median ${cycleMedian}%`, position: 'insideTopRight', fontSize: 10, fill: 'var(--muted-foreground)' }} />
                 )}
                 <ChartTooltip
                   cursor={false}
@@ -247,11 +267,17 @@ export function DashboardMonitor({
           </CardHeader>
           <CardContent>
             <ChartContainer config={trendConfig} className="h-44 w-full" role="img" aria-label="Average response rate per term">
-              <LineChart data={trendData} margin={{ top: 8, right: 8, bottom: 0, left: -24 }}>
+              <AreaChart data={trendData} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
+                <defs>
+                  <linearGradient id="rateFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--brand-color)" stopOpacity={0.18} />
+                    <stop offset="100%" stopColor="var(--brand-color)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid vertical={false} stroke="var(--border)" />
-                <XAxis dataKey="term" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
-                <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(v: number) => `${v}%`} width={36} tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
-                <ReferenceLine y={RESPONSE_TARGET} stroke="var(--muted-foreground)" strokeDasharray="4 3" />
+                <XAxis dataKey="term" interval={0} tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
+                <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(v: number) => `${v}%`} width={40} tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
+                <ReferenceLine y={RESPONSE_TARGET} stroke="var(--muted-foreground)" strokeDasharray="4 3" label={{ value: `${RESPONSE_TARGET}% target`, position: 'insideTopRight', fontSize: 10, fill: 'var(--muted-foreground)' }} />
                 <ChartTooltip
                   cursor={{ stroke: 'var(--border)' }}
                   content={({ active, payload, label }) => {
@@ -264,9 +290,9 @@ export function DashboardMonitor({
                     )
                   }}
                 />
-                <Line
+                <Area
                   type="monotone" dataKey="rate" stroke="var(--brand-color)" strokeWidth={2}
-                  connectNulls
+                  fill="url(#rateFill)" connectNulls
                   dot={(props: { cx?: number; cy?: number; payload?: { current?: boolean } }) => {
                     const { cx, cy, payload } = props
                     if (cx == null || cy == null) return <g />
@@ -275,7 +301,7 @@ export function DashboardMonitor({
                   }}
                   activeDot={{ r: 5 }}
                 />
-              </LineChart>
+              </AreaChart>
             </ChartContainer>
           </CardContent>
         </Card>
