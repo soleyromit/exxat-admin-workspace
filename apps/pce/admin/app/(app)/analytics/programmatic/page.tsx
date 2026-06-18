@@ -9,8 +9,7 @@ import {
 } from '@exxatdesignux/ui'
 import type { MetricItem, ChartConfig } from '@exxatdesignux/ui'
 import {
-  BarChart, Bar, XAxis, YAxis,
-  LineChart, Line, CartesianGrid, Cell,
+  XAxis, YAxis, LineChart, Line, CartesianGrid, ReferenceLine,
 } from 'recharts'
 import { SiteHeader } from '@/components/site-header'
 import { DataTable } from '@/components/data-table'
@@ -46,9 +45,8 @@ const trendConfig: ChartConfig = {
   exit:      { label: 'Program Exit',           color: 'var(--chart-3)' },
 }
 
-const rateConfig: ChartConfig = {
-  rate: { label: 'Response rate', color: 'var(--brand-color)' },
-}
+const RESPONSE_TARGET = 70
+const AT_RISK_THRESHOLD = 60
 
 type ProgSurveyRow = {
   id: string; name: string; type: string; status: string
@@ -138,6 +136,8 @@ export default function ProgrammaticAnalyticsPage() {
       .map(s => ({
         name: s.courseCode.split('—')[0].trim(),
         rate: s.responseRate,
+        responses: s.responseCount,
+        sent: s.enrollmentCount,
       }))
       .sort((a, b) => b.rate - a.rate),
     [progSurveys],
@@ -178,55 +178,34 @@ export default function ProgrammaticAnalyticsPage() {
                 <CardTitle className="text-sm">Response rate — Spring 2026</CardTitle>
                 <CardDescription>
                   {rateData.length > 0
-                    ? 'Surveys currently collecting. Scheduled/draft shown in survey list below.'
+                    ? `Collected vs ${RESPONSE_TARGET}% target · responses / invited`
                     : 'No surveys are collecting yet this period.'}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {rateData.length > 0 ? (
-                  <ChartContainer
-                    config={rateConfig}
-                    className="w-full"
-                    style={{ height: 176 }}
-                    role="img"
-                    aria-label="Response rate by survey, Spring 2026"
-                  >
-                    <BarChart
-                      layout="vertical"
-                      data={rateData}
-                      margin={{ top: 0, right: 40, bottom: 0, left: 0 }}
-                    >
-                      <XAxis type="number" domain={[0, 100]} hide />
-                      <YAxis
-                        type="category"
-                        dataKey="name"
-                        width={132}
-                        tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <Bar
-                        dataKey="rate"
-                        radius={[0, 3, 3, 0]}
-                        maxBarSize={16}
-                        background={{ fill: 'var(--muted)', radius: 3 }}
-                        isAnimationActive={false}
-                        label={{ position: 'right', formatter: (v: number) => `${v}%`, fontSize: 11, fill: 'var(--muted-foreground)' }}
-                      >
-                        {rateData.map((d, i) => (
-                          <Cell key={i} fill={d.rate >= 80 ? 'var(--chart-2)' : d.rate >= 60 ? 'var(--brand-color)' : 'var(--chart-4)'} />
-                        ))}
-                      </Bar>
-                      <ChartTooltip
-                        cursor={false}
-                        content={
-                          <ChartTooltipContent
-                            formatter={(value) => [`${value}%`, 'Response rate']}
-                          />
-                        }
-                      />
-                    </BarChart>
-                  </ChartContainer>
+                  <div className="flex flex-col gap-3.5">
+                    {rateData.map(d => {
+                      const fill = d.rate >= 80 ? 'var(--chart-2)' : d.rate >= AT_RISK_THRESHOLD ? 'var(--brand-color)' : 'var(--chart-4)'
+                      const text = d.rate >= 80 ? 'var(--chart-2)' : d.rate >= AT_RISK_THRESHOLD ? 'var(--brand-color)' : 'var(--chip-4)'
+                      return (
+                        <div key={d.name} className="flex items-center gap-3">
+                          <span className="text-xs w-36 shrink-0 truncate" title={d.name}>{d.name}</span>
+                          {/* bullet: actual fill + target tick on a muted track */}
+                          <div className="relative flex-1 h-3 rounded-full" style={{ background: 'var(--muted)' }} role="img" aria-label={`${d.name}: ${d.rate}% response, ${d.responses} of ${d.sent}, target ${RESPONSE_TARGET}%`}>
+                            <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${Math.min(100, d.rate)}%`, background: fill }} />
+                            <div className="absolute" style={{ left: `${RESPONSE_TARGET}%`, top: -2, bottom: -2, width: 2, background: 'var(--foreground)' }} aria-hidden="true" />
+                          </div>
+                          <span className="text-xs text-muted-foreground tabular-nums w-14 text-right shrink-0">{d.responses}/{d.sent}</span>
+                          <span className="text-sm font-semibold tabular-nums w-11 text-right shrink-0" style={{ color: text }}>{d.rate}%</span>
+                        </div>
+                      )
+                    })}
+                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
+                      <span className="inline-block" style={{ width: 2, height: 10, background: 'var(--foreground)' }} aria-hidden="true" />
+                      {RESPONSE_TARGET}% target
+                    </p>
+                  </div>
                 ) : (
                   <div className="h-[100px] flex items-center justify-center text-sm text-muted-foreground">
                     No data yet
@@ -275,6 +254,7 @@ export default function ProgrammaticAnalyticsPage() {
                         />
                       }
                     />
+                    <ReferenceLine y={RESPONSE_TARGET} stroke="var(--muted-foreground)" strokeDasharray="4 3" label={{ value: `${RESPONSE_TARGET}% target`, position: 'insideTopRight', fontSize: 10, fill: 'var(--muted-foreground)' }} />
                     <ChartLegend content={<ChartLegendContent />} />
                     <Line type="monotone" dataKey="alumni"    stroke="var(--color-alumni)"    strokeWidth={2} dot={{ r: 3, fill: 'var(--color-alumni)'    }} activeDot={{ r: 4 }} connectNulls={false} isAnimationActive={false} />
                     <Line type="monotone" dataKey="preceptor" stroke="var(--color-preceptor)" strokeWidth={2} dot={{ r: 3, fill: 'var(--color-preceptor)' }} activeDot={{ r: 4 }} connectNulls={false} isAnimationActive={false} />
@@ -332,6 +312,10 @@ export default function ProgrammaticAnalyticsPage() {
                             </div>
                             <span className="shrink-0 w-20 text-right text-xs text-muted-foreground tabular-nums">n = {q.count}</span>
                           </div>
+                          {/* quantified breakdown */}
+                          <p className="text-xs text-muted-foreground tabular-nums">
+                            {Math.round(pct(pos))}% positive · {Math.round(pct(neu))}% neutral · {Math.round(pct(neg))}% needs improvement
+                          </p>
                         </div>
                       )
                     })}
