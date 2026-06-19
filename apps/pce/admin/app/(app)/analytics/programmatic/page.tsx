@@ -50,7 +50,6 @@ const trendConfig: ChartConfig = {
 }
 
 const RESPONSE_TARGET = 70
-const AT_RISK_THRESHOLD = 60
 
 type ProgSurveyRow = {
   id: string; name: string; type: string; target: string; status: string
@@ -144,19 +143,6 @@ export default function ProgrammaticAnalyticsPage() {
     ]
   }, [progSurveys])
 
-  /* Only show surveys with actual response data in the rate bar chart, ranked. */
-  const rateData = useMemo(
-    () => progSurveys
-      .filter(s => s.responseRate > 0)
-      .map(s => ({
-        name: s.courseCode.split('—')[0].trim(),
-        rate: s.responseRate,
-        responses: s.responseCount,
-        sent: s.enrollmentCount,
-      }))
-      .sort((a, b) => b.rate - a.rate),
-    [progSurveys],
-  )
 
   /* Question scores for collecting surveys (alumni outcomes in Spring 2026). */
   const collectingSurveys = useMemo(
@@ -187,52 +173,7 @@ export default function ProgrammaticAnalyticsPage() {
           {/* Live collection — filled vs yet-to-fill for collecting surveys */}
           <LiveCollectionCard surveys={progSurveys} onNudge={setNudgeTarget} noun="survey" />
 
-          {/* Charts row: response rate + trend */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-            {/* Response rate — only surveys with data */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Response rate — Spring 2026</CardTitle>
-                <CardDescription>
-                  {rateData.length > 0
-                    ? `Collected vs ${RESPONSE_TARGET}% target · responses / invited`
-                    : 'No surveys are collecting yet this period.'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {rateData.length > 0 ? (
-                  <div className="flex flex-col gap-3.5">
-                    {rateData.map(d => {
-                      const fill = d.rate >= 80 ? 'var(--chart-2)' : d.rate >= AT_RISK_THRESHOLD ? 'var(--brand-color)' : 'var(--chart-4)'
-                      const text = d.rate >= 80 ? 'var(--chart-2)' : d.rate >= AT_RISK_THRESHOLD ? 'var(--brand-color)' : 'var(--chip-4)'
-                      return (
-                        <div key={d.name} className="flex items-center gap-3">
-                          <span className="text-xs w-36 shrink-0 truncate" title={d.name}>{d.name}</span>
-                          {/* bullet: actual fill + target tick on a muted track */}
-                          <div className="relative flex-1 h-3 rounded-full" style={{ background: 'var(--muted)' }} role="img" aria-label={`${d.name}: ${d.rate}% response, ${d.responses} of ${d.sent}, target ${RESPONSE_TARGET}%`}>
-                            <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${Math.min(100, d.rate)}%`, background: fill }} />
-                            <div className="absolute" style={{ left: `${RESPONSE_TARGET}%`, top: -2, bottom: -2, width: 2, background: 'var(--foreground)' }} aria-hidden="true" />
-                          </div>
-                          <span className="text-xs text-muted-foreground tabular-nums w-14 text-right shrink-0">{d.responses}/{d.sent}</span>
-                          <span className="text-sm font-semibold tabular-nums w-11 text-right shrink-0" style={{ color: text }}>{d.rate}%</span>
-                        </div>
-                      )
-                    })}
-                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
-                      <span className="inline-block" style={{ width: 2, height: 10, background: 'var(--foreground)' }} aria-hidden="true" />
-                      {RESPONSE_TARGET}% target
-                    </p>
-                  </div>
-                ) : (
-                  <div className="h-[100px] flex items-center justify-center text-sm text-muted-foreground">
-                    No data yet
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Response rate trend — last 4 terms */}
+          {/* Response rate trend — last 4 terms */}
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm">Response rate trend</CardTitle>
@@ -281,7 +222,6 @@ export default function ProgrammaticAnalyticsPage() {
                 </ChartContainer>
               </CardContent>
             </Card>
-          </div>
 
           {/* Question-level scores for collecting surveys */}
           {collectingSurveys.map(survey => {
