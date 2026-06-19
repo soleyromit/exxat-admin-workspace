@@ -838,6 +838,118 @@
       "title": "Granola intake — 17 new PCE decisions + 1 exam decision from Jun 9–10 transcripts",
       "what": "Extracted 18 confirmed design decisions from 4 meeting transcripts (Post-Course Survey Cadence Meeting BiWeekly Jun 9; Exam Management Sync up Jun 9; Course and faculty evaluation setup Jun 10; India discussion — Weekly Product Sync Jun 10). PCE decisions cover: 3 CE results entry points (term/faculty/course), directory pages view-only with Prism deep-links, student email-only distribution (no login), 2 email templates with term-anchored reminder schedule, academic year/term dates as mandatory prerequisite, term-grouped dashboard, 2 longitudinal analytics sidebar entry points (Faculty leaderboard + Course history), 3-category template section structure (Course/Faculty/General with multi-select roles), faculty results must not be visible to other faculty, template creation paths (Build new sub-options: manual or PDF/Word import; top-level document import, not per-section), multi-select section adding with labels only, Prism-only distribution channel, anonymous response non-configurable default (visibility toggle removed), comment moderation stretch goal (results release date mandatory if excluded), parent+child date override for bulk distribution, report access screen removed (role-based access only), general survey UI unchanged. Exam decision: course offering page limited to currently available data only. 1 conflict flagged (copy existing template), 1 decision superseded (pce-decision-014 → pce-decision-028). Added as pce-decision-019 through pce-decision-035 and exam-decision-014.",
       "source": "Post-Course Survey Cadence Meeting (BiWeely 45 Mins) transcript — Jun 9, 2026; Exam Management Sync up transcript — Jun 9, 2026; Course and faculty evaluation setup — directories, templates, and term workflow transcript — Jun 10, 2026; India discussion — Weekly Product Sync | New Initiatives (Prism) transcript — Jun 10, 2026"
+    },
+    {
+      "id": "2026-06-19-pce-flagged-001",
+      "date": "2026-06-19",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §13a items 6–9: Four open sidebar/nav/faculty/dashboard questions (AMBIGUOUS)",
+      "what": "Monil added 4 new items to §13a: (6) sidebar density concern — 'a lot of tabs on the left side, is there a better way?'; (7) asks whether a nav bar exists alongside the sidebar; (8) requests the faculty persona (Evaluated) experience to be built; (9) asks if Dashboard and Evaluations can be merged.",
+      "why": "AMBIGUOUS — all 4 are open questions ending in '?' inside the §13 design-feedback section. Item 6 revisits the §4 sidebar taxonomy density. Item 7 may conflict with DS Sidebar-only layout. Item 8 is potentially new Phase 1 scope. Item 9 may collapse sidebar entries.",
+      "source": "PCE PRD §13a items 6–9 (Monil Pokar, updated 2026-06-19)"
+    },
+    {
+      "id": "2026-06-19-pce-flagged-002",
+      "date": "2026-06-19",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §13b item 4: Shared templates screen for PCE and General Surveys confirmed (CLEAR — informational)",
+      "what": "New §13b item 4: 'Are you recommending we store PCE and general survey templates in one screen? (Done)' — marked Done, confirming a single shared templates screen with type filtering rather than two separate routes.",
+      "why": "CLEAR — (Done) flag indicates the prototype already answers this design question. PCE and General Survey templates share one screen with filtering. Relevant when building the Templates page.",
+      "source": "PCE PRD §13b item 4 (Monil Pokar, updated 2026-06-19)"
+    },
+    {
+      "id": "2026-06-19-pce-flagged-003",
+      "date": "2026-06-19",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §13b item 5: Course type display labels should be 'Classroom based / Practice based / Lab based' (CLEAR)",
+      "what": "New §13b item 5: 'Update the course type as classroom based, practice based, and Lab based.' The 2026-06-17 run applied code values as 'practice' | 'classroom' | 'lab' (short tokens). This item confirms UI display labels should use the longer form: Classroom Based / Practice Based / Lab Based.",
+      "why": "CLEAR — display label refinement. Short token values in code are correct; UI label text in ToggleGroupItems and type selectors needs the fuller form (e.g., 'Classroom Based' not 'Classroom').",
+      "source": "PCE PRD §13b item 5 (Monil Pokar, updated 2026-06-19)"
+    },
+    {
+      "id": "2026-06-19-pce-flagged-004",
+      "date": "2026-06-19",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §13c items 3–5: Survey wizard CTA ambiguity, status mock data, step update directives (AMBIGUOUS + CLEAR)",
+      "what": "New §13c items: (3) asks if 'Activate term' and 'Push survey' CTAs are redundant (AMBIGUOUS — ends in '?'); (4) directs using correct survey statuses from §4 in mock data (already applied in 2026-05-30 run); (5) directs updating wizard steps per §4 Step 2 post-Aarti discussion (already applied via pce-decision-034).",
+      "why": "Item 3 AMBIGUOUS — 'Activate term' vs 'Push survey' may be separate or redundant actions. Items 4 and 5 are already applied/documented in prior runs. Item 3 requires Monil clarification before building the wizard.",
+      "source": "PCE PRD §13c items 3–5 (Monil Pokar, updated 2026-06-19)"
+    },
+    {
+      "id": "2026-06-19-pce-flagged-005",
+      "date": "2026-06-19",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §13d (NEW SECTION): Setup sub-tabs formally specified — Communication + Evaluation rules (CLEAR)",
+      "what": "New §13d: Setup section with two sub-categories: Communication (Eval window anchored to term dates, Email template, Reminder template, Reminder cadence) and Evaluation rules (Likert N, Comment moderation on/off, Threshold on responses to release results). Instruction: 'remove the rest' — prototype has extra sub-tabs outside this list.",
+      "why": "CLEAR new Settings spec. 7 total sub-tab items across 2 categories. RBAC (listed in §4 sidebar taxonomy under Settings) is notably absent here — may have moved to another section. No code change — Settings not yet built.",
+      "source": "PCE PRD §13d (Monil Pokar, updated 2026-06-19)"
+    },
+    {
+      "id": "2026-06-19-pce-flagged-006",
+      "date": "2026-06-19",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §13e (NEW SECTION): Directory pages must deep-link to analytics views (CLEAR — non-functional)",
+      "what": "New §13e: 'We need to connect each directory to its respective analytics page like: a. Terms to be connected to \"by term\" view (refer product prototype for better visualization).' The word 'like' implies Faculty → Faculty analytics and Courses → Course history analytics are also expected.",
+      "why": "CLEAR navigation directive. Terms directory → 'by term' analytics (pce-decision-024). Additional connections implied for Faculty and Course directories per pce-decisions-024 and -025. No code action now — Directory pages not yet built.",
+      "source": "PCE PRD §13e (Monil Pokar, updated 2026-06-19)"
+    },
+    {
+      "id": "2026-06-19-exam-flagged-001",
+      "date": "2026-06-19",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "Exam Roadmap — Base Entities: In Progress → In Review; row names expanded to confirm list+details views (CLEAR)",
+      "what": "Students entity and Faculty entity advanced from 'In Progress' to 'In Review'. Row names now explicitly include '- list and details view' for each entity. Development column shows 'Dev Ready' (Darshan), start date 18-Jun — Darshan may be waiting on final design sign-off already.",
+      "why": "CLEAR progress. Step 7b: no BUILD-STATUS change (In Review does not map to Shipped). The 18-Jun dev start date has passed — Darshan is unblocked and awaiting design confirmation. URGENT for Romit to confirm Base Entities design is submitted to Vishal.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest, synced 2026-06-19)"
+    },
+    {
+      "id": "2026-06-19-exam-flagged-002",
+      "date": "2026-06-19",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "Exam Roadmap — EM POC Demo added to June 23 (4 days away): 5 scope items (CLEAR — URGENT)",
+      "what": "A new 'EM POC Demo' section added alongside the June 23 Solution Review sessions. Scope: (1) Question bank, (2) In assessment experience, (3) Course list view, (4) Question variant and distractor using AI, (5) RBAC - role and scope based. This is a live demo event on June 23, 2026.",
+      "why": "CLEAR — demo is 4 days from today (2026-06-19). Question bank and In assessment experience are 🟢 Shipped. Course list view, AI question variants, and RBAC need demo-readiness confirmation in the exam-management prototype. Confirm with Nipun whether the prototype or a live build is expected for the demo.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest, synced 2026-06-19)"
+    },
+    {
+      "id": "2026-06-19-exam-flagged-003",
+      "date": "2026-06-19",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "Exam Roadmap — Course Offering design: In Refinement (Romit/Vishal) → In Review (Vishal only) (CLEAR)",
+      "what": "Course Offering design status changed from 'In Refinement (Romit / Vishal)' to 'In Review (Vishal)'. Romit no longer listed as design co-owner for this phase. Engineering (Darshan) dev start date is 18-Jun — already passed. Target dates 16-Jun (design) and 18-Jun (dev start) have both passed.",
+      "why": "CLEAR — Romit's refinement iteration is complete. Design now in Vishal's review queue. No BUILD-STATUS change (stays 🟡 In Progress). If Vishal raises review feedback, turnaround must be fast as Darshan is in development.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest, synced 2026-06-19)"
+    },
+    {
+      "id": "2026-06-19-exam-flagged-004",
+      "date": "2026-06-19",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "Exam Roadmap — All TBD release targets now set: 3rd July (×6) and 20-Jul (×3) (CLEAR)",
+      "what": "Six capabilities now target 3rd July 2026 (Course Offering sub-items and Base Entities). Three additional capabilities target 20-Jul 2026 (likely Assessment Creation & Distribution and Question Creation sub-items). Previously these were TBD. First time a complete P0-Cohere release date picture exists.",
+      "why": "CLEAR — no BUILD-STATUS status changes (no 'Completed' rows this run). Step 7b mapping does not apply to 'In Review' or 'Dev Ready' statuses. Informational: 3rd July is 14 days away — all P0-Cohere deliverables must be engineering-complete by then for the first wave.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest, synced 2026-06-19)"
+    },
+    {
+      "id": "2026-06-19-exam-management-build-status-001",
+      "date": "2026-06-19",
+      "product": "exam-management",
+      "type": "prd-change",
+      "title": "BUILD-STATUS: last-updated date bumped to 2026-06-19 (no feature status changes this run)",
+      "what": "No top-level feature status changes this run — no 'Completed' rows in Nipun's Excel triggered a step 7b BUILD-STATUS update. BUILD-STATUS.md last-updated date bumped from 2026-06-17 to 2026-06-19 per sync protocol.",
+      "why": "Routine date bump on each sync. All Base Entities and Course Offering items are 'In Review' / 'Dev Ready' — not yet 'Completed', so no 🟢 Shipped transitions apply.",
+      "source": "PRD watcher run 2026-06-19",
+      "severity": null,
+      "files": ["docs/BUILD-STATUS.md"]
     }
   ]
 }
