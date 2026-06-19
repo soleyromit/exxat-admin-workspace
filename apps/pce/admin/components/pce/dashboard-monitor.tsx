@@ -18,7 +18,7 @@
 
 import { useMemo } from 'react'
 import {
-  KeyMetrics, Button,
+  KeyMetrics,
   Card, CardContent, CardHeader, CardTitle, CardDescription,
   ChartContainer, ChartTooltip,
 } from '@exxatdesignux/ui'
@@ -28,6 +28,7 @@ import {
   AreaChart, Area, CartesianGrid,
 } from 'recharts'
 import type { PceSurvey } from '@/lib/pce-mock-data'
+import { LiveCollectionCard } from '@/components/pce/live-collection-card'
 
 export interface MonitorNudgeTarget {
   id: string; courseCode: string; courseName: string; nonResponders: number
@@ -314,49 +315,8 @@ export function DashboardMonitor({
         </Card>
       </div>
 
-      {/* At-risk worklist — actionable rows, no bars */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">At-risk evaluations</CardTitle>
-          <CardDescription>Live courses below {AT_RISK_THRESHOLD}% response — send an ad-hoc reminder</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {atRisk.length === 0 ? (
-            <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
-              <i className="fa-light fa-circle-check" aria-hidden="true" style={{ color: 'var(--chart-2)' }} />
-              No courses below the {AT_RISK_THRESHOLD}% threshold this cycle.
-            </div>
-          ) : (
-            <div className="flex flex-col">
-              {atRisk.map((s, i) => {
-                const nonResponders = Math.max(0, s.enrollmentCount - s.responseCount)
-                const days = s.deadline ? daysUntil(s.deadline) : null
-                return (
-                  <div key={s.id} className="flex items-center gap-4 py-2.5 border-b border-border last:border-0">
-                    <span className="text-xs tabular-nums text-muted-foreground w-4 text-center shrink-0">{i + 1}</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">
-                        {s.courseCode} <span className="text-muted-foreground font-normal">{s.courseName}</span>
-                      </p>
-                      <p className="text-xs text-muted-foreground tabular-nums mt-0.5">
-                        {nonResponders} non-responders{days != null ? ` · ${days > 0 ? `${days} days left` : 'closing today'}` : ''}
-                      </p>
-                    </div>
-                    <span className="text-base font-semibold tabular-nums shrink-0" style={{ color: 'var(--chip-4)' }}>{s.responseRate}%</span>
-                    <Button
-                      variant="outline" size="sm" className="shrink-0"
-                      onClick={() => onNudge({ id: s.id, courseCode: s.courseCode, courseName: s.courseName, nonResponders })}
-                      aria-label={`Send ad-hoc reminder for ${s.courseCode}`}
-                    >
-                      Nudge
-                    </Button>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Live collection — filled vs yet-to-fill + urgency-sorted at-risk emphasis */}
+      <LiveCollectionCard surveys={cycle} onNudge={onNudge} noun="evaluation" />
     </div>
   )
 }

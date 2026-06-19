@@ -1,12 +1,16 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
   Button, KeyMetrics,
   Card, CardContent, CardHeader, CardTitle, CardDescription,
   ChartContainer, ChartTooltip, ChartTooltipContent,
   ChartLegend, ChartLegendContent,
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
 } from '@exxatdesignux/ui'
+import { LiveCollectionCard } from '@/components/pce/live-collection-card'
+import type { MonitorNudgeTarget } from '@/components/pce/dashboard-monitor'
 import type { MetricItem, ChartConfig } from '@exxatdesignux/ui'
 import {
   XAxis, YAxis, LineChart, Line, CartesianGrid, ReferenceLine,
@@ -106,6 +110,7 @@ const surveyColumns: ColumnDef<ProgSurveyRow>[] = [
 ]
 
 export default function ProgrammaticAnalyticsPage() {
+  const [nudgeTarget, setNudgeTarget] = useState<MonitorNudgeTarget | null>(null)
   const progSurveys = useMemo(
     () => MOCK_SURVEYS.filter(s => s.surveyType === 'programmatic'),
     [],
@@ -178,6 +183,9 @@ export default function ProgrammaticAnalyticsPage() {
 
           {/* KPI strip */}
           <KeyMetrics variant="compact" metricsSingleRow metrics={kpis} />
+
+          {/* Live collection — filled vs yet-to-fill for collecting surveys */}
+          <LiveCollectionCard surveys={progSurveys} onNudge={setNudgeTarget} noun="survey" />
 
           {/* Charts row: response rate + trend */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -362,6 +370,27 @@ export default function ProgrammaticAnalyticsPage() {
 
         </div>
       </div>
+
+      <AlertDialog open={!!nudgeTarget} onOpenChange={(open) => !open && setNudgeTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send ad-hoc reminder</AlertDialogTitle>
+            <AlertDialogDescription>
+              {nudgeTarget && (
+                <>
+                  Send an immediate reminder to{' '}
+                  <strong>{nudgeTarget.nonResponders} non-responder{nudgeTarget.nonResponders !== 1 ? 's' : ''}</strong>{' '}
+                  in <strong>{nudgeTarget.courseCode.split('—')[0].trim()}</strong>. This is an out-of-schedule nudge.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction>Send reminder</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }
