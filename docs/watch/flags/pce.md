@@ -319,3 +319,75 @@ First snapshot taken for PCE PRD — Monil Pokar — no diff applied. Next run w
 **Suggested action:** The prototype CE/GS switch has been redesigned from a profile-area switch to a "navigation" pattern. Confirm with Monil what "navigation" refers to — separate sidebar nav entries for CE vs General Surveys? A top-nav toggle? This determines the sidebar routing architecture between the two survey types in apps/pce/admin/components/app-sidebar.tsx.
 
 ---
+
+## 2026-06-19 — Flagged: PCE PRD — Monil Pokar (6 new §13 items across 5 flags)
+
+### Flag 1 — §13a items 6–9: Four open design questions added (AMBIGUOUS)
+**Changed text (before):** *(§13a had 5 items)*
+**Changed text (after):**
+> 6. As a user I see a lot of tabs on the left side. Is there a better way to design the layout that reduces tabs/attention buttons so that User does not get cog load?
+> 7. Do we not have a nav bar?
+> 8. Can you also build the faculty persona experience as well?
+> 9. What is the difference in Dashboard and Evaluations? Can we merge them?
+
+**Why flagged:** AMBIGUOUS — all four are sentences ending in "?" inside the §13 design-feedback section. Item 6 revisits sidebar density (the §4 taxonomy has ~12 sidebar entries). Item 7 asks whether a top nav bar exists — this may conflict with the DS Sidebar-only layout. Item 8 requests the faculty-persona (Evaluated) experience — currently out of scope for the Phase 1 admin prototype. Item 9 asks about merging Dashboard and Evaluations — potentially collapsing two sidebar entries into one.
+**Suggested action:** Review all four with Monil. (6) Confirm whether the current §4 sidebar taxonomy is final or needs pruning; (7) confirm whether a top-level nav bar is expected alongside the DS Sidebar; (8) clarify if faculty-persona view is Phase 1 or Phase 2; (9) confirm whether Dashboard and Evaluations should be merged before rebuilding sidebar in apps/pce/admin/components/app-sidebar.tsx.
+
+---
+
+### Flag 2 — §13b item 4: Shared templates screen question resolved (CLEAR — informational)
+**Changed text (before):** *(§13b had 3 items)*
+**Changed text (after):**
+> 4. Are you recommeding we store PCE and general survey templates in one screen? (Done)
+
+**Why flagged:** CLEAR — question is marked "(Done)", meaning the answer is confirmed. Implies PCE and General Survey templates are shown together on a shared screen (with filtering), rather than per-type separate routes. The §4 sidebar taxonomy lists separate "Templates" entries under each survey type — this (Done) note confirms the UI answer to that question has been designed.
+**Suggested action:** When building the Templates page, confirm with Monil whether it's a single shared screen with a type filter (CE / General) or two separate routes. The (Done) suggests the prototype already answers this — check the Vercel prototype before building.
+
+---
+
+### Flag 3 — §13b item 5: Course type display label refinement (CLEAR)
+**Changed text (before):** *(§13b had 3 items)*
+**Changed text (after):**
+> 5. Update the course type as classroom based, practice based, and Lab based
+
+**Why flagged:** CLEAR directive. The 2026-06-17 run applied course type values as `'practice' | 'classroom' | 'lab'` in code (concise tokens). The PRD §4 Step 1 and §13b.5 both use the display labels "Classroom based, Practice Based, Lab based" (fuller form). The code values are correct but UI display labels in ToggleGroup, type selectors, and badge text may need the longer form.
+**Suggested action:** Verify that apps/pce/admin/app/(app)/analytics/page.tsx ToggleGroupItems show "Classroom Based" / "Practice Based" / "Lab Based" (not just "Classroom" / "Practice" / "Lab"). Also ensure the template creation course-type selector uses the full labels when the template wizard is built.
+
+---
+
+### Flag 4 — §13c items 3–5: Survey wizard UX questions and directives (AMBIGUOUS + CLEAR)
+**Changed text (before):** *(§13c had 2 items)*
+**Changed text (after):**
+> 3. There are two CTAs "Activate term" and "Push survey" I guess both doing the same thing. Do we need both?
+> 4. Reflect the correct survey statuses in the mock data (refer Section 4 in this PRD)
+> 5. Update the steps of a push survey flow as per section 4 – step 2 (updated post our discussion with Aarti)
+
+**Why flagged:** Item 3 is AMBIGUOUS (sentence ending in "?"). Items 4 and 5 are CLEAR directives that were already applied/documented. Item 4: survey status labels updated in 2026-05-30 run (Scheduled/Live/Closed Pending Review/Closed Results Available). Item 5: wizard steps updated to 3-step flow per pce-decision-034 and the 2026-06-17 flag.
+**Suggested action:** Item 3 — confirm with Monil whether "Activate term" and "Push survey" are separate actions (activate = enable a term for CE; push = distribute surveys to courses in that term) or redundant CTAs. If separate, both should remain; if redundant, remove one before building the wizard. Items 4 and 5 are already applied/documented — no new action required.
+
+---
+
+### Flag 5 — §13d (NEW SECTION): Setup sub-tabs formally specified (CLEAR — non-functional)
+**Changed text (before):** *(§13d did not exist)*
+**Changed text (after):**
+> 13d. Setup
+> Following sub tabs are relevant to us (remove the rest):
+> a. Communication: Eval window (anchored around start/end date of term), Email template, Reminder template, Reminder cadence
+> b. Evaluation rules: Likert N, Comment moderation (on/off), Threshold on responses to release results
+
+**Why flagged:** CLEAR new spec for the Settings/Setup section. Two categories: Communication (4 items: Eval window anchored to term dates, Email template, Reminder template, Reminder cadence) and Evaluation rules (3 items: Likert N, Comment moderation toggle, Response threshold). "Remove the rest" signals the prototype has extra items outside this list. Note §4 sidebar taxonomy only listed: Eval Window, Email templates, Reminder cadence, Rbac — §13d expands this with Reminder template and Comment moderation while notably omitting RBAC from Setup (possibly moved elsewhere).
+**Suggested action:** When building the Setup/Settings section: implement exactly these 7 sub-tab items under Communication and Evaluation rules. Remove any extra sub-tabs from the current prototype. Confirm with Monil whether RBAC (listed in §4 sidebar taxonomy under Settings) is still a Setup sub-tab or has moved.
+
+---
+
+### Flag 6 — §13e (NEW SECTION): Directory → Analytics deep-links required (CLEAR — non-functional)
+**Changed text (before):** *(§13e did not exist)*
+**Changed text (after):**
+> 13e. Directory
+> We need to connect each directory to its respective analytics page like
+> a. Terms to be connected to "by term" view (refer product prototype for better visualization)
+
+**Why flagged:** CLEAR navigation directive — each directory entry should deep-link to its corresponding analytics view. Specifically: the Terms directory page → "by term" analytics view (longitudinal analytics entry point 1, per pce-decision-024). The word "like" implies additional connections (Faculty → Faculty analytics, Courses → Course history analytics per pce-decision-025) are also expected but not enumerated.
+**Suggested action:** When building the Directory → Program Details → Term page, add a row-level navigation action that opens the corresponding "by term" analytics view. Similarly anticipate Faculty directory → Faculty leaderboard analytics, Courses directory → Course history analytics. No code action now — flag for when directory pages are built.
+
+---
