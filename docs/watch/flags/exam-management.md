@@ -248,3 +248,59 @@ First snapshot taken for Roadmap-Exam-Management — no diff applied. Next run w
 **Suggested action:** No action. Update internal contacts if you communicate with beta schools directly.
 
 ---
+
+## 2026-06-19 — Flagged: Exam Mgmt Roadmap — Nipun (4 changes)
+
+### Flag 1 — Base Entities: status In Progress → In Review; row names expanded (CLEAR)
+**Changed text (before):**
+> Students entity | P0-Cohere | In Progress | Vishal
+> Faculty entity | P0-Cohere | In Progress | Vishal
+
+**Changed text (after):**
+> Students entity - list and details view | P0-Cohere | In Review | Vishal
+> Faculty entity - list and details view | P0-Cohere | In Review | Vishal
+> (Development column: Dev Ready | Darshan | start 18-Jun)
+
+**Why flagged:** CLEAR — both Base Entities capabilities advanced from "In Progress" to "In Review". Row names now explicitly confirm a list view AND a details/profile view are required per entity. Development status shows "Dev Ready" (Darshan), start date 18-Jun — meaning Darshan may already be unblocked and waiting on final design sign-off.
+**Suggested action:** Confirm Base Entities design is submitted for review. If Romit owns any Base Entities design assets, ensure they are finalized — Darshan's 18-Jun dev start has passed and the status shows "Dev Ready" meaning dev is ready to proceed once design is confirmed.
+
+---
+
+### Flag 2 — EM POC Demo added to June 23 calendar: 5 items in scope (CLEAR — URGENT)
+**Changed text (before):** *(June 23 only listed EM Solution Review sessions — Morning and Evening)*
+**Changed text (after):**
+> EM POC Demo
+> Question bank
+> In assessment experience
+> Course list view
+> Question variant and distractor using AI
+> RBAC - role and scope based
+
+**Why flagged:** CLEAR — an "EM POC Demo" section was added alongside the June 23 Solution Reviews. It covers 5 scope items: Question bank, In assessment experience, Course list view, Question variant and distractor using AI, and RBAC. This is 4 days from today (2026-06-19).
+**Suggested action:** URGENT. Confirm with Nipun: (1) Is the POC Demo a separate event on June 23 or part of the Solution Review block? (2) Is Romit/the prototype expected to be used for this demo? (3) Are all 5 features runnable in the current apps/exam-management/ prototype? Specifically: Question bank ✅ (shipped), In assessment experience ✅ (shipped), Course list view — confirm at /courses/, Question variant+distractor via AI — confirm in QB AI flow, RBAC — confirm whether a role-switching prototype exists. Prepare all 5 for June 23.
+
+---
+
+### Flag 3 — Course Offering design: "In Refinement Romit/Vishal" → "In Review Vishal" (CLEAR)
+**Changed text (before):**
+> Course Offering | Design: In Refinement | Romit / Vishal | Target: 16-Jun
+
+**Changed text (after):**
+> Course Offering | Design: In Review | Vishal | Start: 20-May | Target: 16-Jun
+
+**Why flagged:** CLEAR — Course Offering design moved from "In Refinement" to "In Review". Romit is no longer listed as design co-owner for this phase — only Vishal appears as the current reviewer. This signals the refinement iteration is complete and the design is in Vishal's review queue.
+**Suggested action:** Confirm all 5 remaining Course Offering sub-capabilities (list view, detail, students, question bank, faculty tabs) are finalized and submitted to Vishal. Engineering (Darshan) has 18-Jun as dev start date for some rows — if review raises further changes, turnaround needs to be fast to avoid blocking dev.
+
+---
+
+### Flag 4 — Release target dates updated: TBD → 3rd July (×6) and 20-Jul (×3) (CLEAR)
+**Changed text (before):**
+> Release Target: 17th June, 18th June, TBD, TBD, TBD (3 TBD entries)
+
+**Changed text (after):**
+> Release Target: 17th June, 18th June, 3rd July ×6, 20-Jul ×3
+
+**Why flagged:** CLEAR — all previously TBD release targets are now set. Six capabilities target 3rd July; three additional capabilities target 20-Jul. This is the first time a complete release date picture exists for the P0-Cohere scope. Step 7b mapping: no BUILD-STATUS feature status changes (no "Completed" rows this run) — only last-updated date bumped.
+**Suggested action:** Informational. 3rd July = primary Cohere delivery target for Course Offering and Base Entities. 20-Jul = secondary wave (likely Assessment Creation & Distribution and Question Creation sub-items). No BUILD-STATUS change required — step 7b mapping does not include "In Review" or "Dev Ready" statuses.
+
+---
