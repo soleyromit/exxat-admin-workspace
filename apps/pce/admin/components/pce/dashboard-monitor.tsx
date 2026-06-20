@@ -24,7 +24,7 @@ import {
 } from '@exxatdesignux/ui'
 import type { MetricItem, MetricInsight, ChartConfig } from '@exxatdesignux/ui'
 import {
-  ScatterChart, Scatter, Cell, XAxis, YAxis, ZAxis, ReferenceLine,
+  XAxis, YAxis, ReferenceLine,
   AreaChart, Area, CartesianGrid,
 } from 'recharts'
 import type { PceSurvey } from '@/lib/pce-mock-data'
@@ -51,28 +51,11 @@ const STATUS_GROUPS: { key: string; label: string; statuses: string[]; color: st
   { key: 'draft',     label: 'Draft',     statuses: ['draft'],                 color: 'var(--border-control-35)' },
 ]
 
-/** Risk tier → FILL token (fills don't need AA contrast). No red. */
-const dotFill = (rate: number) =>
-  rate >= RESPONSE_TARGET ? 'var(--chart-2)' : rate >= AT_RISK_THRESHOLD ? 'var(--brand-color)' : 'var(--chart-4)'
 
 function weightedRate(surveys: PceSurvey[]): number | null {
   const enrolled = surveys.reduce((s, x) => s + x.enrollmentCount, 0)
   if (enrolled === 0) return null
   return Math.round(surveys.reduce((s, x) => s + x.responseRate * x.enrollmentCount, 0) / enrolled)
-}
-
-function median(nums: number[]): number | null {
-  if (nums.length === 0) return null
-  const s = [...nums].sort((a, b) => a - b)
-  const m = Math.floor(s.length / 2)
-  return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2)
-}
-
-/** Deterministic vertical jitter in [0.18, 0.82] so the strip reads as a cloud. */
-function jitter(seed: string): number {
-  let h = 0
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) % 1000
-  return 0.18 + (h / 1000) * 0.64
 }
 
 /** Deadlines arrive as 'MMM DD, YYYY' or ISO — both parse via new Date(). Null when unparseable. */
@@ -82,7 +65,6 @@ function daysUntil(dateStr: string): number | null {
   return Math.ceil((t - Date.now()) / 86_400_000)
 }
 
-const distConfig: ChartConfig = { rate: { label: 'Response rate', color: 'var(--brand-color)' } }
 const trendConfig: ChartConfig = { rate: { label: 'Response rate', color: 'var(--brand-color)' } }
 
 export function DashboardMonitor({
@@ -143,19 +125,6 @@ export function DashboardMonitor({
     [liveSurveys],
   )
 
-  // Distribution strip: every cycle course as a point (x = rate, size = enrollment, color = tier).
-  const distData = useMemo(() =>
-    cycle.map(s => ({
-      rate: s.responseRate,
-      y: jitter(s.id || s.courseCode),
-      z: s.enrollmentCount,
-      code: s.courseCode,
-      name: s.courseName,
-    })),
-    [cycle],
-  )
-  const cycleMedian = useMemo(() => median(cycle.map(s => s.responseRate)), [cycle])
-
   // Response-rate trend across terms (real, weighted), current cycle marked.
   const trendData = useMemo(() => {
     const present = new Set(live.map(s => s.term))
@@ -165,15 +134,6 @@ export function DashboardMonitor({
       current: t === currentTerm,
     }))
   }, [live, currentTerm])
-
-  const byTypeNote = useMemo(() => {
-    return (['didactic', 'clinical'] as const)
-      .map(type => {
-        const r = weightedRate(cycle.filter(s => s.courseType === type))
-        return r == null ? null : `${type[0].toUpperCase()}${type.slice(1)} ${r}%`
-      })
-      .filter(Boolean).join('  ·  ')
-  }, [cycle])
 
   // Prose goes in `description` (delta is reserved for the trend chip). The rate
   // delta uses `informational` polarity so a decline shows muted, never red.
@@ -225,49 +185,8 @@ export function DashboardMonitor({
 
       <KeyMetrics variant="compact" showHeader={false} metricsSingleRow insightCompact metrics={kpis} insight={insight} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Response distribution — multi-dimensional scatter strip */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Response distribution</CardTitle>
-            <CardDescription>
-              Each course by response rate · dot size = enrolment{byTypeNote ? ` · ${byTypeNote}` : ''}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={distConfig} className="h-44 w-full" role="img" aria-label="Response-rate distribution across cycle courses">
-              <ScatterChart margin={{ top: 18, right: 12, bottom: 0, left: 4 }}>
-                <CartesianGrid horizontal={false} stroke="var(--border)" />
-                <XAxis type="number" dataKey="rate" domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(v: number) => `${v}%`} tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
-                <YAxis type="number" dataKey="y" domain={[0, 1]} hide />
-                <ZAxis type="number" dataKey="z" range={[50, 360]} />
-                {/* threshold label sits low, median label sits high — no collision */}
-                <ReferenceLine x={AT_RISK_THRESHOLD} stroke="var(--chip-4)" strokeDasharray="4 3" label={{ value: `${AT_RISK_THRESHOLD}% target`, position: 'insideBottomLeft', fontSize: 10, fill: 'var(--chip-4)' }} />
-                {cycleMedian != null && (
-                  <ReferenceLine x={cycleMedian} stroke="var(--muted-foreground)" strokeDasharray="2 2" label={{ value: `median ${cycleMedian}%`, position: 'insideTopRight', fontSize: 10, fill: 'var(--muted-foreground)' }} />
-                )}
-                <ChartTooltip
-                  cursor={false}
-                  content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null
-                    const d = payload[0].payload as { code: string; name: string; rate: number; z: number }
-                    return (
-                      <div className="rounded-lg border border-border bg-popover px-2.5 py-1.5 text-xs shadow-md">
-                        <p className="font-medium">{d.code} <span className="font-semibold tabular-nums" style={{ color: dotFill(d.rate) === 'var(--chart-4)' ? 'var(--chip-4)' : dotFill(d.rate) }}>{d.rate}%</span></p>
-                        <p className="text-muted-foreground">{d.name} · {d.z} enrolled</p>
-                      </div>
-                    )
-                  }}
-                />
-                <Scatter data={distData}>
-                  {distData.map((d, i) => <Cell key={i} fill={dotFill(d.rate)} fillOpacity={0.8} stroke={dotFill(d.rate)} />)}
-                </Scatter>
-              </ScatterChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-
-        {/* Response rate over time — trend */}
+      {/* Response rate over time — trend */}
+      <div>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">Response rate over time</CardTitle>
