@@ -234,7 +234,7 @@ First snapshot taken for Roadmap-Exam-Management — no diff applied. Next run w
 > June 23 (Evening): EM Solution Review — Assessments creation & distribution, Question creation + import
 > June 24: EM Brainstorming — Accreditation (Submissions, Strategic alignment), Certification (Collaborative assessments, Strategic alignment), Rubrics, RBAC
 > June 25: EM Project Planning — Buffer for parking lot items
-> P0 - Cohere: 15-Sep 2026 | P1 - Beta: 19-Dec 2026 | P2 - GA Launch: 20-Sep (2027 implied)
+> P0 - Cohere: 15-Sep 2026 | P1 - Beta: 19-Dec 2026 | P2 - GA Launch: 20-Sep
 
 **Why flagged:** AMBIGUOUS — major planning sessions are 6 days away (June 23-25). Solution review sessions cover all key P0-Cohere features. Milestone dates are now explicit: P0 Cohere = 15-Sep, P1 Beta = 19-Dec. The GA Launch date of 20-Sep is ambiguous (2026 or 2027?).
 **Suggested action:** Romit should prepare all In Assessment, Base Entities, Assessment Creation & Distribution, and Question Creation designs for review by June 23. These sessions are 6 days out. Confirm GA Launch 20-Sep is 2027, not 2026.
@@ -302,5 +302,62 @@ First snapshot taken for Roadmap-Exam-Management — no diff applied. Next run w
 
 **Why flagged:** CLEAR — all previously TBD release targets are now set. Six capabilities target 3rd July; three additional capabilities target 20-Jul. This is the first time a complete release date picture exists for the P0-Cohere scope. Step 7b mapping: no BUILD-STATUS feature status changes (no "Completed" rows this run) — only last-updated date bumped.
 **Suggested action:** Informational. 3rd July = primary Cohere delivery target for Course Offering and Base Entities. 20-Jul = secondary wave (likely Assessment Creation & Distribution and Question Creation sub-items). No BUILD-STATUS change required — step 7b mapping does not include "In Review" or "Dev Ready" statuses.
+
+---
+
+## 2026-06-20 — Flagged: Exam Mgmt Roadmap — Nipun (3 changes)
+
+### Flag 1 — Base Entities rows: explicit engineering start date 18-Jun confirmed for Darshan (CLEAR)
+**Changed text (before):**
+> 4-Jun   17-Jun   In Review   Vishal   Dev Ready   Darshan
+> 4-Jun   17-Jun   In Review   Vishal   Dev Ready   Darshan
+
+**Changed text (after):**
+> 4-Jun   17-Jun   In Review   Vishal   18-Jun   Dev Ready   Darshan
+> 4-Jun   17-Jun   In Review   Vishal   18-Jun   Dev Ready   Darshan
+
+**Why flagged:** CLEAR — engineering start date for Base Entities (Students entity, Faculty entity) now explicitly shows `18-Jun` for Darshan's dev start. The 2026-06-19 run showed this date for Course Offering rows but it was absent from Base Entities rows. Now confirmed for both sets.
+**Suggested action:** Dev started 18-Jun (2 days ago). Confirm Base Entities design assets (list view + details view per entity) are finalized and submitted. Any design changes now incur turnaround cost against an active engineering sprint.
+
+---
+
+### Flag 2 — Row "19-Jun" now shows "In Progress 2-Jul" — new development item started (CLEAR)
+**Changed text (before):**
+> 19-Jun  *(no status or target in this row)*
+
+**Changed text (after):**
+> 19-Jun   In Progress   2-Jul
+
+**Why flagged:** CLEAR — a row that previously only showed a start date of `19-Jun` (no status) now shows `In Progress` with a 2-Jul target. This row appears after the In Assessment Experience Completed rows and the Assessment Creation POC rows in the Gantt/tracking section. Most likely corresponds to Assessment Administration (result publishing, basic assessment report) or RBAC framework — both P0-Cohere per the capability table. The 19-Jun start aligns with yesterday's date; 2-Jul = 12 days away.
+**Suggested action:** Confirm with Nipun which item this row maps to. If this is the RBAC framework or Assessment Administration, it is one of the June 23 POC Demo scope items (RBAC - role and scope based). Design needs to be available urgently.
+
+---
+
+### Flag 3 — Release section first table: "3rd July ×6 / 20-Jul ×3" replaced by "16-Jun TBD ×3" (AMBIGUOUS)
+**Changed text (before):**
+> Release  Start   Target
+> 17th June
+> 18th June
+> 3rd July
+> 3rd July
+> 3rd July
+> 3rd July
+> 3rd July
+> 3rd July
+> 20-Jul
+> 20-Jul
+> 20-Jul
+
+**Changed text (after):**
+> Release  Start   Target
+> 17th June
+> 18th June
+> 16-Jun   TBD
+> 16-Jun   TBD
+> 16-Jun   TBD
+> Development
+
+**Why flagged:** AMBIGUOUS — contains "TBD" alongside `16-Jun` start dates for 3 rows that previously showed `3rd July` as release targets. The second copy of the table (a separate sheet) still shows `3rd July ×6` and `20-Jul ×3` unchanged, suggesting this may be a data inconsistency between two Excel sheets — OR the near-term targets for Course Offering and Base Entities items have become TBD (slipped from 3rd July). "TBD" in the release column triggers AMBIGUOUS classification per watcher rules.
+**Suggested action:** Verify with Nipun: (1) Is the 3rd July target for Course Offering and Base Entities still firm? (2) If TBD, what is the new target? The second sheet still shows 3rd July — clarify which is authoritative. Note: the June 23-25 Solution Review sessions and POC Demo are 3 days away — if targets are slipping, Nipun needs to update the primary tracking sheet.
 
 ---
