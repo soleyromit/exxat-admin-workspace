@@ -33,8 +33,9 @@ const COURSE_TYPE_OPTIONS: {
   icon: string
 }[] = [
   { value: 'any',      label: 'Any',      description: 'Works for all course types',               icon: 'fa-layer-group' },
-  { value: 'didactic', label: 'Didactic', description: 'Lecture, lab, seminar, or online course',  icon: 'fa-chalkboard-teacher' },
-  { value: 'clinical', label: 'Clinical', description: 'Rotation, placement, or practicum',        icon: 'fa-stethoscope' },
+  { value: 'didactic', label: 'Classroom based', description: 'Lecture or online didactic course',     icon: 'fa-chalkboard-teacher' },
+  { value: 'clinical', label: 'Practice based',  description: 'Rotation, placement, or practicum',      icon: 'fa-stethoscope' },
+  { value: 'seminar',  label: 'Lab based',       description: 'Lab or hands-on skills course',          icon: 'fa-flask' },
 ]
 
 interface ExtractedSection {

@@ -1,99 +1,56 @@
 'use client'
 
-import { Badge } from '@exxatdesignux/ui'
-import type { SurveyStatus, TemplateSection } from '@/lib/pce-mock-data'
-import { SECTION_ABBREV } from '@/lib/pce-mock-data'
+import { ListHubStatusBadge } from '@/components/list-hub-status-badge'
+import type { SurveyStatus } from '@/lib/pce-mock-data'
+import type { StatusTint } from '@/lib/list-status-badges'
+import {
+  LIST_HUB_STATUS_TINT_SUCCESS,
+  LIST_HUB_STATUS_TINT_WARNING,
+  LIST_HUB_STATUS_TINT_NEUTRAL,
+  LIST_HUB_STATUS_TINT_INFO,
+  LIST_HUB_STATUS_TINT_PLANNED,
+  LIST_HUB_STATUS_TINT_COMPLETED,
+} from '@/lib/list-status-badges'
 
-/* Variant carries the semantics; bg/fg/dot carry the product-design brand tint.
- *   - default  → state has user attention (pending review, active collecting)
- *   - outline  → de-emphasized state (draft, closed)
- *   - secondary→ neutral informational state (released)
- * No destructive used — per memory feedback_aarti_no_red: no red in status viz.
- */
-type BadgeVariant = 'default' | 'secondary' | 'outline' | 'ghost' | 'link'
+// ── CourseOffering status ─────────────────────────────────────────────────────
+export const OFFERING_STATUS_BADGE: Record<string, { tint: StatusTint; icon: string; label: string }> = {
+  planned:   { tint: LIST_HUB_STATUS_TINT_PLANNED,   icon: 'fa-calendar-days', label: 'Planned'   },
+  active:    { tint: LIST_HUB_STATUS_TINT_SUCCESS,   icon: 'fa-circle-check',  label: 'Active'    },
+  completed: { tint: LIST_HUB_STATUS_TINT_COMPLETED, icon: 'fa-flag-checkered',label: 'Completed' },
+  archived:  { tint: LIST_HUB_STATUS_TINT_NEUTRAL,   icon: 'fa-box-archive',   label: 'Archived'  },
+}
+export function OfferingStatusBadge({ status }: { status: string }) {
+  const s = OFFERING_STATUS_BADGE[status] ?? OFFERING_STATUS_BADGE.active
+  return <ListHubStatusBadge label={s.label} tint={s.tint} icon={s.icon} />
+}
 
-const STATUS_CONFIG: Record<SurveyStatus, { label: string; variant: BadgeVariant; bg: string; fg: string; dot: string }> = {
-  draft: {
-    label: 'Draft',
-    variant: 'outline',
-    bg: 'var(--pce-status-draft-bg)',
-    fg: 'var(--pce-status-draft-fg)',
-    dot: 'var(--pce-status-draft-fg)',
-  },
-  active: {
-    label: 'Active',
-    variant: 'default',
-    bg: 'var(--pce-status-active-bg)',
-    fg: 'var(--pce-status-active-fg)',
-    dot: 'var(--brand-color)',
-  },
-  collecting: {
-    label: 'Collecting',
-    variant: 'default',
-    bg: 'var(--pce-status-collecting-bg)',
-    fg: 'var(--pce-status-collecting-fg)',
-    dot: 'var(--pce-status-collecting-dot)',
-  },
-  pending_review: {
-    label: 'Pending Review',
-    variant: 'default',
-    bg: 'var(--pce-status-pending-bg)',
-    fg: 'var(--pce-status-pending-fg)',
-    dot: 'var(--pce-status-pending-fg)',
-  },
-  released: {
-    label: 'Released',
-    variant: 'secondary',
-    bg: 'var(--pce-status-released-bg)',
-    fg: 'var(--pce-status-released-fg)',
-    dot: 'var(--pce-status-released-fg)',
-  },
-  scheduled: {
-    label: 'Scheduled',
-    variant: 'outline',
-    bg: 'var(--pce-status-scheduled-bg)',
-    fg: 'var(--pce-status-scheduled-fg)',
-    dot: 'var(--brand-color)',
-  },
-  closed: {
-    label: 'Closed',
-    variant: 'outline',
-    bg: 'var(--muted)',
-    fg: 'var(--muted-foreground)',
-    dot: 'var(--muted-foreground)',
-  },
+// ── Student enrollment status ─────────────────────────────────────────────────
+export const ENROLLMENT_STATUS_BADGE: Record<string, { tint: StatusTint; icon: string; label: string }> = {
+  enrolled:   { tint: LIST_HUB_STATUS_TINT_SUCCESS,   icon: 'fa-circle-check',  label: 'Enrolled'   },
+  graduated:  { tint: LIST_HUB_STATUS_TINT_COMPLETED, icon: 'fa-graduation-cap',label: 'Graduated'  },
+  withdrawn:  { tint: LIST_HUB_STATUS_TINT_NEUTRAL,   icon: 'fa-circle-xmark',  label: 'Withdrawn'  },
+  'on-leave': { tint: LIST_HUB_STATUS_TINT_WARNING,   icon: 'fa-circle-pause',  label: 'On Leave'   },
+}
+export function EnrollmentStatusBadge({ status }: { status: string }) {
+  const s = ENROLLMENT_STATUS_BADGE[status] ?? ENROLLMENT_STATUS_BADGE.enrolled
+  return <ListHubStatusBadge label={s.label} tint={s.tint} icon={s.icon} />
+}
+
+// ── Survey status ─────────────────────────────────────────────────────────────
+// Canonical survey lifecycle (per spec): Draft → Scheduled → Live →
+// Closed, Pending Review → Closed, Results Available → Archived.
+// Underlying statuses map onto those display labels.
+export const SURVEY_STATUS_BADGE: Record<SurveyStatus, { tint: StatusTint; icon: string; label: string }> = {
+  draft:          { tint: LIST_HUB_STATUS_TINT_NEUTRAL,   icon: 'fa-pen-ruler',      label: 'Draft'                     },
+  scheduled:      { tint: LIST_HUB_STATUS_TINT_PLANNED,   icon: 'fa-calendar',       label: 'Scheduled'                 },
+  active:         { tint: LIST_HUB_STATUS_TINT_SUCCESS,   icon: 'fa-circle-dot',     label: 'Live'                      },
+  collecting:     { tint: LIST_HUB_STATUS_TINT_SUCCESS,   icon: 'fa-circle-dot',     label: 'Live'                      },
+  pending_review: { tint: LIST_HUB_STATUS_TINT_WARNING,   icon: 'fa-hourglass-half', label: 'Closed, Pending Review'    },
+  closed:         { tint: LIST_HUB_STATUS_TINT_WARNING,   icon: 'fa-hourglass-half', label: 'Closed, Pending Review'    },
+  released:       { tint: LIST_HUB_STATUS_TINT_COMPLETED, icon: 'fa-circle-check',   label: 'Closed, Results Available' },
 }
 
 export function SurveyStatusBadge({ status }: { status: SurveyStatus }) {
-  const s = STATUS_CONFIG[status]
-  return (
-    <Badge
-      variant={s.variant}
-      data-status={status}
-      className="rounded gap-1.5 whitespace-nowrap font-medium border-0"
-      style={{ backgroundColor: s.bg, color: s.fg }}
-    >
-      <span
-        style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: s.dot, display: 'inline-block', flexShrink: 0 }}
-        aria-hidden="true"
-      />
-      {s.label}
-    </Badge>
-  )
-}
-
-export function TemplateSectionChips({ sections }: { sections: TemplateSection[] }) {
-  return (
-    <div className="flex gap-1">
-      {sections.map(s => (
-        <Badge
-          key={s}
-          variant="outline"
-          className="rounded font-mono border-border text-[10px] px-[5px] py-[1px]"
-        >
-          {SECTION_ABBREV[s]}
-        </Badge>
-      ))}
-    </div>
-  )
+  const s = SURVEY_STATUS_BADGE[status]
+  return <ListHubStatusBadge label={s.label} tint={s.tint} icon={s.icon} />
 }

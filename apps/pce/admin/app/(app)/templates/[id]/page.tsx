@@ -51,8 +51,8 @@ import type { TemplateQuestion, CourseTypeFilter, SubjectKey } from '@/lib/pce-m
 // SubjectKey is used for predefined subjects; custom subjects use plain strings
 
 const COURSE_TYPE_OPTIONS: { value: CourseTypeFilter; label: string }[] = [
-  { value: 'didactic', label: 'Didactic' },
-  { value: 'clinical', label: 'Clinical' },
+  { value: 'didactic', label: 'Classroom based' },
+  { value: 'clinical', label: 'Practice based' },
 ]
 
 type AnswerType = TemplateQuestion['answerType']

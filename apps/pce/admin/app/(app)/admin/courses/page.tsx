@@ -15,9 +15,9 @@ import { DataTablePaginated } from '@/components/data-table/pagination'
 import type { ColumnDef } from '@/components/data-table/types'
 
 const TYPE_LABELS: Record<MasterCourse['type'], string> = {
-  didactic: 'Didactic',
-  clinical: 'Clinical',
-  seminar:  'Seminar',
+  didactic: 'Classroom based',
+  clinical: 'Practice based',
+  seminar:  'Lab based',
 }
 
 const TYPE_BADGE_VARIANT: Record<MasterCourse['type'], 'secondary' | 'outline'> = {
@@ -87,8 +87,8 @@ export default function MasterCoursesPage() {
 
   const kpis: MetricItem[] = [
     { id: 'total',    label: 'Total courses',   value: MOCK_MASTER_COURSES.length, delta: '', trend: 'neutral' },
-    { id: 'didactic', label: 'Didactic',         value: didacticCount,              delta: '', trend: 'neutral' },
-    { id: 'clinical', label: 'Clinical',          value: clinicalCount,              delta: '', trend: 'neutral' },
+    { id: 'didactic', label: 'Classroom based',   value: didacticCount,              delta: '', trend: 'neutral' },
+    { id: 'clinical', label: 'Practice based',    value: clinicalCount,              delta: '', trend: 'neutral' },
     { id: 'rating',   label: 'Avg program rating', value: programAvgRating !== null ? `${programAvgRating}/5` : '—', delta: '', trend: 'neutral' },
   ]
 
@@ -111,9 +111,9 @@ export default function MasterCoursesPage() {
       filter: {
         type: 'select', icon: 'fa-shapes', operators: ['is', 'is_not'],
         options: [
-          { value: 'didactic', label: 'Didactic' },
-          { value: 'clinical', label: 'Clinical' },
-          { value: 'seminar',  label: 'Seminar' },
+          { value: 'didactic', label: 'Classroom based' },
+          { value: 'clinical', label: 'Practice based' },
+          { value: 'seminar',  label: 'Lab based' },
         ],
       },
     },
