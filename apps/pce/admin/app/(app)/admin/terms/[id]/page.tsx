@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useParams, useSearchParams } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import {
   Button, Badge,
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
@@ -60,15 +60,13 @@ const columns: ColumnDef<CourseRow>[] = [
     ),
   },
   {
-    key: 'status', label: 'Status', width: 140,
+    key: 'status', label: 'Status', width: 200,
     cell: (row) => <SurveyStatusBadge status={row.status} />,
   },
 ]
 
-export default function TermAnalyticsProfile() {
+export default function TermProfile() {
   const params  = useParams<{ id: string }>()
-  const search  = useSearchParams()
-  const fromDir = search?.get('from') === 'directory'
   const termId  = params?.id ?? ''
 
   const term = MOCK_PROGRAM_TERMS.find(t => t.id === termId)
@@ -96,24 +94,22 @@ export default function TermAnalyticsProfile() {
         <i className="fa-light fa-calendar-xmark text-muted-foreground" aria-hidden="true" style={{ fontSize: 32 }} />
         <p className="text-sm text-muted-foreground">Term not found</p>
         <Button variant="outline" size="sm" asChild>
-          <Link href="/analytics">Back to Analytics</Link>
+          <Link href="/admin/terms">Back to Terms</Link>
         </Button>
       </div>
     )
   }
 
+  // Term lifecycle facts (profile details).
+  const enrolledTotal = termSurveys.reduce((s, x) => s + x.enrollmentCount, 0)
+  const facultyCount = new Set(termSurveys.flatMap(s => s.instructors.map(i => i.id))).size
+
   return (
     <>
-      <SiteHeader
-        breadcrumbs={fromDir
-          ? [{ label: 'Terms', href: '/admin/terms' }]
-          : [{ label: 'Analytics', href: '/analytics' }]
-        }
-        title={term.name}
-      />
+      <SiteHeader breadcrumbs={[{ label: 'Terms', href: '/admin/terms' }]} title={term.name} />
 
-      {/* Term header */}
-      <div className="shrink-0 flex items-center gap-4" style={{ padding: '20px 28px 16px' }}>
+      {/* Term header — profile details */}
+      <div className="shrink-0 flex items-center gap-4" style={{ padding: '20px 28px 8px' }}>
         <div
           className="flex items-center justify-center rounded-xl shrink-0"
           style={{ width: 48, height: 48, background: 'var(--brand-tint)' }}
@@ -124,15 +120,19 @@ export default function TermAnalyticsProfile() {
           <h1 className="text-lg font-semibold leading-tight">{term.name}</h1>
           <p className="text-sm text-muted-foreground">
             {term.academicYear} &nbsp;·&nbsp; {fmt(term.startDate)} – {fmt(term.endDate)}
+            &nbsp;·&nbsp; {courseRows.length} course{courseRows.length !== 1 ? 's' : ''} · {enrolledTotal.toLocaleString()} students · {facultyCount} faculty
           </p>
         </div>
-        {term.enabledForEval
-          ? <Badge variant="secondary">Enabled for evaluation</Badge>
-          : <Badge variant="outline">Not enabled</Badge>}
+        <div className="flex items-center gap-2 shrink-0">
+          <Badge variant={term.status === 'active' ? 'secondary' : 'outline'} className="capitalize">{term.status}</Badge>
+          {term.enabledForEval
+            ? <Badge variant="secondary">Enabled for evaluation</Badge>
+            : <Badge variant="outline">Not enabled</Badge>}
+        </div>
       </div>
 
-      {/* Monitor (term-scoped) + courses table */}
-      <div className="flex-1 overflow-auto" style={{ padding: '4px 28px 28px' }}>
+      {/* Analytics (term-scoped) + courses table */}
+      <div className="flex-1 overflow-auto" style={{ padding: '8px 28px 28px' }}>
         {termSurveys.length === 0 ? (
           <div className="flex flex-col items-center gap-2" style={{ padding: '48px 0' }}>
             <i className="fa-light fa-chart-mixed text-muted-foreground" aria-hidden="true" style={{ fontSize: 28 }} />

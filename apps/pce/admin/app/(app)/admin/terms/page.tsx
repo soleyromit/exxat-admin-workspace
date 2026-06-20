@@ -200,7 +200,7 @@ export default function TermsPage() {
       key: 'analytics', label: '', width: 32,
       cell: (row) => row.enabledForEval ? (
         <Link
-          href={`/analytics/term/${row.id}?from=directory`}
+          href={`/admin/terms/${row.id}`}
           onClick={e => e.stopPropagation()}
           title="View analytics"
           aria-label={`View analytics for ${row.name}`}
