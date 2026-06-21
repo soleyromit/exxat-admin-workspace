@@ -12,16 +12,14 @@ interface WizardNavProps {
 
 const DEFAULT_STEPS: Record<string, { n: number; label: string }[]> = {
   course_evaluation: [
-    { n: 1, label: 'Evaluation' },
-    { n: 2, label: 'Design' },
-    { n: 3, label: 'Distribution' },
-    { n: 4, label: 'Communication' },
+    { n: 1, label: 'Scope and design' },
+    { n: 2, label: 'Distribution' },
+    { n: 3, label: 'Communication' },
   ],
   general: [
-    { n: 1, label: 'Survey' },
-    { n: 2, label: 'Design' },
-    { n: 3, label: 'Distribution' },
-    { n: 4, label: 'Communication' },
+    { n: 1, label: 'Scope and design' },
+    { n: 2, label: 'Distribution' },
+    { n: 3, label: 'Communication' },
   ],
 }
 

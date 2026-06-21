@@ -2,6 +2,7 @@
 
 import { useState, useMemo, Suspense } from 'react'
 import { useSearchParams, usePathname } from 'next/navigation'
+import { Button } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { WizardNav } from '@/components/pce/wizard-nav'
@@ -15,12 +16,39 @@ import {
   MOCK_PROGRAM_TERMS,
   MOCK_COURSE_OFFERINGS,
   type SurveyType,
+  type PceTemplate,
 } from '@/lib/pce-mock-data'
 
 const LATEST_TERM_ID = [...MOCK_PROGRAM_TERMS]
   .sort((a, b) => b.startDate.localeCompare(a.startDate))[0]?.id ?? ''
 
-type WizardStep = 1 | 2 | 3 | 4 | 'success'
+type WizardStep = 1 | 2 | 3 | 'success'
+
+// Pre-assign a default template to every (non-archived) offering in a term, so
+// the merged "Scope and design" step shows assignments immediately. One template
+// → all courses; otherwise match by courseType, falling back to the first.
+function autoAssignTemplates(
+  termId: string,
+  publishedTemplates: PceTemplate[],
+): Record<string, string> {
+  const result: Record<string, string> = {}
+  if (publishedTemplates.length === 0) return result
+  const offerings = MOCK_COURSE_OFFERINGS.filter(
+    o => o.termId === termId && o.status !== 'archived',
+  )
+  const single = publishedTemplates.length === 1 ? publishedTemplates[0] : null
+  for (const offering of offerings) {
+    if (single) {
+      result[offering.id] = single.id
+    } else {
+      const matched = offering.courseType
+        ? publishedTemplates.find(t => t.courseType === offering.courseType)
+        : undefined
+      result[offering.id] = (matched ?? publishedTemplates[0]).id
+    }
+  }
+  return result
+}
 
 function dateToYmd(d: Date | undefined): string {
   if (!d) return ''
@@ -41,6 +69,14 @@ function PushSurveyInner() {
     pathname.startsWith('/surveys/programmatic') || params.get('mode') === 'programmatic'
       ? 'general' : 'course_evaluation'
 
+  const publishedTemplates = templates.filter(t =>
+    t.status === 'active' && (
+      surveyMode === 'general'
+        ? t.surveyType === 'programmatic'
+        : (!t.surveyType || t.surveyType === 'course_evaluation')
+    )
+  )
+
   const [step, setStep] = useState<WizardStep>(1)
 
   // Step 1 — Properties
@@ -51,11 +87,11 @@ function PushSurveyInner() {
   const [termId, setTermId] = useState(LATEST_TERM_ID)
   const [surveyDescription, setSurveyDescription] = useState('')
 
-  // Step 2 — Survey Design
-
-  // Step 3 — Distribution
+  // Step 1 — Design (templates) + Distribution scope
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set())
-  const [templateAssignments, setTemplateAssignments] = useState<Record<string, string>>({})
+  const [templateAssignments, setTemplateAssignments] = useState<Record<string, string>>(
+    () => surveyMode !== 'general' ? autoAssignTemplates(LATEST_TERM_ID, publishedTemplates) : {}
+  )
   const [generalTemplateId, setGeneralTemplateId] = useState<string>('')
 
   // Step 4 — Communication
@@ -83,48 +119,24 @@ function PushSurveyInner() {
   )
 
   const selectedOfferings = offeringsForTerm.filter(o => !excludedIds.has(o.id))
-  const publishedTemplates = templates.filter(t =>
-    t.status === 'active' && (
-      surveyMode === 'general'
-        ? t.surveyType === 'programmatic'
-        : (!t.surveyType || t.surveyType === 'course_evaluation')
-    )
-  )
 
-  const allAssigned =
-    selectedOfferings.length > 0 &&
-    selectedOfferings.every(o => !!templateAssignments[o.id])
+  // Step 1 ("Scope and design") gating — scope fields + a template for every course.
+  const scopeValid = surveyMode === 'general'
+    ? !!surveyTitle.trim()
+    : (!!surveyTitle.trim() && !!termId)
+  const designValid = surveyMode === 'general'
+    ? !!generalTemplateId
+    : (selectedOfferings.length > 0 && selectedOfferings.every(o => !!templateAssignments[o.id]))
+  const canContinueStep1 = scopeValid && designValid
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
   function handleTermChange(v: string) {
     setTermId(v)
     setExcludedIds(new Set())
-    setTemplateAssignments({})
-  }
-
-  function buildAutoTemplates(): Record<string, string> {
-    const result: Record<string, string> = {}
-    if (publishedTemplates.length === 0) return result
-    const single = publishedTemplates.length === 1 ? publishedTemplates[0] : null
-    for (const offering of selectedOfferings) {
-      if (single) {
-        result[offering.id] = single.id
-      } else {
-        const matched = offering.courseType
-          ? publishedTemplates.find(t => t.courseType === offering.courseType)
-          : undefined
-        result[offering.id] = (matched ?? publishedTemplates[0]).id
-      }
-    }
-    return result
-  }
-
-  function handleStep1Next() {
-    if (surveyMode !== 'general') {
-      setTemplateAssignments(buildAutoTemplates())
-    }
-    setStep(2)
+    setTemplateAssignments(
+      surveyMode !== 'general' ? autoAssignTemplates(v, publishedTemplates) : {}
+    )
   }
 
   function handleToggleOffering(id: string) {
@@ -184,7 +196,9 @@ function PushSurveyInner() {
     setTermId(LATEST_TERM_ID)
     setSurveyDescription('')
     setExcludedIds(new Set())
-    setTemplateAssignments({})
+    setTemplateAssignments(
+      surveyMode !== 'general' ? autoAssignTemplates(LATEST_TERM_ID, publishedTemplates) : {}
+    )
     setGeneralTemplateId('')
     setOpenDate(undefined)
     setCloseDate(undefined)
@@ -202,8 +216,8 @@ function PushSurveyInner() {
     }
   }
 
-  const currentStepNum = step === 'success' ? 5 : (step as number)
-  const completedUpTo = step === 'success' ? 4 : (step as number) - 1
+  const currentStepNum = step === 'success' ? 4 : (step as number)
+  const completedUpTo = step === 'success' ? 3 : (step as number) - 1
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -229,46 +243,83 @@ function PushSurveyInner() {
       )}
 
       {/* Full-width content */}
-      <div className="flex flex-1 overflow-hidden">
+      <main className="flex flex-1 overflow-hidden">
         <div className="flex-1 overflow-auto" style={{ padding: '32px 40px 48px' }}>
           {step === 1 && (
-            <StepProperties
-              surveyMode={surveyMode}
-              surveyTitle={surveyTitle}
-              termId={termId}
-              description={surveyDescription}
-              onSurveyTitleChange={setSurveyTitle}
-              onTermChange={handleTermChange}
-              onDescriptionChange={setSurveyDescription}
-              onNext={handleStep1Next}
-            />
+            <div className="flex flex-col gap-6" style={{ maxWidth: 680 }}>
+              {/* Step header */}
+              <div className="flex flex-col gap-1">
+                <h2 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Scope and design
+                </h2>
+                <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                  {surveyMode === 'general'
+                    ? 'Define the scope for this survey and choose its template.'
+                    : 'Define the term and scope for this evaluation cycle, then set templates by course type.'}
+                </p>
+              </div>
+
+              {/* Scope */}
+              <StepProperties
+                asSection
+                surveyMode={surveyMode}
+                surveyTitle={surveyTitle}
+                termId={termId}
+                description={surveyDescription}
+                onSurveyTitleChange={setSurveyTitle}
+                onTermChange={handleTermChange}
+                onDescriptionChange={setSurveyDescription}
+              />
+
+              {/* Design */}
+              <div className="border-t border-border pt-6 flex flex-col gap-1">
+                <h3 className="text-base font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Design
+                </h3>
+                <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                  {surveyMode === 'general'
+                    ? 'Set a template for this survey.'
+                    : 'Set a template for each course type. Expand to override individual courses.'}
+                </p>
+              </div>
+
+              {surveyMode === 'general' ? (
+                <StepSurveyDesignGeneral
+                  asSection
+                  publishedTemplates={publishedTemplates}
+                  selectedTemplateId={generalTemplateId}
+                  onTemplateChange={setGeneralTemplateId}
+                />
+              ) : (
+                <StepSurveyDesign
+                  key={termId}
+                  asSection
+                  selectedOfferings={selectedOfferings}
+                  publishedTemplates={publishedTemplates}
+                  templateAssignments={templateAssignments}
+                  onTemplateChange={(offeringId, tmplId) =>
+                    setTemplateAssignments(p => ({ ...p, [offeringId]: tmplId }))
+                  }
+                  onBulkAssignByType={handleBulkAssignByType}
+                />
+              )}
+
+              {/* Single footer for the merged step */}
+              <div className="border-t border-border pt-4 flex items-center justify-end">
+                <Button
+                  variant="default"
+                  size="sm"
+                  disabled={!canContinueStep1}
+                  onClick={() => setStep(2)}
+                >
+                  Continue
+                  <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
+                </Button>
+              </div>
+            </div>
           )}
 
-          {step === 2 && surveyMode === 'general' && (
-            <StepSurveyDesignGeneral
-              publishedTemplates={publishedTemplates}
-              selectedTemplateId={generalTemplateId}
-              onTemplateChange={setGeneralTemplateId}
-              onBack={() => setStep(1)}
-              onNext={() => setStep(3)}
-            />
-          )}
-
-          {step === 2 && surveyMode !== 'general' && (
-            <StepSurveyDesign
-              selectedOfferings={selectedOfferings}
-              publishedTemplates={publishedTemplates}
-              templateAssignments={templateAssignments}
-              onTemplateChange={(offeringId, tmplId) =>
-                setTemplateAssignments(p => ({ ...p, [offeringId]: tmplId }))
-              }
-              onBulkAssignByType={handleBulkAssignByType}
-              onBack={() => setStep(1)}
-              onNext={() => setStep(3)}
-            />
-          )}
-
-          {step === 3 && selectedTerm && (
+          {step === 2 && selectedTerm && (
             <StepDistribution
               offeringsForTerm={offeringsForTerm}
               selectedOfferings={selectedOfferings}
@@ -279,12 +330,12 @@ function PushSurveyInner() {
               onToggleOffering={handleToggleOffering}
               onSetExcluded={setExcludedIds}
               onApplyDatesToAll={(open, close) => { setOpenDate(open); setCloseDate(close) }}
-              onBack={() => setStep(2)}
-              onNext={() => setStep(4)}
+              onBack={() => setStep(1)}
+              onNext={() => setStep(3)}
             />
           )}
 
-          {step === 4 && (
+          {step === 3 && (
             <StepCommunication
               selectedOfferings={selectedOfferings}
               openDate={openDate}
@@ -301,7 +352,7 @@ function PushSurveyInner() {
               onEmailSubjectChange={setEmailSubject}
               onEmailBodyChange={setEmailBody}
               onRemindersChange={setReminders}
-              onBack={() => setStep(3)}
+              onBack={() => setStep(2)}
               onNext={handlePush}
             />
           )}
@@ -316,7 +367,7 @@ function PushSurveyInner() {
           )}
 
         </div>
-      </div>
+      </main>
     </div>
   )
 }

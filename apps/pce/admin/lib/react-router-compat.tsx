@@ -13,7 +13,11 @@
  */
 
 import * as React from "react"
-import { usePathname, useRouter } from "next/navigation"
+import {
+  usePathname,
+  useRouter,
+  useSearchParams as useNextSearchParams,
+} from "next/navigation"
 
 // ---------------------------------------------------------------------------
 // useLocation — provides { pathname, search, hash, state, key }
@@ -49,6 +53,45 @@ export function useNavigate() {
     },
     [router],
   )
+}
+
+// ---------------------------------------------------------------------------
+// useSearchParams — mirrors react-router's [params, setParams] tuple, backed
+// by Next's useSearchParams + router. DS shell reads query scope from this.
+// (webpack tolerated this being absent; Turbopack hard-errors on the missing
+// named export, so it must be exported here.)
+// ---------------------------------------------------------------------------
+type SetSearchParams = (
+  next:
+    | URLSearchParams
+    | Record<string, string>
+    | ((prev: URLSearchParams) => URLSearchParams),
+  options?: { replace?: boolean },
+) => void
+
+export function useSearchParams(): [URLSearchParams, SetSearchParams] {
+  const params = useNextSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
+  const qs = params?.toString() ?? ""
+
+  const setSearchParams = React.useCallback<SetSearchParams>(
+    (next, options) => {
+      const resolved =
+        typeof next === "function"
+          ? next(new URLSearchParams(qs))
+          : next instanceof URLSearchParams
+            ? next
+            : new URLSearchParams(next)
+      const nextQs = resolved.toString()
+      const url = nextQs ? `${pathname}?${nextQs}` : pathname
+      if (options?.replace) router.replace(url)
+      else router.push(url)
+    },
+    [router, pathname, qs],
+  )
+
+  return [new URLSearchParams(qs), setSearchParams]
 }
 
 // ---------------------------------------------------------------------------

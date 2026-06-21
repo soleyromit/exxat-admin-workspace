@@ -27,8 +27,10 @@ interface StepSurveyDesignProps {
   templateAssignments: Record<string, string>
   onTemplateChange: (offeringId: string, tmplId: string) => void
   onBulkAssignByType: (courseType: 'didactic' | 'clinical' | 'any', tmplId: string) => void
-  onBack: () => void
-  onNext: () => void
+  onBack?: () => void
+  onNext?: () => void
+  /** Render as an embedded section (no own header/footer) inside a larger step. */
+  asSection?: boolean
 }
 
 type CourseGroupType = 'didactic' | 'clinical'
@@ -41,6 +43,7 @@ export function StepSurveyDesign({
   onBulkAssignByType,
   onBack,
   onNext,
+  asSection = false,
 }: StepSurveyDesignProps) {
   const [groupDefaults, setGroupDefaults] = useState<Partial<Record<CourseGroupType, string>>>(() => {
     const defaults: Partial<Record<CourseGroupType, string>> = {}
@@ -114,13 +117,15 @@ export function StepSurveyDesign({
   ]
 
   return (
-    <div className="flex flex-col gap-5" style={{ maxWidth: 680 }}>
-      <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Survey design</h1>
-        <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-          Set a template for each course type. Expand to override individual courses.
-        </p>
-      </div>
+    <div className="flex flex-col gap-5" style={asSection ? undefined : { maxWidth: 680 }}>
+      {!asSection && (
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Survey design</h1>
+          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+            Set a template for each course type. Expand to override individual courses.
+          </p>
+        </div>
+      )}
 
       {publishedTemplates.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-14 text-center rounded-xl border border-dashed border-border">
@@ -362,21 +367,23 @@ export function StepSurveyDesign({
         </>
       )}
 
-      <div className="border-t border-border pt-4 flex items-center justify-between">
-        <Button variant="outline" size="sm" onClick={onBack}>
-          <i className="fa-light fa-arrow-left" aria-hidden="true" style={{ fontSize: 12 }} />
-          Back
-        </Button>
-        <Button
-          variant="default"
-          size="sm"
-          disabled={!allAssigned || publishedTemplates.length === 0}
-          onClick={onNext}
-        >
-          Continue
-          <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 12 }} />
-        </Button>
-      </div>
+      {!asSection && (
+        <div className="border-t border-border pt-4 flex items-center justify-between">
+          <Button variant="outline" size="sm" onClick={onBack}>
+            <i className="fa-light fa-arrow-left text-xs" aria-hidden="true" />
+            Back
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            disabled={!allAssigned || publishedTemplates.length === 0}
+            onClick={onNext}
+          >
+            Continue
+            <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
+          </Button>
+        </div>
+      )}
 
       <SurveyPreviewDialog
         template={previewTemplate}

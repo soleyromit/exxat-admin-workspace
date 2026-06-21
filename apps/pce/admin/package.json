@@ -8,7 +8,8 @@
   },
   "scripts": {
     "predev": "exxat-ui dev-guard",
-    "dev": "next dev --port 3005",
+    "dev": "next dev --turbopack --port 3005",
+    "dev:clean": "lsof -ti tcp:3005 -sTCP:LISTEN | xargs -r kill -9; next dev --turbopack --port 3005",
     "build": "next build",
     "start": "next start --port 3005",
     "typecheck": "tsc --noEmit",
@@ -16,8 +17,8 @@
     "postinstall": "exxat-ui sync-extras --quiet --no-upgrade-notice || true && exxat-ui upgrade --quiet || true"
   },
   "dependencies": {
-    "@exxatdesignux/product-framework": "^0.1.5",
-    "@exxatdesignux/ui": "^0.6.30",
+    "@exxatdesignux/product-framework": "^0.1.7",
+    "@exxatdesignux/ui": "^0.6.48",
     "@hookform/resolvers": "^5.2.2",
     "clsx": "^2.1.1",
     "motion": "^12.40.0",
@@ -26,6 +27,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.72.0",
+    "recharts": "^3.8.1",
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
