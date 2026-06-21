@@ -2,11 +2,16 @@ import type { NextConfig } from 'next'
 import path from 'path'
 
 const nextConfig: NextConfig = {
-  // Pin the workspace root. Without this, Next infers the root from the
-  // nearest lockfile above this dir — a stray ~/package-lock.json once made
-  // it root file-tracing at the entire home directory, crawling that whole
-  // tree on every compile (high CPU). Anchor it to the Work monorepo root.
-  outputFileTracingRoot: path.resolve(__dirname, '../../..'),
+  // Pin the workspace root for LOCAL dev only. Without it, Next infers the
+  // root from the nearest lockfile above this dir — a stray ~/package-lock.json
+  // once made it root file-tracing at the entire home directory, crawling that
+  // whole tree on every compile (high CPU). On Vercel the platform sets the
+  // root via the project's rootDirectory; overriding it there breaks output
+  // tracing (routes-manifest.json path doubling → deploy_failed), so skip it
+  // when VERCEL is set.
+  ...(process.env.VERCEL
+    ? {}
+    : { outputFileTracingRoot: path.resolve(__dirname, '../../..') }),
   experimental: {
     externalDir: true,
   },
