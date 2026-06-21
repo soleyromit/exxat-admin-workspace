@@ -173,8 +173,7 @@ export const NAV_ADMIN: NavLinkItem[] = [
     icon:       <i className="fa-light fa-gear-complex" aria-hidden="true" />,
     iconActive: <i className="fa-solid fa-gear-complex" aria-hidden="true" />,
     children: [
-      { key: "email-templates",   title: "Email Templates",   url: "/admin/email-templates",   icon: <i className="fa-light fa-envelope" aria-hidden="true" /> },
-      { key: "reminder-schedule", title: "Reminder Schedule", url: "/admin/reminder-schedule", icon: <i className="fa-light fa-bell" aria-hidden="true" /> },
+      { key: "eval-settings",     title: "Communication & rules", url: "/admin/eval-settings", icon: <i className="fa-light fa-sliders" aria-hidden="true" /> },
       { key: "competencies",      title: "Competencies",      url: "/admin/competencies",      icon: <i className="fa-light fa-list-check" aria-hidden="true" /> },
       { key: "content-areas",     title: "Content Areas",     url: "/admin/content-areas",     icon: <i className="fa-light fa-grid-2" aria-hidden="true" /> },
       { key: "standards",         title: "Standards",         url: "/admin/standards",         icon: <i className="fa-light fa-certificate" aria-hidden="true" /> },
