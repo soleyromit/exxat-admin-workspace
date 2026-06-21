@@ -112,7 +112,13 @@ export default function StudentsPage() {
               {initials(row.firstName, row.lastName)}
             </AvatarFallback>
           </Avatar>
-          <span className="text-sm font-medium">{row.fullName}</span>
+          <Link
+            href={`/admin/students/${row.id}`}
+            onClick={e => e.stopPropagation()}
+            className="text-sm font-medium hover:text-interactive-hover-foreground hover:underline"
+          >
+            {row.fullName}
+          </Link>
         </div>
       ),
     },

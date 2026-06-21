@@ -162,6 +162,7 @@ DOCUMENTED_HAND_ROLLS = {
     # top-level entity list pages, not sub-tables within a profile view.
     "app/(app)/admin/faculty/[id]/page.tsx",
     "app/(app)/admin/offerings/[code]/page.tsx",
+    "app/(app)/admin/students/[id]/page.tsx",
     "app/(app)/admin/terms/[id]/page.tsx",
     # exam-management: qb-table — purpose-built spreadsheet for the question bank.
     # Frozen header + left column, virtual scroll over thousands of rows, inline
