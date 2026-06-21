@@ -158,7 +158,7 @@ export default function CourseOfferingsPage() {
       key: 'analytics', label: '', width: 32,
       cell: (row) => (
         <Link
-          href={`/analytics/course/${encodeURIComponent(row.courseCode)}?from=directory`}
+          href={`/admin/offerings/${encodeURIComponent(row.courseCode)}`}
           onClick={e => e.stopPropagation()}
           aria-label={`View analytics for ${row.courseCode}`}
         >
@@ -195,7 +195,7 @@ export default function CourseOfferingsPage() {
         <KeyMetrics variant="compact" showHeader={false} metricsSingleRow metrics={kpis} />
       </div>
 
-      <div className="flex-1 overflow-auto" style={{ paddingTop: 16, paddingBottom: 28 }}>
+      <div className="flex-1 overflow-auto" tabIndex={0} style={{ paddingTop: 16, paddingBottom: 28 }}>
         <div className="max-w-6xl flex flex-col gap-4">
 
           <DataTablePaginated<OfferingRow>

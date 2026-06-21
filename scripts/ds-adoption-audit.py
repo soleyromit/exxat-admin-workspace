@@ -160,8 +160,8 @@ DOCUMENTED_HAND_ROLLS = {
     # pce: faculty + course analytics profiles — detail pages for a single entity; the DataTable
     # renders a sub-list (offerings) not the primary entity list. ListPageTemplate is for
     # top-level entity list pages, not sub-tables within a profile view.
-    "app/(app)/analytics/faculty/[id]/page.tsx",
-    "app/(app)/analytics/course/[code]/page.tsx",
+    "app/(app)/admin/faculty/[id]/page.tsx",
+    "app/(app)/admin/offerings/[code]/page.tsx",
     "app/(app)/admin/terms/[id]/page.tsx",
     # exam-management: qb-table — purpose-built spreadsheet for the question bank.
     # Frozen header + left column, virtual scroll over thousands of rows, inline

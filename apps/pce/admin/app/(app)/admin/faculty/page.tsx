@@ -159,7 +159,7 @@ export default function FacultyPage() {
       key: 'analytics', label: '', width: 32,
       cell: (row) => (
         <Link
-          href={`/analytics/faculty/${row.id}?from=directory`}
+          href={`/admin/faculty/${row.id}`}
           onClick={e => e.stopPropagation()}
           title="View analytics"
           aria-label={`View analytics for ${row.name}`}

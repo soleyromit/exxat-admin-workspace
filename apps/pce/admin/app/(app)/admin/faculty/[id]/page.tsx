@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import Link from 'next/link'
-import { useParams, useSearchParams } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import {
   Avatar, AvatarFallback, KeyMetrics, Button, Badge,
   ChartContainer, ChartTooltip, ChartTooltipContent,
@@ -104,8 +104,6 @@ const radarChartConfig: ChartConfig = {
 
 export default function FacultyAnalyticsProfile() {
   const params   = useParams<{ id: string }>()
-  const search   = useSearchParams()
-  const fromDir  = search?.get('from') === 'directory'
   const facultyId = params?.id ?? ''
 
   const faculty = MOCK_FACULTY.find(f => f.id === facultyId)
@@ -182,7 +180,7 @@ export default function FacultyAnalyticsProfile() {
         <i className="fa-light fa-user-slash text-muted-foreground" aria-hidden="true" style={{ fontSize: 32 }} />
         <p className="text-sm text-muted-foreground">Faculty not found</p>
         <Button variant="outline" size="sm" asChild>
-          <Link href="/analytics">Back to Analytics</Link>
+          <Link href="/admin/faculty">Back to Faculty</Link>
         </Button>
       </div>
     )
@@ -190,13 +188,7 @@ export default function FacultyAnalyticsProfile() {
 
   return (
     <>
-      <SiteHeader
-        breadcrumbs={fromDir
-          ? [{ label: 'Faculty Directory', href: '/admin/faculty' }]
-          : [{ label: 'Analytics', href: '/analytics' }]
-        }
-        title={faculty.name}
-      />
+      <SiteHeader breadcrumbs={[{ label: 'Faculty', href: '/admin/faculty' }]} title={faculty.name} />
 
       {/* Profile header */}
       <div className="shrink-0 flex items-start gap-4" style={{ padding: '20px 28px 16px' }}>

@@ -150,7 +150,7 @@ export default function MasterCoursesPage() {
       key: 'analytics', label: '', width: 32,
       cell: (row) => row.avgRating !== null ? (
         <Link
-          href={`/analytics/course/${encodeURIComponent(row.code)}?from=directory`}
+          href={`/admin/offerings/${encodeURIComponent(row.code)}`}
           onClick={e => e.stopPropagation()}
           title="View analytics"
           aria-label={`View analytics for ${row.code}`}

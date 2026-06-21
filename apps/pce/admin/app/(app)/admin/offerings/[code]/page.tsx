@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import Link from 'next/link'
-import { useParams, useSearchParams } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import {
   KeyMetrics, Button,
   ChartContainer, ChartTooltip, ChartTooltipContent,
@@ -18,6 +18,8 @@ import type { ColumnDef } from '@/components/data-table/types'
 import { MOCK_MASTER_COURSES, MOCK_FACULTY, MOCK_FACULTY_OFFERINGS } from '@/lib/pce-mock-data'
 
 const PRISM_BASE = 'https://app.exxat.com/prism/dpt/course'
+
+const TYPE_LABELS: Record<string, string> = { didactic: 'Classroom based', clinical: 'Practice based', seminar: 'Lab based' }
 
 const TERM_ORDER = [
   'Spring 2022','Fall 2022','Spring 2023','Fall 2023',
@@ -99,8 +101,6 @@ const radarChartConfig: ChartConfig = {
 
 export default function CourseAnalyticsProfile() {
   const params  = useParams<{ code: string }>()
-  const search  = useSearchParams()
-  const fromDir = search?.get('from') === 'directory'
   const courseCode = params?.code ? decodeURIComponent(params.code) : ''
 
   const course = MOCK_MASTER_COURSES.find(c => c.code === courseCode)
@@ -198,7 +198,7 @@ export default function CourseAnalyticsProfile() {
         <i className="fa-light fa-book-open-cover text-muted-foreground" aria-hidden="true" style={{ fontSize: 32 }} />
         <p className="text-sm text-muted-foreground">Course not found</p>
         <Button variant="outline" size="sm" asChild>
-          <Link href="/analytics">Back to Analytics</Link>
+          <Link href="/admin/offerings">Back to Course Offerings</Link>
         </Button>
       </div>
     )
@@ -206,13 +206,7 @@ export default function CourseAnalyticsProfile() {
 
   return (
     <>
-      <SiteHeader
-        breadcrumbs={fromDir
-          ? [{ label: 'Course Offerings', href: '/admin/offerings' }]
-          : [{ label: 'Analytics', href: '/analytics' }]
-        }
-        title={course.code}
-      />
+      <SiteHeader breadcrumbs={[{ label: 'Course Offerings', href: '/admin/offerings' }]} title={course.code} />
 
       {/* Profile header */}
       <div className="shrink-0 flex items-center gap-4" style={{ padding: '20px 28px 16px' }}>
@@ -224,7 +218,7 @@ export default function CourseAnalyticsProfile() {
         </div>
         <div className="flex-1 min-w-0">
           <h1 className="text-lg font-semibold leading-tight">{course.code} · {course.name}</h1>
-          <p className="text-sm text-muted-foreground capitalize">{course.department} · {course.type}</p>
+          <p className="text-sm text-muted-foreground">{course.department} · {TYPE_LABELS[course.type] ?? course.type}</p>
         </div>
         <Button variant="outline" size="sm" asChild>
           <a href={`${PRISM_BASE}/${course.id}`} target="_blank" rel="noopener noreferrer">
