@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { usePathname } from "@/lib/next-compat"
+import { usePathname, useRouter } from "@/lib/next-compat"
 import { motion } from "motion/react"
 
 import {
@@ -401,8 +401,20 @@ function SecondaryNavItems({ items }: { items: NavSecondaryItem[] }) {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user, toggleRole } = usePce()
+  const router = useRouter()
   const [appearanceOpen, setAppearanceOpen] = React.useState(false)
   const navItems = user.role === "admin" ? NAV_ADMIN : NAV_FACULTY
+
+  // Switching role must also move the user off the current (role-specific) page —
+  // admin routes don't belong in the faculty view and vice versa. Land on each
+  // role's home: faculty → first faculty nav item, admin → the CE dashboard.
+  const FACULTY_LANDING = NAV_FACULTY[0]?.url ?? "/my-surveys"
+  const ADMIN_LANDING = "/analytics"
+  function handleToggleRole() {
+    const goingToFaculty = user.role === "admin"
+    toggleRole()
+    router.push(goingToFaculty ? FACULTY_LANDING : ADMIN_LANDING)
+  }
 
   const navUser = {
     name: user.name,
@@ -472,7 +484,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               extraMenuItems={
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={toggleRole}>
+                  <DropdownMenuItem onClick={handleToggleRole}>
                     <i className="fa-light fa-arrows-rotate" aria-hidden="true" />
                     Switch to {user.role === "admin" ? "Faculty" : "Admin"} view
                   </DropdownMenuItem>

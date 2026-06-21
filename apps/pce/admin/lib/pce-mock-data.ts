@@ -3,7 +3,8 @@ export type TemplateSection = 'course_content' | 'faculty_performance' | 'course
 export type UserRole = 'admin' | 'faculty'
 export type SubjectKey = 'course_content' | 'faculty' | 'course_instructor' | 'course_coordinator' | 'teaching_assistant' | 'lab_instructor' | 'course_director' | 'preceptor' | 'clinical_supervisor'
 export type SurveyType = 'course_evaluation' | 'programmatic'
-export type CourseTypeFilter = 'didactic' | 'clinical' | 'any'
+// Classroom based (didactic) · Practice based (clinical) · Lab based (seminar).
+export type CourseTypeFilter = 'didactic' | 'clinical' | 'seminar' | 'any'
 
 export interface PceSubject {
   key: SubjectKey
@@ -78,7 +79,9 @@ export interface PceInstructor {
   role: 'primary' | 'guest'
   department?: string
   /** Directory/profile fields (optional — survey.instructors carry only id/name/role). */
-  facultyType?: 'faculty' | 'staff'
+  // CAPTE clinical-education faculty classes: Core Faculty (program's primary
+  // appointed faculty) · Associated Faculty (teach but not core) · Adjunct.
+  facultyType?: 'core' | 'associated' | 'adjunct'
   rank?: string        // e.g. 'Professor', 'Associate Professor', 'Lecturer'
   position?: string    // e.g. 'Department Chair', 'Program Director'
   email?: string
@@ -93,8 +96,8 @@ export interface PceSurvey {
   term: string
   /** Cohort = graduating class (e.g., "Class of 2027"). Per Aarti 2026-05-08 16:09 D3, the atomic unit for evaluation is course × term × cohort × faculty. */
   cohort?: string
-  /** Per UC-14 + workspace ADR-002: didactic | clinical (optional, extensible). Used for clinical/didactic split filter on Cohort view (C5). */
-  courseType?: 'didactic' | 'clinical'
+  /** Per UC-14 + workspace ADR-002: Classroom (didactic) | Practice (clinical) | Lab (seminar). Used for the course-type split filter on Cohort view (C5). */
+  courseType?: 'didactic' | 'clinical' | 'seminar'
   /** Prior offerings of the SAME course in earlier terms — drives the trend sparkline (C7). Oldest first; current is excluded (it's the survey itself). */
   priorOfferings?: PriorOffering[]
   templateId: string
@@ -150,14 +153,20 @@ export interface PceUser {
   email: string
   initials: string
   role: UserRole
+  /** Links the user to their faculty record (MOCK_FACULTY) for the faculty-role view. */
+  facultyId?: string
 }
 
+// Dr. Anita Patel is both Department Chair (admin) and faculty (f1) — a real
+// dual role. Unifying the identity means the faculty view (dashboard + forms)
+// is scoped to a populated faculty record instead of a mismatched/hardcoded id.
 export const MOCK_CURRENT_USER: PceUser = {
   id: 'u1',
-  name: 'Dr. Sarah Thompson',
-  email: 'thompson@university.edu',
-  initials: 'ST',
+  name: 'Dr. Anita Patel',
+  email: 'anita.patel@university.edu',
+  initials: 'AP',
   role: 'admin',
+  facultyId: 'f1',
 }
 
 export const MOCK_SUBJECTS: PceSubject[] = [
@@ -1317,12 +1326,12 @@ export const MOCK_COURSES = [
 ]
 
 export const MOCK_FACULTY: PceInstructor[] = [
-  { id: 'f1', name: 'Dr. Anita Patel',    initials: 'AP', role: 'primary', department: 'Basic Sciences',     facultyType: 'faculty', rank: 'Professor',           position: 'Department Chair',  email: 'anita.patel@university.edu',    phone: '+1 (555) 101-1001', employmentStatus: 'active'   },
-  { id: 'f2', name: 'Dr. Kevin Chen',     initials: 'KC', role: 'primary', department: 'Basic Sciences',     facultyType: 'faculty', rank: 'Associate Professor', position: 'Course Director',   email: 'kevin.chen@university.edu',     phone: '+1 (555) 101-1002', employmentStatus: 'active'   },
-  { id: 'f3', name: 'Dr. Maria Williams', initials: 'MW', role: 'primary', department: 'Clinical Education', facultyType: 'faculty', rank: 'Professor',           position: 'Program Director',  email: 'maria.williams@university.edu', phone: '+1 (555) 101-1003', employmentStatus: 'active'   },
-  { id: 'f4', name: 'Dr. James Kim',      initials: 'JK', role: 'primary', department: 'Clinical Education', facultyType: 'faculty', rank: 'Assistant Professor', position: 'Clinical Coordinator', email: 'james.kim@university.edu',    phone: '+1 (555) 101-1004', employmentStatus: 'active'   },
-  { id: 'f5', name: 'Dr. Rachel Gomez',   initials: 'RG', role: 'primary', department: 'Applied Sciences',   facultyType: 'faculty', rank: 'Associate Professor', position: 'Faculty',           email: 'rachel.gomez@university.edu',   phone: '+1 (555) 101-1005', employmentStatus: 'active'   },
-  { id: 'f6', name: 'Dr. Omar Hassan',    initials: 'OH', role: 'primary', department: 'Applied Sciences',   facultyType: 'staff',   rank: 'Lecturer',           position: 'Lab Instructor',    email: 'omar.hassan@university.edu',    phone: '+1 (555) 101-1006', employmentStatus: 'inactive' },
+  { id: 'f1', name: 'Dr. Anita Patel',    initials: 'AP', role: 'primary', department: 'Physical Therapy',        facultyType: 'core',       rank: 'Professor',           position: 'Department Chair',     email: 'anita.patel@university.edu',    phone: '+1 (555) 101-1001', employmentStatus: 'active'   },
+  { id: 'f2', name: 'Dr. Kevin Chen',     initials: 'KC', role: 'primary', department: 'Rehabilitation Sciences', facultyType: 'core',       rank: 'Associate Professor', position: 'Course Director',      email: 'kevin.chen@university.edu',     phone: '+1 (555) 101-1002', employmentStatus: 'active'   },
+  { id: 'f3', name: 'Dr. Maria Williams', initials: 'MW', role: 'primary', department: 'Physical Therapy',        facultyType: 'core',       rank: 'Professor',           position: 'Program Director',     email: 'maria.williams@university.edu', phone: '+1 (555) 101-1003', employmentStatus: 'active'   },
+  { id: 'f4', name: 'Dr. James Kim',      initials: 'JK', role: 'primary', department: 'Clinical Education',      facultyType: 'core',       rank: 'Assistant Professor', position: 'Clinical Coordinator', email: 'james.kim@university.edu',      phone: '+1 (555) 101-1004', employmentStatus: 'active'   },
+  { id: 'f5', name: 'Dr. Rachel Gomez',   initials: 'RG', role: 'primary', department: 'Physical Therapy',        facultyType: 'core',       rank: 'Associate Professor', position: 'Core Faculty',         email: 'rachel.gomez@university.edu',   phone: '+1 (555) 101-1005', employmentStatus: 'active'   },
+  { id: 'f6', name: 'Dr. Omar Hassan',    initials: 'OH', role: 'primary', department: 'Clinical Education',      facultyType: 'associated', rank: 'Lecturer',            position: 'Lab Instructor',       email: 'omar.hassan@university.edu',    phone: '+1 (555) 101-1006', employmentStatus: 'inactive' },
 ]
 
 export interface FacultyOfferingRecord {

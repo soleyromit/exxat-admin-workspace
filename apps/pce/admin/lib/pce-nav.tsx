@@ -108,13 +108,6 @@ export const NAV_ADMIN: NavLinkItem[] = [
         iconActive: <i className="fa-solid fa-chart-mixed" aria-hidden="true" />,
       },
       {
-        key: "ce-surveys",
-        title: "Evaluations",
-        url: "/surveys",
-        icon:       <i className="fa-light fa-paper-plane" aria-hidden="true" />,
-        iconActive: <i className="fa-solid fa-paper-plane" aria-hidden="true" />,
-      },
-      {
         key: "ce-templates",
         title: "Templates",
         url: "/templates",
@@ -136,13 +129,6 @@ export const NAV_ADMIN: NavLinkItem[] = [
         url: "/analytics/programmatic",
         icon:       <i className="fa-light fa-chart-mixed" aria-hidden="true" />,
         iconActive: <i className="fa-solid fa-chart-mixed" aria-hidden="true" />,
-      },
-      {
-        key: "ps-surveys",
-        title: "Surveys",
-        url: "/surveys/programmatic",
-        icon:       <i className="fa-light fa-paper-plane" aria-hidden="true" />,
-        iconActive: <i className="fa-solid fa-paper-plane" aria-hidden="true" />,
       },
       {
         key: "ps-templates",
@@ -169,35 +155,22 @@ export const NAV_ADMIN: NavLinkItem[] = [
   {
     key: "setup",
     title: "Setup",
-    url: "#",
+    // Single destination: Communication + Evaluation rules (tabs). Taxonomy/access
+    // (competencies, content areas, standards, assessment types, permissions,
+    // accommodations) are managed in the Exam Management setup, not here.
+    url: "/admin/eval-settings",
     icon:       <i className="fa-light fa-gear-complex" aria-hidden="true" />,
     iconActive: <i className="fa-solid fa-gear-complex" aria-hidden="true" />,
-    children: [
-      { key: "eval-settings",     title: "Communication & rules", url: "/admin/eval-settings", icon: <i className="fa-light fa-sliders" aria-hidden="true" /> },
-      { key: "competencies",      title: "Competencies",      url: "/admin/competencies",      icon: <i className="fa-light fa-list-check" aria-hidden="true" /> },
-      { key: "content-areas",     title: "Content Areas",     url: "/admin/content-areas",     icon: <i className="fa-light fa-grid-2" aria-hidden="true" /> },
-      { key: "standards",         title: "Standards",         url: "/admin/standards",         icon: <i className="fa-light fa-certificate" aria-hidden="true" /> },
-      { key: "assessment-types",  title: "Assessment Types",  url: "/admin/assessment-types",  icon: <i className="fa-light fa-clipboard-list" aria-hidden="true" /> },
-      { key: "permissions",       title: "Permissions",       url: "/admin/permissions",       icon: <i className="fa-light fa-lock" aria-hidden="true" /> },
-      { key: "accommodations",    title: "Accommodations",    url: "/admin/accommodations",    icon: <i className="fa-light fa-universal-access" aria-hidden="true" /> },
-    ],
   },
 ]
 
 export const NAV_FACULTY: NavLinkItem[] = [
   {
-    key: "my-surveys",
-    title: "My Forms",
-    url: "/my-surveys",
-    icon:       <i className="fa-light fa-paper-plane" aria-hidden="true" />,
-    iconActive: <i className="fa-solid fa-paper-plane" aria-hidden="true" />,
-  },
-  {
-    key: "results",
-    title: "Results",
-    url: "/my-surveys?filter=released",
-    icon:       <i className="fa-light fa-chart-bar" aria-hidden="true" />,
-    iconActive: <i className="fa-solid fa-chart-bar" aria-hidden="true" />,
+    key: "my-dashboard",
+    title: "My Dashboard",
+    url: "/my-dashboard",
+    icon:       <i className="fa-light fa-chart-mixed" aria-hidden="true" />,
+    iconActive: <i className="fa-solid fa-chart-mixed" aria-hidden="true" />,
   },
 ]
 

@@ -17,8 +17,6 @@ import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 import Link from 'next/link'
 
-const FACULTY_ID = 'f1'
-
 /* Group buckets for faculty's own surveys. Aarti's 2026-05-08 directive: active
    bubbles up, results next, past surveys at the bottom. We collapse open/active
    into 'collecting' for grouping purposes. */
@@ -51,13 +49,14 @@ export default function MySurveysPage() {
 }
 
 function MySurveysContent() {
-  const { surveys } = usePce()
+  const { surveys, user } = usePce()
+  const facultyId = user.facultyId ?? 'f1'
   const searchParams = useSearchParams()
   const filterParam = searchParams.get('filter')
   const [term, setTerm] = useState('Spring 2026')
 
   const mySurveys = surveys.filter(s =>
-    s.instructors.some(i => i.id === FACULTY_ID) && s.term === term
+    s.instructors.some(i => i.id === facultyId) && s.term === term
   )
 
   // ?filter=released narrows to released/closed; otherwise show all assigned.
@@ -191,8 +190,11 @@ function MySurveysSkeleton() {
   return (
     <>
       <SiteHeader title="My Surveys" />
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-border shrink-0">
-        <Skeleton className="h-4 w-24" />
+      <div className="flex items-center gap-3 shrink-0" style={{ padding: '14px 28px 14px' }}>
+        <h1 className="flex-1 text-[22px] font-normal" style={{ fontFamily: 'var(--font-heading)' }}>
+          My Surveys
+        </h1>
+        <Skeleton className="h-8 w-36" />
       </div>
       <div className="flex-1 overflow-auto p-4">
         <div className="flex flex-col gap-2">
