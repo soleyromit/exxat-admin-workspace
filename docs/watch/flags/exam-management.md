@@ -361,3 +361,12 @@ First snapshot taken for Roadmap-Exam-Management — no diff applied. Next run w
 **Suggested action:** Verify with Nipun: (1) Is the 3rd July target for Course Offering and Base Entities still firm? (2) If TBD, what is the new target? The second sheet still shows 3rd July — clarify which is authoritative. Note: the June 23-25 Solution Review sessions and POC Demo are 3 days away — if targets are slipping, Nipun needs to update the primary tracking sheet.
 
 ---
+
+## 2026-06-22 — Resolved: Exam Mgmt Roadmap — Nipun (1 AMBIGUOUS flag resolved)
+
+### Resolved 1 — Release table TBD values restored to 3rd July
+**Originally flagged:** 2026-06-20 — Flag 3 — AMBIGUOUS. The first release table in the Excel showed `16-Jun TBD` for 3 rows that had previously shown `3rd July`, while the second sheet still showed `3rd July`. Flagged as possible target slip or mid-edit Excel inconsistency.
+**Resolution:** Today's fresh fetch shows both release tables aligned on `3rd July` (×6) and `20-Jul` (×3) with no TBD values. The 2026-06-20 discrepancy was a transient mid-edit state. **3rd July is confirmed as the primary P0-Cohere release target** for Course Offering and Base Entities capabilities. 20-Jul is the secondary wave target.
+**Status:** RESOLVED. No further action required on this flag. Note: 3rd July is 11 days away — confirm engineering is on track in upcoming June 23-25 Solution Review sessions.
+
+---

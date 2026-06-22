@@ -391,3 +391,37 @@ First snapshot taken for PCE PRD — Monil Pokar — no diff applied. Next run w
 **Suggested action:** When building the Directory → Program Details → Term page, add a row-level navigation action that opens the corresponding "by term" analytics view. Similarly anticipate Faculty directory → Faculty leaderboard analytics, Courses directory → Course history analytics. No code action now — flag for when directory pages are built.
 
 ---
+
+## 2026-06-22 — Resolved: PCE PRD — Monil Pokar (7 §13 items marked Done)
+
+Today's fresh PRD fetch shows the following items from prior flags now marked "(Done)". These are resolved and require no further action unless stated otherwise.
+
+### Resolved 1 — §13a.6: Sidebar tab density concern (Done)
+**Originally flagged:** 2026-06-19 — AMBIGUOUS ("As a user I see a lot of tabs on the left side. Is there a better way to design the layout that reduces tabs/attention buttons?")
+**Resolution:** Marked "(Done)" in PRD. Sidebar density redesign resolved in the prototype. Before rebuilding `apps/pce/admin/components/app-sidebar.tsx`, confirm the final pruned sidebar taxonomy with Monil's prototype.
+
+### Resolved 2 — §13a.8: Faculty persona experience (Done)
+**Originally flagged:** 2026-06-19 — AMBIGUOUS ("Can you also build the faculty persona experience as well?")
+**Resolution:** Marked "(Done)" in PRD. Scope decision for the faculty (Evaluated) persona experience has been resolved. Confirm with Monil whether faculty persona is in Phase 1 scope or deferred before building.
+
+### Resolved 3 — §13a.9: Dashboard vs Evaluations merge (Done)
+**Originally flagged:** 2026-06-19 — AMBIGUOUS ("What is the difference in Dashboard and Evaluations? Can we merge them?")
+**Resolution:** Marked "(Done)" in PRD. The decision on whether to merge or keep Dashboard and Evaluations as separate sidebar entries has been made. Confirm current sidebar taxonomy from prototype before building.
+
+### Resolved 4 — §13b.5: Course type display labels (Done)
+**Originally flagged:** 2026-06-19 — CLEAR ("Update the course type as classroom based, practice based, and Lab based")
+**Resolution:** Marked "(Done)" in PRD. Display labels applied. Verify `apps/pce/admin/app/(app)/analytics/page.tsx` ToggleGroupItems show "Classroom Based" / "Practice Based" / "Lab Based" (not just "Classroom" / "Practice" / "Lab"). Also verify template creation course-type selector when built.
+
+### Resolved 5 — §13c.3: "Activate term" vs "Push survey" CTA redundancy (Done)
+**Originally flagged:** 2026-06-19 — AMBIGUOUS ("There are two CTAs 'Activate term' and 'Push survey' I guess both doing the same thing. Do we need both?")
+**Resolution:** Marked "(Done)" in PRD. The CTA decision has been made. Confirm with Monil which CTA(s) remain in the final wizard design (check the Vercel prototype) before building the push-survey wizard at `apps/pce/admin/app/(app)/surveys/push/`.
+
+### Resolved 6 — §13c.4: Reflect correct survey statuses in mock data (Done)
+**Originally flagged:** 2026-06-19 — CLEAR directive (status labels were already applied in the 2026-05-30 run).
+**Resolution:** Marked "(Done)" in PRD. No further action required.
+
+### Resolved 7 — §13c.5: Update push survey wizard steps per §4 (Done)
+**Originally flagged:** 2026-06-19 — CLEAR directive (already applied via pce-decision-034 and the 2026-06-17 flag).
+**Resolution:** Marked "(Done)" in PRD. No further action required.
+
+---
