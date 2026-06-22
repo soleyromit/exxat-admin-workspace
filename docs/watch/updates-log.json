@@ -1170,6 +1170,40 @@
         "apps/exam-management/admin/app/(app)/question-bank/qb-table.tsx",
         "apps/exam-management/admin/app/(app)/courses/[id]/tabs/questions-tab.tsx"
       ]
+    },
+    {
+      "id": "2026-06-22-pce-resolved-001",
+      "date": "2026-06-22",
+      "product": "pce",
+      "type": "prd-resolved",
+      "title": "PCE PRD — 7 §13 design-feedback items marked (Done) by Monil",
+      "what": "Fresh PRD sync detected 7 items in §13 now marked '(Done)': §13a.6 (sidebar tab density), §13a.8 (faculty persona experience), §13a.9 (Dashboard vs Evaluations merge), §13b.5 (course type display labels), §13c.3 (Activate term vs Push survey CTA redundancy), §13c.4 (survey statuses in mock data), §13c.5 (wizard steps per §4). Previously-flagged open questions in §13a and §13c are resolved; the course type label directive (§13b.5) and wizard step update (§13c.5) were already applied in prior runs.",
+      "why": "CLEAR resolutions of prior AMBIGUOUS flags. §13a.6/8/9 were open design questions — their (Done) markers indicate the answers were resolved in the prototype. §13b.5/§13c.4/§13c.5 were CLEAR directives that had already been applied. §13c.3 (CTA ambiguity) was AMBIGUOUS and is now resolved. No new code changes applied this run — all 7 items were non-functional feedback or pre-applied directives.",
+      "source": "PCE PRD §13 (Monil Pokar, synced 2026-06-22)"
+    },
+    {
+      "id": "2026-06-22-exam-resolved-001",
+      "date": "2026-06-22",
+      "product": "exam-management",
+      "type": "prd-resolved",
+      "title": "Exam Roadmap — 2026-06-20 AMBIGUOUS flag resolved: TBD release targets restored to 3rd July",
+      "what": "Fresh sync of Nipun's Excel shows both release tables now show 3rd July (×6) and 20-Jul (×3) — no TBD values in either table. The 2026-06-20 run flagged the first table as AMBIGUOUS because it showed '16-Jun TBD' for 3 rows where 3rd July had previously appeared, while the second sheet still showed 3rd July. Today's fetch confirms 3rd July is firm across both sheets.",
+      "why": "CLEAR resolution of 2026-06-22-exam-flagged flag (originally 2026-06-20). The TBD values were a transient mid-edit Excel state. 3rd July is confirmed as the primary P0-Cohere release target for Course Offering and Base Entities. 20-Jul is the secondary wave. No BUILD-STATUS status changes (no 'Completed' rows appeared) — only the date bump applies.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest, synced 2026-06-22)"
+    },
+    {
+      "id": "2026-06-22-build-status-date-bump",
+      "date": "2026-06-22",
+      "product": "workspace",
+      "type": "prd-change",
+      "title": "BUILD-STATUS: last-updated date bumped to 2026-06-22 (no feature status changes this run)",
+      "what": "No top-level feature status changes this run — no 'Completed' rows in Nipun's Excel or new CLEAR code-triggering PRD changes. BUILD-STATUS.md last-updated date bumped from 2026-06-20 to 2026-06-22 per sync protocol.",
+      "why": "Routine date bump on each sync. All capability items remain In Review / Dev Ready / In Progress — no step 7b Completed→🟢 Shipped transitions apply. PCE changes were all §13 design-feedback resolutions (non-functional). Exam changes were date confirmations only.",
+      "source": "PRD watcher run 2026-06-22",
+      "severity": null,
+      "files": [
+        "docs/BUILD-STATUS.md"
+      ]
     }
   ]
 }
