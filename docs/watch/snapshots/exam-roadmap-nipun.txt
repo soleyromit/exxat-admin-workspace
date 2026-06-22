@@ -6,7 +6,7 @@ Start   Target   Status   Owner   Start   Target   Status   Owner  In Refinement
 9-Jun  9-Jun   POC Ongoing  9-Jun   POC Ongoing  19-Jun   POC Completed  19-Jun  19-Jun  19-Jun  19-Jun  19-Jun  31-Jul  19-Jun
 26-Jun
 
-Release  Start   Target  17th June  18th June  16-Jun   TBD  16-Jun   TBD  16-Jun   TBD  Development
+Release  Start   Target  17th June  18th June  3rd July  3rd July  3rd July  3rd July  3rd July  3rd July  20-Jul  20-Jul  20-Jul  ment
 Product to check Examsoft with Vishakha to finalize method of import.  Product will only work on PRD and scope alignment  Product will only work on PRD and scope alignment  Product will only work on PRD and scope alignment  Product to make PRD and do detailed technical disucssion with Darshan.
 Product to provide detailed wireframe (90% design), and review with Darshan.
 
