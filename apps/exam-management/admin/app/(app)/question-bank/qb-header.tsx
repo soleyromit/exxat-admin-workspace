@@ -198,7 +198,7 @@ export function QBHeader() {
         <QBBreadcrumb />
       </div>
 
-      {/* Right: persona switcher + Ask Leo */}
+      {/* Right: persona switcher */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
@@ -249,10 +249,6 @@ export function QBHeader() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button variant="outline" size="sm" className="qb-ask-leo-btn gap-1.5" aria-label="Ask Leo AI">
-          <i className="fa-duotone fa-solid fa-star-christmas" style={{ fontSize: 11, color: 'var(--brand-color)' }} aria-hidden="true" />
-          <span className="qb-ask-leo-label">Ask Leo</span>
-        </Button>
       </div>
     </header>
   )

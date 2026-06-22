@@ -1,29 +1,12 @@
 'use client'
 
-/**
- * Admin · Students (UC-19, workspace ADR-001 entity #4).
- *
- * Per workspace ADR-002: students are typically LMS-synced. When LMS-on:
- * the page is read-only with a sync indicator. When LMS-off (this prototype's
- * MOCK_LMS_ENABLED state): full CRUD via Add modal + Import CSV.
- *
- * Bulk-action affordance is deferred to a Phase 2 follow-up — first ship the
- * uniform shape that matches Faculty / Courses / etc.
- *
- * Per workspace ADR-006: accommodations are admin-applied at student level
- * but maintained in a SHARED cross-product module — link out, don't manage
- * here.
- */
-
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
-  Button, Input,
+  Button,
   Tooltip, TooltipContent, TooltipTrigger,
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
-  Field, FieldLabel, FieldGroup, FieldDescription, FieldError,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  Badge, Avatar, AvatarFallback, LocalBanner,
+  Badge, Avatar, AvatarFallback,
   SidebarTrigger, Separator,
 } from '@exxat/ds/packages/ui/src'
 import {
@@ -42,7 +25,6 @@ function statusBadgeVariant(s: Student['enrollmentStatus']): 'secondary' | 'outl
   if (s === 'enrolled') return 'secondary'
   if (s === 'graduated') return 'outline'
   if (s === 'on-leave') return 'outline'
-  // 'withdrawn' uses outline (NOT destructive — DS-005 / no-red-in-status per VIZ-004 spirit)
   return 'outline'
 }
 
@@ -63,20 +45,10 @@ interface StudentRow extends Record<string, unknown> {
 }
 
 export default function StudentsPage() {
-  const [rows, setRows] = useState<Student[]>(MOCK_STUDENTS)
+  const [rows] = useState<Student[]>(MOCK_STUDENTS)
   const [cohortFilter, setCohortFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [addOpen, setAddOpen] = useState(false)
-  const [draft, setDraft] = useState({
-    studentId: '',
-    firstName: '',
-    lastName: '',
-    email: '',
-    cohort: MOCK_COHORTS[0],
-  })
-  const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // External hard-filters (cohort, status) applied OUTSIDE the table.
   const filtered = useMemo(() => {
     return rows.filter(r => {
       if (cohortFilter !== 'all' && r.cohort !== cohortFilter) return false
@@ -100,52 +72,6 @@ export default function StudentsPage() {
     [filtered]
   )
 
-  function validate(): Record<string, string> {
-    const next: Record<string, string> = {}
-    if (!draft.studentId.trim()) next.studentId = 'Student ID is required.'
-    else if (rows.some(r => r.studentId.toLowerCase() === draft.studentId.trim().toLowerCase())) {
-      next.studentId = 'A student with this ID already exists.'
-    }
-    if (!draft.firstName.trim()) next.firstName = 'First name is required.'
-    if (!draft.lastName.trim()) next.lastName = 'Last name is required.'
-    if (!draft.email.trim()) next.email = 'Email is required.'
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email.trim())) {
-      next.email = 'Enter a valid email address (e.g., name@school.edu).'
-    }
-    return next
-  }
-
-  function handleSave() {
-    const next = validate()
-    setErrors(next)
-    if (Object.keys(next).length > 0) return
-    const today = new Date().toISOString().slice(0, 10)
-    const newRow: Student = {
-      id: `st${Date.now()}`,
-      studentId: draft.studentId.trim(),
-      firstName: draft.firstName.trim(),
-      lastName: draft.lastName.trim(),
-      email: draft.email.trim(),
-      cohort: draft.cohort,
-      enrollmentStatus: 'enrolled',
-      enrolledAt: today,
-    }
-    setRows([newRow, ...rows])
-    setDraft({ studentId: '', firstName: '', lastName: '', email: '', cohort: MOCK_COHORTS[0] })
-    setErrors({})
-    setAddOpen(false)
-  }
-
-  function handleAddOpenChange(open: boolean) {
-    setAddOpen(open)
-    if (!open) setErrors({})
-  }
-
-  function handleStatusChange(id: string, next: Student['enrollmentStatus']) {
-    setRows(rows.map(r => r.id === id ? { ...r, enrollmentStatus: next } : r))
-  }
-
-  // Counts for the LMS-state header line
   const enrolledCount = rows.filter(r => r.enrollmentStatus === 'enrolled').length
   const accommodationsCount = rows.filter(r => r.hasAccommodations).length
 
@@ -159,8 +85,7 @@ export default function StudentsPage() {
         <div className="flex items-center gap-2">
           <Avatar className="h-7 w-7 rounded-full shrink-0">
             <AvatarFallback
-              className="rounded-full text-xs font-semibold"
-              style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}
+              className="rounded-full text-xs font-semibold bg-[var(--avatar-initials-bg)] text-[var(--avatar-initials-fg)]"
             >
               {initials(row.firstName, row.lastName)}
             </AvatarFallback>
@@ -221,10 +146,7 @@ export default function StudentsPage() {
       cell: (row) => row.hasAccommodations ? (
         <Tooltip>
           <TooltipTrigger asChild>
-            <span
-              className="inline-flex items-center gap-1 text-xs"
-              style={{ color: 'var(--brand-color-dark)' }}
-            >
+            <span className="inline-flex items-center gap-1 text-xs text-[var(--brand-color-dark)]">
               <i className="fa-light fa-universal-access text-xs" aria-hidden="true" />
               Yes
             </span>
@@ -245,30 +167,8 @@ export default function StudentsPage() {
           label={row.fullName}
           contentClassName="w-48"
           actions={[
-            { label: 'Edit profile',          icon: 'fa-pen',             disabled: MOCK_LMS_ENABLED },
             { label: 'View course offerings', icon: 'fa-rectangle-list' },
             { label: 'View accommodations',   icon: 'fa-universal-access' },
-            {
-              label: 'Mark on leave',
-              icon: 'fa-pause',
-              divider: true,
-              hidden: row.enrollmentStatus !== 'enrolled',
-              onClick: () => handleStatusChange(row.id, 'on-leave'),
-            },
-            {
-              label: 'Reactivate',
-              icon: 'fa-play',
-              divider: true,
-              hidden: row.enrollmentStatus !== 'on-leave',
-              onClick: () => handleStatusChange(row.id, 'enrolled'),
-            },
-            {
-              label: 'Withdraw',
-              icon: 'fa-user-xmark',
-              variant: 'destructive',
-              hidden: row.enrollmentStatus !== 'enrolled' && row.enrollmentStatus !== 'on-leave',
-              onClick: () => handleStatusChange(row.id, 'withdrawn'),
-            },
           ]}
         />
       ),
@@ -298,7 +198,6 @@ export default function StudentsPage() {
             </Link>
           </div>
 
-          {/* Toolbar — external hard-filters (cohort, status) + actions. Search is provided by DataTable. */}
           <div className="flex items-center gap-2 flex-wrap">
             <Select value={cohortFilter} onValueChange={setCohortFilter}>
               <SelectTrigger className="h-8 w-44 text-sm" aria-label="Filter by cohort">
@@ -320,30 +219,6 @@ export default function StudentsPage() {
                 {STATUSES.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
               </SelectContent>
             </Select>
-
-            <div className="flex-1" />
-
-            {MOCK_LMS_ENABLED ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="default" disabled aria-disabled="true">
-                    <i className="fa-light fa-plus" aria-hidden="true" />
-                    Add student
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Managed by your LMS — students sync automatically</TooltipContent>
-              </Tooltip>
-            ) : (
-              <Button variant="default" onClick={() => setAddOpen(true)}>
-                <i className="fa-light fa-plus" aria-hidden="true" />
-                Add student
-              </Button>
-            )}
-
-            <Button variant="outline">
-              <i className="fa-light fa-arrow-up-from-bracket" aria-hidden="true" />
-              Import CSV
-            </Button>
           </div>
 
           <DataTable<StudentRow>
@@ -355,7 +230,7 @@ export default function StudentsPage() {
             defaultGroupBy="cohort"
             emptyState={
               <div className="flex flex-col items-center gap-2 py-6">
-                <i className="fa-light fa-graduation-cap text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
+                <i className="fa-light fa-graduation-cap text-2xl text-muted-foreground" aria-hidden="true" />
                 <p className="text-sm font-medium">
                   {rows.length === 0
                     ? 'No students yet'
@@ -365,14 +240,12 @@ export default function StudentsPage() {
                 </p>
                 <p className="text-xs text-muted-foreground" style={{ maxWidth: 320 }}>
                   {rows.length === 0
-                    ? (MOCK_LMS_ENABLED ? 'Students sync from your LMS — none have synced yet.' : 'Add a student manually or import a CSV roster.')
+                    ? (MOCK_LMS_ENABLED ? 'Students sync from your LMS — none have synced yet.' : 'Students are synced from your LMS or managed by your administrator.')
                     : 'Try adjusting your filters or clearing the search.'}
                 </p>
               </div>
             }
             toolbarSlot={(state) => {
-              // Build the filter-field list from the column filter configs so the
-              // drawer's "Add filter" menu mirrors the toolbar.
               const filterFields: FilterFieldDef[] = columns
                 .filter(c => c.filter)
                 .map(c => ({
@@ -435,7 +308,7 @@ export default function StudentsPage() {
 
           {MOCK_LMS_ENABLED ? (
             <p className="text-xs text-muted-foreground text-right">
-              Last synced 4m ago <span style={{ color: 'var(--chart-2)' }}>●</span>
+              Last synced 4m ago <span className="text-[var(--chart-2)]">●</span>
             </p>
           ) : (
             <p className="text-xs text-muted-foreground">
@@ -446,110 +319,6 @@ export default function StudentsPage() {
 
         </div>
       </div>
-
-      {/* Add student dialog */}
-      <Dialog open={addOpen} onOpenChange={handleAddOpenChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add student</DialogTitle>
-            <DialogDescription>
-              Add a student manually. When LMS integration is on, students sync automatically.
-            </DialogDescription>
-          </DialogHeader>
-
-          {Object.keys(errors).length > 1 && (
-            <LocalBanner variant="error" title="Fix the following before saving">
-              {Object.keys(errors).length} fields need attention.
-            </LocalBanner>
-          )}
-
-          <FieldGroup>
-            <Field orientation="vertical">
-              <FieldLabel htmlFor="stu-id">Student ID *</FieldLabel>
-              <Input
-                id="stu-id"
-                placeholder="e.g., 01234582"
-                value={draft.studentId}
-                onChange={e => setDraft({ ...draft, studentId: e.target.value })}
-                aria-required="true"
-                aria-invalid={!!errors.studentId}
-                aria-describedby={errors.studentId ? 'stu-id-error' : 'stu-id-desc'}
-              />
-              {errors.studentId ? (
-                <FieldError id="stu-id-error">{errors.studentId}</FieldError>
-              ) : (
-                <FieldDescription id="stu-id-desc">Institution-issued ID. Must be unique.</FieldDescription>
-              )}
-            </Field>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Field orientation="vertical">
-                <FieldLabel htmlFor="stu-first">First name *</FieldLabel>
-                <Input
-                  id="stu-first"
-                  value={draft.firstName}
-                  onChange={e => setDraft({ ...draft, firstName: e.target.value })}
-                  aria-required="true"
-                  aria-invalid={!!errors.firstName}
-                  aria-describedby={errors.firstName ? 'stu-first-error' : undefined}
-                />
-                {errors.firstName && <FieldError id="stu-first-error">{errors.firstName}</FieldError>}
-              </Field>
-              <Field orientation="vertical">
-                <FieldLabel htmlFor="stu-last">Last name *</FieldLabel>
-                <Input
-                  id="stu-last"
-                  value={draft.lastName}
-                  onChange={e => setDraft({ ...draft, lastName: e.target.value })}
-                  aria-required="true"
-                  aria-invalid={!!errors.lastName}
-                  aria-describedby={errors.lastName ? 'stu-last-error' : undefined}
-                />
-                {errors.lastName && <FieldError id="stu-last-error">{errors.lastName}</FieldError>}
-              </Field>
-            </div>
-
-            <Field orientation="vertical">
-              <FieldLabel htmlFor="stu-email">Email *</FieldLabel>
-              <Input
-                id="stu-email"
-                type="email"
-                value={draft.email}
-                onChange={e => setDraft({ ...draft, email: e.target.value })}
-                aria-required="true"
-                aria-invalid={!!errors.email}
-                aria-describedby={errors.email ? 'stu-email-error' : undefined}
-              />
-              {errors.email && <FieldError id="stu-email-error">{errors.email}</FieldError>}
-            </Field>
-
-            <Field orientation="vertical">
-              <FieldLabel htmlFor="stu-cohort">Cohort *</FieldLabel>
-              <Select value={draft.cohort} onValueChange={v => setDraft({ ...draft, cohort: v })}>
-                <SelectTrigger id="stu-cohort" aria-label="Cohort">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {MOCK_COHORTS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <FieldDescription>
-                Accommodations for this student are managed in the Accommodations module.
-              </FieldDescription>
-            </Field>
-          </FieldGroup>
-
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button variant="default" onClick={handleSave}>
-              Add student
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   )
 }
-
