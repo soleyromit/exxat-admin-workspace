@@ -16,6 +16,7 @@ import { usePce } from '@/components/pce/pce-state'
 import { SurveyStatusBadge } from '@/components/pce/pce-badges'
 import { AiInsightCard } from '@/components/pce/ai-insight-card'
 import { QuestionChartBlock } from '@/components/pce/question-chart-block'
+import { SurveyResponseRail, type SurveyRailGroup } from '@/components/pce/survey-response-rail'
 import {
   CloseSurveyDialog,
   AddGuestSheet,
@@ -115,6 +116,15 @@ const SUBJECT_LABEL: Record<SubjectKey | 'faculty_performance', string> = {
   faculty_performance: 'Faculty Performance',
 }
 
+// ── Scroll anchor ids (shared by the rendered sections + the scrollspy rail) ──
+const sectionAnchor   = (sid: string, instr?: string) => `sec-${sid}${instr ? `-${instr}` : ''}`
+const questionAnchor  = (sid: string, qid: string, instr?: string) => `q-${sid}${instr ? `-${instr}` : ''}-${qid}`
+
+// Faculty sections are scored per-instructor (instructorBlocks). subjectKey varies
+// by template: 'faculty' (tmpl1/tmpl2), 'faculty_performance', or 'course_instructor'.
+const isFacultySubject = (k: string) =>
+  k === 'course_instructor' || k === 'faculty' || k === 'faculty_performance'
+
 // =============================================================================
 
 export default function SurveyDetailPage() {
@@ -150,6 +160,45 @@ export default function SurveyDetailPage() {
         questions: Object.values(template?.questions ?? {}).flat().filter(q => q.id.startsWith(s[0])),
         order: 0,
       })) ?? []
+
+  const railGroups: SurveyRailGroup[] = useMemo(() => {
+    if (!survey) return []
+    return templateSections.flatMap(section => {
+      const isFacultySection = isFacultySubject(section.subjectKey)
+      const blocks = questionData?.instructorBlocks
+      if (isFacultySection && blocks && blocks.length > 0) {
+        return blocks.map(block => {
+          const instructor = survey.instructors.find(i => i.id === block.instructorId)
+          return {
+            id: sectionAnchor(section.id, block.instructorId),
+            title: section.title,
+            subtitle: instructor?.name,
+            items: section.questions.map((qq, qi) => ({
+              anchorId: questionAnchor(section.id, qq.id, block.instructorId),
+              qNumber: qi + 1,
+              text: qq.text,
+              avg: qq.answerType === 'free_text'
+                ? undefined
+                : block.scores.find(s => s.questionId === qq.id)?.avg,
+            })),
+          }
+        })
+      }
+      const scores = questionData?.sectionScores[section.subjectKey] ?? []
+      return [{
+        id: sectionAnchor(section.id),
+        title: section.title,
+        items: section.questions.map((qq, qi) => ({
+          anchorId: questionAnchor(section.id, qq.id),
+          qNumber: qi + 1,
+          text: qq.text,
+          avg: qq.answerType === 'free_text'
+            ? undefined
+            : scores.find(s => s.questionId === qq.id)?.avg,
+        })),
+      }]
+    })
+  }, [survey, templateSections, questionData])
 
   if (!survey) {
     return (
@@ -238,7 +287,11 @@ export default function SurveyDetailPage() {
     <>
       {/* ── Header ── */}
       <SiteHeader
-        breadcrumbs={[{ label: 'Surveys', href: '/surveys' }]}
+        breadcrumbs={[
+          survey.surveyType === 'programmatic'
+            ? { label: 'Dashboard', href: '/analytics/programmatic' }
+            : { label: 'Dashboard', href: '/analytics' },
+        ]}
         title={`${survey.courseCode} — ${survey.courseName}`}
       />
 
@@ -293,9 +346,10 @@ export default function SurveyDetailPage() {
       </div>
 
 
-      {/* ── Single-scroll body ── */}
-      <div className="flex-1 overflow-auto" style={{ padding: '4px 28px 28px' }}>
-        <div className="flex flex-col gap-6">
+      {/* ── Body — content + sticky scrollspy rail (page scrolls at window level) ── */}
+      <div className="flex-1" style={{ padding: '4px 28px 28px' }}>
+        <div className="flex gap-8 items-start">
+          <div className="flex-1 min-w-0 flex flex-col gap-6">
 
           {/* KPI strip */}
           <KeyMetrics
@@ -404,7 +458,7 @@ export default function SurveyDetailPage() {
             </Card>
           ) : (
             templateSections.flatMap(section => {
-              const isFacultySection = section.subjectKey === 'course_instructor'
+              const isFacultySection = isFacultySubject(section.subjectKey)
               const blocks = questionData?.instructorBlocks
 
               // Faculty section — repeat once per instructor
@@ -416,7 +470,7 @@ export default function SurveyDetailPage() {
                     : null
 
                   return (
-                    <Card key={`${section.id}-${block.instructorId}`} className="overflow-hidden">
+                    <Card key={`${section.id}-${block.instructorId}`} id={sectionAnchor(section.id, block.instructorId)} className="overflow-hidden" style={{ scrollMarginTop: 16 }}>
                       <CardHeader className="border-b">
                         <div className="flex items-center gap-3">
                           {instructor && (
@@ -440,6 +494,7 @@ export default function SurveyDetailPage() {
                       {section.questions.map((q, qi) => (
                         <QuestionChartBlock
                           key={q.id}
+                          anchorId={questionAnchor(section.id, q.id, block.instructorId)}
                           question={q}
                           questionNumber={qi + 1}
                           score={block.scores.find(s => s.questionId === q.id)}
@@ -456,7 +511,7 @@ export default function SurveyDetailPage() {
               // All other sections
               const sectionScores = questionData?.sectionScores[section.subjectKey] ?? []
               return [
-                <Card key={section.id} className="overflow-hidden">
+                <Card key={section.id} id={sectionAnchor(section.id)} className="overflow-hidden" style={{ scrollMarginTop: 16 }}>
                   <CardHeader className="border-b">
                     <CardTitle className="text-sm">{section.title}</CardTitle>
                   </CardHeader>
@@ -468,6 +523,7 @@ export default function SurveyDetailPage() {
                     section.questions.map((q, qi) => (
                       <QuestionChartBlock
                         key={q.id}
+                        anchorId={questionAnchor(section.id, q.id)}
                         question={q}
                         questionNumber={qi + 1}
                         score={sectionScores.find(s => s.questionId === q.id)}
@@ -554,6 +610,11 @@ export default function SurveyDetailPage() {
             </div>
           )}
 
+          </div>
+
+          {railGroups.length > 0 && (
+            <SurveyResponseRail groups={railGroups} />
+          )}
         </div>
       </div>
 

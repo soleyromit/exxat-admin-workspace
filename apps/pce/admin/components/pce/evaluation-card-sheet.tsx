@@ -4,31 +4,33 @@ import { useMemo } from 'react'
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
   KeyMetrics, Badge,
+  Accordion, AccordionItem, AccordionTrigger, AccordionContent,
 } from '@exxatdesignux/ui'
 import type { MetricItem } from '@exxatdesignux/ui'
 import {
-  MOCK_SURVEYS, MOCK_SURVEY_QUESTION_DATA, MOCK_RESPONSES, MOCK_FACULTY,
+  MOCK_SURVEYS, MOCK_SURVEY_QUESTION_DATA, MOCK_RESPONSES, MOCK_FACULTY, MOCK_TEMPLATES,
 } from '@/lib/pce-mock-data'
-import type { QuestionScore } from '@/lib/pce-mock-data'
+import type { QuestionScore, TemplateQuestion } from '@/lib/pce-mock-data'
 
 const tierColor = (avg: number) =>
   avg >= 4.3 ? 'var(--chart-2)' : avg >= 3.7 ? 'var(--brand-color)' : 'var(--chart-4)'
 
-const QUESTION_TEXT: Record<string, string> = {
-  q1: 'The course objectives were clearly stated.',
-  q2: 'Course materials supported my learning.',
-  q3: 'The workload was appropriate for the credit hours.',
-  q4: 'Assessments were aligned with learning objectives.',
-  q6: 'The instructor was well-prepared for each class.',
-  q7: 'The instructor communicated expectations clearly.',
+const SUBJECT_LABEL: Record<string, string> = {
+  course_content: 'Course content',
+  faculty: 'Faculty',
+  faculty_performance: 'Faculty',
+  course_instructor: 'Course instructor',
+  course_coordinator: 'Course coordinator',
+  lab_instructor: 'Labs & materials',
+  course_director: 'Overall experience',
 }
 
-const FREE_TEXT_LABELS: Record<string, string> = {
-  q5: 'What would you change about this course?',
-  q8: 'What feedback do you have for the instructor?',
-}
+// Faculty-type sections are scored per-instructor (qData.instructorBlocks). The
+// subjectKey is inconsistent across templates: 'faculty' (tmpl1/tmpl2),
+// 'faculty_performance', or 'course_instructor' (tmplrich) — all mean the same.
+const FACULTY_SUBJECTS = new Set(['course_instructor', 'faculty', 'faculty_performance'])
 
-/* ── Distribution strip + avg score ── */
+/* ── Distribution strip + avg score (compact, sheet-scale) ── */
 function DistBar({ score }: { score: QuestionScore }) {
   const total = score.distribution.reduce((s, v) => s + v, 0)
   return (
@@ -63,15 +65,18 @@ function DistBar({ score }: { score: QuestionScore }) {
   )
 }
 
-function QuestionRow({ score }: { score: QuestionScore }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <p className="text-xs text-muted-foreground leading-snug">
-        {QUESTION_TEXT[score.questionId] ?? score.questionId}
-      </p>
-      <DistBar score={score} />
-    </div>
-  )
+interface SheetSection {
+  key: string
+  title: string
+  subtitle?: string
+  avg: number | null
+  rows: {
+    id: string
+    text: string
+    isFreeText: boolean
+    score?: QuestionScore
+    freeTextCount?: number
+  }[]
 }
 
 interface EvaluationCardSheetProps {
@@ -83,33 +88,70 @@ export function EvaluationCardSheet({ surveyId, onClose }: EvaluationCardSheetPr
   const survey   = useMemo(() => MOCK_SURVEYS.find(s => s.id === surveyId) ?? null, [surveyId])
   const qData    = useMemo(() => MOCK_SURVEY_QUESTION_DATA.find(d => d.surveyId === surveyId) ?? null, [surveyId])
   const response = useMemo(() => MOCK_RESPONSES.find(r => r.surveyId === surveyId) ?? null, [surveyId])
+  const template = useMemo(
+    () => (survey ? MOCK_TEMPLATES.find(t => t.id === survey.templateId) ?? null : null),
+    [survey],
+  )
+
+  // Section model — data-driven from the assigned template (no hardcoded question
+  // map), so it works for any template at any question count. Faculty sections
+  // repeat once per instructor (using the per-instructor score blocks).
+  const sections: SheetSection[] = useMemo(() => {
+    if (!survey || !template) return []
+    const tSections = template.templateSections?.length
+      ? template.templateSections
+      : template.sections.map(s => ({
+          id: s, subjectKey: s as string, title: SUBJECT_LABEL[s] ?? s,
+          questions: (template.questions?.[s] ?? []) as TemplateQuestion[], order: 0,
+        }))
+
+    const avgOf = (scores: QuestionScore[]) =>
+      scores.length === 0 ? null : +(scores.reduce((a, s) => a + s.avg, 0) / scores.length).toFixed(1)
+
+    const rowsFor = (questions: TemplateQuestion[], scores: QuestionScore[]) =>
+      questions.map(q => ({
+        id: q.id,
+        text: q.text,
+        isFreeText: q.answerType === 'free_text',
+        score: scores.find(s => s.questionId === q.id),
+        freeTextCount: qData?.freeTextCounts?.[q.id],
+      }))
+
+    return tSections.flatMap(section => {
+      const isFaculty = FACULTY_SUBJECTS.has(section.subjectKey)
+      const blocks = qData?.instructorBlocks
+      if (isFaculty && blocks && blocks.length > 0) {
+        return blocks.map(block => {
+          const instructor =
+            survey.instructors.find(i => i.id === block.instructorId) ??
+            MOCK_FACULTY.find(f => f.id === block.instructorId)
+          return {
+            key: `${section.id}-${block.instructorId}`,
+            title: section.title,
+            subtitle: instructor?.name,
+            avg: avgOf(block.scores),
+            rows: rowsFor(section.questions, block.scores),
+          }
+        })
+      }
+      const scores = qData?.sectionScores?.[section.subjectKey] ?? []
+      return [{
+        key: section.id,
+        title: section.title,
+        avg: avgOf(scores),
+        rows: rowsFor(section.questions, scores),
+      }]
+    }).filter(s => s.rows.length > 0)
+  }, [survey, template, qData])
 
   const kpis: MetricItem[] = useMemo(() => {
     if (!survey) return []
-    const cc  = response?.sectionScores.find(s => s.section === 'course_content')
-    const fp  = response?.sectionScores.find(s => s.section === 'faculty_performance')
+    const cc = response?.sectionScores.find(s => s.section === 'course_content')
+    const fp = response?.sectionScores.find(s => s.section === 'faculty_performance')
     return [
-      {
-        id:    'rate',
-        label: 'Completion',
-        value: `${survey.responseRate}%`,
-        delta: '', trend: 'neutral',
-        description: `${survey.responseCount} of ${survey.enrollmentCount}`,
-      },
-      {
-        id:    'cc-avg',
-        label: 'Course avg',
-        value: cc ? `${cc.avg.toFixed(1)}/5` : '—',
-        delta: '', trend: 'neutral',
-        description: 'course questions',
-      },
-      {
-        id:    'fp-avg',
-        label: 'Faculty avg',
-        value: fp ? `${fp.avg.toFixed(1)}/5` : '—',
-        delta: '', trend: 'neutral',
-        description: 'faculty questions',
-      },
+      { id: 'rate',   label: 'Completion',  value: `${survey.responseRate}%`, delta: '', trend: 'neutral', description: `${survey.responseCount} of ${survey.enrollmentCount}` },
+      { id: 'cc-avg', label: 'Course avg',  value: cc ? `${cc.avg.toFixed(1)}/5` : '—', delta: '', trend: 'neutral', description: 'course questions' },
+      { id: 'fp-avg', label: 'Faculty avg', value: fp ? `${fp.avg.toFixed(1)}/5` : '—', delta: '', trend: 'neutral', description: 'faculty questions' },
     ]
   }, [survey, response])
 
@@ -120,7 +162,7 @@ export function EvaluationCardSheet({ surveyId, onClose }: EvaluationCardSheetPr
       <SheetContent
         side="right"
         showCloseButton
-        className="w-full data-[side=right]:sm:max-w-[540px] flex flex-col gap-0 p-0 overflow-hidden"
+        className="w-full data-[side=right]:sm:max-w-[560px] flex flex-col gap-0 p-0 overflow-hidden"
       >
         {survey ? (
           <>
@@ -156,149 +198,78 @@ export function EvaluationCardSheet({ surveyId, onClose }: EvaluationCardSheetPr
 
             {/* ── Scrollable body ── */}
             <div className="flex-1 overflow-auto">
-              <div className="flex flex-col gap-6 px-5 py-5">
+              <div className="flex flex-col gap-5 px-5 py-5">
 
                 <KeyMetrics variant="compact" metricsSingleRow metrics={kpis} />
 
-                {/* Response collection velocity — cumulative responses across the
-                    open→close window, with a projection (dashed) + 70% target. */}
-                {(() => {
-                  if (!survey.openDate || !survey.deadline) return null
-                  const open  = new Date(survey.openDate).getTime()
-                  const close = new Date(survey.deadline).getTime()
-                  if (!Number.isFinite(open) || !Number.isFinite(close) || close <= open) return null
-                  const rate   = survey.responseRate
-                  const closed = survey.status === 'closed' || survey.status === 'released'
-                  const elapsed = closed ? 1 : Math.min(0.95, Math.max(0.1, (Date.now() - open) / (close - open)))
-                  const TARGET = 70
-                  const smooth = (x: number) => x * x * (3 - 2 * x)
-                  const N = 10
-                  const X = (t: number) => t * 100
-                  const Y = (p: number) => 6 + (1 - Math.min(100, Math.max(0, p)) / 100) * 88
-                  const solidPts = Array.from({ length: N + 1 }, (_, k) => {
-                    const t = (k / N) * elapsed
-                    return `${X(t)},${Y(rate * smooth(elapsed === 0 ? 0 : t / elapsed))}`
-                  }).join(' ')
-                  const projectedFinal = closed ? rate : Math.min(100, Math.round(rate / elapsed))
-                  const projPts = `${X(elapsed)},${Y(rate)} ${X(1)},${Y(projectedFinal)}`
-                  const fmtShort = (ms: number) => new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                  return (
-                    <section aria-labelledby="ec-collection-heading">
-                      <div className="flex items-baseline justify-between mb-2">
-                        <h3 id="ec-collection-heading" className="text-sm font-semibold">Response collection</h3>
-                        <span className="text-xs text-muted-foreground tabular-nums">
-                          {closed ? `${rate}% final` : `${rate}% now · ~${projectedFinal}% projected`}
-                        </span>
-                      </div>
-                      <div className="flex flex-col" style={{ height: 128 }} role="img" aria-label={`Response collection ${closed ? `closed at ${rate}%` : `${rate}% now, projected ${projectedFinal}% by close`}`}>
-                        <div className="flex flex-1 gap-1">
-                          <div className="relative w-7 shrink-0">
-                            {[100, 50, 0].map(v => (
-                              <span key={v} className="absolute right-1 text-[10px] text-muted-foreground tabular-nums -translate-y-1/2" style={{ top: `${Y(v)}%` }}>{v}%</span>
-                            ))}
-                          </div>
-                          <div className="relative flex-1">
-                            {[100, 50, 0].map(v => (
-                              <div key={v} className="absolute inset-x-0 border-t border-border" style={{ top: `${Y(v)}%` }} />
-                            ))}
-                            <div className="absolute inset-x-0 border-t border-dashed" style={{ top: `${Y(TARGET)}%`, borderColor: 'var(--muted-foreground)' }} />
-                            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                              <polyline points={solidPts} fill="none" stroke="var(--brand-color)" strokeWidth={2} vectorEffect="non-scaling-stroke" />
-                              {!closed && <polyline points={projPts} fill="none" stroke="var(--brand-color)" strokeWidth={2} strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />}
-                            </svg>
-                            <div className="absolute size-2 rounded-full -translate-x-1/2 -translate-y-1/2" style={{ left: `${X(elapsed)}%`, top: `${Y(rate)}%`, background: 'var(--brand-color)' }} />
-                          </div>
-                        </div>
-                        <div className="flex gap-1">
-                          <div className="w-7 shrink-0" />
-                          <div className="flex-1 flex justify-between mt-1 text-[10px] text-muted-foreground">
-                            <span>{fmtShort(open)} · open</span>
-                            <span>{fmtShort(close)} · close</span>
-                          </div>
-                        </div>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1.5">
-                        <span className="inline-block w-3 border-t border-dashed" style={{ borderColor: 'var(--muted-foreground)' }} aria-hidden="true" />
-                        {TARGET}% target{!closed && ' · dashed = projected'}
-                      </p>
-                    </section>
-                  )
-                })()}
-
-                {/* Course content questions */}
-                {(qData?.sectionScores?.course_content?.length ?? 0) > 0 && (
-                  <section aria-labelledby="ec-cc-heading">
-                    <h3
-                      id="ec-cc-heading"
-                      className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3"
-                    >
-                      Course Content
-                    </h3>
-                    <div className="flex flex-col gap-4">
-                      {qData!.sectionScores.course_content
-                        .filter(q => q.questionId in QUESTION_TEXT)
-                        .map(q => <QuestionRow key={q.questionId} score={q} />)}
+                {/* ── Questions by section — collapsible so a 20-question survey stays
+                    scannable: each header shows the section average + question count;
+                    expand to see per-question distributions. ── */}
+                {qData && sections.length > 0 ? (
+                  <section aria-labelledby="ec-questions-heading">
+                    <div className="flex items-baseline justify-between mb-2">
+                      <h3 id="ec-questions-heading" className="text-sm font-semibold">Questions</h3>
+                      <span className="text-xs text-muted-foreground">
+                        {sections.reduce((n, s) => n + s.rows.length, 0)} across {sections.length} section{sections.length !== 1 ? 's' : ''}
+                      </span>
                     </div>
-                    {qData?.freeTextCounts?.q5 != null && (
-                      <p className="mt-3 text-xs text-muted-foreground flex items-center gap-1.5">
-                        <i className="fa-light fa-message-lines" aria-hidden="true" />
-                        {qData.freeTextCounts.q5} written responses — &ldquo;{FREE_TEXT_LABELS.q5}&rdquo;
-                      </p>
-                    )}
+                    <Accordion type="multiple" defaultValue={[sections[0].key]} className="flex flex-col">
+                      {sections.map(s => (
+                        <AccordionItem key={s.key} value={s.key}>
+                          <AccordionTrigger className="py-3 hover:no-underline">
+                            <span className="flex flex-1 items-center gap-2 min-w-0 pr-2">
+                              <span className="text-sm font-medium truncate">
+                                {s.title}
+                                {s.subtitle && (
+                                  <span className="font-normal text-muted-foreground">{' · '}{s.subtitle}</span>
+                                )}
+                              </span>
+                              <span className="ml-auto flex items-center gap-2 shrink-0">
+                                {s.avg != null && (
+                                  <span className="text-sm font-semibold tabular-nums" style={{ color: tierColor(s.avg) }}>
+                                    {s.avg.toFixed(1)}
+                                  </span>
+                                )}
+                                <span className="text-xs text-muted-foreground tabular-nums">
+                                  {s.rows.length} Q
+                                </span>
+                              </span>
+                            </span>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="flex flex-col gap-4 pb-1">
+                              {s.rows.map(r => (
+                                <div key={r.id} className="flex flex-col gap-1.5">
+                                  <p className="text-sm leading-snug">{r.text}</p>
+                                  {r.isFreeText ? (
+                                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                      <i className="fa-light fa-message-lines" aria-hidden="true" />
+                                      {r.freeTextCount ?? 0} written response{(r.freeTextCount ?? 0) !== 1 ? 's' : ''}
+                                    </p>
+                                  ) : r.score ? (
+                                    <DistBar score={r.score} />
+                                  ) : (
+                                    <p className="text-xs text-muted-foreground">No data yet</p>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
                   </section>
+                ) : (
+                  <div className="flex flex-col items-center gap-3 py-12 text-center text-muted-foreground">
+                    <i className="fa-light fa-chart-bar text-3xl" aria-hidden="true" />
+                    <p className="text-sm">Results not yet available for this evaluation.</p>
+                  </div>
                 )}
-
-                {/* Per-instructor question blocks */}
-                {qData?.instructorBlocks?.map(block => {
-                  const instructor =
-                    survey.instructors.find(i => i.id === block.instructorId) ??
-                    MOCK_FACULTY.find(f => f.id === block.instructorId)
-                  const likertScores = block.scores.filter(q => q.questionId in QUESTION_TEXT)
-                  if (likertScores.length === 0) return null
-                  return (
-                    <section key={block.instructorId} aria-labelledby={`ec-fi-${block.instructorId}`}>
-                      <div className="flex items-center gap-2 mb-3">
-                        <div
-                          className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0"
-                          style={{ backgroundColor: 'var(--brand-tint)', color: 'var(--brand-color-dark)' }}
-                          aria-hidden="true"
-                        >
-                          {instructor?.initials ?? '?'}
-                        </div>
-                        <h3
-                          id={`ec-fi-${block.instructorId}`}
-                          className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider"
-                        >
-                          {instructor?.name ?? block.instructorId}
-                        </h3>
-                        {instructor?.role && (
-                          <span className="text-xs text-muted-foreground capitalize">
-                            ({instructor.role})
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex flex-col gap-4">
-                        {likertScores.map(q => <QuestionRow key={q.questionId} score={q} />)}
-                      </div>
-                      {qData?.freeTextCounts?.q8 != null && (
-                        <p className="mt-3 text-xs text-muted-foreground flex items-center gap-1.5">
-                          <i className="fa-light fa-message-lines" aria-hidden="true" />
-                          {qData.freeTextCounts.q8} written responses — &ldquo;{FREE_TEXT_LABELS.q8}&rdquo;
-                        </p>
-                      )}
-                    </section>
-                  )
-                })}
 
                 {/* Comments */}
                 {(response?.comments?.length ?? 0) > 0 && (
                   <section aria-labelledby="ec-comments-heading">
-                    <h3
-                      id="ec-comments-heading"
-                      className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3"
-                    >
-                      Comments
-                    </h3>
+                    <h3 id="ec-comments-heading" className="text-sm font-semibold mb-3">Comments</h3>
                     <div className="flex flex-col gap-2.5">
                       {response!.comments.map((c, i) => (
                         <div key={i} className="flex items-start gap-2">
@@ -317,14 +288,6 @@ export function EvaluationCardSheet({ surveyId, onClose }: EvaluationCardSheetPr
                       ))}
                     </div>
                   </section>
-                )}
-
-                {/* Empty state — survey has no question data yet */}
-                {!qData && !response && (
-                  <div className="flex flex-col items-center gap-3 py-12 text-center text-muted-foreground">
-                    <i className="fa-light fa-chart-bar text-3xl" aria-hidden="true" />
-                    <p className="text-sm">Results not yet available for this evaluation.</p>
-                  </div>
                 )}
 
               </div>
