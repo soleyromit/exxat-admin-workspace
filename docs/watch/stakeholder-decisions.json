@@ -512,6 +512,26 @@
       "sourceType": "prd",
       "date": "2026-06-17",
       "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-038",
+      "product": "pce",
+      "text": "Directory tabs (Term, Course, Faculty, Student) must include contextual entry points into the Create Survey wizard. When a user selects one or more courses from the Course directory, a 'Push survey' action is surfaced — opening the Create Survey wizard pre-scoped to the selected courses and landing at Step 2 (Scope/Courses already populated). Similar contextual push-survey entry points apply from the other directory tabs. This is the primary survey-creation path from within each directory tab.",
+      "stakeholder": "Monil Pokar",
+      "source": "Exam management and course evaluation design with Monil transcript — Jun 16, 2026",
+      "sourceType": "transcript",
+      "date": "2026-06-16",
+      "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-039",
+      "product": "pce",
+      "text": "The analytics views (by term, by faculty, by course) are dual-homed: they exist as dedicated entries in the Analytics sidebar section AND are accessible from within their respective directory tabs. When a user navigates to a specific course, faculty member, or term in the directory, they can access that item's evaluation analytics inline without navigating to the Analytics sidebar section. Aarti whiteboarded this explicitly during the India office visit; Monil confirmed it as a firm requirement — 'This same view she wants inside respective tabs also.'",
+      "stakeholder": "Aarti Vaishnav",
+      "source": "Exam management and course evaluation design with Monil transcript — Jun 16, 2026",
+      "sourceType": "transcript",
+      "date": "2026-06-16",
+      "status": "confirmed"
     }
   ]
 }
