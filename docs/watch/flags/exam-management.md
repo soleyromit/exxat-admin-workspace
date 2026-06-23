@@ -370,3 +370,17 @@ First snapshot taken for Roadmap-Exam-Management — no diff applied. Next run w
 **Status:** RESOLVED. No further action required on this flag. Note: 3rd July is 11 days away — confirm engineering is on track in upcoming June 23-25 Solution Review sessions.
 
 ---
+
+## 2026-06-23 — Flagged: Exam Mgmt Roadmap — Nipun (1 change)
+
+### Flag 1 — First release table: TBD values reappeared (same pattern as 2026-06-20) — AMBIGUOUS
+**Changed text (before):**
+> Release  Start   Target  17th June  18th June  3rd July  3rd July  3rd July  3rd July  3rd July  3rd July  20-Jul  20-Jul  20-Jul  ment
+
+**Changed text (after):**
+> Release  Start   Target  17th June  18th June  16-Jun   TBD  16-Jun   TBD  16-Jun   TBD  Development
+
+**Why flagged:** AMBIGUOUS — "TBD" values reappeared in the first release table for rows that showed `3rd July` in the 2026-06-22 snapshot. The second release table (separate sheet) still shows `3rd July` (×6) and `20-Jul` (×3) unchanged. This is the same mid-edit pattern as 2026-06-20 (flagged), which resolved itself on 2026-06-22 (confirmed 3rd July). Today is June 23 — the EM Solution Review (morning + evening) and POC Demo sessions are running today and through June 25. The Excel may be actively edited in preparation for or during these sessions.
+**Suggested action:** Monitor tomorrow's run. If TBDs persist for 2+ consecutive runs, escalate to Nipun — it may indicate the 3rd July target is genuinely slipping for Course Offering/Base Entities capabilities. Second sheet remains the more reliable authority until the first table stabilises.
+
+---

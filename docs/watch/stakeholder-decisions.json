@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-06-15",
+  "lastUpdated": "2026-06-23",
   "decisions": [
     {
       "id": "pce-decision-001",
@@ -79,7 +79,8 @@
       "source": "PCE PRD §2 Key Product Decisions #5",
       "sourceType": "prd",
       "date": "2026-05-23",
-      "status": "confirmed"
+      "status": "superseded",
+      "supersededBy": "pce-decision-040"
     },
     {
       "id": "pce-decision-009",
@@ -532,6 +533,17 @@
       "sourceType": "transcript",
       "date": "2026-06-16",
       "status": "confirmed"
+    },
+    {
+      "id": "pce-decision-040",
+      "product": "pce",
+      "text": "Course type (Optional) taxonomy updated to three categories: Practice, Classroom, Lab — replacing the original Didactic/Clinical two-category system from pce-decision-008. All three course types are optional when creating a template. The PRD §2 Key Product Decisions #5 now reads 'Practice / Classroom / Lab' as the enumerated options.",
+      "stakeholder": "Monil Pokar",
+      "source": "PCE PRD §2 Key Product Decisions #5 (updated)",
+      "sourceType": "prd",
+      "date": "2026-06-23",
+      "status": "confirmed",
+      "supersedes": "pce-decision-008"
     }
   ]
 }
