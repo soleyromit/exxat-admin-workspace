@@ -425,3 +425,13 @@ Today's fresh PRD fetch shows the following items from prior flags now marked "(
 **Resolution:** Marked "(Done)" in PRD. No further action required.
 
 ---
+
+## TRANSCRIPT-PRD CONFLICT — 2026-06-23
+**Meeting:** Course and faculty evaluation setup — directories, templates, and term workflow — Jun 10, 2026
+**Speaker:** Aarti Vaishnav
+**What they said:** "there is no student invitation that is happening here. Right? Students don't get invited. They don't get a login. They don't create their profile. They don't do anything. But we do want the student email addresses so that anytime evaluation is published to them that they are getting a email and then a call to action in the email so they can click on it and come it."
+**What the PRD says:** §4 Step 3 — Response Collection: "Entry: Email notification link or Exxat student portal → Surveys tab" and "Survey is also accessible from the student portal (Entry point TBD)"
+**Conflict:** PRD describes the Exxat student portal as a valid access channel for CE, but Aarti explicitly stated no student login, no profile creation, and no invitation — email link is the only access method.
+**Suggested action:** Update PRD §4 Step 3 to remove the student portal entry point and "Survey is also accessible from the student portal (Entry point TBD)" line. Reference pce-decision-021 (email-only distribution) and pce-decision-037 (no student login till Q3 2027) for alignment.
+
+---

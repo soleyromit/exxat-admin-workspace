@@ -73,3 +73,9 @@ If any step fails or produces unexpected output:
 
 ## Known edge cases
 <!-- Agent appends failure fixes here -->
+
+### 2026-06-23: Null transcript — Jun 13 "Meeting with Aarti on PCE, Exam Management"
+Meeting ID `ab7e2691-bfaa-4ace-ac8f-29fcb2a3daec` returned `null` from `get_meeting_transcript`. The meeting was titled "Meeting with Aarti on PCE, Exam Management" (Jun 13, 2026). No recording or transcript was captured. **Fix:** Skip null transcripts and note the gap. Do not count it as a clean meeting.
+
+### 2026-06-23: Oversized transcript — India discussion Jun 10 (159,934 chars)
+Meeting "India discussion — Weekly Product Sync | New Initiatives (Prism)" (Granola ID `4d1fa807-2bda-4a38-880e-15376e9810a7`) returned a 159,934-character transcript — too large for `Read` offset/limit slicing to be reliable. **Fix:** Save the transcript text to the scratchpad, then use `python3` with character-range slicing to search for conflict-relevant phrases (e.g., `python3 -c "t=open('/tmp/transcript.txt').read(); print(t[60000:65000])"`). Also note: first `get_meeting_transcript` call may return a 502 error on very large transcripts — retry once before treating as failure.
