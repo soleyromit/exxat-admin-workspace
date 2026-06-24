@@ -1248,6 +1248,66 @@
       "files": [
         "docs/BUILD-STATUS.md"
       ]
+    },
+    {
+      "id": "2026-06-24-pce-flagged-001",
+      "date": "2026-06-24",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §5 — Two new workflows added to User Stories table: 'Set up Term' and 'Run Data Audit'",
+      "what": "§5 User Stories table gained two new top-level workflow rows prepended before Template Creation: (1) 'Set up Term' linked to US-Setup terms-Course Evaluatio.docx; (2) 'Run Data Audit' linked to US-Run Data Audit-Course Evaluatio-Copy.docx. These align with Flow 2b (AI-native Run Evaluation from §4).",
+      "why": "CLEAR additions — non-functional user story tracking. No code auto-applied.",
+      "source": "PCE PRD §5 User Stories (Monil Pokar, synced 2026-06-24)",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-24-pce-flagged-002",
+      "date": "2026-06-24",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §5 — 'Distribute Survey' renamed 'Push Survey'; 'Responder' renamed 'Survey taker'",
+      "what": "Workflow column: 'Distribute Survey' → 'Push Survey'. Persona column: 'Responder' → 'Survey taker'. Linked user story doc unchanged.",
+      "why": "CLEAR renames consistent with prior PRD evolution. Non-functional.",
+      "source": "PCE PRD §5 User Stories (Monil Pokar, synced 2026-06-24)",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-24-pce-flagged-003",
+      "date": "2026-06-24",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §13a.8 — Faculty persona note expanded: 'Click Faculty view to switch profiles'",
+      "what": "§13a item 8 '(Done)' marker now includes 'Click Faculty view to switch profiles' — usage instruction for the prototype faculty persona toggle.",
+      "why": "CLEAR non-functional annotation. No code change.",
+      "source": "PCE PRD §13a item 8 (Monil Pokar, synced 2026-06-24)",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-24-exam-flagged-001",
+      "date": "2026-06-24",
+      "product": "exam-management",
+      "type": "prd-flagged",
+      "title": "Exam Roadmap — TBD release targets persist for 2nd consecutive run — ESCALATE to Nipun",
+      "what": "First release table shows TBD for 3 rows again (same as 2026-06-23). Second sheet still shows 3rd July (×6) and 20-Jul (×3). Excel content otherwise unchanged.",
+      "why": "AMBIGUOUS — 2nd consecutive run with TBDs triggers escalation per watcher protocol.",
+      "source": "Exam Mgmt Roadmap — Nipun (Excel manifest, synced 2026-06-24)",
+      "severity": "medium",
+      "files": []
+    },
+    {
+      "id": "2026-06-24-build-status-date-bump",
+      "date": "2026-06-24",
+      "product": "workspace",
+      "type": "prd-change",
+      "title": "BUILD-STATUS: last-updated date bumped to 2026-06-24 (no feature status changes this run)",
+      "what": "No top-level feature status changes. BUILD-STATUS.md last-updated date bumped from 2026-06-23 to 2026-06-24.",
+      "why": "Routine date bump. PCE PRD changes were informational. Exam roadmap unchanged. No step 7b Completed→🟢 Shipped transitions.",
+      "source": "PRD watcher run 2026-06-24",
+      "severity": null,
+      "files": ["docs/BUILD-STATUS.md"]
     }
   ]
 }
