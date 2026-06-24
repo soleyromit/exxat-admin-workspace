@@ -373,6 +373,20 @@ First snapshot taken for Roadmap-Exam-Management — no diff applied. Next run w
 
 ## 2026-06-23 — Flagged: Exam Mgmt Roadmap — Nipun (1 change)
 
+## 2026-06-24 — Flagged: Exam Mgmt Roadmap — Nipun (TBD persistence — ESCALATE)
+
+### Flag 1 — First release table: TBD values persist for 2nd consecutive run — ESCALATE to Nipun
+**Changed text (before):** *(same TBD state as 2026-06-23 snapshot — no change in Excel content)*
+**Changed text (after):** *(same)*
+> Release  Start   Target  17th June  18th June  16-Jun   TBD  16-Jun   TBD  16-Jun   TBD  Development
+
+**Why flagged:** AMBIGUOUS escalation — TBD values have now appeared in the first release table for 2 consecutive runs (2026-06-23 and 2026-06-24). Per watcher protocol, escalate after 2+ consecutive runs. The second sheet still shows 3rd July (×6) and 20-Jul (×3), suggesting the first table may be an in-progress working area not yet reconciled. The June 23-25 Solution Review sessions have now run — any target changes made during those sessions should appear in tomorrow's sync.
+**Suggested action:** ESCALATE to Nipun. Ask: (1) Are the 3rd July targets for Course Offering and Base Entities still firm after the June 23–25 Solution Review sessions? (2) If the 3rd July deadline slipped, what is the new date? (3) Is the second sheet the authoritative release schedule? If targets have changed, update BUILD-STATUS.md manually using the step 7b mapping.
+
+---
+
+## 2026-06-23 — Flagged: Exam Mgmt Roadmap — Nipun (1 change)
+
 ### Flag 1 — First release table: TBD values reappeared (same pattern as 2026-06-20) — AMBIGUOUS
 **Changed text (before):**
 > Release  Start   Target  17th June  18th June  3rd July  3rd July  3rd July  3rd July  3rd July  3rd July  20-Jul  20-Jul  20-Jul  ment

@@ -426,6 +426,43 @@ Today's fresh PRD fetch shows the following items from prior flags now marked "(
 
 ---
 
+## 2026-06-24 — Flagged: PCE PRD — Monil Pokar (3 changes, all informational)
+
+### Flag 1 — §5 User Stories: Two new workflows added — "Set up Term" and "Run Data Audit" (CLEAR — informational)
+**Changed text (before):** *(User Stories table started at Template Creation)*
+**Changed text (after):**
+> Set up Term | US - Setup terms - Course Evaluatio.docx
+> Run Data Audit | US - Run Data Audit - Course Evaluatio - Copy.docx
+> (followed by Template Creation, Push Survey, Survey taker, Review and Enable Results, Analytics)
+
+**Why flagged:** CLEAR new workflows formally tracked in the User Stories table. These two workflows align with Flow 2b (AI-native Run Evaluation from §4): 'Set up Term' covers academic calendar/term date configuration (pce-decision-023), and 'Run Data Audit' covers the Leo agent audit phase that validates course/faculty/student data before distribution. User story documents are linked in the PRD.
+**Suggested action:** When reviewing the 'Set up Term' and 'Run Data Audit' user story documents, check whether they expand on the term-date prerequisite flow (pce-decision-023) and the AI audit interface (§4 Flow 2b). No code action — these are tracking additions, not new product decisions.
+
+---
+
+### Flag 2 — §5 User Stories: "Distribute Survey" → "Push Survey"; "Responder" → "Survey taker" (CLEAR — informational)
+**Changed text (before):**
+> Distribute Survey | US - Create Survey - Course Evaluation.docx | Admin
+> Responder | Student
+
+**Changed text (after):**
+> Push Survey | US - Create Survey - Course Evaluation.docx | Admin
+> Survey taker | Student
+
+**Why flagged:** CLEAR renames consistent with prior PRD evolution (Step 2 renamed 'Distribute Survey' → 'Create Survey'/'Push Survey' since 2026-05-30). 'Survey taker' is clearer student-persona terminology than 'Responder'. Non-functional — no code change needed.
+**Suggested action:** No action needed. Consistent with existing code terminology.
+
+---
+
+### Flag 3 — §13a.8: "(Done)" note expanded with "Click Faculty view to switch profiles" (CLEAR — informational)
+**Changed text (before):** "Can you also build the faculty persona experience as well? (Done)"
+**Changed text (after):** "Can you also build the faculty persona experience as well? (Done) Click Faculty view to switch profiles"
+
+**Why flagged:** CLEAR non-functional annotation by Monil. The prototype has a 'Faculty view' toggle/selector, and this note explains how to access it. Non-functional — no code change.
+**Suggested action:** When demoing or extending the PCE prototype, use "Click Faculty view to switch profiles" as the switching mechanism for the faculty (Evaluated) persona. Confirm in the Vercel prototype (exxat-pce-admin-git-dev-soleyromits-projects.vercel.app/surveys).
+
+---
+
 ## TRANSCRIPT-PRD CONFLICT — 2026-06-23
 **Meeting:** Course and faculty evaluation setup — directories, templates, and term workflow — Jun 10, 2026
 **Speaker:** Aarti Vaishnav
