@@ -398,3 +398,25 @@ First snapshot taken for Roadmap-Exam-Management — no diff applied. Next run w
 **Suggested action:** Monitor tomorrow's run. If TBDs persist for 2+ consecutive runs, escalate to Nipun — it may indicate the 3rd July target is genuinely slipping for Course Offering/Base Entities capabilities. Second sheet remains the more reliable authority until the first table stabilises.
 
 ---
+
+## 2026-06-26 — Flagged: Exam Mgmt Roadmap — Nipun (2 changes)
+
+### Flag 1 — First release table: TBD values persist for 3rd consecutive run — ESCALATE (URGENT)
+**Changed text (before):** *(same TBD state as 2026-06-24 and 2026-06-23 — no change in Excel content)*
+**Changed text (after):** *(same)*
+> Release  Start   Target  17th June  18th June  16-Jun   TBD  16-Jun   TBD  16-Jun   TBD  Development
+
+**Why flagged:** AMBIGUOUS escalation — TBD values have now appeared in the first release table for 3 consecutive runs (2026-06-23, 2026-06-24, 2026-06-26). The June 23–25 Solution Review and POC Demo sessions have concluded — if targets were resolved there, they have not been updated in the Excel. The second sheet still shows `3rd July` (×6) and `20-Jul` (×3), but the first table (primary tracking) remains TBD. **3rd July is now only 7 days away** — if targets have genuinely changed, BUILD-STATUS and stakeholder communications need immediate update.
+**Suggested action:** URGENT — escalate directly to Nipun. (1) Are the 3rd July targets for Course Offering and Base Entities still firm? (2) If slipped, what is the new date? (3) Update the first release table to match the second sheet if both are still authoritative. Note: the 3rd July date is in 7 days — any design/engineering work not completed by Monday EOD is at risk.
+
+---
+
+### Flag 2 — New open question: when does faculty release scores/grades after grading? (AMBIGUOUS)
+**Changed text (before):** *(question row did not exist)*
+**Changed text (after):**
+> sl   Question  When does the faculty release scores / grades of assessments after grading each or all  submissions?
+
+**Why flagged:** AMBIGUOUS — a new open question (marked with `sl` — likely "stakeholder loop") appeared in the June calendar/milestones section of Nipun's Excel, inserted between the June 23–25 event block and the P0/P1/P2 milestone line. The question asks about timing of faculty score/grade release after grading — either per-submission or after all submissions are graded. This is unresolved (`?` in question form), with no owner or target date. The answer has direct implications for the result publishing UX and the "Result publishing and basic assessment level report" capability (P0-Cohere, To be picked, Bhargav). FERPA-adjacent: faculty-controlled release timing for student performance data intersects with FERPA §99.31 access control (who controls when student grades become visible and to whom).
+**Suggested action:** Raise with Nipun and Bhargav. Designs for result publishing should not be finalized until this is answered. Two flow variants may be needed: (a) release per-submission (faculty grades as they go — students see results immediately), (b) release all at once after all submissions graded (batch release). RBAC implications: only the faculty/coordinator should trigger the release, not students. Confirm whether the EM POC Demo scope item "RBAC - role and scope based" includes this gating behaviour.
+
+---
