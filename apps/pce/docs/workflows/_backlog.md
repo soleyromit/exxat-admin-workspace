@@ -203,6 +203,26 @@ Source: `docs/research/meetings/2026-06-16-pce-directory-entry-points-manil.md` 
 | T86 | Multi-select courses in directory → "Push survey" CTA | Admin | Course directory | P1 — DESIGN-REVIEW | When admin selects 2+ courses in the course directory, show a "Push survey" button. Creates a survey scoped to only those courses; flow jumps to step 2 (scope pre-filled). NEW affordance — not in current push survey flow. D_PCE_MN03. |
 | T87 | Directory four-view tabs — per-view entry points | Admin | PCE directory | P1 — NEW PAGE NEEDED + DESIGN-REVIEW | Four directory tabs: term view, course view, faculty view, student view. Each tab must have entry points for: (1) create template, (2) create survey, (3) analytics. Route `app/(app)/directory/` does not exist — currently split into separate admin entity pages. Unified "Directory" section with tabs is what Manil/Aarti envision. Architecture decision needed before implementing. Supplements T47, T78, T79. D_PCE_MN01. |
 
+## Phase 1 design tasks — added 2026-06-25
+
+Source: `docs/research/meetings/2026-06-25-course-eval-sync.md` (Granola `c9797a3b`)
+
+> Nipun post-Vadodara sync. PCE requirements frozen. Engineering (Vinay) starts grooming this week. Target: 4 capability designs ready for Aarti's Bangalore visit Wed Jul 2.
+
+### Updates to existing tasks
+
+| # | Update |
+|---|---|
+| T46 | Dashboard = **3 fixed term cards**: current term, last term, upcoming term. Cards shift as new terms start (oldest drops off). First-time login = single "configure term calendar" CTA only. D_PCE_625_01. |
+| T48 | Data audit action label: **"Add data"** (not "Fixed data"). Arjun's directive from Vadodara: "positive or a soft word." Applies everywhere the audit fix action is labeled. D_PCE_625_02. |
+| T49 | Push survey step count: **4 steps confirmed** (not 5 as in PRD; not 3 as currently coded). Step purposes: (1) select courses/term, (2) assign/design template, (3) communication, (4) review/push. Names TBD. D_PCE_625_03. |
+
+### New tasks
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T88 | Template editor: clone faculty sub-role question set | Admin | Template editor | P1 — DESIGN-REVIEW | When a template has multiple faculty sub-role sections (e.g. instructor + course coordinator), admin can clone the full question set from one role to another. Romit confirmed his multi-role design solves this. Design the clone affordance inside the template editor. D_PCE_625_04. Supplements T34, T35. |
+
 ## ⚠️ Escalated conflicts — updated 2026-06-17
 
 Source: `apps/exam-management/docs/research/meetings/2026-06-17-himanshu-design-system-nav-alignment.md` (Granola `1f55db0d`)
