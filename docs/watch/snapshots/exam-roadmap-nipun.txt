@@ -52,4 +52,5 @@ Laura --> Kim  Kinsey   Beta  Arvind   Consultant  Nandini   Consultant  Vicky M
 Business Case   Business Case
 June   Time Block   23-Jun  Morning   EM Solution Review  • In Assessments (student)  • Base entities & settings  • Assessments creation & distribution  Evening   EM Solution Review  • Assessments creation & distribution  • Question creation, import  EM POC Demo  Question bank  In assessment experience  Course list view  Question variant and distractor using AI  RBAC - role and scope based  September  October  December
 24-Jun   25-Jun  EM Brainstorming   Accreditation  • Submissions   • Strategic alignment and review  • Category / Tagging   Certification  • Collaborative assessemnts   • Strategic alignment and review  • Rubrics  • RBAC  EM Project Planning  Buffer for parking lot items and adhoc  items  • P0 Cohere  • P1 Beta Launch  • GA  • Pricing  • GTM
+sl   Question  When does the faculty release scores / grades of assessments after grading each or all  submissions?
 P0 - Cohere   15-Sep  P1 - Beta   19-Dec  P2 - GA Launch   20-Sep
