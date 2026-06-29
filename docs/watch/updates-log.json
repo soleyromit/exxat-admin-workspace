@@ -1308,6 +1308,54 @@
       "source": "PRD watcher run 2026-06-24",
       "severity": null,
       "files": ["docs/BUILD-STATUS.md"]
+    },
+    {
+      "id": "2026-06-29-pce-flagged-001",
+      "date": "2026-06-29",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §4 Sidebar nav restructured — CE/GS top-level, Setup & Analytics added, Settings removed, Academic Calendar removed",
+      "what": "Sidebar taxonomy changed: 'Surveys' parent wrapper removed; Course Evaluations and General Surveys now top-level entries. 'Setup' and 'Analytics' added under Course Evaluations. 'Settings' section removed entirely. 'Program Details' parent and 'Academic Calendar' removed from Directory; 'Term' promoted directly under Directory.",
+      "why": "CLEAR structural change — too large to auto-apply. Requires full sidebar rebuild in apps/pce/admin/components/app-sidebar.tsx.",
+      "source": "PCE PRD — Monil Pokar (synced 2026-06-29)",
+      "severity": "high",
+      "files": []
+    },
+    {
+      "id": "2026-06-29-pce-flagged-002",
+      "date": "2026-06-29",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §3 Limitations section — all 3 bullet texts clarified (non-functional)",
+      "what": "Limitation bullets updated: (1) 'Per course distribution only' → 'Per-course and per faculty distribution only'; (2) 'Auto-render sections based on the count of subjects' → 'Cannot auto-render sections based on the count of Aspects/Faculty'; (3) 'Access control for analytics – within the form' → 'Faculty A should not see Faculty B's responses'.",
+      "why": "CLEAR non-functional informational update. No code change required.",
+      "source": "PCE PRD — Monil Pokar (synced 2026-06-29)",
+      "severity": null,
+      "files": []
+    },
+    {
+      "id": "2026-06-29-pce-flagged-003",
+      "date": "2026-06-29",
+      "product": "pce",
+      "type": "prd-flagged",
+      "title": "PCE PRD §5 Analytics PRD link changed to 'to be added' (AMBIGUOUS)",
+      "what": "Analytics PRD reference removed: 'PRD for PCE Analytics: PRD - Analytics - PCE' → 'PRD for PCE Analytics: to be added'. The analytics spec document has been de-referenced.",
+      "why": "AMBIGUOUS — 'to be added' follows the TBD pattern. Analytics spec is now unresolved.",
+      "source": "PCE PRD — Monil Pokar (synced 2026-06-29)",
+      "severity": "medium",
+      "files": []
+    },
+    {
+      "id": "2026-06-29-build-status-date-bump",
+      "date": "2026-06-29",
+      "product": "workspace",
+      "type": "prd-change",
+      "title": "BUILD-STATUS: last-updated date bumped to 2026-06-29 (no feature status changes this run)",
+      "what": "No top-level feature status changes in exam-roadmap-nipun or exam-prd-nipun. BUILD-STATUS.md last-updated date bumped from 2026-06-26 to 2026-06-29.",
+      "why": "Routine date bump. Exam roadmap unchanged. PCE PRD changes were flagged but non-code. No step 7b Completed→🟢 Shipped transitions.",
+      "source": "PRD watcher run 2026-06-29",
+      "severity": null,
+      "files": ["docs/BUILD-STATUS.md"]
     }
   ]
 }

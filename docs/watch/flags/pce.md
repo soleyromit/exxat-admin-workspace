@@ -463,6 +463,45 @@ Today's fresh PRD fetch shows the following items from prior flags now marked "(
 
 ---
 
+## 2026-06-29 — Flagged: PCE PRD — Monil Pokar (3 changes)
+
+### Flag 1 — §4 Sidebar nav restructured: CE/GS top-level, Setup & Analytics added under CE, Settings removed, Academic Calendar removed (CLEAR — needs sidebar rebuild)
+**Changed text (before):**
+> Tabs: Surveys → Course Evaluations (Dashboard, Templates) | General Surveys (Dashboard, Templates) | Directory → Program Details (Academic Calendar, Term), Courses, Faculty and Staff, Students | Settings → Eval Window, Email templates, Reminder cadence, Rbac
+
+**Changed text (after):**
+> Tabs: Course Evaluations → Dashboard, Templates, Setup, Analytics | General Surveys → Dashboard, Templates | Directory → Courses, Faculty and Staff, Students, Term
+
+**Why flagged:** CLEAR structural change. "Surveys" parent wrapper removed — Course Evaluations and General Surveys are now top-level sidebar entries. "Setup" and "Analytics" added as sub-items under Course Evaluations. "Settings" top-level section removed entirely (was: Eval Window, Email templates, Reminder cadence, Rbac). "Program Details" parent removed from Directory; "Academic Calendar" removed; "Term" promoted to direct child of Directory. Change too large to auto-apply — requires full sidebar rebuild.
+**Suggested action:** Rebuild `apps/pce/admin/components/app-sidebar.tsx` using the new taxonomy: (1) Course Evaluations → Dashboard, Templates, Setup, Analytics; (2) General Surveys → Dashboard, Templates; (3) Directory → Courses, Faculty and Staff, Students, Term. Confirm with Monil where Settings sub-items (Eval Window, Email templates, Reminder cadence, RBAC from §13d) now live — likely under Setup within Course Evaluations.
+
+---
+
+### Flag 2 — §3 Limitations section: all 3 bullet texts updated (CLEAR — informational)
+**Changed text (before):**
+> 1. Per course distribution only, no bulk push available
+> 2. Auto-render sections based on the count of subjects
+> 3. Access control for analytics – within the form
+
+**Changed text (after):**
+> 1. Per-course and per faculty distribution only, no bulk push available
+> 2. Cannot auto-render sections based on the count of Aspects/Faculty
+> 3. Faculty A should not see Faculty B's responses
+
+**Why flagged:** CLEAR non-functional clarifications. Item 1 now explicitly calls out per-faculty limitation alongside per-course. Item 2 reframes from "auto-render" to "cannot auto-render" (negative framing) and renames "subjects" to "Aspects/Faculty". Item 3 reframes the access control limitation as a concrete privacy statement. No code change — this section describes existing system limitations as rationale for the PCE redesign.
+**Suggested action:** No action required. Informational context update only.
+
+---
+
+### Flag 3 — §5 Analytics PRD link changed to "to be added" (AMBIGUOUS)
+**Changed text (before):** "PRD for PCE Analytics: PRD - Analytics - PCE"
+**Changed text (after):** "PRD for PCE Analytics: to be added"
+
+**Why flagged:** AMBIGUOUS — "to be added" follows the TBD/open-question pattern. The previously linked Analytics PRD document ("PRD - Analytics - PCE") has been removed or de-referenced from the master PRD. The analytics architecture spec is now unresolved.
+**Suggested action:** Ask Monil whether the Analytics PRD is being rewritten, moved to a new location, or intentionally deferred. Until resolved, do not build analytics views beyond what is already implemented — the spec reference is gone.
+
+---
+
 ## TRANSCRIPT-PRD CONFLICT — 2026-06-23
 **Meeting:** Course and faculty evaluation setup — directories, templates, and term workflow — Jun 10, 2026
 **Speaker:** Aarti Vaishnav
