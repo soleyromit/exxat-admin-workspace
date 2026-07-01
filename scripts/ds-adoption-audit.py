@@ -797,14 +797,20 @@ def scan_file_for_datatable_no_empty_state(rel: str, text: str) -> list[Gap]:
     if rel in DOCUMENTED_HAND_ROLLS:
         return []
     gaps: list[Gap] = []
+    lines = text.split("\n")
     for m in DATATABLE_OPEN_RE.finditer(text):
+        line_no = text[: m.start()].count("\n") + 1
+        lt = lines[line_no - 1].lstrip() if line_no <= len(lines) else ""
+        # Skip matches inside comment lines (e.g. a docstring or JSX comment
+        # mentioning "<DataTable>"). Covers //, /* */, leading *, and JSX {/* */}.
+        if lt.startswith(("//", "*", "/*", "{/*")):
+            continue
         block = _extract_jsx_props_block(text, m.start())
         if EMPTY_STATE_PROP_RE.search(block):
             continue
         # Allow a same-file empty-guard render-fork as an alternative.
         if EMPTY_GUARD_RE.search(text):
             continue
-        line_no = text[: m.start()].count("\n") + 1
         gaps.append(Gap(
             severity="block",
             rule="datatable-no-empty-state",

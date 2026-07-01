@@ -87,6 +87,8 @@ const programTrendConfig: ChartConfig = {
 }
 const courseRankConfig: ChartConfig = { avg: { label: 'Avg rating', color: 'var(--chart-1)' } }
 const facultyRankConfig: ChartConfig = { avg: { label: 'Avg rating', color: 'var(--chart-2)' } }
+const compareConfig: ChartConfig = { rating: { label: 'Avg rating', color: 'var(--brand-color)' } }
+const courseRatingTrendConfig: ChartConfig = { rating: { label: 'Avg rating', color: 'var(--brand-color)' } }
 
 /* ── By Term columns ── */
 function buildTermColumns(onNudge: (row: CourseTermRow) => void): ColumnDef<CourseTermRow>[] {
@@ -133,7 +135,7 @@ function buildTermColumns(onNudge: (row: CourseTermRow) => void): ColumnDef<Cour
           onClick={(e) => { e.stopPropagation(); onNudge(row) }}
           aria-label={`Send ad-hoc reminder for ${row.courseCode}`}
         >
-          Nudge
+          Remind
         </Button>
       ) : null,
     },
@@ -395,7 +397,7 @@ export function ByTermPanel({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">Course rankings</CardTitle>
-            <CardDescription>Enrollment-weighted avg, all time. Color = tier.</CardDescription>
+            <CardDescription>Avg rating, weighted by class size · all terms. Color = tier.</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={courseRankConfig} style={{ height: `${courseAllTimeRanked.length * 24 + 8}px` }} className="w-full" role="img" aria-label="Course rankings by enrollment-weighted average rating">
@@ -414,7 +416,7 @@ export function ByTermPanel({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">Faculty rankings</CardTitle>
-            <CardDescription>Enrollment-weighted avg, all time. Color = tier.</CardDescription>
+            <CardDescription>Avg rating, weighted by class size · all terms. Color = tier.</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={facultyRankConfig} style={{ height: `${facultyAllTimeRanked.length * 24 + 8}px` }} className="w-full" role="img" aria-label="Faculty rankings by enrollment-weighted average rating">
@@ -434,7 +436,7 @@ export function ByTermPanel({
       <div className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold">Courses in {value}</h2>
         <p className="text-xs text-muted-foreground">
-          Select courses to push evaluations, or click a row to open its Evaluation Card. Use Nudge for an ad-hoc reminder.
+          Select courses to push evaluations, or click a row to open its Evaluation Card. Use Remind for an ad-hoc reminder.
         </p>
         {/* -mx cancels the DataTable's own mx-4/6 so its border aligns flush with the KPIs/charts above */}
         <div className="-mx-4 lg:-mx-6">
@@ -490,8 +492,8 @@ export function ByFacultyPanel({
       ? Math.round(offerings.reduce((s, o) => s + o.responseRate, 0) / offerings.length) : 0
     const termsCount    = new Set(offerings.map(o => o.term)).size
     return [
-      { id: 'f-courses',    label: 'Courses taught', value: offerings.length,                              delta: '', trend: 'neutral', description: 'across all terms' },
-      { id: 'f-rating',     label: 'Avg rating',     value: avgRating > 0 ? `${avgRating.toFixed(1)}/5` : '—', delta: '', trend: 'neutral', description: 'enrollment-weighted' },
+      { id: 'f-courses',    label: 'Courses taught', value: offerings.length,                              delta: '', trend: 'neutral', description: 'across all terms (all data)' },
+      { id: 'f-rating',     label: 'Avg faculty rating', value: avgRating > 0 ? `${avgRating.toFixed(1)}/5` : '—', delta: '', trend: 'neutral', description: 'weighted by class size' },
       { id: 'f-completion', label: 'Avg completion', value: avgCompletion > 0 ? `${avgCompletion}%` : '—',    delta: '', trend: 'neutral', description: 'all offerings' },
       { id: 'f-terms',      label: 'Terms active',   value: termsCount,                                     delta: '', trend: 'neutral', description: 'term appearances' },
     ]
@@ -523,26 +525,32 @@ export function ByFacultyPanel({
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">Comparative context</CardTitle>
             <CardDescription>
-              Enrollment-weighted avg vs. {faculty.department} dept and program average.
+              Avg rating, weighted by class size, vs. {faculty.department} dept and program average.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col gap-3">
-              {compareData.map((d, i) => {
-                const isOwn = i === compareData.length - 1
-                return (
-                  <div key={d.label} className="flex items-center gap-3">
-                    <span className="text-xs w-24 shrink-0 truncate" style={{ color: isOwn ? 'var(--foreground)' : 'var(--muted-foreground)' }}>{d.label}</span>
-                    <div className="flex-1 h-3 rounded-full overflow-hidden" style={{ background: 'var(--muted)' }}>
-                      <div className="h-3 rounded-full" style={{ width: `${(d.rating / 5) * 100}%`, background: isOwn ? 'var(--brand-color)' : 'var(--muted-foreground)', opacity: isOwn ? 1 : 0.45 }} />
-                    </div>
-                    <span className="text-sm font-semibold tabular-nums w-10 text-right" style={{ color: isOwn ? 'var(--brand-color)' : 'var(--muted-foreground)' }}>
-                      {d.rating.toFixed(1)}<span className="text-muted-foreground font-normal text-xs">/5</span>
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
+            <ChartContainer
+              config={compareConfig}
+              style={{ height: `${compareData.length * 40 + 8}px` }}
+              className="w-full"
+              role="img"
+              aria-label={`Comparative context: ${compareData.map(d => `${d.label} ${d.rating}`).join(', ')}`}
+            >
+              <BarChart layout="vertical" data={compareData} margin={{ top: 0, right: 36, bottom: 0, left: 0 }}>
+                <XAxis type="number" domain={[0, 5]} hide />
+                <YAxis type="category" dataKey="label" width={80} tick={{ fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} />
+                <Bar dataKey="rating" radius={[0, 3, 3, 0]} maxBarSize={14} background={{ fill: 'var(--muted)' }}>
+                  {compareData.map((d, i) => (
+                    <Cell
+                      key={d.label}
+                      fill={i === compareData.length - 1 ? 'var(--brand-color)' : 'var(--muted-foreground)'}
+                      fillOpacity={i === compareData.length - 1 ? 1 : 0.45}
+                    />
+                  ))}
+                </Bar>
+                <ChartTooltip cursor={false} content={<ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(1)}/5`, 'Avg rating']} />} />
+              </BarChart>
+            </ChartContainer>
           </CardContent>
         </Card>
       )}
@@ -562,6 +570,13 @@ export function ByFacultyPanel({
             selectable={false}
             searchable={false}
             onRowClick={(row) => { if (row.surveyId) onOpenSurvey(row.surveyId) }}
+            emptyState={
+              <div className="flex flex-col items-center gap-2 py-6">
+                <i className="fa-light fa-chalkboard-user text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
+                <p className="text-sm font-medium">No offerings for this faculty</p>
+                <p className="text-xs text-muted-foreground">Course offerings appear here once this faculty member is assigned to a term.</p>
+              </div>
+            }
           />
         </div>
       </div>
@@ -596,7 +611,7 @@ export function ByCoursePanel({
       : '—'
     return [
       { id: 'c-count',      label: 'Times offered',  value: courseOfferings.length, delta: '', trend: 'neutral', description: 'all terms' },
-      { id: 'c-rating',     label: 'Avg rating',     value: `${avgRating}/5`,       delta: '', trend: 'neutral', description: 'enrollment-weighted' },
+      { id: 'c-rating',     label: 'Avg rating',     value: `${avgRating}/5`,       delta: '', trend: 'neutral', description: 'weighted by class size' },
       { id: 'c-completion', label: 'Avg completion', value: `${avgCompletion}%`,    delta: '', trend: 'neutral', description: 'all offerings' },
       { id: 'c-trend',      label: 'Trend',          value: trendDir,               delta: '', trend: 'neutral', description: 'vs prior term' },
     ]
@@ -636,49 +651,24 @@ export function ByCoursePanel({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">Rating trend — {courseCode}</CardTitle>
-            <CardDescription>Enrollment-weighted avg rating per term.</CardDescription>
+            <CardDescription>Avg rating, weighted by class size, per term.</CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Inline SVG line — reliable in tabs (recharts ResponsiveContainer
-                measures 0 height when mounted inside an inactive Radix tab). */}
-            {(() => {
-              const data = courseTrendData
-              const MIN = 3, MAX = 5
-              const n = data.length
-              const X = (i: number) => n <= 1 ? 50 : (i / (n - 1)) * 100
-              const Y = (r: number) => 6 + (1 - (Math.max(MIN, Math.min(MAX, r)) - MIN) / (MAX - MIN)) * 88
-              const pts = data.map((d, i) => `${X(i)},${Y(d.rating)}`).join(' ')
-              return (
-                <div className="flex flex-col" style={{ height: 140 }} role="img" aria-label={`Rating trend for ${courseCode}: ${data.map(d => `${d.term} ${d.rating}`).join(', ')}`}>
-                  <div className="flex flex-1 gap-1">
-                    <div className="relative w-7 shrink-0">
-                      {[5, 4, 3].map(v => (
-                        <span key={v} className="absolute right-1 text-[10px] text-muted-foreground tabular-nums -translate-y-1/2" style={{ top: `${Y(v)}%` }}>{v.toFixed(1)}</span>
-                      ))}
-                    </div>
-                    <div className="relative flex-1">
-                      {[5, 4, 3].map(v => (
-                        <div key={v} className="absolute inset-x-0 border-t border-border" style={{ top: `${Y(v)}%` }} />
-                      ))}
-                      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                        <polyline points={pts} fill="none" stroke="var(--brand-color)" strokeWidth={2} vectorEffect="non-scaling-stroke" />
-                      </svg>
-                      {data.map((d, i) => (
-                        <div key={i} className="absolute size-2 rounded-full -translate-x-1/2 -translate-y-1/2" style={{ left: `${X(i)}%`, top: `${Y(d.rating)}%`, background: 'var(--brand-color)' }} title={`${d.term}: ${d.rating}/5`} />
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex gap-1">
-                    <div className="w-7 shrink-0" />
-                    <div className="flex-1 flex justify-between mt-1">
-                      {data.map((d, i) => (
-                        <span key={i} className="text-[10px] text-muted-foreground">{d.term}</span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )
-            })()}
+            <ChartContainer
+              config={courseRatingTrendConfig}
+              className="w-full"
+              style={{ height: 140 }}
+              role="img"
+              aria-label={`Rating trend for ${courseCode}: ${courseTrendData.map(d => `${d.term} ${d.rating}`).join(', ')}`}
+            >
+              <LineChart data={courseTrendData} margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
+                <CartesianGrid vertical={false} stroke="var(--border)" />
+                <XAxis dataKey="term" tick={{ fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} />
+                <YAxis domain={[3, 5]} tickFormatter={(v: number) => v.toFixed(1)} tick={{ fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} width={28} />
+                <ChartTooltip content={<ChartTooltipContent formatter={(v: unknown) => [`${(v as number).toFixed(2)}/5`, '']} />} />
+                <Line type="monotone" dataKey="rating" stroke="var(--color-rating)" strokeWidth={2} dot={{ r: 3, fill: 'var(--color-rating)' }} activeDot={{ r: 4 }} isAnimationActive={false} />
+              </LineChart>
+            </ChartContainer>
           </CardContent>
         </Card>
       )}
@@ -694,6 +684,13 @@ export function ByCoursePanel({
             selectable={false}
             searchable={false}
             onRowClick={(row) => { if (row.surveyId) onOpenSurvey(row.surveyId) }}
+            emptyState={
+              <div className="flex flex-col items-center gap-2 py-6">
+                <i className="fa-light fa-book-open text-muted-foreground" aria-hidden="true" style={{ fontSize: 24 }} />
+                <p className="text-sm font-medium">No offerings for this course</p>
+                <p className="text-xs text-muted-foreground">Term offerings appear here once this course is scheduled.</p>
+              </div>
+            }
           />
         </div>
       </div>
