@@ -223,6 +223,33 @@ Source: `docs/research/meetings/2026-06-25-course-eval-sync.md` (Granola `c9797a
 |---|---|---|---|---|---|
 | T88 | Template editor: clone faculty sub-role question set | Admin | Template editor | P1 — DESIGN-REVIEW | When a template has multiple faculty sub-role sections (e.g. instructor + course coordinator), admin can clone the full question set from one role to another. Romit confirmed his multi-role design solves this. Design the clone affordance inside the template editor. D_PCE_625_04. Supplements T34, T35. |
 
+## Phase 1 design tasks — added 2026-06-29 / 2026-06-30
+
+Source: `docs/research/meetings/2026-06-29-template-survey-nav-vishal.md` (Granola `253f8e5f`) · `docs/research/meetings/2026-06-30-template-builder-first-monel.md` (Granola `6932e692`) · `docs/research/meetings/2026-06-30-post-course-survey-cadence.md` (Granola `b235be1e`)
+
+> Vishal + Monel engineering-handoff call (Jun 29) + Monel design review (Jun 30 morning) + Monel + David cadence call (Jun 30 morning). Aarti arrives Bangalore Jul 1 — review meeting Jul 2. Engineering front-end starting next week.
+
+### Updates to existing tasks
+
+| # | Update |
+|---|---|
+| T80 | **P0 URGENT**: Aditi explicitly said she wants to see the left nav structure laid out. Monel: "That's one thing which Aditi explicitly said that she want to see." Must be ready before Jul 2 Aarti review. Vishal (Jun 29): "nail down the left nav structure." D_PCE_629_01, D_PCE_630_06. |
+| T46 | "Dashboard" label is wrong for the course eval landing. Vishal (Jun 29): "we are calling dashboard. But is this dashboard or is it something else? It should not be showing analytics here." The landing is the term-cards / survey-list operational view, not an analytics dashboard. Rename. D_PCE_629_02. |
+| T35 | Faculty role taxonomy enriched (see T96). Roles come from Prism settings only — no custom labels allowed. Monel (Jun 30): "Will not give user the ability to add custom rules. It will be predefined from the drop down list." D_PCE_630_03. |
+
+### New tasks
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T89 | Builder-first template creation flow | Admin | Template creation (CreateTemplateSheet) | P1 — DESIGN-REVIEW | Show the builder interface FIRST when creating a template — not a details form. Details (name, description, course type) should surface as a popup at publish time or as a separate final step. Affects `components/pce/pce-modals.tsx` `CreateTemplateSheet`. Monel: "we should start by giving them the builder flow... it should be builder that should show first." Structural rearchitecture — needs Romit design direction before touching code. D_PCE_630_01. |
+| T90 | Kill "add group" / group naming concept in template builder | Admin | Template editor | P1 — DESIGN-REVIEW | Remove the "add group" concept from Romit's Figma/Lovable designs. Three fixed top-level aspects (Content/Course, Faculty, General) ARE the groupings. No custom group names. Within Faculty, use multi-select roles (D_PCE_NC04, T62) — not group labels. Monel: "we should not have a grouping concept because that will add to engineering effort." D_PCE_630_02. |
+| T91 | PCE left nav — expanded by default + layout for Aarti | Admin | app-sidebar.tsx / nav | **P0 URGENT — before Jul 2** | Course evaluation nav section must be expanded by default (not collapsed). Vishal + Monel confirm nav structure: course evaluation (expanded) → Templates, Setup. "Analytics" not in the primary course eval nav. Sub-items order: Templates first, Setup at bottom. Monel: "Are we keeping course evaluation expandable? I think it's an overkill. No. No. It's collapsed. Expanded by default." Aditi explicitly asked for this layout before her Jul 2 visit. D_PCE_629_01, D_PCE_630_05, D_PCE_630_06. NEW PAGE NEEDED for nav restructuring. |
+| T92 | Remove duplicate "answer type labels" from settings UI | Admin | Settings | P1 | Romit's settings design had an "answer type labels" config section. Monel confirmed it is a duplicate of the Likert scale template picker already in settings. Remove the redundant "answer type labels" UI. Keep only the predefined Likert scale templates (satisfaction / agreement / frequency / quality / difficulty / true-false). D_PCE_630_04. |
+| T93 | Faculty roles: predefined Prism dropdown only in template builder | Admin | Template editor | P1 | Admin cannot type custom faculty role labels in the template. Roles populate from Prism. Settings page = admin defines a subset of Prism's universal role list. That subset shows in create-template. If no settings configured, show full universal list. Reinforces T35. Monel: "Will not give user the ability to add custom rules. It will be predefined from the drop down list." D_PCE_630_03. |
+| T94 | Student roster refresh before survey push | Engineering | Survey push flow | P1 — DESIGN-REVIEW | System must refresh student roster (from SIS/LMS) immediately before sending the survey, not at the time of scheduling. Students who dropped must be excluded; late-adds must be included. Surface this in the push-survey review/confirm step so admin understands when the list was last refreshed. David: "Yes. 100%." D_PCE_630_12. |
+| T95 | Course-level start/end date override in push survey scheduling | Admin | Push survey flow (step 1 / scope) | P1 — DESIGN-REVIEW | Individual course start/end date can override the term-level default dates. Term-level = default for bulk pushes; course-level = override. Design the override affordance in step 1 (select courses/term). Supplements T69, D_PCE_NC15. D_PCE_630_13. |
+| T96 | Faculty role taxonomy for template role picker (research reference) | Admin | Template editor role picker | P1 | Reference taxonomy for designing T35 / T93 role selector. Didactic: Course Coordinator, Course Director (top), Instructor/Lecturer/Teacher (mid). Lab: Lab TA / Lab Assistant (separate). Clinical: Director of Clinical Education (DCE), Placement Faculty. Preceptors NOT evaluated via PCE (they go through LAM). Use this taxonomy when building the Prism-role subset picker in settings + the role selector in template builder. D_PCE_630_14. |
+
 ## ⚠️ Escalated conflicts — updated 2026-06-17
 
 Source: `apps/exam-management/docs/research/meetings/2026-06-17-himanshu-design-system-nav-alignment.md` (Granola `1f55db0d`)
