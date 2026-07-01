@@ -16,17 +16,25 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   Select,
   SelectTrigger,
   SelectContent,
   SelectItem,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
   Collapsible,
   CollapsibleTrigger,
   CollapsibleContent,
   ToggleSwitch,
+  RadioGroup,
+  RadioGroupItem,
+  Label,
   Field,
   FieldLabel,
+  FieldDescription,
   Tabs,
   TabsList,
   TabsTrigger,
@@ -40,30 +48,147 @@ import {
   CommandEmpty,
   CommandGroup,
   CommandItem,
-  Checkbox,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
 import { ListHubStatusBadge } from '@/components/list-hub-status-badge'
 import { LIST_HUB_STATUS_TINT_SUCCESS, LIST_HUB_STATUS_TINT_WARNING } from '@/lib/list-status-badges'
-import { MOCK_SUBJECTS } from '@/lib/pce-mock-data'
-import type { TemplateQuestion, CourseTypeFilter, SubjectKey } from '@/lib/pce-mock-data'
+import { EVAL_DEFAULT_SCALE, EVAL_FACULTY_ROLES, EVAL_DEFAULT_FACULTY_ROLE_IDS } from '@/lib/pce-mock-data'
+
+// Faculty roles offered in the builder = the program roles configured in Central
+// Settings (Jun 30 meeting). Prism-sourced; no custom roles created here.
+// Roles are set PER SECTION (PceTemplateSection.roles) — a section can target one role
+// (separate questions per role) or multiple roles (shared questions across roles).
+const FACULTY_ROLE_OPTIONS: { key: string; label: string }[] =
+  EVAL_FACULTY_ROLES.map(r => ({ key: r.id, label: r.label }))
+const ROLE_LABEL = (key: string) => EVAL_FACULTY_ROLES.find(r => r.id === key)?.label ?? key
+import type { TemplateQuestion, CourseTypeFilter, SubjectKey, PceTemplateSection } from '@/lib/pce-mock-data'
 // SubjectKey is used for predefined subjects; custom subjects use plain strings
 
 const COURSE_TYPE_OPTIONS: { value: CourseTypeFilter; label: string }[] = [
   { value: 'didactic', label: 'Classroom based' },
   { value: 'clinical', label: 'Practice based' },
+  { value: 'seminar',  label: 'Lab based' },
 ]
 
 type AnswerType = TemplateQuestion['answerType']
 
-const Q_TYPE_OPTIONS: { value: AnswerType; label: string; icon: string }[] = [
-  { value: 'likert',    label: 'Likert Scale',              icon: 'fa-sliders' },
-  { value: 'free_text', label: 'Short / Long Answer',       icon: 'fa-align-left' },
+// Answer types the student taker renders — grouped for the picker.
+const Q_TYPE_GROUPS: { label: string; options: { value: AnswerType; label: string; icon: string }[] }[] = [
+  { label: 'Scaled', options: [
+    { value: 'likert',          label: 'Likert scale',       icon: 'fa-sliders' },
+  ] },
+  { label: 'Text', options: [
+    { value: 'free_text',       label: 'Short / long answer', icon: 'fa-align-left' },
+  ] },
+  { label: 'Choice', options: [
+    { value: 'single_choice',   label: 'Single choice',      icon: 'fa-circle-dot' },
+    { value: 'multiple_choice', label: 'Multiple choice',    icon: 'fa-square-check' },
+    { value: 'select_dropdown', label: 'Dropdown',           icon: 'fa-caret-down' },
+  ] },
+  { label: 'Other', options: [
+    { value: 'number',          label: 'Number',             icon: 'fa-hashtag' },
+    { value: 'date_picker',     label: 'Date',               icon: 'fa-calendar' },
+    { value: 'title',           label: 'Section title',      icon: 'fa-heading' },
+  ] },
 ]
+const Q_TYPE_FLAT = Q_TYPE_GROUPS.flatMap(g => g.options)
+const CHOICE_TYPES = new Set<AnswerType>(['single_choice', 'multiple_choice', 'select_dropdown'])
 
 function qTypeLabel(type: AnswerType): string {
-  return Q_TYPE_OPTIONS.find(o => o.value === type)?.label ?? type
+  return Q_TYPE_FLAT.find(o => o.value === type)?.label ?? type
+}
+
+// Editable option list for single / multiple choice + dropdown answer types.
+function ChoicesEditor({ answerType, choices, onChange }: {
+  answerType: AnswerType; choices: string[]; onChange: (c: string[]) => void
+}) {
+  const icon = answerType === 'multiple_choice' ? 'fa-square'
+    : answerType === 'select_dropdown' ? 'fa-caret-down' : 'fa-circle'
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-sm font-medium">Options</span>
+      <div className="flex flex-col gap-1.5">
+        {choices.map((c, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <i className={`fa-light ${icon} text-xs text-muted-foreground shrink-0`} aria-hidden="true" />
+            <Input value={c}
+              onChange={e => { const next = [...choices]; next[i] = e.target.value; onChange(next) }}
+              placeholder={`Option ${i + 1}`} className="text-sm h-8" aria-label={`Option ${i + 1}`} />
+            <Button variant="ghost" size="icon-xs" aria-label={`Remove option ${i + 1}`}
+              disabled={choices.length <= 1}
+              onClick={() => onChange(choices.filter((_, j) => j !== i))}>
+              <i className="fa-light fa-xmark text-xs" aria-hidden="true" />
+            </Button>
+          </div>
+        ))}
+      </div>
+      <Button variant="outline" size="sm" className="w-fit"
+        onClick={() => onChange([...choices, `Option ${choices.length + 1}`])}>
+        <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add option
+      </Button>
+    </div>
+  )
+}
+
+// Optional image upload (cover image / university logo) — Jun 30 PCE meeting.
+// Self-contained clickable dropzone (Notion / Linear pattern): the box is sized to the
+// image's true aspect ratio (`boxClassName`), the dimension guidance lives inside as the
+// affordance, and Replace / Remove appear below only once an image exists — so both the
+// wide cover and the square logo share one consistent structure.
+function ImageUploadField({ label, description, value, onChange, boxClassName, recommend }: {
+  label: string; description?: string; value: string | null; onChange: (v: string | null) => void
+  boxClassName: string; recommend: string
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => onChange(reader.result as string)
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+  return (
+    <Field orientation="vertical">
+      <FieldLabel>{label} <span className="text-xs font-normal text-muted-foreground">(optional)</span></FieldLabel>
+      {description && <FieldDescription>{description}</FieldDescription>}
+      {value ? (
+        <div className="flex flex-col gap-2 items-start">
+          <div className={`${boxClassName} rounded-md border border-border bg-cover bg-center`}
+            style={{ backgroundImage: `url(${value})` }} role="img" aria-label={`${label} preview`} />
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="sm" onClick={() => inputRef.current?.click()}>Replace</Button>
+            <Button variant="ghost" size="sm" onClick={() => onChange(null)}>Remove</Button>
+          </div>
+        </div>
+      ) : (
+        <Button type="button" variant="ghost" size="sm" onClick={() => inputRef.current?.click()}
+          className={`${boxClassName} h-auto rounded-md border border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground transition-colors hover:border-foreground hover:text-foreground hover:bg-transparent`}>
+          <i className="fa-regular fa-arrow-up-from-bracket text-base" aria-hidden="true" />
+          <span className="text-sm font-medium text-foreground">Upload</span>
+          <span className="text-xs tabular-nums">{recommend}</span>
+        </Button>
+      )}
+      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onFile} aria-label={`Upload ${label}`} />
+    </Field>
+  )
+}
+
+// Static section in the Template settings panel — always visible (no accordion), with a
+// clear label + one-line helper so each group is self-explanatory.
+function SettingsSection({ label, hint, children }: {
+  label: string; hint: string; children: React.ReactNode
+}) {
+  return (
+    <section className="flex flex-col gap-4 py-5 border-b border-border last:border-0">
+      <div className="flex flex-col gap-0.5">
+        <h2 className="text-sm font-semibold">{label}</h2>
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      </div>
+      {children}
+    </section>
+  )
 }
 
 type QMeta = {
@@ -83,6 +208,7 @@ function AttributesPanel({
   meta,
   onTextBlur,
   onTypeChange,
+  onChoicesChange,
   onMetaChange,
   onClose,
 }: {
@@ -90,6 +216,7 @@ function AttributesPanel({
   meta: QMeta
   onTextBlur: (text: string) => void
   onTypeChange: (type: AnswerType) => void
+  onChoicesChange: (choices: string[]) => void
   onMetaChange: (patch: Partial<QMeta>) => void
   onClose: () => void
 }) {
@@ -127,17 +254,57 @@ function AttributesPanel({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Q_TYPE_OPTIONS.map(o => (
-                    <SelectItem key={o.value} value={o.value}>
-                      <span className="flex items-center gap-1.5">
-                        <i className={`fa-light ${o.icon}`} aria-hidden="true" />
-                        {o.label}
-                      </span>
-                    </SelectItem>
+                  {Q_TYPE_GROUPS.map(g => (
+                    <SelectGroup key={g.label}>
+                      <SelectLabel>{g.label}</SelectLabel>
+                      {g.options.map(o => (
+                        <SelectItem key={o.value} value={o.value}>
+                          <span className="flex items-center gap-1.5">
+                            <i className={`fa-light ${o.icon}`} aria-hidden="true" />
+                            {o.label}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   ))}
                 </SelectContent>
               </Select>
             </Field>
+
+            {/* Likert preview — reads the program scale from Central Settings (locked, not per-question) */}
+            {question.answerType === 'likert' && (
+              <div className="flex flex-col gap-2">
+                <span className="text-sm font-medium">Scale preview</span>
+                <div className="flex items-center gap-1.5" aria-hidden="true">
+                  {EVAL_DEFAULT_SCALE.labels.map((_, i) => (
+                    <div
+                      key={i}
+                      className="flex-1 h-8 rounded-md border border-border flex items-center justify-center text-sm font-medium tabular-nums"
+                      style={{ background: 'var(--muted)' }}
+                    >
+                      {i + 1}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>1 · {EVAL_DEFAULT_SCALE.labels[0]}</span>
+                  <span>{EVAL_DEFAULT_SCALE.points} · {EVAL_DEFAULT_SCALE.labels[EVAL_DEFAULT_SCALE.labels.length - 1]}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {EVAL_DEFAULT_SCALE.points}-point scale — set program-wide in{' '}
+                  <Link href="/admin/eval-settings" className="underline underline-offset-2 hover:text-foreground">Settings</Link>.
+                </p>
+              </div>
+            )}
+
+            {/* Options editor — single / multiple choice + dropdown */}
+            {CHOICE_TYPES.has(question.answerType) && (
+              <ChoicesEditor
+                answerType={question.answerType}
+                choices={question.choices ?? []}
+                onChange={onChoicesChange}
+              />
+            )}
 
             {/* Question text */}
             <Field orientation="vertical">
@@ -245,15 +412,31 @@ export default function TemplateEditorPage() {
   const [qMeta, setQMeta] = useState<Record<string, QMeta>>({})
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null)
   const [editingSectionTitle, setEditingSectionTitle] = useState('')
-  // Subject group tabs — each group has a key, display label, and list of evaluated roles
-  const [subjectGroups, setSubjectGroups] = useState<Array<{ key: string; label: string; roles: string[] }>>([
-    { key: 'course_content', label: 'Course', roles: [] },
-    { key: 'faculty', label: 'Faculty', roles: [] },
-  ])
+  // Three fixed aspects (Jun 30 PCE meeting — dropped the "Add group" naming).
+  // Roles are selected per Faculty SECTION, not per tab.
+  const subjectGroups: Array<{ key: string; label: string }> = [
+    { key: 'course_content', label: 'Course' },
+    { key: 'faculty',        label: 'Faculty' },
+    { key: 'general',        label: 'General' },
+  ]
   const [activeGroup, setActiveGroup] = useState('course_content')
-  const [groupPickerOpen, setGroupPickerOpen] = useState(false)
-  const [newGroupName, setNewGroupName] = useState('')
-  const [rolePickerGroupKey, setRolePickerGroupKey] = useState<string | null>(null)
+  // Template details live in the persistent right settings panel (Airtable/Typeform
+  // pattern) — no tabs, no dialog. Publish just publishes.
+  // Branding (Jun 30 meeting) — optional cover image + university logo for the student landing.
+  const [coverImage, setCoverImage] = useState<string | null>(null)
+  const [universityLogo, setUniversityLogo] = useState<string | null>(null)
+  // Editor tabs — Builder canvas + a dedicated Template settings tab (Romit).
+  const [editorTab, setEditorTab] = useState<'builder' | 'settings'>('builder')
+  // Opening instruction PER aspect (Course/Faculty/General) — shown at the start of
+  // that section in the evaluation (not a single common instruction).
+  const [aspectInstructions, setAspectInstructions] = useState<Record<string, { title: string; text: string }>>({})
+  const setAspectInstruction = (key: string, patch: Partial<{ title: string; text: string }>) =>
+    setAspectInstructions(prev => ({ ...prev, [key]: { ...(prev[key] ?? { title: '', text: '' }), ...patch } }))
+  // Opening-instruction accordion open state per aspect (collapsed by default).
+  const [openInstruction, setOpenInstruction] = useState<Record<string, boolean>>({})
+  // Faculty roles are PER-SECTION: each Faculty section evaluates the role(s) you pick —
+  // separate sections for role-specific questions, one section (multi-role) for shared ones.
+  const [rolePickerSectionId, setRolePickerSectionId] = useState<string | null>(null)
   const [roleSearch, setRoleSearch] = useState('')
 
 
@@ -263,7 +446,7 @@ export default function TemplateEditorPage() {
     return (
       <div className="flex flex-col items-center justify-center flex-1 gap-3 text-center" style={{ minHeight: 240 }}>
         <i className="fa-light fa-circle-exclamation text-4xl text-muted-foreground" aria-hidden="true" />
-        <p className="text-sm font-medium">Template not found</p>
+        <h1 className="text-sm font-medium">Template not found</h1>
         <Button variant="outline" size="sm" asChild>
           <Link href={backHref}>Back to Templates</Link>
         </Button>
@@ -277,6 +460,17 @@ export default function TemplateEditorPage() {
   const totalQuestions = sections.reduce((sum, s) => sum + s.questions.length, 0)
   const canPublish = sections.length > 0 && totalQuestions > 0
 
+  // Aspect rail metadata (Jun 30 PCE meeting — vertical tabs with info + counts)
+  const ASPECT_INFO: Record<string, string> = {
+    course_content: 'About the course itself — shown once per course.',
+    faculty:        'About teaching staff — each section evaluates the role(s) you choose.',
+    general:        'Program-wide questions — shown once per evaluation.',
+  }
+  const aspectCounts = (key: string) => {
+    const secs = sections.filter(s => s.subjectKey === key)
+    return { sections: secs.length, questions: secs.reduce((n, s) => n + s.questions.length, 0) }
+  }
+
   const selectedSec = selectedQuestion ? sections.find(s => s.id === selectedQuestion.sectionId) : null
   const selectedQ = selectedSec?.questions.find(q => q.id === selectedQuestion?.questionId) ?? null
 
@@ -289,36 +483,10 @@ export default function TemplateEditorPage() {
     })
   }
 
-  function handleAddGroup() {
-    const label = newGroupName.trim()
-    if (!label) return
-    const key = `grp-${Date.now()}`
-    setSubjectGroups(prev => [...prev, { key, label, roles: [] }])
-    setActiveGroup(key)
-    setGroupPickerOpen(false)
-    setNewGroupName('')
-  }
-
-  function handleRemoveGroup(key: string) {
-    if (key === 'course_content') return
-    sections.filter(s => s.subjectKey === key).forEach(s => {
-      removeTemplateSection(t.id, s.id)
-      if (selectedQuestion?.sectionId === s.id) setSelectedQuestion(null)
-    })
-    setSubjectGroups(prev => prev.filter(g => g.key !== key))
-    setActiveGroup('course_content')
-  }
-
-  function handleAddRole(groupKey: string, roleKey: string) {
-    setSubjectGroups(prev => prev.map(g =>
-      g.key === groupKey ? { ...g, roles: [...g.roles, roleKey] } : g
-    ))
-  }
-
-  function handleRemoveRole(groupKey: string, roleKey: string) {
-    setSubjectGroups(prev => prev.map(g =>
-      g.key === groupKey ? { ...g, roles: g.roles.filter(r => r !== roleKey) } : g
-    ))
+  // Roles are per SECTION — different roles for different Faculty sections.
+  function toggleSectionRole(sec: PceTemplateSection, roleKey: string) {
+    const cur = sec.roles ?? []
+    updateTemplateSection(t.id, sec.id, { roles: cur.includes(roleKey) ? cur.filter(r => r !== roleKey) : [...cur, roleKey] })
   }
 
   function handleAddSection(subjectKey?: string) {
@@ -377,33 +545,26 @@ export default function TemplateEditorPage() {
   function handleQDragEnd() { questionDragInfo.current = null }
 
   // ── Role picker — checkmark list, multi-select, custom entry ────────────────
-  function renderRolePickerContent(groupKey: string) {
-    const group = subjectGroups.find(g => g.key === groupKey)
-    const selected = new Set(group?.roles ?? [])
-    const allRoles = MOCK_SUBJECTS
-      .filter(s => s.key !== 'course_content' && s.key !== 'faculty')
-      .sort((a, b) => a.label.localeCompare(b.label))
+  function renderRolePickerContent(sec: PceTemplateSection) {
+    const selected = new Set(sec.roles ?? [])
+    const allRoles = [...FACULTY_ROLE_OPTIONS].sort((a, b) => a.label.localeCompare(b.label))
     const filtered = roleSearch
       ? allRoles.filter(s => s.label.toLowerCase().includes(roleSearch.toLowerCase()))
       : allRoles
-    const isCustom = roleSearch.trim().length > 0 &&
-      !allRoles.some(s => s.label.toLowerCase() === roleSearch.trim().toLowerCase()) &&
-      !selected.has(roleSearch.trim())
 
     function toggleRole(roleKey: string) {
-      if (selected.has(roleKey)) handleRemoveRole(groupKey, roleKey)
-      else handleAddRole(groupKey, roleKey)
+      toggleSectionRole(sec, roleKey)
     }
 
     return (
       <Command shouldFilter={false} className="[&_[data-slot=input-group]]:bg-background [&_[data-slot=input-group]]:border-border/60">
         <CommandInput
-          placeholder="Search or add role…"
+          placeholder="Search roles…"
           value={roleSearch}
           onValueChange={setRoleSearch}
         />
         <CommandList>
-          {filtered.length === 0 && !isCustom && (
+          {filtered.length === 0 && (
             <CommandEmpty>No roles found.</CommandEmpty>
           )}
           {filtered.length > 0 && (
@@ -412,32 +573,22 @@ export default function TemplateEditorPage() {
                 const checked = selected.has(s.key)
                 return (
                   <CommandItem key={s.key} value={s.key} onSelect={() => toggleRole(s.key)} aria-selected={checked}>
-                    <Checkbox
-                      checked={checked}
-                      tabIndex={-1}
-                      className="pointer-events-none shrink-0 size-3.5 p-0"
+                    {/* Non-interactive decorative checkbox — avoids nested-interactive WCAG violation.
+                        CommandItem (role="option") handles all selection semantics. */}
+                    <span
+                      className="shrink-0 size-3.5 rounded-sm border flex items-center justify-center"
+                      style={{
+                        borderColor: checked ? 'var(--primary)' : 'var(--border-control-35)',
+                        background: checked ? 'var(--primary)' : 'transparent',
+                      }}
                       aria-hidden="true"
-                    />
+                    >
+                      {checked && <i className="fa-solid fa-check text-[9px]" style={{ color: 'var(--primary-foreground)' }} aria-hidden="true" />}
+                    </span>
                     <span className="flex-1 ml-2 truncate">{s.label}</span>
-                    {(s.prismCount ?? 0) > 0 && (
-                      <span className="text-xs ml-2 shrink-0 tabular-nums text-muted-foreground">
-                        {s.prismCount} in Prism
-                      </span>
-                    )}
                   </CommandItem>
                 )
               })}
-            </CommandGroup>
-          )}
-          {isCustom && (
-            <CommandGroup>
-              <CommandItem
-                value={roleSearch.trim()}
-                onSelect={() => { handleAddRole(groupKey, roleSearch.trim()); setRoleSearch('') }}
-              >
-                <i className="fa-light fa-plus text-xs shrink-0" aria-hidden="true" />
-                <span className="ml-2">Add &ldquo;{roleSearch.trim()}&rdquo;</span>
-              </CommandItem>
             </CommandGroup>
           )}
         </CommandList>
@@ -531,6 +682,45 @@ export default function TemplateEditorPage() {
         {/* Section body */}
         {isOpen && (
           <div className="flex flex-col gap-2" style={{ padding: '10px 12px 14px' }}>
+            {/* Per-section faculty roles — which role(s) this section's questions evaluate */}
+            {sec.subjectKey === 'faculty' && (() => {
+              const selRoles = sec.roles ?? []
+              return (
+                <div className="flex items-start gap-3 pb-2 mb-1" style={{ borderBottom: '1px solid var(--border)' }}>
+                  <span className="text-xs font-medium shrink-0" style={{ paddingTop: 5 }}>Evaluates</span>
+                  <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
+                    {selRoles.length === 0 ? (
+                      <span className="text-xs text-muted-foreground" style={{ paddingTop: 4 }}>
+                        No role selected
+                      </span>
+                    ) : selRoles.map(roleKey => {
+                      const label = ROLE_LABEL(roleKey)
+                      return (
+                        <span key={roleKey} className="inline-flex items-center gap-1 text-xs font-medium rounded-full"
+                          style={{ background: 'var(--muted)', color: 'var(--foreground)', padding: '2px 4px 2px 10px' }}>
+                          {label}
+                          <Button variant="ghost" size="icon-xs" aria-label={`Remove ${label}`}
+                            className="opacity-50 hover:opacity-100" onClick={e => { e.stopPropagation(); toggleSectionRole(sec, roleKey) }}>
+                            <i className="fa-solid fa-xmark text-xs" aria-hidden="true" />
+                          </Button>
+                        </span>
+                      )
+                    })}
+                  </div>
+                  <Popover open={rolePickerSectionId === sec.id}
+                    onOpenChange={open => { setRolePickerSectionId(open ? sec.id : null); if (!open) setRoleSearch('') }}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="xs" className="shrink-0" onClick={e => e.stopPropagation()}>
+                        <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add role
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0 w-72" align="end" sideOffset={8} aria-label="Add role">
+                      {renderRolePickerContent(sec)}
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )
+            })()}
             {sec.questions.map((q, qIndex) => {
               const isSelected = selectedQuestion?.questionId === q.id && selectedQuestion?.sectionId === sec.id
               return (
@@ -616,17 +806,81 @@ export default function TemplateEditorPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="center" sideOffset={6}>
-                  {Q_TYPE_OPTIONS.map(o => (
-                    <DropdownMenuItem key={o.value} onClick={() => handleAddQuestion(sec.id, o.value)}>
-                      <i className={`fa-light ${o.icon}`} aria-hidden="true" />
-                      {o.label}
-                    </DropdownMenuItem>
+                  {Q_TYPE_GROUPS.map((g, gi) => (
+                    <div key={g.label}>
+                      {gi > 0 && <DropdownMenuSeparator />}
+                      <DropdownMenuLabel className="text-xs text-muted-foreground">{g.label}</DropdownMenuLabel>
+                      {g.options.map(o => (
+                        <DropdownMenuItem key={o.value} onClick={() => handleAddQuestion(sec.id, o.value)}>
+                          <i className={`fa-light ${o.icon}`} aria-hidden="true" />
+                          {o.label}
+                        </DropdownMenuItem>
+                      ))}
+                    </div>
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           </div>
         )}
+      </div>
+    )
+  }
+
+  // Template settings — persistent right panel (Airtable/Typeform pattern), shown
+  // when no question is selected. Discoverable, not hidden behind Publish.
+  function renderTemplateSettings() {
+    return (
+      <div className="flex flex-col">
+        <SettingsSection label="Template name & description"
+          hint="How this template is identified in the templates list.">
+          <Field orientation="vertical">
+            <FieldLabel htmlFor="tmpl-name">Template name</FieldLabel>
+            <Input id="tmpl-name" key={t.id} defaultValue={t.name}
+              onBlur={e => {
+                const v = e.currentTarget.value.trim()
+                if (v && v !== t.name) updateTemplate(t.id, { name: v })
+                else if (!v) e.currentTarget.value = t.name
+              }}
+              placeholder="Untitled template" className="h-9 text-sm" />
+          </Field>
+          <Field orientation="vertical">
+            <FieldLabel htmlFor="tmpl-desc">Description</FieldLabel>
+            <Textarea id="tmpl-desc" key={`${t.id}-desc`} defaultValue={t.description ?? ''}
+              onBlur={e => {
+                const v = e.currentTarget.value.trim()
+                if (v !== (t.description ?? '')) updateTemplate(t.id, { description: v || undefined })
+              }}
+              placeholder="What is this template for?" rows={3} className="text-sm" style={{ resize: 'none' }} />
+          </Field>
+        </SettingsSection>
+
+        <SettingsSection label="Course type"
+          hint="Which kind of course this template is meant to evaluate.">
+          <RadioGroup
+            value={t.courseType}
+            onValueChange={v => updateTemplate(t.id, { courseType: v as CourseTypeFilter })}
+            className="flex flex-row flex-wrap gap-x-6 gap-y-2"
+            aria-label="Course type"
+          >
+            {COURSE_TYPE_OPTIONS.map(opt => (
+              <div key={opt.value} className="flex items-center gap-2">
+                <RadioGroupItem value={opt.value} id={`ct-${opt.value}`} />
+                <Label htmlFor={`ct-${opt.value}`} className="text-sm font-normal cursor-pointer">{opt.label}</Label>
+              </div>
+            ))}
+          </RadioGroup>
+        </SettingsSection>
+
+        <SettingsSection label="Branding"
+          hint="Optional images students see on the evaluation and in invitation emails.">
+          <ImageUploadField label="Cover image" description="Wide banner shown at the top of the student evaluation."
+            boxClassName="w-full max-w-md aspect-[4/1]" recommend="1600×400px"
+            value={coverImage} onChange={setCoverImage} />
+          <ImageUploadField label="University logo" description="Appears in the header and invitation emails."
+            boxClassName="w-full max-w-md aspect-[4/1]" recommend="400×400px"
+            value={universityLogo} onChange={setUniversityLogo} />
+        </SettingsSection>
       </div>
     )
   }
@@ -662,7 +916,7 @@ export default function TemplateEditorPage() {
             {t.name || 'Untitled template'}
           </h1>
           {t.status === 'active'
-            ? <ListHubStatusBadge label="Active" tint={LIST_HUB_STATUS_TINT_SUCCESS} icon="fa-circle-check" />
+            ? <ListHubStatusBadge label="Approved" tint={LIST_HUB_STATUS_TINT_SUCCESS} icon="fa-circle-check" />
             : <ListHubStatusBadge label="Draft" tint={LIST_HUB_STATUS_TINT_WARNING} icon="fa-pen-to-square" />
           }
           <div className="flex items-center gap-2 ml-auto shrink-0">
@@ -673,6 +927,7 @@ export default function TemplateEditorPage() {
             >
               Save draft
             </Button>
+            {/* Details live in the persistent right settings panel — Publish just publishes */}
             {t.status === 'active' ? (
               <Button variant="outline" size="sm" onClick={() => updateTemplate(t.id, { status: 'draft' })}>
                 Unpublish
@@ -681,34 +936,26 @@ export default function TemplateEditorPage() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span>
-                    <Button
-                      variant="default"
-                      size="sm"
-                      disabled={!canPublish}
-                      onClick={() => updateTemplate(t.id, { status: 'active' })}
-                    >
+                    <Button variant="default" size="sm" disabled={!canPublish}
+                      onClick={() => updateTemplate(t.id, { status: 'active' })}>
                       Publish
                     </Button>
                   </span>
                 </TooltipTrigger>
-                {!canPublish && (
-                  <TooltipContent>Add at least one section with a question to publish</TooltipContent>
-                )}
+                {!canPublish && <TooltipContent>Add at least one section with a question to publish</TooltipContent>}
               </Tooltip>
             )}
           </div>
         </div>
       </div>
 
-      <Tabs defaultValue={sections.length > 0 ? 'builder' : 'details'} className="flex flex-col flex-1 min-h-0">
+      <Tabs value={editorTab} onValueChange={v => setEditorTab(v as 'builder' | 'settings')} className="flex flex-col flex-1 min-h-0">
         <div style={{ paddingInline: 40, borderBottom: '1px solid var(--border)' }}>
           <TabsList variant="line">
-            <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="builder">Builder</TabsTrigger>
+            <TabsTrigger value="settings">Template settings</TabsTrigger>
           </TabsList>
         </div>
-
-        {/* ── Builder tab ── */}
         <TabsContent value="builder" className="flex-1 min-h-0 flex flex-row m-0">
           {/* Left — section list */}
           <div className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden">
@@ -737,178 +984,123 @@ export default function TemplateEditorPage() {
               </div>
             </div>
           ) : (
-            /* Course evaluation — dynamic subject group tabs, default (pill) variant */
-            <Tabs
-              value={activeGroup}
-              onValueChange={setActiveGroup}
-              className="flex flex-col flex-1 min-h-0"
-            >
-              {/* Subject group strip — default variant (pill), visually distinct from Details/Builder */}
-              <div
-                className="flex items-center gap-3 shrink-0"
-                style={{ paddingInline: 40, paddingBlock: 10, borderBottom: '1px solid var(--border)' }}
+            /* Course evaluation — vertical aspect rail with info + counts (Jun 30 meeting) */
+            <div className="flex flex-row flex-1 min-h-0">
+              {/* Aspect rail */}
+              <nav
+                aria-label="Template aspects"
+                className="shrink-0 w-60 overflow-y-auto p-3 flex flex-col gap-1"
+                style={{ borderRight: '1px solid var(--border)' }}
               >
-                <TabsList variant="default">
-                  {subjectGroups.map(g => (
-                    <TabsTrigger
-                      key={g.key}
-                      value={g.key}
-                      className={g.key !== 'course_content' ? 'gap-1.5 pr-1' : ''}
-                    >
-                      {g.label}
-                      {g.key !== 'course_content' && (
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          aria-label={`Remove ${g.label} group`}
-                          className="opacity-50 hover:opacity-100 transition-opacity shrink-0"
-                          onClick={e => { e.stopPropagation(); handleRemoveGroup(g.key) }}
-                        >
-                          <i className="fa-solid fa-xmark text-[10px]" aria-hidden="true" />
-                        </Button>
-                      )}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-
-                {/* + Add group */}
-                <Popover
-                  open={groupPickerOpen}
-                  onOpenChange={open => { setGroupPickerOpen(open); if (!open) setNewGroupName('') }}
-                >
-                  <PopoverTrigger asChild>
-                    <Button variant="ghost" size="xs" className="shrink-0">
-                      <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                      Add group
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="p-3 w-52" align="start" sideOffset={8}>
-                    <div className="flex flex-col gap-2">
-                      <p className="text-xs font-medium">Group name</p>
-                      <Input
-                        autoFocus
-                        placeholder="e.g. Clinical Site"
-                        value={newGroupName}
-                        onChange={e => setNewGroupName(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') handleAddGroup() }}
-                        className="h-8 text-sm"
-                      />
-                      <Button size="sm" onClick={handleAddGroup} disabled={!newGroupName.trim()}>
-                        Create group
-                      </Button>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              {/* Tab content — scrollable */}
-              <div className="flex-1 overflow-y-auto" style={{ padding: '28px 40px 48px' }}>
-                {subjectGroups.map(group => {
-                  const groupSections = sections.filter(s => s.subjectKey === group.key)
+                {subjectGroups.map(g => {
+                  const active = activeGroup === g.key
+                  const c = aspectCounts(g.key)
                   return (
-                    <TabsContent key={group.key} value={group.key} className="m-0">
-                      <div style={{ maxWidth: 720 }} className="flex flex-col gap-4">
-
-                        {/* Role tags row — non-course groups only */}
-                        {group.key === 'course_content' ? (
-                          <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                            Shown once per course
-                          </p>
-                        ) : (
-                          <div
-                            className="flex items-start gap-3 pb-3"
-                            style={{ borderBottom: '1px solid var(--border)' }}
-                          >
-                            {/* Label — fixed left */}
-                            <span className="text-sm font-medium shrink-0 pt-0.5">Evaluates</span>
-
-                            {/* Tags — wrap freely in middle */}
-                            <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
-                              {group.roles.length === 0 ? (
-                                <span className="text-sm" style={{ color: 'var(--muted-foreground)', paddingTop: 2 }}>
-                                  No roles selected — sections shown once per role member when added
-                                </span>
-                              ) : group.roles.map(roleKey => {
-                                const role = MOCK_SUBJECTS.find(s => s.key === roleKey)
-                                return (
-                                  <span
-                                    key={roleKey}
-                                    className="inline-flex items-center gap-1.5 text-sm font-medium rounded-full"
-                                    style={{
-                                      background: 'var(--muted)',
-                                      color: 'var(--foreground)',
-                                      padding: '3px 10px 3px 12px',
-                                    }}
-                                  >
-                                    {role?.label ?? roleKey}
-                                    <Button
-                                      variant="ghost"
-                                      size="icon-xs"
-                                      aria-label={`Remove ${role?.label ?? roleKey}`}
-                                      className="opacity-50 hover:opacity-100 -mr-1"
-                                      onClick={() => handleRemoveRole(group.key, roleKey)}
-                                    >
-                                      <i className="fa-solid fa-xmark text-xs" aria-hidden="true" />
-                                    </Button>
-                                  </span>
-                                )
-                              })}
-                            </div>
-
-                            {/* Add role — pinned right, never shifts */}
-                            <Popover
-                              open={rolePickerGroupKey === group.key}
-                              onOpenChange={open => {
-                                setRolePickerGroupKey(open ? group.key : null)
-                                if (!open) setRoleSearch('')
-                              }}
-                            >
-                              <PopoverTrigger asChild>
-                                <Button variant="outline" size="xs" className="shrink-0">
-                                  <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                                  Add role
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="p-0 w-72" align="end" sideOffset={8}>
-                                {renderRolePickerContent(group.key)}
-                              </PopoverContent>
-                            </Popover>
-                          </div>
-                        )}
-
-                        {/* Sections */}
-                        {groupSections.length === 0 ? (
-                          <div
-                            className="flex items-center justify-center rounded-lg border border-dashed"
-                            style={{ padding: '28px 16px', borderColor: 'var(--border)' }}
-                          >
-                            <Button variant="link" size="sm" onClick={() => handleAddSection(group.key)} className="font-semibold">
-                              <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                              Add section
-                            </Button>
-                          </div>
-                        ) : (
-                          <>
-                            {groupSections.map(sec => renderSectionCard(sec))}
-                            <div className="flex items-center justify-center" style={{ paddingTop: 4 }}>
-                              <Button variant="link" size="sm" onClick={() => handleAddSection(group.key)} className="font-semibold">
-                                <i className="fa-light fa-plus text-xs" aria-hidden="true" />
-                                Add section
-                              </Button>
-                            </div>
-                          </>
-                        )}
-
-                      </div>
-                    </TabsContent>
+                    <Button
+                      key={g.key}
+                      variant="ghost"
+                      onClick={() => setActiveGroup(g.key)}
+                      aria-current={active ? 'page' : undefined}
+                      className="h-auto w-full justify-start text-left rounded-lg px-3 py-2.5"
+                      style={active ? { background: 'var(--muted)' } : undefined}
+                    >
+                      <span className="flex flex-col items-start gap-1 w-full">
+                        <span className="text-sm font-medium">{g.label}</span>
+                        <span className="text-xs text-muted-foreground leading-snug whitespace-normal">{ASPECT_INFO[g.key]}</span>
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                          {c.sections} section{c.sections !== 1 ? 's' : ''} · {c.questions} question{c.questions !== 1 ? 's' : ''}
+                        </span>
+                      </span>
+                    </Button>
                   )
                 })}
+              </nav>
+
+              {/* Active aspect content */}
+              <div className="flex-1 overflow-y-auto" style={{ padding: '28px 40px 48px' }}>
+                <div style={{ maxWidth: 720 }} className="flex flex-col gap-4">
+
+                  {/* Opening instruction for THIS aspect — collapsible accordion */}
+                  <Collapsible
+                    open={openInstruction[activeGroup] ?? false}
+                    onOpenChange={o => setOpenInstruction(p => ({ ...p, [activeGroup]: o }))}
+                    className="rounded-2 border border-dashed border-border"
+                  >
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" className="w-full justify-between h-auto px-3.5 py-2.5 hover:bg-transparent">
+                        <span className="text-xs font-medium text-muted-foreground flex items-center">
+                          <i className="fa-light fa-circle-info me-1.5" aria-hidden="true" />
+                          Opening instruction · shown at the start of {subjectGroups.find(g => g.key === activeGroup)?.label}
+                          {(aspectInstructions[activeGroup]?.title || aspectInstructions[activeGroup]?.text) && (
+                            <span className="ms-2 inline-block w-1.5 h-1.5 rounded-full" style={{ background: 'var(--brand-color)' }} aria-label="has content" />
+                          )}
+                        </span>
+                        <i className={`fa-light fa-chevron-${(openInstruction[activeGroup] ?? false) ? 'up' : 'down'} text-xs text-muted-foreground`} aria-hidden="true" />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="px-3.5 pb-3 flex flex-col gap-2">
+                      <Input
+                        value={aspectInstructions[activeGroup]?.title ?? ''}
+                        onChange={e => setAspectInstruction(activeGroup, { title: e.target.value })}
+                        placeholder="Title (optional) — e.g. About this section"
+                        className="h-8 text-sm"
+                        aria-label={`Opening instruction title for ${activeGroup}`}
+                      />
+                      <Textarea
+                        value={aspectInstructions[activeGroup]?.text ?? ''}
+                        onChange={e => setAspectInstruction(activeGroup, { text: e.target.value })}
+                        placeholder="Instruction shown to students before this section's questions…"
+                        rows={2}
+                        className="text-sm"
+                        style={{ resize: 'none' }}
+                        aria-label={`Opening instruction text for ${activeGroup}`}
+                      />
+                    </CollapsibleContent>
+                  </Collapsible>
+
+                  {/* Per-section roles model hint (Faculty) */}
+                  {activeGroup === 'faculty' && (
+                    <p className="text-xs text-muted-foreground">
+                      <i className="fa-light fa-circle-info me-1.5" aria-hidden="true" />
+                      Each section evaluates the role(s) you set on it — use separate sections for role-specific
+                      questions, or one section with multiple roles for shared questions.
+                    </p>
+                  )}
+
+                  {(() => {
+                    const groupSections = sections.filter(s => s.subjectKey === activeGroup)
+                    if (groupSections.length === 0) {
+                      return (
+                        <div
+                          className="flex items-center justify-center rounded-lg border border-dashed"
+                          style={{ padding: '28px 16px', borderColor: 'var(--border)' }}
+                        >
+                          <Button variant="link" size="sm" onClick={() => handleAddSection(activeGroup)} className="font-semibold">
+                            <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                            Add section
+                          </Button>
+                        </div>
+                      )
+                    }
+                    return (
+                      <>
+                        {groupSections.map(sec => renderSectionCard(sec))}
+                        <div className="flex items-center justify-center" style={{ paddingTop: 4 }}>
+                          <Button variant="link" size="sm" onClick={() => handleAddSection(activeGroup)} className="font-semibold">
+                            <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+                            Add section
+                          </Button>
+                        </div>
+                      </>
+                    )
+                  })()}
+                </div>
               </div>
-            </Tabs>
+            </div>
           )}
           </div>
 
-          {/* Right — Attributes panel */}
+          {/* Right panel — Question attributes when a question is selected */}
           {selectedQ && selectedQuestion && (
             <div
               className="w-80 shrink-0 flex flex-col overflow-hidden"
@@ -921,8 +1113,15 @@ export default function TemplateEditorPage() {
                 onTextBlur={text =>
                   updateSectionQuestion(t.id, selectedQuestion.sectionId, selectedQuestion.questionId, { text })
                 }
-                onTypeChange={type =>
-                  updateSectionQuestion(t.id, selectedQuestion.sectionId, selectedQuestion.questionId, { answerType: type })
+                onTypeChange={type => {
+                  const patch: Partial<Pick<TemplateQuestion, 'answerType' | 'choices'>> = { answerType: type }
+                  if (CHOICE_TYPES.has(type) && (selectedQ.choices?.length ?? 0) === 0) {
+                    patch.choices = ['Option 1', 'Option 2']
+                  }
+                  updateSectionQuestion(t.id, selectedQuestion.sectionId, selectedQuestion.questionId, patch)
+                }}
+                onChoicesChange={choices =>
+                  updateSectionQuestion(t.id, selectedQuestion.sectionId, selectedQuestion.questionId, { choices })
                 }
                 onMetaChange={patch => patchQMeta(selectedQuestion.questionId, patch)}
                 onClose={() => setSelectedQuestion(null)}
@@ -931,140 +1130,13 @@ export default function TemplateEditorPage() {
           )}
         </TabsContent>
 
-        {/* ── Details tab ── */}
-        <TabsContent value="details" className="flex-1 overflow-y-auto m-0" style={{ padding: '32px 40px' }}>
-          <div style={{ maxWidth: 560 }} className="space-y-5">
-
-            {/* Title */}
-            <Field orientation="vertical">
-              <FieldLabel htmlFor="tmpl-name">Title</FieldLabel>
-              <Input
-                id="tmpl-name"
-                key={t.id}
-                defaultValue={t.name}
-                onBlur={e => {
-                  const v = e.currentTarget.value.trim()
-                  if (v && v !== t.name) updateTemplate(t.id, { name: v })
-                  else if (!v) e.currentTarget.value = t.name
-                }}
-                placeholder="Untitled template"
-                className="h-9 text-sm"
-              />
-            </Field>
-
-            {/* Description */}
-            <Field orientation="vertical">
-              <FieldLabel htmlFor="tmpl-desc">Description</FieldLabel>
-              <Textarea
-                id="tmpl-desc"
-                key={t.id}
-                defaultValue={t.description ?? ''}
-                onBlur={e => {
-                  const v = e.currentTarget.value.trim()
-                  if (v !== (t.description ?? '')) updateTemplate(t.id, { description: v || undefined })
-                }}
-                placeholder="What is this template for?"
-                rows={3}
-                className="text-sm"
-                style={{ resize: 'none' }}
-              />
-            </Field>
-
-            {/* Course type */}
-            <div>
-              <p className="text-sm font-medium mb-2">Course type</p>
-              <div className="flex gap-2" role="radiogroup" aria-label="Course type">
-                {COURSE_TYPE_OPTIONS.map(opt => {
-                  const active = t.courseType === opt.value
-                  return (
-                    <Button
-                      key={opt.value}
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      role="radio"
-                      aria-checked={active}
-                      className="flex items-center gap-2 rounded-lg h-auto"
-                      style={{
-                        padding: '6px 10px',
-                        background: active ? 'var(--muted)' : 'transparent',
-                      }}
-                      onClick={() => updateTemplate(t.id, { courseType: opt.value })}
-                    >
-                      <div
-                        className="shrink-0 rounded-full border-2 flex items-center justify-center"
-                        style={{
-                          width: 16, height: 16,
-                          borderColor: active ? 'var(--foreground)' : 'var(--border)',
-                        }}
-                      >
-                        {active && (
-                          <div
-                            className="rounded-full"
-                            style={{ width: 7, height: 7, background: 'var(--foreground)' }}
-                          />
-                        )}
-                      </div>
-                      <span className="text-sm font-medium">{opt.label}</span>
-                    </Button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Opening instructions */}
-            <div className="flex flex-col gap-3">
-              <div>
-                <p className="text-sm font-medium">Opening instructions</p>
-                <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                  Shown before the first question. Optional.
-                </p>
-              </div>
-              <div>
-                <FieldLabel
-                  htmlFor="tmpl-instr-title"
-                >
-                  Instruction title
-                </FieldLabel>
-                <Input
-                  id="tmpl-instr-title"
-                  key={`${t.id}-instr-title`}
-                  defaultValue={t.formInstructionTitle ?? ''}
-                  onBlur={e => {
-                    const v = e.currentTarget.value.trim()
-                    if (v !== (t.formInstructionTitle ?? '')) updateTemplate(t.id, { formInstructionTitle: v || undefined })
-                  }}
-                  placeholder="e.g. Before you begin"
-                  className="h-8 text-sm"
-                />
-              </div>
-              <div>
-                <FieldLabel
-                  htmlFor="tmpl-instr-desc"
-                >
-                  Instruction text
-                </FieldLabel>
-                <Textarea
-                  id="tmpl-instr-desc"
-                  key={`${t.id}-instr-desc`}
-                  defaultValue={t.formInstructionDescription ?? ''}
-                  onBlur={e => {
-                    const v = e.currentTarget.value.trim()
-                    if (v !== (t.formInstructionDescription ?? '')) updateTemplate(t.id, { formInstructionDescription: v || undefined })
-                  }}
-                  placeholder="Instructions shown to respondents before the first question…"
-                  rows={4}
-                  className="text-sm"
-                  style={{ resize: 'none' }}
-                />
-              </div>
-            </div>
-
+        {/* ── Template settings tab ── */}
+        <TabsContent value="settings" className="flex-1 overflow-y-auto m-0" style={{ padding: '28px 40px 48px' }}>
+          <div style={{ maxWidth: 560 }}>
+            {renderTemplateSettings()}
           </div>
         </TabsContent>
       </Tabs>
-
-
 
     </div>
   )

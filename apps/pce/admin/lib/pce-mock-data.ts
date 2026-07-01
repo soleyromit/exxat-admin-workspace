@@ -20,6 +20,9 @@ export interface PceTemplateSection {
   subjectKey: string
   title: string  // admin-customizable display name
   description?: string
+  /** Faculty roles this section evaluates (Faculty aspect only) — Jun 30 PCE meeting:
+   *  roles are selected per section, not per tab. */
+  roles?: string[]
   questions: TemplateQuestion[]
   order: number
 }
@@ -54,6 +57,8 @@ export interface PceTemplate {
   /** Likert pointer (3 | 4 | 5 | 7 | 10). Defaults to 5 until T30 settings page. */
   likertPointer: 3 | 4 | 5 | 7 | 10
   courseType?: CourseTypeFilter
+  /** Owning program — drives the Program filter on the templates hub (matches live). */
+  programId?: string
   /** 'course_evaluation' | 'programmatic'. Added in Phase 1 expansion. */
   surveyType?: SurveyType
   /** Dynamic subject-based sections (additive — parallel to legacy questions/sections). */
@@ -61,6 +66,96 @@ export interface PceTemplate {
   /** Optional form-level instruction shown to respondents before the first question. */
   formInstructionTitle?: string
   formInstructionDescription?: string
+}
+
+/** Min response rate (%) required before results release — mirrors the
+ *  "Minimum response rate to release" control in Evaluation settings.
+ *  Source of truth for the "Below threshold" KPI on the Evaluations hub. */
+export const EVAL_RELEASE_THRESHOLD_PCT = 60
+
+/** Faculty roles eligible to be evaluated in a course evaluation. */
+export const EVAL_FACULTY_ROLES = [
+  { id: 'course-coordinator', label: 'Course Coordinator' },
+  { id: 'instructor',         label: 'Instructor' },
+  { id: 'teaching-assistant', label: 'Teaching Assistant' },
+  { id: 'lab-assistant',      label: 'Lab Assistant' },
+  { id: 'guest-lecturer',     label: 'Guest Lecturer' },
+] as const
+
+/** Default selected faculty roles (all active teaching roles, TAs excluded by default). */
+export const EVAL_DEFAULT_FACULTY_ROLE_IDS: string[] = ['course-coordinator', 'instructor']
+
+/** Benchmark targets used in analytics — source of truth for threshold lines on charts. */
+export const EVAL_BENCHMARKS = {
+  targetResponseRate: 70, // % — courses below this are flagged
+  targetCourseScore:  4.0, // out of 5
+  targetFacultyScore: 4.0, // out of 5
+} as const
+
+/** Default Likert scale configuration — single source read by template editor + analytics. */
+export const EVAL_DEFAULT_SCALE = {
+  preset: 'agreement' as const,
+  points: 5,
+  labels: ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'],
+}
+
+// ── Evaluation Dates — anchor-date model (mirrors live /settings → Evaluation Dates) ──
+export type DateAnchor = 'course_end' | 'term_end'
+export const DATE_ANCHOR_LABELS: Record<DateAnchor, string> = {
+  course_end: 'Course End Date',
+  term_end:   'Term End Date',
+}
+/** Window + release rules: a signed day-offset from a chosen anchor. */
+export const EVAL_DATE_RULES = {
+  windowAnchor:  'course_end' as DateAnchor,
+  opensOffset:   -7, // negative = before anchor
+  closesOffset:  7,  // positive = after anchor
+  releaseAnchor: 'course_end' as DateAnchor,
+  releaseOffset: 14,
+}
+
+// ── Communication — email templates (mirrors live Email Templates manager) ──
+export type EvalEmailType = 'invitation' | 'reminder'
+export type EvalEmailStatus = 'action_required' | 'ready'
+export interface EvalEmailTemplate {
+  id: string
+  name: string
+  type: EvalEmailType
+  status: EvalEmailStatus
+  subject: string
+  body: string
+}
+export const EVAL_EMAIL_TEMPLATES: EvalEmailTemplate[] = [
+  {
+    id: 'tpl-invite-formal', name: 'Formal Invite', type: 'invitation', status: 'action_required',
+    subject: 'Course Evaluation — Action Required',
+    body: 'Hi {{student_first_name}},\n\nYour course evaluation for {{course_name}} ({{term_name}}) is now open and your response is required. Your answers are anonymous.\n\nComplete it by {{close_date}}: {{survey_link}}\n\n{{program_name}} Team',
+  },
+  {
+    id: 'tpl-invite-friendly', name: 'Friendly Nudge', type: 'invitation', status: 'ready',
+    subject: 'We’d love your feedback on {{course_name}}',
+    body: 'Hi {{student_first_name}},\n\nGot 5 minutes? Your anonymous feedback on {{course_name}} helps us make the program better.\n\n{{survey_link}}\n\nThank you!\n{{program_name}} Team',
+  },
+  {
+    id: 'tpl-reminder-formal', name: 'Formal Reminder', type: 'reminder', status: 'ready',
+    subject: 'Reminder: {{course_name}} evaluation closes {{close_date}}',
+    body: 'Hi {{student_first_name}},\n\nYour evaluation for {{course_name}} closes in {{days_until_close}} day{{s}} ({{close_date}}). It takes about 5 minutes and is anonymous.\n\n{{survey_link}}\n\n{{program_name}} Team',
+  },
+]
+
+// ── Communication — reminder cadence engine (mirrors live Reminder Cadence) ──
+export type ReminderFrequency = 'daily' | 'every_3_days' | 'every_7_days' | 'custom'
+export type ReminderAnchor = 'survey_close' | 'term_end'
+export const REMINDER_FREQUENCY_LABELS: Record<ReminderFrequency, string> = {
+  daily: 'Daily', every_3_days: 'Every 3 days', every_7_days: 'Every 7 days', custom: 'Custom',
+}
+export const REMINDER_ANCHOR_LABELS: Record<ReminderAnchor, string> = {
+  survey_close: 'Survey Close Date', term_end: 'Term End Date',
+}
+export const EVAL_REMINDER_CADENCE = {
+  frequency:       'every_3_days' as ReminderFrequency,
+  anchor:          'survey_close' as ReminderAnchor,
+  startDaysBefore: 14,
 }
 
 export interface TemplateQuestion {
@@ -352,6 +447,7 @@ export const MOCK_OPEN_TEXT_RESPONSES: PceOpenTextResponse[] = [
 export const MOCK_TEMPLATES: PceTemplate[] = [
   {
     id: 'tmpl1',
+    programId: 'prog1',
     name: 'End-of-Term Evaluation',
     sections: ['course_content', 'faculty_performance'],
     status: 'active',
@@ -396,6 +492,7 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
         subjectKey: 'faculty',
         title: 'Faculty Performance',
         order: 1,
+        roles: ['instructor'],
         questions: [
           { id: 'q6', text: 'The instructor was well-prepared for each class.', answerType: 'likert', order: 0 },
           { id: 'q7', text: 'The instructor communicated expectations clearly.', answerType: 'likert', order: 1 },
@@ -406,6 +503,7 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
   },
   {
     id: 'tmpl2',
+    programId: 'prog1',
     name: 'Faculty Midterm Check-In',
     sections: ['faculty_performance'],
     status: 'active',
@@ -431,6 +529,7 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
         subjectKey: 'faculty',
         title: 'Faculty Performance',
         order: 0,
+        roles: ['lab-assistant', 'course-coordinator'],
         questions: [
           { id: 'q9',  text: 'The instructor encourages student participation.', answerType: 'likert', order: 0 },
           { id: 'q10', text: 'The instructor is available during office hours.', answerType: 'likert', order: 1 },
@@ -441,6 +540,7 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
   },
   {
     id: 'tmpl3',
+    programId: 'prog2',
     name: 'Exit Survey',
     sections: ['course_content', 'faculty_performance', 'course_director'],
     status: 'draft',
@@ -813,8 +913,8 @@ export const MOCK_SURVEYS: PceSurvey[] = [
 
   // ── Monitoring-dashboard fixtures — fuller Spring 2026 cycle + history so the
   //    Overview distribution + trend read as real data (not 5 sparse points). ──
-  { id: 'mon1',  courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'collecting', instructors: [INSTRUCTORS.kim],      responseRate: 55, responseCount: 33, enrollmentCount: 60, deadline: 'Jun 23, 2026', createdAt: 'Jan 15, 2026', surveyType: 'course_evaluation', openDate: '2026-05-20', academicYear: '2025–2026', programId: 'prog1' },
-  { id: 'mon2',  courseCode: 'DPT-611', courseName: 'Pediatric Physical Therapy',          term: 'Spring 2026', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl2', status: 'collecting', instructors: [INSTRUCTORS.gomez],    responseRate: 48, responseCount: 19, enrollmentCount: 40, deadline: 'Jun 18, 2026', createdAt: 'Jan 15, 2026', surveyType: 'course_evaluation', openDate: '2026-05-20', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon1',  courseCode: 'DPT-510', courseName: 'Musculoskeletal Physical Therapy I', term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'collecting', instructors: [INSTRUCTORS.kim],      responseRate: 38, responseCount: 23, enrollmentCount: 60, deadline: 'Jun 23, 2026', createdAt: 'Jan 15, 2026', surveyType: 'course_evaluation', openDate: '2026-05-20', academicYear: '2025–2026', programId: 'prog1' },
+  { id: 'mon2',  courseCode: 'DPT-611', courseName: 'Pediatric Physical Therapy',          term: 'Spring 2026', cohort: 'Class of 2026', courseType: 'clinical', templateId: 'tmpl2', status: 'collecting', instructors: [INSTRUCTORS.gomez],    responseRate: 31, responseCount: 12, enrollmentCount: 40, deadline: 'Jun 18, 2026', createdAt: 'Jan 15, 2026', surveyType: 'course_evaluation', openDate: '2026-05-20', academicYear: '2025–2026', programId: 'prog1' },
   { id: 'mon3',  courseCode: 'DPT-540', courseName: 'Differential Diagnosis',              term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'collecting', instructors: [INSTRUCTORS.williams], responseRate: 91, responseCount: 50, enrollmentCount: 55, deadline: 'Jun 30, 2026', createdAt: 'Jan 15, 2026', surveyType: 'course_evaluation', openDate: '2026-05-20', academicYear: '2025–2026', programId: 'prog1' },
   { id: 'mon4',  courseCode: 'DPT-505', courseName: 'Neuroanatomy',                        term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'closed',     instructors: [INSTRUCTORS.patel],    responseRate: 84, responseCount: 59, enrollmentCount: 70, deadline: 'May 30, 2026', createdAt: 'Jan 15, 2026', surveyType: 'course_evaluation', openDate: '2026-04-20', academicYear: '2025–2026', programId: 'prog1' },
   { id: 'mon5',  courseCode: 'DPT-504', courseName: 'Exercise Physiology',                 term: 'Spring 2026', cohort: 'Class of 2027', courseType: 'didactic', templateId: 'tmpl1', status: 'released',   instructors: [INSTRUCTORS.chen],     responseRate: 88, responseCount: 57, enrollmentCount: 65, deadline: 'May 15, 2026', createdAt: 'Jan 15, 2026', surveyType: 'course_evaluation', openDate: '2026-04-10', academicYear: '2025–2026', programId: 'prog1' },
@@ -938,6 +1038,9 @@ export interface ProgramTerm {
   status: 'active' | 'archived'
   /** Controls whether this term appears in the Activation wizard and product dropdowns */
   enabledForEval: boolean
+  /** YYYY-MM-DD — date the last ad-hoc reminder email was sent for this term's at-risk courses.
+   *  Shown on the Dashboard term card so admins can gauge whether sending another is premature. */
+  lastReminderSentAt?: string
 }
 
 export const MOCK_MASTER_COURSES: MasterCourse[] = [
@@ -964,7 +1067,7 @@ export const MOCK_MASTER_COURSES: MasterCourse[] = [
 ]
 
 export const MOCK_PROGRAM_TERMS: ProgramTerm[] = [
-  { id: 'pt1', name: 'Spring 2026', academicYear: '2025–2026', startDate: '2026-01-12', endDate: '2026-05-08', status: 'active',   enabledForEval: true  },
+  { id: 'pt1', name: 'Spring 2026', academicYear: '2025–2026', startDate: '2026-01-12', endDate: '2026-05-08', status: 'active',   enabledForEval: true,  lastReminderSentAt: '2026-06-24' },
   { id: 'pt2', name: 'Fall 2025',   academicYear: '2025–2026', startDate: '2025-08-25', endDate: '2025-12-12', status: 'archived', enabledForEval: false },
   { id: 'pt3', name: 'Spring 2025', academicYear: '2024–2025', startDate: '2025-01-13', endDate: '2025-05-09', status: 'archived', enabledForEval: false },
   { id: 'pt4', name: 'Fall 2024',   academicYear: '2024–2025', startDate: '2024-08-26', endDate: '2024-12-13', status: 'archived', enabledForEval: false },
