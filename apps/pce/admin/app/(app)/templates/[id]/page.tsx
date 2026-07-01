@@ -50,6 +50,7 @@ import {
   CommandItem,
 } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
+import { WizardNav } from '@/components/pce/wizard-nav'
 import { usePce } from '@/components/pce/pce-state'
 import { ListHubStatusBadge } from '@/components/list-hub-status-badge'
 import { LIST_HUB_STATUS_TINT_SUCCESS, LIST_HUB_STATUS_TINT_WARNING } from '@/lib/list-status-badges'
@@ -57,18 +58,26 @@ import { EVAL_DEFAULT_SCALE, EVAL_FACULTY_ROLES, EVAL_DEFAULT_FACULTY_ROLE_IDS }
 
 // Faculty roles offered in the builder = the program roles configured in Central
 // Settings (Jun 30 meeting). Prism-sourced; no custom roles created here.
-// Roles are set PER SECTION (PceTemplateSection.roles) — a section can target one role
-// (separate questions per role) or multiple roles (shared questions across roles).
+// Roles are declared on a ROLE SET, outside the section (Jul 1 constraint). A set targets
+// one role (separate questions per role) or multiple roles (shared questions across roles).
 const FACULTY_ROLE_OPTIONS: { key: string; label: string }[] =
   EVAL_FACULTY_ROLES.map(r => ({ key: r.id, label: r.label }))
 const ROLE_LABEL = (key: string) => EVAL_FACULTY_ROLES.find(r => r.id === key)?.label ?? key
-import type { TemplateQuestion, CourseTypeFilter, SubjectKey, PceTemplateSection } from '@/lib/pce-mock-data'
+import type { TemplateQuestion, CourseTypeFilter, SubjectKey, PceTemplateSection, PceTemplateRoleSet } from '@/lib/pce-mock-data'
 // SubjectKey is used for predefined subjects; custom subjects use plain strings
 
 const COURSE_TYPE_OPTIONS: { value: CourseTypeFilter; label: string }[] = [
   { value: 'didactic', label: 'Classroom based' },
   { value: 'clinical', label: 'Practice based' },
   { value: 'seminar',  label: 'Lab based' },
+]
+
+// Editor wizard steps — build, configure, then review before publishing.
+type WizardStepKey = 'builder' | 'settings' | 'review'
+const WIZARD_STEPS: { n: number; key: WizardStepKey; label: string }[] = [
+  { n: 1, key: 'builder',  label: 'Builder' },
+  { n: 2, key: 'settings', label: 'Template settings' },
+  { n: 3, key: 'review',   label: 'Review' },
 ]
 
 type AnswerType = TemplateQuestion['answerType']
@@ -401,6 +410,7 @@ export default function TemplateEditorPage() {
   const {
     templates, updateTemplate,
     addTemplateSection, removeTemplateSection, updateTemplateSection,
+    addFacultyRoleSet, removeFacultyRoleSet, updateFacultyRoleSetRoles,
     addSectionQuestion, updateSectionQuestion, deleteSectionQuestion, reorderSectionQuestions,
   } = usePce()
 
@@ -413,7 +423,7 @@ export default function TemplateEditorPage() {
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null)
   const [editingSectionTitle, setEditingSectionTitle] = useState('')
   // Three fixed aspects (Jun 30 PCE meeting — dropped the "Add group" naming).
-  // Roles are selected per Faculty SECTION, not per tab.
+  // Faculty roles are chosen on role sets (outside the section) — Jul 1 constraint.
   const subjectGroups: Array<{ key: string; label: string }> = [
     { key: 'course_content', label: 'Course' },
     { key: 'faculty',        label: 'Faculty' },
@@ -425,8 +435,19 @@ export default function TemplateEditorPage() {
   // Branding (Jun 30 meeting) — optional cover image + university logo for the student landing.
   const [coverImage, setCoverImage] = useState<string | null>(null)
   const [universityLogo, setUniversityLogo] = useState<string | null>(null)
-  // Editor tabs — Builder canvas + a dedicated Template settings tab (Romit).
-  const [editorTab, setEditorTab] = useState<'builder' | 'settings'>('builder')
+  // Editor is a 3-step wizard — Builder → Template settings → Review — ending in Publish.
+  const [wizardStep, setWizardStep] = useState<WizardStepKey>('builder')
+  const [maxStepReached, setMaxStepReached] = useState(1)
+  const currentStepNum = WIZARD_STEPS.find(s => s.key === wizardStep)?.n ?? 1
+  const goToStep = (key: WizardStepKey) => {
+    const n = WIZARD_STEPS.find(s => s.key === key)?.n ?? 1
+    setWizardStep(key)
+    setMaxStepReached(prev => Math.max(prev, n))
+  }
+  const goToStepNum = (n: number) => {
+    const s = WIZARD_STEPS.find(st => st.n === n)
+    if (s) goToStep(s.key)
+  }
   // Opening instruction PER aspect (Course/Faculty/General) — shown at the start of
   // that section in the evaluation (not a single common instruction).
   const [aspectInstructions, setAspectInstructions] = useState<Record<string, { title: string; text: string }>>({})
@@ -434,9 +455,10 @@ export default function TemplateEditorPage() {
     setAspectInstructions(prev => ({ ...prev, [key]: { ...(prev[key] ?? { title: '', text: '' }), ...patch } }))
   // Opening-instruction accordion open state per aspect (collapsed by default).
   const [openInstruction, setOpenInstruction] = useState<Record<string, boolean>>({})
-  // Faculty roles are PER-SECTION: each Faculty section evaluates the role(s) you pick —
-  // separate sections for role-specific questions, one section (multi-role) for shared ones.
-  const [rolePickerSectionId, setRolePickerSectionId] = useState<string | null>(null)
+  // Faculty roles are declared on a ROLE SET (outside the section) — Jul 1 PCE constraint.
+  // A set picks one OR multiple roles, then owns its own sections + questions: one role →
+  // role-specific questions, multiple roles → shared questions, add a set for the next case.
+  const [rolePickerSetId, setRolePickerSetId] = useState<string | null>(null)
   const [roleSearch, setRoleSearch] = useState('')
 
 
@@ -463,7 +485,7 @@ export default function TemplateEditorPage() {
   // Aspect rail metadata (Jun 30 PCE meeting — vertical tabs with info + counts)
   const ASPECT_INFO: Record<string, string> = {
     course_content: 'About the course itself — shown once per course.',
-    faculty:        'About teaching staff — each section evaluates the role(s) you choose.',
+    faculty:        'About teaching staff — group sections into role sets that evaluate one or more roles.',
     general:        'Program-wide questions — shown once per evaluation.',
   }
   const aspectCounts = (key: string) => {
@@ -483,17 +505,23 @@ export default function TemplateEditorPage() {
     })
   }
 
-  // Roles are per SECTION — different roles for different Faculty sections.
-  function toggleSectionRole(sec: PceTemplateSection, roleKey: string) {
-    const cur = sec.roles ?? []
-    updateTemplateSection(t.id, sec.id, { roles: cur.includes(roleKey) ? cur.filter(r => r !== roleKey) : [...cur, roleKey] })
+  // Roles live on the SET, not the section (Jul 1 constraint).
+  const facultyRoleSets = t.facultyRoleSets ?? []
+  function toggleRoleSetRole(set: PceTemplateRoleSet, roleKey: string) {
+    const cur = set.roles ?? []
+    updateFacultyRoleSetRoles(t.id, set.id, cur.includes(roleKey) ? cur.filter(r => r !== roleKey) : [...cur, roleKey])
+  }
+  function handleAddRoleSet() {
+    const newId = `rs-${Date.now()}`
+    addFacultyRoleSet(t.id, newId)
+    setRolePickerSetId(newId) // open the role picker straight away so the user picks roles first
   }
 
-  function handleAddSection(subjectKey?: string) {
+  function handleAddSection(subjectKey?: string, roleSetId?: string) {
     const key = subjectKey ?? (isProgrammatic ? 'course_content' : activeGroup)
     if (!key) return
     const newId = `sec-${Date.now()}`
-    addTemplateSection(t.id, { subjectKey: key, title: 'Untitled Section', questions: [] }, newId)
+    addTemplateSection(t.id, { subjectKey: key, title: 'Untitled Section', questions: [], roleSetId }, newId)
     setEditingSectionId(newId)
     setEditingSectionTitle('Untitled Section')
     setClosedSectionIds(prev => { const n = new Set(prev); n.delete(newId); return n })
@@ -544,16 +572,16 @@ export default function TemplateEditorPage() {
   }
   function handleQDragEnd() { questionDragInfo.current = null }
 
-  // ── Role picker — checkmark list, multi-select, custom entry ────────────────
-  function renderRolePickerContent(sec: PceTemplateSection) {
-    const selected = new Set(sec.roles ?? [])
+  // ── Role picker — checkmark list, multi-select (operates on a role SET) ─────
+  function renderRolePickerContent(set: PceTemplateRoleSet) {
+    const selected = new Set(set.roles ?? [])
     const allRoles = [...FACULTY_ROLE_OPTIONS].sort((a, b) => a.label.localeCompare(b.label))
     const filtered = roleSearch
       ? allRoles.filter(s => s.label.toLowerCase().includes(roleSearch.toLowerCase()))
       : allRoles
 
     function toggleRole(roleKey: string) {
-      toggleSectionRole(sec, roleKey)
+      toggleRoleSetRole(set, roleKey)
     }
 
     return (
@@ -682,45 +710,6 @@ export default function TemplateEditorPage() {
         {/* Section body */}
         {isOpen && (
           <div className="flex flex-col gap-2" style={{ padding: '10px 12px 14px' }}>
-            {/* Per-section faculty roles — which role(s) this section's questions evaluate */}
-            {sec.subjectKey === 'faculty' && (() => {
-              const selRoles = sec.roles ?? []
-              return (
-                <div className="flex items-start gap-3 pb-2 mb-1" style={{ borderBottom: '1px solid var(--border)' }}>
-                  <span className="text-xs font-medium shrink-0" style={{ paddingTop: 5 }}>Evaluates</span>
-                  <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
-                    {selRoles.length === 0 ? (
-                      <span className="text-xs text-muted-foreground" style={{ paddingTop: 4 }}>
-                        No role selected
-                      </span>
-                    ) : selRoles.map(roleKey => {
-                      const label = ROLE_LABEL(roleKey)
-                      return (
-                        <span key={roleKey} className="inline-flex items-center gap-1 text-xs font-medium rounded-full"
-                          style={{ background: 'var(--muted)', color: 'var(--foreground)', padding: '2px 4px 2px 10px' }}>
-                          {label}
-                          <Button variant="ghost" size="icon-xs" aria-label={`Remove ${label}`}
-                            className="opacity-50 hover:opacity-100" onClick={e => { e.stopPropagation(); toggleSectionRole(sec, roleKey) }}>
-                            <i className="fa-solid fa-xmark text-xs" aria-hidden="true" />
-                          </Button>
-                        </span>
-                      )
-                    })}
-                  </div>
-                  <Popover open={rolePickerSectionId === sec.id}
-                    onOpenChange={open => { setRolePickerSectionId(open ? sec.id : null); if (!open) setRoleSearch('') }}>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" size="xs" className="shrink-0" onClick={e => e.stopPropagation()}>
-                        <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add role
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="p-0 w-72" align="end" sideOffset={8} aria-label="Add role">
-                      {renderRolePickerContent(sec)}
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              )
-            })()}
             {sec.questions.map((q, qIndex) => {
               const isSelected = selectedQuestion?.questionId === q.id && selectedQuestion?.sectionId === sec.id
               return (
@@ -885,6 +874,90 @@ export default function TemplateEditorPage() {
     )
   }
 
+  // ── Review step — read-only summary before publishing ──────────────────────
+  function renderReview() {
+    const courseTypeLabel = COURSE_TYPE_OPTIONS.find(o => o.value === t.courseType)?.label ?? 'Any course type'
+    const ReviewRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
+      <div className="flex items-start gap-4 py-2.5 border-b border-border last:border-0">
+        <span className="text-xs text-muted-foreground shrink-0" style={{ width: 130, paddingTop: 1 }}>{label}</span>
+        <div className="flex-1 min-w-0 text-sm">{children}</div>
+      </div>
+    )
+    const SummaryCard = ({ title, onEdit, children }: { title: string; onEdit: () => void; children: React.ReactNode }) => (
+      <section className="rounded-lg border border-border overflow-hidden" style={{ background: 'var(--card)' }}>
+        <div className="flex items-center gap-2" style={{ background: 'var(--muted)', padding: '9px 14px', borderBottom: '1px solid var(--border)' }}>
+          <h3 className="text-sm font-semibold flex-1">{title}</h3>
+          <Button variant="ghost" size="xs" onClick={onEdit}>
+            <i className="fa-light fa-pen text-xs" aria-hidden="true" />Edit
+          </Button>
+        </div>
+        <div style={{ padding: '4px 14px 8px' }}>{children}</div>
+      </section>
+    )
+
+    return (
+      <div style={{ maxWidth: 720 }} className="flex flex-col gap-5 mx-auto">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-base font-semibold">Review &amp; publish</h2>
+          <p className="text-xs text-muted-foreground">Check the template is complete, then publish. You can go back to any step to make changes.</p>
+        </div>
+
+        {!canPublish && (
+          <LocalBanner variant="warning">
+            Add at least one section with a question before you can publish this template.
+          </LocalBanner>
+        )}
+
+        {/* Details */}
+        <SummaryCard title="Template settings" onEdit={() => goToStep('settings')}>
+          <ReviewRow label="Name">{t.name || <span className="text-muted-foreground">Untitled template</span>}</ReviewRow>
+          <ReviewRow label="Description">{t.description || <span className="text-muted-foreground">—</span>}</ReviewRow>
+          <ReviewRow label="Course type">{courseTypeLabel}</ReviewRow>
+          <ReviewRow label="Cover image">{coverImage ? 'Added' : <span className="text-muted-foreground">Not added</span>}</ReviewRow>
+          <ReviewRow label="University logo">{universityLogo ? 'Added' : <span className="text-muted-foreground">Not added</span>}</ReviewRow>
+        </SummaryCard>
+
+        {/* Structure */}
+        <SummaryCard title={`Questions · ${totalQuestions} across ${sections.length} section${sections.length === 1 ? '' : 's'}`} onEdit={() => goToStep('builder')}>
+          {subjectGroups.map(g => {
+            if (g.key === 'faculty') {
+              const setsForG = facultyRoleSets
+              return (
+                <ReviewRow key={g.key} label={g.label}>
+                  {setsForG.length === 0 ? (
+                    <span className="text-muted-foreground">No role sets</span>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {setsForG.map(set => {
+                        const setSecs = sections.filter(s => s.subjectKey === 'faculty' && s.roleSetId === set.id)
+                        const qCount = setSecs.reduce((n, s) => n + s.questions.length, 0)
+                        const roleText = set.roles.length ? set.roles.map(ROLE_LABEL).join(', ') : 'No roles selected'
+                        return (
+                          <div key={set.id} className="flex flex-col gap-0.5">
+                            <span className="text-sm font-medium">{roleText}</span>
+                            <span className="text-xs text-muted-foreground">{setSecs.length} section{setSecs.length === 1 ? '' : 's'} · {qCount} question{qCount === 1 ? '' : 's'}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </ReviewRow>
+              )
+            }
+            const c = aspectCounts(g.key)
+            return (
+              <ReviewRow key={g.key} label={g.label}>
+                {c.sections === 0
+                  ? <span className="text-muted-foreground">No sections</span>
+                  : <span className="text-xs text-muted-foreground">{c.sections} section{c.sections === 1 ? '' : 's'} · {c.questions} question{c.questions === 1 ? '' : 's'}</span>}
+              </ReviewRow>
+            )
+          })}
+        </SummaryCard>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
       <SiteHeader
@@ -927,35 +1000,23 @@ export default function TemplateEditorPage() {
             >
               Save draft
             </Button>
-            {/* Details live in the persistent right settings panel — Publish just publishes */}
-            {t.status === 'active' ? (
+            {/* Publish moved into the wizard's Review step; Unpublish stays here for live templates */}
+            {t.status === 'active' && (
               <Button variant="outline" size="sm" onClick={() => updateTemplate(t.id, { status: 'draft' })}>
                 Unpublish
               </Button>
-            ) : (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span>
-                    <Button variant="default" size="sm" disabled={!canPublish}
-                      onClick={() => updateTemplate(t.id, { status: 'active' })}>
-                      Publish
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                {!canPublish && <TooltipContent>Add at least one section with a question to publish</TooltipContent>}
-              </Tooltip>
             )}
           </div>
         </div>
       </div>
 
-      <Tabs value={editorTab} onValueChange={v => setEditorTab(v as 'builder' | 'settings')} className="flex flex-col flex-1 min-h-0">
-        <div style={{ paddingInline: 40, borderBottom: '1px solid var(--border)' }}>
-          <TabsList variant="line">
-            <TabsTrigger value="builder">Builder</TabsTrigger>
-            <TabsTrigger value="settings">Template settings</TabsTrigger>
-          </TabsList>
-        </div>
+      <Tabs value={wizardStep} className="flex flex-col flex-1 min-h-0">
+        <WizardNav
+          currentStep={currentStepNum}
+          completedUpTo={maxStepReached}
+          onStepClick={goToStepNum}
+          steps={WIZARD_STEPS.map(s => ({ n: s.n, label: s.label }))}
+        />
         <TabsContent value="builder" className="flex-1 min-h-0 flex flex-row m-0">
           {/* Left — section list */}
           <div className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden">
@@ -1058,16 +1119,94 @@ export default function TemplateEditorPage() {
                     </CollapsibleContent>
                   </Collapsible>
 
-                  {/* Per-section roles model hint (Faculty) */}
-                  {activeGroup === 'faculty' && (
-                    <p className="text-xs text-muted-foreground">
-                      <i className="fa-light fa-circle-info me-1.5" aria-hidden="true" />
-                      Each section evaluates the role(s) you set on it — use separate sections for role-specific
-                      questions, or one section with multiple roles for shared questions.
-                    </p>
-                  )}
-
-                  {(() => {
+                  {activeGroup === 'faculty' ? (
+                    /* Role sets — roles declared OUTSIDE the section (Jul 1 constraint).
+                       Each set picks one/multiple roles then owns its own sections. */
+                    <>
+                      <p className="text-xs text-muted-foreground">
+                        <i className="fa-light fa-circle-info me-1.5" aria-hidden="true" />
+                        Pick one or more roles per set, then build its sections — one role for role-specific
+                        questions, multiple roles for shared questions.
+                      </p>
+                      {facultyRoleSets.map(set => {
+                        const setSections = sections.filter(s => s.subjectKey === 'faculty' && s.roleSetId === set.id)
+                        return (
+                          <div key={set.id} className="rounded-lg border border-border overflow-hidden"
+                            style={{ background: 'var(--background)' }}>
+                            {/* Set header — roles chosen here, never on the section */}
+                            <div className="flex items-start gap-3" style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)' }}>
+                              <span className="text-xs font-medium shrink-0" style={{ paddingTop: 6 }}>Evaluating</span>
+                              <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
+                                {set.roles.length === 0 ? (
+                                  <span className="text-xs text-muted-foreground" style={{ paddingTop: 5 }}>Pick one or more roles</span>
+                                ) : set.roles.map(roleKey => {
+                                  const label = ROLE_LABEL(roleKey)
+                                  return (
+                                    <span key={roleKey} className="inline-flex items-center gap-1 text-xs font-medium rounded-full"
+                                      style={{ background: 'var(--muted)', color: 'var(--foreground)', padding: '2px 4px 2px 10px' }}>
+                                      {label}
+                                      <Button variant="ghost" size="icon-xs" aria-label={`Remove ${label}`}
+                                        className="opacity-50 hover:opacity-100" onClick={() => toggleRoleSetRole(set, roleKey)}>
+                                        <i className="fa-solid fa-xmark text-xs" aria-hidden="true" />
+                                      </Button>
+                                    </span>
+                                  )
+                                })}
+                              </div>
+                              <Popover open={rolePickerSetId === set.id}
+                                onOpenChange={open => { setRolePickerSetId(open ? set.id : null); if (!open) setRoleSearch('') }}>
+                                <PopoverTrigger asChild>
+                                  <Button variant="outline" size="xs" className="shrink-0">
+                                    <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add role
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="p-0 w-72" align="end" sideOffset={8} aria-label="Add role">
+                                  {renderRolePickerContent(set)}
+                                </PopoverContent>
+                              </Popover>
+                              <DropdownMenu modal={false}>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon-sm" aria-label="Role set actions" className="shrink-0">
+                                    <i className="fa-regular fa-ellipsis text-xs" aria-hidden="true" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-44">
+                                  <DropdownMenuItem variant="destructive" onClick={() => removeFacultyRoleSet(t.id, set.id)}>
+                                    <i className="fa-light fa-trash" aria-hidden="true" /> Remove role set
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                            {/* Sections owned by this set */}
+                            <div className="flex flex-col gap-2" style={{ padding: '12px' }}>
+                              {setSections.length === 0 ? (
+                                <div className="flex items-center justify-center rounded-lg border border-dashed"
+                                  style={{ padding: '20px 16px', borderColor: 'var(--border)' }}>
+                                  <Button variant="link" size="sm" onClick={() => handleAddSection('faculty', set.id)} className="font-semibold">
+                                    <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
+                                  </Button>
+                                </div>
+                              ) : (
+                                <>
+                                  {setSections.map(sec => renderSectionCard(sec))}
+                                  <div className="flex items-center justify-center" style={{ paddingTop: 2 }}>
+                                    <Button variant="link" size="sm" onClick={() => handleAddSection('faculty', set.id)} className="font-semibold">
+                                      <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
+                                    </Button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                      <div className="flex items-center justify-center" style={{ paddingTop: 4 }}>
+                        <Button variant="outline" size="sm" onClick={handleAddRoleSet}>
+                          <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add role set
+                        </Button>
+                      </div>
+                    </>
+                  ) : (() => {
                     const groupSections = sections.filter(s => s.subjectKey === activeGroup)
                     if (groupSections.length === 0) {
                       return (
@@ -1130,12 +1269,55 @@ export default function TemplateEditorPage() {
           )}
         </TabsContent>
 
-        {/* ── Template settings tab ── */}
+        {/* ── Step 2 · Template settings ── */}
         <TabsContent value="settings" className="flex-1 overflow-y-auto m-0" style={{ padding: '28px 40px 48px' }}>
           <div style={{ maxWidth: 560 }}>
             {renderTemplateSettings()}
           </div>
         </TabsContent>
+
+        {/* ── Step 3 · Review ── */}
+        <TabsContent value="review" className="flex-1 overflow-y-auto m-0" style={{ padding: '28px 40px 48px' }}>
+          {renderReview()}
+        </TabsContent>
+
+        {/* ── Wizard footer — Back / Next / Publish ── */}
+        <div
+          className="shrink-0 flex items-center justify-between border-t border-border"
+          style={{ height: 60, padding: '0 40px', background: 'var(--background)' }}
+        >
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={currentStepNum === 1}
+            onClick={() => goToStepNum(currentStepNum - 1)}
+          >
+            <i className="fa-light fa-arrow-left text-xs" aria-hidden="true" />Back
+          </Button>
+
+          {wizardStep !== 'review' ? (
+            <Button variant="default" size="sm" onClick={() => goToStepNum(currentStepNum + 1)}>
+              Next<i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
+            </Button>
+          ) : t.status === 'active' ? (
+            <span className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
+              <i className="fa-solid fa-circle-check" style={{ color: 'var(--brand-color)' }} aria-hidden="true" />
+              Published — Unpublish from the header to make changes
+            </span>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button variant="default" size="sm" disabled={!canPublish}
+                    onClick={() => updateTemplate(t.id, { status: 'active' })}>
+                    Publish template
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {!canPublish && <TooltipContent>Add at least one section with a question to publish</TooltipContent>}
+            </Tooltip>
+          )}
+        </div>
       </Tabs>
 
     </div>

@@ -21,6 +21,27 @@ import {
   MOCK_FACULTY,
 } from '@/lib/pce-mock-data'
 
+export const DEFAULT_SETUP_EMAIL_SUBJECT =
+  'Your course evaluation for {{course_name}} is now open'
+
+export const DEFAULT_SETUP_EMAIL_BODY = `Hi {{student_first_name}},
+
+Your evaluation for {{course_name}} is open until {{close_date}}. Your responses are anonymous — your name will never be attached to your answers.
+
+Take the survey: {{survey_link}}`
+
+export interface SetupDefaults {
+  initialEmailSubject: string
+  initialEmailBody: string
+  activeReminderIntervals: number[]
+}
+
+const INITIAL_SETUP_DEFAULTS: SetupDefaults = {
+  initialEmailSubject: DEFAULT_SETUP_EMAIL_SUBJECT,
+  initialEmailBody: DEFAULT_SETUP_EMAIL_BODY,
+  activeReminderIntervals: [14, 7, 3],
+}
+
 export interface PushWizardConfig {
   surveyType: SurveyType
   termId: string
@@ -59,13 +80,20 @@ interface PceState {
   // Template section actions
   addTemplateSection: (templateId: string, section: Omit<PceTemplateSection, 'id' | 'order'>, id?: string) => void
   removeTemplateSection: (templateId: string, sectionId: string) => void
-  updateTemplateSection: (templateId: string, sectionId: string, patch: Partial<Pick<PceTemplateSection, 'title' | 'subjectKey' | 'description'>>) => void
+  updateTemplateSection: (templateId: string, sectionId: string, patch: Partial<Pick<PceTemplateSection, 'title' | 'subjectKey' | 'description' | 'roleSetId'>>) => void
   reorderTemplateSections: (templateId: string, fromIndex: number, toIndex: number) => void
+  // Faculty role sets — roles declared outside the section
+  addFacultyRoleSet: (templateId: string, id?: string) => void
+  removeFacultyRoleSet: (templateId: string, roleSetId: string) => void
+  updateFacultyRoleSetRoles: (templateId: string, roleSetId: string, roles: string[]) => void
   // Section question actions (for dynamic sections)
   addSectionQuestion: (templateId: string, sectionId: string, text: string, answerType: TemplateQuestion['answerType'], choices?: string[], id?: string) => void
   updateSectionQuestion: (templateId: string, sectionId: string, questionId: string, patch: Partial<Pick<TemplateQuestion, 'text' | 'answerType' | 'choices'>>) => void
   deleteSectionQuestion: (templateId: string, sectionId: string, questionId: string) => void
   reorderSectionQuestions: (templateId: string, sectionId: string, from: number, to: number) => void
+  // Setup defaults (pre-fill values for term activation wizard)
+  setupDefaults: SetupDefaults
+  saveSetupDefaults: (d: SetupDefaults) => void
   // Wizard actions
   pushSurveyBatch: (config: PushWizardConfig) => void
   // Moderation action
@@ -79,6 +107,8 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
   const [surveys, setSurveys] = useState<PceSurvey[]>(MOCK_SURVEYS)
   const [templates, setTemplates] = useState<PceTemplate[]>(MOCK_TEMPLATES)
   const [hiddenComments, setHiddenComments] = useState<Record<string, number[]>>({})
+  const [setupDefaults, setSetupDefaults] = useState<SetupDefaults>(INITIAL_SETUP_DEFAULTS)
+  const saveSetupDefaults = useCallback((d: SetupDefaults) => setSetupDefaults(d), [])
   const toggleRole = useCallback(() => {
     setUser(u => ({ ...u, role: u.role === 'admin' ? 'faculty' : 'admin' }))
   }, [])
@@ -278,7 +308,7 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
   const updateTemplateSection = useCallback((
     templateId: string,
     sectionId: string,
-    patch: Partial<Pick<PceTemplateSection, 'title' | 'subjectKey' | 'description'>>
+    patch: Partial<Pick<PceTemplateSection, 'title' | 'subjectKey' | 'description' | 'roleSetId'>>
   ) => {
     setTemplates(ts => ts.map(t => {
       if (t.id !== templateId) return t
@@ -286,6 +316,34 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
         s.id === sectionId ? { ...s, ...patch } : s
       )
       return { ...t, templateSections: sections, lastModified: 'May 21, 2026' }
+    }))
+  }, [])
+
+  // ── Faculty role sets — roles declared outside the section ─────────────────
+  const addFacultyRoleSet = useCallback((templateId: string, id?: string) => {
+    setTemplates(ts => ts.map(t => {
+      if (t.id !== templateId) return t
+      const sets = t.facultyRoleSets ?? []
+      const newSet = { id: id ?? `rs-${Date.now()}`, roles: [] as string[] }
+      return { ...t, facultyRoleSets: [...sets, newSet], lastModified: 'May 21, 2026' }
+    }))
+  }, [])
+
+  const removeFacultyRoleSet = useCallback((templateId: string, roleSetId: string) => {
+    setTemplates(ts => ts.map(t => {
+      if (t.id !== templateId) return t
+      const sets = (t.facultyRoleSets ?? []).filter(rs => rs.id !== roleSetId)
+      // Drop the sections that belonged to this set (its questions go with it).
+      const sections = (t.templateSections ?? []).filter(s => s.roleSetId !== roleSetId)
+      return { ...t, facultyRoleSets: sets, templateSections: sections, lastModified: 'May 21, 2026' }
+    }))
+  }, [])
+
+  const updateFacultyRoleSetRoles = useCallback((templateId: string, roleSetId: string, roles: string[]) => {
+    setTemplates(ts => ts.map(t => {
+      if (t.id !== templateId) return t
+      const sets = (t.facultyRoleSets ?? []).map(rs => rs.id === roleSetId ? { ...rs, roles } : rs)
+      return { ...t, facultyRoleSets: sets, lastModified: 'May 21, 2026' }
     }))
   }, [])
 
@@ -443,7 +501,9 @@ export function PceProvider({ children }: { children: React.ReactNode }) {
       addQuestion, updateQuestion, deleteQuestion, reorderQuestions,
       addGuestInstructor, removeInstructor, toggleHideComment,
       addTemplateSection, removeTemplateSection, updateTemplateSection, reorderTemplateSections,
+      addFacultyRoleSet, removeFacultyRoleSet, updateFacultyRoleSetRoles,
       addSectionQuestion, updateSectionQuestion, deleteSectionQuestion, reorderSectionQuestions,
+      setupDefaults, saveSetupDefaults,
       pushSurveyBatch,
       enableResults,
     }}>

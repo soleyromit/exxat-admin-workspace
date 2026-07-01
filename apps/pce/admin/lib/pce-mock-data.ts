@@ -15,14 +15,22 @@ export interface PceSubject {
   perLabel?: string   // "course" | "faculty member" | "preceptor" etc.
 }
 
+/** A Faculty role set — roles declared OUTSIDE the section (Jul 1 PCE constraint).
+ *  Owns the Faculty sections whose `roleSetId` equals this set's id. */
+export interface PceTemplateRoleSet {
+  id: string
+  roles: string[]
+}
+
 export interface PceTemplateSection {
   id: string
   subjectKey: string
   title: string  // admin-customizable display name
   description?: string
-  /** Faculty roles this section evaluates (Faculty aspect only) — Jun 30 PCE meeting:
-   *  roles are selected per section, not per tab. */
-  roles?: string[]
+  /** Faculty aspect only — the role set this section belongs to. Roles are declared
+   *  on the set (PceTemplateRoleSet), NEVER on the section. A section references its
+   *  set by id; it does not carry roles itself. */
+  roleSetId?: string
   questions: TemplateQuestion[]
   order: number
 }
@@ -63,6 +71,10 @@ export interface PceTemplate {
   surveyType?: SurveyType
   /** Dynamic subject-based sections (additive — parallel to legacy questions/sections). */
   templateSections?: PceTemplateSection[]
+  /** Faculty aspect role sets. Each set declares one OR multiple roles (outside the
+   *  section) and owns the Faculty sections whose roleSetId matches. One role → role-
+   *  specific questions; multiple roles → shared questions. Add more sets for more cases. */
+  facultyRoleSets?: PceTemplateRoleSet[]
   /** Optional form-level instruction shown to respondents before the first question. */
   formInstructionTitle?: string
   formInstructionDescription?: string
@@ -492,13 +504,16 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
         subjectKey: 'faculty',
         title: 'Faculty Performance',
         order: 1,
-        roles: ['instructor'],
+        roleSetId: 'rs1-a',
         questions: [
           { id: 'q6', text: 'The instructor was well-prepared for each class.', answerType: 'likert', order: 0 },
           { id: 'q7', text: 'The instructor communicated expectations clearly.', answerType: 'likert', order: 1 },
           { id: 'q8', text: 'What feedback do you have for the instructor?', answerType: 'free_text', order: 2 },
         ],
       },
+    ],
+    facultyRoleSets: [
+      { id: 'rs1-a', roles: ['instructor'] },
     ],
   },
   {
@@ -529,13 +544,16 @@ export const MOCK_TEMPLATES: PceTemplate[] = [
         subjectKey: 'faculty',
         title: 'Faculty Performance',
         order: 0,
-        roles: ['lab-assistant', 'course-coordinator'],
+        roleSetId: 'rs2-a',
         questions: [
           { id: 'q9',  text: 'The instructor encourages student participation.', answerType: 'likert', order: 0 },
           { id: 'q10', text: 'The instructor is available during office hours.', answerType: 'likert', order: 1 },
           { id: 'q11', text: 'Any concerns to share at the midpoint?', answerType: 'free_text', order: 2 },
         ],
       },
+    ],
+    facultyRoleSets: [
+      { id: 'rs2-a', roles: ['lab-assistant', 'course-coordinator'] },
     ],
   },
   {
