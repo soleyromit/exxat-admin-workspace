@@ -1319,6 +1319,58 @@ Student directory shows: courses registered in, evaluation completion status, du
 
 The final course-offering instance view is the **same** whether entered via term, faculty, or course path. Entry point only changes the aggregation stats shown before drilling in.
 
+### 5.62 AI strategy, MVP scope, manual time extension, and navigation direction (2026-07-02)
+
+Source: `apps/exam-management/docs/research/meetings/2026-07-02-ai-strategy-design-system-nav-alignment.md` (Granola `d2449a66`) · Cross-functional leadership meeting.
+
+**Exam management timeline confirmed**
+
+| Milestone | Date |
+|---|---|
+| MVP launch | December 2026 |
+| Limited availability (10 pilot customers) | January 1, 2027 |
+| Limited availability target (30 customers) | June 30, 2027 |
+| General Availability | October 1, 2027 |
+
+Aligns with academic calendar: new semester starts July 1, so June 30 is the goal for each cohort of customers.
+
+**Manual time extension in MVP (D_EM_0702_02)**
+
+Full accommodations module deferred to Phase 2. But MVP must include a simple per-student end-time override in the live monitor:
+
+> "At least be able to manually extend the time. It will be the same field that then gets overwritten by the accommodation setup." — Aarti
+
+This is a single field/action on a student row in the live monitor. When Phase 2 accommodations land, the accommodation rules auto-populate that same field. New task: T102.
+
+**AI strategy phases confirmed (D_EM_0702_06)**
+
+| Stage | Scope | When |
+|---|---|---|
+| Stage 1 — AI as feature | Question refinement assistance; document import | MVP (Dec 2026) |
+| Stage 2 — AI watches | Data flagging; semantic search across entities | Beta / Limited avail (2027) |
+| Stage 3 — AI acts | Agentic checklists; automated task execution | GA (Oct 2027) |
+| Stage 4 — AI as interface | Chat/audio as primary interface | Post-GA |
+
+Semantic search and proctoring/lockdown browser confirmed deferred to beta.
+
+**Navigation direction (D_EM_0702_04)**
+
+Leadership agreed on: keep a **top utility bar** (module switcher, search, Leo, profile) consistent across all modules and Prism. New modules (exam management, course evaluation) use Himanshu's **left-nav design** below that bar. Prism stays as-is structurally.
+
+> "We stick with the new design in general. The only defect we have is that where it says exact one premium, can we continue to have that panel — move some of that [Leo, search] to the top bar and live with that." — Aarti
+
+Partially resolves T99 / T57 Ask Leo conflict: Leo → top bar, not left sidebar. Himanshu to design the top bar; finalize in next-week meeting before applying changes.
+
+**Module entry point (D_EM_0702_05)**
+
+Direction endorsed: operational launcher (subscribed modules prominent) + secondary cross-sell real estate for non-subscribed. Deferred to August review with Aarti.
+
+> "You can think through this and work with Amit a little bit to have a point of view for us to discuss in August."
+
+**Design system: proceed now (D_EM_0702_03)**
+
+Confirmed: do not wait for Himanshu's design system to be fully signed off. Use existing Exact One React components; Himanshu + engineering to collaborate and incrementally enhance. Monthly cadence with leadership. Already captured as D_PCE_630L_02 (Jun 30).
+
 ---
 
 ## Appendix — source meetings
@@ -1356,6 +1408,8 @@ The final course-offering instance view is the **same** whether entered via term
 | 2026-06-10 07:30 | PCE Architecture — tab structure, analytics dimensions, base entity strategy | `4d1fa807` | Vishaka + Arun + Vinaya + Romit |
 | 2026-06-10 11:16 | Course & Faculty Evaluation — setup, directories, term workflow (Aarti 1:1) | `410d7c0e` | Aarti + Romit |
 | 2026-06-17 05:17 | Design system and nav alignment — engineering sync (cross-product) | `1f55db0d` | Himanshu + Romit |
+| 2026-07-02 04:43 | EduTech AI adoption strategy — phased rollout, MVP scope, and design system alignment | `d2449a66` | Aarti + Himanshu + Darshan + Vinay + Vishal + Arun + Romit |
+| 2026-07-02 08:12 | Create template — upload capability and handoff readiness with Monil (PCE) | `3c5d6795` | Monil + Romit |
 
 Per-meeting raw notes at `apps/exam-management/docs/research/meetings/` and `apps/pce/docs/research/meetings/`.
 
@@ -1365,4 +1419,3 @@ Per-meeting raw notes at `apps/exam-management/docs/research/meetings/` and `app
 
 - Add new Aarti decisions as they're made — append to relevant section, cite meeting + date.
 - Mark superseded decisions explicitly; don't delete.
-- When an ADR is drafted from a decision here, link to it.
