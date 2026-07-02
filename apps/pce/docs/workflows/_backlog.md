@@ -264,6 +264,16 @@ Source: `apps/exam-management/docs/research/meetings/2026-06-17-himanshu-design-
 |---|---|---|---|
 | D_PCE_J13_02 | Multiple admin permission tiers | Phase 1 = super admin only. "We don't want to worry about like, oh, you can do this but not this." Tiers evolve as module matures. | 2026-06-13 |
 
+## Phase 1 design tasks — added 2026-07-02
+
+Source: `docs/research/meetings/2026-07-02-template-upload-aspects-monil.md` (Granola `3c5d6795`)
+
+> Monil check-in call (Jul 2 morning). Template handoff readiness + new aspect-level upload directive.
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T97 | ⚠️ Resolve T61 vs. Monil conflict — per-aspect upload capability | Admin | Template creation | P0 — BLOCKER | T61 (Jun 9, Vishaka): top-level import only, remove per-section PDF upload. Monil (Jul 2): per-aspect upload IS wanted because single-doc AI parsing fails to reliably separate content by aspect (course material / faculty / general). Cannot finalize upload UX for template creation until Aarti/Vishaka/Monil align. Add to next Aarti review. D_PCE_0702_01. |
+
 ---
 
 ## Open product questions

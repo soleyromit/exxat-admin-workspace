@@ -193,7 +193,25 @@ Source: `docs/research/meetings/2026-06-17-himanshu-design-system-nav-alignment.
 |---|---|---|---|---|---|
 | T99 | ⚠️ Ask Leo placement conflict — BLOCKER for nav sidebar placement | Design / Eng | Cross-product nav (exam-management + PCE) | P0 — BLOCKER | Aarti Jun 3 (D_PCE42, T57): Ask Leo should NOT be in left nav. Himanshu Jun 17: Ask Leo IS in left sidebar. 2026-06-22: Removed Ask Leo button from `qb-header.tsx` top-right (old position cleared). Sidebar placement still unresolved — do NOT add Ask Leo to sidebar until Himanshu coordinates with Arun + Yash + Aarti. D_EM_HIM01, D_EM_HIM02. |
 | T100 | Student exam experience — DS adaptation for exam-specific components | Student | Assessment taker | P1 — DESIGN-REVIEW | Design system needs new/adapted components for exam-taker flow: keyboard-navigable answer selection (no mouse), text highlight, text strikethrough/elimination, bookmarks, hotspot questions, accessibility panel (color vision, 400% text size, dark contrast, on-screen keyboard), PDF viewer with zoom, audio/video. Himanshu to prioritize. Track together. D_EM_HIM07. |
-| T101 | Module entry point concept — share with Himanshu; align with Aarti | Design | Cross-product platform | P1 — ACTION ITEM | App-store-style platform entry showing contracted products as a list; non-contracted → CTA to email sales. Shown to Himanshu Jun 17 (first time). Himanshu to review with team and surface to Aarti for alignment. Not finalized. D_EM_HIM05. |
+| T101 | Module entry point concept — share with Himanshu; align with Aarti | Design | Cross-product platform | P1 — ACTION ITEM | **Updated Jul 2:** Aarti saw the concept in meeting and endorsed the direction. Primary purpose = operational launcher. Secondary = cross-sell real estate for non-subscribed modules. "Think through this and work with Amit... for us to discuss in August." Deferred to August review. App-store-style: subscribed modules prominent; non-subscribed → trial/interest CTA. D_EM_HIM05, D_EM_0702_05. |
+
+## Phase 1 design tasks — added 2026-07-02
+
+Source: `docs/research/meetings/2026-07-02-ai-strategy-design-system-nav-alignment.md` (Granola `d2449a66`)
+
+> Large cross-functional meeting: AI strategy, exam management timeline, navigation debate, design system approach, PCE Q4 goals.
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T102 | Manual time extension — per-student end-time override in live monitor | Admin | Live monitor (`assessments/[id]/live`) | P1 — DESIGN-REVIEW | MVP scope item. Admin must be able to manually extend an individual student's exam end time without the full accommodations module. This is a single override field — "the same field that gets overwritten by the accommodation setup" when Phase 2 accommodations land. Add to live monitor student row actions. D_EM_0702_02. |
+| T103 | Navigation direction update — top bar + new module left-nav (partially resolves T99) | Design / Eng | Cross-product nav (all products) | P0 — DESIGN-REVIEW | Direction from Jul 2 leadership meeting: keep top utility bar (module switcher, search, Leo, profile) consistent across ALL modules including Prism. New modules (exam management, course evaluation) use Himanshu's left-nav design below that bar. Prism navigation stays as-is. Minimized left nav by default; shows as breadcrumb label. PARTIAL RESOLUTION of T99 — Ask Leo goes in top bar, not sidebar. NEXT STEP: Himanshu to design top bar options; "set up a time next week" to finalize before applying any changes. D_EM_0702_04. |
+
+### Updates to existing tasks (Jul 2)
+
+| # | Update |
+|---|---|
+| T99 | Partially resolved Jul 2: Ask Leo + search → top utility bar, not left nav sidebar. Left nav = module navigation only. Final confirmation after Himanshu's top bar design (T103). Do not apply nav changes yet. D_EM_0702_04. |
+| T13 | Full accommodations = Phase 2. Only manual end-time extension in MVP (tracked as T102). D_EM_0702_07. |
 
 ## Phase 1 → Phase 2 demotions (updated 2026-06-13)
 
