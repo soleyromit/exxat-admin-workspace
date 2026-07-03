@@ -438,9 +438,21 @@ export default function TemplateEditorPage() {
   // Branding (Jun 30 meeting) — optional cover image + university logo for the student landing.
   const [coverImage, setCoverImage] = useState<string | null>(null)
   const [universityLogo, setUniversityLogo] = useState<string | null>(null)
-  // Document-import: which tab (+ optional faculty role set) is receiving the import.
+  // Document-upload: which tab (+ optional faculty role set) is receiving the generated content.
   const [importCtx, setImportCtx] = useState<{ subjectKey: string; roleSetId?: string; label: string } | null>(null)
   const [importedBanner, setImportedBanner] = useState<{ file: string; sections: number; questions: number } | null>(null)
+  // Upload opens the OS file chooser directly (one click); the dialog then opens on the picked file.
+  const uploadInputRef = useRef<HTMLInputElement>(null)
+  const uploadTargetRef = useRef<{ subjectKey: string; roleSetId?: string } | null>(null)
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null)
+  function handleUploadPicked(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]
+    e.target.value = '' // allow re-picking the same file
+    const target = uploadTargetRef.current
+    if (!f || !target) return
+    setUploadedFileName(f.name)
+    openImport(target.subjectKey, target.roleSetId)
+  }
   // Editor is a 3-step wizard — Builder → Template settings → Review — ending in Publish.
   const [wizardStep, setWizardStep] = useState<WizardStepKey>('builder')
   const [maxStepReached, setMaxStepReached] = useState(1)
@@ -558,11 +570,28 @@ export default function TemplateEditorPage() {
     })
     setImportCtx(null)
   }
-  const importBtn = (subjectKey: string, roleSetId?: string) => (
-    <Button variant="link" size="sm" className="font-semibold" onClick={() => openImport(subjectKey, roleSetId)}>
-      <i className="fa-light fa-file-import text-xs" aria-hidden="true" />
-      Import document
-    </Button>
+  // Upload-to-generate — a distinct entry point (not a Fascia "Add section"
+  // action), so it sits ABOVE the section list, scoped to the active aspect.
+  const uploadDocAffordance = (subjectKey: string, roleSetId?: string) => (
+    <div
+      className="flex items-center gap-3 rounded-lg border border-dashed border-border"
+      style={{ padding: '12px 14px' }}
+    >
+      <i className="fa-light fa-cloud-arrow-up" aria-hidden="true" style={{ fontSize: 18, color: 'var(--muted-foreground)' }} />
+      <div className="flex flex-col flex-1 min-w-0">
+        <span className="text-sm font-medium">Upload a document</span>
+        <span className="text-xs text-muted-foreground">Generate sections and questions automatically — edit them after.</span>
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        className="shrink-0"
+        onClick={() => { uploadTargetRef.current = { subjectKey, roleSetId }; uploadInputRef.current?.click() }}
+      >
+        <i className="fa-light fa-arrow-up-from-bracket text-xs" aria-hidden="true" />
+        Upload document
+      </Button>
+    </div>
   )
 
   function handleAddQuestion(sectionId: string, type: AnswerType) {
@@ -1095,31 +1124,30 @@ export default function TemplateEditorPage() {
           {importedBanner && (
             <div style={{ padding: '10px 40px 0' }}>
               <LocalBanner variant="success" dismissible onDismiss={() => setImportedBanner(null)}>
-                Imported {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' : ''} · {importedBanner.questions} question{importedBanner.questions !== 1 ? 's' : ''} from {importedBanner.file}. Review and edit below.
+Generated {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' : ''} · {importedBanner.questions} question{importedBanner.questions !== 1 ? 's' : ''} from {importedBanner.file}. Review and edit below.
               </LocalBanner>
             </div>
           )}
           {isProgrammatic ? (
             /* Programmatic surveys — flat section list */
             <div className="flex-1 overflow-y-auto" style={{ padding: '32px 40px' }}>
-              <div style={{ maxWidth: 720 }}>
+              <div style={{ maxWidth: 720 }} className="flex flex-col gap-4">
+                {uploadDocAffordance('course_content')}
                 {sections.length === 0 ? (
-                  <div className="flex items-center justify-center gap-3" style={{ minHeight: 200 }}>
+                  <div className="flex items-center justify-center" style={{ minHeight: 140 }}>
                     <Button variant="link" size="sm" onClick={() => handleAddSection()} className="font-semibold">
                       <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                       Add section
                     </Button>
-                    {importBtn('course_content')}
                   </div>
                 ) : (
                   <div className="flex flex-col gap-4">
                     {sections.map(sec => renderSectionCard(sec))}
-                    <div className="flex items-center justify-center gap-3" style={{ paddingTop: 4 }}>
+                    <div className="flex items-center justify-center" style={{ paddingTop: 4 }}>
                       <Button variant="link" size="sm" onClick={() => handleAddSection()} className="font-semibold">
                         <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                         Add section
                       </Button>
-                      {importBtn('course_content')}
                     </div>
                   </div>
                 )}
@@ -1143,11 +1171,13 @@ export default function TemplateEditorPage() {
                       variant="ghost"
                       onClick={() => setActiveGroup(g.key)}
                       aria-current={active ? 'page' : undefined}
-                      className="h-auto w-full justify-start text-left rounded-lg px-3 py-2.5"
-                      style={active ? { background: 'var(--muted)' } : undefined}
+                      className="h-auto w-full justify-start text-left rounded-lg px-3 py-2.5 hover:bg-transparent"
+                      // Only the active aspect is filled; inactive stays flat so
+                      // one selection is unmistakable (inline beats the DS bg class).
+                      style={{ background: active ? 'var(--muted)' : 'transparent' }}
                     >
                       <span className="flex flex-col items-start gap-1 w-full">
-                        <span className="text-sm font-medium">{g.label}</span>
+                        <span className={`text-sm ${active ? 'font-semibold' : 'font-medium'}`}>{g.label}</span>
                         <span className="text-xs text-muted-foreground leading-snug whitespace-normal">{ASPECT_INFO[g.key]}</span>
                         <span className="text-xs text-muted-foreground tabular-nums">
                           {c.sections} section{c.sections !== 1 ? 's' : ''} · {c.questions} question{c.questions !== 1 ? 's' : ''}
@@ -1199,6 +1229,9 @@ export default function TemplateEditorPage() {
                       />
                     </CollapsibleContent>
                   </Collapsible>
+
+                  {/* Upload document — template-level entry, above the sections */}
+                  {activeGroup !== 'faculty' && uploadDocAffordance(activeGroup)}
 
                   {activeGroup === 'faculty' ? (
                     /* Role sets — roles declared OUTSIDE the section (Jul 1 constraint).
@@ -1259,23 +1292,22 @@ export default function TemplateEditorPage() {
                               </DropdownMenu>
                             </div>
                             {/* Sections owned by this set */}
-                            <div className="flex flex-col gap-2" style={{ padding: '12px' }}>
+                            <div className="flex flex-col gap-3" style={{ padding: '12px' }}>
+                              {uploadDocAffordance('faculty', set.id)}
                               {setSections.length === 0 ? (
-                                <div className="flex items-center justify-center gap-3 rounded-lg border border-dashed"
+                                <div className="flex items-center justify-center rounded-lg border border-dashed"
                                   style={{ padding: '20px 16px', borderColor: 'var(--border)' }}>
                                   <Button variant="link" size="sm" onClick={() => handleAddSection('faculty', set.id)} className="font-semibold">
                                     <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
                                   </Button>
-                                  {importBtn('faculty', set.id)}
                                 </div>
                               ) : (
                                 <>
                                   {setSections.map(sec => renderSectionCard(sec))}
-                                  <div className="flex items-center justify-center gap-3" style={{ paddingTop: 2 }}>
+                                  <div className="flex items-center justify-center" style={{ paddingTop: 2 }}>
                                     <Button variant="link" size="sm" onClick={() => handleAddSection('faculty', set.id)} className="font-semibold">
                                       <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
                                     </Button>
-                                    {importBtn('faculty', set.id)}
                                   </div>
                                 </>
                               )}
@@ -1294,26 +1326,24 @@ export default function TemplateEditorPage() {
                     if (groupSections.length === 0) {
                       return (
                         <div
-                          className="flex items-center justify-center gap-3 rounded-lg border border-dashed"
+                          className="flex items-center justify-center rounded-lg border border-dashed"
                           style={{ padding: '28px 16px', borderColor: 'var(--border)' }}
                         >
                           <Button variant="link" size="sm" onClick={() => handleAddSection(activeGroup)} className="font-semibold">
                             <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                             Add section
                           </Button>
-                          {importBtn(activeGroup)}
                         </div>
                       )
                     }
                     return (
                       <>
                         {groupSections.map(sec => renderSectionCard(sec))}
-                        <div className="flex items-center justify-center gap-3" style={{ paddingTop: 4 }}>
+                        <div className="flex items-center justify-center" style={{ paddingTop: 4 }}>
                           <Button variant="link" size="sm" onClick={() => handleAddSection(activeGroup)} className="font-semibold">
                             <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                             Add section
                           </Button>
-                          {importBtn(activeGroup)}
                         </div>
                       </>
                     )
@@ -1405,10 +1435,19 @@ export default function TemplateEditorPage() {
         </div>
       </Tabs>
 
+      <input
+        ref={uploadInputRef}
+        type="file"
+        accept=".pdf,.doc,.docx,.txt"
+        className="hidden"
+        onChange={handleUploadPicked}
+        aria-label="Upload a document"
+      />
       <TemplateImportDialog
         open={importCtx !== null}
-        onOpenChange={(o) => { if (!o) setImportCtx(null) }}
+        onOpenChange={(o) => { if (!o) { setImportCtx(null); setUploadedFileName(null) } }}
         tabLabel={importCtx?.label ?? ''}
+        fileName={uploadedFileName}
         docs={importCtx ? (TEMPLATE_IMPORT_LIBRARY[importCtx.subjectKey] ?? []) : []}
         onImport={handleImportDocument}
       />
