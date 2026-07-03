@@ -132,6 +132,14 @@ interface StepCommunicationProps {
   emailBody: string
   reminders: Reminder[]
   emailContacts: EmailContact[]
+  reminderSameAsInvite: boolean
+  reminderTemplateId: string
+  reminderSubject: string
+  reminderBody: string
+  onReminderSameAsInviteChange: (v: boolean) => void
+  onReminderTemplateChange: (id: string) => void
+  onReminderSubjectChange: (v: string) => void
+  onReminderBodyChange: (v: string) => void
   onOpenDateChange: (d: Date | undefined) => void
   onCloseDateChange: (d: Date | undefined) => void
   onReleaseDateChange: (d: Date | undefined) => void
@@ -151,6 +159,8 @@ export function StepCommunication({
   selectedOfferings,
   openDate, closeDate, releaseDate,
   senderName, emailTemplateId, emailSubject, emailBody, reminders, emailContacts,
+  reminderSameAsInvite, reminderTemplateId, reminderSubject, reminderBody,
+  onReminderSameAsInviteChange, onReminderTemplateChange, onReminderSubjectChange, onReminderBodyChange,
   onOpenDateChange, onCloseDateChange, onReleaseDateChange,
   onSenderNameChange, onEmailTemplateChange, onEmailSubjectChange, onEmailBodyChange,
   onRemindersChange, onEmailContactsChange, onBack, onNext,
@@ -224,18 +234,14 @@ export function StepCommunication({
   const [prismOpen, setPrismOpen] = useState(false)
   const [emailTemplateOpen, setEmailTemplateOpen] = useState(false)
 
-  // ── Reminder email (its own template, or reuse the invitation's) ───────────
+  // ── Reminder email — lifted to the page so Review reflects the real choice ──
   const reminderTemplates = EVAL_EMAIL_TEMPLATES.filter(t => t.type === 'reminder')
-  const [reminderSameAsInvite, setReminderSameAsInvite] = useState(false)
-  const [reminderTemplateId, setReminderTemplateId] = useState(reminderTemplates[0]?.id ?? '')
-  const [reminderSubject, setReminderSubject] = useState(reminderTemplates[0]?.subject ?? '')
-  const [reminderBody, setReminderBody] = useState(reminderTemplates[0]?.body ?? '')
   const [reminderTemplateOpen, setReminderTemplateOpen] = useState(false)
   const selectedReminderTemplate = EVAL_EMAIL_TEMPLATES.find(t => t.id === reminderTemplateId) ?? null
   function handleReminderTemplatePick(id: string) {
-    setReminderTemplateId(id)
+    onReminderTemplateChange(id)
     const t = EVAL_EMAIL_TEMPLATES.find(x => x.id === id)
-    if (t) { setReminderSubject(t.subject); setReminderBody(t.body) }
+    if (t) { onReminderSubjectChange(t.subject); onReminderBodyChange(t.body) }
   }
   const isReminderEditedForPush =
     !!selectedReminderTemplate && (reminderSubject !== selectedReminderTemplate.subject || reminderBody !== selectedReminderTemplate.body)
@@ -468,7 +474,7 @@ export function StepCommunication({
               </div>
               <label htmlFor="reminder-same-as-invite" className="flex items-center gap-2 cursor-pointer shrink-0">
                 <span className="text-sm">Same as invitation email</span>
-                <ToggleSwitch id="reminder-same-as-invite" checked={reminderSameAsInvite} onChange={setReminderSameAsInvite} />
+                <ToggleSwitch id="reminder-same-as-invite" checked={reminderSameAsInvite} onChange={onReminderSameAsInviteChange} />
               </label>
             </div>
 
@@ -632,8 +638,8 @@ export function StepCommunication({
         body={reminderBody}
         senderName={senderName}
         onSave={(subject, body, _sender, templateId) => {
-          setReminderTemplateId(templateId)
-          setReminderSubject(subject); setReminderBody(body)
+          onReminderTemplateChange(templateId)
+          onReminderSubjectChange(subject); onReminderBodyChange(body)
           setReminderTemplateOpen(false)
         }}
       />

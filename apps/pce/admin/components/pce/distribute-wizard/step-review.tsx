@@ -6,7 +6,6 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
 } from '@exxatdesignux/ui'
 import type { Reminder, EmailContact } from './step-communication'
-import { EVAL_EMAIL_TEMPLATES } from '@/lib/pce-mock-data'
 
 export interface ReviewCourseGroup {
   templateTitle: string
@@ -32,6 +31,10 @@ interface StepReviewProps {
   emailBody: string
   isEmailEdited: boolean
   reminders: Reminder[]
+  reminderSameAsInvite: boolean
+  reminderTemplateName: string
+  reminderSubject: string
+  reminderBody: string
   onEdit: (step: number) => void
   onBack: () => void
   onPush: () => void
@@ -79,7 +82,9 @@ function Detail({ label, children }: { label: string; children: React.ReactNode 
 export function StepReview({
   surveyMode, surveyTitle, surveyDescription, termName, academicYear, offeringCount, courseGroups,
   openDate, closeDate, releaseDate, studentCount, emailContacts, senderName,
-  templateName, emailSubject, emailBody, isEmailEdited, reminders, onEdit, onBack, onPush,
+  templateName, emailSubject, emailBody, isEmailEdited, reminders,
+  reminderSameAsInvite, reminderTemplateName, reminderSubject, reminderBody,
+  onEdit, onBack, onPush,
 }: StepReviewProps) {
   const typeLabel = surveyMode === 'general' ? 'Programmatic survey' : 'Course evaluation'
   const totalRecipients = studentCount + emailContacts.length
@@ -97,7 +102,6 @@ export function StepReview({
 
   // ── Email preview — resolve merge fields to sample values so it reads like
   //    the real message (Wix / Maze / Loops "preview column" pattern). ────────
-  const reminderTemplate = EVAL_EMAIL_TEMPLATES.find(t => t.type === 'reminder')
   const [previewMode, setPreviewMode] = useState<'invitation' | 'reminder'>('invitation')
   function resolveMerge(text: string): string {
     return text
@@ -112,13 +116,24 @@ export function StepReview({
   }
   const preview = useMemo(() => {
     if (previewMode === 'reminder') {
-      return { subject: reminderTemplate?.subject ?? '', body: reminderTemplate?.body ?? '', name: reminderTemplate?.name ?? 'Reminder' }
+      // "Same as invitation" reuses the invite copy; otherwise the reminder's own.
+      return reminderSameAsInvite
+        ? { subject: emailSubject, body: emailBody, name: `${templateName} (same as invitation)` }
+        : { subject: reminderSubject, body: reminderBody, name: reminderTemplateName }
     }
     return { subject: emailSubject, body: emailBody, name: templateName }
-  }, [previewMode, emailSubject, emailBody, templateName, reminderTemplate])
+  }, [previewMode, emailSubject, emailBody, templateName, reminderSameAsInvite, reminderSubject, reminderBody, reminderTemplateName])
 
   const [testSent, setTestSent] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
+
+  // Identity — course evaluations don't collect a title, so fall back to the
+  // term (the natural "what am I sending"); programmatic surveys use the title.
+  const heading = surveyTitle.trim()
+    || (surveyMode === 'course_evaluation' ? (termName || 'Course evaluation') : 'Untitled survey')
+  const headingIsTerm = !surveyTitle.trim() && surveyMode === 'course_evaluation'
+  const metaLead = [headingIsTerm ? null : termName, academicYear].filter(Boolean).join(' · ')
+  const metaLine = [metaLead, surveyDescription].filter(Boolean).join(' — ') || '—'
 
   return (
     <div className="flex flex-col gap-5" style={{ maxWidth: 980 }}>
@@ -137,14 +152,11 @@ export function StepReview({
             <div className="flex flex-col gap-1.5 flex-1 min-w-0">
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h2 className="text-lg font-semibold truncate" style={{ fontFamily: 'var(--font-heading)' }}>
-                  {surveyTitle || muted('Untitled survey')}
+                  {heading}
                 </h2>
                 <Badge variant="secondary">{typeLabel}</Badge>
               </div>
-              <p className="text-sm text-muted-foreground">
-                {termName || '—'}{academicYear ? ` · ${academicYear}` : ''}
-                {surveyDescription ? ` — ${surveyDescription}` : ''}
-              </p>
+              <p className="text-sm text-muted-foreground">{metaLine}</p>
             </div>
             <Button variant="ghost" size="xs" className="text-muted-foreground hover:text-foreground shrink-0" onClick={() => onEdit(1)}>Edit</Button>
           </div>
@@ -178,7 +190,7 @@ export function StepReview({
           </ReviewSection>
 
           {surveyMode === 'course_evaluation' && (
-            <ReviewSection label={`Courses & templates · ${offeringCount} offering${offeringCount !== 1 ? 's' : ''}`} complete={coursesComplete} onEdit={() => onEdit(1)}>
+            <ReviewSection label={`Courses & templates · ${offeringCount} offering${offeringCount !== 1 ? 's' : ''}`} complete={coursesComplete} onEdit={() => onEdit(2)}>
               {courseGroups.length === 0
                 ? <span>{muted('No courses selected')}</span>
                 : courseGroups.map((g, i) => (
@@ -195,7 +207,14 @@ export function StepReview({
               {templateName}
               {isEmailEdited && <span className="text-xs text-muted-foreground"> · edited for this push</span>}
             </Detail>
-            <Detail label="Reminders">{reminderSummary ?? muted('No reminders scheduled')}</Detail>
+            <Detail label="Reminders">
+              {reminders.length === 0 ? muted('No reminders scheduled') : (
+                <span>
+                  {reminderSameAsInvite ? 'Same as invitation' : reminderTemplateName}
+                  <span className="text-muted-foreground"> · {reminderSummary}</span>
+                </span>
+              )}
+            </Detail>
             <Detail label="From">{senderName || 'Exxat Surveys'}</Detail>
           </ReviewSection>
         </div>

@@ -28,6 +28,7 @@ import {
 
 const FIRST_INVITATION_TEMPLATE = EVAL_EMAIL_TEMPLATES.find(t => t.type === 'invitation') ?? null
 const FIRST_INVITATION_TEMPLATE_ID = FIRST_INVITATION_TEMPLATE?.id ?? ''
+const FIRST_REMINDER_TEMPLATE = EVAL_EMAIL_TEMPLATES.find(t => t.type === 'reminder') ?? null
 
 // Recipients are the selected courses' students; external contacts were removed
 // with the Recipients card, so none are seeded.
@@ -168,6 +169,11 @@ function PushSurveyInner() {
     () => remindersFromSettings(setupDefaults.activeReminderIntervals)
   )
   const [emailContacts, setEmailContacts] = useState<EmailContact[]>(INITIAL_EMAIL_CONTACTS)
+  // Reminder email — lifted here so the Review step reflects the actual choice.
+  const [reminderSameAsInvite, setReminderSameAsInvite] = useState(false)
+  const [reminderTemplateId, setReminderTemplateId] = useState(FIRST_REMINDER_TEMPLATE?.id ?? '')
+  const [reminderSubject, setReminderSubject] = useState(FIRST_REMINDER_TEMPLATE?.subject ?? '')
+  const [reminderBody, setReminderBody] = useState(FIRST_REMINDER_TEMPLATE?.body ?? '')
 
   // Window follows the selected term (recompute from Settings offsets on term change)
   const termWindowMounted = useRef(false)
@@ -462,6 +468,14 @@ function PushSurveyInner() {
               emailBody={emailBody}
               reminders={reminders}
               emailContacts={emailContacts}
+              reminderSameAsInvite={reminderSameAsInvite}
+              reminderTemplateId={reminderTemplateId}
+              reminderSubject={reminderSubject}
+              reminderBody={reminderBody}
+              onReminderSameAsInviteChange={setReminderSameAsInvite}
+              onReminderTemplateChange={setReminderTemplateId}
+              onReminderSubjectChange={setReminderSubject}
+              onReminderBodyChange={setReminderBody}
               onOpenDateChange={setOpenDate}
               onCloseDateChange={setCloseDate}
               onReleaseDateChange={setReleaseDate}
@@ -497,6 +511,10 @@ function PushSurveyInner() {
               emailBody={emailBody}
               isEmailEdited={isEmailEdited}
               reminders={reminders}
+              reminderSameAsInvite={reminderSameAsInvite}
+              reminderTemplateName={EVAL_EMAIL_TEMPLATES.find(t => t.id === reminderTemplateId)?.name ?? 'Reminder'}
+              reminderSubject={reminderSubject}
+              reminderBody={reminderBody}
               onEdit={(n) => setStep(n as WizardStep)}
               onBack={() => setStep(3)}
               onPush={handlePush}
