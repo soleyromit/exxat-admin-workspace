@@ -264,7 +264,22 @@ Source: `apps/exam-management/docs/research/meetings/2026-06-17-himanshu-design-
 |---|---|---|---|
 | D_PCE_J13_02 | Multiple admin permission tiers | Phase 1 = super admin only. "We don't want to worry about like, oh, you can do this but not this." Tiers evolve as module matures. | 2026-06-13 |
 
-## Phase 1 design tasks — added 2026-07-02
+## Phase 1 design tasks — added 2026-07-02 (course eval sync up)
+
+Source: `docs/research/meetings/2026-07-02-course-eval-sync-up.md` (Granola `fdf4dbb5`)
+
+> Monil status call (Jul 2 9:30 AM). Create template confirmed done. Create survey (course eval only) freeze deadline Jul 3. Engineering grooming Monday Jul 6.
+
+### Updates to existing tasks (Jul 2 — course eval sync)
+
+| # | Update |
+|---|---|
+| T28 | **DONE.** Monil confirmed: "Create template is done. And preached." Engineering will be groomed on this Jul 6. D_PCE_0702_05. |
+| T29 | **FREEZE DEADLINE: Jul 3.** Create survey for course evaluation only (NOT programmatic survey — D_PCE_0702_04). Monil grooming engineering on both T28 + T29 Monday Jul 6. |
+
+---
+
+## Phase 1 design tasks — added 2026-07-02 (Monil upload/handoff call)
 
 Source: `docs/research/meetings/2026-07-02-template-upload-aspects-monil.md` (Granola `3c5d6795`)
 
