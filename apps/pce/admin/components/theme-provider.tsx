@@ -2,6 +2,10 @@
 
 import * as React from "react"
 import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes"
+// Import from the SAME deep path DS components use (e.g. nav-user.tsx uses
+// "@exxatdesignux/ui/hooks/use-color-scheme"). The barrel export is a separate
+// module instance under turbopack → its context wouldn't satisfy their useTheme.
+import { ThemeProvider as DSThemeProvider } from "@exxatdesignux/ui/hooks/use-color-scheme"
 
 function ThemeProvider({
   children,
@@ -15,8 +19,12 @@ function ThemeProvider({
       disableTransitionOnChange
       {...props}
     >
-      <ThemeHotkey />
-      {children}
+      {/* DS 0.6.55 components (NavUser, etc.) read ColorSchemeContext via the DS
+          useTheme — mount the DS ThemeProvider here in the client boundary. */}
+      <DSThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+        <ThemeHotkey />
+        {children}
+      </DSThemeProvider>
     </NextThemesProvider>
   )
 }

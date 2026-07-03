@@ -65,6 +65,11 @@ export interface PceTemplate {
   /** Likert pointer (3 | 4 | 5 | 7 | 10). Defaults to 5 until T30 settings page. */
   likertPointer: 3 | 4 | 5 | 7 | 10
   courseType?: CourseTypeFilter
+  /** Survey type — the purpose this template serves. Shown in the template settings step. */
+  surveyPurpose?: 'student_pulse' | 'faculty_self_eval' | 'alumni' | 'preceptor_eval'
+  /** Visibility — 'program' = any admin/coordinator in the program can find & use it;
+   *  'private' = only the creator. Defaults to 'program' when unset. */
+  access?: 'program' | 'private'
   /** Owning program — drives the Program filter on the templates hub (matches live). */
   programId?: string
   /** 'course_evaluation' | 'programmatic'. Added in Phase 1 expansion. */
@@ -139,8 +144,8 @@ export interface EvalEmailTemplate {
 }
 export const EVAL_EMAIL_TEMPLATES: EvalEmailTemplate[] = [
   {
-    id: 'tpl-invite-formal', name: 'Formal Invite', type: 'invitation', status: 'action_required',
-    subject: 'Course Evaluation — Action Required',
+    id: 'tpl-invite-formal', name: 'Formal Invite', type: 'invitation', status: 'ready',
+    subject: 'Your course evaluation for {{course_name}} is now open',
     body: 'Hi {{student_first_name}},\n\nYour course evaluation for {{course_name}} ({{term_name}}) is now open and your response is required. Your answers are anonymous.\n\nComplete it by {{close_date}}: {{survey_link}}\n\n{{program_name}} Team',
   },
   {
@@ -157,12 +162,12 @@ export const EVAL_EMAIL_TEMPLATES: EvalEmailTemplate[] = [
 
 // ── Communication — reminder cadence engine (mirrors live Reminder Cadence) ──
 export type ReminderFrequency = 'daily' | 'every_3_days' | 'every_7_days' | 'custom'
-export type ReminderAnchor = 'survey_close' | 'term_end'
+export type ReminderAnchor = 'survey_close' | 'term_end' | 'course_end'
 export const REMINDER_FREQUENCY_LABELS: Record<ReminderFrequency, string> = {
   daily: 'Daily', every_3_days: 'Every 3 days', every_7_days: 'Every 7 days', custom: 'Custom',
 }
 export const REMINDER_ANCHOR_LABELS: Record<ReminderAnchor, string> = {
-  survey_close: 'Survey Close Date', term_end: 'Term End Date',
+  survey_close: 'Survey Close Date', term_end: 'Term End Date', course_end: 'Course End Date',
 }
 export const EVAL_REMINDER_CADENCE = {
   frequency:       'every_3_days' as ReminderFrequency,
@@ -177,6 +182,81 @@ export interface TemplateQuestion {
   choices?: string[]
   /** 0-based position within its section */
   order: number
+}
+
+// ── Template builder — "import document" mock library ─────────────────────────
+// Selecting a document inserts these sections + questions into the active
+// builder tab (keyed by subjectKey). Real parsing is out of scope; this stands
+// in for extracted content the admin can then edit.
+export interface TemplateImportDoc {
+  id: string
+  name: string
+  sections: { title: string; questions: { text: string; answerType: TemplateQuestion['answerType']; choices?: string[] }[] }[]
+}
+export const TEMPLATE_IMPORT_LIBRARY: Record<string, TemplateImportDoc[]> = {
+  course_content: [
+    {
+      id: 'imp-course-standard', name: 'Course Evaluation — Standard.docx',
+      sections: [
+        { title: 'Course Content & Organization', questions: [
+          { text: 'The course objectives were clearly stated.', answerType: 'likert' },
+          { text: 'The course content was well organized.', answerType: 'likert' },
+          { text: 'The pace of the course was appropriate.', answerType: 'likert' },
+          { text: 'Assignments and activities contributed to my learning.', answerType: 'likert' },
+        ]},
+        { title: 'Learning Materials', questions: [
+          { text: 'The textbook and readings were useful.', answerType: 'likert' },
+          { text: 'Online resources supported my learning.', answerType: 'likert' },
+          { text: 'What materials would you add or remove?', answerType: 'free_text' },
+        ]},
+      ],
+    },
+    {
+      id: 'imp-course-clinical', name: 'Clinical Course Eval.docx',
+      sections: [
+        { title: 'Clinical Preparation', questions: [
+          { text: 'The course prepared me for clinical practice.', answerType: 'likert' },
+          { text: 'Skills labs reinforced key competencies.', answerType: 'likert' },
+        ]},
+        { title: 'Overall', questions: [
+          { text: 'What was the most valuable part of this course?', answerType: 'free_text' },
+        ]},
+      ],
+    },
+  ],
+  faculty: [
+    {
+      id: 'imp-faculty-standard', name: 'Instructor Evaluation.docx',
+      sections: [
+        { title: 'Teaching Effectiveness', questions: [
+          { text: 'The instructor explained concepts clearly.', answerType: 'likert' },
+          { text: 'The instructor was well prepared for class.', answerType: 'likert' },
+          { text: 'The instructor stimulated my interest in the subject.', answerType: 'likert' },
+        ]},
+        { title: 'Communication & Support', questions: [
+          { text: 'The instructor was available for help outside class.', answerType: 'likert' },
+          { text: 'The instructor provided useful feedback on my work.', answerType: 'likert' },
+          { text: 'Additional comments about the instructor:', answerType: 'free_text' },
+        ]},
+      ],
+    },
+  ],
+  general: [
+    {
+      id: 'imp-general-program', name: 'Program Feedback.docx',
+      sections: [
+        { title: 'Program Resources', questions: [
+          { text: 'Facilities and equipment met my needs.', answerType: 'likert' },
+          { text: 'Academic advising was helpful.', answerType: 'likert' },
+          { text: 'Library and study resources were adequate.', answerType: 'likert' },
+        ]},
+        { title: 'Overall Experience', questions: [
+          { text: 'Overall, I am satisfied with the program.', answerType: 'likert' },
+          { text: 'What one change would most improve the program?', answerType: 'free_text' },
+        ]},
+      ],
+    },
+  ],
 }
 
 export interface PceInstructor {

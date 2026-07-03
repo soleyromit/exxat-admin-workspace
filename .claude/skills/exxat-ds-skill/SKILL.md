@@ -159,9 +159,9 @@ The data shape supports any number of children, but the collapsible variant is r
 
 **Reference:** `components/app-sidebar.tsx` (`CollapsibleNavItem`, `isCollapsibleParentMenuButtonActive`, `isCollapsibleChildActive`), `app/globals.css` (`@keyframes collapsible-down/up`), `lib/mock/navigation.tsx` (`NavLinkItem.children`).
 
-### 3.2.1 Nav flyout mode (mobile / zoom ≥ 200%)
+### 3.2.1 Nav flyout mode (≤320px / zoom ≥ 200%)
 
-At **WCAG 1.4.10 reflow** (browser zoom ≥ 200% or equivalent narrow viewport), the primary sidebar becomes an **overlay flyout** (`isNavFlyout` on **`SidebarProvider`** in `@exxatdesignux/ui/components/ui/sidebar`).
+At **WCAG 1.4.10 reflow** (viewport width **≤ 320 CSS px**, browser zoom **≥ 200%**, or short viewport — `computeReflowViewport()` in `packages/ui/src/lib/reflow-viewport.ts`), the primary sidebar becomes an **overlay flyout** (`isNavFlyout` on **`SidebarProvider`** in `@exxatdesignux/ui/components/ui/sidebar`).
 
 | Rule | Implementation |
 |---|---|
@@ -174,7 +174,7 @@ At **WCAG 1.4.10 reflow** (browser zoom ≥ 200% or equivalent narrow viewport),
 
 ### 3.3 Secondary panel auto-collapse on high zoom
 
-`SecondaryPanelProvider` (`components/secondary-panel.tsx`) reads **`useSidebarReflowZoom()`** (browser zoom ≥ 200% **or** very short viewport — same WCAG 1.4.10 signal the primary sidebar uses) and **auto-collapses the nested rail to its icon variant on entering high zoom**. The user can re-expand once collapsed; the next zoom-out → zoom-in cycle re-collapses. `openPanel` also opens directly in compact mode when high zoom is active so freshly-navigated panels don't briefly flash expanded.
+`SecondaryPanelProvider` (`components/secondary-panel.tsx`) reads **`useSidebarReflowZoom()`** (width **≤ 320px**, browser zoom **≥ 200%**, or very short viewport — same WCAG 1.4.10 signal the primary sidebar uses) and **auto-collapses the nested rail to its icon variant on entering reflow**. The user can re-expand once collapsed; the next zoom-out → zoom-in cycle re-collapses. `openPanel` also opens directly in compact mode when reflow is active so freshly-navigated panels don't briefly flash expanded.
 
 Any future secondary-panel-like rail should reuse `useSidebarReflowZoom` rather than inventing a parallel zoom hook.
 
@@ -345,6 +345,8 @@ Align with **`apps/web/AGENTS.md` §6.4**, **`docs/data-views-pattern.md`**, **`
   cell: row => <span className="text-sm font-medium text-foreground">{row.name}</span>,
 }
 ```
+
+**Data point → cell:** Before authoring `cell:`, map each field with **`docs/table-column-cells-pattern.md`** — skill **`exxat-table-column-cells`**, rule **`exxat-table-column-cells.mdc`**. Person columns → **`AvatarInitials` + name + email** (not plain text); status → **`ListHubStatusBadge`**; progress / money / rating → named imports from **`@/components/data-views`**.
 
 **Pin conventions:**
 - `select` column: `defaultPin: "left"`, `lockPin: true`

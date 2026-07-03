@@ -94,8 +94,8 @@ export function StepSuccess({
           Push another
         </Button>
         <Button variant="default" size="sm" asChild>
-          <Link href="/surveys">
-            View surveys
+          <Link href="/analytics">
+            View dashboard
             <i className="fa-light fa-arrow-right" aria-hidden="true" style={{ fontSize: 12 }} />
           </Link>
         </Button>

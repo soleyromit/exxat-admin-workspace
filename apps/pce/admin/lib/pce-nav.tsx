@@ -11,6 +11,9 @@ export interface NavLinkItem {
   icon: React.ReactNode
   iconActive?: React.ReactNode
   children?: NavLinkItem[]
+  /** Extra route prefixes (beyond url + children) that mark this item active —
+   *  for wizard flows like /surveys/push that have no nav entry of their own. */
+  activePrefixes?: string[]
   badge?: number | string
   secondaryPanel?: string
   primaryHubChildKey?: string
@@ -99,13 +102,16 @@ export const NAV_ADMIN: NavLinkItem[] = [
     url: "#",
     icon:       <i className="fa-light fa-star" aria-hidden="true" />,
     iconActive: <i className="fa-solid fa-star" aria-hidden="true" />,
+    // /surveys (list) + /surveys/push (push evaluation) belong to this module.
+    // /surveys/programmatic/* defers to Programmatic Surveys (more specific).
+    activePrefixes: ["/surveys"],
     children: [
       {
-        key: "ce-analytics",
+        key: "ce-dashboard",
         title: "Dashboard",
-        url: "/analytics",
-        icon:       <i className="fa-light fa-chart-mixed" aria-hidden="true" />,
-        iconActive: <i className="fa-solid fa-chart-mixed" aria-hidden="true" />,
+        url: "/course-evaluation/dashboard",
+        icon:       <i className="fa-light fa-gauge-high" aria-hidden="true" />,
+        iconActive: <i className="fa-solid fa-gauge-high" aria-hidden="true" />,
       },
       {
         key: "ce-templates",
@@ -113,6 +119,20 @@ export const NAV_ADMIN: NavLinkItem[] = [
         url: "/templates",
         icon:       <i className="fa-light fa-rectangle-list" aria-hidden="true" />,
         iconActive: <i className="fa-solid fa-rectangle-list" aria-hidden="true" />,
+      },
+      {
+        key: "ce-analytics",
+        title: "Analytics",
+        url: "/analytics",
+        icon:       <i className="fa-light fa-chart-mixed" aria-hidden="true" />,
+        iconActive: <i className="fa-solid fa-chart-mixed" aria-hidden="true" />,
+      },
+      {
+        key: "ce-settings",
+        title: "Settings",
+        url: "/admin/eval-settings",
+        icon:       <i className="fa-light fa-gear-complex" aria-hidden="true" />,
+        iconActive: <i className="fa-solid fa-gear-complex" aria-hidden="true" />,
       },
     ],
   },
@@ -122,6 +142,8 @@ export const NAV_ADMIN: NavLinkItem[] = [
     url: "#",
     icon:       <i className="fa-light fa-chart-network" aria-hidden="true" />,
     iconActive: <i className="fa-solid fa-chart-network" aria-hidden="true" />,
+    // /surveys/programmatic (list) + /surveys/programmatic/push (push survey).
+    activePrefixes: ["/surveys/programmatic"],
     children: [
       {
         key: "ps-analytics",
@@ -142,25 +164,11 @@ export const NAV_ADMIN: NavLinkItem[] = [
   {
     key: "directories",
     title: "Directory",
-    url: "#",
+    // Consolidated: one Directory surface with Courses · Faculty · Students · Term
+    // sub-tabs (matches live pce-three IA). Was 4 separate child rows.
+    url: "/directory/courses",
     icon:       <i className="fa-light fa-folder-open" aria-hidden="true" />,
     iconActive: <i className="fa-solid fa-folder-open" aria-hidden="true" />,
-    children: [
-      { key: "students",  title: "Students",  url: "/admin/students",  icon: <i className="fa-light fa-graduation-cap" aria-hidden="true" /> },
-      { key: "faculty",   title: "Faculty",   url: "/admin/faculty",   icon: <i className="fa-light fa-user-tie" aria-hidden="true" /> },
-      { key: "offerings", title: "Course Offerings", url: "/admin/offerings", icon: <i className="fa-light fa-layer-group" aria-hidden="true" /> },
-      { key: "terms",     title: "Terms",     url: "/admin/terms",     icon: <i className="fa-light fa-calendar" aria-hidden="true" /> },
-    ],
-  },
-  {
-    key: "setup",
-    title: "Setup",
-    // Single destination: Communication + Evaluation rules (tabs). Taxonomy/access
-    // (competencies, content areas, standards, assessment types, permissions,
-    // accommodations) are managed in the Exam Management setup, not here.
-    url: "/admin/eval-settings",
-    icon:       <i className="fa-light fa-gear-complex" aria-hidden="true" />,
-    iconActive: <i className="fa-solid fa-gear-complex" aria-hidden="true" />,
   },
 ]
 

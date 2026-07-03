@@ -1,26 +1,77 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef } from 'react'
+import Link from 'next/link'
 import {
   Badge,
   Button,
   Card,
   CardContent,
+  Checkbox,
   DatePickerField,
   FieldLegend,
   Input,
   LocalBanner,
+  Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
 } from '@exxatdesignux/ui'
-import type { CourseOffering } from '@/lib/pce-mock-data'
-import { MOCK_COURSE_ENROLLMENTS, MOCK_STUDENTS } from '@/lib/pce-mock-data'
+import type { CourseOffering, ReminderFrequency, ReminderAnchor } from '@/lib/pce-mock-data'
+import {
+  MOCK_COURSE_ENROLLMENTS, MOCK_STUDENTS, EVAL_EMAIL_TEMPLATES,
+  EVAL_REMINDER_CADENCE, REMINDER_FREQUENCY_LABELS, REMINDER_ANCHOR_LABELS,
+} from '@/lib/pce-mock-data'
 import { ExxatPrismSheet, type PrismRecipient } from './exxat-prism-sheet'
 import { EmailTemplateSheet } from './email-template-sheet'
 
-const MOCK_LINK = 'https://survey.exxat.com/s/b9xkp4mr'
 const REMINDER_DAY_OPTIONS = [1, 2, 3, 5, 7, 14]
 
+// ── Mini email render — the recognition anchor (decorative, aria-hidden) ───────
+// A stylised skeleton that reads unmistakably as "an email" (letterhead + body
+// lines + the student CTA button) so this card can't be mistaken for the
+// recipient rows above it. Tokenised only; no real copy is rendered here.
+function EmailThumbnail() {
+  return (
+    <div
+      aria-hidden="true"
+      className="shrink-0 rounded-md border border-border overflow-hidden"
+      style={{ width: 128, background: 'var(--card)' }}
+    >
+      <div
+        className="flex items-center"
+        style={{ height: 24, padding: '0 9px', background: 'var(--muted)', borderBottom: '1px solid var(--border)' }}
+      >
+        <div style={{ width: 28, height: 8, borderRadius: 2, background: 'var(--border-control-35)' }} />
+      </div>
+      <div className="flex flex-col" style={{ padding: '11px 9px', gap: 6 }}>
+        <div style={{ height: 7, width: '82%', borderRadius: 2, background: 'var(--foreground)', opacity: 0.8 }} />
+        <div style={{ height: 5, width: '100%', borderRadius: 2, background: 'var(--border)' }} />
+        <div style={{ height: 5, width: '94%',  borderRadius: 2, background: 'var(--border)' }} />
+        <div style={{ height: 5, width: '68%',  borderRadius: 2, background: 'var(--border)' }} />
+        <div style={{ marginTop: 5, height: 15, width: 56, borderRadius: 3, background: 'var(--brand-color)' }} />
+      </div>
+    </div>
+  )
+}
+
+// ── Reminder placeholder — represents "send reminders" (bell + repeat ticks) ───
+function ReminderThumbnail() {
+  return (
+    <div
+      aria-hidden="true"
+      className="shrink-0 rounded-md border border-border overflow-hidden flex flex-col items-center justify-center gap-2.5"
+      style={{ width: 128, height: 108, background: 'var(--card)' }}
+    >
+      <i className="fa-light fa-bell" style={{ fontSize: 26, color: 'var(--muted-foreground)' }} aria-hidden="true" />
+      <div className="flex items-center gap-1">
+        <span style={{ width: 12, height: 5, borderRadius: 3, background: 'var(--border)' }} />
+        <span style={{ width: 12, height: 5, borderRadius: 3, background: 'var(--foreground)', opacity: 0.55 }} />
+        <span style={{ width: 12, height: 5, borderRadius: 3, background: 'var(--border)' }} />
+      </div>
+    </div>
+  )
+}
+
 export type Reminder = { id: string; daysBefore: number }
-type EmailContact = { id: string; firstName: string; lastName: string; email: string }
+export type EmailContact = { id: string; firstName: string; lastName: string; email: string }
 
 // ── Prism icon mark ───────────────────────────────────────────────────────────
 function PrismIconMark({ size = 32 }: { size?: number }) {
@@ -74,27 +125,34 @@ interface StepCommunicationProps {
   closeDate: Date | undefined
   releaseDate: Date | undefined
   senderName: string
+  emailTemplateId: string
   emailSubject: string
   emailBody: string
   reminders: Reminder[]
+  emailContacts: EmailContact[]
   onOpenDateChange: (d: Date | undefined) => void
   onCloseDateChange: (d: Date | undefined) => void
   onReleaseDateChange: (d: Date | undefined) => void
   onSenderNameChange: (v: string) => void
+  onEmailTemplateChange: (id: string) => void
   onEmailSubjectChange: (v: string) => void
   onEmailBodyChange: (v: string) => void
   onRemindersChange: (v: Reminder[]) => void
+  onEmailContactsChange: (v: EmailContact[]) => void
   onBack: () => void
   onNext: () => void
+  /** Step title — "Distribution" for programmatic surveys, else "Communication". */
+  title?: string
 }
 
 export function StepCommunication({
   selectedOfferings,
   openDate, closeDate, releaseDate,
-  senderName, emailSubject, emailBody, reminders,
+  senderName, emailTemplateId, emailSubject, emailBody, reminders, emailContacts,
   onOpenDateChange, onCloseDateChange, onReleaseDateChange,
-  onSenderNameChange, onEmailSubjectChange, onEmailBodyChange,
-  onRemindersChange, onBack, onNext,
+  onSenderNameChange, onEmailTemplateChange, onEmailSubjectChange, onEmailBodyChange,
+  onRemindersChange, onEmailContactsChange, onBack, onNext,
+  title = 'Communication',
 }: StepCommunicationProps) {
   // ── Auto-populate Prism recipients ────────────────────────────────────────
   const autoRecipients = useMemo<PrismRecipient[]>(() => {
@@ -134,12 +192,7 @@ export function StepCommunication({
     return parts.join(', ') + (isAutoPopulated ? ' from selected courses' : ' selected')
   }, [prismRecipients, prismStudents, prismFaculty, prismOther, isAutoPopulated])
 
-  // ── Email contact state ───────────────────────────────────────────────────
-  const [emailContacts, setEmailContacts] = useState<EmailContact[]>([
-    { id: 'ec-1', firstName: 'Morgan', lastName: 'Webb', email: 'mwebb@northgeneral.org' },
-    { id: 'ec-2', firstName: 'Prince', lastName: 'Osei', email: 'p.osei@clinicalsites.edu' },
-    { id: 'ec-3', firstName: 'Jamie', lastName: 'Torres', email: 'jt@riverdale-medical.com' },
-  ])
+  // ── Email contact state (lifted to the page so Review can summarise it) ─────
   const [addingContact, setAddingContact] = useState(false)
   const [draftFirst, setDraftFirst] = useState('')
   const [draftLast, setDraftLast] = useState('')
@@ -150,7 +203,7 @@ export function StepCommunication({
     const email = draftEmail.trim().toLowerCase()
     if (!email.includes('@') || !email.includes('.')) return
     if (!emailContacts.some(c => c.email === email)) {
-      setEmailContacts(prev => [...prev, {
+      onEmailContactsChange([...emailContacts, {
         id: `ec-${Date.now()}`,
         firstName: draftFirst.trim(),
         lastName: draftLast.trim(),
@@ -166,32 +219,74 @@ export function StepCommunication({
   }
 
   // ── Other state ───────────────────────────────────────────────────────────
-  const [anonymousGenerated, setAnonymousGenerated] = useState(false)
-  const [linkCopied, setLinkCopied] = useState(false)
   const [prismOpen, setPrismOpen] = useState(false)
   const [emailTemplateOpen, setEmailTemplateOpen] = useState(false)
+
+  // ── Reminder cadence (frequency + anchor + start days) ─────────────────────
+  const [reminderAutoSend, setReminderAutoSend] = useState(true)
+  const [reminderFrequency, setReminderFrequency] = useState<ReminderFrequency>(EVAL_REMINDER_CADENCE.frequency)
+  const [reminderAnchor, setReminderAnchor] = useState<ReminderAnchor>(EVAL_REMINDER_CADENCE.anchor)
+  const [reminderStartDays, setReminderStartDays] = useState(EVAL_REMINDER_CADENCE.startDaysBefore)
+  const reminderAnchorLabel = REMINDER_ANCHOR_LABELS[reminderAnchor]
+  // Derive the day-based schedule from the cadence so downstream (Review, push) stays in sync.
+  useEffect(() => {
+    const step: Record<ReminderFrequency, number> = { daily: 1, every_3_days: 3, every_7_days: 7, custom: 3 }
+    const days: number[] = []
+    for (let d = reminderStartDays; d >= 1; d -= step[reminderFrequency]) days.push(d)
+    onRemindersChange(days.map(d => ({ id: `r-${d}`, daysBefore: d })))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reminderFrequency, reminderStartDays])
 
   const today = new Date(); today.setHours(0, 0, 0, 0)
   const dateOrderError   = openDate && closeDate && closeDate <= openDate ? 'Close date must be after open date.' : null
   const releaseDateError = releaseDate && closeDate && releaseDate < closeDate ? 'Result release date must be on or after the close date.' : null
   const openInPast       = openDate && openDate < today
-  const canContinue      = !dateOrderError && !releaseDateError
+  const canContinue      = !!releaseDate && !dateOrderError && !releaseDateError
 
-  function handleCopyLink() {
-    navigator.clipboard.writeText(MOCK_LINK).catch(() => {})
-    setLinkCopied(true)
-    setTimeout(() => setLinkCopied(false), 2000)
+  const totalRecipientCount = prismRecipients.length + emailContacts.length
+  const sectionPad: React.CSSProperties = { padding: '14px 16px' }
+
+  // ── Email-notifications card derived state ─────────────────────────────────
+  const selectedTemplate = EVAL_EMAIL_TEMPLATES.find(t => t.id === emailTemplateId) ?? null
+  const invitationTemplates = EVAL_EMAIL_TEMPLATES.filter(t => t.type === 'invitation')
+  // Picking on the card swaps the template and seeds subject/body from it.
+  function handleTemplatePick(id: string) {
+    onEmailTemplateChange(id)
+    const t = EVAL_EMAIL_TEMPLATES.find(x => x.id === id)
+    if (t) { onEmailSubjectChange(t.subject); onEmailBodyChange(t.body) }
+  }
+  // Edits in the push wizard are per-push overrides — they don't rewrite the
+  // saved template, so surface that the picked template was tweaked here.
+  const isEditedForPush =
+    !!selectedTemplate && (emailSubject !== selectedTemplate.subject || emailBody !== selectedTemplate.body)
+  const reachLabel = useMemo(() => {
+    const parts: string[] = []
+    if (prismStudents.length > 0) parts.push(`${prismStudents.length} student${prismStudents.length !== 1 ? 's' : ''}`)
+    if (prismFaculty.length > 0)  parts.push(`${prismFaculty.length} faculty`)
+    if (emailContacts.length > 0) parts.push(`${emailContacts.length} external contact${emailContacts.length !== 1 ? 's' : ''}`)
+    return parts.length > 0 ? `Goes to ${parts.join(' · ')}` : 'No recipients selected yet'
+  }, [prismStudents.length, prismFaculty.length, emailContacts.length])
+  const [testSentToMe, setTestSentToMe] = useState(false)
+  const testSentTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  function handleSendTestToMe() {
+    setTestSentToMe(true)
+    if (testSentTimer.current) clearTimeout(testSentTimer.current)
+    testSentTimer.current = setTimeout(() => setTestSentToMe(false), 3000)
   }
 
-  const totalRecipientCount = prismRecipients.length + emailContacts.length + (anonymousGenerated ? 1 : 0)
-  const sectionPad: React.CSSProperties = { padding: '14px 16px' }
 
   return (
     <div className="flex flex-col gap-6" style={{ maxWidth: 600 }}>
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Communication</h1>
+        <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>{title}</h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-          Set recipients, survey window, and configure invitation emails.
+          Set the survey window, invitation email, and reminder cadence.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          <i className="fa-light fa-gear me-1" aria-hidden="true" />
+          Window, email and reminders are pre-filled from{' '}
+          <Link href="/admin/eval-settings" className="underline underline-offset-2 hover:text-foreground">Central Settings</Link>
+          {' '}— adjust below as needed.
         </p>
       </div>
 
@@ -202,145 +297,6 @@ export function StepCommunication({
           The open date is in the past. Students will receive an invitation immediately upon push.
         </LocalBanner>
       )}
-
-      {/* ── Recipients ───────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-3">
-        <FieldLegend variant="label">Recipients ({totalRecipientCount})</FieldLegend>
-
-        <Card className="overflow-hidden shadow-none">
-          <CardContent className="flex flex-col p-0">
-
-          {/* Prism */}
-          <div style={{ ...sectionPad, borderBottom: '1px solid var(--border)' }}>
-            <div className="flex items-center gap-3">
-              <div className="shrink-0" style={{ width: 32, height: 32 }}>
-                <PrismIconMark size={32} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold">Via Exxat Prism</p>
-                <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>{prismDescription}</p>
-              </div>
-              {prismRecipients.length > 0 ? (
-                <Button variant="outline" size="sm" className="shrink-0" onClick={() => setPrismOpen(true)}>Edit</Button>
-              ) : (
-                <Button variant="outline" size="sm" className="shrink-0" onClick={() => setPrismOpen(true)}>
-                  <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 11 }} />
-                  Select
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Additional Email */}
-          <div style={{ ...sectionPad, borderBottom: '1px solid var(--border)' }}>
-            <div className="flex items-center gap-3">
-              <div className="shrink-0 flex items-center justify-center rounded-lg" style={{ width: 32, height: 32, background: 'var(--muted)' }}>
-                <i className="fa-light fa-envelope" aria-hidden="true" style={{ fontSize: 14, color: 'var(--muted-foreground)' }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold">Additional Email</p>
-                <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                  {emailContacts.length > 0
-                    ? `${emailContacts.length} external contact${emailContacts.length !== 1 ? 's' : ''}`
-                    : 'Invite external recipients by email.'}
-                </p>
-              </div>
-              {!addingContact && (
-                <Button
-                  type="button" variant="outline" size="sm" className="shrink-0"
-                  onClick={() => { setAddingContact(true); setTimeout(() => firstNameRef.current?.focus(), 10) }}
-                >
-                  <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 11 }} />
-                  Add
-                </Button>
-              )}
-            </div>
-
-            {emailContacts.length > 0 && (
-              <div className="flex flex-wrap gap-1.5" style={{ marginTop: 10 }}>
-                {emailContacts.map(c => (
-                  <EmailChip key={c.id} contact={c} onRemove={() => setEmailContacts(prev => prev.filter(x => x.id !== c.id))} />
-                ))}
-              </div>
-            )}
-
-            {addingContact && (
-              <div
-                className="grid items-center gap-1.5"
-                style={{ marginTop: 10, gridTemplateColumns: '1fr 1fr 2fr auto auto' }}
-                onKeyDown={handleContactFormKeyDown}
-              >
-                <Input
-                  ref={firstNameRef}
-                  type="text"
-                  placeholder="First name"
-                  value={draftFirst}
-                  onChange={e => setDraftFirst(e.target.value)}
-                  className="min-w-0"
-                  aria-label="First name"
-                />
-                <Input
-                  type="text"
-                  placeholder="Last name"
-                  value={draftLast}
-                  onChange={e => setDraftLast(e.target.value)}
-                  className="min-w-0"
-                  aria-label="Last name"
-                />
-                <Input
-                  type="email"
-                  placeholder="Email address"
-                  value={draftEmail}
-                  onChange={e => setDraftEmail(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddContact() } }}
-                  className="min-w-0"
-                  aria-label="Email address"
-                />
-                <Button type="button" variant="default" size="sm" disabled={!draftEmail.includes('@')} onClick={handleAddContact}>Add</Button>
-                <Button type="button" variant="ghost" size="sm" onClick={() => { setAddingContact(false); setDraftFirst(''); setDraftLast(''); setDraftEmail('') }}>Cancel</Button>
-              </div>
-            )}
-          </div>
-
-          {/* Anonymous Link */}
-          <div style={sectionPad}>
-            <div className="flex items-center gap-3">
-              <div className="shrink-0 flex items-center justify-center rounded-lg" style={{ width: 32, height: 32, background: 'var(--muted)' }}>
-                <i className="fa-light fa-globe" aria-hidden="true" style={{ fontSize: 14, color: 'var(--muted-foreground)' }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold">Anonymous Link</p>
-                <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Open link for distribution via email or social.</p>
-              </div>
-              {anonymousGenerated ? (
-                <Button variant="link" size="sm" className="text-destructive shrink-0 px-0" onClick={() => setAnonymousGenerated(false)}>Revoke</Button>
-              ) : (
-                <Button variant="outline" size="sm" className="shrink-0" onClick={() => setAnonymousGenerated(true)}>Generate Link</Button>
-              )}
-            </div>
-
-            {anonymousGenerated && (
-              <div className="flex items-center gap-2" style={{ marginTop: 10, paddingLeft: 44 }}>
-                <code
-                  className="text-sm flex-1 rounded"
-                  style={{ padding: '5px 10px', background: 'var(--muted)', color: 'var(--muted-foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                  title={MOCK_LINK}
-                >
-                  {MOCK_LINK}
-                </code>
-                <Button variant="ghost" size="icon" onClick={handleCopyLink} aria-label="Copy public link">
-                  <i className={`fa-light fa-${linkCopied ? 'check' : 'copy'}`} aria-hidden="true" style={{ fontSize: 16 }} />
-                </Button>
-                <span role="status" aria-live="polite" className="text-sm font-medium" style={{ whiteSpace: 'nowrap', minWidth: 0 }}>
-                  {linkCopied ? 'Copied!' : ''}
-                </span>
-              </div>
-            )}
-          </div>
-
-          </CardContent>
-        </Card>
-      </div>
 
       {/* ── Survey window ─────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-3">
@@ -363,11 +319,16 @@ export function StepCommunication({
               <DatePickerField value={closeDate} onChange={onCloseDateChange} aria-labelledby="label-closes-on" aria-required="true" />
             </div>
             <div className="flex flex-col gap-1.5">
-              <p className="text-sm font-medium">Results released <span className="font-normal">(optional)</span></p>
-              <DatePickerField value={releaseDate} onChange={onReleaseDateChange} />
+              <p id="label-release-on" className="text-sm font-medium">
+                Results released <span aria-hidden="true" style={{ color: 'var(--destructive)' }}>*</span>
+                <span className="sr-only">(required)</span>
+              </p>
+              <DatePickerField value={releaseDate} onChange={onReleaseDateChange} aria-labelledby="label-release-on" aria-required="true" />
             </div>
           </div>
-          <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>Results release defaults to immediately after close if not set.</p>
+          <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+            Set the date when results become visible to instructors. Ensure this is after final grades are submitted.
+          </p>
           </CardContent>
         </Card>
       </div>
@@ -377,56 +338,146 @@ export function StepCommunication({
         <FieldLegend variant="label">Email notifications</FieldLegend>
 
         <Card className="overflow-hidden shadow-none">
-          <CardContent className="flex flex-col p-0">
-          <div className="flex items-center gap-3" style={sectionPad}>
-            <div className="shrink-0 flex items-center justify-center rounded-lg" style={{ width: 32, height: 32, background: 'var(--muted)' }}>
-              <i className="fa-light fa-envelope-open-text" aria-hidden="true" style={{ fontSize: 14, color: 'var(--muted-foreground)' }} />
-            </div>
-            <div className="flex flex-col gap-0 flex-1 min-w-0">
-              <p className="text-sm font-semibold truncate">{emailSubject || 'You have been assigned a survey'}</p>
+          <CardContent className="flex items-center gap-4" style={{ padding: 16 }}>
+            {/* Mini render — click to preview/edit. This is what makes the card
+                read as "the email", not another recipient row. */}
+            <button
+              type="button"
+              onClick={() => setEmailTemplateOpen(true)}
+              className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Preview and edit the invitation email"
+            >
+              <EmailThumbnail />
+            </button>
+
+            <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+              <p className="text-sm font-semibold">Send invitation</p>
               <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                Invitation · Sent when survey opens · From: {senderName || 'Exxat Surveys'}
+                Sent to recipients when the survey opens. Choose a template.
               </p>
+
+              <div className="flex items-center gap-2 flex-wrap" style={{ marginTop: 6 }}>
+                <Select value={emailTemplateId} onValueChange={handleTemplatePick}>
+                  <SelectTrigger
+                    aria-label="Choose invitation template"
+                    className="gap-1.5 font-semibold"
+                    style={{ height: 32, width: 220 }}
+                  >
+                    <SelectValue placeholder="Choose a template" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {invitationTemplates.map(t => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {isEditedForPush && (
+                  <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>· Edited for this push</span>
+                )}
+              </div>
+
+              <p className="text-sm truncate" style={{ marginTop: 2 }}>{emailSubject || 'You have been assigned a survey'}</p>
+
+              <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                From {senderName || 'Exxat Surveys'} · {reachLabel}
+              </p>
+
+              <div className="flex items-center gap-2" style={{ marginTop: 6 }}>
+                <Button variant="outline" size="sm" onClick={() => setEmailTemplateOpen(true)}>Edit</Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-foreground"
+                  onClick={handleSendTestToMe}
+                  disabled={testSentToMe}
+                >
+                  {testSentToMe ? (
+                    <>
+                      <i className="fa-solid fa-circle-check" aria-hidden="true" style={{ fontSize: 11, color: 'var(--chart-2)' }} />
+                      Test sent to you
+                    </>
+                  ) : 'Send test to me'}
+                </Button>
+              </div>
             </div>
-            <Button variant="outline" size="sm" className="shrink-0" onClick={() => setEmailTemplateOpen(true)}>Edit</Button>
-          </div>
           </CardContent>
         </Card>
 
-        {/* Reminder day-toggle chips */}
-        <div className="flex flex-col gap-2">
-          <p className="text-sm font-medium">
-            Reminders <span className="font-normal">(to non-respondents only)</span>
-          </p>
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Reminder days before close">
-            {REMINDER_DAY_OPTIONS.map(day => {
-              const active = reminders.some(r => r.daysBefore === day)
-              return (
-                <Button
-                  key={day}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  aria-pressed={active}
-                  onClick={() => {
-                    if (active) onRemindersChange(reminders.filter(r => r.daysBefore !== day))
-                    else        onRemindersChange([...reminders, { id: `r-${day}`, daysBefore: day }])
-                  }}
-                  className="rounded-full text-xs"
-                  style={{
-                    padding: '5px 12px',
-                    background: active ? 'var(--foreground)' : 'var(--background)',
-                    borderColor: active ? 'var(--foreground)' : 'var(--border)',
-                    color: active ? 'var(--background)' : 'var(--foreground)',
-                  }}
-                >
-                  {active && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 9 }} />}
-                  {day} day{day !== 1 ? 's' : ''}
-                </Button>
-              )
-            })}
-          </div>
-        </div>
+      </div>
+
+      {/* ── Reminder Cadence ─────────────────────────────────────────────── */}
+      <div className="flex flex-col gap-3">
+        <FieldLegend variant="label">Reminder Cadence</FieldLegend>
+        <Card className="shadow-none">
+          <CardContent className="flex flex-col gap-5" style={{ padding: 16 }}>
+            <p className="text-sm" style={{ color: 'var(--muted-foreground)', marginTop: -2 }}>
+              Reminders are sent only to students who haven&apos;t submitted.
+            </p>
+
+            <label className="flex items-center gap-3 cursor-pointer">
+              <Checkbox
+                checked={reminderAutoSend}
+                onCheckedChange={v => setReminderAutoSend(!!v)}
+                aria-label="System sends email to recipients when the survey opens"
+              />
+              <span className="text-sm">System sends email to recipients when the survey opens</span>
+            </label>
+
+            <div style={{ borderTop: '1px solid var(--border)' }} />
+
+            {/* Reminder frequency */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-0.5" style={{ maxWidth: 300 }}>
+                <p className="text-sm font-medium">Reminder frequency</p>
+                <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>How often reminder emails repeat.</p>
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                {(Object.keys(REMINDER_FREQUENCY_LABELS) as ReminderFrequency[]).map(f => (
+                  <Button key={f} variant={reminderFrequency === f ? 'default' : 'outline'} size="sm" className="h-8"
+                    aria-pressed={reminderFrequency === f} onClick={() => setReminderFrequency(f)}>
+                    {REMINDER_FREQUENCY_LABELS[f]}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--border)' }} />
+
+            {/* Anchor date */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-0.5" style={{ maxWidth: 300 }}>
+                <p className="text-sm font-medium">Anchor date</p>
+                <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>The reference point the cadence is calculated from.</p>
+              </div>
+              <Select value={reminderAnchor} onValueChange={v => setReminderAnchor(v as ReminderAnchor)}>
+                <SelectTrigger className="h-9 text-sm" style={{ width: 224 }} aria-label="Reminder anchor date"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(REMINDER_ANCHOR_LABELS) as ReminderAnchor[]).map(a => (
+                    <SelectItem key={a} value={a}>{REMINDER_ANCHOR_LABELS[a]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--border)' }} />
+
+            {/* Start sending */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-0.5" style={{ maxWidth: 360 }}>
+                <p className="text-sm font-medium">Start sending</p>
+                <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                  Begin reminders this many days before {reminderAnchorLabel}, repeating at the chosen frequency until the anchor date.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Input type="number" min={1} max={60} value={reminderStartDays}
+                  onChange={e => setReminderStartDays(Math.max(1, Math.min(60, Number(e.target.value) || 1)))}
+                  className="h-9 text-sm tabular-nums text-right" style={{ width: 80 }} aria-label="Start sending days before anchor" />
+                <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>days before {reminderAnchorLabel}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Nav */}
@@ -441,20 +492,15 @@ export function StepCommunication({
         </Button>
       </div>
 
-      <ExxatPrismSheet
-        open={prismOpen}
-        onOpenChange={setPrismOpen}
-        selectedIds={new Set(prismRecipients.map(r => r.id))}
-        onCommit={recipients => { setManualOverride(recipients); setPrismOpen(false) }}
-      />
-
       <EmailTemplateSheet
         open={emailTemplateOpen}
         onOpenChange={setEmailTemplateOpen}
+        templateId={emailTemplateId}
         subject={emailSubject}
         body={emailBody}
         senderName={senderName}
-        onSave={(subject, body, sender) => {
+        onSave={(subject, body, sender, templateId) => {
+          onEmailTemplateChange(templateId)
           onEmailSubjectChange(subject); onEmailBodyChange(body); onSenderNameChange(sender)
           setEmailTemplateOpen(false)
         }}

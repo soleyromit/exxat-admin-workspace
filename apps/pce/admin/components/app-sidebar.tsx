@@ -52,7 +52,7 @@ import { Kbd, KbdGroup } from "@/components/ui/kbd"
 import { useModKeyLabel } from "@/hooks/use-mod-key-label"
 import { ExxatProductLogo } from "@/components/exxat-product-logo"
 import { NavUser } from "@/components/sidebar/nav-user"
-import { useAskLeo } from "@/components/ask-leo-sidebar"
+import { useAskLeo } from "@/components/ask-leo-context"
 import { motionHeaderEnter } from "@/lib/motion-ui"
 import {
   NAV_ADMIN,
@@ -216,7 +216,8 @@ function QuickActionItems({ items }: { items: NavSecondaryItem[] }) {
 function CollapsibleNavItem({ item, pathname, allNavUrls }: { item: NavLinkItem; pathname: string; allNavUrls?: string[] }) {
   const { state, isMobile } = useSidebar()
   const isAnyChildActive = item.children?.some(c => isNavActive(pathname, c.url, allNavUrls)) ?? false
-  const parentActive = isAnyChildActive || isNavActive(pathname, item.url, allNavUrls)
+  const isPrefixActive = item.activePrefixes?.some(p => isNavActive(pathname, p, allNavUrls)) ?? false
+  const parentActive = isAnyChildActive || isPrefixActive || isNavActive(pathname, item.url, allNavUrls)
 
   const [open, setOpen] = React.useState(isAnyChildActive)
   const [flyoutOpen, setFlyoutOpen] = React.useState(false)
@@ -241,7 +242,7 @@ function CollapsibleNavItem({ item, pathname, allNavUrls }: { item: NavLinkItem;
 
   if (!item.children?.length) return null
 
-  const triggerIcon = (iconRailCollapsed ? isAnyChildActive : parentActive) && item.iconActive
+  const triggerIcon = (iconRailCollapsed ? (isAnyChildActive || isPrefixActive) : parentActive) && item.iconActive
     ? item.iconActive
     : item.icon
 
@@ -348,7 +349,10 @@ function CollapsibleNavItem({ item, pathname, allNavUrls }: { item: NavLinkItem;
 function PrimaryNavItems({ items }: { items: NavLinkItem[] }) {
   const pathname = usePathname()
   const allNavUrls = React.useMemo(
-    () => items.flatMap(item => item.children?.map(c => c.url.split("?")[0]) ?? [item.url.split("?")[0]]),
+    () => items.flatMap(item => [
+      ...(item.children?.map(c => c.url.split("?")[0]) ?? [item.url.split("?")[0]]),
+      ...(item.activePrefixes ?? []),
+    ]),
     [items]
   )
 

@@ -1,31 +1,29 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo } from 'react'
 import {
   Badge,
   Button,
   Checkbox,
-  Input,
   LocalBanner,
   Avatar,
   AvatarFallback,
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-  ViewSegmentedControl,
 } from '@exxatdesignux/ui'
 import {
   MOCK_MASTER_COURSES,
   MOCK_FACULTY,
-  MOCK_COURSE_ENROLLMENTS,
   type CourseOffering,
   type ProgramTerm,
 } from '@/lib/pce-mock-data'
 import { usePce } from '@/components/pce/pce-state'
+import { DataTable } from '@/components/data-table'
+import type { ColumnDef } from '@/components/data-table/types'
 
-type TypeTab = 'all' | 'didactic' | 'clinical'
+const TYPE_LABEL: Record<string, string> = {
+  didactic: 'Classroom based',
+  clinical: 'Practice based',
+  seminar:  'Lab based',
+}
 
 interface StepDistributionProps {
   offeringsForTerm: CourseOffering[]
@@ -42,13 +40,16 @@ interface StepDistributionProps {
   onNext: () => void
 }
 
-function CourseTypeBadge({ type }: { type: 'didactic' | 'clinical' }) {
-  return (
-    <Badge variant="outline" className="rounded shrink-0">
-      {type === 'didactic' ? 'Didactic' : 'Clinical'}
-    </Badge>
-  )
-}
+type DistRow = {
+  id: string
+  courseCode: string
+  courseName: string
+  facultyName: string
+  facultyInitials: string
+  enrolled: number
+  courseType: string
+  cohort: string
+} & Record<string, unknown>
 
 export function StepDistribution({
   offeringsForTerm,
@@ -56,18 +57,12 @@ export function StepDistribution({
   excludedIds,
   selectedTerm,
   programName,
-  openDate,
-  closeDate,
   onToggleOffering,
   onSetExcluded,
-  onApplyDatesToAll,
   onBack,
   onNext,
 }: StepDistributionProps) {
   const { surveys } = usePce()
-  const [typeTab, setTypeTab] = useState<TypeTab>('all')
-  const [search, setSearch] = useState('')
-  const [cohortFilter, setCohortFilter] = useState<string>('all')
 
   // Duplicate CE survey check
   const existingCourseCodes = new Set(
@@ -84,62 +79,107 @@ export function StepDistribution({
     return course && existingCourseCodes.has(course.code)
   })
 
-  const didacticOfferings = offeringsForTerm.filter(o => o.courseType === 'didactic')
-  const clinicalOfferings = offeringsForTerm.filter(o => o.courseType === 'clinical')
-  const hasBothTypes = didacticOfferings.length > 0 && clinicalOfferings.length > 0
-
-  const cohortOptions = Array.from(
-    new Set(offeringsForTerm.map(o => o.cohort).filter(Boolean))
-  ).sort()
-
-  const tabFiltered = offeringsForTerm.filter(o => {
-    if (typeTab === 'didactic') return o.courseType === 'didactic'
-    if (typeTab === 'clinical') return o.courseType === 'clinical'
-    return true
-  })
-
-  const filteredOfferings = tabFiltered.filter(offering => {
-    if (cohortFilter !== 'all' && offering.cohort !== cohortFilter) return false
-    if (!search.trim()) return true
-    const course = MOCK_MASTER_COURSES.find(c => c.id === offering.masterCourseId)
-    const q = search.toLowerCase()
-    return (
-      course?.code.toLowerCase().includes(q) ||
-      course?.name.toLowerCase().includes(q)
-    )
-  })
-
-  // Header checkbox state (over visible rows only)
-  const visibleSelectedCount = filteredOfferings.filter(o => !excludedIds.has(o.id)).length
-  const allVisibleSelected = filteredOfferings.length > 0 && visibleSelectedCount === filteredOfferings.length
-  const someVisibleSelected = visibleSelectedCount > 0 && !allVisibleSelected
-
-  function handleHeaderCheckbox() {
-    const next = new Set(excludedIds)
-    if (allVisibleSelected) {
-      filteredOfferings.forEach(o => next.add(o.id))
-    } else {
-      filteredOfferings.forEach(o => next.delete(o.id))
-    }
-    onSetExcluded(next)
-  }
+  const unassignedFacultyCount = offeringsForTerm.filter(
+    o => !o.primaryFacultyId || !MOCK_FACULTY.find(f => f.id === o.primaryFacultyId),
+  ).length
 
   const noneSelected = selectedOfferings.length === 0
 
-  const typeOptions = [
-    { value: 'all' as const, label: `All (${offeringsForTerm.length})` },
-    { value: 'didactic' as const, label: `Didactic (${didacticOfferings.length})` },
-    { value: 'clinical' as const, label: `Clinical (${clinicalOfferings.length})` },
-  ] as const
+  const rows = useMemo<DistRow[]>(
+    () => offeringsForTerm.map(o => {
+      const course = MOCK_MASTER_COURSES.find(c => c.id === o.masterCourseId)
+      const fac = MOCK_FACULTY.find(f => f.id === o.primaryFacultyId)
+      return {
+        id: o.id,
+        courseCode: course?.code ?? '—',
+        courseName: course?.name ?? '',
+        facultyName: fac?.name ?? 'Unassigned faculty',
+        facultyInitials: fac?.initials ?? '?',
+        enrolled: o.enrolledCount,
+        courseType: o.courseType ?? '',
+        cohort: o.cohort ?? '',
+      }
+    }),
+    [offeringsForTerm],
+  )
+
+  // Select-all across the full term list (filtering is a view).
+  const allIds = offeringsForTerm.map(o => o.id)
+  const allSelected  = allIds.length > 0 && allIds.every(id => !excludedIds.has(id))
+  const someSelected = allIds.some(id => !excludedIds.has(id)) && !allSelected
+  const toggleAll = () => onSetExcluded(allSelected ? new Set(allIds) : new Set())
+
+  const typeOptions = useMemo(() => {
+    const present = [...new Set(offeringsForTerm.map(o => o.courseType).filter(Boolean))] as string[]
+    return present.map(t => ({ value: t, label: TYPE_LABEL[t] ?? t }))
+  }, [offeringsForTerm])
+
+  const cohortOptions = useMemo(() => {
+    const present = [...new Set(offeringsForTerm.map(o => o.cohort).filter(Boolean))].sort() as string[]
+    return present.map(c => ({ value: c, label: c }))
+  }, [offeringsForTerm])
+
+  const columns: ColumnDef<DistRow>[] = [
+    {
+      key: 'include', label: '', width: 44, defaultPin: 'left', lockPin: true,
+      header: () => (
+        <Checkbox
+          checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+          onCheckedChange={toggleAll}
+          aria-label="Select all courses"
+        />
+      ),
+      cell: (row) => (
+        <div onClick={e => e.stopPropagation()}>
+          <Checkbox
+            checked={!excludedIds.has(row.id)}
+            onCheckedChange={() => onToggleOffering(row.id)}
+            aria-label={`Include ${row.courseCode}`}
+          />
+        </div>
+      ),
+    },
+    {
+      key: 'courseCode', label: 'Course', sortable: true, width: 320,
+      cell: (row) => (
+        <div className="flex items-center gap-2 min-w-0">
+          <Avatar className="h-7 w-7 shrink-0">
+            <AvatarFallback className="text-xs" style={{ backgroundColor: 'var(--avatar-initials-bg)', color: 'var(--avatar-initials-fg)' }}>
+              {row.facultyInitials}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className="text-sm truncate">
+              <span className="font-semibold">{row.courseCode}</span>{' '}
+              <span className="text-muted-foreground">{row.courseName}</span>
+            </p>
+            <p className="text-xs text-muted-foreground truncate">{row.facultyName} · {row.enrolled} enrolled</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'courseType', label: 'Type', sortable: true, width: 150,
+      filter: { type: 'select', icon: 'fa-layer-group', operators: ['is', 'is_not'], options: typeOptions },
+      cell: (row) => row.courseType
+        ? <Badge variant="outline" className="rounded">{TYPE_LABEL[row.courseType] ?? row.courseType}</Badge>
+        : <span className="text-xs text-muted-foreground">—</span>,
+    },
+    {
+      key: 'cohort', label: 'Cohort', sortable: true, width: 150,
+      filter: { type: 'select', icon: 'fa-users', operators: ['is', 'is_not'], options: cohortOptions },
+      cell: (row) => <span className="text-sm text-muted-foreground">{row.cohort || '—'}</span>,
+    },
+  ]
 
   return (
-    <div className="flex flex-col gap-5" style={{ maxWidth: 640 }}>
+    <div className="flex flex-col gap-5" style={{ maxWidth: 760 }}>
 
       {/* Header */}
       <div className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Courses &amp; access</h1>
         <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-          {selectedTerm.name} · {selectedTerm.academicYear}{programName ? ` · ${programName}` : ''}
+          {selectedTerm.name} · {selectedTerm.academicYear}{programName ? ` · ${programName}` : ''} · All courses included — uncheck to exclude.
         </p>
       </div>
 
@@ -153,150 +193,38 @@ export function StepDistribution({
         </LocalBanner>
       )}
       {noneSelected && (
-        <LocalBanner variant="warning">
-          At least one course must be selected to continue.
+        <LocalBanner variant="warning">At least one course must be selected to continue.</LocalBanner>
+      )}
+      {unassignedFacultyCount > 0 && (
+        <LocalBanner variant="info">
+          {unassignedFacultyCount} course{unassignedFacultyCount !== 1 ? 's have' : ' has'} no instructor — the Instructor section will be suppressed in those surveys.
         </LocalBanner>
       )}
 
-      {/* Type filter + table */}
       {offeringsForTerm.length === 0 ? (
         <p className="text-sm py-8 text-center" style={{ color: 'var(--muted-foreground)' }}>
           No active course offerings for this term.
         </p>
       ) : (
-        <div className="flex flex-col gap-2">
-          {hasBothTypes && (
-            <ViewSegmentedControl
-              value={typeTab}
-              onValueChange={v => setTypeTab(v as TypeTab)}
-              options={typeOptions}
-              aria-label="Filter courses by type"
-            />
-          )}
-
-          <div className="flex flex-col overflow-hidden rounded-lg border border-border">
-            {/* Toolbar */}
-            <div
-              className="flex items-center gap-2 flex-wrap px-3 py-2 border-b border-border"
-            >
-              <Checkbox
-                checked={allVisibleSelected ? true : someVisibleSelected ? 'indeterminate' : false}
-                onCheckedChange={handleHeaderCheckbox}
-                aria-label="Select or deselect all visible courses"
-              />
+        // -mx cancels the DataTable's own mx-4/6 so its border aligns with the header above.
+        <div className="-mx-4 lg:-mx-6">
+          <DataTable<DistRow>
+            data={rows}
+            columns={columns}
+            getRowId={(row) => row.id}
+            searchable
+            toolbarSlot={() => (
               <span className="text-xs tabular-nums" style={{ color: 'var(--muted-foreground)' }}>
                 {selectedOfferings.length} of {offeringsForTerm.length} selected
               </span>
-              <div className="flex-1" />
-              {cohortOptions.length > 1 && (
-                <Select value={cohortFilter} onValueChange={setCohortFilter}>
-                  <SelectTrigger className="h-8 text-xs" style={{ minWidth: 130 }} aria-label="Filter by cohort">
-                    <SelectValue placeholder="All cohorts" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All cohorts</SelectItem>
-                    {cohortOptions.map(c => (
-                      <SelectItem key={c} value={c!}>{c}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-              <div className="relative flex items-center" style={{ minWidth: 180, maxWidth: 220 }}>
-                <i className="fa-light fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs pointer-events-none" aria-hidden="true" />
-                <Input
-                  placeholder="Search courses…"
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  aria-label="Search courses"
-                  className="h-8 pl-7 pr-2 text-xs"
-                />
+            )}
+            emptyState={
+              <div className="flex flex-col items-center gap-2 py-8">
+                <i className="fa-light fa-magnifying-glass text-muted-foreground" aria-hidden="true" style={{ fontSize: 22 }} />
+                <p className="text-sm text-muted-foreground">No courses match your search or filter</p>
               </div>
-            </div>
-
-            {/* Rows — scrollable */}
-            <div style={{ maxHeight: 320, overflowY: 'auto' }}>
-              {filteredOfferings.length === 0 ? (
-                <p className="text-sm py-8 text-center" style={{ color: 'var(--muted-foreground)' }}>
-                  No courses match your filters.
-                </p>
-              ) : (
-                filteredOfferings.map((offering, i) => {
-                  const course = MOCK_MASTER_COURSES.find(c => c.id === offering.masterCourseId)
-                  const faculty = MOCK_FACULTY.find(f => f.id === offering.primaryFacultyId)
-                  const checked = !excludedIds.has(offering.id)
-                  const isLast = i === filteredOfferings.length - 1
-                  const isUnassigned = !faculty
-
-                  return (
-                    <div key={offering.id}>
-                      <label
-                        className="flex items-center gap-3 cursor-pointer"
-                        style={{
-                          padding: '10px 12px',
-                          borderBottom: isLast && !isUnassigned ? 'none' : '1px solid var(--border)',
-                          background: checked ? 'var(--card)' : 'var(--muted)',
-                        }}
-                      >
-                        <Checkbox
-                          checked={checked}
-                          onCheckedChange={() => onToggleOffering(offering.id)}
-                          aria-label={`Include ${course?.code ?? offering.id}`}
-                        />
-
-                        <Avatar style={{ width: 28, height: 28, flexShrink: 0 }}>
-                          <AvatarFallback style={{ fontSize: 12, fontWeight: 600 }}>
-                            {faculty?.initials ?? '?'}
-                          </AvatarFallback>
-                        </Avatar>
-
-                        <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-semibold" style={{ letterSpacing: '-0.01em' }}>
-                              {course?.code}
-                            </span>
-                            <span className="text-sm truncate" style={{ color: 'var(--muted-foreground)' }}>
-                              {course?.name}
-                            </span>
-                            {offering.courseType && (
-                              <CourseTypeBadge type={offering.courseType} />
-                            )}
-                          </div>
-                          <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                            {faculty ? faculty.name : (
-                              <span style={{ color: 'var(--muted-foreground)' }}>Unassigned faculty</span>
-                            )}
-                            {' '}· {offering.enrolledCount} enrolled
-                            {offering.cohort && <> · {offering.cohort}</>}
-                          </span>
-                        </div>
-
-                      </label>
-
-                      {isUnassigned && (
-                        <div
-                          className="flex items-start gap-2"
-                          style={{
-                            padding: '6px 12px 8px 52px',
-                            background: 'var(--muted)',
-                            borderBottom: isLast ? 'none' : '1px solid var(--border)',
-                          }}
-                        >
-                          <i
-                            className="fa-light fa-circle-info text-xs shrink-0 mt-0.5"
-                            aria-hidden="true"
-                            style={{ color: 'var(--muted-foreground)' }}
-                          />
-                          <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                            No instructor assigned. Instructor section will be suppressed in this survey.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })
-              )}
-            </div>
-          </div>
+            }
+          />
         </div>
       )}
 

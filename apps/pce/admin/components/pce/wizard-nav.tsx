@@ -12,14 +12,17 @@ interface WizardNavProps {
 
 const DEFAULT_STEPS: Record<string, { n: number; label: string }[]> = {
   course_evaluation: [
-    { n: 1, label: 'Scope and design' },
-    { n: 2, label: 'Distribution' },
+    { n: 1, label: 'Courses' },
+    { n: 2, label: 'Survey Design' },
     { n: 3, label: 'Communication' },
+    { n: 4, label: 'Review' },
   ],
+  // Programmatic surveys skip Distribution (not course-scoped). The `n` values
+  // stay aligned to the internal wizard steps (1 → 3 → 4) so nav state matches.
   general: [
-    { n: 1, label: 'Scope and design' },
-    { n: 2, label: 'Distribution' },
-    { n: 3, label: 'Communication' },
+    { n: 1, label: 'Basic Details' },
+    { n: 3, label: 'Distribution' },
+    { n: 4, label: 'Review' },
   ],
 }
 
@@ -36,6 +39,9 @@ export function WizardNav({ currentStep, completedUpTo, onStepClick, mode = 'cou
         const isCompleted = n <= completedUpTo
         const isCurrent = n === currentStep
         const isFuture = !isCompleted && !isCurrent
+        // Displayed position is sequential (1,2,3…) even when internal step
+        // numbers skip (e.g. programmatic skips Distribution → n = 1,3,4).
+        const displayNum = idx + 1
 
         return (
           <div key={n} className="flex items-center" style={{ gap: 0 }}>
@@ -46,7 +52,7 @@ export function WizardNav({ currentStep, completedUpTo, onStepClick, mode = 'cou
               onClick={() => isCompleted ? onStepClick(n) : undefined}
               disabled={isFuture}
               aria-current={isCurrent ? 'step' : undefined}
-              aria-label={isCompleted ? `Go back to step ${n}: ${label}` : `Step ${n}: ${label}`}
+              aria-label={isCompleted ? `Go back to step ${displayNum}: ${label}` : `Step ${displayNum}: ${label}`}
               className="gap-2 cursor-default"
               style={isCurrent ? {} : isCompleted ? { cursor: 'pointer' } : {}}
             >
@@ -71,7 +77,7 @@ export function WizardNav({ currentStep, completedUpTo, onStepClick, mode = 'cou
                 {isCompleted ? (
                   <i className="fa-solid fa-check" style={{ fontSize: 10 }} aria-hidden="true" />
                 ) : (
-                  n
+                  displayNum
                 )}
               </span>
 

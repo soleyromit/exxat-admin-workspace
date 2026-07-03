@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, Suspense } from 'react'
+import { useState, useMemo, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams, usePathname } from 'next/navigation'
 import { Button } from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
@@ -9,20 +9,34 @@ import { WizardNav } from '@/components/pce/wizard-nav'
 import { StepProperties } from '@/components/pce/distribute-wizard/step-properties'
 import { StepDistribution } from '@/components/pce/distribute-wizard/step-distribution'
 import { StepSurveyDesign } from '@/components/pce/distribute-wizard/step-survey-design'
-import { StepCommunication, type Reminder } from '@/components/pce/distribute-wizard/step-communication'
+import { StepCommunication, type Reminder, type EmailContact } from '@/components/pce/distribute-wizard/step-communication'
+import { StepReview } from '@/components/pce/distribute-wizard/step-review'
 import { StepSuccess } from '@/components/pce/distribute-wizard/step-success'
+import { StepCourses } from '@/components/pce/distribute-wizard/step-courses'
+import { StepSurveyDesignAssign } from '@/components/pce/distribute-wizard/step-survey-design-assign'
 import { StepSurveyDesignGeneral } from '@/components/pce/distribute-wizard/step-survey-design-general'
 import {
   MOCK_PROGRAM_TERMS,
   MOCK_COURSE_OFFERINGS,
+  MOCK_COURSE_ENROLLMENTS,
+  MOCK_MASTER_COURSES,
+  EVAL_DATE_RULES,
+  EVAL_EMAIL_TEMPLATES,
   type SurveyType,
   type PceTemplate,
 } from '@/lib/pce-mock-data'
 
+const FIRST_INVITATION_TEMPLATE = EVAL_EMAIL_TEMPLATES.find(t => t.type === 'invitation') ?? null
+const FIRST_INVITATION_TEMPLATE_ID = FIRST_INVITATION_TEMPLATE?.id ?? ''
+
+// Recipients are the selected courses' students; external contacts were removed
+// with the Recipients card, so none are seeded.
+const INITIAL_EMAIL_CONTACTS: EmailContact[] = []
+
 const LATEST_TERM_ID = [...MOCK_PROGRAM_TERMS]
   .sort((a, b) => b.startDate.localeCompare(a.startDate))[0]?.id ?? ''
 
-type WizardStep = 1 | 2 | 3 | 'success'
+type WizardStep = 1 | 2 | 3 | 4 | 'success'
 
 // Pre-assign a default template to every (non-archived) offering in a term, so
 // the merged "Scope and design" step shows assignments immediately. One template
@@ -55,14 +69,32 @@ function dateToYmd(d: Date | undefined): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-const DEFAULT_EMAIL_BODY = `Hi {{student_first_name}},
-
-Your evaluation for {{course_name}} is open until {{close_date}}. Your responses are anonymous — your name will never be attached to your answers.
-
-Take the survey: {{survey_link}}`
+// ── Pre-fill from Central Settings (§4: minimum-click goal) ───────────────────
+function isoToDate(iso: string): Date {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+function shiftDate(base: Date, days: number): Date {
+  const n = new Date(base); n.setDate(n.getDate() + days); return n
+}
+/** Survey window derived from the term's end date + the Settings anchor offsets. */
+function windowFromSettings(termId: string): { open?: Date; close?: Date; release?: Date } {
+  const term = MOCK_PROGRAM_TERMS.find(t => t.id === termId)
+  if (!term) return {}
+  const end = isoToDate(term.endDate)
+  return {
+    open:    shiftDate(end, EVAL_DATE_RULES.opensOffset),
+    close:   shiftDate(end, EVAL_DATE_RULES.closesOffset),
+    release: shiftDate(end, EVAL_DATE_RULES.releaseOffset),
+  }
+}
+/** Reminder cadence from the single Settings source (days before survey close). */
+function remindersFromSettings(intervals: number[]): Reminder[] {
+  return [...intervals].sort((a, b) => b - a).map(d => ({ id: `r-${d}`, daysBefore: d }))
+}
 
 function PushSurveyInner() {
-  const { templates, pushSurveyBatch } = usePce()
+  const { templates, pushSurveyBatch, setupDefaults } = usePce()
   const params = useSearchParams()
   const pathname = usePathname()
   const surveyMode: 'course_evaluation' | 'general' =
@@ -77,6 +109,23 @@ function PushSurveyInner() {
     )
   )
 
+  // Scoped entry from the retired Activate wizard: ?offerings=id,id pre-selects a
+  // subset; ?term= pre-selects a whole term. Else default to the latest term.
+  const scopedOfferingIds = useMemo(() => {
+    const raw = params?.get('offerings')
+    return raw ? new Set(raw.split(',').filter(Boolean)) : null
+  }, [params])
+
+  const initialTermId = useMemo(() => {
+    const byTerm = MOCK_PROGRAM_TERMS.find(t => t.id === params?.get('term'))?.id
+    if (byTerm) return byTerm
+    if (scopedOfferingIds) {
+      const first = MOCK_COURSE_OFFERINGS.find(o => scopedOfferingIds.has(o.id))
+      if (first) return first.termId
+    }
+    return LATEST_TERM_ID
+  }, [params, scopedOfferingIds])
+
   const [step, setStep] = useState<WizardStep>(1)
 
   // Step 1 — Properties
@@ -84,26 +133,49 @@ function PushSurveyInner() {
     surveyMode === 'general' ? 'programmatic' : 'course_evaluation'
   )
   const [surveyTitle, setSurveyTitle] = useState('')
-  const [termId, setTermId] = useState(LATEST_TERM_ID)
+  const [termId, setTermId] = useState(initialTermId)
   const [surveyDescription, setSurveyDescription] = useState('')
 
-  // Step 1 — Design (templates) + Distribution scope
-  const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set())
+  // Step 1 — Design (templates) + Distribution scope.
+  // When scoped (?offerings=), pre-exclude everything in the term except the selection.
+  const [excludedIds, setExcludedIds] = useState<Set<string>>(() => {
+    if (!scopedOfferingIds) return new Set()
+    return new Set(
+      MOCK_COURSE_OFFERINGS
+        .filter(o => o.termId === initialTermId && o.status !== 'archived' && !scopedOfferingIds.has(o.id))
+        .map(o => o.id),
+    )
+  })
   const [templateAssignments, setTemplateAssignments] = useState<Record<string, string>>(
-    () => surveyMode !== 'general' ? autoAssignTemplates(LATEST_TERM_ID, publishedTemplates) : {}
+    () => surveyMode !== 'general' ? autoAssignTemplates(initialTermId, publishedTemplates) : {}
   )
   const [generalTemplateId, setGeneralTemplateId] = useState<string>('')
+  // Programmatic surveys pick courses directly (across terms) in step 1.
+  const [selectedCourseIds, setSelectedCourseIds] = useState<Set<string>>(new Set())
 
-  // Step 4 — Communication
-  const [openDate, setOpenDate] = useState<Date | undefined>()
-  const [closeDate, setCloseDate] = useState<Date | undefined>()
-  const [releaseDate, setReleaseDate] = useState<Date | undefined>()
+  // Step 4 — Communication — defaults pre-filled from Central Settings
+  const settingsWindow = useMemo(() => windowFromSettings(initialTermId), [initialTermId])
+  const [openDate, setOpenDate] = useState<Date | undefined>(settingsWindow.open)
+  const [closeDate, setCloseDate] = useState<Date | undefined>(settingsWindow.close)
+  const [releaseDate, setReleaseDate] = useState<Date | undefined>(settingsWindow.release)
   const [senderName, setSenderName] = useState('Exxat Surveys')
-  const [emailSubject, setEmailSubject] = useState(
-    'Your course evaluation for {{course_name}} is now open'
+  const [emailTemplateId, setEmailTemplateId] = useState(FIRST_INVITATION_TEMPLATE_ID)
+  // Seed subject/body from the default template so the invitation card doesn't
+  // read as "edited" before the user has touched anything.
+  const [emailSubject, setEmailSubject] = useState(FIRST_INVITATION_TEMPLATE?.subject ?? setupDefaults.initialEmailSubject)
+  const [emailBody, setEmailBody] = useState(FIRST_INVITATION_TEMPLATE?.body ?? setupDefaults.initialEmailBody)
+  const [reminders, setReminders] = useState<Reminder[]>(
+    () => remindersFromSettings(setupDefaults.activeReminderIntervals)
   )
-  const [emailBody, setEmailBody] = useState(DEFAULT_EMAIL_BODY)
-  const [reminders, setReminders] = useState<Reminder[]>([])
+  const [emailContacts, setEmailContacts] = useState<EmailContact[]>(INITIAL_EMAIL_CONTACTS)
+
+  // Window follows the selected term (recompute from Settings offsets on term change)
+  const termWindowMounted = useRef(false)
+  useEffect(() => {
+    if (!termWindowMounted.current) { termWindowMounted.current = true; return }
+    const w = windowFromSettings(termId)
+    setOpenDate(w.open); setCloseDate(w.close); setReleaseDate(w.release)
+  }, [termId])
 
   // ── Derived values ─────────────────────────────────────────────────────────
 
@@ -118,7 +190,51 @@ function PushSurveyInner() {
     [termId]
   )
 
-  const selectedOfferings = offeringsForTerm.filter(o => !excludedIds.has(o.id))
+  const selectedOfferings = surveyMode === 'general'
+    ? offeringsForTerm.filter(o => !excludedIds.has(o.id))
+    : MOCK_COURSE_OFFERINGS.filter(o => selectedCourseIds.has(o.id))
+
+  // Prism auto-recipients (students enrolled in the selected offerings) — mirrors
+  // StepCommunication's default so Review shows the same reach.
+  const prismStudentCount = useMemo(() => {
+    const seen = new Set<string>()
+    for (const o of selectedOfferings) for (const sid of MOCK_COURSE_ENROLLMENTS[o.id] ?? []) seen.add(sid)
+    return seen.size
+  }, [selectedOfferings])
+  // Default template per picked course (by type) — for the Survey Design step's
+  // "Default" chips + Reset to defaults.
+  const defaultAssignments = useMemo(() => {
+    const result: Record<string, string> = {}
+    if (publishedTemplates.length === 0) return result
+    const single = publishedTemplates.length === 1 ? publishedTemplates[0] : null
+    for (const o of selectedOfferings) {
+      if (single) { result[o.id] = single.id; continue }
+      const matched = o.courseType ? publishedTemplates.find(t => t.courseType === o.courseType) : undefined
+      result[o.id] = (matched ?? publishedTemplates[0]).id
+    }
+    return result
+  }, [selectedOfferings, publishedTemplates])
+  function handleResetTemplateDefaults() {
+    setTemplateAssignments(prev => ({ ...prev, ...defaultAssignments }))
+  }
+
+  const selectedInvitationTemplate = EVAL_EMAIL_TEMPLATES.find(t => t.id === emailTemplateId) ?? null
+  const isEmailEdited = !!selectedInvitationTemplate &&
+    (emailSubject !== selectedInvitationTemplate.subject || emailBody !== selectedInvitationTemplate.body)
+
+  // Group the selected offerings by their assigned survey template, with course
+  // codes — gives the Review real "what did I pick" context (biggest → smallest).
+  const reviewCourseGroups = useMemo(() => {
+    const byTid = new Map<string, { templateTitle: string; codes: string[] }>()
+    for (const o of selectedOfferings) {
+      const tid = templateAssignments[o.id] || 'none'
+      const title = publishedTemplates.find(t => t.id === tid)?.name ?? 'No template assigned'
+      const code = MOCK_MASTER_COURSES.find(c => c.id === o.masterCourseId)?.code ?? o.id
+      if (!byTid.has(tid)) byTid.set(tid, { templateTitle: title, codes: [] })
+      byTid.get(tid)!.codes.push(code)
+    }
+    return [...byTid.values()].sort((a, b) => b.codes.length - a.codes.length)
+  }, [selectedOfferings, templateAssignments, publishedTemplates])
 
   // Step 1 ("Scope and design") gating — scope fields + a template for every course.
   const scopeValid = surveyMode === 'general'
@@ -200,13 +316,17 @@ function PushSurveyInner() {
       surveyMode !== 'general' ? autoAssignTemplates(LATEST_TERM_ID, publishedTemplates) : {}
     )
     setGeneralTemplateId('')
-    setOpenDate(undefined)
-    setCloseDate(undefined)
-    setReleaseDate(undefined)
+    setSelectedCourseIds(new Set())
+    const w = windowFromSettings(LATEST_TERM_ID)
+    setOpenDate(w.open)
+    setCloseDate(w.close)
+    setReleaseDate(w.release)
     setSenderName('Exxat Surveys')
-    setEmailSubject('Your course evaluation for {{course_name}} is now open')
-    setEmailBody(DEFAULT_EMAIL_BODY)
-    setReminders([])
+    setEmailTemplateId(FIRST_INVITATION_TEMPLATE_ID)
+    setEmailSubject(FIRST_INVITATION_TEMPLATE?.subject ?? setupDefaults.initialEmailSubject)
+    setEmailBody(FIRST_INVITATION_TEMPLATE?.body ?? setupDefaults.initialEmailBody)
+    setReminders(remindersFromSettings(setupDefaults.activeReminderIntervals))
+    setEmailContacts(INITIAL_EMAIL_CONTACTS)
   }
 
   function handleStepNavClick(n: number) {
@@ -216,8 +336,8 @@ function PushSurveyInner() {
     }
   }
 
-  const currentStepNum = step === 'success' ? 4 : (step as number)
-  const completedUpTo = step === 'success' ? 3 : (step as number) - 1
+  const currentStepNum = step === 'success' ? 5 : (step as number)
+  const completedUpTo = step === 'success' ? 4 : (step as number) - 1
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -243,19 +363,17 @@ function PushSurveyInner() {
       )}
 
       {/* Full-width content */}
-      <main className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 overflow-auto" style={{ padding: '32px 40px 48px' }}>
-          {step === 1 && (
+          {step === 1 && (surveyMode === 'general' ? (
             <div className="flex flex-col gap-6" style={{ maxWidth: 680 }}>
               {/* Step header */}
               <div className="flex flex-col gap-1">
                 <h2 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>
-                  Scope and design
+                  Basic Details
                 </h2>
                 <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                  {surveyMode === 'general'
-                    ? 'Define the scope for this survey and choose its template.'
-                    : 'Define the term and scope for this evaluation cycle, then set templates by course type.'}
+                  Define the scope for this survey and choose its template.
                 </p>
               </div>
 
@@ -277,59 +395,56 @@ function PushSurveyInner() {
                   Design
                 </h3>
                 <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-                  {surveyMode === 'general'
-                    ? 'Set a template for this survey.'
-                    : 'Set a template for each course type. Expand to override individual courses.'}
+                  Set a template for this survey.
                 </p>
               </div>
 
-              {surveyMode === 'general' ? (
-                <StepSurveyDesignGeneral
-                  asSection
-                  publishedTemplates={publishedTemplates}
-                  selectedTemplateId={generalTemplateId}
-                  onTemplateChange={setGeneralTemplateId}
-                />
-              ) : (
-                <StepSurveyDesign
-                  key={termId}
-                  asSection
-                  selectedOfferings={selectedOfferings}
-                  publishedTemplates={publishedTemplates}
-                  templateAssignments={templateAssignments}
-                  onTemplateChange={(offeringId, tmplId) =>
-                    setTemplateAssignments(p => ({ ...p, [offeringId]: tmplId }))
-                  }
-                  onBulkAssignByType={handleBulkAssignByType}
-                />
-              )}
+              <StepSurveyDesignGeneral
+                asSection
+                publishedTemplates={publishedTemplates}
+                selectedTemplateId={generalTemplateId}
+                onTemplateChange={setGeneralTemplateId}
+              />
 
-              {/* Single footer for the merged step */}
+              {/* Footer */}
               <div className="border-t border-border pt-4 flex items-center justify-end">
                 <Button
                   variant="default"
                   size="sm"
                   disabled={!canContinueStep1}
-                  onClick={() => setStep(2)}
+                  onClick={() => setStep(3)}
                 >
                   Continue
                   <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
                 </Button>
               </div>
             </div>
-          )}
+          ) : (
+            <StepCourses
+              selectedCourseIds={selectedCourseIds}
+              onSelectionChange={setSelectedCourseIds}
+              onNext={() => {
+                // Seed default template assignments for the picked courses.
+                setTemplateAssignments(prev => {
+                  const next = { ...prev }
+                  for (const o of selectedOfferings) if (!next[o.id]) next[o.id] = defaultAssignments[o.id]
+                  return next
+                })
+                setStep(2)
+              }}
+            />
+          ))}
 
-          {step === 2 && selectedTerm && (
-            <StepDistribution
-              offeringsForTerm={offeringsForTerm}
+          {step === 2 && (
+            <StepSurveyDesignAssign
               selectedOfferings={selectedOfferings}
-              excludedIds={excludedIds}
-              selectedTerm={selectedTerm}
-              openDate={openDate}
-              closeDate={closeDate}
-              onToggleOffering={handleToggleOffering}
-              onSetExcluded={setExcludedIds}
-              onApplyDatesToAll={(open, close) => { setOpenDate(open); setCloseDate(close) }}
+              publishedTemplates={publishedTemplates}
+              templateAssignments={templateAssignments}
+              defaultAssignments={defaultAssignments}
+              onTemplateChange={(offeringId, tmplId) =>
+                setTemplateAssignments(p => ({ ...p, [offeringId]: tmplId }))
+              }
+              onResetDefaults={handleResetTemplateDefaults}
               onBack={() => setStep(1)}
               onNext={() => setStep(3)}
             />
@@ -342,18 +457,48 @@ function PushSurveyInner() {
               closeDate={closeDate}
               releaseDate={releaseDate}
               senderName={senderName}
+              emailTemplateId={emailTemplateId}
               emailSubject={emailSubject}
               emailBody={emailBody}
               reminders={reminders}
+              emailContacts={emailContacts}
               onOpenDateChange={setOpenDate}
               onCloseDateChange={setCloseDate}
               onReleaseDateChange={setReleaseDate}
               onSenderNameChange={setSenderName}
+              onEmailTemplateChange={setEmailTemplateId}
               onEmailSubjectChange={setEmailSubject}
               onEmailBodyChange={setEmailBody}
               onRemindersChange={setReminders}
-              onBack={() => setStep(2)}
-              onNext={handlePush}
+              onEmailContactsChange={setEmailContacts}
+              title={surveyMode === 'general' ? 'Distribution' : 'Communication'}
+              onBack={() => setStep(surveyMode === 'general' ? 1 : 2)}
+              onNext={() => setStep(4)}
+            />
+          )}
+
+          {step === 4 && (
+            <StepReview
+              surveyMode={surveyMode}
+              surveyTitle={surveyTitle}
+              surveyDescription={surveyDescription}
+              termName={selectedTerm?.name ?? ''}
+              academicYear={academicYear}
+              offeringCount={selectedOfferings.length}
+              courseGroups={reviewCourseGroups}
+              openDate={openDate}
+              closeDate={closeDate}
+              releaseDate={releaseDate}
+              studentCount={prismStudentCount}
+              emailContacts={emailContacts}
+              senderName={senderName}
+              templateName={selectedInvitationTemplate?.name ?? 'Custom email'}
+              emailSubject={emailSubject}
+              isEmailEdited={isEmailEdited}
+              reminders={reminders}
+              onEdit={(n) => setStep(n as WizardStep)}
+              onBack={() => setStep(3)}
+              onPush={handlePush}
             />
           )}
 
@@ -367,14 +512,14 @@ function PushSurveyInner() {
           )}
 
         </div>
-      </main>
+      </div>
     </div>
   )
 }
 
 export default function PushSurveyPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<h1 className="sr-only">Push evaluation</h1>}>
       <PushSurveyInner />
     </Suspense>
   )

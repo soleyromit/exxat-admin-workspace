@@ -16,7 +16,7 @@
 
 ```
 HubTable (inside ListPageTemplate)  ← canonical hub wrapper
-  └── DataTable                     ← base table component
+  └── DataTable                     ← base table component (owns toolbar px-4 + grid mx-4 inset)
   └── useTableState                 ← sort/filter/column/group state
   └── toolbarSlot                   ← properties button + filter chips + search
         └── TablePropertiesDrawer
@@ -46,6 +46,18 @@ HubTable (inside ListPageTemplate)  ← canonical hub wrapper
 **References:** `packages/ui/src/components/data-views/hub-table.tsx` (`effectivePagination`, `chromeOwnedPagination`); `components/library-table.tsx` (uncontrolled); `components/columns-showcase.tsx` (controlled + small page size).
 
 **Monorepo dev:** `@exxatdesignux/ui` loads from **`dist/`**. After editing `hub-table.tsx`, run `pnpm --filter @exxatdesignux/ui build` and restart Vite.
+
+### Table edge inset (no double gutter)
+
+**`DataTable` owns horizontal rhythm** via **`DATA_TABLE_TOOLBAR_INSET_CLASS`** (`px-4 lg:px-6`) and **`DATA_TABLE_GRID_INSET_CLASS`** (`mx-4 lg:mx-6`) in **`packages/ui/src/lib/table-edge-inset.ts`**.
+
+| Context | Pattern |
+|---------|---------|
+| **`ListPageTemplate` hub** | `HubTable` full-bleed in `renderContent` — no parent `px-*` |
+| **Dashboard / report section** | `px-4 lg:px-6` on intro only; `HubTable` sibling without wrapper padding |
+| **Folder / board / panel views** | `ListPageViewFrame` gutter — **not** on the table branch |
+
+**MUST NOT** wrap intro + table in one padded `<section>`. **Dev:** parent stacked inset → console **`[Exxat DS][DataTable]`**. Rule: **`.cursor/rules/exxat-data-tables.mdc`**.
 
 All imports:
 ```ts

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import Link from 'next/link'
 import {
   Button, Checkbox,
   Input,
@@ -8,47 +9,46 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
   Textarea,
 } from '@exxatdesignux/ui'
-
-const TEMPLATES = [
-  { id: 'standard', label: 'Standard Template' },
-  { id: 'reminder', label: 'Reminder Template' },
-  { id: 'followup', label: 'Follow-up Template' },
-]
+import { EVAL_EMAIL_TEMPLATES, type EvalEmailType } from '@/lib/pce-mock-data'
 
 const DEFAULT_SUBJECT = 'You have been assigned a survey'
-const DEFAULT_BODY = `Dear {{firstName}} {{lastName}},
+const DEFAULT_BODY = `Hi {{student_first_name}},
 
-You have been assigned a new survey titled {{surveyName}} by {{assignedBy}}
+Your course evaluation is now open. Your answers are anonymous.
 
-Your feedback is important and helps us improve our processes.
-
-Please take a few minutes to complete the survey using the link below:
-{{surveyLink}}
+Please take a few minutes to complete it using the link below:
+{{survey_link}}
 
 Thank you for your time and participation!
 
-Best Regards!`
+{{program_name}} Team`
 
 const MERGE_FIELDS = [
-  { label: 'First Name',          variable: '{{firstName}}' },
-  { label: 'Last Name',           variable: '{{lastName}}' },
-  { label: 'Survey Name',         variable: '{{surveyName}}' },
-  { label: 'Survey Closing Date', variable: '{{surveyClosingDate}}' },
-  { label: 'Survey Link',         variable: '{{surveyLink}}' },
-  { label: 'Assigned By',         variable: '{{assignedBy}}' },
+  { label: 'First Name',      variable: '{{student_first_name}}' },
+  { label: 'Course Name',     variable: '{{course_name}}' },
+  { label: 'Term Name',       variable: '{{term_name}}' },
+  { label: 'Closing Date',    variable: '{{close_date}}' },
+  { label: 'Days Until Close',variable: '{{days_until_close}}' },
+  { label: 'Survey Link',     variable: '{{survey_link}}' },
+  { label: 'Program Name',    variable: '{{program_name}}' },
 ]
 
 interface EmailTemplateSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Which saved templates the picker lists + copy. Defaults to invitation. */
+  templateType?: EvalEmailType
+  templateId: string
   subject: string
   body: string
   senderName: string
-  onSave: (subject: string, body: string, senderName: string) => void
+  onSave: (subject: string, body: string, senderName: string, templateId: string) => void
 }
 
-export function EmailTemplateSheet({ open, onOpenChange, subject, body, senderName, onSave }: EmailTemplateSheetProps) {
-  const [templateId, setTemplateId] = useState('standard')
+export function EmailTemplateSheet({ open, onOpenChange, templateType = 'invitation', templateId, subject, body, senderName, onSave }: EmailTemplateSheetProps) {
+  const isReminder = templateType === 'reminder'
+  const templates = EVAL_EMAIL_TEMPLATES.filter(t => t.type === templateType)
+  const [selTemplateId, setSelTemplateId] = useState(templateId || templates[0]?.id || '')
   const [setAsDefault, setSetAsDefault] = useState(false)
   const [draftSubject, setDraftSubject] = useState(subject || DEFAULT_SUBJECT)
   const [draftBody, setDraftBody] = useState(body || DEFAULT_BODY)
@@ -62,6 +62,7 @@ export function EmailTemplateSheet({ open, onOpenChange, subject, body, senderNa
 
   useEffect(() => {
     if (open) {
+      setSelTemplateId(templateId || templates[0]?.id || '')
       setDraftSubject(subject || DEFAULT_SUBJECT)
       setDraftBody(body || DEFAULT_BODY)
       setDraftSenderName(senderName || 'Exxat Surveys')
@@ -98,9 +99,9 @@ export function EmailTemplateSheet({ open, onOpenChange, subject, body, senderNa
   }
 
   function handleTemplateChange(id: string) {
-    setTemplateId(id)
-    setDraftSubject(DEFAULT_SUBJECT)
-    setDraftBody(DEFAULT_BODY)
+    setSelTemplateId(id)
+    const t = templates.find(x => x.id === id)
+    if (t) { setDraftSubject(t.subject); setDraftBody(t.body) }
   }
 
   return (
@@ -109,24 +110,37 @@ export function EmailTemplateSheet({ open, onOpenChange, subject, body, senderNa
 
         {/* Header */}
         <SheetHeader className="flex flex-row items-center gap-3 shrink-0 border-b border-border" style={{ padding: '14px 20px' }}>
-          <SheetTitle className="flex-1 text-base font-semibold">Email Template</SheetTitle>
-          <Button variant="default" size="sm" onClick={() => onSave(draftSubject, draftBody, draftSenderName)}>
-            Save template
+          <SheetTitle className="flex-1 text-base font-semibold">{isReminder ? 'Reminder email' : 'Invitation email'}</SheetTitle>
+          <Button variant="default" size="sm" onClick={() => onSave(draftSubject, draftBody, draftSenderName, selTemplateId)}>
+            Use this template
           </Button>
         </SheetHeader>
 
         <div className="flex-1 overflow-auto flex flex-col gap-5" style={{ padding: '20px 24px' }}>
 
-          {/* Template selector */}
+          {/* Template selector — pick which saved template this push uses */}
           <div className="flex flex-col gap-2">
-            <p className="text-sm font-semibold">Select Template</p>
-            <Select value={templateId} onValueChange={handleTemplateChange}>
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="text-sm font-semibold">Template</p>
+              <Link
+                href="/admin/eval-settings"
+                className="text-xs underline underline-offset-2 text-muted-foreground hover:text-foreground"
+              >
+                Manage templates
+              </Link>
+            </div>
+            <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+              {isReminder
+                ? 'Choose the template sent to non-respondents before the survey closes. Edits here apply to this push only.'
+                : 'Choose the template recipients receive when the survey opens. Edits here apply to this push only.'}
+            </p>
+            <Select value={selTemplateId} onValueChange={handleTemplateChange}>
               <SelectTrigger aria-label="Select email template" style={{ height: 38, fontSize: 14 }}>
-                <SelectValue />
+                <SelectValue placeholder="Select a template" />
               </SelectTrigger>
               <SelectContent>
-                {TEMPLATES.map(t => (
-                  <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>
+                {templates.map(t => (
+                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

@@ -54,7 +54,8 @@ import { WizardNav } from '@/components/pce/wizard-nav'
 import { usePce } from '@/components/pce/pce-state'
 import { ListHubStatusBadge } from '@/components/list-hub-status-badge'
 import { LIST_HUB_STATUS_TINT_SUCCESS, LIST_HUB_STATUS_TINT_WARNING } from '@/lib/list-status-badges'
-import { EVAL_DEFAULT_SCALE, EVAL_FACULTY_ROLES, EVAL_DEFAULT_FACULTY_ROLE_IDS } from '@/lib/pce-mock-data'
+import { EVAL_DEFAULT_SCALE, EVAL_FACULTY_ROLES, EVAL_DEFAULT_FACULTY_ROLE_IDS, TEMPLATE_IMPORT_LIBRARY } from '@/lib/pce-mock-data'
+import { TemplateImportDialog } from '@/components/pce/template-import-dialog'
 
 // Faculty roles offered in the builder = the program roles configured in Central
 // Settings (Jun 30 meeting). Prism-sourced; no custom roles created here.
@@ -63,13 +64,15 @@ import { EVAL_DEFAULT_SCALE, EVAL_FACULTY_ROLES, EVAL_DEFAULT_FACULTY_ROLE_IDS }
 const FACULTY_ROLE_OPTIONS: { key: string; label: string }[] =
   EVAL_FACULTY_ROLES.map(r => ({ key: r.id, label: r.label }))
 const ROLE_LABEL = (key: string) => EVAL_FACULTY_ROLES.find(r => r.id === key)?.label ?? key
-import type { TemplateQuestion, CourseTypeFilter, SubjectKey, PceTemplateSection, PceTemplateRoleSet } from '@/lib/pce-mock-data'
+import type { TemplateQuestion, SubjectKey, PceTemplateSection, PceTemplateRoleSet, TemplateImportDoc } from '@/lib/pce-mock-data'
 // SubjectKey is used for predefined subjects; custom subjects use plain strings
 
-const COURSE_TYPE_OPTIONS: { value: CourseTypeFilter; label: string }[] = [
-  { value: 'didactic', label: 'Classroom based' },
-  { value: 'clinical', label: 'Practice based' },
-  { value: 'seminar',  label: 'Lab based' },
+type SurveyPurpose = 'student_pulse' | 'faculty_self_eval' | 'alumni' | 'preceptor_eval'
+const SURVEY_TYPE_OPTIONS: { value: SurveyPurpose; label: string; description: string }[] = [
+  { value: 'student_pulse',     label: 'Student Pulse',   description: 'Mid-semester or end-of-year student wellbeing checks' },
+  { value: 'faculty_self_eval', label: 'Faculty Self-Eval', description: 'Annual faculty self-reflection and development' },
+  { value: 'alumni',            label: 'Alumni Survey',   description: 'Post-graduation outcomes and preparedness' },
+  { value: 'preceptor_eval',    label: 'Preceptor Eval',  description: 'Clinical site and preceptor feedback' },
 ]
 
 // Editor wizard steps — build, configure, then review before publishing.
@@ -435,6 +438,9 @@ export default function TemplateEditorPage() {
   // Branding (Jun 30 meeting) — optional cover image + university logo for the student landing.
   const [coverImage, setCoverImage] = useState<string | null>(null)
   const [universityLogo, setUniversityLogo] = useState<string | null>(null)
+  // Document-import: which tab (+ optional faculty role set) is receiving the import.
+  const [importCtx, setImportCtx] = useState<{ subjectKey: string; roleSetId?: string; label: string } | null>(null)
+  const [importedBanner, setImportedBanner] = useState<{ file: string; sections: number; questions: number } | null>(null)
   // Editor is a 3-step wizard — Builder → Template settings → Review — ending in Publish.
   const [wizardStep, setWizardStep] = useState<WizardStepKey>('builder')
   const [maxStepReached, setMaxStepReached] = useState(1)
@@ -526,6 +532,38 @@ export default function TemplateEditorPage() {
     setEditingSectionTitle('Untitled Section')
     setClosedSectionIds(prev => { const n = new Set(prev); n.delete(newId); return n })
   }
+
+  // ── Document import — insert extracted sections + questions into a tab ───────
+  function openImport(subjectKey: string, roleSetId?: string) {
+    const label = subjectGroups.find(g => g.key === subjectKey)?.label ?? 'this tab'
+    setImportCtx({ subjectKey, roleSetId, label })
+  }
+  function handleImportDocument(doc: TemplateImportDoc) {
+    if (!importCtx) return
+    const now = Date.now()
+    doc.sections.forEach((sec, si) => {
+      const questions: TemplateQuestion[] = sec.questions.map((q, qi) => ({
+        id: `q-imp-${now}-${si}-${qi}`, text: q.text, answerType: q.answerType, choices: q.choices, order: qi,
+      }))
+      addTemplateSection(
+        t.id,
+        { subjectKey: importCtx.subjectKey, title: sec.title, questions, roleSetId: importCtx.roleSetId },
+        `sec-imp-${now}-${si}`,
+      )
+    })
+    setImportedBanner({
+      file: doc.name,
+      sections: doc.sections.length,
+      questions: doc.sections.reduce((n, s) => n + s.questions.length, 0),
+    })
+    setImportCtx(null)
+  }
+  const importBtn = (subjectKey: string, roleSetId?: string) => (
+    <Button variant="link" size="sm" className="font-semibold" onClick={() => openImport(subjectKey, roleSetId)}>
+      <i className="fa-light fa-file-import text-xs" aria-hidden="true" />
+      Import document
+    </Button>
+  )
 
   function handleAddQuestion(sectionId: string, type: AnswerType) {
     const newId = `q-${Date.now()}`
@@ -844,20 +882,53 @@ export default function TemplateEditorPage() {
           </Field>
         </SettingsSection>
 
-        <SettingsSection label="Course type"
-          hint="Which kind of course this template is meant to evaluate.">
+        <SettingsSection label="Survey type"
+          hint="What this survey is for — determines how it's used across the program.">
           <RadioGroup
-            value={t.courseType}
-            onValueChange={v => updateTemplate(t.id, { courseType: v as CourseTypeFilter })}
-            className="flex flex-row flex-wrap gap-x-6 gap-y-2"
-            aria-label="Course type"
+            value={t.surveyPurpose ?? ''}
+            onValueChange={v => updateTemplate(t.id, { surveyPurpose: v as SurveyPurpose })}
+            className="grid grid-cols-2 gap-2"
+            aria-label="Survey type"
           >
-            {COURSE_TYPE_OPTIONS.map(opt => (
-              <div key={opt.value} className="flex items-center gap-2">
-                <RadioGroupItem value={opt.value} id={`ct-${opt.value}`} />
-                <Label htmlFor={`ct-${opt.value}`} className="text-sm font-normal cursor-pointer">{opt.label}</Label>
+            {SURVEY_TYPE_OPTIONS.map(opt => {
+              const active = t.surveyPurpose === opt.value
+              return (
+                <Label key={opt.value} htmlFor={`st-${opt.value}`}
+                  className="flex items-start gap-2.5 rounded-lg border cursor-pointer transition-colors"
+                  style={{ padding: '12px', borderColor: active ? 'var(--foreground)' : 'var(--border)', background: active ? 'var(--muted)' : 'transparent' }}>
+                  <RadioGroupItem value={opt.value} id={`st-${opt.value}`} className="mt-0.5" />
+                  <span className="flex flex-col gap-0.5 min-w-0">
+                    <span className="text-sm font-medium">{opt.label}</span>
+                    <span className="text-xs text-muted-foreground">{opt.description}</span>
+                  </span>
+                </Label>
+              )
+            })}
+          </RadioGroup>
+        </SettingsSection>
+
+        <SettingsSection label="Access"
+          hint="Who in your program can find and reuse this template.">
+          <RadioGroup
+            value={t.access ?? 'program'}
+            onValueChange={v => updateTemplate(t.id, { access: v as 'program' | 'private' })}
+            className="flex flex-col gap-2"
+            aria-label="Access"
+          >
+            <div className="flex items-start gap-2">
+              <RadioGroupItem value="program" id="access-program" className="mt-0.5" />
+              <div>
+                <Label htmlFor="access-program" className="text-sm font-normal cursor-pointer">Allow access to program</Label>
+                <p className="text-xs text-muted-foreground">Any admin or coordinator in the program can find and use this template.</p>
               </div>
-            ))}
+            </div>
+            <div className="flex items-start gap-2">
+              <RadioGroupItem value="private" id="access-private" className="mt-0.5" />
+              <div>
+                <Label htmlFor="access-private" className="text-sm font-normal cursor-pointer">Private</Label>
+                <p className="text-xs text-muted-foreground">Only you can see and use this template.</p>
+              </div>
+            </div>
           </RadioGroup>
         </SettingsSection>
 
@@ -876,7 +947,7 @@ export default function TemplateEditorPage() {
 
   // ── Review step — read-only summary before publishing ──────────────────────
   function renderReview() {
-    const courseTypeLabel = COURSE_TYPE_OPTIONS.find(o => o.value === t.courseType)?.label ?? 'Any course type'
+    const surveyTypeLabel = SURVEY_TYPE_OPTIONS.find(o => o.value === t.surveyPurpose)?.label
     const ReviewRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
       <div className="flex items-start gap-4 py-2.5 border-b border-border last:border-0">
         <span className="text-xs text-muted-foreground shrink-0" style={{ width: 130, paddingTop: 1 }}>{label}</span>
@@ -912,7 +983,8 @@ export default function TemplateEditorPage() {
         <SummaryCard title="Template settings" onEdit={() => goToStep('settings')}>
           <ReviewRow label="Name">{t.name || <span className="text-muted-foreground">Untitled template</span>}</ReviewRow>
           <ReviewRow label="Description">{t.description || <span className="text-muted-foreground">—</span>}</ReviewRow>
-          <ReviewRow label="Course type">{courseTypeLabel}</ReviewRow>
+          <ReviewRow label="Survey type">{surveyTypeLabel ?? <span className="text-muted-foreground">Not set</span>}</ReviewRow>
+          <ReviewRow label="Access">{(t.access ?? 'program') === 'private' ? 'Private — only you' : 'Program — shared with admins & coordinators'}</ReviewRow>
           <ReviewRow label="Cover image">{coverImage ? 'Added' : <span className="text-muted-foreground">Not added</span>}</ReviewRow>
           <ReviewRow label="University logo">{universityLogo ? 'Added' : <span className="text-muted-foreground">Not added</span>}</ReviewRow>
         </SummaryCard>
@@ -1020,25 +1092,34 @@ export default function TemplateEditorPage() {
         <TabsContent value="builder" className="flex-1 min-h-0 flex flex-row m-0">
           {/* Left — section list */}
           <div className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden">
+          {importedBanner && (
+            <div style={{ padding: '10px 40px 0' }}>
+              <LocalBanner variant="success" dismissible onDismiss={() => setImportedBanner(null)}>
+                Imported {importedBanner.sections} section{importedBanner.sections !== 1 ? 's' : ''} · {importedBanner.questions} question{importedBanner.questions !== 1 ? 's' : ''} from {importedBanner.file}. Review and edit below.
+              </LocalBanner>
+            </div>
+          )}
           {isProgrammatic ? (
             /* Programmatic surveys — flat section list */
             <div className="flex-1 overflow-y-auto" style={{ padding: '32px 40px' }}>
               <div style={{ maxWidth: 720 }}>
                 {sections.length === 0 ? (
-                  <div className="flex items-center justify-center" style={{ minHeight: 200 }}>
+                  <div className="flex items-center justify-center gap-3" style={{ minHeight: 200 }}>
                     <Button variant="link" size="sm" onClick={() => handleAddSection()} className="font-semibold">
                       <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                       Add section
                     </Button>
+                    {importBtn('course_content')}
                   </div>
                 ) : (
                   <div className="flex flex-col gap-4">
                     {sections.map(sec => renderSectionCard(sec))}
-                    <div className="flex items-center justify-center" style={{ paddingTop: 4 }}>
+                    <div className="flex items-center justify-center gap-3" style={{ paddingTop: 4 }}>
                       <Button variant="link" size="sm" onClick={() => handleAddSection()} className="font-semibold">
                         <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                         Add section
                       </Button>
+                      {importBtn('course_content')}
                     </div>
                   </div>
                 )}
@@ -1180,19 +1261,21 @@ export default function TemplateEditorPage() {
                             {/* Sections owned by this set */}
                             <div className="flex flex-col gap-2" style={{ padding: '12px' }}>
                               {setSections.length === 0 ? (
-                                <div className="flex items-center justify-center rounded-lg border border-dashed"
+                                <div className="flex items-center justify-center gap-3 rounded-lg border border-dashed"
                                   style={{ padding: '20px 16px', borderColor: 'var(--border)' }}>
                                   <Button variant="link" size="sm" onClick={() => handleAddSection('faculty', set.id)} className="font-semibold">
                                     <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
                                   </Button>
+                                  {importBtn('faculty', set.id)}
                                 </div>
                               ) : (
                                 <>
                                   {setSections.map(sec => renderSectionCard(sec))}
-                                  <div className="flex items-center justify-center" style={{ paddingTop: 2 }}>
+                                  <div className="flex items-center justify-center gap-3" style={{ paddingTop: 2 }}>
                                     <Button variant="link" size="sm" onClick={() => handleAddSection('faculty', set.id)} className="font-semibold">
                                       <i className="fa-light fa-plus text-xs" aria-hidden="true" />Add section
                                     </Button>
+                                    {importBtn('faculty', set.id)}
                                   </div>
                                 </>
                               )}
@@ -1211,24 +1294,26 @@ export default function TemplateEditorPage() {
                     if (groupSections.length === 0) {
                       return (
                         <div
-                          className="flex items-center justify-center rounded-lg border border-dashed"
+                          className="flex items-center justify-center gap-3 rounded-lg border border-dashed"
                           style={{ padding: '28px 16px', borderColor: 'var(--border)' }}
                         >
                           <Button variant="link" size="sm" onClick={() => handleAddSection(activeGroup)} className="font-semibold">
                             <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                             Add section
                           </Button>
+                          {importBtn(activeGroup)}
                         </div>
                       )
                     }
                     return (
                       <>
                         {groupSections.map(sec => renderSectionCard(sec))}
-                        <div className="flex items-center justify-center" style={{ paddingTop: 4 }}>
+                        <div className="flex items-center justify-center gap-3" style={{ paddingTop: 4 }}>
                           <Button variant="link" size="sm" onClick={() => handleAddSection(activeGroup)} className="font-semibold">
                             <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                             Add section
                           </Button>
+                          {importBtn(activeGroup)}
                         </div>
                       </>
                     )
@@ -1319,6 +1404,14 @@ export default function TemplateEditorPage() {
           )}
         </div>
       </Tabs>
+
+      <TemplateImportDialog
+        open={importCtx !== null}
+        onOpenChange={(o) => { if (!o) setImportCtx(null) }}
+        tabLabel={importCtx?.label ?? ''}
+        docs={importCtx ? (TEMPLATE_IMPORT_LIBRARY[importCtx.subjectKey] ?? []) : []}
+        onImport={handleImportDocument}
+      />
 
     </div>
   )

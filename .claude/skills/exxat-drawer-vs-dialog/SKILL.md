@@ -1,9 +1,11 @@
 ---
 name: exxat-drawer-vs-dialog
-description: Exxat DS — drawer vs dialog. Use when choosing Radix Dialog / AlertDialog vs floating Sheet panels vs route for a flow.
+description: Exxat DS — drawer vs dialog. > Consolidated skill: prefer [.cursor/skills/exxat-overlays/SKILL.md](../exxat-overlays/SKILL.md) for new work.
 ---
 
 # Exxat DS — drawer vs dialog
+
+> **Consolidated skill:** prefer [`.cursor/skills/exxat-overlays/SKILL.md`](../exxat-overlays/SKILL.md) for new work.
 
 Use when choosing **Radix `Dialog` / `AlertDialog`** vs **floating `Sheet` panels** vs **route** for a flow.
 
