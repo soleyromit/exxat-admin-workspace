@@ -494,6 +494,7 @@ function PushSurveyInner() {
               senderName={senderName}
               templateName={selectedInvitationTemplate?.name ?? 'Custom email'}
               emailSubject={emailSubject}
+              emailBody={emailBody}
               isEmailEdited={isEmailEdited}
               reminders={reminders}
               onEdit={(n) => setStep(n as WizardStep)}

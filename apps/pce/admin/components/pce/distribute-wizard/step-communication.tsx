@@ -7,16 +7,16 @@ import {
   Button,
   Card,
   CardContent,
-  Checkbox,
   DatePickerField,
   FieldLegend,
   Input,
   LocalBanner,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
+  ToggleSwitch,
 } from '@exxatdesignux/ui'
 import type { CourseOffering, ReminderFrequency, ReminderAnchor } from '@/lib/pce-mock-data'
 import {
-  MOCK_COURSE_ENROLLMENTS, MOCK_STUDENTS, EVAL_EMAIL_TEMPLATES,
+  MOCK_COURSE_ENROLLMENTS, MOCK_STUDENTS, MOCK_MASTER_COURSES, EVAL_EMAIL_TEMPLATES,
   EVAL_REMINDER_CADENCE, REMINDER_FREQUENCY_LABELS, REMINDER_ANCHOR_LABELS,
 } from '@/lib/pce-mock-data'
 import { ExxatPrismSheet, type PrismRecipient } from './exxat-prism-sheet'
@@ -52,19 +52,21 @@ function EmailThumbnail() {
   )
 }
 
-// ── Reminder placeholder — represents "send reminders" (bell + repeat ticks) ───
+// ── Reminder placeholder — reads as "a reminder/nudge" (bell + repeat ticks) ───
+// Deliberately NOT the letterhead skeleton above: this card is about *nudging*
+// non-responders, so the mark is a bell with three cadence ticks, not an email.
 function ReminderThumbnail() {
   return (
     <div
       aria-hidden="true"
-      className="shrink-0 rounded-md border border-border overflow-hidden flex flex-col items-center justify-center gap-2.5"
-      style={{ width: 128, height: 108, background: 'var(--card)' }}
+      className="shrink-0 rounded-md border border-border overflow-hidden flex flex-col items-center justify-center gap-3"
+      style={{ width: 128, height: 150, background: 'var(--card)' }}
     >
-      <i className="fa-light fa-bell" style={{ fontSize: 26, color: 'var(--muted-foreground)' }} aria-hidden="true" />
-      <div className="flex items-center gap-1">
-        <span style={{ width: 12, height: 5, borderRadius: 3, background: 'var(--border)' }} />
-        <span style={{ width: 12, height: 5, borderRadius: 3, background: 'var(--foreground)', opacity: 0.55 }} />
-        <span style={{ width: 12, height: 5, borderRadius: 3, background: 'var(--border)' }} />
+      <i className="fa-light fa-bell" style={{ fontSize: 30, color: 'var(--muted-foreground)' }} aria-hidden="true" />
+      <div className="flex items-center gap-1.5">
+        <span style={{ width: 14, height: 5, borderRadius: 3, background: 'var(--border)' }} />
+        <span style={{ width: 14, height: 5, borderRadius: 3, background: 'var(--brand-color)', opacity: 0.7 }} />
+        <span style={{ width: 14, height: 5, borderRadius: 3, background: 'var(--border)' }} />
       </div>
     </div>
   )
@@ -222,8 +224,50 @@ export function StepCommunication({
   const [prismOpen, setPrismOpen] = useState(false)
   const [emailTemplateOpen, setEmailTemplateOpen] = useState(false)
 
+  // ── Reminder email (its own template, or reuse the invitation's) ───────────
+  const reminderTemplates = EVAL_EMAIL_TEMPLATES.filter(t => t.type === 'reminder')
+  const [reminderSameAsInvite, setReminderSameAsInvite] = useState(false)
+  const [reminderTemplateId, setReminderTemplateId] = useState(reminderTemplates[0]?.id ?? '')
+  const [reminderSubject, setReminderSubject] = useState(reminderTemplates[0]?.subject ?? '')
+  const [reminderBody, setReminderBody] = useState(reminderTemplates[0]?.body ?? '')
+  const [reminderTemplateOpen, setReminderTemplateOpen] = useState(false)
+  const selectedReminderTemplate = EVAL_EMAIL_TEMPLATES.find(t => t.id === reminderTemplateId) ?? null
+  function handleReminderTemplatePick(id: string) {
+    setReminderTemplateId(id)
+    const t = EVAL_EMAIL_TEMPLATES.find(x => x.id === id)
+    if (t) { setReminderSubject(t.subject); setReminderBody(t.body) }
+  }
+  const isReminderEditedForPush =
+    !!selectedReminderTemplate && (reminderSubject !== selectedReminderTemplate.subject || reminderBody !== selectedReminderTemplate.body)
+  const [reminderTestSent, setReminderTestSent] = useState(false)
+  const reminderTestTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  function handleSendReminderTest() {
+    setReminderTestSent(true)
+    if (reminderTestTimer.current) clearTimeout(reminderTestTimer.current)
+    reminderTestTimer.current = setTimeout(() => setReminderTestSent(false), 3000)
+  }
+
+  // ── Subject preview — resolve merge fields to real sample values so the line
+  //    reads like the actual email subject, not raw {{tokens}}. ───────────────
+  const previewCourseName = useMemo(() => {
+    const first = selectedOfferings[0]
+    const course = first ? MOCK_MASTER_COURSES.find(c => c.id === first.masterCourseId) : null
+    return course?.name || 'your course'
+  }, [selectedOfferings])
+  const previewCloseDate = closeDate
+    ? closeDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    : 'the close date'
+  function resolveMerge(text: string) {
+    return text
+      .replace(/\{\{course_name\}\}/g, previewCourseName)
+      .replace(/\{\{close_date\}\}/g, previewCloseDate)
+      .replace(/\{\{term_name\}\}/g, 'this term')
+      .replace(/\{\{student_first_name\}\}/g, 'Alex')
+      .replace(/\{\{days_until_close\}\}/g, '3')
+      .replace(/\{\{program_name\}\}/g, 'your program')
+  }
+
   // ── Reminder cadence (frequency + anchor + start days) ─────────────────────
-  const [reminderAutoSend, setReminderAutoSend] = useState(true)
   const [reminderFrequency, setReminderFrequency] = useState<ReminderFrequency>(EVAL_REMINDER_CADENCE.frequency)
   const [reminderAnchor, setReminderAnchor] = useState<ReminderAnchor>(EVAL_REMINDER_CADENCE.anchor)
   const [reminderStartDays, setReminderStartDays] = useState(EVAL_REMINDER_CADENCE.startDaysBefore)
@@ -376,7 +420,10 @@ export function StepCommunication({
                 )}
               </div>
 
-              <p className="text-sm truncate" style={{ marginTop: 2 }}>{emailSubject || 'You have been assigned a survey'}</p>
+              <p className="text-sm truncate" style={{ marginTop: 2 }} title={resolveMerge(emailSubject)}>
+                <span style={{ color: 'var(--muted-foreground)' }}>Subject: </span>
+                {resolveMerge(emailSubject) || 'You have been assigned a survey'}
+              </p>
 
               <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
                 From {senderName || 'Exxat Surveys'} · {reachLabel}
@@ -405,26 +452,96 @@ export function StepCommunication({
 
       </div>
 
-      {/* ── Reminder Cadence ─────────────────────────────────────────────── */}
+      {/* ── Reminders ────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-3">
-        <FieldLegend variant="label">Reminder Cadence</FieldLegend>
+        <FieldLegend variant="label">Reminders</FieldLegend>
+
+        {/* Reminder email — its own template, or reuse the invitation's */}
+        <Card className="overflow-hidden shadow-none">
+          <CardContent className="flex flex-col gap-4" style={{ padding: 16 }}>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-0.5 min-w-0" style={{ maxWidth: 340 }}>
+                <p className="text-sm font-semibold">Reminder email</p>
+                <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                  Only sent to students who haven&apos;t submitted yet.
+                </p>
+              </div>
+              <label htmlFor="reminder-same-as-invite" className="flex items-center gap-2 cursor-pointer shrink-0">
+                <span className="text-sm">Same as invitation email</span>
+                <ToggleSwitch id="reminder-same-as-invite" checked={reminderSameAsInvite} onChange={setReminderSameAsInvite} />
+              </label>
+            </div>
+
+            {reminderSameAsInvite ? (
+              <div className="flex items-center gap-2.5 rounded-md" style={{ padding: '10px 12px', background: 'var(--muted)' }}>
+                <i className="fa-light fa-arrow-turn-down-right" aria-hidden="true" style={{ fontSize: 12, color: 'var(--muted-foreground)' }} />
+                <p className="text-sm truncate" style={{ color: 'var(--muted-foreground)' }}>
+                  Students get the same email as the invitation.
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => setReminderTemplateOpen(true)}
+                  className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label="Preview and edit the reminder email"
+                >
+                  <ReminderThumbnail />
+                </button>
+
+                <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Select value={reminderTemplateId} onValueChange={handleReminderTemplatePick}>
+                      <SelectTrigger
+                        aria-label="Choose reminder template"
+                        className="gap-1.5 font-semibold"
+                        style={{ height: 32, width: 220 }}
+                      >
+                        <SelectValue placeholder="Choose a template" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {reminderTemplates.map(t => (
+                          <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {isReminderEditedForPush && (
+                      <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>· Edited for this push</span>
+                    )}
+                  </div>
+
+                  <p className="text-sm truncate" style={{ marginTop: 2 }} title={resolveMerge(reminderSubject)}>
+                    <span style={{ color: 'var(--muted-foreground)' }}>Subject: </span>
+                    {resolveMerge(reminderSubject) || 'Reminder: your evaluation closes soon'}
+                  </p>
+
+                  <div className="flex items-center gap-2" style={{ marginTop: 6 }}>
+                    <Button variant="outline" size="sm" onClick={() => setReminderTemplateOpen(true)}>Edit</Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground hover:text-foreground"
+                      onClick={handleSendReminderTest}
+                      disabled={reminderTestSent}
+                    >
+                      {reminderTestSent ? (
+                        <>
+                          <i className="fa-solid fa-circle-check" aria-hidden="true" style={{ fontSize: 11, color: 'var(--chart-2)' }} />
+                          Test sent to you
+                        </>
+                      ) : 'Send test to me'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Reminder cadence — when the reminder repeats */}
         <Card className="shadow-none">
           <CardContent className="flex flex-col gap-5" style={{ padding: 16 }}>
-            <p className="text-sm" style={{ color: 'var(--muted-foreground)', marginTop: -2 }}>
-              Reminders are sent only to students who haven&apos;t submitted.
-            </p>
-
-            <label className="flex items-center gap-3 cursor-pointer">
-              <Checkbox
-                checked={reminderAutoSend}
-                onCheckedChange={v => setReminderAutoSend(!!v)}
-                aria-label="System sends email to recipients when the survey opens"
-              />
-              <span className="text-sm">System sends email to recipients when the survey opens</span>
-            </label>
-
-            <div style={{ borderTop: '1px solid var(--border)' }} />
-
             {/* Reminder frequency */}
             <div className="flex items-start justify-between gap-4">
               <div className="flex flex-col gap-0.5" style={{ maxWidth: 300 }}>
@@ -503,6 +620,21 @@ export function StepCommunication({
           onEmailTemplateChange(templateId)
           onEmailSubjectChange(subject); onEmailBodyChange(body); onSenderNameChange(sender)
           setEmailTemplateOpen(false)
+        }}
+      />
+
+      <EmailTemplateSheet
+        open={reminderTemplateOpen}
+        onOpenChange={setReminderTemplateOpen}
+        templateType="reminder"
+        templateId={reminderTemplateId}
+        subject={reminderSubject}
+        body={reminderBody}
+        senderName={senderName}
+        onSave={(subject, body, _sender, templateId) => {
+          setReminderTemplateId(templateId)
+          setReminderSubject(subject); setReminderBody(body)
+          setReminderTemplateOpen(false)
         }}
       />
     </div>
