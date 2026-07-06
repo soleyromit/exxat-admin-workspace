@@ -267,7 +267,7 @@ export function CreateAssessmentModal({
                   >
                     <span className="text-sm font-semibold text-foreground">Proctored</span>
                     <span className="text-[11px] text-muted-foreground leading-snug">
-                      Single window · lockdown ready
+                      Single window · faculty-supervised
                     </span>
                   </Button>
                   <Button
