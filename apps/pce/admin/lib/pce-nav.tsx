@@ -113,13 +113,8 @@ export const NAV_ADMIN: NavLinkItem[] = [
         icon:       <i className="fa-light fa-gauge-high" aria-hidden="true" />,
         iconActive: <i className="fa-solid fa-gauge-high" aria-hidden="true" />,
       },
-      {
-        key: "ce-templates",
-        title: "Templates",
-        url: "/templates",
-        icon:       <i className="fa-light fa-rectangle-list" aria-hidden="true" />,
-        iconActive: <i className="fa-solid fa-rectangle-list" aria-hidden="true" />,
-      },
+      // Templates moved into Settings (/admin/eval-settings?section=templates)
+      // as a tab — no standalone left-nav entry.
       {
         key: "ce-analytics",
         title: "Analytics",

@@ -17,7 +17,7 @@ const ADMIN_ENTITY_ROUTES = [
 const PAGE_ROUTES = [
   { id: "page-surveys",           label: "Surveys",                              href: "/surveys",                   icon: "fa-light fa-paper-plane" },
   { id: "page-activate",          label: "Activate Term",                        href: "/surveys/activate",          icon: "fa-light fa-circle-play" },
-  { id: "page-templates",         label: "Templates",                            href: "/templates",                 icon: "fa-light fa-rectangle-list" },
+  { id: "page-templates",         label: "Templates",                            href: "/admin/eval-settings?section=templates", icon: "fa-light fa-rectangle-list" },
   { id: "page-moderation",        label: "Moderation",                           href: "/moderation",                icon: "fa-light fa-shield-check" },
   { id: "page-analytics-ce",      label: "Analytics — Course Evaluation",        href: "/analytics",                 icon: "fa-light fa-chart-mixed" },
   { id: "page-analytics-ps",      label: "Analytics — Programmatic",             href: "/analytics/programmatic",    icon: "fa-light fa-chart-mixed" },

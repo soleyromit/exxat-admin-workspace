@@ -335,7 +335,7 @@ export function StepCommunication({
         <p className="text-xs text-muted-foreground">
           <i className="fa-light fa-gear me-1" aria-hidden="true" />
           Window, email and reminders are pre-filled from{' '}
-          <Link href="/admin/eval-settings" className="underline underline-offset-2 hover:text-foreground">Central Settings</Link>
+          <Link href="/admin/eval-settings" className="underline underline-offset-2 hover:text-foreground">Settings</Link>
           {' '}— adjust below as needed.
         </p>
       </div>

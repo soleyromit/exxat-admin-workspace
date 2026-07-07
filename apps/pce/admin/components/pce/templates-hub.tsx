@@ -18,8 +18,10 @@ import { TablePropertiesDrawer } from '@/components/table-properties/drawer'
 import type { FilterFieldDef } from '@/components/table-properties/types'
 import { SiteHeader } from '@/components/site-header'
 import { usePce } from '@/components/pce/pce-state'
+import { EmptyState as DsEmptyState } from '@/components/empty-state'
 import { DeleteTemplateDialog } from '@/components/pce/pce-modals'
 import type { PceTemplate, SurveyStatus } from '@/lib/pce-mock-data'
+import { MOCK_PROGRAMS } from '@/lib/pce-mock-data'
 import { DataTable } from '@/components/data-table'
 import type { ColumnDef } from '@/components/data-table/types'
 import Link from 'next/link'
@@ -31,10 +33,12 @@ interface TemplateRow extends Record<string, unknown> {
   questionCount: number
   usedBySurveyCount: number
   status: SurveyStatus
+  courseType: string
+  program: string
   lastModified: string
 }
 
-export function TemplatesHub({ mode }: { mode: 'course_evaluation' | 'general' }) {
+export function TemplatesHub({ mode, embedded = false }: { mode: 'course_evaluation' | 'general'; embedded?: boolean }) {
   const { templates } = usePce()
   const router = useRouter()
   const [deleteTemplate, setDeleteTemplate] = useState<PceTemplate | null>(null)
@@ -57,12 +61,14 @@ export function TemplatesHub({ mode }: { mode: 'course_evaluation' | 'general' }
     questionCount: t.questionCount,
     usedBySurveyCount: t.usedBySurveyCount,
     status: t.status,
+    courseType: t.courseType ?? 'any',
+    program: t.programId ?? '',
     lastModified: t.lastModified,
   }))
 
   const courseTypeColumn: ColumnDef<TemplateRow> = {
     key: 'courseType',
-    label: 'Course type',
+    label: 'Course category',
     sortable: true,
     width: 140,
     filter: {
@@ -70,13 +76,15 @@ export function TemplatesHub({ mode }: { mode: 'course_evaluation' | 'general' }
       icon: 'fa-chalkboard-teacher',
       operators: ['is', 'is_not'],
       options: [
-        { value: 'didactic', label: 'Didactic' },
-        { value: 'clinical', label: 'Clinical' },
+        { value: 'didactic', label: 'Classroom based' },
+        { value: 'clinical', label: 'Practice based' },
+        { value: 'seminar',  label: 'Lab based' },
       ],
     },
     cell: (row) => {
       const ct = row.template.courseType
       if (!ct || ct === 'any') return <span className="text-sm text-muted-foreground">Any</span>
+      const label = ct === 'didactic' ? 'Classroom based' : ct === 'clinical' ? 'Practice based' : 'Lab based'
       return (
         <span
           className="text-xs font-medium rounded px-1.5 py-0.5"
@@ -85,9 +93,28 @@ export function TemplatesHub({ mode }: { mode: 'course_evaluation' | 'general' }
             color: ct === 'didactic' ? 'var(--brand-color)' : 'var(--muted-foreground)',
           }}
         >
-          {ct === 'didactic' ? 'Didactic' : 'Clinical'}
+          {label}
         </span>
       )
+    },
+  }
+
+  const programColumn: ColumnDef<TemplateRow> = {
+    key: 'program',
+    label: 'Program',
+    sortable: true,
+    width: 180,
+    filter: {
+      type: 'select',
+      icon: 'fa-graduation-cap',
+      operators: ['is', 'is_not'],
+      options: MOCK_PROGRAMS.map(p => ({ value: p.id, label: p.name })),
+    },
+    cell: (row) => {
+      const p = MOCK_PROGRAMS.find(pr => pr.id === row.template.programId)
+      return p
+        ? <span className="text-sm">{p.name}</span>
+        : <span className="text-sm text-muted-foreground">All programs</span>
     },
   }
 
@@ -107,7 +134,7 @@ export function TemplatesHub({ mode }: { mode: 'course_evaluation' | 'general' }
         </Link>
       ),
     },
-    ...(!isGeneral ? [courseTypeColumn] : []),
+    ...(!isGeneral ? [courseTypeColumn, programColumn] : []),
     {
       key: 'questionCount',
       label: 'Questions',
@@ -150,8 +177,8 @@ export function TemplatesHub({ mode }: { mode: 'course_evaluation' | 'general' }
         options: [
           {
             value: 'active',
-            label: 'Active',
-            node: <ListHubStatusBadge label="Active" tint={LIST_HUB_STATUS_TINT_SUCCESS} icon="fa-circle-check" />,
+            label: 'Approved',
+            node: <ListHubStatusBadge label="Approved" tint={LIST_HUB_STATUS_TINT_SUCCESS} icon="fa-circle-check" />,
           },
           {
             value: 'draft',
@@ -162,7 +189,7 @@ export function TemplatesHub({ mode }: { mode: 'course_evaluation' | 'general' }
       },
       cell: (row) => (
         row.template.status === 'active'
-          ? <ListHubStatusBadge label="Active" tint={LIST_HUB_STATUS_TINT_SUCCESS} icon="fa-circle-check" />
+          ? <ListHubStatusBadge label="Approved" tint={LIST_HUB_STATUS_TINT_SUCCESS} icon="fa-circle-check" />
           : <ListHubStatusBadge label="Draft" tint={LIST_HUB_STATUS_TINT_WARNING} icon="fa-pen-to-square" />
       ),
     },
@@ -191,22 +218,33 @@ export function TemplatesHub({ mode }: { mode: 'course_evaluation' | 'general' }
   const subtitle = `${rows.length} ${rows.length === 1 ? 'template' : 'templates'}`
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
-      <SiteHeader title={title} />
-      <PageHeader
-        title={title}
-        subtitle={subtitle}
-        actions={
-          <div className="flex items-center gap-2" role="group" aria-label="Template actions">
-            <Button size="lg" onClick={() => router.push(newTemplateHref)}>
-              <i className="fa-light fa-plus" aria-hidden="true" />
-              {newTemplateLabel}
-            </Button>
-          </div>
-        }
-      />
+    <div className={embedded ? 'flex flex-col' : 'flex flex-col flex-1 overflow-hidden'}>
+      {!embedded && <SiteHeader title={title} />}
+      {embedded ? (
+        /* Inside the Settings tab: slim toolbar instead of page chrome */
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>{subtitle}</p>
+          <Button size="sm" onClick={() => router.push(newTemplateHref)}>
+            <i className="fa-light fa-plus" aria-hidden="true" />
+            {newTemplateLabel}
+          </Button>
+        </div>
+      ) : (
+        <PageHeader
+          title={title}
+          subtitle={subtitle}
+          actions={
+            <div className="flex items-center gap-2" role="group" aria-label="Template actions">
+              <Button size="lg" onClick={() => router.push(newTemplateHref)}>
+                <i className="fa-light fa-plus" aria-hidden="true" />
+                {newTemplateLabel}
+              </Button>
+            </div>
+          }
+        />
+      )}
 
-      <div className="flex-1 overflow-auto" style={{ paddingBlock: 16, paddingInline: 0 }}>
+      <div className={embedded ? undefined : 'flex-1 overflow-auto'} style={{ paddingBlock: 16, paddingInline: 0 }}>
         {rows.length === 0 ? (
           <EmptyState onCreate={() => router.push(newTemplateHref)} isGeneral={isGeneral} />
         ) : (
@@ -323,26 +361,23 @@ function RowActions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => 
 
 function EmptyState({ onCreate, isGeneral }: { onCreate: () => void; isGeneral: boolean }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-      <i
-        className="fa-light fa-rectangle-list"
-        aria-hidden="true"
-        style={{ fontSize: 40, color: 'var(--muted-foreground)' }}
-      />
-      <div className="flex flex-col gap-1">
-        <p className="text-sm font-medium">
-          {isGeneral ? 'No programmatic templates yet' : 'No templates yet'}
-        </p>
-        <p className="text-sm text-muted-foreground" style={{ maxWidth: 320 }}>
-          {isGeneral
+    <div className="flex items-center justify-center py-12">
+      <DsEmptyState
+        align="center"
+        icon="fa-rectangle-list"
+        title={isGeneral ? 'No programmatic templates yet' : 'No templates yet'}
+        description={
+          isGeneral
             ? 'Create a template for alumni outcomes, preceptor satisfaction, or other program-level surveys.'
-            : 'Create a template to start distributing evaluations.'}
-        </p>
-      </div>
-      <Button variant="default" size="sm" onClick={onCreate}>
-        <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 12 }} />
-        {isGeneral ? 'Create Template' : 'Create Template'}
-      </Button>
+            : 'Create a template to start distributing evaluations.'
+        }
+        footer={
+          <Button variant="default" size="sm" onClick={onCreate}>
+            <i className="fa-light fa-plus text-xs" aria-hidden="true" />
+            Create Template
+          </Button>
+        }
+      />
     </div>
   )
 }
