@@ -1,10 +1,13 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
-  Badge, Button,
+  Badge, Button, LocalBanner,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
 } from '@exxatdesignux/ui'
+import { usePce } from '@/components/pce/pce-state'
+import { NewTemplateFlow } from '@/components/pce/new-template-flow'
+import { TemplateEditor } from '@/components/pce/template-editor'
 import { DataTable } from '@/components/data-table'
 import { useTableState } from '@/components/data-table/use-table-state'
 import type { ColumnDef } from '@/components/data-table/types'
@@ -39,6 +42,20 @@ export function StepSurveyDesignAssign({
   const total = selectedOfferings.length
   const assigned = selectedOfferings.filter(o => templateAssignments[o.id] ?? defaultAssignments[o.id]).length
   const effective = (id: string) => templateAssignments[id] ?? defaultAssignments[id] ?? ''
+
+  // In-step template creation (Klaviyo model): the step swaps to the SAME
+  // create flow + builder used by Settings > Templates, then returns on publish.
+  // The wizard page never unmounts, so scope/selection state is preserved.
+  const { templates: allTemplates } = usePce()
+  const [subView, setSubView] = useState<'assign' | 'create' | { buildId: string }>('assign')
+  const [notice, setNotice] = useState<{ kind: 'published' | 'draft'; name: string } | null>(null)
+  const backToAssign = () => {
+    if (typeof subView === 'object') {
+      const t = allTemplates.find(x => x.id === subView.buildId)
+      if (t && t.status !== 'active') setNotice({ kind: 'draft', name: t.name || 'Untitled template' })
+    }
+    setSubView('assign')
+  }
 
   const rows = useMemo<DesignRow[]>(() =>
     selectedOfferings.map(o => {
@@ -88,6 +105,33 @@ export function StepSurveyDesignAssign({
 
   const tableState = useTableState<DesignRow>(rows, columns)
 
+  // ── Create sub-view: same chooser + builder as Settings > Templates ──────
+  if (subView !== 'assign') {
+    return (
+      <div className="flex flex-col gap-3">
+        <div>
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={backToAssign}>
+            <i className="fa-light fa-arrow-left text-xs" aria-hidden="true" />
+            Back to Survey design
+          </Button>
+        </div>
+        {subView === 'create' ? (
+          <NewTemplateFlow embedded onCreated={id => setSubView({ buildId: id })} />
+        ) : (
+          <TemplateEditor
+            templateId={subView.buildId}
+            embedded
+            onPublished={id => {
+              const t = allTemplates.find(x => x.id === id)
+              setNotice({ kind: 'published', name: t?.name || 'Template' })
+              setSubView('assign')
+            }}
+          />
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-4" style={{ maxWidth: 940 }}>
       <div className="flex flex-col gap-1">
@@ -97,12 +141,32 @@ export function StepSurveyDesignAssign({
         </p>
       </div>
 
+      {notice && (
+        <LocalBanner
+          variant={notice.kind === 'published' ? 'success' : 'info'}
+          dismissible
+          onDismiss={() => setNotice(null)}
+        >
+          {notice.kind === 'published'
+            ? <>&ldquo;{notice.name}&rdquo; published — assign it in the Template column below.</>
+            : <>&ldquo;{notice.name}&rdquo; saved as a draft — publish it to make it assignable. It&apos;s in Settings &rsaquo; Templates.</>}
+        </LocalBanner>
+      )}
+
       <div className="flex items-center justify-between">
         <span className="text-xs tabular-nums" style={{ color: 'var(--muted-foreground)' }}>{assigned} of {total} courses assigned</span>
-        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={onResetDefaults}>
-          <i className="fa-light fa-arrow-rotate-left text-xs" aria-hidden="true" />
-          Reset to defaults
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={onResetDefaults}>
+            <i className="fa-light fa-arrow-rotate-left text-xs" aria-hidden="true" />
+            Reset to defaults
+          </Button>
+          {/* Opens the SAME create flow + builder as Settings → Templates,
+              in place — the wizard stays mounted so its state is preserved. */}
+          <Button variant="outline" size="sm" onClick={() => { setNotice(null); setSubView('create') }}>
+            <i className="fa-light fa-plus" aria-hidden="true" />
+            New template
+          </Button>
+        </div>
       </div>
 
       {total === 0 ? (
