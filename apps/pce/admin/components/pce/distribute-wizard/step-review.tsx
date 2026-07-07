@@ -2,10 +2,11 @@
 
 import { useState, useMemo } from 'react'
 import {
-  Badge, Button, ToggleGroup, ToggleGroupItem,
+  Badge, Button, Checkbox, ToggleGroup, ToggleGroupItem,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
 } from '@exxatdesignux/ui'
 import type { Reminder, EmailContact } from './step-communication'
+import type { CourseIssue } from '@/lib/pce-push-validation'
 
 export interface ReviewCourseGroup {
   templateTitle: string
@@ -38,6 +39,10 @@ interface StepReviewProps {
   onEdit: (step: number) => void
   onBack: () => void
   onPush: () => void
+  cohortSummary?: string
+  evaluateSummary?: string
+  subjectIssues?: CourseIssue[]
+  windowIssues?: CourseIssue[]
 }
 
 function fmtDate(d: Date | undefined): string {
@@ -47,34 +52,73 @@ function fmtShort(d: Date | undefined): string {
   return d ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'the close date'
 }
 
-// ── Readiness section — flat, hairline-divided (Klaviyo/Mailchimp "ready to
-//    send" pattern). A completion marker + label + Edit, then the detail. No
-//    boxed cards, no filled header bars. ────────────────────────────────────
-function ReviewSection({
-  label, complete, onEdit, children,
-}: { label: string; complete: boolean; onEdit: () => void; children: React.ReactNode }) {
+/** Section: heading + Edit + label/value rows (Walmart review-and-confirm model). */
+function Section({
+  title, onEdit, rows,
+}: {
+  title: string
+  onEdit: () => void
+  rows: [string, React.ReactNode][]
+}) {
   return (
-    <section className="flex flex-col gap-2 py-4 border-b border-border last:border-0">
-      <div className="flex items-center gap-2">
-        <i
-          className={complete ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-exclamation'}
-          aria-hidden="true"
-          style={{ fontSize: 13, color: complete ? 'var(--chart-2)' : 'var(--chart-4)' }}
-        />
-        <h3 className="text-sm font-semibold flex-1">{label}</h3>
-        <Button variant="ghost" size="xs" className="text-muted-foreground hover:text-foreground" onClick={onEdit}>Edit</Button>
+    <div className="flex flex-col gap-2 border-t border-border pt-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold">{title}</h3>
+        <Button variant="ghost" size="xs" className="text-muted-foreground hover:text-foreground" onClick={onEdit}>
+          Edit
+        </Button>
       </div>
-      <div className="flex flex-col gap-1 text-sm" style={{ paddingLeft: 21 }}>{children}</div>
-    </section>
+      {rows.map(([k, v]) => (
+        <div key={k} className="flex items-baseline gap-3 text-sm">
+          <span className="text-xs shrink-0" style={{ color: 'var(--muted-foreground)', width: 92 }}>{k}</span>
+          <span className="min-w-0">{v}</span>
+        </div>
+      ))}
+    </div>
   )
 }
 
-// One label→value line inside a section (label demoted, value primary).
-function Detail({ label, children }: { label: string; children: React.ReactNode }) {
+/**
+ * Acknowledgement group — check-row model (Vercel/GitHub merge blockers):
+ * title + shared reason once, compact per-course rows carrying only what
+ * differs, one correct action, and a separated required consent line.
+ */
+function AckGroup({
+  id, title, reason, ackLabel, checked, onChange, action, children,
+}: {
+  id: string
+  title: string
+  reason: string
+  ackLabel: string
+  checked: boolean
+  onChange: (v: boolean) => void
+  /** Group-level fix action (e.g. Edit schedule). */
+  action?: React.ReactNode
+  children: React.ReactNode
+}) {
   return (
-    <div className="flex items-baseline gap-2">
-      <span className="text-xs text-muted-foreground shrink-0" style={{ width: 96 }}>{label}</span>
-      <span className="flex-1 min-w-0">{children}</span>
+    <div className="flex items-start gap-2.5 py-3">
+      <i
+        className="fa-regular fa-circle-exclamation text-xs"
+        aria-hidden="true"
+        style={{ color: 'var(--insight-severity-warning-fg)', marginTop: 4 }}
+      />
+      <div className="flex flex-col gap-2 flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <span className="text-sm font-medium">{title}</span>
+            <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>{reason}</span>
+          </div>
+          {action}
+        </div>
+        {children}
+        <div className="flex items-center gap-2 pt-2 border-t border-border">
+          <Checkbox id={id} checked={checked} onCheckedChange={v => onChange(!!v)} />
+          <label htmlFor={id} className="text-xs cursor-pointer">
+            {ackLabel} <span style={{ color: 'var(--destructive)' }}>*</span>
+          </label>
+        </div>
+      </div>
     </div>
   )
 }
@@ -85,6 +129,7 @@ export function StepReview({
   templateName, emailSubject, emailBody, isEmailEdited, reminders,
   reminderSameAsInvite, reminderTemplateName, reminderSubject, reminderBody,
   onEdit, onBack, onPush,
+  cohortSummary, evaluateSummary, subjectIssues = [], windowIssues = [],
 }: StepReviewProps) {
   const typeLabel = surveyMode === 'general' ? 'Programmatic survey' : 'Course evaluation'
   const totalRecipients = studentCount + emailContacts.length
@@ -93,16 +138,28 @@ export function StepReview({
     : `${[...reminders].map(r => r.daysBefore).sort((a, b) => b - a).join(', ')} days before close`
   const muted = (s: string) => <span className="text-muted-foreground">{s}</span>
 
-  // ── Completion — what could block an irreversible send ──────────────────────
-  const recipientsComplete = totalRecipients > 0
-  const scheduleComplete   = !!openDate && !!closeDate && !!releaseDate
-  const coursesComplete    = surveyMode !== 'course_evaluation' || courseGroups.length > 0
-  const emailComplete      = !!templateName
-  const allReady = recipientsComplete && scheduleComplete && coursesComplete && emailComplete
+  // Acknowledgement gates — each unresolved warning category must be consciously
+  // accepted before Push (Dropbox multi-ack model).
+  const [ackSubject, setAckSubject] = useState(false)
+  const [ackWindow, setAckWindow] = useState(false)
 
-  // ── Email preview — resolve merge fields to sample values so it reads like
-  //    the real message (Wix / Maze / Loops "preview column" pattern). ────────
+  const scheduleComplete = !!openDate && !!closeDate && !!releaseDate
+  const coursesComplete = surveyMode !== 'course_evaluation' || courseGroups.length > 0
+  const emailComplete = !!templateName
+  const recipientsComplete = totalRecipients > 0
+  const subjectAck = subjectIssues.length === 0 || ackSubject
+  const windowAck = windowIssues.length === 0 || ackWindow
+  const allReady = scheduleComplete && coursesComplete && emailComplete && recipientsComplete && subjectAck && windowAck
+  const hasWarnings = subjectIssues.length > 0 || windowIssues.length > 0
+
+  const heading = surveyTitle.trim() || (surveyMode === 'course_evaluation' ? termName || 'Course evaluation' : 'Untitled survey')
+
+  // Email preview (in a dialog — RV-A keeps the column calm)
+  const [previewOpen, setPreviewOpen] = useState(false)
   const [previewMode, setPreviewMode] = useState<'invitation' | 'reminder'>('invitation')
+  const [testSent, setTestSent] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+
   function resolveMerge(text: string): string {
     return text
       .replace(/\{\{student_first_name\}\}/g, 'Alex')
@@ -116,150 +173,206 @@ export function StepReview({
   }
   const preview = useMemo(() => {
     if (previewMode === 'reminder') {
-      // "Same as invitation" reuses the invite copy; otherwise the reminder's own.
       return reminderSameAsInvite
-        ? { subject: emailSubject, body: emailBody, name: `${templateName} (same as invitation)` }
-        : { subject: reminderSubject, body: reminderBody, name: reminderTemplateName }
+        ? { subject: emailSubject, body: emailBody }
+        : { subject: reminderSubject, body: reminderBody }
     }
-    return { subject: emailSubject, body: emailBody, name: templateName }
-  }, [previewMode, emailSubject, emailBody, templateName, reminderSameAsInvite, reminderSubject, reminderBody, reminderTemplateName])
+    return { subject: emailSubject, body: emailBody }
+  }, [previewMode, emailSubject, emailBody, reminderSameAsInvite, reminderSubject, reminderBody])
 
-  const [testSent, setTestSent] = useState(false)
-  const [confirmOpen, setConfirmOpen] = useState(false)
-
-  // Identity — course evaluations don't collect a title, so fall back to the
-  // term (the natural "what am I sending"); programmatic surveys use the title.
-  const heading = surveyTitle.trim()
-    || (surveyMode === 'course_evaluation' ? (termName || 'Course evaluation') : 'Untitled survey')
-  const headingIsTerm = !surveyTitle.trim() && surveyMode === 'course_evaluation'
-  const metaLead = [headingIsTerm ? null : termName, academicYear].filter(Boolean).join(' · ')
-  const metaLine = [metaLead, surveyDescription].filter(Boolean).join(' — ') || '—'
+  const assignmentSummary = surveyMode === 'course_evaluation' && courseGroups.length > 0
+    ? courseGroups.map(g => `${g.codes.length} course${g.codes.length !== 1 ? 's' : ''} — ${g.templateTitle}`).join(' · ')
+    : null
 
   return (
-    <div className="flex flex-col gap-5" style={{ maxWidth: 980 }}>
+    <div className="flex flex-col gap-4" style={{ maxWidth: 620 }}>
+      {/* ── Headline ───────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>Review &amp; push</h1>
-        <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-          Confirm everything below, preview the email, then push. This sends to all recipients and can&apos;t be undone.
-        </p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h2 className="text-lg font-semibold font-heading">{heading}</h2>
+          <Badge variant="secondary">{typeLabel}</Badge>
+        </div>
+        {academicYear && <p className="text-sm text-muted-foreground">{academicYear}</p>}
+        {totalRecipients > 0 && !!openDate && !!closeDate && (
+          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+            Sending to{' '}
+            <span className="font-medium" style={{ color: 'var(--foreground)' }}>
+              {totalRecipients} {totalRecipients === 1 ? 'person' : 'people'}
+            </span>
+            {surveyMode === 'course_evaluation' && offeringCount > 0 && (
+              <> across <span className="font-medium" style={{ color: 'var(--foreground)' }}>{offeringCount} course{offeringCount !== 1 ? 's' : ''}</span></>
+            )}
+            {' '}· opens <span className="font-medium" style={{ color: 'var(--foreground)' }}>{fmtShort(openDate)}</span>
+            {' '}· closes <span className="font-medium" style={{ color: 'var(--foreground)' }}>{fmtShort(closeDate)}</span>
+          </p>
+        )}
       </div>
 
-      <div className="flex gap-8 items-start">
-        {/* ── Readiness column ──────────────────────────────────────────────── */}
-        <div className="flex-1 min-w-0" style={{ maxWidth: 560 }}>
-          {/* Identity header — the primary "what am I sending" anchor */}
-          <div className="flex items-start gap-2 pb-4 border-b border-border">
-            <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h2 className="text-lg font-semibold truncate" style={{ fontFamily: 'var(--font-heading)' }}>
-                  {heading}
-                </h2>
-                <Badge variant="secondary">{typeLabel}</Badge>
+      {/* ── Sections ───────────────────────────────────────────────────────── */}
+      <Section
+        title="Recipients"
+        onEdit={() => onEdit(1)}
+        rows={[
+          ...(surveyMode === 'course_evaluation'
+            ? ([
+                ['Evaluating', [cohortSummary, evaluateSummary].filter(Boolean).join(' · ') || muted('—')],
+              ] as [string, React.ReactNode][])
+            : []),
+          ['Reach', recipientsComplete
+            ? `${studentCount} student${studentCount !== 1 ? 's' : ''}${offeringCount > 0 ? ` · ${offeringCount} courses` : ''}${emailContacts.length > 0 ? ` · ${emailContacts.length} external` : ''}`
+            : muted('No recipients yet')],
+        ]}
+      />
+
+      <Section
+        title="Survey"
+        onEdit={() => onEdit(2)}
+        rows={[
+          ['Template', assignmentSummary ?? muted('No courses assigned')],
+          ['Email', templateName
+            ? <>{templateName}{isEmailEdited && <span className="text-xs text-muted-foreground"> · edited</span>}</>
+            : muted('Not set')],
+        ]}
+      />
+
+      <Section
+        title="Schedule"
+        onEdit={() => onEdit(3)}
+        rows={[
+          ['Window', scheduleComplete ? `${fmtDate(openDate)} → ${fmtDate(closeDate)}` : muted('Dates not set')],
+          ['Results', fmtDate(releaseDate)],
+          ['Reminders', reminders.length === 0
+            ? muted('None scheduled')
+            : <>{reminderSameAsInvite ? 'Same as invitation' : reminderTemplateName}<span className="text-muted-foreground"> · {reminderSummary}</span></>],
+          ['From', senderName || 'Exxat Surveys'],
+        ]}
+      />
+
+      {/* ── Email preview (dialog) ─────────────────────────────────────────── */}
+      <div className="flex items-center justify-between border-t border-border pt-4">
+        <h3 className="text-sm font-semibold">Email</h3>
+        <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>Preview email</Button>
+      </div>
+
+      {/* ── Warnings — acknowledgement gates ──────────────────────────────── */}
+      {surveyMode === 'course_evaluation' && hasWarnings && (
+        <div className="rounded-lg border border-border px-4 py-1" style={{ background: 'var(--card)' }}>
+          {subjectIssues.length > 0 && (
+            <AckGroup
+              id="ack-subject-data"
+              title={`${subjectIssues.length} course${subjectIssues.length !== 1 ? 's are' : ' is'} missing subject data`}
+              reason="They may reach no one, or have no one to evaluate. You can still push — they'll be skipped."
+              ackLabel="I understand these courses are missing faculty or student data"
+              checked={ackSubject}
+              onChange={setAckSubject}
+            >
+              <div className="flex flex-col gap-1">
+                {subjectIssues.map(iss => (
+                  <div key={iss.id} className="flex items-center justify-between gap-3 text-sm">
+                    <span className="min-w-0 truncate">
+                      {iss.courseLabel}
+                      <span style={{ color: 'var(--muted-foreground)' }}> — {iss.reasons.join(', ')}</span>
+                    </span>
+                    <Button asChild variant="link" size="xs" className="shrink-0">
+                      <a href={iss.prismHref} target="_blank" rel="noopener noreferrer" title="Fix in Exxat Prism — opens in a new tab">
+                        Fix in Prism
+                        <i className="fa-light fa-arrow-up-right-from-square text-xs" aria-hidden="true" />
+                        <span className="sr-only"> (opens in new tab)</span>
+                      </a>
+                    </Button>
+                  </div>
+                ))}
               </div>
-              <p className="text-sm text-muted-foreground">{metaLine}</p>
-            </div>
-            <Button variant="ghost" size="xs" className="text-muted-foreground hover:text-foreground shrink-0" onClick={() => onEdit(1)}>Edit</Button>
-          </div>
-
-          {/* Recipients first — the highest-stakes fact for an irreversible send */}
-          <ReviewSection label="Recipients" complete={recipientsComplete} onEdit={() => onEdit(3)}>
-            <Detail label="Via Prism">
-              {studentCount > 0 ? `${studentCount} student${studentCount !== 1 ? 's' : ''} from the selected courses` : muted('None')}
-            </Detail>
-            <Detail label="External">
-              {emailContacts.length === 0 ? muted('None') : (
-                <div className="flex flex-col gap-0.5">
-                  {emailContacts.map(c => {
-                    const name = [c.firstName, c.lastName].filter(Boolean).join(' ')
-                    return (
-                      <span key={c.id} className="truncate">
-                        {name ? <span className="font-medium">{name}</span> : null}
-                        {name ? <span className="text-muted-foreground"> · {c.email}</span> : c.email}
-                      </span>
-                    )
-                  })}
-                </div>
-              )}
-            </Detail>
-          </ReviewSection>
-
-          <ReviewSection label="Schedule" complete={scheduleComplete} onEdit={() => onEdit(3)}>
-            <Detail label="Opens">{fmtDate(openDate)}</Detail>
-            <Detail label="Closes">{fmtDate(closeDate)}</Detail>
-            <Detail label="Results">{fmtDate(releaseDate)}</Detail>
-          </ReviewSection>
-
-          {surveyMode === 'course_evaluation' && (
-            <ReviewSection label={`Courses & templates · ${offeringCount} offering${offeringCount !== 1 ? 's' : ''}`} complete={coursesComplete} onEdit={() => onEdit(2)}>
-              {courseGroups.length === 0
-                ? <span>{muted('No courses selected')}</span>
-                : courseGroups.map((g, i) => (
-                    <Detail key={i} label={g.templateTitle}>
-                      <span className="text-muted-foreground">{g.codes.length} course{g.codes.length !== 1 ? 's' : ''} — </span>
-                      {g.codes.join(', ')}
-                    </Detail>
-                  ))}
-            </ReviewSection>
+            </AckGroup>
           )}
-
-          <ReviewSection label="Emails" complete={emailComplete} onEdit={() => onEdit(3)}>
-            <Detail label="Invitation">
-              {templateName}
-              {isEmailEdited && <span className="text-xs text-muted-foreground"> · edited for this push</span>}
-            </Detail>
-            <Detail label="Reminders">
-              {reminders.length === 0 ? muted('No reminders scheduled') : (
-                <span>
-                  {reminderSameAsInvite ? 'Same as invitation' : reminderTemplateName}
-                  <span className="text-muted-foreground"> · {reminderSummary}</span>
-                </span>
-              )}
-            </Detail>
-            <Detail label="From">{senderName || 'Exxat Surveys'}</Detail>
-          </ReviewSection>
-        </div>
-
-        {/* ── Preview + push panel (sticky) ─────────────────────────────────── */}
-        <aside className="shrink-0" style={{ width: 340, position: 'sticky', top: 8 }}>
-          <div className="flex flex-col gap-3">
-            {/* Recipient count — the "order total" of a send */}
-            <div className="flex items-baseline justify-between gap-3">
-              <div className="flex flex-col">
-                <span className="text-2xl font-semibold tabular-nums" style={{ fontFamily: 'var(--font-heading)' }}>{totalRecipients}</span>
-                <span className="text-xs text-muted-foreground">
-                  {studentCount} student{studentCount !== 1 ? 's' : ''} · {emailContacts.length} external
-                </span>
+          {subjectIssues.length > 0 && windowIssues.length > 0 && (
+            <div className="border-t border-border" />
+          )}
+          {windowIssues.length > 0 && (
+            <AckGroup
+              id="ack-window"
+              title={`${windowIssues.length} course${windowIssues.length !== 1 ? 's’' : '’s'} survey window doesn’t align with the course dates`}
+              reason="The survey opens after these courses have already ended."
+              ackLabel="I understand the survey window doesn't align with these courses' dates"
+              checked={ackWindow}
+              onChange={setAckWindow}
+              action={
+                <Button variant="outline" size="xs" className="shrink-0" onClick={() => onEdit(3)}>
+                  Edit schedule
+                </Button>
+              }
+            >
+              <div className="flex flex-wrap gap-1.5">
+                {windowIssues.map(iss => (
+                  <Badge key={iss.id} variant="outline" className="font-normal" title={iss.courseLabel}>
+                    {iss.courseLabel.split(' – ')[0]}
+                  </Badge>
+                ))}
               </div>
-              <span className="text-xs text-muted-foreground text-right">
-                {fmtShort(openDate)} – {fmtShort(closeDate)}
-              </span>
-            </div>
+            </AckGroup>
+          )}
+        </div>
+      )}
 
-            {/* Email preview — toggle invitation / reminder */}
+      {/* ── Footer ─────────────────────────────────────────────────────────── */}
+      <div className="flex flex-col gap-2 border-t border-border pt-4">
+        {surveyMode === 'course_evaluation' && (
+          <p className="text-xs text-muted-foreground flex items-start gap-1.5">
+            <i className="fa-light fa-shield-check text-xs" aria-hidden="true" style={{ marginTop: 2 }} />
+            <span>Responses are anonymous. Results release to instructors on {fmtShort(releaseDate)}.</span>
+          </p>
+        )}
+        {!allReady && (
+          <p className="text-xs flex items-start gap-1.5" style={{ color: 'var(--insight-severity-warning-fg)' }}>
+            <i className="fa-solid fa-circle-exclamation text-xs" aria-hidden="true" style={{ marginTop: 2 }} />
+            <span>
+              {!subjectAck || !windowAck
+                ? 'Acknowledge the flagged warnings above to continue.'
+                : 'Resolve the flagged sections before pushing.'}
+            </span>
+          </p>
+        )}
+        <Button variant="default" size="sm" className="w-full" disabled={!allReady} onClick={() => setConfirmOpen(true)}>
+          Push evaluation{totalRecipients > 0 ? ` · ${totalRecipients} ${totalRecipients === 1 ? 'person' : 'people'}` : ''}
+        </Button>
+        <Button variant="ghost" size="sm" className="w-full text-muted-foreground hover:text-foreground" onClick={onBack}>
+          Back to Communication
+        </Button>
+      </div>
+
+      {/* ── Email preview dialog ───────────────────────────────────────────── */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Email preview</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3">
             <ToggleGroup
               type="single"
               value={previewMode}
-              onValueChange={(v) => { if (v) setPreviewMode(v as 'invitation' | 'reminder') }}
+              onValueChange={v => { if (v) setPreviewMode(v as 'invitation' | 'reminder') }}
               variant="outline"
               size="sm"
+              spacing={8}
               className="justify-start"
+              aria-label="Email preview type"
             >
               <ToggleGroupItem value="invitation">Invitation</ToggleGroupItem>
               <ToggleGroupItem value="reminder">Reminder</ToggleGroupItem>
             </ToggleGroup>
-
             <div className="rounded-md border border-border overflow-hidden" style={{ background: 'var(--card)' }}>
               <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)', background: 'var(--muted)' }}>
                 <p className="text-xs text-muted-foreground truncate">From {senderName || 'Exxat Surveys'}</p>
-                <p className="text-sm font-medium truncate" title={resolveMerge(preview.subject)}>{resolveMerge(preview.subject) || muted('No subject')}</p>
+                <p className="text-sm font-medium truncate" title={resolveMerge(preview.subject)}>
+                  {resolveMerge(preview.subject) || muted('No subject')}
+                </p>
               </div>
-              <div style={{ padding: '12px', maxHeight: 240, overflowY: 'auto' }}>
+              <div style={{ padding: 12, maxHeight: 260, overflowY: 'auto' }}>
                 <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--foreground)', lineHeight: 1.55 }}>
                   {resolveMerge(preview.body)}
                 </p>
               </div>
             </div>
-
             <Button
               variant="ghost"
               size="sm"
@@ -269,45 +382,25 @@ export function StepReview({
             >
               {testSent ? (
                 <>
-                  <i className="fa-solid fa-circle-check" aria-hidden="true" style={{ fontSize: 11, color: 'var(--chart-2)' }} />
+                  <i className="fa-solid fa-circle-check text-xs" aria-hidden="true" style={{ color: 'var(--chart-2)' }} />
                   Test sent to you
                 </>
               ) : 'Send test to me'}
             </Button>
-
-            <div style={{ borderTop: '1px solid var(--border)' }} />
-
-            {surveyMode === 'course_evaluation' && (
-              <p className="text-xs text-muted-foreground flex items-start gap-1.5">
-                <i className="fa-light fa-shield-check" aria-hidden="true" style={{ fontSize: 11, marginTop: 2 }} />
-                <span>Responses are anonymous. Results release to instructors on {fmtShort(releaseDate)}.</span>
-              </p>
-            )}
-
-            {!allReady && (
-              <p className="text-xs flex items-start gap-1.5" style={{ color: 'var(--chart-4)' }}>
-                <i className="fa-solid fa-circle-exclamation" aria-hidden="true" style={{ fontSize: 11, marginTop: 2 }} />
-                <span>Resolve the flagged sections before you can push.</span>
-              </p>
-            )}
-
-            <Button variant="default" size="sm" className="w-full" disabled={!allReady} onClick={() => setConfirmOpen(true)}>
-              Push survey
-            </Button>
-            <Button variant="ghost" size="sm" className="w-full text-muted-foreground hover:text-foreground" onClick={onBack}>
-              Back to Communication
-            </Button>
           </div>
-        </aside>
-      </div>
+        </DialogContent>
+      </Dialog>
 
-      {/* ── Send confirmation — irreversible action (Mailchimp pattern) ──────── */}
+      {/* ── Confirm dialog ─────────────────────────────────────────────────── */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Push this survey?</DialogTitle>
             <DialogDescription>
-              This sends the {typeLabel.toLowerCase()} to <span className="font-medium text-foreground">{totalRecipients} recipient{totalRecipients !== 1 ? 's' : ''}</span>
+              This sends the {typeLabel.toLowerCase()} to{' '}
+              <span className="font-medium text-foreground">
+                {totalRecipients} recipient{totalRecipients !== 1 ? 's' : ''}
+              </span>
               {openDate ? <> starting {fmtShort(openDate)}</> : null}. It can&apos;t be undone.
             </DialogDescription>
           </DialogHeader>

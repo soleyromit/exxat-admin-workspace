@@ -187,6 +187,14 @@ export function useTableState<TData extends Record<string, unknown>>(
   // ── Column order ──────────────────────────────────────────────────────────
   const [colOrder, setColOrder] = React.useState<string[]>(() => columns.map(c => c.key))
 
+  // Sync colOrder + colWidths when the column key set changes (e.g. dynamic column sets).
+  const colKeySig = columns.map(c => c.key).join('\0')
+  React.useEffect(() => {
+    setColOrder(columns.map(c => c.key))
+    setColWidths(buildDefaultWidths(columns))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [colKeySig])
+
   // ── Column pins ───────────────────────────────────────────────────────────
   const [colPins, setColPins] = React.useState<Record<string, "left" | "right">>(() => buildDefaultPins(columns))
   const lockedPins = React.useMemo(() => buildLockedPins(columns), [columns])

@@ -1126,9 +1126,15 @@ export interface MasterCourse {
   editedBy: string
 }
 
+/** Season half of a term. Kept SEPARATE from academicYear — the push scope rail
+ *  selects Term (season) and Academic Year independently (they are never merged). */
+export type TermSeason = 'Spring' | 'Summer' | 'Fall'
+
 export interface ProgramTerm {
   id: string
   name: string
+  /** Season — the "Term" selector value; independent of academicYear. */
+  season: TermSeason
   academicYear: string
   /** YYYY-MM-DD */
   startDate: string
@@ -1165,11 +1171,11 @@ export const MOCK_MASTER_COURSES: MasterCourse[] = [
 ]
 
 export const MOCK_PROGRAM_TERMS: ProgramTerm[] = [
-  { id: 'pt1', name: 'Spring 2026', academicYear: '2025–2026', startDate: '2026-01-12', endDate: '2026-05-08', status: 'active',   enabledForEval: true,  lastReminderSentAt: '2026-06-24' },
-  { id: 'pt2', name: 'Fall 2025',   academicYear: '2025–2026', startDate: '2025-08-25', endDate: '2025-12-12', status: 'archived', enabledForEval: false },
-  { id: 'pt3', name: 'Spring 2025', academicYear: '2024–2025', startDate: '2025-01-13', endDate: '2025-05-09', status: 'archived', enabledForEval: false },
-  { id: 'pt4', name: 'Fall 2024',   academicYear: '2024–2025', startDate: '2024-08-26', endDate: '2024-12-13', status: 'archived', enabledForEval: false },
-  { id: 'pt5', name: 'Fall 2026',   academicYear: '2026–2027', startDate: '2026-08-24', endDate: '2026-12-11', status: 'active',   enabledForEval: true  },
+  { id: 'pt1', name: 'Spring 2026', season: 'Spring', academicYear: '2025–2026', startDate: '2026-01-12', endDate: '2026-05-08', status: 'active',   enabledForEval: true,  lastReminderSentAt: '2026-06-24' },
+  { id: 'pt2', name: 'Fall 2025',   season: 'Fall',   academicYear: '2025–2026', startDate: '2025-08-25', endDate: '2025-12-12', status: 'archived', enabledForEval: false },
+  { id: 'pt3', name: 'Spring 2025', season: 'Spring', academicYear: '2024–2025', startDate: '2025-01-13', endDate: '2025-05-09', status: 'archived', enabledForEval: false },
+  { id: 'pt4', name: 'Fall 2024',   season: 'Fall',   academicYear: '2024–2025', startDate: '2024-08-26', endDate: '2024-12-13', status: 'archived', enabledForEval: false },
+  { id: 'pt5', name: 'Fall 2026',   season: 'Fall',   academicYear: '2026–2027', startDate: '2026-08-24', endDate: '2026-12-11', status: 'active',   enabledForEval: true  },
 ]
 
 /** LMS-on/off school config. Per workspace ADR-002, default is LMS-on; in this prototype we mock the off state so manual CRUD demos work. Toggle in future via Settings. */
@@ -1179,6 +1185,29 @@ export const MOCK_LMS_ENABLED = false
 // Course Offerings — the atomic 4-tuple unit (Aarti 2026-05-08 16:09 D3)
 // ============================================================================
 
+// CB / LB / PB — delivery mode for the push-flow readiness step (§audit spec).
+// VOCABULARY BRIDGE (do not confuse three overlapping type systems):
+//   • DeliveryMode (this)          : 'classroom' | 'lab' | 'practice'   ← the CB/LB/PB the audit uses
+//   • CourseOffering.courseType    : 'didactic' | 'clinical'            ← LEGACY template-matching join key
+//   • MasterCourse.type / CourseTypeFilter : ...'seminar'...            ← LEGACY, courses/templates surfaces
+// deliveryModeOf() maps the legacy pair (didactic→classroom, clinical→practice); 'lab' has NO legacy
+// equivalent, so LB offerings must set deliveryMode explicitly. Unifying these is out of scope here.
+export type DeliveryMode = 'classroom' | 'lab' | 'practice'
+
+/** Short badge codes for the audit Type column. */
+export const COURSE_TYPE_LABEL: Record<DeliveryMode, string> = {
+  classroom: 'CB',
+  lab: 'LB',
+  practice: 'PB',
+}
+
+/** Full names (tooltips / a11y). */
+export const COURSE_TYPE_FULL_LABEL: Record<DeliveryMode, string> = {
+  classroom: 'Classroom based',
+  lab: 'Lab based',
+  practice: 'Practice based',
+}
+
 export interface CourseOffering {
   id: string
   /** FK → MasterCourse */
@@ -1187,14 +1216,27 @@ export interface CourseOffering {
   termId: string
   /** Graduating class */
   cohort: string
-  /** Primary faculty (Course Coordinator). FK → INSTRUCTORS */
+  /** Primary faculty (Course Coordinator / PB Clinical Coordinator). FK → INSTRUCTORS */
   primaryFacultyId: string
-  /** Additional collaborators (per Aarti D7). FK → INSTRUCTORS */
+  /** Additional collaborators / instructors (per Aarti D7). FK → INSTRUCTORS */
   collaboratorIds: string[]
   /** Roster size */
   enrolledCount: number
   status: 'planned' | 'active' | 'completed' | 'archived'
+  /** Legacy template-matching join key (didactic↔CB, clinical↔PB). Do not remove — templates match on this. */
   courseType?: 'didactic' | 'clinical'
+  /** CB/LB/PB. Optional — falls back from courseType via deliveryModeOf(). */
+  deliveryMode?: DeliveryMode
+  /** LB only — lab teaching assistants. FK → INSTRUCTORS */
+  labTaIds?: string[]
+  /** PB only — placement / clinical faculty. FK → INSTRUCTORS */
+  placementFacultyIds?: string[]
+}
+
+/** Resolve an offering's CB/LB/PB: explicit deliveryMode wins, else legacy courseType maps (clinical→PB, else CB). */
+export function deliveryModeOf(o: Pick<CourseOffering, 'deliveryMode' | 'courseType'>): DeliveryMode {
+  if (o.deliveryMode) return o.deliveryMode
+  return o.courseType === 'clinical' ? 'practice' : 'classroom'
 }
 
 // Permissions (entity #6) — role × scope grants
@@ -1414,20 +1456,26 @@ export const MOCK_COURSE_OFFERINGS: CourseOffering[] = [
   { id: 'co8',  masterCourseId: 'mc8',  termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 48, status: 'active',    courseType: 'didactic' },
 
   // ── Fall 2026 (pt5) — full term ──────────────────────────────────────────
-  // Year 1 (Class of 2029) — Foundations
-  { id: 'co9',  masterCourseId: 'mc1',  termId: 'pt5', cohort: 'Class of 2029', primaryFacultyId: 'f2', collaboratorIds: ['f1'], enrolledCount: 48, status: 'active',    courseType: 'didactic' },
-  { id: 'co10', masterCourseId: 'mc2',  termId: 'pt5', cohort: 'Class of 2029', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 48, status: 'active',    courseType: 'didactic' },
-  { id: 'co11', masterCourseId: 'mc3',  termId: 'pt5', cohort: 'Class of 2029', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 46, status: 'active',    courseType: 'didactic' },
-  { id: 'co12', masterCourseId: 'mc5',  termId: 'pt5', cohort: 'Class of 2029', primaryFacultyId: 'f5', collaboratorIds: [],     enrolledCount: 48, status: 'active',    courseType: 'didactic' },
-  // Year 2 (Class of 2028) — Clinical Sciences
-  { id: 'co13', masterCourseId: 'mc6',  termId: 'pt5', cohort: 'Class of 2028', primaryFacultyId: 'f1', collaboratorIds: ['f2'], enrolledCount: 44, status: 'active',    courseType: 'didactic' },
-  { id: 'co14', masterCourseId: 'mc8',  termId: 'pt5', cohort: 'Class of 2028', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 44, status: 'active',    courseType: 'didactic' },
-  { id: 'co15', masterCourseId: 'mc9',  termId: 'pt5', cohort: 'Class of 2028', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 42, status: 'active',    courseType: 'didactic' },
-  { id: 'co16', masterCourseId: 'mc12', termId: 'pt5', cohort: 'Class of 2028', primaryFacultyId: '',   collaboratorIds: [],     enrolledCount: 40, status: 'active',    courseType: 'didactic' },
-  // Year 3 (Class of 2027) — Clinical Practicums
-  { id: 'co17', masterCourseId: 'mc14', termId: 'pt5', cohort: 'Class of 2027', primaryFacultyId: 'f1', collaboratorIds: ['f6'], enrolledCount: 14, status: 'active',    courseType: 'clinical' },
-  { id: 'co18', masterCourseId: 'mc15', termId: 'pt5', cohort: 'Class of 2027', primaryFacultyId: 'f6', collaboratorIds: [],     enrolledCount: 16, status: 'active',    courseType: 'clinical' },
-  { id: 'co19', masterCourseId: 'mc11', termId: 'pt5', cohort: 'Class of 2027', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 44, status: 'active',    courseType: 'didactic' },
+  // Year 1 — Foundations
+  { id: 'co9',  masterCourseId: 'mc1',  termId: 'pt5', cohort: 'Year 1', primaryFacultyId: 'f2', collaboratorIds: ['f1'], enrolledCount: 48, status: 'active',    courseType: 'didactic' },
+  { id: 'co10', masterCourseId: 'mc2',  termId: 'pt5', cohort: 'Year 1', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 48, status: 'active',    courseType: 'didactic' },
+  { id: 'co11', masterCourseId: 'mc3',  termId: 'pt5', cohort: 'Year 1', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 46, status: 'active',    courseType: 'didactic' },
+  { id: 'co12', masterCourseId: 'mc5',  termId: 'pt5', cohort: 'Year 1', primaryFacultyId: 'f5', collaboratorIds: [],     enrolledCount: 48, status: 'active',    courseType: 'didactic' },
+  // Year 2 — Clinical Sciences
+  { id: 'co13', masterCourseId: 'mc6',  termId: 'pt5', cohort: 'Year 2', primaryFacultyId: 'f1', collaboratorIds: ['f2'], enrolledCount: 44, status: 'active',    courseType: 'didactic' },
+  { id: 'co14', masterCourseId: 'mc8',  termId: 'pt5', cohort: 'Year 2', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 44, status: 'active',    courseType: 'didactic' },
+  { id: 'co15', masterCourseId: 'mc9',  termId: 'pt5', cohort: 'Year 2', primaryFacultyId: 'f4', collaboratorIds: [],     enrolledCount: 42, status: 'active',    courseType: 'didactic' },
+  { id: 'co16', masterCourseId: 'mc12', termId: 'pt5', cohort: 'Year 2', primaryFacultyId: '',   collaboratorIds: [],     enrolledCount: 40, status: 'active',    courseType: 'didactic' },
+  // Year 3 — Clinical Practicums
+  { id: 'co17', masterCourseId: 'mc14', termId: 'pt5', cohort: 'Year 3', primaryFacultyId: 'f1', collaboratorIds: ['f6'], enrolledCount: 14, status: 'active',    courseType: 'clinical' },
+  { id: 'co18', masterCourseId: 'mc15', termId: 'pt5', cohort: 'Year 3', primaryFacultyId: 'f6', collaboratorIds: [],     enrolledCount: 16, status: 'active',    courseType: 'clinical' },
+  { id: 'co19', masterCourseId: 'mc11', termId: 'pt5', cohort: 'Year 3', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 44, status: 'active',    courseType: 'didactic' },
+
+  // ── Lab-based (LB) + Practice-based (PB) — audit readiness fixtures (deliveryMode + one gap each) ──
+  { id: 'co20', masterCourseId: 'mc3',  termId: 'pt5', cohort: 'Year 2', primaryFacultyId: 'f3', collaboratorIds: ['f2'], labTaIds: ['f5'], enrolledCount: 0,  status: 'active', courseType: 'didactic', deliveryMode: 'lab' },              // gap: 0 students
+  { id: 'co21', masterCourseId: 'mc9',  termId: 'pt5', cohort: 'Year 1', primaryFacultyId: 'f4', collaboratorIds: [],     labTaIds: [],     enrolledCount: 30, status: 'active', courseType: 'didactic', deliveryMode: 'lab' },              // gap: no lab instructor/TA
+  { id: 'co22', masterCourseId: 'mc16', termId: 'pt5', cohort: 'Year 3', primaryFacultyId: '',   collaboratorIds: ['f6'], placementFacultyIds: ['f6'], enrolledCount: 12, status: 'active', courseType: 'clinical', deliveryMode: 'practice' }, // gap: no clinical coordinator
+  { id: 'co23', masterCourseId: 'mc14', termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f1', collaboratorIds: [],     placementFacultyIds: [],     enrolledCount: 18, status: 'active', courseType: 'clinical', deliveryMode: 'practice' }, // gap: no placement faculty
 ]
 
 // Maps CourseOffering ID → enrolled Student IDs visible in this demo.
@@ -1441,6 +1489,12 @@ export const MOCK_COURSE_ENROLLMENTS: Record<string, string[]> = {
   co6: ['st6', 'st7', 'st8', 'st9'],                  // DPT-510, Class of 2027
   co7: ['st6', 'st7', 'st8', 'st9'],                  // DPT-511, Class of 2027
   co8: ['st1', 'st2', 'st3', 'st4'],                  // DPT-520, Class of 2026
+  // Fall 2026 (pt5) — Year 1 (new cohort)
+  co9:  ['st18', 'st19', 'st20', 'st21', 'st22'],     // DPT-501
+  co10: ['st18', 'st19', 'st20', 'st21', 'st22'],     // DPT-502
+  co11: ['st18', 'st19', 'st20', 'st21'],              // DPT-503
+  co12: ['st18', 'st19', 'st20', 'st21', 'st22'],     // DPT-505
+  co21: ['st19', 'st20', 'st21', 'st22', 'st23'],     // DPT-530 (lab)
   // Fall 2026 (pt5) — Year 2, Class of 2028
   co13: ['st11', 'st12', 'st13', 'st14', 'st15'],     // DPT-510
   co14: ['st11', 'st12', 'st13', 'st14'],             // DPT-520

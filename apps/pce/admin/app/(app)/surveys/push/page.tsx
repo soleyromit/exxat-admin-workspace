@@ -12,7 +12,7 @@ import { StepSurveyDesign } from '@/components/pce/distribute-wizard/step-survey
 import { StepCommunication, type Reminder, type EmailContact } from '@/components/pce/distribute-wizard/step-communication'
 import { StepReview } from '@/components/pce/distribute-wizard/step-review'
 import { StepSuccess } from '@/components/pce/distribute-wizard/step-success'
-import { StepCourses } from '@/components/pce/distribute-wizard/step-courses'
+import { StepCoursesEvaluatees } from '@/components/pce/courses-evaluatees/step-courses-evaluatees'
 import { StepSurveyDesignAssign } from '@/components/pce/distribute-wizard/step-survey-design-assign'
 import { StepSurveyDesignGeneral } from '@/components/pce/distribute-wizard/step-survey-design-general'
 import {
@@ -24,7 +24,11 @@ import {
   EVAL_EMAIL_TEMPLATES,
   type SurveyType,
   type PceTemplate,
+  type TermSeason,
 } from '@/lib/pce-mock-data'
+import { resolveTerm, cohortOptions, offeringsForScope } from '@/lib/pce-course-scope'
+import { type Criterion, CRITERION_TOGGLE_LABEL } from '@/lib/pce-course-readiness'
+import { subjectDataIssues, windowIssues } from '@/lib/pce-push-validation'
 
 const FIRST_INVITATION_TEMPLATE = EVAL_EMAIL_TEMPLATES.find(t => t.type === 'invitation') ?? null
 const FIRST_INVITATION_TEMPLATE_ID = FIRST_INVITATION_TEMPLATE?.id ?? ''
@@ -154,6 +158,17 @@ function PushSurveyInner() {
   // Programmatic surveys pick courses directly (across terms) in step 1.
   const [selectedCourseIds, setSelectedCourseIds] = useState<Set<string>>(new Set())
 
+  // CE step 1 (Courses & Evaluatees) scope — Term (season) + Academic Year are independent.
+  const initialTerm = MOCK_PROGRAM_TERMS.find(t => t.id === initialTermId)
+  const [ceSeason, setCeSeason] = useState<TermSeason | ''>(
+    surveyMode === 'general' ? '' : initialTerm?.season ?? ''
+  )
+  const [ceAcademicYear, setCeAcademicYear] = useState(
+    surveyMode === 'general' ? '' : initialTerm?.academicYear ?? ''
+  )
+  const [ceCohorts, setCeCohorts] = useState<string[]>([])
+  const [ceCriteria, setCeCriteria] = useState<Criterion[]>([])
+
   // Step 4 — Communication — defaults pre-filled from Central Settings
   const settingsWindow = useMemo(() => windowFromSettings(initialTermId), [initialTermId])
   const [openDate, setOpenDate] = useState<Date | undefined>(settingsWindow.open)
@@ -200,6 +215,29 @@ function PushSurveyInner() {
     ? offeringsForTerm.filter(o => !excludedIds.has(o.id))
     : MOCK_COURSE_OFFERINGS.filter(o => selectedCourseIds.has(o.id))
 
+  // ── CE scope derivations + sync (Courses & Evaluatees step 1) ────────────────
+  const ceScopeTerm = useMemo(() => resolveTerm(ceSeason, ceAcademicYear), [ceSeason, ceAcademicYear])
+  const ceCohortOpts = useMemo(() => cohortOptions(ceScopeTerm), [ceScopeTerm])
+  const ceScoped = useMemo(
+    () => offeringsForScope(ceSeason, ceAcademicYear, ceCohorts),
+    [ceSeason, ceAcademicYear, ceCohorts],
+  )
+  // Keep the wizard's termId (drives Communication date windows) in sync with the scope term.
+  useEffect(() => {
+    if (surveyMode === 'general' || !ceScopeTerm) return
+    setTermId(ceScopeTerm.id)
+  }, [ceScopeTerm, surveyMode])
+  // Cohort options differ per term → clear cohorts when the term changes.
+  const lastCeTermId = useRef<string | undefined>(ceScopeTerm?.id)
+  useEffect(() => {
+    if (surveyMode === 'general') return
+    if (lastCeTermId.current === ceScopeTerm?.id) return
+    lastCeTermId.current = ceScopeTerm?.id
+    setCeCohorts([])
+  }, [ceScopeTerm, surveyMode])
+  // Selection is owned by the readiness DataTable inside StepCoursesEvaluatees and
+  // reported up via onSelectionChange (default all-on, reset on scope change there).
+
   // Prism auto-recipients (students enrolled in the selected offerings) — mirrors
   // StepCommunication's default so Review shows the same reach.
   const prismStudentCount = useMemo(() => {
@@ -242,6 +280,24 @@ function PushSurveyInner() {
     return [...byTid.values()].sort((a, b) => b.codes.length - a.codes.length)
   }, [selectedOfferings, templateAssignments, publishedTemplates])
 
+  // CE Review — two pre-flight validation categories surfaced as acknowledgement
+  // gates: (A) courses missing subject data (no faculty / no students), and
+  // (B) courses whose survey window opens after the course has already ended.
+  const reviewSubjectIssues = useMemo(
+    () => (surveyMode === 'general' ? [] : subjectDataIssues(selectedOfferings)),
+    [selectedOfferings, surveyMode],
+  )
+  const reviewWindowIssues = useMemo(
+    () => (surveyMode === 'general' ? [] : windowIssues(selectedOfferings, openDate)),
+    [selectedOfferings, openDate, surveyMode],
+  )
+
+  // CE Review identity line: cohort + evaluate summaries (CE mode only).
+  const cohortSummary = surveyMode !== 'general' ? ceCohorts.join(' · ') : undefined
+  const evaluateSummary = surveyMode !== 'general'
+    ? ceCriteria.map((c) => CRITERION_TOGGLE_LABEL[c]).join(', ')
+    : undefined
+
   // Step 1 ("Scope and design") gating — scope fields + a template for every course.
   const scopeValid = surveyMode === 'general'
     ? !!surveyTitle.trim()
@@ -281,6 +337,9 @@ function PushSurveyInner() {
     courseType: 'didactic' | 'clinical' | 'any',
     tmplId: string
   ) {
+    // NOTE (P0 boundary — courses-evaluatees-audit spec §10.1): matches on LEGACY `courseType`,
+    // not CB/LB/PB `deliveryMode`. LB offerings (courseType:'didactic') are included by a
+    // 'didactic' bulk-assign. Intentional in P0; deliveryMode-aware assignment is a later phase.
     const next = { ...templateAssignments }
     selectedOfferings.forEach(o => {
       if (courseType === 'any' || o.courseType === courseType) {
@@ -426,19 +485,41 @@ function PushSurveyInner() {
               </div>
             </div>
           ) : (
-            <StepCourses
-              selectedCourseIds={selectedCourseIds}
-              onSelectionChange={setSelectedCourseIds}
-              onNext={() => {
-                // Seed default template assignments for the picked courses.
-                setTemplateAssignments(prev => {
-                  const next = { ...prev }
-                  for (const o of selectedOfferings) if (!next[o.id]) next[o.id] = defaultAssignments[o.id]
-                  return next
-                })
-                setStep(2)
-              }}
-            />
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-1">
+                <h2 className="text-xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>
+                  Courses &amp; evaluatees
+                </h2>
+                <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
+                  Choose the term and what to evaluate. Courses load live from Prism.
+                </p>
+              </div>
+
+              <StepCoursesEvaluatees
+                season={ceSeason}
+                academicYear={ceAcademicYear}
+                cohorts={ceCohorts}
+                criteria={ceCriteria}
+                cohortOptions={ceCohortOpts}
+                scoped={ceScoped}
+                onSeasonChange={setCeSeason}
+                onAcademicYearChange={setCeAcademicYear}
+                onToggleCohort={(c) =>
+                  setCeCohorts(prev => (prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]))
+                }
+                onCriteriaChange={setCeCriteria}
+                onSelectionChange={setSelectedCourseIds}
+                onContinue={() => {
+                  if (!surveyTitle.trim() && ceScopeTerm) setSurveyTitle(`${ceScopeTerm.name} Course Evaluations`)
+                  setTemplateAssignments(prev => {
+                    const next = { ...prev }
+                    for (const o of selectedOfferings) if (!next[o.id]) next[o.id] = defaultAssignments[o.id]
+                    return next
+                  })
+                  setStep(2)
+                }}
+              />
+            </div>
           ))}
 
           {step === 2 && (
@@ -518,6 +599,10 @@ function PushSurveyInner() {
               onEdit={(n) => setStep(n as WizardStep)}
               onBack={() => setStep(3)}
               onPush={handlePush}
+              cohortSummary={cohortSummary}
+              evaluateSummary={evaluateSummary}
+              subjectIssues={reviewSubjectIssues}
+              windowIssues={reviewWindowIssues}
             />
           )}
 
