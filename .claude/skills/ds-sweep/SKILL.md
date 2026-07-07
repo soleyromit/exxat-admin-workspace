@@ -1,6 +1,6 @@
 ---
 name: ds-sweep
-description: Systematic DS + WCAG audit of an entire product directory. Use when asked to sweep, audit, or catch up on DS adoption for a product. Outputs a prioritized remediation backlog by severity.
+description: Use to sweep an ENTIRE product app directory (e.g. `/ds-sweep apps/pce/admin`) for DS-adoption and WCAG debt and produce a saved, severity-ranked remediation backlog. Runs the ds-adoption / ds-globals / architecture audit scripts plus WCAG and state-coverage greps; read-only, fixes nothing. For a single file, directory, or the staged set use ds-check instead; for a UX/design review of one surface use exxat-ux-audit.
 ---
 
 # DS Sweep — Systematic Product Audit

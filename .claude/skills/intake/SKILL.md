@@ -1,6 +1,6 @@
 ---
 name: intake
-description: Use when the user references a meeting/person, makes a decision, pastes a transcript, or proposes new terminology — captures living context (transcripts, ADRs, glossary, personas) under apps/<product>/docs/ with confirm-before-write. INTAKE-001..004 in DESIGN.md §4.
+description: Use when the user references a meeting/person, makes a decision, pastes a transcript, or proposes new terminology — captures living context (transcripts → inbox/ + Meetings/, decisions → Decisions/) into the Obsidian vault at ~/Documents/research-repos with confirm-before-write. INTAKE-001..004 in DESIGN.md §4.
 ---
 
 # Intake — Living Context Capture
@@ -16,7 +16,7 @@ The user-prompt-submit hook surfaces these action IDs from `docs/triggers.md`:
 | `intake:granola-query` | "meeting with X", "yesterday's call" | Pull recent meetings via Granola MCP, list 3 candidates, ask user which (or none) |
 | `intake:granola-query-by-person` | "Aarti said", "Nipun decided" | Pull meetings filtered by person + last 14 days; same confirm flow |
 | `intake:adr-draft` | "decided", "going with", "the answer is" | Draft ADR; show preview; write only on confirmation |
-| `intake:transcript-paste` | Pasted block matching `^\d{1,2}:\d{2}\s+\w+` (Granola format) | Save raw to research/meetings/; extract decisions + persona refs + glossary candidates; confirm each before writing |
+| `intake:transcript-paste` | Pasted block matching `^\d{1,2}:\d{2}\s+\w+` (Granola format) | Save raw to vault `inbox/`; write distilled note to vault `Meetings/`; extract decisions + persona refs + glossary candidates; confirm each before writing |
 | `intake:glossary-add` | "we call this X", "X means Y" (heuristic) | Propose glossary entry; confirm before writing |
 | `intake:override` | "ignore this rule", "make an exception", "override DS-001", "don't apply VIZ-004 here" | Capture as **override ADR** (sub-type) + append to relevant pattern's `## Exceptions` section + add row to `docs/governance/exceptions.md` ledger. Confirm each artifact. Sunset criterion mandatory. |
 
@@ -29,18 +29,23 @@ cwd = /Users/romitsoley/Work/apps/<product>/...   → product = <product>
 cwd = /Users/romitsoley/Work/...                  → ask user: which product?
 ```
 
-If no product context, save to workspace-level `docs/research/meetings/` (cross-product) and `docs/decisions/` (workspace ADR).
+The resolved product becomes the `product:` frontmatter value and the vault subfolder (`Decisions/<product>/`). If no product context, use `product: all` and route decisions to `Decisions/` root; for meetings pick the closest existing topic folder under `Meetings/` (or create `Meetings/<topic>/`).
 
-## Artifact paths
+## Artifact paths — write to the Obsidian vault
 
-| Artifact | Per-product path | Workspace fallback |
+Canonical destination is the vault at `/Users/romitsoley/Documents/research-repos`, NOT the workspace `docs/`. Follow the vault pipeline (`inbox/` = raw capture; distilled wiki notes in topic folders) and the vault note schema.
+
+| Artifact | Vault path | Stage / schema |
 |---|---|---|
-| Meeting transcript | `apps/<product>/docs/research/meetings/<YYYY-MM-DD>-<slug>.md` | `docs/research/meetings/<YYYY-MM-DD>-<slug>.md` |
-| ADR | `apps/<product>/docs/decisions/<NNN>-<slug>.md` | `docs/decisions/<NNN>-<slug>.md` |
-| Glossary entry | `apps/<product>/docs/content.md` (Glossary section) | `docs/content.md` |
-| Persona | `apps/<product>/docs/personas.md` | (no workspace personas) |
+| Raw pasted transcript | `inbox/<YYYY-MM-DD>-<slug>.md` | Raw capture stage — unverified, minimal frontmatter, never cited as authority |
+| Distilled meeting note | `Meetings/<product-or-topic>/<YYYY-MM-DD>-<slug>.md` | Full vault schema, `type: meeting` |
+| Decision / ADR | `Decisions/<product>/<YYYY-MM-DD>-<slug>.md` | Full vault schema, `type: decision`, `status: accepted \| provisional` |
+| Glossary / terminology | `docs/content.md` (Glossary section) in the **workspace** — the vault has no glossary home; keep it here until one exists | Workspace content doc (unchanged) |
+| Persona | `docs/content.md` / `apps/<product>/docs/personas.md` (workspace — vault has no persona home) | Workspace (unchanged) |
 
-ADR numbering: scan target dir, take max + 1, three-digit zero-padded. First ADR is `000-record-architecture-decisions.md`.
+Filenames are dated slugs: `<YYYY-MM-DD>-<slug>.md`. **No `NNN-slug` ADR numbering** — the vault uses the date + a `status:` field instead of a sequence number. `Decisions/` has per-product subfolders (`Decisions/pce/`, `Decisions/exam-management/`, …); `Meetings/` has topic subfolders (`Meetings/post-course-evaluation/`, `Meetings/exxat-aarti/`, …). Pick the matching existing subfolder, or create one.
+
+> **Harvest vs. direct intake.** Ideally distilled wiki notes (`Decisions/`, `Meetings/`, `Research/`) arrive via `/harvest` from a shipped `projects/` file — that is the vault's load-bearing rule (wiki notes harvested, never written raw). But **direct intake to the vault is acceptable for meetings and decisions captured live** (a transcript pasted now, a decision made in the moment): raw transcript lands in `inbox/`, and the distilled meeting/decision note lands in its topic folder with the full schema.
 
 ## Per-action playbooks
 
@@ -72,20 +77,21 @@ Either user pasted a transcript directly, or step 5 above produced one.
    Decisions found: 2
    Glossary candidates: 3 (Cohort drift, Min-N suppression, Grade lock window)
    Persona refs: 1 (PD)
-   Will save to: apps/pce/docs/research/meetings/2026-05-08-aarti-pce-review.md
+   Raw → inbox/2026-05-08-aarti-pce-review.md
+   Distilled → Meetings/pce/2026-05-08-aarti-pce-review.md
    ```
-4. Ask: "Save transcript + create ADRs (Y/n) / pick a subset?"
-5. On confirmation: write transcript file, then loop through ADRs (one confirmation each), then glossary (batch confirmation).
+4. Ask: "Save transcript + create decision notes (Y/n) / pick a subset?"
+5. On confirmation: write the raw transcript to `inbox/`, write the distilled meeting note (full vault schema) to `Meetings/<product-or-topic>/`, then loop through decision notes (one confirmation each), then glossary (batch confirmation).
 
 ### `intake:adr-draft`
 
 1. Identify the decision: 1 sentence summary + the alternatives that were rejected.
-2. Draft using `docs/decisions/_template.md`.
+2. Draft a decision note with the full vault schema (`type: decision`, `status: accepted | provisional`, plus `product · source · date · tags · title · summary · relevance · value · theme`).
 3. Show preview to user.
-4. Ask: "Write ADR-<NNN>: <title>? (Y/n / edit)"
-5. On confirmation: write file. Append to `docs/decisions/README.md` index.
+4. Ask: "Write decision note `<YYYY-MM-DD>-<slug>`: <title>? (Y/n / edit)"
+5. On confirmation: write to `Decisions/<product>/<YYYY-MM-DD>-<slug>.md` (no ADR number — dated slug + `status:`). Link related notes with `[[name]]`.
 
-ADR is light: status (Proposed | Accepted | Superseded), context (1-2 paragraphs), decision (1 paragraph), consequences (3-5 bullets). Don't write 1000 words.
+Keep it light: status (`accepted` | `provisional` | `superseded`), context (1-2 paragraphs), decision (1 paragraph), consequences (3-5 bullets). Don't write 1000 words.
 
 ### `intake:glossary-add`
 
@@ -139,19 +145,27 @@ When the user says "ignore this rule" / "make an exception" / "override DS-001" 
 
 ## Frontmatter standard
 
-All intake-written docs use this frontmatter:
+Distilled vault notes (`Meetings/`, `Decisions/`) use the **vault note schema** (see `/Users/romitsoley/Documents/research-repos/CLAUDE.md`):
 
 ```yaml
 ---
-type: meeting | decision | glossary-update | persona
+type: meeting | decision                       # research on research-intake
+product: pce | exam-management | patient-log | portal | all
+source: <granola:<id> | paste | Romit directive | conversation>
 date: YYYY-MM-DD
-product: <product> | workspace
-participants: [name, ...]   # meetings only
-status: Proposed | Accepted | Superseded   # ADRs only
-source: granola | paste | conversation
-session: <claude-session-id>
+tags: [ ... ]
+title: "..."
+summary: "..."
+relevance: [ ... ]
+value: high | medium | low
+theme: <theme>
+status: accepted | provisional | superseded    # decisions; meetings may omit
 ---
 ```
+
+Raw `inbox/` captures are minimal by design — enough to identify them (`type`, `date`, `source`, `title`) and nothing more; they are unverified and never cited as authority.
+
+Glossary/persona entries written to the **workspace** `docs/content.md` keep the workspace content-doc conventions (they are not vault notes).
 
 ## Confirm-before-write — non-negotiable
 

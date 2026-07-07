@@ -21,9 +21,9 @@ description: >
 - **Stack:** Vite + React + react-router-dom, TypeScript, Tailwind CSS, shadcn/ui primitives, Font Awesome icons
 - **App root:** `apps/web/src/views/` — route modules wired in `src/App.tsx`
 - **Single source of truth:** `apps/web/AGENTS.md` for full prose explanations; this skill is the actionable summary
-- **Companion skills (narrow topics):** `exxat-fontawesome-icons`, `exxat-mono-ids`, `exxat-primary-nav-secondary-panel`, `exxat-centralized-list-dataset`, `exxat-list-page-view-shells`, `exxat-dedicated-search-surfaces`, `exxat-accessibility`, `exxat-board-cards`, `exxat-collaboration-access` — live under `.cursor/skills/`; vetted copies ship with **`@exxatdesignux/ui`** in `consumer-extras/cursor-skills/` after **`pnpm --filter @exxatdesignux/ui vendor:consumer-extras`**.
-- **Library folder-scoped header (rule + doc):** **`.cursor/rules/exxat-library-hub-header.mdc`** and **`docs/library-hub-header-pattern.md`** — pair with **`exxat-primary-nav-secondary-panel`** when URL **`scope=folder`** drives the hub title.
-- **Consumer repos (npm install of `@exxatdesignux/ui`):** For **install / upgrade / bump**, load skill **`exxat-package-upgrade`** first — it gates changelog review, `sync-extras`, and template-vite shell ports without touching mock data or tenant copy. Then read **`node_modules/@exxatdesignux/ui/CHANGELOG.md`**, run **`npx --package=@exxatdesignux/ui@latest exxat-ui sync-extras`**, and diff **`node_modules/@exxatdesignux/ui/template-vite/`** using **`port-map.md`** in that skill. Use **`exxat-ui changelog`**, **`exxat-ui update`**, and **`exxat-ui doctor`** for CLI guidance.
+- **Companion skills (narrow topics):** `exxat-fontawesome-icons`, `exxat-mono-ids`, `exxat-sidebar-nav`, `exxat-centralized-list-dataset`, `exxat-list-page-view-shells`, `exxat-dedicated-search-surfaces`, `exxat-accessibility`, `exxat-board-cards`, `exxat-collaboration-access` — live under `.cursor/skills/`; vetted copies ship with **`@exxatdesignux/ui`** in `consumer-extras/cursor-skills/` after **`pnpm --filter @exxatdesignux/ui vendor:consumer-extras`**.
+- **Library folder-scoped header (rule + doc):** **`.cursor/rules/exxat-library-hub-header.mdc`** and **`docs/library-hub-header-pattern.md`** — pair with **`exxat-sidebar-nav`** when URL **`scope=folder`** drives the hub title.
+- **Consumer repos (npm install of `@exxatdesignux/ui`):** For **install / upgrade / bump**, load skill **`exxat-package-upgrade`** first — it gates changelog review, `sync-extras`, and generated-starter shell ports without touching mock data or tenant copy. Then read **`node_modules/@exxatdesignux/ui/CHANGELOG.md`**, run **`npx --package=@exxatdesignux/ui@latest exxat-ui sync-extras`**, and diff **`node_modules/@exxatdesignux/ui/generated-starter/`** using **`port-map.md`** in that skill. Use **`exxat-ui changelog`**, **`exxat-ui update`**, and **`exxat-ui doctor`** for CLI guidance.
 
 ---
 
@@ -107,7 +107,7 @@ A primary nav row that owns sub-routes has **three possible shapes** — pick ex
 | Shape | When to use | Where it lives |
 |---|---|---|
 | **A. Collapsible children** (e.g. Library → All / My / Favorites / Folders) | Small finite child list that benefits from inline browsing (≤ 40 items, no extra page chrome). | `NavLinkItem.children` rendered by **`CollapsibleNavItem`** in `app-sidebar.tsx`. |
-| **B. Secondary panel** (separate nested rail) | Same nav row needs **scoped search / tree / metrics** alongside the hub content. | `NavLinkItem.secondaryPanel = "<id>"` + `PANELS[id]` — see companion skill `exxat-primary-nav-secondary-panel`. |
+| **B. Secondary panel** (separate nested rail) | Same nav row needs **scoped search / tree / metrics** alongside the hub content. | `NavLinkItem.secondaryPanel = "<id>"` + `PANELS[id]` — see companion skill `exxat-sidebar-nav`. |
 | **C. Both A + B on one row** (Library does this) | Most cases when a hub has a sub-list AND a rich rail. The sidebar still shows the collapsible children; clicking the parent route also opens the secondary panel via `useAutoPanel`. | Combine A + B; the active-state and animation rules in §3.2 still apply to the sidebar children. |
 
 #### Active-state rules — **the single biggest mistake to avoid**
@@ -159,9 +159,9 @@ The data shape supports any number of children, but the collapsible variant is r
 
 **Reference:** `components/app-sidebar.tsx` (`CollapsibleNavItem`, `isCollapsibleParentMenuButtonActive`, `isCollapsibleChildActive`), `app/globals.css` (`@keyframes collapsible-down/up`), `lib/mock/navigation.tsx` (`NavLinkItem.children`).
 
-### 3.2.1 Nav flyout mode (mobile / zoom ≥ 200%)
+### 3.2.1 Nav flyout mode (≤320px / zoom ≥ 200%)
 
-At **WCAG 1.4.10 reflow** (browser zoom ≥ 200% or equivalent narrow viewport), the primary sidebar becomes an **overlay flyout** (`isNavFlyout` on **`SidebarProvider`** in `@exxatdesignux/ui/components/ui/sidebar`).
+At **WCAG 1.4.10 reflow** (viewport width **≤ 320 CSS px**, browser zoom **≥ 200%**, or short viewport — `computeReflowViewport()` in `packages/ui/src/lib/reflow-viewport.ts`), the primary sidebar becomes an **overlay flyout** (`isNavFlyout` on **`SidebarProvider`** in `@exxatdesignux/ui/components/ui/sidebar`).
 
 | Rule | Implementation |
 |---|---|
@@ -174,7 +174,7 @@ At **WCAG 1.4.10 reflow** (browser zoom ≥ 200% or equivalent narrow viewport),
 
 ### 3.3 Secondary panel auto-collapse on high zoom
 
-`SecondaryPanelProvider` (`components/secondary-panel.tsx`) reads **`useSidebarReflowZoom()`** (browser zoom ≥ 200% **or** very short viewport — same WCAG 1.4.10 signal the primary sidebar uses) and **auto-collapses the nested rail to its icon variant on entering high zoom**. The user can re-expand once collapsed; the next zoom-out → zoom-in cycle re-collapses. `openPanel` also opens directly in compact mode when high zoom is active so freshly-navigated panels don't briefly flash expanded.
+`SecondaryPanelProvider` (`components/secondary-panel.tsx`) reads **`useSidebarReflowZoom()`** (width **≤ 320px**, browser zoom **≥ 200%**, or very short viewport — same WCAG 1.4.10 signal the primary sidebar uses) and **auto-collapses the nested rail to its icon variant on entering reflow**. The user can re-expand once collapsed; the next zoom-out → zoom-in cycle re-collapses. `openPanel` also opens directly in compact mode when reflow is active so freshly-navigated panels don't briefly flash expanded.
 
 Any future secondary-panel-like rail should reuse `useSidebarReflowZoom` rather than inventing a parallel zoom hook.
 
@@ -346,6 +346,8 @@ Align with **`apps/web/AGENTS.md` §6.4**, **`docs/data-views-pattern.md`**, **`
 }
 ```
 
+**Data point → cell:** Before authoring `cell:`, map each field with **`docs/table-column-cells-pattern.md`** — skill **`exxat-table-column-cells`**, rule **`exxat-table-column-cells.mdc`**. Person columns → **`AvatarInitials` + name + email** (not plain text); status → **`ListHubStatusBadge`**; progress / money / rating → named imports from **`@/components/data-views`**.
+
 **Pin conventions:**
 - `select` column: `defaultPin: "left"`, `lockPin: true`
 - `actions` column: `defaultPin: "right"`, `lockPin: true`
@@ -359,11 +361,11 @@ Align with **`apps/web/AGENTS.md` §6.4**, **`docs/data-views-pattern.md`**, **`
 
 ### 5.2 KPI trends (`KeyMetrics`, `*-kpi.ts`)
 
-**`MetricItem.trend`** must match the **signed change** (arrow direction = truth). **`trendPolarity`** (`higher_is_better` default, **`lower_is_better`**, **`informational`**) controls **tints** and **`aria-label`** — e.g. **low PBI / review flags** rising → `trend: "up"` + **`lower_is_better`** → unfavourable (red), not green. **Doc:** **`docs/kpi-trend-pattern.md`** · **Rule:** **`.cursor/rules/exxat-kpi-trends.mdc`** · **Skill:** **`.cursor/skills/exxat-kpi-trends/SKILL.md`**.
+**`MetricItem.trend`** must match the **signed change** (arrow direction = truth). **`trendPolarity`** (`higher_is_better` default, **`lower_is_better`**, **`informational`**) controls **tints** and **`aria-label`** — e.g. **low PBI / review flags** rising → `trend: "up"` + **`lower_is_better`** → unfavourable (red), not green. **Doc:** **`docs/kpi-trend-pattern.md`** · **Rule:** **`.cursor/rules/exxat-kpi-trends.mdc`** · **Skill:** **`.cursor/skills/exxat-kpi/SKILL.md`**.
 
 ### 5.3 KPI count (max four)
 
-**`ListPageTemplate`** metrics and **Data tab** key-metrics cards: **≤ 4** `MetricItem` — **`docs/kpi-strip-max-four-pattern.md`**, **`lib/dashboard-layout-merge.ts`**, **`.cursor/rules/exxat-kpi-max-four.mdc`**, **`.cursor/skills/exxat-kpi-max-four/SKILL.md`**.
+**`ListPageTemplate`** metrics and **Data tab** key-metrics cards: **≤ 4** `MetricItem` — **`docs/kpi-strip-max-four-pattern.md`**, **`lib/dashboard-layout-merge.ts`**, **`.cursor/rules/exxat-kpi-max-four.mdc`**, **`.cursor/skills/exxat-kpi/SKILL.md`**.
 
 ### 5.4 Cards vs table rows
 

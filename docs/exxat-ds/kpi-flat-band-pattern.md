@@ -2,7 +2,7 @@
 
 > **Component:** `components/key-metrics.tsx` — **`flatMetricsHairlineClass`**, **`flatBandStyle`**.  
 > **Tokens:** `app/globals.css` — `--key-metrics-flat-*`.  
-> **Cursor:** `.cursor/rules/exxat-kpi-flat-band.mdc` · `.cursor/skills/exxat-kpi-flat-band/SKILL.md`  
+> **Cursor:** `.cursor/rules/exxat-kpi-flat-band.mdc` · `.cursor/skills/exxat-kpi/SKILL.md`  
 > **Related:** `docs/kpi-strip-max-four-pattern.md`, `docs/kpi-trend-pattern.md`
 
 ## Intent

@@ -1,6 +1,6 @@
 ---
 name: design-critique
-description: Use when user asks for design critique, design review, UX critique, a11y audit, or "what's wrong with this design". Reviews a design (described, screenshot-attached, or implemented as TSX) against the workspace's DESIGN.md §4 rules + DS conformance + WCAG 2.1 AA + the active product's storytelling/perspectives. Reports issues grouped by severity. Read-only — never edits. Mirrors the scope of Anthropic's `design` plugin but routes through OUR rule set instead of generic best-practice.
+description: Use when grading a PROPOSED or DESCRIBED design — a screenshot, mockup, Figma frame, verbal concept, or a not-yet-shipped TSX proposal — against the workspace DESIGN.md §4 rule catalogue, DS conformance, WCAG 2.1 AA, and the active product's storytelling/stakeholder perspectives. Fires on "critique this design", "is this on-brand / does this match our DS", "a11y check on this mockup", "what's wrong with this design". Reports issues by severity with cited rules; read-only, never edits. NOT for auditing an existing built route/file/component in the repo — route those to exxat-ux-audit (P1–P20 + code citations); NOT for a mechanical DS rule-violation scan of a file or staged set — route those to ds-check.
 ---
 
 # Design Critique — DS-Aware, Workspace-Scoped
@@ -21,16 +21,22 @@ If the prompt mentions a specific file path, Read the file first.
 
 In priority order (cite rule + source for each finding):
 
-### 1. Workspace `/DESIGN.md` §4 (43 rules across 7 categories)
+### 1. Workspace `/DESIGN.md` §4 "Rules Catalogue"
 
-| Family | Rules | Examples of violations |
-|---|---|---|
-| **DS-001..011** | Component-from-DS-only, no raw HTML, no fabricated APIs | Raw `<button>` instead of DS `<Button variant size>` |
-| **A11Y-001..008** | Touch targets, focus rings, contrast, ARIA, color-not-only encoding | Icon-only Button without `aria-label` |
-| **VIZ-001..005** | No progress bars (last resort), bullet > pie, no red, viz-first | Progress bar used for non-in-flight metric |
-| **CONTENT-001..004** | Tone, terminology consistency, no jargon, action-oriented buttons | "Submit" instead of action verb; "release" instead of "share" |
-| **INTAKE-001..004** | (governance, not visual) | (rarely critique-relevant) |
-| **I18N-001..003** | Logical properties (`me-1` not `mr-1`), localized number/date formats | `marginRight` instead of `marginInlineEnd` |
+**The rule catalogue drifts — never trust the ranges in the table below verbatim.** Before citing, open `/DESIGN.md` §4 and grep the live codes:
+```bash
+grep -oE "(DS|A11Y|VIZ|CONTENT|INTAKE|I18N)-[0-9]{3}" /Users/romitsoley/Work/DESIGN.md | sort -u
+```
+As of this writing §4 holds ~65 rules across 6 families; the table gives the current *approximate* ranges only — the grep is authoritative. Cite the exact code you find; if a code you want to cite isn't in the grep output, don't invent it.
+
+| Family | Approx. range | What it covers | Example violation |
+|---|---|---|---|
+| **DS-0xx** (~DS-001..019) | Component-from-DS-only, no raw HTML, no fabricated APIs | Raw `<button>` instead of DS `<Button variant size>` |
+| **A11Y-0xx** (~A11Y-001..021) | Touch targets, focus rings, contrast, ARIA, color-not-only encoding | Icon-only Button without `aria-label` |
+| **VIZ-0xx** (~VIZ-001..011) | No progress bars (last resort), bullet > pie, no red, viz-first | Progress bar used for non-in-flight metric |
+| **CONTENT-0xx** (~CONTENT-001..004) | Tone, terminology consistency, no jargon, action-oriented buttons | "Submit" instead of action verb; "release" instead of "share" |
+| **INTAKE-0xx** (~INTAKE-001..006) | Governance / capture — rarely visual | (rarely critique-relevant) |
+| **I18N-0xx** (~I18N-001..004) | Logical properties (`me-1` not `mr-1`), localized number/date formats | `marginRight` instead of `marginInlineEnd` |
 
 ### 2. Per-product `apps/<product>/DESIGN.md` extensions
 
@@ -71,11 +77,11 @@ If the design touches a Confirmed signal (S-01..S-04), flag any violation:
 # Design critique — <subject>
 
 Reviewed against:
-- /DESIGN.md §4 (43 rules)
-- apps/<product>/DESIGN.md (if active)
-- apps/<product>/docs/storytelling/* (if active)
+- /DESIGN.md §4 Rules Catalogue (cite exact live codes — do not state a rule count unless you grepped it)
+- apps/<product>/DESIGN.md (only if the file exists for the active product)
+- apps/<product>/docs/storytelling/* (only files that exist)
 - WCAG 2.1 AA
-- docs/RESEARCH-SIGNALS.md (Confirmed S-NN)
+- docs/RESEARCH-SIGNALS.md (Confirmed S-NN, if present)
 
 ## Critical issues — block ship
 - [DS-007] Raw `<button>` element used. → DS `<Button variant size>`
@@ -131,11 +137,18 @@ python3 -c "import sys; sys.path.insert(0, '/Users/romitsoley/Work/.claude/hooks
   outcome='<completed|partial|cancelled>', findings_count=<N>)"
 ```
 
-## Skip the skill when
+## Skip the skill when (route elsewhere)
 
-- The user is asking "how should I design X" — that's intent:design (use brainstorming first)
-- The user has already implemented and just wants a sanity check that builds — that's `ds-check`
-- The user wants praise for their work — say so, don't pretend to critique
+- The user is asking "how should I design X" — that's intent:design (use `exxat-senior-ux` / brainstorming first).
+- The target is an **existing built route / file / component in the repo** ("audit `/students/[id]`", "review this page", "is this page following DS?") — that's `exxat-ux-audit` (P1–P20 + M1–M12 + code citations + auto-fix). This skill is for a *proposed / described / screenshot* design, not a shipped surface.
+- The user wants a **mechanical DS rule-violation scan** of a file or the staged set (raw HTML, inline color, missing aria-label) — that's `ds-check`.
+- The user wants praise for their work — say so, don't pretend to critique.
+
+## Edge cases
+
+- **Missing per-product docs.** If `apps/<product>/DESIGN.md`, the storytelling files, or `docs/RESEARCH-SIGNALS.md` don't exist (check before reading), silently skip those sections — do NOT invent product rules, stakeholder quotes, or signal codes. Critique only against `/DESIGN.md` §4 + WCAG in that case, and say which sources were unavailable.
+- **No product context.** If cwd isn't under `apps/<product>/`, skip §2/§3/§6 entirely and critique against workspace `/DESIGN.md` + WCAG only.
+- **Only an image, no source.** Critique the IA the screenshot shows; don't assert token/API violations you can't see in code — flag them as "verify in source".
 
 ## Why this skill exists
 

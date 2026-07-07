@@ -1,11 +1,13 @@
 ---
 name: research-intake
-description: Use when the user pastes a research insight, quote, theme cluster, or persona observation from rr-insights or any research source. Saves raw insight to apps/<product>/docs/research/insights/, extracts ADR-worthy decisions, persona updates, and glossary candidates with confirm-before-write. Sibling to the Granola intake skill — same Ring 3 distillation pattern (workspace context-architecture doc §3).
+description: Use when the user pastes a research insight, quote, theme cluster, or persona observation from rr-insights or any research source. Captures the raw insight to the Obsidian vault (`~/Documents/research-repos/inbox/`) and distills it into a schema'd note under `Research/<product>/research/`, extracts ADR-worthy decisions (to `Decisions/<product>/`), persona updates, and glossary candidates with confirm-before-write. Sibling to the Granola intake skill — same Ring 3 distillation pattern (workspace context-architecture doc §3).
 ---
 
 # Research Intake — rr-insights Distillation
 
-Routes signals from research repositories (rr-insights, research interviews, customer survey output, ethnography notes) into durable workspace artifacts. Sibling to the Granola intake skill (`.claude/skills/intake/SKILL.md`) — same Ring 3 distillation pattern.
+Routes signals from research repositories (rr-insights, research interviews, customer survey output, ethnography notes) into the **Obsidian vault** — the canonical shared brain at `/Users/romitsoley/Documents/research-repos` — NOT the workspace. Sibling to the Granola intake skill (`.claude/skills/intake/SKILL.md`) — same Ring 3 distillation pattern.
+
+**Vault pipeline (read the vault's own `CLAUDE.md`):** `inbox/` = zero-friction RAW capture (never cited as authority) → the wiki topic folders (`Research/`, `Decisions/`) = distilled, schema'd, durable knowledge. The pipeline-preferred path for durable research is **`inbox/` → `/harvest`** (harvest distills a shipped effort into schema'd wiki notes). But for a clearly-distilled single insight, **direct intake to `Research/<product>/research/` is acceptable** — write the schema'd note in the same pass, and still drop the raw capture in `inbox/` for provenance.
 
 Every write requires user confirmation per INTAKE-002 / INTAKE-003.
 
@@ -17,8 +19,8 @@ The user-prompt-submit hook surfaces these action IDs:
 
 | Action ID | Trigger | This skill's response |
 |---|---|---|
-| `intake:research-insight` | "from rr-insights", "insight:", "research finding", quote-with-attribution patterns like `[P5]`, `[Faculty 3]`, `"..." — Participant 7` | Save insight to research/insights/, extract decisions + persona refs + glossary candidates |
-| `intake:research-theme` | "theme:", "students consistently say", "across N interviews", thematic cluster notation | Same as insight; tag as theme-level (cross-participant) |
+| `intake:research-insight` | "from rr-insights", "insight:", "research finding", quote-with-attribution patterns like `[P5]`, `[Faculty 3]`, `"..." — Participant 7` | Capture raw to vault `inbox/`, distill to vault `Research/<product>/research/`, extract decisions + persona refs + glossary candidates |
+| `intake:research-theme` | "theme:", "students consistently say", "across N interviews", thematic cluster notation | Same as insight; write to vault `Research/<product>/research/themes/` and tag as theme-level (cross-participant) |
 | `intake:persona-quote` | "Aarti said", "Vishaka believes", quote attributed to a known stakeholder | Route to existing storytelling perspective files (see Granola intake) |
 
 If the trigger is ambiguous, ask the user which type before extracting.
@@ -32,17 +34,22 @@ cwd = /Users/romitsoley/Work/apps/<product>/...   → product = <product>
 cwd = /Users/romitsoley/Work/...                  → ask user: which product?
 ```
 
-If no product context, save to workspace-level `docs/research/insights/`.
+If no product context, ask which product; if the insight is genuinely cross-product, use `product: all` in the schema and file under the nearest `Research/` folder the user picks.
 
-## Artifact paths
+## Artifact paths — all in the Obsidian vault (`/Users/romitsoley/Documents/research-repos`)
 
-| Artifact | Per-product path | Workspace fallback |
+All paths below are **vault-relative**. Never write research to the workspace (`apps/<product>/docs/…` or `docs/…`) — that path is retired; the vault is canonical.
+
+| Artifact | Vault path | Notes |
 |---|---|---|
-| Raw insight | `apps/<product>/docs/research/insights/<YYYY-MM-DD>-<slug>.md` | `docs/research/insights/<YYYY-MM-DD>-<slug>.md` |
-| Theme | `apps/<product>/docs/research/insights/themes/<slug>.md` | (workspace level rare) |
-| ADR (when an insight implies a decision) | `apps/<product>/docs/decisions/<NNN>-<slug>.md` | `docs/decisions/<NNN>-<slug>.md` |
-| Glossary entry | `apps/<product>/docs/content.md` | `docs/content.md` |
-| Persona update | `apps/<product>/docs/personas.md` or `docs/storytelling/<persona>.md` | (no workspace personas) |
+| Raw insight — RAW capture | `inbox/<YYYY-MM-DD>-<slug>.md` | Zero-friction, no schema required. Provenance + `/harvest` source. |
+| Raw insight — DISTILLED note | `Research/<product>/research/<YYYY-MM-DD>-<slug>.md` | Full vault schema, `type: research`. This is the durable, citable note. |
+| Theme | `Research/<product>/research/themes/<slug>.md` | `type: research`, `theme:` set. (New `themes/` subfolder — first write creates it.) |
+| ADR (when an insight implies a decision) | `Decisions/<product>/<YYYY-MM-DD>-<slug>.md` | Full vault schema, `type: decision`. (Nested `Decisions/<product>/decisions/<NNN>-<slug>.md` is the older convention — match whichever the product folder already uses.) |
+| Glossary entry | hand off to Granola-intake `glossary-add` (writes to the vault Glossary) | — |
+| Persona update | hand off to Granola-intake persona playbook (vault storytelling notes) | — |
+
+**Rule of thumb:** for every insight, write BOTH the raw `inbox/` capture (provenance) AND, once distilled, the schema'd `Research/<product>/research/` note. For a clearly-distilled paste you may do both in one pass; for anything still fuzzy, capture to `inbox/` only and let `/harvest` promote it later.
 
 ## Per-action playbooks
 
@@ -70,7 +77,10 @@ Steps:
    Personas: Course Coordinator (faculty)
    ADR candidate?: yes — implies design choice (don't surface r_pb without explainer)
    Glossary candidates: (none new)
-   Will save to: apps/exam-management/docs/research/insights/2026-05-09-faculty-pb-distrust.md
+   Will save to (vault):
+     - raw:       inbox/2026-05-09-faculty-pb-distrust.md
+     - distilled: Research/exam-management/research/2026-05-09-faculty-pb-distrust.md  (type: research)
+     - ADR:       Decisions/exam-management/2026-05-09-faculty-pb-distrust.md          (type: decision)
    ```
 4. **Ask:** "Save insight + draft ADR + update persona? (Y/n / pick subset)"
 5. On confirm: write artifacts; surface paths.
@@ -85,31 +95,37 @@ Steps:
 2. Extract: theme name, supporting quote count, sample quotes (1-3), implications.
 3. Show preview.
 4. Ask to save + extract action items (themes often imply design tasks).
-5. On confirm: write to `themes/<slug>.md` AND optionally append a "Themes" section to relevant per-product DESIGN.md or storytelling file.
+5. On confirm: write to `Research/<product>/research/themes/<slug>.md` (full vault schema, `type: research`, `theme:` set) AND optionally drop the raw cluster in `inbox/<YYYY-MM-DD>-<slug>.md` for provenance.
 
 ### `intake:persona-quote`
 
 Already handled by the Granola intake's `granola-query-by-person` flow. If this fires alongside research-intake, route to that playbook. Don't duplicate.
 
-## Frontmatter standard for insight files
+## Frontmatter standard — the vault wiki schema
+
+Distilled `Research/<product>/research/` notes (and theme notes) use the **vault's wiki note schema** (see the vault's own `CLAUDE.md`), NOT a bespoke research-insight schema:
 
 ```yaml
 ---
-type: research-insight
+type: research            # research for insights/themes; decision for ADRs
+product: pce | exam-management | patient-log | portal | all
+source: rr-insights | interview | ethnography | survey | customer-call  # + study/participant IDs
 date: YYYY-MM-DD
-product: <product> | workspace
-source: rr-insights | interview | ethnography | survey | customer-call
-study: <study name or ID>
-participants: [P3, P5, ...]   # IDs only — protect PII
-strength: <"4 of 5" | "single" | "n=12">
-themes: [theme1, theme2]
-personas_referenced: [Course Coordinator, Faculty (Edit)]
-status: New | Distilled | Superseded
-session: <claude-session-id>
+tags: [research, <product>, ...]
+title: "..."
+summary: "one-line synthesis"
+relevance: [research, design, ...]
+value: high | medium | low
+theme: <theme>
+status: accepted | provisional | superseded
 ---
 ```
 
-PII rule: participant IDs only. No names, no emails, no identifying details — even if the source has them. The workspace doesn't need them; recovering from a leak is impossible.
+Filenames: `YYYY-MM-DD-<slug>.md`. Link related notes with `[[name]]`. Record study name + participant IDs (IDs only) inside `source:` or the note body.
+
+The raw `inbox/` capture needs **no frontmatter** — a filename and a line is enough (zero-friction stage).
+
+PII rule: participant IDs only. No names, no emails, no identifying details — even if the source has them. The vault doesn't need them; recovering from a leak is impossible.
 
 ## Cross-skill handoff
 
@@ -117,7 +133,7 @@ PII rule: participant IDs only. No names, no emails, no identifying details — 
 |---|---|
 | Decision implied | This skill drafts; hands the ADR step to Granola-intake's `adr-draft` playbook |
 | New term | Granola-intake `glossary-add` playbook |
-| Persona behavior | Append to `apps/<product>/docs/personas.md` or storytelling/<persona>-perspective.md |
+| Persona behavior | Hand to Granola-intake's persona playbook (writes to the vault's storytelling / persona notes) |
 | Pattern reference | If insight maps to a documented pattern, link the pattern path in the insight file |
 
 Never reimplement playbooks the Granola intake already has. Call them.

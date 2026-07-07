@@ -2,7 +2,7 @@
 
 > **Tokens:** `app/globals.css` — `--sidebar`, `--secondary-panel-bg`, `--background`, `--brand-tint*`.  
 > **Shell:** `components/templates/nested-secondary-panel-shell.tsx` — `bg-[var(--secondary-panel-bg)]`.  
-> **Cursor:** `.cursor/rules/exxat-primary-nav-secondary-panel.mdc` · `.cursor/skills/exxat-primary-nav-secondary-panel/SKILL.md`
+> **Cursor:** `.cursor/rules/exxat-primary-nav-secondary-panel.mdc` · `.cursor/skills/exxat-sidebar-nav/SKILL.md`
 
 ## Stack (back → front)
 
