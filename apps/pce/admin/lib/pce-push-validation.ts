@@ -57,10 +57,12 @@ export function subjectDataIssues(offerings: CourseOffering[]): CourseIssue[] {
 }
 
 /**
- * MOCK: real offerings carry their own end date. We don't have per-course dates
- * in the mock, so spread each course's end deterministically across the final
- * ~8 weeks of its term (by id) — enough to make the window check surface a
- * realistic subset. Replace with the offering's real end date in production.
+ * MOCK: real offerings carry their own dates. We don't have per-course dates
+ * in the mock, so spread each course's end deterministically around its term's
+ * end (by id) — enough to make the window check surface a realistic subset.
+ * Also used for DISPLAY in the Courses & Evaluatees list, so the dates the
+ * admin sees are the same ones the window check validates against.
+ * Replace with the offering's real dates in production.
  */
 function courseEndDate(o: CourseOffering): Date | null {
   const term = MOCK_PROGRAM_TERMS.find(t => t.id === o.termId)
@@ -70,6 +72,15 @@ function courseEndDate(o: CourseOffering): Date | null {
   const offsetWeeks = (seed % 9) - 4 // −4…+4 weeks straddling term end → realistic mix
   end.setDate(end.getDate() - offsetWeeks * 7)
   return end
+}
+
+/** Course start/end for display — start is a standard ~14-week run before the end. */
+export function courseDates(o: CourseOffering): { start: Date; end: Date } | null {
+  const end = courseEndDate(o)
+  if (!end) return null
+  const start = new Date(end)
+  start.setDate(start.getDate() - 98)
+  return { start, end }
 }
 
 /**

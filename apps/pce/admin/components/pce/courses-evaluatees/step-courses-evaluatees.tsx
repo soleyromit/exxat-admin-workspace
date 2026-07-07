@@ -4,8 +4,11 @@ import { useMemo, useEffect, useRef, useState } from 'react'
 import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
   Badge, Skeleton, Checkbox, CheckboxLabel, Button,
-  KeyMetrics, Avatar, AvatarFallback,
 } from '@exxatdesignux/ui'
+import { DataTable } from '@/components/data-table'
+import { PaginationBar } from '@/components/data-table/pagination'
+import { useTableState } from '@/components/data-table/use-table-state'
+import type { ColumnDef } from '@/components/data-table/types'
 import {
   type CourseOffering, type TermSeason, type DeliveryMode,
   COURSE_TYPE_FULL_LABEL,
@@ -15,55 +18,46 @@ import {
   type Criterion, type CellReadiness,
   CRITERION_TOGGLE_LABEL, deriveReadiness,
 } from '@/lib/pce-course-readiness'
+import { courseDates } from '@/lib/pce-push-validation'
+
 const CRITERIA_ORDER: Criterion[] = ['students', 'instructor', 'coordinator']
+
+const fmtD = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 
 const ROLE_LABEL: Record<Criterion, string> = {
   students: 'Students', instructor: 'Instructor', coordinator: 'Coordinator',
 }
 
-interface ReadinessRow {
+interface ReadinessRow extends Record<string, unknown> {
   id: string
   code: string
   name: string
   courseLabel: string
   deliveryMode: DeliveryMode
+  typeLabel: string
+  enrolled: number
+  dates: { start: Date; end: Date } | null
+  datesLabel: string
   cells: Partial<Record<Criterion, CellReadiness>>
   hasGap: boolean
+  /** Group key: gaps first, then ready. */
+  readiness: 'gap' | 'ready'
 }
 
-function initials(name: string) {
-  return name.replace(/^Dr\.?\s*/i, '').split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase()
-}
-
-/** Explicit status chip — DS Badge with a coloured dot + plain-language label. */
-function StatusChip({ ready }: { ready: boolean }) {
-  return (
-    <Badge variant="outline" className="gap-1.5 font-normal whitespace-nowrap shrink-0">
-      <span
-        aria-hidden="true"
-        style={{
-          width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
-          background: ready ? 'var(--chart-2)' : 'var(--insight-severity-warning-fg)',
-        }}
-      />
-      {ready ? 'Ready' : 'Needs setup'}
-    </Badge>
-  )
-}
-
-/** DS Button rendered as a new-tab Prism link (no hand-rolled amber anchors). */
+/** Fix action for the Actions column — names the role it adds, opens Prism. */
 function AddInPrismButton({ cell }: { cell: CellReadiness }) {
   return (
-    <Button asChild variant="outline" size="xs">
+    <Button asChild variant="outline" size="xs" className="justify-start">
       <a
         href={cell.prismHref ?? '#'}
         target="_blank"
         rel="noopener noreferrer"
         title={`Add ${cell.label} in Exxat Prism — opens in a new tab`}
       >
+        <i className="fa-regular fa-circle-plus text-xs" aria-hidden="true" />
         Add {cell.label}
-        <i className="fa-light fa-arrow-up-right-from-square text-xs" aria-hidden="true" />
         <span className="sr-only"> (opens in new tab)</span>
+        <i className="fa-light fa-arrow-up-right-from-square text-xs" aria-hidden="true" />
       </a>
     </Button>
   )
@@ -96,83 +90,147 @@ export function StepCoursesEvaluatees({
   const scopeReady = termChosen && criteria.length > 0
 
   const readiness = useMemo(() => deriveReadiness(scoped, criteria), [scoped, criteria])
-  // Rows ordered by course code.
+  // One row per course (one type per course), ordered by code.
   const rows = useMemo<ReadinessRow[]>(
     () =>
       readiness
         .map(r => {
           const [code, ...rest] = r.courseLabel.split(' – ')
+          const dates = courseDates(r.offering)
           return {
             id: r.offering.id, code, name: rest.join(' – '),
-            courseLabel: r.courseLabel, deliveryMode: r.deliveryMode,
+            courseLabel: r.courseLabel,
+            deliveryMode: r.deliveryMode,
+            typeLabel: COURSE_TYPE_FULL_LABEL[r.deliveryMode],
+            enrolled: r.offering.enrolledCount,
+            dates,
+            datesLabel: dates ? `${fmtD(dates.start)} – ${fmtD(dates.end)}` : '—',
             cells: r.cells, hasGap: r.hasGap,
+            readiness: (r.hasGap ? 'gap' : 'ready') as 'gap' | 'ready',
           }
         })
-        .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }) || a.id.localeCompare(b.id)),
+        .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true })),
     [readiness],
   )
-  // One entry per course — offerings of the same code (classroom + lab) merge
-  // into a single list row; the detail panel shows each section.
-  const courses = useMemo(() => {
-    const map = new Map<string, { code: string; name: string; offerings: ReadinessRow[]; hasGap: boolean }>()
-    for (const r of rows) {
-      const g = map.get(r.code)
-      if (g) { g.offerings.push(r); g.hasGap = g.hasGap || r.hasGap }
-      else map.set(r.code, { code: r.code, name: r.name, offerings: [r], hasGap: r.hasGap })
-    }
-    return [...map.values()]
-  }, [rows])
-  const gapCourses = useMemo(() => courses.filter(c => c.hasGap), [courses])
-  const readyCourses = useMemo(() => courses.filter(c => !c.hasGap), [courses])
 
-  // Focused course — drives the detail panel. Defaults to the first gap.
-  const [focusCode, setFocusCode] = useState<string | null>(null)
+  const columns = useMemo<ColumnDef<ReadinessRow>[]>(() => {
+    const cols: ColumnDef<ReadinessRow>[] = [
+      { key: 'select', label: '', width: 40, defaultPin: 'left', lockPin: true },
+      {
+        key: 'code', label: 'Code', sortable: true, width: 80,
+        cell: r => <span className="text-sm font-medium">{r.code}</span>,
+      },
+      {
+        key: 'name', label: 'Course', sortable: true, width: 160,
+        cell: r => <span className="text-sm block truncate" title={r.name}>{r.name}</span>,
+      },
+      {
+        key: 'enrolled', label: 'Students', sortable: true, width: 84,
+        cell: r => {
+          const gap = r.cells.students && !r.cells.students.ok
+          return (
+            <span className="text-sm tabular-nums" style={gap ? { color: 'var(--muted-foreground)' } : undefined}>
+              {r.enrolled}
+            </span>
+          )
+        },
+      },
+    ]
+    // Evaluatee columns appear per selection — each cell is the value or the fix action.
+    for (const c of (['instructor', 'coordinator'] as Criterion[])) {
+      if (!criteria.includes(c)) continue
+      cols.push({
+        key: c, label: ROLE_LABEL[c], width: 132,
+        cell: r => {
+          const cell = r.cells[c]
+          if (!cell) return null
+          if (cell.ok) return <span className="text-sm block truncate" title={cell.value ?? undefined}>{cell.value}</span>
+          return <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Not assigned</span>
+        },
+      })
+    }
+    cols.push(
+      {
+        key: 'typeLabel', label: 'Type', sortable: true, width: 120,
+        filter: {
+          type: 'select', icon: 'fa-shapes',
+          options: [
+            { value: 'Classroom based', label: 'Classroom based' },
+            { value: 'Lab based', label: 'Lab based' },
+            { value: 'Practice based', label: 'Practice based' },
+          ],
+        },
+        cell: r => <Badge variant="outline" className="font-normal whitespace-nowrap">{r.typeLabel}</Badge>,
+      },
+      {
+        key: 'datesLabel', label: 'Dates', width: 125,
+        cell: r => <span className="text-sm tabular-nums whitespace-nowrap" style={{ color: 'var(--muted-foreground)' }}>{r.datesLabel}</span>,
+      },
+      {
+        // What's needed to complete setup — one consolidated column, pinned right.
+        key: 'actions', label: 'Action needed', width: 230, defaultPin: 'right', lockPin: true,
+        cell: r => {
+          const gaps = CRITERIA_ORDER.filter(c => criteria.includes(c) && r.cells[c] && !r.cells[c]!.ok)
+          if (gaps.length === 0) {
+            return <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>—</span>
+          }
+          return (
+            <div className="flex flex-col items-start gap-1 py-0.5">
+              {gaps.map(c => <AddInPrismButton key={c} cell={r.cells[c]!} />)}
+            </div>
+          )
+        },
+      },
+    )
+    return cols
+  }, [criteria])
+
+  // Pagination — keeps long course lists (40+) manageable.
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+
+  // Grouped by status — gaps first so action items lead.
+  const tableState = useTableState<ReadinessRow>(
+    rows, columns, undefined, { page, pageSize },
+    'readiness',
+    { gap: 'Needs setup', ready: 'Ready to send' },
+    ['gap', 'ready'],
+  )
+  const filteredTotal = tableState.rows.length
+  const totalPages = Math.max(1, Math.ceil(filteredTotal / pageSize))
+  const safePage = Math.min(page, totalPages)
+  // Search/filter changes shrink the set — snap back to page 1.
+  const lastTotal = useRef(filteredTotal)
   useEffect(() => {
-    if (courses.length === 0) { setFocusCode(null); return }
-    if (!focusCode || !courses.some(c => c.code === focusCode)) {
-      setFocusCode((courses.find(c => c.hasGap) ?? courses[0]).code)
-    }
-  }, [courses, focusCode])
-  const focus = courses.find(c => c.code === focusCode)
+    if (lastTotal.current !== filteredTotal) { lastTotal.current = filteredTotal; setPage(1) }
+  }, [filteredTotal])
 
-  // Selection — default all; every course (ready or not) can be unchecked.
-  const [selected, setSelected] = useState<Set<string>>(new Set())
+  // Selection — default all on scope change; any course can be unchecked.
   const rowSig = rows.map(r => r.id).join('\0')
   const lastRowSig = useRef<string>('')
   useEffect(() => {
     if (lastRowSig.current === rowSig) return
     lastRowSig.current = rowSig
-    setSelected(new Set(rows.map(r => r.id)))
-  }, [rowSig, rows])
+    tableState.setSelected(new Set(rows.map(r => r.id)))
+  }, [rowSig, rows, tableState])
 
   // Report selection up (de-duped)
-  const selSig = [...selected].sort().join('\0')
   const lastReported = useRef('')
   useEffect(() => {
-    if (lastReported.current === selSig) return
-    lastReported.current = selSig
-    onSelectionChange(new Set(selected))
-  }, [selSig, selected, onSelectionChange])
-
-  const toggle = (id: string) =>
-    setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
-  /** Course-level toggle: all offerings on/off together. */
-  const toggleCourse = (offerings: ReadinessRow[]) =>
-    setSelected(prev => {
-      const n = new Set(prev)
-      const allOn = offerings.every(o => n.has(o.id))
-      offerings.forEach(o => (allOn ? n.delete(o.id) : n.add(o.id)))
-      return n
-    })
+    const sig = [...tableState.selected].map(String).sort().join('\0')
+    if (lastReported.current === sig) return
+    lastReported.current = sig
+    onSelectionChange(new Set([...tableState.selected].map(String)))
+  }, [tableState.selected, onSelectionChange])
 
   const selectedStudents = useMemo(() => {
     let n = 0
-    for (const r of readiness) if (selected.has(r.offering.id)) n += r.offering.enrolledCount
+    for (const r of rows) if (tableState.selected.has(r.id)) n += r.enrolled
     return n
-  }, [readiness, selected])
+  }, [rows, tableState.selected])
 
   return (
-    <div className="flex flex-col gap-5" style={{ maxWidth: 1080 }}>
+    <div className="flex flex-col gap-5" style={{ maxWidth: 1160 }}>
       {/* ── Scope band ────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
@@ -279,139 +337,59 @@ export function StepCoursesEvaluatees({
       ) : rows.length === 0 ? (
         <EmptyHint heading="No courses for this scope" sub="Adjust the term or cohort filter." />
       ) : (
-        <div className="flex flex-col gap-4">
-          {/* KPI band — the scope's shape at a glance */}
-          <KeyMetrics
-            variant="compact"
-            metricsSingleRow
-            metrics={[
-              { id: 'courses', label: 'Courses', value: courses.length, delta: '', trend: 'neutral', description: `${courses.filter(c => c.offerings.some(o => selected.has(o.id))).length} selected` },
-              { id: 'students', label: 'Students', value: selectedStudents, delta: '', trend: 'neutral', description: 'across selected courses' },
-              { id: 'ready', label: 'Ready to send', value: readyCourses.length, delta: '', trend: 'neutral', description: 'all evaluatees assigned' },
-              { id: 'gaps', label: 'Needs setup', value: gapCourses.length, delta: '', trend: 'neutral', description: gapCourses.length > 0 ? 'add missing data in Prism' : 'nothing to fix' },
-            ]}
+        /* Status-grouped DataTable — fix actions live in the cells */
+        <div className="flex flex-col gap-0">
+        <DataTable<ReadinessRow>
+          data={rows}
+          columns={columns}
+          state={tableState}
+          getRowId={r => r.id}
+          getRowSelectionLabel={r => r.courseLabel}
+          selectable
+          searchable
+          hideBulkActions
+          hasFooter
+          groupIcons={{
+            gap: (
+              <i
+                className="fa-solid fa-triangle-exclamation text-xs"
+                aria-hidden="true"
+                style={{ color: 'var(--insight-severity-warning-fg)' }}
+              />
+            ),
+            ready: (
+              <i
+                className="fa-solid fa-circle-check text-xs"
+                aria-hidden="true"
+                style={{ color: 'var(--chart-2)' }}
+              />
+            ),
+          }}
+        />
+        <div className="mx-4 lg:mx-6 border-x border-b border-border rounded-b-lg overflow-hidden">
+          <PaginationBar
+            page={safePage}
+            pageSize={pageSize}
+            total={filteredTotal}
+            pageSizeOptions={[10, 25, 50, 100]}
+            onPageChange={setPage}
+            onPageSizeChange={n => { setPageSize(n); setPage(1) }}
           />
-
-          {/* Split view: status-sectioned course list + detail panel */}
-          <div className="flex gap-6 items-start">
-            <div className="flex-1 min-w-0 flex flex-col gap-4">
-              {([
-                { label: 'Needs setup', icon: 'fa-triangle-exclamation', color: 'var(--insight-severity-warning-fg)', items: gapCourses },
-                { label: 'Ready to send', icon: 'fa-circle-check', color: 'var(--chart-2)', items: readyCourses },
-              ] as const).filter(s => s.items.length > 0).map(section => (
-                <div key={section.label} className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <i className={`fa-solid ${section.icon} text-xs`} aria-hidden="true" style={{ color: section.color }} />
-                    <span className="text-sm font-semibold">{section.label}</span>
-                    <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>· {section.items.length}</span>
-                  </div>
-                  <div className="rounded-md border border-border overflow-hidden" role="list" aria-label={`${section.label} courses`}>
-                    {section.items.map((c, i) => {
-                      const allSel = c.offerings.every(o => selected.has(o.id))
-                      const someSel = c.offerings.some(o => selected.has(o.id))
-                      return (
-                        <div
-                          key={c.code}
-                          role="listitem"
-                          onClick={() => setFocusCode(c.code)}
-                          className={`flex items-center gap-3 px-3 cursor-pointer${i > 0 ? ' border-t border-border' : ''}`}
-                          style={{ height: 44, background: c.code === focusCode ? 'var(--muted)' : undefined }}
-                        >
-                          <span onClick={e => e.stopPropagation()} className="flex">
-                            <Checkbox
-                              checked={allSel ? true : someSel ? 'indeterminate' : false}
-                              onCheckedChange={() => toggleCourse(c.offerings)}
-                              aria-label={`${c.code} – ${c.name}`}
-                            />
-                          </span>
-                          <span className="text-sm font-medium shrink-0" style={{ width: 72 }}>{c.code}</span>
-                          <span className="text-sm truncate flex-1" style={{ color: 'var(--muted-foreground)' }}>{c.name}</span>
-                          {c.offerings.length > 1 && (
-                            <span className="text-xs shrink-0" style={{ color: 'var(--muted-foreground)' }}>
-                              {c.offerings.length} sections
-                            </span>
-                          )}
-                          <i className="fa-light fa-chevron-right text-xs" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {focus && (
-              <aside
-                className="shrink-0 rounded-lg border border-border p-4 flex flex-col gap-4"
-                style={{ width: 320, position: 'sticky', top: 8 }}
-                aria-label={`Details for ${focus.code} – ${focus.name}`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold">{focus.code}</p>
-                    <p className="text-sm truncate" style={{ color: 'var(--muted-foreground)' }}>{focus.name}</p>
-                  </div>
-                  <StatusChip ready={!focus.hasGap} />
-                </div>
-                {focus.offerings.map((o, oi) => (
-                  <div key={o.id} className={`flex flex-col gap-3${oi > 0 ? ' border-t border-border pt-4' : ''}`}>
-                    <div className="flex items-center justify-between gap-2">
-                      <Badge variant="outline" className="font-normal">{COURSE_TYPE_FULL_LABEL[o.deliveryMode]}</Badge>
-                      {focus.offerings.length > 1 && (
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            id={`include-${o.id}`}
-                            checked={selected.has(o.id)}
-                            onCheckedChange={() => toggle(o.id)}
-                          />
-                          <CheckboxLabel htmlFor={`include-${o.id}`} className="text-xs font-normal cursor-pointer">
-                            Include
-                          </CheckboxLabel>
-                        </div>
-                      )}
-                    </div>
-                    {CRITERIA_ORDER.filter(c => criteria.includes(c)).map(c => {
-                      const cell = o.cells[c]
-                      if (!cell) return null
-                      return (
-                        <div key={c} className="flex items-center justify-between gap-3">
-                          <span className="text-xs shrink-0" style={{ color: 'var(--muted-foreground)', width: 84 }}>{ROLE_LABEL[c]}</span>
-                          {cell.ok ? (
-                            <span className="inline-flex items-center gap-2 text-sm min-w-0">
-                              {/students?$/.test(cell.value ?? '') ? (
-                                <i className="fa-light fa-users text-xs" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
-                              ) : (
-                                <Avatar style={{ width: 22, height: 22 }}>
-                                  <AvatarFallback>{initials(cell.value ?? '')}</AvatarFallback>
-                                </Avatar>
-                              )}
-                              <span className="truncate">{cell.value}</span>
-                            </span>
-                          ) : (
-                            <AddInPrismButton cell={cell} />
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                ))}
-              </aside>
-            )}
-          </div>
+        </div>
         </div>
       )}
 
       {/* ── Footer ────────────────────────────────────────────────────────── */}
       <div className="border-t border-border pt-4 flex items-center justify-between gap-4">
         <span className="text-xs tabular-nums" style={{ color: 'var(--muted-foreground)' }}>
-          {scopeReady && courses.length > 0
-            ? <>{courses.filter(c => c.offerings.some(o => selected.has(o.id))).length} of {courses.length} course{courses.length !== 1 ? 's' : ''} selected · {selectedStudents} students</>
+          {scopeReady && rows.length > 0
+            ? <>{tableState.selected.size} of {rows.length} course{rows.length !== 1 ? 's' : ''} selected · {selectedStudents} students</>
             : null}
         </span>
         <Button
           variant="default"
           size="sm"
-          disabled={!scopeReady || selected.size === 0}
+          disabled={!scopeReady || tableState.selected.size === 0}
           onClick={onContinue}
         >
           Continue

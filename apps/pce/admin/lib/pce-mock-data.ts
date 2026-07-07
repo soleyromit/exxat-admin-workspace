@@ -1472,8 +1472,8 @@ export const MOCK_COURSE_OFFERINGS: CourseOffering[] = [
   { id: 'co19', masterCourseId: 'mc11', termId: 'pt5', cohort: 'Year 3', primaryFacultyId: 'f3', collaboratorIds: [],     enrolledCount: 44, status: 'active',    courseType: 'didactic' },
 
   // ── Lab-based (LB) + Practice-based (PB) — audit readiness fixtures (deliveryMode + one gap each) ──
-  { id: 'co20', masterCourseId: 'mc3',  termId: 'pt5', cohort: 'Year 2', primaryFacultyId: 'f3', collaboratorIds: ['f2'], labTaIds: ['f5'], enrolledCount: 0,  status: 'active', courseType: 'didactic', deliveryMode: 'lab' },              // gap: 0 students
-  { id: 'co21', masterCourseId: 'mc9',  termId: 'pt5', cohort: 'Year 1', primaryFacultyId: 'f4', collaboratorIds: [],     labTaIds: [],     enrolledCount: 30, status: 'active', courseType: 'didactic', deliveryMode: 'lab' },              // gap: no lab instructor/TA
+  { id: 'co20', masterCourseId: 'mc7',  termId: 'pt5', cohort: 'Year 2', primaryFacultyId: 'f3', collaboratorIds: ['f2'], labTaIds: ['f5'], enrolledCount: 0,  status: 'active', courseType: 'didactic', deliveryMode: 'lab' },              // gap: 0 students
+  { id: 'co21', masterCourseId: 'mc4',  termId: 'pt5', cohort: 'Year 1', primaryFacultyId: 'f4', collaboratorIds: [],     labTaIds: [],     enrolledCount: 30, status: 'active', courseType: 'didactic', deliveryMode: 'lab' },              // gap: no lab instructor/TA
   { id: 'co22', masterCourseId: 'mc16', termId: 'pt5', cohort: 'Year 3', primaryFacultyId: '',   collaboratorIds: ['f6'], placementFacultyIds: ['f6'], enrolledCount: 12, status: 'active', courseType: 'clinical', deliveryMode: 'practice' }, // gap: no clinical coordinator
   { id: 'co23', masterCourseId: 'mc14', termId: 'pt1', cohort: 'Class of 2026', primaryFacultyId: 'f1', collaboratorIds: [],     placementFacultyIds: [],     enrolledCount: 18, status: 'active', courseType: 'clinical', deliveryMode: 'practice' }, // gap: no placement faculty
 ]

@@ -329,10 +329,12 @@ export function useTableState<TData extends Record<string, unknown>>(
   }, [rows, paginationOverride?.page, paginationOverride?.pageSize])
 
   // ── Grouped rows ──────────────────────────────────────────────────────────
+  // Groups are built from the PAGED slice so grouping and pagination compose
+  // (each page shows its rows under their group headers).
   const groupedRows = React.useMemo(() => {
     if (!groupBy) return [{ groupKey: null as string | null, groupLabel: null as string | null, rows }]
     const groups = new Map<string, TData[]>()
-    rows.forEach(row => {
+    pagedRows.forEach(row => {
       const val = String(row[groupBy] ?? "—")
       if (!groups.has(val)) groups.set(val, [])
       groups.get(val)!.push(row)
@@ -355,7 +357,7 @@ export function useTableState<TData extends Record<string, unknown>>(
       groupLabel: groupLabels?.[key] ?? key,
       rows: groupRows,
     }))
-  }, [rows, groupBy, groupLabels, groupOrder])
+  }, [rows, pagedRows, groupBy, groupLabels, groupOrder])
 
   // ── Effective pins (respect overflow) ─────────────────────────────────────
   const LOCKED_KEYS = React.useMemo(() => new Set(Object.keys(lockedPins)), [lockedPins])

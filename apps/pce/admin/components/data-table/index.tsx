@@ -287,7 +287,7 @@ function FilterPillBase<TData>({
         )}
 
         {filterDef.type === "select" && (
-          <div className="py-1 max-h-64 overflow-y-auto">
+          <div>
             {showSearch && (
               <div className="px-2 pt-1 pb-1">
                 <div className="relative">
@@ -312,6 +312,7 @@ function FilterPillBase<TData>({
                 </div>
               </div>
             )}
+            <div role="listbox" aria-multiselectable="true" aria-label={`${col.label} options`} className="py-1 max-h-64 overflow-y-auto">
             {filteredOpts.map(opt => {
               const checked = filter.values.includes(opt.value)
               return (
@@ -345,6 +346,7 @@ function FilterPillBase<TData>({
             {filteredOpts.length === 0 && (
               <p className="px-3 py-2 text-xs text-muted-foreground">No options found</p>
             )}
+            </div>
             {filter.values.length > 0 && (
               <div className="border-t border-border px-2 py-2">
                 <button
@@ -479,15 +481,18 @@ export function DataTableToolbar<TData extends Record<string, unknown>>({
               dropdowns skip hideOthers. Fixed 2026-05-11. */}
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
-              <button type="button"
-                className="inline-flex items-center gap-1 h-6 px-2 rounded text-xs text-muted-foreground hover:text-interactive-hover-foreground border border-dashed border-input/70 hover:border-input hover:bg-interactive-hover-subtle transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              <Button
+                type="button"
+                variant="ghost"
+                size="xs"
+                className="h-6 border border-dashed border-input/70 hover:border-input hover:bg-interactive-hover-subtle text-muted-foreground hover:text-interactive-hover-foreground"
               >
                 <i className="fa-light fa-plus text-xs" aria-hidden="true" />
                 Add filter
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-48">
-              <DropdownMenuLabel className="text-xs">Filter by field</DropdownMenuLabel>
+              <DropdownMenuLabel className="text-xs" style={{ color: 'var(--foreground)' }}>Filter by field</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {filterableCols.map(c => (
                 <DropdownMenuItem key={c.key} onClick={() => addFilter(c.key)}>
@@ -499,13 +504,15 @@ export function DataTableToolbar<TData extends Record<string, unknown>>({
           </DropdownMenu>
 
           {activeFilters.length > 0 && (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="xs"
               onClick={() => setActiveFilters([])}
-              className="text-xs text-muted-foreground hover:text-interactive-hover-foreground transition-colors px-1"
+              className="px-1 text-muted-foreground hover:text-interactive-hover-foreground"
             >
               Clear all
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -613,6 +620,8 @@ export interface DataTableExtendedProps<TData extends Record<string, unknown>>
   groupLabels?: Record<string, string>
   /** Ordered list of group keys; rows not in any listed group sort at the end. */
   groupOrder?: string[]
+  /** Optional leading icon per group key, rendered before the group label (PCE extension). */
+  groupIcons?: Record<string, React.ReactNode>
 }
 
 type DataTableInnerProps<TData extends Record<string, unknown>> = DataTableExtendedProps<TData> & {
@@ -638,6 +647,7 @@ function DataTableInner<TData extends Record<string, unknown>>({
   conditionalRules,
   showColumnHeaders = true,
   state,
+  groupIcons,
 }: DataTableInnerProps<TData>) {
   const {
     sortRules, setSortRules,
@@ -780,7 +790,7 @@ function DataTableInner<TData extends Record<string, unknown>>({
                     style={stickyStyle(col.key, true)}
                     className={cn(
                       "group/th relative h-9 px-3 text-left align-middle select-none",
-                      "text-xs font-medium text-muted-foreground tracking-wide",
+                      "text-xs font-medium text-muted-foreground",
                       "bg-dt-header-bg border-b border-border",
                       showGridlines && (!isEdgePinCol
                         ? "border-r border-border last:border-r-0"
@@ -983,7 +993,7 @@ function DataTableInner<TData extends Record<string, unknown>>({
 
           {/* ── Table body ───────────────────────────────────────────────── */}
           <tbody>
-            {(pagedRows !== rows
+            {(groupBy == null
               ? [{ groupKey: null as string | null, groupLabel: null as string | null, rows: pagedRows }]
               : groupedRows
             ).map(({ groupKey, groupLabel, rows: groupRows }) => (
@@ -993,15 +1003,38 @@ function DataTableInner<TData extends Record<string, unknown>>({
                     <td
                       colSpan={displayCols.length}
                       className={cn(
-                        "px-4 py-1.5 text-xs font-semibold text-muted-foreground tracking-wide bg-dt-group-bg select-none sticky left-0",
+                        "px-4 py-1.5 text-xs font-semibold text-muted-foreground bg-dt-group-bg select-none sticky left-0",
                         "border-b border-border",
                       )}
                     >
+                      {selectable && (() => {
+                        /* Group select-all (PCE extension) — toggles every row in the section. */
+                        const ids = groupRows.map((row, i) => getRowId(row, i, getRowIdProp))
+                        const all = ids.length > 0 && ids.every(id => selected.has(id))
+                        const some = ids.some(id => selected.has(id))
+                        return (
+                          <span className="mr-2 inline-flex align-middle" onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={all ? true : some ? "indeterminate" : false}
+                              onCheckedChange={() => {
+                                const n = new Set(selected)
+                                if (all) ids.forEach(id => n.delete(id))
+                                else ids.forEach(id => n.add(id))
+                                setSelected(n)
+                              }}
+                              aria-label={`Select all ${groupLabel ?? "group"} rows`}
+                            />
+                          </span>
+                        )
+                      })()}
+                      {groupKey != null && groupIcons?.[groupKey] != null && (
+                        <span className="mr-1.5 inline-flex">{groupIcons[groupKey]}</span>
+                      )}
                       {groupLabel}
                       {/* WCAG 2.1 AA fix 2026-05-11: opacity-60 on muted-foreground
                          drops to 2.57:1 contrast (visual-review caught). Using
                          text-muted-foreground at full opacity hits 4.6:1+. */}
-                      <span className="ml-2 font-normal normal-case tracking-normal text-muted-foreground">
+                      <span className="ml-2 text-[12px] font-normal normal-case tracking-normal text-muted-foreground">
                         {groupRows.length} record{groupRows.length !== 1 ? "s" : ""}
                       </span>
                     </td>

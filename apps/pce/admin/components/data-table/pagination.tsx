@@ -17,6 +17,7 @@
 
 import * as React from "react"
 import {
+  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -75,14 +76,10 @@ export function PaginationBar({
         {/* modal={false} — axe aria-hidden-focus fix (2026-05-11) */}
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              aria-label="Rows per page"
-              className="inline-flex items-center gap-1 px-2 py-1 rounded border border-input bg-background hover:bg-interactive-hover text-foreground text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
+            <Button variant="outline" size="sm" aria-label="Rows per page">
               {pageSize}
               <i className="fa-light fa-chevron-down text-xs" aria-hidden="true" />
-            </button>
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-20">
             {pageSizeOptions.map(n => (
@@ -105,51 +102,27 @@ export function PaginationBar({
         </span>
         <div className="flex items-center gap-1">
             <Tip label="First page" side="top">
-              <button
-                type="button"
-                aria-label="First page"
-                disabled={page === 1}
-                onClick={() => onPageChange(1)}
-                className="inline-flex items-center justify-center size-7 rounded hover:bg-interactive-hover disabled:opacity-40 disabled:pointer-events-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
+              <Button variant="ghost" size="icon-sm" aria-label="First page" disabled={page === 1} onClick={() => onPageChange(1)}>
                 <i className="fa-light fa-chevrons-left text-xs" aria-hidden="true" />
-              </button>
+              </Button>
             </Tip>
             <Tip label="Previous page" side="top">
-              <button
-                type="button"
-                aria-label="Previous page"
-                disabled={page === 1}
-                onClick={() => onPageChange(page - 1)}
-                className="inline-flex items-center justify-center size-7 rounded hover:bg-interactive-hover disabled:opacity-40 disabled:pointer-events-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
+              <Button variant="ghost" size="icon-sm" aria-label="Previous page" disabled={page === 1} onClick={() => onPageChange(page - 1)}>
                 <i className="fa-light fa-chevron-left text-xs" aria-hidden="true" />
-              </button>
+              </Button>
             </Tip>
             <span className="px-2 text-muted-foreground tabular-nums">
               {page} / {totalPages}
             </span>
             <Tip label="Next page" side="top">
-              <button
-                type="button"
-                aria-label="Next page"
-                disabled={page >= totalPages}
-                onClick={() => onPageChange(page + 1)}
-                className="inline-flex items-center justify-center size-7 rounded hover:bg-interactive-hover disabled:opacity-40 disabled:pointer-events-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
+              <Button variant="ghost" size="icon-sm" aria-label="Next page" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>
                 <i className="fa-light fa-chevron-right text-xs" aria-hidden="true" />
-              </button>
+              </Button>
             </Tip>
             <Tip label="Last page" side="top">
-              <button
-                type="button"
-                aria-label="Last page"
-                disabled={page >= totalPages}
-                onClick={() => onPageChange(totalPages)}
-                className="inline-flex items-center justify-center size-7 rounded hover:bg-interactive-hover disabled:opacity-40 disabled:pointer-events-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
+              <Button variant="ghost" size="icon-sm" aria-label="Last page" disabled={page >= totalPages} onClick={() => onPageChange(totalPages)}>
                 <i className="fa-light fa-chevrons-right text-xs" aria-hidden="true" />
-              </button>
+              </Button>
             </Tip>
         </div>
       </div>
