@@ -133,7 +133,7 @@ export function RoleAccessGrid() {
               Permissions matrix
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Phase 2 — pending Vishaka R7 (permissions matrix definition)</TooltipContent>
+          <TooltipContent>Coming soon — the permissions matrix is being defined.</TooltipContent>
         </Tooltip>
       </div>
 
@@ -213,10 +213,9 @@ export function RoleAccessGrid() {
         )}
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        <i className="fa-light fa-circle-info text-xs me-1" aria-hidden="true" />
-        Per Aarti 2026-05-08, faculty cannot add courses or alter master-list entities — only Admin can. Faculty can add Collaborators on courses they coordinate, but only if Admin granted that capability.
-      </p>
+      {/* Access model (decision 2026-05-08): faculty cannot add courses or alter
+          master-list entities — Admin only. Faculty may add Collaborators on
+          courses they coordinate, only if Admin granted that capability. */}
 
       {/* Grant role dialog */}
       <Dialog open={grantOpen} onOpenChange={setGrantOpen}>
