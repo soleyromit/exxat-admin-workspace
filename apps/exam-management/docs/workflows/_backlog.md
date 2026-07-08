@@ -213,6 +213,21 @@ Source: `docs/research/meetings/2026-07-02-ai-strategy-design-system-nav-alignme
 | T99 | Partially resolved Jul 2: Ask Leo + search → top utility bar, not left nav sidebar. Left nav = module navigation only. Final confirmation after Himanshu's top bar design (T103). Do not apply nav changes yet. D_EM_0702_04. |
 | T13 | Full accommodations = Phase 2. Only manual end-time extension in MVP (tracked as T102). D_EM_0702_07. |
 
+## Phase 1 design tasks — added 2026-07-07
+
+Source: `docs/research/meetings/2026-07-07-vishal-exam-mgmt-priority-sync.md` (Granola `91c567e8`) · `docs/research/meetings/2026-07-06-arun-romit-priority-1on1.md` (Granola `e69904b6`)
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T104 | Assessment creation screens — information density review | Admin / Faculty | Assessment builder (create-assessment-modal.tsx + related builder screens) | P1 — DESIGN-REVIEW | Vishal Jul 7: "there are some screens where the information is too dense. We need to figure out a way to present so much of information. And little screen." Workflow is correct — this is a visual hierarchy and information grouping pass only. Do NOT restructure the workflow; only reconsider grouping, spacing, and visual weight within existing screens. D_EM_0707_05. |
+
+### Priority clarification (Jul 2026)
+
+| # | Update |
+|---|---|
+| — | **Exam management question creation = P0.** Vishal Jul 7: "your P0 will be question creation. Period." Supersedes relative priorities set prior to Jul 2026. No code change — priority signal for Romit's design sequencing. D_EM_0707_03. |
+| — | **Day-to-day approver = Yash.** Weekly Aarti call permanently canceled. Yash reviews designs going forward. Aarti reviews the full picture every ~1.5 months. D_EM_0707_01, D_EM_0707_02. |
+
 ## Phase 1 → Phase 2 demotions (updated 2026-06-13)
 
 | # | Task | Original priority | Demotion reason | Source |

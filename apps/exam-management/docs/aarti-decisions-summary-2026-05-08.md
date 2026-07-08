@@ -1373,6 +1373,46 @@ Confirmed: do not wait for Himanshu's design system to be fully signed off. Use 
 
 ---
 
+### 5.63 Governance change, P0 priority order, and assessment creation density flag (2026-07-06 + 2026-07-07)
+
+Source: `docs/research/meetings/2026-07-06-arun-romit-priority-1on1.md` (Granola `e69904b6`) · `docs/research/meetings/2026-07-07-vishal-exam-mgmt-priority-sync.md` (Granola `91c567e8`)
+
+> Two sequential meetings (Arun 1:1 Jul 6; Vishal design sync Jul 7) establishing the same governance shift from two different principals. Treated as one cohesive section.
+
+**Governance change: Aarti steps back; Yash is new day-to-day approver**
+
+Aarti transitions to "leadership sponsor" role — no longer the day-to-day reviewer. She will review the full picture approximately every 1.5 months. Yash (Asu) is now the primary design approver for day-to-day decisions.
+
+| Decision | Detail |
+|---|---|
+| Weekly Aarti call — canceled permanently (D_EM_0707_01) | Vishal: "There is no call tomorrow. There is no. The weekly call we have with arti is canceled. Forever." |
+| Yash as day-to-day approver (D_EM_0707_02 / D_EM_0706_02) | Vishal: "yes will be our sponsor... Leadership sponsor. So yes will be reviewing the designs. And give us a go." Arun: "I've asked [Asu] to do that. So Asu wanted to do it." |
+| Vishal joining all design syncs (D_EM_0707_07) | Vishal: "I'll make sure to join all our sinks." Increases decision velocity between product and design. |
+
+**Priority order confirmed**
+
+| Priority | Product | Decision |
+|---|---|---|
+| P0 | Exam management — question creation | Vishal: "your P0 will be question creation. Period." Dev has not yet picked up question creation. This is Romit's primary design focus starting next week. |
+| #1 overall | Exam management | Arun: "First exam management number one." If Romit must choose between products, exam management wins. |
+| #2 overall | Course evaluation (PCE) | Arun: "And secondly, course evaluation service." Complete view survey first, then pivot to exam management question creation. |
+
+**Assessment creation screens — information density flag**
+
+Vishal identified the assessment creation screens as presenting too much information in too small a space. The workflow itself is correct; the challenge is visual hierarchy and grouping.
+
+> "There are some screens where the information is too dense. We need to figure out a way to present so much of information. And little screen." — Vishal, 2026-07-07
+
+Design task generated: T104 — assessment creation screens, information density review. DESIGN-REVIEW.
+
+**Speed and design system**
+
+Reconfirms D_EM_0702_03: speed of delivery is the overriding priority. If the design system is in the way, proceed without it.
+
+> "The number one most important thing. Is speed of delivery. Even as I've said many times, if the design system comes in the way, throw away the design system temporarily." — Arun, 2026-07-06
+
+---
+
 ## Appendix — source meetings
 
 | Date | Title | Granola ID | Drove |
@@ -1410,6 +1450,8 @@ Confirmed: do not wait for Himanshu's design system to be fully signed off. Use 
 | 2026-06-17 05:17 | Design system and nav alignment — engineering sync (cross-product) | `1f55db0d` | Himanshu + Romit |
 | 2026-07-02 04:43 | EduTech AI adoption strategy — phased rollout, MVP scope, and design system alignment | `d2449a66` | Aarti + Himanshu + Darshan + Vinay + Vishal + Arun + Romit |
 | 2026-07-02 08:12 | Create template — upload capability and handoff readiness with Monil (PCE) | `3c5d6795` | Monil + Romit |
+| 2026-07-06 10:00 | Priority and governance update 1:1 — Arun and Romit | `e69904b6` | Arun + Romit |
+| 2026-07-07 09:30 | Exam management priority sync and governance change | `91c567e8` | Vishal + Romit |
 
 Per-meeting raw notes at `apps/exam-management/docs/research/meetings/` and `apps/pce/docs/research/meetings/`.
 
